@@ -1,28 +1,226 @@
-# This file configures the analyzer, which statically analyzes Dart code to
-# check for errors, warnings, and lints.
+# Specify analysis options.
 #
-# The issues identified by the analyzer are surfaced in the UI of Dart-enabled
-# IDEs (https://dart.dev/tools#ides-and-editors). The analyzer can also be
-# invoked from the command line by running `flutter analyze`.
+# Until there are meta linter rules, each desired lint must be explicitly enabled.
+# See: https://github.com/dart-lang/linter/issues/288
+#
+# For a list of lints, see: http://dart-lang.github.io/linter/lints/
+# See the configuration guide for more
+# https://github.com/dart-lang/sdk/tree/main/pkg/analyzer#configuring-the-analyzer
+#
+# There are other similar analysis options files in the flutter repos,
+# which should be kept in sync with this file:
+#
+#   - analysis_options.yaml (this file)
+#   - https://github.com/flutter/plugins/blob/master/analysis_options.yaml
+#   - https://github.com/flutter/engine/blob/master/analysis_options.yaml
+#   - https://github.com/flutter/packages/blob/master/analysis_options.yaml
+#
+# This file contains the analysis options used by Flutter tools, such as IntelliJ,
+# Android Studio, and the `flutter analyze` command.
 
-# The following line activates a set of recommended lints for Flutter apps,
-# packages, and plugins designed to encourage good coding practices.
-include: package:flutter_lints/flutter.yaml
+# Enable all rules by default
+include: all_lint_rules.yaml
 
-linter:
-  # The lint rules applied to this project can be customized in the
-  # section below to disable rules from the `package:flutter_lints/flutter.yaml`
-  # included above or to enable additional rules. A list of all available lints
-  # and their documentation is published at https://dart.dev/lints.
-  #
-  # Instead of disabling a lint rule for the entire project in the
-  # section below, it can also be suppressed for a single line of code
-  # or a specific dart file by using the `// ignore: name_of_lint` and
-  # `// ignore_for_file: name_of_lint` syntax on the line or in the file
-  # producing the lint.
+custom_lint:
   rules:
-    # avoid_print: false  # Uncomment to disable the `avoid_print` rule
-    # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
+    # Explicitly disable one lint rule
+    #- missing_provider_scope: false
 
-# Additional information about this file can be found at
-# https://dart.dev/guides/language/analysis-options
+analyzer:
+  plugins:
+    - custom_lint
+
+  language:
+    strict-casts: true
+    #strict-raw-types: true
+  errors:
+    # Otherwise cause the import of all_lint_rules to warn because of some rules conflicts.
+    # The conflicts are fixed in this file instead, so we can safely ignore the warning.
+    included_file_warning: ignore
+    # freezed annotation (https://github.com/rrousselGit/freezed/issues/488)
+    invalid_annotation_target: ignore
+    # treat missing required parameters as a warning (not a hint)
+    # treat missing required parameters as a warning (not a hint)
+    missing_required_param: warning
+    # treat missing returns as a warning (not a hint)
+    missing_return: warning
+    # allow having TODO comments in the code
+    todo: ignore
+    # allow self-reference to deprecated members (we do this because otherwise we have
+    # to annotate every member in every test, assert, etc, when we deprecate something)
+    deprecated_member_use_from_same_package: ignore
+    # TODO(ianh): https://github.com/flutter/flutter/issues/74381
+    # Clean up existing unnecessary imports, and remove line to ignore.
+    unnecessary_import: ignore
+    # Turned off until null-safe rollout is complete.
+    # unnecessary_null_comparison: ignore
+  exclude:
+    - "bin/cache/**"
+      # Ignore protoc generated files
+    - "dev/conductor/lib/proto/*"
+    # Ignore BuildRunner generated files
+    - "lib/**/*.freezed.dart"
+    - "lib/**/*.g.dart"
+    - "lib/**/*.gr.dart"
+
+enable-experiment:
+  - records
+
+# Explicitly disable only the rules we do not want.
+linter:
+  rules:
+    # we prefer having parameters in the same order as fields https://github.com/flutter/flutter/issues/10219
+    always_put_required_named_parameters_first: false
+
+    #conflicts with omit_local_variable_types
+    always_specify_types: false
+
+    always_use_package_imports: false
+
+    # conflicts with always_specify_types
+    avoid_annotating_with_dynamic: false
+
+    # blocked on https://github.com/dart-lang/linter/issues/3023
+    avoid_catches_without_on_clauses: false
+
+    # blocked on https://github.com/dart-lang/linter/issues/3023
+    avoid_catching_errors: false
+
+    # triggers warning with Mock
+    avoid_implementing_value_types: false
+
+    # seems to be a stylistic choice we don't subscribe to
+    avoid_multiple_declarations_per_line: false
+
+    avoid_print: false
+
+    # we prefer having typedef (discussion in https://github.com/flutter/flutter/pull/16356)
+    avoid_private_typedef_functions: false
+
+    # there are enough valid reasons to return `this` that this lint ends up with too many false positives
+    avoid_returning_this: false
+
+    # conflicts with always_specify_types
+    avoid_types_on_closure_parameters: false
+
+    # we use web libraries in web-specific code, and our tests prevent us from using them elsewhere
+    avoid_web_libraries_in_flutter: false
+
+    # doesn't match the typical style of this repo
+    cascade_invocations: false
+
+    # not reliable enough
+    close_sinks: false
+
+    # blocked on https://github.com/dart-lang/linter/issues/1142
+    comment_references: false
+
+    # needs an opt-out https://github.com/dart-lang/linter/issues/204
+    constant_identifier_names: false
+
+    # not required by flutter style
+    curly_braces_in_flow_control_structures: false
+
+    # enabled only at the framework level (packages/flutter/lib)
+    diagnostic_describe_all_properties: false
+
+    # there are appropriate times to use the environment, especially in our tests and build logic
+    do_not_use_environment: false
+
+    eol_at_end_of_file: false
+
+    # who cares?
+    flutter_style_todos: false
+
+    # not required by flutter style
+    join_return_with_assignment: false
+
+    library_private_types_in_public_api: false
+
+    # not required by flutter style
+    lines_longer_than_80_chars: false
+
+    # too many false positives: https://github.com/dart-lang/linter/issues/453
+    literal_only_boolean_expressions: false
+
+    no_default_cases: false
+
+    # ok in tests; we enable this only in packages/
+    no_runtimeType_toString: false
+
+    # too many false positives
+    one_member_abstracts: false
+
+    # this does get disabled in a few places where we have legacy code that uses strings et al
+    only_throw_errors: false
+
+    # we do this commonly
+    parameter_assignments: false
+
+    # not required by flutter style
+    prefer_asserts_with_message: false
+
+    # far too many false positives
+    prefer_constructors_over_static_methods: false
+
+    # opposite of prefer_single_quotes
+    prefer_double_quotes: false
+
+    # conflicts with https://github.com/flutter/flutter/wiki/
+    # Style-guide-for-Flutter-repo#consider-using--for-short-functions-and-methods
+    prefer_expression_function_bodies: false
+
+    # we should enable this one day when it can be auto-fixed
+    #(https://github.com/dart-lang/linter/issues/3104), see also parameter_assignments
+    prefer_final_parameters: false
+
+    prefer_for_elements_to_map_fromIterable: false
+
+    # conflicts with https://github.com/flutter/flutter/wiki/Style-guide-for-Flutter-repo#use-double-literals-for-double-constants
+    prefer_int_literals: false
+
+    # Has false positives, see https://github.com/dart-lang/linter/issues/3018
+    prefer_mixin: false
+
+    # "call()" is confusing to people new to the language since it's not documented anywhere
+    prefer_null_aware_method_calls: false
+
+    # enabled on a case-by-case basis; see e.g. packages/analysis_options.yaml
+    public_member_api_docs: false
+
+    # blocked on https://github.com/dart-lang/sdk/issues/47441
+    require_trailing_commas: false
+
+    sort_constructors_first: false
+
+    # prevents separating pinned transitive dependencies
+    sort_pub_dependencies: false
+
+    # subset of always_specify_types
+    type_annotate_public_apis: false
+
+    # too many false positives, especially with the way AnimationController works
+    unawaited_futures: false
+
+    # conflicts with prefer_final_locals
+    unnecessary_final: false
+
+    # has false positives: https://github.com/dart-lang/linter/issues/498
+    unnecessary_lambdas: false
+
+    # what's "necessary" is a matter of opinion; consistency across strings can help readability more than this lint
+    unnecessary_raw_strings: false
+
+    # blocked on https://github.com/dart-lang/sdk/issues/47436
+    use_if_null_to_convert_nulls_to_bools: false
+
+    use_late_for_private_fields_and_variables: false
+
+    # has false positives: https://github.com/dart-lang/sdk/issues/34182
+    use_string_buffers: false
+
+    # irritating
+    use_super_parameters: false
+
+    # has false positives, so we prefer to catch this by code-review
+    use_to_and_as_if_applicable: false
