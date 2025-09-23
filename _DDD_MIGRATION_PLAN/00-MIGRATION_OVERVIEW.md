@@ -261,6 +261,7 @@ This document outlines the strategic migration plan for transforming the remembe
 As implementation progresses, this folder will contain:
 
 - `01-DOMAIN_CONTRACTS.md` - Ubiquitous language and entity definitions
+- `02-AGGREGATE_BOUNDARIES.md` - Aggregate roots, boundaries, and rationale
 - `02-DATABASE_SCHEMAS.md` - Working and import database designs
 - `03-ETL_PIPELINE.md` - Data transformation specifications
 - `04-REPOSITORY_PATTERNS.md` - Data access layer design

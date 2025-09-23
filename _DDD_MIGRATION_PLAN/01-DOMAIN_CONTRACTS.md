@@ -48,6 +48,8 @@ This phase establishes the foundational domain language and contracts for the re
 
 ## Aggregate Boundaries
 
+See also: `02-AGGREGATE_BOUNDARIES.md` for the aggregate roots decision and detailed rationale.
+
 ### Chat Aggregate
 
 **Aggregate Root**: `Chat`  
