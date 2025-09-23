@@ -165,7 +165,12 @@ class DataMigrationService {
 
     for (var i = 0; i < importContacts.length; i++) {
       final contact = importContacts[i];
-      final importId = contact['id'] as int;
+      // Safely read ID from dynamic map; skip row if missing/invalid
+      final importId = contact['id'] as int?;
+      if (importId == null) {
+        result.warnings.add('Skipping contact row without id at index $i');
+        continue;
+      }
 
       // Create display name from available fields
       final firstName = contact['first'] as String? ?? '';
@@ -173,7 +178,7 @@ class DataMigrationService {
       final company = contact['company'] as String? ?? '';
       final nickname = contact['nickname'] as String? ?? '';
 
-      String displayName = '';
+      var displayName = '';
       if (firstName.isNotEmpty || lastName.isNotEmpty) {
         displayName = '$firstName $lastName'.trim();
       } else if (company.isNotEmpty) {
@@ -233,7 +238,11 @@ class DataMigrationService {
 
     for (var i = 0; i < importHandles.length; i++) {
       final handle = importHandles[i];
-      final importId = handle['id'] as int;
+      final importId = handle['id'] as int?;
+      if (importId == null) {
+        result.warnings.add('Skipping handle row without id at index $i');
+        continue;
+      }
       final contactIdStr = handle['contact_id'] as String? ?? '';
       final service = handle['service'] as String? ?? 'unknown';
 
@@ -310,13 +319,17 @@ class DataMigrationService {
 
     for (var i = 0; i < importChats.length; i++) {
       final chat = importChats[i];
-      final importId = chat['id'] as int;
+      final importId = chat['id'] as int?;
+      if (importId == null) {
+        result.warnings.add('Skipping chat row without id at index $i');
+        continue;
+      }
       final guid = chat['guid'] as String? ?? 'chat_$importId';
       final displayName = chat['display_name'] as String?;
 
       // Find the best contact and display name for this chat
       int? contactId;
-      String? bestDisplayName = displayName;
+      var bestDisplayName = displayName;
 
       try {
         // Get handles for this chat
@@ -456,15 +469,25 @@ class DataMigrationService {
     final chatMessageJoins = await importDb.query('import_chat_message_join');
     final messageToChatMap = <int, int>{};
     for (final join in chatMessageJoins) {
-      final messageId = join['message_id'] as int;
-      final chatId = join['chat_id'] as int;
+      final messageId = join['message_id'] as int?;
+      final chatId = join['chat_id'] as int?;
+      if (messageId == null || chatId == null) {
+        result.warnings.add(
+          'Skipping join row with null ids: message_id=$messageId, chat_id=$chatId',
+        );
+        continue;
+      }
       messageToChatMap[messageId] = chatId;
     }
 
     var migratedCount = 0;
     for (var i = 0; i < importMessages.length; i++) {
       final message = importMessages[i];
-      final importId = message['id'] as int;
+      final importId = message['id'] as int?;
+      if (importId == null) {
+        result.warnings.add('Skipping message row without id at index $i');
+        continue;
+      }
       final importChatId = messageToChatMap[importId];
 
       if (importChatId == null || !chatIdMap.containsKey(importChatId)) {

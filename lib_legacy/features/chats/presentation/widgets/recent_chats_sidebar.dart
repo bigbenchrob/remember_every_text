@@ -21,10 +21,7 @@ class RecentChatsSidebar extends ConsumerWidget {
           padding: const EdgeInsets.all(16.0),
           decoration: BoxDecoration(
             border: Border(
-              bottom: BorderSide(
-                color: MacosTheme.of(context).dividerColor,
-                width: 1.0,
-              ),
+              bottom: BorderSide(color: MacosTheme.of(context).dividerColor),
             ),
           ),
           child: Row(

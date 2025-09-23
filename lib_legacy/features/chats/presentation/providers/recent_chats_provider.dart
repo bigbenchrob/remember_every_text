@@ -53,7 +53,6 @@ Future<List<RecentChatInfo>> recentChats(Ref ref) async {
     // Convert Apple timestamps (nanoseconds since 2001-01-01) to DateTime
     DateTime? firstMessageDate;
     DateTime? lastMessageDate;
-
     if (chat.startDate != null) {
       firstMessageDate = _convertAppleTimestamp(chat.startDate!);
     }
@@ -77,8 +76,6 @@ Future<List<RecentChatInfo>> recentChats(Ref ref) async {
 /// Convert Apple timestamp (nanoseconds since 2001-01-01) to DateTime
 DateTime _convertAppleTimestamp(int appleTimestamp) {
   // Apple epoch starts at 2001-01-01 00:00:00 UTC
-  final appleEpoch = DateTime(2001, 1, 1);
-  // Convert nanoseconds to microseconds for DateTime
   final microseconds = appleTimestamp ~/ 1000;
-  return appleEpoch.add(Duration(microseconds: microseconds));
+  return DateTime(2001).add(Duration(microseconds: microseconds));
 }

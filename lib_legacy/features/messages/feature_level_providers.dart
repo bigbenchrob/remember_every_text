@@ -7,8 +7,8 @@ import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../essentials/navigation/domain/entities/features/messages_spec.dart';
-import './application/use_cases/messages_for_chat_view_builder_provider.dart';
+import '../../essentials/navigation/domain/entities/features/messages_spec.dart';
+import 'application/use_cases/messages_for_chat_view_builder_provider.dart';
 
 part 'feature_level_providers.g.dart';
 

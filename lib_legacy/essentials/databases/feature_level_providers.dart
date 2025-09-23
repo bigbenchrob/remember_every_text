@@ -9,8 +9,8 @@ import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../import/application/debug_settings_provider.dart';
-import './infrastructure/data_sources/local/working/drift_db.dart';
 import 'infrastructure/data_sources/local/import/import_db.dart';
+import 'infrastructure/data_sources/local/working/drift_db.dart';
 
 part 'feature_level_providers.g.dart';
 

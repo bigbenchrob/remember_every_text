@@ -28,6 +28,11 @@ You MUST read these files in order before any code changes:
 - **Async functions**: Return `Future<void>`, never `void`
 - **Containers**: Use `ColoredBox` when only setting color
 - **String interpolation**: Use `$variable`, only `${expression}` for complex cases
+ - **Redundant defaults**: Do not pass values equal to a parameter's default
+ - **Collection literals**: Prefer `[...]`, `{...}` over constructors like `List<T>()`
+ - **Control bodies**: Always put control bodies on new lines with braces
+- **🔥 FREEZED CLASSES**: ALL Freezed classes MUST be declared as `abstract class`, never just `class`
+ - **Freezed unnamed ctor order**: Place `const ClassName._();` AFTER the primary `const factory` constructor in the class body to satisfy `sort_unnamed_constructors_first`.
 - **🔥 DATABASE ACCESS**: ALL database access MUST use providers in `essentials/databases/feature_level_providers.dart`
 - **AddressBook imports**: MUST use `getFolderAggregateEitherProvider` for path resolution
 - **🔥 RIVERPOD PATTERNS**: Follow ONLY the patterns documented in `05-riverpod-provider-patterns.md` - DO NOT scan codebase for examples
@@ -99,6 +104,11 @@ class MyFeature extends _$MyFeature {
 - ❌ flutter_riverpod imports (use hooks_riverpod)
 - ❌ withOpacity() calls (use withValues(alpha:))
 - ❌ Single-line control flow (always use braces)
+- ❌ **NON-ABSTRACT FREEZED CLASSES**: Never use `class MyClass with _$MyClass` - MUST be `abstract class`
+- ❌ Freezed unnamed ctor at top: Do not place `const ClassName._();` before the primary `const factory` in the class — it must come after.
+- ❌ Redundant default args: Don’t pass values that equal defaults (triggers `avoid_redundant_argument_values`).
+- ❌ Unnecessary interpolation braces: Avoid `'${value}'` when `'${}'` isn’t needed; use `$value`.
+- ❌ Prefer collection literals: Avoid `List<T>()`/typed literal invocation when `[]` or spreads suffice.
 - ❌ Direct AddressBook path hardcoding (use getFolderAggregateEitherProvider)
 - ❌ String-based navigation (use ViewSpec sealed classes)
 - ❌ 🔥 **SCANNING CODEBASE FOR PROVIDER EXAMPLES** (use documented patterns only)

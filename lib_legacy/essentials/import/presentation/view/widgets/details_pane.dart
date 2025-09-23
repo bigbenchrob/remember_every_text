@@ -174,7 +174,6 @@ class ImportDetailsPane extends StatelessWidget {
         border: Border(top: BorderSide(color: Color(0xFFE0E0E0))),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(
             done ? Icons.check_circle : Icons.radio_button_unchecked,
@@ -197,7 +196,7 @@ class ImportDetailsPane extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(right: 12.0),
               child: Text(
-                '${st.itemCount}',
+                st.itemCount.toString(),
                 style: const TextStyle(fontSize: 11, color: Color(0xFF555555)),
               ),
             ),

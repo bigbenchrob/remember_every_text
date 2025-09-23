@@ -12,7 +12,7 @@ class RecentChatsList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final recentChatsAsync = ref.watch(recentChatsProvider(limit: 5));
+    final recentChatsAsync = ref.watch(recentChatsProvider());
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

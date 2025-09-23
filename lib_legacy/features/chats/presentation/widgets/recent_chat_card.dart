@@ -24,7 +24,7 @@ class RecentChatCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: theme.canvasColor,
           borderRadius: BorderRadius.circular(8.0),
-          border: Border.all(color: theme.dividerColor, width: 1.0),
+          border: Border.all(color: theme.dividerColor),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
@@ -59,7 +59,7 @@ class RecentChatCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10.0),
                   ),
                   child: Text(
-                    '${chatInfo.messageCount}',
+                    chatInfo.messageCount.toString(),
                     style: theme.typography.caption1.copyWith(
                       color: Colors.blue,
                       fontWeight: FontWeight.w500,

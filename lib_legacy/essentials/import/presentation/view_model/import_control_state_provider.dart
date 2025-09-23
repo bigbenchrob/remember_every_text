@@ -205,7 +205,6 @@ class ImportControlViewModel extends _$ImportControlViewModel {
       statusMessage: 'Starting import...',
       progress: 0.0,
       stages: initialStages,
-      currentStage: null,
     );
 
     try {
@@ -323,7 +322,6 @@ class ImportControlViewModel extends _$ImportControlViewModel {
       statusMessage: 'Starting migration...',
       progress: 0.0,
       stages: initialStages,
-      currentStage: null,
     );
 
     try {
