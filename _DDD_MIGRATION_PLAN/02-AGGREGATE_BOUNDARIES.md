@@ -1,18 +1,20 @@
 # Aggregate Boundaries Decision (Chat, Message, Contact)
 
 ## Decision Summary
+
 - Aggregates: `Chat` (aggregate root) and `Message` (aggregate root)
 - Non-aggregate: `Contact` (reference/projection data; separate bounded context)
 - Rationale: Different invariants, lifecycles, and read/write patterns. Keeps transactions small, prevents hot aggregates, and decouples the core model from external AddressBook data.
 
 ## Why Two Aggregates
+
 - Transaction scopes: Aggregate boundaries define what must change atomically.
-  - Chat: Owns conversation-level state that changes together: title, membership (participants), mute/pin/archive flags, counters, last message reference, etc.
   - Message: Each message has its own lifecycle: arrival, delivery/read flips, edits/retractions, reactions, attachments.
 - Avoid hot aggregates: Modeling Chat → Messages as one aggregate would balloon the root with thousands of children; every write would contend on the Chat root.
 - Write isolation: Append/mutate a Message without locking/loading an entire Chat. Update Chat metadata separately and incrementally.
 
 ## Distinct Invariants
+
 - Chat
   - Stable ChatId.
   - Participant set must have unique handles; DM/group rules (e.g., DM ⇒ 2 participants max; group ⇒ ≥ 3).
@@ -25,6 +27,7 @@
   - Reactions and attachments are subordinate entities (not separate aggregates).
 
 ## Read/Write Patterns & Repositories
+
 - Writes
   - Chat: infrequent (membership/title, pin/mute, derived pointers/counters).
   - Message: frequent (append, delivery/read flips, reactions add/remove).
@@ -36,12 +39,14 @@
   - MessageRepository: paginate by chat, append/import, mutate reactions/read states.
 
 ## Contacts Are Not an Aggregate Here
+
 - External source: Contacts originate in macOS AddressBook and change outside our domain.
 - Role: Rendering aid and linkage to handles; not required for core invariants.
 - Bounded context: Treat as a separate “Identity/AddressBook” context with its own import/sync.
 - In-domain representation: Use lightweight value objects for participants/handles.
 
 Example participant VO (conceptual):
+
 ```
 Participant {
   handleId            // stable key from source
@@ -52,7 +57,16 @@ Participant {
 }
 ```
 
+### Contacts Bounded Context & Projections
+
+- Contacts live in an external Identity/AddressBook bounded context. They are imported/synced independently and exposed as projections.
+- Chat/Message repositories should return domain entities referencing only `HandleId`/`ContactId` (optional), not embedded contact data.
+- Name/avatar resolution happens at the query/presentation layer by joining against the contacts projection (e.g., using a view or provider), with graceful fallback to normalized handle when missing.
+- Consistency is eventual: changes in AddressBook may temporarily diverge from rendered chat/message data until the next projection refresh.
+- This decoupling lets us re-project UI safely without touching chat/message rows and swap contact sources in the future.
+
 ## Practical Mapping to Apple Data
+
 - Chat aggregate
   - ChatId: chat.guid (stable)
   - Participants: import_chat_handle_join → normalize into Participant VOs
@@ -66,10 +80,12 @@ Participant {
   - UI joins against a projection to render names/avatars; re-project when AddressBook changes
 
 ## Consistency Strategy
+
 - Within aggregate: Strong consistency via single transaction (e.g., update Chat membership).
 - Across aggregates: Eventual consistency. E.g., append Message then update Chat.lastMessageId and unread counts as a follow-up step. If it lags, UI still renders acceptably using available data.
 
 ## Implications
+
 - Schema/indexes
   - messages(chat_id, timestamp) composite index for paging.
   - chats(last_message_timestamp) for chat lists.
@@ -85,17 +101,20 @@ Participant {
   - Message-facing use cases require only the target message and minimal chat context (for invariants).
 
 ## Non-Goals / Out of Scope
+
 - Modeling AddressBook changes as domain events in Chat/Message.
 - Forcing contacts to exist for messages/chats to be valid.
 - Over-normalizing reactions/attachments as top-level aggregates.
 
 ## Exit Criteria
+
 - Agree on aggregate roots (Chat, Message) and non-aggregate Contact.
 - Lock in repository interfaces aligned to these boundaries.
 - Define initial invariants checks and projection flows (chat summaries, unread counts).
 - Prepare migration scripts/ETL to populate aggregates and projections from Apple DBs.
 
 ## Benefits
+
 - Performance: No mega-aggregate locks; natural pagination.
 - Robustness: Contact sync decoupled; broken contacts never block chat/message ingestion.
 - Replaceability: Swap contact sources without touching core aggregates.
