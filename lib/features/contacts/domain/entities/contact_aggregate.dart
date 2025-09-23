@@ -3,10 +3,12 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'contact_aggregate.freezed.dart';
 part 'contact_aggregate.g.dart';
 
-/// Contact Aggregate Root
+/// Contact Reference Model (not an aggregate in Chat/Message bounded context)
 ///
-/// Represents a person or entity that can send/receive messages.
-/// Manages identity, handles, and contact metadata independent of chat context.
+/// Represents a person or entity sourced from AddressBook used for rendering
+/// and lookup. Managed in a separate Identity/AddressBook context; the Chat/
+/// Message domain holds only references (e.g., handle IDs) and does not
+/// enforce transactional invariants on Contact.
 @freezed
 abstract class Contact with _$Contact {
   const factory Contact({

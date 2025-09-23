@@ -96,28 +96,28 @@ See also: `02-AGGREGATE_BOUNDARIES.md` for the aggregate roots decision and deta
 - ✅ **Inside**: Message content, attachments, delivery metadata, formatting
 - ❌ **Outside**: Chat context details, contact management, handle management
 
-### Contact Aggregate
+### Contact Reference Model (Separate Identity/AddressBook Context)
 
-**Aggregate Root**: `Contact`  
-**Boundary Rationale**: Contacts represent identity and relationship management, independent of any specific conversation context.
+**Not an Aggregate Root in Chat/Message**  
+**Boundary Rationale**: Contacts represent identity and relationship data managed outside the Chat/Message consistency boundary. They are consumed as projections/reference data.
 
-**Included Entities**:
+**Included Data**:
 
-- `Contact` (root)
-- `ContactHandle` (entity collection)
-- Contact metadata and relationships
+- `Contact` (reference)
+- `ContactHandle` (reference collection)
+- Contact metadata and relationships (projection)
 
-**Key Invariants**:
+**Reference Integrity Expectations**:
 
-1. A contact must have at least one handle or a display name
-2. Handle-to-contact mapping must be unambiguous within service contexts
+1. A contact should have at least one handle or a display name
+2. Handle-to-contact mapping should be unambiguous within service contexts
 3. Display name derivation follows consistent priority rules
-4. Contact merging/splitting maintains handle consistency
+4. Contact merging/splitting maintains handle consistency where possible
 
 **Boundaries**:
 
-- ✅ **Inside**: Identity management, handle ownership, contact metadata
-- ❌ **Outside**: Message content, chat participation tracking, service-specific logic
+- ✅ **Inside (Identity context)**: Identity management, handle ownership, contact metadata
+- ❌ **Outside (Chat/Message)**: Message content, chat participation tracking, service-specific logic
 
 ## Cross-Aggregate Relationships
 
