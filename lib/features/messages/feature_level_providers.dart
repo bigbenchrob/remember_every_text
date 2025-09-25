@@ -2,8 +2,6 @@
 ///* The entry point for dependency injection for the feature.
 ///***************************************************************** */
 
-
-
 // import 'package:example/config/providers.dart';
 // import 'package:example/features/auth/auth_provider.dart';
 // import 'package:example/features/organization/application/organization_create_controller.dart';

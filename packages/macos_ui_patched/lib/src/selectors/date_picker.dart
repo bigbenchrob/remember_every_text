@@ -204,8 +204,7 @@ class _MacosDatePickerState extends State<MacosDatePicker> {
 
     // Hack due to invalid "firstDayOfWeekIndex" implementation in MaterialLocalizations
     // issue: https://github.com/flutter/flutter/issues/122274
-    // TODO: remove this workaround once the issue is fixed.
-    //  Then, "firstDayOfWeekIndex" can be controlled by passing "localizationsDelegates" and "supportedLocales" to MacosApp
+
     int firstDayOfWeekIndex = localizations.firstDayOfWeekIndex;
     if (widget.startWeekOnMonday == true) {
       firstDayOfWeekIndex = 1;
@@ -568,7 +567,7 @@ class _MacosDatePickerState extends State<MacosDatePicker> {
 
     // Hack due to invalid "firstDayOfWeekIndex" implementation in MaterialLocalizations
     // issue: https://github.com/flutter/flutter/issues/122274
-    // TODO: remove this workaround once the issue is fixed.
+
     //  Then, DateUtils.getDaysInMonth will work as expected when proper "localizationsDelegates" and "supportedLocales" are provided to MacosApp
     int fixedDayOffset = dayOffset;
     if (widget.startWeekOnMonday == true) {

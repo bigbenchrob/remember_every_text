@@ -1,22 +1,43 @@
+// Repository port (interface) for Messages.
+// Location: lib/features/messages/domain/i_repositories/repository_interface.dart
 
-// abstract class DepartmentRepositoryInterface {
-//   /// Get departments list
-//   Future<Either<Failure, List<DepartmentEntity>>> getDepartments();
+import '../../../chats/domain/value_objects/chat_id.dart' as chats show ChatId;
+import '../../../reactions/domain/entities/reaction.dart';
+import '../entities/message.dart';
+import '../value_objects/message_id.dart';
 
-//   /// Get department by id
-//   Future<Either<Failure, DepartmentEntity>> getDepartmentById(String id);
+/// Domain-facing contract for message persistence/streams.
+///
+/// Guidance:
+/// - Use a stable ordering (e.g., sentAt, then id) for pagination.
+/// - `append` should enforce monotonic insert semantics.
+/// - `save` is for edits (idempotent upsert).
+abstract class MessagesRepository {
+  Future<Message?> getById(MessageId id);
 
-//   /// Create department
-//   Future<Either<Failure, DepartmentEntity>> createDepartment(
-//     DepartmentName name,
-//   );
+  /// Stream messages in a chat in descending or ascending order.
+  /// Implementations may choose ascending by default; document it.
+  Stream<List<Message>> streamByChat(
+    chats.ChatId chatId, {
+    int? limit,
+    MessageId? before, // for infinite scroll pagination
+  });
 
-//   /// Update department
-//   Future<Either<Failure, DepartmentEntity>> updateDepartment(
-//     String id,
-//     DepartmentName name,
-//   );
+  /// Append a new message (should not reorder history).
+  Future<void> append(Message message);
 
-//   /// Delete department by id
-//   Future<Either<Failure, bool>> deleteDepartment(String id);
-// }
+  /// Save/update an existing message idempotently (e.g., edits, delivery state).
+  Future<void> save(Message message);
+
+  /// Toggle or set a reaction on a message.
+  Future<void> toggleReaction({
+    required MessageId messageId,
+    required Reaction reaction,
+  });
+
+  /// Optional: bulk upsert during import.
+  Future<void> upsertAll(List<Message> messages);
+
+  /// Optional: delete by id.
+  Future<void> deleteById(MessageId id);
+}

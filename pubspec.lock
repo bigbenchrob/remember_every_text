@@ -289,6 +289,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.11"
+  ddd_lints:
+    dependency: "direct dev"
+    description:
+      path: "custom_lint_plugins/ddd_lints"
+      relative: true
+    source: path
+    version: "0.1.0"
   drift:
     dependency: "direct main"
     description:

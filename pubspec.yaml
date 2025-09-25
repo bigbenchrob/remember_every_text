@@ -70,6 +70,8 @@ dev_dependencies:
   riverpod_generator: ^2.6.1
   riverpod_lint: ^2.6.0
   drift_dev: ^2.28.0
+  ddd_lints:
+    path: custom_lint_plugins/ddd_lints
 
 flutter:
   uses-material-design: true

@@ -2,7 +2,6 @@
 // import 'package:meta/meta.dart';
 // import 'package:uuid/uuid.dart';
 
-
 // import './errors.dart';
 // import './failures.dart';
 // import 'i_validatable.dart';

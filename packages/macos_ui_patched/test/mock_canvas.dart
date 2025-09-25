@@ -594,8 +594,7 @@ abstract class _TestRecordingCanvasMatcher extends Matcher {
   @override
   bool matches(Object? object, Map<dynamic, dynamic> matchState) {
     final TestRecordCanvas canvas = TestRecordCanvas();
-    final TestRecordPaintingContext context =
-        TestRecordPaintingContext(canvas);
+    final TestRecordPaintingContext context = TestRecordPaintingContext(canvas);
     final StringBuffer description = StringBuffer();
     String prefixMessage = 'unexpectedly failed.';
     bool result = false;
@@ -684,8 +683,7 @@ class _TestRecordingCanvasPaintsNothingMatcher
   @override
   bool _evaluatePredicates(
       Iterable<RecordInvocation> calls, StringBuffer description) {
-    final Iterable<RecordInvocation> paintingCalls =
-        _filterCanvasCalls(calls);
+    final Iterable<RecordInvocation> paintingCalls = _filterCanvasCalls(calls);
     if (paintingCalls.isEmpty) {
       return true;
     }
@@ -715,8 +713,7 @@ class _TestRecordingCanvasPaintsAssertionMatcher extends Matcher {
   @override
   bool matches(Object? object, Map<dynamic, dynamic> matchState) {
     final TestRecordCanvas canvas = TestRecordCanvas();
-    final TestRecordPaintingContext context =
-        TestRecordPaintingContext(canvas);
+    final TestRecordPaintingContext context = TestRecordPaintingContext(canvas);
     final StringBuffer description = StringBuffer();
     String prefixMessage = 'unexpectedly failed.';
     bool result = false;

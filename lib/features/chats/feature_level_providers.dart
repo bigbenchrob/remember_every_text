@@ -1,61 +1,26 @@
-///***************************************************************** */
-///* The entry point for dependency injection for the feature.
-///***************************************************************** */
+// Riverpod provider for a ChatsRepository implementation.
+// Location: lib/features/chats/feature_level_providers/chat_repository_provider.dart
 
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import './domain/i_repositories/repository_interface.dart';
+import './infrastructure/repositories/sqlite_chats_repository.dart';
+// If you have a database or other deps, import their providers here:
+// import '../../shared/feature_level_providers/working_db_provider.dart';
 
-// import 'package:example/config/providers.dart';
-// import 'package:example/features/auth/auth_provider.dart';
-// import 'package:example/features/organization/application/organization_create_controller.dart';
-// import 'package:example/features/organization/application/organization_view_controller.dart';
-// import 'package:example/features/organization/application/organizations_list_controller.dart';
-// import 'package:example/features/organization/domain/entities/organization_entity.dart';
-// import 'package:example/features/organization/infrastructure/repositories/organization_repository.dart';
-// import 'package:flutter_riverpod/flutter_riverpod.dart';
+part 'feature_level_providers.g.dart';
 
-// ///
-// /// Infrastructure dependencies
-// ///
+@riverpod
+class ChatRepository extends _$ChatRepository {
+  /// Build and return the concrete ChatsRepository.
+  /// Wire your dependencies via `ref.watch(...)` inside this method.
+  @override
+  ChatsRepository build() {
+    // Example (uncomment & adapt to your project):
+    // final db = ref.watch(workingDbProvider);
+    // return SqliteChatsRepository(db: db);
 
-// final organizationRepositoryProvider = Provider<OrganizationRepository?>((ref) {
-//   final user = ref.watch(authRepositoryProvider.select((v) => v.currentUser));
-//   if (user == null) return null;
-//   return OrganizationRepository(
-//     client: ref.watch(supabaseClientProvider),
-//     user: user,
-//   );
-// }); provider
-
-// ///
-// /// Application dependencies
-// ///
-// final organizationListProvider = StateNotifierProvider<
-//     OrganizationListController, AsyncValue<List<OrganizationEntity>>>((ref) {
-//   final repo = ref.watch(organizationRepositoryProvider);
-//   return OrganizationListController(repo);
-// });
-
-// /// Keeps selected by user organization
-// final currentOrganizationProvider = StateProvider<OrganizationEntity?>((ref) {
-//   return null;
-// });
-
-// ///
-// final organizationCreateProvider = StateNotifierProvider<
-//     OrganizationCreateController, AsyncValue<OrganizationEntity?>>((ref) {
-//   final repo = ref.watch(organizationRepositoryProvider);
-
-//   return OrganizationCreateController(repo);
-// });
-
-// ///
-// final organizationViewProvider = StateNotifierProvider.family<
-//     OrganizationViewController,
-//     AsyncValue<OrganizationEntity>,
-//     String>((ref, id) {
-//   return OrganizationViewController(
-//     ref.read(organizationRepositoryProvider)!,
-//     id,
-//     ref.read,
-//   );
-// });
+    // Temporary placeholder to keep compilation clear until infra is wired:
+    return SqliteChatsRepository();
+  }
+}

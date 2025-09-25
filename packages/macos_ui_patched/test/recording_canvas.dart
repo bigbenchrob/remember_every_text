@@ -93,8 +93,7 @@ class TestRecordCanvas implements Canvas {
 }
 
 /// A [PaintingContext] for tests that use [TestRecordingCanvas].
-class TestRecordPaintingContext extends ClipContext
-    implements PaintingContext {
+class TestRecordPaintingContext extends ClipContext implements PaintingContext {
   /// Creates a [PaintingContext] for tests that use [TestRecordingCanvas].
   TestRecordPaintingContext(this.canvas);
 

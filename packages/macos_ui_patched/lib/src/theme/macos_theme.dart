@@ -256,9 +256,7 @@ class MacosThemeData extends Equatable with Diagnosticable {
     );
     macosIconButtonTheme ??= MacosIconButtonThemeData(
       backgroundColor: MacosColors.transparent,
-      disabledColor: isDark
-          ? const Color(0xff353535)
-          : const Color(0xffE5E5E5), // TODO: correct disabled color
+      disabledColor: isDark ? const Color(0xff353535) : const Color(0xffE5E5E5),
       hoverColor: isDark ? const Color(0xff333336) : const Color(0xffF3F2F2),
       shape: BoxShape.circle,
       boxConstraints: const BoxConstraints(

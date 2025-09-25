@@ -1,22 +1,30 @@
+// Repository port (interface) for Chats.
+// Location: lib/features/chats/domain/i_repositories/repository_interface.dart
 
-// abstract class DepartmentRepositoryInterface {
-//   /// Get departments list
-//   Future<Either<Failure, List<DepartmentEntity>>> getDepartments();
+import '../entities/chat.dart';
+import '../value_objects/chat_id.dart';
 
-//   /// Get department by id
-//   Future<Either<Failure, DepartmentEntity>> getDepartmentById(String id);
+/// Domain-facing contract for chat persistence/streams.
+///
+/// Notes:
+/// - `streamAll` powers sidebar/live lists.
+/// - `streamById` is handy for a single-chat screen reacting to changes.
+/// - `upsert`/`upsertAll` are import/projection-safe and idempotent.
+abstract class ChatsRepository {
+  Future<Chat?> getById(ChatId id);
 
-//   /// Create department
-//   Future<Either<Failure, DepartmentEntity>> createDepartment(
-//     DepartmentName name,
-//   );
+  /// Stream all chats; implementation should emit on inserts/updates.
+  Stream<List<Chat>> streamAll();
 
-//   /// Update department
-//   Future<Either<Failure, DepartmentEntity>> updateDepartment(
-//     String id,
-//     DepartmentName name,
-//   );
+  /// Stream a single chat by id; emit null if deleted or not found.
+  Stream<Chat?> streamById(ChatId id);
 
-//   /// Delete department by id
-//   Future<Either<Failure, bool>> deleteDepartment(String id);
-// }
+  /// Idempotent create/update.
+  Future<void> upsert(Chat chat);
+
+  /// Bulk idempotent create/update; useful for import.
+  Future<void> upsertAll(List<Chat> chats);
+
+  /// Optional: delete by id (keep if you plan soft-deletes elsewhere).
+  Future<void> deleteById(ChatId id);
+}

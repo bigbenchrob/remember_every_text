@@ -5,13 +5,13 @@ abstract class WindowManagerPort {
     required double width,
     required double height,
   });
-  
+
   Future<Map<String, double>> getWindowFrame();
-  
+
   Future<void> maximize();
   Future<void> minimize();
   Future<void> restore();
-  
+
   Future<bool> isMaximized();
   Future<bool> isMinimized();
 }

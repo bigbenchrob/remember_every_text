@@ -1,0 +1,13 @@
+name: ddd_lints
+publish_to: "none"
+version: 0.1.0
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  analyzer: ^7.6.0
+  custom_lint_builder: ^0.7.0
+
+dev_dependencies:
+  custom_lint: ^0.7.0

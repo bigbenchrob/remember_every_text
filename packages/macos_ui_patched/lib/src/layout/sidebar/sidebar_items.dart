@@ -3,7 +3,7 @@ import 'package:macos_ui/src/library.dart';
 
 const Duration _kExpand = Duration(milliseconds: 200);
 const ShapeBorder _defaultShape = RoundedRectangleBorder(
-  //TODO: consider changing to 4.0 or 5.0 - App Store, Notes and Mail seem to use 4.0 or 5.0
+  //
   borderRadius: BorderRadius.all(Radius.circular(5.0)),
 );
 
