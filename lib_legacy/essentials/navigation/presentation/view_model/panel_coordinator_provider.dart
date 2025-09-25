@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:remember_this_text/essentials/import/presentation/view/import_control_panel.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../features/chats/feature_level_providers.dart';
 import '../../../../features/messages/feature_level_providers.dart';
-import '../../../import/presentation/view/import_control_panel.dart';
 import '../../application/panels_view_state_provider.dart';
 import '../../domain/entities/features/contacts_spec.dart';
 import '../../domain/entities/features/import_spec.dart';

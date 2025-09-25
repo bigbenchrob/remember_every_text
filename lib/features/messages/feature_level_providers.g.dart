@@ -6,24 +6,24 @@ part of 'feature_level_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$chatsRepositoryHash() => r'8df0d2f5a9871b621f728f101054857a5eb02f9d';
+String _$messageRepositoryHash() => r'21d4db4c1fbc7f5f904716b41c3759ba8d7e3d07';
 
-/// See also [ChatsRepository].
-@ProviderFor(ChatsRepository)
-final chatsRepositoryProvider =
+/// See also [MessageRepository].
+@ProviderFor(MessageRepository)
+final messageRepositoryProvider =
     AutoDisposeNotifierProvider<
-      ChatsRepository,
-      SqliteChatsRepository
+      MessageRepository,
+      SqliteMessagesRepository
     >.internal(
-      ChatsRepository.new,
-      name: r'chatsRepositoryProvider',
+      MessageRepository.new,
+      name: r'messageRepositoryProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
           ? null
-          : _$chatsRepositoryHash,
+          : _$messageRepositoryHash,
       dependencies: null,
       allTransitiveDependencies: null,
     );
 
-typedef _$ChatsRepository = AutoDisposeNotifier<SqliteChatsRepository>;
+typedef _$MessageRepository = AutoDisposeNotifier<SqliteMessagesRepository>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

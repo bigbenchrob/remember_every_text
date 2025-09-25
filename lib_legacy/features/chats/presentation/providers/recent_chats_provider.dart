@@ -2,7 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../essentials/databases/feature_level_providers.dart';
+import '../../../../../lib/essentials/databases/feature_level_providers.dart';
 
 part 'recent_chats_provider.g.dart';
 

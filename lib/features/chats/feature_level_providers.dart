@@ -3,7 +3,6 @@
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import './domain/i_repositories/repository_interface.dart';
 import './infrastructure/repositories/sqlite_chats_repository.dart';
 // If you have a database or other deps, import their providers here:
 // import '../../shared/feature_level_providers/working_db_provider.dart';
@@ -11,11 +10,11 @@ import './infrastructure/repositories/sqlite_chats_repository.dart';
 part 'feature_level_providers.g.dart';
 
 @riverpod
-class ChatRepository extends _$ChatRepository {
+class ChatsRepository extends _$ChatsRepository {
   /// Build and return the concrete ChatsRepository.
   /// Wire your dependencies via `ref.watch(...)` inside this method.
   @override
-  ChatsRepository build() {
+  SqliteChatsRepository build() {
     // Example (uncomment & adapt to your project):
     // final db = ref.watch(workingDbProvider);
     // return SqliteChatsRepository(db: db);
