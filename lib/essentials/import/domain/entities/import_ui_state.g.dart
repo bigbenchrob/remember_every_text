@@ -1,5 +1,4 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
-// ignore_for_file: unnecessary_null_checks
 
 part of 'import_ui_state.dart';
 
@@ -60,7 +59,7 @@ _ImportUiState _$ImportUiStateFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$ImportUiStateToJson(_ImportUiState instance) =>
     <String, dynamic>{
       'isImporting': instance.isImporting,
-      'currentStage': _$ImportStageEnumMap[instance.currentStage],
+      'currentStage': _$ImportStageEnumMap[instance.currentStage]!,
       'progress': instance.progress,
       'statusMessage': instance.statusMessage,
       'errorMessage': instance.errorMessage,

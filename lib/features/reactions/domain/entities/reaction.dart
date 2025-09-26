@@ -4,7 +4,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import '../../../../domain_driven_development/value_transformers.dart';
 // Value objects from their feature folders
 
-import '../../../contacts/domain/value_objects/contact_id.dart';
+import '../../../../essentials/contacts/domain/value_objects/contact_id.dart';
 import '../../../messages/domain/value_objects/message_id.dart';
 import '../constants.dart';
 import '../value_objects/reaction_id.dart';

@@ -1,7 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../features/attachments/domain/value_objects/attachment_id.dart';
-import '../features/contacts/domain/value_objects/contact_id.dart';
+import '../essentials/contacts/domain/value_objects/contact_id.dart';
 import '../features/messages/domain/value_objects/message_id.dart';
 import '../features/reactions/domain/value_objects/reaction_id.dart';
 

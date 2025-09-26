@@ -7,7 +7,7 @@ part of 'import_control_state_provider.dart';
 // **************************************************************************
 
 String _$importControlViewModelHash() =>
-    r'969567747d9e76d848a76316ea19440bb68d30f4';
+    r'27d2a6975d251cd6d7b81171753dc723926a432d';
 
 /// See also [ImportControlViewModel].
 @ProviderFor(ImportControlViewModel)

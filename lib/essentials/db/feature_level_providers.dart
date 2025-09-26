@@ -1,61 +1,70 @@
 ///***************************************************************** */
-///* The entry point for dependency injection for the feature.
+///* The entry point for dependency injection for the database layer.
 ///***************************************************************** */
 
+import 'dart:io';
 
+import 'package:drift/native.dart';
+import 'package:path/path.dart' as path;
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-// import 'package:example/config/providers.dart';
-// import 'package:example/features/auth/auth_provider.dart';
-// import 'package:example/features/organization/application/organization_create_controller.dart';
-// import 'package:example/features/organization/application/organization_view_controller.dart';
-// import 'package:example/features/organization/application/organizations_list_controller.dart';
-// import 'package:example/features/organization/domain/entities/organization_entity.dart';
-// import 'package:example/features/organization/infrastructure/repositories/organization_repository.dart';
-// import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../import/application/debug_settings_provider.dart';
 
-// ///
-// /// Infrastructure dependencies
-// ///
+import 'infrastructure/data_sources/local/import/sqflite_import_database.dart';
+import 'infrastructure/data_sources/local/working/working_database.dart';
 
-// final organizationRepositoryProvider = Provider<OrganizationRepository?>((ref) {
-//   final user = ref.watch(authRepositoryProvider.select((v) => v.currentUser));
-//   if (user == null) return null;
-//   return OrganizationRepository(
-//     client: ref.watch(supabaseClientProvider),
-//     user: user,
-//   );
-// }); provider
+part 'feature_level_providers.g.dart';
 
-// ///
-// /// Application dependencies
-// ///
-// final organizationListProvider = StateNotifierProvider<
-//     OrganizationListController, AsyncValue<List<OrganizationEntity>>>((ref) {
-//   final repo = ref.watch(organizationRepositoryProvider);
-//   return OrganizationListController(repo);
-// });
+const _databaseDirectoryPath = '/Users/rob/sqlite_rmc/remember_every_text/';
 
-// /// Keeps selected by user organization
-// final currentOrganizationProvider = StateProvider<OrganizationEntity?>((ref) {
-//   return null;
-// });
+Future<void> _ensureDatabaseDirectoryExists() async {
+  final directory = Directory(_databaseDirectoryPath);
+  if (!directory.existsSync()) {
+    await directory.create(recursive: true);
+  }
+}
 
-// ///
-// final organizationCreateProvider = StateNotifierProvider<
-//     OrganizationCreateController, AsyncValue<OrganizationEntity?>>((ref) {
-//   final repo = ref.watch(organizationRepositoryProvider);
+/// Provides access to the Sqflite-powered import ledger database.
+@Riverpod(keepAlive: true)
+Future<SqfliteImportDatabase> sqfliteImportDatabase(
+  SqfliteImportDatabaseRef ref,
+) async {
+  await _ensureDatabaseDirectoryExists();
+  final database = SqfliteImportDatabase(
+    databaseDirectory: _databaseDirectoryPath,
+    databaseName: 'macos_import.db',
+    debugSettings: ref.watch(importDebugSettingsProvider),
+  );
 
-//   return OrganizationCreateController(repo);
-// });
+  // Ensure the database file is created immediately so dependent services can query schema metadata.
+  await database.database;
 
-// ///
-// final organizationViewProvider = StateNotifierProvider.family<
-//     OrganizationViewController,
-//     AsyncValue<OrganizationEntity>,
-//     String>((ref, id) {
-//   return OrganizationViewController(
-//     ref.read(organizationRepositoryProvider)!,
-//     id,
-//     ref.read,
-//   );
-// });
+  ref.onDispose(() async {
+    await database.close();
+  });
+
+  return database;
+}
+
+/// Provides access to the Drift projection database used by the UI.
+@Riverpod(keepAlive: true)
+Future<WorkingDatabase> driftWorkingDatabase(
+  DriftWorkingDatabaseRef ref,
+) async {
+  await _ensureDatabaseDirectoryExists();
+  final dbPath = path.join(_databaseDirectoryPath, 'working.db');
+
+  final database = WorkingDatabase(
+    NativeDatabase.createInBackground(File(dbPath)),
+  );
+
+  await database.doWhenOpened((_) async {
+    await database.customStatement('PRAGMA foreign_keys = ON');
+  });
+
+  ref.onDispose(() async {
+    await database.close();
+  });
+
+  return database;
+}

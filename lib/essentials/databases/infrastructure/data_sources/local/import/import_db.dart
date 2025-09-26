@@ -10,7 +10,8 @@ import '../../../../../import/domain/ports/import_database_port.dart';
 /// Centralized import database schema (prefixed with import_* tables).
 class ImportDatabase implements ImportDatabasePort {
   static const int _databaseVersion = 1;
-  static const String _databaseDirectory = '/Users/rob/sqlite_rmc/messages/';
+  static const String _databaseDirectory =
+      '/Users/rob/sqlite_rmc/remember_every_text/';
 
   final String _databaseName;
   final ImportDebugSettingsState _debugSettings;

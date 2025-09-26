@@ -6,7 +6,7 @@ part of 'feature_level_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$workingDatabaseHash() => r'7beff4606bfcbca0dffef5260e4232a00bcfeb31';
+String _$workingDatabaseHash() => r'ee11e45806b53cb213b47eca873a55230a29084d';
 
 /// Provider for the working database that creates the actual instance
 ///

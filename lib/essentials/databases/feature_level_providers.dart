@@ -18,7 +18,7 @@ part 'feature_level_providers.g.dart';
 @Riverpod(keepAlive: true)
 Future<DriftDb> workingDatabase(WorkingDatabaseRef ref) async {
   // Use the same directory as the import database
-  const databaseDirectory = '/Users/rob/sqlite_rmc/messages/';
+  const databaseDirectory = '/Users/rob/sqlite_rmc/remember_every_text/';
   final dbPath = path.join(databaseDirectory, 'working.db');
 
   // Ensure the database directory exists
