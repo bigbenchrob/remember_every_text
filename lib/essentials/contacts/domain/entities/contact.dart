@@ -1,9 +1,9 @@
 // lib/features/contacts/domain/view/contact.dart
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import '../entities/contact_prefs.dart';
-import '../entities/contact_ref.dart';
 import '../value_objects/contact_id.dart';
+import 'contact_prefs.dart';
+import 'contact_ref.dart';
 
 part 'contact.freezed.dart';
 

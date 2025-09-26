@@ -1,5 +1,5 @@
-// import './value_objects.dart';
+import './value_objects.dart';
 
-// abstract class IEntity {
-//   UniqueIntId get id;
-// }
+abstract class IEntity {
+  UniqueIntId get id;
+}
