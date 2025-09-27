@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
+import 'package:remember_this_text/essentials/databases/feature_level_providers.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../lib/essentials/databases/feature_level_providers.dart';
 import '../domain/entities/chat_with_latest_message.dart';
 
 part 'chats_repository.g.dart';
