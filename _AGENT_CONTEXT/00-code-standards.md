@@ -129,3 +129,10 @@ final safe = 'Trimmed: ${value?.trim() ?? 'N/A'}';
 - [ ] Replace all deprecated methods (withOpacity → withValues)
 - [ ] Ensure all control structures use proper bracing
 - [ ] Add const to constructors where possible
+
+## Custom Lint Setup
+
+- The project depends on the upstream `custom_lint` package (>=0.7.6) which resolves the macOS `dartaotruntime` crash.
+- Keep the versions of `custom_lint` and `custom_lint_builder` in sync (currently `^0.7.6`) across `pubspec.yaml` and `custom_lint_plugins/ddd_lints/pubspec.yaml`.
+- Do not restore the old `_third_party_tmp/custom_lint` override unless a new upstream regression requires it.
+- After upgrading lint tooling, run `dart analyze` to confirm the analyzer boots as expected.

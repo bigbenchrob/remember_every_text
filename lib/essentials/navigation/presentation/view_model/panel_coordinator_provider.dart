@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../db_import/presentation/view/db_import_control_panel.dart';
+import '../../../db_import/presentation/view_model/db_import_control_provider.dart';
+import '../../../import/domain/feature_constants.dart';
+import '../../application/panels_view_state_provider.dart';
+import '../../domain/entities/features/import_spec.dart';
+import '../../domain/entities/view_spec.dart';
 import '../../domain/navigation_constants.dart';
 
 part 'panel_coordinator_provider.g.dart';
@@ -15,9 +21,33 @@ class PanelCoordinator extends _$PanelCoordinator {
 
   /// Build widget for the specified panel
   Widget buildPanelWidget(WindowPanel panel) {
-    return _buildEmptyPanelPlaceholder(panel);
+    final panelSpecs = ref.read(panelsViewStateProvider);
+    final viewSpec = panelSpecs[panel];
 
-    // Future: render real widgets based on viewSpec
+    if (viewSpec == null) {
+      return _buildEmptyPanelPlaceholder(panel);
+    }
+
+    return viewSpec.when(
+      messages: (_) => _buildEmptyPanelPlaceholder(panel),
+      chats: (_) => _buildEmptyPanelPlaceholder(panel),
+      contacts: (_) => _buildEmptyPanelPlaceholder(panel),
+      import: (spec) => _buildImportPanel(spec),
+    );
+  }
+
+  Widget _buildImportPanel(ImportSpec spec) {
+    final desiredMode = spec.when(
+      forImport: () => ImportMode.import,
+      forMigration: () => ImportMode.migration,
+    );
+
+    final controlState = ref.read(dbImportControlViewModelProvider);
+    if (controlState.selectedMode != desiredMode) {
+      ref.read(dbImportControlViewModelProvider.notifier).setMode(desiredMode);
+    }
+
+    return const DbImportControlPanel();
   }
 
   /// Placeholder for empty panels

@@ -1,28 +1,30 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'panel_coordinator_provider.dart';
+part of 'db_import_control_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$panelCoordinatorHash() => r'acb1c1fc5ea9a6612c17d84c7d6951a5d6534105';
+String _$dbImportControlViewModelHash() =>
+    r'5e9a58746ab2415c8f910a6e5cd69e48f553b186';
 
-/// Coordinator that maps panel ViewSpecs to rendered widgets
-///
-/// Copied from [PanelCoordinator].
-@ProviderFor(PanelCoordinator)
-final panelCoordinatorProvider =
-    AutoDisposeNotifierProvider<PanelCoordinator, void>.internal(
-      PanelCoordinator.new,
-      name: r'panelCoordinatorProvider',
+/// See also [DbImportControlViewModel].
+@ProviderFor(DbImportControlViewModel)
+final dbImportControlViewModelProvider =
+    AutoDisposeNotifierProvider<
+      DbImportControlViewModel,
+      DbImportControlState
+    >.internal(
+      DbImportControlViewModel.new,
+      name: r'dbImportControlViewModelProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
           ? null
-          : _$panelCoordinatorHash,
+          : _$dbImportControlViewModelHash,
       dependencies: null,
       allTransitiveDependencies: null,
     );
 
-typedef _$PanelCoordinator = AutoDisposeNotifier<void>;
+typedef _$DbImportControlViewModel = AutoDisposeNotifier<DbImportControlState>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
