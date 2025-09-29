@@ -10,11 +10,11 @@ import '../../../../features/address_book_folders/feature_level_providers.dart';
 import '../../../../providers.dart';
 import '../../../db/feature_level_providers.dart';
 import '../../../db/infrastructure/data_sources/local/import/sqflite_import_database.dart';
-import '../../../import/application/debug_settings_provider.dart';
-import '../../../import/domain/ports/message_extractor_port.dart';
 import '../../domain/entities/db_import_result.dart';
+import '../../domain/ports/message_extractor_port.dart';
 import '../../domain/states/db_import_progress.dart';
 import '../../domain/value_objects/db_import_stage.dart';
+import '../debug_settings_provider.dart';
 
 typedef DbImportProgressCallback = void Function(DbImportProgress progress);
 
@@ -166,6 +166,8 @@ class LedgerImportService {
 
       final chatJoinCache = await _buildChatMessageJoinCache(
         messagesDb: messagesDb,
+        cachingEnabled: debugSettings.ledgerRowCachingEnabled,
+        debugSettings: debugSettings,
       );
 
       final extraction = await _extractRichText(
@@ -413,10 +415,18 @@ class LedgerImportService {
 
   Future<_ChatMessageJoinCache> _buildChatMessageJoinCache({
     required Database messagesDb,
+    required bool cachingEnabled,
+    required ImportDebugSettingsState debugSettings,
   }) async {
+    if (!cachingEnabled) {
+      debugSettings.logProgress(
+        'LedgerImportService: ledger row caching disabled; using per-message lookups',
+      );
+      return _ChatMessageJoinCache.disabled();
+    }
+
     final rows = await messagesDb.query('chat_message_join');
     final messageToChat = <int, int>{};
-    final chatToMessages = <int, List<int>>{};
     for (final row in rows) {
       final chatId = row['chat_id'] as int?;
       final messageId = row['message_id'] as int?;
@@ -424,12 +434,12 @@ class LedgerImportService {
         continue;
       }
       messageToChat.putIfAbsent(messageId, () => chatId);
-      chatToMessages.putIfAbsent(chatId, () => <int>[]).add(messageId);
     }
-    return _ChatMessageJoinCache(
-      messageToChat: messageToChat,
-      chatToMessages: chatToMessages,
+
+    debugSettings.logProgress(
+      'LedgerImportService: cached ${messageToChat.length} chat-message joins',
     );
+    return _ChatMessageJoinCache.enabled(messageToChat);
   }
 
   Future<_RichTextExtraction> _extractRichText({
@@ -489,7 +499,10 @@ class LedgerImportService {
         continue;
       }
 
-      final chatId = chatJoinCache.messageToChat[sourceRowId];
+      final chatId = await chatJoinCache.resolveChatId(
+        messagesDb: messagesDb,
+        messageId: sourceRowId,
+      );
       if (chatId == null) {
         continue;
       }
@@ -897,13 +910,49 @@ class _DbImportResultBuilder {
 }
 
 class _ChatMessageJoinCache {
-  const _ChatMessageJoinCache({
-    required this.messageToChat,
-    required this.chatToMessages,
-  });
+  _ChatMessageJoinCache.enabled(Map<int, int> cache) : _messageToChat = cache;
 
-  final Map<int, int> messageToChat;
-  final Map<int, List<int>> chatToMessages;
+  _ChatMessageJoinCache.disabled() : _messageToChat = <int, int>{};
+
+  final Map<int, int> _messageToChat;
+
+  bool get isEnabled => _messageToChat.isNotEmpty;
+
+  Future<int?> resolveChatId({
+    required Database messagesDb,
+    required int messageId,
+  }) async {
+    final cached = _messageToChat[messageId];
+    if (cached != null) {
+      return cached;
+    }
+
+    if (isEnabled) {
+      return null;
+    }
+
+    final rows = await messagesDb.query(
+      'chat_message_join',
+      columns: <String>['chat_id'],
+      where: 'message_id = ?',
+      whereArgs: <Object>[messageId],
+      limit: 1,
+    );
+    if (rows.isEmpty) {
+      return null;
+    }
+
+    final value = rows.first['chat_id'];
+    final chatId = value is int
+        ? value
+        : value is num
+        ? value.toInt()
+        : int.tryParse('$value');
+    if (chatId != null) {
+      _messageToChat[messageId] = chatId;
+    }
+    return chatId;
+  }
 }
 
 class _RichTextExtraction {

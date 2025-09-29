@@ -1,12 +1,12 @@
 import 'package:drift/drift.dart';
 
-import '../../../databases/infrastructure/data_sources/local/working/drift_db.dart';
+import '../../../db/infrastructure/data_sources/local/working/working_database.dart';
 
 /// Repository facade for interacting with the Supabase sync bookkeeping tables.
 class SupabaseSyncStateRepository {
   SupabaseSyncStateRepository({required this.database});
 
-  final DriftDb database;
+  final WorkingDatabase database;
 
   static const String chatsTableKey = 'chats';
   static const String messagesTableKey = 'messages';

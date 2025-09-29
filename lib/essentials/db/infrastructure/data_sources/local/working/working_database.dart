@@ -18,6 +18,8 @@ part 'working_database.g.dart';
     ReactionCounts,
     ReadState,
     MessageReadMarks,
+    SupabaseSyncState,
+    SupabaseSyncLogs,
   ],
 )
 class WorkingDatabase extends _$WorkingDatabase {
@@ -469,4 +471,42 @@ class MessageReadMarks extends Table {
 
   @override
   Set<Column> get primaryKey => {messageGuid};
+}
+
+class SupabaseSyncState extends Table {
+  @override
+  String get tableName => 'supabase_sync_state';
+
+  IntColumn get id => integer().named('id').autoIncrement()();
+  TextColumn get targetTable => text().named('target_table')();
+  IntColumn get lastBatchId => integer().named('last_batch_id').nullable()();
+  IntColumn get lastSyncedRowId =>
+      integer().named('last_synced_row_id').nullable()();
+  TextColumn get lastSyncedGuid =>
+      text().named('last_synced_guid').nullable()();
+  DateTimeColumn get lastSyncedAt =>
+      dateTime().named('last_synced_at').nullable()();
+  DateTimeColumn get updatedAt =>
+      dateTime().named('updated_at').withDefault(currentDateAndTime)();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {targetTable},
+  ];
+}
+
+class SupabaseSyncLogs extends Table {
+  @override
+  String get tableName => 'supabase_sync_logs';
+
+  IntColumn get id => integer().named('id').autoIncrement()();
+  IntColumn get batchId => integer().named('batch_id').nullable()();
+  TextColumn get targetTable => text().named('target_table').nullable()();
+  TextColumn get status => text().named('status').nullable()();
+  IntColumn get attempt =>
+      integer().named('attempt').withDefault(const Constant(1))();
+  TextColumn get requestId => text().named('request_id').nullable()();
+  TextColumn get message => text().named('message').nullable()();
+  DateTimeColumn get createdAt =>
+      dateTime().named('created_at').withDefault(currentDateAndTime)();
 }

@@ -21,15 +21,7 @@
 # Enable all rules by default
 include: all_lint_rules.yaml
 
-custom_lint:
-  rules:
-    # Explicitly disable one lint rule
-    #- missing_provider_scope: false
-
 analyzer:
-  plugins:
-    - custom_lint
-
   language:
     strict-casts: true
     #strict-raw-types: true

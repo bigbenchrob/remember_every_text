@@ -4,7 +4,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../features/chats/presentation/view/chats_sidebar_view.dart';
 import '../../../db_import/presentation/view/db_import_control_panel.dart';
 import '../../../db_import/presentation/view_model/db_import_control_provider.dart';
-import '../../../import/domain/feature_constants.dart';
 import '../../application/panels_view_state_provider.dart';
 import '../../domain/entities/features/import_spec.dart';
 import '../../domain/entities/view_spec.dart';
@@ -39,8 +38,8 @@ class PanelCoordinator extends _$PanelCoordinator {
 
   Widget _buildImportPanel(ImportSpec spec) {
     final desiredMode = spec.when(
-      forImport: () => ImportMode.import,
-      forMigration: () => ImportMode.migration,
+      forImport: () => DbImportMode.import,
+      forMigration: () => DbImportMode.migration,
     );
 
     final controlState = ref.read(dbImportControlViewModelProvider);

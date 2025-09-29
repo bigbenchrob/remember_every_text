@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../../../import/application/debug_settings_provider.dart';
+import '../../application/debug_settings_provider.dart';
 
 class DbImportDebugPanel extends ConsumerWidget {
   const DbImportDebugPanel({super.key});

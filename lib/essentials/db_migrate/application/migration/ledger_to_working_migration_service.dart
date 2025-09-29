@@ -5,7 +5,7 @@ import 'package:sqflite/sqflite.dart';
 
 import '../../../db/feature_level_providers.dart';
 import '../../../db/infrastructure/data_sources/local/working/working_database.dart';
-import '../../../import/application/debug_settings_provider.dart';
+import '../../../db_import/application/debug_settings_provider.dart';
 import '../../domain/entities/db_migration_result.dart';
 import '../../domain/states/db_migration_progress.dart';
 import '../../domain/value_objects/db_migration_stage.dart';

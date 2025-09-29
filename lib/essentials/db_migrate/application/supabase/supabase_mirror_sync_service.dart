@@ -1,7 +1,7 @@
 import '../../../config/domain/value_objects/supabase_api_url.dart';
 import '../../../config/domain/value_objects/supabase_service_role_key.dart';
-import '../../../databases/infrastructure/data_sources/local/working/drift_db.dart';
-import '../../../import/application/debug_settings_provider.dart';
+import '../../../db/infrastructure/data_sources/local/working/working_database.dart';
+import '../../../db_import/application/debug_settings_provider.dart';
 
 /// Coordinates mirroring the working database into Supabase.
 ///
@@ -12,7 +12,7 @@ import '../../../import/application/debug_settings_provider.dart';
 /// eventual implementation details.
 class SupabaseMirrorSyncService {
   SupabaseMirrorSyncService({
-    required DriftDb database,
+    required WorkingDatabase database,
     required SupabaseApiUrl supabaseApiUrl,
     required SupabaseServiceRoleKey serviceRoleKey,
     required ImportDebugSettingsState debugSettings,
@@ -21,7 +21,7 @@ class SupabaseMirrorSyncService {
        _serviceRoleKey = serviceRoleKey,
        _debugSettings = debugSettings;
 
-  final DriftDb _database;
+  final WorkingDatabase _database;
   final SupabaseApiUrl _supabaseApiUrl;
   final SupabaseServiceRoleKey _serviceRoleKey;
   final ImportDebugSettingsState _debugSettings;

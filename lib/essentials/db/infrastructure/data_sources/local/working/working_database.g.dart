@@ -5862,6 +5862,1004 @@ class MessageReadMarksCompanion extends UpdateCompanion<MessageReadMark> {
   }
 }
 
+class $SupabaseSyncStateTable extends SupabaseSyncState
+    with TableInfo<$SupabaseSyncStateTable, SupabaseSyncStateData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SupabaseSyncStateTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _targetTableMeta = const VerificationMeta(
+    'targetTable',
+  );
+  @override
+  late final GeneratedColumn<String> targetTable = GeneratedColumn<String>(
+    'target_table',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastBatchIdMeta = const VerificationMeta(
+    'lastBatchId',
+  );
+  @override
+  late final GeneratedColumn<int> lastBatchId = GeneratedColumn<int>(
+    'last_batch_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastSyncedRowIdMeta = const VerificationMeta(
+    'lastSyncedRowId',
+  );
+  @override
+  late final GeneratedColumn<int> lastSyncedRowId = GeneratedColumn<int>(
+    'last_synced_row_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastSyncedGuidMeta = const VerificationMeta(
+    'lastSyncedGuid',
+  );
+  @override
+  late final GeneratedColumn<String> lastSyncedGuid = GeneratedColumn<String>(
+    'last_synced_guid',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastSyncedAtMeta = const VerificationMeta(
+    'lastSyncedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastSyncedAt = GeneratedColumn<DateTime>(
+    'last_synced_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    targetTable,
+    lastBatchId,
+    lastSyncedRowId,
+    lastSyncedGuid,
+    lastSyncedAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'supabase_sync_state';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SupabaseSyncStateData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('target_table')) {
+      context.handle(
+        _targetTableMeta,
+        targetTable.isAcceptableOrUnknown(
+          data['target_table']!,
+          _targetTableMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_targetTableMeta);
+    }
+    if (data.containsKey('last_batch_id')) {
+      context.handle(
+        _lastBatchIdMeta,
+        lastBatchId.isAcceptableOrUnknown(
+          data['last_batch_id']!,
+          _lastBatchIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_synced_row_id')) {
+      context.handle(
+        _lastSyncedRowIdMeta,
+        lastSyncedRowId.isAcceptableOrUnknown(
+          data['last_synced_row_id']!,
+          _lastSyncedRowIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_synced_guid')) {
+      context.handle(
+        _lastSyncedGuidMeta,
+        lastSyncedGuid.isAcceptableOrUnknown(
+          data['last_synced_guid']!,
+          _lastSyncedGuidMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_synced_at')) {
+      context.handle(
+        _lastSyncedAtMeta,
+        lastSyncedAt.isAcceptableOrUnknown(
+          data['last_synced_at']!,
+          _lastSyncedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {targetTable},
+  ];
+  @override
+  SupabaseSyncStateData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SupabaseSyncStateData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      targetTable: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_table'],
+      )!,
+      lastBatchId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_batch_id'],
+      ),
+      lastSyncedRowId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_synced_row_id'],
+      ),
+      lastSyncedGuid: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_synced_guid'],
+      ),
+      lastSyncedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_synced_at'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $SupabaseSyncStateTable createAlias(String alias) {
+    return $SupabaseSyncStateTable(attachedDatabase, alias);
+  }
+}
+
+class SupabaseSyncStateData extends DataClass
+    implements Insertable<SupabaseSyncStateData> {
+  final int id;
+  final String targetTable;
+  final int? lastBatchId;
+  final int? lastSyncedRowId;
+  final String? lastSyncedGuid;
+  final DateTime? lastSyncedAt;
+  final DateTime updatedAt;
+  const SupabaseSyncStateData({
+    required this.id,
+    required this.targetTable,
+    this.lastBatchId,
+    this.lastSyncedRowId,
+    this.lastSyncedGuid,
+    this.lastSyncedAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['target_table'] = Variable<String>(targetTable);
+    if (!nullToAbsent || lastBatchId != null) {
+      map['last_batch_id'] = Variable<int>(lastBatchId);
+    }
+    if (!nullToAbsent || lastSyncedRowId != null) {
+      map['last_synced_row_id'] = Variable<int>(lastSyncedRowId);
+    }
+    if (!nullToAbsent || lastSyncedGuid != null) {
+      map['last_synced_guid'] = Variable<String>(lastSyncedGuid);
+    }
+    if (!nullToAbsent || lastSyncedAt != null) {
+      map['last_synced_at'] = Variable<DateTime>(lastSyncedAt);
+    }
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  SupabaseSyncStateCompanion toCompanion(bool nullToAbsent) {
+    return SupabaseSyncStateCompanion(
+      id: Value(id),
+      targetTable: Value(targetTable),
+      lastBatchId: lastBatchId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastBatchId),
+      lastSyncedRowId: lastSyncedRowId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastSyncedRowId),
+      lastSyncedGuid: lastSyncedGuid == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastSyncedGuid),
+      lastSyncedAt: lastSyncedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastSyncedAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory SupabaseSyncStateData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SupabaseSyncStateData(
+      id: serializer.fromJson<int>(json['id']),
+      targetTable: serializer.fromJson<String>(json['targetTable']),
+      lastBatchId: serializer.fromJson<int?>(json['lastBatchId']),
+      lastSyncedRowId: serializer.fromJson<int?>(json['lastSyncedRowId']),
+      lastSyncedGuid: serializer.fromJson<String?>(json['lastSyncedGuid']),
+      lastSyncedAt: serializer.fromJson<DateTime?>(json['lastSyncedAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'targetTable': serializer.toJson<String>(targetTable),
+      'lastBatchId': serializer.toJson<int?>(lastBatchId),
+      'lastSyncedRowId': serializer.toJson<int?>(lastSyncedRowId),
+      'lastSyncedGuid': serializer.toJson<String?>(lastSyncedGuid),
+      'lastSyncedAt': serializer.toJson<DateTime?>(lastSyncedAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  SupabaseSyncStateData copyWith({
+    int? id,
+    String? targetTable,
+    Value<int?> lastBatchId = const Value.absent(),
+    Value<int?> lastSyncedRowId = const Value.absent(),
+    Value<String?> lastSyncedGuid = const Value.absent(),
+    Value<DateTime?> lastSyncedAt = const Value.absent(),
+    DateTime? updatedAt,
+  }) => SupabaseSyncStateData(
+    id: id ?? this.id,
+    targetTable: targetTable ?? this.targetTable,
+    lastBatchId: lastBatchId.present ? lastBatchId.value : this.lastBatchId,
+    lastSyncedRowId: lastSyncedRowId.present
+        ? lastSyncedRowId.value
+        : this.lastSyncedRowId,
+    lastSyncedGuid: lastSyncedGuid.present
+        ? lastSyncedGuid.value
+        : this.lastSyncedGuid,
+    lastSyncedAt: lastSyncedAt.present ? lastSyncedAt.value : this.lastSyncedAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  SupabaseSyncStateData copyWithCompanion(SupabaseSyncStateCompanion data) {
+    return SupabaseSyncStateData(
+      id: data.id.present ? data.id.value : this.id,
+      targetTable: data.targetTable.present
+          ? data.targetTable.value
+          : this.targetTable,
+      lastBatchId: data.lastBatchId.present
+          ? data.lastBatchId.value
+          : this.lastBatchId,
+      lastSyncedRowId: data.lastSyncedRowId.present
+          ? data.lastSyncedRowId.value
+          : this.lastSyncedRowId,
+      lastSyncedGuid: data.lastSyncedGuid.present
+          ? data.lastSyncedGuid.value
+          : this.lastSyncedGuid,
+      lastSyncedAt: data.lastSyncedAt.present
+          ? data.lastSyncedAt.value
+          : this.lastSyncedAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SupabaseSyncStateData(')
+          ..write('id: $id, ')
+          ..write('targetTable: $targetTable, ')
+          ..write('lastBatchId: $lastBatchId, ')
+          ..write('lastSyncedRowId: $lastSyncedRowId, ')
+          ..write('lastSyncedGuid: $lastSyncedGuid, ')
+          ..write('lastSyncedAt: $lastSyncedAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    targetTable,
+    lastBatchId,
+    lastSyncedRowId,
+    lastSyncedGuid,
+    lastSyncedAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SupabaseSyncStateData &&
+          other.id == this.id &&
+          other.targetTable == this.targetTable &&
+          other.lastBatchId == this.lastBatchId &&
+          other.lastSyncedRowId == this.lastSyncedRowId &&
+          other.lastSyncedGuid == this.lastSyncedGuid &&
+          other.lastSyncedAt == this.lastSyncedAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class SupabaseSyncStateCompanion
+    extends UpdateCompanion<SupabaseSyncStateData> {
+  final Value<int> id;
+  final Value<String> targetTable;
+  final Value<int?> lastBatchId;
+  final Value<int?> lastSyncedRowId;
+  final Value<String?> lastSyncedGuid;
+  final Value<DateTime?> lastSyncedAt;
+  final Value<DateTime> updatedAt;
+  const SupabaseSyncStateCompanion({
+    this.id = const Value.absent(),
+    this.targetTable = const Value.absent(),
+    this.lastBatchId = const Value.absent(),
+    this.lastSyncedRowId = const Value.absent(),
+    this.lastSyncedGuid = const Value.absent(),
+    this.lastSyncedAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  SupabaseSyncStateCompanion.insert({
+    this.id = const Value.absent(),
+    required String targetTable,
+    this.lastBatchId = const Value.absent(),
+    this.lastSyncedRowId = const Value.absent(),
+    this.lastSyncedGuid = const Value.absent(),
+    this.lastSyncedAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  }) : targetTable = Value(targetTable);
+  static Insertable<SupabaseSyncStateData> custom({
+    Expression<int>? id,
+    Expression<String>? targetTable,
+    Expression<int>? lastBatchId,
+    Expression<int>? lastSyncedRowId,
+    Expression<String>? lastSyncedGuid,
+    Expression<DateTime>? lastSyncedAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (targetTable != null) 'target_table': targetTable,
+      if (lastBatchId != null) 'last_batch_id': lastBatchId,
+      if (lastSyncedRowId != null) 'last_synced_row_id': lastSyncedRowId,
+      if (lastSyncedGuid != null) 'last_synced_guid': lastSyncedGuid,
+      if (lastSyncedAt != null) 'last_synced_at': lastSyncedAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  SupabaseSyncStateCompanion copyWith({
+    Value<int>? id,
+    Value<String>? targetTable,
+    Value<int?>? lastBatchId,
+    Value<int?>? lastSyncedRowId,
+    Value<String?>? lastSyncedGuid,
+    Value<DateTime?>? lastSyncedAt,
+    Value<DateTime>? updatedAt,
+  }) {
+    return SupabaseSyncStateCompanion(
+      id: id ?? this.id,
+      targetTable: targetTable ?? this.targetTable,
+      lastBatchId: lastBatchId ?? this.lastBatchId,
+      lastSyncedRowId: lastSyncedRowId ?? this.lastSyncedRowId,
+      lastSyncedGuid: lastSyncedGuid ?? this.lastSyncedGuid,
+      lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (targetTable.present) {
+      map['target_table'] = Variable<String>(targetTable.value);
+    }
+    if (lastBatchId.present) {
+      map['last_batch_id'] = Variable<int>(lastBatchId.value);
+    }
+    if (lastSyncedRowId.present) {
+      map['last_synced_row_id'] = Variable<int>(lastSyncedRowId.value);
+    }
+    if (lastSyncedGuid.present) {
+      map['last_synced_guid'] = Variable<String>(lastSyncedGuid.value);
+    }
+    if (lastSyncedAt.present) {
+      map['last_synced_at'] = Variable<DateTime>(lastSyncedAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SupabaseSyncStateCompanion(')
+          ..write('id: $id, ')
+          ..write('targetTable: $targetTable, ')
+          ..write('lastBatchId: $lastBatchId, ')
+          ..write('lastSyncedRowId: $lastSyncedRowId, ')
+          ..write('lastSyncedGuid: $lastSyncedGuid, ')
+          ..write('lastSyncedAt: $lastSyncedAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SupabaseSyncLogsTable extends SupabaseSyncLogs
+    with TableInfo<$SupabaseSyncLogsTable, SupabaseSyncLog> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SupabaseSyncLogsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _batchIdMeta = const VerificationMeta(
+    'batchId',
+  );
+  @override
+  late final GeneratedColumn<int> batchId = GeneratedColumn<int>(
+    'batch_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _targetTableMeta = const VerificationMeta(
+    'targetTable',
+  );
+  @override
+  late final GeneratedColumn<String> targetTable = GeneratedColumn<String>(
+    'target_table',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _attemptMeta = const VerificationMeta(
+    'attempt',
+  );
+  @override
+  late final GeneratedColumn<int> attempt = GeneratedColumn<int>(
+    'attempt',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _requestIdMeta = const VerificationMeta(
+    'requestId',
+  );
+  @override
+  late final GeneratedColumn<String> requestId = GeneratedColumn<String>(
+    'request_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _messageMeta = const VerificationMeta(
+    'message',
+  );
+  @override
+  late final GeneratedColumn<String> message = GeneratedColumn<String>(
+    'message',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    batchId,
+    targetTable,
+    status,
+    attempt,
+    requestId,
+    message,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'supabase_sync_logs';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SupabaseSyncLog> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('batch_id')) {
+      context.handle(
+        _batchIdMeta,
+        batchId.isAcceptableOrUnknown(data['batch_id']!, _batchIdMeta),
+      );
+    }
+    if (data.containsKey('target_table')) {
+      context.handle(
+        _targetTableMeta,
+        targetTable.isAcceptableOrUnknown(
+          data['target_table']!,
+          _targetTableMeta,
+        ),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('attempt')) {
+      context.handle(
+        _attemptMeta,
+        attempt.isAcceptableOrUnknown(data['attempt']!, _attemptMeta),
+      );
+    }
+    if (data.containsKey('request_id')) {
+      context.handle(
+        _requestIdMeta,
+        requestId.isAcceptableOrUnknown(data['request_id']!, _requestIdMeta),
+      );
+    }
+    if (data.containsKey('message')) {
+      context.handle(
+        _messageMeta,
+        message.isAcceptableOrUnknown(data['message']!, _messageMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SupabaseSyncLog map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SupabaseSyncLog(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      batchId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}batch_id'],
+      ),
+      targetTable: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_table'],
+      ),
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      ),
+      attempt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}attempt'],
+      )!,
+      requestId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}request_id'],
+      ),
+      message: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}message'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $SupabaseSyncLogsTable createAlias(String alias) {
+    return $SupabaseSyncLogsTable(attachedDatabase, alias);
+  }
+}
+
+class SupabaseSyncLog extends DataClass implements Insertable<SupabaseSyncLog> {
+  final int id;
+  final int? batchId;
+  final String? targetTable;
+  final String? status;
+  final int attempt;
+  final String? requestId;
+  final String? message;
+  final DateTime createdAt;
+  const SupabaseSyncLog({
+    required this.id,
+    this.batchId,
+    this.targetTable,
+    this.status,
+    required this.attempt,
+    this.requestId,
+    this.message,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    if (!nullToAbsent || batchId != null) {
+      map['batch_id'] = Variable<int>(batchId);
+    }
+    if (!nullToAbsent || targetTable != null) {
+      map['target_table'] = Variable<String>(targetTable);
+    }
+    if (!nullToAbsent || status != null) {
+      map['status'] = Variable<String>(status);
+    }
+    map['attempt'] = Variable<int>(attempt);
+    if (!nullToAbsent || requestId != null) {
+      map['request_id'] = Variable<String>(requestId);
+    }
+    if (!nullToAbsent || message != null) {
+      map['message'] = Variable<String>(message);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  SupabaseSyncLogsCompanion toCompanion(bool nullToAbsent) {
+    return SupabaseSyncLogsCompanion(
+      id: Value(id),
+      batchId: batchId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(batchId),
+      targetTable: targetTable == null && nullToAbsent
+          ? const Value.absent()
+          : Value(targetTable),
+      status: status == null && nullToAbsent
+          ? const Value.absent()
+          : Value(status),
+      attempt: Value(attempt),
+      requestId: requestId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(requestId),
+      message: message == null && nullToAbsent
+          ? const Value.absent()
+          : Value(message),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory SupabaseSyncLog.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SupabaseSyncLog(
+      id: serializer.fromJson<int>(json['id']),
+      batchId: serializer.fromJson<int?>(json['batchId']),
+      targetTable: serializer.fromJson<String?>(json['targetTable']),
+      status: serializer.fromJson<String?>(json['status']),
+      attempt: serializer.fromJson<int>(json['attempt']),
+      requestId: serializer.fromJson<String?>(json['requestId']),
+      message: serializer.fromJson<String?>(json['message']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'batchId': serializer.toJson<int?>(batchId),
+      'targetTable': serializer.toJson<String?>(targetTable),
+      'status': serializer.toJson<String?>(status),
+      'attempt': serializer.toJson<int>(attempt),
+      'requestId': serializer.toJson<String?>(requestId),
+      'message': serializer.toJson<String?>(message),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  SupabaseSyncLog copyWith({
+    int? id,
+    Value<int?> batchId = const Value.absent(),
+    Value<String?> targetTable = const Value.absent(),
+    Value<String?> status = const Value.absent(),
+    int? attempt,
+    Value<String?> requestId = const Value.absent(),
+    Value<String?> message = const Value.absent(),
+    DateTime? createdAt,
+  }) => SupabaseSyncLog(
+    id: id ?? this.id,
+    batchId: batchId.present ? batchId.value : this.batchId,
+    targetTable: targetTable.present ? targetTable.value : this.targetTable,
+    status: status.present ? status.value : this.status,
+    attempt: attempt ?? this.attempt,
+    requestId: requestId.present ? requestId.value : this.requestId,
+    message: message.present ? message.value : this.message,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  SupabaseSyncLog copyWithCompanion(SupabaseSyncLogsCompanion data) {
+    return SupabaseSyncLog(
+      id: data.id.present ? data.id.value : this.id,
+      batchId: data.batchId.present ? data.batchId.value : this.batchId,
+      targetTable: data.targetTable.present
+          ? data.targetTable.value
+          : this.targetTable,
+      status: data.status.present ? data.status.value : this.status,
+      attempt: data.attempt.present ? data.attempt.value : this.attempt,
+      requestId: data.requestId.present ? data.requestId.value : this.requestId,
+      message: data.message.present ? data.message.value : this.message,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SupabaseSyncLog(')
+          ..write('id: $id, ')
+          ..write('batchId: $batchId, ')
+          ..write('targetTable: $targetTable, ')
+          ..write('status: $status, ')
+          ..write('attempt: $attempt, ')
+          ..write('requestId: $requestId, ')
+          ..write('message: $message, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    batchId,
+    targetTable,
+    status,
+    attempt,
+    requestId,
+    message,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SupabaseSyncLog &&
+          other.id == this.id &&
+          other.batchId == this.batchId &&
+          other.targetTable == this.targetTable &&
+          other.status == this.status &&
+          other.attempt == this.attempt &&
+          other.requestId == this.requestId &&
+          other.message == this.message &&
+          other.createdAt == this.createdAt);
+}
+
+class SupabaseSyncLogsCompanion extends UpdateCompanion<SupabaseSyncLog> {
+  final Value<int> id;
+  final Value<int?> batchId;
+  final Value<String?> targetTable;
+  final Value<String?> status;
+  final Value<int> attempt;
+  final Value<String?> requestId;
+  final Value<String?> message;
+  final Value<DateTime> createdAt;
+  const SupabaseSyncLogsCompanion({
+    this.id = const Value.absent(),
+    this.batchId = const Value.absent(),
+    this.targetTable = const Value.absent(),
+    this.status = const Value.absent(),
+    this.attempt = const Value.absent(),
+    this.requestId = const Value.absent(),
+    this.message = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  SupabaseSyncLogsCompanion.insert({
+    this.id = const Value.absent(),
+    this.batchId = const Value.absent(),
+    this.targetTable = const Value.absent(),
+    this.status = const Value.absent(),
+    this.attempt = const Value.absent(),
+    this.requestId = const Value.absent(),
+    this.message = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  static Insertable<SupabaseSyncLog> custom({
+    Expression<int>? id,
+    Expression<int>? batchId,
+    Expression<String>? targetTable,
+    Expression<String>? status,
+    Expression<int>? attempt,
+    Expression<String>? requestId,
+    Expression<String>? message,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (batchId != null) 'batch_id': batchId,
+      if (targetTable != null) 'target_table': targetTable,
+      if (status != null) 'status': status,
+      if (attempt != null) 'attempt': attempt,
+      if (requestId != null) 'request_id': requestId,
+      if (message != null) 'message': message,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  SupabaseSyncLogsCompanion copyWith({
+    Value<int>? id,
+    Value<int?>? batchId,
+    Value<String?>? targetTable,
+    Value<String?>? status,
+    Value<int>? attempt,
+    Value<String?>? requestId,
+    Value<String?>? message,
+    Value<DateTime>? createdAt,
+  }) {
+    return SupabaseSyncLogsCompanion(
+      id: id ?? this.id,
+      batchId: batchId ?? this.batchId,
+      targetTable: targetTable ?? this.targetTable,
+      status: status ?? this.status,
+      attempt: attempt ?? this.attempt,
+      requestId: requestId ?? this.requestId,
+      message: message ?? this.message,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (batchId.present) {
+      map['batch_id'] = Variable<int>(batchId.value);
+    }
+    if (targetTable.present) {
+      map['target_table'] = Variable<String>(targetTable.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (attempt.present) {
+      map['attempt'] = Variable<int>(attempt.value);
+    }
+    if (requestId.present) {
+      map['request_id'] = Variable<String>(requestId.value);
+    }
+    if (message.present) {
+      map['message'] = Variable<String>(message.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SupabaseSyncLogsCompanion(')
+          ..write('id: $id, ')
+          ..write('batchId: $batchId, ')
+          ..write('targetTable: $targetTable, ')
+          ..write('status: $status, ')
+          ..write('attempt: $attempt, ')
+          ..write('requestId: $requestId, ')
+          ..write('message: $message, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$WorkingDatabase extends GeneratedDatabase {
   _$WorkingDatabase(QueryExecutor e) : super(e);
   $WorkingDatabaseManager get managers => $WorkingDatabaseManager(this);
@@ -5891,6 +6889,11 @@ abstract class _$WorkingDatabase extends GeneratedDatabase {
   late final $MessageReadMarksTable messageReadMarks = $MessageReadMarksTable(
     this,
   );
+  late final $SupabaseSyncStateTable supabaseSyncState =
+      $SupabaseSyncStateTable(this);
+  late final $SupabaseSyncLogsTable supabaseSyncLogs = $SupabaseSyncLogsTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -5909,6 +6912,8 @@ abstract class _$WorkingDatabase extends GeneratedDatabase {
     reactionCounts,
     readState,
     messageReadMarks,
+    supabaseSyncState,
+    supabaseSyncLogs,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -10838,6 +11843,524 @@ typedef $$MessageReadMarksTableProcessedTableManager =
       MessageReadMark,
       PrefetchHooks Function()
     >;
+typedef $$SupabaseSyncStateTableCreateCompanionBuilder =
+    SupabaseSyncStateCompanion Function({
+      Value<int> id,
+      required String targetTable,
+      Value<int?> lastBatchId,
+      Value<int?> lastSyncedRowId,
+      Value<String?> lastSyncedGuid,
+      Value<DateTime?> lastSyncedAt,
+      Value<DateTime> updatedAt,
+    });
+typedef $$SupabaseSyncStateTableUpdateCompanionBuilder =
+    SupabaseSyncStateCompanion Function({
+      Value<int> id,
+      Value<String> targetTable,
+      Value<int?> lastBatchId,
+      Value<int?> lastSyncedRowId,
+      Value<String?> lastSyncedGuid,
+      Value<DateTime?> lastSyncedAt,
+      Value<DateTime> updatedAt,
+    });
+
+class $$SupabaseSyncStateTableFilterComposer
+    extends Composer<_$WorkingDatabase, $SupabaseSyncStateTable> {
+  $$SupabaseSyncStateTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get targetTable => $composableBuilder(
+    column: $table.targetTable,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lastBatchId => $composableBuilder(
+    column: $table.lastBatchId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lastSyncedRowId => $composableBuilder(
+    column: $table.lastSyncedRowId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastSyncedGuid => $composableBuilder(
+    column: $table.lastSyncedGuid,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastSyncedAt => $composableBuilder(
+    column: $table.lastSyncedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SupabaseSyncStateTableOrderingComposer
+    extends Composer<_$WorkingDatabase, $SupabaseSyncStateTable> {
+  $$SupabaseSyncStateTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get targetTable => $composableBuilder(
+    column: $table.targetTable,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lastBatchId => $composableBuilder(
+    column: $table.lastBatchId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lastSyncedRowId => $composableBuilder(
+    column: $table.lastSyncedRowId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastSyncedGuid => $composableBuilder(
+    column: $table.lastSyncedGuid,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastSyncedAt => $composableBuilder(
+    column: $table.lastSyncedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SupabaseSyncStateTableAnnotationComposer
+    extends Composer<_$WorkingDatabase, $SupabaseSyncStateTable> {
+  $$SupabaseSyncStateTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get targetTable => $composableBuilder(
+    column: $table.targetTable,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get lastBatchId => $composableBuilder(
+    column: $table.lastBatchId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get lastSyncedRowId => $composableBuilder(
+    column: $table.lastSyncedRowId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get lastSyncedGuid => $composableBuilder(
+    column: $table.lastSyncedGuid,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get lastSyncedAt => $composableBuilder(
+    column: $table.lastSyncedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$SupabaseSyncStateTableTableManager
+    extends
+        RootTableManager<
+          _$WorkingDatabase,
+          $SupabaseSyncStateTable,
+          SupabaseSyncStateData,
+          $$SupabaseSyncStateTableFilterComposer,
+          $$SupabaseSyncStateTableOrderingComposer,
+          $$SupabaseSyncStateTableAnnotationComposer,
+          $$SupabaseSyncStateTableCreateCompanionBuilder,
+          $$SupabaseSyncStateTableUpdateCompanionBuilder,
+          (
+            SupabaseSyncStateData,
+            BaseReferences<
+              _$WorkingDatabase,
+              $SupabaseSyncStateTable,
+              SupabaseSyncStateData
+            >,
+          ),
+          SupabaseSyncStateData,
+          PrefetchHooks Function()
+        > {
+  $$SupabaseSyncStateTableTableManager(
+    _$WorkingDatabase db,
+    $SupabaseSyncStateTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SupabaseSyncStateTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SupabaseSyncStateTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SupabaseSyncStateTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> targetTable = const Value.absent(),
+                Value<int?> lastBatchId = const Value.absent(),
+                Value<int?> lastSyncedRowId = const Value.absent(),
+                Value<String?> lastSyncedGuid = const Value.absent(),
+                Value<DateTime?> lastSyncedAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => SupabaseSyncStateCompanion(
+                id: id,
+                targetTable: targetTable,
+                lastBatchId: lastBatchId,
+                lastSyncedRowId: lastSyncedRowId,
+                lastSyncedGuid: lastSyncedGuid,
+                lastSyncedAt: lastSyncedAt,
+                updatedAt: updatedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String targetTable,
+                Value<int?> lastBatchId = const Value.absent(),
+                Value<int?> lastSyncedRowId = const Value.absent(),
+                Value<String?> lastSyncedGuid = const Value.absent(),
+                Value<DateTime?> lastSyncedAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => SupabaseSyncStateCompanion.insert(
+                id: id,
+                targetTable: targetTable,
+                lastBatchId: lastBatchId,
+                lastSyncedRowId: lastSyncedRowId,
+                lastSyncedGuid: lastSyncedGuid,
+                lastSyncedAt: lastSyncedAt,
+                updatedAt: updatedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SupabaseSyncStateTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WorkingDatabase,
+      $SupabaseSyncStateTable,
+      SupabaseSyncStateData,
+      $$SupabaseSyncStateTableFilterComposer,
+      $$SupabaseSyncStateTableOrderingComposer,
+      $$SupabaseSyncStateTableAnnotationComposer,
+      $$SupabaseSyncStateTableCreateCompanionBuilder,
+      $$SupabaseSyncStateTableUpdateCompanionBuilder,
+      (
+        SupabaseSyncStateData,
+        BaseReferences<
+          _$WorkingDatabase,
+          $SupabaseSyncStateTable,
+          SupabaseSyncStateData
+        >,
+      ),
+      SupabaseSyncStateData,
+      PrefetchHooks Function()
+    >;
+typedef $$SupabaseSyncLogsTableCreateCompanionBuilder =
+    SupabaseSyncLogsCompanion Function({
+      Value<int> id,
+      Value<int?> batchId,
+      Value<String?> targetTable,
+      Value<String?> status,
+      Value<int> attempt,
+      Value<String?> requestId,
+      Value<String?> message,
+      Value<DateTime> createdAt,
+    });
+typedef $$SupabaseSyncLogsTableUpdateCompanionBuilder =
+    SupabaseSyncLogsCompanion Function({
+      Value<int> id,
+      Value<int?> batchId,
+      Value<String?> targetTable,
+      Value<String?> status,
+      Value<int> attempt,
+      Value<String?> requestId,
+      Value<String?> message,
+      Value<DateTime> createdAt,
+    });
+
+class $$SupabaseSyncLogsTableFilterComposer
+    extends Composer<_$WorkingDatabase, $SupabaseSyncLogsTable> {
+  $$SupabaseSyncLogsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get batchId => $composableBuilder(
+    column: $table.batchId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get targetTable => $composableBuilder(
+    column: $table.targetTable,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get attempt => $composableBuilder(
+    column: $table.attempt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get requestId => $composableBuilder(
+    column: $table.requestId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get message => $composableBuilder(
+    column: $table.message,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SupabaseSyncLogsTableOrderingComposer
+    extends Composer<_$WorkingDatabase, $SupabaseSyncLogsTable> {
+  $$SupabaseSyncLogsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get batchId => $composableBuilder(
+    column: $table.batchId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get targetTable => $composableBuilder(
+    column: $table.targetTable,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get attempt => $composableBuilder(
+    column: $table.attempt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get requestId => $composableBuilder(
+    column: $table.requestId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get message => $composableBuilder(
+    column: $table.message,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SupabaseSyncLogsTableAnnotationComposer
+    extends Composer<_$WorkingDatabase, $SupabaseSyncLogsTable> {
+  $$SupabaseSyncLogsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get batchId =>
+      $composableBuilder(column: $table.batchId, builder: (column) => column);
+
+  GeneratedColumn<String> get targetTable => $composableBuilder(
+    column: $table.targetTable,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<int> get attempt =>
+      $composableBuilder(column: $table.attempt, builder: (column) => column);
+
+  GeneratedColumn<String> get requestId =>
+      $composableBuilder(column: $table.requestId, builder: (column) => column);
+
+  GeneratedColumn<String> get message =>
+      $composableBuilder(column: $table.message, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$SupabaseSyncLogsTableTableManager
+    extends
+        RootTableManager<
+          _$WorkingDatabase,
+          $SupabaseSyncLogsTable,
+          SupabaseSyncLog,
+          $$SupabaseSyncLogsTableFilterComposer,
+          $$SupabaseSyncLogsTableOrderingComposer,
+          $$SupabaseSyncLogsTableAnnotationComposer,
+          $$SupabaseSyncLogsTableCreateCompanionBuilder,
+          $$SupabaseSyncLogsTableUpdateCompanionBuilder,
+          (
+            SupabaseSyncLog,
+            BaseReferences<
+              _$WorkingDatabase,
+              $SupabaseSyncLogsTable,
+              SupabaseSyncLog
+            >,
+          ),
+          SupabaseSyncLog,
+          PrefetchHooks Function()
+        > {
+  $$SupabaseSyncLogsTableTableManager(
+    _$WorkingDatabase db,
+    $SupabaseSyncLogsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SupabaseSyncLogsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SupabaseSyncLogsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SupabaseSyncLogsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int?> batchId = const Value.absent(),
+                Value<String?> targetTable = const Value.absent(),
+                Value<String?> status = const Value.absent(),
+                Value<int> attempt = const Value.absent(),
+                Value<String?> requestId = const Value.absent(),
+                Value<String?> message = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => SupabaseSyncLogsCompanion(
+                id: id,
+                batchId: batchId,
+                targetTable: targetTable,
+                status: status,
+                attempt: attempt,
+                requestId: requestId,
+                message: message,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int?> batchId = const Value.absent(),
+                Value<String?> targetTable = const Value.absent(),
+                Value<String?> status = const Value.absent(),
+                Value<int> attempt = const Value.absent(),
+                Value<String?> requestId = const Value.absent(),
+                Value<String?> message = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => SupabaseSyncLogsCompanion.insert(
+                id: id,
+                batchId: batchId,
+                targetTable: targetTable,
+                status: status,
+                attempt: attempt,
+                requestId: requestId,
+                message: message,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SupabaseSyncLogsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WorkingDatabase,
+      $SupabaseSyncLogsTable,
+      SupabaseSyncLog,
+      $$SupabaseSyncLogsTableFilterComposer,
+      $$SupabaseSyncLogsTableOrderingComposer,
+      $$SupabaseSyncLogsTableAnnotationComposer,
+      $$SupabaseSyncLogsTableCreateCompanionBuilder,
+      $$SupabaseSyncLogsTableUpdateCompanionBuilder,
+      (
+        SupabaseSyncLog,
+        BaseReferences<
+          _$WorkingDatabase,
+          $SupabaseSyncLogsTable,
+          SupabaseSyncLog
+        >,
+      ),
+      SupabaseSyncLog,
+      PrefetchHooks Function()
+    >;
 
 class $WorkingDatabaseManager {
   final _$WorkingDatabase _db;
@@ -10871,4 +12394,8 @@ class $WorkingDatabaseManager {
       $$ReadStateTableTableManager(_db, _db.readState);
   $$MessageReadMarksTableTableManager get messageReadMarks =>
       $$MessageReadMarksTableTableManager(_db, _db.messageReadMarks);
+  $$SupabaseSyncStateTableTableManager get supabaseSyncState =>
+      $$SupabaseSyncStateTableTableManager(_db, _db.supabaseSyncState);
+  $$SupabaseSyncLogsTableTableManager get supabaseSyncLogs =>
+      $$SupabaseSyncLogsTableTableManager(_db, _db.supabaseSyncLogs);
 }

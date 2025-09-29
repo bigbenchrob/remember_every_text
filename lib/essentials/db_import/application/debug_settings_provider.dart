@@ -23,12 +23,18 @@ class ImportDebugSettings extends _$ImportDebugSettings {
     state = state.copyWith(enableErrorDetailsLogging: enabled);
   }
 
+  /// Toggle ledger row caching behaviour used by the import pipeline.
+  void updateLedgerRowCaching({required bool enabled}) {
+    state = state.copyWith(ledgerRowCachingEnabled: enabled);
+  }
+
   /// Enable all debugging options
   void enableAllDebugging() {
     state = state.copyWith(
       enableDatabaseLogging: true,
       enableProgressLogging: true,
       enableErrorDetailsLogging: true,
+      ledgerRowCachingEnabled: true,
     );
   }
 
@@ -49,6 +55,7 @@ class ImportDebugSettingsState {
     this.enableDatabaseLogging = false,
     this.enableProgressLogging = false,
     this.enableErrorDetailsLogging = true, // Keep error details on by default
+    this.ledgerRowCachingEnabled = true,
   });
 
   /// Enable detailed database access logging
@@ -60,10 +67,14 @@ class ImportDebugSettingsState {
   /// Enable detailed error logging (recommended to keep enabled)
   final bool enableErrorDetailsLogging;
 
+  /// When true, the import pipeline caches ledger joins to reduce lookups.
+  final bool ledgerRowCachingEnabled;
+
   ImportDebugSettingsState copyWith({
     bool? enableDatabaseLogging,
     bool? enableProgressLogging,
     bool? enableErrorDetailsLogging,
+    bool? ledgerRowCachingEnabled,
   }) {
     return ImportDebugSettingsState(
       enableDatabaseLogging:
@@ -72,6 +83,8 @@ class ImportDebugSettingsState {
           enableProgressLogging ?? this.enableProgressLogging,
       enableErrorDetailsLogging:
           enableErrorDetailsLogging ?? this.enableErrorDetailsLogging,
+      ledgerRowCachingEnabled:
+          ledgerRowCachingEnabled ?? this.ledgerRowCachingEnabled,
     );
   }
 }
@@ -98,4 +111,7 @@ extension ImportDebugSettingsX on ImportDebugSettingsState {
       print('❌ [ERROR DEBUG] $message');
     }
   }
+
+  /// Convenience getter for disabling the ledger row cache.
+  bool get isLedgerRowCachingDisabled => !ledgerRowCachingEnabled;
 }

@@ -7,7 +7,7 @@ part of 'supabase_mirror_sync_service_provider.dart';
 // **************************************************************************
 
 String _$supabaseMirrorSyncServiceHash() =>
-    r'70007dda826488642aaa72dedf3013d1241085a5';
+    r'c83dda58923f39076d201e7ae74ab0b2e0bff717';
 
 /// Provides the application-layer service responsible for mirroring batches
 /// into Supabase once the working database is populated.

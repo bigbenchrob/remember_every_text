@@ -5,17 +5,18 @@ import 'package:macos_ui/macos_ui.dart';
 import '../../../db_import/presentation/view_model/db_import_control_provider.dart';
 import '../../../db_import/presentation/widgets/db_import_details_pane.dart';
 import '../../../db_import/presentation/widgets/db_import_progress_pane.dart';
-import '../../../import/domain/feature_constants.dart';
 
 class DbMigrationPanel extends StatelessWidget {
   const DbMigrationPanel({
     required this.controlState,
     required this.notifier,
+    required this.mode,
     super.key,
   });
 
   final DbImportControlState controlState;
   final DbImportControlViewModel notifier;
+  final DbImportMode mode;
 
   @override
   Widget build(BuildContext context) {
@@ -69,17 +70,17 @@ class DbMigrationPanel extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         if (controlState.stages.isNotEmpty) ...[
-          CupertinoSegmentedControl<ImportViewMode>(
+          CupertinoSegmentedControl<DbImportViewMode>(
             groupValue: controlState.viewMode,
             onValueChanged: notifier.setViewMode,
             children: const {
-              ImportViewMode.progress: Padding(
+              DbImportViewMode.progress: Padding(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 child: Text('Progress'),
               ),
-              ImportViewMode.details: Padding(
+              DbImportViewMode.summary: Padding(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                child: Text('Details'),
+                child: Text('Summary'),
               ),
             },
           ),
@@ -87,9 +88,9 @@ class DbMigrationPanel extends StatelessWidget {
         ],
         if (controlState.stages.isNotEmpty)
           Expanded(
-            child: controlState.viewMode == ImportViewMode.progress
-                ? DbImportProgressPane(controlState: controlState)
-                : DbImportDetailsPane(controlState: controlState),
+            child: controlState.viewMode == DbImportViewMode.progress
+                ? DbImportProgressPane(controlState: controlState, mode: mode)
+                : DbImportDetailsPane(controlState: controlState, mode: mode),
           )
         else
           Expanded(

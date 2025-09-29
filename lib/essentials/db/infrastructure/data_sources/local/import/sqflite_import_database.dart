@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
-import '../../../../../import/application/debug_settings_provider.dart';
+import '../../../../../db_import/application/debug_settings_provider.dart';
 
 class SqfliteImportDatabase {
   SqfliteImportDatabase({

@@ -3,8 +3,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../config/application/supabase_api_url_provider.dart';
 import '../../../config/application/supabase_service_role_key_provider.dart';
-import '../../../databases/feature_level_providers.dart';
-import '../../../import/application/debug_settings_provider.dart';
+import '../../../db/feature_level_providers.dart';
+import '../../../db_import/application/debug_settings_provider.dart';
 import '../supabase/supabase_mirror_sync_service.dart';
 
 part 'supabase_mirror_sync_service_provider.g.dart';
@@ -13,7 +13,7 @@ part 'supabase_mirror_sync_service_provider.g.dart';
 /// into Supabase once the working database is populated.
 @riverpod
 Future<SupabaseMirrorSyncService> supabaseMirrorSyncService(Ref ref) async {
-  final database = await ref.watch(workingDatabaseProvider.future);
+  final database = await ref.watch(driftWorkingDatabaseProvider.future);
   final supabaseUrl = ref.watch(supabaseApiUrlProvider);
   final serviceRoleKey = ref.watch(supabaseServiceRoleKeyProvider);
   final debugSettings = ref.watch(importDebugSettingsProvider);

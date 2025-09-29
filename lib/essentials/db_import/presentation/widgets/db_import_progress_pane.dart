@@ -2,35 +2,32 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
-import '../../../import/domain/entities/import_progress_stage.dart';
-import '../../../import/domain/entities/import_subtask_timing.dart';
 import '../view_model/db_import_control_provider.dart';
 
 class DbImportProgressPane extends StatelessWidget {
-  const DbImportProgressPane({super.key, required this.controlState});
+  const DbImportProgressPane({
+    super.key,
+    required this.controlState,
+    required this.mode,
+  });
 
   final DbImportControlState controlState;
+  final DbImportMode mode;
 
   @override
   Widget build(BuildContext context) {
-    final isMigration =
-        controlState.statusMessage?.toLowerCase().contains('migrat') ?? false;
-    return _buildProgressSection(controlState, isImport: !isMigration);
+    final isImport = mode == DbImportMode.import;
+    return _buildProgressSection(controlState, isImport: isImport);
   }
 
   Widget _buildProgressSection(
     DbImportControlState state, {
     required bool isImport,
   }) {
-    final grouped = <String, List<ImportSubtaskTiming>>{};
-    for (final timing in state.timings) {
-      grouped.putIfAbsent(timing.stageName, () => []).add(timing);
-    }
     final stageDurations = <String, Duration?>{
-      for (final entry in grouped.entries)
-        entry.key: _sumDurations(entry.value),
+      for (final stage in state.stages) stage.name: stage.duration,
     };
-    final aggregateDuration = _aggregateDuration(state);
+    final aggregateDuration = _aggregateDuration(state.stages);
 
     return Container(
       padding: const EdgeInsets.all(16.0),
@@ -120,7 +117,7 @@ class DbImportProgressPane extends StatelessWidget {
     );
   }
 
-  Widget _buildStageItem(ImportProgressStage stage, {Duration? duration}) {
+  Widget _buildStageItem(UiStageProgress stage, {Duration? duration}) {
     Color iconColor;
     IconData icon;
     var statusText = stage.displayName;
@@ -140,14 +137,14 @@ class DbImportProgressPane extends StatelessWidget {
     }
 
     Color? accentForStage(String name) {
-      if (name == 'analyzingMessages') {
-        return const Color(0xFFFB8C00);
-      }
       if (name == 'extractingRichContent') {
         return const Color(0xFF8E24AA);
       }
       if (name == 'importingMessages') {
         return const Color(0xFF00897B);
+      }
+      if (name == 'migratingMessages') {
+        return const Color(0xFF1976D2);
       }
       return null;
     }
@@ -219,37 +216,17 @@ class DbImportProgressPane extends StatelessWidget {
     return row;
   }
 
-  Duration? _sumDurations(List<ImportSubtaskTiming> subtasks) {
-    var total = Duration.zero;
-    var anyIncomplete = false;
-    for (final subtask in subtasks) {
-      if (subtask.duration == null) {
-        anyIncomplete = true;
-      } else {
-        total += subtask.duration!;
-      }
-    }
-    if (anyIncomplete && total == Duration.zero) {
+  Duration? _aggregateDuration(List<UiStageProgress> stages) {
+    if (stages.isEmpty || stages.every((stage) => !stage.isComplete)) {
       return null;
     }
-    return total;
-  }
-
-  Duration? _aggregateDuration(DbImportControlState state) {
-    if (state.timings.isEmpty) {
-      return null;
-    }
-    final overall = state.progress ?? 0;
-    final allComplete =
-        overall >= 0.999 &&
-        state.timings.every((timing) => timing.duration != null);
-    if (!allComplete) {
+    if (stages.any((stage) => !stage.isComplete || stage.duration == null)) {
       return null;
     }
 
-    return state.timings.fold<Duration>(
+    return stages.fold<Duration>(
       Duration.zero,
-      (accumulator, timing) => accumulator + timing.duration!,
+      (accumulator, stage) => accumulator + stage.duration!,
     );
   }
 

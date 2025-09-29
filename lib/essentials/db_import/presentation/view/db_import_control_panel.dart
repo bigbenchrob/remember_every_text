@@ -4,7 +4,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 
 import '../../../db_migrate/presentation/view/db_migration_panel.dart';
-import '../../../import/domain/feature_constants.dart';
 import '../view_model/db_import_control_provider.dart';
 import '../widgets/db_import_debug_panel.dart';
 import '../widgets/db_import_details_pane.dart';
@@ -33,20 +32,20 @@ class DbImportControlPanel extends ConsumerWidget {
             Row(
               children: [
                 Expanded(
-                  child: CupertinoSegmentedControl<ImportMode>(
+                  child: CupertinoSegmentedControl<DbImportMode>(
                     groupValue: controlState.selectedMode,
                     onValueChanged: (value) {
                       notifier.setMode(value);
                     },
                     children: const {
-                      ImportMode.import: Padding(
+                      DbImportMode.import: Padding(
                         padding: EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 8,
                         ),
                         child: Text('Import'),
                       ),
-                      ImportMode.migration: Padding(
+                      DbImportMode.migration: Padding(
                         padding: EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 8,
@@ -85,16 +84,18 @@ class DbImportControlPanel extends ConsumerWidget {
                 duration: const Duration(milliseconds: 250),
                 child: controlState.showingDebugPanel
                     ? const _DebugPanelView(key: ValueKey('debug-controls'))
-                    : controlState.selectedMode == ImportMode.import
+                    : controlState.selectedMode == DbImportMode.import
                     ? _ImportControls(
                         key: const ValueKey('import-controls'),
                         controlState: controlState,
                         notifier: notifier,
+                        mode: DbImportMode.import,
                       )
                     : DbMigrationPanel(
                         key: const ValueKey('migration-controls'),
                         controlState: controlState,
                         notifier: notifier,
+                        mode: DbImportMode.migration,
                       ),
               ),
             ),
@@ -109,11 +110,13 @@ class _ImportControls extends StatelessWidget {
   const _ImportControls({
     required this.controlState,
     required this.notifier,
+    required this.mode,
     super.key,
   });
 
   final DbImportControlState controlState;
   final DbImportControlViewModel notifier;
+  final DbImportMode mode;
 
   @override
   Widget build(BuildContext context) {
@@ -144,17 +147,17 @@ class _ImportControls extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         if (controlState.stages.isNotEmpty) ...[
-          CupertinoSegmentedControl<ImportViewMode>(
+          CupertinoSegmentedControl<DbImportViewMode>(
             groupValue: controlState.viewMode,
             onValueChanged: notifier.setViewMode,
             children: const {
-              ImportViewMode.progress: Padding(
+              DbImportViewMode.progress: Padding(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 child: Text('Progress'),
               ),
-              ImportViewMode.details: Padding(
+              DbImportViewMode.summary: Padding(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                child: Text('Details'),
+                child: Text('Summary'),
               ),
             },
           ),
@@ -162,9 +165,9 @@ class _ImportControls extends StatelessWidget {
         ],
         if (controlState.stages.isNotEmpty)
           Expanded(
-            child: controlState.viewMode == ImportViewMode.progress
-                ? DbImportProgressPane(controlState: controlState)
-                : DbImportDetailsPane(controlState: controlState),
+            child: controlState.viewMode == DbImportViewMode.progress
+                ? DbImportProgressPane(controlState: controlState, mode: mode)
+                : DbImportDetailsPane(controlState: controlState, mode: mode),
           )
         else
           const Expanded(

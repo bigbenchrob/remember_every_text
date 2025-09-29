@@ -2,7 +2,8 @@ import 'package:drift/drift.dart' as drift;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../essentials/databases/feature_level_providers.dart';
+import '../../../../essentials/db/feature_level_providers.dart';
+import '../../../../essentials/db/infrastructure/data_sources/local/working/working_database.dart';
 
 part 'recent_chats_provider.g.dart';
 
@@ -26,65 +27,72 @@ class RecentChatSummary {
 }
 
 @riverpod
-Future<List<RecentChatSummary>> recentChats(
-  Ref ref, {
-  int limit = 5,
-}) async {
-  final db = await ref.watch(workingDatabaseProvider.future);
+Future<List<RecentChatSummary>> recentChats(Ref ref, {int limit = 5}) async {
+  final db = await ref.watch(driftWorkingDatabaseProvider.future);
 
-  final chatsAlias = db.chats;
-  final contactsAlias = db.contacts;
+  List<WorkingChat> chatRows;
+  final chatsQuery = db.select(db.workingChats)
+    ..orderBy([
+      (tbl) => drift.OrderingTerm(
+        expression: tbl.lastMessageAtUtc,
+        mode: drift.OrderingMode.desc,
+      ),
+      (tbl) => drift.OrderingTerm(
+        expression: tbl.updatedAtUtc,
+        mode: drift.OrderingMode.desc,
+      ),
+      (tbl) => drift.OrderingTerm(expression: tbl.id),
+    ])
+    ..limit(limit);
 
-  final query = db.select(chatsAlias).join([
-    drift.leftOuterJoin(
-      contactsAlias,
-      contactsAlias.id.equalsExp(chatsAlias.contactId),
-    ),
-  ]);
+  chatRows = await chatsQuery.get();
 
-  query.orderBy([
-    drift.OrderingTerm.desc(chatsAlias.endDate),
-    drift.OrderingTerm.desc(chatsAlias.startDate),
-    drift.OrderingTerm.asc(chatsAlias.id),
-  ]);
+  final messageCountExpression = db.workingMessages.id.count();
+  final firstSentExpression = db.workingMessages.sentAtUtc.min();
+  final lastSentExpression = db.workingMessages.sentAtUtc.max();
 
-  query.limit(limit);
+  DateTime? parseUtc(String? value) {
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    final parsed = DateTime.tryParse(value);
+    return parsed?.toLocal();
+  }
 
-  final rows = await query.get();
+  String deriveTitle(WorkingChat chat) {
+    return chat.displayName ??
+        chat.computedName ??
+        chat.userCustomName ??
+        'Unnamed Conversation';
+  }
+
   final results = <RecentChatSummary>[];
 
-  for (final row in rows) {
-    final chatRow = row.readTable(chatsAlias);
-    final contactRow = row.readTableOrNull(contactsAlias);
+  for (final chat in chatRows) {
+    final stats =
+        await (db.selectOnly(db.workingMessages)
+              ..where(db.workingMessages.chatId.equals(chat.id))
+              ..addColumns([
+                messageCountExpression,
+                firstSentExpression,
+                lastSentExpression,
+              ]))
+            .getSingleOrNull();
 
-    String? normalizeOrNull(String? value) {
-      if (value == null) {
-        return null;
-      }
-      final trimmed = value.trim();
-      return trimmed.isEmpty ? null : trimmed;
-    }
+    final messageCount = stats?.read(messageCountExpression) ?? 0;
+    final firstSentUtc = stats?.read(firstSentExpression);
+    final lastSentUtc = stats?.read(lastSentExpression);
 
-    final normalizedContactName = normalizeOrNull(contactRow?.displayName);
-    final normalizedChatName = normalizeOrNull(chatRow.displayName);
-    final title =
-        normalizedContactName ?? normalizedChatName ?? 'Unnamed Conversation';
-
-    DateTime? toDateTime(int? raw) {
-      if (raw == null) {
-        return null;
-      }
-      return DateTime.fromMillisecondsSinceEpoch(raw, isUtc: true).toLocal();
-    }
+    final lastMessageDate = parseUtc(lastSentUtc ?? chat.lastMessageAtUtc);
 
     results.add(
       RecentChatSummary(
-        chatId: chatRow.id,
-        title: title,
-        messageCount: chatRow.messageCount,
-        firstMessageDate: toDateTime(chatRow.startDate),
-        lastMessageDate: toDateTime(chatRow.endDate),
-        isGroup: contactRow?.isGroup ?? false,
+        chatId: chat.id,
+        title: deriveTitle(chat),
+        messageCount: messageCount,
+        firstMessageDate: parseUtc(firstSentUtc ?? chat.createdAtUtc),
+        lastMessageDate: lastMessageDate,
+        isGroup: chat.isGroup,
       ),
     );
   }

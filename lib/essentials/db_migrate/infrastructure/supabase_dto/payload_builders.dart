@@ -1,6 +1,8 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
-import '../../../databases/infrastructure/data_sources/local/working/drift_db.dart';
+import '../../../db/infrastructure/data_sources/local/working/working_database.dart';
 import 'attachment_payload.dart';
 import 'chat_payload.dart';
 import 'message_payload.dart';
@@ -11,7 +13,7 @@ class SupabasePayloadBuilder {
     required this.ownerUserId,
   });
 
-  final DriftDb database;
+  final WorkingDatabase database;
   final String ownerUserId;
 
   static const int defaultBatchSize = 500;
@@ -20,7 +22,7 @@ class SupabasePayloadBuilder {
     int? afterRowId,
     int limit = defaultBatchSize,
   }) async {
-    final query = database.select(database.chats)
+    final query = database.select(database.workingChats)
       ..orderBy([(tbl) => OrderingTerm(expression: tbl.id)])
       ..limit(limit);
 
@@ -36,7 +38,7 @@ class SupabasePayloadBuilder {
     int? afterRowId,
     int limit = defaultBatchSize,
   }) async {
-    final query = database.select(database.messages)
+    final query = database.select(database.workingMessages)
       ..orderBy([(tbl) => OrderingTerm(expression: tbl.id)])
       ..limit(limit);
 
@@ -54,7 +56,7 @@ class SupabasePayloadBuilder {
     int? afterRowId,
     int limit = defaultBatchSize,
   }) async {
-    final query = database.select(database.attachments)
+    final query = database.select(database.workingAttachments)
       ..orderBy([(tbl) => OrderingTerm(expression: tbl.id)])
       ..limit(limit);
 
@@ -68,56 +70,89 @@ class SupabasePayloadBuilder {
         .toList(growable: false);
   }
 
-  SupabaseChatPayload _mapChatRow(Chat row) {
+  SupabaseChatPayload _mapChatRow(WorkingChat row) {
     return SupabaseChatPayload(
       ownerUserId: ownerUserId,
       guid: row.guid,
-      service: 'Unknown',
-      isGroup: false,
+      service: row.service,
+      isGroup: row.isGroup,
       displayName: row.displayName,
-      computedName: row.displayName,
-      lastMessageAtUtc: _timestampToUtc(row.endDate),
-      createdAtUtc: _timestampToUtc(row.startDate),
-      updatedAtUtc: _timestampToUtc(row.endDate),
+      userCustomName: row.userCustomName,
+      computedName: row.computedName,
+      lastMessageAtUtc: _parseUtcString(row.lastMessageAtUtc),
+      lastSenderIdentityId: row.lastSenderIdentityId,
+      lastMessagePreview: row.lastMessagePreview,
+      unreadCount: row.unreadCount,
+      pinned: row.pinned,
+      archived: row.archived,
+      mutedUntilUtc: _parseUtcString(row.mutedUntilUtc),
+      favourite: row.favourite,
+      createdAtUtc: _parseUtcString(row.createdAtUtc),
+      updatedAtUtc: _parseUtcString(row.updatedAtUtc),
     );
   }
 
-  SupabaseMessagePayload _mapMessageRow(Message row) {
-    final replyGuid = row.quotedMessageId == null
-        ? null
-        : 'message-${row.quotedMessageId}';
+  SupabaseMessagePayload _mapMessageRow(WorkingMessage row) {
+    final reactionSummary = _decodeReactionSummary(row.reactionSummaryJson);
 
     return SupabaseMessagePayload(
       ownerUserId: ownerUserId,
-      guid: 'message-${row.id}',
+      guid: row.guid,
       chatId: row.chatId,
       isFromMe: row.isFromMe,
-      senderIdentityId: row.senderHandleId,
-      sentAtUtc: _timestampToUtc(row.timestamp),
-      text: row.content,
+      senderIdentityId: row.senderIdentityId,
+      sentAtUtc: _parseUtcString(row.sentAtUtc),
+      deliveredAtUtc: _parseUtcString(row.deliveredAtUtc),
+      readAtUtc: _parseUtcString(row.readAtUtc),
+      status: row.status,
+      text: row.textContent,
       hasAttachments: row.hasAttachments,
-      replyToGuid: replyGuid,
-      updatedAtUtc: _timestampToUtc(row.importLastSyncedAt),
+      replyToGuid: row.replyToGuid,
+      systemType: row.systemType,
+      reactionCarrier: row.reactionCarrier,
+      balloonBundleId: row.balloonBundleId,
+      reactionSummaryJson: reactionSummary,
+      isStarred: row.isStarred,
+      isDeletedLocal: row.isDeletedLocal,
+      updatedAtUtc: _parseUtcString(row.updatedAtUtc),
     );
   }
 
-  SupabaseAttachmentPayload _mapAttachmentRow(Attachment row) {
+  SupabaseAttachmentPayload _mapAttachmentRow(WorkingAttachment row) {
     return SupabaseAttachmentPayload(
       ownerUserId: ownerUserId,
-      messageGuid: 'message-${row.messageId}',
-      importAttachmentId: row.id,
-      localPath: row.filePath,
+      messageGuid: row.messageGuid,
+      importAttachmentId: row.importAttachmentId,
+      localPath: row.localPath,
       mimeType: row.mimeType,
-      sizeBytes: row.fileSize,
-      thumbPath: row.thumbnailPath,
-      createdAtUtc: _timestampToUtc(row.importLastSyncedAt),
+      uti: row.uti,
+      transferName: row.transferName,
+      sizeBytes: row.sizeBytes,
+      isSticker: row.isSticker,
+      thumbPath: row.thumbPath,
+      createdAtUtc: _parseUtcString(row.createdAtUtc),
     );
   }
 
-  DateTime? _timestampToUtc(int? value) {
-    if (value == null) {
+  DateTime? _parseUtcString(String? value) {
+    if (value == null || value.isEmpty) {
       return null;
     }
-    return DateTime.fromMillisecondsSinceEpoch(value, isUtc: true);
+    return DateTime.tryParse(value)?.toUtc();
+  }
+
+  Map<String, dynamic>? _decodeReactionSummary(String? value) {
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    try {
+      final decoded = jsonDecode(value);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+    } catch (_) {
+      return null;
+    }
+    return null;
   }
 }
