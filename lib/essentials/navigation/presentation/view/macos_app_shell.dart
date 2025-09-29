@@ -175,7 +175,7 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
               label: 'Chats',
               icon: const MacosIcon(CupertinoIcons.chat_bubble_2),
               onPressed: () {
-                const spec = ViewSpec.chats(ChatsSpec.list());
+                const spec = ViewSpec.chats(ChatsSpec.recent(limit: 5));
 
                 // Log the navigation action
                 ref

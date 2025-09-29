@@ -420,63 +420,116 @@ class ImportService {
 
       final blobResults = <String, String?>{};
       if (blobData.isNotEmpty) {
-        onInstrument?.call('extractingRichContent', 'rustExtraction', 'start');
-        onProgress(
-          'extractingRichContent',
-          0.44,
-          'Extracting ${blobData.length} rich messages using Rust...',
-          stageProgress: 0.0,
-          stageCurrent: 0,
-          stageTotal: blobData.length,
-        );
+        final extractorAvailable = await _extractor.isAvailable();
+        if (!extractorAvailable) {
+          _debugSettings.logError(
+            'Rust extractor unavailable; skipping rich text extraction for ${blobData.length} messages.',
+          );
+          result.warnings.add(
+            'Rust extractor unavailable; ${blobData.length} rich messages will be imported without extracted text.',
+          );
+          onProgress(
+            'extractingRichContent',
+            0.44,
+            'Skipping rich text extraction; extractor unavailable.',
+            stageProgress: 1.0,
+            stageCurrent: 0,
+            stageTotal: blobData.length,
+          );
+        } else {
+          var rustExtractionStarted = false;
+          var processResultsStarted = false;
+          onInstrument?.call(
+            'extractingRichContent',
+            'rustExtraction',
+            'start',
+          );
+          rustExtractionStarted = true;
+          try {
+            onProgress(
+              'extractingRichContent',
+              0.44,
+              'Extracting ${blobData.length} rich messages using Rust...',
+              stageProgress: 0.0,
+              stageCurrent: 0,
+              stageTotal: blobData.length,
+            );
 
-        final rustTextMap = await _extractor.extractAllMessageTexts(
-          limit: _rustExtractLimit,
-          dbPath: _messagesDbPath,
-        );
-        onInstrument?.call(
-          'extractingRichContent',
-          'rustExtraction',
-          'end',
-          itemCount: blobData.length,
-        );
+            final rustTextMap = await _extractor.extractAllMessageTexts(
+              limit: _rustExtractLimit,
+              dbPath: _messagesDbPath,
+            );
 
-        onInstrument?.call('extractingRichContent', 'processResults', 'start');
-        onProgress(
-          'extractingRichContent',
-          0.45,
-          'Processing extraction results...',
-          stageProgress: 0.3,
-          stageCurrent: 0,
-          stageTotal: blobMessages.length,
-        );
-
-        var processedCount = 0;
-        for (final entry in blobMessages.entries) {
-          final messageId = entry.key;
-          final messageRowId = int.parse(messageId);
-          final extractedText = rustTextMap[messageRowId];
-          blobResults[messageId] = extractedText;
-
-          processedCount++;
-          if (processedCount % 100 == 0 ||
-              processedCount == blobMessages.length) {
+            onInstrument?.call(
+              'extractingRichContent',
+              'processResults',
+              'start',
+            );
+            processResultsStarted = true;
             onProgress(
               'extractingRichContent',
               0.45,
-              'Processing extraction results... ($processedCount/${blobMessages.length})',
-              stageProgress: 0.3 + (processedCount / blobMessages.length * 0.5),
-              stageCurrent: processedCount,
+              'Processing extraction results...',
+              stageProgress: 0.3,
+              stageCurrent: 0,
               stageTotal: blobMessages.length,
             );
+
+            var processedCount = 0;
+            for (final entry in blobMessages.entries) {
+              final messageId = entry.key;
+              final messageRowId = int.parse(messageId);
+              final extractedText = rustTextMap[messageRowId];
+              blobResults[messageId] = extractedText;
+
+              processedCount++;
+              if (processedCount % 100 == 0 ||
+                  processedCount == blobMessages.length) {
+                onProgress(
+                  'extractingRichContent',
+                  0.45,
+                  'Processing extraction results... ($processedCount/${blobMessages.length})',
+                  stageProgress:
+                      0.3 + (processedCount / blobMessages.length * 0.5),
+                  stageCurrent: processedCount,
+                  stageTotal: blobMessages.length,
+                );
+              }
+            }
+          } catch (e) {
+            _debugSettings.logError(
+              'Rust extractor failed: $e. Falling back to raw message bodies.',
+            );
+            result.warnings.add(
+              'Rich text extraction failed; continuing without extracted text: $e',
+            );
+            onProgress(
+              'extractingRichContent',
+              0.45,
+              'Rich text extraction failed; continuing without extracted text.',
+              stageProgress: 1.0,
+              stageCurrent: 0,
+              stageTotal: blobData.length,
+            );
+          } finally {
+            if (processResultsStarted) {
+              onInstrument?.call(
+                'extractingRichContent',
+                'processResults',
+                'end',
+                itemCount: blobMessages.length,
+              );
+            }
+            if (rustExtractionStarted) {
+              onInstrument?.call(
+                'extractingRichContent',
+                'rustExtraction',
+                'end',
+                itemCount: blobData.length,
+              );
+            }
           }
         }
-        onInstrument?.call(
-          'extractingRichContent',
-          'processResults',
-          'end',
-          itemCount: blobMessages.length,
-        );
       }
 
       // Import direct text messages

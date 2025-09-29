@@ -18,6 +18,7 @@ class DbImportControlState {
     this.currentStage,
     this.viewMode = ImportViewMode.progress,
     this.timings = const [],
+    this.showingDebugPanel = false,
   });
 
   final ImportMode selectedMode;
@@ -28,6 +29,7 @@ class DbImportControlState {
   final String? currentStage;
   final ImportViewMode viewMode;
   final List<ImportSubtaskTiming> timings;
+  final bool showingDebugPanel;
 
   DbImportControlState copyWith({
     ImportMode? selectedMode,
@@ -38,6 +40,7 @@ class DbImportControlState {
     String? currentStage,
     ImportViewMode? viewMode,
     List<ImportSubtaskTiming>? timings,
+    bool? showingDebugPanel,
   }) {
     return DbImportControlState(
       selectedMode: selectedMode ?? this.selectedMode,
@@ -48,6 +51,7 @@ class DbImportControlState {
       currentStage: currentStage ?? this.currentStage,
       viewMode: viewMode ?? this.viewMode,
       timings: timings ?? this.timings,
+      showingDebugPanel: showingDebugPanel ?? this.showingDebugPanel,
     );
   }
 }
@@ -67,6 +71,17 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
     if (state.viewMode != mode) {
       state = state.copyWith(viewMode: mode);
     }
+  }
+
+  void setDebugPanelVisible({required bool isVisible}) {
+    if (state.showingDebugPanel == isVisible) {
+      return;
+    }
+    state = state.copyWith(showingDebugPanel: isVisible);
+  }
+
+  void toggleDebugPanel() {
+    state = state.copyWith(showingDebugPanel: !state.showingDebugPanel);
   }
 
   void reset() {
@@ -238,6 +253,7 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
       progress: 0.0,
       stages: stages,
       timings: const [],
+      showingDebugPanel: false,
     );
 
     try {
@@ -308,6 +324,7 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
       progress: 0.0,
       stages: stages,
       timings: const [],
+      showingDebugPanel: false,
     );
 
     try {

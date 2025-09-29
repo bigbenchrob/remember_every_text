@@ -1,6 +1,7 @@
 // panel_switcher.dart
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../domain/entities/features/chats_spec.dart';
 import '../domain/entities/view_spec.dart';
 import '../domain/navigation_constants.dart';
 
@@ -11,7 +12,7 @@ class PanelsViewState extends _$PanelsViewState {
   /// Map from WindowPanel -> current ViewSpec to render.
   @override
   Map<WindowPanel, ViewSpec?> build() => {
-    WindowPanel.left: null,
+    WindowPanel.left: const ViewSpec.chats(ChatsSpec.recent(limit: 5)),
     WindowPanel.center: null,
     WindowPanel.right: null,
   };

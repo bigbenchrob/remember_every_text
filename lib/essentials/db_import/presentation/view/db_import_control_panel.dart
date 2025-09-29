@@ -30,27 +30,62 @@ class DbImportControlPanel extends ConsumerWidget {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            CupertinoSegmentedControl<ImportMode>(
-              groupValue: controlState.selectedMode,
-              onValueChanged: (value) {
-                notifier.setMode(value);
-              },
-              children: const {
-                ImportMode.import: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Text('Import'),
+            Row(
+              children: [
+                Expanded(
+                  child: CupertinoSegmentedControl<ImportMode>(
+                    groupValue: controlState.selectedMode,
+                    onValueChanged: (value) {
+                      notifier.setMode(value);
+                    },
+                    children: const {
+                      ImportMode.import: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        child: Text('Import'),
+                      ),
+                      ImportMode.migration: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        child: Text('Migration'),
+                      ),
+                    },
+                  ),
                 ),
-                ImportMode.migration: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Text('Migration'),
+                const SizedBox(width: 12),
+                MacosTooltip(
+                  message: controlState.showingDebugPanel
+                      ? 'Close debug settings'
+                      : 'Open debug settings',
+                  child: MacosIconButton(
+                    semanticLabel: controlState.showingDebugPanel
+                        ? 'Close debug settings'
+                        : 'Open debug settings',
+                    icon: MacosIcon(
+                      controlState.showingDebugPanel
+                          ? CupertinoIcons.xmark
+                          : CupertinoIcons.ant,
+                    ),
+                    boxConstraints: const BoxConstraints(
+                      minWidth: 30,
+                      minHeight: 30,
+                    ),
+                    onPressed: notifier.toggleDebugPanel,
+                  ),
                 ),
-              },
+              ],
             ),
             const SizedBox(height: 24),
             Expanded(
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 250),
-                child: controlState.selectedMode == ImportMode.import
+                child: controlState.showingDebugPanel
+                    ? const _DebugPanelView(key: ValueKey('debug-controls'))
+                    : controlState.selectedMode == ImportMode.import
                     ? _ImportControls(
                         key: const ValueKey('import-controls'),
                         controlState: controlState,
@@ -140,9 +175,21 @@ class _ImportControls extends StatelessWidget {
               ),
             ),
           ),
-        const SizedBox(height: 16),
-        const DbImportDebugPanel(),
       ],
+    );
+  }
+}
+
+class _DebugPanelView extends StatelessWidget {
+  const _DebugPanelView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Align(
+      alignment: Alignment.topCenter,
+      child: SingleChildScrollView(
+        child: SizedBox(width: double.infinity, child: DbImportDebugPanel()),
+      ),
     );
   }
 }

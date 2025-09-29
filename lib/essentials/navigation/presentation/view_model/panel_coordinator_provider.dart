@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../features/chats/presentation/view/chats_sidebar_view.dart';
 import '../../../db_import/presentation/view/db_import_control_panel.dart';
 import '../../../db_import/presentation/view_model/db_import_control_provider.dart';
 import '../../../import/domain/feature_constants.dart';
@@ -30,7 +31,7 @@ class PanelCoordinator extends _$PanelCoordinator {
 
     return viewSpec.when(
       messages: (_) => _buildEmptyPanelPlaceholder(panel),
-      chats: (_) => _buildEmptyPanelPlaceholder(panel),
+      chats: (chatsSpec) => ChatsSidebarView(spec: chatsSpec),
       contacts: (_) => _buildEmptyPanelPlaceholder(panel),
       import: (spec) => _buildImportPanel(spec),
     );
