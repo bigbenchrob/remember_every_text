@@ -91,3 +91,25 @@ Either<ValueFailure<String>, String> validateMacFilePath(String input) {
     return left(ValueFailure.invalidFilePath(failedValue: input));
   }
 }
+
+Either<ValueFailure<String>, String> validateSupabaseApiUrl(String input) {
+  return validateStringNotEmpty(input).flatMap((value) {
+    final uri = Uri.tryParse(value);
+    if (uri == null) {
+      return left(ValueFailure.invalidSupabaseUrl(failedValue: value));
+    }
+    if (!uri.hasScheme || !uri.hasAuthority) {
+      return left(ValueFailure.invalidSupabaseUrl(failedValue: value));
+    }
+    if (uri.scheme != 'https') {
+      return left(ValueFailure.invalidSupabaseUrl(failedValue: value));
+    }
+    return right(value);
+  });
+}
+
+Either<ValueFailure<String>, String> validateSupabaseServiceRoleKey(
+  String input,
+) {
+  return validateStringNotEmpty(input);
+}

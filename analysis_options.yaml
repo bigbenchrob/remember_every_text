@@ -62,6 +62,7 @@ analyzer:
     - "lib/**/*.freezed.dart"
     - "lib/**/*.g.dart"
     - "lib/**/*.gr.dart"
+    - "_third_party_tmp/**"
 
 enable-experiment:
   - records

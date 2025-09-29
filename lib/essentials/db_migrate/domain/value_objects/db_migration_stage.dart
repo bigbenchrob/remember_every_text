@@ -15,6 +15,7 @@ enum DbMigrationStage {
     'updatingProjectionState',
     'Updating projection state',
   ),
+  mirroringSupabase('mirroringSupabase', 'Mirroring to Supabase'),
   completed('completed', 'Projection completed');
 
   const DbMigrationStage(this.key, this.label);

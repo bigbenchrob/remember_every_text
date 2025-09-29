@@ -3,7 +3,16 @@ import 'package:drift/drift.dart';
 part 'drift_db.g.dart';
 
 @DriftDatabase(
-  tables: [Contacts, Handles, Chats, ChatParticipants, Messages, Attachments],
+  tables: [
+    Contacts,
+    Handles,
+    Chats,
+    ChatParticipants,
+    Messages,
+    Attachments,
+    SupabaseSyncState,
+    SupabaseSyncLogs,
+  ],
 )
 class DriftDb extends _$DriftDb {
   DriftDb(QueryExecutor e) : super(e);
@@ -109,4 +118,32 @@ class Attachments extends Table {
   TextColumn get thumbnailPath => text().nullable()();
   IntColumn get importSourceId => integer().nullable()();
   IntColumn get importLastSyncedAt => integer().nullable()();
+}
+
+// ========== SUPABASE SYNC STATE ==========
+class SupabaseSyncState extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get targetTable => text()();
+  IntColumn get lastBatchId => integer().nullable()();
+  IntColumn get lastSyncedRowId => integer().nullable()();
+  TextColumn get lastSyncedGuid => text().nullable()();
+  DateTimeColumn get lastSyncedAt => dateTime().nullable()();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {targetTable},
+  ];
+}
+
+// ========== SUPABASE SYNC LOGS ==========
+class SupabaseSyncLogs extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get batchId => integer().nullable()();
+  TextColumn get targetTable => text().nullable()();
+  TextColumn get status => text().nullable()();
+  IntColumn get attempt => integer().withDefault(const Constant(1))();
+  TextColumn get requestId => text().nullable()();
+  TextColumn get message => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }

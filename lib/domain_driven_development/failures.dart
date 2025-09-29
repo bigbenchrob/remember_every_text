@@ -28,6 +28,8 @@ abstract class ValueFailure<T> with _$ValueFailure<T> {
       ShortPassword<T>;
   const factory ValueFailure.invalidPhotoUrl({required T failedValue}) =
       InvalidPhotoUrl<T>;
+  const factory ValueFailure.invalidSupabaseUrl({required T failedValue}) =
+      InvalidSupabaseUrl<T>;
   const factory ValueFailure.invalidFolderPath({required T failedValue}) =
       InvalidFolderPath<T>;
   const factory ValueFailure.invalidFilePath({required T failedValue}) =

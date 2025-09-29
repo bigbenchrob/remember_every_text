@@ -9,6 +9,7 @@ import '../../../import/application/debug_settings_provider.dart';
 import '../../domain/entities/db_migration_result.dart';
 import '../../domain/states/db_migration_progress.dart';
 import '../../domain/value_objects/db_migration_stage.dart';
+import '../application_providers/supabase_mirror_sync_service_provider.dart';
 
 typedef DbMigrationProgressCallback =
     void Function(DbMigrationProgress progress);
@@ -165,6 +166,16 @@ class LedgerToWorkingMigrationService {
         'Updating projection state metadata',
       );
       await _updateProjectionState(workingDb: workingDb, batchId: batchId);
+
+      emit(
+        DbMigrationStage.mirroringSupabase,
+        0.98,
+        'Mirroring working projection to Supabase',
+      );
+      final mirrorService = await ref.watch(
+        supabaseMirrorSyncServiceProvider.future,
+      );
+      await mirrorService.syncAllPendingBatches();
 
       emit(
         DbMigrationStage.completed,

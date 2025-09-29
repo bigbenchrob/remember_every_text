@@ -79,3 +79,5 @@ flutter:
 dependency_overrides:
   macos_ui:
     path: packages/macos_ui_patched
+  custom_lint:
+    path: _third_party_tmp/custom_lint

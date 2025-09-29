@@ -86,7 +86,7 @@ extension ValueFailurePatterns<T> on ValueFailure<T> {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ExceedingLength<T> value)?  exceedingLength,TResult Function( InsufficientLength<T> value)?  insufficientLength,TResult Function( Empty<T> value)?  empty,TResult Function( Multiline<T> value)?  multiline,TResult Function( NumberTooLarge<T> value)?  numberTooLarge,TResult Function( ListTooLong<T> value)?  listTooLong,TResult Function( InvalidEmail<T> value)?  invalidEmail,TResult Function( ShortPassword<T> value)?  shortPassword,TResult Function( InvalidPhotoUrl<T> value)?  invalidPhotoUrl,TResult Function( InvalidFolderPath<T> value)?  invalidFolderPath,TResult Function( InvalidFilePath<T> value)?  invalidFilePath,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ExceedingLength<T> value)?  exceedingLength,TResult Function( InsufficientLength<T> value)?  insufficientLength,TResult Function( Empty<T> value)?  empty,TResult Function( Multiline<T> value)?  multiline,TResult Function( NumberTooLarge<T> value)?  numberTooLarge,TResult Function( ListTooLong<T> value)?  listTooLong,TResult Function( InvalidEmail<T> value)?  invalidEmail,TResult Function( ShortPassword<T> value)?  shortPassword,TResult Function( InvalidPhotoUrl<T> value)?  invalidPhotoUrl,TResult Function( InvalidSupabaseUrl<T> value)?  invalidSupabaseUrl,TResult Function( InvalidFolderPath<T> value)?  invalidFolderPath,TResult Function( InvalidFilePath<T> value)?  invalidFilePath,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case ExceedingLength() when exceedingLength != null:
@@ -98,7 +98,8 @@ return numberTooLarge(_that);case ListTooLong() when listTooLong != null:
 return listTooLong(_that);case InvalidEmail() when invalidEmail != null:
 return invalidEmail(_that);case ShortPassword() when shortPassword != null:
 return shortPassword(_that);case InvalidPhotoUrl() when invalidPhotoUrl != null:
-return invalidPhotoUrl(_that);case InvalidFolderPath() when invalidFolderPath != null:
+return invalidPhotoUrl(_that);case InvalidSupabaseUrl() when invalidSupabaseUrl != null:
+return invalidSupabaseUrl(_that);case InvalidFolderPath() when invalidFolderPath != null:
 return invalidFolderPath(_that);case InvalidFilePath() when invalidFilePath != null:
 return invalidFilePath(_that);case _:
   return orElse();
@@ -118,7 +119,7 @@ return invalidFilePath(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ExceedingLength<T> value)  exceedingLength,required TResult Function( InsufficientLength<T> value)  insufficientLength,required TResult Function( Empty<T> value)  empty,required TResult Function( Multiline<T> value)  multiline,required TResult Function( NumberTooLarge<T> value)  numberTooLarge,required TResult Function( ListTooLong<T> value)  listTooLong,required TResult Function( InvalidEmail<T> value)  invalidEmail,required TResult Function( ShortPassword<T> value)  shortPassword,required TResult Function( InvalidPhotoUrl<T> value)  invalidPhotoUrl,required TResult Function( InvalidFolderPath<T> value)  invalidFolderPath,required TResult Function( InvalidFilePath<T> value)  invalidFilePath,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ExceedingLength<T> value)  exceedingLength,required TResult Function( InsufficientLength<T> value)  insufficientLength,required TResult Function( Empty<T> value)  empty,required TResult Function( Multiline<T> value)  multiline,required TResult Function( NumberTooLarge<T> value)  numberTooLarge,required TResult Function( ListTooLong<T> value)  listTooLong,required TResult Function( InvalidEmail<T> value)  invalidEmail,required TResult Function( ShortPassword<T> value)  shortPassword,required TResult Function( InvalidPhotoUrl<T> value)  invalidPhotoUrl,required TResult Function( InvalidSupabaseUrl<T> value)  invalidSupabaseUrl,required TResult Function( InvalidFolderPath<T> value)  invalidFolderPath,required TResult Function( InvalidFilePath<T> value)  invalidFilePath,}){
 final _that = this;
 switch (_that) {
 case ExceedingLength():
@@ -130,7 +131,8 @@ return numberTooLarge(_that);case ListTooLong():
 return listTooLong(_that);case InvalidEmail():
 return invalidEmail(_that);case ShortPassword():
 return shortPassword(_that);case InvalidPhotoUrl():
-return invalidPhotoUrl(_that);case InvalidFolderPath():
+return invalidPhotoUrl(_that);case InvalidSupabaseUrl():
+return invalidSupabaseUrl(_that);case InvalidFolderPath():
 return invalidFolderPath(_that);case InvalidFilePath():
 return invalidFilePath(_that);case _:
   throw StateError('Unexpected subclass');
@@ -149,7 +151,7 @@ return invalidFilePath(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ExceedingLength<T> value)?  exceedingLength,TResult? Function( InsufficientLength<T> value)?  insufficientLength,TResult? Function( Empty<T> value)?  empty,TResult? Function( Multiline<T> value)?  multiline,TResult? Function( NumberTooLarge<T> value)?  numberTooLarge,TResult? Function( ListTooLong<T> value)?  listTooLong,TResult? Function( InvalidEmail<T> value)?  invalidEmail,TResult? Function( ShortPassword<T> value)?  shortPassword,TResult? Function( InvalidPhotoUrl<T> value)?  invalidPhotoUrl,TResult? Function( InvalidFolderPath<T> value)?  invalidFolderPath,TResult? Function( InvalidFilePath<T> value)?  invalidFilePath,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ExceedingLength<T> value)?  exceedingLength,TResult? Function( InsufficientLength<T> value)?  insufficientLength,TResult? Function( Empty<T> value)?  empty,TResult? Function( Multiline<T> value)?  multiline,TResult? Function( NumberTooLarge<T> value)?  numberTooLarge,TResult? Function( ListTooLong<T> value)?  listTooLong,TResult? Function( InvalidEmail<T> value)?  invalidEmail,TResult? Function( ShortPassword<T> value)?  shortPassword,TResult? Function( InvalidPhotoUrl<T> value)?  invalidPhotoUrl,TResult? Function( InvalidSupabaseUrl<T> value)?  invalidSupabaseUrl,TResult? Function( InvalidFolderPath<T> value)?  invalidFolderPath,TResult? Function( InvalidFilePath<T> value)?  invalidFilePath,}){
 final _that = this;
 switch (_that) {
 case ExceedingLength() when exceedingLength != null:
@@ -161,7 +163,8 @@ return numberTooLarge(_that);case ListTooLong() when listTooLong != null:
 return listTooLong(_that);case InvalidEmail() when invalidEmail != null:
 return invalidEmail(_that);case ShortPassword() when shortPassword != null:
 return shortPassword(_that);case InvalidPhotoUrl() when invalidPhotoUrl != null:
-return invalidPhotoUrl(_that);case InvalidFolderPath() when invalidFolderPath != null:
+return invalidPhotoUrl(_that);case InvalidSupabaseUrl() when invalidSupabaseUrl != null:
+return invalidSupabaseUrl(_that);case InvalidFolderPath() when invalidFolderPath != null:
 return invalidFolderPath(_that);case InvalidFilePath() when invalidFilePath != null:
 return invalidFilePath(_that);case _:
   return null;
@@ -180,7 +183,7 @@ return invalidFilePath(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( T failedValue,  int max)?  exceedingLength,TResult Function( T failedValue,  int min)?  insufficientLength,TResult Function( T failedValue)?  empty,TResult Function( T failedValue)?  multiline,TResult Function( T failedValue,  num max)?  numberTooLarge,TResult Function( T failedValue,  int max)?  listTooLong,TResult Function( T failedValue)?  invalidEmail,TResult Function( T failedValue)?  shortPassword,TResult Function( T failedValue)?  invalidPhotoUrl,TResult Function( T failedValue)?  invalidFolderPath,TResult Function( T failedValue)?  invalidFilePath,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( T failedValue,  int max)?  exceedingLength,TResult Function( T failedValue,  int min)?  insufficientLength,TResult Function( T failedValue)?  empty,TResult Function( T failedValue)?  multiline,TResult Function( T failedValue,  num max)?  numberTooLarge,TResult Function( T failedValue,  int max)?  listTooLong,TResult Function( T failedValue)?  invalidEmail,TResult Function( T failedValue)?  shortPassword,TResult Function( T failedValue)?  invalidPhotoUrl,TResult Function( T failedValue)?  invalidSupabaseUrl,TResult Function( T failedValue)?  invalidFolderPath,TResult Function( T failedValue)?  invalidFilePath,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case ExceedingLength() when exceedingLength != null:
 return exceedingLength(_that.failedValue,_that.max);case InsufficientLength() when insufficientLength != null:
@@ -191,7 +194,8 @@ return numberTooLarge(_that.failedValue,_that.max);case ListTooLong() when listT
 return listTooLong(_that.failedValue,_that.max);case InvalidEmail() when invalidEmail != null:
 return invalidEmail(_that.failedValue);case ShortPassword() when shortPassword != null:
 return shortPassword(_that.failedValue);case InvalidPhotoUrl() when invalidPhotoUrl != null:
-return invalidPhotoUrl(_that.failedValue);case InvalidFolderPath() when invalidFolderPath != null:
+return invalidPhotoUrl(_that.failedValue);case InvalidSupabaseUrl() when invalidSupabaseUrl != null:
+return invalidSupabaseUrl(_that.failedValue);case InvalidFolderPath() when invalidFolderPath != null:
 return invalidFolderPath(_that.failedValue);case InvalidFilePath() when invalidFilePath != null:
 return invalidFilePath(_that.failedValue);case _:
   return orElse();
@@ -211,7 +215,7 @@ return invalidFilePath(_that.failedValue);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( T failedValue,  int max)  exceedingLength,required TResult Function( T failedValue,  int min)  insufficientLength,required TResult Function( T failedValue)  empty,required TResult Function( T failedValue)  multiline,required TResult Function( T failedValue,  num max)  numberTooLarge,required TResult Function( T failedValue,  int max)  listTooLong,required TResult Function( T failedValue)  invalidEmail,required TResult Function( T failedValue)  shortPassword,required TResult Function( T failedValue)  invalidPhotoUrl,required TResult Function( T failedValue)  invalidFolderPath,required TResult Function( T failedValue)  invalidFilePath,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( T failedValue,  int max)  exceedingLength,required TResult Function( T failedValue,  int min)  insufficientLength,required TResult Function( T failedValue)  empty,required TResult Function( T failedValue)  multiline,required TResult Function( T failedValue,  num max)  numberTooLarge,required TResult Function( T failedValue,  int max)  listTooLong,required TResult Function( T failedValue)  invalidEmail,required TResult Function( T failedValue)  shortPassword,required TResult Function( T failedValue)  invalidPhotoUrl,required TResult Function( T failedValue)  invalidSupabaseUrl,required TResult Function( T failedValue)  invalidFolderPath,required TResult Function( T failedValue)  invalidFilePath,}) {final _that = this;
 switch (_that) {
 case ExceedingLength():
 return exceedingLength(_that.failedValue,_that.max);case InsufficientLength():
@@ -222,7 +226,8 @@ return numberTooLarge(_that.failedValue,_that.max);case ListTooLong():
 return listTooLong(_that.failedValue,_that.max);case InvalidEmail():
 return invalidEmail(_that.failedValue);case ShortPassword():
 return shortPassword(_that.failedValue);case InvalidPhotoUrl():
-return invalidPhotoUrl(_that.failedValue);case InvalidFolderPath():
+return invalidPhotoUrl(_that.failedValue);case InvalidSupabaseUrl():
+return invalidSupabaseUrl(_that.failedValue);case InvalidFolderPath():
 return invalidFolderPath(_that.failedValue);case InvalidFilePath():
 return invalidFilePath(_that.failedValue);case _:
   throw StateError('Unexpected subclass');
@@ -241,7 +246,7 @@ return invalidFilePath(_that.failedValue);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( T failedValue,  int max)?  exceedingLength,TResult? Function( T failedValue,  int min)?  insufficientLength,TResult? Function( T failedValue)?  empty,TResult? Function( T failedValue)?  multiline,TResult? Function( T failedValue,  num max)?  numberTooLarge,TResult? Function( T failedValue,  int max)?  listTooLong,TResult? Function( T failedValue)?  invalidEmail,TResult? Function( T failedValue)?  shortPassword,TResult? Function( T failedValue)?  invalidPhotoUrl,TResult? Function( T failedValue)?  invalidFolderPath,TResult? Function( T failedValue)?  invalidFilePath,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( T failedValue,  int max)?  exceedingLength,TResult? Function( T failedValue,  int min)?  insufficientLength,TResult? Function( T failedValue)?  empty,TResult? Function( T failedValue)?  multiline,TResult? Function( T failedValue,  num max)?  numberTooLarge,TResult? Function( T failedValue,  int max)?  listTooLong,TResult? Function( T failedValue)?  invalidEmail,TResult? Function( T failedValue)?  shortPassword,TResult? Function( T failedValue)?  invalidPhotoUrl,TResult? Function( T failedValue)?  invalidSupabaseUrl,TResult? Function( T failedValue)?  invalidFolderPath,TResult? Function( T failedValue)?  invalidFilePath,}) {final _that = this;
 switch (_that) {
 case ExceedingLength() when exceedingLength != null:
 return exceedingLength(_that.failedValue,_that.max);case InsufficientLength() when insufficientLength != null:
@@ -252,7 +257,8 @@ return numberTooLarge(_that.failedValue,_that.max);case ListTooLong() when listT
 return listTooLong(_that.failedValue,_that.max);case InvalidEmail() when invalidEmail != null:
 return invalidEmail(_that.failedValue);case ShortPassword() when shortPassword != null:
 return shortPassword(_that.failedValue);case InvalidPhotoUrl() when invalidPhotoUrl != null:
-return invalidPhotoUrl(_that.failedValue);case InvalidFolderPath() when invalidFolderPath != null:
+return invalidPhotoUrl(_that.failedValue);case InvalidSupabaseUrl() when invalidSupabaseUrl != null:
+return invalidSupabaseUrl(_that.failedValue);case InvalidFolderPath() when invalidFolderPath != null:
 return invalidFolderPath(_that.failedValue);case InvalidFilePath() when invalidFilePath != null:
 return invalidFilePath(_that.failedValue);case _:
   return null;
@@ -856,6 +862,72 @@ class _$InvalidPhotoUrlCopyWithImpl<T,$Res>
 /// with the given fields replaced by the non-null parameter values.
 @override @pragma('vm:prefer-inline') $Res call({Object? failedValue = freezed,}) {
   return _then(InvalidPhotoUrl<T>(
+failedValue: freezed == failedValue ? _self.failedValue : failedValue // ignore: cast_nullable_to_non_nullable
+as T,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class InvalidSupabaseUrl<T> implements ValueFailure<T> {
+  const InvalidSupabaseUrl({required this.failedValue});
+  
+
+@override final  T failedValue;
+
+/// Create a copy of ValueFailure
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$InvalidSupabaseUrlCopyWith<T, InvalidSupabaseUrl<T>> get copyWith => _$InvalidSupabaseUrlCopyWithImpl<T, InvalidSupabaseUrl<T>>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvalidSupabaseUrl<T>&&const DeepCollectionEquality().equals(other.failedValue, failedValue));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(failedValue));
+
+@override
+String toString() {
+  return 'ValueFailure<$T>.invalidSupabaseUrl(failedValue: $failedValue)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $InvalidSupabaseUrlCopyWith<T,$Res> implements $ValueFailureCopyWith<T, $Res> {
+  factory $InvalidSupabaseUrlCopyWith(InvalidSupabaseUrl<T> value, $Res Function(InvalidSupabaseUrl<T>) _then) = _$InvalidSupabaseUrlCopyWithImpl;
+@override @useResult
+$Res call({
+ T failedValue
+});
+
+
+
+
+}
+/// @nodoc
+class _$InvalidSupabaseUrlCopyWithImpl<T,$Res>
+    implements $InvalidSupabaseUrlCopyWith<T, $Res> {
+  _$InvalidSupabaseUrlCopyWithImpl(this._self, this._then);
+
+  final InvalidSupabaseUrl<T> _self;
+  final $Res Function(InvalidSupabaseUrl<T>) _then;
+
+/// Create a copy of ValueFailure
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? failedValue = freezed,}) {
+  return _then(InvalidSupabaseUrl<T>(
 failedValue: freezed == failedValue ? _self.failedValue : failedValue // ignore: cast_nullable_to_non_nullable
 as T,
   ));
