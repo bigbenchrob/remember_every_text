@@ -26,7 +26,7 @@ class WorkingDatabase extends _$WorkingDatabase {
   WorkingDatabase(QueryExecutor executor) : super(executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -37,6 +37,9 @@ class WorkingDatabase extends _$WorkingDatabase {
       await _seedProjectionState();
     },
     onUpgrade: (Migrator m, int from, int to) async {
+      if (from < 2) {
+        await _ensureMessageReadMarksTable(m);
+      }
       await _createIndexes();
       await _createVirtualTablesAndTriggers();
       await _seedProjectionState();
@@ -59,6 +62,16 @@ class WorkingDatabase extends _$WorkingDatabase {
     await customStatement(
       'INSERT OR IGNORE INTO projection_state (id, last_import_batch_id, last_projected_at_utc) VALUES (1, NULL, NULL)',
     );
+  }
+
+  Future<void> _ensureMessageReadMarksTable(Migrator migrator) async {
+    final existing = await customSelect(
+      "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'message_read_marks'",
+    ).getSingleOrNull();
+
+    if (existing == null) {
+      await migrator.createTable(messageReadMarks);
+    }
   }
 }
 
@@ -208,11 +221,14 @@ class WorkingSchemaMigrations extends Table {
   @override
   String get tableName => 'schema_migrations';
 
-  IntColumn get version =>
-      integer().named('version').customConstraint('PRIMARY KEY NOT NULL')();
+  IntColumn get version => integer().named('version')();
   TextColumn get appliedAtUtc => text().named('applied_at_utc')();
+
+  @override
+  Set<Column> get primaryKey => {version};
 }
 
+/// Singleton table to track projection state. (Ensured to have only one row with id=1 by constraint)
 class ProjectionState extends Table {
   @override
   String get tableName => 'projection_state';
@@ -220,11 +236,14 @@ class ProjectionState extends Table {
   IntColumn get id => integer()
       .named('id')
       .clientDefault(() => 1)
-      .customConstraint('PRIMARY KEY NOT NULL CHECK(id=1)')();
+      .customConstraint('NOT NULL CHECK(id=1)')(); // removed PRIMARY KEY here
   IntColumn get lastImportBatchId =>
       integer().named('last_import_batch_id').nullable()();
   TextColumn get lastProjectedAtUtc =>
       text().named('last_projected_at_utc').nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id}; // single source of truth for PK
 }
 
 class AppSettings extends Table {
@@ -248,7 +267,7 @@ class WorkingIdentities extends Table {
   TextColumn get service => text()
       .named('service')
       .customConstraint(
-        "NOT NULL DEFAULT 'Unknown' CHECK(service IN ('iMessage','SMS','Unknown'))",
+        "NOT NULL DEFAULT 'Unknown' CHECK(service IN ('iMessage','iMessageLite','SMS','RCS','Unknown'))",
       )();
   TextColumn get displayName => text().named('display_name').nullable()();
   TextColumn get contactRef => text().named('contact_ref').nullable()();
@@ -284,7 +303,7 @@ class WorkingChats extends Table {
   TextColumn get service => text()
       .named('service')
       .customConstraint(
-        "NOT NULL DEFAULT 'Unknown' CHECK(service IN ('iMessage','SMS','Unknown'))",
+        "NOT NULL DEFAULT 'Unknown' CHECK(service IN ('iMessage','iMessageLite','SMS','RCS','Unknown'))",
       )();
   BoolColumn get isGroup =>
       boolean().named('is_group').withDefault(const Constant(false))();

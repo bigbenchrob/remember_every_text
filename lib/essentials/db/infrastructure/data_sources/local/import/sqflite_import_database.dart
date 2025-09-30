@@ -1,3 +1,5 @@
+// ignore_for_file: prefer_single_quotes
+
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -15,7 +17,7 @@ class SqfliteImportDatabase {
        _databaseName = databaseName,
        _debugSettings = debugSettings;
 
-  static const int _schemaVersion = 1;
+  static const int _schemaVersion = 4;
 
   final String _databaseDirectory;
   final String _databaseName;
@@ -61,16 +63,53 @@ class SqfliteImportDatabase {
   }
 
   Future<void> _onCreate(Database db, int version) async {
-    final batch = db.batch();
-    _schemaStatements.forEach(batch.execute);
-    _indexStatements.forEach(batch.execute);
-    batch.execute(_expandedMessagesViewStatement);
-    await batch.commit(noResult: true);
+    _debugSettings.logDatabase(
+      'SqfliteImportDatabase._onCreate: creating schema version $version',
+    );
 
-    await db.insert('schema_migrations', <String, Object?>{
-      'version': version,
-      'applied_at_utc': DateTime.now().toUtc().toIso8601String(),
-    }, conflictAlgorithm: ConflictAlgorithm.replace);
+    try {
+      final batch = db.batch();
+
+      _debugSettings.logDatabase(
+        'SqfliteImportDatabase._onCreate: adding ${_schemaStatements.length} schema statements',
+      );
+      _schemaStatements.forEach(batch.execute);
+
+      _debugSettings.logDatabase(
+        'SqfliteImportDatabase._onCreate: adding ${_indexStatements.length} index statements',
+      );
+      _indexStatements.forEach(batch.execute);
+
+      _debugSettings.logDatabase(
+        'SqfliteImportDatabase._onCreate: adding expanded messages view',
+      );
+      batch.execute(_expandedMessagesViewStatement);
+
+      _debugSettings.logDatabase(
+        'SqfliteImportDatabase._onCreate: committing batch',
+      );
+      await batch.commit(noResult: true);
+
+      _debugSettings.logDatabase(
+        'SqfliteImportDatabase._onCreate: inserting schema migration record',
+      );
+      await db.insert('schema_migrations', <String, Object?>{
+        'version': version,
+        'applied_at_utc': DateTime.now().toUtc().toIso8601String(),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+
+      _debugSettings.logDatabase(
+        'SqfliteImportDatabase._onCreate: schema creation completed successfully',
+      );
+    } catch (e, stackTrace) {
+      _debugSettings.logDatabase(
+        'SqfliteImportDatabase._onCreate: ERROR creating schema: $e',
+      );
+      _debugSettings.logDatabase(
+        'SqfliteImportDatabase._onCreate: Stack trace: $stackTrace',
+      );
+      rethrow;
+    }
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -135,6 +174,14 @@ class SqfliteImportDatabase {
     String? notes,
   }) async {
     final db = await database;
+
+    // Safety check: ensure schema exists (in case database initialization failed)
+    await _ensureSchemaExists(db);
+
+    _debugSettings.logDatabase(
+      'SqfliteImportDatabase.insertImportBatch: creating batch with startedAtUtc=$startedAtUtc',
+    );
+
     final data = _cleanMap(<String, Object?>{
       'id': id,
       'started_at_utc': startedAtUtc,
@@ -144,10 +191,69 @@ class SqfliteImportDatabase {
       'host_info_json': hostInfoJson,
       'notes': notes,
     });
-    return db.insert(
+
+    final batchId = await db.insert(
       'import_batches',
       data,
       conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+
+    _debugSettings.logDatabase(
+      'SqfliteImportDatabase.insertImportBatch: created batch with ID=$batchId',
+    );
+
+    // Verify the batch was actually created
+    final verification = await db.query(
+      'import_batches',
+      where: 'id = ?',
+      whereArgs: [batchId],
+    );
+
+    if (verification.isEmpty) {
+      _debugSettings.logDatabase(
+        'SqfliteImportDatabase.insertImportBatch: ERROR - batch $batchId not found after creation!',
+      );
+      throw Exception(
+        'Failed to create import batch: batch $batchId not found after insertion',
+      );
+    }
+
+    _debugSettings.logDatabase(
+      'SqfliteImportDatabase.insertImportBatch: verified batch $batchId exists',
+    );
+
+    return batchId;
+  }
+
+  Future<void> updateImportBatch({
+    required int id,
+    String? finishedAtUtc,
+    String? notes,
+  }) async {
+    final db = await database;
+
+    _debugSettings.logDatabase(
+      'SqfliteImportDatabase.updateImportBatch: updating batch $id with finishedAtUtc=$finishedAtUtc, notes=$notes',
+    );
+
+    final data = _cleanMap(<String, Object?>{
+      'finished_at_utc': finishedAtUtc,
+      'notes': notes,
+    });
+
+    final updateCount = await db.update(
+      'import_batches',
+      data,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    if (updateCount == 0) {
+      throw Exception('Failed to update import batch: batch $id not found');
+    }
+
+    _debugSettings.logDatabase(
+      'SqfliteImportDatabase.updateImportBatch: successfully updated batch $id',
     );
   }
 
@@ -264,6 +370,25 @@ class SqfliteImportDatabase {
     required int batchId,
   }) async {
     final db = await database;
+
+    // Verify the batch exists before inserting handle
+    final batchExists = await db.query(
+      'import_batches',
+      where: 'id = ?',
+      whereArgs: [batchId],
+    );
+
+    if (batchExists.isEmpty) {
+      _debugSettings.logDatabase(
+        'SqfliteImportDatabase.insertHandle: ERROR - batch $batchId does not exist!',
+      );
+      throw Exception('Cannot insert handle: batch $batchId does not exist');
+    }
+
+    _debugSettings.logDatabase(
+      'SqfliteImportDatabase.insertHandle: inserting handle for batch $batchId, service=$service, rawIdentifier=$rawIdentifier',
+    );
+
     final data = _cleanMap(<String, Object?>{
       'id': id,
       'source_rowid': sourceRowid,
@@ -274,11 +399,28 @@ class SqfliteImportDatabase {
       'last_seen_utc': lastSeenUtc,
       'batch_id': batchId,
     });
-    return db.insert(
-      'handles',
-      data,
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+
+    try {
+      final handleId = await db.insert(
+        'handles',
+        data,
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+
+      _debugSettings.logDatabase(
+        'SqfliteImportDatabase.insertHandle: successfully created handle $handleId',
+      );
+
+      return handleId;
+    } catch (e) {
+      _debugSettings.logDatabase(
+        'SqfliteImportDatabase.insertHandle: ERROR inserting handle: $e',
+      );
+      _debugSettings.logDatabase(
+        'SqfliteImportDatabase.insertHandle: Failed data: $data',
+      );
+      rethrow;
+    }
   }
 
   Future<int> insertChat({
@@ -355,12 +497,52 @@ class SqfliteImportDatabase {
     required int batchId,
   }) async {
     final db = await database;
+
+    // Validate that the chat exists
+    final chatExists = await db.query(
+      'chats',
+      where: 'id = ?',
+      whereArgs: [chatId],
+    );
+
+    if (chatExists.isEmpty) {
+      _debugSettings.logDatabase(
+        'SqfliteImportDatabase.insertMessage: ERROR - chat $chatId does not exist!',
+      );
+      throw Exception('Cannot insert message: chat $chatId does not exist');
+    }
+
+    // Validate sender handle if provided
+    if (senderHandleId != null && senderHandleId != 0) {
+      final handleExists = await db.query(
+        'handles',
+        where: 'id = ?',
+        whereArgs: [senderHandleId],
+      );
+
+      if (handleExists.isEmpty) {
+        _debugSettings.logDatabase(
+          'SqfliteImportDatabase.insertMessage: ERROR - handle $senderHandleId does not exist!',
+        );
+        throw Exception(
+          'Cannot insert message: handle $senderHandleId does not exist',
+        );
+      }
+    }
+
+    // Handle sender_handle_id = 0 (treat as NULL)
+    final actualSenderHandleId = (senderHandleId == 0) ? null : senderHandleId;
+
+    _debugSettings.logDatabase(
+      'SqfliteImportDatabase.insertMessage: inserting message for chat $chatId, handle $actualSenderHandleId, guid $guid',
+    );
+
     final data = _cleanMap(<String, Object?>{
       'id': id,
       'source_rowid': sourceRowid,
       'guid': guid,
       'chat_id': chatId,
-      'sender_handle_id': senderHandleId,
+      'sender_handle_id': actualSenderHandleId,
       'service': service,
       'is_from_me': _boolToInt(isFromMe),
       'date_utc': dateUtc,
@@ -378,11 +560,18 @@ class SqfliteImportDatabase {
       'payload_json': payloadJson,
       'batch_id': batchId,
     });
-    return db.insert(
+
+    final insertedId = await db.insert(
       'messages',
       data,
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+
+    _debugSettings.logDatabase(
+      'SqfliteImportDatabase.insertMessage: SUCCESS - inserted message $id (returned ID: $insertedId)',
+    );
+
+    return insertedId;
   }
 
   Future<int> insertChatMessageJoinSource({
@@ -447,6 +636,42 @@ class SqfliteImportDatabase {
     int? sourceRowid,
   }) async {
     final db = await database;
+
+    // Validate that the message exists
+    final messageExists = await db.query(
+      'messages',
+      where: 'id = ?',
+      whereArgs: [messageId],
+    );
+
+    if (messageExists.isEmpty) {
+      _debugSettings.logDatabase(
+        'SqfliteImportDatabase.insertMessageAttachment: SKIPPING - message $messageId does not exist (likely filtered during validation)',
+      );
+      // Return -1 to indicate skipped insertion
+      return -1;
+    }
+
+    // Validate that the attachment exists
+    final attachmentExists = await db.query(
+      'attachments',
+      where: 'id = ?',
+      whereArgs: [attachmentId],
+    );
+
+    if (attachmentExists.isEmpty) {
+      _debugSettings.logDatabase(
+        'SqfliteImportDatabase.insertMessageAttachment: ERROR - attachment $attachmentId does not exist!',
+      );
+      throw Exception(
+        'Cannot insert message_attachment: attachment $attachmentId does not exist',
+      );
+    }
+
+    _debugSettings.logDatabase(
+      'SqfliteImportDatabase.insertMessageAttachment: linking message $messageId to attachment $attachmentId',
+    );
+
     final data = _cleanMap(<String, Object?>{
       'message_id': messageId,
       'attachment_id': attachmentId,
@@ -587,10 +812,10 @@ class SqfliteImportDatabase {
     "CREATE TABLE IF NOT EXISTS import_logs (id INTEGER PRIMARY KEY, batch_id INTEGER REFERENCES import_batches(id) ON DELETE SET NULL, at_utc TEXT NOT NULL, level TEXT NOT NULL CHECK(level IN ('debug','info','warn','error')), message TEXT NOT NULL, context_json TEXT)",
     'CREATE TABLE IF NOT EXISTS contacts (id INTEGER PRIMARY KEY, source_record_id INTEGER, display_name TEXT, given_name TEXT, family_name TEXT, organization TEXT, is_organization INTEGER NOT NULL DEFAULT 0 CHECK(is_organization IN (0,1)), created_at_utc TEXT, updated_at_utc TEXT, batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT)',
     "CREATE TABLE IF NOT EXISTS contact_channels (id INTEGER PRIMARY KEY, contact_id INTEGER NOT NULL REFERENCES contacts(id) ON DELETE CASCADE, kind TEXT NOT NULL CHECK(kind IN ('email','phone')), value TEXT NOT NULL, label TEXT, UNIQUE(kind, value))",
-    "CREATE TABLE IF NOT EXISTS handles (id INTEGER PRIMARY KEY, source_rowid INTEGER, service TEXT NOT NULL CHECK(service IN ('iMessage','SMS','Unknown')), raw_identifier TEXT NOT NULL, normalized_address TEXT, country TEXT, last_seen_utc TEXT, batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(service, raw_identifier))",
-    "CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT NOT NULL, service TEXT CHECK(service IN ('iMessage','SMS','Unknown')), display_name TEXT, is_group INTEGER NOT NULL DEFAULT 0 CHECK(is_group IN (0,1)), created_at_utc TEXT, updated_at_utc TEXT, batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(guid))",
+    "CREATE TABLE IF NOT EXISTS handles (id INTEGER PRIMARY KEY, source_rowid INTEGER, service TEXT NOT NULL, raw_identifier TEXT NOT NULL, normalized_address TEXT, country TEXT, last_seen_utc TEXT, batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(service, raw_identifier))",
+    "CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT NOT NULL, service TEXT, display_name TEXT, is_group INTEGER NOT NULL DEFAULT 0 CHECK(is_group IN (0,1)), created_at_utc TEXT, updated_at_utc TEXT, batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(guid))",
     "CREATE TABLE IF NOT EXISTS chat_participants (chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE, handle_id INTEGER NOT NULL REFERENCES handles(id) ON DELETE CASCADE, role TEXT CHECK(role IN ('member','owner','unknown')) DEFAULT 'member', added_at_utc TEXT, PRIMARY KEY (chat_id, handle_id))",
-    "CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT NOT NULL, chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE, sender_handle_id INTEGER REFERENCES handles(id) ON DELETE SET NULL, service TEXT CHECK(service IN ('iMessage','SMS','Unknown')), is_from_me INTEGER NOT NULL CHECK(is_from_me IN (0,1)), date_utc TEXT, date_read_utc TEXT, date_delivered_utc TEXT, subject TEXT, text TEXT, attributed_body_blob BLOB, item_type TEXT CHECK(item_type IN ('text','attachment-only','sticker','reaction-carrier','system','unknown')), error_code INTEGER, is_system_message INTEGER NOT NULL DEFAULT 0 CHECK(is_system_message IN (0,1)), thread_originator_guid TEXT, associated_message_guid TEXT, balloon_bundle_id TEXT, payload_json TEXT, batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(guid))",
+    "CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT NOT NULL, chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE, sender_handle_id INTEGER REFERENCES handles(id) ON DELETE SET NULL, service TEXT, is_from_me INTEGER NOT NULL CHECK(is_from_me IN (0,1)), date_utc TEXT, date_read_utc TEXT, date_delivered_utc TEXT, subject TEXT, text TEXT, attributed_body_blob BLOB, item_type TEXT CHECK(item_type IN ('text','attachment-only','sticker','reaction-carrier','system','unknown')), error_code INTEGER, is_system_message INTEGER NOT NULL DEFAULT 0 CHECK(is_system_message IN (0,1)), thread_originator_guid TEXT, associated_message_guid TEXT, balloon_bundle_id TEXT, payload_json TEXT, batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(guid))",
     'CREATE TABLE IF NOT EXISTS chat_message_join_source (chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE, message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE, source_rowid INTEGER, PRIMARY KEY (chat_id, message_id))',
     'CREATE TABLE IF NOT EXISTS attachments (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT, transfer_name TEXT, uti TEXT, mime_type TEXT, total_bytes INTEGER, is_sticker INTEGER NOT NULL DEFAULT 0 CHECK(is_sticker IN (0,1)), is_outgoing INTEGER CHECK(is_outgoing IN (0,1)), created_at_utc TEXT, local_path TEXT, sha256_hex TEXT, batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT)',
     'CREATE TABLE IF NOT EXISTS message_attachments (message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE, attachment_id INTEGER NOT NULL REFERENCES attachments(id) ON DELETE CASCADE, source_rowid INTEGER, PRIMARY KEY (message_id, attachment_id))',
@@ -611,4 +836,47 @@ class SqfliteImportDatabase {
 
   static const String _expandedMessagesViewStatement =
       'CREATE VIEW IF NOT EXISTS v_messages_expanded AS SELECT m.id AS message_id, m.guid AS message_guid, m.chat_id, c.guid AS chat_guid, m.date_utc, m.is_from_me, m.text, m.item_type, m.associated_message_guid, h.id AS sender_handle_id, h.normalized_address AS sender_address FROM messages m JOIN chats c ON c.id = m.chat_id LEFT JOIN handles h ON h.id = m.sender_handle_id';
+
+  /// Safety method to ensure schema exists (in case database initialization failed during app startup)
+  Future<void> _ensureSchemaExists(Database db) async {
+    try {
+      // Check if import_batches table exists
+      final tables = await db.query(
+        'sqlite_master',
+        where: 'type = ? AND name = ?',
+        whereArgs: ['table', 'import_batches'],
+      );
+
+      if (tables.isEmpty) {
+        _debugSettings.logDatabase(
+          'SqfliteImportDatabase._ensureSchemaExists: import_batches table missing, creating schema',
+        );
+
+        // Create the schema since it's missing
+        final batch = db.batch();
+        _schemaStatements.forEach(batch.execute);
+        _indexStatements.forEach(batch.execute);
+        batch.execute(_expandedMessagesViewStatement);
+        await batch.commit(noResult: true);
+
+        // Insert schema migration record
+        await db.insert('schema_migrations', <String, Object?>{
+          'version': _schemaVersion,
+          'applied_at_utc': DateTime.now().toUtc().toIso8601String(),
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
+
+        _debugSettings.logDatabase(
+          'SqfliteImportDatabase._ensureSchemaExists: schema created successfully',
+        );
+      }
+    } catch (e, stackTrace) {
+      _debugSettings.logDatabase(
+        'SqfliteImportDatabase._ensureSchemaExists: ERROR ensuring schema: $e',
+      );
+      _debugSettings.logDatabase(
+        'SqfliteImportDatabase._ensureSchemaExists: Stack trace: $stackTrace',
+      );
+      rethrow;
+    }
+  }
 }

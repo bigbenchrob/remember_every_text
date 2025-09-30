@@ -31,13 +31,11 @@ class DateConverter {
   }
 
   static double apple2CoreTS(int appleTimeStamp) {
-    final divided = appleTimeStamp / 1000000000;
-    //return divided.toStringAsFixed(6) as double;
-    return divided;
+    return appleTimeStamp / 1000000000;
   }
 
   /// Turn a unix TimeStamp to an int based on the Apple date specification
-  /// (nanooseconds since 2020-01-01)
+  /// (nanoseconds since 2001-01-01)
   static int unix2Apple(int unixTimeStamp) {
     return (unixTimeStamp - 978307200) * 1000000000;
   }
@@ -78,5 +76,47 @@ class DateConverter {
     formatterString ??= 'yyyy-MM-dd HH:mm';
     final formatter = DateFormat(formatterString);
     return formatter.format(dartTimeStamp2DateTime(dartTimeStamp));
+  }
+
+  /// Safely convert SQLite numeric values (int or double) to int for date processing
+  /// SQLite can return dates as either int or double, this handles both cases
+  static int? toIntSafe(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+    if (value is int) {
+      return value;
+    }
+    if (value is double) {
+      return value.round();
+    }
+    return null;
+  }
+
+  /// Convert Apple timestamp (nanoseconds since 2001-01-01) to ISO 8601 UTC string
+  /// Handles both int and double values from SQLite databases
+  /// Returns null for null or zero values
+  static String? appleToIsoString(dynamic raw) {
+    final intValue = toIntSafe(raw);
+    if (intValue == null || intValue == 0) {
+      return null;
+    }
+
+    // Convert Apple nanoseconds to Dart milliseconds and create DateTime
+    final dartTimestamp = apple2Dart(intValue);
+    final dateTime = dartTimeStamp2DateTime(dartTimestamp);
+    return dateTime.toUtc().toIso8601String();
+  }
+
+  /// Convert Apple timestamp to DateTime object
+  /// Handles both int and double values from SQLite databases
+  static DateTime? appleToDateTime(dynamic raw) {
+    final intValue = toIntSafe(raw);
+    if (intValue == null || intValue == 0) {
+      return null;
+    }
+
+    final dartTimestamp = apple2Dart(intValue);
+    return dartTimeStamp2DateTime(dartTimestamp);
   }
 }

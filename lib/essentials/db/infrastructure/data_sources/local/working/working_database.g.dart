@@ -19,7 +19,6 @@ class $WorkingSchemaMigrationsTable extends WorkingSchemaMigrations
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
-    $customConstraints: 'PRIMARY KEY NOT NULL',
   );
   static const VerificationMeta _appliedAtUtcMeta = const VerificationMeta(
     'appliedAtUtc',
@@ -234,7 +233,7 @@ class $ProjectionStateTable extends ProjectionState
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
-    $customConstraints: 'PRIMARY KEY NOT NULL CHECK(id=1)',
+    $customConstraints: 'NOT NULL CHECK(id=1)',
     clientDefault: () => 1,
   );
   static const VerificationMeta _lastImportBatchIdMeta = const VerificationMeta(
@@ -747,7 +746,7 @@ class $WorkingIdentitiesTable extends WorkingIdentities
     type: DriftSqlType.string,
     requiredDuringInsert: false,
     $customConstraints:
-        'NOT NULL DEFAULT \'Unknown\' CHECK(service IN (\'iMessage\',\'SMS\',\'Unknown\'))',
+        'NOT NULL DEFAULT \'Unknown\' CHECK(service IN (\'iMessage\',\'iMessageLite\',\'SMS\',\'RCS\',\'Unknown\'))',
     defaultValue: const CustomExpression('\'Unknown\''),
   );
   static const VerificationMeta _displayNameMeta = const VerificationMeta(
@@ -1457,7 +1456,7 @@ class $WorkingChatsTable extends WorkingChats
     type: DriftSqlType.string,
     requiredDuringInsert: false,
     $customConstraints:
-        'NOT NULL DEFAULT \'Unknown\' CHECK(service IN (\'iMessage\',\'SMS\',\'Unknown\'))',
+        'NOT NULL DEFAULT \'Unknown\' CHECK(service IN (\'iMessage\',\'iMessageLite\',\'SMS\',\'RCS\',\'Unknown\'))',
     defaultValue: const CustomExpression('\'Unknown\''),
   );
   static const VerificationMeta _isGroupMeta = const VerificationMeta(

@@ -104,6 +104,16 @@ See `03-navigation-overview.md` for complete architecture, implementation layers
 - Performance, theming, testing, accessibility, and anti-pattern checklist
 - Supplements (does not override) earlier numbered docs
 
+### 6. Rust Message Extractor ⚠️ CRITICAL FOR MESSAGE IMPORTS
+
+📁 **`08-rust-message-extractor.md`**
+
+- **ESSENTIAL FOR MESSAGE TEXT EXTRACTION** - 90% of message content is in attributedBody
+- Binary location: `target/release/extract_messages_limited`
+- Source code location: `rust/rust/attributed-string-decoder/`
+- Build instructions and troubleshooting
+- **WITHOUT EXTRACTOR**: Messages import with mostly empty text content
+
 ## File Organization
 
 ```
@@ -115,6 +125,7 @@ _AGENT_CONTEXT/
 ├── 03-navigation-overview.md              # ⭐ ESSENTIAL - Navigation system with explicit event fields
 ├── 05-riverpod-provider-patterns.md       # ⚠️ MANDATORY - Provider code generation rules
 ├── 06-flutter-dart-agent-rules.md         # Extended Flutter/Dart agent rules
+├── 08-rust-message-extractor.md           # ⚠️ CRITICAL - Rust binary for message text extraction
 └── [Additional numbered files as needed]
 ```
 

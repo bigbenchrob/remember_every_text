@@ -176,9 +176,9 @@ class DbImportDetailsPane extends StatelessWidget {
           borderRadius: BorderRadius.circular(6),
           border: Border.all(color: const Color(0xFFD5D5D5)),
         ),
-        child: Text(
+        child: const Text(
           'Import metrics will appear after a completed run.',
-          style: const TextStyle(fontSize: 12, color: Color(0xFF666666)),
+          style: TextStyle(fontSize: 12, color: Color(0xFF666666)),
         ),
       );
     }

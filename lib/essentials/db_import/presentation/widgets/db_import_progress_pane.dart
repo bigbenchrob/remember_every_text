@@ -52,7 +52,7 @@ class DbImportProgressPane extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          SelectableText(
             state.statusMessage ?? 'Preparing...',
             style: const TextStyle(fontSize: 12, color: Color(0xFF666666)),
           ),

@@ -50,9 +50,30 @@ class RustMessageExtractor implements MessageExtractorPort {
   @override
   Future<bool> isAvailable() async {
     try {
-      final result = await Process.run('ls', [extractorPath]);
-      return result.exitCode == 0;
-    } catch (_) {
+      final path = extractorPath;
+      print('🔍 Checking Rust extractor availability at: $path');
+
+      // Check if the file exists
+      final file = File(path);
+      final exists = file.existsSync();
+
+      print('📁 File exists: $exists');
+
+      if (!exists) {
+        return false;
+      }
+
+      // Check if it's executable (additional safety check)
+      try {
+        final stat = file.statSync();
+        print('📊 File mode: ${stat.mode.toRadixString(8)}');
+        return true;
+      } catch (e) {
+        print('⚠️ Failed to stat file: $e');
+        return false;
+      }
+    } catch (e) {
+      print('❌ Error checking extractor availability: $e');
       return false;
     }
   }

@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../essentials/navigation/domain/entities/features/chats_spec.dart';
+import '../view_model/chats_view_model_provider.dart';
 import '../view_model/recent_chats_provider.dart';
 
 class ChatsSidebarView extends HookConsumerWidget {
@@ -71,6 +72,11 @@ class ChatsSidebarView extends HookConsumerWidget {
                         return _ChatSummaryCard(
                           summary: chat,
                           dateFormatter: dateFormatter,
+                          onTap: () async {
+                            await ref
+                                .read(chatsViewModelProvider.notifier)
+                                .selectChat(chat.chatId);
+                          },
                         );
                       },
                     ),
@@ -94,10 +100,15 @@ class ChatsSidebarView extends HookConsumerWidget {
 }
 
 class _ChatSummaryCard extends StatelessWidget {
-  const _ChatSummaryCard({required this.summary, required this.dateFormatter});
+  const _ChatSummaryCard({
+    required this.summary,
+    required this.dateFormatter,
+    required this.onTap,
+  });
 
   final RecentChatSummary summary;
   final DateFormat dateFormatter;
+  final VoidCallback onTap;
 
   String _format(DateTime? value) {
     if (value == null) {
@@ -112,62 +123,68 @@ class _ChatSummaryCard extends StatelessWidget {
       context,
     ).typography.caption1.copyWith(color: const Color(0xFF6B6B70));
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: MacosTheme.of(context).brightness == Brightness.dark
-            ? const Color(0xFF2C2C33)
-            : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E2EA)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: MacosTheme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF2C2C33)
+                : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE2E2EA)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(
-                    summary.title,
-                    style: MacosTheme.of(
-                      context,
-                    ).typography.title2.copyWith(fontWeight: FontWeight.w600),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (summary.isGroup)
-                  const Padding(
-                    padding: EdgeInsets.only(left: 8),
-                    child: MacosIcon(
-                      CupertinoIcons.person_2_fill,
-                      size: 16,
-                      color: Color(0xFF58585F),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        summary.title,
+                        style: MacosTheme.of(
+                          context,
+                        ).typography.title2.copyWith(fontWeight: FontWeight.w600),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
+                    if (summary.isGroup)
+                      const Padding(
+                        padding: EdgeInsets.only(left: 8),
+                        child: MacosIcon(
+                          CupertinoIcons.person_2_fill,
+                          size: 16,
+                          color: Color(0xFF58585F),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text('Messages: ${summary.messageCount}', style: captionStyle),
+                const SizedBox(height: 6),
+                Text(
+                  'First message: ${_format(summary.firstMessageDate)}',
+                  style: captionStyle,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Last message: ${_format(summary.lastMessageDate)}',
+                  style: captionStyle,
+                ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text('Messages: ${summary.messageCount}', style: captionStyle),
-            const SizedBox(height: 6),
-            Text(
-              'First message: ${_format(summary.firstMessageDate)}',
-              style: captionStyle,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Last message: ${_format(summary.lastMessageDate)}',
-              style: captionStyle,
-            ),
-          ],
+          ),
         ),
       ),
     );

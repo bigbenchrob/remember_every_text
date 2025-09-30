@@ -6,6 +6,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
+import '../../../../core/util/date_converter.dart';
 import '../../../../features/address_book_folders/feature_level_providers.dart';
 import '../../../../providers.dart';
 import '../../../db/feature_level_providers.dart';
@@ -80,20 +81,6 @@ class LedgerImportService {
     final now = DateTime.now().toUtc();
     final startedAtUtc = now.toIso8601String();
 
-    final batchId = await ledgerDb.insertImportBatch(
-      startedAtUtc: startedAtUtc,
-      sourceChatDb: messagesDbPath,
-      sourceAddressbook: resolvedAddressBookPath,
-      hostInfoJson: await _buildHostInfoJson(),
-      notes: 'Automated import run ${now.toIso8601String()}',
-    );
-
-    debugSettings.logDatabase(
-      '$_importLogContext: created import batch $batchId',
-    );
-
-    final resultBuilder = _DbImportResultBuilder(batchId: batchId);
-
     void emit(
       DbImportStage stage,
       double progress,
@@ -119,6 +106,24 @@ class LedgerImportService {
 
     emit(DbImportStage.preparingSources, 0.02, 'Preparing source metadata');
 
+    emit(DbImportStage.clearingLedger, 0.05, 'Clearing previous ledger data');
+    await ledgerDb.clearAllData();
+
+    // Create batch AFTER clearing data to prevent it from being deleted
+    final batchId = await ledgerDb.insertImportBatch(
+      startedAtUtc: startedAtUtc,
+      sourceChatDb: messagesDbPath,
+      sourceAddressbook: resolvedAddressBookPath,
+      hostInfoJson: await _buildHostInfoJson(),
+      notes: 'Automated import run ${now.toIso8601String()}',
+    );
+
+    debugSettings.logDatabase(
+      '$_importLogContext: created import batch $batchId',
+    );
+
+    final resultBuilder = _DbImportResultBuilder(batchId: batchId);
+
     await _recordSourceFile(
       ledgerDb: ledgerDb,
       batchId: batchId,
@@ -129,9 +134,6 @@ class LedgerImportService {
       batchId: batchId,
       file: addressBookFile,
     );
-
-    emit(DbImportStage.clearingLedger, 0.05, 'Clearing previous ledger data');
-    await ledgerDb.clearAllData();
 
     Database? messagesDb;
     Database? addressBookDb;
@@ -210,13 +212,9 @@ class LedgerImportService {
 
       emit(DbImportStage.completed, 1.0, 'Import completed successfully');
 
-      await ledgerDb.insertImportBatch(
+      await ledgerDb.updateImportBatch(
         id: batchId,
-        startedAtUtc: startedAtUtc,
         finishedAtUtc: DateTime.now().toUtc().toIso8601String(),
-        sourceChatDb: messagesDbPath,
-        sourceAddressbook: resolvedAddressBookPath,
-        hostInfoJson: await _buildHostInfoJson(),
         notes: 'Completed import run',
       );
 
@@ -280,8 +278,10 @@ class LedgerImportService {
       final normalizedAddress = _normalizeIdentifier(rawIdentifier);
       final service = (row['service'] as String?)?.trim();
       final country = (row['country'] as String?)?.trim();
-      final lastSeen = row['last_read_date'] as int? ?? row['last_use'] as int?;
-      final lastSeenUtc = _appleEpochToIsoString(lastSeen);
+      final lastSeen =
+          DateConverter.toIntSafe(row['last_read_date']) ??
+          DateConverter.toIntSafe(row['last_use']);
+      final lastSeenUtc = DateConverter.appleToIsoString(lastSeen);
 
       await ledgerDb.insertHandle(
         id: sourceRowId,
@@ -339,8 +339,10 @@ class LedgerImportService {
         continue;
       }
       final isGroup = (row['is_group'] as int? ?? 0) == 1;
-      final created = row['creation_date'] as int?;
-      final updated = row['last_read_message_timestamp'] as int?;
+      final created = DateConverter.toIntSafe(row['creation_date']);
+      final updated = DateConverter.toIntSafe(
+        row['last_read_message_timestamp'],
+      );
 
       await ledgerDb.insertChat(
         id: sourceRowId,
@@ -349,8 +351,8 @@ class LedgerImportService {
         service: (row['service_name'] as String?)?.trim() ?? 'Unknown',
         displayName: (row['display_name'] as String?)?.trim(),
         isGroup: isGroup,
-        createdAtUtc: _appleEpochToIsoString(created),
-        updatedAtUtc: _appleEpochToIsoString(updated),
+        createdAtUtc: DateConverter.appleToIsoString(created),
+        updatedAtUtc: DateConverter.appleToIsoString(updated),
         batchId: batchId,
       );
 
@@ -465,11 +467,38 @@ class LedgerImportService {
       return const _RichTextExtraction(messages: <int, String>{});
     }
 
-    final extracted = await extractor.extractAllMessageTexts(
-      limit: rustExtractionLimit,
-      dbPath: messagesDbPath,
+    // Check if the Rust extractor is available
+    final debugSettings = ref.watch(importDebugSettingsProvider);
+    debugSettings.logDatabase(
+      '$_importLogContext: Checking Rust extractor availability for ${blobMessageIds.length} messages with attributed bodies',
     );
-    return _RichTextExtraction(messages: extracted);
+
+    final isExtractorAvailable = await extractor.isAvailable();
+    debugSettings.logDatabase(
+      '$_importLogContext: Rust extractor available: $isExtractorAvailable',
+    );
+
+    if (!isExtractorAvailable) {
+      debugSettings.logDatabase(
+        '$_importLogContext: Rust extractor not available, skipping rich text extraction for ${blobMessageIds.length} messages',
+      );
+      return const _RichTextExtraction(messages: <int, String>{});
+    }
+
+    try {
+      final extracted = await extractor.extractAllMessageTexts(
+        limit: rustExtractionLimit,
+        dbPath: messagesDbPath,
+      );
+      return _RichTextExtraction(messages: extracted);
+    } catch (e) {
+      final debugSettings = ref.watch(importDebugSettingsProvider);
+      debugSettings.logDatabase(
+        '$_importLogContext: Rich text extraction failed: $e',
+      );
+      // Return empty extraction to continue import without rich text
+      return const _RichTextExtraction(messages: <int, String>{});
+    }
   }
 
   Future<int> _importMessages({
@@ -522,9 +551,9 @@ class LedgerImportService {
         senderHandleId: row['handle_id'] as int?,
         service: (row['service'] as String?)?.trim() ?? 'Unknown',
         isFromMe: (row['is_from_me'] as int? ?? 0) == 1,
-        dateUtc: _appleEpochToIsoString(row['date'] as int?),
-        dateReadUtc: _appleEpochToIsoString(row['date_read'] as int?),
-        dateDeliveredUtc: _appleEpochToIsoString(row['date_delivered'] as int?),
+        dateUtc: DateConverter.appleToIsoString(row['date']),
+        dateReadUtc: DateConverter.appleToIsoString(row['date_read']),
+        dateDeliveredUtc: DateConverter.appleToIsoString(row['date_delivered']),
         subject: (row['subject'] as String?)?.trim(),
         text: resolvedText,
         attributedBodyBlob: attributed,
@@ -591,7 +620,7 @@ class LedgerImportService {
         totalBytes: row['total_bytes'] as int?,
         isSticker: (row['is_sticker'] as int? ?? 0) == 1,
         isOutgoing: _nullableBool(row['is_outgoing'] as int?),
-        createdAtUtc: _appleEpochToIsoString(row['created_date'] as int?),
+        createdAtUtc: DateConverter.appleToIsoString(row['created_date']),
         localPath: row['filename'] as String?,
         batchId: batchId,
       );
@@ -616,12 +645,16 @@ class LedgerImportService {
       if (messageId == null || attachmentId == null) {
         continue;
       }
-      await ledgerDb.insertMessageAttachment(
+      final insertResult = await ledgerDb.insertMessageAttachment(
         messageId: messageId,
         attachmentId: attachmentId,
         sourceRowid: row['ROWID'] as int?,
       );
-      processed++;
+
+      // Only count as processed if actually inserted (not skipped)
+      if (insertResult != -1) {
+        processed++;
+      }
       if (processed % 500 == 0 || processed == joins.length) {
         emit(
           DbImportStage.linkingMessageArtifacts,
@@ -675,8 +708,8 @@ class LedgerImportService {
         familyName: last,
         organization: company,
         isOrganization: isCompany,
-        createdAtUtc: _appleEpochToIsoString(row['ZCREATIONDATE'] as int?),
-        updatedAtUtc: _appleEpochToIsoString(row['ZMODIFICATIONDATE'] as int?),
+        createdAtUtc: DateConverter.appleToIsoString(row['ZCREATIONDATE']),
+        updatedAtUtc: DateConverter.appleToIsoString(row['ZMODIFICATIONDATE']),
         batchId: batchId,
       );
       processed++;
@@ -820,26 +853,6 @@ class LedgerImportService {
       }
     }
     return null;
-  }
-
-  String? _appleEpochToIsoString(int? raw) {
-    if (raw == null || raw == 0) {
-      return null;
-    }
-    final dateTime = _appleEpochToDate(raw).toUtc();
-    return dateTime.toIso8601String();
-  }
-
-  DateTime _appleEpochToDate(int raw) {
-    const appleEpochSecondsOffset = 978307200; // 2001-01-01 to 1970-01-01
-    final absRaw = raw.abs();
-    final microseconds = absRaw > 1000000000000
-        ? raw ~/ 1000
-        : absRaw > 1000000000
-        ? raw
-        : raw * 1000000;
-    final epochMicros = (appleEpochSecondsOffset * 1000000) + microseconds;
-    return DateTime.fromMicrosecondsSinceEpoch(epochMicros, isUtc: true);
   }
 
   String? _buildDisplayName(

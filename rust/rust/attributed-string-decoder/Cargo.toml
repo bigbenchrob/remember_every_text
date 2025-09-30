@@ -1,0 +1,23 @@
+[package]
+name = "attributed-string-decoder"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# your working stack
+crabstep = "0.2.1"
+anyhow   = "1"
+plist    = "1"
+
+# FRB (codegen uses macros/traits from this crate)
+flutter_rust_bridge = "=2.11.1"
+
+# (Optional) if you still accept base64 at some boundary
+base64   = { version = "0.22", optional = true }
+
+[features]
+default = []
+
