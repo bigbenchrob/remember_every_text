@@ -8,6 +8,9 @@ part 'messages_for_chat_view_builder_provider.g.dart';
 
 /// Resolves the widget used to display messages for a specific chat.
 @riverpod
-Widget messagesForChatViewBuilder(MessagesForChatViewBuilderRef ref, int chatId) {
+Widget messagesForChatViewBuilder(
+  MessagesForChatViewBuilderRef ref,
+  int chatId,
+) {
   return MessagesForChatView(chatId: chatId);
 }

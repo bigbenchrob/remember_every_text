@@ -17,7 +17,25 @@ part 'panel_coordinator_provider.g.dart';
 class PanelCoordinator extends _$PanelCoordinator {
   @override
   void build() {
-    // Stateless coordinator
+    ref.listen<Map<WindowPanel, ViewSpec?>>(panelsViewStateProvider, (
+      previous,
+      next,
+    ) {
+      final nextSpec = next[WindowPanel.right];
+
+      if (nextSpec == null) {
+        return;
+      }
+
+      nextSpec.maybeWhen(
+        import: (importSpec) {
+          _syncImportPanelMode(importSpec);
+        },
+        orElse: () {
+          // No-op for other specs.
+        },
+      );
+    });
   }
 
   /// Build widget for the specified panel
@@ -30,10 +48,9 @@ class PanelCoordinator extends _$PanelCoordinator {
     }
 
     return viewSpec.when(
-      messages: (messagesSpec) =>
-          ref.read(messagesCoordinatorProvider.notifier).buildForSpec(
-                messagesSpec,
-              ),
+      messages: (messagesSpec) => ref
+          .read(messagesCoordinatorProvider.notifier)
+          .buildForSpec(messagesSpec),
       chats: (chatsSpec) => ChatsSidebarView(spec: chatsSpec),
       contacts: (_) => _buildEmptyPanelPlaceholder(panel),
       import: (spec) => _buildImportPanel(spec),
@@ -41,17 +58,26 @@ class PanelCoordinator extends _$PanelCoordinator {
   }
 
   Widget _buildImportPanel(ImportSpec spec) {
+    // Listener established in build() keeps the control view model in sync.
+    final panelKey = spec.when(
+      forImport: () => const ValueKey('import-mode'),
+      forMigration: () => const ValueKey('migration-mode'),
+    );
+    return DbImportControlPanel(key: panelKey);
+  }
+
+  void _syncImportPanelMode(ImportSpec spec) {
     final desiredMode = spec.when(
       forImport: () => DbImportMode.import,
       forMigration: () => DbImportMode.migration,
     );
 
     final controlState = ref.read(dbImportControlViewModelProvider);
-    if (controlState.selectedMode != desiredMode) {
-      ref.read(dbImportControlViewModelProvider.notifier).setMode(desiredMode);
+    if (controlState.selectedMode == desiredMode) {
+      return;
     }
 
-    return const DbImportControlPanel();
+    ref.read(dbImportControlViewModelProvider.notifier).setMode(desiredMode);
   }
 
   /// Placeholder for empty panels

@@ -29,8 +29,10 @@ class ChatMessageListItem {
 }
 
 @riverpod
-Future<List<ChatMessageListItem>> messagesForChat(MessagesForChatRef ref,
-  {required int chatId}) async {
+Stream<List<ChatMessageListItem>> messagesForChat(
+  MessagesForChatRef ref, {
+  required int chatId,
+}) async* {
   final db = await ref.watch(driftWorkingDatabaseProvider.future);
 
   DateTime? parseUtc(String? value) {
@@ -54,37 +56,40 @@ Future<List<ChatMessageListItem>> messagesForChat(MessagesForChatRef ref,
     return identity.displayName ?? identity.normalizedAddress ?? 'Unknown';
   }
 
-  final query = db.select(db.workingMessages).join([
-    drift.leftOuterJoin(
-      db.workingIdentities,
-      db.workingIdentities.id.equalsExp(db.workingMessages.senderIdentityId),
-    ),
-  ])
-    ..where(db.workingMessages.chatId.equals(chatId))
-    ..orderBy([
-      drift.OrderingTerm(
-        expression: db.workingMessages.id,
-        mode: drift.OrderingMode.desc,
-      ),
-    ]);
+  final query =
+      db.select(db.workingMessages).join([
+          drift.leftOuterJoin(
+            db.workingIdentities,
+            db.workingIdentities.id.equalsExp(
+              db.workingMessages.senderIdentityId,
+            ),
+          ),
+        ])
+        ..where(db.workingMessages.chatId.equals(chatId))
+        ..orderBy([
+          drift.OrderingTerm(
+            expression: db.workingMessages.id,
+            mode: drift.OrderingMode.desc,
+          ),
+        ]);
 
-  final rows = await query.get();
+  yield* query.watch().map((rows) {
+    return rows.map((row) {
+      final message = row.readTable(db.workingMessages);
+      final identity = row.readTableOrNull(db.workingIdentities);
 
-  return rows.map((row) {
-    final message = row.readTable(db.workingMessages);
-    final identity = row.readTableOrNull(db.workingIdentities);
-
-    return ChatMessageListItem(
-      id: message.id,
-      guid: message.guid,
-      isFromMe: message.isFromMe,
-      senderName: resolveSenderName(
-        identity: identity,
+      return ChatMessageListItem(
+        id: message.id,
+        guid: message.guid,
         isFromMe: message.isFromMe,
-      ),
-      text: message.textContent ?? '[No text content]',
-  sentAt: parseUtc(message.sentAtUtc),
-      hasAttachments: message.hasAttachments,
-    );
-  }).toList();
+        senderName: resolveSenderName(
+          identity: identity,
+          isFromMe: message.isFromMe,
+        ),
+        text: message.textContent ?? '[No text content]',
+        sentAt: parseUtc(message.sentAtUtc),
+        hasAttachments: message.hasAttachments,
+      );
+    }).toList();
+  });
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -5,6 +7,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:macos_ui/macos_ui.dart';
 
+import '../../../../essentials/db_import/presentation/view_model/db_import_control_provider.dart';
 import '../../../../essentials/navigation/domain/entities/features/chats_spec.dart';
 import '../view_model/chats_view_model_provider.dart';
 import '../view_model/recent_chats_provider.dart';
@@ -60,25 +63,38 @@ class ChatsSidebarView extends HookConsumerWidget {
                     );
                   }
 
-                  return MacosScrollbar(
-                    controller: scrollController,
-                    thumbVisibility: true,
-                    child: ListView.separated(
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                      await ref
+                          .read(dbImportControlViewModelProvider.notifier)
+                          .runImportAndMigration(awaitCompletion: false);
+                      await Future<void>.delayed(
+                        const Duration(milliseconds: 400),
+                      );
+                    },
+                    child: MacosScrollbar(
                       controller: scrollController,
-                      itemCount: chats.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final chat = chats[index];
-                        return _ChatSummaryCard(
-                          summary: chat,
-                          dateFormatter: dateFormatter,
-                          onTap: () async {
-                            await ref
-                                .read(chatsViewModelProvider.notifier)
-                                .selectChat(chat.chatId);
-                          },
-                        );
-                      },
+                      thumbVisibility: true,
+                      child: ListView.separated(
+                        controller: scrollController,
+                        physics: const AlwaysScrollableScrollPhysics(
+                          parent: BouncingScrollPhysics(),
+                        ),
+                        itemCount: chats.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final chat = chats[index];
+                          return _ChatSummaryCard(
+                            summary: chat,
+                            dateFormatter: dateFormatter,
+                            onTap: () async {
+                              await ref
+                                  .read(chatsViewModelProvider.notifier)
+                                  .selectChat(chat.chatId);
+                            },
+                          );
+                        },
+                      ),
                     ),
                   );
                 },
@@ -152,9 +168,8 @@ class _ChatSummaryCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         summary.title,
-                        style: MacosTheme.of(
-                          context,
-                        ).typography.title2.copyWith(fontWeight: FontWeight.w600),
+                        style: MacosTheme.of(context).typography.title2
+                            .copyWith(fontWeight: FontWeight.w600),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),

@@ -258,11 +258,34 @@ class $ProjectionStateTable extends ProjectionState
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _lastProjectedMessageIdMeta =
+      const VerificationMeta('lastProjectedMessageId');
+  @override
+  late final GeneratedColumn<int> lastProjectedMessageId = GeneratedColumn<int>(
+    'last_projected_message_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastProjectedAttachmentIdMeta =
+      const VerificationMeta('lastProjectedAttachmentId');
+  @override
+  late final GeneratedColumn<int> lastProjectedAttachmentId =
+      GeneratedColumn<int>(
+        'last_projected_attachment_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
     lastImportBatchId,
     lastProjectedAtUtc,
+    lastProjectedMessageId,
+    lastProjectedAttachmentId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -297,6 +320,24 @@ class $ProjectionStateTable extends ProjectionState
         ),
       );
     }
+    if (data.containsKey('last_projected_message_id')) {
+      context.handle(
+        _lastProjectedMessageIdMeta,
+        lastProjectedMessageId.isAcceptableOrUnknown(
+          data['last_projected_message_id']!,
+          _lastProjectedMessageIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_projected_attachment_id')) {
+      context.handle(
+        _lastProjectedAttachmentIdMeta,
+        lastProjectedAttachmentId.isAcceptableOrUnknown(
+          data['last_projected_attachment_id']!,
+          _lastProjectedAttachmentIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -318,6 +359,14 @@ class $ProjectionStateTable extends ProjectionState
         DriftSqlType.string,
         data['${effectivePrefix}last_projected_at_utc'],
       ),
+      lastProjectedMessageId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_projected_message_id'],
+      ),
+      lastProjectedAttachmentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_projected_attachment_id'],
+      ),
     );
   }
 
@@ -332,10 +381,14 @@ class ProjectionStateData extends DataClass
   final int id;
   final int? lastImportBatchId;
   final String? lastProjectedAtUtc;
+  final int? lastProjectedMessageId;
+  final int? lastProjectedAttachmentId;
   const ProjectionStateData({
     required this.id,
     this.lastImportBatchId,
     this.lastProjectedAtUtc,
+    this.lastProjectedMessageId,
+    this.lastProjectedAttachmentId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -346,6 +399,14 @@ class ProjectionStateData extends DataClass
     }
     if (!nullToAbsent || lastProjectedAtUtc != null) {
       map['last_projected_at_utc'] = Variable<String>(lastProjectedAtUtc);
+    }
+    if (!nullToAbsent || lastProjectedMessageId != null) {
+      map['last_projected_message_id'] = Variable<int>(lastProjectedMessageId);
+    }
+    if (!nullToAbsent || lastProjectedAttachmentId != null) {
+      map['last_projected_attachment_id'] = Variable<int>(
+        lastProjectedAttachmentId,
+      );
     }
     return map;
   }
@@ -359,6 +420,13 @@ class ProjectionStateData extends DataClass
       lastProjectedAtUtc: lastProjectedAtUtc == null && nullToAbsent
           ? const Value.absent()
           : Value(lastProjectedAtUtc),
+      lastProjectedMessageId: lastProjectedMessageId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastProjectedMessageId),
+      lastProjectedAttachmentId:
+          lastProjectedAttachmentId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastProjectedAttachmentId),
     );
   }
 
@@ -373,6 +441,12 @@ class ProjectionStateData extends DataClass
       lastProjectedAtUtc: serializer.fromJson<String?>(
         json['lastProjectedAtUtc'],
       ),
+      lastProjectedMessageId: serializer.fromJson<int?>(
+        json['lastProjectedMessageId'],
+      ),
+      lastProjectedAttachmentId: serializer.fromJson<int?>(
+        json['lastProjectedAttachmentId'],
+      ),
     );
   }
   @override
@@ -382,6 +456,10 @@ class ProjectionStateData extends DataClass
       'id': serializer.toJson<int>(id),
       'lastImportBatchId': serializer.toJson<int?>(lastImportBatchId),
       'lastProjectedAtUtc': serializer.toJson<String?>(lastProjectedAtUtc),
+      'lastProjectedMessageId': serializer.toJson<int?>(lastProjectedMessageId),
+      'lastProjectedAttachmentId': serializer.toJson<int?>(
+        lastProjectedAttachmentId,
+      ),
     };
   }
 
@@ -389,6 +467,8 @@ class ProjectionStateData extends DataClass
     int? id,
     Value<int?> lastImportBatchId = const Value.absent(),
     Value<String?> lastProjectedAtUtc = const Value.absent(),
+    Value<int?> lastProjectedMessageId = const Value.absent(),
+    Value<int?> lastProjectedAttachmentId = const Value.absent(),
   }) => ProjectionStateData(
     id: id ?? this.id,
     lastImportBatchId: lastImportBatchId.present
@@ -397,6 +477,12 @@ class ProjectionStateData extends DataClass
     lastProjectedAtUtc: lastProjectedAtUtc.present
         ? lastProjectedAtUtc.value
         : this.lastProjectedAtUtc,
+    lastProjectedMessageId: lastProjectedMessageId.present
+        ? lastProjectedMessageId.value
+        : this.lastProjectedMessageId,
+    lastProjectedAttachmentId: lastProjectedAttachmentId.present
+        ? lastProjectedAttachmentId.value
+        : this.lastProjectedAttachmentId,
   );
   ProjectionStateData copyWithCompanion(ProjectionStateCompanion data) {
     return ProjectionStateData(
@@ -407,6 +493,12 @@ class ProjectionStateData extends DataClass
       lastProjectedAtUtc: data.lastProjectedAtUtc.present
           ? data.lastProjectedAtUtc.value
           : this.lastProjectedAtUtc,
+      lastProjectedMessageId: data.lastProjectedMessageId.present
+          ? data.lastProjectedMessageId.value
+          : this.lastProjectedMessageId,
+      lastProjectedAttachmentId: data.lastProjectedAttachmentId.present
+          ? data.lastProjectedAttachmentId.value
+          : this.lastProjectedAttachmentId,
     );
   }
 
@@ -415,46 +507,68 @@ class ProjectionStateData extends DataClass
     return (StringBuffer('ProjectionStateData(')
           ..write('id: $id, ')
           ..write('lastImportBatchId: $lastImportBatchId, ')
-          ..write('lastProjectedAtUtc: $lastProjectedAtUtc')
+          ..write('lastProjectedAtUtc: $lastProjectedAtUtc, ')
+          ..write('lastProjectedMessageId: $lastProjectedMessageId, ')
+          ..write('lastProjectedAttachmentId: $lastProjectedAttachmentId')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, lastImportBatchId, lastProjectedAtUtc);
+  int get hashCode => Object.hash(
+    id,
+    lastImportBatchId,
+    lastProjectedAtUtc,
+    lastProjectedMessageId,
+    lastProjectedAttachmentId,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is ProjectionStateData &&
           other.id == this.id &&
           other.lastImportBatchId == this.lastImportBatchId &&
-          other.lastProjectedAtUtc == this.lastProjectedAtUtc);
+          other.lastProjectedAtUtc == this.lastProjectedAtUtc &&
+          other.lastProjectedMessageId == this.lastProjectedMessageId &&
+          other.lastProjectedAttachmentId == this.lastProjectedAttachmentId);
 }
 
 class ProjectionStateCompanion extends UpdateCompanion<ProjectionStateData> {
   final Value<int> id;
   final Value<int?> lastImportBatchId;
   final Value<String?> lastProjectedAtUtc;
+  final Value<int?> lastProjectedMessageId;
+  final Value<int?> lastProjectedAttachmentId;
   const ProjectionStateCompanion({
     this.id = const Value.absent(),
     this.lastImportBatchId = const Value.absent(),
     this.lastProjectedAtUtc = const Value.absent(),
+    this.lastProjectedMessageId = const Value.absent(),
+    this.lastProjectedAttachmentId = const Value.absent(),
   });
   ProjectionStateCompanion.insert({
     this.id = const Value.absent(),
     this.lastImportBatchId = const Value.absent(),
     this.lastProjectedAtUtc = const Value.absent(),
+    this.lastProjectedMessageId = const Value.absent(),
+    this.lastProjectedAttachmentId = const Value.absent(),
   });
   static Insertable<ProjectionStateData> custom({
     Expression<int>? id,
     Expression<int>? lastImportBatchId,
     Expression<String>? lastProjectedAtUtc,
+    Expression<int>? lastProjectedMessageId,
+    Expression<int>? lastProjectedAttachmentId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (lastImportBatchId != null) 'last_import_batch_id': lastImportBatchId,
       if (lastProjectedAtUtc != null)
         'last_projected_at_utc': lastProjectedAtUtc,
+      if (lastProjectedMessageId != null)
+        'last_projected_message_id': lastProjectedMessageId,
+      if (lastProjectedAttachmentId != null)
+        'last_projected_attachment_id': lastProjectedAttachmentId,
     });
   }
 
@@ -462,11 +576,17 @@ class ProjectionStateCompanion extends UpdateCompanion<ProjectionStateData> {
     Value<int>? id,
     Value<int?>? lastImportBatchId,
     Value<String?>? lastProjectedAtUtc,
+    Value<int?>? lastProjectedMessageId,
+    Value<int?>? lastProjectedAttachmentId,
   }) {
     return ProjectionStateCompanion(
       id: id ?? this.id,
       lastImportBatchId: lastImportBatchId ?? this.lastImportBatchId,
       lastProjectedAtUtc: lastProjectedAtUtc ?? this.lastProjectedAtUtc,
+      lastProjectedMessageId:
+          lastProjectedMessageId ?? this.lastProjectedMessageId,
+      lastProjectedAttachmentId:
+          lastProjectedAttachmentId ?? this.lastProjectedAttachmentId,
     );
   }
 
@@ -482,6 +602,16 @@ class ProjectionStateCompanion extends UpdateCompanion<ProjectionStateData> {
     if (lastProjectedAtUtc.present) {
       map['last_projected_at_utc'] = Variable<String>(lastProjectedAtUtc.value);
     }
+    if (lastProjectedMessageId.present) {
+      map['last_projected_message_id'] = Variable<int>(
+        lastProjectedMessageId.value,
+      );
+    }
+    if (lastProjectedAttachmentId.present) {
+      map['last_projected_attachment_id'] = Variable<int>(
+        lastProjectedAttachmentId.value,
+      );
+    }
     return map;
   }
 
@@ -490,7 +620,9 @@ class ProjectionStateCompanion extends UpdateCompanion<ProjectionStateData> {
     return (StringBuffer('ProjectionStateCompanion(')
           ..write('id: $id, ')
           ..write('lastImportBatchId: $lastImportBatchId, ')
-          ..write('lastProjectedAtUtc: $lastProjectedAtUtc')
+          ..write('lastProjectedAtUtc: $lastProjectedAtUtc, ')
+          ..write('lastProjectedMessageId: $lastProjectedMessageId, ')
+          ..write('lastProjectedAttachmentId: $lastProjectedAttachmentId')
           ..write(')'))
         .toString();
   }
@@ -7138,12 +7270,16 @@ typedef $$ProjectionStateTableCreateCompanionBuilder =
       Value<int> id,
       Value<int?> lastImportBatchId,
       Value<String?> lastProjectedAtUtc,
+      Value<int?> lastProjectedMessageId,
+      Value<int?> lastProjectedAttachmentId,
     });
 typedef $$ProjectionStateTableUpdateCompanionBuilder =
     ProjectionStateCompanion Function({
       Value<int> id,
       Value<int?> lastImportBatchId,
       Value<String?> lastProjectedAtUtc,
+      Value<int?> lastProjectedMessageId,
+      Value<int?> lastProjectedAttachmentId,
     });
 
 class $$ProjectionStateTableFilterComposer
@@ -7167,6 +7303,16 @@ class $$ProjectionStateTableFilterComposer
 
   ColumnFilters<String> get lastProjectedAtUtc => $composableBuilder(
     column: $table.lastProjectedAtUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lastProjectedMessageId => $composableBuilder(
+    column: $table.lastProjectedMessageId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lastProjectedAttachmentId => $composableBuilder(
+    column: $table.lastProjectedAttachmentId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -7194,6 +7340,16 @@ class $$ProjectionStateTableOrderingComposer
     column: $table.lastProjectedAtUtc,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get lastProjectedMessageId => $composableBuilder(
+    column: $table.lastProjectedMessageId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lastProjectedAttachmentId => $composableBuilder(
+    column: $table.lastProjectedAttachmentId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ProjectionStateTableAnnotationComposer
@@ -7215,6 +7371,16 @@ class $$ProjectionStateTableAnnotationComposer
 
   GeneratedColumn<String> get lastProjectedAtUtc => $composableBuilder(
     column: $table.lastProjectedAtUtc,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get lastProjectedMessageId => $composableBuilder(
+    column: $table.lastProjectedMessageId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get lastProjectedAttachmentId => $composableBuilder(
+    column: $table.lastProjectedAttachmentId,
     builder: (column) => column,
   );
 }
@@ -7259,20 +7425,28 @@ class $$ProjectionStateTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<int?> lastImportBatchId = const Value.absent(),
                 Value<String?> lastProjectedAtUtc = const Value.absent(),
+                Value<int?> lastProjectedMessageId = const Value.absent(),
+                Value<int?> lastProjectedAttachmentId = const Value.absent(),
               }) => ProjectionStateCompanion(
                 id: id,
                 lastImportBatchId: lastImportBatchId,
                 lastProjectedAtUtc: lastProjectedAtUtc,
+                lastProjectedMessageId: lastProjectedMessageId,
+                lastProjectedAttachmentId: lastProjectedAttachmentId,
               ),
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
                 Value<int?> lastImportBatchId = const Value.absent(),
                 Value<String?> lastProjectedAtUtc = const Value.absent(),
+                Value<int?> lastProjectedMessageId = const Value.absent(),
+                Value<int?> lastProjectedAttachmentId = const Value.absent(),
               }) => ProjectionStateCompanion.insert(
                 id: id,
                 lastImportBatchId: lastImportBatchId,
                 lastProjectedAtUtc: lastProjectedAtUtc,
+                lastProjectedMessageId: lastProjectedMessageId,
+                lastProjectedAttachmentId: lastProjectedAttachmentId,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

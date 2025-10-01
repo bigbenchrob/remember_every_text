@@ -235,7 +235,7 @@ return $default(_that.id,_that.chatId,_that.senderHandleId,_that.sentAt,_that.te
 
 
 class _Message extends Message {
-  const _Message({required this.id, required this.chatId, required this.senderHandleId, required this.sentAt, required this.text, required this.isFromMe}): assert(senderHandleId.isNotEmpty, 'senderHandleId cannot be empty'),super._();
+  const _Message({required this.id, required this.chatId, required this.senderHandleId, required this.sentAt, required this.text, required this.isFromMe}): assert(senderHandleId != '', 'senderHandleId cannot be empty'),super._();
   
 
 /// Stable identifier for the message (macOS `message.guid` or ROWID string).

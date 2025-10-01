@@ -11,6 +11,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import './providers.dart';
+import 'essentials/db_import/application/monitor/chat_db_change_monitor_provider.dart';
 import 'essentials/navigation/application/router.dart';
 import 'essentials/window_state/feature_level_providers.dart';
 
@@ -109,6 +110,7 @@ class App extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(goRouterProvider);
+    ref.watch(chatDbChangeMonitorProvider);
 
     return MacosApp.router(
       title: 'remember_that_text',

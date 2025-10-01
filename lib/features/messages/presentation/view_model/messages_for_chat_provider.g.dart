@@ -6,7 +6,7 @@ part of 'messages_for_chat_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$messagesForChatHash() => r'4f92d69bf25571e540078b5a618924ae8195fdcb';
+String _$messagesForChatHash() => r'69b88d6f02e84296e19184536c88104f6c78e84d';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -68,7 +68,7 @@ class MessagesForChatFamily
 
 /// See also [messagesForChat].
 class MessagesForChatProvider
-    extends AutoDisposeFutureProvider<List<ChatMessageListItem>> {
+    extends AutoDisposeStreamProvider<List<ChatMessageListItem>> {
   /// See also [messagesForChat].
   MessagesForChatProvider({required int chatId})
     : this._internal(
@@ -98,7 +98,7 @@ class MessagesForChatProvider
 
   @override
   Override overrideWith(
-    FutureOr<List<ChatMessageListItem>> Function(MessagesForChatRef provider)
+    Stream<List<ChatMessageListItem>> Function(MessagesForChatRef provider)
     create,
   ) {
     return ProviderOverride(
@@ -116,7 +116,7 @@ class MessagesForChatProvider
   }
 
   @override
-  AutoDisposeFutureProviderElement<List<ChatMessageListItem>> createElement() {
+  AutoDisposeStreamProviderElement<List<ChatMessageListItem>> createElement() {
     return _MessagesForChatProviderElement(this);
   }
 
@@ -137,13 +137,13 @@ class MessagesForChatProvider
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 mixin MessagesForChatRef
-    on AutoDisposeFutureProviderRef<List<ChatMessageListItem>> {
+    on AutoDisposeStreamProviderRef<List<ChatMessageListItem>> {
   /// The parameter `chatId` of this provider.
   int get chatId;
 }
 
 class _MessagesForChatProviderElement
-    extends AutoDisposeFutureProviderElement<List<ChatMessageListItem>>
+    extends AutoDisposeStreamProviderElement<List<ChatMessageListItem>>
     with MessagesForChatRef {
   _MessagesForChatProviderElement(super.provider);
 

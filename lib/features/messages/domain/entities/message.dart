@@ -21,7 +21,7 @@ abstract class Message with _$Message {
   // enables custom helpers
 
   /// Core state of the Message aggregate root.
-  @Assert('senderHandleId.isNotEmpty', 'senderHandleId cannot be empty')
+  @Assert("senderHandleId != ''", 'senderHandleId cannot be empty')
   const factory Message({
     /// Stable identifier for the message (macOS `message.guid` or ROWID string).
     required MessageId id,

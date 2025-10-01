@@ -26,7 +26,7 @@ class WorkingDatabase extends _$WorkingDatabase {
   WorkingDatabase(QueryExecutor executor) : super(executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -39,6 +39,16 @@ class WorkingDatabase extends _$WorkingDatabase {
     onUpgrade: (Migrator m, int from, int to) async {
       if (from < 2) {
         await _ensureMessageReadMarksTable(m);
+      }
+      if (from < 3) {
+        await m.addColumn(
+          projectionState,
+          projectionState.lastProjectedMessageId as GeneratedColumn,
+        );
+        await m.addColumn(
+          projectionState,
+          projectionState.lastProjectedAttachmentId as GeneratedColumn,
+        );
       }
       await _createIndexes();
       await _createVirtualTablesAndTriggers();
@@ -59,9 +69,12 @@ class WorkingDatabase extends _$WorkingDatabase {
   }
 
   Future<void> _seedProjectionState() async {
-    await customStatement(
-      'INSERT OR IGNORE INTO projection_state (id, last_import_batch_id, last_projected_at_utc) VALUES (1, NULL, NULL)',
-    );
+    await customStatement('''
+      INSERT OR IGNORE INTO projection_state (
+        id, last_import_batch_id, last_projected_at_utc,
+        last_projected_message_id, last_projected_attachment_id
+      ) VALUES (1, NULL, NULL, NULL, NULL)
+      ''');
   }
 
   Future<void> _ensureMessageReadMarksTable(Migrator migrator) async {
@@ -241,6 +254,10 @@ class ProjectionState extends Table {
       integer().named('last_import_batch_id').nullable()();
   TextColumn get lastProjectedAtUtc =>
       text().named('last_projected_at_utc').nullable()();
+  IntColumn get lastProjectedMessageId =>
+      integer().named('last_projected_message_id').nullable()();
+  IntColumn get lastProjectedAttachmentId =>
+      integer().named('last_projected_attachment_id').nullable()();
 
   @override
   Set<Column> get primaryKey => {id}; // single source of truth for PK

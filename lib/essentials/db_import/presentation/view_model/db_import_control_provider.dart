@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../db/feature_level_providers.dart';
 import '../../../db_migrate/domain/entities/db_migration_result.dart';
 import '../../../db_migrate/domain/states/db_migration_progress.dart';
 import '../../../db_migrate/domain/value_objects/db_migration_stage.dart';
@@ -173,6 +176,77 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
     state = const DbImportControlState();
   }
 
+  Future<void> clearImportDatabase() async {
+    if (state.isProcessing) {
+      return;
+    }
+
+    state = state.copyWith(
+      isProcessing: true,
+      statusMessage: 'Clearing import database...',
+      stages: const <UiStageProgress>[],
+      clearProgress: true,
+      clearCurrentStage: true,
+      clearImportResult: true,
+      viewMode: DbImportViewMode.progress,
+    );
+
+    try {
+      final ledgerDb = await ref.read(sqfliteImportDatabaseProvider.future);
+      await ledgerDb.clearAllData();
+
+      state = state.copyWith(
+        isProcessing: false,
+        statusMessage: 'Import database cleared.',
+        clearProgress: true,
+        clearCurrentStage: true,
+      );
+    } catch (error) {
+      final message = _mapDatabaseError(
+        'Failed to clear import database',
+        error,
+      );
+      state = state.copyWith(isProcessing: false, statusMessage: message);
+    }
+  }
+
+  Future<void> clearWorkingDatabase() async {
+    if (state.isProcessing) {
+      return;
+    }
+
+    state = state.copyWith(
+      isProcessing: true,
+      statusMessage: 'Clearing working database...',
+      stages: const <UiStageProgress>[],
+      clearProgress: true,
+      clearCurrentStage: true,
+      clearMigrationResult: true,
+      viewMode: DbImportViewMode.progress,
+    );
+
+    try {
+      final migrationService = ref.read(
+        ledgerToWorkingMigrationServiceProvider,
+      );
+      await migrationService.clearWorkingProjection();
+      ref.invalidate(driftWorkingDatabaseProvider);
+
+      state = state.copyWith(
+        isProcessing: false,
+        statusMessage: 'Working database cleared.',
+        clearProgress: true,
+        clearCurrentStage: true,
+      );
+    } catch (error) {
+      final message = _mapDatabaseError(
+        'Failed to clear working database',
+        error,
+      );
+      state = state.copyWith(isProcessing: false, statusMessage: message);
+    }
+  }
+
   Future<void> startImport() async {
     final stages = _importStageTemplate();
 
@@ -257,6 +331,34 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
         progress: 0.0,
       );
     }
+  }
+
+  Future<void> runImportAndMigration({bool awaitCompletion = true}) async {
+    Future<void> pipeline() async {
+      if (state.isProcessing) {
+        return;
+      }
+
+      await startImport();
+
+      final importSuccess = state.lastImportResult?.success ?? false;
+      if (!importSuccess) {
+        return;
+      }
+
+      if (state.isProcessing) {
+        return;
+      }
+
+      await startMigration();
+    }
+
+    if (awaitCompletion) {
+      await pipeline();
+      return;
+    }
+
+    unawaited(pipeline());
   }
 
   String _mapDatabaseError(String prefix, Object error) {

@@ -133,17 +133,29 @@ class _ImportControls extends StatelessWidget {
           style: TextStyle(fontSize: 14, color: Color(0xFF666666)),
         ),
         const SizedBox(height: 24),
-        SizedBox(
-          width: double.infinity,
-          child: PushButton(
-            controlSize: ControlSize.regular,
-            onPressed: controlState.isProcessing
-                ? null
-                : () => notifier.startImport(),
-            child: Text(
-              controlState.isProcessing ? 'Importing...' : 'Start Import',
+        Row(
+          children: [
+            Expanded(
+              child: PushButton(
+                controlSize: ControlSize.regular,
+                onPressed: controlState.isProcessing
+                    ? null
+                    : () => notifier.startImport(),
+                child: Text(
+                  controlState.isProcessing ? 'Importing...' : 'Start Import',
+                ),
+              ),
             ),
-          ),
+            const SizedBox(width: 8),
+            PushButton(
+              controlSize: ControlSize.regular,
+              secondary: true,
+              onPressed: controlState.isProcessing
+                  ? null
+                  : () => notifier.clearImportDatabase(),
+              child: const Text('Clear Import DB'),
+            ),
+          ],
         ),
         const SizedBox(height: 24),
         if (controlState.stages.isNotEmpty) ...[

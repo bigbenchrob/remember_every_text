@@ -1260,7 +1260,7 @@ packages:
     source: hosted
     version: "1.3.0"
   watcher:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: watcher
       sha256: "5bf046f41320ac97a469d506261797f35254fa61c641741ef32dacda98b7d39c"

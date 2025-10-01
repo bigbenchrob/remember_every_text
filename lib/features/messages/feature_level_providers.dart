@@ -30,14 +30,11 @@ class MessagesCoordinator extends _$MessagesCoordinator {
 
   Widget buildForSpec(MessagesSpec spec) {
     return spec.when(
-      forChat: (chatId) =>
-          ref.read(messagesForChatViewBuilderProvider(chatId)),
-      forContact: (contactId) => _buildComingSoon(
-        'Messages for contact $contactId are coming soon.',
-      ),
-      recent: (limit) => _buildComingSoon(
-        'Recent $limit messages view is coming soon.',
-      ),
+      forChat: (chatId) => ref.read(messagesForChatViewBuilderProvider(chatId)),
+      forContact: (contactId) =>
+          _buildComingSoon('Messages for contact $contactId are coming soon.'),
+      recent: (limit) =>
+          _buildComingSoon('Recent $limit messages view is coming soon.'),
     );
   }
 
@@ -45,10 +42,7 @@ class MessagesCoordinator extends _$MessagesCoordinator {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
-        child: Text(
-          message,
-          textAlign: TextAlign.center,
-        ),
+        child: Text(message, textAlign: TextAlign.center),
       ),
     );
   }

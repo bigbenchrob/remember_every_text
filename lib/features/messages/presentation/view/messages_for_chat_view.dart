@@ -15,8 +15,7 @@ class MessagesForChatView extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final scrollController = useScrollController();
-    final asyncMessages =
-        ref.watch(messagesForChatProvider(chatId: chatId));
+    final asyncMessages = ref.watch(messagesForChatProvider(chatId: chatId));
     final dateFormatter = DateFormat('MMM d, yyyy • h:mm a');
 
     return asyncMessages.when(
@@ -60,7 +59,7 @@ class MessagesForChatView extends HookConsumerWidget {
           ),
         );
       },
-  loading: () => const Center(child: ProgressCircle(radius: 12)),
+      loading: () => const Center(child: ProgressCircle(radius: 12)),
       error: (error, stackTrace) => Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -102,8 +101,9 @@ class _MessageBubble extends StatelessWidget {
     }
 
     return Align(
-      alignment:
-          message.isFromMe ? Alignment.centerRight : Alignment.centerLeft,
+      alignment: message.isFromMe
+          ? Alignment.centerRight
+          : Alignment.centerLeft,
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: bubbleColor,
@@ -135,11 +135,7 @@ class _MessageBubble extends StatelessWidget {
                   ),
                 Text(
                   message.text,
-                  style: TextStyle(
-                    fontSize: 15,
-                    height: 1.4,
-                    color: textColor,
-                  ),
+                  style: TextStyle(fontSize: 15, height: 1.4, color: textColor),
                 ),
                 const SizedBox(height: 6),
                 Row(

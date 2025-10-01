@@ -54,6 +54,15 @@ class DbMigrationPanel extends StatelessWidget {
               secondary: true,
               onPressed: controlState.isProcessing
                   ? null
+                  : () => notifier.clearWorkingDatabase(),
+              child: const Text('Clear Working DB'),
+            ),
+            const SizedBox(width: 8),
+            PushButton(
+              controlSize: ControlSize.regular,
+              secondary: true,
+              onPressed: controlState.isProcessing
+                  ? null
                   : () => notifier.checkDatabaseAccess(),
               child: const Text('Check DB'),
             ),

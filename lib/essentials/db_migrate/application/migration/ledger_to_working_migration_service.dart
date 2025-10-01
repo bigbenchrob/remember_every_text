@@ -14,6 +14,20 @@ import '../application_providers/supabase_mirror_sync_service_provider.dart';
 typedef DbMigrationProgressCallback =
     void Function(DbMigrationProgress progress);
 
+typedef _StageProgressEmitter =
+    void Function({
+      required String label,
+      required int processed,
+      required int total,
+    });
+
+class _LedgerMaxIds {
+  const _LedgerMaxIds({required this.messageId, required this.attachmentId});
+
+  final int? messageId;
+  final int? attachmentId;
+}
+
 /// Orchestrates the projection of data from the Sqflite ledger database into
 /// the Drift-powered working database used by the UI layer.
 class LedgerToWorkingMigrationService {
@@ -75,11 +89,66 @@ class LedgerToWorkingMigrationService {
       resultBuilder.batchId = batchId;
 
       emit(
-        DbMigrationStage.clearingWorking,
-        0.08,
-        'Clearing existing working projections',
+        DbMigrationStage.preparingSources,
+        0.06,
+        'Aligning ledger batches with import batch $batchId',
       );
-      await _clearWorkingDatabase(workingDb: workingDb);
+      await ledger.assignExistingRecordsToBatch(batchId: batchId);
+
+      final projectionState = await workingDb.projectionState
+          .select()
+          .getSingleOrNull();
+      final previousProjectedMessageId =
+          projectionState?.lastProjectedMessageId;
+      final previousProjectedAttachmentId =
+          projectionState?.lastProjectedAttachmentId;
+      var shouldResetWorking = false;
+      if (previousProjectedMessageId != null ||
+          previousProjectedAttachmentId != null) {
+        emit(
+          DbMigrationStage.preparingSources,
+          0.07,
+          'Validating ledger continuity against working projection',
+        );
+        final ledgerMaxIds = await _fetchLedgerMaxIds(
+          importDb: importDb,
+          batchId: batchId,
+        );
+        final ledgerMessageId = ledgerMaxIds.messageId ?? -1;
+        final ledgerAttachmentId = ledgerMaxIds.attachmentId ?? -1;
+        final workingMessageId = previousProjectedMessageId ?? -1;
+        final workingAttachmentId = previousProjectedAttachmentId ?? -1;
+        if (ledgerMessageId < workingMessageId ||
+            ledgerAttachmentId < workingAttachmentId) {
+          shouldResetWorking = true;
+          debugSettings.logProgress(
+            '$_logContext: Detected ledger reset (ledger max: $ledgerMessageId/$ledgerAttachmentId, '
+            'working last: $workingMessageId/$workingAttachmentId). Resetting working projection.',
+          );
+        }
+      }
+
+      if (shouldResetWorking) {
+        emit(
+          DbMigrationStage.clearingWorking,
+          0.08,
+          'Clearing existing working projections',
+        );
+        await _clearWorkingDatabase(workingDb: workingDb);
+      } else {
+        emit(
+          DbMigrationStage.clearingWorking,
+          0.08,
+          'Retaining working projection for incremental update',
+        );
+      }
+
+      final minMessageIdExclusive = shouldResetWorking
+          ? null
+          : previousProjectedMessageId;
+      final minAttachmentIdExclusive = shouldResetWorking
+          ? null
+          : previousProjectedAttachmentId;
 
       emit(
         DbMigrationStage.loadingContacts,
@@ -123,10 +192,11 @@ class LedgerToWorkingMigrationService {
       resultBuilder.chatsProjected = chatProjection.chatCount;
       resultBuilder.participantsProjected = chatProjection.participantCount;
 
-      emit(DbMigrationStage.migratingMessages, 0.68, 'Projecting messages');
-      final attachmentsIndex = await _loadAttachments(
-        importDb: importDb,
-        batchId: batchId,
+      emit(
+        DbMigrationStage.migratingMessages,
+        0.68,
+        'Projecting messages',
+        stageProgress: 0,
       );
       final messageProjection = await _projectMessages(
         importDb: importDb,
@@ -134,7 +204,22 @@ class LedgerToWorkingMigrationService {
         batchId: batchId,
         chatIdMap: chatProjection.chatIdMap,
         handleToIdentity: identityProjection.handleToIdentityId,
-        attachmentsIndex: attachmentsIndex,
+        minImportMessageIdExclusive: minMessageIdExclusive,
+        emitProgress:
+            ({
+              required String label,
+              required int processed,
+              required int total,
+            }) {
+              emit(
+                DbMigrationStage.migratingMessages,
+                0.74,
+                label,
+                stageProgress: total == 0 ? 1 : processed / total,
+                stageCurrent: processed,
+                stageTotal: total,
+              );
+            },
       );
       resultBuilder.messagesProjected = messageProjection.messageCount;
 
@@ -142,13 +227,35 @@ class LedgerToWorkingMigrationService {
         DbMigrationStage.migratingAttachments,
         0.82,
         'Projecting attachments',
+        stageProgress: 0,
       );
-      final attachmentsInserted = await _projectAttachments(
+      final attachmentsIndex = await _loadAttachments(
+        importDb: importDb,
+        batchId: batchId,
+        messageIds: messageProjection.importMessageIds,
+        minAttachmentIdExclusive: minAttachmentIdExclusive,
+      );
+      final attachmentProjection = await _projectAttachments(
         workingDb: workingDb,
         attachmentsIndex: attachmentsIndex,
         messageGuidByImportId: messageProjection.messageGuidByImportId,
+        emitProgress:
+            ({
+              required String label,
+              required int processed,
+              required int total,
+            }) {
+              emit(
+                DbMigrationStage.migratingAttachments,
+                0.86,
+                label,
+                stageProgress: total == 0 ? 1 : processed / total,
+                stageCurrent: processed,
+                stageTotal: total,
+              );
+            },
       );
-      resultBuilder.attachmentsProjected = attachmentsInserted;
+      resultBuilder.attachmentsProjected = attachmentProjection.insertedCount;
 
       emit(DbMigrationStage.migratingReactions, 0.9, 'Projecting reactions');
       final reactionsInserted = await _projectReactions(
@@ -165,7 +272,18 @@ class LedgerToWorkingMigrationService {
         0.96,
         'Updating projection state metadata',
       );
-      await _updateProjectionState(workingDb: workingDb, batchId: batchId);
+      final nextProjectedMessageId =
+          messageProjection.maxImportMessageId ??
+          (shouldResetWorking ? null : previousProjectedMessageId);
+      final nextProjectedAttachmentId =
+          attachmentProjection.maxImportAttachmentId ??
+          (shouldResetWorking ? null : previousProjectedAttachmentId);
+      await _updateProjectionState(
+        workingDb: workingDb,
+        batchId: batchId,
+        maxMessageId: nextProjectedMessageId,
+        maxAttachmentId: nextProjectedAttachmentId,
+      );
 
       emit(
         DbMigrationStage.mirroringSupabase,
@@ -201,6 +319,19 @@ class LedgerToWorkingMigrationService {
     }
   }
 
+  Future<void> clearWorkingProjection() async {
+    final workingDb = await ref.watch(driftWorkingDatabaseProvider.future);
+    await _clearWorkingDatabase(workingDb: workingDb);
+    await workingDb.customStatement('''
+      UPDATE projection_state
+      SET last_import_batch_id = NULL,
+          last_projected_at_utc = NULL,
+          last_projected_message_id = NULL,
+          last_projected_attachment_id = NULL
+      WHERE id = 1
+      ''');
+  }
+
   Future<int?> _fetchLatestBatchId(Database importDb) async {
     final rows = await importDb.rawQuery(
       'SELECT id FROM import_batches ORDER BY id DESC LIMIT 1',
@@ -210,6 +341,39 @@ class LedgerToWorkingMigrationService {
     }
     final value = rows.first['id'];
     return value is int ? value : int.tryParse('$value');
+  }
+
+  Future<_LedgerMaxIds> _fetchLedgerMaxIds({
+    required Database importDb,
+    required int batchId,
+  }) async {
+    final messageRows = await importDb.rawQuery(
+      'SELECT MAX(id) AS max_id FROM messages WHERE batch_id = ?',
+      <Object>[batchId],
+    );
+    final attachmentRows = await importDb.rawQuery(
+      'SELECT MAX(id) AS max_id FROM attachments WHERE batch_id = ?',
+      <Object>[batchId],
+    );
+
+    int? parseMaxId(List<Map<String, Object?>> rows) {
+      if (rows.isEmpty) {
+        return null;
+      }
+      final value = rows.first['max_id'];
+      if (value == null) {
+        return null;
+      }
+      if (value is int) {
+        return value;
+      }
+      return int.tryParse('$value');
+    }
+
+    return _LedgerMaxIds(
+      messageId: parseMaxId(messageRows),
+      attachmentId: parseMaxId(attachmentRows),
+    );
   }
 
   Future<void> _clearWorkingDatabase({
@@ -496,28 +660,65 @@ class LedgerToWorkingMigrationService {
     required int batchId,
     required Map<int, int> chatIdMap,
     required Map<int, int> handleToIdentity,
-    required _AttachmentsIndex attachmentsIndex,
+    required int? minImportMessageIdExclusive,
+    required _StageProgressEmitter emitProgress,
   }) async {
+    final whereClauses = <String>['batch_id = ?'];
+    final whereArgs = <Object>[batchId];
+    if (minImportMessageIdExclusive != null) {
+      whereClauses.add('id > ?');
+      whereArgs.add(minImportMessageIdExclusive);
+    }
+
     final messageRows = await importDb.query(
       'messages',
-      where: 'batch_id = ?',
-      whereArgs: <Object>[batchId],
-      orderBy: 'date_utc ASC, id ASC',
+      where: whereClauses.join(' AND '),
+      whereArgs: whereArgs,
+      orderBy: 'id ASC',
+    );
+
+    final totalCandidates = messageRows.length;
+    if (totalCandidates == 0) {
+      emitProgress(label: 'No new messages to project', processed: 0, total: 0);
+      return _MessageProjection.empty(
+        maxImportMessageId: minImportMessageIdExclusive,
+      );
+    }
+
+    emitProgress(
+      label: 'Projecting $totalCandidates messages',
+      processed: 0,
+      total: totalCandidates,
+    );
+
+    final messageIds = messageRows
+        .map((Map<String, Object?> row) => row['id'])
+        .whereType<int>()
+        .toList(growable: false);
+    final messagesWithAttachments = await _loadMessageAttachmentPresence(
+      importDb: importDb,
+      batchId: batchId,
+      messageIds: messageIds,
     );
 
     final messageGuidById = <int, String>{};
     final migratedGuids = <String>{};
+    final importMessageIds = <int>{};
     var messagesInserted = 0;
+    var processed = 0;
+    var maxImportMessageId = minImportMessageIdExclusive;
 
     for (final row in messageRows) {
       final messageId = row['id'] as int?;
       final chatId = row['chat_id'] as int?;
       final guid = row['guid'] as String?;
       if (messageId == null || chatId == null || guid == null) {
+        processed++;
         continue;
       }
       final workingChatId = chatIdMap[chatId];
       if (workingChatId == null) {
+        processed++;
         continue;
       }
 
@@ -536,8 +737,6 @@ class LedgerToWorkingMigrationService {
       final isSystemMessage = ((row['is_system_message'] as int?) ?? 0) == 1;
       final itemType = row['item_type'] as String?;
       final errorCode = row['error_code'] as int?;
-      final attachmentsForMessage =
-          attachmentsIndex.byMessage[messageId] ?? const <_LedgerAttachment>[];
 
       final status = _deriveMessageStatus(
         isFromMe: isFromMe,
@@ -559,7 +758,9 @@ class LedgerToWorkingMigrationService {
               readAtUtc: Value(readAtUtc),
               status: Value(status),
               textContent: Value(text),
-              hasAttachments: Value(attachmentsForMessage.isNotEmpty),
+              hasAttachments: Value(
+                messagesWithAttachments.contains(messageId),
+              ),
               replyToGuid: Value(threadOriginatorGuid ?? associatedMessageGuid),
               systemType: Value(isSystemMessage ? 'system' : null),
               reactionCarrier: Value(itemType == 'reaction-carrier'),
@@ -571,32 +772,75 @@ class LedgerToWorkingMigrationService {
 
       messageGuidById[messageId] = guid;
       migratedGuids.add(guid);
+      importMessageIds.add(messageId);
       messagesInserted++;
+      if (maxImportMessageId == null || messageId > maxImportMessageId) {
+        maxImportMessageId = messageId;
+      }
+
+      processed++;
+      if (processed % 200 == 0 || processed == totalCandidates) {
+        emitProgress(
+          label:
+              'Projected $processed/$totalCandidates messages ($messagesInserted inserted)',
+          processed: processed,
+          total: totalCandidates,
+        );
+      }
     }
 
     return _MessageProjection(
       messageGuidByImportId: messageGuidById,
       migratedMessageGuids: migratedGuids,
       messageCount: messagesInserted,
+      maxImportMessageId: maxImportMessageId,
+      importMessageIds: importMessageIds,
     );
   }
 
-  Future<int> _projectAttachments({
+  Future<_AttachmentProjection> _projectAttachments({
     required WorkingDatabase workingDb,
     required _AttachmentsIndex attachmentsIndex,
     required Map<int, String> messageGuidByImportId,
+    required _StageProgressEmitter emitProgress,
   }) async {
-    var attachmentsInserted = 0;
-    for (final attachment in attachmentsIndex.byId.values) {
+    final attachments = attachmentsIndex.byId.values.toList(growable: false)
+      ..sort((a, b) => a.id.compareTo(b.id));
+    final totalAttachments = attachments.length;
+    if (totalAttachments == 0) {
+      emitProgress(
+        label: 'No new attachments to project',
+        processed: 0,
+        total: 0,
+      );
+      return _AttachmentProjection(
+        insertedCount: 0,
+        maxImportAttachmentId: attachmentsIndex.maxImportAttachmentId,
+      );
+    }
+
+    emitProgress(
+      label: 'Projecting $totalAttachments attachments',
+      processed: 0,
+      total: totalAttachments,
+    );
+
+    var processed = 0;
+    var inserted = 0;
+    for (final attachment in attachments) {
       final messageId = attachment.messageId;
       if (messageId == null) {
+        processed++;
         continue;
       }
-      final messageGuid = messageGuidByImportId[messageId];
+      final messageGuid =
+          messageGuidByImportId[messageId] ??
+          attachmentsIndex.messageGuidByMessageId[messageId];
       if (messageGuid == null) {
+        processed++;
         continue;
       }
-      await workingDb
+      final insertResult = await workingDb
           .into(workingDb.workingAttachments)
           .insert(
             WorkingAttachmentsCompanion.insert(
@@ -612,9 +856,25 @@ class LedgerToWorkingMigrationService {
             ),
             mode: InsertMode.insertOrIgnore,
           );
-      attachmentsInserted++;
+      if (insertResult > 0) {
+        inserted++;
+      }
+
+      processed++;
+      if (processed % 200 == 0 || processed == totalAttachments) {
+        emitProgress(
+          label:
+              'Projected $processed/$totalAttachments attachments ($inserted inserted)',
+          processed: processed,
+          total: totalAttachments,
+        );
+      }
     }
-    return attachmentsInserted;
+
+    return _AttachmentProjection(
+      insertedCount: inserted,
+      maxImportAttachmentId: attachmentsIndex.maxImportAttachmentId,
+    );
   }
 
   Future<int> _projectReactions({
@@ -664,6 +924,8 @@ class LedgerToWorkingMigrationService {
   Future<void> _updateProjectionState({
     required WorkingDatabase workingDb,
     required int batchId,
+    required int? maxMessageId,
+    required int? maxAttachmentId,
   }) async {
     final timestamp = DateTime.now().toUtc().toIso8601String();
     await workingDb
@@ -673,6 +935,8 @@ class LedgerToWorkingMigrationService {
             id: const Value(1),
             lastImportBatchId: Value(batchId),
             lastProjectedAtUtc: Value(timestamp),
+            lastProjectedMessageId: Value(maxMessageId),
+            lastProjectedAttachmentId: Value(maxAttachmentId),
           ),
         );
   }
@@ -713,60 +977,214 @@ class LedgerToWorkingMigrationService {
   Future<_AttachmentsIndex> _loadAttachments({
     required Database importDb,
     required int batchId,
+    required Set<int> messageIds,
+    int? minAttachmentIdExclusive,
   }) async {
-    final attachmentRows = await importDb.query(
-      'attachments',
-      where: 'batch_id = ?',
-      whereArgs: <Object>[batchId],
-    );
+    final shouldScanByAttachmentId = minAttachmentIdExclusive != null;
+    if (messageIds.isEmpty && !shouldScanByAttachmentId) {
+      return _AttachmentsIndex.empty();
+    }
 
-    final attachmentsById = <int, _LedgerAttachment>{};
-    for (final row in attachmentRows) {
-      final id = row['id'] as int?;
-      if (id == null) {
-        continue;
+    const chunkSize = 400;
+    final candidateAttachmentIds = <int>{};
+    final messageToAttachmentIds = <int, List<int>>{};
+    final affectedMessageIds = <int>{}..addAll(messageIds);
+
+    Future<void> collectJoinRows({
+      required String condition,
+      required List<Object> args,
+    }) async {
+      final rows = await importDb.rawQuery(
+        'SELECT ma.message_id, ma.attachment_id '
+        'FROM message_attachments ma '
+        'INNER JOIN attachments a ON a.id = ma.attachment_id '
+        'WHERE a.batch_id = ? AND ($condition)',
+        <Object>[batchId, ...args],
+      );
+      for (final row in rows) {
+        final messageId = row['message_id'] as int?;
+        final attachmentId = row['attachment_id'] as int?;
+        if (messageId == null || attachmentId == null) {
+          continue;
+        }
+        candidateAttachmentIds.add(attachmentId);
+        messageToAttachmentIds
+            .putIfAbsent(messageId, () => <int>[])
+            .add(attachmentId);
+        affectedMessageIds.add(messageId);
       }
-      attachmentsById[id] = _LedgerAttachment(
-        id: id,
-        messageId: null,
-        guid: row['guid'] as String?,
-        transferName: row['transfer_name'] as String?,
-        uti: row['uti'] as String?,
-        mimeType: row['mime_type'] as String?,
-        totalBytes: row['total_bytes'] as int?,
-        isSticker: ((row['is_sticker'] as int?) ?? 0) == 1,
-        createdAtUtc: row['created_at_utc'] as String?,
-        localPath: row['local_path'] as String?,
+    }
+
+    if (messageIds.isNotEmpty) {
+      final messageIdList = messageIds.toList(growable: false);
+      var messageIndex = 0;
+      while (messageIndex < messageIdList.length) {
+        final end = (messageIndex + chunkSize > messageIdList.length)
+            ? messageIdList.length
+            : messageIndex + chunkSize;
+        final chunk = messageIdList.sublist(messageIndex, end);
+        final placeholders = List<String>.filled(chunk.length, '?').join(', ');
+        await collectJoinRows(
+          condition: 'ma.message_id IN ($placeholders)',
+          args: chunk.map<Object>((int id) => id).toList(growable: false),
+        );
+        messageIndex = end;
+      }
+    }
+
+    if (minAttachmentIdExclusive != null) {
+      await collectJoinRows(
+        condition: 'ma.attachment_id > ?',
+        args: <Object>[minAttachmentIdExclusive],
       );
     }
 
-    final joinRows = await importDb.query(
-      'message_attachments',
-      columns: <String>['message_id', 'attachment_id'],
-    );
+    if (candidateAttachmentIds.isEmpty) {
+      return _AttachmentsIndex.empty(
+        maxImportAttachmentId: minAttachmentIdExclusive,
+      );
+    }
+
+    final attachmentsById = <int, _LedgerAttachment>{};
+    final attachmentIdList = candidateAttachmentIds.toList(growable: false)
+      ..sort();
+    var attachmentIndex = 0;
+    while (attachmentIndex < attachmentIdList.length) {
+      final end = (attachmentIndex + chunkSize > attachmentIdList.length)
+          ? attachmentIdList.length
+          : attachmentIndex + chunkSize;
+      final chunk = attachmentIdList.sublist(attachmentIndex, end);
+      final placeholders = List<String>.filled(chunk.length, '?').join(', ');
+      final rows = await importDb.rawQuery(
+        'SELECT id, guid, transfer_name, uti, mime_type, total_bytes, '
+        'is_sticker, created_at_utc, local_path '
+        'FROM attachments '
+        'WHERE batch_id = ? AND id IN ($placeholders)',
+        <Object>[batchId, ...chunk],
+      );
+      for (final row in rows) {
+        final id = row['id'] as int?;
+        if (id == null) {
+          continue;
+        }
+        attachmentsById[id] = _LedgerAttachment(
+          id: id,
+          messageId: null,
+          guid: row['guid'] as String?,
+          transferName: row['transfer_name'] as String?,
+          uti: row['uti'] as String?,
+          mimeType: row['mime_type'] as String?,
+          totalBytes: row['total_bytes'] as int?,
+          isSticker: ((row['is_sticker'] as int?) ?? 0) == 1,
+          createdAtUtc: row['created_at_utc'] as String?,
+          localPath: row['local_path'] as String?,
+        );
+      }
+      attachmentIndex = end;
+    }
 
     final attachmentsByMessage = <int, List<_LedgerAttachment>>{};
-    for (final row in joinRows) {
-      final messageId = row['message_id'] as int?;
-      final attachmentId = row['attachment_id'] as int?;
-      if (messageId == null || attachmentId == null) {
-        continue;
+    for (final entry in messageToAttachmentIds.entries) {
+      final messageId = entry.key;
+      final ids = entry.value;
+      final attachments = <_LedgerAttachment>[];
+      for (final attachmentId in ids) {
+        final attachment = attachmentsById[attachmentId];
+        if (attachment == null) {
+          continue;
+        }
+        attachments.add(attachment.copyWith(messageId: messageId));
       }
-      final attachment = attachmentsById[attachmentId];
-      if (attachment == null) {
-        continue;
+      if (attachments.isNotEmpty) {
+        attachmentsByMessage[messageId] = attachments;
       }
-      final updated = attachment.copyWith(messageId: messageId);
-      attachmentsById[attachmentId] = updated;
-      attachmentsByMessage
-          .putIfAbsent(messageId, () => <_LedgerAttachment>[])
-          .add(updated);
     }
+
+    final messageGuidByMessageId = await _loadMessageGuids(
+      importDb: importDb,
+      messageIds: affectedMessageIds,
+    );
+
+    final maxAttachmentId = attachmentIdList.isEmpty
+        ? minAttachmentIdExclusive
+        : attachmentIdList.last;
 
     return _AttachmentsIndex(
       byId: attachmentsById,
       byMessage: attachmentsByMessage,
+      messageGuidByMessageId: messageGuidByMessageId,
+      maxImportAttachmentId: maxAttachmentId,
     );
+  }
+
+  Future<Set<int>> _loadMessageAttachmentPresence({
+    required Database importDb,
+    required int batchId,
+    required List<int> messageIds,
+  }) async {
+    if (messageIds.isEmpty) {
+      return const <int>{};
+    }
+
+    const chunkSize = 400;
+    final result = <int>{};
+    var index = 0;
+    while (index < messageIds.length) {
+      final end = (index + chunkSize > messageIds.length)
+          ? messageIds.length
+          : index + chunkSize;
+      final chunk = messageIds.sublist(index, end);
+      final placeholders = List<String>.filled(chunk.length, '?').join(', ');
+      final rows = await importDb.rawQuery(
+        'SELECT DISTINCT ma.message_id '
+        'FROM message_attachments ma '
+        'INNER JOIN attachments a ON a.id = ma.attachment_id '
+        'WHERE a.batch_id = ? AND ma.message_id IN ($placeholders)',
+        <Object>[batchId, ...chunk],
+      );
+      for (final row in rows) {
+        final messageId = row['message_id'] as int?;
+        if (messageId != null) {
+          result.add(messageId);
+        }
+      }
+      index = end;
+    }
+    return result;
+  }
+
+  Future<Map<int, String>> _loadMessageGuids({
+    required Database importDb,
+    required Set<int> messageIds,
+  }) async {
+    if (messageIds.isEmpty) {
+      return const <int, String>{};
+    }
+
+    const chunkSize = 400;
+    final result = <int, String>{};
+    final ids = messageIds.toList(growable: false)..sort();
+    var index = 0;
+    while (index < ids.length) {
+      final end = (index + chunkSize > ids.length)
+          ? ids.length
+          : index + chunkSize;
+      final chunk = ids.sublist(index, end);
+      final placeholders = List<String>.filled(chunk.length, '?').join(', ');
+      final rows = await importDb.rawQuery(
+        'SELECT id, guid FROM messages WHERE id IN ($placeholders)',
+        chunk,
+      );
+      for (final row in rows) {
+        final id = row['id'] as int?;
+        final guid = row['guid'] as String?;
+        if (id != null && guid != null) {
+          result[id] = guid;
+        }
+      }
+      index = end;
+    }
+    return result;
   }
 
   String _deriveChatDisplayName({
@@ -1043,10 +1461,22 @@ class _LedgerAttachment {
 }
 
 class _AttachmentsIndex {
-  _AttachmentsIndex({required this.byId, required this.byMessage});
+  _AttachmentsIndex({
+    required this.byId,
+    required this.byMessage,
+    required this.messageGuidByMessageId,
+    required this.maxImportAttachmentId,
+  });
+
+  _AttachmentsIndex.empty({this.maxImportAttachmentId})
+    : byId = <int, _LedgerAttachment>{},
+      byMessage = <int, List<_LedgerAttachment>>{},
+      messageGuidByMessageId = <int, String>{};
 
   final Map<int, _LedgerAttachment> byId;
   final Map<int, List<_LedgerAttachment>> byMessage;
+  final Map<int, String> messageGuidByMessageId;
+  final int? maxImportAttachmentId;
 }
 
 @immutable
@@ -1115,11 +1545,31 @@ class _MessageProjection {
     required this.messageGuidByImportId,
     required this.migratedMessageGuids,
     required this.messageCount,
+    required this.maxImportMessageId,
+    required this.importMessageIds,
   });
+
+  const _MessageProjection.empty({this.maxImportMessageId})
+    : messageGuidByImportId = const <int, String>{},
+      migratedMessageGuids = const <String>{},
+      messageCount = 0,
+      importMessageIds = const <int>{};
 
   final Map<int, String> messageGuidByImportId;
   final Set<String> migratedMessageGuids;
   final int messageCount;
+  final int? maxImportMessageId;
+  final Set<int> importMessageIds;
+}
+
+class _AttachmentProjection {
+  const _AttachmentProjection({
+    required this.insertedCount,
+    required this.maxImportAttachmentId,
+  });
+
+  final int insertedCount;
+  final int? maxImportAttachmentId;
 }
 
 class _DbMigrationResultBuilder {

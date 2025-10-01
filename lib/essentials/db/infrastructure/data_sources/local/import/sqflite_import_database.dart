@@ -305,6 +305,43 @@ class SqfliteImportDatabase {
     );
   }
 
+  Future<int?> maxMessageSourceRowId() async {
+    return _selectMaxInt(table: 'messages', column: 'source_rowid');
+  }
+
+  Future<int?> maxAttachmentSourceRowId() async {
+    return _selectMaxInt(table: 'attachments', column: 'source_rowid');
+  }
+
+  Future<int?> maxMessageAttachmentSourceRowId() async {
+    return _selectMaxInt(table: 'message_attachments', column: 'source_rowid');
+  }
+
+  Future<int?> maxHandleSourceRowId() async {
+    return _selectMaxInt(table: 'handles', column: 'source_rowid');
+  }
+
+  Future<int?> maxChatSourceRowId() async {
+    return _selectMaxInt(table: 'chats', column: 'source_rowid');
+  }
+
+  Future<void> assignExistingRecordsToBatch({required int batchId}) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      const tablesWithBatchColumn = <String>[
+        'contacts',
+        'handles',
+        'chats',
+        'messages',
+        'attachments',
+      ];
+
+      for (final table in tablesWithBatchColumn) {
+        await txn.update(table, <String, Object?>{'batch_id': batchId});
+      }
+    });
+  }
+
   Future<int> insertContact({
     int? id,
     int? sourceRecordId,
@@ -734,7 +771,7 @@ class SqfliteImportDatabase {
     );
   }
 
-  Future<Map<String, int>> tableCounts() async {
+  Future<Map<String, int>> tableRowCounts() async {
     final db = await database;
     final tableNames = <String>[
       'schema_migrations',
@@ -764,6 +801,24 @@ class SqfliteImportDatabase {
     return results;
   }
 
+  Future<int> countRows(String table) async {
+    final db = await database;
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) AS row_count FROM $table',
+    );
+    if (result.isEmpty) {
+      return 0;
+    }
+    final value = result.first['row_count'];
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    return int.tryParse('$value') ?? 0;
+  }
+
   Future<void> clearAllData() async {
     final db = await database;
     await db.transaction((txn) async {
@@ -788,6 +843,76 @@ class SqfliteImportDatabase {
         await txn.delete(table);
       }
     });
+  }
+
+  Future<bool> _rowExists({
+    required String table,
+    required String where,
+    required List<Object?> whereArgs,
+  }) async {
+    final db = await database;
+    final result = await db.query(
+      table,
+      columns: const <String>['1'],
+      where: where,
+      whereArgs: whereArgs,
+      limit: 1,
+    );
+    return result.isNotEmpty;
+  }
+
+  Future<bool> contactExists(int id) {
+    return _rowExists(
+      table: 'contacts',
+      where: 'id = ?',
+      whereArgs: <Object>[id],
+    );
+  }
+
+  Future<bool> contactChannelExists({
+    required String kind,
+    required String value,
+  }) {
+    return _rowExists(
+      table: 'contact_channels',
+      where: 'kind = ? AND value = ?',
+      whereArgs: <Object>[kind, value],
+    );
+  }
+
+  Future<bool> chatParticipantExists({
+    required int chatId,
+    required int handleId,
+  }) {
+    return _rowExists(
+      table: 'chat_participants',
+      where: 'chat_id = ? AND handle_id = ?',
+      whereArgs: <Object>[chatId, handleId],
+    );
+  }
+
+  Future<int?> _selectMaxInt({
+    required String table,
+    required String column,
+  }) async {
+    final db = await database;
+    final rows = await db.rawQuery(
+      'SELECT MAX($column) AS max_value FROM $table',
+    );
+    if (rows.isEmpty) {
+      return null;
+    }
+    final value = rows.first['max_value'];
+    if (value == null) {
+      return null;
+    }
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    return int.tryParse('$value');
   }
 
   Map<String, Object?> _cleanMap(Map<String, Object?> data) {

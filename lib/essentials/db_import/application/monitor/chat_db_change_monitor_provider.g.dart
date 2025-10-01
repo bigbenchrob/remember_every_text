@@ -1,30 +1,27 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'db_import_control_provider.dart';
+part of 'chat_db_change_monitor_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$dbImportControlViewModelHash() =>
-    r'3ba39e662dd417f377187f6d94e106bb3c669b15';
+String _$chatDbChangeMonitorHash() =>
+    r'31e4dd0bcfd639a19efebf62812c04c21c3fa9e1';
 
-/// See also [DbImportControlViewModel].
-@ProviderFor(DbImportControlViewModel)
-final dbImportControlViewModelProvider =
-    AutoDisposeNotifierProvider<
-      DbImportControlViewModel,
-      DbImportControlState
-    >.internal(
-      DbImportControlViewModel.new,
-      name: r'dbImportControlViewModelProvider',
+/// See also [ChatDbChangeMonitor].
+@ProviderFor(ChatDbChangeMonitor)
+final chatDbChangeMonitorProvider =
+    NotifierProvider<ChatDbChangeMonitor, ChatDbChangeMonitorState>.internal(
+      ChatDbChangeMonitor.new,
+      name: r'chatDbChangeMonitorProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
           ? null
-          : _$dbImportControlViewModelHash,
+          : _$chatDbChangeMonitorHash,
       dependencies: null,
       allTransitiveDependencies: null,
     );
 
-typedef _$DbImportControlViewModel = AutoDisposeNotifier<DbImportControlState>;
+typedef _$ChatDbChangeMonitor = Notifier<ChatDbChangeMonitorState>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

@@ -41,6 +41,44 @@ class LedgerImportService {
     final ledgerDb = await ref.watch(sqfliteImportDatabaseProvider.future);
     final pathsHelper = await ref.watch(pathsHelperProvider.future);
 
+    var previousMaxMessageRowId = await ledgerDb.maxMessageSourceRowId();
+    var previousMaxAttachmentRowId = await ledgerDb.maxAttachmentSourceRowId();
+    var previousMaxMessageAttachmentRowId = await ledgerDb
+        .maxMessageAttachmentSourceRowId();
+    var previousMaxHandleRowId = await ledgerDb.maxHandleSourceRowId();
+    var previousMaxChatRowId = await ledgerDb.maxChatSourceRowId();
+    var hasExistingLedgerData =
+        previousMaxMessageRowId != null ||
+        previousMaxHandleRowId != null ||
+        previousMaxChatRowId != null ||
+        previousMaxAttachmentRowId != null ||
+        previousMaxMessageAttachmentRowId != null;
+
+    if (hasExistingLedgerData && previousMaxMessageRowId != null) {
+      const messageCountFloor = 50;
+      const rowIdGapThreshold = 500;
+      final existingMessageCount = await ledgerDb.countRows('messages');
+      final detectedTruncatedMessages =
+          existingMessageCount > 0 &&
+          existingMessageCount < messageCountFloor &&
+          previousMaxMessageRowId - existingMessageCount > rowIdGapThreshold;
+
+      if (detectedTruncatedMessages) {
+        debugSettings.logProgress(
+          '$_importLogContext: Detected truncated message set '
+          '(count=$existingMessageCount, maxRowId=$previousMaxMessageRowId). '
+          'Forcing full reimport.',
+        );
+
+        previousMaxMessageRowId = null;
+        previousMaxAttachmentRowId = null;
+        previousMaxMessageAttachmentRowId = null;
+        previousMaxHandleRowId = null;
+        previousMaxChatRowId = null;
+        hasExistingLedgerData = false;
+      }
+    }
+
     final messagesDbPath = pathsHelper.chatDBPath;
     final addressBookEither = await ref.watch(
       futureGetFolderAggregateProvider.future,
@@ -106,8 +144,16 @@ class LedgerImportService {
 
     emit(DbImportStage.preparingSources, 0.02, 'Preparing source metadata');
 
-    emit(DbImportStage.clearingLedger, 0.05, 'Clearing previous ledger data');
-    await ledgerDb.clearAllData();
+    emit(
+      DbImportStage.clearingLedger,
+      0.05,
+      hasExistingLedgerData
+          ? 'Preparing ledger for incremental append'
+          : 'Initializing ledger import tables',
+    );
+    if (!hasExistingLedgerData) {
+      await ledgerDb.clearAllData();
+    }
 
     // Create batch AFTER clearing data to prevent it from being deleted
     final batchId = await ledgerDb.insertImportBatch(
@@ -117,6 +163,10 @@ class LedgerImportService {
       hostInfoJson: await _buildHostInfoJson(),
       notes: 'Automated import run ${now.toIso8601String()}',
     );
+
+    if (hasExistingLedgerData) {
+      await ledgerDb.assignExistingRecordsToBatch(batchId: batchId);
+    }
 
     debugSettings.logDatabase(
       '$_importLogContext: created import batch $batchId',
@@ -150,6 +200,7 @@ class LedgerImportService {
         batchId: batchId,
         messagesDb: messagesDb,
         emit: emit,
+        minSourceRowIdExclusive: previousMaxHandleRowId,
       );
 
       resultBuilder.chatsImported = await _importChats(
@@ -157,6 +208,7 @@ class LedgerImportService {
         batchId: batchId,
         messagesDb: messagesDb,
         emit: emit,
+        minSourceRowIdExclusive: previousMaxChatRowId,
       );
 
       resultBuilder.participantsImported = await _importChatParticipants(
@@ -178,20 +230,26 @@ class LedgerImportService {
         messagesDb: messagesDb,
       );
 
-      resultBuilder.messagesImported = await _importMessages(
+      final messageImportResult = await _importMessages(
         ledgerDb: ledgerDb,
         batchId: batchId,
         messagesDb: messagesDb,
         chatJoinCache: chatJoinCache,
         extraction: extraction,
         emit: emit,
+        minSourceRowIdExclusive: previousMaxMessageRowId,
       );
+      resultBuilder.messagesImported = messageImportResult.insertedCount;
 
       final attachmentsCounts = await _importAttachments(
         ledgerDb: ledgerDb,
         batchId: batchId,
         messagesDb: messagesDb,
         emit: emit,
+        minAttachmentSourceRowIdExclusive: previousMaxAttachmentRowId,
+        minMessageAttachmentSourceRowIdExclusive:
+            previousMaxMessageAttachmentRowId,
+        newMessageSourceRowIds: messageImportResult.insertedSourceRowIds,
       );
       resultBuilder.attachmentsImported = attachmentsCounts.attachments;
       resultBuilder.messageAttachmentsImported =
@@ -262,15 +320,36 @@ class LedgerImportService {
       int? stageTotal,
     })
     emit,
+    int? minSourceRowIdExclusive,
   }) async {
+    final rows = await messagesDb.query(
+      'handle',
+      where: minSourceRowIdExclusive == null ? null : 'ROWID > ?',
+      whereArgs: minSourceRowIdExclusive == null
+          ? null
+          : <Object>[minSourceRowIdExclusive],
+    );
+
+    if (rows.isEmpty) {
+      emit(
+        DbImportStage.importingHandles,
+        0.1,
+        'No new handles detected',
+        stageProgress: 1,
+        stageCurrent: 0,
+        stageTotal: 0,
+      );
+      return 0;
+    }
+
     emit(
       DbImportStage.importingHandles,
       0.1,
-      'Importing message handles',
+      'Importing ${rows.length} new handles',
       stageProgress: 0,
+      stageTotal: rows.length,
     );
 
-    final rows = await messagesDb.query('handle');
     var processed = 0;
     for (final row in rows) {
       final sourceRowId = row['ROWID'] as int?;
@@ -299,8 +378,8 @@ class LedgerImportService {
         emit(
           DbImportStage.importingHandles,
           0.12,
-          'Imported $processed/${rows.length} handles',
-          stageProgress: processed / rows.length,
+          'Imported $processed/${rows.length} new handles',
+          stageProgress: rows.isEmpty ? 1 : processed / rows.length,
           stageCurrent: processed,
           stageTotal: rows.length,
         );
@@ -323,14 +402,35 @@ class LedgerImportService {
       int? stageTotal,
     })
     emit,
+    int? minSourceRowIdExclusive,
   }) async {
+    final rows = await messagesDb.query(
+      'chat',
+      where: minSourceRowIdExclusive == null ? null : 'ROWID > ?',
+      whereArgs: minSourceRowIdExclusive == null
+          ? null
+          : <Object>[minSourceRowIdExclusive],
+    );
+
+    if (rows.isEmpty) {
+      emit(
+        DbImportStage.importingChats,
+        0.18,
+        'No new chats detected',
+        stageProgress: 1,
+        stageCurrent: 0,
+        stageTotal: 0,
+      );
+      return 0;
+    }
+
     emit(
       DbImportStage.importingChats,
       0.18,
-      'Importing chats',
+      'Importing ${rows.length} new chats',
       stageProgress: 0,
+      stageTotal: rows.length,
     );
-    final rows = await messagesDb.query('chat');
     var processed = 0;
     for (final row in rows) {
       final sourceRowId = row['ROWID'] as int?;
@@ -361,8 +461,8 @@ class LedgerImportService {
         emit(
           DbImportStage.importingChats,
           0.24,
-          'Imported $processed/${rows.length} chats',
-          stageProgress: processed / rows.length,
+          'Imported $processed/${rows.length} new chats',
+          stageProgress: rows.isEmpty ? 1 : processed / rows.length,
           stageCurrent: processed,
           stageTotal: rows.length,
         );
@@ -393,26 +493,46 @@ class LedgerImportService {
     );
     final rows = await messagesDb.query('chat_handle_join');
     var processed = 0;
+    var inserted = 0;
     for (final row in rows) {
       final chatId = row['chat_id'] as int?;
       final handleId = row['handle_id'] as int?;
       if (chatId == null || handleId == null) {
+        processed++;
+        continue;
+      }
+      final alreadyLinked = await ledgerDb.chatParticipantExists(
+        chatId: chatId,
+        handleId: handleId,
+      );
+      processed++;
+      if (alreadyLinked) {
+        if (processed % 500 == 0 || processed == rows.length) {
+          emit(
+            DbImportStage.importingParticipants,
+            0.32,
+            'Linked $inserted/${rows.length} participants',
+            stageProgress: rows.isEmpty ? 1 : processed / rows.length,
+            stageCurrent: inserted,
+            stageTotal: rows.length,
+          );
+        }
         continue;
       }
       await ledgerDb.insertChatParticipant(chatId: chatId, handleId: handleId);
-      processed++;
+      inserted++;
       if (processed % 500 == 0 || processed == rows.length) {
         emit(
           DbImportStage.importingParticipants,
           0.32,
-          'Linked $processed/${rows.length} participants',
-          stageProgress: processed / rows.length,
-          stageCurrent: processed,
+          'Linked $inserted/${rows.length} participants',
+          stageProgress: rows.isEmpty ? 1 : processed / rows.length,
+          stageCurrent: inserted,
           stageTotal: rows.length,
         );
       }
     }
-    return rows.length;
+    return inserted;
   }
 
   Future<_ChatMessageJoinCache> _buildChatMessageJoinCache({
@@ -501,7 +621,7 @@ class LedgerImportService {
     }
   }
 
-  Future<int> _importMessages({
+  Future<_MessageImportResult> _importMessages({
     required SqfliteImportDatabase ledgerDb,
     required int batchId,
     required Database messagesDb,
@@ -516,10 +636,45 @@ class LedgerImportService {
       int? stageTotal,
     })
     emit,
+    int? minSourceRowIdExclusive,
   }) async {
-    emit(DbImportStage.importingMessages, 0.36, 'Importing messages');
-    final rows = await messagesDb.query('message');
+    emit(
+      DbImportStage.importingMessages,
+      0.36,
+      'Scanning for new messages',
+      stageProgress: 0,
+    );
+
+    final rows = await messagesDb.query(
+      'message',
+      where: minSourceRowIdExclusive == null ? null : 'ROWID > ?',
+      whereArgs: minSourceRowIdExclusive == null
+          ? null
+          : <Object>[minSourceRowIdExclusive],
+    );
+
+    if (rows.isEmpty) {
+      emit(
+        DbImportStage.importingMessages,
+        0.36,
+        'No new messages to import',
+        stageProgress: 1,
+        stageCurrent: 0,
+        stageTotal: 0,
+      );
+      return const _MessageImportResult.empty();
+    }
+
+    emit(
+      DbImportStage.importingMessages,
+      0.4,
+      'Importing ${rows.length} messages',
+      stageProgress: 0,
+      stageTotal: rows.length,
+    );
     var processed = 0;
+    var inserted = 0;
+    final insertedSourceRowIds = <int>{};
 
     for (final row in rows) {
       final sourceRowId = row['ROWID'] as int?;
@@ -568,6 +723,8 @@ class LedgerImportService {
       );
 
       if (messageInserted > 0) {
+        inserted++;
+        insertedSourceRowIds.add(sourceRowId);
         await ledgerDb.insertChatMessageJoinSource(
           chatId: chatId,
           messageId: sourceRowId,
@@ -580,7 +737,8 @@ class LedgerImportService {
         emit(
           DbImportStage.importingMessages,
           0.52,
-          'Imported $processed/${rows.length} messages',
+          'Processed $processed/${rows.length} messages'
+          ' ($inserted inserted)',
           stageProgress: processed / rows.length,
           stageCurrent: processed,
           stageTotal: rows.length,
@@ -588,7 +746,11 @@ class LedgerImportService {
       }
     }
 
-    return rows.length;
+    return _MessageImportResult(
+      scannedCount: rows.length,
+      insertedCount: inserted,
+      insertedSourceRowIds: List<int>.unmodifiable(insertedSourceRowIds),
+    );
   }
 
   Future<_AttachmentCounts> _importAttachments({
@@ -604,72 +766,222 @@ class LedgerImportService {
       int? stageTotal,
     })
     emit,
+    int? minAttachmentSourceRowIdExclusive,
+    int? minMessageAttachmentSourceRowIdExclusive,
+    Iterable<int>? newMessageSourceRowIds,
   }) async {
-    emit(DbImportStage.importingAttachments, 0.6, 'Importing attachments');
-    final attachments = await messagesDb.query('attachment');
-    var processed = 0;
+    emit(
+      DbImportStage.importingAttachments,
+      0.6,
+      'Scanning for new attachments',
+      stageProgress: 0,
+    );
+
+    final attachmentsSql = StringBuffer('''
+SELECT
+  attachment.ROWID AS source_rowid,
+  attachment.guid,
+  attachment.transfer_name,
+  attachment.uti,
+  attachment.mime_type,
+  attachment.total_bytes,
+  attachment.is_sticker,
+  attachment.is_outgoing,
+  attachment.created_date,
+  attachment.filename
+FROM attachment
+''');
+    final attachmentsArgs = <Object>[];
+    if (minAttachmentSourceRowIdExclusive != null) {
+      attachmentsSql.write('WHERE attachment.ROWID > ?');
+      attachmentsArgs.add(minAttachmentSourceRowIdExclusive);
+    }
+
+    final attachments = await messagesDb.rawQuery(
+      attachmentsSql.toString(),
+      attachmentsArgs,
+    );
+
+    if (attachments.isEmpty) {
+      emit(
+        DbImportStage.importingAttachments,
+        0.6,
+        'No new attachments detected',
+        stageProgress: 1,
+        stageCurrent: 0,
+        stageTotal: 0,
+      );
+    }
+
+    var processedAttachments = 0;
+    var insertedAttachments = 0;
+    final newAttachmentIds = <int>{};
+
     for (final row in attachments) {
-      final sourceRowId = row['ROWID'] as int?;
-      await ledgerDb.insertAttachment(
+      final sourceRowId = row['source_rowid'] as int?;
+      final insertResult = await ledgerDb.insertAttachment(
         id: sourceRowId,
         sourceRowid: sourceRowId,
         guid: row['guid'] as String?,
         transferName: row['transfer_name'] as String?,
         uti: row['uti'] as String?,
         mimeType: row['mime_type'] as String?,
-        totalBytes: row['total_bytes'] as int?,
+        totalBytes: (row['total_bytes'] as num?)?.toInt(),
         isSticker: (row['is_sticker'] as int? ?? 0) == 1,
         isOutgoing: _nullableBool(row['is_outgoing'] as int?),
         createdAtUtc: DateConverter.appleToIsoString(row['created_date']),
         localPath: row['filename'] as String?,
         batchId: batchId,
       );
-      processed++;
-      if (processed % 200 == 0 || processed == attachments.length) {
+
+      if (insertResult > 0 && sourceRowId != null) {
+        insertedAttachments++;
+        newAttachmentIds.add(sourceRowId);
+      }
+
+      processedAttachments++;
+      if (processedAttachments % 200 == 0 ||
+          processedAttachments == attachments.length) {
         emit(
           DbImportStage.importingAttachments,
           0.66,
-          'Imported $processed/${attachments.length} attachments',
-          stageProgress: processed / attachments.length,
-          stageCurrent: processed,
+          'Processed $processedAttachments/${attachments.length} attachments'
+          ' ($insertedAttachments inserted)',
+          stageProgress: attachments.isEmpty
+              ? 1
+              : processedAttachments / attachments.length,
+          stageCurrent: processedAttachments,
           stageTotal: attachments.length,
         );
       }
     }
 
-    final joins = await messagesDb.query('message_attachment_join');
-    processed = 0;
-    for (final row in joins) {
-      final messageId = row['message_id'] as int?;
-      final attachmentId = row['attachment_id'] as int?;
-      if (messageId == null || attachmentId == null) {
-        continue;
+    if (newAttachmentIds.isEmpty &&
+        minMessageAttachmentSourceRowIdExclusive != null) {
+      final fallbackRows = await messagesDb.rawQuery(
+        'SELECT DISTINCT attachment_id FROM message_attachment_join '
+        'WHERE attachment_id > ?',
+        <Object>[minMessageAttachmentSourceRowIdExclusive],
+      );
+      for (final row in fallbackRows) {
+        final attachmentId = row['attachment_id'] as int?;
+        if (attachmentId != null) {
+          newAttachmentIds.add(attachmentId);
+        }
       }
+    }
+
+    final messageIds = <int>{
+      if (newMessageSourceRowIds != null) ...newMessageSourceRowIds,
+    };
+
+    if (attachments.isEmpty && messageIds.isEmpty && newAttachmentIds.isEmpty) {
+      emit(
+        DbImportStage.linkingMessageArtifacts,
+        0.7,
+        'No new message attachments to link',
+        stageProgress: 1,
+        stageCurrent: 0,
+        stageTotal: 0,
+      );
+      return _AttachmentCounts(
+        attachments: insertedAttachments,
+        messageAttachments: 0,
+      );
+    }
+
+    final joinPairs = <({int messageId, int attachmentId})>{};
+
+    Future<void> collectJoinPairs({
+      required Set<int> ids,
+      required String column,
+    }) async {
+      if (ids.isEmpty) {
+        return;
+      }
+      final ordered = ids.toList()..sort();
+      const chunkSize = 200;
+      var index = 0;
+      while (index < ordered.length) {
+        final end = (index + chunkSize > ordered.length)
+            ? ordered.length
+            : index + chunkSize;
+        final chunk = ordered.sublist(index, end);
+        final placeholders = List<String>.filled(chunk.length, '?').join(', ');
+        final rows = await messagesDb.rawQuery(
+          'SELECT message_id, attachment_id FROM message_attachment_join '
+          'WHERE $column IN ($placeholders)',
+          chunk.map<Object>((id) => id).toList(),
+        );
+        for (final row in rows) {
+          final messageId = row['message_id'] as int?;
+          final attachmentId = row['attachment_id'] as int?;
+          if (messageId == null || attachmentId == null) {
+            continue;
+          }
+          joinPairs.add((messageId: messageId, attachmentId: attachmentId));
+        }
+        index = end;
+      }
+    }
+
+    await collectJoinPairs(ids: messageIds, column: 'message_id');
+    await collectJoinPairs(ids: newAttachmentIds, column: 'attachment_id');
+
+    if (joinPairs.isEmpty) {
+      emit(
+        DbImportStage.linkingMessageArtifacts,
+        0.7,
+        'No new message attachments to link',
+        stageProgress: 1,
+        stageCurrent: 0,
+        stageTotal: 0,
+      );
+      return _AttachmentCounts(
+        attachments: insertedAttachments,
+        messageAttachments: 0,
+      );
+    }
+
+    final totalPairs = joinPairs.length;
+    var processedPairs = 0;
+    var linkedPairs = 0;
+
+    emit(
+      DbImportStage.linkingMessageArtifacts,
+      0.7,
+      'Linking $totalPairs message attachments',
+      stageProgress: 0,
+      stageTotal: totalPairs,
+    );
+
+    for (final pair in joinPairs) {
       final insertResult = await ledgerDb.insertMessageAttachment(
-        messageId: messageId,
-        attachmentId: attachmentId,
-        sourceRowid: row['ROWID'] as int?,
+        messageId: pair.messageId,
+        attachmentId: pair.attachmentId,
+        sourceRowid: pair.attachmentId,
       );
 
-      // Only count as processed if actually inserted (not skipped)
       if (insertResult != -1) {
-        processed++;
+        linkedPairs++;
       }
-      if (processed % 500 == 0 || processed == joins.length) {
+
+      processedPairs++;
+      if (processedPairs % 200 == 0 || processedPairs == totalPairs) {
         emit(
           DbImportStage.linkingMessageArtifacts,
-          0.7,
-          'Linked $processed/${joins.length} message attachments',
-          stageProgress: processed / joins.length,
-          stageCurrent: processed,
-          stageTotal: joins.length,
+          0.72,
+          'Linked $linkedPairs/$totalPairs message attachments',
+          stageProgress: totalPairs == 0 ? 1 : processedPairs / totalPairs,
+          stageCurrent: processedPairs,
+          stageTotal: totalPairs,
         );
       }
     }
 
     return _AttachmentCounts(
-      attachments: attachments.length,
-      messageAttachments: joins.length,
+      attachments: insertedAttachments,
+      messageAttachments: linkedPairs,
     );
   }
 
@@ -690,15 +1002,33 @@ class LedgerImportService {
     emit(DbImportStage.importingAddressBook, 0.78, 'Importing contacts');
     final rows = await addressBookDb.query('ZABCDRECORD');
     var processed = 0;
+    var inserted = 0;
     for (final row in rows) {
       final recordId = row['Z_PK'] as int?;
       if (recordId == null) {
+        processed++;
         continue;
       }
       final first = row['ZFIRSTNAME'] as String?;
       final last = row['ZLASTNAME'] as String?;
       final company = row['ZORGANIZATION'] as String?;
       final isCompany = (row['ZISCOMPANY'] as int? ?? 0) == 1;
+
+      processed++;
+      final alreadyImported = await ledgerDb.contactExists(recordId);
+      if (alreadyImported) {
+        if (processed % 200 == 0 || processed == rows.length) {
+          emit(
+            DbImportStage.importingAddressBook,
+            0.82,
+            'Imported $inserted/${rows.length} contacts',
+            stageProgress: rows.isEmpty ? 1 : processed / rows.length,
+            stageCurrent: inserted,
+            stageTotal: rows.length,
+          );
+        }
+        continue;
+      }
 
       await ledgerDb.insertContact(
         id: recordId,
@@ -712,19 +1042,19 @@ class LedgerImportService {
         updatedAtUtc: DateConverter.appleToIsoString(row['ZMODIFICATIONDATE']),
         batchId: batchId,
       );
-      processed++;
+      inserted++;
       if (processed % 200 == 0 || processed == rows.length) {
         emit(
           DbImportStage.importingAddressBook,
           0.82,
-          'Imported $processed/${rows.length} contacts',
-          stageProgress: processed / rows.length,
-          stageCurrent: processed,
+          'Imported $inserted/${rows.length} contacts',
+          stageProgress: rows.isEmpty ? 1 : processed / rows.length,
+          stageCurrent: inserted,
           stageTotal: rows.length,
         );
       }
     }
-    return rows.length;
+    return inserted;
   }
 
   Future<int> _importContactChannels({
@@ -746,7 +1076,7 @@ class LedgerImportService {
       0.86,
       'Importing contact channels',
     );
-    var totalChannels = 0;
+    var insertedChannels = 0;
 
     final emailRows = await addressBookDb.query('ZABCDEMAILADDRESS');
     for (final row in emailRows) {
@@ -758,13 +1088,21 @@ class LedgerImportService {
       if (value == null || value.isEmpty) {
         continue;
       }
+      final normalizedValue = value.toLowerCase();
+      final alreadyImported = await ledgerDb.contactChannelExists(
+        kind: 'email',
+        value: normalizedValue,
+      );
+      if (alreadyImported) {
+        continue;
+      }
       await ledgerDb.insertContactChannel(
         contactId: recordId,
         kind: 'email',
-        value: value.toLowerCase(),
+        value: normalizedValue,
         label: row['ZLABEL'] as String?,
       );
-      totalChannels++;
+      insertedChannels++;
     }
 
     final phoneRows = await addressBookDb.query('ZABCDPHONENUMBER');
@@ -777,23 +1115,31 @@ class LedgerImportService {
       if (value == null || value.isEmpty) {
         continue;
       }
+      final normalizedValue = _normalizeIdentifier(value) ?? value;
+      final alreadyImported = await ledgerDb.contactChannelExists(
+        kind: 'phone',
+        value: normalizedValue,
+      );
+      if (alreadyImported) {
+        continue;
+      }
       await ledgerDb.insertContactChannel(
         contactId: recordId,
         kind: 'phone',
-        value: _normalizeIdentifier(value) ?? value,
+        value: normalizedValue,
         label: row['ZLABEL'] as String?,
       );
-      totalChannels++;
+      insertedChannels++;
     }
 
     emit(
       DbImportStage.importingAddressBook,
       0.9,
-      'Imported $totalChannels contact channels',
+      'Imported $insertedChannels contact channels',
       stageProgress: 1,
     );
 
-    return totalChannels;
+    return insertedChannels;
   }
 
   Future<String?> _buildHostInfoJson() async {
@@ -972,6 +1318,23 @@ class _RichTextExtraction {
   const _RichTextExtraction({required this.messages});
 
   final Map<int, String> messages;
+}
+
+class _MessageImportResult {
+  const _MessageImportResult({
+    required this.scannedCount,
+    required this.insertedCount,
+    required this.insertedSourceRowIds,
+  });
+
+  const _MessageImportResult.empty()
+    : scannedCount = 0,
+      insertedCount = 0,
+      insertedSourceRowIds = const <int>[];
+
+  final int scannedCount;
+  final int insertedCount;
+  final List<int> insertedSourceRowIds;
 }
 
 class _AttachmentCounts {
