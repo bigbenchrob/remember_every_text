@@ -1,4 +1,3 @@
-
 // abstract class DepartmentRepositoryInterface {
 //   /// Get departments list
 //   Future<Either<Failure, List<DepartmentEntity>>> getDepartments();

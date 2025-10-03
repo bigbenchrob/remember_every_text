@@ -1,0 +1,9 @@
+/Users/rob/Development/FlutterProjects/remember_every_text/rust/rust/attributed-string-decoder/target/debug/deps/allo_isolate-ea70c527f0a1a11f.d: /Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/allo-isolate-0.1.27/src/lib.rs /Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/allo-isolate-0.1.27/src/dart_array.rs /Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/allo-isolate-0.1.27/src/into_dart.rs /Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/allo-isolate-0.1.27/src/into_dart_extra.rs /Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/allo-isolate-0.1.27/src/ffi.rs
+
+/Users/rob/Development/FlutterProjects/remember_every_text/rust/rust/attributed-string-decoder/target/debug/deps/liballo_isolate-ea70c527f0a1a11f.rmeta: /Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/allo-isolate-0.1.27/src/lib.rs /Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/allo-isolate-0.1.27/src/dart_array.rs /Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/allo-isolate-0.1.27/src/into_dart.rs /Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/allo-isolate-0.1.27/src/into_dart_extra.rs /Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/allo-isolate-0.1.27/src/ffi.rs
+
+/Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/allo-isolate-0.1.27/src/lib.rs:
+/Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/allo-isolate-0.1.27/src/dart_array.rs:
+/Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/allo-isolate-0.1.27/src/into_dart.rs:
+/Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/allo-isolate-0.1.27/src/into_dart_extra.rs:
+/Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/allo-isolate-0.1.27/src/ffi.rs:

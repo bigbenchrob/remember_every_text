@@ -1,4 +1,4 @@
-OUT_DIR = Some(/Users/rob/Development/FlutterProjects/remember_this_text/rust/rust/attributed-string-decoder/target/debug/build/dart-sys-c847ec8ac5ac1d62/out)
+OUT_DIR = Some(/Users/rob/Development/FlutterProjects/remember_every_text/rust/rust/attributed-string-decoder/target/debug/build/dart-sys-c847ec8ac5ac1d62/out)
 OPT_LEVEL = Some(0)
 TARGET = Some(aarch64-apple-darwin)
 HOST = Some(aarch64-apple-darwin)
@@ -59,4 +59,4 @@ ARFLAGS_aarch64_apple_darwin = None
 cargo:rerun-if-env-changed=ARFLAGS_aarch64-apple-darwin
 ARFLAGS_aarch64-apple-darwin = None
 cargo:rustc-link-lib=static=dart_api_dl
-cargo:rustc-link-search=native=/Users/rob/Development/FlutterProjects/remember_this_text/rust/rust/attributed-string-decoder/target/debug/build/dart-sys-c847ec8ac5ac1d62/out
+cargo:rustc-link-search=native=/Users/rob/Development/FlutterProjects/remember_every_text/rust/rust/attributed-string-decoder/target/debug/build/dart-sys-c847ec8ac5ac1d62/out

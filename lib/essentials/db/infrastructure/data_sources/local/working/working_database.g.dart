@@ -1606,39 +1606,6 @@ class $WorkingChatsTable extends WorkingChats
     ),
     defaultValue: const Constant(false),
   );
-  static const VerificationMeta _userCustomNameMeta = const VerificationMeta(
-    'userCustomName',
-  );
-  @override
-  late final GeneratedColumn<String> userCustomName = GeneratedColumn<String>(
-    'user_custom_name',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _computedNameMeta = const VerificationMeta(
-    'computedName',
-  );
-  @override
-  late final GeneratedColumn<String> computedName = GeneratedColumn<String>(
-    'computed_name',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _displayNameMeta = const VerificationMeta(
-    'displayName',
-  );
-  @override
-  late final GeneratedColumn<String> displayName = GeneratedColumn<String>(
-    'display_name',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
   static const VerificationMeta _lastMessageAtUtcMeta = const VerificationMeta(
     'lastMessageAtUtc',
   );
@@ -1768,9 +1735,6 @@ class $WorkingChatsTable extends WorkingChats
     guid,
     service,
     isGroup,
-    userCustomName,
-    computedName,
-    displayName,
     lastMessageAtUtc,
     lastSenderIdentityId,
     lastMessagePreview,
@@ -1815,33 +1779,6 @@ class $WorkingChatsTable extends WorkingChats
       context.handle(
         _isGroupMeta,
         isGroup.isAcceptableOrUnknown(data['is_group']!, _isGroupMeta),
-      );
-    }
-    if (data.containsKey('user_custom_name')) {
-      context.handle(
-        _userCustomNameMeta,
-        userCustomName.isAcceptableOrUnknown(
-          data['user_custom_name']!,
-          _userCustomNameMeta,
-        ),
-      );
-    }
-    if (data.containsKey('computed_name')) {
-      context.handle(
-        _computedNameMeta,
-        computedName.isAcceptableOrUnknown(
-          data['computed_name']!,
-          _computedNameMeta,
-        ),
-      );
-    }
-    if (data.containsKey('display_name')) {
-      context.handle(
-        _displayNameMeta,
-        displayName.isAcceptableOrUnknown(
-          data['display_name']!,
-          _displayNameMeta,
-        ),
       );
     }
     if (data.containsKey('last_message_at_utc')) {
@@ -1954,18 +1891,6 @@ class $WorkingChatsTable extends WorkingChats
         DriftSqlType.bool,
         data['${effectivePrefix}is_group'],
       )!,
-      userCustomName: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}user_custom_name'],
-      ),
-      computedName: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}computed_name'],
-      ),
-      displayName: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}display_name'],
-      ),
       lastMessageAtUtc: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}last_message_at_utc'],
@@ -2020,9 +1945,6 @@ class WorkingChat extends DataClass implements Insertable<WorkingChat> {
   final String guid;
   final String service;
   final bool isGroup;
-  final String? userCustomName;
-  final String? computedName;
-  final String? displayName;
   final String? lastMessageAtUtc;
   final int? lastSenderIdentityId;
   final String? lastMessagePreview;
@@ -2038,9 +1960,6 @@ class WorkingChat extends DataClass implements Insertable<WorkingChat> {
     required this.guid,
     required this.service,
     required this.isGroup,
-    this.userCustomName,
-    this.computedName,
-    this.displayName,
     this.lastMessageAtUtc,
     this.lastSenderIdentityId,
     this.lastMessagePreview,
@@ -2059,15 +1978,6 @@ class WorkingChat extends DataClass implements Insertable<WorkingChat> {
     map['guid'] = Variable<String>(guid);
     map['service'] = Variable<String>(service);
     map['is_group'] = Variable<bool>(isGroup);
-    if (!nullToAbsent || userCustomName != null) {
-      map['user_custom_name'] = Variable<String>(userCustomName);
-    }
-    if (!nullToAbsent || computedName != null) {
-      map['computed_name'] = Variable<String>(computedName);
-    }
-    if (!nullToAbsent || displayName != null) {
-      map['display_name'] = Variable<String>(displayName);
-    }
     if (!nullToAbsent || lastMessageAtUtc != null) {
       map['last_message_at_utc'] = Variable<String>(lastMessageAtUtc);
     }
@@ -2099,15 +2009,6 @@ class WorkingChat extends DataClass implements Insertable<WorkingChat> {
       guid: Value(guid),
       service: Value(service),
       isGroup: Value(isGroup),
-      userCustomName: userCustomName == null && nullToAbsent
-          ? const Value.absent()
-          : Value(userCustomName),
-      computedName: computedName == null && nullToAbsent
-          ? const Value.absent()
-          : Value(computedName),
-      displayName: displayName == null && nullToAbsent
-          ? const Value.absent()
-          : Value(displayName),
       lastMessageAtUtc: lastMessageAtUtc == null && nullToAbsent
           ? const Value.absent()
           : Value(lastMessageAtUtc),
@@ -2143,9 +2044,6 @@ class WorkingChat extends DataClass implements Insertable<WorkingChat> {
       guid: serializer.fromJson<String>(json['guid']),
       service: serializer.fromJson<String>(json['service']),
       isGroup: serializer.fromJson<bool>(json['isGroup']),
-      userCustomName: serializer.fromJson<String?>(json['userCustomName']),
-      computedName: serializer.fromJson<String?>(json['computedName']),
-      displayName: serializer.fromJson<String?>(json['displayName']),
       lastMessageAtUtc: serializer.fromJson<String?>(json['lastMessageAtUtc']),
       lastSenderIdentityId: serializer.fromJson<int?>(
         json['lastSenderIdentityId'],
@@ -2170,9 +2068,6 @@ class WorkingChat extends DataClass implements Insertable<WorkingChat> {
       'guid': serializer.toJson<String>(guid),
       'service': serializer.toJson<String>(service),
       'isGroup': serializer.toJson<bool>(isGroup),
-      'userCustomName': serializer.toJson<String?>(userCustomName),
-      'computedName': serializer.toJson<String?>(computedName),
-      'displayName': serializer.toJson<String?>(displayName),
       'lastMessageAtUtc': serializer.toJson<String?>(lastMessageAtUtc),
       'lastSenderIdentityId': serializer.toJson<int?>(lastSenderIdentityId),
       'lastMessagePreview': serializer.toJson<String?>(lastMessagePreview),
@@ -2191,9 +2086,6 @@ class WorkingChat extends DataClass implements Insertable<WorkingChat> {
     String? guid,
     String? service,
     bool? isGroup,
-    Value<String?> userCustomName = const Value.absent(),
-    Value<String?> computedName = const Value.absent(),
-    Value<String?> displayName = const Value.absent(),
     Value<String?> lastMessageAtUtc = const Value.absent(),
     Value<int?> lastSenderIdentityId = const Value.absent(),
     Value<String?> lastMessagePreview = const Value.absent(),
@@ -2209,11 +2101,6 @@ class WorkingChat extends DataClass implements Insertable<WorkingChat> {
     guid: guid ?? this.guid,
     service: service ?? this.service,
     isGroup: isGroup ?? this.isGroup,
-    userCustomName: userCustomName.present
-        ? userCustomName.value
-        : this.userCustomName,
-    computedName: computedName.present ? computedName.value : this.computedName,
-    displayName: displayName.present ? displayName.value : this.displayName,
     lastMessageAtUtc: lastMessageAtUtc.present
         ? lastMessageAtUtc.value
         : this.lastMessageAtUtc,
@@ -2239,15 +2126,6 @@ class WorkingChat extends DataClass implements Insertable<WorkingChat> {
       guid: data.guid.present ? data.guid.value : this.guid,
       service: data.service.present ? data.service.value : this.service,
       isGroup: data.isGroup.present ? data.isGroup.value : this.isGroup,
-      userCustomName: data.userCustomName.present
-          ? data.userCustomName.value
-          : this.userCustomName,
-      computedName: data.computedName.present
-          ? data.computedName.value
-          : this.computedName,
-      displayName: data.displayName.present
-          ? data.displayName.value
-          : this.displayName,
       lastMessageAtUtc: data.lastMessageAtUtc.present
           ? data.lastMessageAtUtc.value
           : this.lastMessageAtUtc,
@@ -2282,9 +2160,6 @@ class WorkingChat extends DataClass implements Insertable<WorkingChat> {
           ..write('guid: $guid, ')
           ..write('service: $service, ')
           ..write('isGroup: $isGroup, ')
-          ..write('userCustomName: $userCustomName, ')
-          ..write('computedName: $computedName, ')
-          ..write('displayName: $displayName, ')
           ..write('lastMessageAtUtc: $lastMessageAtUtc, ')
           ..write('lastSenderIdentityId: $lastSenderIdentityId, ')
           ..write('lastMessagePreview: $lastMessagePreview, ')
@@ -2305,9 +2180,6 @@ class WorkingChat extends DataClass implements Insertable<WorkingChat> {
     guid,
     service,
     isGroup,
-    userCustomName,
-    computedName,
-    displayName,
     lastMessageAtUtc,
     lastSenderIdentityId,
     lastMessagePreview,
@@ -2327,9 +2199,6 @@ class WorkingChat extends DataClass implements Insertable<WorkingChat> {
           other.guid == this.guid &&
           other.service == this.service &&
           other.isGroup == this.isGroup &&
-          other.userCustomName == this.userCustomName &&
-          other.computedName == this.computedName &&
-          other.displayName == this.displayName &&
           other.lastMessageAtUtc == this.lastMessageAtUtc &&
           other.lastSenderIdentityId == this.lastSenderIdentityId &&
           other.lastMessagePreview == this.lastMessagePreview &&
@@ -2347,9 +2216,6 @@ class WorkingChatsCompanion extends UpdateCompanion<WorkingChat> {
   final Value<String> guid;
   final Value<String> service;
   final Value<bool> isGroup;
-  final Value<String?> userCustomName;
-  final Value<String?> computedName;
-  final Value<String?> displayName;
   final Value<String?> lastMessageAtUtc;
   final Value<int?> lastSenderIdentityId;
   final Value<String?> lastMessagePreview;
@@ -2365,9 +2231,6 @@ class WorkingChatsCompanion extends UpdateCompanion<WorkingChat> {
     this.guid = const Value.absent(),
     this.service = const Value.absent(),
     this.isGroup = const Value.absent(),
-    this.userCustomName = const Value.absent(),
-    this.computedName = const Value.absent(),
-    this.displayName = const Value.absent(),
     this.lastMessageAtUtc = const Value.absent(),
     this.lastSenderIdentityId = const Value.absent(),
     this.lastMessagePreview = const Value.absent(),
@@ -2384,9 +2247,6 @@ class WorkingChatsCompanion extends UpdateCompanion<WorkingChat> {
     required String guid,
     this.service = const Value.absent(),
     this.isGroup = const Value.absent(),
-    this.userCustomName = const Value.absent(),
-    this.computedName = const Value.absent(),
-    this.displayName = const Value.absent(),
     this.lastMessageAtUtc = const Value.absent(),
     this.lastSenderIdentityId = const Value.absent(),
     this.lastMessagePreview = const Value.absent(),
@@ -2403,9 +2263,6 @@ class WorkingChatsCompanion extends UpdateCompanion<WorkingChat> {
     Expression<String>? guid,
     Expression<String>? service,
     Expression<bool>? isGroup,
-    Expression<String>? userCustomName,
-    Expression<String>? computedName,
-    Expression<String>? displayName,
     Expression<String>? lastMessageAtUtc,
     Expression<int>? lastSenderIdentityId,
     Expression<String>? lastMessagePreview,
@@ -2422,9 +2279,6 @@ class WorkingChatsCompanion extends UpdateCompanion<WorkingChat> {
       if (guid != null) 'guid': guid,
       if (service != null) 'service': service,
       if (isGroup != null) 'is_group': isGroup,
-      if (userCustomName != null) 'user_custom_name': userCustomName,
-      if (computedName != null) 'computed_name': computedName,
-      if (displayName != null) 'display_name': displayName,
       if (lastMessageAtUtc != null) 'last_message_at_utc': lastMessageAtUtc,
       if (lastSenderIdentityId != null)
         'last_sender_identity_id': lastSenderIdentityId,
@@ -2445,9 +2299,6 @@ class WorkingChatsCompanion extends UpdateCompanion<WorkingChat> {
     Value<String>? guid,
     Value<String>? service,
     Value<bool>? isGroup,
-    Value<String?>? userCustomName,
-    Value<String?>? computedName,
-    Value<String?>? displayName,
     Value<String?>? lastMessageAtUtc,
     Value<int?>? lastSenderIdentityId,
     Value<String?>? lastMessagePreview,
@@ -2464,9 +2315,6 @@ class WorkingChatsCompanion extends UpdateCompanion<WorkingChat> {
       guid: guid ?? this.guid,
       service: service ?? this.service,
       isGroup: isGroup ?? this.isGroup,
-      userCustomName: userCustomName ?? this.userCustomName,
-      computedName: computedName ?? this.computedName,
-      displayName: displayName ?? this.displayName,
       lastMessageAtUtc: lastMessageAtUtc ?? this.lastMessageAtUtc,
       lastSenderIdentityId: lastSenderIdentityId ?? this.lastSenderIdentityId,
       lastMessagePreview: lastMessagePreview ?? this.lastMessagePreview,
@@ -2494,15 +2342,6 @@ class WorkingChatsCompanion extends UpdateCompanion<WorkingChat> {
     }
     if (isGroup.present) {
       map['is_group'] = Variable<bool>(isGroup.value);
-    }
-    if (userCustomName.present) {
-      map['user_custom_name'] = Variable<String>(userCustomName.value);
-    }
-    if (computedName.present) {
-      map['computed_name'] = Variable<String>(computedName.value);
-    }
-    if (displayName.present) {
-      map['display_name'] = Variable<String>(displayName.value);
     }
     if (lastMessageAtUtc.present) {
       map['last_message_at_utc'] = Variable<String>(lastMessageAtUtc.value);
@@ -2546,9 +2385,6 @@ class WorkingChatsCompanion extends UpdateCompanion<WorkingChat> {
           ..write('guid: $guid, ')
           ..write('service: $service, ')
           ..write('isGroup: $isGroup, ')
-          ..write('userCustomName: $userCustomName, ')
-          ..write('computedName: $computedName, ')
-          ..write('displayName: $displayName, ')
           ..write('lastMessageAtUtc: $lastMessageAtUtc, ')
           ..write('lastSenderIdentityId: $lastSenderIdentityId, ')
           ..write('lastMessagePreview: $lastMessagePreview, ')
@@ -8681,9 +8517,6 @@ typedef $$WorkingChatsTableCreateCompanionBuilder =
       required String guid,
       Value<String> service,
       Value<bool> isGroup,
-      Value<String?> userCustomName,
-      Value<String?> computedName,
-      Value<String?> displayName,
       Value<String?> lastMessageAtUtc,
       Value<int?> lastSenderIdentityId,
       Value<String?> lastMessagePreview,
@@ -8701,9 +8534,6 @@ typedef $$WorkingChatsTableUpdateCompanionBuilder =
       Value<String> guid,
       Value<String> service,
       Value<bool> isGroup,
-      Value<String?> userCustomName,
-      Value<String?> computedName,
-      Value<String?> displayName,
       Value<String?> lastMessageAtUtc,
       Value<int?> lastSenderIdentityId,
       Value<String?> lastMessagePreview,
@@ -8842,21 +8672,6 @@ class $$WorkingChatsTableFilterComposer
 
   ColumnFilters<bool> get isGroup => $composableBuilder(
     column: $table.isGroup,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get userCustomName => $composableBuilder(
-    column: $table.userCustomName,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get computedName => $composableBuilder(
-    column: $table.computedName,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get displayName => $composableBuilder(
-    column: $table.displayName,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9033,21 +8848,6 @@ class $$WorkingChatsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get userCustomName => $composableBuilder(
-    column: $table.userCustomName,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get computedName => $composableBuilder(
-    column: $table.computedName,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get displayName => $composableBuilder(
-    column: $table.displayName,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get lastMessageAtUtc => $composableBuilder(
     column: $table.lastMessageAtUtc,
     builder: (column) => ColumnOrderings(column),
@@ -9137,21 +8937,6 @@ class $$WorkingChatsTableAnnotationComposer
 
   GeneratedColumn<bool> get isGroup =>
       $composableBuilder(column: $table.isGroup, builder: (column) => column);
-
-  GeneratedColumn<String> get userCustomName => $composableBuilder(
-    column: $table.userCustomName,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get computedName => $composableBuilder(
-    column: $table.computedName,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get displayName => $composableBuilder(
-    column: $table.displayName,
-    builder: (column) => column,
-  );
 
   GeneratedColumn<String> get lastMessageAtUtc => $composableBuilder(
     column: $table.lastMessageAtUtc,
@@ -9332,9 +9117,6 @@ class $$WorkingChatsTableTableManager
                 Value<String> guid = const Value.absent(),
                 Value<String> service = const Value.absent(),
                 Value<bool> isGroup = const Value.absent(),
-                Value<String?> userCustomName = const Value.absent(),
-                Value<String?> computedName = const Value.absent(),
-                Value<String?> displayName = const Value.absent(),
                 Value<String?> lastMessageAtUtc = const Value.absent(),
                 Value<int?> lastSenderIdentityId = const Value.absent(),
                 Value<String?> lastMessagePreview = const Value.absent(),
@@ -9350,9 +9132,6 @@ class $$WorkingChatsTableTableManager
                 guid: guid,
                 service: service,
                 isGroup: isGroup,
-                userCustomName: userCustomName,
-                computedName: computedName,
-                displayName: displayName,
                 lastMessageAtUtc: lastMessageAtUtc,
                 lastSenderIdentityId: lastSenderIdentityId,
                 lastMessagePreview: lastMessagePreview,
@@ -9370,9 +9149,6 @@ class $$WorkingChatsTableTableManager
                 required String guid,
                 Value<String> service = const Value.absent(),
                 Value<bool> isGroup = const Value.absent(),
-                Value<String?> userCustomName = const Value.absent(),
-                Value<String?> computedName = const Value.absent(),
-                Value<String?> displayName = const Value.absent(),
                 Value<String?> lastMessageAtUtc = const Value.absent(),
                 Value<int?> lastSenderIdentityId = const Value.absent(),
                 Value<String?> lastMessagePreview = const Value.absent(),
@@ -9388,9 +9164,6 @@ class $$WorkingChatsTableTableManager
                 guid: guid,
                 service: service,
                 isGroup: isGroup,
-                userCustomName: userCustomName,
-                computedName: computedName,
-                displayName: displayName,
                 lastMessageAtUtc: lastMessageAtUtc,
                 lastSenderIdentityId: lastSenderIdentityId,
                 lastMessagePreview: lastMessagePreview,

@@ -1,0 +1,11 @@
+/Users/rob/Development/FlutterProjects/remember_every_text/rust/rust/attributed-string-decoder/target/debug/deps/addr2line-07de327ff6f277ec.d: /Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr2line-0.24.2/src/lib.rs /Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr2line-0.24.2/src/frame.rs /Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr2line-0.24.2/src/function.rs /Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr2line-0.24.2/src/lazy.rs /Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr2line-0.24.2/src/line.rs /Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr2line-0.24.2/src/lookup.rs /Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr2line-0.24.2/src/unit.rs
+
+/Users/rob/Development/FlutterProjects/remember_every_text/rust/rust/attributed-string-decoder/target/debug/deps/libaddr2line-07de327ff6f277ec.rmeta: /Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr2line-0.24.2/src/lib.rs /Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr2line-0.24.2/src/frame.rs /Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr2line-0.24.2/src/function.rs /Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr2line-0.24.2/src/lazy.rs /Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr2line-0.24.2/src/line.rs /Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr2line-0.24.2/src/lookup.rs /Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr2line-0.24.2/src/unit.rs
+
+/Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr2line-0.24.2/src/lib.rs:
+/Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr2line-0.24.2/src/frame.rs:
+/Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr2line-0.24.2/src/function.rs:
+/Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr2line-0.24.2/src/lazy.rs:
+/Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr2line-0.24.2/src/line.rs:
+/Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr2line-0.24.2/src/lookup.rs:
+/Users/rob/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr2line-0.24.2/src/unit.rs:

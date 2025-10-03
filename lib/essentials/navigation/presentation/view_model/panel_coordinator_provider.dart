@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../features/chats/presentation/view/chats_sidebar_view.dart';
 import '../../../../features/messages/feature_level_providers.dart';
+import '../../../../features/settings/presentation/view/settings_panel_view.dart';
 import '../../../db_import/presentation/view/db_import_control_panel.dart';
 import '../../../db_import/presentation/view_model/db_import_control_provider.dart';
 import '../../application/panels_view_state_provider.dart';
@@ -54,6 +55,7 @@ class PanelCoordinator extends _$PanelCoordinator {
       chats: (chatsSpec) => ChatsSidebarView(spec: chatsSpec),
       contacts: (_) => _buildEmptyPanelPlaceholder(panel),
       import: (spec) => _buildImportPanel(spec),
+      settings: (_) => const SettingsPanelView(),
     );
   }
 

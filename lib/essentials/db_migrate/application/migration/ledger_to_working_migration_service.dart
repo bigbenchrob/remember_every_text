@@ -186,8 +186,6 @@ class LedgerToWorkingMigrationService {
         batchId: batchId,
         handleToIdentity: identityProjection.handleToIdentityId,
         handleToContact: identityProjection.handleToContactId,
-        identityDisplayNames: identityProjection.identityDisplayNames,
-        contactIndex: contactIndex,
       );
       resultBuilder.chatsProjected = chatProjection.chatCount;
       resultBuilder.participantsProjected = chatProjection.participantCount;
@@ -559,8 +557,6 @@ class LedgerToWorkingMigrationService {
     required int batchId,
     required Map<int, int> handleToIdentity,
     required Map<int, int> handleToContact,
-    required Map<int, String> identityDisplayNames,
-    required _ContactIndex contactIndex,
   }) async {
     final chatRows = await importDb.query(
       'chats',
@@ -586,7 +582,6 @@ class LedgerToWorkingMigrationService {
         continue;
       }
       final guid = (row['guid'] as String?) ?? 'chat-$importChatId';
-      final ledgerDisplayName = row['display_name'] as String?;
       final isGroup = ((row['is_group'] as int?) ?? 0) == 1;
       final createdAtUtc = row['created_at_utc'] as String?;
       final updatedAtUtc = row['updated_at_utc'] as String?;
@@ -595,31 +590,57 @@ class LedgerToWorkingMigrationService {
       final participants =
           participantsByChat[importChatId] ?? const <_LedgerChatParticipant>[];
 
-      final computedName = _deriveChatDisplayName(
-        explicitName: ledgerDisplayName,
-        participants: participants,
-        handleToIdentity: handleToIdentity,
-        handleToContact: handleToContact,
-        identityDisplayNames: identityDisplayNames,
-        contactIndex: contactIndex,
-        isGroup: isGroup,
-      );
+      final existingChat =
+          await (workingDb.select(workingDb.workingChats)
+                ..where((tbl) => tbl.guid.equals(guid))
+                ..limit(1))
+              .getSingleOrNull();
 
-      final newChatId = await workingDb
-          .into(workingDb.workingChats)
-          .insert(
-            WorkingChatsCompanion.insert(
-              guid: guid,
-              service: Value(service ?? 'Unknown'),
-              isGroup: Value(isGroup),
-              computedName: Value(computedName),
-              displayName: Value(computedName),
-              createdAtUtc: Value(createdAtUtc),
-              updatedAtUtc: Value(updatedAtUtc),
+      int newChatId;
+      if (existingChat != null) {
+        newChatId = existingChat.id;
+        chatIdMap[importChatId] = newChatId;
+
+        final shouldUpdateService =
+            service != null && existingChat.service != service;
+        final shouldUpdateIsGroup = existingChat.isGroup != isGroup;
+        final shouldUpdateUpdatedAt =
+            updatedAtUtc != null && existingChat.updatedAtUtc != updatedAtUtc;
+
+        if (shouldUpdateService ||
+            shouldUpdateIsGroup ||
+            shouldUpdateUpdatedAt) {
+          await (workingDb.update(
+            workingDb.workingChats,
+          )..where((tbl) => tbl.id.equals(existingChat.id))).write(
+            WorkingChatsCompanion(
+              service: shouldUpdateService
+                  ? Value(service)
+                  : const Value.absent(),
+              isGroup: shouldUpdateIsGroup
+                  ? Value(isGroup)
+                  : const Value.absent(),
+              updatedAtUtc: shouldUpdateUpdatedAt
+                  ? Value(updatedAtUtc)
+                  : const Value.absent(),
             ),
           );
-      chatsInserted++;
-      chatIdMap[importChatId] = newChatId;
+        }
+      } else {
+        newChatId = await workingDb
+            .into(workingDb.workingChats)
+            .insert(
+              WorkingChatsCompanion.insert(
+                guid: guid,
+                service: Value(service ?? 'Unknown'),
+                isGroup: Value(isGroup),
+                createdAtUtc: Value(createdAtUtc),
+                updatedAtUtc: Value(updatedAtUtc),
+              ),
+            );
+        chatsInserted++;
+        chatIdMap[importChatId] = newChatId;
+      }
 
       var sortIndex = 0;
       for (final participant in participants) {
@@ -1093,7 +1114,12 @@ class LedgerToWorkingMigrationService {
         if (attachment == null) {
           continue;
         }
-        attachments.add(attachment.copyWith(messageId: messageId));
+        final attachmentWithMessageId = attachment.copyWith(
+          messageId: messageId,
+        );
+        attachments.add(attachmentWithMessageId);
+        // Update the attachmentsById map so the messageId is set
+        attachmentsById[attachmentId] = attachmentWithMessageId;
       }
       if (attachments.isNotEmpty) {
         attachmentsByMessage[messageId] = attachments;
@@ -1185,56 +1211,6 @@ class LedgerToWorkingMigrationService {
       index = end;
     }
     return result;
-  }
-
-  String _deriveChatDisplayName({
-    required String? explicitName,
-    required List<_LedgerChatParticipant> participants,
-    required Map<int, int> handleToIdentity,
-    required Map<int, int> handleToContact,
-    required Map<int, String> identityDisplayNames,
-    required _ContactIndex contactIndex,
-    required bool isGroup,
-  }) {
-    if (explicitName != null && explicitName.trim().isNotEmpty) {
-      return explicitName.trim();
-    }
-
-    final participantNames = <String>[];
-    for (final participant in participants) {
-      final handleId = participant.handleId;
-      if (handleId == null) {
-        continue;
-      }
-      final identityId = handleToIdentity[handleId];
-      if (identityId == null) {
-        continue;
-      }
-      final contactId = handleToContact[handleId];
-      if (contactId != null) {
-        final name = contactIndex.contactsById[contactId]?.displayName;
-        if (name != null && name.trim().isNotEmpty) {
-          participantNames.add(name.trim());
-          continue;
-        }
-      }
-      final identityName = identityDisplayNames[identityId];
-      if (identityName != null && identityName.trim().isNotEmpty) {
-        participantNames.add(identityName.trim());
-        continue;
-      }
-      participantNames.add('Participant');
-    }
-
-    if (participantNames.isEmpty) {
-      return isGroup ? 'Group chat' : 'Conversation';
-    }
-
-    if (isGroup) {
-      return participantNames.take(3).join(', ');
-    }
-
-    return participantNames.first;
   }
 
   String _deriveMessageStatus({
@@ -1348,6 +1324,54 @@ class LedgerToWorkingMigrationService {
     if (existingId != null) {
       return existingId;
     }
+
+    final existingRow =
+        await (workingDb.select(workingDb.workingIdentities)
+              ..where((tbl) {
+                final serviceMatches = tbl.service.equals(key.service);
+                final normalized = key.normalizedAddress;
+                if (normalized == null) {
+                  return serviceMatches & tbl.normalizedAddress.isNull();
+                }
+                return serviceMatches &
+                    tbl.normalizedAddress.equals(normalized);
+              })
+              ..limit(1))
+            .getSingleOrNull();
+
+    if (existingRow != null) {
+      identityLookup[key] = existingRow.id;
+
+      final desiredContactRef = contactId == null ? null : 'contact:$contactId';
+      final shouldUpdateDisplayName =
+          displayName.isNotEmpty && existingRow.displayName != displayName;
+      final shouldUpdateContactRef =
+          existingRow.contactRef != desiredContactRef;
+      final shouldUpdateSystem = existingRow.isSystem != isSystem;
+
+      if (shouldUpdateDisplayName ||
+          shouldUpdateContactRef ||
+          shouldUpdateSystem) {
+        await (workingDb.update(
+          workingDb.workingIdentities,
+        )..where((tbl) => tbl.id.equals(existingRow.id))).write(
+          WorkingIdentitiesCompanion(
+            displayName: shouldUpdateDisplayName
+                ? Value(displayName)
+                : const Value.absent(),
+            contactRef: shouldUpdateContactRef
+                ? Value(desiredContactRef)
+                : const Value.absent(),
+            isSystem: shouldUpdateSystem
+                ? Value(isSystem)
+                : const Value.absent(),
+          ),
+        );
+      }
+
+      return existingRow.id;
+    }
+
     final newId = await workingDb
         .into(workingDb.workingIdentities)
         .insert(

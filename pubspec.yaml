@@ -38,6 +38,8 @@ dependencies:
   macos_ui: ^2.2.0
   macos_window_utils: ^1.5.0
   watcher: ^1.1.0
+  url_launcher: ^6.3.0
+  plist_parser: ^0.2.5
 
   # Date/Time manipulation
   jiffy: ^6.3.1

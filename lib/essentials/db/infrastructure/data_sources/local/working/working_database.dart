@@ -26,7 +26,7 @@ class WorkingDatabase extends _$WorkingDatabase {
   WorkingDatabase(QueryExecutor executor) : super(executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -49,6 +49,9 @@ class WorkingDatabase extends _$WorkingDatabase {
           projectionState,
           projectionState.lastProjectedAttachmentId as GeneratedColumn,
         );
+      }
+      if (from < 4) {
+        await _removeChatNameColumns(m);
       }
       await _createIndexes();
       await _createVirtualTablesAndTriggers();
@@ -86,11 +89,51 @@ class WorkingDatabase extends _$WorkingDatabase {
       await migrator.createTable(messageReadMarks);
     }
   }
+
+  Future<void> _removeChatNameColumns(Migrator migrator) async {
+    await customStatement('DROP TABLE IF EXISTS chats_old');
+    await customStatement('ALTER TABLE chats RENAME TO chats_old');
+    await migrator.createTable(workingChats);
+    await customStatement('''
+      INSERT INTO chats (
+        id,
+        guid,
+        service,
+        is_group,
+        last_message_at_utc,
+        last_sender_identity_id,
+        last_message_preview,
+        unread_count,
+        pinned,
+        archived,
+        muted_until_utc,
+        favourite,
+        created_at_utc,
+        updated_at_utc
+      )
+      SELECT
+        id,
+        guid,
+        service,
+        is_group,
+        last_message_at_utc,
+        last_sender_identity_id,
+        last_message_preview,
+        unread_count,
+        pinned,
+        archived,
+        muted_until_utc,
+        favourite,
+        created_at_utc,
+        updated_at_utc
+      FROM chats_old
+    ''');
+    await customStatement('DROP TABLE chats_old');
+  }
 }
 
 const List<String> _workingIndexStatements = [
   'CREATE INDEX IF NOT EXISTS idx_chats_sort ON chats(pinned DESC, last_message_at_utc DESC)',
-  'CREATE INDEX IF NOT EXISTS idx_chats_display ON chats(display_name)',
   'CREATE INDEX IF NOT EXISTS idx_chat_participants_proj_order ON chat_participants_proj(chat_id, sort_key)',
   'CREATE INDEX IF NOT EXISTS idx_messages_chat_time ON messages(chat_id, sent_at_utc)',
   'CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender_identity_id)',
@@ -135,7 +178,6 @@ const List<String> _workingVirtualAndTriggerStatements = [
   SELECT
     c.id           AS chat_id,
     c.guid         AS chat_guid,
-    c.display_name,
     c.last_message_at_utc,
     c.unread_count,
     m.guid         AS last_message_guid,
@@ -324,10 +366,6 @@ class WorkingChats extends Table {
       )();
   BoolColumn get isGroup =>
       boolean().named('is_group').withDefault(const Constant(false))();
-  TextColumn get userCustomName =>
-      text().named('user_custom_name').nullable()();
-  TextColumn get computedName => text().named('computed_name').nullable()();
-  TextColumn get displayName => text().named('display_name').nullable()();
   TextColumn get lastMessageAtUtc =>
       text().named('last_message_at_utc').nullable()();
   IntColumn get lastSenderIdentityId => integer()

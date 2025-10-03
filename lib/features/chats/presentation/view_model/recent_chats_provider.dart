@@ -4,6 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../essentials/db/feature_level_providers.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/working/working_database.dart';
+import '../../../settings/application/contact_short_names/contact_short_names_controller.dart';
 
 part 'recent_chats_provider.g.dart';
 
@@ -16,6 +17,7 @@ class RecentChatSummary {
     required this.firstMessageDate,
     required this.lastMessageDate,
     required this.isGroup,
+    required this.participants,
   });
 
   final int chatId;
@@ -24,11 +26,13 @@ class RecentChatSummary {
   final DateTime? firstMessageDate;
   final DateTime? lastMessageDate;
   final bool isGroup;
+  final List<String> participants;
 }
 
 @riverpod
 Future<List<RecentChatSummary>> recentChats(Ref ref, {int limit = 5}) async {
   final db = await ref.watch(driftWorkingDatabaseProvider.future);
+  final shortNames = await ref.watch(contactShortNamesProvider.future);
 
   List<WorkingChat> chatRows;
   final chatsQuery = db.select(db.workingChats)
@@ -59,11 +63,33 @@ Future<List<RecentChatSummary>> recentChats(Ref ref, {int limit = 5}) async {
     return parsed?.toLocal();
   }
 
-  String deriveTitle(WorkingChat chat) {
-    return chat.displayName ??
-        chat.computedName ??
-        chat.userCustomName ??
-        'Unnamed Conversation';
+  String resolveContactKey(WorkingIdentity identity) {
+    final contactRef = identity.contactRef?.trim();
+    if (contactRef != null && contactRef.isNotEmpty) {
+      return 'contact:$contactRef';
+    }
+    return 'identity:${identity.id}';
+  }
+
+  String deriveTitle(WorkingChat chat, List<String> participants) {
+    if (participants.isEmpty) {
+      return 'Unnamed Conversation';
+    }
+
+    if (!chat.isGroup && participants.isNotEmpty) {
+      return participants.first;
+    }
+
+    if (participants.length == 1) {
+      return participants.first;
+    }
+
+    if (participants.length == 2) {
+      return '${participants[0]} and ${participants[1]}';
+    }
+
+    final remainingCount = participants.length - 2;
+    return '${participants[0]}, ${participants[1]} + $remainingCount more';
   }
 
   final results = <RecentChatSummary>[];
@@ -85,14 +111,66 @@ Future<List<RecentChatSummary>> recentChats(Ref ref, {int limit = 5}) async {
 
     final lastMessageDate = parseUtc(lastSentUtc ?? chat.lastMessageAtUtc);
 
+    // Query all participants for this chat
+    final participantsQuery =
+        db.select(db.chatParticipantsProj).join([
+            drift.innerJoin(
+              db.workingIdentities,
+              db.workingIdentities.id.equalsExp(
+                db.chatParticipantsProj.identityId,
+              ),
+            ),
+          ])
+          ..where(db.chatParticipantsProj.chatId.equals(chat.id))
+          ..orderBy([
+            drift.OrderingTerm(expression: db.chatParticipantsProj.sortKey),
+          ]);
+
+    final participantRows = await participantsQuery.get();
+    final participantNames = <String>[];
+    final seenNames = <String>{};
+
+    for (final row in participantRows) {
+      final identity = row.readTable(db.workingIdentities);
+      if (identity.isSystem) {
+        continue;
+      }
+
+      final key = resolveContactKey(identity);
+      final trimmedShortName = shortNames[key]?.trim();
+      final trimmedIdentityName = identity.displayName?.trim();
+      final trimmedHandle = identity.normalizedAddress?.trim();
+
+      var resolvedName = trimmedShortName;
+      if (resolvedName == null || resolvedName.isEmpty) {
+        resolvedName = trimmedIdentityName;
+      }
+      if (resolvedName == null || resolvedName.isEmpty) {
+        resolvedName = trimmedHandle;
+      }
+      if (resolvedName == null || resolvedName.isEmpty) {
+        resolvedName = 'Unknown Contact';
+      }
+
+      final normalized = resolvedName.toLowerCase();
+      if (seenNames.add(normalized)) {
+        participantNames.add(resolvedName);
+      }
+    }
+
+    if (participantNames.isEmpty) {
+      participantNames.add('Unknown Contact');
+    }
+
     results.add(
       RecentChatSummary(
         chatId: chat.id,
-        title: deriveTitle(chat),
+        title: deriveTitle(chat, participantNames),
         messageCount: messageCount,
         firstMessageDate: parseUtc(firstSentUtc ?? chat.createdAtUtc),
         lastMessageDate: lastMessageDate,
         isGroup: chat.isGroup,
+        participants: participantNames,
       ),
     );
   }

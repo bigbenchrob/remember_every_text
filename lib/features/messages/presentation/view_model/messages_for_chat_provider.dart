@@ -7,6 +7,60 @@ import '../../../../essentials/db/infrastructure/data_sources/local/working/work
 
 part 'messages_for_chat_provider.g.dart';
 
+/// Attachment information for display
+class AttachmentInfo {
+  const AttachmentInfo({
+    required this.id,
+    required this.localPath,
+    required this.mimeType,
+    required this.transferName,
+  });
+
+  final int id;
+  final String? localPath;
+  final String? mimeType;
+  final String? transferName;
+
+  bool get isImage {
+    if (mimeType != null) {
+      return mimeType!.startsWith('image/');
+    }
+    if (localPath != null) {
+      final path = localPath!.toLowerCase();
+      return path.endsWith('.jpg') ||
+          path.endsWith('.jpeg') ||
+          path.endsWith('.png') ||
+          path.endsWith('.heic') ||
+          path.endsWith('.heif') ||
+          path.endsWith('.gif') ||
+          path.endsWith('.webp');
+    }
+    return false;
+  }
+
+  bool get isVideo {
+    if (mimeType != null) {
+      return mimeType!.startsWith('video/');
+    }
+    if (localPath != null) {
+      final path = localPath!.toLowerCase();
+      return path.endsWith('.mov') ||
+          path.endsWith('.mp4') ||
+          path.endsWith('.m4v') ||
+          path.endsWith('.avi') ||
+          path.endsWith('.mkv');
+    }
+    return false;
+  }
+
+  bool get isUrlPreview {
+    if (localPath != null) {
+      return localPath!.toLowerCase().endsWith('.pluginpayloadattachment');
+    }
+    return false;
+  }
+}
+
 /// Lightweight view model representing a message row rendered in the UI.
 class ChatMessageListItem {
   const ChatMessageListItem({
@@ -17,6 +71,7 @@ class ChatMessageListItem {
     required this.text,
     required this.sentAt,
     required this.hasAttachments,
+    this.attachments = const [],
   });
 
   final int id;
@@ -26,6 +81,7 @@ class ChatMessageListItem {
   final String text;
   final DateTime? sentAt;
   final bool hasAttachments;
+  final List<AttachmentInfo> attachments;
 }
 
 @riverpod
@@ -73,23 +129,49 @@ Stream<List<ChatMessageListItem>> messagesForChat(
           ),
         ]);
 
-  yield* query.watch().map((rows) {
-    return rows.map((row) {
+  yield* query.watch().asyncMap((rows) async {
+    final items = <ChatMessageListItem>[];
+
+    for (final row in rows) {
       final message = row.readTable(db.workingMessages);
       final identity = row.readTableOrNull(db.workingIdentities);
 
-      return ChatMessageListItem(
-        id: message.id,
-        guid: message.guid,
-        isFromMe: message.isFromMe,
-        senderName: resolveSenderName(
-          identity: identity,
+      // Fetch attachments for this message if it has any
+      final attachments = message.hasAttachments
+          ? await (db.select(db.workingAttachments)
+                  ..where((a) => a.messageGuid.equals(message.guid)))
+                .get()
+                .then((attachmentRows) {
+                  return attachmentRows
+                      .map(
+                        (a) => AttachmentInfo(
+                          id: a.id,
+                          localPath: a.localPath,
+                          mimeType: a.mimeType,
+                          transferName: a.transferName,
+                        ),
+                      )
+                      .toList();
+                })
+          : <AttachmentInfo>[];
+
+      items.add(
+        ChatMessageListItem(
+          id: message.id,
+          guid: message.guid,
           isFromMe: message.isFromMe,
+          senderName: resolveSenderName(
+            identity: identity,
+            isFromMe: message.isFromMe,
+          ),
+          text: message.textContent ?? '[No text content]',
+          sentAt: parseUtc(message.sentAtUtc),
+          hasAttachments: message.hasAttachments,
+          attachments: attachments,
         ),
-        text: message.textContent ?? '[No text content]',
-        sentAt: parseUtc(message.sentAtUtc),
-        hasAttachments: message.hasAttachments,
       );
-    }).toList();
+    }
+
+    return items;
   });
 }

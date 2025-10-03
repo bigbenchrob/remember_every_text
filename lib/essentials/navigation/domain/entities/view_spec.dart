@@ -4,6 +4,7 @@ import 'features/chats_spec.dart';
 import 'features/contacts_spec.dart';
 import 'features/import_spec.dart';
 import 'features/messages_spec.dart';
+import 'features/settings_spec.dart';
 
 part 'view_spec.freezed.dart';
 
@@ -13,4 +14,5 @@ abstract class ViewSpec with _$ViewSpec {
   const factory ViewSpec.chats(ChatsSpec spec) = _ViewChats;
   const factory ViewSpec.contacts(ContactsSpec spec) = _ViewContacts;
   const factory ViewSpec.import(ImportSpec spec) = _ViewImport;
+  const factory ViewSpec.settings(SettingsSpec spec) = _ViewSettings;
 }

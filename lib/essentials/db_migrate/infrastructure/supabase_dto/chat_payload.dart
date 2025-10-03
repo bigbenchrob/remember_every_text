@@ -4,9 +4,6 @@ class SupabaseChatPayload {
     required this.guid,
     required this.service,
     required this.isGroup,
-    required this.displayName,
-    this.userCustomName,
-    this.computedName,
     this.lastMessageAtUtc,
     this.lastSenderIdentityId,
     this.lastMessagePreview,
@@ -23,9 +20,6 @@ class SupabaseChatPayload {
   final String guid;
   final String service;
   final bool isGroup;
-  final String? displayName;
-  final String? userCustomName;
-  final String? computedName;
   final DateTime? lastMessageAtUtc;
   final int? lastSenderIdentityId;
   final String? lastMessagePreview;
@@ -43,9 +37,6 @@ class SupabaseChatPayload {
       'guid': guid,
       'service': service,
       'is_group': isGroup,
-      'display_name': displayName,
-      'user_custom_name': userCustomName,
-      'computed_name': computedName,
       'last_message_at_utc': lastMessageAtUtc?.toIso8601String(),
       'last_sender_identity_id': lastSenderIdentityId,
       'last_message_preview': lastMessagePreview,

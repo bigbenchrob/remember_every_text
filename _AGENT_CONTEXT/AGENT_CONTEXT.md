@@ -35,7 +35,18 @@ This file serves as the master index for all critical documentation that AI agen
 - Naming conventions and file organization patterns
 - Infrastructure/Application/Domain layer separation
 
-### 4. Riverpod Provider Patterns ⚠️ MANDATORY PATTERNS
+### 4. Database Schema Reference ⚠️ CRITICAL FOR DATABASE WORK
+
+📁 **`10-database-schema-reference.md`**
+
+- **REQUIRED BEFORE ANY DATABASE QUERIES** - Prevents field name mistakes
+- Authoritative schema for all database tables
+- Common join patterns and query examples
+- Database file locations (NOT in Application Support!)
+- Critical anti-patterns to avoid (message vs messages, text vs content, etc.)
+- **IGNORE THIS = BROKEN QUERIES** - Wrong table/field names cause runtime errors
+
+### 5. Riverpod Provider Patterns ⚠️ MANDATORY PATTERNS
 
 📁 **`05-riverpod-provider-patterns.md`**
 
@@ -53,6 +64,9 @@ This file serves as the master index for all critical documentation that AI agen
 - **Control flow**: Always use braces, never single-line statements
 - **Async functions**: Return `Future<void>`, never `void`
 - **Containers**: Use `ColoredBox` when only setting color
+- **Database tables**: `messages` (plural), never `message` (singular)
+- **Database fields**: `content` not `text`, `message_id` not `message_guid`
+- **Database location**: `/Users/rob/sqlite_rmc/remember_every_text/working.db`
 - **AddressBook imports**: MUST use `getFolderAggregateEitherProvider` for path resolution
 - **Riverpod providers**: MUST use `@riverpod` annotation, NEVER manual providers
 
@@ -114,6 +128,33 @@ See `03-navigation-overview.md` for complete architecture, implementation layers
 - Build instructions and troubleshooting
 - **WITHOUT EXTRACTOR**: Messages import with mostly empty text content
 
+### 7. Native Link Preview Flow ✅
+
+📁 **`09-rust-url-preview-parser.md`** _(Quick reference name retained for numbering; content now documents the LinkPresentation flow)_
+
+- Summarises the production LinkPresentation + method channel architecture
+- Lists key files (`native_link_preview_service.dart`, `url_preview_widget.dart`, `messages_for_chat_view.dart`)
+- Outlines troubleshooting tips and test harness (`url_preview_test_runner.dart`)
+
+📁 **`12-native-link-preview-implementation.md`**
+
+- Full implementation guide for the LinkPresentation integration
+- Explains service wiring, widget behaviour, and fallback UX
+- Notes there is no longer any attachment parsing or Rust dependency for previews
+
+### 8. Data Import & Migration Strategy ⚠️ CRITICAL FOR IMPORT/MIGRATION WORK
+
+📁 **`11-data-import-migration-strategy.md`**
+
+- **ESSENTIAL FOR ALL IMPORT AND MIGRATION WORK** - Complete strategy documentation
+- Two-database architecture: import.db (immutable ledger) + working.db (application database)
+- 12-stage import pipeline with progress tracking
+- Data flow: macOS chat.db/AddressBook → import.db → working.db
+- Batch tracking and provenance system
+- Rust extractor integration for attributedBody
+- Performance considerations and best practices
+- **WITHOUT THIS**: Risk breaking import/migration workflows
+
 ## File Organization
 
 ```
@@ -126,6 +167,10 @@ _AGENT_CONTEXT/
 ├── 05-riverpod-provider-patterns.md       # ⚠️ MANDATORY - Provider code generation rules
 ├── 06-flutter-dart-agent-rules.md         # Extended Flutter/Dart agent rules
 ├── 08-rust-message-extractor.md           # ⚠️ CRITICAL - Rust binary for message text extraction
+├── 09-rust-url-preview-parser.md          # LinkPresentation quick reference (naming retained)
+├── 10-database-schema-reference.md        # ⚠️ CRITICAL - Database schema & query patterns
+├── 11-data-import-migration-strategy.md   # ⚠️ CRITICAL - Import/migration architecture
+├── 12-native-link-preview-implementation.md # Native LinkPresentation for URL previews
 └── [Additional numbered files as needed]
 ```
 
@@ -136,7 +181,11 @@ _AGENT_CONTEXT/
 3. **IF WORKING WITH IMPORTS** - Read `01-addressbook-database-resolution.md`
 4. **FOR ARCHITECTURE QUESTIONS** - Reference `02-architecture-overview.md`
 5. **FOR UI/NAVIGATION WORK** - Read `03-navigation-overview.md` to understand explicit event fields
-6. **FOR PROVIDERS** - Follow `05-riverpod-provider-patterns.md` for code generation patterns
-7. When in doubt, ask for clarification rather than guessing
+6. **FOR DATABASE WORK** - Read `10-database-schema-reference.md` before writing queries
+7. **FOR PROVIDERS** - Follow `05-riverpod-provider-patterns.md` for code generation patterns
+8. **FOR MESSAGE IMPORTS** - Read `08-rust-message-extractor.md` for text extraction
+9. **FOR URL PREVIEWS** - Read `09-rust-url-preview-parser.md` (quick reference) and `12-native-link-preview-implementation.md`
+10. **FOR IMPORT/MIGRATION WORK** - Read `11-data-import-migration-strategy.md` for complete system architecture
+11. When in doubt, ask for clarification rather than guessing
 
 **Remember**: Following these guidelines prevents the most common agent mistakes and ensures code quality.

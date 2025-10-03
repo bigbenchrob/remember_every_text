@@ -14,6 +14,7 @@ import './providers.dart';
 import 'essentials/db_import/application/monitor/chat_db_change_monitor_provider.dart';
 import 'essentials/navigation/application/router.dart';
 import 'essentials/window_state/feature_level_providers.dart';
+import 'frb_generated.dart';
 
 /// This method initializes macos_window_utils and styles the window.
 Future<void> _configureMacosWindowUtils() async {
@@ -65,6 +66,9 @@ void main() async {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
   }
+
+  // Initialize Rust library for URL preview parsing
+  await RustLib.init();
 
   await _configureMacosWindowUtils();
 

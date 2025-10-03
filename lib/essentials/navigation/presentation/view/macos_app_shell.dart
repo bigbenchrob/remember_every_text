@@ -12,6 +12,7 @@ import '../../domain/entities/features/chats_spec.dart';
 import '../../domain/entities/features/contacts_spec.dart';
 import '../../domain/entities/features/import_spec.dart';
 import '../../domain/entities/features/messages_spec.dart';
+import '../../domain/entities/features/settings_spec.dart';
 import '../../domain/entities/view_spec.dart';
 import '../../domain/navigation_constants.dart';
 import '../view_model/panel_widget_providers.dart';
@@ -27,6 +28,8 @@ class MacosAppShell extends ConsumerStatefulWidget {
 class _MacosAppShellState extends ConsumerState<MacosAppShell> {
   double? _sidebarWidth;
   double? _endSidebarWidth;
+  double? _savedEndSidebarWidth; // Remember width when collapsed
+  bool _endSidebarVisible = false;
   bool _initialized = false;
   Timer? _debounceTimer;
   Timer? _windowFrameDebounce;
@@ -47,6 +50,7 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
         setState(() {
           _sidebarWidth = state.sidebarWidth;
           _endSidebarWidth = state.endSidebarWidth;
+          _savedEndSidebarWidth = state.endSidebarWidth; // Remember last width
           _initialized = true;
         });
       }
@@ -71,6 +75,28 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
     _debounceTimer?.cancel();
     _windowFrameDebounce?.cancel();
     super.dispose();
+  }
+
+  void _handleEndSidebarContentChange(bool hasContent) {
+    if (hasContent && !_endSidebarVisible) {
+      // Restore sidebar to saved width
+      setState(() {
+        _endSidebarVisible = true;
+        _endSidebarWidth = _savedEndSidebarWidth ?? 280.0;
+      });
+    } else if (!hasContent && _endSidebarVisible) {
+      // Remember current width before collapsing
+      setState(() {
+        _savedEndSidebarWidth = _endSidebarWidth;
+        _endSidebarVisible = false;
+        _endSidebarWidth = 0.0;
+      });
+      // Save the collapsed state
+      final windowSvc = ref.read(windowStateServiceProvider);
+      _debounceSave(() async {
+        await windowSvc.saveSidebarWidths(endSidebarWidth: 0.0);
+      });
+    }
   }
 
   @override
@@ -107,6 +133,15 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
           }
         });
       }
+    });
+
+    // Watch for right panel content changes and auto-show/hide sidebar
+    ref.listen<Map<WindowPanel, ViewSpec?>>(panelsViewStateProvider, (
+      previous,
+      next,
+    ) {
+      final hasContent = next[WindowPanel.right] != null;
+      _handleEndSidebarContentChange(hasContent);
     });
 
     return MacosWindow(
@@ -146,6 +181,43 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
         toolBar: ToolBar(
           title: const Text('Remember This Text'),
           centerTitle: true,
+          leading: MacosTooltip(
+            message: 'Settings',
+            useMousePosition: false,
+            child: MacosIconButton(
+              icon: MacosIcon(
+                CupertinoIcons.gear_alt,
+                color: MacosTheme.brightnessOf(context).resolve(
+                  const Color.fromRGBO(0, 0, 0, 0.65),
+                  const Color.fromRGBO(255, 255, 255, 0.75),
+                ),
+                size: 18,
+              ),
+              boxConstraints: const BoxConstraints(
+                minHeight: 20,
+                minWidth: 20,
+                maxWidth: 48,
+                maxHeight: 38,
+              ),
+              onPressed: () {
+                const spec = ViewSpec.settings(
+                  SettingsSpec.contactShortNames(),
+                );
+
+                ref
+                    .read(navigationLoggerProvider.notifier)
+                    .logToolbarClick(
+                      buttonLabel: 'Settings',
+                      targetPanel: WindowPanel.center,
+                      viewSpec: spec,
+                    );
+
+                ref
+                    .read(panelsViewStateProvider.notifier)
+                    .show(panel: WindowPanel.center, spec: spec);
+              },
+            ),
+          ),
           actions: [
             ToolBarIconButton(
               label: 'Messages',
@@ -226,32 +298,6 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
                     .read(navigationLoggerProvider.notifier)
                     .logToolbarClick(
                       buttonLabel: 'Import',
-                      targetPanel: WindowPanel.right,
-                      viewSpec: spec,
-                    );
-
-                // Perform the navigation
-                ref
-                    .read(panelsViewStateProvider.notifier)
-                    .show(panel: WindowPanel.right, spec: spec);
-              },
-              showLabel: false,
-            ),
-            const ToolBarSpacer(),
-            ToolBarIconButton(
-              label: 'Settings',
-              icon: const MacosIcon(CupertinoIcons.settings),
-              onPressed: () {
-                // Demo: Show contacts search as an example
-                const spec = ViewSpec.contacts(
-                  ContactsSpec.search(query: 'John'),
-                );
-
-                // Log the navigation action
-                ref
-                    .read(navigationLoggerProvider.notifier)
-                    .logToolbarClick(
-                      buttonLabel: 'Settings',
                       targetPanel: WindowPanel.right,
                       viewSpec: spec,
                     );

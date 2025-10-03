@@ -1,0 +1,326 @@
+Riverpod Wiring for Overlay + Working DB (Preferences Merge)
+
+Purpose
+
+This document shows how to wire Riverpod providers so that view models (e.g., ContactVM, ChatVM) are built by merging:
+	1.	“Working DB” data (macOS mirror; read-only domain facts), with
+	2.	“Overlay DB” user preferences (shortName, isFavorite, isPinned, etc.).
+
+The goal is to keep your working DB pristine and disposable, while overlay data persists and is composed transparently in your UI layer.
+
+⸻
+
+Assumptions and Naming
+	•	Drift DBs:
+	•	WorkingDb (your existing mirror).
+	•	UserOverlaysDb (lightweight preferences DB).
+	•	Stable keys:
+	•	contactKey (handleId or normalized address/email).
+	•	chatGuid (iMessage chat GUID).
+	•	Repositories:
+	•	Working repositories remain in their features (e.g., features/contacts/infrastructure/repositories).
+	•	Preferences repository (overlay) lives in features/preferences/application/repositories.
+	•	Providers:
+	•	Feature-level providers in each feature’s feature_level_providers.dart.
+	•	RiverpodAnnotation used for @riverpod classes (ChatRepository extends _$ChatRepository, etc.) or plain Provider/StreamProvider where simpler.
+
+⸻
+
+Folder Layout (New/Updated Files)
+
+lib/
+features/
+preferences/
+feature_level_providers.dart
+application/
+repositories/
+preferences_repository.dart
+infrastructure/
+db/
+user_overlays_db.dart
+user_overlays_tables.dart
+daos/
+contact_overrides_dao.dart
+chat_overrides_dao.dart
+contacts/
+feature_level_providers.dart
+application/
+repositories/
+contacts_repository.dart
+chats/
+feature_level_providers.dart
+application/
+repositories/
+chats_repository.dart
+app/
+providers/
+database_connections_providers.dart
+view_models/
+contact_vm_providers.dart
+chat_vm_providers.dart
+
+Adjust paths to your current structure as needed. The separation between app/providers (composition) and features/* is deliberate: features own raw data access; app layer composes them into VMs.
+
+⸻
+
+Database Connections Providers
+
+File: lib/app/providers/database_connections_providers.dart
+
+Purpose: Provide singleton instances of WorkingDb and UserOverlaysDb and keep their lifecycle under control.
+
+Key points:
+	•	Create and memoize QueryExecutor(s) (NativeDatabase/VMDatabase).
+	•	For macOS sandbox path, build Application Support path at startup.
+	•	Expose Provider and Provider.
+	•	Optionally expose DAO providers here or in features.
+
+Example outline (inline; adapt to your project):
+	•	final appSupportDirProvider = Provider(() => … resolve Application Support path …);
+	•	final userOverlaysDbProvider = Provider((ref) { final dir = ref.watch(appSupportDirProvider); final file = File(’${dir.path}/user_overlays.db’); final executor = NativeDatabase(file); return UserOverlaysDb(executor); });
+	•	final workingDbProvider = Provider((ref) { … your existing executor … return WorkingDb(executor); });
+
+If you already manage DB lifecycles elsewhere, just expose providers that read those singletons.
+
+⸻
+
+DAO Providers (Overlay)
+
+File: lib/features/preferences/feature_level_providers.dart
+
+Purpose: Expose DAOs for overlay DB via providers.
+
+Outline:
+	•	final contactOverridesDaoProvider = Provider((ref) { final db = ref.watch(userOverlaysDbProvider); return ContactOverridesDao(db); });
+	•	final chatOverridesDaoProvider = Provider((ref) { final db = ref.watch(userOverlaysDbProvider); return ChatOverridesDao(db); });
+
+⸻
+
+Working Repositories Providers
+
+You likely already have these in features/contacts/feature_level_providers.dart and features/chats/feature_level_providers.dart. Ensure each exposes:
+	•	A repository to get/watch a single entity by key (stream preferred).
+	•	A repository to watch lists (for screens listing contacts/chats).
+	•	Methods do not know about overlays.
+
+Example outline (contacts):
+	•	final contactsRepositoryProvider = Provider((ref) { final db = ref.watch(workingDbProvider); return DriftContactsRepository(db); });
+
+Same for chats.
+
+⸻
+
+Preferences Repository (Overlay)
+
+File: lib/features/preferences/application/repositories/preferences_repository.dart
+
+Purpose: Methods to set/get overlays (short name, favorite, pinned, muted, tint).
+
+Interface (suggested minimal):
+	•	Stream<ContactOverride?> watchContactOverride(String contactKey)
+	•	Future upsertContactShortName(String contactKey, String? shortName)
+	•	Future setContactFavorite(String contactKey, bool isFavorite)
+	•	Stream<ChatOverride?> watchChatOverride(String chatGuid)
+	•	Future setChatPinned(String chatGuid, bool isPinned)
+	•	Future setChatMuted(String chatGuid, bool isMuted)
+	•	Future setChatTint(String chatGuid, String? hex)
+
+Provider:
+	•	final preferencesRepositoryProvider = Provider((ref) { final contactDao = ref.watch(contactOverridesDaoProvider); final chatDao = ref.watch(chatOverridesDaoProvider); return DriftPreferencesRepository(contactDao, chatDao); });
+
+⸻
+
+View Models (Merged)
+
+We produce VM providers that combine working streams with overlay streams. Prefer streams for UI that should live-update as users toggle favorites/names.
+
+ContactVM
+
+Minimal fields (extend later): key, displayName, isFavorite, plus pass-through fields needed by UI.
+
+Merge logic:
+	•	watch Working contact by contactKey as Stream.
+	•	watch ContactOverride by contactKey as Stream<ContactOverride?>.
+	•	combineLatest and map to ContactVM:
+displayName = override?.shortName ?? contact.computedDisplayName
+isFavorite  = override?.isFavorite ?? false
+
+File: lib/app/providers/view_models/contact_vm_providers.dart
+
+Providers:
+	•	final contactStreamProvider = StreamProvider.family<Contact, String>((ref, contactKey) { final repo = ref.watch(contactsRepositoryProvider); return repo.watchByKey(contactKey); });
+	•	final contactOverrideStreamProvider = StreamProvider.family<ContactOverride?, String>((ref, contactKey) { final prefs = ref.watch(preferencesRepositoryProvider); return prefs.watchContactOverride(contactKey); });
+	•	final contactVmProvider = StreamProvider.family<ContactVM, String>((ref, contactKey) {
+final contactStream = ref.watch(contactStreamProvider(contactKey).stream);
+final overrideStream = ref.watch(contactOverrideStreamProvider(contactKey).stream);
+return Rx.combineLatest2(contactStream, overrideStream, (contact, override) {
+return ContactVM(
+key: contactKey,
+displayName: (override?.shortName?.isNotEmpty == true)
+? override!.shortName!
+: contact.computedDisplayName,
+isFavorite: override?.isFavorite ?? false,
+// copy through other properties needed by UI
+);
+});
+});
+
+Notes:
+	•	Import rxdart for Rx.combineLatest2. If you prefer pure Riverpod, use ref.watch two StreamProviders and compose with .when data; however, a derived Stream is often simpler for list pages.
+	•	handle null override cleanly.
+	•	For write operations (set favorite, set short name) expose Actions via a separate Notifier/AsyncNotifier.
+
+Optional write Notifier:
+	•	@riverpod
+class ContactOverridesController extends _$ContactOverridesController {
+Future setFavorite(String contactKey, bool value) async { final prefs = ref.read(preferencesRepositoryProvider); await prefs.setContactFavorite(contactKey, value); }
+Future upsertShortName(String contactKey, String? name) async { final prefs = ref.read(preferencesRepositoryProvider); await prefs.upsertContactShortName(contactKey, name); }
+}
+
+UI can read contactVmProvider for rendering and call controller methods for updates.
+
+⸻
+
+ChatVM
+
+Analogous to ContactVM.
+
+File: lib/app/providers/view_models/chat_vm_providers.dart
+
+Providers:
+	•	final chatStreamProvider = StreamProvider.family<Chat, String>((ref, chatGuid) { final repo = ref.watch(chatsRepositoryProvider); return repo.watchByGuid(chatGuid); });
+	•	final chatOverrideStreamProvider = StreamProvider.family<ChatOverride?, String>((ref, chatGuid) { final prefs = ref.watch(preferencesRepositoryProvider); return prefs.watchChatOverride(chatGuid); });
+	•	final chatVmProvider = StreamProvider.family<ChatVM, String>((ref, chatGuid) {
+final chat$ = ref.watch(chatStreamProvider(chatGuid).stream);
+final over$ = ref.watch(chatOverrideStreamProvider(chatGuid).stream);
+return Rx.combineLatest2(chat$, over$, (chat, override) {
+return ChatVM(
+guid: chatGuid,
+title: chat.resolvedTitle, // from working data
+isPinned: override?.isPinned ?? false,
+isMuted: override?.isMuted ?? false,
+tint: override?.customTint, // can be null
+// add counts, last message preview etc. from working data
+);
+});
+});
+
+Optional write Notifier:
+	•	@riverpod
+class ChatOverridesController extends _$ChatOverridesController {
+Future setPinned(String chatGuid, bool value) async { ref.read(preferencesRepositoryProvider).setChatPinned(chatGuid, value); }
+Future setMuted(String chatGuid, bool value) async { ref.read(preferencesRepositoryProvider).setChatMuted(chatGuid, value); }
+Future setTint(String chatGuid, String? hex) async { ref.read(preferencesRepositoryProvider).setChatTint(chatGuid, hex); }
+}
+
+⸻
+
+List Screens (Merged Collections)
+
+Lists (e.g., “All Contacts”, “All Chats”) often need sorting/filters using overlay info (favorites, pins). You have two options:
+	1.	Merge in Dart (simple first):
+	•	watch contacts list from working repo: Stream<List>
+	•	watch all overrides: Stream<Map<contactKey, ContactOverride>>
+	•	combineLatest and map over the list to ContactVMs
+	•	sort by isFavorite descending, then displayName, etc.
+	2.	SQL join via ATTACH (advanced later):
+	•	attach overlays DB and define SQL views joining working.contacts and overlays.ContactOverrides, enabling ORDER BY isFavorite DESC, displayName, etc., directly in SQL.
+	•	this scales better for very large lists and complex filters.
+
+Start with (1); migrate to (2) if performance/complex sorting demands it.
+
+Example outline for Dart-merge provider (contacts list):
+	•	final contactsListProvider = StreamProvider<List>((ref) => repo.watchAll());
+	•	final contactOverridesMapProvider = StreamProvider<Map<String, ContactOverride>>((ref) => prefs.watchAllContactsAsMap());
+	•	final contactsVmListProvider = StreamProvider<List>((ref) {
+final contacts$ = ref.watch(contactsListProvider.stream);
+final overrides$ = ref.watch(contactOverridesMapProvider.stream);
+return Rx.combineLatest2(contacts$, overrides$, (contacts, map) {
+final vms = contacts.map((c) {
+final o = map[c.key];
+return ContactVM(
+key: c.key,
+displayName: (o?.shortName?.isNotEmpty == true) ? o!.shortName! : c.computedDisplayName,
+isFavorite: o?.isFavorite ?? false,
+// other fields
+);
+}).toList();
+vms.sort((a, b) {
+final favCmp = (b.isFavorite ? 1 : 0).compareTo(a.isFavorite ? 1 : 0);
+if (favCmp != 0) return favCmp;
+return a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase());
+});
+return vms;
+});
+});
+
+Implement prefs.watchAllContactsAsMap() by selecting all ContactOverrides and mapping to a key->override map with a compact diffing stream (e.g., Drift watch on table + map step).
+
+Do the same for chats with pins at the top, then recent activity as a secondary sort from working data.
+
+⸻
+
+Error Handling and Edge Cases
+	•	Missing working entity but present override: ignore override; consider periodic cleanup job that prunes orphaned overrides.
+	•	Changed key strategy: if you ever switch from email-based contactKey to handleId, add a one-time migration/reconciliation that maps old keys to new where possible.
+	•	User clears overlay data: simply delete rows from overrides tables; VMs fall back to working values automatically.
+	•	Rapid toggles (favorite/pin): ensure DAO upserts are idempotent. Optionally debounce UI actions.
+	•	Integrity: primaryKey on contactKey/chatGuid ensures one row per entity; last write wins. Keep updatedAt for conflict resolution if you later introduce sync/export.
+
+⸻
+
+Testing Strategy
+
+Unit tests (pure Dart):
+	•	Repositories: feed fake streams (StreamController) for working and overlay; assert VM merge results.
+	•	Controllers: call setFavorite/upsertShortName; verify DAO methods invoked and streams emit updated VMs.
+
+Drift tests:
+	•	Use in-memory databases for WorkingDb and UserOverlaysDb.
+	•	Seed working contacts/chats; insert overrides; assert SELECTs and watchers behave as expected.
+
+Riverpod tests:
+	•	Use ProviderContainer with overrides:
+	•	override workingDbProvider with in-memory WorkingDb
+	•	override userOverlaysDbProvider with in-memory UserOverlaysDb
+	•	seed data and read contactVmProvider/contactsVmListProvider; expect values.
+
+⸻
+
+Performance Notes
+	•	Favor Stream-based watchers for both working and overlay tables to minimize recompute.
+	•	For big lists, build a map of overrides once per emission (O(n)) rather than repeatedly searching a list.
+	•	If lists become huge (>50k), consider ATTACH + SQL views for server-side sorting/filtering, or paging strategies.
+
+⸻
+
+Minimal Checklist to Go Live
+	1.	Ensure userOverlaysDbProvider is available (database_connections_providers.dart).
+	2.	Provide DAOs via providers (preferences/feature_level_providers.dart).
+	3.	Implement PreferencesRepository (read/write overlay rows, plus watch helpers).
+	4.	Expose contactVmProvider and chatVmProvider (merged streams).
+	5.	Wire UI:
+	•	Contact details page watches contactVmProvider(contactKey).
+	•	Favorite toggle calls ContactOverridesController.setFavorite.
+	•	Short name editor calls ContactOverridesController.upsertShortName.
+	•	Chats page watches chatVmProvider(chatGuid) and chatsVmListProvider for lists.
+	6.	Add basic tests to lock merge behavior.
+
+⸻
+
+Optional: ATTACH Strategy (Later)
+
+If/when you need SQL-level joins:
+	•	On WorkingDb connection open, execute: ATTACH DATABASE ‘’ AS overlays;
+	•	Define SQL views in WorkingDb migration that LEFT JOIN overlays.ContactOverrides and overlays.ChatOverrides.
+	•	Point your working repositories to these views for list queries, preserving domain ownership boundaries (the write paths still go through overlay DAOs).
+
+⸻
+
+Summary
+	•	Keep working data and overlay preferences in separate DBs.
+	•	Riverpod providers compose them into ContactVM/ChatVM via combined streams.
+	•	Start with simple Dart merges for both single-entity and lists.
+	•	Migrate to ATTACH + SQL views only when sorting/filtering complexity or scale demands it.
+	•	Provide small write controllers for user actions (favorite/pin/short name).
+	•	Test with in-memory DBs and ProviderContainer overrides.
