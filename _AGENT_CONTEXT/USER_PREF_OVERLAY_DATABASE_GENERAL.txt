@@ -1,0 +1,158 @@
+Overlay Database for User Preferences
+
+Rationale
+
+Your working database is a faithful mirror of macOS system data (chat.db, AddressBook).
+It must stay pristine and disposable: you want to be able to drop and rebuild it whenever macOS changes schema or you re-import.
+
+User-generated data (short names, favourites, pins, tags, etc.) doesn’t belong in that mirror.
+Instead, you create a lightweight overlay Drift database (user_overlays.db) that:
+	•	Stores only user choices.
+	•	Survives re-imports and resets of the working DB.
+	•	Uses stable foreign keys (handleId, normalized addresses, chat GUIDs) rather than fragile ROWIDs.
+	•	Can be merged with working data at runtime.
+
+Merging Strategy
+
+There are two ways to combine working data with overlays:
+	1.	Merge in Dart (recommended first step).
+	•	Each repository fetches domain entities from the working DB.
+	•	Overlay DAOs provide streams of overrides.
+	•	Use Riverpod combineLatest to merge them into a ContactVM / ChatVM.
+	2.	SQL Join via ATTACH.
+	•	Drift supports attaching multiple sqlite files.
+	•	You can join across working.db and user_overlays.db if you want sorting or filtering by overlay fields at the SQL level.
+	•	More complex, but scalable later.
+
+Overlay Database Schema
+
+ContactOverrides table:
+
+import ‘package:drift/drift.dart’;
+
+class ContactOverrides extends Table {
+TextColumn get contactKey => text()(); // e.g., handleId / normalized address
+TextColumn get shortName => text().nullable()();
+BoolColumn get isFavorite => boolean().withDefault(const Constant(false))();
+DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+@override
+Set get primaryKey => {contactKey};
+}
+
+ChatOverrides table:
+
+class ChatOverrides extends Table {
+TextColumn get chatGuid => text()(); // iMessage GUID
+BoolColumn get isPinned => boolean().withDefault(const Constant(false))();
+BoolColumn get isMuted => boolean().withDefault(const Constant(false))();
+TextColumn get customTint => text().nullable()(); // e.g. hex color
+DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+@override
+Set get primaryKey => {chatGuid};
+}
+
+Drift Implementation
+
+Database class:
+
+// lib/features/preferences/infrastructure/db/user_overlays_db.dart
+import ‘package:drift/drift.dart’;
+import ‘user_overlays_tables.dart’;
+
+part ‘user_overlays_db.g.dart’;
+
+@DriftDatabase(tables: [ContactOverrides, ChatOverrides])
+class UserOverlaysDb extends _$UserOverlaysDb {
+UserOverlaysDb(QueryExecutor e) : super(e);
+
+@override
+int get schemaVersion => 1;
+}
+
+ContactOverrides DAO:
+
+@DriftAccessor(tables: [ContactOverrides])
+class ContactOverridesDao extends DatabaseAccessor
+with _$ContactOverridesDaoMixin {
+ContactOverridesDao(UserOverlaysDb db) : super(db);
+
+Stream<ContactOverridesData?> watchByKey(String key) =>
+(select(contactOverrides)..where((t) => t.contactKey.equals(key)))
+.watchSingleOrNull();
+
+Future upsertShortName(String key, String? shortName) =>
+into(contactOverrides).insertOnConflictUpdate(
+ContactOverridesCompanion.insert(
+contactKey: key,
+shortName: Value(shortName),
+),
+);
+
+Future setFavorite(String key, bool fav) =>
+into(contactOverrides).insertOnConflictUpdate(
+ContactOverridesCompanion.insert(
+contactKey: key,
+isFavorite: Value(fav),
+),
+);
+}
+
+Repository Merge Example
+
+Future getContactVM(String contactKey) async {
+final contact = await workingContactsRepo.getByKey(contactKey);
+final override = await overlays.contactOverridesDao.get(contactKey);
+
+return ContactVM(
+key: contactKey,
+displayName: override?.shortName ?? contact.computedDisplayName,
+isFavorite: override?.isFavorite ?? false,
+// pass through other contact fields
+);
+}
+
+For live updates in the UI, expose this as a Stream by combining the working contact stream with the overlay stream.
+
+Proposed Feature Folder Structure
+
+lib/
+features/
+preferences/
+domain/
+entities/
+contact_override.dart
+chat_override.dart
+application/
+repositories/
+preferences_repository.dart
+infrastructure/
+db/
+user_overlays_tables.dart
+user_overlays_db.dart
+daos/
+contact_overrides_dao.dart
+chat_overrides_dao.dart
+feature_level_providers.dart
+
+Where to Store user_overlays.db on macOS
+
+Put it in Application Support so it survives resets but doesn’t clutter Documents or Temp:
+
+~/Library/Containers/<your.bundle.id>/Data/Library/Application Support//user_overlays.db
+
+Future-Proofing
+
+You can extend the overlay DB with:
+	•	Tags: UserTags and ContactTags tables.
+	•	Notes: free-form text linked to entities.
+	•	HiddenEntities: let users hide chats/contacts without deleting them.
+	•	SortOverrides: manual ordering.
+
+Summary
+	•	Keep working DB clean as a macOS mirror.
+	•	Overlay DB holds user data with stable keys.
+	•	Merge overlay + working data in repositories or SQL joins.
+	•	Drift-based schema keeps it structured and queryable.
+	•	Folder structure follows your DDD layering.

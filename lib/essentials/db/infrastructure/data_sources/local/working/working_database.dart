@@ -8,10 +8,10 @@ part 'working_database.g.dart';
     WorkingSchemaMigrations,
     ProjectionState,
     AppSettings,
-    WorkingIdentities,
-    IdentityHandleLinks,
+    WorkingParticipants,
+    ParticipantHandleLinks,
     WorkingChats,
-    ChatParticipantsProj,
+    ChatToParticipant,
     WorkingMessages,
     WorkingAttachments,
     WorkingReactions,
@@ -101,7 +101,7 @@ class WorkingDatabase extends _$WorkingDatabase {
         service,
         is_group,
         last_message_at_utc,
-        last_sender_identity_id,
+        last_sender_participant_id,
         last_message_preview,
         unread_count,
         pinned,
@@ -134,9 +134,9 @@ class WorkingDatabase extends _$WorkingDatabase {
 
 const List<String> _workingIndexStatements = [
   'CREATE INDEX IF NOT EXISTS idx_chats_sort ON chats(pinned DESC, last_message_at_utc DESC)',
-  'CREATE INDEX IF NOT EXISTS idx_chat_participants_proj_order ON chat_participants_proj(chat_id, sort_key)',
+  'CREATE INDEX IF NOT EXISTS idx_chat_to_participant_order ON chat_to_participant(chat_id, sort_key)',
   'CREATE INDEX IF NOT EXISTS idx_messages_chat_time ON messages(chat_id, sent_at_utc)',
-  'CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender_identity_id)',
+  'CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender_participant_id)',
   'CREATE INDEX IF NOT EXISTS idx_messages_reply ON messages(reply_to_guid)',
   'CREATE INDEX IF NOT EXISTS idx_attachments_msg ON attachments(message_guid)',
   'CREATE INDEX IF NOT EXISTS idx_reactions_target ON reactions(message_guid)',
@@ -182,7 +182,7 @@ const List<String> _workingVirtualAndTriggerStatements = [
     c.unread_count,
     m.guid         AS last_message_guid,
     m.text         AS last_message_text,
-    m.sender_identity_id
+    m.sender_participant_id
   FROM chats c
   LEFT JOIN messages m
     ON m.chat_id = c.id
@@ -196,10 +196,10 @@ const List<String> _workingVirtualAndTriggerStatements = [
     m.sent_at_utc,
     m.text,
     m.is_from_me,
-    i.display_name AS sender_name,
+    p.display_name AS sender_name,
     rc.love, rc.like, rc.dislike, rc.laugh, rc.emphasize, rc.question
   FROM messages m
-  LEFT JOIN identities i ON i.id = m.sender_identity_id
+  LEFT JOIN participants p ON p.id = m.sender_participant_id
   LEFT JOIN reaction_counts rc ON rc.message_guid = m.guid;
   ''',
   // Reaction maintenance triggers
@@ -245,9 +245,9 @@ const List<String> _workingVirtualAndTriggerStatements = [
        SET last_message_at_utc = CASE
              WHEN last_message_at_utc IS NULL OR new.sent_at_utc > last_message_at_utc
              THEN new.sent_at_utc ELSE last_message_at_utc END,
-           last_sender_identity_id = CASE
+           last_sender_participant_id = CASE
              WHEN last_message_at_utc IS NULL OR new.sent_at_utc >= last_message_at_utc
-             THEN new.sender_identity_id ELSE last_sender_identity_id END,
+             THEN new.sender_participant_id ELSE last_sender_participant_id END,
            last_message_preview = CASE
              WHEN last_message_at_utc IS NULL OR new.sent_at_utc >= last_message_at_utc
              THEN substr(COALESCE(new.text,''), 1, 120) ELSE last_message_preview END
@@ -316,9 +316,9 @@ class AppSettings extends Table {
   Set<Column> get primaryKey => {key};
 }
 
-class WorkingIdentities extends Table {
+class WorkingParticipants extends Table {
   @override
-  String get tableName => 'identities';
+  String get tableName => 'participants';
 
   IntColumn get id => integer().named('id').autoIncrement()();
   TextColumn get normalizedAddress =>
@@ -340,17 +340,17 @@ class WorkingIdentities extends Table {
   ];
 }
 
-class IdentityHandleLinks extends Table {
+class ParticipantHandleLinks extends Table {
   @override
-  String get tableName => 'identity_handle_links';
+  String get tableName => 'participant_handle_links';
 
-  IntColumn get identityId => integer()
-      .named('identity_id')
-      .references(WorkingIdentities, #id, onDelete: KeyAction.cascade)();
+  IntColumn get participantId => integer()
+      .named('participant_id')
+      .references(WorkingParticipants, #id, onDelete: KeyAction.cascade)();
   IntColumn get importHandleId => integer().named('import_handle_id')();
 
   @override
-  Set<Column> get primaryKey => {identityId, importHandleId};
+  Set<Column> get primaryKey => {participantId, importHandleId};
 }
 
 class WorkingChats extends Table {
@@ -368,10 +368,10 @@ class WorkingChats extends Table {
       boolean().named('is_group').withDefault(const Constant(false))();
   TextColumn get lastMessageAtUtc =>
       text().named('last_message_at_utc').nullable()();
-  IntColumn get lastSenderIdentityId => integer()
-      .named('last_sender_identity_id')
+  IntColumn get lastSenderParticipantId => integer()
+      .named('last_sender_participant_id')
       .nullable()
-      .references(WorkingIdentities, #id, onDelete: KeyAction.setNull)();
+      .references(WorkingParticipants, #id, onDelete: KeyAction.setNull)();
   TextColumn get lastMessagePreview =>
       text().named('last_message_preview').nullable()();
   IntColumn get unreadCount =>
@@ -392,16 +392,16 @@ class WorkingChats extends Table {
   ];
 }
 
-class ChatParticipantsProj extends Table {
+class ChatToParticipant extends Table {
   @override
-  String get tableName => 'chat_participants_proj';
+  String get tableName => 'chat_to_participant';
 
   IntColumn get chatId => integer()
       .named('chat_id')
       .references(WorkingChats, #id, onDelete: KeyAction.cascade)();
-  IntColumn get identityId => integer()
-      .named('identity_id')
-      .references(WorkingIdentities, #id, onDelete: KeyAction.cascade)();
+  IntColumn get participantId => integer()
+      .named('participant_id')
+      .references(WorkingParticipants, #id, onDelete: KeyAction.cascade)();
   TextColumn get role => text()
       .named('role')
       .customConstraint(
@@ -411,7 +411,7 @@ class ChatParticipantsProj extends Table {
       integer().named('sort_key').withDefault(const Constant(0))();
 
   @override
-  Set<Column> get primaryKey => {chatId, identityId};
+  Set<Column> get primaryKey => {chatId, participantId};
 }
 
 class WorkingMessages extends Table {
@@ -423,10 +423,10 @@ class WorkingMessages extends Table {
   IntColumn get chatId => integer()
       .named('chat_id')
       .references(WorkingChats, #id, onDelete: KeyAction.cascade)();
-  IntColumn get senderIdentityId => integer()
-      .named('sender_identity_id')
+  IntColumn get senderParticipantId => integer()
+      .named('sender_participant_id')
       .nullable()
-      .references(WorkingIdentities, #id, onDelete: KeyAction.setNull)();
+      .references(WorkingParticipants, #id, onDelete: KeyAction.setNull)();
   BoolColumn get isFromMe =>
       boolean().named('is_from_me').withDefault(const Constant(false))();
   TextColumn get sentAtUtc => text().named('sent_at_utc').nullable()();
@@ -491,10 +491,10 @@ class WorkingReactions extends Table {
       .customConstraint(
         "NOT NULL CHECK(kind IN ('love','like','dislike','laugh','emphasize','question','unknown'))",
       )();
-  IntColumn get reactorIdentityId => integer()
-      .named('reactor_identity_id')
+  IntColumn get reactorParticipantId => integer()
+      .named('reactor_participant_id')
       .nullable()
-      .references(WorkingIdentities, #id, onDelete: KeyAction.setNull)();
+      .references(WorkingParticipants, #id, onDelete: KeyAction.setNull)();
   TextColumn get action => text()
       .named('action')
       .customConstraint("NOT NULL CHECK(\"action\" IN ('add','remove'))")();

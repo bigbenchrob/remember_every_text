@@ -163,17 +163,18 @@ class LedgerToWorkingMigrationService {
       emit(
         DbMigrationStage.migratingIdentities,
         0.25,
-        'Projecting identities and handle links',
+        'Projecting participants and handle links',
       );
-      final identityProjection = await _projectIdentities(
+      final participantProjection = await _projectParticipants(
         importDb: importDb,
         workingDb: workingDb,
         batchId: batchId,
         contactIndex: contactIndex,
       );
-      resultBuilder.identitiesProjected = identityProjection.identityCount;
+      resultBuilder.identitiesProjected =
+          participantProjection.participantCount;
       resultBuilder.identityHandleLinksProjected =
-          identityProjection.handleLinkCount;
+          participantProjection.handleLinkCount;
 
       emit(
         DbMigrationStage.migratingChats,
@@ -184,8 +185,8 @@ class LedgerToWorkingMigrationService {
         importDb: importDb,
         workingDb: workingDb,
         batchId: batchId,
-        handleToIdentity: identityProjection.handleToIdentityId,
-        handleToContact: identityProjection.handleToContactId,
+        handleToParticipant: participantProjection.handleToParticipantId,
+        handleToContact: participantProjection.handleToContactId,
       );
       resultBuilder.chatsProjected = chatProjection.chatCount;
       resultBuilder.participantsProjected = chatProjection.participantCount;
@@ -201,7 +202,7 @@ class LedgerToWorkingMigrationService {
         workingDb: workingDb,
         batchId: batchId,
         chatIdMap: chatProjection.chatIdMap,
-        handleToIdentity: identityProjection.handleToIdentityId,
+        handleToParticipant: participantProjection.handleToParticipantId,
         minImportMessageIdExclusive: minMessageIdExclusive,
         emitProgress:
             ({
@@ -260,7 +261,7 @@ class LedgerToWorkingMigrationService {
         importDb: importDb,
         workingDb: workingDb,
         batchId: batchId,
-        handleToIdentity: identityProjection.handleToIdentityId,
+        handleToParticipant: participantProjection.handleToParticipantId,
         migratedMessageGuids: messageProjection.migratedMessageGuids,
       );
       resultBuilder.reactionsProjected = reactionsInserted;
@@ -385,10 +386,10 @@ class LedgerToWorkingMigrationService {
         'reactions',
         'attachments',
         'messages',
-        'chat_participants_proj',
+        'chat_to_participant',
         'chats',
-        'identity_handle_links',
-        'identities',
+        'participant_handle_links',
+        'participants',
       ];
 
       for (final table in tablesInDeleteOrder) {
@@ -457,7 +458,7 @@ class LedgerToWorkingMigrationService {
     );
   }
 
-  Future<_IdentityProjection> _projectIdentities({
+  Future<_ParticipantProjection> _projectParticipants({
     required Database importDb,
     required WorkingDatabase workingDb,
     required int batchId,
@@ -469,12 +470,12 @@ class LedgerToWorkingMigrationService {
       whereArgs: <Object>[batchId],
     );
 
-    final handleToIdentity = <int, int>{};
+    final handleToParticipant = <int, int>{};
     final handleToContactId = <int, int>{};
-    final identityDisplayNames = <int, String>{};
-    final identityLookup = <_IdentityKey, int>{};
+    final participantDisplayNames = <int, String>{};
+    final participantLookup = <_ParticipantKey, int>{};
 
-    var identitiesInserted = 0;
+    var participantsInserted = 0;
     var linksInserted = 0;
 
     for (final row in rows) {
@@ -510,43 +511,43 @@ class LedgerToWorkingMigrationService {
         handleToContactId[handleId] = matchedContactId;
       }
 
-      final key = _IdentityKey(
+      final key = _ParticipantKey(
         service: service,
         normalizedAddress: normalized.canonical ?? rawIdentifier,
       );
 
-      final identityId = await _upsertIdentity(
+      final participantId = await _upsertParticipant(
         workingDb: workingDb,
-        identityLookup: identityLookup,
+        participantLookup: participantLookup,
         key: key,
         displayName: displayName,
         contactId: matchedContactId,
         isSystem: false,
-        identitiesInserted: () {
-          identitiesInserted++;
+        participantsInserted: () {
+          participantsInserted++;
         },
       );
 
-      identityDisplayNames.putIfAbsent(identityId, () => displayName);
+      participantDisplayNames.putIfAbsent(participantId, () => displayName);
 
       await workingDb
-          .into(workingDb.identityHandleLinks)
+          .into(workingDb.participantHandleLinks)
           .insert(
-            IdentityHandleLinksCompanion.insert(
-              identityId: identityId,
+            ParticipantHandleLinksCompanion.insert(
+              participantId: participantId,
               importHandleId: handleId,
             ),
             mode: InsertMode.insertOrIgnore,
           );
       linksInserted++;
-      handleToIdentity[handleId] = identityId;
+      handleToParticipant[handleId] = participantId;
     }
 
-    return _IdentityProjection(
-      handleToIdentityId: handleToIdentity,
+    return _ParticipantProjection(
+      handleToParticipantId: handleToParticipant,
       handleToContactId: handleToContactId,
-      identityDisplayNames: identityDisplayNames,
-      identityCount: identitiesInserted,
+      participantDisplayNames: participantDisplayNames,
+      participantCount: participantsInserted,
       handleLinkCount: linksInserted,
     );
   }
@@ -555,7 +556,7 @@ class LedgerToWorkingMigrationService {
     required Database importDb,
     required WorkingDatabase workingDb,
     required int batchId,
-    required Map<int, int> handleToIdentity,
+    required Map<int, int> handleToParticipant,
     required Map<int, int> handleToContact,
   }) async {
     final chatRows = await importDb.query(
@@ -648,16 +649,16 @@ class LedgerToWorkingMigrationService {
         if (handleId == null) {
           continue;
         }
-        final identityId = handleToIdentity[handleId];
-        if (identityId == null) {
+        final participantId = handleToParticipant[handleId];
+        if (participantId == null) {
           continue;
         }
         await workingDb
-            .into(workingDb.chatParticipantsProj)
+            .into(workingDb.chatToParticipant)
             .insert(
-              ChatParticipantsProjCompanion.insert(
+              ChatToParticipantCompanion.insert(
                 chatId: newChatId,
-                identityId: identityId,
+                participantId: participantId,
                 role: Value(participant.role ?? 'member'),
                 sortKey: Value(sortIndex),
               ),
@@ -680,7 +681,7 @@ class LedgerToWorkingMigrationService {
     required WorkingDatabase workingDb,
     required int batchId,
     required Map<int, int> chatIdMap,
-    required Map<int, int> handleToIdentity,
+    required Map<int, int> handleToParticipant,
     required int? minImportMessageIdExclusive,
     required _StageProgressEmitter emitProgress,
   }) async {
@@ -744,9 +745,9 @@ class LedgerToWorkingMigrationService {
       }
 
       final senderHandleId = row['sender_handle_id'] as int?;
-      final senderIdentityId = senderHandleId == null
+      final senderParticipantId = senderHandleId == null
           ? null
-          : handleToIdentity[senderHandleId];
+          : handleToParticipant[senderHandleId];
       final isFromMe = ((row['is_from_me'] as int?) ?? 0) == 1;
       final sentAtUtc = row['date_utc'] as String?;
       final deliveredAtUtc = row['date_delivered_utc'] as String?;
@@ -772,7 +773,7 @@ class LedgerToWorkingMigrationService {
             WorkingMessagesCompanion.insert(
               guid: guid,
               chatId: workingChatId,
-              senderIdentityId: Value(senderIdentityId),
+              senderParticipantId: Value(senderParticipantId),
               isFromMe: Value(isFromMe),
               sentAtUtc: Value(sentAtUtc),
               deliveredAtUtc: Value(deliveredAtUtc),
@@ -902,7 +903,7 @@ class LedgerToWorkingMigrationService {
     required Database importDb,
     required WorkingDatabase workingDb,
     required int batchId,
-    required Map<int, int> handleToIdentity,
+    required Map<int, int> handleToParticipant,
     required Set<String> migratedMessageGuids,
   }) async {
     final rows = await importDb.query('reactions');
@@ -918,9 +919,9 @@ class LedgerToWorkingMigrationService {
       }
 
       final reactorHandleId = row['reactor_handle_id'] as int?;
-      final reactorIdentityId = reactorHandleId == null
+      final reactorParticipantId = reactorHandleId == null
           ? null
-          : handleToIdentity[reactorHandleId];
+          : handleToParticipant[reactorHandleId];
       final action = row['action'] as String?;
       final kind = (row['kind'] as String?) ?? 'unknown';
       final reactedAtUtc = row['reacted_at_utc'] as String?;
@@ -932,7 +933,7 @@ class LedgerToWorkingMigrationService {
               messageGuid: targetMessageGuid,
               kind: kind,
               action: action ?? 'add',
-              reactorIdentityId: Value(reactorIdentityId),
+              reactorParticipantId: Value(reactorParticipantId),
               reactedAtUtc: Value(reactedAtUtc),
             ),
             mode: InsertMode.insertOrIgnore,
@@ -1311,22 +1312,22 @@ class LedgerToWorkingMigrationService {
     return digits;
   }
 
-  Future<int> _upsertIdentity({
+  Future<int> _upsertParticipant({
     required WorkingDatabase workingDb,
-    required Map<_IdentityKey, int> identityLookup,
-    required _IdentityKey key,
+    required Map<_ParticipantKey, int> participantLookup,
+    required _ParticipantKey key,
     required String displayName,
     required int? contactId,
     required bool isSystem,
-    required void Function() identitiesInserted,
+    required void Function() participantsInserted,
   }) async {
-    final existingId = identityLookup[key];
+    final existingId = participantLookup[key];
     if (existingId != null) {
       return existingId;
     }
 
     final existingRow =
-        await (workingDb.select(workingDb.workingIdentities)
+        await (workingDb.select(workingDb.workingParticipants)
               ..where((tbl) {
                 final serviceMatches = tbl.service.equals(key.service);
                 final normalized = key.normalizedAddress;
@@ -1340,7 +1341,7 @@ class LedgerToWorkingMigrationService {
             .getSingleOrNull();
 
     if (existingRow != null) {
-      identityLookup[key] = existingRow.id;
+      participantLookup[key] = existingRow.id;
 
       final desiredContactRef = contactId == null ? null : 'contact:$contactId';
       final shouldUpdateDisplayName =
@@ -1353,9 +1354,9 @@ class LedgerToWorkingMigrationService {
           shouldUpdateContactRef ||
           shouldUpdateSystem) {
         await (workingDb.update(
-          workingDb.workingIdentities,
+          workingDb.workingParticipants,
         )..where((tbl) => tbl.id.equals(existingRow.id))).write(
-          WorkingIdentitiesCompanion(
+          WorkingParticipantsCompanion(
             displayName: shouldUpdateDisplayName
                 ? Value(displayName)
                 : const Value.absent(),
@@ -1373,9 +1374,9 @@ class LedgerToWorkingMigrationService {
     }
 
     final newId = await workingDb
-        .into(workingDb.workingIdentities)
+        .into(workingDb.workingParticipants)
         .insert(
-          WorkingIdentitiesCompanion.insert(
+          WorkingParticipantsCompanion.insert(
             normalizedAddress: Value(key.normalizedAddress),
             service: Value(key.service),
             displayName: Value(displayName),
@@ -1385,8 +1386,8 @@ class LedgerToWorkingMigrationService {
             isSystem: Value(isSystem),
           ),
         );
-    identityLookup[key] = newId;
-    identitiesInserted();
+    participantLookup[key] = newId;
+    participantsInserted();
     return newId;
   }
 }
@@ -1504,8 +1505,11 @@ class _AttachmentsIndex {
 }
 
 @immutable
-class _IdentityKey {
-  const _IdentityKey({required this.service, required this.normalizedAddress});
+class _ParticipantKey {
+  const _ParticipantKey({
+    required this.service,
+    required this.normalizedAddress,
+  });
 
   final String service;
   final String? normalizedAddress;
@@ -1515,7 +1519,7 @@ class _IdentityKey {
     if (identical(this, other)) {
       return true;
     }
-    if (other is! _IdentityKey) {
+    if (other is! _ParticipantKey) {
       return false;
     }
     return other.service == service &&
@@ -1536,19 +1540,19 @@ class _NormalizedIdentifier {
   final Set<String> matchingKeys;
 }
 
-class _IdentityProjection {
-  const _IdentityProjection({
-    required this.handleToIdentityId,
+class _ParticipantProjection {
+  const _ParticipantProjection({
+    required this.handleToParticipantId,
     required this.handleToContactId,
-    required this.identityDisplayNames,
-    required this.identityCount,
+    required this.participantDisplayNames,
+    required this.participantCount,
     required this.handleLinkCount,
   });
 
-  final Map<int, int> handleToIdentityId;
+  final Map<int, int> handleToParticipantId;
   final Map<int, int> handleToContactId;
-  final Map<int, String> identityDisplayNames;
-  final int identityCount;
+  final Map<int, String> participantDisplayNames;
+  final int participantCount;
   final int handleLinkCount;
 }
 

@@ -100,24 +100,26 @@ Stream<List<ChatMessageListItem>> messagesForChat(
   }
 
   String resolveSenderName({
-    WorkingIdentity? identity,
+    WorkingParticipant? participant,
     required bool isFromMe,
   }) {
     if (isFromMe) {
       return 'You';
     }
-    if (identity == null) {
+    if (participant == null) {
       return 'Unknown sender';
     }
-    return identity.displayName ?? identity.normalizedAddress ?? 'Unknown';
+    return participant.displayName ??
+        participant.normalizedAddress ??
+        'Unknown';
   }
 
   final query =
       db.select(db.workingMessages).join([
           drift.leftOuterJoin(
-            db.workingIdentities,
-            db.workingIdentities.id.equalsExp(
-              db.workingMessages.senderIdentityId,
+            db.workingParticipants,
+            db.workingParticipants.id.equalsExp(
+              db.workingMessages.senderParticipantId,
             ),
           ),
         ])
@@ -134,7 +136,7 @@ Stream<List<ChatMessageListItem>> messagesForChat(
 
     for (final row in rows) {
       final message = row.readTable(db.workingMessages);
-      final identity = row.readTableOrNull(db.workingIdentities);
+      final participant = row.readTableOrNull(db.workingParticipants);
 
       // Fetch attachments for this message if it has any
       final attachments = message.hasAttachments
@@ -161,7 +163,7 @@ Stream<List<ChatMessageListItem>> messagesForChat(
           guid: message.guid,
           isFromMe: message.isFromMe,
           senderName: resolveSenderName(
-            identity: identity,
+            participant: participant,
             isFromMe: message.isFromMe,
           ),
           text: message.textContent ?? '[No text content]',

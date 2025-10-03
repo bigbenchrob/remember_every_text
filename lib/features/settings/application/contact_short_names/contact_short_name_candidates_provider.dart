@@ -72,7 +72,7 @@ String _deriveDisplayName(Iterable<SettingsContactIdentity> identities) {
 Future<List<SettingsContactEntry>> contactShortNameCandidates(Ref ref) async {
   final db = await ref.watch(driftWorkingDatabaseProvider.future);
   final rows =
-      await (db.select(db.workingIdentities)..orderBy([
+      await (db.select(db.workingParticipants)..orderBy([
             (tbl) => drift.OrderingTerm(expression: tbl.displayName),
             (tbl) => drift.OrderingTerm(expression: tbl.normalizedAddress),
           ]))
@@ -80,25 +80,25 @@ Future<List<SettingsContactEntry>> contactShortNameCandidates(Ref ref) async {
 
   final groups = <String, List<SettingsContactIdentity>>{};
 
-  for (final identity in rows) {
-    if (identity.isSystem) {
+  for (final participant in rows) {
+    if (participant.isSystem) {
       continue;
     }
-    final contactRef = identity.contactRef?.trim();
+    final contactRef = participant.contactRef?.trim();
     final key = contactRef != null && contactRef.isNotEmpty
         ? 'contact:$contactRef'
-        : 'identity:${identity.id}';
+        : 'participant:${participant.id}';
 
-    final identityEntry = SettingsContactIdentity(
-      identityId: identity.id,
-      displayName: identity.displayName,
-      normalizedAddress: identity.normalizedAddress,
-      service: identity.service,
+    final participantEntry = SettingsContactIdentity(
+      identityId: participant.id,
+      displayName: participant.displayName,
+      normalizedAddress: participant.normalizedAddress,
+      service: participant.service,
     );
 
     groups
         .putIfAbsent(key, () => <SettingsContactIdentity>[])
-        .add(identityEntry);
+        .add(participantEntry);
   }
 
   final entries = groups.entries.map((entry) {

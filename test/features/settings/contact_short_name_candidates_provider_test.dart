@@ -33,9 +33,9 @@ void main() {
     'groups identities by contactRef and ignores system identities',
     () async {
       await database
-          .into(database.workingIdentities)
+          .into(database.workingParticipants)
           .insert(
-            WorkingIdentitiesCompanion.insert(
+            WorkingParticipantsCompanion.insert(
               id: const drift.Value(1),
               normalizedAddress: const drift.Value('claire@example.com'),
               service: const drift.Value('iMessage'),
@@ -45,9 +45,9 @@ void main() {
             ),
           );
       await database
-          .into(database.workingIdentities)
+          .into(database.workingParticipants)
           .insert(
-            WorkingIdentitiesCompanion.insert(
+            WorkingParticipantsCompanion.insert(
               id: const drift.Value(2),
               normalizedAddress: const drift.Value('555-0100'),
               service: const drift.Value('SMS'),
@@ -57,9 +57,9 @@ void main() {
             ),
           );
       await database
-          .into(database.workingIdentities)
+          .into(database.workingParticipants)
           .insert(
-            WorkingIdentitiesCompanion.insert(
+            WorkingParticipantsCompanion.insert(
               id: const drift.Value(3),
               normalizedAddress: const drift.Value('555-0200'),
               service: const drift.Value('SMS'),
@@ -68,9 +68,9 @@ void main() {
             ),
           );
       await database
-          .into(database.workingIdentities)
+          .into(database.workingParticipants)
           .insert(
-            WorkingIdentitiesCompanion.insert(
+            WorkingParticipantsCompanion.insert(
               id: const drift.Value(4),
               normalizedAddress: const drift.Value('555-0300'),
               service: const drift.Value('SMS'),
@@ -90,7 +90,7 @@ void main() {
       expect(group.displayName, 'Claire Jennings');
 
       final individual = result.firstWhere(
-        (entry) => entry.contactKey == 'identity:4',
+        (entry) => entry.contactKey == 'participant:4',
       );
       expect(individual.identities.single.identityId, 4);
       expect(individual.displayName, '555-0300');
@@ -99,9 +99,9 @@ void main() {
 
   test('prefers alphabetic display names over numeric handles', () async {
     await database
-        .into(database.workingIdentities)
+        .into(database.workingParticipants)
         .insert(
-          WorkingIdentitiesCompanion.insert(
+          WorkingParticipantsCompanion.insert(
             id: const drift.Value(10),
             normalizedAddress: const drift.Value('555-0400'),
             service: const drift.Value('SMS'),
@@ -111,9 +111,9 @@ void main() {
           ),
         );
     await database
-        .into(database.workingIdentities)
+        .into(database.workingParticipants)
         .insert(
-          WorkingIdentitiesCompanion.insert(
+          WorkingParticipantsCompanion.insert(
             id: const drift.Value(11),
             normalizedAddress: const drift.Value('beta@example.com'),
             service: const drift.Value('iMessage'),
@@ -138,9 +138,9 @@ void main() {
     'falls back to handle when identities only contain numeric labels',
     () async {
       await database
-          .into(database.workingIdentities)
+          .into(database.workingParticipants)
           .insert(
-            WorkingIdentitiesCompanion.insert(
+            WorkingParticipantsCompanion.insert(
               id: const drift.Value(20),
               normalizedAddress: const drift.Value('+12024742228'),
               service: const drift.Value('iMessage'),

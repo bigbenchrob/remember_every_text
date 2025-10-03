@@ -11,6 +11,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../db_import/application/debug_settings_provider.dart';
 
 import 'infrastructure/data_sources/local/import/sqflite_import_database.dart';
+import 'infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'infrastructure/data_sources/local/working/working_database.dart';
 
 part 'feature_level_providers.g.dart';
@@ -55,6 +56,27 @@ Future<WorkingDatabase> driftWorkingDatabase(
   final dbPath = path.join(_databaseDirectoryPath, 'working.db');
 
   final database = WorkingDatabase(
+    NativeDatabase.createInBackground(File(dbPath)),
+  );
+
+  await database.doWhenOpened((_) async {
+    await database.customStatement('PRAGMA foreign_keys = ON');
+  });
+
+  ref.onDispose(() async {
+    await database.close();
+  });
+
+  return database;
+}
+
+/// Provides access to the overlay database for user preferences and customizations.
+@Riverpod(keepAlive: true)
+Future<OverlayDatabase> overlayDatabase(OverlayDatabaseRef ref) async {
+  await _ensureDatabaseDirectoryExists();
+  final dbPath = path.join(_databaseDirectoryPath, 'user_overlays.db');
+
+  final database = OverlayDatabase(
     NativeDatabase.createInBackground(File(dbPath)),
   );
 

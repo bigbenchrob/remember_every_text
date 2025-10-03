@@ -63,12 +63,12 @@ Future<List<RecentChatSummary>> recentChats(Ref ref, {int limit = 5}) async {
     return parsed?.toLocal();
   }
 
-  String resolveContactKey(WorkingIdentity identity) {
-    final contactRef = identity.contactRef?.trim();
+  String resolveContactKey(WorkingParticipant participant) {
+    final contactRef = participant.contactRef?.trim();
     if (contactRef != null && contactRef.isNotEmpty) {
       return 'contact:$contactRef';
     }
-    return 'identity:${identity.id}';
+    return 'participant:${participant.id}';
   }
 
   String deriveTitle(WorkingChat chat, List<String> participants) {
@@ -113,37 +113,36 @@ Future<List<RecentChatSummary>> recentChats(Ref ref, {int limit = 5}) async {
 
     // Query all participants for this chat
     final participantsQuery =
-        db.select(db.chatParticipantsProj).join([
+        db.select(db.chatToParticipant).join([
             drift.innerJoin(
-              db.workingIdentities,
-              db.workingIdentities.id.equalsExp(
-                db.chatParticipantsProj.identityId,
+              db.workingParticipants,
+              db.workingParticipants.id.equalsExp(
+                db.chatToParticipant.participantId,
               ),
             ),
           ])
-          ..where(db.chatParticipantsProj.chatId.equals(chat.id))
+          ..where(db.chatToParticipant.chatId.equals(chat.id))
           ..orderBy([
-            drift.OrderingTerm(expression: db.chatParticipantsProj.sortKey),
+            drift.OrderingTerm(expression: db.chatToParticipant.sortKey),
           ]);
-
     final participantRows = await participantsQuery.get();
     final participantNames = <String>[];
     final seenNames = <String>{};
 
     for (final row in participantRows) {
-      final identity = row.readTable(db.workingIdentities);
-      if (identity.isSystem) {
+      final participant = row.readTable(db.workingParticipants);
+      if (participant.isSystem) {
         continue;
       }
 
-      final key = resolveContactKey(identity);
+      final key = resolveContactKey(participant);
       final trimmedShortName = shortNames[key]?.trim();
-      final trimmedIdentityName = identity.displayName?.trim();
-      final trimmedHandle = identity.normalizedAddress?.trim();
+      final trimmedParticipantName = participant.displayName?.trim();
+      final trimmedHandle = participant.normalizedAddress?.trim();
 
       var resolvedName = trimmedShortName;
       if (resolvedName == null || resolvedName.isEmpty) {
-        resolvedName = trimmedIdentityName;
+        resolvedName = trimmedParticipantName;
       }
       if (resolvedName == null || resolvedName.isEmpty) {
         resolvedName = trimmedHandle;

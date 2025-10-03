@@ -6,7 +6,7 @@ part of 'contact_short_names_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$contactShortNamesHash() => r'44696f6fcef55192602a1feee049c57482c6e47f';
+String _$contactShortNamesHash() => r'56aee41ee93dcf6184e429e22f5ebcd02cb324b6';
 
 /// See also [ContactShortNames].
 @ProviderFor(ContactShortNames)
