@@ -6,6 +6,7 @@ import '../resolvers/global_timeline_resolver.dart';
 import '../resolvers/handle_lens_resolver.dart';
 import '../resolvers/messages_for_contact_resolver.dart';
 import '../resolvers/messages_for_handle_resolver.dart';
+import '../resolvers/recovered_attachment_sidebar_resolver.dart';
 import '../resolvers/recovered_unlinked_messages_resolver.dart';
 
 part 'view_spec_coordinator.g.dart';
@@ -43,10 +44,21 @@ class ViewSpecCoordinator extends _$ViewSpecCoordinator {
           GlobalTimelineResolver().resolve(scrollToDate: scrollToDate),
       forHandle: (handleId) =>
           MessagesForHandleResolver().resolve(handleId: handleId),
-      recoveredUnlinkedMessages: (contactId) =>
-          RecoveredUnlinkedMessagesResolver().resolve(contactId: contactId),
-      recoveredNoHandleFromMeMessages: () =>
-          RecoveredUnlinkedMessagesResolver().resolve(onlyNoHandleFromMe: true),
+      recoveredUnlinkedMessages: (contactId, scrollToDate) =>
+          RecoveredUnlinkedMessagesResolver().resolve(
+            contactId: contactId,
+            scrollToDate: scrollToDate,
+          ),
+      recoveredNoHandleFromMeMessages: (scrollToDate) =>
+          RecoveredUnlinkedMessagesResolver().resolve(
+            onlyNoHandleFromMe: true,
+            scrollToDate: scrollToDate,
+          ),
+      recoveredAttachmentViewer: (messageId, attachment) =>
+          RecoveredAttachmentSidebarResolver().resolve(
+            messageId: messageId,
+            attachment: attachment,
+          ),
       handleLens: (handleId) =>
           HandleLensResolver().resolve(handleId: handleId),
       forChatInDateRange: (chatId, startDate, endDate) => const Center(

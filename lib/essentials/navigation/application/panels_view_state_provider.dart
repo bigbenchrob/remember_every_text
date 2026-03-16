@@ -12,11 +12,15 @@ class PanelsViewState extends _$PanelsViewState {
   int _pageIdSeed = 0;
 
   /// Map from WindowPanel -> stack of pages to render. Currently only the
-  /// center panel participates in the layout, but we keep the map structure so
-  /// future multi-panel scenarios can reuse this state without breaking APIs.
+  /// center and right panels participate in the layout. We keep the map
+  /// structure so future multi-panel scenarios can reuse this state without
+  /// breaking APIs.
   @override
   Map<WindowPanel, PanelStack> build(SidebarMode mode) {
-    return {WindowPanel.center: const PanelStack.empty()};
+    return {
+      WindowPanel.center: const PanelStack.empty(),
+      WindowPanel.right: const PanelStack.empty(),
+    };
   }
 
   // Show a new panel stack with a single page, replacing any existing stack.
@@ -26,10 +30,10 @@ class PanelsViewState extends _$PanelsViewState {
       title: _defaultTitleFor(spec),
       isClosable: false,
     );
-    state = {
-      ...state,
-      panel: PanelStack(pages: <PanelPage>[page]),
-    };
+    state = _withUpdatedPanel(
+      panel: panel,
+      stack: PanelStack(pages: <PanelPage>[page]),
+    );
   }
 
   // Push a new page onto the stack for the specified panel.
@@ -45,7 +49,7 @@ class PanelsViewState extends _$PanelsViewState {
       title: title ?? _defaultTitleFor(spec),
       isClosable: isClosable,
     );
-    state = {...state, panel: current.push(page)};
+    state = _withUpdatedPanel(panel: panel, stack: current.push(page));
   }
 
   // Activate a page at the specified index for the given panel.
@@ -54,7 +58,7 @@ class PanelsViewState extends _$PanelsViewState {
     if (current == null) {
       return;
     }
-    state = {...state, panel: current.activate(index)};
+    state = _withUpdatedPanel(panel: panel, stack: current.activate(index));
   }
 
   // Pop the top page off the stack for the specified panel.
@@ -67,7 +71,7 @@ class PanelsViewState extends _$PanelsViewState {
     if (current.pages.length == 1 && !lastPage.isClosable) {
       return;
     }
-    state = {...state, panel: current.pop()};
+    state = _withUpdatedPanel(panel: panel, stack: current.pop());
   }
 
   // Close the page at the specified index for the given panel.
@@ -80,12 +84,30 @@ class PanelsViewState extends _$PanelsViewState {
     if (!page.isClosable) {
       return;
     }
-    state = {...state, panel: current.removeAt(index)};
+    state = _withUpdatedPanel(panel: panel, stack: current.removeAt(index));
   }
 
   // Clear the panel, setting it to empty.
   void clear({required WindowPanel panel}) {
-    state = {...state, panel: const PanelStack.empty()};
+    state = _withUpdatedPanel(panel: panel, stack: const PanelStack.empty());
+  }
+
+  Map<WindowPanel, PanelStack> _withUpdatedPanel({
+    required WindowPanel panel,
+    required PanelStack stack,
+  }) {
+    final next = {
+      WindowPanel.center: state[WindowPanel.center] ?? const PanelStack.empty(),
+      WindowPanel.right: state[WindowPanel.right] ?? const PanelStack.empty(),
+      ...state,
+      panel: stack,
+    };
+
+    if (panel == WindowPanel.center) {
+      next[WindowPanel.right] = const PanelStack.empty();
+    }
+
+    return next;
   }
 
   /// Create a new panel page with the given specifications.
@@ -100,6 +122,11 @@ class PanelsViewState extends _$PanelsViewState {
 
   /// Get a default title for a given view spec.
   String _defaultTitleFor(ViewSpec spec) {
+    final specString = spec.toString();
+    if (specString.contains('recoveredAttachmentViewer')) {
+      return 'Recovered Attachment';
+    }
+
     return spec.map(
       messages: (_) => 'Messages',
       import: (_) => 'Import',

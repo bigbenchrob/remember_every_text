@@ -310,7 +310,368 @@ class _CenterPanelWidgetProviderElement
   SidebarMode get mode => (origin as CenterPanelWidgetProvider).mode;
 }
 
-String _$leftPanelWidgetHash() => r'b3958721d618342de7294ec48f49fd84fdf7075b';
+String _$rightPanelWidgetHash() => r'5cbd207bc7cbd9c0d172adcf9b882a038118037b';
+
+/// See also [rightPanelWidget].
+@ProviderFor(rightPanelWidget)
+const rightPanelWidgetProvider = RightPanelWidgetFamily();
+
+/// See also [rightPanelWidget].
+class RightPanelWidgetFamily extends Family<Widget> {
+  /// See also [rightPanelWidget].
+  const RightPanelWidgetFamily();
+
+  /// See also [rightPanelWidget].
+  RightPanelWidgetProvider call(SidebarMode mode) {
+    return RightPanelWidgetProvider(mode);
+  }
+
+  @override
+  RightPanelWidgetProvider getProviderOverride(
+    covariant RightPanelWidgetProvider provider,
+  ) {
+    return call(provider.mode);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'rightPanelWidgetProvider';
+}
+
+/// See also [rightPanelWidget].
+class RightPanelWidgetProvider extends AutoDisposeProvider<Widget> {
+  /// See also [rightPanelWidget].
+  RightPanelWidgetProvider(SidebarMode mode)
+    : this._internal(
+        (ref) => rightPanelWidget(ref as RightPanelWidgetRef, mode),
+        from: rightPanelWidgetProvider,
+        name: r'rightPanelWidgetProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$rightPanelWidgetHash,
+        dependencies: RightPanelWidgetFamily._dependencies,
+        allTransitiveDependencies:
+            RightPanelWidgetFamily._allTransitiveDependencies,
+        mode: mode,
+      );
+
+  RightPanelWidgetProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.mode,
+  }) : super.internal();
+
+  final SidebarMode mode;
+
+  @override
+  Override overrideWith(Widget Function(RightPanelWidgetRef provider) create) {
+    return ProviderOverride(
+      origin: this,
+      override: RightPanelWidgetProvider._internal(
+        (ref) => create(ref as RightPanelWidgetRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        mode: mode,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeProviderElement<Widget> createElement() {
+    return _RightPanelWidgetProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is RightPanelWidgetProvider && other.mode == mode;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, mode.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin RightPanelWidgetRef on AutoDisposeProviderRef<Widget> {
+  /// The parameter `mode` of this provider.
+  SidebarMode get mode;
+}
+
+class _RightPanelWidgetProviderElement
+    extends AutoDisposeProviderElement<Widget>
+    with RightPanelWidgetRef {
+  _RightPanelWidgetProviderElement(super.provider);
+
+  @override
+  SidebarMode get mode => (origin as RightPanelWidgetProvider).mode;
+}
+
+String _$shouldShowEndSidebarHash() =>
+    r'd77dc4076f2b8fa4317db7e77d21527752921f40';
+
+/// See also [shouldShowEndSidebar].
+@ProviderFor(shouldShowEndSidebar)
+const shouldShowEndSidebarProvider = ShouldShowEndSidebarFamily();
+
+/// See also [shouldShowEndSidebar].
+class ShouldShowEndSidebarFamily extends Family<bool> {
+  /// See also [shouldShowEndSidebar].
+  const ShouldShowEndSidebarFamily();
+
+  /// See also [shouldShowEndSidebar].
+  ShouldShowEndSidebarProvider call(SidebarMode mode) {
+    return ShouldShowEndSidebarProvider(mode);
+  }
+
+  @override
+  ShouldShowEndSidebarProvider getProviderOverride(
+    covariant ShouldShowEndSidebarProvider provider,
+  ) {
+    return call(provider.mode);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'shouldShowEndSidebarProvider';
+}
+
+/// See also [shouldShowEndSidebar].
+class ShouldShowEndSidebarProvider extends AutoDisposeProvider<bool> {
+  /// See also [shouldShowEndSidebar].
+  ShouldShowEndSidebarProvider(SidebarMode mode)
+    : this._internal(
+        (ref) => shouldShowEndSidebar(ref as ShouldShowEndSidebarRef, mode),
+        from: shouldShowEndSidebarProvider,
+        name: r'shouldShowEndSidebarProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$shouldShowEndSidebarHash,
+        dependencies: ShouldShowEndSidebarFamily._dependencies,
+        allTransitiveDependencies:
+            ShouldShowEndSidebarFamily._allTransitiveDependencies,
+        mode: mode,
+      );
+
+  ShouldShowEndSidebarProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.mode,
+  }) : super.internal();
+
+  final SidebarMode mode;
+
+  @override
+  Override overrideWith(
+    bool Function(ShouldShowEndSidebarRef provider) create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: ShouldShowEndSidebarProvider._internal(
+        (ref) => create(ref as ShouldShowEndSidebarRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        mode: mode,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeProviderElement<bool> createElement() {
+    return _ShouldShowEndSidebarProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ShouldShowEndSidebarProvider && other.mode == mode;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, mode.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin ShouldShowEndSidebarRef on AutoDisposeProviderRef<bool> {
+  /// The parameter `mode` of this provider.
+  SidebarMode get mode;
+}
+
+class _ShouldShowEndSidebarProviderElement
+    extends AutoDisposeProviderElement<bool>
+    with ShouldShowEndSidebarRef {
+  _ShouldShowEndSidebarProviderElement(super.provider);
+
+  @override
+  SidebarMode get mode => (origin as ShouldShowEndSidebarProvider).mode;
+}
+
+String _$contextualSidebarWidgetHash() =>
+    r'e6e8d6c23eea8ede21582ed25b3e4971b5bd4f9f';
+
+/// See also [contextualSidebarWidget].
+@ProviderFor(contextualSidebarWidget)
+const contextualSidebarWidgetProvider = ContextualSidebarWidgetFamily();
+
+/// See also [contextualSidebarWidget].
+class ContextualSidebarWidgetFamily extends Family<Widget?> {
+  /// See also [contextualSidebarWidget].
+  const ContextualSidebarWidgetFamily();
+
+  /// See also [contextualSidebarWidget].
+  ContextualSidebarWidgetProvider call(SidebarMode mode) {
+    return ContextualSidebarWidgetProvider(mode);
+  }
+
+  @override
+  ContextualSidebarWidgetProvider getProviderOverride(
+    covariant ContextualSidebarWidgetProvider provider,
+  ) {
+    return call(provider.mode);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'contextualSidebarWidgetProvider';
+}
+
+/// See also [contextualSidebarWidget].
+class ContextualSidebarWidgetProvider extends AutoDisposeProvider<Widget?> {
+  /// See also [contextualSidebarWidget].
+  ContextualSidebarWidgetProvider(SidebarMode mode)
+    : this._internal(
+        (ref) =>
+            contextualSidebarWidget(ref as ContextualSidebarWidgetRef, mode),
+        from: contextualSidebarWidgetProvider,
+        name: r'contextualSidebarWidgetProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$contextualSidebarWidgetHash,
+        dependencies: ContextualSidebarWidgetFamily._dependencies,
+        allTransitiveDependencies:
+            ContextualSidebarWidgetFamily._allTransitiveDependencies,
+        mode: mode,
+      );
+
+  ContextualSidebarWidgetProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.mode,
+  }) : super.internal();
+
+  final SidebarMode mode;
+
+  @override
+  Override overrideWith(
+    Widget? Function(ContextualSidebarWidgetRef provider) create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: ContextualSidebarWidgetProvider._internal(
+        (ref) => create(ref as ContextualSidebarWidgetRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        mode: mode,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeProviderElement<Widget?> createElement() {
+    return _ContextualSidebarWidgetProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ContextualSidebarWidgetProvider && other.mode == mode;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, mode.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin ContextualSidebarWidgetRef on AutoDisposeProviderRef<Widget?> {
+  /// The parameter `mode` of this provider.
+  SidebarMode get mode;
+}
+
+class _ContextualSidebarWidgetProviderElement
+    extends AutoDisposeProviderElement<Widget?>
+    with ContextualSidebarWidgetRef {
+  _ContextualSidebarWidgetProviderElement(super.provider);
+
+  @override
+  SidebarMode get mode => (origin as ContextualSidebarWidgetProvider).mode;
+}
+
+String _$leftPanelWidgetHash() => r'5f46ef6d57c7f9f5b6ab472077d1c189e767f219';
 
 /// Widget provider for left panel (sidebar).
 ///

@@ -1,5 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import '../entities/attachment_info.dart';
+
 part 'messages_view_spec.freezed.dart';
 
 @freezed
@@ -22,13 +24,22 @@ abstract class MessagesSpec with _$MessagesSpec {
 
   /// Dedicated surface for recovered deleted-message candidates that remain
   /// outside the normal chat linkage model.
-  const factory MessagesSpec.recoveredUnlinkedMessages({int? contactId}) =
-      _RecoveredUnlinkedMessages;
+  const factory MessagesSpec.recoveredUnlinkedMessages({
+    int? contactId,
+    DateTime? scrollToDate,
+  }) = _RecoveredUnlinkedMessages;
 
   /// Experimental surface for recovered orphaned records with no surviving
   /// handle linkage that still appear to be outgoing messages.
-  const factory MessagesSpec.recoveredNoHandleFromMeMessages() =
-      _RecoveredNoHandleFromMeMessages;
+  const factory MessagesSpec.recoveredNoHandleFromMeMessages({
+    DateTime? scrollToDate,
+  }) = _RecoveredNoHandleFromMeMessages;
+
+  /// End-sidebar viewer for a single recovered attachment.
+  const factory MessagesSpec.recoveredAttachmentViewer({
+    required int messageId,
+    required AttachmentInfo attachment,
+  }) = _RecoveredAttachmentViewer;
 
   /// Triage view for a stray handle: header + action bar + message list.
   const factory MessagesSpec.handleLens({required int handleId}) =

@@ -5,10 +5,12 @@ import '../../../presentation/view/recovered_unlinked_messages_placeholder_view.
 /// Widget builder for the recovered-unlinked-messages center panel view.
 Widget buildRecoveredUnlinkedMessagesView({
   int? contactId,
+  DateTime? scrollToDate,
   bool onlyNoHandleFromMe = false,
 }) {
   return RecoveredUnlinkedMessagesPlaceholderView(
     contactId: contactId,
+    scrollToDate: scrollToDate,
     onlyNoHandleFromMe: onlyNoHandleFromMe,
   );
 }

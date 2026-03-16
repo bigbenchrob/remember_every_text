@@ -5,6 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../essentials/db/feature_level_providers.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/working/working_database.dart';
 import '../../../../essentials/db/shared/handle_identifier_utils.dart';
+import '../../domain/entities/attachment_info.dart';
 import '../../../contacts/infrastructure/repositories/handles_for_contact_provider.dart';
 import '../../../contacts/infrastructure/repositories/participant_merge_utils.dart';
 
@@ -29,7 +30,7 @@ class RecoveredUnlinkedMessageItem {
     required this.itemType,
     required this.hasAttachments,
     required this.attachmentCount,
-    required this.attachmentNames,
+    required this.attachments,
   });
 
   final int id;
@@ -49,7 +50,7 @@ class RecoveredUnlinkedMessageItem {
   final String itemType;
   final bool hasAttachments;
   final int attachmentCount;
-  final List<String> attachmentNames;
+  final List<AttachmentInfo> attachments;
 }
 
 @riverpod
@@ -128,10 +129,15 @@ Stream<List<RecoveredUnlinkedMessageItem>> recoveredUnlinkedMessages(
                 .get()
           : const <RecoveredUnlinkedAttachment>[];
 
-      final attachmentNames = attachments
-          .map((attachment) => attachment.transferName?.trim())
-          .whereType<String>()
-          .where((name) => name.isNotEmpty)
+      final recoveredAttachments = _dedupeRecoveredAttachments(attachments)
+          .map((attachment) {
+            return AttachmentInfo(
+              id: attachment.id,
+              localPath: attachment.localPath,
+              mimeType: attachment.mimeType,
+              transferName: _resolvedRecoveredAttachmentName(attachment),
+            );
+          })
           .toList(growable: false);
 
       items.add(
@@ -163,8 +169,8 @@ Stream<List<RecoveredUnlinkedMessageItem>> recoveredUnlinkedMessages(
             sentAt: parseUtc(row.sentAtUtc),
             itemType: row.itemType ?? 'unknown',
             hasAttachments: row.hasAttachments,
-            attachmentCount: attachments.length,
-            attachmentNames: attachmentNames,
+            attachmentCount: recoveredAttachments.length,
+            attachments: recoveredAttachments,
           ),
           isDirectMatch: isDirectMatch,
           hasSenderAddress: hasSenderAddress,
@@ -217,11 +223,67 @@ Stream<List<RecoveredUnlinkedMessageItem>> recoveredUnlinkedMessages(
             itemType: entry.item.itemType,
             hasAttachments: entry.item.hasAttachments,
             attachmentCount: entry.item.attachmentCount,
-            attachmentNames: entry.item.attachmentNames,
+            attachments: entry.item.attachments,
           );
         })
         .toList(growable: false);
   });
+}
+
+String? _resolvedRecoveredAttachmentName(
+  RecoveredUnlinkedAttachment attachment,
+) {
+  final transferName = attachment.transferName?.trim();
+  if (transferName != null && transferName.isNotEmpty) {
+    return transferName;
+  }
+
+  final localPath = attachment.localPath?.trim();
+  if (localPath == null || localPath.isEmpty) {
+    return null;
+  }
+
+  final segments = localPath.split('/');
+  final lastSegment = segments.isEmpty ? localPath : segments.last.trim();
+  if (lastSegment.isEmpty) {
+    return null;
+  }
+
+  return lastSegment;
+}
+
+List<RecoveredUnlinkedAttachment> _dedupeRecoveredAttachments(
+  List<RecoveredUnlinkedAttachment> attachments,
+) {
+  if (attachments.length < 2) {
+    return attachments;
+  }
+
+  final deduped = <String, RecoveredUnlinkedAttachment>{};
+
+  for (final attachment in attachments) {
+    final dedupKey = _recoveredAttachmentDedupKey(attachment);
+    deduped.putIfAbsent(dedupKey, () => attachment);
+  }
+
+  return deduped.values.toList(growable: false);
+}
+
+String _recoveredAttachmentDedupKey(RecoveredUnlinkedAttachment attachment) {
+  final importAttachmentId = attachment.importAttachmentId;
+  if (importAttachmentId != null) {
+    return 'import:$importAttachmentId';
+  }
+
+  final sha256Hex = attachment.sha256Hex?.trim();
+  if (sha256Hex != null && sha256Hex.isNotEmpty) {
+    return 'sha:$sha256Hex';
+  }
+
+  final localPath = attachment.localPath?.trim() ?? '';
+  final transferName = attachment.transferName?.trim() ?? '';
+  final mimeType = attachment.mimeType?.trim() ?? '';
+  return 'path:$localPath|name:$transferName|mime:$mimeType';
 }
 
 String _fallbackRecoveredMessageText({required String semanticKind}) {

@@ -3,6 +3,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../logging/application/app_logger.dart';
+import '../../../features/messages/feature_level_providers.dart'
+    as messages_feature;
+import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 
 // Import the sidebar feature barrel to access cassette widget coordinator and card.
 // The provider (cassetteWidgetCoordinatorProvider) exposes the list of cassette
@@ -48,6 +51,134 @@ Widget centerPanelWidget(Ref ref, SidebarMode mode) {
   return ref
       .read(panelCoordinatorProvider(mode).notifier)
       .buildPanelSurface(WindowPanel.center, stack);
+}
+
+@riverpod
+Widget rightPanelWidget(Ref ref, SidebarMode mode) {
+  final stack = ref.watch(
+    panelsViewStateProvider(
+      mode,
+    ).select((stacks) => stacks[WindowPanel.right] ?? const PanelStack.empty()),
+  );
+  return ref
+      .read(panelCoordinatorProvider(mode).notifier)
+      .buildPanelSurface(WindowPanel.right, stack);
+}
+
+@riverpod
+bool shouldShowEndSidebar(Ref ref, SidebarMode mode) {
+  if (mode != SidebarMode.messages) {
+    return false;
+  }
+
+  final stacks = ref.watch(panelsViewStateProvider(mode));
+  final centerSpec = stacks[WindowPanel.center]?.activePage?.spec;
+  final rightStack = stacks[WindowPanel.right] ?? const PanelStack.empty();
+
+  if (rightStack.isEmpty) {
+    return false;
+  }
+
+  return _supportsRecoveredAttachmentSidebar(centerSpec);
+}
+
+@riverpod
+Widget? contextualSidebarWidget(Ref ref, SidebarMode mode) {
+  if (mode != SidebarMode.messages) {
+    return null;
+  }
+
+  final rack = ref.watch(cassetteRackStateProvider(mode));
+  final topMenuChoice = _currentTopChatMenuChoice(rack);
+
+  final centerSpec = ref.watch(
+    panelsViewStateProvider(
+      mode,
+    ).select((stacks) => stacks[WindowPanel.center]?.activePage?.spec),
+  );
+
+  if (centerSpec == null) {
+    return null;
+  }
+
+  if (!_shouldShowRecoveredContextFor(topMenuChoice)) {
+    return null;
+  }
+
+  return centerSpec.when(
+    messages: (messagesSpec) {
+      return messagesSpec.mapOrNull(
+        recoveredUnlinkedMessages: (spec) => ref.watch(
+          messages_feature.recoveredMessagesSidebarProvider(
+            contactId: spec.contactId,
+            scrollToDate: spec.scrollToDate,
+          ),
+        ),
+        recoveredNoHandleFromMeMessages: (spec) => ref.watch(
+          messages_feature.recoveredMessagesSidebarProvider(
+            onlyNoHandleFromMe: true,
+            scrollToDate: spec.scrollToDate,
+          ),
+        ),
+      );
+    },
+    import: (_) => null,
+    onboarding: (_) => null,
+  );
+}
+
+bool _supportsRecoveredAttachmentSidebar(ViewSpec? spec) {
+  if (spec == null) {
+    return false;
+  }
+
+  return spec.maybeWhen(
+    messages: (messagesSpec) {
+      return messagesSpec.maybeWhen(
+        recoveredUnlinkedMessages: (_, __) => true,
+        recoveredNoHandleFromMeMessages: (_) => true,
+        orElse: () => false,
+      );
+    },
+    orElse: () => false,
+  );
+}
+
+TopChatMenuChoice? _currentTopChatMenuChoice(CassetteRack rack) {
+  if (rack.cassettes.isEmpty) {
+    return null;
+  }
+
+  return rack.cassettes.first.when(
+    sidebarUtility: (sidebarSpec) {
+      final selectedChoice = sidebarSpec.selectedChoice;
+      if (selectedChoice is TopChatMenuChoice) {
+        return selectedChoice;
+      }
+
+      return null;
+    },
+    contacts: (_) => null,
+    contactsSettings: (_) => null,
+    contactsInfo: (_) => null,
+    handles: (_) => null,
+    handlesInfo: (_) => null,
+    messages: (_) => null,
+    messagesInfo: (_) => null,
+  );
+}
+
+bool _shouldShowRecoveredContextFor(TopChatMenuChoice? choice) {
+  switch (choice) {
+    case TopChatMenuChoice.recoveredUnlinkedMessages:
+    case TopChatMenuChoice.recoveredNoHandleFromMeMessages:
+      return true;
+    case TopChatMenuChoice.contacts:
+    case TopChatMenuChoice.strayHandles:
+    case TopChatMenuChoice.searchAllMessages:
+    case null:
+      return false;
+  }
 }
 
 /// Widget provider for left panel (sidebar).
@@ -109,6 +240,7 @@ Widget centerPanelWidget(Ref ref, SidebarMode mode) {
 ///   operation completes.
 @riverpod
 Widget leftPanelWidget(Ref ref, SidebarMode mode) {
+  final contextualWidget = ref.watch(contextualSidebarWidgetProvider(mode));
   // Watch the async cassette list from the coordinator.
   //
   // This is an AsyncValue because feature-side coordinators (e.g.,
@@ -122,6 +254,9 @@ Widget leftPanelWidget(Ref ref, SidebarMode mode) {
   // but we have previous data), we continue showing the previous cassettes
   // rather than dropping to a loading state.
   final cassetteWidgets = asyncCassettes.valueOrNull ?? const <Widget>[];
+  final sidebarWidgets = contextualWidget == null
+      ? cassetteWidgets
+      : <Widget>[contextualWidget, ...cassetteWidgets];
 
   // Determine if this is truly the first load (no data yet) vs. a refresh
   // (loading new data but we have previous data to show).
@@ -166,7 +301,7 @@ Widget leftPanelWidget(Ref ref, SidebarMode mode) {
   // The MouseRegion wrapper supports future hover-based interactions
   // (e.g., showing cassette actions on hover).
   return MouseRegion(
-    child: _LeftSidebarSurface(cassetteWidgets: cassetteWidgets),
+    child: _LeftSidebarSurface(cassetteWidgets: sidebarWidgets),
   );
 }
 

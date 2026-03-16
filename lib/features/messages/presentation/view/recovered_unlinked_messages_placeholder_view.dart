@@ -3,11 +3,19 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:macos_ui/macos_ui.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
 import '../../../../essentials/debug/application/developer_mode_provider.dart';
+import '../../../../essentials/navigation/application/panels_view_state_provider.dart';
+import '../../../../essentials/navigation/domain/entities/view_spec.dart';
+import '../../../../essentials/navigation/domain/navigation_constants.dart';
+import '../../../../essentials/navigation/domain/sidebar_mode.dart';
+import '../../application/view_spec/resolver_tools/recovered_visible_month_provider.dart';
+import '../../domain/entities/attachment_info.dart';
+import '../../domain/spec_classes/messages_view_spec.dart';
 import '../../infrastructure/repositories/recovered_unlinked_messages_provider.dart';
 
 String _formatRecoveredSemanticKind(String semanticKind) {
@@ -74,11 +82,13 @@ String _buildRecoveredStatusLine(RecoveredUnlinkedMessageItem message) {
 class RecoveredUnlinkedMessagesPlaceholderView extends HookConsumerWidget {
   const RecoveredUnlinkedMessagesPlaceholderView({
     this.contactId,
+    this.scrollToDate,
     this.onlyNoHandleFromMe = false,
     super.key,
   });
 
   final int? contactId;
+  final DateTime? scrollToDate;
   final bool onlyNoHandleFromMe;
 
   @override
@@ -194,16 +204,11 @@ class RecoveredUnlinkedMessagesPlaceholderView extends HookConsumerWidget {
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Expanded(
-                      child: ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                        itemCount: filtered.length,
-                        separatorBuilder: (_, _) =>
-                            const SizedBox(height: AppSpacing.sm),
-                        itemBuilder: (context, index) {
-                          return _RecoveredUnlinkedMessageCard(
-                            message: filtered[index],
-                          );
-                        },
+                      child: _RecoveredMessagesList(
+                        contactId: contactId,
+                        messages: filtered,
+                        onlyNoHandleFromMe: onlyNoHandleFromMe,
+                        scrollToDate: scrollToDate,
                       ),
                     ),
                   ],
@@ -219,6 +224,151 @@ class RecoveredUnlinkedMessagesPlaceholderView extends HookConsumerWidget {
       ),
     );
   }
+}
+
+class _RecoveredMessagesList extends HookConsumerWidget {
+  const _RecoveredMessagesList({
+    required this.contactId,
+    required this.messages,
+    required this.onlyNoHandleFromMe,
+    this.scrollToDate,
+  });
+
+  final int? contactId;
+  final List<RecoveredUnlinkedMessageItem> messages;
+  final bool onlyNoHandleFromMe;
+  final DateTime? scrollToDate;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final itemScrollController = useMemoized(ItemScrollController.new);
+    final itemPositionsListener = useMemoized(ItemPositionsListener.create);
+    final lastScrollTarget = useRef<String?>(null);
+    final visibleMonthNotifier = ref.read(
+      recoveredVisibleMonthProvider(
+        contactId: contactId,
+        onlyNoHandleFromMe: onlyNoHandleFromMe,
+      ).notifier,
+    );
+    final targetIndex = _targetIndexForScrollDate(
+      messages: messages,
+      scrollToDate: scrollToDate,
+    );
+    final targetKey = scrollToDate == null || targetIndex == null
+        ? null
+        : '${scrollToDate!.year}-${scrollToDate!.month.toString().padLeft(2, '0')}-$targetIndex';
+
+    useEffect(() {
+      if (targetIndex == null || targetKey == null) {
+        return null;
+      }
+      if (lastScrollTarget.value == targetKey) {
+        return null;
+      }
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!itemScrollController.isAttached) {
+          return;
+        }
+
+        lastScrollTarget.value = targetKey;
+        itemScrollController.jumpTo(index: targetIndex);
+      });
+
+      return null;
+    }, [targetKey, targetIndex, itemScrollController]);
+
+    useEffect(() {
+      void handlePositionsChanged() {
+        final positions = itemPositionsListener.itemPositions.value;
+        if (positions.isEmpty) {
+          return;
+        }
+
+        final visiblePositions =
+            positions
+                .where((position) {
+                  return position.itemTrailingEdge > 0 &&
+                      position.itemLeadingEdge < 1;
+                })
+                .toList(growable: false)
+              ..sort((left, right) {
+                return left.itemLeadingEdge.compareTo(right.itemLeadingEdge);
+              });
+
+        if (visiblePositions.isEmpty) {
+          return;
+        }
+
+        final topVisibleIndex = visiblePositions.first.index;
+        if (topVisibleIndex < 0 || topVisibleIndex >= messages.length) {
+          return;
+        }
+
+        visibleMonthNotifier.setMonthKey(
+          _monthKeyForDate(messages[topVisibleIndex].sentAt),
+        );
+      }
+
+      itemPositionsListener.itemPositions.addListener(handlePositionsChanged);
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        handlePositionsChanged();
+      });
+
+      return () {
+        itemPositionsListener.itemPositions.removeListener(
+          handlePositionsChanged,
+        );
+      };
+    }, [itemPositionsListener, messages, visibleMonthNotifier]);
+
+    return ScrollablePositionedList.builder(
+      itemScrollController: itemScrollController,
+      itemPositionsListener: itemPositionsListener,
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+      itemCount: messages.length,
+      itemBuilder: (context, index) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: index == messages.length - 1 ? 0 : AppSpacing.sm,
+          ),
+          child: _RecoveredUnlinkedMessageCard(message: messages[index]),
+        );
+      },
+    );
+  }
+}
+
+int? _targetIndexForScrollDate({
+  required List<RecoveredUnlinkedMessageItem> messages,
+  required DateTime? scrollToDate,
+}) {
+  if (scrollToDate == null || messages.isEmpty) {
+    return null;
+  }
+
+  final monthStart = DateTime(scrollToDate.year, scrollToDate.month, 1);
+
+  for (var index = 0; index < messages.length; index += 1) {
+    final sentAt = messages[index].sentAt;
+    if (sentAt == null) {
+      continue;
+    }
+    if (!sentAt.isBefore(monthStart)) {
+      return index;
+    }
+  }
+
+  return messages.length - 1;
+}
+
+String? _monthKeyForDate(DateTime? date) {
+  if (date == null) {
+    return null;
+  }
+
+  return '${date.year}-${date.month.toString().padLeft(2, '0')}';
 }
 
 List<RecoveredUnlinkedMessageItem> _applyRecoveredBucketFilter({
@@ -246,7 +396,12 @@ List<RecoveredUnlinkedMessageItem> _filterMessages({
 
   return messages
       .where((message) {
-        final attachmentText = message.attachmentNames.join(' ').toLowerCase();
+        final attachmentText = message.attachments
+            .map((attachment) => attachment.transferName?.trim())
+            .whereType<String>()
+            .where((name) => name.isNotEmpty)
+            .join(' ')
+            .toLowerCase();
         final haystack = [
           message.senderLabel.toLowerCase(),
           message.service.toLowerCase(),
@@ -295,6 +450,50 @@ class _RecoveredUnlinkedMessageCard extends ConsumerWidget {
 
   final RecoveredUnlinkedMessageItem message;
 
+  _SelectedRecoveredAttachment? _selectedRecoveredAttachment(WidgetRef ref) {
+    final rightSpec = ref.watch(
+      panelsViewStateProvider(
+        SidebarMode.messages,
+      ).select((panels) => panels[WindowPanel.right]?.activePage?.spec),
+    );
+
+    return rightSpec?.when(
+      messages: (messagesSpec) => messagesSpec.mapOrNull(
+        recoveredAttachmentViewer: (selectedSpec) =>
+            _SelectedRecoveredAttachment(
+              messageId: selectedSpec.messageId,
+              attachmentId: selectedSpec.attachment.id,
+            ),
+      ),
+      import: (_) => null,
+      onboarding: (_) => null,
+    );
+  }
+
+  List<AttachmentInfo> _visibleAttachments() {
+    return message.attachments.take(6).toList(growable: false);
+  }
+
+  String _attachmentLabel(AttachmentInfo attachment, int index) {
+    final transferName = attachment.transferName?.trim();
+    if (transferName != null && transferName.isNotEmpty) {
+      return transferName;
+    }
+
+    final resolvedPath = attachment.resolvedLocalPath()?.trim();
+    if (resolvedPath != null && resolvedPath.isNotEmpty) {
+      final segments = resolvedPath.split('/');
+      final lastSegment = segments.isEmpty
+          ? resolvedPath
+          : segments.last.trim();
+      if (lastSegment.isNotEmpty) {
+        return lastSegment;
+      }
+    }
+
+    return 'Attachment ${index + 1}';
+  }
+
   String _buildHeaderTitle() {
     if (message.isFromMe) {
       return 'You';
@@ -329,6 +528,9 @@ class _RecoveredUnlinkedMessageCard extends ConsumerWidget {
     final isFromMe = message.isFromMe;
     final hasMeaningfulText = _hasMeaningfulRecoveredText(message);
     final statusLine = _buildRecoveredStatusLine(message);
+    final attachments = _visibleAttachments();
+    final selectedAttachment = _selectedRecoveredAttachment(ref);
+    final isSelectedMessage = selectedAttachment?.messageId == message.id;
     final backgroundColor = message.isInferred
         ? colors.accents.primary.withValues(alpha: 0.10)
         : isFromMe
@@ -336,18 +538,24 @@ class _RecoveredUnlinkedMessageCard extends ConsumerWidget {
         : isSparseArtifact
         ? colors.content.textTertiary.withValues(alpha: 0.08)
         : colors.surfaces.surface;
-    final borderColor = message.isInferred
+    final baseBorderColor = message.isInferred
         ? colors.accents.primary.withValues(alpha: 0.28)
         : isFromMe
         ? colors.accents.primary.withValues(alpha: 0.16)
         : isSparseArtifact
         ? colors.content.textTertiary.withValues(alpha: 0.24)
         : colors.lines.borderSubtle;
+    final borderColor = isSelectedMessage
+        ? colors.accents.primary.withValues(alpha: 0.72)
+        : baseBorderColor;
+    final cardColor = isSelectedMessage
+        ? colors.accents.primary.withValues(alpha: 0.12)
+        : backgroundColor;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: backgroundColor,
+        color: cardColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: borderColor, width: 1),
       ),
@@ -389,22 +597,20 @@ class _RecoveredUnlinkedMessageCard extends ConsumerWidget {
           ],
           if (message.hasAttachments) ...[
             const SizedBox(height: AppSpacing.sm),
-            if (message.attachmentNames.isNotEmpty) ...[
+            if (attachments.isNotEmpty) ...[
               Wrap(
                 spacing: AppSpacing.xs,
                 runSpacing: AppSpacing.xs,
                 children: [
-                  for (final attachmentName in message.attachmentNames.take(6))
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.surfaces.control,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(attachmentName, style: typography.caption1),
+                  for (var index = 0; index < attachments.length; index += 1)
+                    _RecoveredAttachmentChip(
+                      label: _attachmentLabel(attachments[index], index),
+                      attachment: attachments[index],
+                      messageId: message.id,
+                      isSelected:
+                          selectedAttachment?.messageId == message.id &&
+                          selectedAttachment?.attachmentId ==
+                              attachments[index].id,
                     ),
                 ],
               ),
@@ -431,6 +637,77 @@ class _RecoveredUnlinkedMessageCard extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _RecoveredAttachmentChip extends ConsumerWidget {
+  const _RecoveredAttachmentChip({
+    required this.label,
+    required this.attachment,
+    required this.messageId,
+    required this.isSelected,
+  });
+
+  final String label;
+  final AttachmentInfo attachment;
+  final int messageId;
+  final bool isSelected;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final typography = ref.watch(themeTypographyProvider);
+    final chipColor = isSelected
+        ? colors.accents.primary.withValues(alpha: 0.24)
+        : colors.surfaces.control;
+    final chipBorderColor = isSelected
+        ? colors.accents.primary.withValues(alpha: 0.72)
+        : colors.lines.borderSubtle.withValues(alpha: 0.5);
+    final chipTextColor = isSelected
+        ? colors.accents.primary
+        : colors.content.textPrimary;
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () {
+          ref
+              .read(panelsViewStateProvider(SidebarMode.messages).notifier)
+              .show(
+                panel: WindowPanel.right,
+                spec: ViewSpec.messages(
+                  MessagesSpec.recoveredAttachmentViewer(
+                    messageId: messageId,
+                    attachment: attachment,
+                  ),
+                ),
+              );
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: chipColor,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: chipBorderColor, width: 1),
+          ),
+          child: Text(
+            label,
+            style: typography.caption1.copyWith(color: chipTextColor),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SelectedRecoveredAttachment {
+  const _SelectedRecoveredAttachment({
+    required this.messageId,
+    required this.attachmentId,
+  });
+
+  final int messageId;
+  final int attachmentId;
 }
 
 class _RecoveredLegend extends ConsumerWidget {

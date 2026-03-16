@@ -15,6 +15,7 @@ import '../../../onboarding/domain/onboarding_status.dart';
 import '../../../onboarding/domain/spec_classes/onboarding_view_spec.dart';
 import '../../../onboarding/presentation/onboarding_overlay.dart';
 import '../../../window_state/feature_level_providers.dart';
+import '../../application/panel_widget_providers.dart';
 import '../../application/sidebar_mode_provider.dart';
 import '../../domain/entities/view_spec.dart';
 import '../../domain/navigation_constants.dart';
@@ -107,11 +108,22 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
 
     final onboardingStatus = ref.watch(onboardingGateProvider);
     final showOnboarding = onboardingStatus != OnboardingStatus.notNeeded;
+    final activeMode = ref.watch(activeSidebarModeProvider);
     const showDeveloperToolbarActions = !kReleaseMode;
 
     return Stack(
       children: [
         MacosWindow(
+          endSidebar: Sidebar(
+            key: ValueKey<String>('end-sidebar-${activeMode.name}'),
+            startWidth: 360,
+            minWidth: 300,
+            maxWidth: 520,
+            shownByDefault: false,
+            builder: (context, scrollController) {
+              return ref.watch(rightPanelWidgetProvider(activeMode));
+            },
+          ),
           child: MacosScaffold(
             toolBar: ToolBar(
               // Position mode toggle above sidebar, other controls above center panel.
@@ -238,12 +250,16 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
             children: [
               ContentArea(
                 builder: (context, scrollController) {
-                  final activeMode = ref.watch(activeSidebarModeProvider);
-                  return IndexedStack(
-                    index: activeMode == SidebarMode.messages ? 0 : 1,
-                    children: const [
-                      WorkspaceLayout(mode: SidebarMode.messages),
-                      WorkspaceLayout(mode: SidebarMode.settings),
+                  return Stack(
+                    children: [
+                      IndexedStack(
+                        index: activeMode == SidebarMode.messages ? 0 : 1,
+                        children: const [
+                          WorkspaceLayout(mode: SidebarMode.messages),
+                          WorkspaceLayout(mode: SidebarMode.settings),
+                        ],
+                      ),
+                      _EndSidebarSyncObserver(mode: activeMode),
                     ],
                   );
                 },
@@ -258,3 +274,27 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
 }
 
 // Legacy placeholder widgets removed; dynamic providers now supply content.
+
+class _EndSidebarSyncObserver extends ConsumerWidget {
+  const _EndSidebarSyncObserver({required this.mode});
+
+  final SidebarMode mode;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final shouldShow = ref.watch(shouldShowEndSidebarProvider(mode));
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!context.mounted) {
+        return;
+      }
+
+      final scope = MacosWindowScope.of(context);
+      if (scope.isEndSidebarShown != shouldShow) {
+        scope.toggleEndSidebar();
+      }
+    });
+
+    return const SizedBox.shrink();
+  }
+}
