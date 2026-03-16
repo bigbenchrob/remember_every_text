@@ -6,13 +6,22 @@ import '../view_model/shared/hydration/attachment_info.dart';
 import '../view_model/shared/hydration/messages_for_handle_provider.dart';
 import 'message_link_preview_card.dart';
 
+enum MessageCardLayout { bubble, analysis }
+
 /// Shared message card widget used in both contact messages and global timeline views.
 /// Handles all message types: text, images, videos, and link previews.
 /// Uses bubble-style layout with metadata underneath.
 class MessageCard extends ConsumerWidget {
-  const MessageCard({required this.message, super.key});
+  const MessageCard({
+    required this.message,
+    this.layout = MessageCardLayout.bubble,
+    this.grouping = MessageGroupingStyle.standalone,
+    super.key,
+  });
 
   final MessageListItem message;
+  final MessageCardLayout layout;
+  final MessageGroupingStyle grouping;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -43,6 +52,8 @@ class MessageCard extends ConsumerWidget {
     if (urlPreviewAttachment != null || isPureUrlMessage) {
       return MessageLinkPreviewCard(
         message: message,
+        layout: layout,
+        grouping: grouping,
         maxWidth: MsgTheme.maxBubbleWidth,
       );
     }
@@ -56,6 +67,10 @@ class MessageCard extends ConsumerWidget {
         sender: message.senderName,
         sentAt: message.sentAt ?? DateTime.now(),
         messageId: message.id,
+        layout: layout == MessageCardLayout.analysis
+            ? MessageLayout.fullWidth
+            : MessageLayout.bubble,
+        grouping: grouping,
       );
     }
 
@@ -68,6 +83,10 @@ class MessageCard extends ConsumerWidget {
         sender: message.senderName,
         sentAt: message.sentAt ?? DateTime.now(),
         messageId: message.id,
+        layout: layout == MessageCardLayout.analysis
+            ? MessageLayout.fullWidth
+            : MessageLayout.bubble,
+        grouping: grouping,
       );
     }
 
@@ -78,6 +97,10 @@ class MessageCard extends ConsumerWidget {
       sender: message.senderName,
       sentAt: message.sentAt ?? DateTime.now(),
       messageId: message.id,
+      layout: layout == MessageCardLayout.analysis
+          ? MessageLayout.fullWidth
+          : MessageLayout.bubble,
+      grouping: grouping,
     );
   }
 

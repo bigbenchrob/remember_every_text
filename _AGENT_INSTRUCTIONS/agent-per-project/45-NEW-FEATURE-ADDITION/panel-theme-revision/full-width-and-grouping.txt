@@ -1,0 +1,337 @@
+MessageLens Conversation Layout Refactor
+
+Full-Width Timeline + Sender Grouping Model
+
+Goal
+
+Refactor message display in MessageLens to support:
+	•	calmer visual structure
+	•	easier chronological scanning
+	•	reduced UI noise
+	•	better fit for an analysis / archive viewer rather than a chat client
+
+The new model combines three principles:
+	1.	Single panel surface
+	2.	Full-width message entries
+	3.	Sender-based message grouping (clustering)
+
+This replaces the legacy left/right chat bubble layout.
+
+⸻
+
+1. Core Layout Philosophy
+
+MessageLens is not a chat client.
+It is a conversation analysis and archive tool.
+
+Therefore messages should behave like:
+
+timeline entries
+log events
+thread comments
+
+—not like interactive chat bubbles.
+
+The interface should optimize for:
+
+vertical scanning
+temporal reading
+data clarity
+
+⸻
+
+2. Two-Surface Window Model
+
+The window visually resolves into two surfaces.
+
+Surface 1
+Navigation column (sidebar)
+
+Surface 2
+Content panel
+
+The center panel must remain a single continuous surface.
+
+Do NOT create separate backgrounds for:
+
+header
+search area
+message list
+
+Structure inside the panel is expressed using:
+
+spacing
+typography
+cards
+group containers
+
+—not additional surfaces.
+
+⸻
+
+3. Message Timeline Model
+
+Messages are displayed as a chronological vertical timeline.
+
+Each message entry uses the full panel width.
+
+Example structure:
+
+Group Header
+Message
+Message
+Message
+
+Group Header
+Message
+
+This eliminates horizontal zig-zag scanning.
+
+⸻
+
+4. Sender Grouping (Message Clustering)
+
+Messages from the same sender that occur close in time should be grouped.
+
+Purpose:
+
+reduce repeated metadata
+improve visual scanning
+reduce UI noise
+
+⸻
+
+Grouping Rule
+
+Messages belong to the same group when:
+
+sender is identical
+AND timestamp difference < grouping window
+
+Suggested grouping window:
+
+5 minutes
+
+When either condition fails, start a new group.
+
+⸻
+
+Group Structure
+
+Each group contains:
+
+GroupHeader
+MessageEntry
+MessageEntry
+MessageEntry
+
+Example visual structure:
+
+Claire — Oct 4 2018 • 1:03 PM
+
+Leaving Kelowna now!
+
+Checked online and my tires are fine.
+
+Will update you as we travel.
+
+⸻
+
+You — Oct 4 2018 • 1:05 PM
+
+Sounds good.
+
+⸻
+
+Cathie Campbell — Oct 4 2018 • 1:05 PM
+
+That’s great Claire. Let me know when you get home.
+
+⸻
+
+5. Group Header
+
+The header appears once per group, not once per message.
+
+Header contains:
+
+Sender name
+Conversation timestamp (first message time)
+
+Optional metadata may include:
+
+contact identifier
+handle information
+semantic classification if relevant
+
+⸻
+
+6. Message Entries Within a Group
+
+Each message entry contains:
+
+Message body
+Optional attachment preview
+Optional metadata line
+
+Individual timestamps should still be visible, but subtle.
+
+Example:
+
+Leaving Kelowna now!
+1:03 PM
+
+Checked online and my tires are fine.
+1:04 PM
+
+⸻
+
+7. Sender Differentiation
+
+Messages should not shift horizontally.
+
+Sender identity is conveyed through:
+
+background color
+sender header
+metadata line
+
+Example:
+
+Received messages
+neutral card color
+
+Sent messages
+accent-tinted card color
+
+Do NOT offset text messages left/right.
+
+⸻
+
+8. Media Exception Rule
+
+Attachments and previews may optionally align based on sender.
+
+Examples:
+
+Images
+Videos
+Link previews
+File attachments
+
+These can align:
+
+left for received
+right for sent
+
+Text messages remain full width.
+
+⸻
+
+9. Visual Spacing Model
+
+Two spacing tiers must exist.
+
+Within a group
+small spacing between messages
+
+Between groups
+larger spacing
+
+Suggested tokens:
+
+messageSpacingWithinGroup = 4–6 px
+messageGroupSpacing = 16–20 px
+
+This creates a clear visual rhythm.
+
+⸻
+
+10. Card and Surface Tokens
+
+Use simplified surface tokens.
+
+panelSurface
+panelCard
+panelSeparator
+
+Definitions:
+
+panelSurface
+background of center panel
+
+panelCard
+background of message entries
+
+panelSeparator
+subtle dividers when required
+
+Cards should appear to float slightly above the panel surface.
+
+⸻
+
+11. Example Hierarchy
+
+ConversationView
+
+ListView (timeline)
+
+MessageGroup
+
+GroupHeader
+MessageEntry
+MessageEntry
+MessageEntry
+
+⸻
+
+12. Grouping Algorithm
+
+Process messages in chronological order.
+
+Initialize empty group.
+
+For each message:
+
+If sender matches current group sender
+AND time difference < grouping window
+
+Append message to current group.
+
+Else
+
+Create new group.
+
+⸻
+
+13. Benefits
+
+This layout produces several improvements.
+
+Reduced metadata repetition
+
+Straighter vertical scanning
+
+Lower visual noise
+
+Better support for long conversations
+
+Better alignment with MessageLens’ role as a conversation archive and analysis tool
+
+⸻
+
+14. Summary
+
+Adopt the following structural model:
+
+Full-width timeline messages
+
+Sender-based grouping
+
+Single continuous panel surface
+
+Text messages full width
+
+Media items optionally aligned left/right
+
+This produces a calmer and more readable interface for large conversation histories.

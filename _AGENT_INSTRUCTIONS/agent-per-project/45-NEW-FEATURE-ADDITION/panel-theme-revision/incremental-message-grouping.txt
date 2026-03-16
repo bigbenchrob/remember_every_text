@@ -1,0 +1,281 @@
+MessageLens Incremental Message Grouping Strategy
+
+Low-Risk Presentation-Layer Clustering Without Refactoring the Data Pipeline
+
+Goal
+
+Add the visual benefits of message grouping to MessageLens without rewriting the underlying loading, hydration, or virtualization model.
+
+This approach treats grouping as a presentation-layer adjacency effect, not as a new data structure.
+
+The underlying list remains a list of individual messages.
+
+⸻
+
+1. Key Principle
+
+Do NOT refactor the message pipeline to operate on grouped conversation blocks.
+
+Keep the existing model:
+
+ordered message ids + ordinals
+lazy hydration as rows enter the viewport
+one row rendered per message
+
+Grouping should be introduced only as row-level visual state.
+
+In other words:
+
+message + grouping decoration
+
+not:
+
+group object containing multiple messages
+
+⸻
+
+2. Why This Is the Safe Approach
+
+A true grouping refactor would require changing core assumptions about:
+
+list identity
+pagination
+hydration
+virtualization
+scroll positioning
+variable-height grouped containers
+
+That would be high risk.
+
+Instead, treat grouping as a lightweight visual relationship between neighboring messages.
+
+Each row determines whether it visually starts, continues, or ends a cluster based on its adjacent messages.
+
+This preserves the current architecture.
+
+⸻
+
+3. The Row-Level Grouping Model
+
+Each rendered message row computes a small grouping state based on nearby messages.
+
+Suggested conceptual states:
+
+standalone
+firstInCluster
+middleInCluster
+lastInCluster
+
+A simpler initial model is also acceptable:
+
+showHeader = true / false
+compactTopSpacing = true / false
+
+The row remains a single message row.
+Only its presentation changes.
+
+⸻
+
+4. Minimum Viable Grouping Behavior
+
+For the first implementation, only compare a message to the immediately previous message.
+
+If:
+
+same sender
+AND time difference is below a grouping threshold
+
+Then:
+
+hide repeated sender header
+use reduced top spacing
+
+Otherwise:
+
+show full sender header
+use normal top spacing
+
+This alone delivers most of the visual benefit.
+
+⸻
+
+5. Suggested Grouping Rule
+
+Messages should be considered part of the same visual cluster when:
+
+sender identity matches
+AND timestamp difference is less than a threshold
+
+Suggested threshold:
+
+5 minutes
+
+This should be configurable as a constant so it can be tuned later.
+
+⸻
+
+6. What Changes in the UI
+
+For the first message in a cluster:
+
+show sender header
+show normal top spacing
+
+For subsequent messages in the same cluster:
+
+suppress repeated sender header
+use tighter spacing to visually attach to the previous message
+
+Optional later refinements:
+
+reduced corner radius between clustered cards
+subtle shared background rhythm
+group divider spacing after cluster ends
+
+⸻
+
+7. Important Architectural Constraint
+
+Do NOT replace message rows with group widgets in the list.
+
+The list should still scroll and virtualize individual message rows.
+
+This avoids changes to:
+
+message identity
+scroll anchoring
+hydration semantics
+ordinal-based positioning
+
+Grouping remains purely decorative.
+
+⸻
+
+8. Handling Lazy Hydration
+
+Grouping depends on neighboring messages, which may not yet be hydrated.
+
+This is manageable.
+
+Recommended strategy:
+
+If the previous message metadata is available, compute grouping normally.
+
+If the previous message is not available yet, treat the current message as a provisional cluster start.
+
+When neighboring metadata becomes available, recompute grouping for the affected rows.
+
+This may cause minor visual adjustments after hydration, which is acceptable.
+
+⸻
+
+9. Better Optimization Option
+
+If desired, maintain a lightweight metadata cache for nearby rows containing only:
+
+sender identity
+timestamp
+message type
+
+This allows grouping decisions without fully hydrating the message body.
+
+This is optional and can be added later if needed.
+
+⸻
+
+10. Recommended Implementation Phases
+
+Phase 1 — Header Suppression
+
+Keep all rows independent.
+
+Add row-level logic:
+
+If previous message has same sender and is within grouping threshold, do not show repeated sender header.
+
+This gives an immediate reduction in noise.
+
+⸻
+
+Phase 2 — Spacing Rhythm
+
+Add two vertical spacing modes:
+
+cluster spacing
+normal spacing
+
+Within a cluster, spacing is tighter.
+Between clusters, spacing is larger.
+
+This makes grouped runs visually obvious without structural changes.
+
+⸻
+
+Phase 3 — Shape Refinement
+
+Optionally refine card shape:
+
+firstInCluster
+middleInCluster
+lastInCluster
+standalone
+
+This can be used to adjust border radius, separators, or top/bottom padding.
+
+This should still remain row-based, not container-based.
+
+⸻
+
+Phase 4 — Optional Metadata Policy
+
+Once clustering works, consider reducing repeated right-side metadata in clustered runs if that improves readability.
+
+This is optional and should be evaluated after the visual grouping is in place.
+
+⸻
+
+11. Why This Works Well for MessageLens
+
+MessageLens is a conversation archive and analysis tool, not a live chat client.
+
+That means it does not require perfect chat-app grouping semantics.
+
+It only needs enough grouping to:
+
+reduce repeated metadata
+calm the vertical scroll
+improve scanning in long conversations
+
+A presentation-only clustering strategy is the correct tradeoff.
+
+⸻
+
+12. Summary Recommendation
+
+Implement grouping as a local adjacency styling policy.
+
+Do not introduce grouped list items.
+Do not change hydration units.
+Do not change the ordinal-based message pipeline.
+
+Instead:
+
+keep one row per message
+compare each row to the previous message
+suppress repeated headers inside clusters
+tighten spacing inside clusters
+
+This gives most of the readability benefit of grouping with far less implementation risk.
+
+⸻
+
+Final Direction
+
+Recommended initial scope:
+
+one message row = one list item
+grouping determined only from adjacent message metadata
+visual grouping only
+no backing data-model refactor
+
+This is the lowest-risk path to achieving a calmer grouped conversation view in MessageLens.

@@ -14,6 +14,7 @@ part 'messages_for_handle_provider.g.dart';
 class MessageListItem {
   const MessageListItem({
     required this.id,
+    required this.chatId,
     required this.guid,
     required this.isFromMe,
     required this.senderName,
@@ -24,6 +25,7 @@ class MessageListItem {
   });
 
   final int id;
+  final int chatId;
   final String guid;
   final bool isFromMe;
   final String senderName;
@@ -110,6 +112,7 @@ Stream<List<MessageListItem>> messagesForHandle(
       items.add(
         MessageListItem(
           id: message.id,
+          chatId: message.chatId,
           guid: message.guid,
           isFromMe: message.isFromMe,
           senderName: senderNameForMessage(

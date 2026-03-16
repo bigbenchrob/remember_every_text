@@ -14,12 +14,16 @@ import '../../../../config/theme/theme_typography.dart';
 
 import '../../../contacts/infrastructure/repositories/contact_profile_provider.dart';
 import '../../domain/value_objects/message_timeline_scope.dart';
+import '../view_model/shared/display_widgets/new_display_widgets.dart';
+import '../view_model/shared/hydration/messages_for_handle_provider.dart';
 import '../view_model/timeline/hydration/message_by_id_provider.dart';
 import '../view_model/timeline/hydration/message_by_ordinal_provider.dart';
 import '../view_model/timeline/message_timeline_view_model_provider.dart';
 import '../view_model/timeline/ordinal/current_visible_month_provider.dart';
 import '../view_model/timeline/timeline_metadata_provider.dart';
 import '../widgets/message_card.dart';
+
+const Duration _contactMessageGroupingThreshold = Duration(minutes: 5);
 
 /// Unified view for message timelines across all scopes.
 ///
@@ -63,12 +67,11 @@ class MessagesTimelineView extends HookConsumerWidget {
       return null;
     }, [scrollToDate, ordinalAsync.hasValue]);
 
-    // Color scheme: header/search get a darker chrome, message list gets lighter
-    final isDark = colors.isDark;
-    final chromeBg = isDark ? const Color(0xFF1C1C1E) : const Color(0xFFE8E8ED);
-    final messageListBg = isDark
-        ? const Color(0xFF2C2C2E)
-        : const Color(0xFFF8F8FA);
+    final timelineSurfaceColor = switch (scope) {
+      ContactTimelineScope() => colors.messagePanels.coolPanelSurface,
+      GlobalTimelineScope() => colors.messagePanels.coolPanelSurface,
+      ChatTimelineScope() => colors.messagePanels.surface,
+    };
 
     // Build scope-specific scaffold
     return switch (scope) {
@@ -76,24 +79,24 @@ class MessagesTimelineView extends HookConsumerWidget {
         context,
         ref,
         vm,
-        chromeBg,
-        messageListBg,
+        timelineSurfaceColor,
+        timelineSurfaceColor,
       ),
       ContactTimelineScope(:final contactId) => _buildContactScaffold(
         context,
         ref,
         vm,
         contactId,
-        chromeBg,
-        messageListBg,
+        timelineSurfaceColor,
+        timelineSurfaceColor,
       ),
       ChatTimelineScope(:final chatId) => _buildChatScaffold(
         context,
         ref,
         vm,
         chatId,
-        chromeBg,
-        messageListBg,
+        timelineSurfaceColor,
+        timelineSurfaceColor,
       ),
     };
   }
@@ -185,7 +188,7 @@ class MessagesTimelineView extends HookConsumerWidget {
     MessageTimelineViewModelState vm,
   ) {
     if (vm.isSearching) {
-      return _SearchResultsList(vm: vm);
+      return _SearchResultsList(vm: vm, scope: scope);
     }
 
     final typography = ref.watch(themeTypographyProvider);
@@ -200,7 +203,9 @@ class MessagesTimelineView extends HookConsumerWidget {
           itemScrollController: ordinalState.itemScrollController,
           itemPositionsListener: ordinalState.itemPositionsListener,
           itemCount: ordinalState.totalCount,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: EdgeInsets.symmetric(
+            horizontal: _messageColumnHorizontalPadding(scope),
+          ),
           itemBuilder: (context, index) {
             return _MessageRow(scope: scope, ordinal: index);
           },
@@ -221,6 +226,14 @@ class MessagesTimelineView extends HookConsumerWidget {
       GlobalTimelineScope() => 'No messages indexed yet.',
       ContactTimelineScope() => 'No messages with this contact yet.',
       ChatTimelineScope() => 'No messages in this chat yet.',
+    };
+  }
+
+  double _messageColumnHorizontalPadding(MessageTimelineScope scope) {
+    return switch (scope) {
+      ContactTimelineScope() => 32,
+      GlobalTimelineScope() => 32,
+      ChatTimelineScope() => 16,
     };
   }
 }
@@ -785,13 +798,43 @@ class _MessageRow extends ConsumerWidget {
     final itemAsync = ref.watch(
       messageByTimelineOrdinalProvider(scope: scope, ordinal: ordinal),
     );
+    final previousItemAsync = ordinal > 0 && scope is ContactTimelineScope
+        ? ref.watch(
+            messageByTimelineOrdinalProvider(
+              scope: scope,
+              ordinal: ordinal - 1,
+            ),
+          )
+        : const AsyncValue<MessageListItem?>.data(null);
+    final nextItemAsync = scope is ContactTimelineScope
+        ? ref.watch(
+            messageByTimelineOrdinalProvider(
+              scope: scope,
+              ordinal: ordinal + 1,
+            ),
+          )
+        : const AsyncValue<MessageListItem?>.data(null);
 
     return itemAsync.when(
       data: (item) {
         if (item == null) {
           return const _SkeletonRow();
         }
-        return MessageCard(message: item);
+        final grouping = _groupingStyleFor(
+          current: item,
+          previous: previousItemAsync.valueOrNull,
+          next: nextItemAsync.valueOrNull,
+          scope: scope,
+        );
+        return MessageCard(
+          message: item,
+          layout: switch (scope) {
+            ContactTimelineScope() => MessageCardLayout.analysis,
+            GlobalTimelineScope() => MessageCardLayout.analysis,
+            ChatTimelineScope() => MessageCardLayout.bubble,
+          },
+          grouping: grouping,
+        );
       },
       loading: () => const _SkeletonRow(),
       error: (error, _) => Padding(
@@ -800,6 +843,108 @@ class _MessageRow extends ConsumerWidget {
       ),
     );
   }
+}
+
+MessageGroupingStyle _groupingStyleFor({
+  required MessageListItem current,
+  required MessageListItem? previous,
+  required MessageListItem? next,
+  required MessageTimelineScope scope,
+}) {
+  if ((scope is! ContactTimelineScope && scope is! GlobalTimelineScope) ||
+      previous == null) {
+    final nextContinues = next == null
+        ? false
+        : _messagesCanCluster(current, next);
+    if (!nextContinues) {
+      return MessageGroupingStyle.standalone;
+    }
+
+    return const MessageGroupingStyle(
+      role: MessageClusterRole.first,
+      showSenderHeader: true,
+      compactTopSpacing: false,
+      compactBottomSpacing: true,
+      softenContinuationChrome: false,
+    );
+  }
+
+  final continuesFromPrevious = _messagesCanCluster(previous, current);
+  final continuesToNext = next == null
+      ? false
+      : _messagesCanCluster(current, next);
+
+  if (!continuesFromPrevious && !continuesToNext) {
+    return MessageGroupingStyle.standalone;
+  }
+
+  if (!continuesFromPrevious && continuesToNext) {
+    return const MessageGroupingStyle(
+      role: MessageClusterRole.first,
+      showSenderHeader: true,
+      compactTopSpacing: false,
+      compactBottomSpacing: true,
+      softenContinuationChrome: false,
+    );
+  }
+
+  if (continuesFromPrevious && continuesToNext) {
+    return const MessageGroupingStyle(
+      role: MessageClusterRole.middle,
+      showSenderHeader: false,
+      compactTopSpacing: true,
+      compactBottomSpacing: true,
+      softenContinuationChrome: true,
+    );
+  }
+
+  return const MessageGroupingStyle(
+    role: MessageClusterRole.last,
+    showSenderHeader: false,
+    compactTopSpacing: true,
+    compactBottomSpacing: false,
+    softenContinuationChrome: true,
+  );
+}
+
+bool _messagesCanCluster(MessageListItem previous, MessageListItem current) {
+  if (_isMediaBoundaryMessage(previous) || _isMediaBoundaryMessage(current)) {
+    return false;
+  }
+
+  if (previous.chatId != current.chatId) {
+    return false;
+  }
+
+  final currentSentAt = current.sentAt;
+  final previousSentAt = previous.sentAt;
+  if (currentSentAt == null || previousSentAt == null) {
+    return false;
+  }
+
+  final sameSender =
+      current.isFromMe == previous.isFromMe &&
+      current.senderName == previous.senderName;
+  final timeDelta = currentSentAt.difference(previousSentAt);
+
+  return sameSender &&
+      !timeDelta.isNegative &&
+      timeDelta <= _contactMessageGroupingThreshold;
+}
+
+bool _isMediaBoundaryMessage(MessageListItem item) {
+  if (item.attachments.isNotEmpty || item.hasAttachments) {
+    return true;
+  }
+
+  final trimmedText = item.text.trim();
+  if (trimmedText.isEmpty) {
+    return false;
+  }
+
+  final urlRegex = RegExp(r'https?://[^\s]+', caseSensitive: false);
+  final matches = urlRegex.allMatches(trimmedText).toList();
+  return matches.length == 1 && matches.first.group(0) == trimmedText;
 }
 
 /// Skeleton placeholder while message is loading.
@@ -833,9 +978,18 @@ class _SkeletonRow extends ConsumerWidget {
 ///
 /// Uses on-demand hydration like the main timeline for fast initial display.
 class _SearchResultsList extends ConsumerWidget {
-  const _SearchResultsList({required this.vm});
+  const _SearchResultsList({required this.vm, required this.scope});
 
   final MessageTimelineViewModelState vm;
+  final MessageTimelineScope scope;
+
+  double get _horizontalPadding {
+    return switch (scope) {
+      ContactTimelineScope() => 32,
+      GlobalTimelineScope() => 32,
+      ChatTimelineScope() => 16,
+    };
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -853,7 +1007,12 @@ class _SearchResultsList extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              padding: EdgeInsets.fromLTRB(
+                _horizontalPadding,
+                8,
+                _horizontalPadding,
+                8,
+              ),
               child: Text(
                 '${resultIds.length} results',
                 style: TextStyle(
@@ -864,10 +1023,13 @@ class _SearchResultsList extends ConsumerWidget {
             ),
             Expanded(
               child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.symmetric(horizontal: _horizontalPadding),
                 itemCount: resultIds.length,
                 itemBuilder: (context, index) {
-                  return _SearchResultRow(messageId: resultIds[index]);
+                  return _SearchResultRow(
+                    messageId: resultIds[index],
+                    scope: scope,
+                  );
                 },
               ),
             ),
@@ -882,9 +1044,10 @@ class _SearchResultsList extends ConsumerWidget {
 
 /// Single search result row with on-demand hydration.
 class _SearchResultRow extends ConsumerWidget {
-  const _SearchResultRow({required this.messageId});
+  const _SearchResultRow({required this.messageId, required this.scope});
 
   final int messageId;
+  final MessageTimelineScope scope;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -895,7 +1058,14 @@ class _SearchResultRow extends ConsumerWidget {
         if (item == null) {
           return const _SkeletonRow();
         }
-        return MessageCard(message: item);
+        return MessageCard(
+          message: item,
+          layout: switch (scope) {
+            ContactTimelineScope() => MessageCardLayout.analysis,
+            GlobalTimelineScope() => MessageCardLayout.analysis,
+            ChatTimelineScope() => MessageCardLayout.bubble,
+          },
+        );
       },
       loading: () => const _SkeletonRow(),
       error: (error, _) => Padding(

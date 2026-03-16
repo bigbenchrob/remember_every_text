@@ -114,7 +114,7 @@ class RecoveredUnlinkedMessagesPlaceholderView extends HookConsumerWidget {
         : 'Source records recovered from `chat.db` without a normal chat link. Many may reflect conversations deleted on iPhone or iPad, but they remain separate from the normal chat flow.';
 
     return ColoredBox(
-      color: colors.surfaces.canvas,
+      color: colors.messagePanels.surface,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -532,24 +532,24 @@ class _RecoveredUnlinkedMessageCard extends ConsumerWidget {
     final selectedAttachment = _selectedRecoveredAttachment(ref);
     final isSelectedMessage = selectedAttachment?.messageId == message.id;
     final backgroundColor = message.isInferred
-        ? colors.accents.primary.withValues(alpha: 0.10)
+        ? colors.messagePanels.accentTint
         : isFromMe
-        ? colors.accents.primary.withValues(alpha: 0.06)
+        ? colors.messagePanels.accentTintSoft
         : isSparseArtifact
-        ? colors.content.textTertiary.withValues(alpha: 0.08)
-        : colors.surfaces.surface;
+        ? colors.messagePanels.mutedTint
+        : colors.messagePanels.card;
     final baseBorderColor = message.isInferred
-        ? colors.accents.primary.withValues(alpha: 0.28)
+        ? colors.messagePanels.accentBorder
         : isFromMe
-        ? colors.accents.primary.withValues(alpha: 0.16)
+        ? colors.messagePanels.accentBorderSoft
         : isSparseArtifact
-        ? colors.content.textTertiary.withValues(alpha: 0.24)
-        : colors.lines.borderSubtle;
+        ? colors.messagePanels.mutedBorder
+        : colors.messagePanels.cardBorder;
     final borderColor = isSelectedMessage
-        ? colors.accents.primary.withValues(alpha: 0.72)
+        ? colors.messagePanels.selectionBorder
         : baseBorderColor;
     final cardColor = isSelectedMessage
-        ? colors.accents.primary.withValues(alpha: 0.12)
+        ? colors.messagePanels.selectionTint
         : backgroundColor;
 
     return Container(
@@ -658,11 +658,11 @@ class _RecoveredAttachmentChip extends ConsumerWidget {
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
     final chipColor = isSelected
-        ? colors.accents.primary.withValues(alpha: 0.24)
-        : colors.surfaces.control;
+        ? colors.messagePanels.chipSelectionTint
+        : colors.messagePanels.supportSurface;
     final chipBorderColor = isSelected
-        ? colors.accents.primary.withValues(alpha: 0.72)
-        : colors.lines.borderSubtle.withValues(alpha: 0.5);
+        ? colors.messagePanels.selectionBorder
+        : colors.messagePanels.chipBorder;
     final chipTextColor = isSelected
         ? colors.accents.primary
         : colors.content.textPrimary;
@@ -728,9 +728,9 @@ class _RecoveredLegend extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: colors.surfaces.control,
+        color: colors.messagePanels.supportSurface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.lines.borderSubtle, width: 1),
+        border: Border.all(color: colors.messagePanels.cardBorder, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
