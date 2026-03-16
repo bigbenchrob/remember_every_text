@@ -16,10 +16,12 @@ part 'working_database.g.dart';
     ChatToHandle,
     WorkingChats,
     WorkingMessages,
+    RecoveredUnlinkedMessages,
     GlobalMessageIndex, // Stable ordinal index across all messages
     MessageIndex, // Stable ordinal index for large chat virtualization
     ContactMessageIndex, // Ordinal index for all messages with a contact
     WorkingAttachments,
+    RecoveredUnlinkedAttachments,
     WorkingReactions,
     ReactionCounts,
     ReadState,
@@ -32,7 +34,7 @@ class WorkingDatabase extends _$WorkingDatabase {
   WorkingDatabase(QueryExecutor executor) : super(executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -43,7 +45,19 @@ class WorkingDatabase extends _$WorkingDatabase {
       await _seedProjectionState();
     },
     onUpgrade: (Migrator m, int from, int to) async {
-      // No legacy databases to migrate — all users start fresh.
+      if (from < 2) {
+        await m.createTable(recoveredUnlinkedMessages);
+        await m.createTable(recoveredUnlinkedAttachments);
+        for (final statement in _v2WorkingIndexStatements) {
+          await customStatement(statement);
+        }
+      }
+
+      if (from < 3) {
+        for (final statement in _v3WorkingAlterStatements) {
+          await customStatement(statement);
+        }
+      }
     },
   );
 
@@ -280,6 +294,9 @@ const List<String> _workingIndexStatements = [
   'CREATE INDEX IF NOT EXISTS idx_chats_sort ON chats(pinned DESC, last_message_at_utc DESC)',
   'CREATE INDEX IF NOT EXISTS idx_messages_chat_time ON messages(chat_id, sent_at_utc)',
   'CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender_handle_id)',
+  'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_messages_time ON recovered_unlinked_messages(sent_at_utc)',
+  'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_messages_sender ON recovered_unlinked_messages(sender_handle_id)',
+  'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_messages_batch ON recovered_unlinked_messages(batch_id)',
   'CREATE INDEX IF NOT EXISTS idx_messages_reply ON messages(reply_to_guid)',
   'CREATE INDEX IF NOT EXISTS idx_messages_associated ON messages(associated_message_guid)',
   'CREATE INDEX IF NOT EXISTS idx_messages_batch ON messages(batch_id)',
@@ -295,6 +312,8 @@ const List<String> _workingIndexStatements = [
   'CREATE INDEX IF NOT EXISTS idx_contact_message_index_message_contact ON contact_message_index(message_id, contact_id)',
   'CREATE INDEX IF NOT EXISTS idx_attachments_msg ON attachments(message_guid)',
   'CREATE INDEX IF NOT EXISTS idx_attachments_batch ON attachments(batch_id)',
+  'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_attachments_msg ON recovered_unlinked_attachments(message_guid)',
+  'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_attachments_batch ON recovered_unlinked_attachments(batch_id)',
   'CREATE INDEX IF NOT EXISTS idx_reactions_target ON reactions(target_message_guid)',
   'CREATE INDEX IF NOT EXISTS idx_reactions_carrier ON reactions(carrier_message_id)',
   'CREATE INDEX IF NOT EXISTS idx_handle_to_participant_handle ON handle_to_participant(handle_id)',
@@ -305,6 +324,14 @@ const List<String> _workingIndexStatements = [
   'CREATE INDEX IF NOT EXISTS idx_chat_to_handle_handle ON chat_to_handle(handle_id)',
   'CREATE INDEX IF NOT EXISTS idx_handles_canonical_to_alias_canonical ON handles_canonical_to_alias(canonical_handle_id)',
   'CREATE INDEX IF NOT EXISTS idx_reactions_message_guid ON reactions(message_guid)',
+];
+
+const List<String> _v2WorkingIndexStatements = [
+  'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_messages_time ON recovered_unlinked_messages(sent_at_utc)',
+  'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_messages_sender ON recovered_unlinked_messages(sender_handle_id)',
+  'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_messages_batch ON recovered_unlinked_messages(batch_id)',
+  'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_attachments_msg ON recovered_unlinked_attachments(message_guid)',
+  'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_attachments_batch ON recovered_unlinked_attachments(batch_id)',
 ];
 
 const List<String> _workingVirtualAndTriggerStatements = [
@@ -852,11 +879,32 @@ class WorkingMessages extends Table {
         "NOT NULL DEFAULT 'unknown' CHECK(status IN ('unknown','sent','delivered','read','failed'))",
       )();
   TextColumn get textContent => text().named('text').nullable()();
+  IntColumn get rawItemType => integer().named('raw_item_type').nullable()();
+  IntColumn get rawAssociatedMessageType =>
+      integer().named('raw_associated_message_type').nullable()();
+  TextColumn get semanticKind => text()
+      .named('semantic_kind')
+      .nullable()
+      .customConstraint(
+        "CHECK(semantic_kind IN ('plain-text','rich-text','edited-or-unsent','associated','balloon-or-app','attachment-only','system','unknown-variant','sparse-artifact') OR semantic_kind IS NULL)",
+      )();
+  BoolColumn get isSparseArtifact => boolean()
+      .named('is_sparse_artifact')
+      .withDefault(const Constant(false))();
+  BoolColumn get hasAttributedBodySource => boolean()
+      .named('has_attributed_body_source')
+      .withDefault(const Constant(false))();
+  BoolColumn get hasMessageSummaryInfo => boolean()
+      .named('has_message_summary_info')
+      .withDefault(const Constant(false))();
+  BoolColumn get hasPayloadDataSource => boolean()
+      .named('has_payload_data_source')
+      .withDefault(const Constant(false))();
   TextColumn get itemType => text()
       .named('item_type')
       .nullable()
       .customConstraint(
-        "CHECK(item_type IN ('text','attachment-only','sticker','reaction-carrier','system','unknown') OR item_type IS NULL)",
+        "CHECK(item_type IN ('text','attachment-only','sticker','reaction-carrier','system','unknown','balloon') OR item_type IS NULL)",
       )();
   BoolColumn get isSystemMessage =>
       boolean().named('is_system_message').withDefault(const Constant(false))();
@@ -888,6 +936,96 @@ class WorkingMessages extends Table {
     {guid},
   ];
 }
+
+class RecoveredUnlinkedMessages extends Table {
+  @override
+  String get tableName => 'recovered_unlinked_messages';
+
+  IntColumn get id => integer().named('id')();
+  TextColumn get guid => text().named('guid')();
+  IntColumn get senderHandleId => integer()
+      .named('sender_handle_id')
+      .nullable()
+      .references(HandlesCanonical, #id, onDelete: KeyAction.setNull)();
+  TextColumn get senderAddress => text().named('sender_address').nullable()();
+  TextColumn get service => text()
+      .named('service')
+      .customConstraint(
+        "NOT NULL DEFAULT 'Unknown' CHECK(service IN ('iMessage','iMessageLite','SMS','RCS','Unknown'))",
+      )();
+  BoolColumn get isFromMe =>
+      boolean().named('is_from_me').withDefault(const Constant(false))();
+  TextColumn get sentAtUtc => text().named('sent_at_utc').nullable()();
+  TextColumn get deliveredAtUtc =>
+      text().named('delivered_at_utc').nullable()();
+  TextColumn get readAtUtc => text().named('read_at_utc').nullable()();
+  TextColumn get textContent => text().named('text').nullable()();
+  IntColumn get rawItemType => integer().named('raw_item_type').nullable()();
+  IntColumn get rawAssociatedMessageType =>
+      integer().named('raw_associated_message_type').nullable()();
+  TextColumn get semanticKind => text()
+      .named('semantic_kind')
+      .nullable()
+      .customConstraint(
+        "CHECK(semantic_kind IN ('plain-text','rich-text','edited-or-unsent','associated','balloon-or-app','attachment-only','system','unknown-variant','sparse-artifact') OR semantic_kind IS NULL)",
+      )();
+  BoolColumn get isSparseArtifact => boolean()
+      .named('is_sparse_artifact')
+      .withDefault(const Constant(false))();
+  BoolColumn get hasAttributedBodySource => boolean()
+      .named('has_attributed_body_source')
+      .withDefault(const Constant(false))();
+  BoolColumn get hasMessageSummaryInfo => boolean()
+      .named('has_message_summary_info')
+      .withDefault(const Constant(false))();
+  BoolColumn get hasPayloadDataSource => boolean()
+      .named('has_payload_data_source')
+      .withDefault(const Constant(false))();
+  TextColumn get itemType => text()
+      .named('item_type')
+      .nullable()
+      .customConstraint(
+        "CHECK(item_type IN ('text','attachment-only','sticker','reaction-carrier','system','unknown','balloon') OR item_type IS NULL)",
+      )();
+  BoolColumn get isSystemMessage =>
+      boolean().named('is_system_message').withDefault(const Constant(false))();
+  IntColumn get errorCode => integer().named('error_code').nullable()();
+  BoolColumn get hasAttachments =>
+      boolean().named('has_attachments').withDefault(const Constant(false))();
+  TextColumn get associatedMessageGuid =>
+      text().named('associated_message_guid').nullable()();
+  TextColumn get threadOriginatorGuid =>
+      text().named('thread_originator_guid').nullable()();
+  TextColumn get balloonBundleId =>
+      text().named('balloon_bundle_id').nullable()();
+  TextColumn get payloadJson => text().named('payload_json').nullable()();
+  IntColumn get batchId => integer().named('batch_id').nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {guid},
+  ];
+}
+
+const List<String> _v3WorkingAlterStatements = <String>[
+  'ALTER TABLE messages ADD COLUMN raw_item_type INTEGER',
+  'ALTER TABLE messages ADD COLUMN raw_associated_message_type INTEGER',
+  "ALTER TABLE messages ADD COLUMN semantic_kind TEXT CHECK(semantic_kind IN ('plain-text','rich-text','edited-or-unsent','associated','balloon-or-app','attachment-only','system','unknown-variant','sparse-artifact') OR semantic_kind IS NULL)",
+  'ALTER TABLE messages ADD COLUMN is_sparse_artifact INTEGER NOT NULL DEFAULT 0 CHECK(is_sparse_artifact IN (0,1))',
+  'ALTER TABLE messages ADD COLUMN has_attributed_body_source INTEGER NOT NULL DEFAULT 0 CHECK(has_attributed_body_source IN (0,1))',
+  'ALTER TABLE messages ADD COLUMN has_message_summary_info INTEGER NOT NULL DEFAULT 0 CHECK(has_message_summary_info IN (0,1))',
+  'ALTER TABLE messages ADD COLUMN has_payload_data_source INTEGER NOT NULL DEFAULT 0 CHECK(has_payload_data_source IN (0,1))',
+  'ALTER TABLE recovered_unlinked_messages ADD COLUMN raw_item_type INTEGER',
+  'ALTER TABLE recovered_unlinked_messages ADD COLUMN raw_associated_message_type INTEGER',
+  "ALTER TABLE recovered_unlinked_messages ADD COLUMN semantic_kind TEXT CHECK(semantic_kind IN ('plain-text','rich-text','edited-or-unsent','associated','balloon-or-app','attachment-only','system','unknown-variant','sparse-artifact') OR semantic_kind IS NULL)",
+  'ALTER TABLE recovered_unlinked_messages ADD COLUMN is_sparse_artifact INTEGER NOT NULL DEFAULT 0 CHECK(is_sparse_artifact IN (0,1))',
+  'ALTER TABLE recovered_unlinked_messages ADD COLUMN has_attributed_body_source INTEGER NOT NULL DEFAULT 0 CHECK(has_attributed_body_source IN (0,1))',
+  'ALTER TABLE recovered_unlinked_messages ADD COLUMN has_message_summary_info INTEGER NOT NULL DEFAULT 0 CHECK(has_message_summary_info IN (0,1))',
+  'ALTER TABLE recovered_unlinked_messages ADD COLUMN has_payload_data_source INTEGER NOT NULL DEFAULT 0 CHECK(has_payload_data_source IN (0,1))',
+];
 
 /// Ordinal index for stable message ordering in large chats.
 /// Maps each message to a zero-based sequential position within its chat.
@@ -983,6 +1121,28 @@ class WorkingAttachments extends Table {
   BoolColumn get isSticker =>
       boolean().named('is_sticker').withDefault(const Constant(false))();
   TextColumn get thumbPath => text().named('thumb_path').nullable()();
+  TextColumn get createdAtUtc => text().named('created_at_utc').nullable()();
+  BoolColumn get isOutgoing =>
+      boolean().named('is_outgoing').withDefault(const Constant(false))();
+  TextColumn get sha256Hex => text().named('sha256_hex').nullable()();
+  IntColumn get batchId => integer().named('batch_id').nullable()();
+}
+
+class RecoveredUnlinkedAttachments extends Table {
+  @override
+  String get tableName => 'recovered_unlinked_attachments';
+
+  IntColumn get id => integer().named('id').autoIncrement()();
+  TextColumn get messageGuid => text().named('message_guid')();
+  IntColumn get importAttachmentId =>
+      integer().named('import_attachment_id').nullable()();
+  TextColumn get localPath => text().named('local_path').nullable()();
+  TextColumn get mimeType => text().named('mime_type').nullable()();
+  TextColumn get uti => text().named('uti').nullable()();
+  TextColumn get transferName => text().named('transfer_name').nullable()();
+  IntColumn get sizeBytes => integer().named('size_bytes').nullable()();
+  BoolColumn get isSticker =>
+      boolean().named('is_sticker').withDefault(const Constant(false))();
   TextColumn get createdAtUtc => text().named('created_at_utc').nullable()();
   BoolColumn get isOutgoing =>
       boolean().named('is_outgoing').withDefault(const Constant(false))();

@@ -63,17 +63,28 @@ class TopChatMenuWidget extends ConsumerWidget {
         SidebarUtilityCassetteSpec.topChatMenu(selectedChoice: newChoice),
       );
 
-      // Clear the center panel so stale content from the previous mode
-      // does not persist (e.g. a handle lens view staying visible after
-      // switching to "Messages from contacts").
-      ref
-          .read(panelsViewStateProvider(sidebarMode).notifier)
-          .clear(panel: WindowPanel.center);
+      if (_shouldClearPanelsAfterSelection(newChoice)) {
+        final panelsNotifier = ref.read(
+          panelsViewStateProvider(sidebarMode).notifier,
+        );
+        panelsNotifier.clear(panel: WindowPanel.right);
+        panelsNotifier.clear(panel: WindowPanel.center);
+      }
 
       // Update the rack using index-based method (no need to hold old spec)
       ref
           .read(cassetteRackStateProvider(sidebarMode).notifier)
           .replaceAtIndexAndCascade(cassetteIndex, newSpec);
+
+      if (_shouldClearPanelsAfterSelection(newChoice)) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final panelsNotifier = ref.read(
+            panelsViewStateProvider(sidebarMode).notifier,
+          );
+          panelsNotifier.clear(panel: WindowPanel.right);
+          panelsNotifier.clear(panel: WindowPanel.center);
+        });
+      }
     }
 
     return AppThemeWidgets.dropdownMenu<TopChatMenuChoice>(
@@ -102,5 +113,17 @@ class TopChatMenuWidget extends ConsumerWidget {
       chevronColor: colors.dropdownMenu(DropdownMenu.chevronIcon),
       chevronBackgroundColor: colors.dropdownMenu(DropdownMenu.chevronBg),
     );
+  }
+}
+
+bool _shouldClearPanelsAfterSelection(TopChatMenuChoice choice) {
+  switch (choice) {
+    case TopChatMenuChoice.contacts:
+    case TopChatMenuChoice.strayHandles:
+      return true;
+    case TopChatMenuChoice.recoveredUnlinkedMessages:
+    case TopChatMenuChoice.recoveredNoHandleFromMeMessages:
+    case TopChatMenuChoice.searchAllMessages:
+      return false;
   }
 }

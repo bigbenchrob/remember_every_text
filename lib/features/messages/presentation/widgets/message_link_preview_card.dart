@@ -3,27 +3,44 @@ import 'package:flutter/material.dart';
 import '../view_model/shared/display_widgets/new_display_widgets.dart';
 import '../view_model/shared/hydration/messages_for_handle_provider.dart';
 import 'url_preview_widget.dart';
+import 'message_card.dart';
 
 class MessageLinkPreviewCard extends StatelessWidget {
   const MessageLinkPreviewCard({
     super.key,
     required this.message,
+    this.layout = MessageCardLayout.bubble,
+    this.grouping = MessageGroupingStyle.standalone,
     this.maxWidth = 420,
   });
 
   final MessageListItem message;
+  final MessageCardLayout layout;
+  final MessageGroupingStyle grouping;
   final double maxWidth;
 
   @override
   Widget build(BuildContext context) {
-    return _LinkPreviewContent(message: message, maxWidth: maxWidth);
+    return _LinkPreviewContent(
+      message: message,
+      layout: layout,
+      grouping: grouping,
+      maxWidth: maxWidth,
+    );
   }
 }
 
 class _LinkPreviewContent extends StatelessWidget {
-  const _LinkPreviewContent({required this.message, required this.maxWidth});
+  const _LinkPreviewContent({
+    required this.message,
+    required this.layout,
+    required this.grouping,
+    required this.maxWidth,
+  });
 
   final MessageListItem message;
+  final MessageCardLayout layout;
+  final MessageGroupingStyle grouping;
   final double maxWidth;
 
   @override
@@ -39,30 +56,56 @@ class _LinkPreviewContent extends StatelessWidget {
     final firstUrl = urls.first;
     final sender = message.isFromMe ? 'You' : message.senderName;
 
+    final isAnalysis = layout == MessageCardLayout.analysis;
+
+    final preview = ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth),
+      child: UrlPreviewWidget(url: firstUrl, maxWidth: maxWidth),
+    );
+
+    final content = Column(
+      crossAxisAlignment: message.isFromMe
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
+      children: [
+        preview,
+        const SizedBox(height: 6),
+        Padding(
+          padding: EdgeInsets.only(
+            left: isAnalysis ? 0 : 8,
+            right: isAnalysis ? 0 : 8,
+            bottom: 16,
+          ),
+          child: MetadataLine(
+            sender: sender,
+            sentAt: message.sentAt ?? DateTime.now(),
+            messageId: message.id,
+            layout: isAnalysis ? MessageLayout.fullWidth : MessageLayout.bubble,
+          ),
+        ),
+      ],
+    );
+
+    if (isAnalysis) {
+      return Align(
+        alignment: message.isFromMe
+            ? Alignment.centerRight
+            : Alignment.centerLeft,
+        child: Padding(
+          padding: EdgeInsets.only(
+            top: grouping.compactTopSpacing ? 2 : 10,
+            bottom: 6,
+          ),
+          child: content,
+        ),
+      );
+    }
+
     return Align(
       alignment: message.isFromMe
           ? Alignment.centerRight
           : Alignment.centerLeft,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: maxWidth),
-        child: Column(
-          crossAxisAlignment: message.isFromMe
-              ? CrossAxisAlignment.end
-              : CrossAxisAlignment.start,
-          children: [
-            UrlPreviewWidget(url: firstUrl, maxWidth: maxWidth),
-            const SizedBox(height: 6),
-            Padding(
-              padding: const EdgeInsets.only(left: 8, right: 8, bottom: 16),
-              child: MetadataLine(
-                sender: sender,
-                sentAt: message.sentAt ?? DateTime.now(),
-                messageId: message.id,
-              ),
-            ),
-          ],
-        ),
-      ),
+      child: content,
     );
   }
 

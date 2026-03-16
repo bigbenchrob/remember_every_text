@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:macos_ui/macos_ui.dart' show MacosTooltip;
 
 import '../../../../config/theme/theme_typography.dart';
 import '../../../../essentials/navigation/domain/entities/view_spec.dart';
@@ -28,6 +29,7 @@ class CalendarHeatmapTimelineWidget extends ConsumerWidget {
     this.monthSpacing = 2.0,
     this.onMonthTap,
     this.selectedMonthKey,
+    this.monthTooltipBuilder,
     super.key,
   });
 
@@ -41,6 +43,9 @@ class CalendarHeatmapTimelineWidget extends ConsumerWidget {
 
   /// Currently selected/visible month in format "YYYY-MM"
   final String? selectedMonthKey;
+
+  /// Optional hover text builder for month cells.
+  final String? Function(MonthData monthData)? monthTooltipBuilder;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -62,6 +67,7 @@ class CalendarHeatmapTimelineWidget extends ConsumerWidget {
             monthSpacing: monthSpacing,
             onMonthTap: onMonthTap,
             selectedMonthKey: selectedMonthKey,
+            monthTooltipBuilder: monthTooltipBuilder,
             ref: ref,
           ),
       ],
@@ -78,6 +84,7 @@ class _YearRowsGroup extends StatelessWidget {
     required this.ref,
     this.onMonthTap,
     this.selectedMonthKey,
+    this.monthTooltipBuilder,
   });
 
   final List<YearRow> yearRows;
@@ -86,6 +93,7 @@ class _YearRowsGroup extends StatelessWidget {
   final WidgetRef ref;
   final void Function(int year, int month, int messageCount)? onMonthTap;
   final String? selectedMonthKey;
+  final String? Function(MonthData monthData)? monthTooltipBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -100,6 +108,7 @@ class _YearRowsGroup extends StatelessWidget {
             monthSpacing: monthSpacing,
             onMonthTap: onMonthTap,
             selectedMonthKey: selectedMonthKey,
+            monthTooltipBuilder: monthTooltipBuilder,
             ref: ref,
           ),
           SizedBox(height: monthSpacing * 2),
@@ -118,6 +127,7 @@ class _SingleYearRow extends StatelessWidget {
     required this.ref,
     this.onMonthTap,
     this.selectedMonthKey,
+    this.monthTooltipBuilder,
   });
 
   final YearRow yearRow;
@@ -126,6 +136,7 @@ class _SingleYearRow extends StatelessWidget {
   final WidgetRef ref;
   final void Function(int year, int month, int messageCount)? onMonthTap;
   final String? selectedMonthKey;
+  final String? Function(MonthData monthData)? monthTooltipBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -153,6 +164,7 @@ class _SingleYearRow extends StatelessWidget {
             size: monthSize,
             onMonthTap: onMonthTap,
             isSelected: _isMonthSelected(yearRow.months[i]),
+            monthTooltipBuilder: monthTooltipBuilder,
             ref: ref,
           ),
         ],
@@ -177,6 +189,7 @@ class _MonthCell extends StatelessWidget {
     required this.ref,
     this.onMonthTap,
     this.isSelected = false,
+    this.monthTooltipBuilder,
   });
 
   final MonthData monthData;
@@ -184,6 +197,7 @@ class _MonthCell extends StatelessWidget {
   final WidgetRef ref;
   final void Function(int year, int month, int messageCount)? onMonthTap;
   final bool isSelected;
+  final String? Function(MonthData monthData)? monthTooltipBuilder;
 
   void _handleTap() {
     // Don't navigate for notYetStarted or empty months
@@ -280,7 +294,9 @@ class _MonthCell extends StatelessWidget {
       return cellContent;
     }
 
-    return GestureDetector(
+    final tooltipMessage = monthTooltipBuilder?.call(monthData);
+
+    Widget interactiveCell = GestureDetector(
       onTap: _handleTap,
       child: MouseRegion(
         cursor: monthData.messageCount > 0
@@ -289,6 +305,15 @@ class _MonthCell extends StatelessWidget {
         child: cellContent,
       ),
     );
+
+    if (tooltipMessage != null && tooltipMessage.trim().isNotEmpty) {
+      interactiveCell = MacosTooltip(
+        message: tooltipMessage,
+        child: interactiveCell,
+      );
+    }
+
+    return interactiveCell;
   }
 
   Color _getColor(MonthIntensity intensity) {

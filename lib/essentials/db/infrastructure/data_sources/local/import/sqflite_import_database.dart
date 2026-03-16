@@ -18,7 +18,7 @@ class SqfliteImportDatabase {
        _databaseName = databaseName,
        _debugSettings = debugSettings;
 
-  static const int _schemaVersion = 1;
+  static const int _schemaVersion = 3;
 
   final String _databaseDirectory;
   final String _databaseName;
@@ -127,7 +127,28 @@ class SqfliteImportDatabase {
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // No legacy databases to migrate — all users start fresh.
+    if (oldVersion < 2) {
+      final batch = db.batch();
+      _v2SchemaStatements.forEach(batch.execute);
+      _v2IndexStatements.forEach(batch.execute);
+      await batch.commit(noResult: true);
+
+      await db.insert('schema_migrations', <String, Object?>{
+        'version': 2,
+        'applied_at_utc': DateTime.now().toUtc().toIso8601String(),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+
+    if (oldVersion < 3) {
+      final batch = db.batch();
+      _v3SchemaStatements.forEach(batch.execute);
+      await batch.commit(noResult: true);
+
+      await db.insert('schema_migrations', <String, Object?>{
+        'version': 3,
+        'applied_at_utc': DateTime.now().toUtc().toIso8601String(),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    }
   }
 
   Future<void> close() async {
@@ -165,9 +186,13 @@ class SqfliteImportDatabase {
   /// but after the last import are properly detected.
   Future<int?> getMaxImportedMessageRowId() async {
     final db = await database;
-    final result = await db.rawQuery(
-      'SELECT MAX(source_rowid) as max_rowid FROM messages',
-    );
+    final result = await db.rawQuery('''
+SELECT MAX(source_rowid) AS max_rowid FROM (
+  SELECT source_rowid FROM messages
+  UNION ALL
+  SELECT source_rowid FROM recovered_unlinked_messages
+)
+''');
     if (result.isEmpty || result.first['max_rowid'] == null) {
       return null;
     }
@@ -326,7 +351,10 @@ class SqfliteImportDatabase {
   }
 
   Future<int?> maxMessageSourceRowId() async {
-    return _selectMaxInt(table: 'messages', column: 'source_rowid');
+    return _selectMaxIntAcrossTables(
+      tables: const <String>['messages', 'recovered_unlinked_messages'],
+      column: 'source_rowid',
+    );
   }
 
   Future<int?> maxAttachmentSourceRowId() async {
@@ -334,7 +362,13 @@ class SqfliteImportDatabase {
   }
 
   Future<int?> maxMessageAttachmentSourceRowId() async {
-    return _selectMaxInt(table: 'message_attachments', column: 'source_rowid');
+    return _selectMaxIntAcrossTables(
+      tables: const <String>[
+        'message_attachments',
+        'recovered_unlinked_message_attachments',
+      ],
+      column: 'source_rowid',
+    );
   }
 
   Future<int?> maxHandleSourceRowId() async {
@@ -353,6 +387,7 @@ class SqfliteImportDatabase {
         'handles',
         'chats',
         'messages',
+        'recovered_unlinked_messages',
         'attachments',
       ];
 
@@ -384,7 +419,7 @@ class SqfliteImportDatabase {
       'display_name': displayName,
       'short_name': shortName,
       'created_at_utc': createdAtUtc,
-      'is_ignored': _boolToInt(isIgnored),
+      'is_ignored': _boolToInt(value: isIgnored),
       'batch_id': batchId,
     });
     return db.insert(
@@ -598,7 +633,7 @@ AND Z_PK NOT IN (
       'guid': guid,
       'service': service,
       'display_name': displayName,
-      'is_group': _boolToInt(isGroup),
+      'is_group': _boolToInt(value: isGroup),
       'created_at_utc': createdAtUtc,
       'updated_at_utc': updatedAtUtc,
       'batch_id': batchId,
@@ -646,6 +681,13 @@ AND Z_PK NOT IN (
     String? subject,
     String? text,
     Uint8List? attributedBodyBlob,
+    int? rawItemType,
+    int? rawAssociatedMessageType,
+    Uint8List? messageSummaryInfoBlob,
+    Uint8List? payloadDataBlob,
+    required bool hasAttributedBodySource,
+    required bool hasMessageSummaryInfo,
+    required bool hasPayloadDataSource,
     String? itemType,
     int? errorCode,
     required bool isSystemMessage,
@@ -674,16 +716,23 @@ AND Z_PK NOT IN (
       'chat_id': chatId,
       'sender_handle_id': actualSenderHandleId,
       'service': service,
-      'is_from_me': _boolToInt(isFromMe),
+      'is_from_me': _boolToInt(value: isFromMe),
       'date_utc': dateUtc,
       'date_read_utc': dateReadUtc,
       'date_delivered_utc': dateDeliveredUtc,
       'subject': subject,
       'text': text,
       'attributed_body_blob': attributedBodyBlob,
+      'raw_item_type': rawItemType,
+      'raw_associated_message_type': rawAssociatedMessageType,
+      'message_summary_info_blob': messageSummaryInfoBlob,
+      'payload_data_blob': payloadDataBlob,
+      'has_attributed_body_source': _boolToInt(value: hasAttributedBodySource),
+      'has_message_summary_info': _boolToInt(value: hasMessageSummaryInfo),
+      'has_payload_data_source': _boolToInt(value: hasPayloadDataSource),
       'item_type': itemType,
       'error_code': errorCode,
-      'is_system_message': _boolToInt(isSystemMessage),
+      'is_system_message': _boolToInt(value: isSystemMessage),
       'thread_originator_guid': threadOriginatorGuid,
       'associated_message_guid': associatedMessageGuid,
       'balloon_bundle_id': balloonBundleId,
@@ -722,6 +771,75 @@ AND Z_PK NOT IN (
     );
   }
 
+  Future<int> insertRecoveredUnlinkedMessage({
+    int? id,
+    int? sourceRowid,
+    required String guid,
+    int? senderHandleId,
+    String? service,
+    required bool isFromMe,
+    String? dateUtc,
+    String? dateReadUtc,
+    String? dateDeliveredUtc,
+    String? subject,
+    String? text,
+    Uint8List? attributedBodyBlob,
+    int? rawItemType,
+    int? rawAssociatedMessageType,
+    Uint8List? messageSummaryInfoBlob,
+    Uint8List? payloadDataBlob,
+    required bool hasAttributedBodySource,
+    required bool hasMessageSummaryInfo,
+    required bool hasPayloadDataSource,
+    String? itemType,
+    int? errorCode,
+    required bool isSystemMessage,
+    String? threadOriginatorGuid,
+    String? associatedMessageGuid,
+    String? balloonBundleId,
+    String? payloadJson,
+    required int batchId,
+  }) async {
+    final db = await database;
+    final actualSenderHandleId = (senderHandleId == 0) ? null : senderHandleId;
+
+    final data = _cleanMap(<String, Object?>{
+      'id': id,
+      'source_rowid': sourceRowid,
+      'guid': guid,
+      'sender_handle_id': actualSenderHandleId,
+      'service': service,
+      'is_from_me': _boolToInt(value: isFromMe),
+      'date_utc': dateUtc,
+      'date_read_utc': dateReadUtc,
+      'date_delivered_utc': dateDeliveredUtc,
+      'subject': subject,
+      'text': text,
+      'attributed_body_blob': attributedBodyBlob,
+      'raw_item_type': rawItemType,
+      'raw_associated_message_type': rawAssociatedMessageType,
+      'message_summary_info_blob': messageSummaryInfoBlob,
+      'payload_data_blob': payloadDataBlob,
+      'has_attributed_body_source': _boolToInt(value: hasAttributedBodySource),
+      'has_message_summary_info': _boolToInt(value: hasMessageSummaryInfo),
+      'has_payload_data_source': _boolToInt(value: hasPayloadDataSource),
+      'item_type': itemType,
+      'error_code': errorCode,
+      'is_system_message': _boolToInt(value: isSystemMessage),
+      'thread_originator_guid': threadOriginatorGuid,
+      'associated_message_guid': associatedMessageGuid,
+      'balloon_bundle_id': balloonBundleId,
+      'payload_json': payloadJson,
+      'batch_id': batchId,
+    });
+
+    return db.insert(
+      'recovered_unlinked_messages',
+      data,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
   Future<void> updateMessageText({
     required int messageId,
     required String text,
@@ -730,11 +848,34 @@ AND Z_PK NOT IN (
     _debugSettings.logDatabase(
       'SqfliteImportDatabase.updateMessageText: updating message $messageId with extracted text',
     );
-    await db.update(
-      'messages',
-      _cleanMap(<String, Object?>{'text': text}),
-      where: 'id = ?',
-      whereArgs: <Object>[messageId],
+    await db.rawUpdate(
+      "UPDATE messages "
+      "SET text = ?, "
+      "item_type = CASE "
+      "  WHEN item_type IS NULL THEN 'text' "
+      "  WHEN item_type IN ('attachment-only', 'unknown', 'balloon') THEN 'text' "
+      '  ELSE item_type '
+      'END '
+      'WHERE id = ?',
+      <Object>[text, messageId],
+    );
+  }
+
+  Future<void> updateRecoveredUnlinkedMessageText({
+    required int messageId,
+    required String text,
+  }) async {
+    final db = await database;
+    await db.rawUpdate(
+      "UPDATE recovered_unlinked_messages "
+      "SET text = ?, "
+      "item_type = CASE "
+      "  WHEN item_type IS NULL THEN 'text' "
+      "  WHEN item_type IN ('attachment-only', 'unknown', 'balloon') THEN 'text' "
+      '  ELSE item_type '
+      'END '
+      'WHERE id = ?',
+      <Object>[text, messageId],
     );
   }
 
@@ -762,8 +903,8 @@ AND Z_PK NOT IN (
       'uti': uti,
       'mime_type': mimeType,
       'total_bytes': totalBytes,
-      'is_sticker': _boolToInt(isSticker),
-      'is_outgoing': _boolToNullableInt(isOutgoing),
+      'is_sticker': _boolToInt(value: isSticker),
+      'is_outgoing': _boolToNullableInt(value: isOutgoing),
       'created_at_utc': createdAtUtc,
       'local_path': localPath,
       'sha256_hex': sha256Hex,
@@ -855,6 +996,26 @@ AND Z_PK NOT IN (
     });
   }
 
+  Future<void> insertRecoveredUnlinkedMessageAttachmentsBatch(
+    List<Map<String, Object?>> rows,
+  ) async {
+    if (rows.isEmpty) {
+      return;
+    }
+    final db = await database;
+    await db.transaction((txn) async {
+      final batch = txn.batch();
+      for (final row in rows) {
+        batch.insert(
+          'recovered_unlinked_message_attachments',
+          _cleanMap(row),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+      await batch.commit(noResult: true);
+    });
+  }
+
   Future<int> insertReaction({
     int? id,
     required int carrierMessageId,
@@ -919,9 +1080,11 @@ AND Z_PK NOT IN (
       'chats',
       'chat_to_handle',
       'messages',
+      'recovered_unlinked_messages',
       'chat_to_message',
       'attachments',
       'message_attachments',
+      'recovered_unlinked_message_attachments',
       'reactions',
       'message_links',
     ];
@@ -963,9 +1126,11 @@ AND Z_PK NOT IN (
       const tablesInDeleteOrder = <String>[
         'message_links',
         'reactions',
+        'recovered_unlinked_message_attachments',
         'message_attachments',
         'attachments',
         'chat_to_message',
+        'recovered_unlinked_messages',
         'messages',
         'chat_to_handle',
         'chats',
@@ -1136,6 +1301,37 @@ AND Z_PK NOT IN (
     return int.tryParse('$value');
   }
 
+  Future<int?> _selectMaxIntAcrossTables({
+    required List<String> tables,
+    required String column,
+  }) async {
+    if (tables.isEmpty) {
+      return null;
+    }
+
+    final db = await database;
+    final unionSql = tables
+        .map((table) => 'SELECT $column AS max_value FROM $table')
+        .join(' UNION ALL ');
+    final rows = await db.rawQuery(
+      'SELECT MAX(max_value) AS max_value FROM ($unionSql)',
+    );
+    if (rows.isEmpty) {
+      return null;
+    }
+    final value = rows.first['max_value'];
+    if (value == null) {
+      return null;
+    }
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    return int.tryParse('$value');
+  }
+
   Map<String, Object?> _cleanMap(Map<String, Object?> data) {
     final result = <String, Object?>{};
     data.forEach((key, value) {
@@ -1146,9 +1342,9 @@ AND Z_PK NOT IN (
     return result;
   }
 
-  int _boolToInt(bool value) => value ? 1 : 0;
+  int _boolToInt({required bool value}) => value ? 1 : 0;
 
-  int? _boolToNullableInt(bool? value) =>
+  int? _boolToNullableInt({required bool? value}) =>
       value == null ? null : (value ? 1 : 0);
 
   static const List<String> _schemaStatements = <String>[
@@ -1161,10 +1357,12 @@ AND Z_PK NOT IN (
     "CREATE TABLE IF NOT EXISTS handles (id INTEGER PRIMARY KEY, source_rowid INTEGER, service TEXT NOT NULL, raw_identifier TEXT NOT NULL, normalized_identifier TEXT, compound_identifier TEXT NOT NULL DEFAULT '', country TEXT, last_seen_utc TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(service, raw_identifier))",
     "CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT NOT NULL, service TEXT, display_name TEXT, is_group INTEGER NOT NULL DEFAULT 0 CHECK(is_group IN (0,1)), created_at_utc TEXT, updated_at_utc TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(guid))",
     "CREATE TABLE IF NOT EXISTS chat_to_handle (chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE, handle_id INTEGER NOT NULL REFERENCES handles(id) ON DELETE CASCADE, role TEXT CHECK(role IN ('member','owner','unknown')) DEFAULT 'member', added_at_utc TEXT, PRIMARY KEY (chat_id, handle_id))",
-    "CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT NOT NULL, chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE, sender_handle_id INTEGER REFERENCES handles(id) ON DELETE SET NULL, service TEXT, is_from_me INTEGER NOT NULL CHECK(is_from_me IN (0,1)), date_utc TEXT, date_read_utc TEXT, date_delivered_utc TEXT, subject TEXT, text TEXT, attributed_body_blob BLOB, item_type TEXT CHECK(item_type IN ('text','attachment-only','sticker','reaction-carrier','system','unknown','balloon')), error_code INTEGER, is_system_message INTEGER NOT NULL DEFAULT 0 CHECK(is_system_message IN (0,1)), thread_originator_guid TEXT, associated_message_guid TEXT, balloon_bundle_id TEXT, payload_json TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(guid))",
+    "CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT NOT NULL, chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE, sender_handle_id INTEGER REFERENCES handles(id) ON DELETE SET NULL, service TEXT, is_from_me INTEGER NOT NULL CHECK(is_from_me IN (0,1)), date_utc TEXT, date_read_utc TEXT, date_delivered_utc TEXT, subject TEXT, text TEXT, attributed_body_blob BLOB, raw_item_type INTEGER, raw_associated_message_type INTEGER, message_summary_info_blob BLOB, payload_data_blob BLOB, has_attributed_body_source INTEGER NOT NULL DEFAULT 0 CHECK(has_attributed_body_source IN (0,1)), has_message_summary_info INTEGER NOT NULL DEFAULT 0 CHECK(has_message_summary_info IN (0,1)), has_payload_data_source INTEGER NOT NULL DEFAULT 0 CHECK(has_payload_data_source IN (0,1)), item_type TEXT CHECK(item_type IN ('text','attachment-only','sticker','reaction-carrier','system','unknown','balloon')), error_code INTEGER, is_system_message INTEGER NOT NULL DEFAULT 0 CHECK(is_system_message IN (0,1)), thread_originator_guid TEXT, associated_message_guid TEXT, balloon_bundle_id TEXT, payload_json TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(guid))",
+    "CREATE TABLE IF NOT EXISTS recovered_unlinked_messages (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT NOT NULL, sender_handle_id INTEGER REFERENCES handles(id) ON DELETE SET NULL, service TEXT, is_from_me INTEGER NOT NULL CHECK(is_from_me IN (0,1)), date_utc TEXT, date_read_utc TEXT, date_delivered_utc TEXT, subject TEXT, text TEXT, attributed_body_blob BLOB, raw_item_type INTEGER, raw_associated_message_type INTEGER, message_summary_info_blob BLOB, payload_data_blob BLOB, has_attributed_body_source INTEGER NOT NULL DEFAULT 0 CHECK(has_attributed_body_source IN (0,1)), has_message_summary_info INTEGER NOT NULL DEFAULT 0 CHECK(has_message_summary_info IN (0,1)), has_payload_data_source INTEGER NOT NULL DEFAULT 0 CHECK(has_payload_data_source IN (0,1)), item_type TEXT CHECK(item_type IN ('text','attachment-only','sticker','reaction-carrier','system','unknown','balloon')), error_code INTEGER, is_system_message INTEGER NOT NULL DEFAULT 0 CHECK(is_system_message IN (0,1)), thread_originator_guid TEXT, associated_message_guid TEXT, balloon_bundle_id TEXT, payload_json TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(guid))",
     'CREATE TABLE IF NOT EXISTS chat_to_message (chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE, message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE, source_rowid INTEGER, PRIMARY KEY (chat_id, message_id))',
     'CREATE TABLE IF NOT EXISTS attachments (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT, transfer_name TEXT, uti TEXT, mime_type TEXT, total_bytes INTEGER, is_sticker INTEGER NOT NULL DEFAULT 0 CHECK(is_sticker IN (0,1)), is_outgoing INTEGER CHECK(is_outgoing IN (0,1)), created_at_utc TEXT, local_path TEXT, sha256_hex TEXT, batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT)',
     'CREATE TABLE IF NOT EXISTS message_attachments (message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE, attachment_id INTEGER NOT NULL REFERENCES attachments(id) ON DELETE CASCADE, source_rowid INTEGER, PRIMARY KEY (message_id, attachment_id))',
+    'CREATE TABLE IF NOT EXISTS recovered_unlinked_message_attachments (message_id INTEGER NOT NULL REFERENCES recovered_unlinked_messages(id) ON DELETE CASCADE, attachment_id INTEGER NOT NULL REFERENCES attachments(id) ON DELETE CASCADE, source_rowid INTEGER, PRIMARY KEY (message_id, attachment_id))',
     "CREATE TABLE IF NOT EXISTS reactions (id INTEGER PRIMARY KEY, carrier_message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE, target_message_guid TEXT NOT NULL, action TEXT NOT NULL CHECK(action IN ('add','remove')), kind TEXT NOT NULL CHECK(kind IN ('love','like','dislike','laugh','emphasize','question','unknown')), reactor_handle_id INTEGER REFERENCES handles(id) ON DELETE SET NULL, reacted_at_utc TEXT, parse_confidence REAL CHECK(parse_confidence >= 0.0 AND parse_confidence <= 1.0) DEFAULT 1.0)",
     'CREATE TABLE IF NOT EXISTS message_links (id INTEGER PRIMARY KEY, message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE, url TEXT NOT NULL, start INTEGER, end INTEGER)',
     'CREATE TABLE IF NOT EXISTS contact_to_chat_handle (id INTEGER PRIMARY KEY, contact_Z_PK INTEGER NOT NULL REFERENCES contacts(Z_PK) ON DELETE CASCADE, chat_handle_id INTEGER NOT NULL REFERENCES handles(id) ON DELETE CASCADE, batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(contact_Z_PK, chat_handle_id))',
@@ -1181,13 +1379,48 @@ AND Z_PK NOT IN (
     'CREATE INDEX IF NOT EXISTS idx_messages_ignore ON messages(is_ignored)',
     'CREATE INDEX IF NOT EXISTS idx_messages_assoc ON messages(associated_message_guid)',
     'CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender_handle_id)',
+    'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_messages_date ON recovered_unlinked_messages(date_utc)',
+    'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_messages_ignore ON recovered_unlinked_messages(is_ignored)',
+    'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_messages_assoc ON recovered_unlinked_messages(associated_message_guid)',
+    'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_messages_sender ON recovered_unlinked_messages(sender_handle_id)',
     'CREATE INDEX IF NOT EXISTS idx_attach_created ON attachments(created_at_utc)',
     'CREATE INDEX IF NOT EXISTS idx_reactions_target ON reactions(target_message_guid)',
     'CREATE INDEX IF NOT EXISTS idx_reactions_reactor ON reactions(reactor_handle_id)',
     'CREATE INDEX IF NOT EXISTS idx_contact_phone_email_owner ON contact_phone_email(ZOWNER)',
     'CREATE INDEX IF NOT EXISTS idx_message_attachments_attachment ON message_attachments(attachment_id)',
+    'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_message_attachments_attachment ON recovered_unlinked_message_attachments(attachment_id)',
     'CREATE INDEX IF NOT EXISTS idx_reactions_carrier ON reactions(carrier_message_id)',
     'CREATE INDEX IF NOT EXISTS idx_chat_to_message_message ON chat_to_message(message_id)',
+  ];
+
+  static const List<String> _v2SchemaStatements = <String>[
+    "CREATE TABLE IF NOT EXISTS recovered_unlinked_messages (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT NOT NULL, sender_handle_id INTEGER REFERENCES handles(id) ON DELETE SET NULL, service TEXT, is_from_me INTEGER NOT NULL CHECK(is_from_me IN (0,1)), date_utc TEXT, date_read_utc TEXT, date_delivered_utc TEXT, subject TEXT, text TEXT, attributed_body_blob BLOB, item_type TEXT CHECK(item_type IN ('text','attachment-only','sticker','reaction-carrier','system','unknown','balloon')), error_code INTEGER, is_system_message INTEGER NOT NULL DEFAULT 0 CHECK(is_system_message IN (0,1)), thread_originator_guid TEXT, associated_message_guid TEXT, balloon_bundle_id TEXT, payload_json TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(guid))",
+    'CREATE TABLE IF NOT EXISTS recovered_unlinked_message_attachments (message_id INTEGER NOT NULL REFERENCES recovered_unlinked_messages(id) ON DELETE CASCADE, attachment_id INTEGER NOT NULL REFERENCES attachments(id) ON DELETE CASCADE, source_rowid INTEGER, PRIMARY KEY (message_id, attachment_id))',
+  ];
+
+  static const List<String> _v3SchemaStatements = <String>[
+    'ALTER TABLE messages ADD COLUMN raw_item_type INTEGER',
+    'ALTER TABLE messages ADD COLUMN raw_associated_message_type INTEGER',
+    'ALTER TABLE messages ADD COLUMN message_summary_info_blob BLOB',
+    'ALTER TABLE messages ADD COLUMN payload_data_blob BLOB',
+    'ALTER TABLE messages ADD COLUMN has_attributed_body_source INTEGER NOT NULL DEFAULT 0 CHECK(has_attributed_body_source IN (0,1))',
+    'ALTER TABLE messages ADD COLUMN has_message_summary_info INTEGER NOT NULL DEFAULT 0 CHECK(has_message_summary_info IN (0,1))',
+    'ALTER TABLE messages ADD COLUMN has_payload_data_source INTEGER NOT NULL DEFAULT 0 CHECK(has_payload_data_source IN (0,1))',
+    'ALTER TABLE recovered_unlinked_messages ADD COLUMN raw_item_type INTEGER',
+    'ALTER TABLE recovered_unlinked_messages ADD COLUMN raw_associated_message_type INTEGER',
+    'ALTER TABLE recovered_unlinked_messages ADD COLUMN message_summary_info_blob BLOB',
+    'ALTER TABLE recovered_unlinked_messages ADD COLUMN payload_data_blob BLOB',
+    'ALTER TABLE recovered_unlinked_messages ADD COLUMN has_attributed_body_source INTEGER NOT NULL DEFAULT 0 CHECK(has_attributed_body_source IN (0,1))',
+    'ALTER TABLE recovered_unlinked_messages ADD COLUMN has_message_summary_info INTEGER NOT NULL DEFAULT 0 CHECK(has_message_summary_info IN (0,1))',
+    'ALTER TABLE recovered_unlinked_messages ADD COLUMN has_payload_data_source INTEGER NOT NULL DEFAULT 0 CHECK(has_payload_data_source IN (0,1))',
+  ];
+
+  static const List<String> _v2IndexStatements = <String>[
+    'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_messages_date ON recovered_unlinked_messages(date_utc)',
+    'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_messages_ignore ON recovered_unlinked_messages(is_ignored)',
+    'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_messages_assoc ON recovered_unlinked_messages(associated_message_guid)',
+    'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_messages_sender ON recovered_unlinked_messages(sender_handle_id)',
+    'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_message_attachments_attachment ON recovered_unlinked_message_attachments(attachment_id)',
   ];
 
   static const String _expandedMessagesViewStatement =

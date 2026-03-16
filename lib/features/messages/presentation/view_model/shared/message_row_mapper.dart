@@ -30,6 +30,7 @@ class MessageRowMapper {
       results.add(
         MessageListItem(
           id: message.id,
+          chatId: message.chatId,
           guid: message.guid,
           isFromMe: message.isFromMe,
           senderName: _senderNameForMessage(

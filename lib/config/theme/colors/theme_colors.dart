@@ -261,6 +261,69 @@ class Overlays {
   Color get shadow => _r(const ColorPair(Color(0x1F000000), Color(0x33000000)));
 }
 
+/// Semantic colors for message-list center panels.
+///
+/// These tokens codify the calm single-surface message-panel treatment first
+/// established by the recovered deleted-messages panel so other message views
+/// can adopt the same hierarchy from one source.
+class MessagePanels {
+  const MessagePanels(this._t);
+
+  final ThemeColors _t;
+
+  Color _r(ColorPair p) => _t.resolvePair(p);
+
+  /// Unified content surface for message panels.
+  Color get surface => _t.surfaces.canvas;
+
+  /// Cooler neutral panel surface for the contact analysis timeline.
+  Color get coolPanelSurface =>
+      _r(const ColorPair(Color(0xFFF2F4F8), Color(0xFF242B31)));
+
+  /// Base card surface for message rows.
+  Color get card => _t.surfaces.surface;
+
+  /// Slightly lifted cool-neutral surface for received timeline cards.
+  Color get receivedSurface =>
+      _r(const ColorPair(Color(0xFFF9FAFD), Color(0xFF2D353C)));
+
+  /// Support surface for legends, chips, and compact explanatory blocks.
+  Color get supportSurface => _t.surfaces.control;
+
+  /// Soft accent tint used for light semantic emphasis.
+  Color get accentTintSoft => _t.accents.primary.withValues(alpha: 0.06);
+
+  /// Stronger accent tint used for selected or highlighted message states.
+  Color get accentTint => _t.accents.primary.withValues(alpha: 0.10);
+
+  /// Accent tint used by selected chips and compact selected controls.
+  Color get chipSelectionTint => _t.accents.primary.withValues(alpha: 0.24);
+
+  /// Selected-row accent tint.
+  Color get selectionTint => _t.accents.primary.withValues(alpha: 0.12);
+
+  /// Subtle neutral tint for sparse or metadata-heavy content.
+  Color get mutedTint => _t.content.textTertiary.withValues(alpha: 0.08);
+
+  /// Standard card border.
+  Color get cardBorder => _t.lines.borderSubtle;
+
+  /// Soft accent border.
+  Color get accentBorderSoft => _t.accents.primary.withValues(alpha: 0.16);
+
+  /// Standard accent border.
+  Color get accentBorder => _t.accents.primary.withValues(alpha: 0.28);
+
+  /// Strong selected accent border.
+  Color get selectionBorder => _t.accents.primary.withValues(alpha: 0.72);
+
+  /// Neutral muted border.
+  Color get mutedBorder => _t.content.textTertiary.withValues(alpha: 0.24);
+
+  /// Border used by compact chips inside message rows.
+  Color get chipBorder => _t.lines.borderSubtle.withValues(alpha: 0.5);
+}
+
 /// Semantic button-state tokens for consistent button appearance everywhere.
 ///
 /// Covers primary (accent-coloured), secondary (neutral), and destructive
@@ -661,6 +724,7 @@ class ThemeColors extends _$ThemeColors {
   Lines get lines => Lines(this);
   Accents get accents => Accents(this);
   Overlays get overlays => Overlays(this);
+  MessagePanels get messagePanels => MessagePanels(this);
   ButtonColors get buttons => ButtonColors(this);
   InteractiveHints get interactiveHints => InteractiveHints(this);
   ContactBadge get contactBadge => ContactBadge(this);

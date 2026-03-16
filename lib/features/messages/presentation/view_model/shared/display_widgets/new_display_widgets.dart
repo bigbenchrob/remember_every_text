@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../../../../config/theme/colors/theme_colors.dart';
+import '../../../../../../essentials/debug/application/developer_mode_provider.dart';
 import '../hydration/attachment_info.dart';
 
 // ignore: avoid_classes_with_only_static_members
@@ -23,36 +24,210 @@ class MsgTheme {
   static EdgeInsets convoHPad() => const EdgeInsets.symmetric(horizontal: 14);
 }
 
+enum MessageLayout { bubble, fullWidth }
+
+enum MessageClusterRole { standalone, first, middle, last }
+
+class MessageGroupingStyle {
+  const MessageGroupingStyle({
+    required this.role,
+    required this.showSenderHeader,
+    required this.compactTopSpacing,
+    required this.compactBottomSpacing,
+    required this.softenContinuationChrome,
+  });
+
+  static const standalone = MessageGroupingStyle(
+    role: MessageClusterRole.standalone,
+    showSenderHeader: true,
+    compactTopSpacing: false,
+    compactBottomSpacing: false,
+    softenContinuationChrome: false,
+  );
+
+  final MessageClusterRole role;
+  final bool showSenderHeader;
+  final bool compactTopSpacing;
+  final bool compactBottomSpacing;
+  final bool softenContinuationChrome;
+}
+
+Widget _alignMediaForLayout({
+  required MessageLayout layout,
+  required bool isMe,
+  required Widget child,
+}) {
+  if (layout == MessageLayout.bubble) {
+    return child;
+  }
+
+  return Align(
+    alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: MsgTheme.maxBubbleWidth),
+      child: child,
+    ),
+  );
+}
+
+Widget _alignMetadataForLayout({
+  required MessageLayout layout,
+  required bool isMe,
+  required Widget child,
+}) {
+  if (layout == MessageLayout.bubble) {
+    return child;
+  }
+
+  return Align(
+    alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: MsgTheme.maxBubbleWidth),
+      child: child,
+    ),
+  );
+}
+
+String _formatCompactMessageDateTime(DateTime dateTime) {
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
+  final month = months[dateTime.month - 1];
+  final day = dateTime.day;
+  final year = dateTime.year;
+  final hour = dateTime.hour;
+  final minute = dateTime.minute.toString().padLeft(2, '0');
+  final hour12 = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+  final amPm = hour >= 12 ? 'PM' : 'AM';
+
+  return '$month $day $year • $hour12:$minute $amPm';
+}
+
+String _formatClusterContinuationTime(DateTime dateTime) {
+  final hour = dateTime.hour;
+  final minute = dateTime.minute.toString().padLeft(2, '0');
+  final hour12 = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+
+  return '$hour12:$minute';
+}
+
+String _formatMessageIdLabel(int messageId) {
+  final formattedId = messageId.toString().replaceAllMapped(
+    RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+    (match) => '${match[1]},',
+  );
+  return 'Message ID $formattedId';
+}
+
+BorderRadius _textBorderRadiusForRole(MessageClusterRole role) {
+  const large = Radius.circular(16);
+  const flat = Radius.zero;
+
+  return switch (role) {
+    MessageClusterRole.standalone => const BorderRadius.all(large),
+    MessageClusterRole.first => const BorderRadius.only(
+      topLeft: large,
+      topRight: large,
+      bottomLeft: flat,
+      bottomRight: flat,
+    ),
+    MessageClusterRole.middle => const BorderRadius.all(flat),
+    MessageClusterRole.last => const BorderRadius.only(
+      topLeft: flat,
+      topRight: flat,
+      bottomLeft: large,
+      bottomRight: large,
+    ),
+  };
+}
+
+Border? _textBorderForRole({
+  required MessageClusterRole role,
+  required Color color,
+}) {
+  return switch (role) {
+    MessageClusterRole.standalone => Border.all(color: color, width: 1),
+    MessageClusterRole.first => Border(
+      top: BorderSide(color: color),
+      left: BorderSide(color: color),
+      right: BorderSide(color: color),
+    ),
+    MessageClusterRole.middle => Border(
+      left: BorderSide(color: color),
+      right: BorderSide(color: color),
+    ),
+    MessageClusterRole.last => Border(
+      left: BorderSide(color: color),
+      right: BorderSide(color: color),
+      bottom: BorderSide(color: color),
+    ),
+  };
+}
+
 class MessageShell extends StatelessWidget {
   const MessageShell({
     super.key,
     required this.isMe,
     required this.child,
     this.metadata,
+    this.layout = MessageLayout.bubble,
+    this.grouping = MessageGroupingStyle.standalone,
   });
 
   final bool isMe;
   final Widget child;
   final Widget? metadata;
+  final MessageLayout layout;
+  final MessageGroupingStyle grouping;
 
   @override
   Widget build(BuildContext context) {
-    final bubbleRow = Row(
-      mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-      children: [
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: MsgTheme.maxBubbleWidth),
-          child: child,
-        ),
-      ],
-    );
+    final bubbleRow = switch (layout) {
+      MessageLayout.bubble => Row(
+        mainAxisAlignment: isMe
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
+        children: [
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: MsgTheme.maxBubbleWidth,
+            ),
+            child: child,
+          ),
+        ],
+      ),
+      MessageLayout.fullWidth => child,
+    };
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      padding: switch (layout) {
+        MessageLayout.bubble => const EdgeInsets.symmetric(
+          horizontal: 8,
+          vertical: 12,
+        ),
+        MessageLayout.fullWidth => EdgeInsets.only(
+          top: grouping.compactTopSpacing ? 0 : 10,
+          bottom: grouping.compactBottomSpacing ? 0 : 6,
+        ),
+      },
       child: Column(
-        crossAxisAlignment: isMe
-            ? CrossAxisAlignment.end
-            : CrossAxisAlignment.start,
+        crossAxisAlignment: switch (layout) {
+          MessageLayout.bubble =>
+            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          MessageLayout.fullWidth => CrossAxisAlignment.stretch,
+        },
         children: [
           bubbleRow,
           if (metadata != null) ...[MsgTheme.gapXS, metadata!],
@@ -68,22 +243,32 @@ class MetadataLine extends ConsumerWidget {
     required this.sender,
     required this.sentAt,
     required this.messageId,
+    this.layout = MessageLayout.bubble,
   });
 
   final String sender;
   final DateTime sentAt;
   final int messageId;
+  final MessageLayout layout;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
+    final developerMode = ref.watch(developerModeProvider).valueOrNull;
+    final isDeveloperMode = developerMode == DeveloperModeValue.developer;
     final formattedDateTime = _formatDateTime(sentAt);
+    final metadataText = isDeveloperMode
+        ? '$sender * $formattedDateTime * ID: $messageId'
+        : '$sender * $formattedDateTime';
+
     return Text(
-      '$sender * $formattedDateTime * ID: $messageId',
+      metadataText,
       style: TextStyle(
-        color: colors.messageBubble(MessageBubble.metadata),
-        fontSize: 11,
+        color: layout == MessageLayout.fullWidth
+            ? colors.content.textSecondary
+            : colors.messageBubble(MessageBubble.metadata),
+        fontSize: layout == MessageLayout.fullWidth ? 12 : 11,
         height: 1.2,
       ),
     );
@@ -126,6 +311,8 @@ class TextMessageTile extends ConsumerWidget {
     required this.sentAt,
     required this.messageId,
     this.highlight,
+    this.layout = MessageLayout.bubble,
+    this.grouping = MessageGroupingStyle.standalone,
   });
 
   final bool isMe;
@@ -134,23 +321,65 @@ class TextMessageTile extends ConsumerWidget {
   final DateTime sentAt;
   final int messageId;
   final String? highlight;
+  final MessageLayout layout;
+  final MessageGroupingStyle grouping;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
-    final bg = isMe
-        ? colors.messageBubble(MessageBubble.sentBg)
-        : colors.messageBubble(MessageBubble.receivedBg);
+    final developerMode = ref.watch(developerModeProvider).valueOrNull;
+    final isDeveloperMode = developerMode == DeveloperModeValue.developer;
+    final bg = switch (layout) {
+      MessageLayout.bubble =>
+        isMe
+            ? colors.messageBubble(MessageBubble.sentBg)
+            : colors.messageBubble(MessageBubble.receivedBg),
+      MessageLayout.fullWidth =>
+        isMe
+            ? grouping.softenContinuationChrome
+                  ? Color.lerp(
+                      colors.messagePanels.accentTintSoft,
+                      colors.messagePanels.coolPanelSurface,
+                      0.18,
+                    )!
+                  : colors.messagePanels.accentTintSoft
+            : grouping.softenContinuationChrome
+            ? Color.lerp(
+                colors.messagePanels.receivedSurface,
+                colors.messagePanels.coolPanelSurface,
+                0.22,
+              )!
+            : colors.messagePanels.receivedSurface,
+    };
+    final borderColor = switch (layout) {
+      MessageLayout.bubble => null,
+      MessageLayout.fullWidth =>
+        isMe
+            ? grouping.softenContinuationChrome
+                  ? colors.messagePanels.accentBorderSoft.withValues(
+                      alpha: 0.72,
+                    )
+                  : colors.messagePanels.accentBorderSoft
+            : grouping.softenContinuationChrome
+            ? colors.messagePanels.cardBorder.withValues(alpha: 0.78)
+            : colors.messagePanels.cardBorder,
+    };
     final style = TextStyle(
-      color: isMe
+      color: layout == MessageLayout.fullWidth
+          ? colors.content.textPrimary
+          : isMe
           ? colors.messageBubble(MessageBubble.sentText)
           : colors.messageBubble(MessageBubble.receivedText),
       height: 1.25,
       fontSize: 14.5,
     );
     final highlightStyle = style.copyWith(
-      backgroundColor: isMe
+      backgroundColor: layout == MessageLayout.fullWidth
+          ? isMe
+                ? colors.messagePanels.selectionTint
+                : colors.messagePanels.supportSurface
+          : isMe
           ? colors.messageBubble(MessageBubble.sentHighlight)
           : colors.messageBubble(MessageBubble.receivedHighlight),
     );
@@ -161,15 +390,109 @@ class TextMessageTile extends ConsumerWidget {
 
     return MessageShell(
       isMe: isMe,
-      metadata: MetadataLine(
-        sender: sender,
-        sentAt: sentAt,
-        messageId: messageId,
-      ),
+      layout: layout,
+      grouping: grouping,
       child: Container(
-        padding: MsgTheme.bubblePadding,
-        decoration: BoxDecoration(color: bg, borderRadius: MsgTheme.textRadius),
-        child: SelectableText.rich(contentSpan),
+        padding: EdgeInsets.symmetric(
+          horizontal: MsgTheme.bubblePadding.horizontal / 2,
+          vertical:
+              layout == MessageLayout.fullWidth && grouping.compactTopSpacing
+              ? 8.5
+              : MsgTheme.bubblePadding.vertical / 2,
+        ),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: layout == MessageLayout.fullWidth
+              ? _textBorderRadiusForRole(grouping.role)
+              : MsgTheme.textRadius,
+          border: borderColor == null
+              ? null
+              : layout == MessageLayout.fullWidth
+              ? _textBorderForRole(role: grouping.role, color: borderColor)
+              : Border.all(color: borderColor, width: 1),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (grouping.showSenderHeader) ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: sender,
+                            style: TextStyle(
+                              color: colors.content.textSecondary,
+                              fontSize: 12,
+                              height: 1.2,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          TextSpan(
+                            text: ' — ',
+                            style: TextStyle(
+                              color: colors.content.textTertiary,
+                              fontSize: 12,
+                              height: 1.2,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                          TextSpan(
+                            text: _formatCompactMessageDateTime(sentAt),
+                            style: TextStyle(
+                              color: colors.content.textSecondaryQuiet,
+                              fontSize: 12,
+                              height: 1.2,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (isDeveloperMode) ...[
+                    const SizedBox(width: 12),
+                    Text(
+                      _formatMessageIdLabel(messageId),
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: colors.content.textSecondary,
+                        fontSize: 12,
+                        height: 1.2,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
+            if (grouping.showSenderHeader)
+              SelectableText.rich(contentSpan)
+            else
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(child: SelectableText.rich(contentSpan)),
+                  const SizedBox(width: 10),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      _formatClusterContinuationTime(sentAt),
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: colors.content.textSecondaryQuiet,
+                        fontSize: 11,
+                        height: 1.1,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -226,6 +549,8 @@ class ImageMessageTile extends StatelessWidget {
     required this.sender,
     required this.sentAt,
     required this.messageId,
+    this.layout = MessageLayout.bubble,
+    this.grouping = MessageGroupingStyle.standalone,
   });
 
   final bool isMe;
@@ -233,6 +558,8 @@ class ImageMessageTile extends StatelessWidget {
   final String sender;
   final DateTime sentAt;
   final int messageId;
+  final MessageLayout layout;
+  final MessageGroupingStyle grouping;
 
   @override
   Widget build(BuildContext context) {
@@ -243,29 +570,40 @@ class ImageMessageTile extends StatelessWidget {
 
     return MessageShell(
       isMe: isMe,
-      metadata: MetadataLine(
-        sender: sender,
-        sentAt: sentAt,
-        messageId: messageId,
+      layout: layout,
+      grouping: grouping,
+      metadata: _alignMetadataForLayout(
+        layout: layout,
+        isMe: isMe,
+        child: MetadataLine(
+          sender: sender,
+          sentAt: sentAt,
+          messageId: messageId,
+          layout: layout,
+        ),
       ),
-      child: ClipRRect(
-        borderRadius: MsgTheme.mediaRadius,
-        child: _IntrinsicSizedMedia(
-          child: AspectRatio(
-            aspectRatio: aspectRatio,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                const ColoredBox(color: Colors.black12),
-                if (exists)
-                  Image.file(
-                    file!,
-                    fit: BoxFit.cover,
-                    filterQuality: FilterQuality.medium,
-                  )
-                else
-                  const Center(child: Text('Image unavailable')),
-              ],
+      child: _alignMediaForLayout(
+        layout: layout,
+        isMe: isMe,
+        child: ClipRRect(
+          borderRadius: MsgTheme.mediaRadius,
+          child: _IntrinsicSizedMedia(
+            child: AspectRatio(
+              aspectRatio: aspectRatio,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  const ColoredBox(color: Colors.black12),
+                  if (exists)
+                    Image.file(
+                      file!,
+                      fit: BoxFit.cover,
+                      filterQuality: FilterQuality.medium,
+                    )
+                  else
+                    const Center(child: Text('Image unavailable')),
+                ],
+              ),
             ),
           ),
         ),
@@ -282,6 +620,8 @@ class VideoMessageTile extends ConsumerStatefulWidget {
     required this.sender,
     required this.sentAt,
     required this.messageId,
+    this.layout = MessageLayout.bubble,
+    this.grouping = MessageGroupingStyle.standalone,
   });
 
   final bool isMe;
@@ -289,6 +629,8 @@ class VideoMessageTile extends ConsumerStatefulWidget {
   final String sender;
   final DateTime sentAt;
   final int messageId;
+  final MessageLayout layout;
+  final MessageGroupingStyle grouping;
 
   @override
   ConsumerState<VideoMessageTile> createState() => _VideoMessageTileState();
@@ -348,83 +690,94 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
 
     return MessageShell(
       isMe: widget.isMe,
-      metadata: MetadataLine(
-        sender: widget.sender,
-        sentAt: widget.sentAt,
-        messageId: widget.messageId,
-      ),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: colors.surfaces.surface,
-          borderRadius: MsgTheme.mediaRadius,
-          border: Border.all(color: colors.lines.borderSubtle),
+      layout: widget.layout,
+      grouping: widget.grouping,
+      metadata: _alignMetadataForLayout(
+        layout: widget.layout,
+        isMe: widget.isMe,
+        child: MetadataLine(
+          sender: widget.sender,
+          sentAt: widget.sentAt,
+          messageId: widget.messageId,
+          layout: widget.layout,
         ),
-        child: ClipRRect(
-          borderRadius: MsgTheme.mediaRadius,
-          child: _IntrinsicSizedMedia(
-            child: AspectRatio(
-              aspectRatio: aspectRatio,
-              child: Stack(
-                fit: StackFit.expand,
-                alignment: Alignment.center,
-                children: [
-                  const ColoredBox(color: Colors.black26),
-                  if (hasVideo && _ready)
-                    VideoPlayer(_controller!)
-                  else if (hasVideo)
-                    const Center(
-                      child: SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    )
-                  else
-                    const Center(child: Text('Video unavailable')),
-                  if (hasVideo)
-                    Positioned.fill(
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: _toggle,
-                          child: AnimatedOpacity(
-                            duration: const Duration(milliseconds: 180),
-                            opacity: _controller!.value.isPlaying ? 0.0 : 1.0,
-                            child: Center(
-                              child: Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: const BoxDecoration(
-                                  color: Colors.black54,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  _controller!.value.isPlaying
-                                      ? Icons.pause
-                                      : Icons.play_arrow,
-                                  size: 28,
-                                  color: Colors.white,
+      ),
+      child: _alignMediaForLayout(
+        layout: widget.layout,
+        isMe: widget.isMe,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: colors.surfaces.surface,
+            borderRadius: MsgTheme.mediaRadius,
+            border: Border.all(color: colors.lines.borderSubtle),
+          ),
+          child: ClipRRect(
+            borderRadius: MsgTheme.mediaRadius,
+            child: _IntrinsicSizedMedia(
+              child: AspectRatio(
+                aspectRatio: aspectRatio,
+                child: Stack(
+                  fit: StackFit.expand,
+                  alignment: Alignment.center,
+                  children: [
+                    const ColoredBox(color: Colors.black26),
+                    if (hasVideo && _ready)
+                      VideoPlayer(_controller!)
+                    else if (hasVideo)
+                      const Center(
+                        child: SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    else
+                      const Center(child: Text('Video unavailable')),
+                    if (hasVideo)
+                      Positioned.fill(
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: _toggle,
+                            child: AnimatedOpacity(
+                              duration: const Duration(milliseconds: 180),
+                              opacity: _controller!.value.isPlaying ? 0.0 : 1.0,
+                              child: Center(
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.black54,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    _controller!.value.isPlaying
+                                        ? Icons.pause
+                                        : Icons.play_arrow,
+                                    size: 28,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  if (hasVideo && _ready)
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      child: VideoProgressIndicator(
-                        _controller!,
-                        allowScrubbing: true,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 6,
-                          horizontal: 8,
+                    if (hasVideo && _ready)
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        child: VideoProgressIndicator(
+                          _controller!,
+                          allowScrubbing: true,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 6,
+                            horizontal: 8,
+                          ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -445,6 +798,8 @@ class LinkPreviewTile extends ConsumerWidget {
     this.previewImage,
     this.previewImageWidget,
     this.previewText,
+    this.layout = MessageLayout.bubble,
+    this.grouping = MessageGroupingStyle.standalone,
   }) : assert(
          previewImage != null || previewImageWidget != null,
          'Provide either previewImage or previewImageWidget',
@@ -458,6 +813,8 @@ class LinkPreviewTile extends ConsumerWidget {
   final File? previewImage;
   final Widget? previewImageWidget;
   final String? previewText;
+  final MessageLayout layout;
+  final MessageGroupingStyle grouping;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -519,10 +876,13 @@ class LinkPreviewTile extends ConsumerWidget {
 
     return MessageShell(
       isMe: isMe,
+      layout: layout,
+      grouping: grouping,
       metadata: MetadataLine(
         sender: sender,
         sentAt: sentAt,
         messageId: messageId,
+        layout: layout,
       ),
       child: Material(
         color: Colors.transparent,

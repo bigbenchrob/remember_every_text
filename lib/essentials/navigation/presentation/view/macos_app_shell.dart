@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../providers.dart';
+import '../../../debug/application/developer_mode_provider.dart';
 import '../../../logging/application/navigation_logger.dart';
 import '../../../onboarding/application/onboarding_gate_provider.dart';
 import '../../../onboarding/domain/import_spec.dart';
@@ -13,6 +15,7 @@ import '../../../onboarding/domain/onboarding_status.dart';
 import '../../../onboarding/domain/spec_classes/onboarding_view_spec.dart';
 import '../../../onboarding/presentation/onboarding_overlay.dart';
 import '../../../window_state/feature_level_providers.dart';
+import '../../application/panel_widget_providers.dart';
 import '../../application/sidebar_mode_provider.dart';
 import '../../domain/entities/view_spec.dart';
 import '../../domain/navigation_constants.dart';
@@ -105,10 +108,22 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
 
     final onboardingStatus = ref.watch(onboardingGateProvider);
     final showOnboarding = onboardingStatus != OnboardingStatus.notNeeded;
+    final activeMode = ref.watch(activeSidebarModeProvider);
+    const showDeveloperToolbarActions = !kReleaseMode;
 
     return Stack(
       children: [
         MacosWindow(
+          endSidebar: Sidebar(
+            key: ValueKey<String>('end-sidebar-${activeMode.name}'),
+            startWidth: 360,
+            minWidth: 300,
+            maxWidth: 520,
+            shownByDefault: false,
+            builder: (context, scrollController) {
+              return ref.watch(rightPanelWidgetProvider(activeMode));
+            },
+          ),
           child: MacosScaffold(
             toolBar: ToolBar(
               // Position mode toggle above sidebar, other controls above center panel.
@@ -152,34 +167,59 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
                   },
                   showLabel: false,
                 ),
-                ToolBarIconButton(
-                  label: 'Onboarding',
-                  icon: const MacosIcon(CupertinoIcons.rocket),
-                  onPressed: () {
-                    ref
-                        .read(activeSidebarModeProvider.notifier)
-                        .setMode(SidebarMode.messages);
+                if (showDeveloperToolbarActions)
+                  ToolBarIconButton(
+                    label: 'Onboarding',
+                    icon: const MacosIcon(CupertinoIcons.rocket),
+                    onPressed: () {
+                      ref
+                          .read(activeSidebarModeProvider.notifier)
+                          .setMode(SidebarMode.messages);
 
-                    const spec = ViewSpec.onboarding(OnboardingSpec.devPanel());
+                      const spec = ViewSpec.onboarding(
+                        OnboardingSpec.devPanel(),
+                      );
 
-                    ref
-                        .read(navigationLoggerProvider.notifier)
-                        .logToolbarClick(
-                          buttonLabel: 'Onboarding',
-                          targetPanel: WindowPanel.center,
-                          viewSpec: spec,
-                        );
+                      ref
+                          .read(navigationLoggerProvider.notifier)
+                          .logToolbarClick(
+                            buttonLabel: 'Onboarding',
+                            targetPanel: WindowPanel.center,
+                            viewSpec: spec,
+                          );
 
-                    ref
-                        .read(
-                          panelsViewStateProvider(
-                            SidebarMode.messages,
-                          ).notifier,
-                        )
-                        .show(panel: WindowPanel.center, spec: spec);
-                  },
-                  showLabel: false,
-                ),
+                      ref
+                          .read(
+                            panelsViewStateProvider(
+                              SidebarMode.messages,
+                            ).notifier,
+                          )
+                          .show(panel: WindowPanel.center, spec: spec);
+                    },
+                    showLabel: false,
+                  ),
+                if (showDeveloperToolbarActions)
+                  () {
+                    final developerMode = ref.watch(developerModeProvider);
+                    final isDeveloperMode =
+                        developerMode.valueOrNull ==
+                        DeveloperModeValue.developer;
+
+                    return ToolBarIconButton(
+                      label: isDeveloperMode
+                          ? 'Developer Mode: On (click to switch to User Mode)'
+                          : 'Developer Mode: Off (click to switch to Developer Mode)',
+                      icon: MacosIcon(
+                        isDeveloperMode
+                            ? CupertinoIcons.chevron_left_slash_chevron_right
+                            : CupertinoIcons.person,
+                      ),
+                      onPressed: () {
+                        ref.read(developerModeProvider.notifier).toggleMode();
+                      },
+                      showLabel: false,
+                    );
+                  }(),
                 () {
                   final themeMode = ref.watch(switchableDarkModeProvider);
                   final (IconData icon, String tooltip) = switch (themeMode) {
@@ -210,12 +250,16 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
             children: [
               ContentArea(
                 builder: (context, scrollController) {
-                  final activeMode = ref.watch(activeSidebarModeProvider);
-                  return IndexedStack(
-                    index: activeMode == SidebarMode.messages ? 0 : 1,
-                    children: const [
-                      WorkspaceLayout(mode: SidebarMode.messages),
-                      WorkspaceLayout(mode: SidebarMode.settings),
+                  return Stack(
+                    children: [
+                      IndexedStack(
+                        index: activeMode == SidebarMode.messages ? 0 : 1,
+                        children: const [
+                          WorkspaceLayout(mode: SidebarMode.messages),
+                          WorkspaceLayout(mode: SidebarMode.settings),
+                        ],
+                      ),
+                      _EndSidebarSyncObserver(mode: activeMode),
                     ],
                   );
                 },
@@ -230,3 +274,27 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
 }
 
 // Legacy placeholder widgets removed; dynamic providers now supply content.
+
+class _EndSidebarSyncObserver extends ConsumerWidget {
+  const _EndSidebarSyncObserver({required this.mode});
+
+  final SidebarMode mode;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final shouldShow = ref.watch(shouldShowEndSidebarProvider(mode));
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!context.mounted) {
+        return;
+      }
+
+      final scope = MacosWindowScope.of(context);
+      if (scope.isEndSidebarShown != shouldShow) {
+        scope.toggleEndSidebar();
+      }
+    });
+
+    return const SizedBox.shrink();
+  }
+}

@@ -64,6 +64,26 @@ class NavigationLogEntry {
             'variant': 'forHandle',
             'handleId': handleId,
           },
+          recoveredUnlinkedMessages: (contactId, scrollToDate) => {
+            'variant': 'recoveredUnlinkedMessages',
+            if (contactId != null) 'contactId': contactId,
+            if (scrollToDate != null)
+              'scrollToDate': scrollToDate.toIso8601String(),
+          },
+          recoveredNoHandleFromMeMessages: (scrollToDate) => {
+            'variant': 'recoveredNoHandleFromMeMessages',
+            if (scrollToDate != null)
+              'scrollToDate': scrollToDate.toIso8601String(),
+          },
+          recoveredAttachmentViewer: (messageId, attachment) => {
+            'variant': 'recoveredAttachmentViewer',
+            'messageId': messageId,
+            'attachmentId': attachment.id,
+            if (attachment.transferName != null)
+              'transferName': attachment.transferName,
+            if (attachment.mimeType != null) 'mimeType': attachment.mimeType,
+            if (attachment.localPath != null) 'localPath': attachment.localPath,
+          },
           forChatInDateRange: (chatId, startDate, endDate) => {
             'variant': 'forChatInDateRange',
             'chatId': chatId,

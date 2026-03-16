@@ -1,0 +1,169 @@
+# MessageLens Color Palette Refinement  
+Using Tinted Neutrals for a Calmer Conversation UI
+
+## Purpose
+
+Improve visual cohesion and reduce contrast noise in the MessageLens conversation UI by replacing pure neutral grays with slightly tinted neutrals.
+
+This technique is widely used in polished macOS interfaces and modern productivity tools.
+
+The goal is to ensure that all UI surfaces share a subtle color relationship with the app’s accent color (blue), producing a calmer and more unified interface.
+
+---
+
+# 1. The Core Principle
+
+Avoid using mathematically neutral gray.
+
+Pure gray values are defined as:
+
+R = G = B
+
+Example:
+
+240, 240, 240
+
+When pure gray is placed next to an accent color like blue, the gray can feel visually disconnected or slightly muddy.
+
+Instead, neutral surfaces should be very slightly tinted toward the accent color.
+
+In MessageLens the accent color is blue, so neutral surfaces should be cool grays with a slight blue bias.
+
+---
+
+# 2. What “Tinted Neutral” Means
+
+A tinted neutral is still visually perceived as gray, but its RGB channels are slightly shifted toward the accent hue.
+
+Example concept:
+
+Panel surface  
+242, 244, 248
+
+Contact message card  
+248, 249, 252
+
+Sent message card  
+soft blue tint
+
+These values still appear neutral but harmonize with the blue accent color.
+
+Typical tint strength:
+
+Blue channel increased by 2–5 units.
+
+The tint must remain extremely subtle so the user does not consciously perceive it as colored.
+
+---
+
+# 3. Why This Improves the UI
+
+Tinted neutrals create:
+
+• visual harmony between neutral surfaces and accent colors  
+• reduced visual tension across large scrolling areas  
+• a more polished and intentional appearance
+
+Without tinted neutrals, accent colors can appear overly saturated because they sit against a completely neutral field.
+
+With tinted neutrals, accent colors feel like a natural extension of the palette.
+
+---
+
+# 4. Recommended Surface Hierarchy
+
+Conversation views should use three related surfaces.
+
+Panel Surface  
+cool light gray with subtle blue tint
+
+Received Message Card  
+slightly brighter cool gray
+
+Sent Message Card  
+soft blue tint
+
+Messages With No Content  
+muted neutral gray
+
+The luminance order should be:
+
+panel surface < received card < sent card
+
+This ensures that cards feel slightly elevated above the panel background.
+
+---
+
+# 5. Avoid Pure White Cards
+
+Pure white surfaces create strong contrast and visual noise when repeated in long timelines.
+
+Instead of:
+
+panel gray  
+white cards  
+blue cards
+
+Use:
+
+panel cool gray  
+light cool gray cards  
+blue cards
+
+This keeps the interface visually calm during long scrolling sessions.
+
+---
+
+# 6. Token Structure
+
+Theme tokens should reflect the new palette model.
+
+Recommended tokens:
+
+panelSurfaceCoolNeutral  
+receivedMessageSurface  
+sentMessageSurface  
+emptyMessageSurface
+
+Definitions:
+
+panelSurfaceCoolNeutral  
+base background of the center panel, cool gray with slight blue tint
+
+receivedMessageSurface  
+slightly brighter cool gray used for contact messages
+
+sentMessageSurface  
+soft blue tint used for messages sent by the user
+
+emptyMessageSurface  
+muted gray used for placeholder or empty messages
+
+---
+
+# 7. Implementation Guidelines
+
+When defining neutral colors:
+
+1. Start with a light gray base.
+2. Increase the blue channel slightly.
+3. Keep the tint subtle enough that the color still reads as neutral.
+
+The difference between panel surface and received message surface should be small (1–3% luminance difference) to create a gentle elevation effect.
+
+Avoid introducing strong saturation into neutral surfaces.
+
+---
+
+# 8. Expected Result
+
+After this change the conversation UI should feel:
+
+• calmer  
+• more cohesive  
+• less visually noisy  
+• more aligned with modern macOS design patterns
+
+The palette will appear unified because neutral surfaces share a subtle relationship with the accent color.
+
+Users will not consciously perceive the tint, but the interface will feel more polished.

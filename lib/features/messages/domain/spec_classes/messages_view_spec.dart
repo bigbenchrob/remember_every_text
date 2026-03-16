@@ -1,9 +1,11 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import '../entities/attachment_info.dart';
+
 part 'messages_view_spec.freezed.dart';
 
 @freezed
-class MessagesSpec with _$MessagesSpec {
+abstract class MessagesSpec with _$MessagesSpec {
   const factory MessagesSpec.forChat({required int chatId}) = _MessagesForChat;
 
   const factory MessagesSpec.forContact({
@@ -19,6 +21,25 @@ class MessagesSpec with _$MessagesSpec {
   /// Show ALL messages from a handle across all chats chronologically
   const factory MessagesSpec.forHandle({required int handleId}) =
       _MessagesForHandle;
+
+  /// Dedicated surface for recovered deleted-message candidates that remain
+  /// outside the normal chat linkage model.
+  const factory MessagesSpec.recoveredUnlinkedMessages({
+    int? contactId,
+    DateTime? scrollToDate,
+  }) = _RecoveredUnlinkedMessages;
+
+  /// Experimental surface for recovered orphaned records with no surviving
+  /// handle linkage that still appear to be outgoing messages.
+  const factory MessagesSpec.recoveredNoHandleFromMeMessages({
+    DateTime? scrollToDate,
+  }) = _RecoveredNoHandleFromMeMessages;
+
+  /// End-sidebar viewer for a single recovered attachment.
+  const factory MessagesSpec.recoveredAttachmentViewer({
+    required int messageId,
+    required AttachmentInfo attachment,
+  }) = _RecoveredAttachmentViewer;
 
   /// Triage view for a stray handle: header + action bar + message list.
   const factory MessagesSpec.handleLens({required int handleId}) =

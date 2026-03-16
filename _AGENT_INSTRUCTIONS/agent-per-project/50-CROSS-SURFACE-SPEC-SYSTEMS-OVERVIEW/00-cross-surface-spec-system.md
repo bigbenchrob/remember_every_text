@@ -211,6 +211,30 @@ dispatch a spec through the target surface's state provider.
 Features must not reach into another surface's coordinator, rack state,
 or rendering internals.
 
+### Coordination and Refresh Invariant
+
+Cross-surface dispatch alone is not sufficient to keep the UI coherent.
+When sidebar cassette state changes, the app must ensure that center/right
+panel content is still **compatible with the newly active cassette context**.
+
+Treat this as a hard rule:
+
+- A cassette widget may dispatch `show(...)` into a panel only for content
+    that is valid while that cassette context remains active.
+- If a cassette widget performs an automatic `show(...)` on mount/effect,
+    it must first verify that the owning cassette context is still current.
+- Essentials-level navigation code must provide a reconciliation backstop that
+    clears panel content which is no longer compatible with the active cassette
+    flow. Do not rely solely on widget timing.
+
+Practical example:
+
+- Recovered-message cassettes may auto-open recovered center-panel content.
+- If the top chat menu switches to contacts or stray handles, recovered center
+    or right-panel content must be treated as stale and cleared.
+- Contextual sidebar widgets derived from center-panel specs must also be gated
+    by the current cassette flow, not just by the panel spec alone.
+
 ---
 
 ## Design Principles

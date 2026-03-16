@@ -7,7 +7,7 @@ part of 'current_visible_month_provider.dart';
 // **************************************************************************
 
 String _$currentVisibleMonthForScopeHash() =>
-    r'd31296c3286f8b91897828491dbd8b5e96338700';
+    r'dafde6ec7b5c6d355141643bf4d9b702a2349b95';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -30,6 +30,13 @@ class _SystemHash {
   }
 }
 
+abstract class _$CurrentVisibleMonthForScope
+    extends BuildlessAutoDisposeAsyncNotifier<String?> {
+  late final MessageTimelineScope scope;
+
+  FutureOr<String?> build({required MessageTimelineScope scope});
+}
+
 /// Provides the currently visible month key for a given timeline scope.
 ///
 /// The month key is in 'yyyy-MM' format (e.g., '2023-06').
@@ -37,8 +44,8 @@ class _SystemHash {
 ///
 /// Returns null if the ordinal state is not yet loaded.
 ///
-/// Copied from [currentVisibleMonthForScope].
-@ProviderFor(currentVisibleMonthForScope)
+/// Copied from [CurrentVisibleMonthForScope].
+@ProviderFor(CurrentVisibleMonthForScope)
 const currentVisibleMonthForScopeProvider = CurrentVisibleMonthForScopeFamily();
 
 /// Provides the currently visible month key for a given timeline scope.
@@ -48,7 +55,7 @@ const currentVisibleMonthForScopeProvider = CurrentVisibleMonthForScopeFamily();
 ///
 /// Returns null if the ordinal state is not yet loaded.
 ///
-/// Copied from [currentVisibleMonthForScope].
+/// Copied from [CurrentVisibleMonthForScope].
 class CurrentVisibleMonthForScopeFamily extends Family<AsyncValue<String?>> {
   /// Provides the currently visible month key for a given timeline scope.
   ///
@@ -57,7 +64,7 @@ class CurrentVisibleMonthForScopeFamily extends Family<AsyncValue<String?>> {
   ///
   /// Returns null if the ordinal state is not yet loaded.
   ///
-  /// Copied from [currentVisibleMonthForScope].
+  /// Copied from [CurrentVisibleMonthForScope].
   const CurrentVisibleMonthForScopeFamily();
 
   /// Provides the currently visible month key for a given timeline scope.
@@ -67,7 +74,7 @@ class CurrentVisibleMonthForScopeFamily extends Family<AsyncValue<String?>> {
   ///
   /// Returns null if the ordinal state is not yet loaded.
   ///
-  /// Copied from [currentVisibleMonthForScope].
+  /// Copied from [CurrentVisibleMonthForScope].
   CurrentVisibleMonthForScopeProvider call({
     required MessageTimelineScope scope,
   }) {
@@ -103,9 +110,13 @@ class CurrentVisibleMonthForScopeFamily extends Family<AsyncValue<String?>> {
 ///
 /// Returns null if the ordinal state is not yet loaded.
 ///
-/// Copied from [currentVisibleMonthForScope].
+/// Copied from [CurrentVisibleMonthForScope].
 class CurrentVisibleMonthForScopeProvider
-    extends AutoDisposeFutureProvider<String?> {
+    extends
+        AutoDisposeAsyncNotifierProviderImpl<
+          CurrentVisibleMonthForScope,
+          String?
+        > {
   /// Provides the currently visible month key for a given timeline scope.
   ///
   /// The month key is in 'yyyy-MM' format (e.g., '2023-06').
@@ -113,13 +124,10 @@ class CurrentVisibleMonthForScopeProvider
   ///
   /// Returns null if the ordinal state is not yet loaded.
   ///
-  /// Copied from [currentVisibleMonthForScope].
+  /// Copied from [CurrentVisibleMonthForScope].
   CurrentVisibleMonthForScopeProvider({required MessageTimelineScope scope})
     : this._internal(
-        (ref) => currentVisibleMonthForScope(
-          ref as CurrentVisibleMonthForScopeRef,
-          scope: scope,
-        ),
+        () => CurrentVisibleMonthForScope()..scope = scope,
         from: currentVisibleMonthForScopeProvider,
         name: r'currentVisibleMonthForScopeProvider',
         debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -144,13 +152,18 @@ class CurrentVisibleMonthForScopeProvider
   final MessageTimelineScope scope;
 
   @override
-  Override overrideWith(
-    FutureOr<String?> Function(CurrentVisibleMonthForScopeRef provider) create,
+  FutureOr<String?> runNotifierBuild(
+    covariant CurrentVisibleMonthForScope notifier,
   ) {
+    return notifier.build(scope: scope);
+  }
+
+  @override
+  Override overrideWith(CurrentVisibleMonthForScope Function() create) {
     return ProviderOverride(
       origin: this,
       override: CurrentVisibleMonthForScopeProvider._internal(
-        (ref) => create(ref as CurrentVisibleMonthForScopeRef),
+        () => create()..scope = scope,
         from: from,
         name: null,
         dependencies: null,
@@ -162,7 +175,8 @@ class CurrentVisibleMonthForScopeProvider
   }
 
   @override
-  AutoDisposeFutureProviderElement<String?> createElement() {
+  AutoDisposeAsyncNotifierProviderElement<CurrentVisibleMonthForScope, String?>
+  createElement() {
     return _CurrentVisibleMonthForScopeProviderElement(this);
   }
 
@@ -182,13 +196,18 @@ class CurrentVisibleMonthForScopeProvider
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin CurrentVisibleMonthForScopeRef on AutoDisposeFutureProviderRef<String?> {
+mixin CurrentVisibleMonthForScopeRef
+    on AutoDisposeAsyncNotifierProviderRef<String?> {
   /// The parameter `scope` of this provider.
   MessageTimelineScope get scope;
 }
 
 class _CurrentVisibleMonthForScopeProviderElement
-    extends AutoDisposeFutureProviderElement<String?>
+    extends
+        AutoDisposeAsyncNotifierProviderElement<
+          CurrentVisibleMonthForScope,
+          String?
+        >
     with CurrentVisibleMonthForScopeRef {
   _CurrentVisibleMonthForScopeProviderElement(super.provider);
 

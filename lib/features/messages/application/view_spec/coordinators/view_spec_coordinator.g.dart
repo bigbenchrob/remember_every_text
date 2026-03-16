@@ -7,7 +7,7 @@ part of 'view_spec_coordinator.dart';
 // **************************************************************************
 
 String _$viewSpecCoordinatorHash() =>
-    r'28cac704d98bc2aadc87333bd5cc41b0c7ed9894';
+    r'fc511c1644bedb48f35c7e7717aeb587e96ee0c4';
 
 /// Coordinator that maps [MessagesSpec] to rendered widgets for the center panel.
 ///
