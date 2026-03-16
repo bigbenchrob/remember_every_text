@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../logging/application/app_logger.dart';
 import '../../../features/messages/feature_level_providers.dart'
     as messages_feature;
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
-
+import '../../logging/application/app_logger.dart';
 // Import the sidebar feature barrel to access cassette widget coordinator and card.
 // The provider (cassetteWidgetCoordinatorProvider) exposes the list of cassette
 // widgets that compose the sidebar. We wrap these in a Column to produce the
@@ -20,6 +19,46 @@ import '../feature_level_providers.dart';
 import './panel_coordinator_provider.dart';
 
 part 'panel_widget_providers.g.dart';
+
+@riverpod
+void reconcileSidebarPanels(Ref ref, SidebarMode mode) {
+  if (mode != SidebarMode.messages) {
+    return;
+  }
+
+  final rack = ref.watch(cassetteRackStateProvider(mode));
+  final latestContactId = ref
+      .read(cassetteRackStateProvider(mode).notifier)
+      .findLatestContactId();
+  final panels = ref.watch(panelsViewStateProvider(mode));
+  final centerStack = panels[WindowPanel.center] ?? const PanelStack.empty();
+  final rightStack = panels[WindowPanel.right] ?? const PanelStack.empty();
+  final centerSpec = centerStack.activePage?.spec;
+  final topMenuChoice = _currentTopChatMenuChoice(rack);
+
+  final shouldClearCenter = !_isCenterSpecCompatibleWithSidebar(
+    topMenuChoice: topMenuChoice,
+    latestContactId: latestContactId,
+    centerSpec: centerSpec,
+  );
+  final shouldClearRight =
+      !rightStack.isEmpty &&
+      (shouldClearCenter || !_supportsRecoveredAttachmentSidebar(centerSpec));
+
+  if (!shouldClearCenter && !shouldClearRight) {
+    return;
+  }
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    final panelsNotifier = ref.read(panelsViewStateProvider(mode).notifier);
+    if (shouldClearRight) {
+      panelsNotifier.clear(panel: WindowPanel.right);
+    }
+    if (shouldClearCenter) {
+      panelsNotifier.clear(panel: WindowPanel.center);
+    }
+  });
+}
 
 /// Whether the center panel is showing content that operates independently
 /// of the sidebar (e.g. import/migration, workbench).
@@ -43,6 +82,7 @@ bool isSidebarParked(Ref ref, SidebarMode mode) {
 /// Widget provider for center panel
 @riverpod
 Widget centerPanelWidget(Ref ref, SidebarMode mode) {
+  ref.watch(reconcileSidebarPanelsProvider(mode));
   final stack = ref.watch(
     panelsViewStateProvider(mode).select(
       (stacks) => stacks[WindowPanel.center] ?? const PanelStack.empty(),
@@ -179,6 +219,55 @@ bool _shouldShowRecoveredContextFor(TopChatMenuChoice? choice) {
     case null:
       return false;
   }
+}
+
+bool _isCenterSpecCompatibleWithSidebar({
+  required TopChatMenuChoice? topMenuChoice,
+  required int? latestContactId,
+  required ViewSpec? centerSpec,
+}) {
+  if (centerSpec == null) {
+    return true;
+  }
+
+  return centerSpec.when(
+    messages: (messagesSpec) {
+      return messagesSpec.when(
+        forChat: (_) => true,
+        forContact: (contactId, _, __) {
+          return topMenuChoice == TopChatMenuChoice.contacts &&
+              latestContactId != null &&
+              latestContactId == contactId;
+        },
+        globalTimeline: (_) {
+          return topMenuChoice == TopChatMenuChoice.searchAllMessages;
+        },
+        forHandle: (_) {
+          return topMenuChoice == TopChatMenuChoice.strayHandles;
+        },
+        recoveredUnlinkedMessages: (contactId, _) {
+          if (topMenuChoice == TopChatMenuChoice.recoveredUnlinkedMessages) {
+            return true;
+          }
+
+          return topMenuChoice == TopChatMenuChoice.contacts &&
+              latestContactId != null &&
+              contactId == latestContactId;
+        },
+        recoveredNoHandleFromMeMessages: (_) {
+          return topMenuChoice ==
+              TopChatMenuChoice.recoveredNoHandleFromMeMessages;
+        },
+        recoveredAttachmentViewer: (_, __) => true,
+        handleLens: (_) {
+          return topMenuChoice == TopChatMenuChoice.strayHandles;
+        },
+        forChatInDateRange: (_, __, ___) => true,
+      );
+    },
+    import: (_) => true,
+    onboarding: (_) => true,
+  );
 }
 
 /// Widget provider for left panel (sidebar).

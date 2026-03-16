@@ -140,6 +140,24 @@ When `replaceAtIndexAndCascade()` is called, the rack state provider:
 2. Calls `childSpec()` repeatedly to build the cascade chain
 3. Replaces everything below the index with the new chain
 
+### Important: Cascade Does Not Automatically Reconcile Panels
+
+The cassette rack owns sidebar intent, but it does not by itself guarantee that
+center/right panel content is still valid after a cascade change.
+
+Therefore:
+
+- Any cassette transition that changes the meaning of the sidebar flow must be
+  evaluated against existing panel content.
+- If previously shown panel content no longer matches the active cassette path,
+  the panel content must be cleared or replaced.
+- Do not assume that replacing the cassette rack is enough to remove stale
+  center-panel content. Widget-level effects may reassert an older spec unless
+  they are guarded.
+
+This is especially important for cassettes that auto-open panel content on
+mount, such as heatmaps or recovered-message navigators.
+
 ---
 
 ## 4. CassetteWidgetCoordinator — App-Level Dispatch
@@ -191,6 +209,19 @@ import '.../features/handles/feature_level_providers.dart' as handles_feature;
 This prevents provider name collisions and enforces the barrel-only import rule.
 
 **Location:** `lib/essentials/sidebar/application/cassette_widget_coordinator_provider.dart`
+
+### Widget Builder Side Effects
+
+Some cassette widget builders intentionally trigger panel navigation in response
+to becoming active. This is allowed, but only under the following constraints:
+
+- The side effect must dispatch through `panelsViewStateProvider(...)` using a
+  `ViewSpec`; no direct panel manipulation is allowed.
+- The widget must verify that its owning cassette context is still current
+  before dispatching. If the user has already switched the top menu or the rack
+  has cascaded elsewhere, the side effect must abort.
+- Essentials-level reconciliation should still exist as a fail-safe. Guards in
+  widgets reduce races; they do not replace architecture-level coherence.
 
 ---
 

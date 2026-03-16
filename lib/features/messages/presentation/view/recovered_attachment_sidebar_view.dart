@@ -139,7 +139,7 @@ class _RecoveredAttachmentPreview extends ConsumerWidget {
           File(resolvedPath!),
           fit: BoxFit.contain,
           errorBuilder: (_, __, ___) {
-            return _RecoveredAttachmentPlaceholder(
+            return const _RecoveredAttachmentPlaceholder(
               title: 'Image preview unavailable',
               body:
                   'The recovered image file exists in metadata, but could not be rendered here.',

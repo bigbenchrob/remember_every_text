@@ -9,6 +9,9 @@ import '../../../../../essentials/navigation/domain/entities/view_spec.dart';
 import '../../../../../essentials/navigation/domain/navigation_constants.dart';
 import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../../essentials/navigation/feature_level_providers.dart';
+import '../../../../../essentials/sidebar/application/cassette_rack_state_provider.dart';
+import '../../../../../essentials/sidebar/domain/entities/cassette_spec.dart';
+import '../../../../sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../domain/spec_classes/messages_view_spec.dart';
 
 /// Sidebar cassette content for the no-handle/from-me recovered bucket.
@@ -26,6 +29,12 @@ class RecoveredNoHandleFromMeNavigatorWidget extends HookConsumerWidget {
 
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        final rack = ref.read(cassetteRackStateProvider(SidebarMode.messages));
+        final topChoice = _currentTopMenuChoice(rack);
+        if (topChoice != TopChatMenuChoice.recoveredNoHandleFromMeMessages) {
+          return;
+        }
+
         ref
             .read(panelsViewStateProvider(SidebarMode.messages).notifier)
             .show(
@@ -67,4 +76,21 @@ class RecoveredNoHandleFromMeNavigatorWidget extends HookConsumerWidget {
       ],
     );
   }
+}
+
+TopChatMenuChoice? _currentTopMenuChoice(CassetteRack rack) {
+  if (rack.cassettes.isEmpty) {
+    return null;
+  }
+
+  return rack.cassettes.first.mapOrNull(
+    sidebarUtility: (cassette) {
+      final selectedChoice = cassette.spec.selectedChoice;
+      if (selectedChoice is TopChatMenuChoice) {
+        return selectedChoice;
+      }
+
+      return null;
+    },
+  );
 }

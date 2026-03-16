@@ -5,9 +5,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../essentials/db/feature_level_providers.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/working/working_database.dart';
 import '../../../../essentials/db/shared/handle_identifier_utils.dart';
-import '../../domain/entities/attachment_info.dart';
 import '../../../contacts/infrastructure/repositories/handles_for_contact_provider.dart';
 import '../../../contacts/infrastructure/repositories/participant_merge_utils.dart';
+import '../../domain/entities/attachment_info.dart';
 
 part 'recovered_unlinked_messages_provider.g.dart';
 

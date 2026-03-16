@@ -6,7 +6,8 @@ part of 'panel_widget_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$isSidebarParkedHash() => r'3e78e9ac13a4c1f0fc2151cde86b0a68f04f3516';
+String _$reconcileSidebarPanelsHash() =>
+    r'75763dfb3d560e9d68a9ebd3d5f0efe171c34b78';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -28,6 +29,126 @@ class _SystemHash {
     return 0x1fffffff & (hash + ((0x00003fff & hash) << 15));
   }
 }
+
+/// See also [reconcileSidebarPanels].
+@ProviderFor(reconcileSidebarPanels)
+const reconcileSidebarPanelsProvider = ReconcileSidebarPanelsFamily();
+
+/// See also [reconcileSidebarPanels].
+class ReconcileSidebarPanelsFamily extends Family<void> {
+  /// See also [reconcileSidebarPanels].
+  const ReconcileSidebarPanelsFamily();
+
+  /// See also [reconcileSidebarPanels].
+  ReconcileSidebarPanelsProvider call(SidebarMode mode) {
+    return ReconcileSidebarPanelsProvider(mode);
+  }
+
+  @override
+  ReconcileSidebarPanelsProvider getProviderOverride(
+    covariant ReconcileSidebarPanelsProvider provider,
+  ) {
+    return call(provider.mode);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'reconcileSidebarPanelsProvider';
+}
+
+/// See also [reconcileSidebarPanels].
+class ReconcileSidebarPanelsProvider extends AutoDisposeProvider<void> {
+  /// See also [reconcileSidebarPanels].
+  ReconcileSidebarPanelsProvider(SidebarMode mode)
+    : this._internal(
+        (ref) => reconcileSidebarPanels(ref as ReconcileSidebarPanelsRef, mode),
+        from: reconcileSidebarPanelsProvider,
+        name: r'reconcileSidebarPanelsProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$reconcileSidebarPanelsHash,
+        dependencies: ReconcileSidebarPanelsFamily._dependencies,
+        allTransitiveDependencies:
+            ReconcileSidebarPanelsFamily._allTransitiveDependencies,
+        mode: mode,
+      );
+
+  ReconcileSidebarPanelsProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.mode,
+  }) : super.internal();
+
+  final SidebarMode mode;
+
+  @override
+  Override overrideWith(
+    void Function(ReconcileSidebarPanelsRef provider) create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: ReconcileSidebarPanelsProvider._internal(
+        (ref) => create(ref as ReconcileSidebarPanelsRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        mode: mode,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeProviderElement<void> createElement() {
+    return _ReconcileSidebarPanelsProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ReconcileSidebarPanelsProvider && other.mode == mode;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, mode.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin ReconcileSidebarPanelsRef on AutoDisposeProviderRef<void> {
+  /// The parameter `mode` of this provider.
+  SidebarMode get mode;
+}
+
+class _ReconcileSidebarPanelsProviderElement
+    extends AutoDisposeProviderElement<void>
+    with ReconcileSidebarPanelsRef {
+  _ReconcileSidebarPanelsProviderElement(super.provider);
+
+  @override
+  SidebarMode get mode => (origin as ReconcileSidebarPanelsProvider).mode;
+}
+
+String _$isSidebarParkedHash() => r'3e78e9ac13a4c1f0fc2151cde86b0a68f04f3516';
 
 /// Whether the center panel is showing content that operates independently
 /// of the sidebar (e.g. import/migration, workbench).
@@ -180,7 +301,7 @@ class _IsSidebarParkedProviderElement extends AutoDisposeProviderElement<bool>
   SidebarMode get mode => (origin as IsSidebarParkedProvider).mode;
 }
 
-String _$centerPanelWidgetHash() => r'c7c17f1a5aa31d76ec4c64ee0b875cd1265dc180';
+String _$centerPanelWidgetHash() => r'cc418e5ac3e6dfdf48fff5e47b7b80c95e8438bb';
 
 /// Widget provider for center panel
 ///
@@ -550,7 +671,7 @@ class _ShouldShowEndSidebarProviderElement
 }
 
 String _$contextualSidebarWidgetHash() =>
-    r'e6e8d6c23eea8ede21582ed25b3e4971b5bd4f9f';
+    r'cb57f5acfcccefee1dd0af3d563a94005558237f';
 
 /// See also [contextualSidebarWidget].
 @ProviderFor(contextualSidebarWidget)

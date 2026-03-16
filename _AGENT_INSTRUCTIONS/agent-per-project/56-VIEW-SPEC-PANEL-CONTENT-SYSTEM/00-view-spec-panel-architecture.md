@@ -105,6 +105,24 @@ ref.read(panelsViewStateProvider(SidebarMode.messages).notifier).show(
 
 **Location:** `lib/essentials/navigation/application/panels_view_state_provider.dart`
 
+### Panel Coherence Requirement
+
+`PanelsViewState` is not the sole owner of navigation intent. In messages mode,
+the active sidebar cassette flow and the active center/right panel specs must be
+kept coherent together.
+
+The architecture requirement is:
+
+- A panel spec is valid only while it remains compatible with the current
+  cassette context.
+- If cassette state changes and the active panel spec is no longer compatible,
+  a navigation-layer reconciliation step must clear or replace that panel.
+- Right-panel content must be considered dependent on the center-panel spec
+  unless a system explicitly declares otherwise.
+
+This protects the app from stale content that survives sidebar transitions due
+to asynchronous rebuild order or widget-level post-frame navigation effects.
+
 ---
 
 ## 4. PanelCoordinator — App-Level Dispatch
@@ -179,6 +197,26 @@ sidebar: ref.watch(leftPanelWidgetProvider(mode)),
 ```
 
 **Location:** `lib/essentials/navigation/application/panel_widget_providers.dart`
+
+### Reconciliation Backstop
+
+`panel_widget_providers.dart` is the correct place for a last-line coherence
+check because it can observe both:
+
+- the current cassette rack / sidebar context
+- the current center and right panel stacks
+
+Use this layer to enforce compatibility rules and clear stale panel content when
+necessary. This should be treated as a defensive architectural backstop, not as
+an optional convenience.
+
+Guideline:
+
+- Prefer expressing intent through cassette transitions and `ViewSpec`
+  navigation.
+- But always assume widget timing can race during rebuilds.
+- Therefore, keep a reconciliation rule in navigation that removes panel content
+  which no longer belongs to the active sidebar flow.
 
 ---
 

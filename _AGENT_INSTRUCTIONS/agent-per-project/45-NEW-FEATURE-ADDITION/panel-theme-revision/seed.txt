@@ -1,0 +1,288 @@
+MessageLens UI Surface Model
+
+Guidelines for Calm, Structured Panel Design
+
+Overview
+
+Recent UI work on the Recovered Deleted Messages view revealed a layout pattern that significantly improves visual calmness and clarity. The improvement comes from reducing the number of competing visual surfaces within the main window.
+
+The design principle is simple:
+
+Use two surfaces only.
+	1.	Navigation surface (sidebar)
+	2.	Content surface (center panel)
+
+All structure inside the center panel should be expressed through hierarchy, not through additional background layers.
+
+This document describes the rule, why it works, how to apply it across MessageLens, and one additional layout technique that can further refine the UI.
+
+⸻
+
+1. The Two-Surface Rule
+
+The window should visually resolve into only two major surfaces.
+
+Navigation Surface
+Used for global navigation and cassette selection.
+
+Content Surface
+Used for all panel content including header, controls, and lists.
+
+Conceptual layout:
+
+Navigation Surface | Content Surface
+
+Everything inside the content surface should appear as one continuous material.
+
+⸻
+
+2. What Previously Caused Visual Noise
+
+The earlier contact message view effectively created three surfaces:
+
+Navigation surface
+Panel header surface
+List background surface
+
+This leads to unnecessary visual parsing by the eye.
+
+Navigation
+Panel chrome
+Content surface
+Card elements
+
+The user must visually distinguish four layers rather than two.
+
+⸻
+
+3. The Improved Layout Pattern
+
+The recovered-messages view implicitly simplified the structure to:
+
+Navigation Surface | Panel Surface
+
+Within the panel surface:
+
+Title
+Controls
+Cards / list items
+
+The hierarchy is communicated using:
+
+Typography
+Spacing
+Grouping
+Cards
+
+—not new backgrounds.
+
+This greatly reduces cognitive load and produces the calm appearance you observed.
+
+⸻
+
+4. Why the Header and List Can Share a Background
+
+Even when the header and list share the same background, the structure remains clear because hierarchy is communicated through three signals.
+
+Typography
+
+Large title
+Secondary controls
+Body content
+
+Spacing
+
+Example spacing tokens:
+
+panelHeaderToControlsGap = 12
+panelControlsToContentGap = 16
+
+Spacing becomes the separator.
+
+Cards
+
+List items sit inside card containers which visually separate them from the panel surface.
+
+Panel Surface
+Title
+Controls
+Cards
+
+This maintains strong structure while keeping the panel visually unified.
+
+⸻
+
+5. Apple Uses This Pattern Widely
+
+Many macOS apps treat the panel header and list as a single surface.
+
+Examples:
+
+Mail
+Notes
+Reminders
+Things
+Craft
+
+The rule used in these interfaces:
+
+A panel should appear as one continuous surface unless there is a strong reason to subdivide it.
+
+Message lists are typically not subdivided.
+
+⸻
+
+6. Recommendation for MessageLens
+
+Adopt the following rule for center panels:
+
+Center panels use a single background surface.
+Headers do not introduce a separate background.
+Lists inherit the panel surface color.
+
+The overall window structure becomes:
+
+Sidebar = navigation surface
+Center panel = content surface
+
+Hierarchy inside the panel is expressed using:
+
+spacing
+typography
+cards
+dividers
+shadows
+
+—not additional backgrounds.
+
+⸻
+
+7. Suggested Theme Token Simplification
+
+If the theme currently defines separate surfaces such as:
+
+panelHeaderBackground
+panelListBackground
+
+These should be collapsed.
+
+Suggested tokens:
+
+panelSurface
+panelCard
+panelSeparator
+
+Definitions:
+
+panelSurface — base background of center panel
+panelCard — background for list/message cards
+panelSeparator — subtle divider lines
+
+Structure then becomes:
+
+Panel surface
+Cards float above panel surface
+
+This reduces visual complexity and improves consistency.
+
+⸻
+
+8. When Separate Surfaces Are Still Appropriate
+
+Separate backgrounds are still appropriate in some cases.
+
+Examples:
+
+Settings screens using grouped tables
+Inspector panels with multiple functional sections
+Complex dashboards with distinct content zones
+
+However, message lists and activity streams generally benefit from a unified panel surface.
+
+⸻
+
+9. Subtle Improvement: Slightly Lift the Cards
+
+A small refinement can improve depth perception.
+
+Make cards slightly lighter than the panel surface.
+
+Example concept:
+
+panelSurface = neutral base layer
+panelCard = +2% luminance
+
+This makes cards appear to float gently above the surface without needing borders.
+
+Apple frequently uses this technique.
+
+⸻
+
+10. The “Floating List” Technique (One Simple Trick)
+
+A subtle layout trick used by apps like Notes and Mail can make the interface feel even calmer.
+
+Instead of the list extending edge-to-edge across the panel, the list becomes a centered floating column.
+
+Panel Surface
+Floating List Column
+Card
+Card
+Card
+
+Characteristics of this pattern:
+
+• The panel surface extends across the entire width
+• The message list occupies a centered column
+• Cards sit inside that column
+• Side gutters remain empty panel surface
+
+Benefits:
+
+Reduces visual density
+Improves readability of long lists
+Creates visual breathing room
+Makes the interface feel lighter and more composed
+
+This works particularly well for message streams because it mirrors the visual rhythm of conversation bubbles.
+
+For MessageLens, this could mean:
+
+Panel Surface
+Centered message list column
+Message cards
+
+The panel remains a unified surface while the content floats inside it.
+
+⸻
+
+11. Final Design Principle
+
+MessageLens panels should follow this structure:
+
+Navigation Surface (sidebar)
+
+Content Surface (panel)
+
+Inside the content surface:
+
+Title
+Controls
+Floating list or cards
+
+Hierarchy is communicated through spacing, typography, and grouping rather than additional surfaces.
+
+⸻
+
+Summary
+
+The recovered-messages screen represents a stronger and calmer design pattern.
+
+It succeeds because it:
+
+reduces the number of surfaces
+treats the panel as a unified material
+uses hierarchy instead of backgrounds
+lets cards define structure
+
+This pattern should become the default design model for center panels in MessageLens.
