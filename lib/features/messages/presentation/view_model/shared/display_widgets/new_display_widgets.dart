@@ -143,7 +143,7 @@ BorderRadius _textBorderRadiusForRole(MessageClusterRole role) {
       bottomLeft: flat,
       bottomRight: flat,
     ),
-    MessageClusterRole.middle => const BorderRadius.all(flat),
+    MessageClusterRole.middle => BorderRadius.zero,
     MessageClusterRole.last => const BorderRadius.only(
       topLeft: flat,
       topRight: flat,

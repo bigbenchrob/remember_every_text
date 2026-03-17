@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../view_model/shared/display_widgets/new_display_widgets.dart';
 import '../view_model/shared/hydration/messages_for_handle_provider.dart';
-import 'url_preview_widget.dart';
 import 'message_card.dart';
+import 'url_preview_widget.dart';
 
 class MessageLinkPreviewCard extends StatelessWidget {
   const MessageLinkPreviewCard({

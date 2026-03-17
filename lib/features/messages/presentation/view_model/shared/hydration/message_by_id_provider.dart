@@ -71,6 +71,7 @@ Future<MessageListItem> messageById(
 
   return MessageListItem(
     id: message.id,
+    chatId: message.chatId,
     guid: message.guid,
     isFromMe: message.isFromMe,
     senderName: senderNameForMessage(

@@ -11,6 +11,10 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
+import '../../../../essentials/navigation/domain/entities/view_spec.dart';
+import '../../../../essentials/navigation/domain/navigation_constants.dart';
+import '../../../../essentials/navigation/domain/sidebar_mode.dart';
+import '../../../../essentials/navigation/feature_level_providers.dart';
 
 import '../../../contacts/infrastructure/repositories/contact_profile_provider.dart';
 import '../../domain/value_objects/message_timeline_scope.dart';
@@ -853,9 +857,7 @@ MessageGroupingStyle _groupingStyleFor({
 }) {
   if ((scope is! ContactTimelineScope && scope is! GlobalTimelineScope) ||
       previous == null) {
-    final nextContinues = next == null
-        ? false
-        : _messagesCanCluster(current, next);
+    final nextContinues = next != null && _messagesCanCluster(current, next);
     if (!nextContinues) {
       return MessageGroupingStyle.standalone;
     }
@@ -870,9 +872,7 @@ MessageGroupingStyle _groupingStyleFor({
   }
 
   final continuesFromPrevious = _messagesCanCluster(previous, current);
-  final continuesToNext = next == null
-      ? false
-      : _messagesCanCluster(current, next);
+  final continuesToNext = next != null && _messagesCanCluster(current, next);
 
   if (!continuesFromPrevious && !continuesToNext) {
     return MessageGroupingStyle.standalone;
@@ -1058,7 +1058,7 @@ class _SearchResultRow extends ConsumerWidget {
         if (item == null) {
           return const _SkeletonRow();
         }
-        return MessageCard(
+        final card = MessageCard(
           message: item,
           layout: switch (scope) {
             ContactTimelineScope() => MessageCardLayout.analysis,
@@ -1066,11 +1066,73 @@ class _SearchResultRow extends ConsumerWidget {
             ChatTimelineScope() => MessageCardLayout.bubble,
           },
         );
+
+        if (scope is! GlobalTimelineScope) {
+          return card;
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: card),
+            const SizedBox(width: 8),
+            _SearchResultContextButton(item: item),
+          ],
+        );
       },
       loading: () => const _SkeletonRow(),
       error: (error, _) => Padding(
         padding: const EdgeInsets.all(16),
         child: Text('Message $messageId failed: $error'),
+      ),
+    );
+  }
+}
+
+class _SearchResultContextButton extends ConsumerWidget {
+  const _SearchResultContextButton({required this.item});
+
+  final MessageListItem item;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+
+    Future<void> openContext() async {
+      ref
+          .read(panelsViewStateProvider(SidebarMode.messages).notifier)
+          .show(
+            panel: WindowPanel.right,
+            spec: ViewSpec.messages(
+              MessagesSpec.searchResultContext(
+                messageId: item.id,
+                chatId: item.chatId,
+              ),
+            ),
+          );
+    }
+
+    return MacosTooltip(
+      message: 'Show message context',
+      child: Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: colors.surfaces.surface,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: colors.lines.borderSubtle),
+          ),
+          child: IconButton(
+            onPressed: openContext,
+            icon: Icon(
+              CupertinoIcons.search,
+              size: 18,
+              color: colors.content.textSecondary,
+            ),
+            tooltip: 'Show message context',
+          ),
+        ),
       ),
     );
   }
