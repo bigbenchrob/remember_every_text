@@ -4,10 +4,14 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show SelectableText;
 import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
+import '../../../../essentials/navigation/domain/navigation_constants.dart';
+import '../../../../essentials/navigation/domain/sidebar_mode.dart';
+import '../../../../essentials/navigation/feature_level_providers.dart';
 import '../../domain/entities/attachment_info.dart';
 
 class RecoveredAttachmentSidebarView extends ConsumerWidget {
@@ -61,6 +65,12 @@ class RecoveredAttachmentSidebarView extends ConsumerWidget {
     final resolvedPath = attachment.resolvedLocalPath();
     final hasLocalPath = resolvedPath != null && resolvedPath.isNotEmpty;
 
+    Future<void> closeSidebar() async {
+      ref
+          .read(panelsViewStateProvider(SidebarMode.messages).notifier)
+          .clear(panel: WindowPanel.right);
+    }
+
     return ColoredBox(
       color: colors.surfaces.canvas,
       child: Padding(
@@ -68,47 +78,65 @@ class RecoveredAttachmentSidebarView extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Recovered attachment', style: typography.headline),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              _displayName(),
-              style: typography.body.copyWith(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              '${_kindLabel()} from recovered message $messageId',
-              style: typography.caption1.copyWith(
-                color: colors.content.textSecondary,
+            Expanded(
+              child: ListView(
+                children: [
+                  Text('Recovered attachment', style: typography.headline),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    _displayName(),
+                    style: typography.body.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    '${_kindLabel()} from recovered message $messageId',
+                    style: typography.caption1.copyWith(
+                      color: colors.content.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _RecoveredAttachmentPreview(
+                    attachment: attachment,
+                    resolvedPath: resolvedPath,
+                  ),
+                  if (hasLocalPath) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      'Recovered file path',
+                      style: typography.caption.copyWith(
+                        color: colors.content.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    SelectableText(resolvedPath, style: typography.caption1),
+                  ],
+                  if (attachment.mimeType != null &&
+                      attachment.mimeType!.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      'MIME type',
+                      style: typography.caption.copyWith(
+                        color: colors.content.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(attachment.mimeType!, style: typography.caption1),
+                  ],
+                ],
               ),
             ),
             const SizedBox(height: AppSpacing.md),
-            _RecoveredAttachmentPreview(
-              attachment: attachment,
-              resolvedPath: resolvedPath,
+            Align(
+              alignment: Alignment.centerLeft,
+              child: PushButton(
+                controlSize: ControlSize.large,
+                secondary: true,
+                onPressed: closeSidebar,
+                child: const Text('Close sidebar'),
+              ),
             ),
-            if (hasLocalPath) ...[
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                'Recovered file path',
-                style: typography.caption.copyWith(
-                  color: colors.content.textSecondary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              SelectableText(resolvedPath, style: typography.caption1),
-            ],
-            if (attachment.mimeType != null &&
-                attachment.mimeType!.isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                'MIME type',
-                style: typography.caption.copyWith(
-                  color: colors.content.textSecondary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(attachment.mimeType!, style: typography.caption1),
-            ],
           ],
         ),
       ),

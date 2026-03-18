@@ -1,0 +1,114 @@
+CONTEXT ACTION — POSITIONING + ICON UPDATE
+
+GOAL
+Replace the current [context] text button with a properly positioned trailing icon inside the message pill, with no layout shift.
+
+⸻
+
+1. LAYOUT STRUCTURE
+
+Update each message row to use a layered layout:
+	•	Wrap the existing message pill in a Stack
+	•	Keep message content as the base layer
+	•	Add a positioned trailing icon overlay
+
+Required structure (conceptual)
+	•	Parent: message pill container
+	•	Child 1: existing message content (Column / Row)
+	•	Child 2: Positioned trailing action icon
+
+⸻
+
+2. ICON POSITIONING
+
+Place the icon:
+	•	Inside the message pill
+	•	Right-aligned
+	•	Vertically centered relative to the pill
+
+Exact constraints
+	•	right inset: 12px
+	•	vertical alignment: center of pill height
+	•	icon size: 16–18px
+	•	hit target: minimum 24x24px
+
+⸻
+
+3. PREVENT TEXT OVERLAP
+
+Add trailing padding to the message content container:
+	•	increase right padding by 36px
+
+This ensures:
+	•	text never collides with the overlay icon
+	•	no layout shift on hover
+
+⸻
+
+4. VISUAL STATES
+
+Default state
+	•	opacity: 0.35–0.45
+	•	neutral color (onSurfaceVariant / secondary text)
+
+On row hover
+	•	opacity: 1.0
+	•	color: accent (same as links / primary)
+
+On icon hover
+	•	optional:
+	•	subtle circular background (low alpha)
+	•	slight scale (1.0 → 1.05)
+
+⸻
+
+5. ICON SELECTION (REPLACE CURRENT)
+
+Use one of the following (in order of preference):
+
+Preferred (clean + intuitive)
+	•	Icons.short_text (represents text lines / context)
+	•	Icons.segment (stacked lines metaphor)
+	•	Icons.subject
+
+Alternative (more explicit)
+	•	Icons.forum (conversation metaphor)
+	•	Icons.chat_bubble_outline
+
+Avoid
+	•	arrows (too directional)
+	•	info icons (reads as metadata, not action)
+
+⸻
+
+6. INTERACTION
+	•	Entire icon area is clickable
+	•	On tap:
+	•	trigger existing context loading behavior
+	•	set active message ID (for highlight sync)
+
+⸻
+
+7. OPTIONAL (IF EASY)
+
+Show icon only when:
+	•	row is hovered OR
+	•	row is the active context source
+
+Otherwise keep at low opacity (do not fully hide unless trivial to implement cleanly)
+
+⸻
+
+8. NON-NEGOTIABLE CONSTRAINTS
+	•	No layout shift when icon appears
+	•	No change to message text flow
+	•	No per-row horizontal misalignment
+	•	Icon must remain visually attached to its message
+
+⸻
+
+RESULT
+	•	Clean, stable trailing action
+	•	Strong association with message
+	•	Zero visual noise during scanning
+	•	Matches macOS “pro app” interaction patterns

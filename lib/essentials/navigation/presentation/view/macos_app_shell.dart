@@ -14,6 +14,7 @@ import '../../../onboarding/domain/import_spec.dart';
 import '../../../onboarding/domain/onboarding_status.dart';
 import '../../../onboarding/domain/spec_classes/onboarding_view_spec.dart';
 import '../../../onboarding/presentation/onboarding_overlay.dart';
+import '../../../window_state/domain/entities/window_state_entity.dart';
 import '../../../window_state/feature_level_providers.dart';
 import '../../application/panel_widget_providers.dart';
 import '../../application/sidebar_mode_provider.dart';
@@ -35,6 +36,7 @@ class MacosAppShell extends ConsumerStatefulWidget {
 class _MacosAppShellState extends ConsumerState<MacosAppShell> {
   static const double _toolbarHorizontalPadding = 8.0;
   static const double _toolbarVerticalPadding = 4.0;
+  static const double _defaultEndSidebarWidth = 360.0;
   bool _initialized = false;
   Timer? _windowFrameDebounce;
   DateTime _lastFrameSave = DateTime.fromMillisecondsSinceEpoch(0);
@@ -89,7 +91,7 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
       // Throttle: only allow an immediate save if > 1500ms since last save
       if (elapsed > 1500) {
         _lastFrameSave = now;
-        windowSvc.saveCurrentWindowState();
+        windowSvc.saveCurrentWindowState(includeSize: false);
         _pendingTrailingFrameSave = false;
       } else {
         // Schedule a trailing save 1600ms after last immediate save
@@ -100,7 +102,7 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
           if (_pendingTrailingFrameSave) {
             _lastFrameSave = DateTime.now();
             _pendingTrailingFrameSave = false;
-            windowSvc.saveCurrentWindowState();
+            windowSvc.saveCurrentWindowState(includeSize: false);
           }
         });
       }
@@ -116,7 +118,7 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
         MacosWindow(
           endSidebar: Sidebar(
             key: ValueKey<String>('end-sidebar-${activeMode.name}'),
-            startWidth: 360,
+            startWidth: _defaultEndSidebarWidth,
             minWidth: 300,
             maxWidth: 520,
             shownByDefault: false,
@@ -267,6 +269,7 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
             ],
           ),
         ),
+        if (!kReleaseMode) const _WindowTargetMarker(),
         if (showOnboarding) const OnboardingOverlay(),
       ],
     );
@@ -292,9 +295,41 @@ class _EndSidebarSyncObserver extends ConsumerWidget {
       final scope = MacosWindowScope.of(context);
       if (scope.isEndSidebarShown != shouldShow) {
         scope.toggleEndSidebar();
+        unawaited(
+          ref
+              .read(windowStateServiceProvider)
+              .animateEndSidebarWindowWidth(
+                showing: shouldShow,
+                sidebarWidth: _MacosAppShellState._defaultEndSidebarWidth,
+              ),
+        );
       }
     });
 
     return const SizedBox.shrink();
+  }
+}
+
+class _WindowTargetMarker extends StatelessWidget {
+  const _WindowTargetMarker();
+
+  static const double _markerSize = 10.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      left: WindowStateEntity.defaultWindowWidth - _markerSize,
+      top: WindowStateEntity.defaultState().height - _markerSize,
+      child: IgnorePointer(
+        child: Container(
+          width: _markerSize,
+          height: _markerSize,
+          decoration: BoxDecoration(
+            color: const Color(0xFFE5484D),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+      ),
+    );
   }
 }

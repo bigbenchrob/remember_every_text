@@ -1058,26 +1058,17 @@ class _SearchResultRow extends ConsumerWidget {
         if (item == null) {
           return const _SkeletonRow();
         }
-        final card = MessageCard(
+        if (scope is GlobalTimelineScope) {
+          return _GlobalSearchResultCard(item: item);
+        }
+
+        return MessageCard(
           message: item,
           layout: switch (scope) {
             ContactTimelineScope() => MessageCardLayout.analysis,
             GlobalTimelineScope() => MessageCardLayout.analysis,
             ChatTimelineScope() => MessageCardLayout.bubble,
           },
-        );
-
-        if (scope is! GlobalTimelineScope) {
-          return card;
-        }
-
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(child: card),
-            const SizedBox(width: 8),
-            _SearchResultContextButton(item: item),
-          ],
         );
       },
       loading: () => const _SkeletonRow(),
@@ -1089,15 +1080,55 @@ class _SearchResultRow extends ConsumerWidget {
   }
 }
 
-class _SearchResultContextButton extends ConsumerWidget {
-  const _SearchResultContextButton({required this.item});
+class _GlobalSearchResultCard extends HookConsumerWidget {
+  const _GlobalSearchResultCard({required this.item});
 
   final MessageListItem item;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final canShowContextAction =
+        item.text.trim().isNotEmpty && !_isMediaBoundaryMessage(item);
+
+    if (!canShowContextAction) {
+      return MessageCard(message: item, layout: MessageCardLayout.analysis);
+    }
+
+    final isHovered = useState(false);
+
+    return MouseRegion(
+      onEnter: (_) {
+        isHovered.value = true;
+      },
+      onExit: (_) {
+        isHovered.value = false;
+      },
+      child: MessageCard(
+        message: item,
+        layout: MessageCardLayout.analysis,
+        inlineTextAction: _ContextSidebarIconAction(
+          item: item,
+          isRowHovered: isHovered.value,
+        ),
+      ),
+    );
+  }
+}
+
+class _ContextSidebarIconAction extends HookConsumerWidget {
+  const _ContextSidebarIconAction({
+    required this.item,
+    required this.isRowHovered,
+  });
+
+  final MessageListItem item;
+  final bool isRowHovered;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
+    final isHovered = useState(false);
 
     Future<void> openContext() async {
       ref
@@ -1114,23 +1145,44 @@ class _SearchResultContextButton extends ConsumerWidget {
     }
 
     return MacosTooltip(
-      message: 'Show message context',
-      child: Padding(
-        padding: const EdgeInsets.only(top: 12),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: colors.surfaces.surface,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: colors.lines.borderSubtle),
-          ),
-          child: IconButton(
-            onPressed: openContext,
-            icon: Icon(
-              CupertinoIcons.search,
-              size: 18,
-              color: colors.content.textSecondary,
+      message: 'View in timeline',
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) {
+          isHovered.value = true;
+        },
+        onExit: (_) {
+          isHovered.value = false;
+        },
+        child: GestureDetector(
+          onTap: openContext,
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: Center(
+              child: AnimatedScale(
+                duration: const Duration(milliseconds: 150),
+                scale: isHovered.value ? 1.05 : 1,
+                child: Padding(
+                  padding: const EdgeInsets.all(3),
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 150),
+                    opacity: isHovered.value
+                        ? 1
+                        : isRowHovered
+                        ? 0.72
+                        : 0.4,
+                    child: Icon(
+                      Icons.view_timeline_outlined,
+                      size: 18,
+                      color: isHovered.value
+                          ? colors.accents.primary
+                          : colors.content.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
             ),
-            tooltip: 'Show message context',
           ),
         ),
       ),

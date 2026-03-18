@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
+import '../../../../essentials/navigation/domain/navigation_constants.dart';
+import '../../../../essentials/navigation/domain/sidebar_mode.dart';
+import '../../../../essentials/navigation/feature_level_providers.dart';
 import '../../application/view_spec/resolver_tools/search_result_context_provider.dart';
 import '../view_model/shared/hydration/messages_for_handle_provider.dart';
 import '../widgets/message_card.dart';
@@ -36,6 +40,12 @@ class SearchResultContextSidebarView extends ConsumerWidget {
       ),
     );
 
+    Future<void> closeSidebar() async {
+      ref
+          .read(panelsViewStateProvider(SidebarMode.messages).notifier)
+          .clear(panel: WindowPanel.right);
+    }
+
     return ColoredBox(
       color: colors.surfaces.canvas,
       child: contextAsync.when(
@@ -47,11 +57,24 @@ class SearchResultContextSidebarView extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Message context', style: typography.headline),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    'The selected message could not be loaded from chat $chatId.',
-                    style: typography.body,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Message context', style: typography.headline),
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          'The selected message could not be loaded from chat $chatId.',
+                          style: typography.body,
+                        ),
+                      ],
+                    ),
+                  ),
+                  PushButton(
+                    controlSize: ControlSize.large,
+                    secondary: true,
+                    onPressed: closeSidebar,
+                    child: const Text('Close sidebar'),
                   ),
                 ],
               ),
@@ -115,6 +138,13 @@ class SearchResultContextSidebarView extends ConsumerWidget {
                     },
                   ),
                 ),
+                const SizedBox(height: AppSpacing.md),
+                PushButton(
+                  controlSize: ControlSize.large,
+                  secondary: true,
+                  onPressed: closeSidebar,
+                  child: const Text('Close sidebar'),
+                ),
               ],
             ),
           );
@@ -132,9 +162,25 @@ class SearchResultContextSidebarView extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Message context', style: typography.headline),
-              const SizedBox(height: AppSpacing.md),
-              Text('Unable to load context: $error', style: typography.body),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Message context', style: typography.headline),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      'Unable to load context: $error',
+                      style: typography.body,
+                    ),
+                  ],
+                ),
+              ),
+              PushButton(
+                controlSize: ControlSize.large,
+                secondary: true,
+                onPressed: closeSidebar,
+                child: const Text('Close sidebar'),
+              ),
             ],
           ),
         ),

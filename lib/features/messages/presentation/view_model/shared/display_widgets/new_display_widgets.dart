@@ -313,6 +313,7 @@ class TextMessageTile extends ConsumerWidget {
     this.highlight,
     this.layout = MessageLayout.bubble,
     this.grouping = MessageGroupingStyle.standalone,
+    this.inlineTrailingAction,
   });
 
   final bool isMe;
@@ -323,6 +324,7 @@ class TextMessageTile extends ConsumerWidget {
   final String? highlight;
   final MessageLayout layout;
   final MessageGroupingStyle grouping;
+  final Widget? inlineTrailingAction;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -337,37 +339,21 @@ class TextMessageTile extends ConsumerWidget {
             : colors.messageBubble(MessageBubble.receivedBg),
       MessageLayout.fullWidth =>
         isMe
-            ? grouping.softenContinuationChrome
-                  ? Color.lerp(
-                      colors.messagePanels.accentTintSoft,
-                      colors.messagePanels.coolPanelSurface,
-                      0.18,
-                    )!
-                  : colors.messagePanels.accentTintSoft
-            : grouping.softenContinuationChrome
-            ? Color.lerp(
-                colors.messagePanels.receivedSurface,
-                colors.messagePanels.coolPanelSurface,
-                0.22,
-              )!
+            ? colors.messagePanels.accentTintSoft
             : colors.messagePanels.receivedSurface,
     };
     final borderColor = switch (layout) {
       MessageLayout.bubble => null,
       MessageLayout.fullWidth =>
         isMe
-            ? grouping.softenContinuationChrome
-                  ? colors.messagePanels.accentBorderSoft.withValues(
-                      alpha: 0.72,
-                    )
-                  : colors.messagePanels.accentBorderSoft
-            : grouping.softenContinuationChrome
-            ? colors.messagePanels.cardBorder.withValues(alpha: 0.78)
+            ? colors.messagePanels.accentBorderSoft
             : colors.messagePanels.cardBorder,
     };
     final style = TextStyle(
       color: layout == MessageLayout.fullWidth
-          ? colors.content.textPrimary
+          ? grouping.softenContinuationChrome
+                ? colors.content.textPrimary.withValues(alpha: 0.94)
+                : colors.content.textPrimary
           : isMe
           ? colors.messageBubble(MessageBubble.sentText)
           : colors.messageBubble(MessageBubble.receivedText),
@@ -387,6 +373,9 @@ class TextMessageTile extends ConsumerWidget {
       baseStyle: style,
       highlightStyle: highlightStyle,
     );
+    final inlineAction = inlineTrailingAction;
+    final usesOverlayAction =
+        inlineAction != null && !grouping.showSenderHeader;
 
     return MessageShell(
       isMe: isMe,
@@ -397,7 +386,7 @@ class TextMessageTile extends ConsumerWidget {
           horizontal: MsgTheme.bubblePadding.horizontal / 2,
           vertical:
               layout == MessageLayout.fullWidth && grouping.compactTopSpacing
-              ? 8.5
+              ? 4
               : MsgTheme.bubblePadding.vertical / 2,
         ),
         decoration: BoxDecoration(
@@ -411,89 +400,117 @@ class TextMessageTile extends ConsumerWidget {
               ? _textBorderForRole(role: grouping.role, color: borderColor)
               : Border.all(color: borderColor, width: 1),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
-            if (grouping.showSenderHeader) ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: Text.rich(
-                      TextSpan(
-                        children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (grouping.showSenderHeader) ...[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Text.rich(
                           TextSpan(
-                            text: sender,
-                            style: TextStyle(
-                              color: colors.content.textSecondary,
-                              fontSize: 12,
-                              height: 1.2,
-                              fontWeight: FontWeight.w500,
-                            ),
+                            children: [
+                              TextSpan(
+                                text: sender,
+                                style: TextStyle(
+                                  color: colors.content.textSecondary,
+                                  fontSize: 12,
+                                  height: 1.2,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              TextSpan(
+                                text: ' — ',
+                                style: TextStyle(
+                                  color: colors.content.textTertiary,
+                                  fontSize: 12,
+                                  height: 1.2,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                              TextSpan(
+                                text: _formatCompactMessageDateTime(sentAt),
+                                style: TextStyle(
+                                  color: colors.content.textSecondaryQuiet,
+                                  fontSize: 12,
+                                  height: 1.2,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                              if (isDeveloperMode)
+                                TextSpan(
+                                  text:
+                                      ' — ${_formatMessageIdLabel(messageId)}',
+                                  style: TextStyle(
+                                    color: colors.content.textSecondary,
+                                    fontSize: 12,
+                                    height: 1.2,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
+                            ],
                           ),
-                          TextSpan(
-                            text: ' — ',
-                            style: TextStyle(
-                              color: colors.content.textTertiary,
-                              fontSize: 12,
-                              height: 1.2,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                          TextSpan(
-                            text: _formatCompactMessageDateTime(sentAt),
-                            style: TextStyle(
-                              color: colors.content.textSecondaryQuiet,
-                              fontSize: 12,
-                              height: 1.2,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
+                      if (inlineAction != null) ...[
+                        const SizedBox(width: 12),
+                        inlineAction,
+                      ],
+                    ],
                   ),
-                  if (isDeveloperMode) ...[
-                    const SizedBox(width: 12),
-                    Text(
-                      _formatMessageIdLabel(messageId),
-                      textAlign: TextAlign.right,
-                      style: TextStyle(
-                        color: colors.content.textSecondary,
-                        fontSize: 12,
-                        height: 1.2,
-                      ),
-                    ),
-                  ],
+                  const SizedBox(height: 8),
                 ],
-              ),
-              const SizedBox(height: 8),
-            ],
-            if (grouping.showSenderHeader)
-              SelectableText.rich(contentSpan)
-            else
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(child: SelectableText.rich(contentSpan)),
-                  const SizedBox(width: 10),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      _formatClusterContinuationTime(sentAt),
-                      textAlign: TextAlign.right,
-                      style: TextStyle(
-                        color: colors.content.textSecondaryQuiet,
-                        fontSize: 11,
-                        height: 1.1,
-                        fontWeight: FontWeight.w400,
+                if (grouping.showSenderHeader)
+                  _buildMessageBody(
+                    contentSpan: contentSpan,
+                    reserveTrailingActionSpace: false,
+                  )
+                else
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: _buildMessageBody(
+                          contentSpan: contentSpan,
+                          reserveTrailingActionSpace: usesOverlayAction,
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 10),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          _formatClusterContinuationTime(sentAt),
+                          textAlign: TextAlign.right,
+                          style: TextStyle(
+                            color: colors.content.textSecondaryQuiet,
+                            fontSize: 11,
+                            height: 1.1,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+              ],
+            ),
+            if (usesOverlayAction)
+              Positioned(right: 12, top: 8, child: inlineAction),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildMessageBody({
+    required TextSpan contentSpan,
+    required bool reserveTrailingActionSpace,
+  }) {
+    return Padding(
+      padding: EdgeInsets.only(right: reserveTrailingActionSpace ? 44 : 0),
+      child: SelectableText.rich(contentSpan),
     );
   }
 

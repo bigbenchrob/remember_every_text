@@ -16,12 +16,14 @@ class MessageCard extends ConsumerWidget {
     required this.message,
     this.layout = MessageCardLayout.bubble,
     this.grouping = MessageGroupingStyle.standalone,
+    this.inlineTextAction,
     super.key,
   });
 
   final MessageListItem message;
   final MessageCardLayout layout;
   final MessageGroupingStyle grouping;
+  final Widget? inlineTextAction;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -101,6 +103,7 @@ class MessageCard extends ConsumerWidget {
           ? MessageLayout.fullWidth
           : MessageLayout.bubble,
       grouping: grouping,
+      inlineTrailingAction: inlineTextAction,
     );
   }
 
