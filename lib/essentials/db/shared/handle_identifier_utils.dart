@@ -138,11 +138,11 @@ String formatPhoneNumberForDisplay(String? rawIdentifier) {
   }
 
   // Fallback: just add spacing every 3-4 digits for readability
-  return _addGenericSpacing(digitsOnly, hasPlus);
+  return _addGenericSpacing(digitsOnly, hasPlus: hasPlus);
 }
 
 /// Add generic spacing to long phone numbers for readability
-String _addGenericSpacing(String digitsOnly, bool hasPlus) {
+String _addGenericSpacing(String digitsOnly, {required bool hasPlus}) {
   final prefix = hasPlus ? '+' : '';
   final buffer = StringBuffer(prefix);
 

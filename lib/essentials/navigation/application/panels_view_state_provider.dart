@@ -126,6 +126,9 @@ class PanelsViewState extends _$PanelsViewState {
     if (specString.contains('recoveredAttachmentViewer')) {
       return 'Recovered Attachment';
     }
+    if (specString.contains('searchResultContext')) {
+      return 'Message Context';
+    }
 
     return spec.map(
       messages: (_) => 'Messages',

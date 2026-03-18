@@ -1,3 +1,8 @@
+import 'dart:math' as math;
+import 'dart:ui' show lerpDouble;
+
+import 'package:flutter/animation.dart';
+
 import '../domain/entities/window_state_entity.dart';
 import '../domain/ports/window_manager_port.dart';
 import '../domain/ports/window_storage_port.dart';
@@ -9,12 +14,20 @@ class WindowStateService {
   WindowStateEntity? _cachedState;
 
   static const double _shrinkRatioThreshold = 0.75;
-  static const double _autoShrinkWidthThreshold = 520.0;
-  static const double _autoShrinkHeightThreshold = 420.0;
   static const double _minWidth = 900.0;
   static const double _minHeight = 720.0;
   static const double _fallbackMinWidth = 900.0;
   static const double _fallbackMinHeight = 720.0;
+  static const Duration _endSidebarResizeDuration = Duration(milliseconds: 220);
+  static const int _endSidebarResizeSteps = 10;
+  static const double _screenChangeTolerance = 12.0;
+  static const int _screenChangeReconcileAttempts = 4;
+  static const Duration _screenChangeReconcileDelay = Duration(
+    milliseconds: 140,
+  );
+
+  double? _baseWindowWidthBeforeEndSidebar;
+  bool _isEndSidebarExpanded = false;
 
   WindowStateService({
     required WindowStoragePort storage,
@@ -26,10 +39,16 @@ class WindowStateService {
   Future<WindowStateEntity> loadWindowState() async {
     try {
       final state = await _storage.loadWindowState();
-      _cachedState = state ?? WindowStateEntity.defaultState();
+      _cachedState = _normalizeLoadedState(
+        state ?? WindowStateEntity.defaultState(),
+      );
+      _baseWindowWidthBeforeEndSidebar = _cachedState!.width;
+      _isEndSidebarExpanded = false;
       return _cachedState!;
     } catch (e) {
-      _cachedState = WindowStateEntity.defaultState();
+      _cachedState = _normalizeLoadedState(WindowStateEntity.defaultState());
+      _baseWindowWidthBeforeEndSidebar = _cachedState!.width;
+      _isEndSidebarExpanded = false;
       return _cachedState!;
     }
   }
@@ -39,6 +58,9 @@ class WindowStateService {
     try {
       await _storage.saveWindowState(state);
       _cachedState = state;
+      if (!_isEndSidebarExpanded) {
+        _baseWindowWidthBeforeEndSidebar = state.width;
+      }
     } catch (e) {
       // Silently fail - window state is not critical
     }
@@ -89,19 +111,28 @@ class WindowStateService {
   }
 
   /// Save current window state - convenience method for main.dart
-  Future<void> saveCurrentWindowState() async {
+  Future<void> saveCurrentWindowState({bool includeSize = true}) async {
     try {
-      // Load existing state to preserve sidebar widths
-      final existingState = await loadWindowState();
+      final existingState = _cachedState ?? await loadWindowState();
 
       // Get current window dimensions
       final frame = await _windowManager.getWindowFrame();
       final isMinimized = await _windowManager.isMinimized();
 
+      final persistedWidth = includeSize
+          ? _persistedWindowWidth(
+              actualWidth: frame['width'] ?? existingState.width,
+              fallbackWidth: existingState.width,
+            )
+          : existingState.width;
+      final persistedHeight = includeSize
+          ? (frame['height'] ?? existingState.height)
+          : existingState.height;
+
       // Create new state preserving sidebar widths from existing state
       final currentState = WindowStateEntity(
-        width: frame['width'] ?? existingState.width,
-        height: frame['height'] ?? existingState.height,
+        width: persistedWidth,
+        height: persistedHeight,
         x: frame['x'] ?? existingState.x,
         y: frame['y'] ?? existingState.y,
         isMinimized: isMinimized,
@@ -109,16 +140,14 @@ class WindowStateService {
             existingState.sidebarWidth, // Preserve existing sidebar width
       );
 
-      final previousState = _cachedState;
+      final previousState = existingState;
       final widthShrankUnexpectedly =
-          previousState != null &&
-          previousState.width > _autoShrinkWidthThreshold &&
-          currentState.width <= _autoShrinkWidthThreshold &&
+          includeSize &&
+          currentState.width < previousState.width &&
           currentState.width < previousState.width * _shrinkRatioThreshold;
       final heightShrankUnexpectedly =
-          previousState != null &&
-          previousState.height > _autoShrinkHeightThreshold &&
-          currentState.height <= _autoShrinkHeightThreshold &&
+          includeSize &&
+          currentState.height < previousState.height &&
           currentState.height < previousState.height * _shrinkRatioThreshold;
 
       if (widthShrankUnexpectedly || heightShrankUnexpectedly) {
@@ -151,19 +180,18 @@ class WindowStateService {
       final currentWidth = frame['width'] ?? savedState.width;
       final currentHeight = frame['height'] ?? savedState.height;
 
-      final widthShrank =
-          savedState.width > _autoShrinkWidthThreshold &&
-          currentWidth < savedState.width * _shrinkRatioThreshold;
-      final heightShrank =
-          savedState.height > _autoShrinkHeightThreshold &&
-          currentHeight < savedState.height * _shrinkRatioThreshold;
+      final widthChanged =
+          (currentWidth - savedState.width).abs() > _screenChangeTolerance;
+      final heightChanged =
+          (currentHeight - savedState.height).abs() > _screenChangeTolerance;
 
-      if (!widthShrank && !heightShrank) {
+      if (!widthChanged && !heightChanged) {
         return;
       }
 
-      final x = frame['x'] ?? savedState.x;
-      final y = frame['y'] ?? savedState.y;
+      var latestFrame = frame;
+      final targetX = frame['x'] ?? savedState.x;
+      final targetY = frame['y'] ?? savedState.y;
 
       final minWidth = savedState.width > _fallbackMinWidth
           ? savedState.width
@@ -174,41 +202,49 @@ class WindowStateService {
 
       await _windowManager.setWindowMinSize(width: minWidth, height: minHeight);
 
-      await Future<void>.delayed(const Duration(milliseconds: 32));
+      for (
+        var attempt = 0;
+        attempt < _screenChangeReconcileAttempts;
+        attempt++
+      ) {
+        await Future<void>.delayed(
+          attempt == 0
+              ? const Duration(milliseconds: 32)
+              : _screenChangeReconcileDelay,
+        );
 
-      await _windowManager.setWindowFrame(
-        x: x,
-        y: y,
-        width: savedState.width,
-        height: savedState.height,
-      );
+        await _windowManager.setWindowFrame(
+          x: targetX,
+          y: targetY,
+          width: savedState.width,
+          height: savedState.height,
+        );
 
-      await Future<void>.delayed(const Duration(milliseconds: 180));
+        await Future<void>.delayed(_screenChangeReconcileDelay);
+        latestFrame = await _windowManager.getWindowFrame();
 
-      final reconciledFrame = await _windowManager.getWindowFrame();
+        final reconciledWidth = latestFrame['width'] ?? savedState.width;
+        final reconciledHeight = latestFrame['height'] ?? savedState.height;
+        final widthSettled =
+            (reconciledWidth - savedState.width).abs() <=
+            _screenChangeTolerance;
+        final heightSettled =
+            (reconciledHeight - savedState.height).abs() <=
+            _screenChangeTolerance;
+
+        if (widthSettled && heightSettled) {
+          break;
+        }
+      }
 
       await _windowManager.setWindowMinSize(
         width: _minWidth,
         height: _minHeight,
       );
 
-      final actualWidth = reconciledFrame['width'] ?? savedState.width;
-      final actualHeight = reconciledFrame['height'] ?? savedState.height;
-      final actualX = reconciledFrame['x'] ?? x;
-      final actualY = reconciledFrame['y'] ?? y;
-
-      final widthStillShrunk =
-          savedState.width > _autoShrinkWidthThreshold &&
-          actualWidth < savedState.width * _shrinkRatioThreshold;
-      final heightStillShrunk =
-          savedState.height > _autoShrinkHeightThreshold &&
-          actualHeight < savedState.height * _shrinkRatioThreshold;
-
       final updatedState = savedState.copyWith(
-        width: widthStillShrunk ? actualWidth : savedState.width,
-        height: heightStillShrunk ? actualHeight : savedState.height,
-        x: actualX,
-        y: actualY,
+        x: latestFrame['x'] ?? targetX,
+        y: latestFrame['y'] ?? targetY,
       );
 
       await saveWindowState(updatedState);
@@ -246,5 +282,113 @@ class WindowStateService {
     } catch (_) {
       // Silently ignore; sizing not critical.
     }
+  }
+
+  Future<void> animateEndSidebarWindowWidth({
+    required bool showing,
+    required double sidebarWidth,
+  }) async {
+    try {
+      final frame = await _windowManager.getWindowFrame();
+      final x = frame['x'] ?? 0.0;
+      final y = frame['y'] ?? 0.0;
+      final height = frame['height'] ?? _minHeight;
+      final currentWidth =
+          frame['width'] ?? WindowStateEntity.defaultWindowWidth;
+
+      if (showing) {
+        if (_isEndSidebarExpanded) {
+          return;
+        }
+
+        _baseWindowWidthBeforeEndSidebar = currentWidth;
+        _isEndSidebarExpanded = true;
+
+        await _animateWindowWidth(
+          x: x,
+          y: y,
+          height: height,
+          startWidth: currentWidth,
+          endWidth: currentWidth + sidebarWidth,
+        );
+        await saveCurrentWindowState();
+        return;
+      }
+
+      if (!_isEndSidebarExpanded && _baseWindowWidthBeforeEndSidebar == null) {
+        return;
+      }
+
+      final targetWidth = math.max(
+        _minWidth,
+        _baseWindowWidthBeforeEndSidebar ?? (currentWidth - sidebarWidth),
+      );
+
+      _baseWindowWidthBeforeEndSidebar = targetWidth;
+      _isEndSidebarExpanded = false;
+
+      await _animateWindowWidth(
+        x: x,
+        y: y,
+        height: height,
+        startWidth: currentWidth,
+        endWidth: targetWidth,
+      );
+      await saveCurrentWindowState();
+    } catch (_) {
+      // Silently ignore animation failures.
+    }
+  }
+
+  double _persistedWindowWidth({
+    required double actualWidth,
+    required double fallbackWidth,
+  }) {
+    if (_isEndSidebarExpanded) {
+      return _baseWindowWidthBeforeEndSidebar ?? fallbackWidth;
+    }
+
+    return actualWidth;
+  }
+
+  Future<void> _animateWindowWidth({
+    required double x,
+    required double y,
+    required double height,
+    required double startWidth,
+    required double endWidth,
+  }) async {
+    if ((startWidth - endWidth).abs() < 1) {
+      return;
+    }
+
+    const curve = Curves.easeInOutCubic;
+
+    for (var step = 1; step <= _endSidebarResizeSteps; step++) {
+      final progress = step / _endSidebarResizeSteps;
+      final curvedProgress = curve.transform(progress);
+      final width =
+          lerpDouble(startWidth, endWidth, curvedProgress) ?? endWidth;
+
+      await _windowManager.setWindowFrame(
+        x: x,
+        y: y,
+        width: width,
+        height: height,
+      );
+
+      if (step < _endSidebarResizeSteps) {
+        await Future<void>.delayed(
+          _endSidebarResizeDuration ~/ _endSidebarResizeSteps,
+        );
+      }
+    }
+  }
+
+  WindowStateEntity _normalizeLoadedState(WindowStateEntity state) {
+    final baseWidth = math.max(_minWidth, state.sidebarWidth * 3);
+    final baseHeight = WindowStateEntity.defaultState().height;
+
+    return state.copyWith(width: baseWidth, height: baseHeight);
   }
 }

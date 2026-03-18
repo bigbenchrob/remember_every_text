@@ -84,6 +84,13 @@ class NavigationLogEntry {
             if (attachment.mimeType != null) 'mimeType': attachment.mimeType,
             if (attachment.localPath != null) 'localPath': attachment.localPath,
           },
+          searchResultContext: (messageId, chatId, beforeCount, afterCount) => {
+            'variant': 'searchResultContext',
+            'messageId': messageId,
+            'chatId': chatId,
+            'beforeCount': beforeCount,
+            'afterCount': afterCount,
+          },
           forChatInDateRange: (chatId, startDate, endDate) => {
             'variant': 'forChatInDateRange',
             'chatId': chatId,

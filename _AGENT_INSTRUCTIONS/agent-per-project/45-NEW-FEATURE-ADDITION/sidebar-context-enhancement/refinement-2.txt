@@ -1,0 +1,87 @@
+Yes — the icon is still wrong.
+
+What I’m seeing is:
+	•	it is visually living in the message body area
+	•	it is still reading like a text-adjacent inline affordance
+	•	it is not anchored to the pill as a whole
+	•	it is also too low and too close to the message text block
+
+The agent likely fixed the width of the wrong subtree. The icon should not be attached to the message text region. It should be attached to the entire pill container.
+
+Here’s a copyable instruction block you can hand off:
+
+CONTEXT ICON POSITIONING — CORRECTION PASS
+
+The current result is still incorrect.
+
+What is wrong:
+	•	The icon is still effectively attached to the message body/content area
+	•	It is appearing low in the card, near the body text
+	•	It is not clearly anchored to the trailing edge of the pill as a whole
+	•	The result still reads like an inline text affordance, not a trailing row action
+
+What I want instead:
+	•	The context icon must be positioned relative to the FULL MESSAGE PILL CONTAINER
+	•	Not relative to the message body container
+	•	Not relative to the text width
+	•	Not inline with or trailing the message text
+
+Correct layout model:
+	•	Treat the whole message pill as the positioning parent
+	•	Inside the pill, there are two visual bands:
+	1.	top metadata band: sender / timestamp on left, message ID on right
+	2.	body band: message text below
+	•	The context icon should live in the TOP-RIGHT ACTION ZONE of the pill, visually associated with the metadata/header area, not with the body text
+
+Required placement:
+	•	Anchor the icon to the pill container itself
+	•	right: 12
+	•	top: 12 to 14
+	•	Do NOT vertically center it in the whole pill
+	•	Align it with the upper content region, near the message ID area
+	•	It should feel like a trailing card action, not a body-level control
+
+Important:
+	•	The icon should NOT sit underneath the message ID if that makes the top-right area feel crowded
+	•	Prefer one of these two layouts:
+
+Preferred:
+	•	message ID remains top-right
+	•	context icon sits directly below it, still in the upper-right zone, with deliberate spacing
+	•	this should look like a small secondary action column
+
+Alternative:
+	•	place the context icon on the same horizontal line as message ID, just to the left of the ID, if spacing allows cleanly
+
+Do NOT:
+	•	place the icon inline with message text
+	•	place the icon centered vertically in the pill
+	•	anchor the icon to the body text stack
+	•	use the text-content container as the Stack parent
+
+Implementation guidance:
+	•	The outermost pill widget must be the Stack parent
+	•	Base layer: existing pill content
+	•	Overlay layer: Positioned context action
+	•	Reserve space only if needed for the top-right overlay zone, not by changing text flow in the message body
+	•	The positioning reference must be the rendered bounds of the full pill decoration/container
+
+Icon choice:
+	•	Replace the current icon with a better “show surrounding conversation” metaphor
+	•	Preferred icons:
+	•	Icons.subject
+	•	Icons.segment
+	•	Icons.view_stream_outlined
+	•	Best first choice: Icons.subject
+	•	Avoid icons that look like generic menu or drag handles
+
+Visual treatment:
+	•	low emphasis by default
+	•	hover increases opacity and tint
+	•	small hit target expansion is fine, but the visible icon should remain discreet
+
+Acceptance test:
+	•	For short messages and long messages, the icon remains in the same fixed upper-right position within the pill
+	•	The icon does not move based on message length
+	•	The icon does not appear visually connected to the body text
+	•	The control reads as a card-level action attached to the message result

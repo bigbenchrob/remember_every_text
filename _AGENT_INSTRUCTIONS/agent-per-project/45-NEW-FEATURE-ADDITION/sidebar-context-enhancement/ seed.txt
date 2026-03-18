@@ -1,0 +1,185 @@
+MESSAGE CONTEXT FEATURE — DESIGN + IMPLEMENTATION CONTRACT
+
+GOAL
+Improve clarity, discoverability, and visual coherence of the “show context” feature in the global message search view.
+
+Primary UX objective:
+Make it immediately clear that a selected message in the main list is the source of the contextual thread shown in the sidebar.
+
+⸻
+
+1. CONTEXT TRIGGER (MAIN MESSAGE LIST)
+
+Current issue
+
+[context] text reads as inline data and creates visual noise.
+
+Required changes
+
+Replace [context] text button with a right-aligned icon action
+	•	Position: fixed at right edge of message row (no per-row variation)
+	•	Icon: “context / thread / expand” metaphor (e.g. stacked lines or arrow)
+	•	Default state:
+	•	low emphasis (opacity ~0.6–0.7)
+	•	neutral or subdued accent color
+	•	Hover state:
+	•	full opacity
+	•	accent color (theme primary)
+	•	tooltip: “Show conversation context”
+
+Optional (preferred if feasible):
+	•	Hide icon by default
+	•	Reveal on row hover
+
+Rules:
+	•	Action must not shift layout or text alignment
+	•	Interaction target must remain stable across all rows
+
+⸻
+
+2. SIDEBAR CONTEXT POSITIONING
+
+Required behavior
+
+When user activates context:
+	•	Sidebar opens (or updates) with contextual messages
+	•	The trigger message is positioned:
+	•	~40–45% from top of scroll viewport (NOT perfectly centered)
+
+Implementation notes
+	•	Compute scroll offset so selected message index is slightly above center
+	•	Animate scroll (no jump)
+	•	Apply fade + slight upward motion to content on load
+
+⸻
+
+3. VISUAL LINK: SOURCE ↔ CONTEXT
+
+This is the most important requirement.
+
+We must clearly indicate that:
+
+“this message in the main list is the same message shown in the sidebar”
+
+⸻
+
+3A. MAIN LIST — “ACTIVE ORIGIN” STATE
+
+When a message has an active context:
+
+Apply a distinct “origin” style (NOT standard selection):
+	•	Background: subtle tinted surface (slightly stronger than default)
+	•	Left accent bar:
+	•	width: 2–3px
+	•	color: theme accent
+	•	Optional:
+	•	very subtle outline or glow
+
+Important:
+	•	Do NOT use full selection styling
+	•	This is a “driver” state, not a selection state
+
+⸻
+
+3B. SIDEBAR — “CONTEXT FOCUS” MESSAGE
+
+The same message in the sidebar should be visually strongest:
+	•	Slight elevation (shadow or surface lift)
+	•	Stronger background tint than surrounding messages
+	•	Same accent color as main list origin state
+
+⸻
+
+3C. SHARED VISUAL LANGUAGE
+
+To link both representations:
+	•	Use identical accent color
+	•	Use consistent highlight tone
+	•	Ensure message bubble structure matches between views
+
+This creates subconscious object identity across panels.
+
+⸻
+
+4. TRANSITION FEEDBACK (CAUSE → EFFECT)
+
+When user triggers context:
+
+Sequence:
+	1.	Main message briefly highlights/pulses
+	2.	Sidebar opens or updates
+	3.	Target message appears already highlighted
+
+Animation guidelines:
+	•	duration: ~150–250ms
+	•	easing: standard ease-out
+	•	no abrupt jumps
+
+Goal:
+Communicate “this action caused that result”
+
+⸻
+
+5. SIDEBAR STRUCTURE IMPROVEMENTS
+
+Add a header section:
+	•	Title: “Conversation context”
+	•	Subtext:
+	•	contact name
+	•	optional timestamp anchor
+
+Example:
+Conversation context
+From: Bob · Oct 13, 2023
+
+⸻
+
+Add footer action:
+	•	“Open full conversation →”
+
+Purpose:
+Allow user to transition from partial context to full thread view
+
+⸻
+
+6. INTERACTION MODEL (MODE vs ONE-OFF)
+
+Context view should behave as a mode:
+	•	While sidebar is open:
+	•	clicking another message updates context in-place
+	•	highlight transitions smoothly between messages
+
+Do NOT:
+	•	close/reopen sidebar per click
+	•	reset scroll abruptly
+
+⸻
+
+7. SIDEBAR VISUAL TUNING
+	•	Message spacing tighter than main list
+	•	Metadata (timestamps, IDs) reduced emphasis
+	•	Slightly differentiated background from main panel
+	•	Maintain consistent alignment with main message bubbles
+
+⸻
+
+8. NON-GOALS / CONSTRAINTS
+	•	Do NOT change message ordering or data model
+	•	Do NOT alter search results behavior
+	•	Feature must remain purely presentational (no impact on hydration or indexing)
+	•	Avoid introducing new layout jitter in message rows
+
+⸻
+
+SUMMARY
+
+We are introducing a clear interaction model:
+	•	Message in main list = origin
+	•	Sidebar = contextual expansion of that origin
+	•	Visual system must reinforce that both are the same entity
+
+Key pillars:
+	•	Low-noise, consistent action affordance
+	•	Stable spatial positioning
+	•	Strong cross-panel visual linkage
+	•	Smooth cause → effect transitions

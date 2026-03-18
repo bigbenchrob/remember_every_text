@@ -175,6 +175,7 @@ bool _supportsRecoveredAttachmentSidebar(ViewSpec? spec) {
   return spec.maybeWhen(
     messages: (messagesSpec) {
       return messagesSpec.maybeWhen(
+        globalTimeline: (_) => true,
         recoveredUnlinkedMessages: (_, __) => true,
         recoveredNoHandleFromMeMessages: (_) => true,
         orElse: () => false,
@@ -259,6 +260,9 @@ bool _isCenterSpecCompatibleWithSidebar({
               TopChatMenuChoice.recoveredNoHandleFromMeMessages;
         },
         recoveredAttachmentViewer: (_, __) => true,
+        searchResultContext: (_, __, ___, ____) {
+          return topMenuChoice == TopChatMenuChoice.searchAllMessages;
+        },
         handleLens: (_) {
           return topMenuChoice == TopChatMenuChoice.strayHandles;
         },

@@ -59,7 +59,7 @@ class DeveloperMode extends _$DeveloperMode {
     });
   }
 
-  Future<void> setDeveloperModeEnabled(bool enabled) async {
+  Future<void> setDeveloperModeEnabled({required bool enabled}) async {
     await setMode(
       enabled ? DeveloperModeValue.developer : DeveloperModeValue.user,
     );

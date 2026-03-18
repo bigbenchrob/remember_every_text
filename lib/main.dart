@@ -42,19 +42,18 @@ class _MyDelegate extends NSWindowDelegate {
   @override
   void windowDidResize() {
     super.windowDidResize();
-    _scheduleWindowStateSave();
   }
 
   @override
   void windowDidMove() {
     super.windowDidMove();
-    _scheduleWindowStateSave();
+    _scheduleWindowStateSave(includeSize: false);
   }
 
   @override
   void windowDidEndLiveResize() {
     super.windowDidEndLiveResize();
-    _scheduleWindowStateSave();
+    _scheduleWindowStateSave(includeSize: true);
   }
 
   @override
@@ -71,18 +70,18 @@ class _MyDelegate extends NSWindowDelegate {
     () async {
       final service = container.read(windowStateServiceProvider);
       await service.reconcileAfterScreenChange();
-      _scheduleWindowStateSave();
+      _scheduleWindowStateSave(includeSize: false);
     }();
   }
 
-  void _scheduleWindowStateSave() {
+  void _scheduleWindowStateSave({required bool includeSize}) {
     final container = _container;
     if (container != null) {
       _pendingSave?.cancel();
       _pendingSave = Timer(const Duration(milliseconds: 240), () {
         container
             .read(windowStateServiceProvider)
-            .saveCurrentWindowState() // Use the method that preserves sidebar widths
+            .saveCurrentWindowState(includeSize: includeSize)
             .catchError((error) {
               // Silently ignore errors in background saves
             });

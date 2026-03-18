@@ -11,6 +11,10 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
+import '../../../../essentials/navigation/domain/entities/view_spec.dart';
+import '../../../../essentials/navigation/domain/navigation_constants.dart';
+import '../../../../essentials/navigation/domain/sidebar_mode.dart';
+import '../../../../essentials/navigation/feature_level_providers.dart';
 
 import '../../../contacts/infrastructure/repositories/contact_profile_provider.dart';
 import '../../domain/value_objects/message_timeline_scope.dart';
@@ -853,9 +857,7 @@ MessageGroupingStyle _groupingStyleFor({
 }) {
   if ((scope is! ContactTimelineScope && scope is! GlobalTimelineScope) ||
       previous == null) {
-    final nextContinues = next == null
-        ? false
-        : _messagesCanCluster(current, next);
+    final nextContinues = next != null && _messagesCanCluster(current, next);
     if (!nextContinues) {
       return MessageGroupingStyle.standalone;
     }
@@ -870,9 +872,7 @@ MessageGroupingStyle _groupingStyleFor({
   }
 
   final continuesFromPrevious = _messagesCanCluster(previous, current);
-  final continuesToNext = next == null
-      ? false
-      : _messagesCanCluster(current, next);
+  final continuesToNext = next != null && _messagesCanCluster(current, next);
 
   if (!continuesFromPrevious && !continuesToNext) {
     return MessageGroupingStyle.standalone;
@@ -1058,6 +1058,10 @@ class _SearchResultRow extends ConsumerWidget {
         if (item == null) {
           return const _SkeletonRow();
         }
+        if (scope is GlobalTimelineScope) {
+          return _GlobalSearchResultCard(item: item);
+        }
+
         return MessageCard(
           message: item,
           layout: switch (scope) {
@@ -1071,6 +1075,116 @@ class _SearchResultRow extends ConsumerWidget {
       error: (error, _) => Padding(
         padding: const EdgeInsets.all(16),
         child: Text('Message $messageId failed: $error'),
+      ),
+    );
+  }
+}
+
+class _GlobalSearchResultCard extends HookConsumerWidget {
+  const _GlobalSearchResultCard({required this.item});
+
+  final MessageListItem item;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final canShowContextAction =
+        item.text.trim().isNotEmpty && !_isMediaBoundaryMessage(item);
+
+    if (!canShowContextAction) {
+      return MessageCard(message: item, layout: MessageCardLayout.analysis);
+    }
+
+    final isHovered = useState(false);
+
+    return MouseRegion(
+      onEnter: (_) {
+        isHovered.value = true;
+      },
+      onExit: (_) {
+        isHovered.value = false;
+      },
+      child: MessageCard(
+        message: item,
+        layout: MessageCardLayout.analysis,
+        inlineTextAction: _ContextSidebarIconAction(
+          item: item,
+          isRowHovered: isHovered.value,
+        ),
+      ),
+    );
+  }
+}
+
+class _ContextSidebarIconAction extends HookConsumerWidget {
+  const _ContextSidebarIconAction({
+    required this.item,
+    required this.isRowHovered,
+  });
+
+  final MessageListItem item;
+  final bool isRowHovered;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final isHovered = useState(false);
+
+    Future<void> openContext() async {
+      ref
+          .read(panelsViewStateProvider(SidebarMode.messages).notifier)
+          .show(
+            panel: WindowPanel.right,
+            spec: ViewSpec.messages(
+              MessagesSpec.searchResultContext(
+                messageId: item.id,
+                chatId: item.chatId,
+              ),
+            ),
+          );
+    }
+
+    return MacosTooltip(
+      message: 'View in timeline',
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) {
+          isHovered.value = true;
+        },
+        onExit: (_) {
+          isHovered.value = false;
+        },
+        child: GestureDetector(
+          onTap: openContext,
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: Center(
+              child: AnimatedScale(
+                duration: const Duration(milliseconds: 150),
+                scale: isHovered.value ? 1.05 : 1,
+                child: Padding(
+                  padding: const EdgeInsets.all(3),
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 150),
+                    opacity: isHovered.value
+                        ? 1
+                        : isRowHovered
+                        ? 0.72
+                        : 0.4,
+                    child: Icon(
+                      Icons.view_timeline_outlined,
+                      size: 18,
+                      color: isHovered.value
+                          ? colors.accents.primary
+                          : colors.content.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

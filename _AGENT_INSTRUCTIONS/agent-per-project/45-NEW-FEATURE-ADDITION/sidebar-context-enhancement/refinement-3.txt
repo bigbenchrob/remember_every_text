@@ -1,0 +1,34 @@
+The context icon placement is now conceptually correct. Keep the icon in the upper-right action zone of the pill. Do not move it back toward the body text.
+
+The remaining issue is overlap with long message content. Fix this by reserving a true trailing exclusion zone in the message body layout.
+
+Required changes:
+	1.	Keep the icon anchored to the full pill container, in the upper-right zone.
+	•	right inset: 12
+	•	top inset: about 12–14
+	•	keep current pill-level overlay model
+	2.	Reserve horizontal space for the icon so body text never renders underneath it.
+	•	Add trailing padding to the body text container
+	•	Start with 44px reserved space on the right
+	•	If needed, increase to 52px
+	•	This padding must always be present, not only on hover, so there is no layout shift
+	3.	Apply the reserved trailing space to all body-content rendering branches
+	•	plain text messages
+	•	multi-line text
+	•	any alternate text tile/widget variant used in search results
+	•	verify that one rendering path is not bypassing the padding
+	4.	Do not reserve that extra space in the metadata row unless needed
+	•	the problem is body-text collision, not metadata collision
+	•	the metadata row already appears fine with the ID moved inline
+	5.	Vertically, keep the icon near the header/metadata zone, but make sure it does not hang so low that it visually intrudes into the first line of body text
+	•	if necessary, move it 2–4px upward rather than downward
+	6.	Use a better icon
+	•	preferred: Icons.subject
+	•	second choice: Icons.segment
+	•	avoid icons that read like drag handles or menus
+
+Acceptance test:
+	•	On short and long messages, the icon stays fixed in the same upper-right position
+	•	No body text can render underneath the icon
+	•	No layout shift on hover
+	•	The icon reads as a pill action, not part of the message content
