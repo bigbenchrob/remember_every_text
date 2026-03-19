@@ -4,7 +4,7 @@ CassetteSpec? resolveContactsInfoChild(ContactsInfoCassetteSpec spec) {
   return spec.when(
     infoCard: (key, chosenContactId) {
       switch (key) {
-        case ContactsInfoKey.favouritesVsRecents:
+        case ContactsInfoKey.pickerContentSources:
           // No contact chosen yet — show the contact picker.
           return const CassetteSpec.contacts(
             ContactsCassetteSpec.contactChooser(),

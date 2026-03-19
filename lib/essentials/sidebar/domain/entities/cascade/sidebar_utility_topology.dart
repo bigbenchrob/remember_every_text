@@ -5,25 +5,25 @@ CassetteSpec? resolveSidebarUtilityChild(SidebarUtilityCassetteSpec spec) {
     topChatMenu: (selectedChoice) {
       switch (selectedChoice) {
         case TopChatMenuChoice.contacts:
-          return sidebarUtilityToContactsInfoCard();
+          return sidebarUtilityChildContactsInfoCard();
 
         case TopChatMenuChoice.strayHandles:
-          return sidebarUtilityToStrayHandlesTypeSwitcher();
+          return sidebarUtilityChildStrayHandlesTypeSwitcher();
 
         case TopChatMenuChoice.recoveredUnlinkedMessages:
-          return sidebarUtilityToRecoveredUnlinkedNavigator();
+          return sidebarUtilityChildRecoveredUnlinkedNavigator();
 
         case TopChatMenuChoice.recoveredNoHandleFromMeMessages:
-          return sidebarUtilityToRecoveredNoHandleFromMeNavigator();
+          return sidebarUtilityChildRecoveredNoHandleFromMeNavigator();
 
         case TopChatMenuChoice.searchAllMessages:
-          return sidebarUtilityToMessagesHeatMapAll();
+          return sidebarUtilityChildMessagesHeatMapAll();
       }
     },
     settingsMenu: (selectedChoice) {
       switch (selectedChoice) {
         case SettingsMenuChoice.actions:
-          return sidebarUtilitySettingsToActionsMenu();
+          return sidebarUtilitySettingsChildActionsMenu();
       }
     },
   );

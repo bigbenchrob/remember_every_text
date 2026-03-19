@@ -35,8 +35,8 @@ abstract class ContactsInfoCassetteSpec with _$ContactsInfoCassetteSpec {
 
 /// Feature-owned keys that identify informational content meaning for Contacts.
 enum ContactsInfoKey {
-  /// Shown before a contact is chosen: explains how contacts are listed.
-  favouritesVsRecents,
+  /// Shown before a contact is chosen: explains which sources populate the picker.
+  pickerContentSources,
 
   /// Shown after a contact is chosen: contextual info about the selection.
   chosenContact,

@@ -1,6 +1,6 @@
 part of '../../cassette_spec.dart';
 
-CassetteSpec contactsToMessagesHeatMap(int contactId) {
+CassetteSpec contactsChildMessagesHeatMap(int contactId) {
   return CassetteSpec.messages(
     MessagesCassetteSpec.heatMap(contactId: contactId),
   );

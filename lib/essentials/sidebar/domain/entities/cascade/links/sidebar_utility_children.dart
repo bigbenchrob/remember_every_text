@@ -1,25 +1,27 @@
 part of '../../cassette_spec.dart';
 
-CassetteSpec sidebarUtilityToContactsInfoCard() {
+CassetteSpec sidebarUtilityChildContactsInfoCard() {
   return const CassetteSpec.contactsInfo(
-    ContactsInfoCassetteSpec.infoCard(key: ContactsInfoKey.favouritesVsRecents),
+    ContactsInfoCassetteSpec.infoCard(
+      key: ContactsInfoKey.pickerContentSources,
+    ),
   );
 }
 
 /// Cascade from "From unfamiliar sources" menu to stray handles type switcher.
-CassetteSpec sidebarUtilityToStrayHandlesTypeSwitcher() {
+CassetteSpec sidebarUtilityChildStrayHandlesTypeSwitcher() {
   return const CassetteSpec.handles(
     HandlesCassetteSpec.strayHandlesTypeSwitcher(),
   );
 }
 
-CassetteSpec sidebarUtilityToMessagesHeatMapAll() {
+CassetteSpec sidebarUtilityChildMessagesHeatMapAll() {
   return const CassetteSpec.messages(
     MessagesCassetteSpec.heatMap(contactId: null),
   );
 }
 
-CassetteSpec sidebarUtilityToRecoveredUnlinkedNavigator() {
+CassetteSpec sidebarUtilityChildRecoveredUnlinkedNavigator() {
   return const CassetteSpec.messagesInfo(
     MessagesInfoCassetteSpec.infoCard(
       key: MessagesInfoKey.recoveredDeletedMessages,
@@ -27,7 +29,7 @@ CassetteSpec sidebarUtilityToRecoveredUnlinkedNavigator() {
   );
 }
 
-CassetteSpec sidebarUtilityToRecoveredNoHandleFromMeNavigator() {
+CassetteSpec sidebarUtilityChildRecoveredNoHandleFromMeNavigator() {
   return const CassetteSpec.messagesInfo(
     MessagesInfoCassetteSpec.infoCard(
       key: MessagesInfoKey.recoveredNoHandleMessages,
@@ -35,7 +37,7 @@ CassetteSpec sidebarUtilityToRecoveredNoHandleFromMeNavigator() {
   );
 }
 
-CassetteSpec sidebarUtilitySettingsToActionsMenu() {
+CassetteSpec sidebarUtilitySettingsChildActionsMenu() {
   return const CassetteSpec.contactsSettings(
     ContactsSettingsSpec.actionsMenu(),
   );

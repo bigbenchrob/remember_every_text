@@ -46,7 +46,7 @@ class ContactsInfoContentResolver extends _$ContactsInfoContentResolver {
     int? chosenContactId,
   }) async {
     switch (key) {
-      case ContactsInfoKey.favouritesVsRecents:
+      case ContactsInfoKey.pickerContentSources:
         return const ContactsInfoContent(
           body:
               'These are contacts from your Address Book as well as those '

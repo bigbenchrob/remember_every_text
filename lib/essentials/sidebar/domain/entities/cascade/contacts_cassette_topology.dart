@@ -24,7 +24,7 @@ CassetteSpec? resolveContactsChild(ContactsCassetteSpec spec) {
     },
     handleFilter: (contactId, _) {
       // Handle filter cascades to messages heat map
-      return contactsToMessagesHeatMap(contactId);
+      return contactsChildMessagesHeatMap(contactId);
     },
   );
 }

@@ -20,8 +20,8 @@ part 'cascade/handles_cassette_topology.dart';
 part 'cascade/handles_info_topology.dart';
 part 'cascade/messages_cassette_topology.dart';
 part 'cascade/messages_info_topology.dart';
-part 'cascade/links/contacts_to_messages.dart';
-part 'cascade/links/sidebar_utility_to_contacts.dart';
+part 'cascade/links/contacts_children.dart';
+part 'cascade/links/sidebar_utility_children.dart';
 
 @freezed
 abstract class CassetteSpec with _$CassetteSpec {

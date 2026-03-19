@@ -45,10 +45,10 @@ class _ContactSelectionControlWidgetState
   void _handleTap() {
     // Replace the info card (which contains this widget) with the
     // picker variant. This restores the cascade:
-    //   infoCard(favouritesVsRecents) → contactChooser (fresh picker)
+    //   infoCard(pickerContentSources) → contactChooser (fresh picker)
     const newInfoSpec = CassetteSpec.contactsInfo(
       ContactsInfoCassetteSpec.infoCard(
-        key: ContactsInfoKey.favouritesVsRecents,
+        key: ContactsInfoKey.pickerContentSources,
       ),
     );
 

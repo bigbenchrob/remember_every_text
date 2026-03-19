@@ -132,7 +132,7 @@ class _HandleFilterDropdown extends ConsumerWidget {
           // Virtual participant was removed — navigate back to picker.
           const pickerSpec = CassetteSpec.contactsInfo(
             ContactsInfoCassetteSpec.infoCard(
-              key: ContactsInfoKey.favouritesVsRecents,
+              key: ContactsInfoKey.pickerContentSources,
             ),
           );
           // Replace from the info card level (index 1) to cascade fresh.
