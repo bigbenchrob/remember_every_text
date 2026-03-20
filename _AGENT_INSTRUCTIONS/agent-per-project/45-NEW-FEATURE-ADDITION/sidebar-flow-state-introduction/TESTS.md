@@ -2,7 +2,7 @@
 tier: feature
 scope: tests
 owner: agent-per-project
-last_reviewed: 2026-03-19
+last_reviewed: 2026-03-20
 source_of_truth: doc
 links:
   - ./PROPOSAL.md
@@ -48,7 +48,12 @@ tests: []
 - Heatmap month-jump behavior worked in both regular and recovered flows.
 - A sidebar projection defect was observed during recovered contact flow: the sidebar could show the recovered messages heatmap and the regular contact heatmap together.
 - Follow-up patch applied after this pass: hide the conflicting regular contact heatmap cassette during contact-recovered flow and place the recovered contextual heatmap after the main cassette branch.
-- Revalidation of the recovered contact sidebar projection is still pending after that follow-up patch.
+
+### 2026-03-20 Follow-Up Manual Pass
+
+- Revalidation of the recovered contact sidebar projection passed after the follow-up patch: the recovered contextual heatmap no longer coexisted with the regular contact heatmap in the same sidebar state.
+- Cold-launch contact investigation improved after the targeted prewarm follow-up: after a true cold app launch, choosing the first contact no longer showed the previously observed prolonged dual-loading state across the lower sidebar and center panel.
+- Remaining accepted edge case: an effectively instant click with no hover dwell may still receive less benefit from the hover-triggered prewarm path, but the observed first-impression lag was resolved in manual testing.
 
 ### Scenario 1: Default Contact Flow
 

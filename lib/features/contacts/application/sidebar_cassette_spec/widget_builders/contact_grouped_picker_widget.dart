@@ -1,8 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../../essentials/db/feature_level_providers.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart';
+import '../../../../messages/feature_level_providers.dart' as messages_feature;
+import '../../../infrastructure/repositories/contact_profile_provider.dart';
 import '../../../infrastructure/repositories/recent_contacts_repository.dart';
 import '../../../presentation/widgets/grouped_contact_selector.dart';
 import '../resolver_tools/filtered_picker_sections_provider.dart';
@@ -19,7 +24,7 @@ import '../resolver_tools/filtered_picker_sections_provider.dart';
 /// - May use `ref.watch()` for reactive updates
 /// - Construct specs only on user interaction (output, not interpretation)
 /// - Never make branching decisions about which UI to show
-class ContactGroupedPickerWidget extends ConsumerWidget {
+class ContactGroupedPickerWidget extends HookConsumerWidget {
   const ContactGroupedPickerWidget({
     super.key,
     required this.chosenContactId,
@@ -34,15 +39,25 @@ class ContactGroupedPickerWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    useEffect(() {
+      unawaited(ref.read(driftWorkingDatabaseProvider.future));
+      unawaited(ref.read(overlayDatabaseProvider.future));
+      return null;
+    }, const []);
+
     return FullContactPicker(
       selectedParticipantId: chosenContactId,
       onContactSelected: (contactId) => _handleContactSelection(ref, contactId),
+      onContactHovered: (contactId) {
+        _prewarmContactInvestigation(ref, contactId);
+      },
       maxHeight: 380,
     );
   }
 
   Future<void> _handleContactSelection(WidgetRef ref, int contactId) async {
     final infoCardIndex = cassetteIndex - 1;
+    _prewarmContactInvestigation(ref, contactId);
     ref
         .read(sidebarFlowProvider.notifier)
         .contactChosen(contactId: contactId, infoCardIndex: infoCardIndex);
@@ -52,5 +67,16 @@ class ContactGroupedPickerWidget extends ConsumerWidget {
     await overlayDb.trackContactAccess(contactId);
     ref.invalidate(recentContactsProvider);
     ref.invalidate(filteredPickerSectionsProvider);
+  }
+
+  void _prewarmContactInvestigation(WidgetRef ref, int contactId) {
+    unawaited(ref.read(contactProfileProvider(contactId: contactId).future));
+    unawaited(
+      ref.read(
+        messages_feature
+            .prewarmContactMessagesProvider(contactId: contactId)
+            .future,
+      ),
+    );
   }
 }

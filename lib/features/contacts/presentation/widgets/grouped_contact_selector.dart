@@ -65,11 +65,13 @@ class FullContactPicker extends ConsumerWidget {
     super.key,
     required this.selectedParticipantId,
     required this.onContactSelected,
+    this.onContactHovered,
     this.maxHeight,
   });
 
   final int? selectedParticipantId;
   final ValueChanged<int> onContactSelected;
+  final ValueChanged<int>? onContactHovered;
   final double? maxHeight;
 
   @override
@@ -94,6 +96,7 @@ class FullContactPicker extends ConsumerWidget {
               unified: unified,
               selectedParticipantId: selectedParticipantId,
               onContactSelected: onContactSelected,
+              onContactHovered: onContactHovered,
             );
           },
           loading: () => const Padding(
@@ -314,11 +317,13 @@ class GroupedContactsPicker extends ConsumerStatefulWidget {
     required this.unified,
     required this.selectedParticipantId,
     required this.onContactSelected,
+    this.onContactHovered,
   });
 
   final UnifiedPickerSections unified;
   final int? selectedParticipantId;
   final ValueChanged<int> onContactSelected;
+  final ValueChanged<int>? onContactHovered;
 
   @override
   ConsumerState<GroupedContactsPicker> createState() =>
@@ -427,6 +432,7 @@ class _GroupedContactsPickerState extends ConsumerState<GroupedContactsPicker> {
             unified: widget.unified,
             selectedParticipantId: widget.selectedParticipantId,
             onContactSelected: widget.onContactSelected,
+            onContactHovered: widget.onContactHovered,
             controller: _itemScrollController,
             positionsListener: _itemPositionsListener,
           ),
@@ -500,6 +506,7 @@ class _GroupedContactsList extends StatefulWidget {
     required this.unified,
     required this.selectedParticipantId,
     required this.onContactSelected,
+    this.onContactHovered,
     required this.controller,
     required this.positionsListener,
   });
@@ -507,6 +514,7 @@ class _GroupedContactsList extends StatefulWidget {
   final UnifiedPickerSections unified;
   final int? selectedParticipantId;
   final ValueChanged<int> onContactSelected;
+  final ValueChanged<int>? onContactHovered;
   final ItemScrollController controller;
   final ItemPositionsListener positionsListener;
 
@@ -531,6 +539,7 @@ class _GroupedContactsListState extends State<_GroupedContactsList> {
             allFavoriteIds: widget.unified.allFavoriteIds,
             selectedParticipantId: widget.selectedParticipantId,
             onContactSelected: widget.onContactSelected,
+            onContactHovered: widget.onContactHovered,
           );
         },
       ),
@@ -686,12 +695,14 @@ class _ContactGroupSection extends ConsumerWidget {
     required this.allFavoriteIds,
     required this.selectedParticipantId,
     required this.onContactSelected,
+    this.onContactHovered,
   });
 
   final PickerSection section;
   final Set<int> allFavoriteIds;
   final int? selectedParticipantId;
   final ValueChanged<int> onContactSelected;
+  final ValueChanged<int>? onContactHovered;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -721,6 +732,11 @@ class _ContactGroupSection extends ConsumerWidget {
                   contact.participantId,
                 ),
                 selected: contact.participantId == selectedParticipantId,
+                onHoverStart: onContactHovered == null
+                    ? null
+                    : () {
+                        onContactHovered!(contact.participantId);
+                      },
                 onTap: () => onContactSelected(contact.participantId),
               ),
             ),
@@ -736,12 +752,14 @@ class _ContactListItem extends StatelessWidget {
     required this.contact,
     required this.selected,
     required this.onTap,
+    this.onHoverStart,
     this.showFavoriteIndicator = false,
   });
 
   final ContactSummary contact;
   final bool selected;
   final VoidCallback onTap;
+  final VoidCallback? onHoverStart;
   final bool showFavoriteIndicator;
 
   @override
@@ -750,6 +768,7 @@ class _ContactListItem extends StatelessWidget {
       displayName: contact.displayName,
       shortName: contact.shortName,
       showFavoriteIndicator: showFavoriteIndicator,
+      onHoverStart: onHoverStart,
       onTap: onTap,
     );
   }

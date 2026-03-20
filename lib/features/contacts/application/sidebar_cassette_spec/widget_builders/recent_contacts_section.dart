@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -7,6 +9,8 @@ import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../essentials/db/feature_level_providers.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart';
+import '../../../../messages/feature_level_providers.dart' as messages_feature;
+import '../../../infrastructure/repositories/contact_profile_provider.dart';
 import '../../../infrastructure/repositories/recent_contacts_repository.dart';
 import '../../../presentation/widgets/contact_initial_badge.dart';
 
@@ -148,6 +152,7 @@ class _RecentContactRowState extends ConsumerState<_RecentContactRow> {
 
   void _handleTap() {
     final infoCardIndex = widget.cassetteIndex - 1;
+    _prewarmContactInvestigation(widget.participantId);
     ref
         .read(sidebarFlowProvider.notifier)
         .contactChosen(
@@ -157,6 +162,17 @@ class _RecentContactRowState extends ConsumerState<_RecentContactRow> {
 
     // Track as recently accessed
     _trackContactAccess(widget.participantId);
+  }
+
+  void _prewarmContactInvestigation(int contactId) {
+    unawaited(ref.read(contactProfileProvider(contactId: contactId).future));
+    unawaited(
+      ref.read(
+        messages_feature
+            .prewarmContactMessagesProvider(contactId: contactId)
+            .future,
+      ),
+    );
   }
 
   Future<void> _trackContactAccess(int contactId) async {
@@ -176,7 +192,10 @@ class _RecentContactRowState extends ConsumerState<_RecentContactRow> {
     final hoverColor = colors.surfaces.hover;
 
     return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
+      onEnter: (_) {
+        _prewarmContactInvestigation(widget.participantId);
+        setState(() => _isHovered = true);
+      },
       onExit: (_) => setState(() => _isHovered = false),
       cursor: SystemMouseCursors.click,
       child: GestureDetector(

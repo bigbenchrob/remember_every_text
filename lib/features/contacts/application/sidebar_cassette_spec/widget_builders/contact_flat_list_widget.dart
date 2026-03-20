@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 
@@ -8,6 +11,8 @@ import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../essentials/db/feature_level_providers.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart';
+import '../../../../messages/feature_level_providers.dart' as messages_feature;
+import '../../../infrastructure/repositories/contact_profile_provider.dart';
 import '../../../infrastructure/repositories/contacts_list_repository.dart';
 import '../../../infrastructure/repositories/recent_contacts_repository.dart';
 import '../../../presentation/widgets/contact_initial_badge.dart';
@@ -27,7 +32,7 @@ import '../resolver_tools/picker_filter_mode_provider.dart';
 /// - May use `ref.watch()` for reactive updates
 /// - Construct specs only on user interaction (output, not interpretation)
 /// - Never make branching decisions about which UI to show
-class ContactFlatListWidget extends ConsumerWidget {
+class ContactFlatListWidget extends HookConsumerWidget {
   const ContactFlatListWidget({
     super.key,
     required this.chosenContactId,
@@ -42,6 +47,12 @@ class ContactFlatListWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    useEffect(() {
+      unawaited(ref.read(driftWorkingDatabaseProvider.future));
+      unawaited(ref.read(overlayDatabaseProvider.future));
+      return null;
+    }, const []);
+
     final filterMode = ref.watch(pickerFilterProvider);
     final contactsAsync = ref.watch(contactsListRepositoryProvider);
     final favoritesAsync = ref.watch(favoriteContactsProvider);
@@ -84,6 +95,9 @@ class ContactFlatListWidget extends ConsumerWidget {
                   return _ContactRow(
                     displayName: contact.displayName,
                     isSelected: isSelected,
+                    onHoverStart: () {
+                      _prewarmContactInvestigation(ref, contact.participantId);
+                    },
                     onTap: () =>
                         _handleContactSelection(ref, contact.participantId),
                     colors: colors,
@@ -107,6 +121,7 @@ class ContactFlatListWidget extends ConsumerWidget {
 
   Future<void> _handleContactSelection(WidgetRef ref, int contactId) async {
     final infoCardIndex = cassetteIndex - 1;
+    _prewarmContactInvestigation(ref, contactId);
     ref
         .read(sidebarFlowProvider.notifier)
         .contactChosen(contactId: contactId, infoCardIndex: infoCardIndex);
@@ -115,6 +130,17 @@ class ContactFlatListWidget extends ConsumerWidget {
     final overlayDb = await ref.read(overlayDatabaseProvider.future);
     await overlayDb.trackContactAccess(contactId);
     ref.invalidate(recentContactsProvider);
+  }
+
+  void _prewarmContactInvestigation(WidgetRef ref, int contactId) {
+    unawaited(ref.read(contactProfileProvider(contactId: contactId).future));
+    unawaited(
+      ref.read(
+        messages_feature
+            .prewarmContactMessagesProvider(contactId: contactId)
+            .future,
+      ),
+    );
   }
 }
 
@@ -146,6 +172,7 @@ class _ContactRow extends StatelessWidget {
   const _ContactRow({
     required this.displayName,
     required this.isSelected,
+    required this.onHoverStart,
     required this.onTap,
     required this.colors,
     required this.typography,
@@ -153,49 +180,56 @@ class _ContactRow extends StatelessWidget {
 
   final String displayName;
   final bool isSelected;
+  final VoidCallback onHoverStart;
   final VoidCallback onTap;
   final ThemeColors colors;
   final ThemeTypography typography;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm,
-          vertical: AppSpacing.sm,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? colors.accents.primary.withValues(alpha: 0.12)
-              : Colors.transparent,
-          border: Border(
-            bottom: BorderSide(color: colors.lines.borderSubtle, width: 0.5),
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) {
+        onHoverStart();
+      },
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.sm,
           ),
-        ),
-        child: Row(
-          children: [
-            ContactInitialBadge(displayName: displayName),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                displayName,
-                style: typography.body.copyWith(
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? colors.accents.primary.withValues(alpha: 0.12)
+                : Colors.transparent,
+            border: Border(
+              bottom: BorderSide(color: colors.lines.borderSubtle, width: 0.5),
             ),
-            if (isSelected) ...[
+          ),
+          child: Row(
+            children: [
+              ContactInitialBadge(displayName: displayName),
               const SizedBox(width: 8),
-              Icon(
-                CupertinoIcons.checkmark_alt,
-                size: 14,
-                color: colors.accents.primary,
+              Expanded(
+                child: Text(
+                  displayName,
+                  style: typography.body.copyWith(
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
+              if (isSelected) ...[
+                const SizedBox(width: 8),
+                Icon(
+                  CupertinoIcons.checkmark_alt,
+                  size: 14,
+                  color: colors.accents.primary,
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

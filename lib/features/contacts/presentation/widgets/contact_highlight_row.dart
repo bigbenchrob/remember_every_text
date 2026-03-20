@@ -17,6 +17,7 @@ class ContactHighlightRow extends StatefulWidget {
     this.showFavoriteIndicator = false,
     this.contentPadding,
     this.contentLeftGutter,
+    this.onHoverStart,
     this.onTap,
   });
 
@@ -27,6 +28,7 @@ class ContactHighlightRow extends StatefulWidget {
   final bool showFavoriteIndicator;
   final EdgeInsets? contentPadding;
   final double? contentLeftGutter;
+  final VoidCallback? onHoverStart;
   final VoidCallback? onTap;
 
   @override
@@ -114,7 +116,10 @@ class _ContactHighlightRowState extends State<ContactHighlightRow> {
         final onTapCallback = widget.onTap;
         if (onTapCallback == null) {
           return MouseRegion(
-            onEnter: (_) => setState(() => _isHovered = true),
+            onEnter: (_) {
+              widget.onHoverStart?.call();
+              setState(() => _isHovered = true);
+            },
             onExit: (_) => setState(() => _isHovered = false),
             child: decorated,
           );
@@ -122,7 +127,10 @@ class _ContactHighlightRowState extends State<ContactHighlightRow> {
 
         return MouseRegion(
           cursor: SystemMouseCursors.click,
-          onEnter: (_) => setState(() => _isHovered = true),
+          onEnter: (_) {
+            widget.onHoverStart?.call();
+            setState(() => _isHovered = true);
+          },
           onExit: (_) => setState(() => _isHovered = false),
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
@@ -363,8 +371,11 @@ class _NameEditTargetState extends State<_NameEditTarget> {
                   vertical: hints.paddingVertical,
                 ),
                 // Negative margin to offset horizontal padding
-                transform:
-                    Matrix4.translationValues(-hints.paddingHorizontal, 0, 0),
+                transform: Matrix4.translationValues(
+                  -hints.paddingHorizontal,
+                  0,
+                  0,
+                ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -379,11 +390,7 @@ class _NameEditTargetState extends State<_NameEditTarget> {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    Icon(
-                      CupertinoIcons.pencil,
-                      size: 16,
-                      color: pencilColor,
-                    ),
+                    Icon(CupertinoIcons.pencil, size: 16, color: pencilColor),
                   ],
                 ),
               ),
@@ -452,9 +459,7 @@ class _FavoriteStarToggleState extends State<_FavoriteStarToggle> {
       context: context,
       position: position,
       constraints: const BoxConstraints(maxWidth: 220),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       items: [
         const PopupMenuItem<bool>(
           value: true,
@@ -489,8 +494,9 @@ class _FavoriteStarToggleState extends State<_FavoriteStarToggle> {
       );
     }
 
-    final tooltipMessage =
-        widget.isFavorite ? 'Remove from Favorites' : 'Add to Favorites';
+    final tooltipMessage = widget.isFavorite
+        ? 'Remove from Favorites'
+        : 'Add to Favorites';
 
     return Semantics(
       button: true,
