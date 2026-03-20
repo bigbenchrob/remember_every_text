@@ -7,7 +7,7 @@ part of 'panel_widget_providers.dart';
 // **************************************************************************
 
 String _$reconcileSidebarPanelsHash() =>
-    r'75763dfb3d560e9d68a9ebd3d5f0efe171c34b78';
+    r'dc296ad7386312e27191fb85f1f096157f79805e';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -671,7 +671,7 @@ class _ShouldShowEndSidebarProviderElement
 }
 
 String _$contextualSidebarWidgetHash() =>
-    r'cb57f5acfcccefee1dd0af3d563a94005558237f';
+    r'cb05193bd9e58fcc04232065c54ed8e6f0de10c7';
 
 /// See also [contextualSidebarWidget].
 @ProviderFor(contextualSidebarWidget)
@@ -792,7 +792,7 @@ class _ContextualSidebarWidgetProviderElement
   SidebarMode get mode => (origin as ContextualSidebarWidgetProvider).mode;
 }
 
-String _$leftPanelWidgetHash() => r'5f46ef6d57c7f9f5b6ab472077d1c189e767f219';
+String _$leftPanelWidgetHash() => r'06804b704050c8e571c92877f43b40b1051ca9db';
 
 /// Widget provider for left panel (sidebar).
 ///

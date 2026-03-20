@@ -28,10 +28,10 @@ Map<String, dynamic> _$SidebarUtilityCassetteSpecTopChatMenuToJson(
 const _$TopChatMenuChoiceEnumMap = {
   TopChatMenuChoice.contacts: 'contacts',
   TopChatMenuChoice.strayHandles: 'strayHandles',
+  TopChatMenuChoice.searchAllMessages: 'searchAllMessages',
   TopChatMenuChoice.recoveredUnlinkedMessages: 'recoveredUnlinkedMessages',
   TopChatMenuChoice.recoveredNoHandleFromMeMessages:
       'recoveredNoHandleFromMeMessages',
-  TopChatMenuChoice.searchAllMessages: 'searchAllMessages',
 };
 
 _SidebarUtilityCassetteSpecSettingsMenu

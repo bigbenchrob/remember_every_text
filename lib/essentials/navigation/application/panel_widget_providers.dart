@@ -26,36 +26,46 @@ void reconcileSidebarPanels(Ref ref, SidebarMode mode) {
     return;
   }
 
-  final rack = ref.watch(cassetteRackStateProvider(mode));
-  final latestContactId = ref
-      .read(cassetteRackStateProvider(mode).notifier)
-      .findLatestContactId();
+  final flowState = ref.watch(sidebarFlowProvider);
   final panels = ref.watch(panelsViewStateProvider(mode));
   final centerStack = panels[WindowPanel.center] ?? const PanelStack.empty();
   final rightStack = panels[WindowPanel.right] ?? const PanelStack.empty();
   final centerSpec = centerStack.activePage?.spec;
-  final topMenuChoice = _currentTopChatMenuChoice(rack);
+  final projectedCenterSpec = flowState.projectedCenterSpec;
 
-  final shouldClearCenter = !_isCenterSpecCompatibleWithSidebar(
-    topMenuChoice: topMenuChoice,
-    latestContactId: latestContactId,
+  final shouldResetCenter = _shouldResetCenterPanel(
+    flowState: flowState,
     centerSpec: centerSpec,
+    projectedCenterSpec: projectedCenterSpec,
   );
+  final effectiveCenterSpec = shouldResetCenter
+      ? projectedCenterSpec
+      : centerSpec;
   final shouldClearRight =
       !rightStack.isEmpty &&
-      (shouldClearCenter || !_supportsRecoveredAttachmentSidebar(centerSpec));
+      (shouldResetCenter ||
+          !_supportsRecoveredAttachmentSidebar(effectiveCenterSpec));
 
-  if (!shouldClearCenter && !shouldClearRight) {
+  if (!shouldResetCenter && !shouldClearRight) {
     return;
   }
 
   WidgetsBinding.instance.addPostFrameCallback((_) {
     final panelsNotifier = ref.read(panelsViewStateProvider(mode).notifier);
+    if (shouldResetCenter) {
+      if (projectedCenterSpec == null) {
+        panelsNotifier.clear(panel: WindowPanel.center);
+      } else {
+        panelsNotifier.show(
+          panel: WindowPanel.center,
+          spec: projectedCenterSpec,
+        );
+      }
+      return;
+    }
+
     if (shouldClearRight) {
       panelsNotifier.clear(panel: WindowPanel.right);
-    }
-    if (shouldClearCenter) {
-      panelsNotifier.clear(panel: WindowPanel.center);
     }
   });
 }
@@ -128,8 +138,7 @@ Widget? contextualSidebarWidget(Ref ref, SidebarMode mode) {
     return null;
   }
 
-  final rack = ref.watch(cassetteRackStateProvider(mode));
-  final topMenuChoice = _currentTopChatMenuChoice(rack);
+  final flowState = ref.watch(sidebarFlowProvider);
 
   final centerSpec = ref.watch(
     panelsViewStateProvider(
@@ -141,19 +150,25 @@ Widget? contextualSidebarWidget(Ref ref, SidebarMode mode) {
     return null;
   }
 
-  if (!_shouldShowRecoveredContextFor(topMenuChoice)) {
-    return null;
-  }
-
   return centerSpec.when(
     messages: (messagesSpec) {
       return messagesSpec.mapOrNull(
-        recoveredUnlinkedMessages: (spec) => ref.watch(
-          messages_feature.recoveredMessagesSidebarProvider(
-            contactId: spec.contactId,
-            scrollToDate: spec.scrollToDate,
-          ),
-        ),
+        recoveredUnlinkedMessages: (spec) {
+          if (!_shouldShowRecoveredContextFor(flowState)) {
+            return null;
+          }
+
+          final effectiveContactId = flowState.isContactsBranch
+              ? flowState.chosenContactId
+              : spec.contactId;
+
+          return ref.watch(
+            messages_feature.recoveredMessagesSidebarProvider(
+              contactId: effectiveContactId,
+              scrollToDate: spec.scrollToDate,
+            ),
+          );
+        },
         recoveredNoHandleFromMeMessages: (spec) => ref.watch(
           messages_feature.recoveredMessagesSidebarProvider(
             onlyNoHandleFromMe: true,
@@ -185,46 +200,69 @@ bool _supportsRecoveredAttachmentSidebar(ViewSpec? spec) {
   );
 }
 
-TopChatMenuChoice? _currentTopChatMenuChoice(CassetteRack rack) {
-  if (rack.cassettes.isEmpty) {
-    return null;
+bool _shouldShowRecoveredContextFor(SidebarFlowState flowState) {
+  if (flowState.topMenuChoice == TopChatMenuChoice.recoveredUnlinkedMessages ||
+      flowState.topMenuChoice ==
+          TopChatMenuChoice.recoveredNoHandleFromMeMessages) {
+    return true;
   }
 
-  return rack.cassettes.first.when(
-    sidebarUtility: (sidebarSpec) {
-      final selectedChoice = sidebarSpec.selectedChoice;
-      if (selectedChoice is TopChatMenuChoice) {
-        return selectedChoice;
-      }
+  return flowState.isContactsBranch &&
+      flowState.messageScope == SidebarFlowMessageScope.recoveredDeleted &&
+      flowState.chosenContactId != null;
+}
 
-      return null;
-    },
-    contacts: (_) => null,
-    contactsSettings: (_) => null,
-    contactsInfo: (_) => null,
-    handles: (_) => null,
-    handlesInfo: (_) => null,
-    messages: (_) => null,
-    messagesInfo: (_) => null,
+bool _shouldResetCenterPanel({
+  required SidebarFlowState flowState,
+  required ViewSpec? centerSpec,
+  required ViewSpec? projectedCenterSpec,
+}) {
+  if (projectedCenterSpec != null) {
+    if (centerSpec == null) {
+      return true;
+    }
+
+    if (_isFlowManagedCenterSpec(centerSpec)) {
+      return centerSpec != projectedCenterSpec;
+    }
+
+    return !_isCenterSpecCompatibleWithSidebar(
+      flowState: flowState,
+      centerSpec: centerSpec,
+    );
+  }
+
+  if (centerSpec == null) {
+    return false;
+  }
+
+  if (_isFlowManagedCenterSpec(centerSpec)) {
+    return true;
+  }
+
+  return !_isCenterSpecCompatibleWithSidebar(
+    flowState: flowState,
+    centerSpec: centerSpec,
   );
 }
 
-bool _shouldShowRecoveredContextFor(TopChatMenuChoice? choice) {
-  switch (choice) {
-    case TopChatMenuChoice.recoveredUnlinkedMessages:
-    case TopChatMenuChoice.recoveredNoHandleFromMeMessages:
-      return true;
-    case TopChatMenuChoice.contacts:
-    case TopChatMenuChoice.strayHandles:
-    case TopChatMenuChoice.searchAllMessages:
-    case null:
-      return false;
-  }
+bool _isFlowManagedCenterSpec(ViewSpec spec) {
+  return spec.maybeWhen(
+    messages: (messagesSpec) {
+      return messagesSpec.maybeWhen(
+        forContact: (_, __, ___) => true,
+        globalTimeline: (_) => true,
+        recoveredUnlinkedMessages: (_, __) => true,
+        recoveredNoHandleFromMeMessages: (_) => true,
+        orElse: () => false,
+      );
+    },
+    orElse: () => false,
+  );
 }
 
 bool _isCenterSpecCompatibleWithSidebar({
-  required TopChatMenuChoice? topMenuChoice,
-  required int? latestContactId,
+  required SidebarFlowState flowState,
   required ViewSpec? centerSpec,
 }) {
   if (centerSpec == null) {
@@ -236,35 +274,38 @@ bool _isCenterSpecCompatibleWithSidebar({
       return messagesSpec.when(
         forChat: (_) => true,
         forContact: (contactId, _, __) {
-          return topMenuChoice == TopChatMenuChoice.contacts &&
-              latestContactId != null &&
-              latestContactId == contactId;
+          return flowState.topMenuChoice == TopChatMenuChoice.contacts &&
+              flowState.messageScope == SidebarFlowMessageScope.regular &&
+              flowState.chosenContactId == contactId;
         },
         globalTimeline: (_) {
-          return topMenuChoice == TopChatMenuChoice.searchAllMessages;
+          return flowState.topMenuChoice == TopChatMenuChoice.searchAllMessages;
         },
         forHandle: (_) {
-          return topMenuChoice == TopChatMenuChoice.strayHandles;
+          return flowState.topMenuChoice == TopChatMenuChoice.strayHandles;
         },
         recoveredUnlinkedMessages: (contactId, _) {
-          if (topMenuChoice == TopChatMenuChoice.recoveredUnlinkedMessages) {
+          if (flowState.topMenuChoice ==
+              TopChatMenuChoice.recoveredUnlinkedMessages) {
             return true;
           }
 
-          return topMenuChoice == TopChatMenuChoice.contacts &&
-              latestContactId != null &&
-              contactId == latestContactId;
+          return flowState.topMenuChoice == TopChatMenuChoice.contacts &&
+              flowState.messageScope ==
+                  SidebarFlowMessageScope.recoveredDeleted &&
+              flowState.chosenContactId != null &&
+              contactId == flowState.chosenContactId;
         },
         recoveredNoHandleFromMeMessages: (_) {
-          return topMenuChoice ==
+          return flowState.topMenuChoice ==
               TopChatMenuChoice.recoveredNoHandleFromMeMessages;
         },
         recoveredAttachmentViewer: (_, __) => true,
         searchResultContext: (_, __, ___, ____) {
-          return topMenuChoice == TopChatMenuChoice.searchAllMessages;
+          return flowState.topMenuChoice == TopChatMenuChoice.searchAllMessages;
         },
         handleLens: (_) {
-          return topMenuChoice == TopChatMenuChoice.strayHandles;
+          return flowState.topMenuChoice == TopChatMenuChoice.strayHandles;
         },
         forChatInDateRange: (_, __, ___) => true,
       );
@@ -349,7 +390,7 @@ Widget leftPanelWidget(Ref ref, SidebarMode mode) {
   final cassetteWidgets = asyncCassettes.valueOrNull ?? const <Widget>[];
   final sidebarWidgets = contextualWidget == null
       ? cassetteWidgets
-      : <Widget>[contextualWidget, ...cassetteWidgets];
+      : <Widget>[...cassetteWidgets, contextualWidget];
 
   // Determine if this is truly the first load (no data yet) vs. a refresh
   // (loading new data but we have previous data to show).
@@ -410,6 +451,7 @@ class _LeftSidebarSurface extends StatelessWidget {
       builder: (context, constraints) {
         final controls = <Widget>[];
         final content = <({Widget widget, bool shouldExpand})>[];
+        var encounteredMainContent = false;
 
         for (final widget in cassetteWidgets) {
           final constrained = ConstrainedBox(
@@ -417,11 +459,18 @@ class _LeftSidebarSurface extends StatelessWidget {
             child: widget,
           );
 
-          // Control and naked cards go at the top, don't expand
-          if (widget is SidebarCassetteCard &&
-              (widget.isControl || widget.isNaked)) {
+          final isPinnedControlCandidate =
+              widget is SidebarCassetteCard &&
+              (widget.isControl || widget.isNaked);
+
+          // Only keep the leading control block pinned. Once main content
+          // starts, preserve the authored cassette order even if later items
+          // use naked/control styling for visual reasons.
+          if (!encounteredMainContent && isPinnedControlCandidate) {
             controls.add(constrained);
           } else {
+            encounteredMainContent = true;
+
             // SidebarCassetteCard carries its own shouldExpand flag.
             // All other widget types default to false (intrinsic height).
             final shouldExpand = switch (widget) {

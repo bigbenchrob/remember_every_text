@@ -17,9 +17,19 @@ CassetteSpec? resolveContactsChild(ContactsCassetteSpec spec) {
       );
     },
     contactHeroSummary: (chosenContactId) {
-      // Hero summary cascades to handle filter dropdown
+      // Hero summary cascades to the contextual info card.
+      // Chain: heroSummary → infoCard(chosenContact) → messageScopeToggle
+      //     → handleFilter → heatMap
+      return CassetteSpec.contactsInfo(
+        ContactsInfoCassetteSpec.infoCard(
+          key: ContactsInfoKey.chosenContact,
+          chosenContactId: chosenContactId,
+        ),
+      );
+    },
+    messageScopeToggle: (contactId) {
       return CassetteSpec.contacts(
-        ContactsCassetteSpec.handleFilter(contactId: chosenContactId),
+        ContactsCassetteSpec.handleFilter(contactId: contactId),
       );
     },
     handleFilter: (contactId, _) {

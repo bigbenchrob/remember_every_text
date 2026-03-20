@@ -45,6 +45,12 @@ abstract class ContactsCassetteSpec with _$ContactsCassetteSpec {
     required int chosenContactId,
   }) = _ContactHeroSummarySpec;
 
+  /// Toggle between the regular chat-related view and recovered deleted
+  /// messages for the selected contact.
+  const factory ContactsCassetteSpec.messageScopeToggle({
+    required int contactId,
+  }) = _MessageScopeToggleSpec;
+
   /// Dropdown to filter messages by a specific handle (phone/email) linked
   /// to this contact. Defaults to showing all handles.
   ///

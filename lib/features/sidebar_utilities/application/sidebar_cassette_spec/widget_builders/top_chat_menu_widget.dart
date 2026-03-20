@@ -6,9 +6,7 @@ import '../../../../../config/theme/colors/theme_colors.dart'
 import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../config/theme/widgets/theme_widgets.dart';
 import '../../../../../essentials/db/feature_level_providers/working_db_populated_provider.dart';
-import '../../../../../essentials/navigation/domain/navigation_constants.dart';
 import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
-import '../../../../../essentials/navigation/feature_level_providers.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart';
 import '../../../domain/sidebar_utilities_constants.dart';
 
@@ -58,33 +56,9 @@ class TopChatMenuWidget extends ConsumerWidget {
         currentChoice == TopChatMenuChoice.contacts && !isPopulated;
 
     void handleSelectionChange(TopChatMenuChoice newChoice) {
-      // Construct the new spec locally - this is OUTPUT, not interpretation
-      final newSpec = CassetteSpec.sidebarUtility(
-        SidebarUtilityCassetteSpec.topChatMenu(selectedChoice: newChoice),
-      );
-
-      if (_shouldClearPanelsAfterSelection(newChoice)) {
-        final panelsNotifier = ref.read(
-          panelsViewStateProvider(sidebarMode).notifier,
-        );
-        panelsNotifier.clear(panel: WindowPanel.right);
-        panelsNotifier.clear(panel: WindowPanel.center);
-      }
-
-      // Update the rack using index-based method (no need to hold old spec)
       ref
-          .read(cassetteRackStateProvider(sidebarMode).notifier)
-          .replaceAtIndexAndCascade(cassetteIndex, newSpec);
-
-      if (_shouldClearPanelsAfterSelection(newChoice)) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          final panelsNotifier = ref.read(
-            panelsViewStateProvider(sidebarMode).notifier,
-          );
-          panelsNotifier.clear(panel: WindowPanel.right);
-          panelsNotifier.clear(panel: WindowPanel.center);
-        });
-      }
+          .read(sidebarFlowProvider.notifier)
+          .topMenuChanged(choice: newChoice, cassetteIndex: cassetteIndex);
     }
 
     return AppThemeWidgets.dropdownMenu<TopChatMenuChoice>(
@@ -113,17 +87,5 @@ class TopChatMenuWidget extends ConsumerWidget {
       chevronColor: colors.dropdownMenu(DropdownMenu.chevronIcon),
       chevronBackgroundColor: colors.dropdownMenu(DropdownMenu.chevronBg),
     );
-  }
-}
-
-bool _shouldClearPanelsAfterSelection(TopChatMenuChoice choice) {
-  switch (choice) {
-    case TopChatMenuChoice.contacts:
-    case TopChatMenuChoice.strayHandles:
-      return true;
-    case TopChatMenuChoice.recoveredUnlinkedMessages:
-    case TopChatMenuChoice.recoveredNoHandleFromMeMessages:
-    case TopChatMenuChoice.searchAllMessages:
-      return false;
   }
 }

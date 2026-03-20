@@ -2,16 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 
-import '../../../../../config/theme/colors/theme_colors.dart';
-import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../essentials/db/feature_level_providers.dart';
-import '../../../../../essentials/navigation/domain/entities/view_spec.dart';
-import '../../../../../essentials/navigation/domain/navigation_constants.dart';
-import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
-import '../../../../../essentials/navigation/feature_level_providers.dart';
-import '../../../../messages/domain/spec_classes/messages_view_spec.dart';
 import '../../../infrastructure/repositories/contacts_list_repository.dart';
-import '../../../infrastructure/repositories/handles_for_contact_provider.dart';
 import '../../../presentation/dialogs/contact_name_edit_dialog.dart';
 import '../../../presentation/widgets/contact_cassette_error.dart';
 import '../../../presentation/widgets/contact_highlight_row.dart';
@@ -32,17 +24,10 @@ import '../resolver_tools/unified_picker_sections_provider.dart';
 /// - May use `ref.watch()` for reactive updates
 /// - Construct specs only on user interaction (output, not interpretation)
 class ContactHeroSummaryWidget extends ConsumerWidget {
-  const ContactHeroSummaryWidget({
-    super.key,
-    required this.contactId,
-    required this.cassetteIndex,
-  });
+  const ContactHeroSummaryWidget({super.key, required this.contactId});
 
   /// The ID of the contact to display.
   final int contactId;
-
-  /// Position in the cassette rack (for updates via replaceAtIndexAndCascade).
-  final int cassetteIndex;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -61,14 +46,6 @@ class ContactHeroSummaryWidget extends ConsumerWidget {
           contactIsFavoriteProvider(participantId: contactId),
         );
         final isFavorite = isFavoriteAsync.valueOrNull ?? false;
-        final handlesAsync = ref.watch(
-          handlesForContactProvider(contactId: contactId),
-        );
-        final hasLinkedHandles = handlesAsync.valueOrNull?.isNotEmpty ?? false;
-        ref.watch(themeColorsProvider);
-        final colors = ref.read(themeColorsProvider.notifier);
-        final typography = ref.watch(themeTypographyProvider);
-
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -85,35 +62,7 @@ class ContactHeroSummaryWidget extends ConsumerWidget {
                 wantsFavorite,
               ),
             ),
-            if (hasLinkedHandles) ...[
-              const SizedBox(height: 8),
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () {
-                  ref
-                      .read(
-                        panelsViewStateProvider(SidebarMode.messages).notifier,
-                      )
-                      .show(
-                        panel: WindowPanel.center,
-                        spec: ViewSpec.messages(
-                          MessagesSpec.recoveredUnlinkedMessages(
-                            contactId: contactId,
-                          ),
-                        ),
-                      );
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2),
-                  child: Text(
-                    'Show recovered deleted messages',
-                    style: typography.caption1.copyWith(
-                      color: colors.accents.primary.withValues(alpha: 0.85),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            const SizedBox(height: 2),
           ],
         );
       },

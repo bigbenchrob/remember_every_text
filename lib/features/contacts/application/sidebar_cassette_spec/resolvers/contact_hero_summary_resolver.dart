@@ -33,10 +33,7 @@ class ContactHeroSummaryResolver extends _$ContactHeroSummaryResolver {
       subtitle: null,
       isNaked: true, // Align edges with top menu dropdown
       shouldExpand: false, // Hero summary wraps content, doesn't expand
-      child: ContactHeroSummaryWidget(
-        contactId: contactId,
-        cassetteIndex: cassetteIndex,
-      ),
+      child: ContactHeroSummaryWidget(contactId: contactId),
     );
   }
 }

@@ -14,6 +14,11 @@ The sidebar is a **managed stack** of cassettes. Each cassette is described by a
 
 Features own the content. Essentials owns the stack, chrome, and composition.
 
+For the contacts/messages branch, the visible rack is no longer the only place
+where flow meaning lives. Canonical flow state is owned by
+`sidebar_flow_state_provider.dart`, and the cassette rack plus center-panel
+routing are expected to remain coherent with that state.
+
 ## Documents
 
 | File | Purpose |
@@ -27,6 +32,7 @@ Features own the content. Essentials owns the stack, chrome, and composition.
 |---|---|
 | `CassetteSpec` sealed class | `lib/essentials/sidebar/domain/entities/cassette_spec.dart` |
 | Rack state provider | `lib/essentials/sidebar/application/cassette_rack_state_provider.dart` |
+| Canonical flow-state owner | `lib/essentials/sidebar/application/sidebar_flow_state_provider.dart` |
 | App-level coordinator | `lib/essentials/sidebar/application/cassette_widget_coordinator_provider.dart` |
 | Cascade topology | `lib/essentials/sidebar/domain/entities/cascade/` |
 | Card view model | `lib/essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart` |

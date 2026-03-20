@@ -6,11 +6,6 @@ import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../essentials/db/feature_level_providers.dart';
-import '../../../../../essentials/navigation/domain/entities/view_spec.dart';
-import '../../../../../essentials/navigation/domain/navigation_constants.dart';
-import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
-import '../../../../../essentials/navigation/feature_level_providers.dart';
-import '../../../../../essentials/sidebar/application/cassette_rack_state_provider.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart';
 import '../../../infrastructure/repositories/recent_contacts_repository.dart';
 import '../../../presentation/widgets/contact_initial_badge.dart';
@@ -152,26 +147,16 @@ class _RecentContactRowState extends ConsumerState<_RecentContactRow> {
   bool _isHovered = false;
 
   void _handleTap() {
-    // Replace the info card (one level up) with the chosen-contact variant.
-    // The info card's cascade topology will produce:
-    //   infoCard(chosenContact) → selectionControl → heroSummary → heatMap
     final infoCardIndex = widget.cassetteIndex - 1;
-    final newSpec = CassetteSpec.contactsInfo(
-      ContactsInfoCassetteSpec.infoCard(
-        key: ContactsInfoKey.chosenContact,
-        chosenContactId: widget.participantId,
-      ),
-    );
-
     ref
-        .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-        .replaceAtIndexAndCascade(infoCardIndex, newSpec);
+        .read(sidebarFlowProvider.notifier)
+        .contactChosen(
+          contactId: widget.participantId,
+          infoCardIndex: infoCardIndex,
+        );
 
     // Track as recently accessed
     _trackContactAccess(widget.participantId);
-
-    // Show messages in center panel
-    _showMessages(widget.participantId);
   }
 
   Future<void> _trackContactAccess(int contactId) async {
@@ -179,17 +164,6 @@ class _RecentContactRowState extends ConsumerState<_RecentContactRow> {
     await overlayDb.trackContactAccess(contactId);
     // Invalidate to refresh the recents list
     ref.invalidate(recentContactsProvider);
-  }
-
-  void _showMessages(int contactId) {
-    ref
-        .read(panelsViewStateProvider(SidebarMode.messages).notifier)
-        .show(
-          panel: WindowPanel.center,
-          spec: ViewSpec.messages(
-            MessagesSpec.forContact(contactId: contactId, scrollToDate: null),
-          ),
-        );
   }
 
   @override

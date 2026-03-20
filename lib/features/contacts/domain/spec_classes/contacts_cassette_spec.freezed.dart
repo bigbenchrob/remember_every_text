@@ -55,13 +55,14 @@ extension ContactsCassetteSpecPatterns on ContactsCassetteSpec {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _ContactChooserSpec value)?  contactChooser,TResult Function( _ContactSelectionControlSpec value)?  contactSelectionControl,TResult Function( _ContactHeroSummarySpec value)?  contactHeroSummary,TResult Function( _HandleFilterSpec value)?  handleFilter,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _ContactChooserSpec value)?  contactChooser,TResult Function( _ContactSelectionControlSpec value)?  contactSelectionControl,TResult Function( _ContactHeroSummarySpec value)?  contactHeroSummary,TResult Function( _MessageScopeToggleSpec value)?  messageScopeToggle,TResult Function( _HandleFilterSpec value)?  handleFilter,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case _ContactChooserSpec() when contactChooser != null:
 return contactChooser(_that);case _ContactSelectionControlSpec() when contactSelectionControl != null:
 return contactSelectionControl(_that);case _ContactHeroSummarySpec() when contactHeroSummary != null:
-return contactHeroSummary(_that);case _HandleFilterSpec() when handleFilter != null:
+return contactHeroSummary(_that);case _MessageScopeToggleSpec() when messageScopeToggle != null:
+return messageScopeToggle(_that);case _HandleFilterSpec() when handleFilter != null:
 return handleFilter(_that);case _:
   return orElse();
 
@@ -80,13 +81,14 @@ return handleFilter(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _ContactChooserSpec value)  contactChooser,required TResult Function( _ContactSelectionControlSpec value)  contactSelectionControl,required TResult Function( _ContactHeroSummarySpec value)  contactHeroSummary,required TResult Function( _HandleFilterSpec value)  handleFilter,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _ContactChooserSpec value)  contactChooser,required TResult Function( _ContactSelectionControlSpec value)  contactSelectionControl,required TResult Function( _ContactHeroSummarySpec value)  contactHeroSummary,required TResult Function( _MessageScopeToggleSpec value)  messageScopeToggle,required TResult Function( _HandleFilterSpec value)  handleFilter,}){
 final _that = this;
 switch (_that) {
 case _ContactChooserSpec():
 return contactChooser(_that);case _ContactSelectionControlSpec():
 return contactSelectionControl(_that);case _ContactHeroSummarySpec():
-return contactHeroSummary(_that);case _HandleFilterSpec():
+return contactHeroSummary(_that);case _MessageScopeToggleSpec():
+return messageScopeToggle(_that);case _HandleFilterSpec():
 return handleFilter(_that);case _:
   throw StateError('Unexpected subclass');
 
@@ -104,13 +106,14 @@ return handleFilter(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _ContactChooserSpec value)?  contactChooser,TResult? Function( _ContactSelectionControlSpec value)?  contactSelectionControl,TResult? Function( _ContactHeroSummarySpec value)?  contactHeroSummary,TResult? Function( _HandleFilterSpec value)?  handleFilter,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _ContactChooserSpec value)?  contactChooser,TResult? Function( _ContactSelectionControlSpec value)?  contactSelectionControl,TResult? Function( _ContactHeroSummarySpec value)?  contactHeroSummary,TResult? Function( _MessageScopeToggleSpec value)?  messageScopeToggle,TResult? Function( _HandleFilterSpec value)?  handleFilter,}){
 final _that = this;
 switch (_that) {
 case _ContactChooserSpec() when contactChooser != null:
 return contactChooser(_that);case _ContactSelectionControlSpec() when contactSelectionControl != null:
 return contactSelectionControl(_that);case _ContactHeroSummarySpec() when contactHeroSummary != null:
-return contactHeroSummary(_that);case _HandleFilterSpec() when handleFilter != null:
+return contactHeroSummary(_that);case _MessageScopeToggleSpec() when messageScopeToggle != null:
+return messageScopeToggle(_that);case _HandleFilterSpec() when handleFilter != null:
 return handleFilter(_that);case _:
   return null;
 
@@ -128,12 +131,13 @@ return handleFilter(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( int? chosenContactId)?  contactChooser,TResult Function( int chosenContactId)?  contactSelectionControl,TResult Function( int chosenContactId)?  contactHeroSummary,TResult Function( int contactId,  int? selectedHandleId)?  handleFilter,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( int? chosenContactId)?  contactChooser,TResult Function( int chosenContactId)?  contactSelectionControl,TResult Function( int chosenContactId)?  contactHeroSummary,TResult Function( int contactId)?  messageScopeToggle,TResult Function( int contactId,  int? selectedHandleId)?  handleFilter,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ContactChooserSpec() when contactChooser != null:
 return contactChooser(_that.chosenContactId);case _ContactSelectionControlSpec() when contactSelectionControl != null:
 return contactSelectionControl(_that.chosenContactId);case _ContactHeroSummarySpec() when contactHeroSummary != null:
-return contactHeroSummary(_that.chosenContactId);case _HandleFilterSpec() when handleFilter != null:
+return contactHeroSummary(_that.chosenContactId);case _MessageScopeToggleSpec() when messageScopeToggle != null:
+return messageScopeToggle(_that.contactId);case _HandleFilterSpec() when handleFilter != null:
 return handleFilter(_that.contactId,_that.selectedHandleId);case _:
   return orElse();
 
@@ -152,12 +156,13 @@ return handleFilter(_that.contactId,_that.selectedHandleId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( int? chosenContactId)  contactChooser,required TResult Function( int chosenContactId)  contactSelectionControl,required TResult Function( int chosenContactId)  contactHeroSummary,required TResult Function( int contactId,  int? selectedHandleId)  handleFilter,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( int? chosenContactId)  contactChooser,required TResult Function( int chosenContactId)  contactSelectionControl,required TResult Function( int chosenContactId)  contactHeroSummary,required TResult Function( int contactId)  messageScopeToggle,required TResult Function( int contactId,  int? selectedHandleId)  handleFilter,}) {final _that = this;
 switch (_that) {
 case _ContactChooserSpec():
 return contactChooser(_that.chosenContactId);case _ContactSelectionControlSpec():
 return contactSelectionControl(_that.chosenContactId);case _ContactHeroSummarySpec():
-return contactHeroSummary(_that.chosenContactId);case _HandleFilterSpec():
+return contactHeroSummary(_that.chosenContactId);case _MessageScopeToggleSpec():
+return messageScopeToggle(_that.contactId);case _HandleFilterSpec():
 return handleFilter(_that.contactId,_that.selectedHandleId);case _:
   throw StateError('Unexpected subclass');
 
@@ -175,12 +180,13 @@ return handleFilter(_that.contactId,_that.selectedHandleId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( int? chosenContactId)?  contactChooser,TResult? Function( int chosenContactId)?  contactSelectionControl,TResult? Function( int chosenContactId)?  contactHeroSummary,TResult? Function( int contactId,  int? selectedHandleId)?  handleFilter,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( int? chosenContactId)?  contactChooser,TResult? Function( int chosenContactId)?  contactSelectionControl,TResult? Function( int chosenContactId)?  contactHeroSummary,TResult? Function( int contactId)?  messageScopeToggle,TResult? Function( int contactId,  int? selectedHandleId)?  handleFilter,}) {final _that = this;
 switch (_that) {
 case _ContactChooserSpec() when contactChooser != null:
 return contactChooser(_that.chosenContactId);case _ContactSelectionControlSpec() when contactSelectionControl != null:
 return contactSelectionControl(_that.chosenContactId);case _ContactHeroSummarySpec() when contactHeroSummary != null:
-return contactHeroSummary(_that.chosenContactId);case _HandleFilterSpec() when handleFilter != null:
+return contactHeroSummary(_that.chosenContactId);case _MessageScopeToggleSpec() when messageScopeToggle != null:
+return messageScopeToggle(_that.contactId);case _HandleFilterSpec() when handleFilter != null:
 return handleFilter(_that.contactId,_that.selectedHandleId);case _:
   return null;
 
@@ -380,6 +386,72 @@ class __$ContactHeroSummarySpecCopyWithImpl<$Res>
 @pragma('vm:prefer-inline') $Res call({Object? chosenContactId = null,}) {
   return _then(_ContactHeroSummarySpec(
 chosenContactId: null == chosenContactId ? _self.chosenContactId : chosenContactId // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class _MessageScopeToggleSpec implements ContactsCassetteSpec {
+  const _MessageScopeToggleSpec({required this.contactId});
+  
+
+ final  int contactId;
+
+/// Create a copy of ContactsCassetteSpec
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$MessageScopeToggleSpecCopyWith<_MessageScopeToggleSpec> get copyWith => __$MessageScopeToggleSpecCopyWithImpl<_MessageScopeToggleSpec>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MessageScopeToggleSpec&&(identical(other.contactId, contactId) || other.contactId == contactId));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,contactId);
+
+@override
+String toString() {
+  return 'ContactsCassetteSpec.messageScopeToggle(contactId: $contactId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$MessageScopeToggleSpecCopyWith<$Res> implements $ContactsCassetteSpecCopyWith<$Res> {
+  factory _$MessageScopeToggleSpecCopyWith(_MessageScopeToggleSpec value, $Res Function(_MessageScopeToggleSpec) _then) = __$MessageScopeToggleSpecCopyWithImpl;
+@useResult
+$Res call({
+ int contactId
+});
+
+
+
+
+}
+/// @nodoc
+class __$MessageScopeToggleSpecCopyWithImpl<$Res>
+    implements _$MessageScopeToggleSpecCopyWith<$Res> {
+  __$MessageScopeToggleSpecCopyWithImpl(this._self, this._then);
+
+  final _MessageScopeToggleSpec _self;
+  final $Res Function(_MessageScopeToggleSpec) _then;
+
+/// Create a copy of ContactsCassetteSpec
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? contactId = null,}) {
+  return _then(_MessageScopeToggleSpec(
+contactId: null == contactId ? _self.contactId : contactId // ignore: cast_nullable_to_non_nullable
 as int,
   ));
 }

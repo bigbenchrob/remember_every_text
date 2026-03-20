@@ -1,19 +1,11 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
-import '../../../../../essentials/navigation/domain/entities/view_spec.dart';
-import '../../../../../essentials/navigation/domain/navigation_constants.dart';
-import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
-import '../../../../../essentials/navigation/feature_level_providers.dart';
-import '../../../../../essentials/sidebar/application/cassette_rack_state_provider.dart';
+import '../../../../../config/theme/widgets/theme_widgets.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart';
-import '../../../../messages/domain/spec_classes/messages_view_spec.dart';
 import '../../../application/services/manual_handle_link_service.dart';
-import '../../../domain/spec_classes/contacts_cassette_spec.dart';
-import '../../../domain/spec_classes/contacts_info_cassette_spec.dart';
 import '../../../infrastructure/repositories/handles_for_contact_provider.dart';
 
 /// Widget builder for the handle-filter cassette.
@@ -66,8 +58,6 @@ class HandleFilterWidget extends ConsumerWidget {
 }
 
 class _HandleFilterDropdown extends ConsumerWidget {
-  static const _popupMenuMaxHeight = 320.0;
-
   const _HandleFilterDropdown({
     required this.contactId,
     required this.handles,
@@ -85,29 +75,12 @@ class _HandleFilterDropdown extends ConsumerWidget {
   final ThemeTypography typography;
 
   void _onHandleSelected(WidgetRef ref, int? handleId) {
-    // Update the cassette spec with the new selection (drives unlink affordance).
-    final newSpec = CassetteSpec.contacts(
-      ContactsCassetteSpec.handleFilter(
-        contactId: contactId,
-        selectedHandleId: handleId,
-      ),
-    );
     ref
-        .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-        .replaceAtIndexAndCascade(cassetteIndex, newSpec);
-
-    // Navigate the center panel to the same contact timeline, optionally
-    // filtered to messages from the selected handle.
-    ref
-        .read(panelsViewStateProvider(SidebarMode.messages).notifier)
-        .show(
-          panel: WindowPanel.center,
-          spec: ViewSpec.messages(
-            MessagesSpec.forContact(
-              contactId: contactId,
-              filterHandleId: handleId,
-            ),
-          ),
+        .read(sidebarFlowProvider.notifier)
+        .handleSelected(
+          contactId: contactId,
+          handleId: handleId,
+          cassetteIndex: cassetteIndex,
         );
   }
 
@@ -129,21 +102,9 @@ class _HandleFilterDropdown extends ConsumerWidget {
         ref.invalidate(handlesForContactProvider(contactId: contactId));
 
         if (contactDeleted) {
-          // Virtual participant was removed — navigate back to picker.
-          const pickerSpec = CassetteSpec.contactsInfo(
-            ContactsInfoCassetteSpec.infoCard(
-              key: ContactsInfoKey.pickerContentSources,
-            ),
-          );
-          // Replace from the info card level (index 1) to cascade fresh.
           ref
-              .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-              .replaceAtIndexAndCascade(1, pickerSpec);
-
-          // Clear the center panel.
-          ref
-              .read(panelsViewStateProvider(SidebarMode.messages).notifier)
-              .clear(panel: WindowPanel.center);
+              .read(sidebarFlowProvider.notifier)
+              .chooseAnotherContact(infoCardIndex: 1);
         } else {
           // Still has other handles — reset to "All".
           _onHandleSelected(ref, null);
@@ -154,8 +115,19 @@ class _HandleFilterDropdown extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final muted = colors.content.textSecondary;
-    final label = typography.caption1.copyWith(color: muted);
+    final options = [
+      const _HandleMenuOption(handleId: null, label: 'No, show all'),
+      ...handles.map(
+        (handle) => _HandleMenuOption(
+          handleId: handle.handleId,
+          label: _handleMenuLabel(handle),
+        ),
+      ),
+    ];
+    final selectedOption = options.firstWhere(
+      (option) => option.handleId == selectedHandleId,
+      orElse: () => options.first,
+    );
 
     // Find the selected handle to check if it's an override link.
     final selectedHandle = selectedHandleId != null
@@ -169,49 +141,34 @@ class _HandleFilterDropdown extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('From phone # / email:', style: label),
-          const SizedBox(height: 4),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final itemWidth = constraints.maxWidth - 36;
-
-              return SizedBox(
-                width: double.infinity,
-                child: MacosPopupButton<int?>(
-                  value: selectedHandleId,
-                  onChanged: (value) => _onHandleSelected(ref, value),
-                  menuMaxHeight: _popupMenuMaxHeight,
-                  selectedItemBuilder: (context) {
-                    return [
-                      _HandlePopupLabel(
-                        text: 'All linked handles',
-                        width: itemWidth,
-                      ),
-                      for (final handle in handles)
-                        _HandlePopupLabel(
-                          text: _handleMenuLabel(handle),
-                          width: itemWidth,
-                        ),
-                    ];
-                  },
-                  items: [
-                    const MacosPopupMenuItem<int?>(
-                      value: null,
-                      child: _HandlePopupLabel(text: 'All linked handles'),
-                    ),
-                    ...handles.map(
-                      (handle) => MacosPopupMenuItem<int?>(
-                        value: handle.handleId,
-                        child: _HandlePopupLabel(
-                          text: _handleMenuLabel(handle),
-                          width: itemWidth,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+          Text('From specific phone # or email?', style: typography.caption),
+          const SizedBox(height: 6),
+          AppThemeWidgets.dropdownMenu<_HandleMenuOption>(
+            options: options,
+            selectedOption: selectedOption,
+            onSelected: (option) {
+              _onHandleSelected(ref, option.handleId);
+            },
+            optionLabelBuilder: (option) => option.label,
+            itemBuilder: (context, option, {required isSelected}) {
+              return _HandleDropdownRow(
+                text: option.label,
+                isSelected: isSelected,
+                colors: colors,
+                typography: typography,
               );
             },
+            equals: (a, b) => a.handleId == b.handleId,
+            outerPadding: EdgeInsets.zero,
+            triggerPadding: const EdgeInsets.only(
+              left: 12.0,
+              right: 16.0,
+              top: 10.0,
+              bottom: 10.0,
+            ),
+            selectedValueStyle: typography.controlValue,
+            chevronColor: colors.dropdownMenu(DropdownMenu.chevronIcon),
+            chevronBackgroundColor: colors.dropdownMenu(DropdownMenu.chevronBg),
           ),
           if (canUnlink) ...[
             const SizedBox(height: 6),
@@ -235,25 +192,47 @@ String _handleMenuLabel(LinkedHandle handle) {
   return '${handle.displayValue} (${handle.service})';
 }
 
-class _HandlePopupLabel extends StatelessWidget {
-  const _HandlePopupLabel({required this.text, this.width});
+class _HandleMenuOption {
+  const _HandleMenuOption({required this.handleId, required this.label});
+
+  final int? handleId;
+  final String label;
+}
+
+class _HandleDropdownRow extends StatelessWidget {
+  const _HandleDropdownRow({
+    required this.text,
+    required this.isSelected,
+    required this.colors,
+    required this.typography,
+  });
 
   final String text;
-  final double? width;
+  final bool isSelected;
+  final ThemeColors colors;
+  final ThemeTypography typography;
 
   @override
   Widget build(BuildContext context) {
-    final child = Text(
-      text,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      softWrap: false,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: isSelected ? colors.dropdownMenu(DropdownMenu.selectedBg) : null,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Text(
+          text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          softWrap: false,
+          style: typography.callout.copyWith(
+            color: isSelected
+                ? colors.dropdownMenu(DropdownMenu.selectedText)
+                : colors.content.textPrimary,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+          ),
+        ),
+      ),
     );
-
-    if (width == null) {
-      return child;
-    }
-
-    return SizedBox(width: width, child: child);
   }
 }

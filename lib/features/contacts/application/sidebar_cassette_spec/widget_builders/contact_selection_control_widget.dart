@@ -3,10 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
-import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
-import '../../../../../essentials/sidebar/application/cassette_rack_state_provider.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart';
-import '../../../domain/spec_classes/contacts_info_cassette_spec.dart';
 
 /// Minimal text-link control that navigates back to the contact picker.
 ///
@@ -43,18 +40,11 @@ class _ContactSelectionControlWidgetState
   bool _isHovered = false;
 
   void _handleTap() {
-    // Replace the info card (which contains this widget) with the
-    // picker variant. This restores the cascade:
-    //   infoCard(pickerContentSources) → contactChooser (fresh picker)
-    const newInfoSpec = CassetteSpec.contactsInfo(
-      ContactsInfoCassetteSpec.infoCard(
-        key: ContactsInfoKey.pickerContentSources,
-      ),
-    );
+    final heroCassetteIndex = widget.cassetteIndex - 1;
 
     ref
-        .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-        .replaceAtIndexAndCascade(widget.cassetteIndex, newInfoSpec);
+        .read(sidebarFlowProvider.notifier)
+        .chooseAnotherContact(infoCardIndex: heroCassetteIndex);
   }
 
   @override

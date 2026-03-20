@@ -5,15 +5,11 @@ import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
-import '../../../../essentials/navigation/application/panels_view_state_provider.dart';
-import '../../../../essentials/navigation/domain/entities/view_spec.dart';
-import '../../../../essentials/navigation/domain/navigation_constants.dart';
-import '../../../../essentials/navigation/domain/sidebar_mode.dart';
+import '../../../../essentials/sidebar/feature_level_providers.dart';
 import '../../../../essentials/sidebar/presentation/view/sidebar_cassette_card.dart';
 import '../../application/view_spec/resolver_tools/recovered_messages_heatmap_data.dart';
 import '../../application/view_spec/resolver_tools/recovered_visible_month_provider.dart';
 import '../../domain/calendar_heatmap_timeline_data.dart';
-import '../../domain/spec_classes/messages_view_spec.dart';
 import '../../infrastructure/repositories/recovered_unlinked_messages_provider.dart';
 import 'calendar_heatmap_timeline_widget.dart';
 
@@ -102,22 +98,18 @@ class RecoveredMessagesHeatmapSidebar extends ConsumerWidget {
                   }
 
                   final startDate = DateTime(year, month, 1);
-                  final messagesSpec = onlyNoHandleFromMe
-                      ? MessagesSpec.recoveredNoHandleFromMeMessages(
-                          scrollToDate: startDate,
-                        )
-                      : MessagesSpec.recoveredUnlinkedMessages(
-                          contactId: contactId,
-                          scrollToDate: startDate,
-                        );
+                  if (onlyNoHandleFromMe) {
+                    ref
+                        .read(sidebarFlowProvider.notifier)
+                        .showRecoveredNoHandleFromMe(scrollToDate: startDate);
+                    return;
+                  }
 
                   ref
-                      .read(
-                        panelsViewStateProvider(SidebarMode.messages).notifier,
-                      )
-                      .show(
-                        panel: WindowPanel.center,
-                        spec: ViewSpec.messages(messagesSpec),
+                      .read(sidebarFlowProvider.notifier)
+                      .showRecoveredDeletedAt(
+                        contactId: contactId,
+                        startDate: startDate,
                       );
                 },
               ),

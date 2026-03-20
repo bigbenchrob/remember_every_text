@@ -22,13 +22,13 @@ The system has four layers:
 @freezed
 abstract class CassetteSpec with _$CassetteSpec {
   const factory CassetteSpec.sidebarUtility(SidebarUtilityCassetteSpec spec) = ...;
-  const factory CassetteSpec.presentation(PresentationCassetteSpec spec) = ...;
   const factory CassetteSpec.contacts(ContactsCassetteSpec spec) = ...;
   const factory CassetteSpec.contactsSettings(ContactsSettingsSpec spec) = ...;
   const factory CassetteSpec.contactsInfo(ContactsInfoCassetteSpec spec) = ...;
   const factory CassetteSpec.handles(HandlesCassetteSpec spec) = ...;
   const factory CassetteSpec.handlesInfo(HandlesInfoCassetteSpec spec) = ...;
   const factory CassetteSpec.messages(MessagesCassetteSpec spec) = ...;
+  const factory CassetteSpec.messagesInfo(MessagesInfoCassetteSpec spec) = ...;
 }
 ```
 
@@ -63,6 +63,32 @@ class CassetteRackState extends _$CassetteRackState {
   CassetteRack build(SidebarMode mode) { ... }  // Returns initial rack for mode
 }
 ```
+
+### Canonical flow state for the contacts/messages branch
+
+The rack remains the rendered sidebar artifact, but it is no longer the
+canonical owner of all sidebar meaning.
+
+For the contacts/messages branch, `SidebarFlowState` in
+`lib/essentials/sidebar/application/sidebar_flow_state_provider.dart` owns the
+meaningful flow decisions, including:
+
+- active top-menu branch
+- chosen contact
+- selected handle, if any
+- regular vs recovered/deleted message scope
+
+That provider is responsible for explicit transitions such as contact choice,
+contact reset, handle selection, and message-scope switching. Those transitions
+update both the visible rack and the center-panel `ViewSpec` routing so the
+sidebar and panels stay coherent.
+
+This distinction matters:
+
+- the rack still stores what should currently render in the sidebar
+- the canonical flow provider stores why that branch is active
+- code should not reintroduce critical state inference by scanning the current
+  rack when canonical flow state already owns the answer
 
 ### Initial stacks
 
@@ -122,8 +148,8 @@ lib/essentials/sidebar/domain/entities/cascade/
 ├── handles_info_topology.dart
 ├── messages_cassette_topology.dart
 └── links/
-    ├── contacts_to_messages.dart      ← cross-feature: contacts → messages
-    └── sidebar_utility_to_contacts.dart  ← cross-feature: utility → contacts
+  ├── contacts_children.dart         ← cross-feature: contacts → messages
+  └── sidebar_utility_children.dart  ← cross-feature: utility → contacts
 ```
 
 ### Cross-feature links
@@ -139,6 +165,16 @@ When `replaceAtIndexAndCascade()` is called, the rack state provider:
 1. Replaces the spec at the given index
 2. Calls `childSpec()` repeatedly to build the cascade chain
 3. Replaces everything below the index with the new chain
+
+For branches that use canonical flow state, the recascade is the projection
+mechanism, not the source of truth. In particular, the contacts/messages branch
+should be understood as:
+
+1. user interaction triggers an explicit transition on `SidebarFlowState`
+2. the transition computes the correct replacement cassette root for the branch
+3. `CassetteRackState` re-cascades from that root
+4. panel routing is updated from the same transition so stale center-panel
+  content cannot linger legitimately
 
 ### Important: Cascade Does Not Automatically Reconcile Panels
 
@@ -157,6 +193,25 @@ Therefore:
 
 This is especially important for cassettes that auto-open panel content on
 mount, such as heatmaps or recovered-message navigators.
+
+### Current chosen-contact branch shape
+
+The stabilized contacts/messages chosen-contact flow now projects this branch
+order:
+
+1. top chat menu
+2. contact hero summary
+3. chosen-contact info card
+4. message-scope toggle
+5. handle filter
+6. contact-scoped messages heatmap or recovered contextual branch, depending on
+  the canonical message scope
+
+That order is semantically intentional:
+
+- hero first establishes identity
+- info card explains the current context and offers the reset action
+- controls follow after context rather than competing with it above
 
 ---
 

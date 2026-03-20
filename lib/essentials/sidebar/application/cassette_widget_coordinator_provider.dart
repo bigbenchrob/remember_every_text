@@ -29,6 +29,9 @@ class CassetteWidgetCoordinator extends _$CassetteWidgetCoordinator {
   @override
   Future<List<Widget>> build(SidebarMode mode) async {
     final rack = ref.watch(cassetteRackStateProvider(mode));
+    final flowState = mode == SidebarMode.messages
+        ? ref.watch(sidebarFlowProvider)
+        : null;
     final widgets = <Widget>[];
 
     /// Build a view model for a given cassette spec by routing to the owning feature.
@@ -171,9 +174,44 @@ class CassetteWidgetCoordinator extends _$CassetteWidgetCoordinator {
 
     // Build widgets for the explicit rack cassettes.
     for (var i = 0; i < rack.cassettes.length; i++) {
-      await addCassette(rack.cassettes[i], cassetteIndex: i);
+      final spec = rack.cassettes[i];
+      if (_shouldHideSpecForFlow(spec: spec, flowState: flowState)) {
+        continue;
+      }
+
+      await addCassette(spec, cassetteIndex: i);
     }
 
     return widgets;
   }
+}
+
+bool _shouldHideSpecForFlow({
+  required CassetteSpec spec,
+  required SidebarFlowState? flowState,
+}) {
+  if (flowState == null) {
+    return false;
+  }
+
+  if (!flowState.isContactsBranch ||
+      flowState.messageScope != SidebarFlowMessageScope.recoveredDeleted) {
+    return false;
+  }
+
+  return spec.maybeWhen(
+    messages: (messagesSpec) {
+      return messagesSpec.maybeWhen(
+        heatMap: (contactId) {
+          return contactId != null;
+        },
+        orElse: () {
+          return false;
+        },
+      );
+    },
+    orElse: () {
+      return false;
+    },
+  );
 }

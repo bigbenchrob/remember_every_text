@@ -1,5 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:macos_ui/macos_ui.dart';
@@ -7,14 +6,8 @@ import 'package:macos_ui/macos_ui.dart';
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
-import '../../../../../essentials/navigation/domain/entities/view_spec.dart';
-import '../../../../../essentials/navigation/domain/navigation_constants.dart';
-import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
-import '../../../../../essentials/navigation/feature_level_providers.dart';
-import '../../../../../essentials/sidebar/application/cassette_rack_state_provider.dart';
-import '../../../../../essentials/sidebar/domain/entities/cassette_spec.dart';
+import '../../../../../essentials/sidebar/feature_level_providers.dart';
 import '../../../../contacts/infrastructure/repositories/contact_profile_provider.dart';
-import '../../../../sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../domain/calendar_heatmap_timeline_data.dart';
 import '../../../domain/value_objects/message_timeline_scope.dart';
 import '../../../presentation/view_model/timeline/ordinal/current_visible_month_provider.dart';
@@ -84,36 +77,13 @@ class MessagesHeatmapWidget extends ConsumerWidget {
   }
 }
 
-class _GlobalHeatmapContent extends HookConsumerWidget {
+class _GlobalHeatmapContent extends ConsumerWidget {
   const _GlobalHeatmapContent({required this.data});
 
   final CalendarHeatmapTimelineData? data;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final rack = ref.watch(cassetteRackStateProvider(SidebarMode.messages));
-    final topChoice = _currentTopMenuChoice(rack);
-    useEffect(() {
-      if (data != null && topChoice == TopChatMenuChoice.searchAllMessages) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          final latestChoice = _currentTopMenuChoice(
-            ref.read(cassetteRackStateProvider(SidebarMode.messages)),
-          );
-          if (latestChoice != TopChatMenuChoice.searchAllMessages) {
-            return;
-          }
-
-          ref
-              .read(panelsViewStateProvider(SidebarMode.messages).notifier)
-              .show(
-                panel: WindowPanel.center,
-                spec: const ViewSpec.messages(MessagesSpec.globalTimeline()),
-              );
-        });
-      }
-      return null;
-    }, [data != null, topChoice]);
-
     if (data == null) {
       return const _EmptyHeatmapCard(
         message: 'Import messages to see how your conversations ebb and flow.',
@@ -174,25 +144,15 @@ class _GlobalHeatmapContent extends HookConsumerWidget {
             final startDate = isLastMonth ? null : DateTime(year, month, 1);
 
             ref
-                .read(panelsViewStateProvider(SidebarMode.messages).notifier)
-                .show(
-                  panel: WindowPanel.center,
-                  spec: ViewSpec.messages(
-                    MessagesSpec.globalTimeline(scrollToDate: startDate),
-                  ),
-                );
+                .read(sidebarFlowProvider.notifier)
+                .showGlobalTimelineAt(startDate);
           },
         ),
         const SizedBox(height: AppSpacing.sm),
         PushButton(
           controlSize: ControlSize.small,
           onPressed: () {
-            ref
-                .read(panelsViewStateProvider(SidebarMode.messages).notifier)
-                .show(
-                  panel: WindowPanel.center,
-                  spec: const ViewSpec.messages(MessagesSpec.globalTimeline()),
-                );
+            ref.read(sidebarFlowProvider.notifier).showGlobalTimeline();
           },
           child: Text(
             'Open full timeline',
@@ -204,7 +164,7 @@ class _GlobalHeatmapContent extends HookConsumerWidget {
   }
 }
 
-class _ContactHeatmapContent extends HookConsumerWidget {
+class _ContactHeatmapContent extends ConsumerWidget {
   const _ContactHeatmapContent({
     required this.contactId,
     required this.profile,
@@ -217,44 +177,6 @@ class _ContactHeatmapContent extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final rack = ref.watch(cassetteRackStateProvider(SidebarMode.messages));
-    final topChoice = _currentTopMenuChoice(rack);
-    final latestContactId = ref
-        .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-        .findLatestContactId();
-    useEffect(() {
-      if (data != null &&
-          topChoice == TopChatMenuChoice.contacts &&
-          latestContactId == contactId) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          final latestRack = ref.read(
-            cassetteRackStateProvider(SidebarMode.messages),
-          );
-          final latestChoice = _currentTopMenuChoice(latestRack);
-          final latestSelectedContactId = ref
-              .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-              .findLatestContactId();
-          if (latestChoice != TopChatMenuChoice.contacts ||
-              latestSelectedContactId != contactId) {
-            return;
-          }
-
-          ref
-              .read(panelsViewStateProvider(SidebarMode.messages).notifier)
-              .show(
-                panel: WindowPanel.center,
-                spec: ViewSpec.messages(
-                  MessagesSpec.forContact(
-                    contactId: contactId,
-                    scrollToDate: null,
-                  ),
-                ),
-              );
-        });
-      }
-      return null;
-    }, [data != null, topChoice, latestContactId]);
-
     if (data == null) {
       return const _EmptyHeatmapCard(
         message: 'Select a contact or choose one with messages to plot.',
@@ -298,15 +220,10 @@ class _ContactHeatmapContent extends HookConsumerWidget {
             final startDate = isLastMonth ? null : DateTime(year, month, 1);
 
             ref
-                .read(panelsViewStateProvider(SidebarMode.messages).notifier)
-                .show(
-                  panel: WindowPanel.center,
-                  spec: ViewSpec.messages(
-                    MessagesSpec.forContact(
-                      contactId: contactId,
-                      scrollToDate: startDate,
-                    ),
-                  ),
+                .read(sidebarFlowProvider.notifier)
+                .showContactTimelineAt(
+                  contactId: contactId,
+                  scrollToDate: startDate,
                 );
           },
         ),
@@ -330,23 +247,6 @@ class _ContactHeatmapContent extends HookConsumerWidget {
       ],
     );
   }
-}
-
-TopChatMenuChoice? _currentTopMenuChoice(CassetteRack rack) {
-  if (rack.cassettes.isEmpty) {
-    return null;
-  }
-
-  return rack.cassettes.first.mapOrNull(
-    sidebarUtility: (cassette) {
-      final selectedChoice = cassette.spec.selectedChoice;
-      if (selectedChoice is TopChatMenuChoice) {
-        return selectedChoice;
-      }
-
-      return null;
-    },
-  );
 }
 
 class _HeatmapLoadingCard extends StatelessWidget {

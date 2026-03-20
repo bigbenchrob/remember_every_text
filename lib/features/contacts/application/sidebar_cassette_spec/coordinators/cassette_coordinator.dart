@@ -6,6 +6,7 @@ import '../resolvers/contact_chooser_resolver.dart';
 import '../resolvers/contact_hero_summary_resolver.dart';
 import '../resolvers/contact_selection_control_resolver.dart';
 import '../resolvers/handle_filter_resolver.dart';
+import '../resolvers/message_scope_toggle_resolver.dart';
 
 part 'cassette_coordinator.g.dart';
 
@@ -58,6 +59,9 @@ class ContactsCassetteCoordinator extends _$ContactsCassetteCoordinator {
             contactId: hero.chosenContactId,
             cassetteIndex: cassetteIndex,
           ),
+      messageScopeToggle: (toggle) => ref
+          .read(messageScopeToggleResolverProvider.notifier)
+          .resolve(contactId: toggle.contactId, cassetteIndex: cassetteIndex),
       handleFilter: (filter) => ref
           .read(handleFilterResolverProvider.notifier)
           .resolve(
