@@ -19,6 +19,8 @@ class StrayPhonesResolver extends _$StrayPhonesResolver {
   Future<SidebarCassetteCardViewModel> resolve() async {
     // TODO: Add data fetching and conditional logic as needed
     return const SidebarCassetteCardViewModel(
+      role: SidebarCassetteRole.contextPrimary,
+      placementMode: SidebarBodyPlacementMode.inset,
       title: 'Stray phone numbers',
       subtitle: 'Phone numbers not linked to any contact in your address book.',
       shouldExpand: true,

@@ -18,6 +18,8 @@ class ManualLinkingResolver extends _$ManualLinkingResolver {
   /// Resolve into a sidebar cassette view model.
   Future<SidebarCassetteCardViewModel> resolve() async {
     return const SidebarCassetteCardViewModel(
+      role: SidebarCassetteRole.action,
+      placementMode: SidebarBodyPlacementMode.inset,
       title: 'Manual Linking',
       subtitle:
           'Link unknown handles to contacts when automatic matching fails.',

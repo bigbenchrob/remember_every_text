@@ -199,7 +199,7 @@ class _ContactHeatmapContent extends ConsumerWidget {
         'Messages • ${_formatDateRange(timeline.firstMessageDate, timeline.lastMessageDate)}';
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Summary above heatmap acts as visual separator from info card
         Text(summaryText, style: t.vizMeta),

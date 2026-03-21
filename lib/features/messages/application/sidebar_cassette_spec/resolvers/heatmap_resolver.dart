@@ -33,6 +33,9 @@ class HeatmapResolver extends _$HeatmapResolver {
     final isContactScoped = contactId != null;
 
     return SidebarCassetteCardViewModel(
+      role: SidebarCassetteRole.contextPrimary,
+      placementMode: SidebarBodyPlacementMode.inset,
+      contentAlignment: SidebarBodyContentAlignment.loose,
       // No loud title for contact heatmap - it's obvious from context.
       // Global heatmap gets a title since it's the main feature.
       title: isContactScoped ? '' : 'All messages heatmap',

@@ -25,6 +25,8 @@ class StrayHandlesReviewResolver extends _$StrayHandlesReviewResolver {
     final sectionHeader = _buildSectionHeader(filter, mode);
 
     return SidebarCassetteCardViewModel(
+      role: SidebarCassetteRole.contextPrimary,
+      placementMode: SidebarBodyPlacementMode.insetWithTrailingGutter,
       title: '', // No card title - use sectionTitle for tighter spacing
       sectionTitle: sectionHeader,
       layoutStyle: SidebarCardLayoutStyle.listDense, // Space-efficient rails

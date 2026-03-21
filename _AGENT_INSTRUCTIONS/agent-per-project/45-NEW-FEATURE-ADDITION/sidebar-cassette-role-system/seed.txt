@@ -1,0 +1,256 @@
+#Sidebar Cassette Role System
+
+Okay, now that the sidebar cassette stack has a sound mechanistic underpinning, some aesthetic concerns need to be addressed. These have actually arisen from the same thing that necessitated another look at the underlying presentation logic: more cassette widgets added to a sidebar that previously contained a maximum of two or three.
+
+As you can see, there is no visual order. What is pictured is, from top to bottom:
+
+1. the top menu
+2. the "hero" card for the currently selected contact
+3. an info card containing a control to choose another contact
+4. a toggle to show messages either from the normal chat flow or the pool of recovered (deleted) messages for that contact
+5. a filter to optionally select
+6. an action area to control center panel display -- the timeline heat map
+
+In addition to the right and left margins being all over the place, there is no indication that these fit into any sort of functional hierarchy, i.e.:
+
+APP LEVEL CONTROL: the top menu 1
+
+CURRENT CONTEXT INFORMATION:   2 and 3
+FILTER SETTINGS: 4 and 5
+
+ACTIONABLE INTERFACE CONTROLS: the heat map, 6
+
+The optimum solution would be for, again, principles to be applied to ensure that it would be impossible for an individual cassette to violate the design guidelines and throw the sidebar appearance off, as long as it was correctly categorized. I don't know how to do that
+
+##Statement of problem
+
+
+##Summary restatement of problem
+
+What you’re asking for here is exactly parallel to the architectural shift you just made:
+
+You removed “state inferred from UI” and replaced it with “UI projected from canonical state.”
+
+Now you need to do the same thing for layout and visual hierarchy.
+
+Right now, your sidebar is the visual equivalent of findLatestContactId():
+	•	each cassette brings its own margins, spacing, visual weight
+	•	the final appearance is emergent, not defined
+
+So the solution is not “tweak spacing.”
+
+It’s:
+
+Make visual structure a projection of declared cassette roles.
+
+##Plan outline
+
+Sidebar Cassette Role System
+
+Objective
+
+Introduce a semantic role system for sidebar cassettes so that:
+	•	visual hierarchy is enforced structurally
+	•	spacing, margins, and grouping are not controlled by individual cassettes
+	•	cassette widgets cannot violate layout rules
+	•	sidebar appearance is a deterministic projection of cassette roles
+
+This mirrors the canonical-state principle:
+
+Cassettes declare meaning. The sidebar system decides appearance.
+
+⸻
+
+Core Concept
+
+Each cassette must declare a semantic role.
+
+Roles are:
+	•	few
+	•	reusable
+	•	visual/functional, not feature-specific
+
+Roles are NOT:
+	•	tied to specific features (e.g. “contactHero”)
+	•	allowed to encode layout decisions themselves
+
+⸻
+
+Role Definitions
+
+SidebarCassetteRole:
+	•	appControl        → top-level navigation / mode switching
+	•	contextPrimary    → primary subject of current context
+	•	contextSecondary  → supporting context / explanatory info
+	•	filter            → controls that constrain the data set
+	•	action            → controls that drive navigation or exploration
+
+⸻
+
+Role Semantics
+
+appControl
+
+Top-level application controls that change major app mode or branch.
+
+Examples:
+	•	top menu (Messages vs Settings)
+
+Characteristics:
+	•	visually separated from rest of stack
+	•	highest structural priority
+	•	not repeated within a stack
+
+⸻
+
+contextPrimary
+
+Defines the current subject of the sidebar.
+
+Examples:
+	•	selected contact hero card
+
+Characteristics:
+	•	visually prominent
+	•	establishes “what we are looking at”
+	•	appears once per stack
+
+⸻
+
+contextSecondary
+
+Provides supporting information or auxiliary actions related to the current context.
+
+Examples:
+	•	info card explaining current view
+	•	“change contact” affordance
+
+Characteristics:
+	•	visually subordinate to contextPrimary
+	•	grouped with contextPrimary
+	•	may include lightweight actions
+
+⸻
+
+filter
+
+Controls that refine or constrain the dataset currently being explored.
+
+Examples:
+	•	message scope toggle (current vs deleted)
+	•	handle filter (phone/email)
+
+Characteristics:
+	•	may appear multiple times
+	•	visually grouped together
+	•	consistent control density and spacing
+	•	does not change the subject, only the subset
+
+⸻
+
+action
+
+Controls that drive navigation, exploration, or selection within the current dataset.
+
+Examples:
+	•	heat map timeline
+	•	jump-to-month interactions
+
+Characteristics:
+	•	visually distinct from filters
+	•	often larger or more interactive
+	•	represents “what you can do next”
+
+⸻
+
+Structural Rules
+
+Rule 1: Every CassetteSpec MUST declare a role
+
+Every cassette spec must include a SidebarCassetteRole.
+
+No role → invalid spec.
+
+⸻
+
+Rule 2: Cassettes MUST NOT control outer layout
+
+Cassettes:
+	•	MUST NOT apply outer padding
+	•	MUST NOT control vertical spacing between cassettes
+	•	MUST NOT assume position in stack
+
+All layout is applied externally.
+
+⸻
+
+Rule 3: Sidebar layout is role-driven
+
+Rendering pipeline:
+
+CassetteSpecs (feature-defined)
+→ Role assignment (per spec)
+→ Section grouping (by role)
+→ Layout rules applied per section
+→ Rendered sidebar
+
+⸻
+
+Rule 4: Sections are derived, not declared
+
+Cassettes do NOT declare sections.
+
+Sections are derived by grouping roles:
+	•	appControl → its own section
+	•	contextPrimary + contextSecondary → context section
+	•	filter → filter section
+	•	action → action section
+
+⸻
+
+Layout Ownership
+
+Introduce a centralized layout system responsible for:
+	•	outer margins
+	•	inter-section spacing
+	•	intra-section spacing
+	•	background treatments
+
+Example conceptual rules:
+
+appControl:
+	•	outer padding: 16
+	•	bottom spacing: 12
+
+context:
+	•	outer padding: 16
+	•	spacing between items: 8
+
+filter:
+	•	outer padding: 12
+	•	spacing between items: 8
+	•	grouped background (subtle)
+
+action:
+	•	outer padding: 12
+	•	top spacing: 16
+	•	visually distinct container
+
+These values are owned centrally, not by cassettes.
+
+⸻
+
+Invariants
+	1.	Visual hierarchy must be explainable from cassette roles alone
+	2.	No cassette can alter global layout behavior
+	3.	Spacing must be consistent within a role group
+	4.	Sections must be visually distinguishable without relying on individual cassette styling
+	5.	Adding a new cassette with a valid role must not break layout
+
+⸻
+
+Design Principle
+
+Layout is not a property of components.
+
+Layout is a property of the system.

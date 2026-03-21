@@ -1,4 +1,3 @@
-import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
@@ -14,15 +13,14 @@ class ActionsInfoResolver extends _$ActionsInfoResolver {
   @override
   void build() {}
 
-  SidebarCassetteCardViewModel resolve({required int cassetteIndex}) {
-    return const SidebarCassetteCardViewModel(
+  SidebarInfoCassetteViewModel resolve({required int cassetteIndex}) {
+    return const SidebarInfoCassetteViewModel(
+      role: SidebarCassetteRole.action,
       title: 'Send Logs',
-      child: SizedBox.shrink(),
-      cardType: CassetteCardType.info,
-      infoBodyText:
+      bodyText:
           'If you encounter a problem, you can send diagnostic logs '
           'to help with troubleshooting.',
-      infoAction: SendLogsActionButton(),
+      content: SendLogsActionButton(),
     );
   }
 }

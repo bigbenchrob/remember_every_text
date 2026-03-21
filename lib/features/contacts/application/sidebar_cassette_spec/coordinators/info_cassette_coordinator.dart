@@ -1,4 +1,3 @@
-import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
@@ -27,7 +26,7 @@ class ContactsInfoCassetteCoordinator
   }
 
   /// Build a sidebar cassette view model for a Contacts info cassette request.
-  Future<SidebarCassetteCardViewModel> buildViewModel(
+  Future<SidebarCassettePayload> buildViewModel(
     ContactsInfoCassetteSpec spec, {
     required int cassetteIndex,
   }) async {
@@ -41,12 +40,11 @@ class ContactsInfoCassetteCoordinator
               chosenContactId: chosenContactId,
             );
 
-        return SidebarCassetteCardViewModel(
-          title: content.title ?? '',
-          child: const SizedBox.shrink(), // ignored for info cards
-          cardType: CassetteCardType.info,
-          infoBodyText: content.body,
-          infoAction: content.action,
+        return SidebarInfoCassetteViewModel(
+          role: SidebarCassetteRole.contextSecondary,
+          title: content.title,
+          bodyText: content.body,
+          content: content.action,
         );
     }
 

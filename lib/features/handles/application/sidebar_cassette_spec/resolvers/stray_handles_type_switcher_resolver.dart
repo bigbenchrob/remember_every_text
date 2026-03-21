@@ -23,6 +23,8 @@ class StrayHandlesTypeSwitcherResolver
     required int cassetteIndex,
   }) async {
     return SidebarCassetteCardViewModel(
+      role: SidebarCassetteRole.filter,
+      placementMode: SidebarBodyPlacementMode.fullWidth,
       title: '', // Intentionally empty - control is self-explanatory
       shouldExpand: false,
       isNaked: true, // Tight spacing control for filter controls

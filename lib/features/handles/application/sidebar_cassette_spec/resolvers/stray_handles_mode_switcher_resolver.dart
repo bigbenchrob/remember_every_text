@@ -22,6 +22,8 @@ class StrayHandlesModeSwitcherResolver
     required StrayHandleFilter filter,
   }) async {
     return SidebarCassetteCardViewModel(
+      role: SidebarCassetteRole.filter,
+      placementMode: SidebarBodyPlacementMode.fullWidth,
       title: '', // Empty - the "Show:" label is inline in the widget
       shouldExpand: false,
       isNaked: true, // Tight spacing control for filter controls

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../config/theme/spacing/app_spacing.dart';
+import 'sidebar_body_layout.dart';
 import '../../../../config/theme/theme_typography.dart';
 import '../view_model/sidebar_cassette_card_view_model.dart';
 
@@ -36,9 +37,11 @@ class SidebarCassetteCard extends ConsumerWidget {
 
   final EdgeInsetsGeometry padding;
   final EdgeInsetsGeometry margin;
-  final bool isControl;
   final bool isNaked;
   final bool shouldExpand;
+  final SidebarCassetteRole role;
+  final SidebarBodyPlacementMode placementMode;
+  final SidebarBodyContentAlignment contentAlignment;
 
   /// Layout style controlling horizontal rails.
   /// When non-null, overrides [padding] and [margin] with style-derived values.
@@ -61,9 +64,11 @@ class SidebarCassetteCard extends ConsumerWidget {
       vertical: AppSpacing.sm,
       horizontal: AppSpacing.md,
     ),
-    this.isControl = false,
     this.isNaked = false,
     this.shouldExpand = false,
+    this.role = SidebarCassetteRole.contextPrimary,
+    this.placementMode = SidebarBodyPlacementMode.inset,
+    this.contentAlignment = SidebarBodyContentAlignment.fill,
     this.layoutStyle,
   });
 
@@ -71,12 +76,34 @@ class SidebarCassetteCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Naked mode: minimal wrapper with only horizontal margin for edge alignment
     if (isNaked) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.xs,
-        ),
-        child: child,
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final nakedPadding = _nakedPaddingForPlacement(placementMode);
+          final contentEnvelopeWidth = constraints.maxWidth.isFinite
+              ? (constraints.maxWidth - nakedPadding.horizontal).clamp(
+                  0.0,
+                  double.infinity,
+                )
+              : 0.0;
+          final geometry = SidebarGeometryConstraints.fromTokens(
+            placementMode: placementMode,
+            tokens: SidebarGeometryTokens(
+              contentEnvelopeWidth: contentEnvelopeWidth,
+              bodyInset: 0,
+              trailingGutterWidth: _sidebarTrailingGutterWidth,
+              interiorGap: _sidebarInteriorGapForGutter,
+            ),
+          );
+
+          return Padding(
+            padding: nakedPadding,
+            child: buildSidebarBodyContent(
+              child: child,
+              geometry: geometry,
+              contentAlignment: contentAlignment,
+            ),
+          );
+        },
       );
     }
 
@@ -90,15 +117,17 @@ class SidebarCassetteCard extends ConsumerWidget {
 
     final showHeader = hasTitle || hasSubtitle;
 
-    // Compute effective margin/padding from layoutStyle or legacy properties
-    final (effectiveMargin, effectivePadding, sectionTitleGap) =
-        _computeLayout();
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final hasBoundedHeight = constraints.maxHeight.isFinite;
 
-        final body = child;
+        // Compute effective margin/padding from layoutStyle or placement mode.
+        // If no legacy override is active, placementMode owns the horizontal body
+        // geometry and derives concrete constraints from the live sidebar width.
+        final (effectiveMargin, effectivePadding, sectionTitleGap, geometry) =
+            _computeLayout(maxWidth: constraints.maxWidth);
+
+        final body = _buildBodyWithGeometry(geometry);
 
         final content = Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -140,8 +169,23 @@ class SidebarCassetteCard extends ConsumerWidget {
     );
   }
 
-  /// Computes (margin, padding, sectionTitleGap) based on layoutStyle.
-  (EdgeInsets, EdgeInsets, double) _computeLayout() {
+  Widget _buildBodyWithGeometry(SidebarGeometryConstraints? geometry) {
+    if (geometry == null) {
+      return child;
+    }
+
+    return buildSidebarBodyContent(
+      child: child,
+      geometry: geometry,
+      contentAlignment: contentAlignment,
+    );
+  }
+
+  /// Computes (margin, padding, sectionTitleGap, geometry) based on any
+  /// remaining layoutStyle override first, then placementMode.
+  (EdgeInsets, EdgeInsets, double, SidebarGeometryConstraints?) _computeLayout({
+    required double maxWidth,
+  }) {
     // Layout style takes precedence when specified
     if (layoutStyle != null) {
       return switch (layoutStyle!) {
@@ -152,11 +196,13 @@ class SidebarCassetteCard extends ConsumerWidget {
           ),
           const EdgeInsets.all(AppSpacing.md),
           AppSpacing.sm,
+          null,
         ),
         SidebarCardLayoutStyle.listDense => (
           const EdgeInsets.symmetric(vertical: AppSpacing.xs, horizontal: 0),
           const EdgeInsets.symmetric(horizontal: 12, vertical: AppSpacing.sm),
           AppSpacing.xs,
+          null,
         ),
         SidebarCardLayoutStyle.controlAligned => (
           const EdgeInsets.symmetric(
@@ -165,28 +211,74 @@ class SidebarCassetteCard extends ConsumerWidget {
           ),
           EdgeInsets.zero,
           0.0,
+          null,
         ),
       };
     }
 
-    // Legacy: isControl overrides
-    if (isControl) {
-      return (
-        const EdgeInsets.only(
-          left: AppSpacing.md,
-          right: AppSpacing.md,
-          top: AppSpacing.sm,
-          bottom: AppSpacing.xs,
-        ),
-        const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm + AppSpacing.xs,
-        ),
-        AppSpacing.sm,
-      );
-    }
+    final effectiveMargin = margin as EdgeInsets;
+    final effectivePadding = padding as EdgeInsets;
+    final contentEnvelopeWidth = maxWidth.isFinite
+        ? (maxWidth - effectiveMargin.horizontal).clamp(0.0, double.infinity)
+        : 0.0;
+    final geometry = SidebarGeometryConstraints.fromTokens(
+      placementMode: placementMode,
+      tokens: SidebarGeometryTokens(
+        contentEnvelopeWidth: contentEnvelopeWidth,
+        bodyInset: effectivePadding.horizontal / 2,
+        trailingGutterWidth: _sidebarTrailingGutterWidth,
+        interiorGap: _sidebarInteriorGapForGutter,
+      ),
+    );
 
-    // Legacy: use provided margin/padding
-    return (margin as EdgeInsets, padding as EdgeInsets, AppSpacing.sm);
+    final placementPadding = _paddingForPlacement(
+      placementMode: placementMode,
+      currentPadding: effectivePadding,
+    );
+
+    return (effectiveMargin, placementPadding, AppSpacing.sm, geometry);
   }
 }
+
+EdgeInsets _nakedPaddingForPlacement(SidebarBodyPlacementMode placementMode) {
+  return switch (placementMode) {
+    SidebarBodyPlacementMode.fullWidth => const EdgeInsets.symmetric(
+      horizontal: AppSpacing.md,
+      vertical: AppSpacing.xs,
+    ),
+    SidebarBodyPlacementMode.inset => const EdgeInsets.symmetric(
+      horizontal: AppSpacing.md,
+      vertical: AppSpacing.xs,
+    ),
+    SidebarBodyPlacementMode.insetWithTrailingGutter => const EdgeInsets.only(
+      left: AppSpacing.md,
+      top: AppSpacing.xs,
+      right: AppSpacing.md + _sidebarTrailingGutterWidth,
+      bottom: AppSpacing.xs,
+    ),
+  };
+}
+
+EdgeInsets _paddingForPlacement({
+  required SidebarBodyPlacementMode placementMode,
+  required EdgeInsets currentPadding,
+}) {
+  return switch (placementMode) {
+    SidebarBodyPlacementMode.fullWidth => EdgeInsets.only(
+      left: 0,
+      top: currentPadding.top,
+      right: 0,
+      bottom: currentPadding.bottom,
+    ),
+    SidebarBodyPlacementMode.inset => currentPadding,
+    SidebarBodyPlacementMode.insetWithTrailingGutter => EdgeInsets.only(
+      left: currentPadding.left,
+      top: currentPadding.top,
+      right: currentPadding.right,
+      bottom: currentPadding.bottom,
+    ),
+  };
+}
+
+const double _sidebarTrailingGutterWidth = AppSpacing.xl;
+const double _sidebarInteriorGapForGutter = AppSpacing.sm;

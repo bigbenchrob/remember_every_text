@@ -38,6 +38,9 @@ class SettingsTopMenuResolver extends _$SettingsTopMenuResolver {
     required SidebarMode sidebarMode,
   }) async {
     return SidebarCassetteCardViewModel(
+      role: SidebarCassetteRole.appControl,
+      placementMode: SidebarBodyPlacementMode.fullWidth,
+      contentAlignment: SidebarBodyContentAlignment.insetControl,
       title: '',
       isNaked: true,
       child: SettingsTopMenuWidget(

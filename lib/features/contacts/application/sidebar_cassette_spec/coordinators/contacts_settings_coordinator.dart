@@ -15,7 +15,7 @@ part 'contacts_settings_coordinator.g.dart';
 /// It follows the cross-surface spec system rules:
 /// - Routes only (no business logic)
 /// - Calls exactly one resolver per spec variant
-/// - Returns Future<SidebarCassetteCardViewModel>
+/// - Returns Future<SidebarCassettePayload>
 @riverpod
 class ContactsSettingsCoordinator extends _$ContactsSettingsCoordinator {
   @override
@@ -26,7 +26,7 @@ class ContactsSettingsCoordinator extends _$ContactsSettingsCoordinator {
   /// Routes to the appropriate resolver based on spec variant.
   /// The [cassetteIndex] is passed through for widgets that need to update
   /// the cassette stack.
-  Future<SidebarCassetteCardViewModel> buildViewModel(
+  Future<SidebarCassettePayload> buildViewModel(
     ContactsSettingsSpec spec, {
     required int cassetteIndex,
   }) async {

@@ -1,0 +1,40 @@
+Just one more idea: there would be no point in adding a widened right margin to accommodate trailing buttons for sidebar layouts where no widget needs them. Recognizing that we don't want to make the sidebar the Wild West and introduce so many bendable rules that the rules become pointless, what about two sidebar configurations:
+
+SidebarConfiguation.centered
+SidebarConfiguration.rightGutter
+
+AGENT:
+
+Yes, with one important constraint: I would not make that a single global mode for the entire sidebar at a given moment. I would make it a small, authoritative shell configuration chosen by essentials/sidebar per rendered cassette or section.
+
+If you mean this:
+
+SidebarConfiguration.centered
+SidebarConfiguration.rightGutter
+then the idea is sound. It is much cleaner than giving every cassette its own optional gutter math. But if rightGutter applies to the whole sidebar branch at once, it is too coarse. You would waste space on screens where only one cassette, or one list inside one cassette, actually needs trailing actions.
+
+So I would refine it like this:
+
+SidebarConfiguration.centered
+Normal symmetric rails. No reserved gutter.
+SidebarConfiguration.rightGutter
+Same left rail, but reserves a sidebar-owned trailing gutter for approved affordances.
+Then the rule becomes:
+
+most cassettes default to centered
+only gutter-capable body types may opt into rightGutter
+the choice is made by the sidebar shell, not by arbitrary feature widget padding
+a cassette that uses rightGutter must still keep its main content inside the non-gutter lane
+That gives you the simplicity you want without turning the system into a bag of exceptions.
+
+So my recommendation is:
+
+keep exactly these two high-level geometry modes
+treat them as sidebar-owned shell configurations
+apply them at the lane/body level, not as one global sidebar-wide switch
+let role decide the default, and body type decide whether gutter mode is actually allowed
+In other words, I think your instinct is right, but the abstraction should probably be “two shell configurations” rather than “two whole-sidebar states.”
+
+If you want, I can fold that refinement into the geometry contract doc next and simplify the current lane-policy language around those two top-level configurations.
+
+

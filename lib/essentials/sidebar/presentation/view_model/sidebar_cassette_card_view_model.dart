@@ -1,22 +1,98 @@
 import 'package:flutter/widgets.dart';
 
-/// The type of card container to render for a cassette.
+/// Semantic grouping for sidebar cassettes.
 ///
-/// Used by [CassetteWidgetCoordinator] to select the appropriate wrapper.
-enum CassetteCardType {
-  /// Standard cassette card with title, subtitle, section, footer slots.
-  /// Supports both full cards and "naked" mode for plain controls.
-  standard,
+/// This lets essentials own section ordering and hierarchy without inferring
+/// meaning from layout flags or widget shape.
+enum SidebarCassetteRole {
+  appControl,
+  contextPrimary,
+  contextSecondary,
+  filter,
+  action,
+}
 
-  /// Soft informational card for explanatory text.
-  /// Uses [SidebarInfoCard] with tinted background, optional title/footnote.
-  /// When this type is used, [infoBodyText] provides the card body content.
-  info,
+/// Approved content placement modes within the sidebar content envelope.
+enum SidebarBodyPlacementMode { fullWidth, inset, insetWithTrailingGutter }
 
-  /// Full-bleed navigation control for "back to previous state" actions.
-  /// Uses [SidebarNavigationCard] with a subtle tinted strip.
-  /// The child widget owns all internal padding, typography, and interaction.
-  sidebarNavigation,
+/// How cassette content behaves once it is inside the shared sidebar envelope.
+enum SidebarBodyContentAlignment { fill, leftAnchored, insetControl, loose }
+
+/// Centrally owned geometry constraints derived from sidebar tokens.
+class SidebarGeometryConstraints {
+  const SidebarGeometryConstraints({
+    required this.placementMode,
+    required this.contentEnvelopeWidth,
+    required this.maxContentWidth,
+    required this.hasTrailingGutter,
+    required this.trailingGutterWidth,
+    required this.trailingAffordanceMaxWidth,
+  });
+
+  factory SidebarGeometryConstraints.fromTokens({
+    required SidebarBodyPlacementMode placementMode,
+    required SidebarGeometryTokens tokens,
+  }) {
+    switch (placementMode) {
+      case SidebarBodyPlacementMode.fullWidth:
+        return SidebarGeometryConstraints(
+          placementMode: placementMode,
+          contentEnvelopeWidth: tokens.contentEnvelopeWidth,
+          maxContentWidth: tokens.contentEnvelopeWidth,
+          hasTrailingGutter: false,
+          trailingGutterWidth: 0,
+          trailingAffordanceMaxWidth: 0,
+        );
+      case SidebarBodyPlacementMode.inset:
+        final insetWidth = tokens.contentEnvelopeWidth - (tokens.bodyInset * 2);
+
+        return SidebarGeometryConstraints(
+          placementMode: placementMode,
+          contentEnvelopeWidth: tokens.contentEnvelopeWidth,
+          maxContentWidth: insetWidth,
+          hasTrailingGutter: false,
+          trailingGutterWidth: 0,
+          trailingAffordanceMaxWidth: 0,
+        );
+      case SidebarBodyPlacementMode.insetWithTrailingGutter:
+        final mainWidth =
+            tokens.contentEnvelopeWidth -
+            tokens.bodyInset -
+            tokens.trailingGutterWidth -
+            tokens.interiorGap;
+
+        return SidebarGeometryConstraints(
+          placementMode: placementMode,
+          contentEnvelopeWidth: tokens.contentEnvelopeWidth,
+          maxContentWidth: mainWidth,
+          hasTrailingGutter: true,
+          trailingGutterWidth: tokens.trailingGutterWidth,
+          trailingAffordanceMaxWidth: tokens.trailingGutterWidth,
+        );
+    }
+  }
+
+  final SidebarBodyPlacementMode placementMode;
+  final double contentEnvelopeWidth;
+  final double maxContentWidth;
+  final bool hasTrailingGutter;
+  final double trailingGutterWidth;
+  final double trailingAffordanceMaxWidth;
+}
+
+/// Tunable geometry tokens for the sidebar cassette system.
+class SidebarGeometryTokens {
+  const SidebarGeometryTokens({
+    required this.contentEnvelopeWidth,
+    required this.bodyInset,
+    required this.trailingGutterWidth,
+    required this.interiorGap,
+  });
+
+  final double contentEnvelopeWidth;
+  final double bodyInset;
+  final double trailingGutterWidth;
+  final double interiorGap;
 }
 
 /// Layout style for [SidebarCassetteCard] horizontal rails.
@@ -40,23 +116,40 @@ enum SidebarCardLayoutStyle {
   controlAligned,
 }
 
-/// Presentation data for rendering a cassette inside the sidebar card shell.
-class SidebarCassetteCardViewModel {
+/// Essentials-owned payload families for the sidebar cassette shell.
+sealed class SidebarCassettePayload {
+  const SidebarCassettePayload({required this.role, this.topSpacing = 0});
+
+  /// Semantic role used by essentials-owned sidebar composition.
+  final SidebarCassetteRole role;
+
+  /// Extra vertical space to insert above this cassette in the sidebar stack.
+  final double topSpacing;
+}
+
+/// Standard content cassette payload.
+class SidebarCassetteCardViewModel extends SidebarCassettePayload {
   const SidebarCassetteCardViewModel({
+    SidebarCassetteRole role = SidebarCassetteRole.contextPrimary,
+    this.placementMode = SidebarBodyPlacementMode.inset,
+    this.contentAlignment = SidebarBodyContentAlignment.fill,
     required this.title,
     this.subtitle,
     this.sectionTitle,
     this.footerText,
     required this.child,
-    this.cardType = CassetteCardType.standard,
     this.layoutStyle = SidebarCardLayoutStyle.standard,
-    this.infoBodyText,
-    this.infoAction,
-    this.isControl = false,
     this.isNaked = false,
-    this.topSpacing = 0,
+    double topSpacing = 0,
     bool? shouldExpand,
-  }) : shouldExpand = shouldExpand ?? false;
+  }) : shouldExpand = shouldExpand ?? false,
+       super(role: role, topSpacing: topSpacing);
+
+  /// Approved placement mode used by the sidebar geometry contract.
+  final SidebarBodyPlacementMode placementMode;
+
+  /// Approved content alignment used inside the shared sidebar envelope.
+  final SidebarBodyContentAlignment contentAlignment;
 
   /// Display title shown in the sidebar card header.
   final String title;
@@ -70,37 +163,13 @@ class SidebarCassetteCardViewModel {
   /// The cassette content widget rendered inside the card.
   ///
   /// For [CassetteCardType.standard], this is the interactive body content.
-  /// For [CassetteCardType.info], this is ignored; use [infoBodyText] instead.
   final Widget child;
-
-  /// The type of card container to use for this cassette.
-  ///
-  /// Defaults to [CassetteCardType.standard] which uses [SidebarCassetteCard].
-  /// Use [CassetteCardType.info] for explanatory cards using [SidebarInfoCard].
-  final CassetteCardType cardType;
 
   /// Layout style controlling horizontal rails (margin/padding/gaps).
   ///
   /// Defaults to [SidebarCardLayoutStyle.standard] with generous insets.
   /// Use [SidebarCardLayoutStyle.listDense] for space-sensitive lists.
   final SidebarCardLayoutStyle layoutStyle;
-
-  /// Body text for info cards ([CassetteCardType.info]).
-  ///
-  /// When [cardType] is [CassetteCardType.info], this text is rendered as the
-  /// main explanatory content of the [SidebarInfoCard].
-  final String? infoBodyText;
-
-  /// Optional escape-hatch action widget for info cards.
-  ///
-  /// When [cardType] is [CassetteCardType.info] and this is non-null,
-  /// the action is rendered at the bottom of the [SidebarInfoCard]
-  /// as a footnote-action (mutually exclusive with [footerText]).
-  final Widget? infoAction;
-
-  /// Whether this cassette is primarily a control surface (vs content).
-  /// Control cassettes should be visually de-emphasized in the sidebar.
-  final bool isControl;
 
   /// Whether this cassette should render "naked" - with only horizontal margin
   /// to align edges with cards, but no padding, border, background, or shadow.
@@ -112,12 +181,42 @@ class SidebarCassetteCardViewModel {
   ///
   /// Shared sidebar wrappers own the capability; features opt into it for
   /// layouts that need more breathing room than the default cassette rhythm.
-  final double topSpacing;
-
   /// Whether this cassette should expand to fill available vertical space.
   ///
   /// Defaults to `false` — cards take their intrinsic height unless the
   /// resolver explicitly opts in with `shouldExpand: true` (e.g. scrollable
   /// lists that should fill the remaining sidebar space).
   final bool shouldExpand;
+}
+
+/// Canonical informational cassette payload.
+class SidebarInfoCassetteViewModel extends SidebarCassettePayload {
+  const SidebarInfoCassetteViewModel({
+    SidebarCassetteRole role = SidebarCassetteRole.contextSecondary,
+    double topSpacing = 0,
+    this.title,
+    required this.bodyText,
+    this.footnote,
+    this.content,
+  }) : super(role: role, topSpacing: topSpacing);
+
+  final String? title;
+  final String bodyText;
+  final String? footnote;
+  final Widget? content;
+}
+
+/// Canonical navigation cassette payload.
+class SidebarNavigationCassetteViewModel extends SidebarCassettePayload {
+  const SidebarNavigationCassetteViewModel({
+    SidebarCassetteRole role = SidebarCassetteRole.action,
+    double topSpacing = 0,
+    required this.child,
+    this.placementMode = SidebarBodyPlacementMode.fullWidth,
+    this.contentAlignment = SidebarBodyContentAlignment.leftAnchored,
+  }) : super(role: role, topSpacing: topSpacing);
+
+  final Widget child;
+  final SidebarBodyPlacementMode placementMode;
+  final SidebarBodyContentAlignment contentAlignment;
 }

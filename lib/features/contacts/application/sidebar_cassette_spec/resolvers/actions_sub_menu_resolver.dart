@@ -20,6 +20,8 @@ class ActionsSubMenuResolver extends _$ActionsSubMenuResolver {
     required int cassetteIndex,
   }) {
     return SidebarCassetteCardViewModel(
+      role: SidebarCassetteRole.action,
+      placementMode: SidebarBodyPlacementMode.fullWidth,
       title: '',
       isNaked: true,
       child: ActionsSubMenuWidget(

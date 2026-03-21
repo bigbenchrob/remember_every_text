@@ -18,6 +18,8 @@ class SpamManagementResolver extends _$SpamManagementResolver {
   /// Resolve into a sidebar cassette view model.
   Future<SidebarCassetteCardViewModel> resolve() async {
     return const SidebarCassetteCardViewModel(
+      role: SidebarCassetteRole.action,
+      placementMode: SidebarBodyPlacementMode.inset,
       title: 'Spam Management',
       subtitle: 'Block unwanted handles and manage your blacklist.',
       shouldExpand: true,

@@ -1,0 +1,175 @@
+
+#Rules should be:
+
+All cassette content is rendered within the shared content envelope.
+Within that envelope, content must declare an alignment mode.
+
+Approved alignment modes:
+	•	fill
+Content occupies the full width of the content lane.
+Used for text blocks and readable content.
+	•	leftAnchored
+Content aligns to the left rail but does not expand to full width.
+Used for labels, links, and lightweight actions.
+	•	insetControl
+Control elements are aligned to the content lane but rendered with internal horizontal inset so their visual body does not touch the rails.
+Used for toggles, segmented controls, dropdowns.
+	•	loose
+Content aligns to the left rail but may use its intrinsic width.
+Used for visualizations such as heatmaps.
+
+Rules:
+	•	Content must not define its own external width or padding.
+	•	All horizontal alignment must be explainable as a combination of lane policy and alignment mode.
+	•	Visual misalignment caused by internal padding must be corrected at the essentials level, not per cassette.
+
+#Specific examples from contact hero sidebar
+
+1. Info text block (“Showing messages…”)
+
+should be fully justified
+
+Yes — but more precisely:
+	•	It should fill the readable lane exactly
+	•	Not float inside it
+	•	Not introduce its own internal width
+
+So:
+	•	left edge = left rail ✔
+	•	right edge = right rail ✔
+
+👉 This is a readable lane violation right now
+
+⸻
+
+2. “Change contact…” button
+
+should align with left side
+
+Correct.
+
+This is a classic pattern:
+	•	body text = full readable width
+	•	action link = anchored to left rail only
+
+Do NOT center or inset this.
+
+⸻
+
+3. The two control sections
+
+This is the most important issue.
+
+You wrote:
+
+toggle aligns with top menu but appears wider
+
+This is the key insight:
+
+👉 You have two competing visual widths
+	•	actual layout width
+	•	perceived width (due to inner padding / shape / contrast)
+
+⸻
+
+What’s going wrong
+
+Your controls are likely:
+	•	using fullWidth lane
+	•	but with internal padding and rounded shapes
+	•	which makes them look wider or misaligned
+
+Meanwhile:
+	•	the menu above is visually narrower
+	•	so the control feels oversized
+
+⸻
+
+The fix
+
+You need to separate:
+
+control container width
+vs
+control visual body
+
+The correct pattern:
+	•	control container aligns to content lane
+	•	control visual element may be inset inside it
+
+So:
+	•	labels (“Show messages belonging to”) → left aligned to rail ✔
+	•	control (segmented / dropdown) → inset within same lane
+
+👉 Right now your controls are behaving like fullWidth content, but they should behave like inset content inside a control lane
+
+⸻
+
+4. Heatmap
+
+You said:
+
+doesn’t align with anything — maybe okay
+
+You’re half right.
+
+The heatmap is a special case, but it still needs a rule:
+
+👉 It should align to the same left rail, but it does not need to fill the right rail
+
+So:
+	•	left = anchored ✔
+	•	right = flexible ✔
+
+What it must NOT do:
+	•	drift left/right independently
+	•	invent its own centering logic
+
+⸻
+
+🧩 What’s actually missing
+
+You implemented:
+	•	role system ✅
+	•	geometry contract ✅
+	•	content envelope ✅
+
+But you’re missing one layer:
+
+Content type rules inside the lane
+
+Right now everything is treated as:
+	•	“something inside 150px”
+
+But visually, there are different behaviors:
+
+⸻
+
+🧱 Introduce Content Alignment Types
+
+Add this concept:
+
+SidebarContentAlignment:
+	•	fill → occupies full lane width (text blocks)
+	•	leftAnchored → aligns left, does not fill (links, labels)
+	•	insetControl → control sits inside lane with internal padding
+	•	loose → flexible width but anchored left (heatmap)
+
+⸻
+
+🎯 Apply it to your screen
+
+Info text
+	•	alignment: fill
+
+“Change contact”
+	•	alignment: leftAnchored
+
+Section labels
+	•	alignment: leftAnchored
+
+Toggle / dropdown controls
+	•	alignment: insetControl
+
+Heatmap
+	•	alignment: loose (left anchored, width defined by content)

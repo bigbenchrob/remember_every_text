@@ -17,7 +17,7 @@ class MessagesInfoCassetteCoordinator
     // Stateless coordinator
   }
 
-  Future<SidebarCassetteCardViewModel> buildViewModel(
+  Future<SidebarCassettePayload> buildViewModel(
     MessagesInfoCassetteSpec spec, {
     required int cassetteIndex,
   }) async {
@@ -28,9 +28,10 @@ class MessagesInfoCassetteCoordinator
             .resolve(key, cassetteIndex: cassetteIndex);
 
         return SidebarCassetteCardViewModel(
+          role: SidebarCassetteRole.action,
+          placementMode: SidebarBodyPlacementMode.fullWidth,
           title: content.title ?? '',
           child: content.child,
-          layoutStyle: content.layoutStyle,
           topSpacing: content.topSpacing,
         );
     }

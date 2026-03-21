@@ -1,0 +1,355 @@
+SIDEBAR ARCHITECTURE CONTRACT
+
+(Canonical Flow, Role System, Geometry, and Action Ownership)
+
+⸻
+
+1. Purpose
+
+This document defines the authoritative architectural boundaries for the sidebar system.
+
+Its purpose is to ensure that:
+	•	sidebar layout is deterministic and consistent
+	•	feature code cannot violate layout or styling rules
+	•	state, structure, and rendering responsibilities are cleanly separated
+	•	future development cannot reintroduce implicit state or layout drift
+
+This contract is mandatory for all sidebar-related features.
+
+⸻
+
+2. Core Principles
+
+2.1 Canonical State Principle
+
+All sidebar and panel meaning must be derived from canonical flow state.
+	•	UI must never define state
+	•	state must never be inferred from rendered UI
+	•	the cassette stack is a projection, not a source of truth
+
+If a UI configuration cannot be explained from canonical state alone, it is invalid.
+
+⸻
+
+2.2 Projection Principle
+
+The sidebar is built through a one-way projection:
+
+Flow State
+→ Cassette Specs
+→ Presentation Models
+→ Sidebar Layout System
+→ Rendered UI
+
+Each layer refines meaning. No layer may reach backward or infer upstream intent.
+
+⸻
+
+2.3 Ownership Principle
+
+Responsibilities are strictly divided:
+	•	Features define meaning
+	•	Essentials defines structure, layout, rendering, and behavior execution
+
+No layer may assume responsibilities belonging to another.
+
+⸻
+
+2.4 No Implicit Behavior
+
+All behavior must be:
+	•	explicitly declared
+	•	explicitly routed
+	•	centrally owned
+
+There must be no behavior derived from:
+	•	widget structure
+	•	cassette position
+	•	local UI state
+
+⸻
+
+2.5 No Layout From Features
+
+Layout is a system concern.
+	•	features must not define padding, margins, widths, or alignment
+	•	features must not attempt to “line up” with other cassettes
+	•	features must not introduce alternative geometry systems
+
+All layout must be explainable from sidebar-owned rules.
+
+⸻
+
+3. Layer Responsibilities
+
+⸻
+
+3.1 Feature Layer (Spec Interpretation Only)
+
+The feature layer:
+	•	receives feature-specific cassette specs
+	•	interprets domain meaning
+	•	produces structured presentation data
+
+The feature layer must NOT:
+	•	build Flutter widgets
+	•	return Widget instances
+	•	define padding, spacing, or layout
+	•	know about cassette index or stack position
+	•	invoke sidebar flow transitions directly
+
+The feature layer may ONLY return:
+	•	strings (labels, body text)
+	•	structured data models (lists, options, selections)
+	•	semantic action descriptors (intent + label)
+
+The feature layer must not know what a Widget is.
+
+⸻
+
+3.2 Essentials Presentation Model Layer
+
+This layer defines the allowed shapes of sidebar content.
+
+It introduces a fixed set of cassette body types, such as:
+	•	info body
+	•	dropdown body
+	•	segmented control body
+	•	button/action body
+	•	list body (with optional gutter)
+	•	visualization body (e.g. heatmap)
+
+Each body type is represented by a typed data model.
+
+These models:
+	•	fully describe the content
+	•	contain no layout instructions
+	•	contain no Flutter widgets
+
+This layer is the contract boundary between features and rendering.
+
+⸻
+
+3.3 Essentials Widget Layer
+
+This is the ONLY layer allowed to construct Flutter widgets.
+
+It is responsible for:
+	•	rendering all cassette body types
+	•	applying layout rules
+	•	enforcing geometry constraints
+	•	applying consistent styling
+	•	rendering all controls (buttons, menus, toggles)
+	•	rendering all action affordances
+
+Feature code must never construct these widgets.
+
+⸻
+
+3.4 Essentials Action Dispatch Layer
+
+All user interactions are handled here.
+
+Features do not execute behavior.
+
+Instead, features declare:
+	•	action label
+	•	action intent
+
+Essentials maps action intent to behavior.
+
+Examples:
+	•	chooseAnotherContact
+	•	selectHandle
+	•	changeMessageScope
+	•	focusHeatmapMonth
+
+Essentials executes these by invoking the canonical flow state transitions.
+
+⸻
+
+4. Action Model
+
+⸻
+
+4.1 Action Declaration
+
+Features declare actions using semantic descriptors:
+	•	label (string)
+	•	intent (enum or identifier)
+
+No callbacks. No closures. No widget handlers.
+
+⸻
+
+4.2 Action Execution
+
+Essentials:
+	•	renders the control (button, link, etc.)
+	•	binds interaction handlers
+	•	dispatches the corresponding flow transition
+
+⸻
+
+4.3 Prohibited Patterns
+
+Feature code must NOT:
+	•	call providers directly
+	•	invoke flow transitions
+	•	pass cassette indices
+	•	construct gesture detectors
+	•	manage hover or press state
+
+⸻
+
+5. Geometry Contract
+
+⸻
+
+5.1 Fixed Content Envelope
+
+All cassette content is rendered within a fixed-width content envelope.
+
+This envelope is owned by essentials.
+
+Feature content must fit within this envelope.
+
+⸻
+
+5.2 Internal Alignment Modes
+
+Content may use only approved alignment modes:
+	•	fill (full width of envelope)
+	•	left-aligned (anchored to left rail)
+	•	inset (visually inset within envelope)
+	•	inset with trailing gutter (reserved right-side region)
+
+Features do not control these directly. They are selected by body type.
+
+⸻
+
+5.3 Gutter Rules
+	•	gutter is owned by essentials
+	•	main content may not enter gutter
+	•	only approved trailing affordances may occupy gutter
+	•	gutter does not change sidebar rails
+
+⸻
+
+5.4 No Custom Geometry
+
+Features must not:
+	•	define outer padding
+	•	define custom widths
+	•	simulate gutters
+	•	shift content horizontally
+
+⸻
+
+6. Role System
+
+⸻
+
+Each cassette declares a semantic role:
+	•	appControl
+	•	contextPrimary
+	•	contextSecondary
+	•	filter
+	•	action
+
+Roles determine:
+	•	grouping
+	•	spacing
+	•	section boundaries
+	•	visual hierarchy
+
+Roles do not define layout directly.
+
+⸻
+
+7. Section System
+
+⸻
+
+Sections are derived from roles, not declared by features.
+
+Grouping:
+	•	appControl → app section
+	•	contextPrimary + contextSecondary → context section
+	•	filter → filter section
+	•	action → action section
+
+Sections own:
+	•	vertical spacing
+	•	grouping behavior
+	•	optional background treatment
+
+⸻
+
+8. Prohibited Patterns
+
+⸻
+
+The following are explicitly forbidden:
+	•	returning raw Widget from feature layer
+	•	embedding Padding or layout widgets in feature content
+	•	using cassetteIndex in feature code
+	•	invoking sidebarFlowProvider from feature code
+	•	constructing buttons, dropdowns, toggles in feature layer
+	•	defining layout behavior in feature resolvers
+	•	inferring state from cassette stack
+
+⸻
+
+9. Migration Guidance
+
+⸻
+
+During refactor:
+	1.	Replace all feature-returned Widgets with typed data models
+	2.	Introduce action intent system
+	3.	Centralize all control rendering in essentials
+	4.	Remove cassetteIndex from feature pathways
+	5.	Replace all layout flags with role + body type rules
+	6.	Enforce geometry via essentials shells
+
+⸻
+
+10. Validation Rule
+
+⸻
+
+A sidebar implementation is correct only if:
+	•	layout can be explained entirely by role + geometry contract
+	•	all actions originate from semantic intents
+	•	no feature code constructs widgets
+	•	no feature code manipulates sidebar structure
+	•	no visual inconsistency can arise from feature implementation differences
+
+⸻
+
+11. Summary
+
+⸻
+
+Features describe meaning.
+Essentials constructs reality.
+
+State defines UI.
+UI never defines state.
+
+Layout is owned centrally.
+Components do not negotiate it.
+
+Actions are declared semantically.
+Execution is centralized.
+
+⸻
+
+If this contract is followed, the sidebar becomes:
+	•	deterministic
+	•	consistent
+	•	extensible
+	•	immune to layout drift
+	•	immune to stale UI state
+	•	easy to reason about

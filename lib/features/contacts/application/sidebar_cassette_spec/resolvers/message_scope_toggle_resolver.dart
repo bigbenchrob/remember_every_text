@@ -18,6 +18,9 @@ class MessageScopeToggleResolver extends _$MessageScopeToggleResolver {
     required int cassetteIndex,
   }) async {
     return SidebarCassetteCardViewModel(
+      role: SidebarCassetteRole.filter,
+      placementMode: SidebarBodyPlacementMode.fullWidth,
+      contentAlignment: SidebarBodyContentAlignment.insetControl,
       title: '',
       isNaked: true,
       child: ContactMessageScopeToggleWidget(contactId: contactId),

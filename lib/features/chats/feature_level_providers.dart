@@ -33,7 +33,7 @@ class FeatureCassetteSpecCoordinator extends _$FeatureCassetteSpecCoordinator {
   }
 
   /// Build a cassette view model for the given [ChatsCassetteSpec].
-  SidebarCassetteCardViewModel buildForSpec(ChatsCassetteSpec spec) {
+  SidebarCassettePayload buildForSpec(ChatsCassetteSpec spec) {
     // TODO: Implement when ChatsCassetteSpec is defined
     return const SidebarCassetteCardViewModel(
       title: 'Chats',
@@ -53,7 +53,7 @@ class SettingsCassetteSpecCoordinator
   }
 
   /// Build a cassette view model for the given [ChatsSettingsSpec].
-  SidebarCassetteCardViewModel buildForSpec(ChatsSettingsSpec spec) {
+  SidebarCassettePayload buildForSpec(ChatsSettingsSpec spec) {
     // TODO: Implement when ChatsSettingsSpec is defined
     return const SidebarCassetteCardViewModel(
       title: 'Chat Settings',

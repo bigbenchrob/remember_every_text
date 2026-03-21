@@ -29,6 +29,8 @@ class ContactHeroSummaryResolver extends _$ContactHeroSummaryResolver {
     required int cassetteIndex,
   }) async {
     return SidebarCassetteCardViewModel(
+      role: SidebarCassetteRole.contextPrimary,
+      placementMode: SidebarBodyPlacementMode.fullWidth,
       title: '',
       subtitle: null,
       isNaked: true, // Align edges with top menu dropdown

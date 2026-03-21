@@ -19,6 +19,8 @@ class UnmatchedHandlesResolver extends _$UnmatchedHandlesResolver {
   Future<SidebarCassetteCardViewModel> resolve() async {
     // TODO: Add data fetching and conditional logic as needed
     return const SidebarCassetteCardViewModel(
+      role: SidebarCassetteRole.contextPrimary,
+      placementMode: SidebarBodyPlacementMode.inset,
       title: 'Unmatched phone numbers & emails',
       subtitle:
           'Link stray handles to contacts to keep conversations organized.',
