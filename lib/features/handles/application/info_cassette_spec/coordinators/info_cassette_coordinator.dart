@@ -1,4 +1,3 @@
-import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -28,7 +27,7 @@ part 'info_cassette_coordinator.g.dart';
 /// - Accept a HandlesInfoCassetteSpec (sidebar protocol entity)
 /// - Pattern-match on the spec variant
 /// - Delegate meaning/data/formatting to application-layer case handlers/resolvers
-/// - Return a SidebarCassetteCardViewModel (NOT a wrapped widget)
+/// - Return a SidebarCassettePayload (NOT a wrapped widget)
 ///
 /// Why return a view model instead of a widget?
 ///
@@ -52,7 +51,7 @@ class HandlesInfoCassetteCoordinator extends _$HandlesInfoCassetteCoordinator {
   /// This is async because:
   /// - info content may later depend on repositories (counts, derived values)
   /// - keeping the API async avoids refactoring call sites later
-  Future<SidebarCassetteCardViewModel> buildViewModel(
+  Future<SidebarCassettePayload> buildViewModel(
     HandlesInfoCassetteSpec spec, {
     required int cassetteIndex,
   }) async {
@@ -69,12 +68,11 @@ class HandlesInfoCassetteCoordinator extends _$HandlesInfoCassetteCoordinator {
         // We do NOT build a Text() widget here.
         // We pass plain data to the view model and let the app-level chrome builder decide
         // how an "info" card is rendered.
-        return SidebarCassetteCardViewModel(
-          title: content.title ?? '',
-          footerText: content.footnote,
-          child: const SizedBox.shrink(), // ignored for info cards
-          cardType: CassetteCardType.info,
-          infoBodyText: content.body,
+        return SidebarInfoCassetteViewModel(
+          role: SidebarCassetteRole.contextSecondary,
+          title: content.title,
+          bodyText: content.body,
+          footnote: content.footnote,
         );
     }
 

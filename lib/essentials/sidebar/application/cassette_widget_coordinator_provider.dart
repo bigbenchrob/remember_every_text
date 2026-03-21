@@ -10,6 +10,7 @@ import '../../../features/messages/feature_level_providers.dart'
 import '../../../features/sidebar_utilities/feature_level_providers.dart'
     as sidebar_utilities;
 import '../../navigation/domain/sidebar_mode.dart';
+import 'sidebar_cassette_sectioning.dart';
 
 import '../feature_level_providers.dart';
 
@@ -33,6 +34,7 @@ class CassetteWidgetCoordinator extends _$CassetteWidgetCoordinator {
         ? ref.watch(sidebarFlowProvider)
         : null;
     final widgets = <Widget>[];
+    SidebarCassetteSection? previousSection;
 
     /// Build a view model for a given cassette spec by routing to the owning feature.
     ///
@@ -42,7 +44,7 @@ class CassetteWidgetCoordinator extends _$CassetteWidgetCoordinator {
     ///
     /// The [cassetteIndex] is passed to feature coordinators so widgets can
     /// update the rack without holding specs in state.
-    Future<SidebarCassetteCardViewModel> buildViewModelForSpec(
+    Future<SidebarCassettePayload> buildViewModelForSpec(
       CassetteSpec spec, {
       required int cassetteIndex,
     }) {
@@ -86,6 +88,16 @@ class CassetteWidgetCoordinator extends _$CassetteWidgetCoordinator {
           );
         },
         handles: (handlesSpec) async {
+          handlesSpec.maybeMap(
+            strayHandlesReview: (_) {
+              ref.watch(handles_feature.strayHandleModeSettingProvider);
+              return null;
+            },
+            orElse: () {
+              return null;
+            },
+          );
+
           final coordinator = ref.read(
             handles_feature.handlesCassetteCoordinatorProvider.notifier,
           );
@@ -131,45 +143,65 @@ class CassetteWidgetCoordinator extends _$CassetteWidgetCoordinator {
       CassetteSpec spec, {
       required int cassetteIndex,
     }) async {
-      final viewModel = await buildViewModelForSpec(
+      final payload = await buildViewModelForSpec(
         spec,
         cassetteIndex: cassetteIndex,
       );
 
       Widget widget;
 
-      switch (viewModel.cardType) {
-        case CassetteCardType.standard:
+      switch (payload) {
+        case SidebarCassetteCardViewModel():
           widget = SidebarCassetteCard(
-            title: viewModel.title,
-            subtitle: viewModel.subtitle,
-            sectionTitle: viewModel.sectionTitle,
-            footerText: viewModel.footerText,
-            isControl: viewModel.isControl,
-            isNaked: viewModel.isNaked,
-            shouldExpand: viewModel.shouldExpand,
-            layoutStyle: viewModel.layoutStyle,
-            child: viewModel.child,
+            title: payload.title,
+            subtitle: payload.subtitle,
+            sectionTitle: payload.sectionTitle,
+            footerText: payload.footerText,
+            isNaked: payload.isNaked,
+            shouldExpand: payload.shouldExpand,
+            role: payload.role,
+            placementMode: payload.placementMode,
+            contentAlignment: payload.contentAlignment,
+            layoutStyle: payload.layoutStyle,
+            child: payload.child,
           );
-        case CassetteCardType.info:
+        case SidebarInfoCassetteViewModel():
           widget = SidebarInfoCard(
-            title: viewModel.title.isEmpty ? null : viewModel.title,
-            body: TextSpan(text: viewModel.infoBodyText ?? ''),
-            footnote: viewModel.footerText,
-            action: viewModel.infoAction,
+            title: payload.title,
+            bodyText: payload.bodyText,
+            footnote: payload.footnote,
+            content: payload.content,
           );
-        case CassetteCardType.sidebarNavigation:
-          widget = SidebarNavigationCard(child: viewModel.child);
+        case SidebarNavigationCassetteViewModel():
+          widget = SidebarNavigationCard(
+            child: payload.child,
+            placementMode: payload.placementMode,
+            contentAlignment: payload.contentAlignment,
+          );
       }
 
-      if (viewModel.topSpacing > 0) {
+      if (payload.topSpacing > 0) {
         widget = Padding(
-          padding: EdgeInsets.only(top: viewModel.topSpacing),
+          padding: EdgeInsets.only(top: payload.topSpacing),
+          child: widget,
+        );
+      }
+
+      final currentSection = sidebarCassetteSectionForRole(payload.role);
+      final sectionTopSpacing = sidebarCassetteSectionTopSpacing(
+        previousSection: previousSection,
+        currentSection: currentSection,
+      );
+
+      if (sectionTopSpacing > 0) {
+        widget = Padding(
+          padding: EdgeInsets.only(top: sectionTopSpacing),
           child: widget,
         );
       }
 
       widgets.add(widget);
+      previousSection = currentSection;
     }
 
     // Build widgets for the explicit rack cassettes.

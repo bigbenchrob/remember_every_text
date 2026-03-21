@@ -58,7 +58,7 @@ class FeatureCassetteSpecCoordinator extends _$FeatureCassetteSpecCoordinator {
   }
 
   /// Build a cassette view model for the given [AttachmentsCassetteSpec].
-  SidebarCassetteCardViewModel buildForSpec(AttachmentsCassetteSpec spec) {
+  SidebarCassettePayload buildForSpec(AttachmentsCassetteSpec spec) {
     // TODO: Implement when AttachmentsCassetteSpec is defined
     return const SidebarCassetteCardViewModel(
       title: 'Attachments',
@@ -78,7 +78,7 @@ class SettingsCassetteSpecCoordinator
   }
 
   /// Build a cassette view model for the given [AttachmentsSettingsSpec].
-  SidebarCassetteCardViewModel buildForSpec(AttachmentsSettingsSpec spec) {
+  SidebarCassettePayload buildForSpec(AttachmentsSettingsSpec spec) {
     // TODO: Implement when AttachmentsSettingsSpec is defined
     return const SidebarCassetteCardViewModel(
       title: 'Attachment Settings',

@@ -1,7 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
-import '../../../presentation/cassettes/settings/contact_display_name_info_cassette.dart';
 
 part 'display_name_info_resolver.g.dart';
 
@@ -20,11 +19,19 @@ class DisplayNameInfoResolver extends _$DisplayNameInfoResolver {
   @override
   void build() {}
 
-  /// Produces a view model containing an info card about name customization.
-  SidebarCassetteCardViewModel resolve({required int cassetteIndex}) {
-    return const SidebarCassetteCardViewModel(
+  /// Produces a canonical info payload about name customization.
+  SidebarInfoCassetteViewModel resolve({required int cassetteIndex}) {
+    return const SidebarInfoCassetteViewModel(
+      role: SidebarCassetteRole.contextSecondary,
       title: 'Contact Names',
-      child: ContactDisplayNameInfoCassette(),
+      bodyText:
+          'Contact names are imported from your Contacts app. '
+          "If the imported name isn't quite right, you can customize it.\n\n"
+          "To customize a contact's name:\n"
+          '1. Switch to Messages mode\n'
+          '2. Select the contact\n'
+          '3. Click "edit" on their hero card',
+      footnote: 'Your custom name will be used throughout the app.',
     );
   }
 }

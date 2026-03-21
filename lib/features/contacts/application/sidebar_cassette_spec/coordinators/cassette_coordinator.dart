@@ -21,7 +21,7 @@ part 'cassette_coordinator.g.dart';
 /// - Pattern-matches on the spec
 /// - Extracts payload parameters
 /// - Calls exactly ONE resolver
-/// - Returns the resolver's `Future<SidebarCassetteCardViewModel>`
+/// - Returns the resolver's `Future<SidebarCassettePayload>`
 ///
 /// The coordinator MUST NOT:
 /// - Perform IO
@@ -36,7 +36,7 @@ class ContactsCassetteCoordinator extends _$ContactsCassetteCoordinator {
   }
 
   /// Build a sidebar cassette view model for the given contacts cassette spec.
-  Future<SidebarCassetteCardViewModel> buildViewModel(
+  Future<SidebarCassettePayload> buildViewModel(
     ContactsCassetteSpec spec, {
     required int cassetteIndex,
   }) async {

@@ -16,28 +16,22 @@ class SidebarInfoCard extends ConsumerWidget {
   const SidebarInfoCard({
     super.key,
     this.title,
-    required this.body,
+    required this.bodyText,
     this.footnote,
-    this.action,
+    this.content,
     this.margin = const EdgeInsets.symmetric(
       vertical: AppSpacing.sm,
       horizontal: AppSpacing.md,
     ),
-    this.padding = const EdgeInsets.all(AppSpacing.md),
-  }) : assert(
-         footnote == null || action == null,
-         'SidebarInfoCard cannot have both a footnote and an action.',
-       );
+    this.padding = const EdgeInsets.symmetric(vertical: AppSpacing.md),
+  }) : assert(true);
 
   final String? title;
-  final InlineSpan body;
+  final String bodyText;
   final String? footnote;
 
-  /// Optional escape-hatch action rendered at the bottom of the card.
-  ///
-  /// Reads as a footnote-action — muted, lightweight, no divider.
-  /// Mutually exclusive with [footnote].
-  final Widget? action;
+  /// Optional supplemental widget rendered below the text block.
+  final Widget? content;
 
   final EdgeInsetsGeometry margin;
   final EdgeInsetsGeometry padding;
@@ -49,8 +43,6 @@ class SidebarInfoCard extends ConsumerWidget {
     final hasTitle = title != null && title!.trim().isNotEmpty;
     final hasFootnote = footnote != null && footnote!.trim().isNotEmpty;
 
-    // No visual chrome: transparent background, no border.
-    // The SidebarPlane provides the background.
     return Padding(
       padding: margin,
       child: Padding(
@@ -63,16 +55,18 @@ class SidebarInfoCard extends ConsumerWidget {
               Text(title!, style: typography.infoCardTitle),
               const SizedBox(height: AppSpacing.sm),
             ],
-            RichText(
-              text: TextSpan(style: typography.infoCardBody, children: [body]),
+            Text(
+              bodyText,
+              style: typography.infoCardBody,
+              textAlign: TextAlign.justify,
             ),
             if (hasFootnote) ...[
               const SizedBox(height: AppSpacing.sm + AppSpacing.xs),
               Text(footnote!, style: typography.infoCardFootnote),
             ],
-            if (action != null) ...[
+            if (content != null) ...[
               const SizedBox(height: AppSpacing.sm + AppSpacing.xs),
-              action!,
+              content!,
             ],
           ],
         ),

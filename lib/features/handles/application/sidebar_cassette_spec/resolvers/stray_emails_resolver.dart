@@ -19,6 +19,8 @@ class StrayEmailsResolver extends _$StrayEmailsResolver {
   Future<SidebarCassetteCardViewModel> resolve() async {
     // TODO: Add data fetching and conditional logic as needed
     return const SidebarCassetteCardViewModel(
+      role: SidebarCassetteRole.contextPrimary,
+      placementMode: SidebarBodyPlacementMode.inset,
       title: 'Stray emails',
       subtitle:
           'Email addresses not linked to any contact in your address book.',

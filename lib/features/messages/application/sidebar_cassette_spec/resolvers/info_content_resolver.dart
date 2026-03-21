@@ -2,7 +2,6 @@ import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../config/theme/spacing/app_spacing.dart';
-import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 import '../../../domain/spec_classes/messages_info_cassette_spec.dart';
 import '../widget_builders/recovered_no_handle_from_me_navigator_widget.dart';
 import '../widget_builders/recovered_unlinked_navigator_widget.dart';
@@ -14,13 +13,11 @@ class MessagesInfoContent {
   const MessagesInfoContent({
     this.title,
     required this.child,
-    this.layoutStyle = SidebarCardLayoutStyle.controlAligned,
     this.topSpacing = 0,
   });
 
   final String? title;
   final Widget child;
-  final SidebarCardLayoutStyle layoutStyle;
   final double topSpacing;
 }
 

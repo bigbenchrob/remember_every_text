@@ -1,4 +1,3 @@
-import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
@@ -14,17 +13,16 @@ class ReimportDataInfoResolver extends _$ReimportDataInfoResolver {
   @override
   void build() {}
 
-  SidebarCassetteCardViewModel resolve({required int cassetteIndex}) {
-    return const SidebarCassetteCardViewModel(
+  SidebarInfoCassetteViewModel resolve({required int cassetteIndex}) {
+    return const SidebarInfoCassetteViewModel(
+      role: SidebarCassetteRole.action,
       title: 'Reimport Data',
-      child: SizedBox.shrink(),
-      cardType: CassetteCardType.info,
-      infoBodyText:
+      bodyText:
           'This will reimport all the chat message and address book '
           'contact data from the databases on your Mac. Any records '
           'you have added (like new contact names for unfamiliar '
           'phone numbers) will not be affected.',
-      infoAction: ReimportDataActionButton(),
+      content: ReimportDataActionButton(),
     );
   }
 }

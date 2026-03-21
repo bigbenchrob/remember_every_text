@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../../config/theme/spacing/app_spacing.dart';
+import 'sidebar_body_layout.dart';
+import '../view_model/sidebar_cassette_card_view_model.dart';
 
 /// A full-bleed card for "back to previous state" navigation controls.
 ///
@@ -22,18 +24,69 @@ import '../../../../config/theme/spacing/app_spacing.dart';
 /// - "Change contact…" back-link after a contact is selected
 /// - Future "back to …" navigation controls in other cascades
 class SidebarNavigationCard extends StatelessWidget {
-  const SidebarNavigationCard({super.key, required this.child});
+  const SidebarNavigationCard({
+    super.key,
+    required this.child,
+    this.placementMode = SidebarBodyPlacementMode.fullWidth,
+    this.contentAlignment = SidebarBodyContentAlignment.leftAnchored,
+  });
 
   /// The navigation control widget. Owns all internal layout and styling.
   final Widget child;
+  final SidebarBodyPlacementMode placementMode;
+  final SidebarBodyContentAlignment contentAlignment;
 
   @override
   Widget build(BuildContext context) {
-    // No visual chrome: just vertical spacing to separate from adjacent items.
-    // The SidebarPlane provides the background.
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-      child: child,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final padding = _navigationPaddingForPlacement(placementMode);
+        final contentEnvelopeWidth = constraints.maxWidth.isFinite
+            ? (constraints.maxWidth - padding.horizontal).clamp(
+                0.0,
+                double.infinity,
+              )
+            : 0.0;
+        final geometry = SidebarGeometryConstraints.fromTokens(
+          placementMode: placementMode,
+          tokens: SidebarGeometryTokens(
+            contentEnvelopeWidth: contentEnvelopeWidth,
+            bodyInset: 0,
+            trailingGutterWidth: AppSpacing.xl,
+            interiorGap: AppSpacing.sm,
+          ),
+        );
+
+        return Padding(
+          padding: padding,
+          child: buildSidebarBodyContent(
+            child: child,
+            geometry: geometry,
+            contentAlignment: contentAlignment,
+          ),
+        );
+      },
     );
   }
+}
+
+EdgeInsets _navigationPaddingForPlacement(
+  SidebarBodyPlacementMode placementMode,
+) {
+  return switch (placementMode) {
+    SidebarBodyPlacementMode.fullWidth => const EdgeInsets.symmetric(
+      horizontal: AppSpacing.md,
+      vertical: AppSpacing.xs,
+    ),
+    SidebarBodyPlacementMode.inset => const EdgeInsets.symmetric(
+      horizontal: AppSpacing.md,
+      vertical: AppSpacing.xs,
+    ),
+    SidebarBodyPlacementMode.insetWithTrailingGutter => const EdgeInsets.only(
+      left: AppSpacing.md,
+      top: AppSpacing.xs,
+      right: AppSpacing.md + AppSpacing.xl,
+      bottom: AppSpacing.xs,
+    ),
+  };
 }

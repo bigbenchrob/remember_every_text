@@ -20,6 +20,35 @@ import './panel_coordinator_provider.dart';
 
 part 'panel_widget_providers.g.dart';
 
+bool isPinnedAppControlCassette(Widget widget) {
+  final cassetteCard = unwrapSidebarCassetteCard(widget);
+  return cassetteCard != null &&
+      cassetteCard.role == SidebarCassetteRole.appControl;
+}
+
+bool shouldExpandSidebarCassette(Widget widget) {
+  final cassetteCard = unwrapSidebarCassetteCard(widget);
+  return cassetteCard?.shouldExpand ?? false;
+}
+
+SidebarCassetteCard? unwrapSidebarCassetteCard(Widget widget) {
+  Widget current = widget;
+
+  while (current is Padding) {
+    final child = current.child;
+    if (child == null) {
+      return null;
+    }
+    current = child;
+  }
+
+  if (current is SidebarCassetteCard) {
+    return current;
+  }
+
+  return null;
+}
+
 @riverpod
 void reconcileSidebarPanels(Ref ref, SidebarMode mode) {
   if (mode != SidebarMode.messages) {
@@ -459,9 +488,7 @@ class _LeftSidebarSurface extends StatelessWidget {
             child: widget,
           );
 
-          final isPinnedControlCandidate =
-              widget is SidebarCassetteCard &&
-              (widget.isControl || widget.isNaked);
+          final isPinnedControlCandidate = isPinnedAppControlCassette(widget);
 
           // Only keep the leading control block pinned. Once main content
           // starts, preserve the authored cassette order even if later items
@@ -473,10 +500,7 @@ class _LeftSidebarSurface extends StatelessWidget {
 
             // SidebarCassetteCard carries its own shouldExpand flag.
             // All other widget types default to false (intrinsic height).
-            final shouldExpand = switch (widget) {
-              SidebarCassetteCard(:final shouldExpand) => shouldExpand,
-              _ => false,
-            };
+            final shouldExpand = shouldExpandSidebarCassette(widget);
             content.add((widget: constrained, shouldExpand: shouldExpand));
           }
         }

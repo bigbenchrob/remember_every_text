@@ -66,9 +66,10 @@ class ContactChooserResolver extends _$ContactChooserResolver {
     // via the unified picker sections provider.
     // controlAligned matches the top menu's naked width (16pt horizontal).
     return SidebarCassetteCardViewModel(
+      role: SidebarCassetteRole.contextPrimary,
+      placementMode: SidebarBodyPlacementMode.fullWidth,
       title: '',
       shouldExpand: true,
-      layoutStyle: SidebarCardLayoutStyle.controlAligned,
       child: mainPicker,
     );
   }

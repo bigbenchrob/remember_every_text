@@ -136,7 +136,7 @@ class _HandleFilterDropdown extends ConsumerWidget {
     final canUnlink = selectedHandle?.isOverrideLink ?? false;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -150,14 +150,6 @@ class _HandleFilterDropdown extends ConsumerWidget {
               _onHandleSelected(ref, option.handleId);
             },
             optionLabelBuilder: (option) => option.label,
-            itemBuilder: (context, option, {required isSelected}) {
-              return _HandleDropdownRow(
-                text: option.label,
-                isSelected: isSelected,
-                colors: colors,
-                typography: typography,
-              );
-            },
             equals: (a, b) => a.handleId == b.handleId,
             outerPadding: EdgeInsets.zero,
             triggerPadding: const EdgeInsets.only(
@@ -197,42 +189,4 @@ class _HandleMenuOption {
 
   final int? handleId;
   final String label;
-}
-
-class _HandleDropdownRow extends StatelessWidget {
-  const _HandleDropdownRow({
-    required this.text,
-    required this.isSelected,
-    required this.colors,
-    required this.typography,
-  });
-
-  final String text;
-  final bool isSelected;
-  final ThemeColors colors;
-  final ThemeTypography typography;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: isSelected ? colors.dropdownMenu(DropdownMenu.selectedBg) : null,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Text(
-          text,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          softWrap: false,
-          style: typography.callout.copyWith(
-            color: isSelected
-                ? colors.dropdownMenu(DropdownMenu.selectedText)
-                : colors.content.textPrimary,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-          ),
-        ),
-      ),
-    );
-  }
 }

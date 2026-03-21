@@ -26,6 +26,9 @@ class HandleFilterResolver extends _$HandleFilterResolver {
     required int cassetteIndex,
   }) async {
     return SidebarCassetteCardViewModel(
+      role: SidebarCassetteRole.filter,
+      placementMode: SidebarBodyPlacementMode.fullWidth,
+      contentAlignment: SidebarBodyContentAlignment.insetControl,
       title: '',
       isNaked: true,
       child: HandleFilterWidget(
