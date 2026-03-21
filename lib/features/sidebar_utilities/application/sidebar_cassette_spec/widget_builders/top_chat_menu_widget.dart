@@ -7,6 +7,8 @@ import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../config/theme/widgets/theme_widgets.dart';
 import '../../../../../essentials/db/feature_level_providers/working_db_populated_provider.dart';
 import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
+import '../../../../../essentials/sidebar/application/sidebar_action_dispatcher.dart';
+import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart';
 import '../../../domain/sidebar_utilities_constants.dart';
 
@@ -54,11 +56,16 @@ class TopChatMenuWidget extends ConsumerWidget {
     final isPopulated = ref.watch(workingDbPopulatedProvider);
     final showPrompt =
         currentChoice == TopChatMenuChoice.contacts && !isPopulated;
+    final dispatcher = ref.read(sidebarActionDispatcherProvider.notifier);
 
-    void handleSelectionChange(TopChatMenuChoice newChoice) {
-      ref
-          .read(sidebarFlowProvider.notifier)
-          .topMenuChanged(choice: newChoice, cassetteIndex: cassetteIndex);
+    Future<void> handleSelectionChange(TopChatMenuChoice newChoice) async {
+      await dispatcher.dispatch(
+        intent: TopMenuChanged(choice: _mapTopMenuChoice(newChoice)),
+        context: SidebarActionDispatchContext(
+          sidebarMode: sidebarMode,
+          cassetteIndex: cassetteIndex,
+        ),
+      );
     }
 
     return AppThemeWidgets.dropdownMenu<TopChatMenuChoice>(
@@ -88,4 +95,17 @@ class TopChatMenuWidget extends ConsumerWidget {
       chevronBackgroundColor: colors.dropdownMenu(DropdownMenu.chevronBg),
     );
   }
+}
+
+SidebarTopMenuChoice _mapTopMenuChoice(TopChatMenuChoice choice) {
+  return switch (choice) {
+    TopChatMenuChoice.contacts => SidebarTopMenuChoice.contacts,
+    TopChatMenuChoice.strayHandles => SidebarTopMenuChoice.strayHandles,
+    TopChatMenuChoice.searchAllMessages =>
+      SidebarTopMenuChoice.searchAllMessages,
+    TopChatMenuChoice.recoveredUnlinkedMessages =>
+      SidebarTopMenuChoice.recoveredUnlinkedMessages,
+    TopChatMenuChoice.recoveredNoHandleFromMeMessages =>
+      SidebarTopMenuChoice.recoveredNoHandleFromMeMessages,
+  };
 }

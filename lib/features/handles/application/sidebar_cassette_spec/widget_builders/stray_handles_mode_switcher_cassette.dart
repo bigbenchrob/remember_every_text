@@ -5,6 +5,9 @@ import '../../../../../../config/theme/colors/theme_colors.dart'
     show DropdownMenu, themeColorsProvider;
 import '../../../../../../config/theme/theme_typography.dart';
 import '../../../../../../config/theme/widgets/theme_widgets.dart';
+import '../../../../../../essentials/navigation/domain/sidebar_mode.dart';
+import '../../../../../../essentials/sidebar/application/sidebar_action_dispatcher.dart';
+import '../../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../domain/spec_classes/handles_cassette_spec.dart';
 import '../../state/stray_handle_mode_provider.dart';
 
@@ -26,6 +29,7 @@ class StrayHandlesModeSwitcherCassette extends ConsumerWidget {
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
     final currentMode = ref.watch(strayHandleModeSettingProvider);
+    final dispatcher = ref.read(sidebarActionDispatcherProvider.notifier);
 
     // Spacing constants:
     // - 20pt from segmented control above (contributes with type switcher bottom)
@@ -36,8 +40,13 @@ class StrayHandlesModeSwitcherCassette extends ConsumerWidget {
       child: AppThemeWidgets.dropdownMenu<StrayHandleMode>(
         options: StrayHandleMode.values,
         selectedOption: currentMode,
-        onSelected: (mode) {
-          ref.read(strayHandleModeSettingProvider.notifier).setMode(mode);
+        onSelected: (mode) async {
+          await dispatcher.dispatch(
+            intent: StrayHandleModeChanged(mode: _mapMode(mode)),
+            context: const SidebarActionDispatchContext(
+              sidebarMode: SidebarMode.messages,
+            ),
+          );
         },
         optionLabelBuilder: _modeLabel,
         leadingLabel: 'Show:',
@@ -60,6 +69,14 @@ class StrayHandlesModeSwitcherCassette extends ConsumerWidget {
       ),
     );
   }
+}
+
+SidebarStrayHandleMode _mapMode(StrayHandleMode mode) {
+  return switch (mode) {
+    StrayHandleMode.allStrays => SidebarStrayHandleMode.allStrays,
+    StrayHandleMode.spamCandidates => SidebarStrayHandleMode.spamCandidates,
+    StrayHandleMode.dismissed => SidebarStrayHandleMode.dismissed,
+  };
 }
 
 String _modeLabel(StrayHandleMode mode) {

@@ -7,7 +7,7 @@ part of 'handle_filter_resolver.dart';
 // **************************************************************************
 
 String _$handleFilterResolverHash() =>
-    r'e14c8bf9358becb99ef1c29f4597ba4816bcdcae';
+    r'1e0b6bbd349d87b920a30c767b77dd4a32b7cea5';
 
 /// Resolves a handle filter cassette — the "From phone # / email:" dropdown.
 ///

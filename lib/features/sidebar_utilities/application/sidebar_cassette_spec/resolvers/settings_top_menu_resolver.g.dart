@@ -7,7 +7,7 @@ part of 'settings_top_menu_resolver.dart';
 // **************************************************************************
 
 String _$settingsTopMenuResolverHash() =>
-    r'fbbed6c8c001886415ca7ace1c2749f9feb523ed';
+    r'9f44d1013c1f2c90f74a2d20b7680206626411bb';
 
 /// Settings Top Menu Resolver
 ///

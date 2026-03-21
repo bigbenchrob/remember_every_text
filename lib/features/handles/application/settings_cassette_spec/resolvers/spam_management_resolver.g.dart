@@ -7,7 +7,7 @@ part of 'spam_management_resolver.dart';
 // **************************************************************************
 
 String _$spamManagementResolverHash() =>
-    r'f27a791ff214da02cf6755bef9c0bf31b18b7f04';
+    r'0864845034fa7bfa5b6da0bb3695708d079826f5';
 
 /// Resolver for the spam management settings cassette.
 ///

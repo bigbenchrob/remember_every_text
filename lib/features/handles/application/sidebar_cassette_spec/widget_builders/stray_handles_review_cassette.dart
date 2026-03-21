@@ -5,12 +5,13 @@ import 'package:intl/intl.dart';
 
 import '../../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../../config/theme/theme_typography.dart';
-import '../../../../../../essentials/db/feature_level_providers.dart';
 import '../../../../../../essentials/navigation/domain/entities/panel_stack.dart';
 import '../../../../../../essentials/navigation/domain/entities/view_spec.dart';
 import '../../../../../../essentials/navigation/domain/navigation_constants.dart';
 import '../../../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../../../essentials/navigation/feature_level_providers.dart';
+import '../../../../../../essentials/sidebar/application/sidebar_action_dispatcher.dart';
+import '../../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../domain/spec_classes/handles_cassette_spec.dart';
 import '../../../domain/utilities/handle_normalizer.dart';
 import '../../../infrastructure/repositories/stray_handles_provider.dart';
@@ -50,6 +51,7 @@ class StrayHandlesReviewCassette extends HookConsumerWidget {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
+    final dispatcher = ref.read(sidebarActionDispatcherProvider.notifier);
 
     // Select provider based on mode
     final asyncHandles = switch (mode) {
@@ -110,12 +112,12 @@ class StrayHandlesReviewCassette extends HookConsumerWidget {
               handle: handle,
               mode: mode,
               isSelected: handle.handleId == activeHandleId,
-              onTap: () => _openHandleLens(ref, handle.handleId),
+              onTap: () => _openHandleLens(dispatcher, handle.handleId),
               onDismiss: mode != StrayHandleMode.dismissed
-                  ? () => _dismissHandle(ref, handle)
+                  ? () => _dismissHandle(dispatcher, handle)
                   : null,
               onRestore: mode == StrayHandleMode.dismissed
-                  ? () => _restoreHandle(ref, handle)
+                  ? () => _restoreHandle(dispatcher, handle)
                   : null,
             );
           },
@@ -176,33 +178,42 @@ class StrayHandlesReviewCassette extends HookConsumerWidget {
       'No dismissed items.\nItems you dismiss will appear here.',
   };
 
-  void _openHandleLens(WidgetRef ref, int handleId) {
-    ref
-        .read(panelsViewStateProvider(SidebarMode.messages).notifier)
-        .show(
-          panel: WindowPanel.center,
-          spec: ViewSpec.messages(MessagesSpec.handleLens(handleId: handleId)),
-        );
+  Future<void> _openHandleLens(
+    SidebarActionDispatcher dispatcher,
+    int handleId,
+  ) async {
+    await dispatcher.dispatch(
+      intent: StrayHandleOpened(handleId: handleId),
+      context: const SidebarActionDispatchContext(
+        sidebarMode: SidebarMode.messages,
+      ),
+    );
   }
 
-  Future<void> _dismissHandle(WidgetRef ref, StrayHandleSummary handle) async {
-    final overlayDb = await ref.read(overlayDatabaseProvider.future);
+  Future<void> _dismissHandle(
+    SidebarActionDispatcher dispatcher,
+    StrayHandleSummary handle,
+  ) async {
     final normalizedHandle = normalizeHandleIdentifier(handle.handleValue);
-    await overlayDb.dismissHandle(normalizedHandle);
-    // Force refresh of stray handles
-    ref.invalidate(strayHandlesProvider);
-    ref.invalidate(spamCandidateHandlesProvider);
-    ref.invalidate(dismissedHandlesProvider);
+    await dispatcher.dispatch(
+      intent: StrayHandleDismissed(normalizedHandle: normalizedHandle),
+      context: const SidebarActionDispatchContext(
+        sidebarMode: SidebarMode.messages,
+      ),
+    );
   }
 
-  Future<void> _restoreHandle(WidgetRef ref, StrayHandleSummary handle) async {
-    final overlayDb = await ref.read(overlayDatabaseProvider.future);
+  Future<void> _restoreHandle(
+    SidebarActionDispatcher dispatcher,
+    StrayHandleSummary handle,
+  ) async {
     final normalizedHandle = normalizeHandleIdentifier(handle.handleValue);
-    await overlayDb.restoreHandle(normalizedHandle);
-    // Force refresh of stray handles
-    ref.invalidate(strayHandlesProvider);
-    ref.invalidate(spamCandidateHandlesProvider);
-    ref.invalidate(dismissedHandlesProvider);
+    await dispatcher.dispatch(
+      intent: StrayHandleRestored(normalizedHandle: normalizedHandle),
+      context: const SidebarActionDispatchContext(
+        sidebarMode: SidebarMode.messages,
+      ),
+    );
   }
 }
 

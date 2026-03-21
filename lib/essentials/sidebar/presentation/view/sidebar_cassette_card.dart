@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../config/theme/spacing/app_spacing.dart';
-import 'sidebar_body_layout.dart';
 import '../../../../config/theme/theme_typography.dart';
 import '../view_model/sidebar_cassette_card_view_model.dart';
+import 'sidebar_body_layout.dart';
 
 /// A content container for sidebar cassette widgets.
 ///

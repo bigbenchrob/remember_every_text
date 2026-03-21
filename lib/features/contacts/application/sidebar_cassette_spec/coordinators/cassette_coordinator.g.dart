@@ -7,7 +7,7 @@ part of 'cassette_coordinator.dart';
 // **************************************************************************
 
 String _$contactsCassetteCoordinatorHash() =>
-    r'8830d85cf48b9a6d24b23c8d5766e833ccc985b5';
+    r'bc90110b6ea62eefe8f63fbf33e8add9d121096f';
 
 /// Contacts Cassette Coordinator
 ///
@@ -20,7 +20,7 @@ String _$contactsCassetteCoordinatorHash() =>
 /// - Pattern-matches on the spec
 /// - Extracts payload parameters
 /// - Calls exactly ONE resolver
-/// - Returns the resolver's `Future<SidebarCassetteCardViewModel>`
+/// - Returns the resolver's `Future<SidebarCassettePayload>`
 ///
 /// The coordinator MUST NOT:
 /// - Perform IO

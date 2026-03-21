@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../../config/theme/spacing/app_spacing.dart';
-import 'sidebar_body_layout.dart';
 import '../view_model/sidebar_cassette_card_view_model.dart';
+import 'sidebar_body_layout.dart';
 
 /// A full-bleed card for "back to previous state" navigation controls.
 ///

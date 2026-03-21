@@ -5,6 +5,8 @@ import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../config/theme/widgets/theme_widgets.dart';
 import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
+import '../../../../../essentials/sidebar/application/sidebar_action_dispatcher.dart';
+import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart';
 import '../../../domain/sidebar_utilities_constants.dart';
 
@@ -46,17 +48,16 @@ class SettingsTopMenuWidget extends ConsumerWidget {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
+    final dispatcher = ref.read(sidebarActionDispatcherProvider.notifier);
 
-    void handleSelectionChange(SettingsMenuChoice newChoice) {
-      // Construct the new spec locally - this is OUTPUT, not interpretation
-      final newSpec = CassetteSpec.sidebarUtility(
-        SidebarUtilityCassetteSpec.settingsMenu(selectedChoice: newChoice),
+    Future<void> handleSelectionChange(SettingsMenuChoice newChoice) async {
+      await dispatcher.dispatch(
+        intent: SettingsMenuChanged(choice: _mapSettingsMenuChoice(newChoice)),
+        context: SidebarActionDispatchContext(
+          sidebarMode: sidebarMode,
+          cassetteIndex: cassetteIndex,
+        ),
       );
-
-      // Update the rack using index-based method (no need to hold old spec)
-      ref
-          .read(cassetteRackStateProvider(sidebarMode).notifier)
-          .replaceAtIndexAndCascade(cassetteIndex, newSpec);
     }
 
     return AppThemeWidgets.dropdownMenu<SettingsMenuChoice>(
@@ -81,4 +82,10 @@ class SettingsTopMenuWidget extends ConsumerWidget {
       chevronBackgroundColor: colors.accents.primary.withValues(alpha: 0.12),
     );
   }
+}
+
+SidebarSettingsMenuChoice _mapSettingsMenuChoice(SettingsMenuChoice choice) {
+  return switch (choice) {
+    SettingsMenuChoice.actions => SidebarSettingsMenuChoice.actions,
+  };
 }

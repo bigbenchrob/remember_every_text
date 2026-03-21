@@ -7,7 +7,7 @@ part of 'info_cassette_coordinator.dart';
 // **************************************************************************
 
 String _$handlesInfoCassetteCoordinatorHash() =>
-    r'44937e126dc5d5916950b4b68d8939e2aa1fea2d';
+    r'6106b9ed4caac5798784f23b5825df3dbce6663f';
 
 /// Handles InfoCassetteCoordinator
 ///
@@ -16,7 +16,7 @@ String _$handlesInfoCassetteCoordinatorHash() =>
 /// - Accept a HandlesInfoCassetteSpec (sidebar protocol entity)
 /// - Pattern-match on the spec variant
 /// - Delegate meaning/data/formatting to application-layer case handlers/resolvers
-/// - Return a SidebarCassetteCardViewModel (NOT a wrapped widget)
+/// - Return a SidebarCassettePayload (NOT a wrapped widget)
 ///
 /// Why return a view model instead of a widget?
 ///

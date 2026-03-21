@@ -7,7 +7,7 @@ part of 'actions_info_resolver.dart';
 // **************************************************************************
 
 String _$actionsInfoResolverHash() =>
-    r'37912da93454e246fe6aabfe9b5b7b9664297de2';
+    r'd2fbd427e82ff1f8e8f9ca86cfee594b4777bded';
 
 /// Resolver for ContactsSettingsSpec.sendLogsInfo().
 ///

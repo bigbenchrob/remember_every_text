@@ -7,7 +7,7 @@ part of 'contact_hero_summary_resolver.dart';
 // **************************************************************************
 
 String _$contactHeroSummaryResolverHash() =>
-    r'1e26443bcbf8dd5abb98a07ec0742267df3a7c18';
+    r'041f1247e202166c10b103e6bc7a1b46f4f637c9';
 
 /// Resolves a contact hero summary cassette.
 ///

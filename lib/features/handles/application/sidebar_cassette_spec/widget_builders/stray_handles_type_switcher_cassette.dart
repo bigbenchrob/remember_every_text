@@ -4,7 +4,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../../config/theme/theme_typography.dart';
 import '../../../../../../essentials/navigation/domain/sidebar_mode.dart';
-import '../../../../../../essentials/sidebar/domain/entities/cassette_spec.dart';
+import '../../../../../../essentials/sidebar/application/sidebar_action_dispatcher.dart';
+import '../../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../../../../essentials/sidebar/feature_level_providers.dart';
 import '../../../domain/spec_classes/handles_cassette_spec.dart';
 
@@ -28,15 +29,16 @@ class StrayHandlesTypeSwitcherCassette extends ConsumerWidget {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
+    final dispatcher = ref.read(sidebarActionDispatcherProvider.notifier);
 
-    void handleFilterChange(StrayHandleFilter newFilter) {
-      // Build new spec with updated filter and cascade
-      final newSpec = CassetteSpec.handles(
-        HandlesCassetteSpec.strayHandlesTypeSwitcher(selectedFilter: newFilter),
+    Future<void> handleFilterChange(StrayHandleFilter newFilter) async {
+      await dispatcher.dispatch(
+        intent: StrayHandleFilterChanged(filter: _mapFilter(newFilter)),
+        context: SidebarActionDispatchContext(
+          sidebarMode: SidebarMode.messages,
+          cassetteIndex: cassetteIndex,
+        ),
       );
-      ref
-          .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-          .replaceAtIndexAndCascade(cassetteIndex, newSpec);
     }
 
     // Spacing constants:
@@ -75,6 +77,14 @@ class StrayHandlesTypeSwitcherCassette extends ConsumerWidget {
       ),
     );
   }
+}
+
+SidebarStrayHandleFilter _mapFilter(StrayHandleFilter filter) {
+  return switch (filter) {
+    StrayHandleFilter.phones => SidebarStrayHandleFilter.phones,
+    StrayHandleFilter.emails => SidebarStrayHandleFilter.emails,
+    StrayHandleFilter.businessUrns => SidebarStrayHandleFilter.businessUrns,
+  };
 }
 
 class _SegmentContent extends StatelessWidget {

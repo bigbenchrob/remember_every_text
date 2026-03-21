@@ -8,17 +8,17 @@ import 'package:remember_this_text/essentials/sidebar/presentation/view_model/si
 void main() {
   group('isPinnedAppControlCassette', () {
     test('returns true only for app control cassette cards', () {
-      final appControlCard = SidebarCassetteCard(
+      const appControlCard = SidebarCassetteCard(
         title: '',
         role: SidebarCassetteRole.appControl,
         isNaked: true,
-        child: const SizedBox.shrink(),
+        child: SizedBox.shrink(),
       );
-      final contextCard = SidebarCassetteCard(
+      const contextCard = SidebarCassetteCard(
         title: '',
         role: SidebarCassetteRole.contextPrimary,
         isNaked: true,
-        child: const SizedBox.shrink(),
+        child: SizedBox.shrink(),
       );
 
       expect(isPinnedAppControlCassette(appControlCard), isTrue);
@@ -27,13 +27,13 @@ void main() {
     });
 
     test('unwraps padded cassette cards before checking pinned role', () {
-      final wrappedAppControlCard = Padding(
-        padding: const EdgeInsets.only(top: 8),
+      const wrappedAppControlCard = Padding(
+        padding: EdgeInsets.only(top: 8),
         child: SidebarCassetteCard(
           title: '',
           role: SidebarCassetteRole.appControl,
           isNaked: true,
-          child: const SizedBox.shrink(),
+          child: SizedBox.shrink(),
         ),
       );
 
@@ -43,17 +43,17 @@ void main() {
 
   group('shouldExpandSidebarCassette', () {
     test('unwraps padded cassette cards before checking expansion', () {
-      final wrappedExpandingCard = Padding(
-        padding: const EdgeInsets.only(top: 8),
+      const wrappedExpandingCard = Padding(
+        padding: EdgeInsets.only(top: 8),
         child: SidebarCassetteCard(
           title: '',
           shouldExpand: true,
-          child: const SizedBox.shrink(),
+          child: SizedBox.shrink(),
         ),
       );
-      final wrappedIntrinsicCard = Padding(
-        padding: const EdgeInsets.only(top: 8),
-        child: SidebarCassetteCard(title: '', child: const SizedBox.shrink()),
+      const wrappedIntrinsicCard = Padding(
+        padding: EdgeInsets.only(top: 8),
+        child: SidebarCassetteCard(title: '', child: SizedBox.shrink()),
       );
 
       expect(shouldExpandSidebarCassette(wrappedExpandingCard), isTrue);

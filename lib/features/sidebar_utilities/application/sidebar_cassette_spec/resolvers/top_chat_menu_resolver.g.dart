@@ -7,7 +7,7 @@ part of 'top_chat_menu_resolver.dart';
 // **************************************************************************
 
 String _$topChatMenuResolverHash() =>
-    r'e54deab393b10ee7167b35dcc5a14cf87e1e9d67';
+    r'05d98d4eff2af57ae06eee691833d859025ddc3b';
 
 /// Top Chat Menu Resolver
 ///

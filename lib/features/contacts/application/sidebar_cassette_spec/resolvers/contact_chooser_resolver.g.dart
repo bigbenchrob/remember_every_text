@@ -7,7 +7,7 @@ part of 'contact_chooser_resolver.dart';
 // **************************************************************************
 
 String _$contactChooserResolverHash() =>
-    r'4dbe9e52fc6d60b4b0182d8575b89e7aa4bf15d6';
+    r'cc21f643303b77dee528aaf0482686643dc97187';
 
 /// Resolves a contact chooser cassette.
 ///

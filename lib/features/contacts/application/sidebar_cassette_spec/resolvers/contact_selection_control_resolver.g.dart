@@ -7,19 +7,19 @@ part of 'contact_selection_control_resolver.dart';
 // **************************************************************************
 
 String _$contactSelectionControlResolverHash() =>
-    r'5d1b3d2e4d7e89b9371c92a16dc7cd1be24ee65f';
+    r'6d7ba11e46a76280e13014b6cf972a616b2c203f';
 
 /// Resolves the "back to picker" selection control.
 ///
 /// The selection control is **navigation, not content and not identity**.
-/// It uses [CassetteCardType.sidebarNavigation] — a full-bleed card type
+/// It uses a canonical navigation payload — a full-bleed type
 /// purpose-built for "back to previous state" navigation affordances.
 /// No card chrome, no shadow, no contact name.
 ///
 /// ## Contract (from 00-cross-surface-spec-system.md)
 ///
 /// - Receives explicit parameters (not specs)
-/// - Returns `Future<SidebarCassetteCardViewModel>`
+/// - Returns `Future<SidebarCassettePayload>`
 /// - Determines which widget builder to use
 /// - Does NOT construct widgets itself (delegates to widget builder)
 ///

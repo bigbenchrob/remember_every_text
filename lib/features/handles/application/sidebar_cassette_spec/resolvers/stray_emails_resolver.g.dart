@@ -7,7 +7,7 @@ part of 'stray_emails_resolver.dart';
 // **************************************************************************
 
 String _$strayEmailsResolverHash() =>
-    r'36c9c55ea7aa5082a467f00df473483e82b7cd8f';
+    r'6b6bfe2fed6b60ef4d73613da17a57fc55f618f7';
 
 /// Resolver for the stray emails cassette.
 ///

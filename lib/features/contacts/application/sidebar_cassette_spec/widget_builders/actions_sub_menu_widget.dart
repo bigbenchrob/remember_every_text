@@ -5,10 +5,9 @@ import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../config/theme/widgets/theme_widgets.dart';
 import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
-import '../../../../../essentials/sidebar/application/cassette_rack_state_provider.dart';
-import '../../../../../essentials/sidebar/domain/entities/cassette_spec.dart';
+import '../../../../../essentials/sidebar/application/sidebar_action_dispatcher.dart';
+import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../../sidebar_utilities/domain/sidebar_utilities_constants.dart';
-import '../../../domain/spec_classes/contacts_settings_spec.dart';
 
 /// Dropdown submenu for choosing an action within Settings → Actions.
 ///
@@ -33,15 +32,18 @@ class ActionsSubMenuWidget extends ConsumerWidget {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
+    final dispatcher = ref.read(sidebarActionDispatcherProvider.notifier);
 
-    void handleSelectionChange(ActionsMenuChoice newChoice) {
-      final newSpec = CassetteSpec.contactsSettings(
-        ContactsSettingsSpec.actionsMenu(selectedChoice: newChoice),
+    Future<void> handleSelectionChange(ActionsMenuChoice newChoice) async {
+      await dispatcher.dispatch(
+        intent: SettingsActionChosen(
+          choice: _mapSettingsActionChoice(newChoice),
+        ),
+        context: SidebarActionDispatchContext(
+          sidebarMode: sidebarMode,
+          cassetteIndex: cassetteIndex,
+        ),
       );
-
-      ref
-          .read(cassetteRackStateProvider(sidebarMode).notifier)
-          .replaceAtIndexAndCascade(cassetteIndex, newSpec);
     }
 
     return AppThemeWidgets.dropdownMenu<ActionsMenuChoice?>(
@@ -66,4 +68,11 @@ class ActionsSubMenuWidget extends ConsumerWidget {
       chevronBackgroundColor: colors.accents.primary.withValues(alpha: 0.12),
     );
   }
+}
+
+SidebarSettingsActionChoice _mapSettingsActionChoice(ActionsMenuChoice choice) {
+  return switch (choice) {
+    ActionsMenuChoice.sendLogs => SidebarSettingsActionChoice.sendLogs,
+    ActionsMenuChoice.reimportData => SidebarSettingsActionChoice.reimportData,
+  };
 }

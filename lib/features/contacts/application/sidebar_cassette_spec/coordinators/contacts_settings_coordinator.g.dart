@@ -7,7 +7,7 @@ part of 'contacts_settings_coordinator.dart';
 // **************************************************************************
 
 String _$contactsSettingsCoordinatorHash() =>
-    r'5d466b36e0ac4e68225a99e3b88c76e01a50c3e9';
+    r'67ea446a6cea3b20f0fb6210766ec1ffbec2306b';
 
 /// Coordinator for ContactsSettingsSpec variants.
 ///
@@ -15,7 +15,7 @@ String _$contactsSettingsCoordinatorHash() =>
 /// It follows the cross-surface spec system rules:
 /// - Routes only (no business logic)
 /// - Calls exactly one resolver per spec variant
-/// - Returns Future<SidebarCassetteCardViewModel>
+/// - Returns Future<SidebarCassettePayload>
 ///
 /// Copied from [ContactsSettingsCoordinator].
 @ProviderFor(ContactsSettingsCoordinator)

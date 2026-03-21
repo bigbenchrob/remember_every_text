@@ -32,7 +32,7 @@ bool shouldExpandSidebarCassette(Widget widget) {
 }
 
 SidebarCassetteCard? unwrapSidebarCassetteCard(Widget widget) {
-  Widget current = widget;
+  var current = widget;
 
   while (current is Padding) {
     final child = current.child;

@@ -30,16 +30,44 @@ class _SystemHash {
   }
 }
 
-/// See also [prewarmContactMessages].
+/// Warms the contact-scoped sidebar heatmap and center-timeline ordinal state
+/// before the user-visible contact transition completes.
+///
+/// This exists to avoid the first contact selection on a cold launch showing
+/// both a lower-sidebar loading gap and a center-panel spinner while those two
+/// read-only data paths initialize for the first time.
+///
+/// Copied from [prewarmContactMessages].
 @ProviderFor(prewarmContactMessages)
 const prewarmContactMessagesProvider = PrewarmContactMessagesFamily();
 
-/// See also [prewarmContactMessages].
+/// Warms the contact-scoped sidebar heatmap and center-timeline ordinal state
+/// before the user-visible contact transition completes.
+///
+/// This exists to avoid the first contact selection on a cold launch showing
+/// both a lower-sidebar loading gap and a center-panel spinner while those two
+/// read-only data paths initialize for the first time.
+///
+/// Copied from [prewarmContactMessages].
 class PrewarmContactMessagesFamily extends Family<AsyncValue<void>> {
-  /// See also [prewarmContactMessages].
+  /// Warms the contact-scoped sidebar heatmap and center-timeline ordinal state
+  /// before the user-visible contact transition completes.
+  ///
+  /// This exists to avoid the first contact selection on a cold launch showing
+  /// both a lower-sidebar loading gap and a center-panel spinner while those two
+  /// read-only data paths initialize for the first time.
+  ///
+  /// Copied from [prewarmContactMessages].
   const PrewarmContactMessagesFamily();
 
-  /// See also [prewarmContactMessages].
+  /// Warms the contact-scoped sidebar heatmap and center-timeline ordinal state
+  /// before the user-visible contact transition completes.
+  ///
+  /// This exists to avoid the first contact selection on a cold launch showing
+  /// both a lower-sidebar loading gap and a center-panel spinner while those two
+  /// read-only data paths initialize for the first time.
+  ///
+  /// Copied from [prewarmContactMessages].
   PrewarmContactMessagesProvider call({required int contactId}) {
     return PrewarmContactMessagesProvider(contactId: contactId);
   }
@@ -66,9 +94,23 @@ class PrewarmContactMessagesFamily extends Family<AsyncValue<void>> {
   String? get name => r'prewarmContactMessagesProvider';
 }
 
-/// See also [prewarmContactMessages].
+/// Warms the contact-scoped sidebar heatmap and center-timeline ordinal state
+/// before the user-visible contact transition completes.
+///
+/// This exists to avoid the first contact selection on a cold launch showing
+/// both a lower-sidebar loading gap and a center-panel spinner while those two
+/// read-only data paths initialize for the first time.
+///
+/// Copied from [prewarmContactMessages].
 class PrewarmContactMessagesProvider extends AutoDisposeFutureProvider<void> {
-  /// See also [prewarmContactMessages].
+  /// Warms the contact-scoped sidebar heatmap and center-timeline ordinal state
+  /// before the user-visible contact transition completes.
+  ///
+  /// This exists to avoid the first contact selection on a cold launch showing
+  /// both a lower-sidebar loading gap and a center-panel spinner while those two
+  /// read-only data paths initialize for the first time.
+  ///
+  /// Copied from [prewarmContactMessages].
   PrewarmContactMessagesProvider({required int contactId})
     : this._internal(
         (ref) => prewarmContactMessages(

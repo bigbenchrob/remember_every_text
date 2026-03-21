@@ -7,7 +7,7 @@ part of 'display_name_info_resolver.dart';
 // **************************************************************************
 
 String _$displayNameInfoResolverHash() =>
-    r'70ed5c785e5f50eb7a12deb41fda85433e4499dd';
+    r'ffdc30f795da39aa4770e8957f17b45f6ec1d3d3';
 
 /// Resolver for ContactsSettingsSpec.displayNameInfo().
 ///

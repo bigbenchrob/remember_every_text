@@ -10,14 +10,13 @@ import '../../../features/messages/feature_level_providers.dart'
 import '../../../features/sidebar_utilities/feature_level_providers.dart'
     as sidebar_utilities;
 import '../../navigation/domain/sidebar_mode.dart';
-import 'sidebar_cassette_sectioning.dart';
-
 import '../feature_level_providers.dart';
-
-/// utility widgets to wrap each cassette in a card
 import '../presentation/view/sidebar_info_card.dart';
 import '../presentation/view/sidebar_navigation_card.dart';
 import '../presentation/view_model/sidebar_cassette_card_view_model.dart';
+import 'sidebar_cassette_sectioning.dart';
+
+/// utility widgets to wrap each cassette in a card
 
 part 'cassette_widget_coordinator_provider.g.dart';
 
@@ -174,9 +173,9 @@ class CassetteWidgetCoordinator extends _$CassetteWidgetCoordinator {
           );
         case SidebarNavigationCassetteViewModel():
           widget = SidebarNavigationCard(
-            child: payload.child,
             placementMode: payload.placementMode,
             contentAlignment: payload.contentAlignment,
+            child: payload.child,
           );
       }
 

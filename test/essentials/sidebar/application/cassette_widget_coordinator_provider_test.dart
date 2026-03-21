@@ -24,14 +24,15 @@ void main() {
         ],
       );
 
-      container.read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-        ..setRack([
-          const CassetteSpec.handles(
-            HandlesCassetteSpec.strayHandlesReview(
-              filter: StrayHandleFilter.phones,
+      container
+          .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
+          .setRack([
+            const CassetteSpec.handles(
+              HandlesCassetteSpec.strayHandlesReview(
+                filter: StrayHandleFilter.phones,
+              ),
             ),
-          ),
-        ]);
+          ]);
     });
 
     tearDown(() {
@@ -60,7 +61,7 @@ void main() {
 SidebarCassetteCard _reviewCard(List<Widget> widgets) {
   expect(widgets, hasLength(1));
 
-  Widget current = widgets.single;
+  var current = widgets.single;
   while (current is Padding) {
     final child = current.child;
     expect(child, isNotNull);

@@ -7,7 +7,7 @@ part of 'reimport_data_info_resolver.dart';
 // **************************************************************************
 
 String _$reimportDataInfoResolverHash() =>
-    r'6ba27254d0bba84b379f7cc0da25e2883073bdcc';
+    r'a895f8901e31fcbb6d597b44bc905ca4cfc93aa0';
 
 /// Resolver for ContactsSettingsSpec.reimportDataInfo().
 ///
