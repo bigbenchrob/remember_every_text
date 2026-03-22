@@ -11,6 +11,7 @@ import '../../../features/sidebar_utilities/feature_level_providers.dart'
     as sidebar_utilities;
 import '../../navigation/domain/sidebar_mode.dart';
 import '../feature_level_providers.dart';
+import '../presentation/view/sidebar_body_model_content.dart';
 import '../presentation/view/sidebar_info_card.dart';
 import '../presentation/view/sidebar_navigation_card.dart';
 import '../presentation/view_model/sidebar_cassette_card_view_model.dart';
@@ -151,6 +152,13 @@ class CassetteWidgetCoordinator extends _$CassetteWidgetCoordinator {
 
       switch (payload) {
         case SidebarCassetteCardViewModel():
+          final child =
+              payload.child ??
+              SidebarBodyModelContent(
+                bodyModel: payload.bodyModel!,
+                sidebarMode: mode,
+                cassetteIndex: cassetteIndex,
+              );
           widget = SidebarCassetteCard(
             title: payload.title,
             subtitle: payload.subtitle,
@@ -162,7 +170,7 @@ class CassetteWidgetCoordinator extends _$CassetteWidgetCoordinator {
             placementMode: payload.placementMode,
             contentAlignment: payload.contentAlignment,
             layoutStyle: payload.layoutStyle,
-            child: payload.child,
+            child: child,
           );
         case SidebarInfoCassetteViewModel():
           widget = SidebarInfoCard(

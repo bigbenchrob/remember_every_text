@@ -18,7 +18,7 @@ class SqfliteImportDatabase {
        _databaseName = databaseName,
        _debugSettings = debugSettings;
 
-  static const int _schemaVersion = 3;
+  static const int _schemaVersion = 4;
 
   final String _databaseDirectory;
   final String _databaseName;
@@ -149,6 +149,63 @@ class SqfliteImportDatabase {
         'applied_at_utc': DateTime.now().toUtc().toIso8601String(),
       }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
+
+    if (oldVersion < 4) {
+      await _upgradeHandlesTableToPreserveSourceRows(db);
+
+      await db.insert('schema_migrations', <String, Object?>{
+        'version': 4,
+        'applied_at_utc': DateTime.now().toUtc().toIso8601String(),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+  }
+
+  Future<void> _upgradeHandlesTableToPreserveSourceRows(Database db) async {
+    await db.transaction((txn) async {
+      await txn.execute('PRAGMA foreign_keys = OFF');
+      await txn.execute('DROP INDEX IF EXISTS idx_handles_compound');
+      await txn.execute('DROP INDEX IF EXISTS idx_handles_norm');
+      await txn.execute('DROP INDEX IF EXISTS idx_handles_ignore');
+      await txn.execute('ALTER TABLE handles RENAME TO handles_old');
+      await txn.execute(_handlesTableStatementWithoutUniqueness);
+      await txn.execute('''
+INSERT INTO handles (
+  id,
+  source_rowid,
+  service,
+  raw_identifier,
+  normalized_identifier,
+  compound_identifier,
+  country,
+  last_seen_utc,
+  is_ignored,
+  batch_id
+)
+SELECT
+  id,
+  source_rowid,
+  service,
+  raw_identifier,
+  normalized_identifier,
+  compound_identifier,
+  country,
+  last_seen_utc,
+  is_ignored,
+  batch_id
+FROM handles_old
+''');
+      await txn.execute('DROP TABLE handles_old');
+      await txn.execute(
+        'CREATE INDEX IF NOT EXISTS idx_handles_compound ON handles(compound_identifier)',
+      );
+      await txn.execute(
+        'CREATE INDEX IF NOT EXISTS idx_handles_norm ON handles(normalized_identifier)',
+      );
+      await txn.execute(
+        'CREATE INDEX IF NOT EXISTS idx_handles_ignore ON handles(is_ignored)',
+      );
+      await txn.execute('PRAGMA foreign_keys = ON');
+    });
   }
 
   Future<void> close() async {
@@ -1354,7 +1411,7 @@ AND Z_PK NOT IN (
     "CREATE TABLE IF NOT EXISTS import_logs (id INTEGER PRIMARY KEY, batch_id INTEGER REFERENCES import_batches(id) ON DELETE SET NULL, at_utc TEXT NOT NULL, level TEXT NOT NULL CHECK(level IN ('debug','info','warn','error')), message TEXT NOT NULL, context_json TEXT)",
     'CREATE TABLE IF NOT EXISTS contacts (id INTEGER PRIMARY KEY, Z_PK INTEGER NOT NULL UNIQUE, first_name TEXT, last_name TEXT, organization TEXT, display_name TEXT NOT NULL, short_name TEXT, created_at_utc TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT)',
     "CREATE TABLE IF NOT EXISTS contact_phone_email (id INTEGER PRIMARY KEY, ZOWNER INTEGER NOT NULL REFERENCES contacts(Z_PK) ON DELETE CASCADE, kind TEXT NOT NULL CHECK(kind IN ('email','phone')), value TEXT NOT NULL, label TEXT, UNIQUE(kind, value))",
-    "CREATE TABLE IF NOT EXISTS handles (id INTEGER PRIMARY KEY, source_rowid INTEGER, service TEXT NOT NULL, raw_identifier TEXT NOT NULL, normalized_identifier TEXT, compound_identifier TEXT NOT NULL DEFAULT '', country TEXT, last_seen_utc TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(service, raw_identifier))",
+    _handlesTableStatementWithoutUniqueness,
     "CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT NOT NULL, service TEXT, display_name TEXT, is_group INTEGER NOT NULL DEFAULT 0 CHECK(is_group IN (0,1)), created_at_utc TEXT, updated_at_utc TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(guid))",
     "CREATE TABLE IF NOT EXISTS chat_to_handle (chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE, handle_id INTEGER NOT NULL REFERENCES handles(id) ON DELETE CASCADE, role TEXT CHECK(role IN ('member','owner','unknown')) DEFAULT 'member', added_at_utc TEXT, PRIMARY KEY (chat_id, handle_id))",
     "CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT NOT NULL, chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE, sender_handle_id INTEGER REFERENCES handles(id) ON DELETE SET NULL, service TEXT, is_from_me INTEGER NOT NULL CHECK(is_from_me IN (0,1)), date_utc TEXT, date_read_utc TEXT, date_delivered_utc TEXT, subject TEXT, text TEXT, attributed_body_blob BLOB, raw_item_type INTEGER, raw_associated_message_type INTEGER, message_summary_info_blob BLOB, payload_data_blob BLOB, has_attributed_body_source INTEGER NOT NULL DEFAULT 0 CHECK(has_attributed_body_source IN (0,1)), has_message_summary_info INTEGER NOT NULL DEFAULT 0 CHECK(has_message_summary_info IN (0,1)), has_payload_data_source INTEGER NOT NULL DEFAULT 0 CHECK(has_payload_data_source IN (0,1)), item_type TEXT CHECK(item_type IN ('text','attachment-only','sticker','reaction-carrier','system','unknown','balloon')), error_code INTEGER, is_system_message INTEGER NOT NULL DEFAULT 0 CHECK(is_system_message IN (0,1)), thread_originator_guid TEXT, associated_message_guid TEXT, balloon_bundle_id TEXT, payload_json TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(guid))",
@@ -1414,6 +1471,9 @@ AND Z_PK NOT IN (
     'ALTER TABLE recovered_unlinked_messages ADD COLUMN has_message_summary_info INTEGER NOT NULL DEFAULT 0 CHECK(has_message_summary_info IN (0,1))',
     'ALTER TABLE recovered_unlinked_messages ADD COLUMN has_payload_data_source INTEGER NOT NULL DEFAULT 0 CHECK(has_payload_data_source IN (0,1))',
   ];
+
+  static const String _handlesTableStatementWithoutUniqueness =
+      "CREATE TABLE IF NOT EXISTS handles (id INTEGER PRIMARY KEY, source_rowid INTEGER, service TEXT NOT NULL, raw_identifier TEXT NOT NULL, normalized_identifier TEXT, compound_identifier TEXT NOT NULL DEFAULT '', country TEXT, last_seen_utc TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT)";
 
   static const List<String> _v2IndexStatements = <String>[
     'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_messages_date ON recovered_unlinked_messages(date_utc)',

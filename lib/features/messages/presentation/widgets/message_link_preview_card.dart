@@ -55,57 +55,54 @@ class _LinkPreviewContent extends StatelessWidget {
 
     final firstUrl = urls.first;
     final sender = message.isFromMe ? 'You' : message.senderName;
+    final messageLayout = layout == MessageCardLayout.analysis
+        ? MessageLayout.fullWidth
+        : MessageLayout.bubble;
 
-    final isAnalysis = layout == MessageCardLayout.analysis;
-
-    final preview = ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: maxWidth),
-      child: UrlPreviewWidget(url: firstUrl, maxWidth: maxWidth),
-    );
-
-    final content = Column(
-      crossAxisAlignment: message.isFromMe
-          ? CrossAxisAlignment.end
-          : CrossAxisAlignment.start,
-      children: [
-        preview,
-        const SizedBox(height: 6),
-        Padding(
-          padding: EdgeInsets.only(
-            left: isAnalysis ? 0 : 8,
-            right: isAnalysis ? 0 : 8,
-            bottom: 16,
-          ),
-          child: MetadataLine(
-            sender: sender,
-            sentAt: message.sentAt ?? DateTime.now(),
-            messageId: message.id,
-            layout: isAnalysis ? MessageLayout.fullWidth : MessageLayout.bubble,
-          ),
+    return MessageShell(
+      isMe: message.isFromMe,
+      layout: messageLayout,
+      grouping: grouping,
+      metadata: _alignForLayout(
+        layout: messageLayout,
+        isMe: message.isFromMe,
+        maxWidth: maxWidth,
+        child: MetadataLine(
+          sender: sender,
+          sentAt: message.sentAt ?? DateTime.now(),
+          messageId: message.id,
+          layout: messageLayout,
         ),
-      ],
-    );
-
-    if (isAnalysis) {
-      return Align(
-        alignment: message.isFromMe
-            ? Alignment.centerRight
-            : Alignment.centerLeft,
-        child: Padding(
-          padding: EdgeInsets.only(
-            top: grouping.compactTopSpacing ? 2 : 10,
-            bottom: 6,
-          ),
-          child: content,
+      ),
+      child: _alignForLayout(
+        layout: messageLayout,
+        isMe: message.isFromMe,
+        maxWidth: maxWidth,
+        child: UrlPreviewWidget(
+          url: firstUrl,
+          isFromMe: message.isFromMe,
+          maxWidth: maxWidth,
         ),
-      );
+      ),
+    );
+  }
+
+  Widget _alignForLayout({
+    required MessageLayout layout,
+    required bool isMe,
+    required double maxWidth,
+    required Widget child,
+  }) {
+    if (layout == MessageLayout.bubble) {
+      return child;
     }
 
     return Align(
-      alignment: message.isFromMe
-          ? Alignment.centerRight
-          : Alignment.centerLeft,
-      child: content,
+      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: child,
+      ),
     );
   }
 

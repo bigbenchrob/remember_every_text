@@ -53,7 +53,7 @@ abstract class SearchIndexer {
 - Responsibilities:
   - Ensure `messages_fts` schema and triggers exist and match expectations.
 - `rebuildAll`: truncate and repopulate `messages_fts` using batched inserts from `working_messages`. In normal operation triggers keep the table fresh; this hook is reserved for bootstrap or full resets.
-- `rebuildForMessages`: delete rows matching message IDs (via rowid) and reinsert fresh content. Documented as an escape hatch for resyncing known-bad subsets when triggers are temporarily disabled or suspect.
+- `rebuildForMessages`: delete rows matching message IDs (via rowid) and reinsert fresh content. Documented as an escape hatch for refreshing known-bad subsets when triggers are temporarily disabled or suspect.
 - `validate`: sample row counts, verify triggers fire after message insert/update/delete, and execute smoke-test queries to confirm index health.
 - Step 2 implementation batches inserts in slices of 10k rows to keep rebuild times predictable and uses `SharedPreferences` metrics to capture per-run timestamps alongside SimpleLexical stats.
 - Query building and ranking logic (token normalization, AND/OR semantics, bm25 + recency blending) lives in `SearchQueryParser` / `SearchService`, keeping the indexer focused on maintenance.

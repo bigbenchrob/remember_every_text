@@ -11,6 +11,7 @@ import 'package:remember_this_text/essentials/sidebar/application/sidebar_flow_s
 import 'package:remember_this_text/essentials/sidebar/domain/entities/cassette_spec.dart';
 import 'package:remember_this_text/features/contacts/domain/spec_classes/contacts_cassette_spec.dart';
 import 'package:remember_this_text/features/contacts/domain/spec_classes/contacts_info_cassette_spec.dart';
+import 'package:remember_this_text/features/handles/domain/spec_classes/handles_cassette_spec.dart';
 import 'package:remember_this_text/features/messages/domain/spec_classes/messages_cassette_spec.dart';
 import 'package:remember_this_text/features/messages/domain/spec_classes/messages_view_spec.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
@@ -251,6 +252,46 @@ void main() {
             MessagesSpec.recoveredNoHandleFromMeMessages(),
           ),
         ),
+      );
+    });
+
+    test('top menu stray handles branch cascades the full review stack', () {
+      container
+          .read(sidebarFlowProvider.notifier)
+          .topMenuChanged(
+            choice: TopChatMenuChoice.strayHandles,
+            cassetteIndex: 0,
+          );
+
+      final flowState = container.read(sidebarFlowProvider);
+      final rack = container.read(
+        cassetteRackStateProvider(SidebarMode.messages),
+      );
+
+      expect(flowState.topMenuChoice, TopChatMenuChoice.strayHandles);
+      expect(_activeSpec(container, WindowPanel.center), isNull);
+      expect(
+        rack.cassettes,
+        equals([
+          const CassetteSpec.sidebarUtility(
+            SidebarUtilityCassetteSpec.topChatMenu(
+              selectedChoice: TopChatMenuChoice.strayHandles,
+            ),
+          ),
+          const CassetteSpec.handles(
+            HandlesCassetteSpec.strayHandlesTypeSwitcher(),
+          ),
+          const CassetteSpec.handles(
+            HandlesCassetteSpec.strayHandlesModeSwitcher(
+              filter: StrayHandleFilter.phones,
+            ),
+          ),
+          const CassetteSpec.handles(
+            HandlesCassetteSpec.strayHandlesReview(
+              filter: StrayHandleFilter.phones,
+            ),
+          ),
+        ]),
       );
     });
 

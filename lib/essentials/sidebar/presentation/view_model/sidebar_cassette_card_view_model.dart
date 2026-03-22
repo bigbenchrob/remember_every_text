@@ -1,5 +1,7 @@
 import 'package:flutter/widgets.dart';
 
+import '../../domain/sidebar_body_model.dart';
+
 /// Semantic grouping for sidebar cassettes.
 ///
 /// This lets essentials own section ordering and hierarchy without inferring
@@ -137,12 +139,17 @@ class SidebarCassetteCardViewModel extends SidebarCassettePayload {
     this.subtitle,
     this.sectionTitle,
     this.footerText,
-    required this.child,
+    this.child,
+    this.bodyModel,
     this.layoutStyle = SidebarCardLayoutStyle.standard,
     this.isNaked = false,
     double topSpacing = 0,
     bool? shouldExpand,
-  }) : shouldExpand = shouldExpand ?? false,
+  }) : assert(
+         (child != null) != (bodyModel != null),
+         'Provide exactly one of child or bodyModel.',
+       ),
+       shouldExpand = shouldExpand ?? false,
        super(role: role, topSpacing: topSpacing);
 
   /// Approved placement mode used by the sidebar geometry contract.
@@ -163,7 +170,10 @@ class SidebarCassetteCardViewModel extends SidebarCassettePayload {
   /// The cassette content widget rendered inside the card.
   ///
   /// For [CassetteCardType.standard], this is the interactive body content.
-  final Widget child;
+  final Widget? child;
+
+  /// Essentials-owned semantic body model rendered by shared sidebar widgets.
+  final SidebarBodyModel? bodyModel;
 
   /// Layout style controlling horizontal rails (margin/padding/gaps).
   ///

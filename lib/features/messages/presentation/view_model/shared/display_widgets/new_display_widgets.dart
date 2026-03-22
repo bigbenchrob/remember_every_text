@@ -558,7 +558,7 @@ class TextMessageTile extends ConsumerWidget {
   }
 }
 
-class ImageMessageTile extends StatelessWidget {
+class ImageMessageTile extends ConsumerWidget {
   const ImageMessageTile({
     super.key,
     required this.isMe,
@@ -566,6 +566,7 @@ class ImageMessageTile extends StatelessWidget {
     required this.sender,
     required this.sentAt,
     required this.messageId,
+    this.captionText,
     this.layout = MessageLayout.bubble,
     this.grouping = MessageGroupingStyle.standalone,
   });
@@ -575,11 +576,12 @@ class ImageMessageTile extends StatelessWidget {
   final String sender;
   final DateTime sentAt;
   final int messageId;
+  final String? captionText;
   final MessageLayout layout;
   final MessageGroupingStyle grouping;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final resolvedPath = attachment.resolvedLocalPath();
     final file = resolvedPath != null ? File(resolvedPath) : null;
     final exists = file?.existsSync() ?? false;
@@ -602,27 +604,42 @@ class ImageMessageTile extends StatelessWidget {
       child: _alignMediaForLayout(
         layout: layout,
         isMe: isMe,
-        child: ClipRRect(
-          borderRadius: MsgTheme.mediaRadius,
-          child: _IntrinsicSizedMedia(
-            child: AspectRatio(
-              aspectRatio: aspectRatio,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  const ColoredBox(color: Colors.black12),
-                  if (exists)
-                    Image.file(
-                      file!,
-                      fit: BoxFit.cover,
-                      filterQuality: FilterQuality.medium,
-                    )
-                  else
-                    const Center(child: Text('Image unavailable')),
-                ],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ClipRRect(
+              borderRadius: MsgTheme.mediaRadius,
+              child: _IntrinsicSizedMedia(
+                child: AspectRatio(
+                  aspectRatio: aspectRatio,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      const ColoredBox(color: Colors.black12),
+                      if (exists)
+                        Image.file(
+                          file!,
+                          fit: BoxFit.cover,
+                          filterQuality: FilterQuality.medium,
+                        )
+                      else
+                        const Center(child: Text('Image unavailable')),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ),
+            if (captionText != null) ...[
+              const SizedBox(height: 8),
+              _MediaCaptionBubble(
+                isMe: isMe,
+                text: captionText!,
+                layout: layout,
+                grouping: grouping,
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -637,6 +654,7 @@ class VideoMessageTile extends ConsumerStatefulWidget {
     required this.sender,
     required this.sentAt,
     required this.messageId,
+    this.captionText,
     this.layout = MessageLayout.bubble,
     this.grouping = MessageGroupingStyle.standalone,
   });
@@ -646,6 +664,7 @@ class VideoMessageTile extends ConsumerStatefulWidget {
   final String sender;
   final DateTime sentAt;
   final int messageId;
+  final String? captionText;
   final MessageLayout layout;
   final MessageGroupingStyle grouping;
 
@@ -722,83 +741,164 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
       child: _alignMediaForLayout(
         layout: widget.layout,
         isMe: widget.isMe,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: colors.surfaces.surface,
-            borderRadius: MsgTheme.mediaRadius,
-            border: Border.all(color: colors.lines.borderSubtle),
-          ),
-          child: ClipRRect(
-            borderRadius: MsgTheme.mediaRadius,
-            child: _IntrinsicSizedMedia(
-              child: AspectRatio(
-                aspectRatio: aspectRatio,
-                child: Stack(
-                  fit: StackFit.expand,
-                  alignment: Alignment.center,
-                  children: [
-                    const ColoredBox(color: Colors.black26),
-                    if (hasVideo && _ready)
-                      VideoPlayer(_controller!)
-                    else if (hasVideo)
-                      const Center(
-                        child: SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      )
-                    else
-                      const Center(child: Text('Video unavailable')),
-                    if (hasVideo)
-                      Positioned.fill(
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: _toggle,
-                            child: AnimatedOpacity(
-                              duration: const Duration(milliseconds: 180),
-                              opacity: _controller!.value.isPlaying ? 0.0 : 1.0,
-                              child: Center(
-                                child: Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.black54,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    _controller!.value.isPlaying
-                                        ? Icons.pause
-                                        : Icons.play_arrow,
-                                    size: 28,
-                                    color: Colors.white,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: colors.surfaces.surface,
+                borderRadius: MsgTheme.mediaRadius,
+                border: Border.all(color: colors.lines.borderSubtle),
+              ),
+              child: ClipRRect(
+                borderRadius: MsgTheme.mediaRadius,
+                child: _IntrinsicSizedMedia(
+                  child: AspectRatio(
+                    aspectRatio: aspectRatio,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      alignment: Alignment.center,
+                      children: [
+                        const ColoredBox(color: Colors.black26),
+                        if (hasVideo && _ready)
+                          VideoPlayer(_controller!)
+                        else if (hasVideo)
+                          const Center(
+                            child: SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          )
+                        else
+                          const Center(child: Text('Video unavailable')),
+                        if (hasVideo)
+                          Positioned.fill(
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: _toggle,
+                                child: AnimatedOpacity(
+                                  duration: const Duration(milliseconds: 180),
+                                  opacity: _controller!.value.isPlaying
+                                      ? 0.0
+                                      : 1.0,
+                                  child: DecoratedBox(
+                                    decoration: const BoxDecoration(
+                                      color: Colors.black45,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(10),
+                                      child: Icon(
+                                        _controller!.value.isPlaying
+                                            ? Icons.pause
+                                            : Icons.play_arrow,
+                                        color: Colors.white,
+                                        size: 22,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                      ),
-                    if (hasVideo && _ready)
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        child: VideoProgressIndicator(
-                          _controller!,
-                          allowScrubbing: true,
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 6,
-                            horizontal: 8,
+                        if (hasVideo && _ready)
+                          Positioned(
+                            right: 0,
+                            bottom: 0,
+                            child: VideoProgressIndicator(
+                              _controller!,
+                              allowScrubbing: true,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 6,
+                                horizontal: 8,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                  ],
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
+            if (widget.captionText != null) ...[
+              const SizedBox(height: 8),
+              _MediaCaptionBubble(
+                isMe: widget.isMe,
+                text: widget.captionText!,
+                layout: widget.layout,
+                grouping: widget.grouping,
+              ),
+            ],
+          ],
         ),
+      ),
+    );
+  }
+}
+
+class _MediaCaptionBubble extends ConsumerWidget {
+  const _MediaCaptionBubble({
+    required this.isMe,
+    required this.text,
+    required this.layout,
+    required this.grouping,
+  });
+
+  final bool isMe;
+  final String text;
+  final MessageLayout layout;
+  final MessageGroupingStyle grouping;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final bg = switch (layout) {
+      MessageLayout.bubble =>
+        isMe
+            ? colors.messageBubble(MessageBubble.sentBg)
+            : colors.messageBubble(MessageBubble.receivedBg),
+      MessageLayout.fullWidth =>
+        isMe
+            ? colors.messagePanels.accentTintSoft
+            : colors.messagePanels.receivedSurface,
+    };
+    final borderColor = switch (layout) {
+      MessageLayout.bubble => null,
+      MessageLayout.fullWidth =>
+        isMe
+            ? colors.messagePanels.accentBorderSoft
+            : colors.messagePanels.cardBorder,
+    };
+    final textColor = switch (layout) {
+      MessageLayout.bubble =>
+        isMe
+            ? colors.messageBubble(MessageBubble.sentText)
+            : colors.messageBubble(MessageBubble.receivedText),
+      MessageLayout.fullWidth =>
+        grouping.softenContinuationChrome
+            ? colors.content.textPrimary.withValues(alpha: 0.94)
+            : colors.content.textPrimary,
+    };
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: MsgTheme.bubblePadding.horizontal / 2,
+        vertical: MsgTheme.bubblePadding.vertical / 2,
+      ),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: MsgTheme.textRadius,
+        border: borderColor == null
+            ? null
+            : Border.all(color: borderColor, width: 1),
+      ),
+      child: SelectableText(
+        text,
+        style: TextStyle(color: textColor, height: 1.25, fontSize: 14.5),
       ),
     );
   }

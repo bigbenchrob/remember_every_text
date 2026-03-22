@@ -25,6 +25,15 @@ class RecoveredUnlinkedAttachmentsMigrator extends BaseTableMigrator {
       return;
     }
 
+    if (ctx.incrementalMode) {
+      final removedDuplicates = await _removeDuplicateProjectedAttachments(ctx);
+      if (removedDuplicates > 0) {
+        ctx.log(
+          '[recovered_unlinked_attachments] removed $removedDuplicates duplicate projected row(s) before incremental copy',
+        );
+      }
+    }
+
     final joinable = await _countJoinableAttachments(ctx);
     if (joinable == 0) {
       ctx.log('[recovered_unlinked_attachments] no rows to project');
@@ -67,7 +76,12 @@ class RecoveredUnlinkedAttachmentsMigrator extends BaseTableMigrator {
         FROM $_attachAlias.recovered_unlinked_message_attachments ruma
         JOIN $_attachAlias.attachments a ON a.id = ruma.attachment_id
         JOIN recovered_unlinked_messages rum ON rum.id = ruma.message_id
-        WHERE rum.guid IS NOT NULL AND LENGTH(TRIM(rum.guid)) > 0;
+        LEFT JOIN recovered_unlinked_attachments existing
+          ON existing.message_guid = rum.guid
+         AND existing.import_attachment_id = a.id
+        WHERE rum.guid IS NOT NULL
+          AND LENGTH(TRIM(rum.guid)) > 0
+          AND existing.id IS NULL;
       ''');
 
       final rows = await ctx.workingDb
@@ -81,21 +95,11 @@ class RecoveredUnlinkedAttachmentsMigrator extends BaseTableMigrator {
 
   @override
   Future<void> postValidate(IMigrationContext ctx) async {
-    final expected = await _countJoinableAttachments(ctx);
+    final expected = await _countProjectableAttachments(ctx);
     final projected = await count(ctx.workingDb, name);
     ctx.log(
       '[recovered_unlinked_attachments] expected=$expected projected=$projected',
     );
-
-    if (ctx.incrementalMode) {
-      await expectTrueOrThrow(
-        ok: projected >= expected,
-        errorCode: 'RECOVERED_UNLINKED_ATTACHMENTS_INCREMENTAL_UNDERCOUNT',
-        message:
-            'recovered_unlinked_attachments: working has $projected rows but expected >= $expected',
-      );
-      return;
-    }
 
     await expectTrueOrThrow(
       ok: projected == expected,
@@ -118,6 +122,61 @@ class RecoveredUnlinkedAttachmentsMigrator extends BaseTableMigrator {
       return 0;
     }
     return _coerceToInt(rows.first['c']);
+  }
+
+  Future<int> _countProjectableAttachments(IMigrationContext ctx) async {
+    return _withAttachedImport(ctx, () async {
+      final rows = await ctx.workingDb.customSelect('''
+        SELECT COUNT(*) AS c
+        FROM $_attachAlias.recovered_unlinked_message_attachments ruma
+        JOIN $_attachAlias.attachments a ON a.id = ruma.attachment_id
+        JOIN recovered_unlinked_messages rum ON rum.id = ruma.message_id
+        WHERE rum.guid IS NOT NULL AND LENGTH(TRIM(rum.guid)) > 0
+      ''').get();
+      return _extractCount(rows, 'c');
+    });
+  }
+
+  Future<int> _removeDuplicateProjectedAttachments(
+    IMigrationContext ctx,
+  ) async {
+    final duplicateRows = await ctx.workingDb.customSelect('''
+      SELECT COUNT(*) AS c
+      FROM recovered_unlinked_attachments duplicate
+      WHERE duplicate.import_attachment_id IS NOT NULL
+        AND EXISTS (
+          SELECT 1
+          FROM recovered_unlinked_attachments keeper
+          WHERE keeper.message_guid = duplicate.message_guid
+            AND keeper.import_attachment_id = duplicate.import_attachment_id
+            AND keeper.id < duplicate.id
+        )
+    ''').get();
+    final duplicatesToRemove = _extractCount(duplicateRows, 'c');
+    if (duplicatesToRemove == 0) {
+      return 0;
+    }
+
+    await ctx.workingDb.customStatement('''
+      DELETE FROM recovered_unlinked_attachments
+      WHERE id IN (
+        SELECT duplicate.id
+        FROM recovered_unlinked_attachments duplicate
+        WHERE duplicate.import_attachment_id IS NOT NULL
+          AND EXISTS (
+            SELECT 1
+            FROM recovered_unlinked_attachments keeper
+            WHERE keeper.message_guid = duplicate.message_guid
+              AND keeper.import_attachment_id = duplicate.import_attachment_id
+              AND keeper.id < duplicate.id
+          )
+      )
+    ''');
+
+    final rows = await ctx.workingDb
+        .customSelect('SELECT changes() AS c')
+        .get();
+    return _extractCount(rows, 'c');
   }
 
   Future<T> _withAttachedImport<T>(

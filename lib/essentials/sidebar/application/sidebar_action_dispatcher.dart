@@ -15,9 +15,10 @@ import '../../navigation/domain/navigation_constants.dart';
 import '../../navigation/domain/sidebar_mode.dart';
 import '../../navigation/feature_level_providers.dart';
 import '../../onboarding/application/onboarding_gate_provider.dart';
+import '../application/cassette_rack_state_provider.dart';
+import '../application/sidebar_flow_state_provider.dart';
 import '../domain/entities/cassette_spec.dart';
 import '../domain/sidebar_action_intent.dart';
-import '../feature_level_providers.dart';
 
 part 'sidebar_action_dispatcher.g.dart';
 

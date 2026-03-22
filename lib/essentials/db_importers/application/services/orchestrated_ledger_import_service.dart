@@ -30,6 +30,7 @@ import '../importers/message_rich_text_importer.dart';
 import '../importers/messages_importer.dart';
 import '../importers/prepare_sources_importer.dart';
 import '../orchestrator/import_orchestrator.dart';
+import 'incremental_ledger_integrity_check.dart';
 
 typedef ExecutionPlanCallback = void Function(List<ImporterStep> steps);
 
@@ -123,6 +124,24 @@ class OrchestratedLedgerImportService {
           'AddressBook database not found at ${addressBookFile.path}';
       debugSettings.logError('$_logContext: $message');
       return DbImportResult(batchId: -1, success: false, error: message);
+    }
+
+    if (hasExistingLedgerData) {
+      final hasMissingMembershipParents = await hasMissingChatMembershipParents(
+        ledgerDb: ledgerDb,
+        messagesDbPath: messagesFile.path,
+      );
+      if (hasMissingMembershipParents) {
+        debugSettings.logProgress(
+          '$_logContext: Detected incomplete handles/chats baseline for chat memberships, forcing full reimport.',
+        );
+        previousMaxHandleRowId = null;
+        previousMaxChatRowId = null;
+        previousMaxMessageRowId = null;
+        previousMaxAttachmentRowId = null;
+        previousMaxMessageAttachmentRowId = null;
+        hasExistingLedgerData = false;
+      }
     }
 
     final startedAtUtc = DateTime.now().toUtc().toIso8601String();

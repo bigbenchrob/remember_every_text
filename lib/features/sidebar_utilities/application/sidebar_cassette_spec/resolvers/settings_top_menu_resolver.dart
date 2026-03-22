@@ -1,9 +1,10 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
+import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
+import '../../../../../essentials/sidebar/domain/sidebar_body_model.dart';
+import '../../../../../essentials/sidebar/domain/sidebar_body_option.dart';
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 import '../../../domain/sidebar_utilities_constants.dart';
-import '../widget_builders/settings_top_menu_widget.dart';
 
 part 'settings_top_menu_resolver.g.dart';
 
@@ -34,8 +35,6 @@ class SettingsTopMenuResolver extends _$SettingsTopMenuResolver {
   /// Parameters are explicit and fully-decided - no spec interpretation here.
   Future<SidebarCassetteCardViewModel> resolve({
     required SettingsMenuChoice currentChoice,
-    required int cassetteIndex,
-    required SidebarMode sidebarMode,
   }) async {
     return SidebarCassetteCardViewModel(
       role: SidebarCassetteRole.appControl,
@@ -43,11 +42,27 @@ class SettingsTopMenuResolver extends _$SettingsTopMenuResolver {
       contentAlignment: SidebarBodyContentAlignment.insetControl,
       title: '',
       isNaked: true,
-      child: SettingsTopMenuWidget(
-        currentChoice: currentChoice,
-        cassetteIndex: cassetteIndex,
-        sidebarMode: sidebarMode,
+      bodyModel: SidebarDropdownBodyModel(
+        promptLabel: '',
+        selectedOptionId: currentChoice.id,
+        options: SettingsMenuChoice.values
+            .map(
+              (choice) => SidebarDropdownOption(
+                id: choice.id,
+                label: choice.label,
+                selectionIntent: SettingsMenuChanged(
+                  choice: _mapSettingsMenuChoice(choice),
+                ),
+              ),
+            )
+            .toList(),
       ),
     );
   }
+}
+
+SidebarSettingsMenuChoice _mapSettingsMenuChoice(SettingsMenuChoice choice) {
+  return switch (choice) {
+    SettingsMenuChoice.actions => SidebarSettingsMenuChoice.actions,
+  };
 }

@@ -7,9 +7,11 @@ import 'package:remember_this_text/essentials/navigation/domain/sidebar_mode.dar
 import 'package:remember_this_text/essentials/sidebar/application/cassette_rack_state_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/application/cassette_widget_coordinator_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/domain/entities/cassette_spec.dart';
+import 'package:remember_this_text/essentials/sidebar/presentation/view/sidebar_body_model_content.dart';
 import 'package:remember_this_text/essentials/sidebar/presentation/view/sidebar_cassette_card.dart';
 import 'package:remember_this_text/features/handles/application/state/stray_handle_mode_provider.dart';
 import 'package:remember_this_text/features/handles/domain/spec_classes/handles_cassette_spec.dart';
+import 'package:remember_this_text/features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
 
 void main() {
   group('cassetteWidgetCoordinatorProvider', () {
@@ -44,7 +46,7 @@ void main() {
 
       final initialWidgets = await container.read(provider.future);
       expect(
-        _reviewCard(initialWidgets).sectionTitle,
+        _singleCard(initialWidgets).sectionTitle,
         'Unfamiliar phone numbers',
       );
 
@@ -53,12 +55,31 @@ void main() {
           .setMode(StrayHandleMode.spamCandidates);
 
       final updatedWidgets = await container.read(provider.future);
-      expect(_reviewCard(updatedWidgets).sectionTitle, 'Spam phone numbers');
+      expect(_singleCard(updatedWidgets).sectionTitle, 'Spam phone numbers');
     });
+
+    test(
+      'renders settings menu cassettes through body model content',
+      () async {
+        container
+            .read(cassetteRackStateProvider(SidebarMode.settings).notifier)
+            .setRack([
+              const CassetteSpec.sidebarUtility(
+                SidebarUtilityCassetteSpec.settingsMenu(),
+              ),
+            ]);
+
+        final widgets = await container.read(
+          cassetteWidgetCoordinatorProvider(SidebarMode.settings).future,
+        );
+
+        expect(_singleCard(widgets).child, isA<SidebarBodyModelContent>());
+      },
+    );
   });
 }
 
-SidebarCassetteCard _reviewCard(List<Widget> widgets) {
+SidebarCassetteCard _singleCard(List<Widget> widgets) {
   expect(widgets, hasLength(1));
 
   var current = widgets.single;

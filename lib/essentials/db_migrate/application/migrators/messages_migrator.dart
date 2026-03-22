@@ -227,7 +227,7 @@ class MessagesMigrator extends BaseTableMigrator {
           .get();
       final insertedCount = _extractCount(rows, 'c');
 
-      // Repair missing sender_handle_id for messages that now have a mapping
+      // Backfill missing sender_handle_id for messages that now have a mapping
       // This fixes rows that were skipped by INSERT OR IGNORE in previous runs
       // but had NULL sender_handle_id due to missing mappings at that time.
       await ctx.workingDb.customStatement('''
@@ -247,6 +247,16 @@ class MessagesMigrator extends BaseTableMigrator {
             WHERE m.guid = messages.guid
           );
       ''');
+
+      final backfilledRows = await ctx.workingDb
+          .customSelect('SELECT changes() AS c')
+          .get();
+      final backfilledCount = _extractCount(backfilledRows, 'c');
+      if (backfilledCount > 0) {
+        ctx.log(
+          '[messages] backfilled $backfilledCount existing incoming messages with canonical sender handles',
+        );
+      }
 
       await ctx.workingDb.customStatement('''
         WITH candidate AS (
@@ -359,6 +369,16 @@ class MessagesMigrator extends BaseTableMigrator {
         message: 'messages: working has $projected rows but expected $expected',
       );
     }
+
+    final remainingResolvableIncoming = await _countResolvableIncomingMessages(
+      ctx,
+    );
+    await expectTrueOrThrow(
+      ok: remainingResolvableIncoming == 0,
+      errorCode: 'MESSAGES_SENDER_HANDLE_BACKFILL_INCOMPLETE',
+      message:
+          'messages: working still has $remainingResolvableIncoming resolvable incoming rows with null sender_handle_id',
+    );
   }
 
   Future<int> _countJoinableMessages(IMigrationContext ctx) async {
@@ -373,6 +393,26 @@ class MessagesMigrator extends BaseTableMigrator {
       return 0;
     }
     return _coerceToInt(rows.first['c']);
+  }
+
+  Future<int> _countResolvableIncomingMessages(IMigrationContext ctx) {
+    return _withAttachedImport(ctx, () async {
+      final rows = await ctx.workingDb.customSelect('''
+        SELECT COUNT(*) AS c
+        FROM messages working_messages
+        WHERE working_messages.sender_handle_id IS NULL
+          AND working_messages.is_from_me = 0
+          AND EXISTS (
+            SELECT 1
+            FROM $_attachAlias.messages import_messages
+            JOIN handles_canonical_to_alias map
+              ON map.source_handle_id = import_messages.sender_handle_id
+            WHERE import_messages.guid = working_messages.guid
+          )
+      ''').get();
+
+      return _extractCount(rows, 'c');
+    });
   }
 
   Future<T> _withAttachedImport<T>(

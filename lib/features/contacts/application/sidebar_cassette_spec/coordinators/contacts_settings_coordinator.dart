@@ -36,7 +36,7 @@ class ContactsSettingsCoordinator extends _$ContactsSettingsCoordinator {
           .resolve(cassetteIndex: cassetteIndex),
       actionsMenu: (selectedChoice) => ref
           .read(actionsSubMenuResolverProvider.notifier)
-          .resolve(currentChoice: selectedChoice, cassetteIndex: cassetteIndex),
+          .resolve(currentChoice: selectedChoice),
       sendLogsInfo: () => ref
           .read(actionsInfoResolverProvider.notifier)
           .resolve(cassetteIndex: cassetteIndex),

@@ -177,6 +177,7 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
         }
 
         final now = DateTime.now();
+        final updateStartedAt = DateTime.now();
         final newMessageCount = previousMaxRowId != null
             ? currentMaxRowId - previousMaxRowId
             : 0;
@@ -208,6 +209,16 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
           ref
               .read(appLoggerProvider.notifier)
               .info(
+                _buildImportSummaryLog(
+                  timestamp: updateStartedAt,
+                  newMessageCount: newMessageCount,
+                  importResult: importResult,
+                ),
+                source: 'ChatDbMonitor',
+              );
+          ref
+              .read(appLoggerProvider.notifier)
+              .info(
                 'Incremental import successful. Triggering migration',
                 source: 'ChatDbMonitor',
               );
@@ -217,10 +228,16 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
           );
 
           if (migrationResult.success) {
+            final completedAt = DateTime.now();
             ref
                 .read(appLoggerProvider.notifier)
                 .info(
-                  'Incremental migration successful',
+                  _buildMigrationSummaryLog(
+                    startedAt: updateStartedAt,
+                    completedAt: completedAt,
+                    importResult: importResult,
+                    migrationResult: migrationResult,
+                  ),
                   source: 'ChatDbMonitor',
                 );
             // Signal to UI providers that new message data is available
@@ -294,5 +311,45 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
           source: 'ChatDbMonitor',
           context: {if (stackTrace != null) 'stackTrace': '$stackTrace'},
         );
+  }
+
+  String _buildImportSummaryLog({
+    required DateTime timestamp,
+    required int newMessageCount,
+    required dynamic importResult,
+  }) {
+    final timeLabel = _formatLocalClockTime(timestamp);
+    return 'Incremental update at $timeLabel: '
+        '$newMessageCount new source row(s) detected; '
+        'import batch ${importResult.batchId} added '
+        '${importResult.messagesImported} message(s), '
+        '${importResult.attachmentsImported} attachment(s), and '
+        '${importResult.messageAttachmentsImported} message/attachment link(s).';
+  }
+
+  String _buildMigrationSummaryLog({
+    required DateTime startedAt,
+    required DateTime completedAt,
+    required dynamic importResult,
+    required dynamic migrationResult,
+  }) {
+    final timeLabel = _formatLocalClockTime(completedAt);
+    final durationMs = completedAt.difference(startedAt).inMilliseconds;
+    return 'Incremental update at $timeLabel completed in ${durationMs}ms: '
+        'batch ${importResult.batchId}, '
+        '${importResult.messagesImported} imported message(s), '
+        '${importResult.attachmentsImported} imported attachment(s), '
+        '${migrationResult.messagesProjected} working message row(s), '
+        '${migrationResult.attachmentsProjected} working attachment row(s).';
+  }
+
+  String _formatLocalClockTime(DateTime timestamp) {
+    final local = timestamp.toLocal();
+    final hour = local.hour == 0
+        ? 12
+        : (local.hour > 12 ? local.hour - 12 : local.hour);
+    final minute = local.minute.toString().padLeft(2, '0');
+    final suffix = local.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $suffix';
   }
 }

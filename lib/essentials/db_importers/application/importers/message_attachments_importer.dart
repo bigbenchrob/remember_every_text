@@ -3,6 +3,7 @@ import 'package:sqflite/sqflite.dart';
 import '../../domain/base_table_importer.dart';
 import '../../domain/row_progress_reporter.dart';
 import '../../infrastructure/sqlite/import_context_sqlite.dart';
+import 'source_join_prevalidation.dart';
 
 class MessageAttachmentsImporter extends BaseTableImporter
     with RowProgressReporter {
@@ -16,6 +17,8 @@ class MessageAttachmentsImporter extends BaseTableImporter
 
   @override
   Future<void> validatePrereqs(IImportContext ctx) async {
+    await validateSourceMessageAttachmentJoinIntegrity(ctx);
+    await validateLedgerMessageAttachmentJoinCoverage(ctx);
     if (ctx.hasExistingLedgerData) {
       return;
     }

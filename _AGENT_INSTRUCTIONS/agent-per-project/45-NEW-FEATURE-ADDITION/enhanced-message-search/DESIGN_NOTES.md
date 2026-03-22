@@ -39,7 +39,7 @@ To avoid a monolithic "search service" that knows everything, we split responsib
 *   **Logic**:
     *   *Rebuild*: Truncate `messages_fts`, populate from `working_messages`.
     *   *Incremental*: Delete old entries for `messageIds`, insert new text.
-    *   *Note*: Since we already have triggers on `messages_fts`, this indexer might primarily serve as a "Repair/Resync" tool and a query interface, rather than needing heavy manual maintenance code.
+    *   *Note*: Since we already have triggers on `messages_fts`, this indexer might primarily serve as a "Rebuild/Refresh" tool and a query interface, rather than needing heavy manual maintenance code.
 
 ### 2.2. `MessageEmotionIndexer` (Metadata/Heuristic)
 *   **Purpose**: Filter by "intensity" or "emotion".

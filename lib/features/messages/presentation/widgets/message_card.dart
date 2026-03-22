@@ -31,6 +31,7 @@ class MessageCard extends ConsumerWidget {
   }
 
   Widget _buildMessageContent(BuildContext context) {
+    final messageText = _meaningfulMessageText(message.text);
     final urls = _extractUrls(message.text);
     final isPureUrlMessage =
         urls.length == 1 && message.text.trim() == urls.first;
@@ -66,6 +67,7 @@ class MessageCard extends ConsumerWidget {
       return ImageMessageTile(
         isMe: message.isFromMe,
         attachment: attachment,
+        captionText: messageText,
         sender: message.senderName,
         sentAt: message.sentAt ?? DateTime.now(),
         messageId: message.id,
@@ -82,6 +84,7 @@ class MessageCard extends ConsumerWidget {
       return VideoMessageTile(
         isMe: message.isFromMe,
         attachment: attachment,
+        captionText: messageText,
         sender: message.senderName,
         sentAt: message.sentAt ?? DateTime.now(),
         messageId: message.id,
@@ -110,5 +113,23 @@ class MessageCard extends ConsumerWidget {
   List<String> _extractUrls(String text) {
     final urlRegex = RegExp(r'https?://[^\s]+', caseSensitive: false);
     return urlRegex.allMatches(text).map((m) => m.group(0)!).toList();
+  }
+
+  String? _meaningfulMessageText(String text) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+
+    switch (trimmed) {
+      case '[No text content]':
+      case '(No text content)':
+      case '(No plain text content)':
+      case '(No preserved content)':
+      case '(Associated message carrier without plain text)':
+        return null;
+    }
+
+    return text;
   }
 }

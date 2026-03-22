@@ -52,11 +52,7 @@ class SidebarUtilitiesCassetteCoordinator
           ),
       settingsMenu: (menu) => ref
           .read(settingsTopMenuResolverProvider.notifier)
-          .resolve(
-            currentChoice: menu.selectedChoice,
-            cassetteIndex: cassetteIndex,
-            sidebarMode: SidebarMode.settings,
-          ),
+          .resolve(currentChoice: menu.selectedChoice),
     );
   }
 }

@@ -135,6 +135,36 @@ class RecoveredUnlinkedMessagesMigrator extends BaseTableMigrator {
         WHERE m.guid IS NOT NULL AND LENGTH(TRIM(m.guid)) > 0;
       ''');
 
+      await ctx.workingDb.customStatement('''
+        UPDATE recovered_unlinked_messages
+        SET sender_handle_id = (
+          SELECT map.canonical_handle_id
+          FROM $_attachAlias.recovered_unlinked_messages import_messages
+          JOIN handles_canonical_to_alias map
+            ON map.source_handle_id = import_messages.sender_handle_id
+          WHERE import_messages.guid = recovered_unlinked_messages.guid
+        )
+        WHERE sender_handle_id IS NULL
+          AND is_from_me = 0
+          AND EXISTS (
+            SELECT 1
+            FROM $_attachAlias.recovered_unlinked_messages import_messages
+            JOIN handles_canonical_to_alias map
+              ON map.source_handle_id = import_messages.sender_handle_id
+            WHERE import_messages.guid = recovered_unlinked_messages.guid
+          )
+      ''');
+
+      final backfilledRows = await ctx.workingDb
+          .customSelect('SELECT changes() AS c')
+          .get();
+      final backfilledCount = _extractCount(backfilledRows, 'c');
+      if (backfilledCount > 0) {
+        ctx.log(
+          '[recovered_unlinked_messages] backfilled $backfilledCount existing incoming rows with canonical sender handles',
+        );
+      }
+
       final rows = await ctx.workingDb
           .customSelect('SELECT changes() AS c')
           .get();
@@ -159,14 +189,24 @@ class RecoveredUnlinkedMessagesMigrator extends BaseTableMigrator {
         message:
             'recovered_unlinked_messages: working has $projected rows but expected >= $expected',
       );
-      return;
+    } else {
+      await expectTrueOrThrow(
+        ok: projected == expected,
+        errorCode: 'RECOVERED_UNLINKED_MESSAGES_ROW_MISMATCH',
+        message:
+            'recovered_unlinked_messages: working has $projected rows but expected $expected',
+      );
     }
 
+    final remainingResolvableIncoming = await _countResolvableIncomingMessages(
+      ctx,
+    );
     await expectTrueOrThrow(
-      ok: projected == expected,
-      errorCode: 'RECOVERED_UNLINKED_MESSAGES_ROW_MISMATCH',
+      ok: remainingResolvableIncoming == 0,
+      errorCode:
+          'RECOVERED_UNLINKED_MESSAGES_SENDER_HANDLE_BACKFILL_INCOMPLETE',
       message:
-          'recovered_unlinked_messages: working has $projected rows but expected $expected',
+          'recovered_unlinked_messages: working still has $remainingResolvableIncoming resolvable incoming rows with null sender_handle_id',
     );
   }
 
@@ -181,6 +221,26 @@ class RecoveredUnlinkedMessagesMigrator extends BaseTableMigrator {
       return 0;
     }
     return _coerceToInt(rows.first['c']);
+  }
+
+  Future<int> _countResolvableIncomingMessages(IMigrationContext ctx) {
+    return _withAttachedImport(ctx, () async {
+      final rows = await ctx.workingDb.customSelect('''
+        SELECT COUNT(*) AS c
+        FROM recovered_unlinked_messages working_messages
+        WHERE working_messages.sender_handle_id IS NULL
+          AND working_messages.is_from_me = 0
+          AND EXISTS (
+            SELECT 1
+            FROM $_attachAlias.recovered_unlinked_messages import_messages
+            JOIN handles_canonical_to_alias map
+              ON map.source_handle_id = import_messages.sender_handle_id
+            WHERE import_messages.guid = working_messages.guid
+          )
+      ''').get();
+
+      return _extractCount(rows, 'c');
+    });
   }
 
   Future<T> _withAttachedImport<T>(

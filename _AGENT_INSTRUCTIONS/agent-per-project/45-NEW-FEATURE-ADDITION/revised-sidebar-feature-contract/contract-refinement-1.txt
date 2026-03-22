@@ -1,0 +1,281 @@
+SIDEBAR RENDERING & RESPONSIBILITY CONTRACT (REFINEMENT)
+
+Purpose
+
+This document refines the sidebar architecture to resolve the boundary between:
+	•	centrally governed sidebar controls
+	•	feature-owned complex visualizations
+
+It ensures that:
+	•	layout cannot be violated by feature code
+	•	standard controls remain consistent across the app
+	•	complex feature UI can exist without breaking the system
+	•	all rendering obeys canonical geometry and flow principles
+
+⸻
+
+1. Core Principle Extension
+
+Not every sidebar body is rendered by essentials.
+
+But:
+
+Every sidebar body is hosted, constrained, and governed by essentials.
+
+⸻
+
+2. Two Categories of Sidebar Bodies
+
+⸻
+
+2.1 Category A — Governed Sidebar Primitives
+
+These are standard UI elements that must be visually and behaviorally consistent across the app.
+
+Examples:
+	•	dropdown menus
+	•	segmented controls
+	•	buttons and inline actions
+	•	info cards
+	•	standard lists
+	•	list rows with trailing gutter affordances
+
+Rules
+	•	Features MUST NOT construct these as Widgets
+	•	Features MUST return structured presentation data only
+	•	Essentials MUST render these using centralized widget implementations
+
+Feature responsibilities
+	•	labels (strings)
+	•	selected values
+	•	options / items
+	•	semantic action intents
+
+Essentials responsibilities
+	•	widget construction
+	•	styling and visual consistency
+	•	layout and spacing
+	•	hover / press behavior
+	•	interaction handling
+	•	action dispatch
+
+⸻
+
+2.2 Category B — Feature-Owned Complex Bodies
+
+These are domain-specific visualizations that cannot reasonably be abstracted into generic primitives.
+
+Examples:
+	•	messages heat map
+	•	future charts or analytical views
+	•	any rich, domain-driven visualization
+
+Rules
+	•	Features MAY construct these as Widgets
+	•	These Widgets MUST NOT control sidebar layout
+	•	These Widgets MUST be rendered inside an essentials-owned constraint shell
+
+⸻
+
+3. SidebarConstrainedContent (Critical Mechanism)
+
+⸻
+
+3.1 Definition
+
+SidebarConstrainedContent is an essentials-owned wrapper that:
+	•	defines the usable content region
+	•	enforces width and layout constraints
+	•	prevents feature widgets from breaking sidebar geometry
+
+⸻
+
+3.2 Responsibilities
+
+SidebarConstrainedContent must:
+	•	enforce a fixed maximum width (content envelope)
+	•	apply sidebar-defined padding and insets
+	•	respect lane policy (including gutter if applicable)
+	•	clip or constrain overflow
+	•	ensure alignment with sidebar rails
+
+Feature widgets must always be placed inside this container.
+
+⸻
+
+3.3 Guarantee
+
+Feature code cannot expand beyond the allowed width.
+
+Layout violations are prevented structurally, not detected after the fact.
+
+⸻
+
+3.4 Debug Behavior (Optional but Recommended)
+
+In debug mode, SidebarConstrainedContent may:
+	•	assert on layout overflow
+	•	log warnings for improper use of unconstrained widgets
+	•	detect common violations (e.g. use of infinite width)
+
+⸻
+
+4. Geometry Constraint Contract
+
+⸻
+
+4.1 Constraint Object
+
+Essentials provides a geometry constraint object to feature renderers.
+
+This may include:
+	•	maxContentWidth
+	•	contentPadding
+	•	gutterWidth (if applicable)
+	•	lanePolicy
+
+This object communicates expected layout boundaries.
+
+⸻
+
+4.2 Enforcement Model
+
+Two layers of enforcement:
+	1.	Soft contract
+Feature receives constraints and is expected to respect them
+	2.	Hard enforcement
+SidebarConstrainedContent ensures the widget cannot exceed bounds
+
+⸻
+
+4.3 Important Rule
+
+Constraints are enforced by container, not by trust.
+
+The system must not rely on feature code behaving correctly.
+
+⸻
+
+5. Action Handling for Complex Bodies
+
+⸻
+
+5.1 Principle
+
+Feature widgets must not directly manipulate sidebar or panel state.
+
+⸻
+
+5.2 Interaction Model
+
+Feature widgets may detect user interaction internally, but must emit:
+	•	semantic events
+	•	domain-specific interaction signals
+
+Examples:
+	•	monthSelected(YearMonth)
+	•	rowSelected(itemId)
+
+⸻
+
+5.3 Execution
+
+Essentials (or flow layer):
+	•	receives these events
+	•	maps them to canonical flow transitions
+	•	executes sidebar and panel updates
+
+⸻
+
+5.4 Prohibited
+
+Feature widgets must not:
+	•	call providers directly
+	•	manipulate cassette stack
+	•	reference cassette index
+	•	trigger navigation or flow transitions directly
+
+⸻
+
+6. Layout Ownership (Reinforced)
+
+⸻
+
+6.1 Essentials Owns
+	•	sidebar rails
+	•	content envelope width
+	•	padding and spacing
+	•	gutter behavior
+	•	section grouping
+	•	alignment rules
+
+⸻
+
+6.2 Features Must Not Own
+	•	outer padding
+	•	margins
+	•	width definitions
+	•	horizontal alignment
+	•	gutter simulation
+
+⸻
+
+7. Rendering Pipeline (Updated)
+
+⸻
+
+Flow State
+→ Cassette Specs
+→ Feature Interpretation (data only)
+→ Presentation Models
+→ Essentials Rendering Layer
+→ SidebarConstrainedContent
+→ Rendered UI
+
+⸻
+
+8. Design Philosophy
+
+⸻
+
+8.1 Prevent, Don’t Detect
+
+Layout violations should be impossible, not merely detectable.
+
+⸻
+
+8.2 Controlled Flexibility
+	•	simple controls → fully centralized
+	•	complex visuals → allowed, but sandboxed
+
+⸻
+
+8.3 Single Source of Truth
+	•	state → canonical
+	•	layout → centralized
+	•	behavior → centrally dispatched
+
+⸻
+
+9. Summary Rules
+
+⸻
+
+	1.	Features describe meaning, not widgets
+	2.	Essentials constructs all governed controls
+	3.	Complex widgets are allowed only inside constrained hosts
+	4.	SidebarConstrainedContent enforces geometry
+	5.	Actions are declared semantically, executed centrally
+	6.	Layout cannot be overridden by feature code
+
+⸻
+
+10. Key Sentence
+
+⸻
+
+Not every sidebar body is built by essentials, but every sidebar body is constrained and governed by essentials.
+
+⸻
+
+This document extends the sidebar architecture to support complex feature UI without sacrificing consistency, predictability, or control.

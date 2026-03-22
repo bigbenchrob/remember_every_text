@@ -1,30 +1,37 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:macos_ui/macos_ui.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../essentials/services/native_link_preview_service.dart';
+import '../view_model/shared/display_widgets/new_display_widgets.dart';
 
-const double _cardHeight = 226;
-const double _mediaHeight = 130;
+const double _previewAspectRatio = 2.0;
 const Duration _fallbackDelay = Duration(seconds: 10);
 const Duration _transitionDuration = Duration(milliseconds: 180);
 
 /// Rich URL preview widget for displaying link metadata in messages.
 /// Shows image, title, and site name with a clean, tappable design while
 /// keeping the layout stable when previews load asynchronously.
-class UrlPreviewWidget extends StatefulWidget {
-  const UrlPreviewWidget({required this.url, this.maxWidth = 400, super.key});
+class UrlPreviewWidget extends ConsumerStatefulWidget {
+  const UrlPreviewWidget({
+    required this.url,
+    required this.isFromMe,
+    this.maxWidth = 400,
+    super.key,
+  });
 
   final String url;
+  final bool isFromMe;
   final double maxWidth;
 
   @override
-  State<UrlPreviewWidget> createState() => _UrlPreviewWidgetState();
+  ConsumerState<UrlPreviewWidget> createState() => _UrlPreviewWidgetState();
 }
 
-class _UrlPreviewWidgetState extends State<UrlPreviewWidget> {
+class _UrlPreviewWidgetState extends ConsumerState<UrlPreviewWidget> {
   final _previewService = NativeLinkPreviewService();
 
   NativeLinkMetadata? _metadata;
@@ -107,11 +114,13 @@ class _UrlPreviewWidgetState extends State<UrlPreviewWidget> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
     final child = _metadata != null
-        ? _buildNativePreview(_metadata!)
+        ? _buildNativePreview(_metadata!, colors)
         : _showFallback
-        ? _buildLinkFallback()
-        : _buildLoadingWidget();
+        ? _buildLinkFallback(colors)
+        : _buildLoadingWidget(colors);
 
     return AnimatedSwitcher(
       duration: _transitionDuration,
@@ -121,55 +130,108 @@ class _UrlPreviewWidgetState extends State<UrlPreviewWidget> {
     );
   }
 
-  Widget _buildLoadingWidget() {
+  Widget _buildLoadingWidget(ThemeColors colors) {
     // Show a lightweight placeholder with domain info while loading
     // This feels much faster than a spinner
-    return SizedBox(
+    return _buildSurface(
       key: const ValueKey('loading'),
-      width: _effectiveMaxWidth,
-      height: _cardHeight,
-      child: GestureDetector(
-        onTap: () => _launchUrl(widget.url),
-        child: MouseRegion(
-          cursor: SystemMouseCursors.click,
-          child: Container(
-            constraints: BoxConstraints(
-              maxWidth: _effectiveMaxWidth,
-              minHeight: _cardHeight,
+      colors: colors,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AspectRatio(
+            aspectRatio: _previewAspectRatio,
+            child: ColoredBox(color: colors.messagePanels.supportSurface),
+          ),
+          DecoratedBox(
+            decoration: BoxDecoration(gradient: _footerGradient(colors)),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 7, 12, 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    widget.url,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: colors.content.textPrimary,
+                      height: 1.16,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 0.5),
+                  Text(
+                    _extractDomain(widget.url),
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      color: colors.content.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
             ),
-            decoration: _cardDecoration,
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Placeholder image area with subtle shimmer
-                const SizedBox(
-                  height: _mediaHeight,
-                  child: ColoredBox(color: Color(0xFFE5E5E9)),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLinkFallback(ThemeColors colors) {
+    return _buildSurface(
+      key: const ValueKey('fallback'),
+      colors: colors,
+      child: DecoratedBox(
+        decoration: BoxDecoration(gradient: _footerGradient(colors)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: colors.messagePanels.accentTint,
+                      borderRadius: const BorderRadius.all(Radius.circular(10)),
+                    ),
+                    child: Icon(
+                      Icons.link_rounded,
+                      size: 18,
+                      color: colors.accents.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           _extractDomain(widget.url),
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: MacosColors.systemGrayColor,
-                            fontWeight: FontWeight.w500,
+                          style: TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w600,
+                            color: colors.content.textPrimary,
+                            height: 1.12,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 8),
-                        // Show URL while title loads
+                        const SizedBox(height: 1.5),
                         Text(
                           widget.url,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: MacosColors.systemGrayColor,
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: colors.accents.primary,
+                            height: 1.16,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -177,152 +239,99 @@ class _UrlPreviewWidgetState extends State<UrlPreviewWidget> {
                       ],
                     ),
                   ),
+                ],
+              ),
+              const Spacer(),
+              Text(
+                'Open in browser',
+                style: TextStyle(
+                  fontSize: 10.5,
+                  color: colors.content.textSecondary,
+                  fontWeight: FontWeight.w500,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildLinkFallback() {
-    return SizedBox(
-      key: const ValueKey('fallback'),
-      width: _effectiveMaxWidth,
-      height: _cardHeight,
-      child: GestureDetector(
-        onTap: () => _launchUrl(widget.url),
-        child: MouseRegion(
-          cursor: SystemMouseCursors.click,
-          child: Container(
-            constraints: BoxConstraints(
-              maxWidth: _effectiveMaxWidth,
-              minHeight: _cardHeight,
-            ),
-            padding: const EdgeInsets.all(16),
-            decoration: _cardDecoration,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      Icons.link,
-                      size: 24,
-                      color: MacosColors.systemBlueColor,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            _extractDomain(widget.url),
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            widget.url,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: MacosColors.systemBlueColor,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Tap to open in browser',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: MacosColors.systemGrayColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(
-                      Icons.arrow_forward_ios,
-                      size: 16,
-                      color: MacosColors.systemGrayColor,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNativePreview(NativeLinkMetadata metadata) {
+  Widget _buildNativePreview(NativeLinkMetadata metadata, ThemeColors colors) {
     final normalizedTitle = _normalizedTitle(metadata);
 
-    return SizedBox(
+    return _buildSurface(
       key: const ValueKey('native'),
-      width: _effectiveMaxWidth,
-      height: _cardHeight,
+      colors: colors,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _PreviewMedia(
+            metadata: metadata,
+            aspectRatio: _previewAspectRatio,
+            placeholderColor: colors.messagePanels.supportSurface,
+          ),
+          DecoratedBox(
+            decoration: BoxDecoration(gradient: _footerGradient(colors)),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 7, 12, 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _AdaptivePreviewText(
+                    text: normalizedTitle ?? widget.url,
+                    baseStyle: TextStyle(
+                      fontSize: normalizedTitle != null ? 15.25 : 13.75,
+                      fontWeight: normalizedTitle != null
+                          ? FontWeight.w600
+                          : FontWeight.w500,
+                      color: colors.content.textPrimary,
+                      height: 1.14,
+                    ),
+                    maxLines: 2,
+                    minFontSize: normalizedTitle != null ? 10.5 : 11,
+                  ),
+                  const SizedBox(height: 0.5),
+                  Text(
+                    _extractDomain(metadata.url ?? widget.url),
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      color: colors.content.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSurface({
+    required Key key,
+    required ThemeColors colors,
+    required Widget child,
+  }) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: widget.maxWidth),
       child: GestureDetector(
+        key: key,
         onTap: () => _launchUrl(widget.url),
         child: MouseRegion(
           cursor: SystemMouseCursors.click,
-          child: Container(
-            constraints: BoxConstraints(
-              maxWidth: _effectiveMaxWidth,
-              minHeight: _cardHeight,
-            ),
-            decoration: _cardDecoration,
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _PreviewMedia(metadata: metadata, mediaHeight: _mediaHeight),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _extractDomain(metadata.url ?? widget.url),
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: MacosColors.systemGrayColor,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Expanded(
-                          child: _AdaptivePreviewText(
-                            text: normalizedTitle ?? widget.url,
-                            baseStyle: TextStyle(
-                              fontSize: normalizedTitle != null ? 16 : 14,
-                              fontWeight: normalizedTitle != null
-                                  ? FontWeight.w600
-                                  : FontWeight.w500,
-                              color: Colors.black,
-                            ),
-                            maxLines: normalizedTitle != null ? 2 : 2,
-                            minFontSize: normalizedTitle != null ? 10 : 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+          child: ClipRRect(
+            borderRadius: MsgTheme.textRadius,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: _surfaceBackground(colors),
+                borderRadius: MsgTheme.textRadius,
+              ),
+              child: child,
             ),
           ),
         ),
@@ -347,29 +356,56 @@ class _UrlPreviewWidgetState extends State<UrlPreviewWidget> {
     }
   }
 
+  Color _surfaceBackground(ThemeColors colors) {
+    if (!widget.isFromMe) {
+      return Color.alphaBlend(
+        colors.messagePanels.mutedTint.withValues(alpha: 0.9),
+        colors.messagePanels.receivedSurface,
+      );
+    }
+
+    final neutralBase = Color.alphaBlend(
+      colors.messagePanels.mutedTint.withValues(alpha: 0.84),
+      colors.messagePanels.receivedSurface,
+    );
+
+    return Color.alphaBlend(
+      colors.messagePanels.accentTintSoft.withValues(alpha: 0.18),
+      neutralBase,
+    );
+  }
+
+  LinearGradient _footerGradient(ThemeColors colors) {
+    final base = _surfaceBackground(colors);
+    final lifted = Color.lerp(
+      base,
+      colors.messagePanels.supportSurface,
+      widget.isFromMe ? 0.18 : 0.24,
+    )!;
+
+    return LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [base, lifted],
+    );
+  }
+
   Future<void> _launchUrl(String url) async {
     final uri = Uri.parse(url);
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
-
-  BoxDecoration get _cardDecoration {
-    return BoxDecoration(
-      color: MacosColors.controlBackgroundColor,
-      border: Border.all(color: MacosColors.separatorColor),
-      borderRadius: BorderRadius.circular(12),
-    );
-  }
-
-  double get _effectiveMaxWidth {
-    return widget.maxWidth * 0.8;
-  }
 }
 
 class _PreviewMedia extends StatelessWidget {
-  const _PreviewMedia({required this.metadata, required this.mediaHeight});
+  const _PreviewMedia({
+    required this.metadata,
+    required this.aspectRatio,
+    required this.placeholderColor,
+  });
 
   final NativeLinkMetadata metadata;
-  final double mediaHeight;
+  final double aspectRatio;
+  final Color placeholderColor;
 
   @override
   Widget build(BuildContext context) {
@@ -378,14 +414,14 @@ class _PreviewMedia extends StatelessWidget {
         metadata.imageData == null && metadata.iconData != null;
 
     if (previewBytes == null) {
-      return SizedBox(
-        height: mediaHeight,
-        child: const ColoredBox(color: Color(0xFFE5E5E9)),
+      return AspectRatio(
+        aspectRatio: aspectRatio,
+        child: ColoredBox(color: placeholderColor),
       );
     }
 
-    return SizedBox(
-      height: mediaHeight,
+    return AspectRatio(
+      aspectRatio: aspectRatio,
       child: Container(
         decoration: isIconFallback
             ? const BoxDecoration(
@@ -400,11 +436,12 @@ class _PreviewMedia extends StatelessWidget {
         child: Image.memory(
           previewBytes,
           fit: BoxFit.cover,
+          alignment: Alignment.topCenter,
           filterQuality: isIconFallback
               ? FilterQuality.high
               : FilterQuality.low,
           errorBuilder: (context, error, stackTrace) {
-            return const ColoredBox(color: Color(0xFFE5E5E9));
+            return ColoredBox(color: placeholderColor);
           },
         ),
       ),

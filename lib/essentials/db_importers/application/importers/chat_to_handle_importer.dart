@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 
 import '../../domain/base_table_importer.dart';
 import '../../infrastructure/sqlite/import_context_sqlite.dart';
+import 'source_join_prevalidation.dart';
 
 class ChatToHandleImporter extends BaseTableImporter {
   ChatToHandleImporter();
@@ -14,6 +15,8 @@ class ChatToHandleImporter extends BaseTableImporter {
 
   @override
   Future<void> validatePrereqs(IImportContext ctx) async {
+    await validateSourceChatHandleJoinIntegrity(ctx);
+    await validateLedgerChatHandleJoinCoverage(ctx);
     if (ctx.hasExistingLedgerData) {
       return;
     }
