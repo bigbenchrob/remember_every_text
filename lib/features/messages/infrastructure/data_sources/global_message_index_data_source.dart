@@ -46,6 +46,14 @@ class GlobalMessageIndexDataSource {
     return _map(row);
   }
 
+  Future<int?> getOrdinalForMessage(int messageId) async {
+    final row = await (_db.select(
+      _db.globalMessageIndex,
+    )..where((t) => t.messageId.equals(messageId))).getSingleOrNull();
+
+    return row?.ordinal;
+  }
+
   Future<List<GlobalMessageIndexEntry>> fetchFirstPage(int limit) async {
     final rows =
         await (_db.select(_db.globalMessageIndex)

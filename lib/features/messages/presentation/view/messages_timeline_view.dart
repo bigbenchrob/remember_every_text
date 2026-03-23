@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -22,12 +24,14 @@ import '../view_model/shared/display_widgets/new_display_widgets.dart';
 import '../view_model/shared/hydration/messages_for_handle_provider.dart';
 import '../view_model/timeline/hydration/message_by_id_provider.dart';
 import '../view_model/timeline/hydration/message_by_ordinal_provider.dart';
+import '../view_model/timeline/contact_timeline_display_version_provider.dart';
 import '../view_model/timeline/message_timeline_view_model_provider.dart';
 import '../view_model/timeline/ordinal/current_visible_month_provider.dart';
 import '../view_model/timeline/timeline_metadata_provider.dart';
 import '../widgets/message_card.dart';
 
 const Duration _contactMessageGroupingThreshold = Duration(minutes: 5);
+const double _contactPendingIndicatorLaneHeight = 28;
 
 /// Unified view for message timelines across all scopes.
 ///
@@ -52,24 +56,185 @@ class MessagesTimelineView extends HookConsumerWidget {
     final colors = ref.read(themeColorsProvider.notifier);
     final vm = ref.watch(messageTimelineViewModelProvider(scope: scope));
     final ordinalAsync = vm.ordinal;
+    final ordinalState = ordinalAsync.valueOrNull;
+    final AsyncValue<List<int>> pendingContactMessageIdsAsync;
+    if (scope is ContactTimelineScope) {
+      pendingContactMessageIdsAsync = ref.watch(
+        pendingContactTimelineMessageIdsProvider(scope: scope),
+      );
+    } else {
+      pendingContactMessageIdsAsync = const AsyncValue<List<int>>.data(<int>[]);
+    }
+    final pendingContactMessages =
+        pendingContactMessageIdsAsync.valueOrNull ?? const <int>[];
+    final hasPendingContactMessages = pendingContactMessages.isNotEmpty;
+    final pendingIndicatorDismissed = useState(false);
+    final lastAppliedInitialScrollKey = useRef<String?>(null);
+    final lastVisibleTopMessageId = useRef<int?>(null);
+    final lastVisibleTopAlignment = useRef<double?>(null);
+    final previousTotalCount = useRef<int?>(null);
+    final visibleAnchorGeneration = useRef<int>(0);
+    final previousPendingMessageCount = useRef<int>(0);
+    final initialScrollKey =
+        '${scope.hashCode}:${scrollToDate?.toIso8601String() ?? 'latest'}';
+
+    useEffect(() {
+      final previousCount = previousPendingMessageCount.value;
+      final currentCount = pendingContactMessages.length;
+      previousPendingMessageCount.value = currentCount;
+
+      if (currentCount > previousCount) {
+        pendingIndicatorDismissed.value = false;
+      }
+
+      if (currentCount == 0) {
+        pendingIndicatorDismissed.value = false;
+      }
+
+      return null;
+    }, [pendingContactMessages.length]);
+
+    useEffect(() {
+      if (scope is ContactTimelineScope) {
+        return null;
+      }
+
+      final currentOrdinalState = ordinalState;
+      if (currentOrdinalState == null) {
+        return null;
+      }
+
+      void captureVisibleTopOrdinal() {
+        final positions =
+            currentOrdinalState.itemPositionsListener.itemPositions.value;
+
+        final visiblePositions = positions
+            .where((position) {
+              return position.itemTrailingEdge > 0 &&
+                  position.itemLeadingEdge < 1;
+            })
+            .toList(growable: false);
+
+        if (visiblePositions.isEmpty) {
+          return;
+        }
+
+        visiblePositions.sort((left, right) {
+          return left.itemLeadingEdge.compareTo(right.itemLeadingEdge);
+        });
+
+        final topVisiblePosition = visiblePositions.first;
+        lastVisibleTopAlignment.value = topVisiblePosition.itemLeadingEdge;
+
+        final captureGeneration = ++visibleAnchorGeneration.value;
+        unawaited(() async {
+          final messageId = await currentOrdinalState.strategy
+              .getMessageIdByOrdinal(topVisiblePosition.index);
+
+          if (captureGeneration != visibleAnchorGeneration.value) {
+            return;
+          }
+
+          lastVisibleTopMessageId.value = messageId;
+        }());
+      }
+
+      currentOrdinalState.itemPositionsListener.itemPositions.addListener(
+        captureVisibleTopOrdinal,
+      );
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        captureVisibleTopOrdinal();
+      });
+
+      return () {
+        currentOrdinalState.itemPositionsListener.itemPositions.removeListener(
+          captureVisibleTopOrdinal,
+        );
+      };
+    }, [ordinalState?.itemPositionsListener]);
+
+    useEffect(() {
+      if (scope is ContactTimelineScope) {
+        return null;
+      }
+
+      final currentOrdinalState = ordinalState;
+      if (currentOrdinalState == null) {
+        return null;
+      }
+
+      final previousCount = previousTotalCount.value;
+      previousTotalCount.value = currentOrdinalState.totalCount;
+
+      if (previousCount == null ||
+          previousCount == currentOrdinalState.totalCount) {
+        return null;
+      }
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(() async {
+          if (!currentOrdinalState.itemScrollController.isAttached) {
+            return;
+          }
+
+          final restoreMessageId = lastVisibleTopMessageId.value;
+          if (restoreMessageId == null) {
+            return;
+          }
+
+          final restoreOrdinal = await currentOrdinalState.strategy
+              .getOrdinalForMessage(restoreMessageId);
+          if (restoreOrdinal == null) {
+            return;
+          }
+
+          final restoreAlignment = lastVisibleTopAlignment.value ?? 0;
+          final clampedOrdinal = restoreOrdinal.clamp(
+            0,
+            currentOrdinalState.totalCount - 1,
+          );
+          currentOrdinalState.itemScrollController.jumpTo(
+            index: clampedOrdinal,
+            alignment: restoreAlignment,
+          );
+        }());
+      });
+
+      return null;
+    }, [ordinalState?.totalCount, ordinalState?.itemScrollController, scope]);
 
     // Handle initial scroll positioning
     useEffect(() {
-      if (scrollToDate != null && ordinalAsync.hasValue) {
-        WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!ordinalAsync.hasValue) {
+        return null;
+      }
+
+      if (lastAppliedInitialScrollKey.value == initialScrollKey) {
+        return null;
+      }
+
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (lastAppliedInitialScrollKey.value == initialScrollKey) {
+          return;
+        }
+
+        lastAppliedInitialScrollKey.value = initialScrollKey;
+
+        if (scrollToDate != null) {
           await ref
               .read(messageTimelineViewModelProvider(scope: scope).notifier)
               .jumpToDate(scrollToDate!);
-        });
-      } else if (scrollToDate == null && ordinalAsync.hasValue) {
-        WidgetsBinding.instance.addPostFrameCallback((_) async {
-          await ref
-              .read(messageTimelineViewModelProvider(scope: scope).notifier)
-              .jumpToLatest();
-        });
-      }
+          return;
+        }
+
+        await ref
+            .read(messageTimelineViewModelProvider(scope: scope).notifier)
+            .jumpToLatest();
+      });
+
       return null;
-    }, [scrollToDate, ordinalAsync.hasValue]);
+    }, [initialScrollKey, ordinalAsync.hasValue, ref, scope, scrollToDate]);
 
     final timelineSurfaceColor = switch (scope) {
       ContactTimelineScope() => colors.messagePanels.coolPanelSurface,
@@ -91,6 +256,12 @@ class MessagesTimelineView extends HookConsumerWidget {
         ref,
         vm,
         contactId,
+        hasPendingContactMessages,
+        pendingContactMessages,
+        hasPendingContactMessages && !pendingIndicatorDismissed.value,
+        () {
+          pendingIndicatorDismissed.value = true;
+        },
         timelineSurfaceColor,
         timelineSurfaceColor,
       ),
@@ -135,6 +306,10 @@ class MessagesTimelineView extends HookConsumerWidget {
     WidgetRef ref,
     MessageTimelineViewModelState vm,
     int contactId,
+    bool hasPendingContactMessages,
+    List<int> pendingContactMessageIds,
+    bool showPendingGlowBar,
+    VoidCallback dismissPendingGlowBar,
     Color chromeBg,
     Color messageListBg,
   ) {
@@ -150,9 +325,28 @@ class MessagesTimelineView extends HookConsumerWidget {
           ),
           _SearchBar(scope: scope, vm: vm),
           Expanded(
-            child: _FadeOverlayList(
-              backgroundColor: messageListBg,
-              child: _buildMessageList(context, ref, vm),
+            child: Listener(
+              behavior: HitTestBehavior.translucent,
+              onPointerDown: (_) {
+                dismissPendingGlowBar();
+              },
+              child: _FadeOverlayList(
+                backgroundColor: messageListBg,
+                child: _buildMessageList(
+                  context,
+                  ref,
+                  vm,
+                  hasPendingContactMessages: hasPendingContactMessages,
+                  pendingContactMessageIds: pendingContactMessageIds,
+                  onUserInteraction: dismissPendingGlowBar,
+                ),
+              ),
+            ),
+          ),
+          ColoredBox(
+            color: messageListBg,
+            child: IgnorePointer(
+              child: _PendingMessagesGlowBar(isActive: showPendingGlowBar),
             ),
           ),
         ],
@@ -189,38 +383,84 @@ class MessagesTimelineView extends HookConsumerWidget {
   Widget _buildMessageList(
     BuildContext context,
     WidgetRef ref,
-    MessageTimelineViewModelState vm,
-  ) {
+    MessageTimelineViewModelState vm, {
+    bool hasPendingContactMessages = false,
+    List<int> pendingContactMessageIds = const <int>[],
+    VoidCallback? onUserInteraction,
+  }) {
     if (vm.isSearching) {
       return _SearchResultsList(vm: vm, scope: scope);
     }
 
     final typography = ref.watch(themeTypographyProvider);
+    final resolvedOrdinalState = vm.ordinal.valueOrNull;
 
-    return vm.ordinal.when(
-      data: (ordinalState) {
-        if (ordinalState.totalCount == 0) {
-          return Center(child: Text(_emptyMessage, style: typography.title3));
+    if (resolvedOrdinalState == null) {
+      return vm.ordinal.when(
+        data: (_) => const SizedBox.shrink(),
+        loading: () => const Center(child: ProgressCircle()),
+        error: (error, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text('Unable to load timeline: $error'),
+          ),
+        ),
+      );
+    }
+
+    if (resolvedOrdinalState.totalCount == 0) {
+      return Center(child: Text(_emptyMessage, style: typography.title3));
+    }
+
+    final showPendingMessages =
+        scope is ContactTimelineScope && hasPendingContactMessages;
+    final itemCount =
+        resolvedOrdinalState.totalCount + pendingContactMessageIds.length;
+
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (notification is ScrollStartNotification ||
+            notification is ScrollUpdateNotification ||
+            notification is UserScrollNotification) {
+          onUserInteraction?.call();
         }
 
-        return ScrollablePositionedList.builder(
-          itemScrollController: ordinalState.itemScrollController,
-          itemPositionsListener: ordinalState.itemPositionsListener,
-          itemCount: ordinalState.totalCount,
-          padding: EdgeInsets.symmetric(
-            horizontal: _messageColumnHorizontalPadding(scope),
-          ),
-          itemBuilder: (context, index) {
-            return _MessageRow(scope: scope, ordinal: index);
-          },
-        );
+        return false;
       },
-      loading: () => const Center(child: ProgressCircle()),
-      error: (error, _) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text('Unable to load timeline: $error'),
+      child: ScrollablePositionedList.builder(
+        itemScrollController: resolvedOrdinalState.itemScrollController,
+        itemPositionsListener: resolvedOrdinalState.itemPositionsListener,
+        itemCount: itemCount,
+        padding: EdgeInsets.symmetric(
+          horizontal: _messageColumnHorizontalPadding(scope),
         ),
+        itemBuilder: (context, index) {
+          if (showPendingMessages && index >= resolvedOrdinalState.totalCount) {
+            final pendingIndex = index - resolvedOrdinalState.totalCount;
+            final messageId = pendingContactMessageIds[pendingIndex];
+            final previousPendingMessageId = pendingIndex > 0
+                ? pendingContactMessageIds[pendingIndex - 1]
+                : null;
+            final nextPendingMessageId =
+                pendingIndex + 1 < pendingContactMessageIds.length
+                ? pendingContactMessageIds[pendingIndex + 1]
+                : null;
+            final previousDisplayedOrdinal =
+                pendingIndex == 0 && resolvedOrdinalState.totalCount > 0
+                ? resolvedOrdinalState.totalCount - 1
+                : null;
+
+            return _PendingMessageRow(
+              scope: scope,
+              messageId: messageId,
+              previousPendingMessageId: previousPendingMessageId,
+              nextPendingMessageId: nextPendingMessageId,
+              previousDisplayedOrdinal: previousDisplayedOrdinal,
+            );
+          }
+
+          return _MessageRow(scope: scope, ordinal: index);
+        },
       ),
     );
   }
@@ -239,6 +479,168 @@ class MessagesTimelineView extends HookConsumerWidget {
       GlobalTimelineScope() => 32,
       ChatTimelineScope() => 16,
     };
+  }
+}
+
+class _PendingMessageRow extends ConsumerWidget {
+  const _PendingMessageRow({
+    required this.scope,
+    required this.messageId,
+    required this.previousPendingMessageId,
+    required this.nextPendingMessageId,
+    required this.previousDisplayedOrdinal,
+  });
+
+  final MessageTimelineScope scope;
+  final int messageId;
+  final int? previousPendingMessageId;
+  final int? nextPendingMessageId;
+  final int? previousDisplayedOrdinal;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final itemAsync = ref.watch(messageByIdProvider(messageId: messageId));
+    final previousItemAsync = previousPendingMessageId != null
+        ? ref.watch(messageByIdProvider(messageId: previousPendingMessageId!))
+        : previousDisplayedOrdinal != null
+        ? ref.watch(
+            messageByTimelineOrdinalProvider(
+              scope: scope,
+              ordinal: previousDisplayedOrdinal!,
+            ),
+          )
+        : const AsyncValue<MessageListItem?>.data(null);
+    final nextItemAsync = nextPendingMessageId != null
+        ? ref.watch(messageByIdProvider(messageId: nextPendingMessageId!))
+        : const AsyncValue<MessageListItem?>.data(null);
+
+    return itemAsync.when(
+      data: (item) {
+        if (item == null) {
+          return const _SkeletonRow();
+        }
+
+        final grouping = _groupingStyleFor(
+          current: item,
+          previous: previousItemAsync.valueOrNull,
+          next: nextItemAsync.valueOrNull,
+          scope: scope,
+        );
+
+        return MessageCard(
+          message: item,
+          layout: MessageCardLayout.analysis,
+          grouping: grouping,
+        );
+      },
+      loading: () => const _SkeletonRow(),
+      error: (error, _) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text('Pending message failed: $error'),
+      ),
+    );
+  }
+}
+
+class _PendingMessagesGlowBar extends ConsumerStatefulWidget {
+  const _PendingMessagesGlowBar({required this.isActive});
+
+  final bool isActive;
+
+  @override
+  ConsumerState<_PendingMessagesGlowBar> createState() =>
+      _PendingMessagesGlowBarState();
+}
+
+class _PendingMessagesGlowBarState
+    extends ConsumerState<_PendingMessagesGlowBar>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _opacity;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+    _opacity = Tween<double>(
+      begin: 0.52,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    _scale = Tween<double>(
+      begin: 0.975,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final accentColor = colors.accents.focusRing;
+    final trackColor = accentColor.withValues(alpha: 0.22);
+
+    return Center(
+      child: SizedBox(
+        width: 132,
+        height: _contactPendingIndicatorLaneHeight,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: trackColor,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: const SizedBox(width: 104, height: 3),
+            ),
+            if (widget.isActive)
+              AnimatedBuilder(
+                animation: _controller,
+                builder: (context, child) {
+                  return Transform.scale(
+                    scaleX: _scale.value,
+                    child: Opacity(
+                      opacity: _opacity.value,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(999),
+                          gradient: LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [
+                              accentColor.withValues(alpha: 0),
+                              accentColor.withValues(alpha: 0.92),
+                              accentColor.withValues(alpha: 0),
+                            ],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: accentColor.withValues(alpha: 0.34),
+                              blurRadius: 14,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: const SizedBox(width: 126, height: 5),
+                      ),
+                    ),
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

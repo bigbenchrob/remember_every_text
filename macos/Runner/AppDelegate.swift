@@ -5,9 +5,14 @@
   import Cocoa
   import FlutterMacOS
   import LinkPresentation
+  import OSLog
 
   @main
   class AppDelegate: FlutterAppDelegate {
+    private let unifiedLogger = Logger(
+      subsystem: Bundle.main.bundleIdentifier ?? "com.bigbenchsoftware.MessageLens",
+      category: "AppLogger"
+    )
 
     override func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
       return true
@@ -32,6 +37,57 @@
         self.handleMethodCall(call, result: result)
       }
 
+      let unifiedLogChannel = FlutterMethodChannel(
+        name: "com.remember_this_text/unified_log",
+        binaryMessenger: messenger
+      )
+      unifiedLogChannel.setMethodCallHandler {
+        (call: FlutterMethodCall, result: @escaping FlutterResult) in
+        self.handleUnifiedLogMethodCall(call, result: result)
+      }
+
+    }
+
+    private func handleUnifiedLogMethodCall(
+      _ call: FlutterMethodCall,
+      result: @escaping FlutterResult
+    ) {
+      guard call.method == "log" else {
+        result(FlutterMethodNotImplemented)
+        return
+      }
+
+      guard let args = call.arguments as? [String: Any],
+        let level = args["level"] as? String,
+        let message = args["message"] as? String
+      else {
+        result(
+          FlutterError(
+            code: "INVALID_ARGUMENT",
+            message: "level and message are required",
+            details: nil
+          ))
+        return
+      }
+
+      let source = args["source"] as? String
+      let renderedMessage: String
+      if let source, !source.isEmpty {
+        renderedMessage = "[\(source)] \(message)"
+      } else {
+        renderedMessage = message
+      }
+
+      switch level {
+      case "error":
+        unifiedLogger.error("\(renderedMessage, privacy: .public)")
+      case "warn":
+        unifiedLogger.warning("\(renderedMessage, privacy: .public)")
+      default:
+        unifiedLogger.info("\(renderedMessage, privacy: .public)")
+      }
+
+      result(nil)
     }
 
     private func handleMethodCall(_ call: FlutterMethodCall, result: @escaping FlutterResult) {

@@ -23,4 +23,9 @@ abstract class OrdinalStrategy {
   ///
   /// Returns null if ordinal is out of range.
   Future<int?> getMessageIdByOrdinal(int ordinal);
+
+  /// Get the current ordinal for a specific message ID.
+  ///
+  /// Returns null if the message is not present in this scope.
+  Future<int?> getOrdinalForMessage(int messageId);
 }

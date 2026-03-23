@@ -601,14 +601,14 @@ class ImageMessageTile extends ConsumerWidget {
           layout: layout,
         ),
       ),
-      child: _alignMediaForLayout(
-        layout: layout,
-        isMe: isMe,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ClipRRect(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _alignMediaForLayout(
+            layout: layout,
+            isMe: isMe,
+            child: ClipRRect(
               borderRadius: MsgTheme.mediaRadius,
               child: _IntrinsicSizedMedia(
                 child: AspectRatio(
@@ -630,17 +630,17 @@ class ImageMessageTile extends ConsumerWidget {
                 ),
               ),
             ),
-            if (captionText != null) ...[
-              const SizedBox(height: 8),
-              _MediaCaptionBubble(
-                isMe: isMe,
-                text: captionText!,
-                layout: layout,
-                grouping: grouping,
-              ),
-            ],
+          ),
+          if (captionText != null) ...[
+            MsgTheme.gapMD,
+            _AttachedTextBubble(
+              isMe: isMe,
+              text: captionText!,
+              layout: layout,
+              grouping: grouping,
+            ),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -738,14 +738,14 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
           layout: widget.layout,
         ),
       ),
-      child: _alignMediaForLayout(
-        layout: widget.layout,
-        isMe: widget.isMe,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DecoratedBox(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _alignMediaForLayout(
+            layout: widget.layout,
+            isMe: widget.isMe,
+            child: DecoratedBox(
               decoration: BoxDecoration(
                 color: colors.surfaces.surface,
                 borderRadius: MsgTheme.mediaRadius,
@@ -823,24 +823,24 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
                 ),
               ),
             ),
-            if (widget.captionText != null) ...[
-              const SizedBox(height: 8),
-              _MediaCaptionBubble(
-                isMe: widget.isMe,
-                text: widget.captionText!,
-                layout: widget.layout,
-                grouping: widget.grouping,
-              ),
-            ],
+          ),
+          if (widget.captionText != null) ...[
+            MsgTheme.gapMD,
+            _AttachedTextBubble(
+              isMe: widget.isMe,
+              text: widget.captionText!,
+              layout: widget.layout,
+              grouping: widget.grouping,
+            ),
           ],
-        ),
+        ],
       ),
     );
   }
 }
 
-class _MediaCaptionBubble extends ConsumerWidget {
-  const _MediaCaptionBubble({
+class _AttachedTextBubble extends ConsumerWidget {
+  const _AttachedTextBubble({
     required this.isMe,
     required this.text,
     required this.layout,
@@ -884,21 +884,24 @@ class _MediaCaptionBubble extends ConsumerWidget {
             : colors.content.textPrimary,
     };
 
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: MsgTheme.bubblePadding.horizontal / 2,
-        vertical: MsgTheme.bubblePadding.vertical / 2,
-      ),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: MsgTheme.textRadius,
-        border: borderColor == null
-            ? null
-            : Border.all(color: borderColor, width: 1),
-      ),
-      child: SelectableText(
-        text,
-        style: TextStyle(color: textColor, height: 1.25, fontSize: 14.5),
+    return SizedBox(
+      width: double.infinity,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: MsgTheme.bubblePadding.horizontal / 2,
+          vertical: MsgTheme.bubblePadding.vertical / 2,
+        ),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: MsgTheme.textRadius,
+          border: borderColor == null
+              ? null
+              : Border.all(color: borderColor, width: 1),
+        ),
+        child: SelectableText(
+          text,
+          style: TextStyle(color: textColor, height: 1.25, fontSize: 14.5),
+        ),
       ),
     );
   }

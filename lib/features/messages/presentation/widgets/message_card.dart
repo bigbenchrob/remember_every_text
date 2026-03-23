@@ -116,7 +116,11 @@ class MessageCard extends ConsumerWidget {
   }
 
   String? _meaningfulMessageText(String text) {
-    final trimmed = text.trim();
+    final sanitized = text
+        .replaceAll('\uFFFC', '')
+        .replaceAll('\u200B', '')
+        .replaceAll('\u2060', '');
+    final trimmed = sanitized.trim();
     if (trimmed.isEmpty) {
       return null;
     }
@@ -125,11 +129,13 @@ class MessageCard extends ConsumerWidget {
       case '[No text content]':
       case '(No text content)':
       case '(No plain text content)':
+      case '(No plain text content; summary metadata preserved)':
+      case '(No plain text content; app or balloon payload preserved)':
       case '(No preserved content)':
       case '(Associated message carrier without plain text)':
         return null;
     }
 
-    return text;
+    return trimmed;
   }
 }

@@ -45,4 +45,8 @@ class ContactOrdinalStrategy implements OrdinalStrategy {
   @override
   Future<int?> getMessageIdByOrdinal(int ordinal) =>
       _dataSource.getMessageIdByOrdinal(contactId, ordinal);
+
+  @override
+  Future<int?> getOrdinalForMessage(int messageId) =>
+      _dataSource.getOrdinalForMessage(contactId, messageId);
 }

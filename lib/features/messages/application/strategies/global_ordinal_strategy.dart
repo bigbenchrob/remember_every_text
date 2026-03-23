@@ -41,4 +41,9 @@ class GlobalOrdinalStrategy implements OrdinalStrategy {
     final entry = await _dataSource.getByOrdinal(ordinal);
     return entry?.messageId;
   }
+
+  @override
+  Future<int?> getOrdinalForMessage(int messageId) {
+    return _dataSource.getOrdinalForMessage(messageId);
+  }
 }

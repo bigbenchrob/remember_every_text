@@ -136,4 +136,47 @@ class FilteredContactOrdinalStrategy implements OrdinalStrategy {
 
     return result?.read<int?>('message_id');
   }
+
+  @override
+  Future<int?> getOrdinalForMessage(int messageId) async {
+    final targetResult = await _db
+        .customSelect(
+          '''
+          SELECT cmi.ordinal AS target_ordinal
+          $_baseFromWhere
+            AND cmi.message_id = ?
+          LIMIT 1
+          ''',
+          variables: [..._baseVars, Variable.withInt(messageId)],
+          readsFrom: {
+            _db.contactMessageIndex,
+            _db.workingMessages,
+            _db.chatToHandle,
+          },
+        )
+        .getSingleOrNull();
+
+    final targetOrdinal = targetResult?.read<int?>('target_ordinal');
+    if (targetOrdinal == null) {
+      return null;
+    }
+
+    final positionResult = await _db
+        .customSelect(
+          '''
+          SELECT COUNT(*) AS pos
+          $_baseFromWhere
+            AND cmi.ordinal < ?
+          ''',
+          variables: [..._baseVars, Variable.withInt(targetOrdinal)],
+          readsFrom: {
+            _db.contactMessageIndex,
+            _db.workingMessages,
+            _db.chatToHandle,
+          },
+        )
+        .getSingleOrNull();
+
+    return positionResult?.read<int?>('pos');
+  }
 }

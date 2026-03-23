@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../domain/log_entry.dart';
 import '../infrastructure/log_file_writer.dart';
+import '../infrastructure/macos_unified_log_bridge.dart';
 
 part 'app_logger.g.dart';
 
@@ -20,6 +23,7 @@ const _kMaxInMemoryEntries = 500;
 @Riverpod(keepAlive: true)
 class AppLogger extends _$AppLogger {
   final LogFileWriter _writer = LogFileWriter();
+  final MacosUnifiedLogBridge _unifiedLogBridge = MacosUnifiedLogBridge();
 
   @override
   List<LogEntry> build() {
@@ -55,6 +59,10 @@ class AppLogger extends _$AppLogger {
 
     // Async file write (fire-and-forget).
     _writer.append(entry);
+
+    if (entry.level != LogLevel.debug) {
+      unawaited(_unifiedLogBridge.log(entry));
+    }
   }
 
   void debug(String message, {String? source, Map<String, dynamic>? context}) {

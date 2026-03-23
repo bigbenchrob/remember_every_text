@@ -43,4 +43,8 @@ class ChatOrdinalStrategy implements OrdinalStrategy {
   @override
   Future<int?> getMessageIdByOrdinal(int ordinal) =>
       _dataSource.getMessageIdByOrdinal(chatId, ordinal);
+
+  @override
+  Future<int?> getOrdinalForMessage(int messageId) =>
+      _dataSource.getOrdinalForMessage(messageId);
 }

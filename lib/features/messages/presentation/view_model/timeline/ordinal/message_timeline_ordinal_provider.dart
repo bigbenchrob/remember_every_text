@@ -7,6 +7,7 @@ import '../../../../../../essentials/db/feature_level_providers/message_data_ver
 import '../../../../application/strategies/ordinal_strategy.dart';
 import '../../../../domain/message_timeline_scope_extensions.dart';
 import '../../../../domain/value_objects/message_timeline_scope.dart';
+import '../contact_timeline_display_version_provider.dart';
 
 part 'message_timeline_ordinal_provider.g.dart';
 
@@ -56,14 +57,21 @@ class MessageTimelineOrdinalState {
 @riverpod
 class MessageTimelineOrdinal extends _$MessageTimelineOrdinal {
   late OrdinalStrategy _strategy;
+  late final ItemScrollController _itemScrollController =
+      ItemScrollController();
+  late final ItemPositionsListener _itemPositionsListener =
+      ItemPositionsListener.create();
 
   @override
   Future<MessageTimelineOrdinalState> build({
     required MessageTimelineScope scope,
   }) async {
-    // Watch the message data version so we rebuild when new messages are imported.
-    // This is critical for incremental imports - without it, the totalCount stays stale.
-    ref.watch(messageDataVersionProvider);
+    switch (scope) {
+      case ContactTimelineScope():
+        ref.watch(contactTimelineDisplayVersionProvider(scope: scope));
+      case GlobalTimelineScope() || ChatTimelineScope():
+        ref.watch(messageDataVersionProvider);
+    }
 
     // During maintenance, return empty state to avoid DB access.
     final isMaintenance = ref.watch(dbMaintenanceLockProvider);
@@ -71,8 +79,8 @@ class MessageTimelineOrdinal extends _$MessageTimelineOrdinal {
       return MessageTimelineOrdinalState(
         scope: scope,
         totalCount: 0,
-        itemScrollController: ItemScrollController(),
-        itemPositionsListener: ItemPositionsListener.create(),
+        itemScrollController: _itemScrollController,
+        itemPositionsListener: _itemPositionsListener,
         strategy: _EmptyOrdinalStrategy(),
       );
     }
@@ -85,8 +93,8 @@ class MessageTimelineOrdinal extends _$MessageTimelineOrdinal {
     return MessageTimelineOrdinalState(
       scope: scope,
       totalCount: totalCount,
-      itemScrollController: ItemScrollController(),
-      itemPositionsListener: ItemPositionsListener.create(),
+      itemScrollController: _itemScrollController,
+      itemPositionsListener: _itemPositionsListener,
       strategy: _strategy,
     );
   }
@@ -165,4 +173,7 @@ class _EmptyOrdinalStrategy implements OrdinalStrategy {
 
   @override
   Future<int?> getMessageIdByOrdinal(int ordinal) async => null;
+
+  @override
+  Future<int?> getOrdinalForMessage(int messageId) async => null;
 }

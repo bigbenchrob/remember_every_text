@@ -5,6 +5,7 @@ import '../../../../../essentials/db/feature_level_providers.dart';
 import '../../../../../essentials/db/feature_level_providers/message_data_version_provider.dart';
 import '../../../../../essentials/db/infrastructure/data_sources/local/working/working_database.dart';
 import '../../../domain/value_objects/message_timeline_scope.dart';
+import 'contact_timeline_display_version_provider.dart';
 
 part 'timeline_metadata_provider.g.dart';
 
@@ -70,8 +71,12 @@ Future<TimelineMetadata> timelineMetadata(
   TimelineMetadataRef ref, {
   required MessageTimelineScope scope,
 }) async {
-  // Watch message data version so we rebuild when new messages are imported.
-  ref.watch(messageDataVersionProvider);
+  switch (scope) {
+    case ContactTimelineScope():
+      ref.watch(contactTimelineDisplayVersionProvider(scope: scope));
+    case GlobalTimelineScope() || ChatTimelineScope():
+      ref.watch(messageDataVersionProvider);
+  }
 
   final db = await ref.watch(driftWorkingDatabaseProvider.future);
 
