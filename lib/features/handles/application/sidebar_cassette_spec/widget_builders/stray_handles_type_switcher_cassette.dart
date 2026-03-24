@@ -41,11 +41,11 @@ class StrayHandlesTypeSwitcherCassette extends ConsumerWidget {
       );
     }
 
-    // Spacing constants:
-    // - 12pt from top dropdown (8pt here + 4pt from naked wrapper)
-    // - 20pt to "Show:" below (12pt here + 4pt wrapper + 4pt mode switcher wrapper)
+    // Outer section spacing is owned by sidebar sectioning.
+    // Keep only the control's own geometry here so the filter group reads as
+    // one tight section between the neighboring controls.
     return Padding(
-      padding: const EdgeInsets.only(top: 8, bottom: 12),
+      padding: EdgeInsets.zero,
       child: CupertinoSegmentedControl<StrayHandleFilter>(
         groupValue: selectedFilter,
         onValueChanged: handleFilterChange,

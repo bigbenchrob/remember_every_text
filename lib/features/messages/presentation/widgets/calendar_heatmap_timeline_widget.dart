@@ -75,6 +75,58 @@ class CalendarHeatmapTimelineWidget extends ConsumerWidget {
   }
 }
 
+Color calendarHeatmapColorForIntensity(MonthIntensity intensity) {
+  switch (intensity) {
+    case MonthIntensity.notYetStarted:
+    case MonthIntensity.empty:
+    case MonthIntensity.fewDots:
+      return Colors.transparent;
+
+    case MonthIntensity.lightGray:
+      return const Color(0xFFE0E0E0);
+    case MonthIntensity.mediumGray:
+      return const Color(0xFFB0B0B0);
+    case MonthIntensity.darkGray:
+      return const Color(0xFF808080);
+
+    case MonthIntensity.paleYellow:
+      return const Color(0xFFFFF176);
+    case MonthIntensity.lightYellow:
+      return const Color(0xFFFFEE58);
+    case MonthIntensity.mediumYellow:
+      return const Color(0xFFFDD835);
+    case MonthIntensity.darkYellow:
+      return const Color(0xFFFBC02D);
+
+    case MonthIntensity.lightGreen:
+      return const Color(0xFFC8E6C9);
+    case MonthIntensity.mediumGreen:
+      return const Color(0xFF66BB6A);
+    case MonthIntensity.darkGreen:
+      return const Color(0xFF2E7D32);
+
+    case MonthIntensity.lightBlue:
+      return const Color(0xFFB3E5FC);
+    case MonthIntensity.mediumBlue:
+      return const Color(0xFF42A5F5);
+    case MonthIntensity.darkBlue:
+      return const Color(0xFF1565C0);
+
+    case MonthIntensity.lightOrange:
+      return const Color(0xFFFFE0B2);
+    case MonthIntensity.darkOrange:
+      return const Color(0xFFFB8C00);
+
+    case MonthIntensity.lightPurple:
+      return const Color(0xFFE1BEE7);
+    case MonthIntensity.darkPurple:
+      return const Color(0xFF8E24AA);
+
+    case MonthIntensity.red:
+      return const Color(0xFFD32F2F);
+  }
+}
+
 /// A group of year rows (wraps years into display rows)
 class _YearRowsGroup extends StatelessWidget {
   const _YearRowsGroup({
@@ -267,7 +319,7 @@ class _MonthCell extends StatelessWidget {
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: _getColor(monthData.intensity),
+          color: calendarHeatmapColorForIntensity(monthData.intensity),
           borderRadius: BorderRadius.circular(2),
         ),
       );
@@ -314,61 +366,6 @@ class _MonthCell extends StatelessWidget {
     }
 
     return interactiveCell;
-  }
-
-  Color _getColor(MonthIntensity intensity) {
-    switch (intensity) {
-      case MonthIntensity.notYetStarted:
-      case MonthIntensity.empty:
-      case MonthIntensity.fewDots:
-        return Colors.transparent;
-
-      // Gray series (4-50 messages)
-      case MonthIntensity.lightGray:
-        return const Color(0xFFE0E0E0);
-      case MonthIntensity.mediumGray:
-        return const Color(0xFFB0B0B0);
-      case MonthIntensity.darkGray:
-        return const Color(0xFF808080);
-
-      // Yellow series (51-200 messages)
-      case MonthIntensity.lightYellow:
-        return const Color(0xFFFFF9C4);
-      case MonthIntensity.darkYellow:
-        return const Color(0xFFFDD835);
-
-      // Green series (201-2000 messages)
-      case MonthIntensity.lightGreen:
-        return const Color(0xFFC8E6C9);
-      case MonthIntensity.mediumGreen:
-        return const Color(0xFF66BB6A);
-      case MonthIntensity.darkGreen:
-        return const Color(0xFF2E7D32);
-
-      // Blue series (2001-8000 messages)
-      case MonthIntensity.lightBlue:
-        return const Color(0xFFB3E5FC);
-      case MonthIntensity.mediumBlue:
-        return const Color(0xFF42A5F5);
-      case MonthIntensity.darkBlue:
-        return const Color(0xFF1565C0);
-
-      // Orange series (8001-20000 messages)
-      case MonthIntensity.lightOrange:
-        return const Color(0xFFFFE0B2);
-      case MonthIntensity.darkOrange:
-        return const Color(0xFFFB8C00);
-
-      // Purple series (20001-50000 messages)
-      case MonthIntensity.lightPurple:
-        return const Color(0xFFE1BEE7);
-      case MonthIntensity.darkPurple:
-        return const Color(0xFF8E24AA);
-
-      // Red (50000+ messages - maximum intensity)
-      case MonthIntensity.red:
-        return const Color(0xFFD32F2F);
-    }
   }
 }
 

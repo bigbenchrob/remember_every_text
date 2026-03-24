@@ -430,6 +430,7 @@ class _GroupedContactsPickerState extends ConsumerState<GroupedContactsPicker> {
           height: availableHeight,
           child: _GroupedContactsList(
             unified: widget.unified,
+            showSectionHeaders: _isScrollable,
             selectedParticipantId: widget.selectedParticipantId,
             onContactSelected: widget.onContactSelected,
             onContactHovered: widget.onContactHovered,
@@ -504,6 +505,7 @@ class _GroupedEmptyState extends ConsumerWidget {
 class _GroupedContactsList extends StatefulWidget {
   const _GroupedContactsList({
     required this.unified,
+    required this.showSectionHeaders,
     required this.selectedParticipantId,
     required this.onContactSelected,
     this.onContactHovered,
@@ -512,6 +514,7 @@ class _GroupedContactsList extends StatefulWidget {
   });
 
   final UnifiedPickerSections unified;
+  final bool showSectionHeaders;
   final int? selectedParticipantId;
   final ValueChanged<int> onContactSelected;
   final ValueChanged<int>? onContactHovered;
@@ -536,6 +539,7 @@ class _GroupedContactsListState extends State<_GroupedContactsList> {
         itemBuilder: (context, index) {
           return _ContactGroupSection(
             section: sections[index],
+            showHeader: widget.showSectionHeaders,
             allFavoriteIds: widget.unified.allFavoriteIds,
             selectedParticipantId: widget.selectedParticipantId,
             onContactSelected: widget.onContactSelected,
@@ -692,6 +696,7 @@ class _GroupedSelectorError extends ConsumerWidget {
 class _ContactGroupSection extends ConsumerWidget {
   const _ContactGroupSection({
     required this.section,
+    required this.showHeader,
     required this.allFavoriteIds,
     required this.selectedParticipantId,
     required this.onContactSelected,
@@ -699,6 +704,7 @@ class _ContactGroupSection extends ConsumerWidget {
   });
 
   final PickerSection section;
+  final bool showHeader;
   final Set<int> allFavoriteIds;
   final int? selectedParticipantId;
   final ValueChanged<int> onContactSelected;
@@ -713,16 +719,16 @@ class _ContactGroupSection extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Section header — same visual grammar for all sections
-          Padding(
-            padding: const EdgeInsets.only(
-              left: 8,
-              right: 8,
-              top: 4,
-              bottom: 4,
+          if (showHeader)
+            Padding(
+              padding: const EdgeInsets.only(
+                left: 8,
+                right: 8,
+                top: 4,
+                bottom: 4,
+              ),
+              child: Text(section.label, style: typography.pickerSectionLabel),
             ),
-            child: Text(section.label, style: typography.pickerSectionLabel),
-          ),
           ...section.contacts.map(
             (contact) => Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),

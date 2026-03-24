@@ -176,7 +176,7 @@ void main() {
           GROUP BY import_attachment_id
           ORDER BY import_attachment_id
         ''',
-              variables: [drift.Variable<String>(messageGuid)],
+              variables: [const drift.Variable<String>(messageGuid)],
             )
             .get();
 

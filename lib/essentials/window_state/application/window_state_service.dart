@@ -38,12 +38,16 @@ class WindowStateService {
   /// Load the saved window state or return default state
   Future<WindowStateEntity> loadWindowState() async {
     try {
-      final state = await _storage.loadWindowState();
-      _cachedState = _normalizeLoadedState(
-        state ?? WindowStateEntity.defaultState(),
-      );
+      final persistedState = await _storage.loadWindowState();
+      final state = persistedState ?? WindowStateEntity.defaultState();
+      _cachedState = _normalizeLoadedState(state);
       _baseWindowWidthBeforeEndSidebar = _cachedState!.width;
       _isEndSidebarExpanded = false;
+
+      if (persistedState == null) {
+        await _storage.saveWindowState(_cachedState!);
+      }
+
       return _cachedState!;
     } catch (e) {
       _cachedState = _normalizeLoadedState(WindowStateEntity.defaultState());
@@ -386,9 +390,16 @@ class WindowStateService {
   }
 
   WindowStateEntity _normalizeLoadedState(WindowStateEntity state) {
-    final baseWidth = math.max(_minWidth, state.sidebarWidth * 3);
-    final baseHeight = WindowStateEntity.defaultState().height;
+    final normalizedWidth = state.width.clamp(_minWidth, double.infinity);
+    final normalizedHeight = state.height.clamp(_minHeight, double.infinity);
+    final normalizedSidebarWidth = state.sidebarWidth <= 0
+        ? WindowStateEntity.defaultSidebarWidth
+        : state.sidebarWidth;
 
-    return state.copyWith(width: baseWidth, height: baseHeight);
+    return state.copyWith(
+      width: normalizedWidth,
+      height: normalizedHeight,
+      sidebarWidth: normalizedSidebarWidth,
+    );
   }
 }

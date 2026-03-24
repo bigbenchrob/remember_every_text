@@ -80,6 +80,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/branding/message_lens_toolbar_icon.png
 
 dependency_overrides:
   macos_ui:

@@ -22,30 +22,14 @@ class StrayHandlesReviewResolver extends _$StrayHandlesReviewResolver {
     required StrayHandleFilter filter,
     required StrayHandleMode mode,
   }) async {
-    final sectionHeader = _buildSectionHeader(filter, mode);
-
-    return SidebarCassetteCardViewModel(
+    return SidebarCassetteCardViewModel.featureComplex(
       role: SidebarCassetteRole.contextPrimary,
-      placementMode: SidebarBodyPlacementMode.insetWithTrailingGutter,
-      title: '', // No card title - use sectionTitle for tighter spacing
-      sectionTitle: sectionHeader,
-      layoutStyle: SidebarCardLayoutStyle.listDense, // Space-efficient rails
+      placementMode: SidebarBodyPlacementMode.inset,
+      contentAlignment: SidebarBodyContentAlignment.fill,
+      title: '',
+      layoutStyle: SidebarCardLayoutStyle.controlAligned,
       shouldExpand: true,
       child: StrayHandlesReviewCassette(filter: filter, mode: mode),
     );
-  }
-
-  String _buildSectionHeader(StrayHandleFilter filter, StrayHandleMode mode) {
-    final filterLabel = switch (filter) {
-      StrayHandleFilter.phones => 'phone numbers',
-      StrayHandleFilter.emails => 'email addresses',
-      StrayHandleFilter.businessUrns => 'business accounts',
-    };
-
-    return switch (mode) {
-      StrayHandleMode.allStrays => 'Unfamiliar $filterLabel',
-      StrayHandleMode.spamCandidates => 'Spam $filterLabel',
-      StrayHandleMode.dismissed => 'Dismissed $filterLabel',
-    };
   }
 }

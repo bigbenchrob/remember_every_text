@@ -24,6 +24,7 @@ routing are expected to remain coherent with that state.
 | File | Purpose |
 |---|---|
 | [00-cassette-system-architecture.md](00-cassette-system-architecture.md) | Full architecture: rack state, cascade, coordinator dispatch, card chrome, **card configuration patterns** |
+| [10-layout-and-optical-composition.md](10-layout-and-optical-composition.md) | Canonical ownership contract for sidebar layout, feature-owned complex bodies, and optical tuning inside the constrained frame |
 | [INVIOLATE_RULES.md](INVIOLATE_RULES.md) | Non-negotiable rules for the cassette system |
 
 ## Key Code Locations

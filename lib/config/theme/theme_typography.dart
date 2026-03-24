@@ -233,10 +233,10 @@ class ThemeTypography {
   /// Must visually dominate the options, but be subordinate to card title.
   /// Example: "Display format"
   TextStyle get cassetteCardSectionHeader => _base.copyWith(
-    fontSize: 12,
-    fontWeight: FontWeight.w700,
-    letterSpacing: 0.2,
-    color: _colors.content.textSecondary,
+    fontSize: 13,
+    fontWeight: FontWeight.w800,
+    letterSpacing: 0.15,
+    color: _colors.content.textSecondary.withValues(alpha: 0.92),
   );
 
   /// Footer text – lowest emphasis, explanatory.

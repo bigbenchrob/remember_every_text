@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:macos_ui/macos_ui.dart';
@@ -7,7 +8,6 @@ import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart';
-import '../../../../contacts/infrastructure/repositories/contact_profile_provider.dart';
 import '../../../domain/calendar_heatmap_timeline_data.dart';
 import '../../../domain/value_objects/message_timeline_scope.dart';
 import '../../../presentation/view_model/timeline/ordinal/current_visible_month_provider.dart';
@@ -38,29 +38,13 @@ class MessagesHeatmapWidget extends ConsumerWidget {
         ? ref.watch(globalMessagesHeatmapProvider)
         : ref.watch(contactTimelineProvider(contactId: contactId!));
 
-    final profileAsync = contactId == null
-        ? const AsyncValue<ContactProfileSummary?>.data(null)
-        : ref.watch(contactProfileProvider(contactId: contactId!));
-
     return timelineAsync.when(
       data: (timeline) {
-        if (contactId != null) {
-          return profileAsync.when(
-            data: (profile) => _ContactHeatmapContent(
-              contactId: contactId!,
-              profile: profile,
-              data: timeline,
-            ),
-            loading: () => const _HeatmapLoadingCard(),
-            error: (error, _) => _HeatmapErrorCard(
-              message: 'Unable to load profile. $error',
-              onRetry: () {
-                ref.invalidate(contactProfileProvider(contactId: contactId!));
-              },
-            ),
-          );
+        if (contactId == null) {
+          return _GlobalHeatmapContent(data: timeline);
         }
-        return _GlobalHeatmapContent(data: timeline);
+
+        return _ContactHeatmapContent(contactId: contactId!, data: timeline);
       },
       loading: () => const _HeatmapLoadingCard(),
       error: (error, _) => _HeatmapErrorCard(
@@ -92,87 +76,35 @@ class _GlobalHeatmapContent extends ConsumerWidget {
     }
 
     final timeline = data!;
-    ref.watch(themeColorsProvider);
-    final colors = ref.read(themeColorsProvider.notifier);
-    final t = ref.watch(themeTypographyProvider);
 
     final selectedMonthAsync = ref.watch(
       currentVisibleMonthForScopeProvider(
         scope: const MessageTimelineScope.global(),
       ),
     );
-    final selectedMonth = selectedMonthAsync.valueOrNull;
+    return MessageHeatmapContent(
+      data: timeline,
+      selectedMonthKey: selectedMonthAsync.valueOrNull,
+      onMonthTap: (year, month, count) {
+        if (count <= 0) {
+          return;
+        }
 
-    final stats = _buildStats(
-      typography: t,
-      colors: colors,
-      stats: [
-        _HeatmapStat(
-          icon: CupertinoIcons.bolt_circle,
-          label: 'Total messages',
-          value: NumberFormat.decimalPattern().format(timeline.totalMessages),
-        ),
-        _HeatmapStat(
-          icon: CupertinoIcons.calendar,
-          label: 'Archive span',
-          value: _formatDateRange(
-            timeline.firstMessageDate,
-            timeline.lastMessageDate,
-          ),
-        ),
-      ],
-    );
+        final isLastMonth =
+            year == timeline.lastMessageDate.year &&
+            month == timeline.lastMessageDate.month;
+        final startDate = isLastMonth ? null : DateTime(year, month, 1);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        stats,
-        const SizedBox(height: AppSpacing.sm),
-        CalendarHeatmapTimelineWidget(
-          data: timeline,
-          monthSize: 12,
-          monthSpacing: 2,
-          selectedMonthKey: selectedMonth,
-          onMonthTap: (year, month, count) {
-            if (count <= 0) {
-              return;
-            }
-
-            final isLastMonth =
-                year == timeline.lastMessageDate.year &&
-                month == timeline.lastMessageDate.month;
-            final startDate = isLastMonth ? null : DateTime(year, month, 1);
-
-            ref
-                .read(sidebarFlowProvider.notifier)
-                .showGlobalTimelineAt(startDate);
-          },
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        PushButton(
-          controlSize: ControlSize.small,
-          onPressed: () {
-            ref.read(sidebarFlowProvider.notifier).showGlobalTimeline();
-          },
-          child: Text(
-            'Open full timeline',
-            style: t.body.copyWith(fontSize: 13, fontWeight: FontWeight.w600),
-          ),
-        ),
-      ],
+        ref.read(sidebarFlowProvider.notifier).showGlobalTimelineAt(startDate);
+      },
     );
   }
 }
 
 class _ContactHeatmapContent extends ConsumerWidget {
-  const _ContactHeatmapContent({
-    required this.contactId,
-    required this.profile,
-    required this.data,
-  });
+  const _ContactHeatmapContent({required this.contactId, required this.data});
 
   final int contactId;
-  final ContactProfileSummary? profile;
   final CalendarHeatmapTimelineData? data;
 
   @override
@@ -185,66 +117,164 @@ class _ContactHeatmapContent extends ConsumerWidget {
     }
 
     final timeline = data!;
-    final t = ref.watch(themeTypographyProvider);
-
     final selectedMonthAsync = ref.watch(
       currentVisibleMonthForScopeProvider(
         scope: MessageTimelineScope.contact(contactId: contactId),
       ),
     );
-    final selectedMonth = selectedMonthAsync.valueOrNull;
+    return MessageHeatmapContent(
+      data: timeline,
+      selectedMonthKey: selectedMonthAsync.valueOrNull,
+      onMonthTap: (year, month, count) {
+        if (count <= 0) {
+          return;
+        }
 
+        final isLastMonth =
+            year == timeline.lastMessageDate.year &&
+            month == timeline.lastMessageDate.month;
+        final startDate = isLastMonth ? null : DateTime(year, month, 1);
+
+        ref
+            .read(sidebarFlowProvider.notifier)
+            .showContactTimelineAt(
+              contactId: contactId,
+              scrollToDate: startDate,
+            );
+      },
+    );
+  }
+}
+
+class MessageHeatmapContent extends ConsumerWidget {
+  const MessageHeatmapContent({
+    required this.data,
+    required this.selectedMonthKey,
+    required this.onMonthTap,
+    this.monthTooltipBuilder,
+    this.legend = const MessageHeatmapLegend(),
+    this.hintText = 'Tap a square to jump to that month',
+    super.key,
+  });
+
+  final CalendarHeatmapTimelineData data;
+  final String? selectedMonthKey;
+  final void Function(int year, int month, int count) onMonthTap;
+  final String? Function(MonthData monthData)? monthTooltipBuilder;
+  final Widget? legend;
+  final String hintText;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final typography = ref.watch(themeTypographyProvider);
     final summaryText =
-        '${NumberFormat.decimalPattern().format(timeline.totalMessages)} '
-        'Messages • ${_formatDateRange(timeline.firstMessageDate, timeline.lastMessageDate)}';
+        '${NumberFormat.decimalPattern().format(data.totalMessages)} messages '
+        '• ${_formatDateRange(data.firstMessageDate, data.lastMessageDate)}';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Summary above heatmap acts as visual separator from info card
-        Text(summaryText, style: t.vizMeta),
+        Text(summaryText, style: typography.vizMeta),
         const SizedBox(height: AppSpacing.cassetteContentGap),
         CalendarHeatmapTimelineWidget(
-          data: timeline,
+          data: data,
           monthSize: 12,
           monthSpacing: 2,
-          selectedMonthKey: selectedMonth,
-          onMonthTap: (year, month, count) {
-            if (count <= 0) {
-              return;
-            }
-
-            final isLastMonth =
-                year == timeline.lastMessageDate.year &&
-                month == timeline.lastMessageDate.month;
-            final startDate = isLastMonth ? null : DateTime(year, month, 1);
-
-            ref
-                .read(sidebarFlowProvider.notifier)
-                .showContactTimelineAt(
-                  contactId: contactId,
-                  scrollToDate: startDate,
-                );
-          },
+          selectedMonthKey: selectedMonthKey,
+          monthTooltipBuilder: monthTooltipBuilder,
+          onMonthTap: onMonthTap,
         ),
-        // Hint using same Row structure as heatmap year rows
+        if (legend != null) ...[
+          const SizedBox(height: AppSpacing.cassetteContentGap),
+          legend!,
+        ],
         Padding(
           padding: const EdgeInsets.only(top: AppSpacing.cassetteHintGap),
-          child: Row(
-            children: [
-              const SizedBox(width: 32), // Same as year label width
-              const SizedBox(width: 4), // Same as monthSpacing * 2
-              Flexible(
-                child: Text(
-                  'Tap a square to jump to that month',
-                  style: t.caption,
-                  softWrap: true,
-                ),
-              ),
-            ],
-          ),
+          child: Text(hintText, style: typography.caption, softWrap: true),
         ),
       ],
+    );
+  }
+}
+
+class MessageHeatmapLegend extends ConsumerWidget {
+  const MessageHeatmapLegend({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return const Wrap(
+      spacing: AppSpacing.md,
+      runSpacing: AppSpacing.xs,
+      children: [
+        _LegendItem(label: '1-3', swatch: _DotLegendSwatch()),
+        _LegendItem(label: '4-10', intensity: MonthIntensity.lightGray),
+        _LegendItem(label: '11-30', intensity: MonthIntensity.mediumGray),
+        _LegendItem(label: '31-50', intensity: MonthIntensity.darkGray),
+        _LegendItem(label: '51-75', intensity: MonthIntensity.paleYellow),
+        _LegendItem(label: '76-100', intensity: MonthIntensity.lightYellow),
+        _LegendItem(label: '101-150', intensity: MonthIntensity.mediumYellow),
+        _LegendItem(label: '151-200', intensity: MonthIntensity.darkYellow),
+        _LegendItem(label: '201-500', intensity: MonthIntensity.lightGreen),
+        _LegendItem(label: '501-1K', intensity: MonthIntensity.mediumGreen),
+        _LegendItem(label: '1K-2K', intensity: MonthIntensity.darkGreen),
+      ],
+    );
+  }
+}
+
+class _LegendItem extends ConsumerWidget {
+  const _LegendItem({required this.label, this.intensity, this.swatch});
+
+  final String label;
+  final MonthIntensity? intensity;
+  final Widget? swatch;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final typography = ref.watch(themeTypographyProvider);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        swatch ?? _ColorLegendSwatch(intensity: intensity!),
+        const SizedBox(width: AppSpacing.xs),
+        Text(label, style: typography.caption),
+      ],
+    );
+  }
+}
+
+class _ColorLegendSwatch extends StatelessWidget {
+  const _ColorLegendSwatch({required this.intensity});
+
+  final MonthIntensity intensity;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: calendarHeatmapColorForIntensity(intensity),
+        borderRadius: BorderRadius.circular(2),
+      ),
+      child: const SizedBox(width: 10, height: 10),
+    );
+  }
+}
+
+class _DotLegendSwatch extends StatelessWidget {
+  const _DotLegendSwatch();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(
+      width: 10,
+      height: 10,
+      child: Center(
+        child: Text(
+          '...',
+          style: TextStyle(fontSize: 8, height: 1, color: Color(0xFF999999)),
+        ),
+      ),
     );
   }
 }
@@ -335,48 +365,6 @@ class _EmptyHeatmapCard extends ConsumerWidget {
       ),
     );
   }
-}
-
-class _HeatmapStat {
-  const _HeatmapStat({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-}
-
-Widget _buildStats({
-  required ThemeTypography typography,
-  required ThemeColors colors,
-  required List<_HeatmapStat> stats,
-}) {
-  return Wrap(
-    spacing: AppSpacing.sm,
-    runSpacing: AppSpacing.xs,
-    children: stats
-        .map(
-          (stat) => Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(stat.icon, size: 14, color: colors.content.textSecondary),
-              const SizedBox(width: AppSpacing.xs),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(stat.value, style: typography.vizMeta),
-                  Text(stat.label, style: typography.caption),
-                ],
-              ),
-              const SizedBox(width: AppSpacing.md),
-            ],
-          ),
-        )
-        .toList(growable: false),
-  );
 }
 
 String _formatDateRange(DateTime start, DateTime end) {

@@ -1,0 +1,13 @@
+I have reached a state where something that seemed beautifully simple in theory crashes into cold harsh reality when we try to put it into practice.
+
+Menus, segmented controls, hero type display cards, buttons -- all fit into our new contract. The feature supplies things like text labels, and specifies what action, if any, should be taken. These actions live in the essentials layer, as they overwhelmingly involve stack and center panel mechanics, which have no place involving individual features. The essentials layer supplies the widget code and ensures it fits into the sidebar layout specs.
+
+Then we consider something like the messages heat map. Extremely messages centered, involving a detailed UI based on complex data derived from the infrastructure layer. If we look at the attached widget code, it would seem foolish to shove this into the essentials layer just to satisfy a foolish consistency with much simpler widgets like menus and buttons.
+
+So what would be a more sensible distribution of responsibilities? 
+
+-- the messages layer should build the heatmap widget itself. What will constrain it so it doesn't exceed the space available in the sidebar? Maybe width constants supplied by a provider at the essentials level? We can't absolutely guarantee that those values must be used so an edit won't violate that in the future but it's as close as we can get as far as I can come up with right now
+
+-- this messages derived widget should be content that slots into an essentials-derived holder, which itself is constrained according to the sidebar layout parameters. We just need to ensure that the feature level uses a constant defining the maximum width of inserted content
+
+-- clicking on a month square in the heat map will trigger an action (showContactTimeline) e.g. stored in essentials/sidebar and codified in the sealed actions class.

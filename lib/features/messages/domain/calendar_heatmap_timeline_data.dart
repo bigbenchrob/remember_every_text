@@ -27,10 +27,16 @@ enum MonthIntensity {
   /// 31-50 messages (dark gray)
   darkGray,
 
-  /// 51-100 messages (light yellow)
+  /// 51-75 messages (pale yellow)
+  paleYellow,
+
+  /// 76-100 messages (light yellow)
   lightYellow,
 
-  /// 101-200 messages (dark yellow)
+  /// 101-150 messages (medium yellow)
+  mediumYellow,
+
+  /// 151-200 messages (dark yellow)
   darkYellow,
 
   /// 201-500 messages (light green)
@@ -78,8 +84,12 @@ enum MonthIntensity {
       return MonthIntensity.mediumGray;
     } else if (count <= 50) {
       return MonthIntensity.darkGray;
+    } else if (count <= 75) {
+      return MonthIntensity.paleYellow;
     } else if (count <= 100) {
       return MonthIntensity.lightYellow;
+    } else if (count <= 150) {
+      return MonthIntensity.mediumYellow;
     } else if (count <= 200) {
       return MonthIntensity.darkYellow;
     } else if (count <= 500) {

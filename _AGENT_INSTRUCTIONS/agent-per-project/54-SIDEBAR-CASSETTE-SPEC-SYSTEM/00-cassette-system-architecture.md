@@ -12,6 +12,10 @@ The system has four layers:
 3. **Coordinator dispatch** — routing each spec to the owning feature
 4. **Card chrome** — wrapping feature content in visual card containers
 
+For the detailed layout ownership contract, including feature-owned complex
+bodies and optical composition inside an essentials-owned frame, read
+`10-layout-and-optical-composition.md` in this folder.
+
 ---
 
 ## 1. CassetteSpec — The Top-Level Sealed Class
@@ -336,6 +340,16 @@ Three card widgets correspond to `CassetteCardType`:
 These are **essentials-owned** presentation widgets. Features never construct or
 return these cards — they return a `SidebarCassetteCardViewModel` and the
 coordinator wraps it.
+
+### Practical ownership guidance
+
+- When a sidebar cassette can be expressed as a governed primitive such as a
+  button, menu, or compact navigation control, essentials should own that body.
+- When a sidebar cassette body is highly feature-specific and depends on
+  feature infrastructure or complex rendering, the feature may build the body,
+  but only inside the constrained frame owned by essentials.
+- Feature-owned complex bodies may tune their internal composition, but must
+  not redefine the outer cassette rails or width.
 
 ---
 

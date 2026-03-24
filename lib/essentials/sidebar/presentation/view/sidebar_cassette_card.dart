@@ -42,6 +42,7 @@ class SidebarCassetteCard extends ConsumerWidget {
   final SidebarCassetteRole role;
   final SidebarBodyPlacementMode placementMode;
   final SidebarBodyContentAlignment contentAlignment;
+  final SidebarBodyRenderKind bodyRenderKind;
 
   /// Layout style controlling horizontal rails.
   /// When non-null, overrides [padding] and [margin] with style-derived values.
@@ -60,15 +61,13 @@ class SidebarCassetteCard extends ConsumerWidget {
       right: AppSpacing.md,
       bottom: AppSpacing.md,
     ),
-    this.margin = const EdgeInsets.symmetric(
-      vertical: AppSpacing.sm,
-      horizontal: AppSpacing.md,
-    ),
+    this.margin = const EdgeInsets.symmetric(horizontal: AppSpacing.md),
     this.isNaked = false,
     this.shouldExpand = false,
     this.role = SidebarCassetteRole.contextPrimary,
     this.placementMode = SidebarBodyPlacementMode.inset,
     this.contentAlignment = SidebarBodyContentAlignment.fill,
+    this.bodyRenderKind = SidebarBodyRenderKind.governedPrimitive,
     this.layoutStyle,
   });
 
@@ -101,6 +100,7 @@ class SidebarCassetteCard extends ConsumerWidget {
               child: child,
               geometry: geometry,
               contentAlignment: contentAlignment,
+              bodyRenderKind: bodyRenderKind,
             ),
           );
         },
@@ -178,6 +178,7 @@ class SidebarCassetteCard extends ConsumerWidget {
       child: child,
       geometry: geometry,
       contentAlignment: contentAlignment,
+      bodyRenderKind: bodyRenderKind,
     );
   }
 
@@ -186,29 +187,23 @@ class SidebarCassetteCard extends ConsumerWidget {
   (EdgeInsets, EdgeInsets, double, SidebarGeometryConstraints?) _computeLayout({
     required double maxWidth,
   }) {
-    // Layout style takes precedence when specified
-    if (layoutStyle != null) {
+    if (layoutStyle != null &&
+        bodyRenderKind == SidebarBodyRenderKind.governedPrimitive) {
       return switch (layoutStyle!) {
         SidebarCardLayoutStyle.standard => (
-          const EdgeInsets.symmetric(
-            vertical: AppSpacing.sm,
-            horizontal: AppSpacing.md,
-          ),
+          const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           const EdgeInsets.all(AppSpacing.md),
           AppSpacing.sm,
           null,
         ),
         SidebarCardLayoutStyle.listDense => (
-          const EdgeInsets.symmetric(vertical: AppSpacing.xs, horizontal: 0),
+          EdgeInsets.zero,
           const EdgeInsets.symmetric(horizontal: 12, vertical: AppSpacing.sm),
           AppSpacing.xs,
           null,
         ),
         SidebarCardLayoutStyle.controlAligned => (
-          const EdgeInsets.symmetric(
-            vertical: AppSpacing.xs,
-            horizontal: AppSpacing.md,
-          ),
+          const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           EdgeInsets.zero,
           0.0,
           null,
@@ -216,8 +211,33 @@ class SidebarCassetteCard extends ConsumerWidget {
       };
     }
 
-    final effectiveMargin = margin as EdgeInsets;
-    final effectivePadding = padding as EdgeInsets;
+    final (
+      effectiveMargin,
+      effectivePadding,
+      sectionTitleGap,
+    ) = layoutStyle == null
+        ? (margin as EdgeInsets, padding as EdgeInsets, AppSpacing.sm)
+        : switch (layoutStyle!) {
+            SidebarCardLayoutStyle.standard => (
+              const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+              const EdgeInsets.all(AppSpacing.md),
+              AppSpacing.sm,
+            ),
+            SidebarCardLayoutStyle.listDense => (
+              EdgeInsets.zero,
+              const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: AppSpacing.sm,
+              ),
+              AppSpacing.xs,
+            ),
+            SidebarCardLayoutStyle.controlAligned => (
+              const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+              EdgeInsets.zero,
+              0.0,
+            ),
+          };
+
     final contentEnvelopeWidth = maxWidth.isFinite
         ? (maxWidth - effectiveMargin.horizontal).clamp(0.0, double.infinity)
         : 0.0;
@@ -236,7 +256,7 @@ class SidebarCassetteCard extends ConsumerWidget {
       currentPadding: effectivePadding,
     );
 
-    return (effectiveMargin, placementPadding, AppSpacing.sm, geometry);
+    return (effectiveMargin, placementPadding, sectionTitleGap, geometry);
   }
 }
 
@@ -244,17 +264,13 @@ EdgeInsets _nakedPaddingForPlacement(SidebarBodyPlacementMode placementMode) {
   return switch (placementMode) {
     SidebarBodyPlacementMode.fullWidth => const EdgeInsets.symmetric(
       horizontal: AppSpacing.md,
-      vertical: AppSpacing.xs,
     ),
     SidebarBodyPlacementMode.inset => const EdgeInsets.symmetric(
       horizontal: AppSpacing.md,
-      vertical: AppSpacing.xs,
     ),
     SidebarBodyPlacementMode.insetWithTrailingGutter => const EdgeInsets.only(
       left: AppSpacing.md,
-      top: AppSpacing.xs,
       right: AppSpacing.md + _sidebarTrailingGutterWidth,
-      bottom: AppSpacing.xs,
     ),
   };
 }

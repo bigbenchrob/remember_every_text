@@ -51,7 +51,6 @@ class ContactGroupedPickerWidget extends HookConsumerWidget {
       onContactHovered: (contactId) {
         _prewarmContactInvestigation(ref, contactId);
       },
-      maxHeight: 380,
     );
   }
 

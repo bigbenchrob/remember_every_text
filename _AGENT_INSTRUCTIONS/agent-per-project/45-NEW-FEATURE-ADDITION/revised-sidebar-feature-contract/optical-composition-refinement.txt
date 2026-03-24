@@ -1,0 +1,171 @@
+SIDEBAR DESIGN ADDENDUM
+
+Structural Geometry vs Optical Composition
+
+⸻
+
+1. Purpose
+
+This addendum defines how to handle visual tuning of sidebar content once structural layout rules are correctly enforced.
+
+It resolves the tension between:
+	•	strict, system-owned geometry (rails, width, spacing)
+	•	feature-specific visual needs (lists, heatmaps, dense content)
+
+⸻
+
+2. Core Principle
+
+Sidebar layout operates in two distinct layers:
+
+Structural Geometry (Essentials-owned)
+Optical Composition (Feature-owned, within constraints)
+
+⸻
+
+3. Structural Geometry (Essentials-Owned)
+
+Structural geometry defines the outer rules of the sidebar.
+
+Essentials is solely responsible for:
+	•	sidebar rails (left/right alignment)
+	•	cassette width (content envelope)
+	•	horizontal padding of cassette wrappers
+	•	vertical rhythm between cassettes
+	•	section grouping and spacing
+	•	gutter existence and placement
+
+Invariant
+
+All cassettes must align to the same structural rails.
+
+Feature code must not modify:
+	•	outer padding
+	•	cassette width
+	•	horizontal alignment relative to other cassettes
+
+⸻
+
+4. Optical Composition (Feature-Owned, Constrained)
+
+Optical composition governs how content sits inside the allowed space.
+
+This is where feature-level tuning is appropriate.
+
+Feature code MAY control:
+	•	internal content insets (left/right within the host)
+	•	spacing between content columns
+	•	divider start/end positions
+	•	gutter width (within allowed policy)
+	•	relative positioning of text, metadata, and controls
+	•	internal density (row height, spacing)
+
+Key Rule
+
+All optical adjustments must occur inside the constrained content envelope.
+
+They must not alter the outer geometry.
+
+⸻
+
+5. The Frame vs Composition Model
+
+Use this mental model:
+	•	Essentials defines the frame
+	•	Feature defines the composition inside the frame
+
+Features may not resize or reposition the frame.
+
+Features may adjust how content is arranged within it.
+
+⸻
+
+6. Approved Optical Adjustments
+
+For feature-owned complex bodies (e.g. lists, heatmaps), the following are acceptable:
+	•	slight left inset of primary text column
+	•	aligning dividers with text column instead of full width
+	•	tuning spacing between main content and metadata column
+	•	adjusting gutter width to match actual control footprint
+	•	right-aligning marginal controls to gutter edge
+	•	introducing visual grouping through spacing within the body
+
+⸻
+
+7. Prohibited Adjustments
+
+The following remain strictly forbidden:
+	•	adding outer horizontal padding to shrink cassette width
+	•	introducing alternative rail systems
+	•	centering content to compensate for excess width
+	•	redefining the cassette’s alignment relative to other cassettes
+	•	simulating gutters using outer padding
+
+⸻
+
+8. Diagnosing “Too Wide” vs “Poor Composition”
+
+When content feels too wide, do NOT immediately change geometry.
+
+Instead check:
+	•	Are dividers spanning too far?
+	•	Is the text column too close to the left rail?
+	•	Is the metadata column floating too far from the main content?
+	•	Is the gutter wider than necessary?
+	•	Are trailing controls visually pulling the layout outward?
+
+Fix these through composition, not structure.
+
+⸻
+
+9. Lists with Trailing Actions (Special Case)
+
+Lists with trailing buttons (e.g. dismiss controls) often appear wider due to:
+	•	asymmetrical visual weight
+	•	protruding controls on the right
+	•	lack of enclosing border
+
+Required rules
+	•	list must still fill full cassette width
+	•	trailing controls must align to the gutter’s outer edge
+	•	controls must not be centered within excess gutter space
+
+Recommended adjustments
+	•	reduce gutter width to match control footprint
+	•	visually associate metadata with the trailing region
+	•	slightly inset the main text lane if needed
+	•	shorten divider lines to match the text lane
+
+⸻
+
+10. Interaction with Existing Contracts
+
+This addendum does not change:
+	•	canonical state ownership
+	•	role system
+	•	action intent system
+	•	SidebarConstrainedContent enforcement
+
+It only clarifies how feature-level content may be tuned after those constraints are applied.
+
+⸻
+
+11. Summary
+
+Structural correctness comes first.
+
+Once a cassette:
+	•	fills the correct width
+	•	aligns to system rails
+	•	obeys geometry constraints
+
+Then and only then:
+
+Feature-level optical composition may be used to achieve visual comfort.
+
+⸻
+
+12. Key Sentence
+
+Do not change the width of the box.
+Change how the contents sit inside it.

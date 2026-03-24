@@ -30,18 +30,11 @@ class HeatmapResolver extends _$HeatmapResolver {
     required int? contactId,
     required int cassetteIndex,
   }) async {
-    final isContactScoped = contactId != null;
-
-    return SidebarCassetteCardViewModel(
+    return SidebarCassetteCardViewModel.featureComplex(
       role: SidebarCassetteRole.contextPrimary,
       placementMode: SidebarBodyPlacementMode.inset,
       contentAlignment: SidebarBodyContentAlignment.loose,
-      // No loud title for contact heatmap - it's obvious from context.
-      // Global heatmap gets a title since it's the main feature.
-      title: isContactScoped ? '' : 'All messages heatmap',
-      subtitle: isContactScoped
-          ? null
-          : 'Discover peaks and gaps across your entire archive.',
+      title: '',
       shouldExpand: false,
       child: MessagesHeatmapWidget(contactId: contactId),
     );

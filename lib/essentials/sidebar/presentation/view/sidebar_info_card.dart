@@ -19,10 +19,7 @@ class SidebarInfoCard extends ConsumerWidget {
     required this.bodyText,
     this.footnote,
     this.content,
-    this.margin = const EdgeInsets.symmetric(
-      vertical: AppSpacing.sm,
-      horizontal: AppSpacing.md,
-    ),
+    this.margin = const EdgeInsets.symmetric(horizontal: AppSpacing.md),
     this.padding = const EdgeInsets.symmetric(vertical: AppSpacing.md),
   }) : assert(true);
 

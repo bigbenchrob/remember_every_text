@@ -18,6 +18,9 @@ abstract class MessagesInfoCassetteSpec with _$MessagesInfoCassetteSpec {
 
 /// Feature-owned keys that identify informational content meaning for Messages.
 enum MessagesInfoKey {
+  /// Explains the global search-all-messages heatmap surface.
+  searchAllMessages,
+
   /// Explains the recovered deleted-messages surface.
   recoveredDeletedMessages,
 

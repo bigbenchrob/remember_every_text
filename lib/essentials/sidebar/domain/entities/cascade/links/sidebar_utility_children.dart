@@ -15,9 +15,9 @@ CassetteSpec sidebarUtilityChildStrayHandlesTypeSwitcher() {
   );
 }
 
-CassetteSpec sidebarUtilityChildMessagesHeatMapAll() {
-  return const CassetteSpec.messages(
-    MessagesCassetteSpec.heatMap(contactId: null),
+CassetteSpec sidebarUtilityChildSearchAllMessagesInfoCard() {
+  return const CassetteSpec.messagesInfo(
+    MessagesInfoCassetteSpec.infoCard(key: MessagesInfoKey.searchAllMessages),
   );
 }
 

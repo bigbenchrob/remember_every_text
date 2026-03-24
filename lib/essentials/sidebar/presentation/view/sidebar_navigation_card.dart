@@ -76,17 +76,13 @@ EdgeInsets _navigationPaddingForPlacement(
   return switch (placementMode) {
     SidebarBodyPlacementMode.fullWidth => const EdgeInsets.symmetric(
       horizontal: AppSpacing.md,
-      vertical: AppSpacing.xs,
     ),
     SidebarBodyPlacementMode.inset => const EdgeInsets.symmetric(
       horizontal: AppSpacing.md,
-      vertical: AppSpacing.xs,
     ),
     SidebarBodyPlacementMode.insetWithTrailingGutter => const EdgeInsets.only(
       left: AppSpacing.md,
-      top: AppSpacing.xs,
       right: AppSpacing.md + AppSpacing.xl,
-      bottom: AppSpacing.xs,
     ),
   };
 }

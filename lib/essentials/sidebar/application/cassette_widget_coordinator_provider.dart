@@ -169,6 +169,7 @@ class CassetteWidgetCoordinator extends _$CassetteWidgetCoordinator {
             role: payload.role,
             placementMode: payload.placementMode,
             contentAlignment: payload.contentAlignment,
+            bodyRenderKind: payload.bodyRenderKind,
             layoutStyle: payload.layoutStyle,
             child: child,
           );

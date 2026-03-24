@@ -6,8 +6,10 @@ import 'package:sqlite3/sqlite3.dart';
 
 import '../../../../providers.dart';
 import '../../../db/feature_level_providers.dart';
+import '../../../db_migrate/domain/entities/db_migration_result.dart';
 import '../../../db_migrate/feature_level_providers.dart';
 import '../../../logging/application/app_logger.dart';
+import '../../domain/entities/db_import_result.dart';
 import '../../feature_level_providers.dart';
 
 part 'chat_db_change_monitor_provider.g.dart';
@@ -316,7 +318,7 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
   String _buildImportSummaryLog({
     required DateTime timestamp,
     required int newMessageCount,
-    required dynamic importResult,
+    required DbImportResult importResult,
   }) {
     final timeLabel = _formatLocalClockTime(timestamp);
     return 'Incremental update at $timeLabel: '
@@ -330,8 +332,8 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
   String _buildMigrationSummaryLog({
     required DateTime startedAt,
     required DateTime completedAt,
-    required dynamic importResult,
-    required dynamic migrationResult,
+    required DbImportResult importResult,
+    required DbMigrationResult migrationResult,
   }) {
     final timeLabel = _formatLocalClockTime(completedAt);
     final durationMs = completedAt.difference(startedAt).inMilliseconds;

@@ -65,7 +65,7 @@ class ContactChooserResolver extends _$ContactChooserResolver {
     // The picker now contains FAVORITES and RECENTS sections inline
     // via the unified picker sections provider.
     // controlAligned matches the top menu's naked width (16pt horizontal).
-    return SidebarCassetteCardViewModel(
+    return SidebarCassetteCardViewModel.featureComplex(
       role: SidebarCassetteRole.contextPrimary,
       placementMode: SidebarBodyPlacementMode.fullWidth,
       title: '',

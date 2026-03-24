@@ -88,3 +88,58 @@ at intrinsic height unless the resolver explicitly sets `shouldExpand: true`.
   card with fixed-height content.
 - **Never** rely on implicit expansion. If a card needs to expand, say so explicitly
   in the resolver.
+
+## 12. Essentials Owns Sidebar Layout
+
+Essentials always owns outer sidebar layout.
+
+Features must not redefine:
+
+- cassette width
+- outer horizontal rails
+- wrapper alignment relative to sibling cassettes
+- vertical rhythm between cassettes
+- section-transition spacing
+
+If a cassette needs different chrome or composition, express that through the
+approved sidebar payload and essentials-owned wrapper rules. Do not invent a
+second layout system inside the feature.
+
+## 13. Feature-Owned Complex Bodies Fill the Frame
+
+For feature-owned complex bodies, essentials supplies the full cassette body
+frame. The feature body must fill that frame and may only subdivide it
+internally.
+
+Allowed:
+
+- internal text or metadata lanes
+- internal trailing action gutters
+- optical tuning inside the full-width body
+
+Forbidden:
+
+- outer horizontal padding that shrinks the whole body
+- simulated gutters created by shrinking the root body
+- alternate outer rails inside the cassette
+
+## 14. Optical Tuning Does Not Override Geometry
+
+Optical tuning is allowed only after the geometry contract is satisfied.
+
+Use optical tuning to adjust how content sits inside the cassette body.
+Do not use it to compensate for broken wrapper geometry.
+
+When content feels too wide or too narrow, verify first that width is not being
+lost at the wrapper, list, or row boundary before introducing visual tuning.
+
+## 15. Do Not Repeat Control-Defined Dataset Context
+
+Avoid redundant section headers when the current UI controls already fully
+define the dataset being displayed.
+
+Lists should read as the direct result of the selected controls unless
+additional context is required for clarity.
+
+Do not add a results header that merely restates the active filter, mode, or
+scope already communicated by the controls above.

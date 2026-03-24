@@ -12,12 +12,17 @@ part 'info_content_resolver.g.dart';
 class MessagesInfoContent {
   const MessagesInfoContent({
     this.title,
-    required this.child,
+    this.body,
+    this.child,
     this.topSpacing = 0,
-  });
+  }) : assert(
+         (body != null) != (child != null),
+         'Provide exactly one of body or child.',
+       );
 
   final String? title;
-  final Widget child;
+  final String? body;
+  final Widget? child;
   final double topSpacing;
 }
 
@@ -34,6 +39,15 @@ class MessagesInfoContentResolver extends _$MessagesInfoContentResolver {
     required int cassetteIndex,
   }) async {
     switch (key) {
+      case MessagesInfoKey.searchAllMessages:
+        return const MessagesInfoContent(
+          body:
+              'The heatmap below represents all the messages in your database, '
+              'regardless of who you were texting with. Messages are shown at '
+              'right, listed by date. Clicking on a square in the heatmap '
+              'will bring you to that month. You can enter search terms in the '
+              'list header.',
+        );
       case MessagesInfoKey.recoveredDeletedMessages:
         return MessagesInfoContent(
           child: RecoveredUnlinkedNavigatorWidget(cassetteIndex: cassetteIndex),

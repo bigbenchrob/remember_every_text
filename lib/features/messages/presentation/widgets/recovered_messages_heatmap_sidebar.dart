@@ -7,11 +7,11 @@ import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
 import '../../../../essentials/sidebar/feature_level_providers.dart';
 import '../../../../essentials/sidebar/presentation/view/sidebar_cassette_card.dart';
+import '../../application/sidebar_cassette_spec/widget_builders/messages_heatmap_widget.dart';
 import '../../application/view_spec/resolver_tools/recovered_messages_heatmap_data.dart';
 import '../../application/view_spec/resolver_tools/recovered_visible_month_provider.dart';
 import '../../domain/calendar_heatmap_timeline_data.dart';
 import '../../infrastructure/repositories/recovered_unlinked_messages_provider.dart';
-import 'calendar_heatmap_timeline_widget.dart';
 
 class RecoveredMessagesHeatmapSidebar extends ConsumerWidget {
   const RecoveredMessagesHeatmapSidebar({
@@ -39,14 +39,7 @@ class RecoveredMessagesHeatmapSidebar extends ConsumerWidget {
     );
 
     return SidebarCassetteCard(
-      title: onlyNoHandleFromMe
-          ? 'Recovered no-handle heatmap'
-          : 'Recovered messages heatmap',
-      subtitle: onlyNoHandleFromMe
-          ? 'Month-by-month activity for recovered outgoing messages that lost handle linkage.'
-          : contactId == null
-          ? 'Month-by-month activity across recovered deleted-message candidates.'
-          : 'Month-by-month activity for recovered deleted messages attributed to this contact.',
+      title: '',
       child: asyncMessages.when(
         data: (messages) {
           final filteredMessages = _filterRecoveredMessages(
@@ -68,68 +61,39 @@ class RecoveredMessagesHeatmapSidebar extends ConsumerWidget {
             );
           }
 
-          final summaryText =
-              '${NumberFormat.decimalPattern().format(heatmapData.totalMessages)} '
-              'messages • ${_formatDateRange(heatmapData.firstMessageDate, heatmapData.lastMessageDate)}';
+          return MessageHeatmapContent(
+            data: heatmapData,
+            selectedMonthKey: visibleMonthKey ?? _monthKeyFor(scrollToDate),
+            monthTooltipBuilder: (monthData) {
+              if (monthData.intensity.isNotYetStarted) {
+                return null;
+              }
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(summaryText, style: typography.vizMeta),
-              const SizedBox(height: AppSpacing.cassetteContentGap),
-              CalendarHeatmapTimelineWidget(
-                data: heatmapData,
-                monthSize: 12,
-                monthSpacing: 2,
-                selectedMonthKey: visibleMonthKey ?? _monthKeyFor(scrollToDate),
-                monthTooltipBuilder: (monthData) {
-                  if (monthData.intensity.isNotYetStarted) {
-                    return null;
-                  }
+              return _buildRecoveredMonthTooltip(
+                monthData: monthData,
+                onlyNoHandleFromMe: onlyNoHandleFromMe,
+              );
+            },
+            onMonthTap: (year, month, count) {
+              if (count <= 0) {
+                return;
+              }
 
-                  return _buildRecoveredMonthTooltip(
-                    monthData: monthData,
-                    onlyNoHandleFromMe: onlyNoHandleFromMe,
+              final startDate = DateTime(year, month, 1);
+              if (onlyNoHandleFromMe) {
+                ref
+                    .read(sidebarFlowProvider.notifier)
+                    .showRecoveredNoHandleFromMe(scrollToDate: startDate);
+                return;
+              }
+
+              ref
+                  .read(sidebarFlowProvider.notifier)
+                  .showRecoveredDeletedAt(
+                    contactId: contactId,
+                    startDate: startDate,
                   );
-                },
-                onMonthTap: (year, month, count) {
-                  if (count <= 0) {
-                    return;
-                  }
-
-                  final startDate = DateTime(year, month, 1);
-                  if (onlyNoHandleFromMe) {
-                    ref
-                        .read(sidebarFlowProvider.notifier)
-                        .showRecoveredNoHandleFromMe(scrollToDate: startDate);
-                    return;
-                  }
-
-                  ref
-                      .read(sidebarFlowProvider.notifier)
-                      .showRecoveredDeletedAt(
-                        contactId: contactId,
-                        startDate: startDate,
-                      );
-                },
-              ),
-              Padding(
-                padding: const EdgeInsets.only(top: AppSpacing.cassetteHintGap),
-                child: Row(
-                  children: [
-                    const SizedBox(width: 32),
-                    const SizedBox(width: 4),
-                    Flexible(
-                      child: Text(
-                        'Tap a square to jump to that month in the recovered list',
-                        style: typography.caption,
-                        softWrap: true,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            },
           );
         },
         loading: () => const Padding(
@@ -158,11 +122,6 @@ List<RecoveredUnlinkedMessageItem> _filterRecoveredMessages({
         return message.isFromMe && message.senderHandleId == null;
       })
       .toList(growable: false);
-}
-
-String _formatDateRange(DateTime firstDate, DateTime lastDate) {
-  final formatter = DateFormat('MMM yyyy');
-  return '${formatter.format(firstDate)} - ${formatter.format(lastDate)}';
 }
 
 String? _monthKeyFor(DateTime? date) {

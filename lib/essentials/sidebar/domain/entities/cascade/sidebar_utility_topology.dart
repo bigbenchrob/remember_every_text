@@ -14,10 +14,10 @@ CassetteSpec? resolveSidebarUtilityChild(SidebarUtilityCassetteSpec spec) {
           return sidebarUtilityChildRecoveredUnlinkedNavigator();
 
         case TopChatMenuChoice.recoveredNoHandleFromMeMessages:
-          return sidebarUtilityChildRecoveredNoHandleFromMeNavigator();
+          return null;
 
         case TopChatMenuChoice.searchAllMessages:
-          return sidebarUtilityChildMessagesHeatMapAll();
+          return sidebarUtilityChildSearchAllMessagesInfoCard();
       }
     },
     settingsMenu: (selectedChoice) {

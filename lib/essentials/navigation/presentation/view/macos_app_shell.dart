@@ -14,7 +14,6 @@ import '../../../onboarding/domain/import_spec.dart';
 import '../../../onboarding/domain/onboarding_status.dart';
 import '../../../onboarding/domain/spec_classes/onboarding_view_spec.dart';
 import '../../../onboarding/presentation/onboarding_overlay.dart';
-import '../../../window_state/domain/entities/window_state_entity.dart';
 import '../../../window_state/feature_level_providers.dart';
 import '../../application/panel_widget_providers.dart';
 import '../../application/sidebar_mode_provider.dart';
@@ -135,7 +134,7 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
                 top: _toolbarVerticalPadding,
                 bottom: _toolbarVerticalPadding,
               ),
-              title: const Text('MessageLens'),
+              title: const _ToolbarTitle(),
               centerTitle: true,
               leading: const AppModeToggle(),
               actions: [
@@ -269,7 +268,6 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
             ],
           ),
         ),
-        if (!kReleaseMode) const _WindowTargetMarker(),
         if (showOnboarding) const OnboardingOverlay(),
       ],
     );
@@ -310,26 +308,26 @@ class _EndSidebarSyncObserver extends ConsumerWidget {
   }
 }
 
-class _WindowTargetMarker extends StatelessWidget {
-  const _WindowTargetMarker();
+class _ToolbarTitle extends StatelessWidget {
+  const _ToolbarTitle();
 
-  static const double _markerSize = 10.0;
+  static const String _toolbarIconAsset =
+      'assets/branding/message_lens_toolbar_icon.png';
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      left: WindowStateEntity.defaultWindowWidth - _markerSize,
-      top: WindowStateEntity.defaultState().height - _markerSize,
-      child: IgnorePointer(
-        child: Container(
-          width: _markerSize,
-          height: _markerSize,
-          decoration: BoxDecoration(
-            color: const Color(0xFFE5484D),
-            borderRadius: BorderRadius.circular(2),
-          ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Image.asset(
+          _toolbarIconAsset,
+          width: 18,
+          height: 18,
+          filterQuality: FilterQuality.high,
         ),
-      ),
+        const SizedBox(width: 8),
+        const Text('MessageLens'),
+      ],
     );
   }
 }

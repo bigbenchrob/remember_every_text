@@ -38,10 +38,7 @@ class StrayHandlesReviewCassette extends HookConsumerWidget {
   /// All rows reserve this space — data stops, action buttons live here.
   /// 32pt = 24pt button + 4pt padding on each side.
   static const double actionGutterWidth = 32;
-
-  /// Extra right inset so the macOS overlay scrollbar does not obscure the
-  /// action gutter when it appears.
-  static const double _scrollbarClearance = 14;
+  static const double _contentLaneInset = 8;
 
   final StrayHandleFilter filter;
   final StrayHandleMode mode;
@@ -98,14 +95,14 @@ class StrayHandlesReviewCassette extends HookConsumerWidget {
 
         return ListView.separated(
           // Let ListView fill the bounded height from shouldExpand: true
-          // and handle its own scrolling
-          // 4pt top padding completes 12pt gap: 8pt (sectionTitle) + 4pt
-          // Right padding keeps content inboard of the overlay scrollbar.
-          padding: const EdgeInsets.only(top: 2, right: _scrollbarClearance),
+          // and handle its own scrolling.
+          padding: EdgeInsets.zero,
           itemCount: filtered.length,
-          // Dividers stop at the data boundary (before action gutter)
-          separatorBuilder: (_, __) =>
-              const Divider(height: 1, indent: 0, endIndent: actionGutterWidth),
+          separatorBuilder: (_, __) => const Divider(
+            height: 1,
+            indent: _contentLaneInset,
+            endIndent: actionGutterWidth,
+          ),
           itemBuilder: (context, index) {
             final handle = filtered[index];
             return _StrayHandleRow(
@@ -268,6 +265,7 @@ class _StrayHandleRow extends ConsumerWidget {
           // (stops before the action gutter).
           if (isSelected)
             Positioned.fill(
+              left: StrayHandlesReviewCassette._contentLaneInset,
               right: StrayHandlesReviewCassette.actionGutterWidth,
               child: DecoratedBox(
                 decoration: BoxDecoration(
@@ -279,6 +277,7 @@ class _StrayHandleRow extends ConsumerWidget {
           // Fixed right inset reserves action gutter for all rows
           Padding(
             padding: const EdgeInsets.only(
+              left: StrayHandlesReviewCassette._contentLaneInset,
               right: StrayHandlesReviewCassette.actionGutterWidth,
               top: 8,
               bottom: 8,
@@ -394,7 +393,8 @@ class _StrayHandleRow extends ConsumerWidget {
               right: 0,
               top: 0,
               bottom: 2,
-              child: Center(
+              child: Align(
+                alignment: Alignment.centerRight,
                 child: showDismiss
                     ? _DismissButton(onPressed: onDismiss!)
                     : _RestoreButton(onPressed: onRestore!, colors: colors),

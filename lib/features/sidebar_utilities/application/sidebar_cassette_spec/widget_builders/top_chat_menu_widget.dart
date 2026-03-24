@@ -1,8 +1,9 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../../config/theme/colors/theme_colors.dart'
     show DropdownMenu, themeColorsProvider;
+import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../config/theme/widgets/theme_widgets.dart';
 import '../../../../../essentials/db/feature_level_providers/working_db_populated_provider.dart';
@@ -72,6 +73,73 @@ class TopChatMenuWidget extends ConsumerWidget {
       options: choices,
       selectedOption: currentChoice,
       onSelected: handleSelectionChange,
+      itemBuilder: (context, choice, {required isSelected}) {
+        final isSecondaryChoice = _isSecondaryTopMenuChoice(choice);
+        final sectionHeader =
+            choice == TopChatMenuChoice.recoveredUnlinkedMessages
+            ? Padding(
+                padding: const EdgeInsets.fromLTRB(12, AppSpacing.lg, 12, 4),
+                child: Text(
+                  'Recovered',
+                  style: typography.caption.copyWith(
+                    color: colors.content.textTertiary.withValues(alpha: 0.82),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              )
+            : null;
+        final itemTextColor = isSelected
+            ? colors.dropdownMenu(DropdownMenu.selectedText)
+            : isSecondaryChoice
+            ? colors.content.textSecondary.withValues(alpha: 0.88)
+            : colors.content.textPrimary;
+        final itemLeftInset = isSecondaryChoice ? 16.0 : 12.0;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (sectionHeader != null) sectionHeader,
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? colors.dropdownMenu(DropdownMenu.selectedBg)
+                    : null,
+              ),
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  itemLeftInset,
+                  sectionHeader == null ? 10 : 8,
+                  12,
+                  10,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        choice.label,
+                        style: typography.callout.copyWith(
+                          color: itemTextColor,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                    if (isSelected)
+                      Icon(
+                        CupertinoIcons.check_mark,
+                        size: 14,
+                        color: colors.dropdownMenu(DropdownMenu.checkmark),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
       optionLabelBuilder: (choice) {
         if (showPrompt && choice == TopChatMenuChoice.contacts) {
           return 'Show messages from:';
@@ -95,6 +163,11 @@ class TopChatMenuWidget extends ConsumerWidget {
       chevronBackgroundColor: colors.dropdownMenu(DropdownMenu.chevronBg),
     );
   }
+}
+
+bool _isSecondaryTopMenuChoice(TopChatMenuChoice choice) {
+  return choice == TopChatMenuChoice.recoveredUnlinkedMessages ||
+      choice == TopChatMenuChoice.recoveredNoHandleFromMeMessages;
 }
 
 SidebarTopMenuChoice _mapTopMenuChoice(TopChatMenuChoice choice) {

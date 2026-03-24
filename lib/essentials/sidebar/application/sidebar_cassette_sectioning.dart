@@ -18,12 +18,19 @@ double sidebarCassetteSectionTopSpacing({
   required SidebarCassetteSection? previousSection,
   required SidebarCassetteSection currentSection,
 }) {
-  if (previousSection == null || previousSection == currentSection) {
+  if (previousSection == null) {
     return 0;
+  }
+
+  if (previousSection == currentSection) {
+    return AppSpacing.sm;
   }
 
   return switch ((previousSection, currentSection)) {
     (SidebarCassetteSection.app, SidebarCassetteSection.context) =>
+      AppSpacing.xl,
+    (_, SidebarCassetteSection.filter) => AppSpacing.lg,
+    (SidebarCassetteSection.filter, SidebarCassetteSection.context) =>
       AppSpacing.xl,
     _ => AppSpacing.lg,
   };

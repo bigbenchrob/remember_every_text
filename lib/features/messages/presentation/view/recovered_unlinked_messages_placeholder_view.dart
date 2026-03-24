@@ -103,7 +103,7 @@ class RecoveredUnlinkedMessagesPlaceholderView extends HookConsumerWidget {
     final query = useState('');
     final isContactScoped = contactId != null;
     final title = onlyNoHandleFromMe
-        ? 'Recovered No-Handle Messages'
+        ? 'Recovered no-handle messages'
         : isContactScoped
         ? 'Recovered deleted messages'
         : 'Recovered deleted messages';

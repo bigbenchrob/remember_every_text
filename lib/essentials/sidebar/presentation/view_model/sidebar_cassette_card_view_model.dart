@@ -20,6 +20,9 @@ enum SidebarBodyPlacementMode { fullWidth, inset, insetWithTrailingGutter }
 /// How cassette content behaves once it is inside the shared sidebar envelope.
 enum SidebarBodyContentAlignment { fill, leftAnchored, insetControl, loose }
 
+/// How the cassette body is rendered within the essentials-owned sidebar host.
+enum SidebarBodyRenderKind { governedPrimitive, featureComplex }
+
 /// Centrally owned geometry constraints derived from sidebar tokens.
 class SidebarGeometryConstraints {
   const SidebarGeometryConstraints({
@@ -135,6 +138,7 @@ class SidebarCassetteCardViewModel extends SidebarCassettePayload {
     SidebarCassetteRole role = SidebarCassetteRole.contextPrimary,
     this.placementMode = SidebarBodyPlacementMode.inset,
     this.contentAlignment = SidebarBodyContentAlignment.fill,
+    this.bodyRenderKind = SidebarBodyRenderKind.governedPrimitive,
     required this.title,
     this.subtitle,
     this.sectionTitle,
@@ -152,11 +156,37 @@ class SidebarCassetteCardViewModel extends SidebarCassettePayload {
        shouldExpand = shouldExpand ?? false,
        super(role: role, topSpacing: topSpacing);
 
+  /// Explicit constructor for feature-owned complex sidebar bodies.
+  ///
+  /// Use this when the feature provides a full widget subtree and essentials
+  /// must host it inside the constrained sidebar shell.
+  const SidebarCassetteCardViewModel.featureComplex({
+    SidebarCassetteRole role = SidebarCassetteRole.contextPrimary,
+    this.placementMode = SidebarBodyPlacementMode.inset,
+    this.contentAlignment = SidebarBodyContentAlignment.fill,
+    required this.title,
+    this.subtitle,
+    this.sectionTitle,
+    this.footerText,
+    required Widget this.child,
+    this.layoutStyle = SidebarCardLayoutStyle.standard,
+    this.isNaked = false,
+    double topSpacing = 0,
+    bool? shouldExpand,
+  }) : bodyModel = null,
+       bodyRenderKind = SidebarBodyRenderKind.featureComplex,
+       shouldExpand = shouldExpand ?? false,
+       super(role: role, topSpacing: topSpacing);
+
   /// Approved placement mode used by the sidebar geometry contract.
   final SidebarBodyPlacementMode placementMode;
 
   /// Approved content alignment used inside the shared sidebar envelope.
   final SidebarBodyContentAlignment contentAlignment;
+
+  /// Whether the child is an essentials-governed primitive or a feature-owned
+  /// complex body that must be sandboxed by the sidebar host.
+  final SidebarBodyRenderKind bodyRenderKind;
 
   /// Display title shown in the sidebar card header.
   final String title;

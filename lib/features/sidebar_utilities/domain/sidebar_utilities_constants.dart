@@ -21,7 +21,7 @@ enum TopChatMenuChoice {
   /// Recovered orphaned records with no surviving handle linkage.
   recoveredNoHandleFromMeMessages(
     id: 'recovered_no_handle_from_me_messages',
-    label: 'Recovered No-Handle Messages',
+    label: 'Recovered no-handle messages',
   );
 
   const TopChatMenuChoice({required this.id, required this.label});

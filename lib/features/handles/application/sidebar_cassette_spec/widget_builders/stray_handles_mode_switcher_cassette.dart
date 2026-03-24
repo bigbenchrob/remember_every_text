@@ -31,12 +31,11 @@ class StrayHandlesModeSwitcherCassette extends ConsumerWidget {
     final currentMode = ref.watch(strayHandleModeSettingProvider);
     final dispatcher = ref.read(sidebarActionDispatcherProvider.notifier);
 
-    // Spacing constants:
-    // - 20pt from segmented control above (contributes with type switcher bottom)
-    // - 6pt between "Show:" label and popup (horizontal)
-    // - 24pt to section header below (16pt here + 4pt wrapper + 4pt from review card)
+    // Outer section spacing is owned by sidebar sectioning.
+    // This widget keeps only its internal control composition so the filter
+    // section stays compact while the stack separates it from adjacent sections.
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.zero,
       child: AppThemeWidgets.dropdownMenu<StrayHandleMode>(
         options: StrayHandleMode.values,
         selectedOption: currentMode,

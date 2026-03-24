@@ -3,9 +3,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../essentials/db/feature_level_providers.dart';
+import '../../../domain/calendar_heatmap_timeline_data.dart';
 import '../../../domain/value_objects/message_timeline_scope.dart';
 import '../../../presentation/view_model/timeline/contact_timeline_display_version_provider.dart';
-import '../../../domain/calendar_heatmap_timeline_data.dart';
 import 'contact_timeline_calculator.dart';
 
 part 'contact_timeline_provider.g.dart';

@@ -26,12 +26,23 @@ class MessagesInfoCassetteCoordinator
         final content = await ref
             .read(messagesInfoContentResolverProvider.notifier)
             .resolve(key, cassetteIndex: cassetteIndex);
+        final body = content.body;
+        final child = content.child;
+
+        if (body != null) {
+          return SidebarInfoCassetteViewModel(
+            role: SidebarCassetteRole.contextSecondary,
+            topSpacing: content.topSpacing,
+            title: content.title,
+            bodyText: body,
+          );
+        }
 
         return SidebarCassetteCardViewModel(
           role: SidebarCassetteRole.action,
           placementMode: SidebarBodyPlacementMode.fullWidth,
           title: content.title ?? '',
-          child: content.child,
+          child: child,
           topSpacing: content.topSpacing,
         );
     }

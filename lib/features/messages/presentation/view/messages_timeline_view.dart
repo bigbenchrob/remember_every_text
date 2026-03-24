@@ -17,14 +17,13 @@ import '../../../../essentials/navigation/domain/entities/view_spec.dart';
 import '../../../../essentials/navigation/domain/navigation_constants.dart';
 import '../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../essentials/navigation/feature_level_providers.dart';
-
 import '../../../contacts/infrastructure/repositories/contact_profile_provider.dart';
 import '../../domain/value_objects/message_timeline_scope.dart';
 import '../view_model/shared/display_widgets/new_display_widgets.dart';
 import '../view_model/shared/hydration/messages_for_handle_provider.dart';
+import '../view_model/timeline/contact_timeline_display_version_provider.dart';
 import '../view_model/timeline/hydration/message_by_id_provider.dart';
 import '../view_model/timeline/hydration/message_by_ordinal_provider.dart';
-import '../view_model/timeline/contact_timeline_display_version_provider.dart';
 import '../view_model/timeline/message_timeline_view_model_provider.dart';
 import '../view_model/timeline/ordinal/current_visible_month_provider.dart';
 import '../view_model/timeline/timeline_metadata_provider.dart';
