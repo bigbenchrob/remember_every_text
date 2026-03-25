@@ -1,0 +1,468 @@
+FEATURE ADDITION PROPOSAL — ENVIRONMENT READINESS SURFACE
+
+Purpose
+
+Add a new first-launch / pre-import surface that evaluates the local macOS environment required by MessageLens and guides the user through any missing prerequisites in a calm, deterministic, non-modal flow. This replaces the current failure-dialog pattern with a state-driven readiness experience shown in the center panel with no sidebar content.
+
+Core idea
+
+The environment readiness flow is not an error handler. It is a first-class cross-surface feature that presents the current state of the machine, explains what MessageLens needs, provides fix instructions where necessary, and re-checks the environment until the app is ready to proceed.
+
+This surface should feel like a system readiness dashboard or guided setup sequence, not a stack of interruptions.
+
+Primary UX goals
+	1.	Replace modal failure dialogs with a persistent center-panel readiness surface.
+	2.	Show all required environment checks as part of one coherent sequence.
+	3.	Keep the progression deterministic and system-driven rather than user-driven.
+	4.	Explain why each permission or requirement exists in plain language.
+	5.	Reassure the user that MessageLens is read-only and keeps data on-device.
+	6.	Allow the user to perform a fix outside the app, return, and re-check.
+	7.	Confirm success visually before advancing.
+	8.	Once all checks pass, transition cleanly into the normal import / onboarding flow.
+
+High-level UX model
+
+Do not use tabs.
+
+Use a vertical stepper / readiness checklist with one active step at a time.
+
+Example structure:
+
+Environment Readiness
+
+[active] Full Disk Access
+[pending] Local Messages history
+[pending] Contacts database access
+[pending] Import readiness
+
+Each step can be in one of these states:
+	•	pending
+	•	active
+	•	success
+	•	failure
+
+Recommended visual semantics:
+	•	gray = pending
+	•	blue or app accent = active
+	•	green = success
+	•	amber/orange = action needed / failure
+
+The surface should have two coordinated regions:
+	1.	Left or top summary rail: list of readiness checks and their state
+	2.	Main content area: explanation, instructions, actions, and re-check UI for the currently active step
+
+Behavioral model
+
+The flow is sequential and deterministic.
+
+At launch, the app evaluates all environment checks and identifies the first failing step. That step becomes active. Earlier successful steps show green. Later steps remain pending.
+
+When the user resolves the active issue and clicks Re-check, the check runs again. If it passes:
+	•	its step turns green
+	•	the user briefly sees the success state
+	•	the next failing step becomes active automatically
+
+If all checks pass:
+	•	the readiness surface shows all green
+	•	the app proceeds to the import / post-readiness flow
+
+Important UX rule:
+Do not immediately yank the user away from a newly completed step. Let the success register, either with a short delay or an explicit Continue button if that feels more stable. A slight pause is enough.
+
+Why this feature belongs in the cross-surface spec system
+
+This is another surface with:
+	•	feature-owned specs
+	•	app-level routing
+	•	feature-level coordination
+	•	resolvers that determine state
+	•	dumb builders/widgets that render already-decided content
+
+This should follow the same architectural discipline as the sidebar cassette system and other future surfaces.
+
+The environment readiness feature should not be implemented as ad hoc dialog logic or scattered conditional screens. It should be owned by a feature and expressed through a clear spec/coordinator/resolver/builder contract.
+
+Architectural principles
+	1.	The environment readiness flow is state-driven, not event-driven.
+	2.	The app-level surface coordinator decides that the environment readiness surface should be shown.
+	3.	The feature-level coordinator interprets feature specs and returns fully decided surface view models.
+	4.	Resolvers perform environment inspection and synthesize step state.
+	5.	Builders/widgets do not inspect system state directly and do not decide sequencing.
+	6.	No modal dialogs should be used for ordinary readiness failures once this feature is in place.
+	7.	Re-check actions should route back through the feature resolver path, not directly manipulate widget-local state in a way that bypasses the feature contract.
+	8.	This surface should be reusable any time the app becomes not-ready again, not just on first launch.
+
+Recommended conceptual feature ownership
+
+Feature name:
+environment_readiness
+
+This feature owns:
+	•	the readiness step definitions
+	•	the step ordering
+	•	the explanatory copy keys
+	•	the resolver logic for computing status
+	•	the view-model assembly for the center-panel readiness surface
+
+This feature does not own:
+	•	app launch routing
+	•	global shell/chrome decisions outside the surface
+	•	import execution itself
+	•	sidebar mechanics
+
+Suggested domain concepts
+
+Environment readiness should be modeled explicitly.
+
+Core concepts:
+	•	EnvironmentReadinessSpec
+	•	EnvironmentReadinessStep
+	•	EnvironmentReadinessStepKey
+	•	EnvironmentReadinessStepStatus
+	•	EnvironmentReadinessSnapshot
+	•	EnvironmentReadinessAction
+	•	EnvironmentReadinessSurfaceViewModel
+	•	EnvironmentReadinessStepViewModel
+
+Suggested step keys:
+	•	fullDiskAccess
+	•	messagesDatabaseAvailability
+	•	contactsDatabaseReadability
+	•	importStorageReadiness
+
+You may later add more, for example:
+	•	messagesAppHistoryPresence
+	•	diskSpace
+	•	appLocationSecurityIssue
+	•	databaseMigrationNeeded
+
+Suggested status model:
+	•	pending
+	•	active
+	•	success
+	•	failure
+
+Optional richer status model if needed:
+	•	unknown
+	•	pending
+	•	checking
+	•	success
+	•	failure
+
+Suggested snapshot idea
+
+A single resolver pass should produce a full EnvironmentReadinessSnapshot describing all checks and the first failing step. This gives the feature a single source of truth for the whole readiness state.
+
+The snapshot should answer:
+	•	which steps exist and in what order
+	•	current status of each step
+	•	which step is active
+	•	whether the environment is fully ready
+	•	what explanation/actions are needed for the active step
+
+This avoids widget-level piecemeal logic and keeps the flow deterministic.
+
+Suggested cross-surface routing model
+
+At the app-level center-panel routing layer, add a route/spec variant for the environment readiness surface.
+
+Conceptually:
+	•	if app is not environment-ready, center panel shows environment readiness surface
+	•	sidebar is empty or intentionally suppressed
+	•	once ready, routing proceeds to import / normal app flow
+
+The surface should therefore be routable and restorable like other surfaces rather than being treated as a transient popover or startup hack.
+
+Coordinator responsibilities
+
+App-level surface coordinator responsibilities:
+	•	decide when environment readiness surface is the active center-panel surface
+	•	pass the enclosing spec into the environment readiness feature coordinator
+	•	remain ignorant of feature-specific environment logic
+
+Feature-level environment readiness coordinator responsibilities:
+	•	interpret EnvironmentReadinessSpec
+	•	request a readiness snapshot from the resolver
+	•	map the snapshot into an EnvironmentReadinessSurfaceViewModel
+	•	decide the active step, labels, actions, and main content payload
+	•	return a fully decided surface view model
+
+The feature coordinator must not:
+	•	directly build widgets
+	•	directly perform OS queries if those belong in resolvers/services
+	•	watch reactive providers in coordinator code
+	•	scatter logic across multiple unrelated UI files
+
+Resolver responsibilities
+
+Create one or more resolvers/services that inspect the local machine state and return normalized readiness results.
+
+Resolver responsibilities:
+	•	inspect permission/database environment
+	•	compute individual step results
+	•	determine the first failing step
+	•	return a complete EnvironmentReadinessSnapshot
+
+Resolvers should be explicit and deterministic.
+Do not bury environment checks inside widget initState methods.
+Do not make each panel independently query the world and improvise its own interpretation.
+
+If a check depends on macOS-level state changing outside the app, the resolver must be re-runnable on demand.
+
+Builder/widget responsibilities
+
+Builders/widgets are dumb renderers.
+
+They receive:
+	•	summary rail data
+	•	active step content
+	•	step titles
+	•	explanatory text
+	•	instruction list / stepper content
+	•	action button labels
+	•	flags like canRecheck, canOpenSystemSettings, showContinue, etc.
+
+Builders/widgets do not:
+	•	decide which step is active
+	•	inspect the file system directly
+	•	decide ordering
+	•	infer success/failure rules
+	•	contain branching business logic beyond simple rendering branches
+
+Recommended user-facing flow
+	1.	App launches
+	2.	Environment readiness surface appears in center panel
+	3.	Readiness summary shows all steps
+	4.	First failing step is active
+	5.	Main content explains:
+	•	what MessageLens needs
+	•	why it needs it
+	•	reassurance about privacy / read-only behavior
+	•	exact fix steps
+	6.	User clicks a CTA such as Open System Settings
+	7.	User performs the fix outside the app
+	8.	User returns and clicks Re-check
+	9.	Resolver runs again
+	10.	Step becomes green if successful
+	11.	Focus advances to next failing step
+	12.	Once all steps are green, proceed to import flow
+
+Recommended copy principles
+
+The tone should be calm, plain, and confidence-building.
+
+For each step:
+	•	explain what is missing
+	•	explain why the app needs it
+	•	reassure the user where appropriate
+	•	give numbered fix steps
+	•	provide one or two direct actions only
+
+Avoid:
+	•	low-level jargon
+	•	blameful wording
+	•	alarming privacy wording
+	•	too much technical detail in the default view
+
+Example tone:
+“MessageLens needs permission to read your Messages and Contacts data so it can import your history into the app. It cannot modify those databases, and your data stays on your Mac.”
+
+Use short instructional steps. This is an ideal place for a granular stepper display.
+
+Suggested action model per step
+
+Each active step can expose one or more actions.
+
+Examples:
+	•	Open System Settings
+	•	Re-check
+	•	Continue
+	•	Learn more
+
+These should be represented as structured actions in the step view model, not improvised ad hoc buttons per widget.
+
+Important distinction:
+“Open System Settings” or equivalent external actions are not success.
+Only a resolver re-check determines success.
+
+Recommended step grouping
+
+There are two reasonable options.
+
+Option A: fine-grained steps
+	•	Full Disk Access
+	•	Messages database
+	•	Contacts database
+	•	Import readiness
+
+Option B: slightly grouped steps
+	•	Permissions
+	•	Local data availability
+	•	Import readiness
+
+For the first implementation, fine-grained steps are probably easier to understand and easier to debug. They also map nicely to green-check progression and give more precise user reassurance.
+
+Recommended first implementation steps
+
+Step 1: Full Disk Access
+Pass condition:
+	•	App can confirm that the relevant protected locations are accessible as required
+
+Main content:
+	•	explain why the app needs access
+	•	reassure read-only behavior
+	•	give step-by-step instructions for granting access
+	•	actions: Open System Settings, Re-check
+
+Step 2: Messages database availability
+Pass condition:
+	•	local Messages database exists and is readable
+Possible failure reasons:
+	•	Messages has not created local history on this Mac yet
+	•	iCloud Messages has not synced locally
+	•	user has no local history
+	•	path inaccessible despite FDA
+
+Main content:
+	•	explain that MessageLens needs a local copy of Messages history on this Mac
+	•	suggest opening Messages and allowing sync/history download
+	•	suggest confirming Messages in iCloud settings if appropriate
+	•	action: Re-check
+
+Step 3: Contacts database readability
+Pass condition:
+	•	Contacts data source is readable
+Main content:
+	•	explain that contact names and details help make messages easier to understand
+	•	reassure that the app only reads contact data
+	•	action: Re-check
+
+Step 4: Import readiness
+Pass condition:
+	•	required local app storage and internal setup conditions are ready for import
+Main content:
+	•	explain what happens next
+	•	show readiness confirmation or import launch CTA
+
+Auto re-check considerations
+
+A useful enhancement is to re-run readiness checks when the app regains focus.
+That would allow a step to turn green automatically after the user returns from System Settings.
+
+However, this should be an enhancement, not a requirement for the initial implementation.
+The first version should work cleanly with an explicit Re-check button.
+
+Transitions and visual behavior
+
+Recommended behavior:
+	•	step state changes should animate subtly
+	•	green success should be visually satisfying but restrained
+	•	when a step passes, leave it visible long enough to register
+	•	then advance focus to the next failing step
+
+Do not:
+	•	flash between states too quickly
+	•	reset the entire surface on every re-check
+	•	bounce the user between routes unnecessarily
+
+State persistence / resumption
+
+This surface should be resumable.
+If the user quits midway through setup and returns, the app should simply recompute readiness and show the correct active step.
+
+Do not treat onboarding progress as a manually persisted wizard index unless necessary.
+The machine state itself is the source of truth.
+
+Testing implications
+
+This feature should make environment/setup issues much easier to test and reason about.
+
+Add a testable readiness domain model so you can simulate:
+	•	all good
+	•	missing FDA
+	•	missing Messages database
+	•	unreadable Contacts database
+	•	mixed success/failure sequences
+	•	successful re-check progression
+
+The important thing is that the sequencing emerges from snapshot state, not from a fragile chain of imperative UI commands.
+
+Suggested folder structure
+
+Create a new Feature Addition folder for environment readiness planning and implementation guidance.
+
+Recommended project feature structure:
+
+features/environment_readiness/
+application/
+center_surface_spec/
+coordinators/
+resolvers/
+resolver_tools/
+widget_builders/
+domain/
+entities/
+infrastructure/
+services/
+presentation/
+widgets/
+surfaces/
+feature_level_providers.dart
+
+Suggested document set for the new Feature Addition folder
+	1.	00-feature-overview
+Purpose, user problem, UX direction, success criteria
+	2.	10-domain-model
+Step keys, statuses, snapshot model, action model, spec ownership
+	3.	20-cross-surface-contract
+How this feature plugs into the existing cross-surface spec system
+App-level routing responsibilities
+Feature coordinator responsibilities
+Resolver/builder boundaries
+	4.	30-user-flow-and-copy
+Step-by-step flow
+Instruction-writing rules
+Privacy reassurance text guidance
+Action wording
+	5.	40-implementation-phases
+Tracer-bullet rollout plan
+
+Suggested tracer-bullet implementation phases
+
+Phase 1
+Introduce a basic environment readiness center-panel route/spec and render a static scaffold with summary rail plus main content area.
+
+Phase 2
+Implement domain entities and a single resolver that returns a full snapshot with mocked statuses.
+
+Phase 3
+Wire real checks for Full Disk Access only.
+
+Phase 4
+Add Messages database availability check.
+
+Phase 5
+Add Contacts database readability check.
+
+Phase 6
+Add import readiness step and success transition into import flow.
+
+Phase 7
+Polish transitions, copy, and optional focus-based auto re-check.
+
+Critical architectural rules to state explicitly for agents
+	1.	The environment readiness feature is a cross-surface feature, not a dialog hack.
+	2.	The app-level coordinator decides that this surface is active; it does not interpret environment steps.
+	3.	The feature-level coordinator interprets feature specs and returns a fully decided surface view model.
+	4.	Resolvers inspect the environment and return a complete readiness snapshot.
+	5.	Builders/widgets do not perform environment inspection or sequencing decisions.
+	6.	Step ordering and active-step selection live in feature-owned logic, not in widget code.
+	7.	Re-check re-enters the resolver path and recomputes readiness from source truth.
+	8.	Success/failure state must derive from actual environment state, not from “user clicked the button.”
+	9.	This feature should be reusable any time the app becomes not-ready, not only on first launch.
+
+Bottom-line recommendation
+
+Proceed with this feature.
+
+It is a stronger fit for MessageLens than chained failure dialogs because it turns setup from a fragmented sequence of interruptions into a single, deterministic, comprehensible environment-readiness surface. It also cleanly fits the existing cross-surface spec philosophy and should be implemented as a proper feature-owned surface using the same strict coordinator/resolver/builder separation you are standardizing elsewhere.

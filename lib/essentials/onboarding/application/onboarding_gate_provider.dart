@@ -11,9 +11,11 @@ import '../../db/feature_level_providers/message_data_version_provider.dart';
 import '../../db_importers/presentation/view_model/db_import_control_provider.dart';
 import '../../navigation/application/sidebar_mode_provider.dart';
 import '../../navigation/domain/sidebar_mode.dart';
+import '../domain/onboarding_environment_report.dart';
 import '../domain/onboarding_status.dart';
 import 'database_existence_checker.dart';
 import 'fda_checker.dart';
+import 'onboarding_environment_report_provider.dart';
 
 part 'onboarding_gate_provider.g.dart';
 
@@ -38,16 +40,41 @@ class OnboardingGate extends _$OnboardingGate {
 
   @override
   OnboardingStatus build() {
-    // Gate 1: Full Disk Access.
+    final reportAsync = ref.watch(onboardingEnvironmentReportProvider);
+
+    return reportAsync.when(
+      data: _classifyStatusFromReport,
+      loading: _fallbackBuildStatus,
+      error: (_, __) => _fallbackBuildStatus(),
+    );
+  }
+
+  OnboardingStatus _classifyStatusFromReport(
+    OnboardingEnvironmentReport report,
+  ) {
+    return switch (report.state) {
+      OnboardingEnvironmentState.permissionBlocked =>
+        OnboardingStatus.awaitingFda,
+      OnboardingEnvironmentState.ready => OnboardingStatus.notNeeded,
+      OnboardingEnvironmentState.importFailed ||
+      OnboardingEnvironmentState.migrationFailed ||
+      OnboardingEnvironmentState.sourceUnavailable ||
+      OnboardingEnvironmentState.sourceSparseOrUnsynced ||
+      OnboardingEnvironmentState.readyToImport =>
+        OnboardingStatus.awaitingUserAction,
+    };
+  }
+
+  OnboardingStatus _fallbackBuildStatus() {
     if (!_fdaChecker.canReadMessagesDatabase()) {
       return OnboardingStatus.awaitingFda;
     }
 
-    // Gate 2: populated databases.
     final hasData = _checker.hasPopulatedDatabases(databaseDirectoryPath);
     if (hasData) {
       return OnboardingStatus.notNeeded;
     }
+
     return OnboardingStatus.awaitingUserAction;
   }
 
@@ -125,6 +152,11 @@ class OnboardingGate extends _$OnboardingGate {
   /// Open System Settings to the Full Disk Access pane.
   Future<void> openFdaSettings() async {
     await FdaChecker.openFdaSettings();
+  }
+
+  void refreshEnvironment() {
+    ref.invalidate(onboardingEnvironmentReportProvider);
+    ref.invalidateSelf();
   }
 
   /// Abort the in-progress import, delete the partially-created database

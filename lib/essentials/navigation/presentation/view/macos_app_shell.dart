@@ -168,37 +168,34 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
                   },
                   showLabel: false,
                 ),
-                if (showDeveloperToolbarActions)
-                  ToolBarIconButton(
-                    label: 'Onboarding',
-                    icon: const MacosIcon(CupertinoIcons.rocket),
-                    onPressed: () {
-                      ref
-                          .read(activeSidebarModeProvider.notifier)
-                          .setMode(SidebarMode.messages);
+                ToolBarIconButton(
+                  label: 'Onboarding Dev Panel',
+                  icon: const MacosIcon(CupertinoIcons.rocket),
+                  onPressed: () {
+                    ref
+                        .read(activeSidebarModeProvider.notifier)
+                        .setMode(SidebarMode.messages);
 
-                      const spec = ViewSpec.onboarding(
-                        OnboardingSpec.devPanel(),
-                      );
+                    const spec = ViewSpec.onboarding(OnboardingSpec.devPanel());
 
-                      ref
-                          .read(navigationLoggerProvider.notifier)
-                          .logToolbarClick(
-                            buttonLabel: 'Onboarding',
-                            targetPanel: WindowPanel.center,
-                            viewSpec: spec,
-                          );
+                    ref
+                        .read(navigationLoggerProvider.notifier)
+                        .logToolbarClick(
+                          buttonLabel: 'Onboarding Dev Panel',
+                          targetPanel: WindowPanel.center,
+                          viewSpec: spec,
+                        );
 
-                      ref
-                          .read(
-                            panelsViewStateProvider(
-                              SidebarMode.messages,
-                            ).notifier,
-                          )
-                          .show(panel: WindowPanel.center, spec: spec);
-                    },
-                    showLabel: false,
-                  ),
+                    ref
+                        .read(
+                          panelsViewStateProvider(
+                            SidebarMode.messages,
+                          ).notifier,
+                        )
+                        .show(panel: WindowPanel.center, spec: spec);
+                  },
+                  showLabel: false,
+                ),
                 if (showDeveloperToolbarActions)
                   () {
                     final developerMode = ref.watch(developerModeProvider);

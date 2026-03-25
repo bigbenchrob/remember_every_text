@@ -6,7 +6,9 @@ import '../../../config/theme/theme_typography.dart';
 import '../../db_importers/domain/entities/db_import_result.dart';
 import '../../db_importers/presentation/view_model/db_import_control_provider.dart';
 import '../../db_migrate/domain/entities/db_migration_result.dart';
+import '../application/onboarding_environment_report_provider.dart';
 import '../application/onboarding_gate_provider.dart';
+import '../domain/onboarding_environment_report.dart';
 import '../domain/onboarding_status.dart';
 import 'onboarding_progress_view.dart';
 
@@ -26,6 +28,7 @@ class OnboardingOverlay extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final status = ref.watch(onboardingGateProvider);
+    final report = ref.watch(onboardingEnvironmentReportProvider).valueOrNull;
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
@@ -40,7 +43,7 @@ class OnboardingOverlay extends ConsumerWidget {
         // Centered card.
         Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520, maxHeight: 640),
+            constraints: const BoxConstraints(maxWidth: 640, maxHeight: 920),
             child: Container(
               margin: const EdgeInsets.all(32),
               padding: const EdgeInsets.all(32),
@@ -61,10 +64,12 @@ class OnboardingOverlay extends ConsumerWidget {
               ),
               child: switch (status) {
                 OnboardingStatus.awaitingFda => _FdaContent(
+                  report: report,
                   colors: colors,
                   typography: typography,
                 ),
                 OnboardingStatus.awaitingUserAction => _WelcomeContent(
+                  report: report,
                   colors: colors,
                   typography: typography,
                 ),
@@ -105,13 +110,20 @@ class OnboardingOverlay extends ConsumerWidget {
 /// in [OnboardingGate.build] will pass and the import welcome screen
 /// appears automatically.
 class _FdaContent extends ConsumerWidget {
-  const _FdaContent({required this.colors, required this.typography});
+  const _FdaContent({
+    required this.report,
+    required this.colors,
+    required this.typography,
+  });
 
+  final OnboardingEnvironmentReport? report;
   final ThemeColors colors;
   final ThemeTypography typography;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final bodyText = _permissionBodyText(report);
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -126,11 +138,18 @@ class _FdaContent extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         Text(
-          'MessageLens needs Full Disk Access to read your Messages and '
-          'Contacts databases. Without it, the app cannot import your data.',
+          bodyText,
           style: typography.body.copyWith(color: colors.content.textSecondary),
           textAlign: TextAlign.center,
         ),
+        if (report != null) ...[
+          const SizedBox(height: 16),
+          _EnvironmentSummaryCard(
+            report: report!,
+            colors: colors,
+            typography: typography,
+          ),
+        ],
         const SizedBox(height: 20),
         // Step-by-step instructions.
         Container(
@@ -194,6 +213,18 @@ class _FdaContent extends ConsumerWidget {
           ),
           child: const Text('Open System Settings'),
         ),
+        const SizedBox(height: 12),
+        TextButton(
+          onPressed: () {
+            ref.read(onboardingGateProvider.notifier).refreshEnvironment();
+          },
+          child: Text(
+            'Re-check environment',
+            style: typography.caption.copyWith(
+              color: colors.content.textTertiary,
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -252,20 +283,31 @@ class _InstructionStep extends StatelessWidget {
 
 /// Welcome panel: app title + explanation + "Import My Messages" button.
 class _WelcomeContent extends ConsumerWidget {
-  const _WelcomeContent({required this.colors, required this.typography});
+  const _WelcomeContent({
+    required this.report,
+    required this.colors,
+    required this.typography,
+  });
 
+  final OnboardingEnvironmentReport? report;
   final ThemeColors colors;
   final ThemeTypography typography;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final presentation = _awaitingUserActionPresentation(report);
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.message_rounded, size: 56, color: colors.accents.primary),
+        Icon(
+          presentation.icon,
+          size: 56,
+          color: presentation.iconColor(colors),
+        ),
         const SizedBox(height: 20),
         Text(
-          'Welcome to MessageLens',
+          presentation.title,
           style: typography.headline.copyWith(
             color: colors.content.textPrimary,
           ),
@@ -273,28 +315,641 @@ class _WelcomeContent extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         Text(
-          'To get started, MessageLens needs to import your Messages '
-          'and Contacts data. This is a one-time process.',
+          presentation.body,
           style: typography.body.copyWith(color: colors.content.textSecondary),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 32),
-        FilledButton(
-          onPressed: () {
-            ref.read(onboardingGateProvider.notifier).startImportAndMigration();
-          },
-          style: FilledButton.styleFrom(
-            backgroundColor: colors.buttons.primaryBackground,
-            foregroundColor: colors.buttons.primaryForeground,
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
+        if (report != null) ...[
+          const SizedBox(height: 16),
+          _EnvironmentSummaryCard(
+            report: report!,
+            colors: colors,
+            typography: typography,
           ),
-          child: const Text('Import My Messages'),
-        ),
+        ],
+        if (presentation.notes.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          _AdviceCard(
+            notes: presentation.notes,
+            colors: colors,
+            typography: typography,
+          ),
+        ],
+        const SizedBox(height: 32),
+        if (presentation.canImportImmediately)
+          FilledButton(
+            onPressed: () {
+              ref
+                  .read(onboardingGateProvider.notifier)
+                  .startImportAndMigration();
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: colors.buttons.primaryBackground,
+              foregroundColor: colors.buttons.primaryForeground,
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(presentation.primaryActionLabel),
+          )
+        else ...[
+          FilledButton(
+            onPressed: () {
+              ref.read(onboardingGateProvider.notifier).refreshEnvironment();
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: colors.buttons.primaryBackground,
+              foregroundColor: colors.buttons.primaryForeground,
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Re-check Environment'),
+          ),
+          if (presentation.allowsManualImport) ...[
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: () {
+                ref
+                    .read(onboardingGateProvider.notifier)
+                    .startImportAndMigration();
+              },
+              style: OutlinedButton.styleFrom(
+                foregroundColor: colors.content.textPrimary,
+                side: BorderSide(color: colors.lines.borderSubtle),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 14,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text('Import Anyway'),
+            ),
+          ],
+        ],
       ],
     );
+  }
+}
+
+class _EnvironmentSummaryCard extends StatelessWidget {
+  const _EnvironmentSummaryCard({
+    required this.report,
+    required this.colors,
+    required this.typography,
+  });
+
+  final OnboardingEnvironmentReport report;
+  final ThemeColors colors;
+  final ThemeTypography typography;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.surfaces.control,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: colors.lines.borderSubtle, width: 0.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Environment summary',
+            style: typography.body.copyWith(
+              color: colors.content.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _DiagnosticRow(
+            label: 'Full Disk Access',
+            value: report.hasFullDiskAccess
+                ? 'Available'
+                : 'Missing or blocked',
+            colors: colors,
+            typography: typography,
+            isGood: report.hasFullDiskAccess,
+          ),
+          _DiagnosticRow(
+            label: 'Messages database',
+            value: _messagesValue(report),
+            colors: colors,
+            typography: typography,
+            isGood: report.messagesDatabase.readable,
+          ),
+          _DiagnosticRow(
+            label: 'Contacts database',
+            value: _contactsValue(report),
+            colors: colors,
+            typography: typography,
+            isGood: report.addressBookDatabase?.readable ?? false,
+          ),
+          _DiagnosticRow(
+            label: 'Import database',
+            value: _appDbValue(report.importDatabase),
+            colors: colors,
+            typography: typography,
+            isGood: report.importDatabase.hasData,
+          ),
+          _DiagnosticRow(
+            label: 'Working database',
+            value: _appDbValue(report.workingDatabase),
+            colors: colors,
+            typography: typography,
+            isGood: report.workingDatabase.hasData,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AdviceCard extends StatelessWidget {
+  const _AdviceCard({
+    required this.notes,
+    required this.colors,
+    required this.typography,
+  });
+
+  final List<String> notes;
+  final ThemeColors colors;
+  final ThemeTypography typography;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.surfaces.control,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: colors.lines.borderSubtle, width: 0.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'What to check',
+            style: typography.body.copyWith(
+              color: colors.content.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 10),
+          for (final note in notes)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: colors.accents.primary,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      note,
+                      style: typography.body.copyWith(
+                        color: colors.content.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DiagnosticRow extends StatelessWidget {
+  const _DiagnosticRow({
+    required this.label,
+    required this.value,
+    required this.colors,
+    required this.typography,
+    required this.isGood,
+  });
+
+  final String label;
+  final String value;
+  final ThemeColors colors;
+  final ThemeTypography typography;
+  final bool isGood;
+
+  @override
+  Widget build(BuildContext context) {
+    final statusColor = isGood ? const Color(0xFF4CAF50) : _kWarningAmber;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            isGood ? Icons.check_circle_rounded : Icons.warning_amber_rounded,
+            size: 16,
+            color: statusColor,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                style: typography.caption.copyWith(
+                  color: colors.content.textSecondary,
+                ),
+                children: [
+                  TextSpan(
+                    text: '$label: ',
+                    style: typography.caption.copyWith(
+                      color: colors.content.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  TextSpan(text: value),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _permissionBodyText(OnboardingEnvironmentReport? report) {
+  if (report == null) {
+    return 'MessageLens needs Full Disk Access to read your Messages and '
+        'Contacts databases. Without it, the app cannot import your data.';
+  }
+
+  if (!report.messagesDatabase.exists) {
+    return 'MessageLens cannot find a local Messages database on this Mac yet. '
+        'That can happen if Messages has not created local history here, or if '
+        'privacy settings are still blocking access.';
+  }
+
+  return 'MessageLens cannot read the local Messages database yet. Grant Full '
+      'Disk Access, then relaunch the app so setup can continue.';
+}
+
+_AwaitingUserActionPresentation _awaitingUserActionPresentation(
+  OnboardingEnvironmentReport? report,
+) {
+  if (report == null) {
+    return const _AwaitingUserActionPresentation(
+      title: 'Welcome to MessageLens',
+      body:
+          'To get started, MessageLens needs to import your Messages and '
+          'Contacts data. This is a one-time process.',
+      notes: [],
+      canImportImmediately: true,
+      allowsManualImport: false,
+      primaryActionLabel: 'Import My Messages',
+      icon: Icons.message_rounded,
+      iconKind: _PresentationIconKind.primary,
+    );
+  }
+
+  switch (report.state) {
+    case OnboardingEnvironmentState.readyToImport:
+      return const _AwaitingUserActionPresentation(
+        title: 'Ready to Import',
+        body:
+            'MessageLens can reach the local Messages and Contacts sources on '
+            'this Mac. Importing will copy that data into the app.',
+        notes: [],
+        canImportImmediately: true,
+        allowsManualImport: false,
+        primaryActionLabel: 'Import My Messages',
+        icon: Icons.message_rounded,
+        iconKind: _PresentationIconKind.primary,
+      );
+    case OnboardingEnvironmentState.sourceUnavailable:
+      return _AwaitingUserActionPresentation(
+        title: 'Source Data Unavailable',
+        body:
+            'MessageLens cannot yet reach all of the local source data it '
+            'needs on this Mac. Re-check the environment after resolving the '
+            'issue below.',
+        notes: _sourceUnavailableNotes(report),
+        canImportImmediately: false,
+        allowsManualImport: false,
+        primaryActionLabel: 'Import My Messages',
+        icon: Icons.storage_rounded,
+        iconKind: _PresentationIconKind.warning,
+      );
+    case OnboardingEnvironmentState.sourceSparseOrUnsynced:
+      return _AwaitingUserActionPresentation(
+        title: 'Little Local Messages History Found',
+        body:
+            'MessageLens can read the Messages database, but this Mac appears '
+            'to have little or no local message history right now.',
+        notes: _sourceSparseNotes(report),
+        canImportImmediately: false,
+        allowsManualImport: true,
+        primaryActionLabel: 'Import My Messages',
+        icon: Icons.cloud_off_rounded,
+        iconKind: _PresentationIconKind.warning,
+      );
+    case OnboardingEnvironmentState.importFailed:
+      return _AwaitingUserActionPresentation(
+        title: 'Import Attempt Failed',
+        body:
+            'MessageLens could reach your local sources, but the last import '
+            'attempt did not finish successfully.',
+        notes: _importFailureNotes(report),
+        canImportImmediately: true,
+        allowsManualImport: false,
+        primaryActionLabel: 'Try Import Again',
+        icon: Icons.error_outline_rounded,
+        iconKind: _PresentationIconKind.warning,
+      );
+    case OnboardingEnvironmentState.migrationFailed:
+      return _AwaitingUserActionPresentation(
+        title: 'Imported Data Could Not Be Prepared',
+        body:
+            'MessageLens imported source data, but the app could not finish '
+            'preparing it for use.',
+        notes: _migrationFailureNotes(report),
+        canImportImmediately: true,
+        allowsManualImport: false,
+        primaryActionLabel: 'Retry Import and Migration',
+        icon: Icons.sync_problem_rounded,
+        iconKind: _PresentationIconKind.warning,
+      );
+    case OnboardingEnvironmentState.permissionBlocked:
+      return _AwaitingUserActionPresentation(
+        title: 'Permission Required',
+        body: _permissionBodyText(report),
+        notes: const [],
+        canImportImmediately: false,
+        allowsManualImport: false,
+        primaryActionLabel: 'Import My Messages',
+        icon: Icons.lock_outline_rounded,
+        iconKind: _PresentationIconKind.warning,
+      );
+    case OnboardingEnvironmentState.ready:
+      return const _AwaitingUserActionPresentation(
+        title: 'Environment Ready',
+        body:
+            'The environment looks healthy. MessageLens should be able to use '
+            'its imported data on this Mac.',
+        notes: [],
+        canImportImmediately: false,
+        allowsManualImport: false,
+        primaryActionLabel: 'Import My Messages',
+        icon: Icons.check_circle_outline,
+        iconKind: _PresentationIconKind.success,
+      );
+  }
+}
+
+List<String> _importFailureNotes(OnboardingEnvironmentReport report) {
+  final notes = <String>[];
+
+  final recordedAt = report.lastImportFailureRecordedAt;
+  if (report.usingPersistedImportFailure && recordedAt != null) {
+    notes.add(
+      _persistedFailureNote(
+        kind: 'import',
+        freshness: report.importFailureFreshness(),
+        recordedAt: recordedAt,
+      ),
+    );
+  }
+
+  final message = report.importFailureMessage;
+  if (message != null && message.isNotEmpty) {
+    notes.add(message);
+  }
+
+  notes.add(
+    'Confirm Messages and Contacts are still available on this Mac, then retry the import.',
+  );
+
+  if (!report.importDatabase.exists || !report.importDatabase.hasData) {
+    notes.add(
+      'No usable import ledger was left behind, so the next retry will start from a clean import pass.',
+    );
+  }
+
+  return notes;
+}
+
+List<String> _migrationFailureNotes(OnboardingEnvironmentReport report) {
+  final notes = <String>[];
+
+  final recordedAt = report.lastMigrationFailureRecordedAt;
+  if (report.usingPersistedMigrationFailure && recordedAt != null) {
+    notes.add(
+      _persistedFailureNote(
+        kind: 'migration',
+        freshness: report.migrationFailureFreshness(),
+        recordedAt: recordedAt,
+      ),
+    );
+  }
+
+  final message = report.migrationFailureMessage;
+  if (message != null && message.isNotEmpty) {
+    notes.add(message);
+  }
+
+  if (report.importDatabase.hasData) {
+    notes.add(
+      'The import ledger contains data, so the failure happened while preparing app-facing tables.',
+    );
+  }
+
+  if (!report.workingDatabase.hasData) {
+    notes.add(
+      'The working database is still empty or incomplete. Retrying will rerun the full import and migration pipeline.',
+    );
+  }
+
+  notes.add(
+    'If this keeps happening, capture the error above and inspect the migration diagnostics in the dev panel.',
+  );
+
+  return notes;
+}
+
+String _formatRecordedAt(DateTime timestamp) {
+  final local = timestamp.toLocal();
+  final month = local.month.toString().padLeft(2, '0');
+  final day = local.day.toString().padLeft(2, '0');
+  final hour = local.hour.toString().padLeft(2, '0');
+  final minute = local.minute.toString().padLeft(2, '0');
+  return '${local.year}-$month-$day $hour:$minute';
+}
+
+String _persistedFailureNote({
+  required String kind,
+  required OnboardingFailureFreshness freshness,
+  required DateTime recordedAt,
+}) {
+  final formatted = _formatRecordedAt(recordedAt);
+
+  return switch (freshness) {
+    OnboardingFailureFreshness.today =>
+      'This $kind failure was recorded earlier today at $formatted during a previous launch.',
+    OnboardingFailureFreshness.older =>
+      'This $kind failure was recorded during a previous launch on $formatted.',
+    OnboardingFailureFreshness.unknown =>
+      'This $kind failure was recorded during a previous launch.',
+  };
+}
+
+List<String> _sourceUnavailableNotes(OnboardingEnvironmentReport report) {
+  final notes = <String>[];
+
+  if (!report.messagesDatabase.exists) {
+    notes.add(
+      'Open Messages on this Mac and confirm local history exists here before re-checking.',
+    );
+  }
+
+  if (report.addressBookDatabase == null ||
+      !report.addressBookDatabase!.readable) {
+    notes.add(
+      report.addressBookFailureMessage ??
+          'The Contacts source could not be resolved. Verify that Contacts data is available on this Mac.',
+    );
+  }
+
+  if (notes.isEmpty) {
+    notes.add('Resolve the source-data issue, then re-check the environment.');
+  }
+
+  return notes;
+}
+
+List<String> _sourceSparseNotes(OnboardingEnvironmentReport report) {
+  final notes = <String>[];
+
+  notes.add(
+    'Open Messages and confirm this Mac is signed into the Apple Account you expect to inspect.',
+  );
+  notes.add(
+    'If you use Messages in iCloud, wait for local history to appear on this Mac, then re-check the environment.',
+  );
+
+  final rowCount = report.messagesDatabase.rowCount;
+  if (rowCount != null) {
+    notes.add(
+      'MessageLens currently sees only $rowCount messages in the local Messages database on this Mac.',
+    );
+  }
+
+  notes.add(
+    'If this Mac genuinely has only a small local archive, you can still import it using "Import Anyway".',
+  );
+
+  return notes;
+}
+
+String _messagesValue(OnboardingEnvironmentReport report) {
+  if (!report.messagesDatabase.exists) {
+    return 'Not found';
+  }
+  if (!report.messagesDatabase.readable) {
+    return 'Blocked';
+  }
+
+  final rowCount = report.messagesDatabase.rowCount;
+  if (rowCount == null) {
+    return 'Readable';
+  }
+
+  return '$rowCount messages detected';
+}
+
+String _contactsValue(OnboardingEnvironmentReport report) {
+  final probe = report.addressBookDatabase;
+  if (probe == null) {
+    return report.addressBookFailureMessage ?? 'Unavailable';
+  }
+  if (!probe.exists) {
+    return 'Not found';
+  }
+  if (!probe.readable) {
+    return 'Blocked';
+  }
+
+  final rowCount = probe.rowCount;
+  if (rowCount == null) {
+    return 'Readable';
+  }
+
+  return '$rowCount contacts detected';
+}
+
+String _appDbValue(OnboardingDatabaseProbe probe) {
+  if (!probe.exists) {
+    return 'Not created yet';
+  }
+  if (!probe.readable) {
+    return 'Unavailable';
+  }
+
+  final rowCount = probe.rowCount;
+  if (rowCount == null) {
+    return 'Created';
+  }
+
+  if (rowCount == 0) {
+    return 'Created but empty';
+  }
+
+  return '$rowCount messages stored';
+}
+
+enum _PresentationIconKind { primary, warning, success }
+
+class _AwaitingUserActionPresentation {
+  const _AwaitingUserActionPresentation({
+    required this.title,
+    required this.body,
+    required this.notes,
+    required this.canImportImmediately,
+    required this.allowsManualImport,
+    required this.primaryActionLabel,
+    required this.icon,
+    required this.iconKind,
+  });
+
+  final String title;
+  final String body;
+  final List<String> notes;
+  final bool canImportImmediately;
+  final bool allowsManualImport;
+  final String primaryActionLabel;
+  final IconData icon;
+  final _PresentationIconKind iconKind;
+
+  Color iconColor(ThemeColors colors) {
+    return switch (iconKind) {
+      _PresentationIconKind.primary => colors.accents.primary,
+      _PresentationIconKind.warning => _kWarningAmber,
+      _PresentationIconKind.success => const Color(0xFF4CAF50),
+    };
   }
 }
 

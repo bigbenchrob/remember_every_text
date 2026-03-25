@@ -10,6 +10,7 @@ import '../../../db_migrate/domain/entities/db_migration_result.dart';
 import '../../../db_migrate/domain/states/table_migration_progress.dart';
 import '../../../db_migrate/feature_level_providers.dart';
 import '../../../logging/application/app_logger.dart';
+import '../../../onboarding/infrastructure/persistence/overlay_onboarding_failure_storage.dart';
 import '../../application/services/import_status_checker.dart';
 import '../../domain/entities/db_import_result.dart';
 import '../../domain/states/table_import_progress.dart';
@@ -337,6 +338,12 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
   @override
   DbImportControlState build() {
     return const DbImportControlState();
+  }
+
+  OverlayOnboardingFailureStorage get _failureStorage {
+    return OverlayOnboardingFailureStorage(
+      overlayDb: ref.read(overlayDatabaseProvider.future),
+    );
   }
 
   void setMode(DbImportMode mode) {
@@ -759,12 +766,31 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
         progress: result.success ? 1.0 : state.progress,
         lastImportResult: result,
       );
+
+      if (result.success) {
+        await _failureStorage.clearImportResult();
+      } else {
+        await _failureStorage.saveImportResult(
+          result,
+          recordedAt: DateTime.now().toUtc(),
+        );
+      }
     } catch (error) {
       final message = _mapDatabaseError('Import failed', error);
+      final result = DbImportResult(
+        batchId: -1,
+        success: false,
+        error: message,
+      );
       state = state.copyWith(
         isProcessing: false,
         statusMessage: message,
         progress: 0.0,
+        lastImportResult: result,
+      );
+      await _failureStorage.saveImportResult(
+        result,
+        recordedAt: DateTime.now().toUtc(),
       );
     }
   }
@@ -872,14 +898,33 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
       );
 
       if (result.success) {
+        await _failureStorage.clearMigrationResult();
+      } else {
+        await _failureStorage.saveMigrationResult(
+          result,
+          recordedAt: DateTime.now().toUtc(),
+        );
+      }
+
+      if (result.success) {
         ref.invalidate(recentChatsProvider);
       }
     } catch (error) {
       final message = _mapDatabaseError('Migration failed', error);
+      final result = DbMigrationResult(
+        batchId: -1,
+        success: false,
+        error: message,
+      );
       state = state.copyWith(
         isProcessing: false,
         statusMessage: message,
         progress: 0.0,
+        lastMigrationResult: result,
+      );
+      await _failureStorage.saveMigrationResult(
+        result,
+        recordedAt: DateTime.now().toUtc(),
       );
     }
   }

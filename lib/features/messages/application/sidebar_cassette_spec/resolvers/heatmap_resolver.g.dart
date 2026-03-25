@@ -6,7 +6,7 @@ part of 'heatmap_resolver.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$heatmapResolverHash() => r'3d9a0a582d3e6b05a97b188fbe3400871fcb062c';
+String _$heatmapResolverHash() => r'fbc81a850d3bba8e8bc0857ea3647c1da80ea307';
 
 /// Resolves a messages heatmap cassette.
 ///

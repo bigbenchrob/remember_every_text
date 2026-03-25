@@ -1,0 +1,9 @@
+Given the problems I am having getting my daughter up and running with message lens, I have expanded the onboarding flow from prompting the user to give the app FDA and showing the import process to a full suite that thoroughly examines the local environment and advises fixes when necessary. The copilot agent has set this up to show the user a dialog at the point of failure, offering a path to fixing the problem and inviting the user to restart analysis when they believe they have carried out the suggested steps.
+
+I'm thinking a better approach might be to combine all the failure dialogs into a single tabbed view that lives in the center panel. On first launch, this panel willl show (with nothing in the sidebar). one by one, the tabs will go from gray to green if no problem is found. If, for example, Full Disk Access has not been assigned, the user will see an explanation, e.g. "Message lens needs access to your computer's Messages and Address Book databases in order to import the data it needs. MacOS protects these unless you give MessageLens specific permission to access them. You do not need to worry about doing this: MessageLens will only be able to read the data but will not be able to change the database. Also, all your data stays on you computer, so it will not be exposed to third parties, including the developer.
+
+To give full disk access: (1) ..."
+
+And in fact, there could be a stepper display in the instructions with => 1 =>2 => 3 so that they can be broken down granularly.
+
+Once the test passes (maybe a "Try again" button on the FDA subpanel") the FDA tab turns green and we move onto the next one. What do you think?
