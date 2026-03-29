@@ -110,6 +110,10 @@ class NavigationLogEntry {
           forMigration: () => {'variant': 'forMigration'},
         ),
       },
+      environmentReadiness: (readinessSpec) => {
+        'type': 'environmentReadiness',
+        'spec': {'variant': 'readinessPanel'},
+      },
       onboarding: (onboardingSpec) => {
         'type': 'onboarding',
         'spec': onboardingSpec.when(devPanel: () => {'variant': 'devPanel'}),

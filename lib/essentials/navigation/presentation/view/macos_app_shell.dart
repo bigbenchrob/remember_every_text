@@ -22,6 +22,7 @@ import '../../domain/navigation_constants.dart';
 import '../../domain/sidebar_mode.dart';
 import '../../feature_level_providers.dart';
 import '../widgets/app_mode_toggle.dart';
+import '../widgets/onboarding_center_panel_sync_observer.dart';
 import 'workspace_layout.dart';
 
 /// macOS window with a fixed navigation column and primary content canvas.
@@ -108,7 +109,15 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
     });
 
     final onboardingStatus = ref.watch(onboardingGateProvider);
-    final showOnboarding = onboardingStatus != OnboardingStatus.notNeeded;
+    final showOnboardingOverlay = switch (onboardingStatus) {
+      OnboardingStatus.importing ||
+      OnboardingStatus.migrating ||
+      OnboardingStatus.complete ||
+      OnboardingStatus.reimporting ||
+      OnboardingStatus.reimportMigrating ||
+      OnboardingStatus.reimportComplete => true,
+      _ => false,
+    };
     final activeMode = ref.watch(activeSidebarModeProvider);
     const showDeveloperToolbarActions = !kReleaseMode;
 
@@ -257,6 +266,7 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
                           WorkspaceLayout(mode: SidebarMode.settings),
                         ],
                       ),
+                      const OnboardingCenterPanelSyncObserver(),
                       _EndSidebarSyncObserver(mode: activeMode),
                     ],
                   );
@@ -265,7 +275,7 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
             ],
           ),
         ),
-        if (showOnboarding) const OnboardingOverlay(),
+        if (showOnboardingOverlay) const OnboardingOverlay(),
       ],
     );
   }

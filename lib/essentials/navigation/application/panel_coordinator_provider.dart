@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../features/environment_readiness/feature_level_providers.dart'
+    as environment_readiness_feature;
 import '../../../features/messages/feature_level_providers.dart'
     as messages_feature;
 import '../../db_importers/presentation/view/db_import_control_panel.dart';
 import '../../db_importers/presentation/view_model/db_import_control_provider.dart';
 import '../../onboarding/domain/import_spec.dart';
+import '../../onboarding/domain/spec_classes/onboarding_view_spec.dart';
 import '../../onboarding/presentation/onboarding_dev_panel.dart';
 import '../domain/entities/panel_stack.dart';
 import '../domain/entities/view_spec.dart';
@@ -61,7 +64,13 @@ class PanelCoordinator extends _$PanelCoordinator {
           .read(messages_feature.viewSpecCoordinatorProvider.notifier)
           .buildForSpec(messagesSpec),
       import: _buildImportPanel,
-      onboarding: (_) => const OnboardingDevPanel(),
+      environmentReadiness: (readinessSpec) => ref
+          .read(
+            environment_readiness_feature.viewSpecCoordinatorProvider.notifier,
+          )
+          .buildForSpec(readinessSpec),
+      onboarding: (onboardingSpec) =>
+          onboardingSpec.when(devPanel: () => const OnboardingDevPanel()),
     );
   }
 

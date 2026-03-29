@@ -97,6 +97,7 @@ class SidebarParkedOverlay extends ConsumerWidget {
         orElse: () => 'Database Operation',
       ),
       messages: (_) => 'Operation in Progress',
+      environmentReadiness: (_) => 'Environment Readiness',
       onboarding: (_) => 'Onboarding',
     );
   }
@@ -108,6 +109,7 @@ class SidebarParkedOverlay extends ConsumerWidget {
     return spec.when(
       import: (_) => CupertinoIcons.square_arrow_down,
       messages: (_) => CupertinoIcons.gear_alt,
+      environmentReadiness: (_) => CupertinoIcons.check_mark_circled,
       onboarding: (_) => CupertinoIcons.rocket,
     );
   }

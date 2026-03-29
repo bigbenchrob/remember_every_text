@@ -207,6 +207,7 @@ Widget? contextualSidebarWidget(Ref ref, SidebarMode mode) {
       );
     },
     import: (_) => null,
+    environmentReadiness: (_) => null,
     onboarding: (_) => null,
   );
 }
@@ -340,6 +341,7 @@ bool _isCenterSpecCompatibleWithSidebar({
       );
     },
     import: (_) => true,
+    environmentReadiness: (_) => true,
     onboarding: (_) => true,
   );
 }

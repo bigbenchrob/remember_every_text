@@ -467,6 +467,7 @@ class _RecoveredUnlinkedMessageCard extends ConsumerWidget {
       ),
       import: (_) => null,
       onboarding: (_) => null,
+      environmentReadiness: (_) => null,
     );
   }
 
