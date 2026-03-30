@@ -31,13 +31,16 @@ class OnboardingCenterPanelSyncObserver extends ConsumerWidget {
           orElse: () => false,
         ) ??
         false;
+    final isShowingImport =
+        centerSpec?.maybeWhen(import: (_) => true, orElse: () => false) ??
+        false;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final panelsNotifier = ref.read(
         panelsViewStateProvider(SidebarMode.messages).notifier,
       );
 
-      if (shouldShowReadiness && !isShowingReadiness) {
+      if (shouldShowReadiness && !isShowingReadiness && !isShowingImport) {
         ref
             .read(activeSidebarModeProvider.notifier)
             .setMode(SidebarMode.messages);

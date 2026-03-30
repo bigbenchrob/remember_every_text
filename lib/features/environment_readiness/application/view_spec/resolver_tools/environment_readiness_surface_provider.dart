@@ -14,10 +14,16 @@ EnvironmentReadinessSurfaceViewModel environmentReadinessSurface(Ref ref) {
   final status = ref.watch(onboardingGateProvider);
   final report = ref.watch(onboardingEnvironmentReportProvider).valueOrNull;
   final activeStep = _activeStepFor(status: status, report: report);
+  final detailsByStep = {
+    for (final step in EnvironmentReadinessStepKey.values)
+      step: _detailFor(activeStep: step, report: report),
+  };
 
   return EnvironmentReadinessSurfaceViewModel(
+    activeStepKey: activeStep,
     steps: _buildSteps(activeStep),
-    detail: _detailFor(activeStep: activeStep, report: report),
+    detailsByStep: detailsByStep,
+    detail: detailsByStep[activeStep]!,
   );
 }
 

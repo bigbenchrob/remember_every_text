@@ -1,0 +1,93 @@
+---
+tier: project
+scope: build
+owner: agent-per-project
+last_reviewed: 2026-03-29
+source_of_truth: doc
+links:
+  - ./README.md
+  - ../../macos/Runner/Configs/AppInfo.xcconfig
+  - ../../macos/Runner.xcodeproj/project.pbxproj
+tests: []
+---
+
+# macOS FDA Grant Continuity Across Production Builds
+
+## TL;DR
+
+For macOS Full Disk Access to carry over from one shipped `MessageLens.app` to the next, the production build must preserve the app's identity.
+
+The critical invariants are:
+
+1. Keep the bundle identifier at `com.bigbenchsoftware.MessageLens`.
+2. Keep release signing tied to the same team and production identity.
+3. Ship a real release build, not an ad hoc or debug build.
+4. Replace the prior `MessageLens.app` rather than introducing a differently identified app.
+
+If these invariants hold, macOS will usually continue treating the new build as the same app for TCC / Full Disk Access purposes.
+
+## Why This Matters
+
+Users may already have granted Full Disk Access to a previously shipped production build of `MessageLens`. If a new release changes app identity, macOS may no longer apply the old TCC grant to the new build. The result is confusing:
+
+1. `MessageLens` may still appear in the Full Disk Access list.
+2. The new build may still fail the FDA check.
+3. The user may need to remove and re-add the app manually.
+
+For family distribution, manual testing, and ad hoc release sharing, preserving TCC continuity reduces support burden significantly.
+
+## Current Project Invariants
+
+The repository is currently configured so production builds can preserve FDA continuity:
+
+1. Bundle identifier in [macos/Runner/Configs/AppInfo.xcconfig](../../macos/Runner/Configs/AppInfo.xcconfig): `com.bigbenchsoftware.MessageLens`
+2. Release target signing in [macos/Runner.xcodeproj/project.pbxproj](../../macos/Runner.xcodeproj/project.pbxproj):
+   - Team: `FQHT2QP3NE`
+   - Release signing identity: `Developer ID Application`
+
+Do not change these casually.
+
+## Required Production-Build Contract
+
+When an agent or developer is asked to “do a production build”, that request must imply all of the following:
+
+1. Build the macOS app with the `Release` configuration.
+2. Preserve bundle id `com.bigbenchsoftware.MessageLens`.
+3. Preserve signing team `FQHT2QP3NE`.
+4. Preserve production signing with `Developer ID Application`.
+5. Do not deliver an ad hoc signed build as a production artifact.
+6. Do not substitute a debug app for the production build.
+
+## Verification Checklist After Building
+
+Before handing off a production build, verify:
+
+1. The built app bundle identifier is still `com.bigbenchsoftware.MessageLens`.
+2. The app is signed as a production build, not ad hoc.
+3. The release signing identity matches the expected production setup.
+4. The app name remains `MessageLens.app`.
+
+If these checks are not confirmed, do not describe the artifact as a production build.
+
+## User-Facing Expectation
+
+If the production build preserves the same identity, the normal user experience should be:
+
+1. Replace the old `MessageLens.app` with the new one.
+2. Launch the app.
+3. Existing Full Disk Access should continue to apply.
+
+If macOS does not honor the prior grant, the fallback recovery is:
+
+1. Remove `MessageLens` from Full Disk Access.
+2. Add it again.
+3. Relaunch the app.
+
+This fallback should be the exception, not the planned path.
+
+## INVIOLATE RULES
+
+1. NEVER change the production bundle identifier without explicitly acknowledging that prior FDA grants may stop carrying over.
+2. NEVER hand off a debug or ad hoc signed macOS app as a production build.
+3. ALWAYS verify release signing identity before claiming that a build should preserve FDA continuity.
+4. ALWAYS treat “production build” as including app-identity continuity, not just successful compilation.

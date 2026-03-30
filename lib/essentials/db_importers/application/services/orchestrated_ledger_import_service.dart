@@ -52,9 +52,9 @@ class OrchestratedLedgerImportService {
     ExecutionPlanCallback? onExecutionPlan,
     TableImportProgressCallback? onTableProgress,
   }) async {
-    final debugSettings = ref.watch(importDebugSettingsProvider);
-    final ledgerDb = await ref.watch(sqfliteImportDatabaseProvider.future);
-    final pathsHelper = await ref.watch(pathsHelperProvider.future);
+    final debugSettings = ref.read(importDebugSettingsProvider);
+    final ledgerDb = await ref.read(sqfliteImportDatabaseProvider.future);
+    final pathsHelper = await ref.read(pathsHelperProvider.future);
 
     var previousMaxHandleRowId = await ledgerDb.maxHandleSourceRowId();
     var previousMaxChatRowId = await ledgerDb.maxChatSourceRowId();
@@ -93,7 +93,7 @@ class OrchestratedLedgerImportService {
     }
 
     final messagesDbPath = pathsHelper.chatDBPath;
-    final addressBookEither = await ref.watch(
+    final addressBookEither = await ref.read(
       futureGetFolderAggregateProvider.future,
     );
     String? addressBookPath;

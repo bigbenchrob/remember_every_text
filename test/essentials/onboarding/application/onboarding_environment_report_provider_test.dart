@@ -40,7 +40,7 @@ void main() {
     });
 
     test(
-      'surfaces persisted import failures when in-memory control state is empty',
+      'treats stale persisted import failures as ready to import when app databases are empty',
       () async {
         final messagesDbPath = _createMessagesDatabase(
           tempDir.path,
@@ -84,8 +84,8 @@ void main() {
           onboardingEnvironmentReportProvider.future,
         );
 
-        expect(report.state, OnboardingEnvironmentState.importFailed);
-        expect(report.blockerKind, OnboardingBlockerKind.importFailed);
+        expect(report.state, OnboardingEnvironmentState.readyToImport);
+        expect(report.blockerKind, OnboardingBlockerKind.importDatabaseMissing);
         expect(report.importFailureMessage, 'Persisted import failure');
         expect(report.usingPersistedImportFailure, isTrue);
         expect(report.lastImportFailureRecordedAt, recordedAt);

@@ -1,7 +1,15 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:remember_this_text/essentials/navigation/application/panel_widget_providers.dart';
+import 'package:remember_this_text/essentials/navigation/application/panels_view_state_provider.dart';
+import 'package:remember_this_text/essentials/navigation/domain/entities/view_spec.dart';
+import 'package:remember_this_text/essentials/navigation/domain/navigation_constants.dart';
+import 'package:remember_this_text/essentials/navigation/domain/sidebar_mode.dart';
+import 'package:remember_this_text/essentials/onboarding/domain/import_spec.dart';
+import 'package:remember_this_text/essentials/sidebar/application/sidebar_flow_state_provider.dart';
+import 'package:remember_this_text/features/messages/domain/spec_classes/messages_view_spec.dart';
 import 'package:remember_this_text/essentials/sidebar/presentation/view/sidebar_cassette_card.dart';
 import 'package:remember_this_text/essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 
@@ -59,6 +67,50 @@ void main() {
       expect(shouldExpandSidebarCassette(wrappedExpandingCard), isTrue);
       expect(shouldExpandSidebarCassette(wrappedIntrinsicCard), isFalse);
       expect(shouldExpandSidebarCassette(const SizedBox.shrink()), isFalse);
+    });
+  });
+
+  group('reconcileSidebarPanels', () {
+    testWidgets('preserves import panel when sidebar flow projects messages', (
+      tester,
+    ) async {
+      final container = ProviderContainer();
+      final reconciliationSubscription = container.listen(
+        reconcileSidebarPanelsProvider(SidebarMode.messages),
+        (_, __) {},
+        fireImmediately: true,
+      );
+
+      container.read(sidebarFlowProvider.notifier).showGlobalTimeline();
+      await tester.idle();
+      container
+          .read(panelsViewStateProvider(SidebarMode.messages).notifier)
+          .show(
+            panel: WindowPanel.center,
+            spec: const ViewSpec.import(ImportSpec.forImport()),
+          );
+
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        container
+            .read(
+              panelsViewStateProvider(SidebarMode.messages),
+            )[WindowPanel.center]
+            ?.activePage
+            ?.spec,
+        const ViewSpec.import(ImportSpec.forImport()),
+      );
+      expect(
+        container.read(sidebarFlowProvider).projectedCenterSpec,
+        const ViewSpec.messages(MessagesSpec.globalTimeline()),
+      );
+
+      reconciliationSubscription.close();
+      await tester.idle();
+      await tester.pump();
+      container.dispose();
     });
   });
 }

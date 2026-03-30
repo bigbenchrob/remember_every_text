@@ -146,6 +146,12 @@ class _OnboardingEnvironmentEvaluator {
         .loadMigrationResultEntry();
     final persistedImportResult = persistedImportEntry?.result;
     final persistedMigrationResult = persistedMigrationEntry?.result;
+    final hasLiveImportFailure =
+        controlState.lastImportResult != null &&
+        controlState.lastImportResult!.success == false;
+    final hasLiveMigrationFailure =
+        controlState.lastMigrationResult != null &&
+        controlState.lastMigrationResult!.success == false;
     final simulatedPipelineFailureActive =
         devOverrides.simulateImportFailure ||
         devOverrides.simulateMigrationFailure;
@@ -214,6 +220,16 @@ class _OnboardingEnvironmentEvaluator {
 
     final importProbe = _probeFile(importDbPath, rowCount: importRowCount);
     final workingProbe = _probeFile(workingDbPath, rowCount: workingRowCount);
+    final usingPersistedImportFailure =
+        !devOverrides.simulateImportFailure &&
+        !simulatedPipelineFailureActive &&
+        controlState.lastImportResult == null &&
+        persistedImportEntry != null;
+    final usingPersistedMigrationFailure =
+        !devOverrides.simulateMigrationFailure &&
+        !simulatedPipelineFailureActive &&
+        controlState.lastMigrationResult == null &&
+        persistedMigrationEntry != null;
 
     final state = _classifyState(
       hasFullDiskAccess: hasFullDiskAccess,
@@ -222,8 +238,10 @@ class _OnboardingEnvironmentEvaluator {
       sourceMessageCount: sourceMessageCount,
       forceImportFailure: devOverrides.simulateImportFailure,
       forceMigrationFailure: devOverrides.simulateMigrationFailure,
-      lastImportSucceeded: lastImportResult?.success,
-      lastMigrationSucceeded: lastMigrationResult?.success,
+      hasLiveImportFailure: hasLiveImportFailure,
+      hasLiveMigrationFailure: hasLiveMigrationFailure,
+      usingPersistedImportFailure: usingPersistedImportFailure,
+      usingPersistedMigrationFailure: usingPersistedMigrationFailure,
       importProbe: importProbe,
       workingProbe: workingProbe,
     );
@@ -236,8 +254,10 @@ class _OnboardingEnvironmentEvaluator {
       sourceMessageCount: sourceMessageCount,
       forceImportFailure: devOverrides.simulateImportFailure,
       forceMigrationFailure: devOverrides.simulateMigrationFailure,
-      lastImportSucceeded: lastImportResult?.success,
-      lastMigrationSucceeded: lastMigrationResult?.success,
+      hasLiveImportFailure: hasLiveImportFailure,
+      hasLiveMigrationFailure: hasLiveMigrationFailure,
+      usingPersistedImportFailure: usingPersistedImportFailure,
+      usingPersistedMigrationFailure: usingPersistedMigrationFailure,
       importProbe: importProbe,
       workingProbe: workingProbe,
     );
@@ -262,16 +282,8 @@ class _OnboardingEnvironmentEvaluator {
       lastMigrationResult: lastMigrationResult,
       lastImportFailureRecordedAt: persistedImportEntry?.recordedAt,
       lastMigrationFailureRecordedAt: persistedMigrationEntry?.recordedAt,
-      usingPersistedImportFailure:
-          !devOverrides.simulateImportFailure &&
-          !simulatedPipelineFailureActive &&
-          controlState.lastImportResult == null &&
-          persistedImportEntry != null,
-      usingPersistedMigrationFailure:
-          !devOverrides.simulateMigrationFailure &&
-          !simulatedPipelineFailureActive &&
-          controlState.lastMigrationResult == null &&
-          persistedMigrationEntry != null,
+      usingPersistedImportFailure: usingPersistedImportFailure,
+      usingPersistedMigrationFailure: usingPersistedMigrationFailure,
     );
   }
 
@@ -282,8 +294,10 @@ class _OnboardingEnvironmentEvaluator {
     required int? sourceMessageCount,
     required bool forceImportFailure,
     required bool forceMigrationFailure,
-    required bool? lastImportSucceeded,
-    required bool? lastMigrationSucceeded,
+    required bool hasLiveImportFailure,
+    required bool hasLiveMigrationFailure,
+    required bool usingPersistedImportFailure,
+    required bool usingPersistedMigrationFailure,
     required OnboardingDatabaseProbe importProbe,
     required OnboardingDatabaseProbe workingProbe,
   }) {
@@ -312,11 +326,23 @@ class _OnboardingEnvironmentEvaluator {
       return OnboardingEnvironmentState.ready;
     }
 
-    if (lastMigrationSucceeded == false) {
+    if (_shouldSurfaceMigrationFailure(
+      forceMigrationFailure: forceMigrationFailure,
+      hasLiveMigrationFailure: hasLiveMigrationFailure,
+      usingPersistedMigrationFailure: usingPersistedMigrationFailure,
+      importProbe: importProbe,
+      workingProbe: workingProbe,
+    )) {
       return OnboardingEnvironmentState.migrationFailed;
     }
 
-    if (lastImportSucceeded == false) {
+    if (_shouldSurfaceImportFailure(
+      forceImportFailure: forceImportFailure,
+      hasLiveImportFailure: hasLiveImportFailure,
+      usingPersistedImportFailure: usingPersistedImportFailure,
+      importProbe: importProbe,
+      workingProbe: workingProbe,
+    )) {
       return OnboardingEnvironmentState.importFailed;
     }
 
@@ -331,8 +357,10 @@ class _OnboardingEnvironmentEvaluator {
     required int? sourceMessageCount,
     required bool forceImportFailure,
     required bool forceMigrationFailure,
-    required bool? lastImportSucceeded,
-    required bool? lastMigrationSucceeded,
+    required bool hasLiveImportFailure,
+    required bool hasLiveMigrationFailure,
+    required bool usingPersistedImportFailure,
+    required bool usingPersistedMigrationFailure,
     required OnboardingDatabaseProbe importProbe,
     required OnboardingDatabaseProbe workingProbe,
   }) {
@@ -362,11 +390,23 @@ class _OnboardingEnvironmentEvaluator {
       return OnboardingBlockerKind.importFailed;
     }
 
-    if (lastMigrationSucceeded == false) {
+    if (_shouldSurfaceMigrationFailure(
+      forceMigrationFailure: forceMigrationFailure,
+      hasLiveMigrationFailure: hasLiveMigrationFailure,
+      usingPersistedMigrationFailure: usingPersistedMigrationFailure,
+      importProbe: importProbe,
+      workingProbe: workingProbe,
+    )) {
       return OnboardingBlockerKind.migrationFailed;
     }
 
-    if (lastImportSucceeded == false) {
+    if (_shouldSurfaceImportFailure(
+      forceImportFailure: forceImportFailure,
+      hasLiveImportFailure: hasLiveImportFailure,
+      usingPersistedImportFailure: usingPersistedImportFailure,
+      importProbe: importProbe,
+      workingProbe: workingProbe,
+    )) {
       return OnboardingBlockerKind.importFailed;
     }
 
@@ -387,6 +427,42 @@ class _OnboardingEnvironmentEvaluator {
     }
 
     return OnboardingBlockerKind.none;
+  }
+
+  bool _shouldSurfaceImportFailure({
+    required bool forceImportFailure,
+    required bool hasLiveImportFailure,
+    required bool usingPersistedImportFailure,
+    required OnboardingDatabaseProbe importProbe,
+    required OnboardingDatabaseProbe workingProbe,
+  }) {
+    if (forceImportFailure || hasLiveImportFailure) {
+      return true;
+    }
+
+    if (!usingPersistedImportFailure) {
+      return false;
+    }
+
+    return importProbe.hasData || workingProbe.hasData;
+  }
+
+  bool _shouldSurfaceMigrationFailure({
+    required bool forceMigrationFailure,
+    required bool hasLiveMigrationFailure,
+    required bool usingPersistedMigrationFailure,
+    required OnboardingDatabaseProbe importProbe,
+    required OnboardingDatabaseProbe workingProbe,
+  }) {
+    if (forceMigrationFailure || hasLiveMigrationFailure) {
+      return true;
+    }
+
+    if (!usingPersistedMigrationFailure) {
+      return false;
+    }
+
+    return importProbe.hasData || workingProbe.hasData;
   }
 
   OnboardingSyncPlausibility _classifySyncPlausibility({

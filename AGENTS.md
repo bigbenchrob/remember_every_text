@@ -30,6 +30,7 @@ This README contains the canonical index to all project documentation including:
 10. **[Feature Spec Handling](_AGENT_INSTRUCTIONS/agent-per-project/52-FEATURE-HANDLING-OF-X-SURFACE-SPECS/)** - Universal coordinator → resolver → widget_builder pattern
 11. **[Sidebar Cassette System](_AGENT_INSTRUCTIONS/agent-per-project/54-SIDEBAR-CASSETTE-SPEC-SYSTEM/)** - Rack state, cascade, card chrome
 12. **[View Spec Panel System](_AGENT_INSTRUCTIONS/agent-per-project/56-VIEW-SPEC-PANEL-CONTENT-SYSTEM/)** - ViewSpec panel navigation and feature dispatch
+13. **[macOS FDA Grant Continuity](_AGENT_INSTRUCTIONS/agent-per-project/60-BUILD-CONSIDERATIONS/02-macos-fda-grant-continuity.md)** - 🔥 MUST-READ before any production build; preserve bundle id and release signing so existing Full Disk Access grants carry over
 
 ### Quick Reference
 - **Lint Antipatterns**: [`_AGENT_INSTRUCTIONS/agent-instructions-shared/10-language/linter-antipatterns.md`](_AGENT_INSTRUCTIONS/agent-instructions-shared/10-language/linter-antipatterns.md) - One-stop list of analyzer tripwires
@@ -37,6 +38,7 @@ This README contains the canonical index to all project documentation including:
 - **AddressBook Imports**: [`_AGENT_INSTRUCTIONS/agent-per-project/10-DATABASES/06-addressbook-path-resolution.md`](_AGENT_INSTRUCTIONS/agent-per-project/10-DATABASES/06-addressbook-path-resolution.md)
 - **Dark Mode Theming**: [`_AGENT_INSTRUCTIONS/agent-per-project/05-COLOR-AND-TYPOGRAPHY-THEMING/05-dark-mode-theming.md`](_AGENT_INSTRUCTIONS/agent-per-project/05-COLOR-AND-TYPOGRAPHY-THEMING/05-dark-mode-theming.md) - Luminance hierarchy and dark mode selection rules
 - **Cross-Surface Spec Systems**: [`_AGENT_INSTRUCTIONS/agent-per-project/50-CROSS-SURFACE-SPEC-SYSTEMS-OVERVIEW/`](_AGENT_INSTRUCTIONS/agent-per-project/50-CROSS-SURFACE-SPEC-SYSTEMS-OVERVIEW/) - Architecture overview and inviolate rules
+- **Production Build / FDA Continuity**: [`_AGENT_INSTRUCTIONS/agent-per-project/60-BUILD-CONSIDERATIONS/02-macos-fda-grant-continuity.md`](_AGENT_INSTRUCTIONS/agent-per-project/60-BUILD-CONSIDERATIONS/02-macos-fda-grant-continuity.md) - Keep `com.bigbenchsoftware.MessageLens` and production signing stable so macOS FDA grants persist across shipped builds
 
 ## Critical Rules (Quick Reference)
 

@@ -27,7 +27,7 @@ MessageExtractorPort dbImportMessageExtractor(Ref ref) {
 }
 
 /// High-level service orchestrating the ingest into the Sqflite ledger.
-@riverpod
+@Riverpod(keepAlive: true)
 OrchestratedLedgerImportService orchestratedLedgerImportService(Ref ref) {
   return OrchestratedLedgerImportService(
     ref: ref,

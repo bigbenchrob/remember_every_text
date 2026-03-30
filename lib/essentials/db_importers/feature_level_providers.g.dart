@@ -30,14 +30,14 @@ final dbImportMessageExtractorProvider =
 typedef DbImportMessageExtractorRef =
     AutoDisposeProviderRef<MessageExtractorPort>;
 String _$orchestratedLedgerImportServiceHash() =>
-    r'6aca1303b778d17d459a830947e8049a53a715d9';
+    r'bb21b627711e6c5592dfce875b92504fc52a1bfe';
 
 /// High-level service orchestrating the ingest into the Sqflite ledger.
 ///
 /// Copied from [orchestratedLedgerImportService].
 @ProviderFor(orchestratedLedgerImportService)
 final orchestratedLedgerImportServiceProvider =
-    AutoDisposeProvider<OrchestratedLedgerImportService>.internal(
+    Provider<OrchestratedLedgerImportService>.internal(
       orchestratedLedgerImportService,
       name: r'orchestratedLedgerImportServiceProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -50,6 +50,6 @@ final orchestratedLedgerImportServiceProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef OrchestratedLedgerImportServiceRef =
-    AutoDisposeProviderRef<OrchestratedLedgerImportService>;
+    ProviderRef<OrchestratedLedgerImportService>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

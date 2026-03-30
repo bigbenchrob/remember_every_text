@@ -52,10 +52,15 @@ class EnvironmentReadinessDetailViewModel {
 
 class EnvironmentReadinessSurfaceViewModel {
   const EnvironmentReadinessSurfaceViewModel({
+    required this.activeStepKey,
     required this.steps,
+    required this.detailsByStep,
     required this.detail,
   });
 
+  final EnvironmentReadinessStepKey activeStepKey;
   final List<EnvironmentReadinessStepViewModel> steps;
+  final Map<EnvironmentReadinessStepKey, EnvironmentReadinessDetailViewModel>
+  detailsByStep;
   final EnvironmentReadinessDetailViewModel detail;
 }

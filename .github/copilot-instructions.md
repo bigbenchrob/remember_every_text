@@ -32,6 +32,7 @@ You MUST read these files in order before any code changes:
 12. **`_AGENT_INSTRUCTIONS/agent-per-project/52-FEATURE-HANDLING-OF-X-SURFACE-SPECS/`** - Universal coordinator → resolver → widget_builder pattern
 13. **`_AGENT_INSTRUCTIONS/agent-per-project/54-SIDEBAR-CASSETTE-SPEC-SYSTEM/`** - Sidebar cassette rack, cascade, card chrome
 14. **`_AGENT_INSTRUCTIONS/agent-per-project/56-VIEW-SPEC-PANEL-CONTENT-SYSTEM/`** - ViewSpec panel navigation and feature dispatch
+15. **`_AGENT_INSTRUCTIONS/agent-per-project/60-BUILD-CONSIDERATIONS/02-macos-fda-grant-continuity.md`** - 🔥 MUST-READ before any production build; preserve bundle id and release signing so macOS Full Disk Access grants carry over across shipped builds
 
 ## Quick Reference Code Standards
 - **Primary import**: Always use `hooks_riverpod`, never `flutter_riverpod`
@@ -57,6 +58,7 @@ You MUST read these files in order before any code changes:
 - **Code generation**: `dart run build_runner build --delete-conflicting-outputs`
 - **Testing**: `flutter test --plain-name "<pattern>"` (Flutter) / `dart test --plain-name "<pattern>"` (Dart)
 - **Run app**: `flutter run -d macos`
+- **Production builds**: Read `_AGENT_INSTRUCTIONS/agent-per-project/60-BUILD-CONSIDERATIONS/02-macos-fda-grant-continuity.md` first and preserve `com.bigbenchsoftware.MessageLens` plus release signing identity so prior FDA grants continue to apply
 - **Lint compliance**: Fix all violations immediately - strict analysis_options.yaml enforced
 
 ## Project Architecture

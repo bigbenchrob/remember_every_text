@@ -1,10 +1,21 @@
+import 'dart:io';
+
+import 'package:dartz/dartz.dart';
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import 'package:remember_this_text/domain_driven_development/value_objects.dart';
+import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
+import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_gate_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_status.dart';
+import 'package:remember_this_text/features/address_book_folders/domain/entities/address_book_folder_aggregate.dart';
+import 'package:remember_this_text/features/address_book_folders/domain/entities/address_book_folder_entity.dart';
+import 'package:remember_this_text/features/address_book_folders/domain/value_objects/value_objects.dart';
+import 'package:remember_this_text/features/address_book_folders/feature_level_providers.dart';
 
 void main() {
   group('onboardingGateProvider', () {
@@ -104,6 +115,99 @@ void main() {
         );
       },
     );
+
+    test('preserves importing workflow status during report rebuilds', () {
+      final status = OnboardingGate.resolveBuildStatus(
+        reportAsync: AsyncData(
+          _report(
+            state: OnboardingEnvironmentState.importFailed,
+            blockerKind: OnboardingBlockerKind.importFailed,
+          ),
+        ),
+        workflowOverrideStatus: OnboardingStatus.importing,
+        fallbackBuildStatus: () => OnboardingStatus.awaitingUserAction,
+      );
+
+      expect(status, OnboardingStatus.importing);
+    });
+
+    test('preserves completion status during report rebuilds', () {
+      final status = OnboardingGate.resolveBuildStatus(
+        reportAsync: AsyncData(
+          _report(
+            state: OnboardingEnvironmentState.ready,
+            blockerKind: OnboardingBlockerKind.none,
+          ),
+        ),
+        workflowOverrideStatus: OnboardingStatus.complete,
+        fallbackBuildStatus: () => OnboardingStatus.notNeeded,
+      );
+
+      expect(status, OnboardingStatus.complete);
+    });
+
+    test('falls back to derived status when no workflow override exists', () {
+      final status = OnboardingGate.resolveBuildStatus(
+        reportAsync: AsyncData(
+          _report(
+            state: OnboardingEnvironmentState.migrationFailed,
+            blockerKind: OnboardingBlockerKind.migrationFailed,
+          ),
+        ),
+        workflowOverrideStatus: null,
+        fallbackBuildStatus: () => OnboardingStatus.notNeeded,
+      );
+
+      expect(status, OnboardingStatus.awaitingUserAction);
+    });
+
+    test('refreshEnvironment re-checks full disk access', () async {
+      final tempDir = await Directory.systemTemp.createTemp(
+        'onboarding_gate_provider_test',
+      );
+      final overlayDb = OverlayDatabase(NativeDatabase.memory());
+      final messagesDbPath = _createReadableFile(tempDir.path, 'messages.db');
+      final addressBookPath = _createReadableFile(
+        tempDir.path,
+        'AddressBook-v22.abcddb',
+      );
+      var hasFullDiskAccess = true;
+
+      addTearDown(() async {
+        await overlayDb.close();
+        if (tempDir.existsSync()) {
+          await tempDir.delete(recursive: true);
+        }
+      });
+
+      container = ProviderContainer(
+        overrides: [
+          overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
+          onboardingFullDiskAccessProvider.overrideWith(
+            (ref) => hasFullDiskAccess,
+          ),
+          onboardingMessagesDatabasePathProvider.overrideWith(
+            (ref) => messagesDbPath,
+          ),
+          onboardingDatabaseDirectoryPathProvider.overrideWith(
+            (ref) => tempDir.path,
+          ),
+          futureGetFolderAggregateProvider.overrideWith(
+            (ref) async => right(_addressBookAggregate(addressBookPath)),
+          ),
+        ],
+      );
+
+      expect(
+        await _readGateStatus(container),
+        OnboardingStatus.awaitingUserAction,
+      );
+
+      hasFullDiskAccess = false;
+      container.read(onboardingGateProvider.notifier).refreshEnvironment();
+
+      expect(await _readGateStatus(container), OnboardingStatus.awaitingFda);
+    });
   });
 }
 
@@ -147,4 +251,22 @@ OnboardingEnvironmentReport _report({
     ),
     hasFullDiskAccess: hasFullDiskAccess,
   );
+}
+
+String _createReadableFile(String directoryPath, String fileName) {
+  final file = File('$directoryPath/$fileName');
+  file.writeAsStringSync('fixture');
+  return file.path;
+}
+
+AddressBookFolderAggregate _addressBookAggregate(String addressBookPath) {
+  return AddressBookFolderAggregate([
+    AddressBookFolderEntity(
+      path: FolderPathValueObject(addressBookPath),
+      shortPath: AddressBookFolderShortPath('TEST-SOURCE'),
+      lastCreationDate: FolderCreationDate(DateTime.utc(2026, 03, 24)),
+      lastModificationDate: FolderModificationDate(DateTime.utc(2026, 03, 24)),
+      recordCount: NonZeroInt(12),
+    ),
+  ]);
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -37,19 +38,37 @@ part 'onboarding_gate_provider.g.dart';
 class OnboardingGate extends _$OnboardingGate {
   static const _checker = DatabaseExistenceChecker();
   static const _fdaChecker = FdaChecker();
+  OnboardingStatus? _workflowOverrideStatus;
 
   @override
   OnboardingStatus build() {
     final reportAsync = ref.watch(onboardingEnvironmentReportProvider);
 
-    return reportAsync.when(
-      data: _classifyStatusFromReport,
-      loading: _fallbackBuildStatus,
-      error: (_, __) => _fallbackBuildStatus(),
+    return resolveBuildStatus(
+      reportAsync: reportAsync,
+      workflowOverrideStatus: _workflowOverrideStatus,
+      fallbackBuildStatus: _fallbackBuildStatus,
     );
   }
 
-  OnboardingStatus _classifyStatusFromReport(
+  @visibleForTesting
+  static OnboardingStatus resolveBuildStatus({
+    required AsyncValue<OnboardingEnvironmentReport> reportAsync,
+    required OnboardingStatus? workflowOverrideStatus,
+    required OnboardingStatus Function() fallbackBuildStatus,
+  }) {
+    if (_shouldPreserveWorkflowOverride(workflowOverrideStatus)) {
+      return workflowOverrideStatus!;
+    }
+
+    return reportAsync.when(
+      data: _classifyStatusFromReport,
+      loading: fallbackBuildStatus,
+      error: (_, __) => fallbackBuildStatus(),
+    );
+  }
+
+  static OnboardingStatus _classifyStatusFromReport(
     OnboardingEnvironmentReport report,
   ) {
     return switch (report.state) {
@@ -62,6 +81,21 @@ class OnboardingGate extends _$OnboardingGate {
       OnboardingEnvironmentState.sourceSparseOrUnsynced ||
       OnboardingEnvironmentState.readyToImport =>
         OnboardingStatus.awaitingUserAction,
+    };
+  }
+
+  static bool _shouldPreserveWorkflowOverride(OnboardingStatus? status) {
+    return switch (status) {
+      OnboardingStatus.importing ||
+      OnboardingStatus.migrating ||
+      OnboardingStatus.complete ||
+      OnboardingStatus.reimporting ||
+      OnboardingStatus.reimportMigrating ||
+      OnboardingStatus.reimportComplete => true,
+      null ||
+      OnboardingStatus.awaitingFda ||
+      OnboardingStatus.awaitingUserAction ||
+      OnboardingStatus.notNeeded => false,
     };
   }
 
@@ -102,7 +136,7 @@ class OnboardingGate extends _$OnboardingGate {
     await _deleteImportDatabaseFiles();
 
     // ── Import phase ──
-    state = OnboardingStatus.importing;
+    _setWorkflowOverride(OnboardingStatus.importing);
     // Wait until the frame has actually painted so the overlay's
     // _ProgressContent widget is mounted and ref.watch-ing
     // dbImportControlViewModelProvider.  A plain Future.delayed(Duration.zero)
@@ -112,26 +146,46 @@ class OnboardingGate extends _$OnboardingGate {
     try {
       await ref.read(dbImportControlViewModelProvider.notifier).startImport();
     } catch (_) {
-      state = OnboardingStatus.complete;
+      _finishFirstRunWithFailure();
+      return;
+    }
+
+    final importSucceeded =
+        ref.read(dbImportControlViewModelProvider).lastImportResult?.success ??
+        false;
+    if (!importSucceeded) {
+      _finishFirstRunWithFailure();
       return;
     }
 
     // ── Migration phase ──
-    state = OnboardingStatus.migrating;
+    _setWorkflowOverride(OnboardingStatus.migrating);
     await _waitForEndOfFrame();
     try {
       await ref
           .read(dbImportControlViewModelProvider.notifier)
           .startMigration(skipImportCheck: true);
     } catch (_) {
-      // Swallow — land on complete so user can dismiss.
+      _finishFirstRunWithFailure();
+      return;
+    }
+
+    final migrationSucceeded =
+        ref
+            .read(dbImportControlViewModelProvider)
+            .lastMigrationResult
+            ?.success ??
+        false;
+    if (!migrationSucceeded) {
+      _finishFirstRunWithFailure();
+      return;
     }
 
     // Signal all data-dependent providers (contacts, messages, etc.) to
     // rebuild with the freshly-populated working database.
     ref.read(messageDataVersionProvider.notifier).bump();
 
-    state = OnboardingStatus.complete;
+    _setWorkflowOverride(OnboardingStatus.complete);
   }
 
   /// Wait until the current frame has finished painting.
@@ -155,6 +209,8 @@ class OnboardingGate extends _$OnboardingGate {
   }
 
   void refreshEnvironment() {
+    _clearWorkflowOverride();
+    ref.invalidate(onboardingFullDiskAccessProvider);
     ref.invalidate(onboardingEnvironmentReportProvider);
     ref.invalidateSelf();
   }
@@ -195,17 +251,17 @@ class OnboardingGate extends _$OnboardingGate {
     await _deleteImportDatabaseFiles();
 
     // ── Import phase ──
-    state = OnboardingStatus.reimporting;
+    _setWorkflowOverride(OnboardingStatus.reimporting);
     await _waitForEndOfFrame();
     try {
       await ref.read(dbImportControlViewModelProvider.notifier).startImport();
     } catch (_) {
-      state = OnboardingStatus.reimportComplete;
+      _setWorkflowOverride(OnboardingStatus.reimportComplete);
       return;
     }
 
     // ── Migration phase ──
-    state = OnboardingStatus.reimportMigrating;
+    _setWorkflowOverride(OnboardingStatus.reimportMigrating);
     await _waitForEndOfFrame();
     try {
       await ref
@@ -217,7 +273,7 @@ class OnboardingGate extends _$OnboardingGate {
 
     ref.read(messageDataVersionProvider.notifier).bump();
 
-    state = OnboardingStatus.reimportComplete;
+    _setWorkflowOverride(OnboardingStatus.reimportComplete);
   }
 
   /// Dismiss the overlay and switch to the Messages sidebar.
@@ -227,11 +283,27 @@ class OnboardingGate extends _$OnboardingGate {
   /// `!_debugDuringDeviceUpdate` assertion in mouse_tracker.dart).
   void dismiss() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _clearWorkflowOverride();
       ref
           .read(activeSidebarModeProvider.notifier)
           .setMode(SidebarMode.messages);
       state = OnboardingStatus.notNeeded;
     });
+  }
+
+  void _setWorkflowOverride(OnboardingStatus status) {
+    _workflowOverrideStatus = status;
+    state = status;
+  }
+
+  void _clearWorkflowOverride() {
+    _workflowOverrideStatus = null;
+  }
+
+  void _finishFirstRunWithFailure() {
+    _clearWorkflowOverride();
+    ref.invalidate(onboardingEnvironmentReportProvider);
+    state = OnboardingStatus.awaitingUserAction;
   }
 
   /// Close any open import DB connection, delete the files, and

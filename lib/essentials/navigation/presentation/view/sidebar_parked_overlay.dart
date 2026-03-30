@@ -4,6 +4,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
+import '../../../onboarding/application/onboarding_environment_report_provider.dart';
+import '../../../onboarding/application/onboarding_gate_provider.dart';
 import '../../../onboarding/domain/import_spec.dart';
 import '../../application/panels_view_state_provider.dart';
 import '../../domain/entities/panel_stack.dart';
@@ -35,7 +37,28 @@ class SidebarParkedOverlay extends ConsumerWidget {
       ),
     );
     final spec = stack.activePage?.spec;
+    final hasSimulatedOnboardingOverride = ref.watch(
+      onboardingDevOverridesProvider.select(
+        (overrides) => overrides.hasAnyOverride,
+      ),
+    );
     final label = _labelForSpec(spec);
+    final isReadinessSpec =
+        spec?.maybeWhen(
+          environmentReadiness: (_) => true,
+          orElse: () => false,
+        ) ??
+        false;
+    final sidebarMessage = isReadinessSpec
+        ? hasSimulatedOnboardingOverride
+              ? 'A developer simulation is pinning this readiness screen.'
+              : 'The sidebar will unlock when these required checks pass.'
+        : 'The sidebar is unavailable while\nthis operation is active.';
+    final actionLabel = isReadinessSpec
+        ? hasSimulatedOnboardingOverride
+              ? 'Clear Simulation'
+              : 'Re-check'
+        : 'Cancel';
 
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -60,7 +83,7 @@ class SidebarParkedOverlay extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'The sidebar is unavailable while\nthis operation is active.',
+            sidebarMessage,
             style: typography.cassetteCardSubtitle.copyWith(
               color: colors.content.textTertiary,
             ),
@@ -70,8 +93,12 @@ class SidebarParkedOverlay extends ConsumerWidget {
           SizedBox(
             width: double.infinity,
             child: CupertinoButton.filled(
-              onPressed: () => _dismiss(ref),
-              child: const Text('Cancel'),
+              onPressed: () => _dismiss(
+                ref,
+                spec: spec,
+                hasSimulatedOnboardingOverride: hasSimulatedOnboardingOverride,
+              ),
+              child: Text(actionLabel),
             ),
           ),
           const Spacer(flex: 2),
@@ -80,7 +107,26 @@ class SidebarParkedOverlay extends ConsumerWidget {
     );
   }
 
-  void _dismiss(WidgetRef ref) {
+  void _dismiss(
+    WidgetRef ref, {
+    required ViewSpec? spec,
+    required bool hasSimulatedOnboardingOverride,
+  }) {
+    final isReadinessSpec =
+        spec?.maybeWhen(
+          environmentReadiness: (_) => true,
+          orElse: () => false,
+        ) ??
+        false;
+
+    if (isReadinessSpec) {
+      if (hasSimulatedOnboardingOverride) {
+        ref.read(onboardingDevOverridesProvider.notifier).clearAll();
+      }
+      ref.read(onboardingGateProvider.notifier).refreshEnvironment();
+      return;
+    }
+
     ref
         .read(panelsViewStateProvider(mode).notifier)
         .clear(panel: WindowPanel.center);

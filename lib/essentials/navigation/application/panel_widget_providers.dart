@@ -247,6 +247,10 @@ bool _shouldResetCenterPanel({
   required ViewSpec? centerSpec,
   required ViewSpec? projectedCenterSpec,
 }) {
+  if (centerSpec?.isSidebarIndependent ?? false) {
+    return false;
+  }
+
   if (projectedCenterSpec != null) {
     if (centerSpec == null) {
       return true;
