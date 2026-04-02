@@ -203,6 +203,7 @@ class CassetteRackState extends _$CassetteRackState {
     if (index < 0 || index >= state.cassettes.length) {
       return;
     }
+
     final preserved = state.cassettes.take(index).toList(growable: false);
     final isPopulated = ref.read(workingDbPopulatedProvider);
     final cascaded = isPopulated

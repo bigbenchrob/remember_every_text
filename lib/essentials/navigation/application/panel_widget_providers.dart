@@ -20,6 +20,20 @@ import './panel_coordinator_provider.dart';
 
 part 'panel_widget_providers.g.dart';
 
+class _LeftPanelCassetteSnapshot {
+  const _LeftPanelCassetteSnapshot({
+    required this.rackSignature,
+    required this.widgets,
+  });
+
+  final String rackSignature;
+  final List<Widget> widgets;
+}
+
+String _rackSignature(CassetteRack rack) {
+  return rack.cassettes.join('|');
+}
+
 bool isPinnedAppControlCassette(Widget widget) {
   final cassetteCard = unwrapSidebarCassetteCard(widget);
   return cassetteCard != null &&
@@ -410,58 +424,101 @@ bool _isCenterSpecCompatibleWithSidebar({
 @riverpod
 Widget leftPanelWidget(Ref ref, SidebarMode mode) {
   final contextualWidget = ref.watch(contextualSidebarWidgetProvider(mode));
-  // Watch the async cassette list from the coordinator.
-  //
-  // This is an AsyncValue because feature-side coordinators (e.g.,
-  // InfoCassetteCoordinator) may perform async operations like repository
-  // lookups or data formatting.
-  final asyncCassettes = ref.watch(cassetteWidgetCoordinatorProvider(mode));
+  final rack = ref.watch(cassetteRackStateProvider(mode));
+  final asyncSnapshot = ref.watch(leftPanelCassetteSnapshotProvider(mode));
 
-  // Extract the most recent successful value, or fall back to an empty list.
-  //
-  // Using `valueOrNull` ensures that during a refresh (when isLoading is true
-  // but we have previous data), we continue showing the previous cassettes
-  // rather than dropping to a loading state.
-  final cassetteWidgets = asyncCassettes.valueOrNull ?? const <Widget>[];
+  return _buildLeftPanelSurface(
+    mode: mode,
+    rack: rack,
+    contextualWidget: contextualWidget,
+    asyncSnapshot: asyncSnapshot,
+    logError: (error, stackTrace) {
+      ref
+          .read(appLoggerProvider.notifier)
+          .error(
+            'Sidebar cassette error: $error',
+            source: 'SidebarPanel',
+            context: {if (stackTrace != null) 'stackTrace': '$stackTrace'},
+          );
+    },
+  );
+}
+
+Widget _buildLeftPanelFromWidgetRef(WidgetRef ref, SidebarMode mode) {
+  final contextualWidget = ref.watch(contextualSidebarWidgetProvider(mode));
+  final rack = ref.watch(cassetteRackStateProvider(mode));
+  final asyncSnapshot = ref.watch(leftPanelCassetteSnapshotProvider(mode));
+
+  return _buildLeftPanelSurface(
+    mode: mode,
+    rack: rack,
+    contextualWidget: contextualWidget,
+    asyncSnapshot: asyncSnapshot,
+    logError: (error, stackTrace) {
+      ref
+          .read(appLoggerProvider.notifier)
+          .error(
+            'Sidebar cassette error: $error',
+            source: 'SidebarPanel',
+            context: {if (stackTrace != null) 'stackTrace': '$stackTrace'},
+          );
+    },
+  );
+}
+
+@riverpod
+Future<_LeftPanelCassetteSnapshot> leftPanelCassetteSnapshot(
+  Ref ref,
+  SidebarMode mode,
+) async {
+  final rack = ref.watch(cassetteRackStateProvider(mode));
+  final widgets = await ref.watch(
+    cassetteWidgetCoordinatorProvider(mode).future,
+  );
+
+  return _LeftPanelCassetteSnapshot(
+    rackSignature: _rackSignature(rack),
+    widgets: widgets,
+  );
+}
+
+Widget _buildLeftPanelSurface({
+  required SidebarMode mode,
+  required CassetteRack rack,
+  required Widget? contextualWidget,
+  required AsyncValue<_LeftPanelCassetteSnapshot> asyncSnapshot,
+  required void Function(Object error, StackTrace? stackTrace) logError,
+}) {
+  final currentRackSignature = _rackSignature(rack);
+  final snapshot = asyncSnapshot.valueOrNull;
+  final hasCurrentSnapshot = snapshot?.rackSignature == currentRackSignature;
+
+  // Preserve stale widgets only while the rack shape is unchanged.
+  // Structural transitions should render as loading, not as the previous branch.
+  final cassetteWidgets = hasCurrentSnapshot
+      ? snapshot!.widgets
+      : const <Widget>[];
   final sidebarWidgets = contextualWidget == null
       ? cassetteWidgets
       : <Widget>[...cassetteWidgets, contextualWidget];
 
-  // Determine if this is truly the first load (no data yet) vs. a refresh
-  // (loading new data but we have previous data to show).
-  //
-  // We only show the loading indicator when:
-  // - We're in a loading state, AND
-  // - We have no previous value to display
-  //
-  // This prevents the entire sidebar from flashing a spinner every time a
-  // cassette triggers an update.
-  final isInitialLoad = asyncCassettes.isLoading && !asyncCassettes.hasValue;
+  final isLoadingCurrentRack = asyncSnapshot.isLoading && !hasCurrentSnapshot;
 
   // Log errors for debugging but don't disrupt the UI.
   //
   // Future enhancement: Consider surfacing errors via a toast, badge, or
 
   // subtle inline indicator rather than silently swallowing them.
-  if (asyncCassettes.hasError) {
+  if (asyncSnapshot.hasError) {
     // TODO(sidebar): Add user-visible error indicator or recovery UI.
-    ref
-        .read(appLoggerProvider.notifier)
-        .error(
-          'Sidebar cassette error: ${asyncCassettes.error}',
-          source: 'SidebarPanel',
-          context: {
-            if (asyncCassettes.stackTrace != null)
-              'stackTrace': '${asyncCassettes.stackTrace}',
-          },
-        );
+    logError(asyncSnapshot.error!, asyncSnapshot.stackTrace);
   }
 
   // Show a centered loading indicator only during the initial load.
   //
   // This ensures the user sees feedback on first render, but subsequent
   // updates (triggered by user actions) don't cause a jarring full-reload.
-  if (isInitialLoad) {
+  if (isLoadingCurrentRack) {
     return const Center(child: CircularProgressIndicator.adaptive());
   }
 
@@ -470,8 +527,20 @@ Widget leftPanelWidget(Ref ref, SidebarMode mode) {
   // The MouseRegion wrapper supports future hover-based interactions
   // (e.g., showing cassette actions on hover).
   return MouseRegion(
+    key: ValueKey<String>('left-panel-$mode-${rack.cassettes.join('|')}'),
     child: _LeftSidebarSurface(cassetteWidgets: sidebarWidgets),
   );
+}
+
+class LeftPanelHost extends ConsumerWidget {
+  const LeftPanelHost({super.key, required this.mode});
+
+  final SidebarMode mode;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _buildLeftPanelFromWidgetRef(ref, mode);
+  }
 }
 
 /// Sidebar surface that separates pinned controls from scrollable content.

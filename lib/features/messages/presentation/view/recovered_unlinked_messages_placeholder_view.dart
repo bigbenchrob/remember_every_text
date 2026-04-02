@@ -17,6 +17,7 @@ import '../../application/view_spec/resolver_tools/recovered_visible_month_provi
 import '../../domain/entities/attachment_info.dart';
 import '../../domain/spec_classes/messages_view_spec.dart';
 import '../../infrastructure/repositories/recovered_unlinked_messages_provider.dart';
+import 'recovered_visible_month_key.dart';
 
 String _formatRecoveredSemanticKind(String semanticKind) {
   return switch (semanticKind) {
@@ -244,6 +245,7 @@ class _RecoveredMessagesList extends HookConsumerWidget {
     final itemScrollController = useMemoized(ItemScrollController.new);
     final itemPositionsListener = useMemoized(ItemPositionsListener.create);
     final lastScrollTarget = useRef<String?>(null);
+    final lastVisibleMonthKey = useRef<String?>(null);
     final visibleMonthNotifier = ref.read(
       recoveredVisibleMonthProvider(
         contactId: contactId,
@@ -280,34 +282,16 @@ class _RecoveredMessagesList extends HookConsumerWidget {
 
     useEffect(() {
       void handlePositionsChanged() {
-        final positions = itemPositionsListener.itemPositions.value;
-        if (positions.isEmpty) {
-          return;
-        }
-
-        final visiblePositions =
-            positions
-                .where((position) {
-                  return position.itemTrailingEdge > 0 &&
-                      position.itemLeadingEdge < 1;
-                })
-                .toList(growable: false)
-              ..sort((left, right) {
-                return left.itemLeadingEdge.compareTo(right.itemLeadingEdge);
-              });
-
-        if (visiblePositions.isEmpty) {
-          return;
-        }
-
-        final topVisibleIndex = visiblePositions.first.index;
-        if (topVisibleIndex < 0 || topVisibleIndex >= messages.length) {
-          return;
-        }
-
-        visibleMonthNotifier.setMonthKey(
-          _monthKeyForDate(messages[topVisibleIndex].sentAt),
+        final monthKey = recoveredVisibleMonthKeyForVisiblePositions(
+          positions: itemPositionsListener.itemPositions.value,
+          messages: messages,
         );
+        if (monthKey == null || lastVisibleMonthKey.value == monthKey) {
+          return;
+        }
+
+        lastVisibleMonthKey.value = monthKey;
+        visibleMonthNotifier.setMonthKey(monthKey);
       }
 
       itemPositionsListener.itemPositions.addListener(handlePositionsChanged);
@@ -361,14 +345,6 @@ int? _targetIndexForScrollDate({
   }
 
   return messages.length - 1;
-}
-
-String? _monthKeyForDate(DateTime? date) {
-  if (date == null) {
-    return null;
-  }
-
-  return '${date.year}-${date.month.toString().padLeft(2, '0')}';
 }
 
 List<RecoveredUnlinkedMessageItem> _applyRecoveredBucketFilter({

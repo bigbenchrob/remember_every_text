@@ -1,12 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:intl/intl.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
+import '../../../../../../essentials/db/feature_level_providers.dart';
 import '../../../../domain/value_objects/message_timeline_scope.dart';
-import '../hydration/message_by_ordinal_provider.dart';
 import 'message_timeline_ordinal_provider.dart';
 
 part 'current_visible_month_provider.g.dart';
@@ -21,6 +20,9 @@ part 'current_visible_month_provider.g.dart';
 class CurrentVisibleMonthForScope extends _$CurrentVisibleMonthForScope {
   VoidCallback? _detachPositionsListener;
   int _updateGeneration = 0;
+  int? _lastVisibleOrdinal;
+  final Map<int, int> _messageIdByOrdinal = <int, int>{};
+  final Map<int, String> _monthKeyByMessageId = <int, String>{};
 
   @override
   FutureOr<String?> build({required MessageTimelineScope scope}) async {
@@ -28,6 +30,9 @@ class CurrentVisibleMonthForScope extends _$CurrentVisibleMonthForScope {
       messageTimelineOrdinalProvider(scope: scope),
     );
     final ordinalState = ordinalAsync.valueOrNull;
+    _lastVisibleOrdinal = null;
+    _messageIdByOrdinal.clear();
+    _monthKeyByMessageId.clear();
 
     _detachPositionsListener?.call();
     _detachPositionsListener = null;
@@ -77,6 +82,10 @@ class CurrentVisibleMonthForScope extends _$CurrentVisibleMonthForScope {
       return;
     }
 
+    if (state.valueOrNull == monthKey) {
+      return;
+    }
+
     state = AsyncData(monthKey);
   }
 
@@ -102,19 +111,57 @@ class CurrentVisibleMonthForScope extends _$CurrentVisibleMonthForScope {
     final topPosition = visiblePositions.reduce((left, right) {
       return left.itemLeadingEdge <= right.itemLeadingEdge ? left : right;
     });
+    if (_lastVisibleOrdinal == topPosition.index) {
+      return state.valueOrNull;
+    }
+    _lastVisibleOrdinal = topPosition.index;
 
-    final messageItem = await ref.read(
-      messageByTimelineOrdinalProvider(
-        scope: scope,
-        ordinal: topPosition.index,
-      ).future,
-    );
+    final ordinalState = ref
+        .read(messageTimelineOrdinalProvider(scope: scope))
+        .valueOrNull;
+    final strategy = ordinalState?.strategy;
+    if (strategy == null) {
+      return state.valueOrNull;
+    }
 
-    final sentAt = messageItem?.sentAt;
+    final cachedMessageId = _messageIdByOrdinal[topPosition.index];
+    final messageId =
+        cachedMessageId ??
+        await strategy.getMessageIdByOrdinal(topPosition.index);
+    if (messageId == null) {
+      return state.valueOrNull;
+    }
+    _messageIdByOrdinal[topPosition.index] = messageId;
+
+    final cachedMonthKey = _monthKeyByMessageId[messageId];
+    if (cachedMonthKey != null) {
+      return cachedMonthKey;
+    }
+
+    final db = await ref.read(driftWorkingDatabaseProvider.future);
+    final sentAtRow =
+        await (db.selectOnly(db.workingMessages)
+              ..addColumns([db.workingMessages.sentAtUtc])
+              ..where(db.workingMessages.id.equals(messageId))
+              ..limit(1))
+            .getSingleOrNull();
+    final sentAtUtc = sentAtRow?.read(db.workingMessages.sentAtUtc);
+    if (sentAtUtc == null || sentAtUtc.isEmpty) {
+      return state.valueOrNull;
+    }
+
+    final sentAt = DateTime.tryParse(sentAtUtc);
     if (sentAt == null) {
       return state.valueOrNull;
     }
 
-    return DateFormat('yyyy-MM').format(sentAt);
+    final monthKey = _monthKeyForDate(sentAt);
+    _monthKeyByMessageId[messageId] = monthKey;
+    return monthKey;
   }
+}
+
+String _monthKeyForDate(DateTime date) {
+  final month = date.month.toString().padLeft(2, '0');
+  return '${date.year}-$month';
 }

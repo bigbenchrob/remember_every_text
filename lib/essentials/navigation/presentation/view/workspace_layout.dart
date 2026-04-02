@@ -25,7 +25,7 @@ class WorkspaceLayout extends ConsumerWidget {
           width: _navigationColumnWidth,
           child: isParked
               ? SidebarParkedOverlay(mode: mode)
-              : ref.watch(leftPanelWidgetProvider(mode)),
+              : LeftPanelHost(mode: mode),
         ),
         Expanded(
           child: ContentPlane(

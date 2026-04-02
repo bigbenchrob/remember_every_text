@@ -1,0 +1,49 @@
+Handoff Summary — Ftr.img-archive Branch
+Branch & Git State
+Branch: Ftr.img-archive (1 commit ahead of main)
+Last commit: 3b684c9 — Living Attachments Archive + Deterministic Recovery feature work
+Uncommitted changes: 8 new documentation files in 25-ONBOARDING-AND-ARCHIVE + updated canonical map in the project README, plus debug prints in one widget file (see below)
+What Was Just Completed
+Documentation: Created a comprehensive 25-ONBOARDING-AND-ARCHIVE/ folder (8 files) in agent-per-project covering:
+
+README.md — reading order, ownership, invariants
+00-overview.md — 4-phase evolution narrative
+10-onboarding-gate.md — 9-state state machine
+20-environment-readiness.md — FDA/source probes
+30-import-migration-coordination.md — pipeline sequence
+40-attachment-archive.md — content-addressable archive
+50-deterministic-recovery.md — GUID-based historical recovery
+60-reimport-and-ongoing-sync.md — auto-sync / re-import
+The project README canonical map at README.md was updated with the new 25-ONBOARDING-AND-ARCHIVE/ row.
+
+Prior sessions (same branch): Living Attachments Archive Phases 0–4 implemented and passing (36/36 tests). flutter analyze was clean. build_runner succeeded.
+
+Known Failure Points / Outstanding Issues
+1. Debug prints left in production widget (MUST REVERT)
+contact_selection_control_widget.dart has temporary debug instrumentation from the bug investigation:
+
+Line 2: import 'package:flutter/foundation.dart'; — added only for debugPrint
+Lines 47–52: debugPrint('[ChangeContact] TAP! ...') in _handleTap()
+Line 59: debugPrint('[ChangeContact] chooseAnotherContact completed')
+These must be removed before merge.
+
+2. "< Change contact..." button unresponsive on fresh start (UNRESOLVED BUG)
+Symptom: After launching the app fresh, choosing a contact in the sidebar, the "Change contact..." back-link at the top of the info card does nothing when tapped.
+Investigation findings:
+_handleTap() calls sidebarFlowProvider.notifier.chooseAnotherContact() which calls replaceAtIndexAndCascade on the cassette rack
+Git diff of HEAD~1 shows sidebar files were modified (action dispatcher, action intent enum, cascade topology files) — these are the most probable cause
+The debug prints added above were never observed in console output, suggesting the tap handler may not be firing at all, or the widget is being overlaid/obscured
+GestureDetector with HitTestBehavior.opaque is present, so hit testing should work
+The bug appeared after the Ftr.img-archive commit; main branch did not exhibit it (verified by checkout)
+Root cause not identified — the investigation was paused at user request
+3. No flutter analyze run after documentation changes
+The docs are markdown only (no Dart changes in this session), so analyze should still be clean, but it hasn't been re-verified in this session.
+
+4. Uncommitted documentation not yet staged/committed
+The 8 new doc files and README edit exist only as working tree changes — they need to be committed (either as part of the feature branch or separately).
+
+Recommended Next Steps for Receiving Agent
+Revert debug prints in contact_selection_control_widget.dart: remove the foundation.dart import and both debugPrint calls
+Investigate the button bug: The most productive approach is to git diff HEAD~1 HEAD -- lib/essentials/sidebar/ and examine what changed in the cascade/rack/topology files — the bug was introduced by the Ftr.img-archive commit
+Commit the documentation if satisfied with content
+Run flutter analyze to confirm clean state after any code changes

@@ -792,7 +792,7 @@ class _ContextualSidebarWidgetProviderElement
   SidebarMode get mode => (origin as ContextualSidebarWidgetProvider).mode;
 }
 
-String _$leftPanelWidgetHash() => r'06804b704050c8e571c92877f43b40b1051ca9db';
+String _$leftPanelWidgetHash() => r'32339528c3c90ef11c17eaec7284b94605ed4f8d';
 
 /// Widget provider for left panel (sidebar).
 ///
@@ -1255,6 +1255,136 @@ class _LeftPanelWidgetProviderElement extends AutoDisposeProviderElement<Widget>
 
   @override
   SidebarMode get mode => (origin as LeftPanelWidgetProvider).mode;
+}
+
+String _$leftPanelCassetteSnapshotHash() =>
+    r'f48a2a30ddd413d71ca193a23bf54b9801d0a836';
+
+/// See also [leftPanelCassetteSnapshot].
+@ProviderFor(leftPanelCassetteSnapshot)
+const leftPanelCassetteSnapshotProvider = LeftPanelCassetteSnapshotFamily();
+
+/// See also [leftPanelCassetteSnapshot].
+class LeftPanelCassetteSnapshotFamily
+    extends Family<AsyncValue<_LeftPanelCassetteSnapshot>> {
+  /// See also [leftPanelCassetteSnapshot].
+  const LeftPanelCassetteSnapshotFamily();
+
+  /// See also [leftPanelCassetteSnapshot].
+  LeftPanelCassetteSnapshotProvider call(SidebarMode mode) {
+    return LeftPanelCassetteSnapshotProvider(mode);
+  }
+
+  @override
+  LeftPanelCassetteSnapshotProvider getProviderOverride(
+    covariant LeftPanelCassetteSnapshotProvider provider,
+  ) {
+    return call(provider.mode);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'leftPanelCassetteSnapshotProvider';
+}
+
+/// See also [leftPanelCassetteSnapshot].
+class LeftPanelCassetteSnapshotProvider
+    extends AutoDisposeFutureProvider<_LeftPanelCassetteSnapshot> {
+  /// See also [leftPanelCassetteSnapshot].
+  LeftPanelCassetteSnapshotProvider(SidebarMode mode)
+    : this._internal(
+        (ref) => leftPanelCassetteSnapshot(
+          ref as LeftPanelCassetteSnapshotRef,
+          mode,
+        ),
+        from: leftPanelCassetteSnapshotProvider,
+        name: r'leftPanelCassetteSnapshotProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$leftPanelCassetteSnapshotHash,
+        dependencies: LeftPanelCassetteSnapshotFamily._dependencies,
+        allTransitiveDependencies:
+            LeftPanelCassetteSnapshotFamily._allTransitiveDependencies,
+        mode: mode,
+      );
+
+  LeftPanelCassetteSnapshotProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.mode,
+  }) : super.internal();
+
+  final SidebarMode mode;
+
+  @override
+  Override overrideWith(
+    FutureOr<_LeftPanelCassetteSnapshot> Function(
+      LeftPanelCassetteSnapshotRef provider,
+    )
+    create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: LeftPanelCassetteSnapshotProvider._internal(
+        (ref) => create(ref as LeftPanelCassetteSnapshotRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        mode: mode,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<_LeftPanelCassetteSnapshot> createElement() {
+    return _LeftPanelCassetteSnapshotProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is LeftPanelCassetteSnapshotProvider && other.mode == mode;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, mode.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin LeftPanelCassetteSnapshotRef
+    on AutoDisposeFutureProviderRef<_LeftPanelCassetteSnapshot> {
+  /// The parameter `mode` of this provider.
+  SidebarMode get mode;
+}
+
+class _LeftPanelCassetteSnapshotProviderElement
+    extends AutoDisposeFutureProviderElement<_LeftPanelCassetteSnapshot>
+    with LeftPanelCassetteSnapshotRef {
+  _LeftPanelCassetteSnapshotProviderElement(super.provider);
+
+  @override
+  SidebarMode get mode => (origin as LeftPanelCassetteSnapshotProvider).mode;
 }
 
 // ignore_for_file: type=lint
