@@ -1,0 +1,358 @@
+============================================================
+FORENSIC FAILURE ANALYSIS A
+============================================================
+
+Date: 2026-04-01
+Databases:
+  Working DB : ~/Library/Application Support/com.bigbenchsoftware.MessageLens/working.db
+  Overlay DB : ~/Library/Application Support/com.bigbenchsoftware.MessageLens/user_overlays.db
+  Archive Dir: ~/Library/Application Support/com.bigbenchsoftware.MessageLens/attachment_archive/
+  Backup Dir : /Users/rob/Library/Messages-bkp-2026-03-29
+
+============================================================
+STEP 1 — IDENTIFY ATTACHMENT RECORDS
+============================================================
+
+--- MESSAGE 133484 (FAILURE) ---
+  message_id       : 133484
+  message_guid     : E9F8AA4C-8288-4790-9F96-FA310932E252
+  chat_id          : 6
+  is_from_me       : 1
+  sent_at_utc      : 2026-03-23T17:06:30.000Z
+  has_attachments  : 1
+  attachment_id    : 32289
+  import_attachment_id : 39801
+  transfer_name    : Following — Bluesky.png
+  mime_type        : image/png
+  uti              : public.png
+  local_path       : ~/Library/Messages/Attachments/c8/08/at_0_E9F8AA4C-8288-4790-9F96-FA310932E252/Following — Bluesky.png
+  sha256_hex       : (empty — NULL)
+  size_bytes       : 2952262
+
+--- MESSAGE 133595 (CONTROL/SUCCESS) ---
+  message_id       : 133595
+  message_guid     : 8CE5C978-D739-4359-8FF3-CB86E8F85C6E
+  chat_id          : 279
+  is_from_me       : 0
+  sent_at_utc      : 2026-03-24T22:12:23.000Z
+  has_attachments  : 1
+  attachment_id    : 32324
+  import_attachment_id : 39836
+  transfer_name    : IMG_4986.png
+  mime_type        : image/png
+  uti              : public.png
+  local_path       : ~/Library/Messages/Attachments/7c/12/33219550-7F53-4D10-900D-C3C591242DC6/IMG_4986.png
+  sha256_hex       : (empty — NULL)
+  size_bytes       : 1632986
+
+============================================================
+STEP 2 — VERIFY WORKING DB STATE
+============================================================
+
+--- 133484 (FAILURE) ---
+  Full row present: YES (attachment id 32289)
+  Resolved local_path: /Users/rob/Library/Messages/Attachments/c8/08/at_0_E9F8AA4C-8288-4790-9F96-FA310932E252/Following — Bluesky.png
+  File exists at path: NO
+  sha256_hex       : (empty — NULL)
+  created_at_utc   : 2001-01-01T00:00:01.000Z (placeholder)
+  is_outgoing      : 0
+  batch_id         : 1
+
+--- 133595 (CONTROL/SUCCESS) ---
+  Full row present: YES (attachment id 32324)
+  Resolved local_path: /Users/rob/Library/Messages/Attachments/7c/12/33219550-7F53-4D10-900D-C3C591242DC6/IMG_4986.png
+  File exists at path: NO
+  sha256_hex       : (empty — NULL)
+  created_at_utc   : 2001-01-01T00:00:01.000Z (placeholder)
+  is_outgoing      : 0
+  batch_id         : 1
+
+============================================================
+STEP 3 — VERIFY OVERLAY ARCHIVE RECORD
+============================================================
+
+Overlay schema used:
+  CREATE TABLE archived_attachments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    message_guid TEXT NOT NULL,
+    import_attachment_id INTEGER NOT NULL,
+    archive_relative_path TEXT NOT NULL,
+    archived_at_utc TEXT NOT NULL,
+    file_size_bytes INTEGER NOT NULL,
+    content_hash TEXT NULL,
+    provenance TEXT NOT NULL DEFAULT 'archived',
+    original_local_path TEXT NULL,
+    UNIQUE (message_guid, import_attachment_id)
+  );
+
+--- 133484 (FAILURE) ---
+  Lookup key: message_guid='E9F8AA4C-8288-4790-9F96-FA310932E252', import_attachment_id=39801
+  Matching rows: 0
+  >>> NO OVERLAY RECORD FOUND <<<
+  Broadened search (all rows with same guid): 0
+  Broadened search (all rows with same import_attachment_id): 0
+
+--- 133595 (CONTROL/SUCCESS) ---
+  Lookup key: message_guid='8CE5C978-D739-4359-8FF3-CB86E8F85C6E', import_attachment_id=39836
+  Matching rows: 1
+  id                    : 6555
+  message_guid          : 8CE5C978-D739-4359-8FF3-CB86E8F85C6E
+  import_attachment_id  : 39836
+  archive_relative_path : 87/87b60a716a227245ae34fc8ec589f49765144c681eb1c2fb321747434b217156.png
+  archived_at_utc       : 2026-03-30T19:19:37.559661Z
+  file_size_bytes       : 1632986
+  content_hash          : 87b60a716a227245ae34fc8ec589f49765144c681eb1c2fb321747434b217156
+  provenance            : imported_historical
+  original_local_path   : /Users/rob/Library/Messages-bkp-2026-03-29/Attachments-2026-03-29/7c/12/33219550-7F53-4D10-900D-C3C591242DC6/IMG_4986.png
+
+============================================================
+STEP 4 — VERIFY ARCHIVE FILE ON DISK
+============================================================
+
+--- 133484 (FAILURE) ---
+  No overlay record exists → no archive path to check.
+  No archive corruption — record simply never created.
+
+--- 133595 (CONTROL/SUCCESS) ---
+  archive_relative_path : 87/87b60a716a227245ae34fc8ec589f49765144c681eb1c2fb321747434b217156.png
+  Full archive path     : ~/Library/Application Support/com.bigbenchsoftware.MessageLens/attachment_archive/87/87b60a716a227245ae34fc8ec589f49765144c681eb1c2fb321747434b217156.png
+  File exists           : YES
+  File size on disk     : 1632986 bytes (matches overlay record)
+
+============================================================
+STEP 5 — BACKUP MATCHING ANALYSIS (CRITICAL)
+============================================================
+
+Backup directory: /Users/rob/Library/Messages-bkp-2026-03-29
+Backup attachments folder renamed to: Attachments-2026-03-29 (was Attachments)
+
+--- 133484 (FAILURE) ---
+  transfer_name    : Following — Bluesky.png
+  local_path (DB)  : ~/Library/Messages/Attachments/c8/08/at_0_E9F8AA4C-8288-4790-9F96-FA310932E252/Following — Bluesky.png
+
+  Exact filename search (case-sensitive):
+    FOUND: YES — 164 UNIQUE COPIES in backup (same basename, different GUID dirs)
+    Example paths:
+      .../Attachments-2026-03-29/61/01/A43A625A-CE7E-47AD-9A9B-EADE3E27A512/Following — Bluesky.png
+      .../Attachments-2026-03-29/0d/13/EE4DDA09-ABC5-42A9-827F-11FCA303D92B/Following — Bluesky.png
+      .../Attachments-2026-03-29/c8/08/A73BC1D8-5D9C-4548-8695-C3FB24CCEFC5/Following — Bluesky.png
+      ... (161 more)
+
+  Case-insensitive search: same 164 copies (no additional)
+
+  Path-suffix match (c8/08/at_0_E9F8AA4C-8288-4790-9F96-FA310932E252/Following — Bluesky.png):
+    NOT FOUND — the GUID directory "at_0_E9F8AA4C-8288-4790-9F96-FA310932E252" does NOT exist in backup.
+    NOTE: Backup dir c8/08/ contains a DIFFERENT GUID: A73BC1D8-5D9C-4548-8695-C3FB24CCEFC5
+
+  Caches/Previews check: NOT FOUND (directory does not exist)
+
+  >>> CONCLUSION: File IS present in backup (164 copies with same filename) but the specific
+      GUID directory in the working DB path does not match any backup directory. <<<
+
+--- 133595 (CONTROL/SUCCESS) ---
+  transfer_name    : IMG_4986.png
+  local_path (DB)  : ~/Library/Messages/Attachments/7c/12/33219550-7F53-4D10-900D-C3C591242DC6/IMG_4986.png
+
+  Exact filename search (case-sensitive):
+    FOUND: 1 copy — /Users/rob/Library/Messages-bkp-2026-03-29/Attachments-2026-03-29/7c/12/33219550-7F53-4D10-900D-C3C591242DC6/IMG_4986.png
+
+  Case-insensitive search: same 1 copy
+
+  Path-suffix match (7c/12/33219550-7F53-4D10-900D-C3C591242DC6/IMG_4986.png):
+    FOUND — exact match. The GUID directory in backup MATCHES the working DB path.
+
+  Caches/Previews check: Preview exists (IMG_4986-preview.ktx) but not original file.
+
+  >>> CONCLUSION: File present in backup with matching GUID directory structure. <<<
+
+============================================================
+STEP 6 — MATCHING DECISION TRACE
+============================================================
+
+Production matcher: HistoricalImport._processFile()
+  in lib/features/attachments/application/historical_import_provider.dart
+
+Algorithm (iterates over backup files, NOT working DB records):
+  1. Read backup file bytes, compute sha256
+  2. Look up hash in hashIndex (built from working DB sha256_hex column)
+  3. If no hash match → extract _pathTail(backupFilePath) = last 3 segments
+  4. Look up path tail in pathIndex (built from working DB local_path column)
+  5. If matched → create overlay record + copy to archive
+
+--- 133484 (FAILURE) — Matching trace ---
+
+  HASH MATCH ATTEMPTED: NO
+    Working DB sha256_hex for this attachment: NULL (iCloud-evicted file — never downloaded)
+    Therefore this attachment has NO entry in hashIndex.
+    Even though the archiver computes sha256 for each backup file, it cannot
+    find message 133484's attachment in hashIndex because the working DB
+    row has sha256_hex = NULL.
+
+  PATH-TAIL MATCH ATTEMPTED: YES (but failed to match correctly)
+    Working DB local_path: ~/Library/Messages/Attachments/c8/08/at_0_E9F8AA4C-8288-4790-9F96-FA310932E252/Following — Bluesky.png
+    _pathTail of working DB path → "at_0_E9F8AA4C-8288-4790-9F96-FA310932E252/Following — Bluesky.png"
+      (last 3 segments: "08", "at_0_E9F8AA4C-...", "Following — Bluesky.png")
+
+    The backup files have path tails like:
+      "08/A73BC1D8-5D9C-4548-8695-C3FB24CCEFC5/Following — Bluesky.png"
+      "01/A43A625A-CE7E-47AD-9A9B-EADE3E27A512/Following — Bluesky.png"
+      etc.
+
+    The path tail from the working DB is:
+      "08/at_0_E9F8AA4C-8288-4790-9F96-FA310932E252/Following — Bluesky.png"
+
+    NONE of the 164 backup copies have "at_0_E9F8AA4C-..." as their GUID directory.
+    The backup-side path tails don't match the working-DB-side path tails.
+
+    CRITICAL DETAIL: The working DB uses an "at_0_" prefix on the GUID folder:
+      at_0_E9F8AA4C-8288-4790-9F96-FA310932E252
+    The backup uses bare GUIDs:
+      A73BC1D8-5D9C-4548-8695-C3FB24CCEFC5
+
+    These are DIFFERENT GUIDs entirely — iMessage generated a new local GUID
+    ("at_0_E9F8AA4C-...") when the file was sent, but the backup contains the
+    RECEIVED copies with their own distinct GUIDs.
+
+  RESULT: No hash match (NULL hash), no path-tail match (GUID mismatch) → NOT MATCHED.
+
+--- 133595 (CONTROL/SUCCESS) — Matching trace ---
+
+  HASH MATCH ATTEMPTED: NO
+    Working DB sha256_hex for this attachment: NULL (iCloud-evicted)
+    Same situation as 133484 — no hashIndex entry.
+
+  PATH-TAIL MATCH ATTEMPTED: YES (succeeded)
+    Working DB local_path: ~/Library/Messages/Attachments/7c/12/33219550-7F53-4D10-900D-C3C591242DC6/IMG_4986.png
+    _pathTail of working DB path → "12/33219550-7F53-4D10-900D-C3C591242DC6/IMG_4986.png"
+
+    Backup file path: .../Attachments-2026-03-29/7c/12/33219550-7F53-4D10-900D-C3C591242DC6/IMG_4986.png
+    _pathTail of backup file → "12/33219550-7F53-4D10-900D-C3C591242DC6/IMG_4986.png"
+
+    EXACT MATCH — same GUID directory in both working DB and backup.
+
+  RESULT: Path-tail match succeeded → file archived + overlay record created.
+
+============================================================
+STEP 7 — RESOLVER OUTPUT
+============================================================
+
+Production resolver: resolveArchivePaths()
+  in lib/features/messages/presentation/view_model/shared/hydration/attachment_info_loader.dart
+
+Algorithm:
+  1. For each attachment, resolve local_path (expand ~/)
+  2. Check if file exists at resolved local_path
+  3. If yes → use local file, skip archive
+  4. If no → require non-null message_guid AND import_attachment_id
+  5. Batch query: overlay.archived_attachments WHERE message_guid = X AND import_attachment_id IN (ids)
+  6. If overlay row found → archiveResolvedPath = archiveDir/archive_relative_path
+  7. If no overlay row → attachment stays unresolved (broken image in UI)
+
+--- 133484 (FAILURE) ---
+  Resolved local_path: /Users/rob/Library/Messages/Attachments/c8/08/at_0_E9F8AA4C-8288-4790-9F96-FA310932E252/Following — Bluesky.png
+  Local file exists: NO
+  Query overlay: message_guid='E9F8AA4C-8288-4790-9F96-FA310932E252', import_attachment_id=39801
+  Result: 0 rows
+  Outcome: UNRESOLVED — no overlay record, no local file → broken image in UI
+
+--- 133595 (CONTROL/SUCCESS) ---
+  Resolved local_path: /Users/rob/Library/Messages/Attachments/7c/12/33219550-7F53-4D10-900D-C3C591242DC6/IMG_4986.png
+  Local file exists: NO
+  Query overlay: message_guid='8CE5C978-D739-4359-8FF3-CB86E8F85C6E', import_attachment_id=39836
+  Result: 1 row (id=6555)
+  archiveResolvedPath: ~/Library/Application Support/com.bigbenchsoftware.MessageLens/attachment_archive/87/87b60a716a227245ae34fc8ec589f49765144c681eb1c2fb321747434b217156.png
+  Outcome: RESOLVED — archive file found and served
+
+============================================================
+STEP 8 — FINAL CLASSIFICATION
+============================================================
+
+--- 133484 (FAILURE) ---
+  message_id   : 133484
+  sent_at_utc  : 2026-03-23T17:06:30.000Z (Mar 23, 10:06 AM PDT)
+  transfer_name: Following — Bluesky.png
+
+  CLASSIFICATION: >>> present in backup but matching failed <<<
+
+  ROOT CAUSE CHAIN:
+    1. sha256_hex is NULL in working DB (file was iCloud-evicted, never downloaded locally)
+       → hash-based matching impossible
+    2. Working DB local_path GUID directory ("at_0_E9F8AA4C-8288-4790-9F96-FA310932E252")
+       does not match any backup GUID directory
+       → path-tail matching fails despite 164 copies of the file existing in backup
+    3. The "at_0_" prefix indicates iMessage generated a unique local folder name when
+       this message was sent — different from the received-copy GUIDs in the backup
+    4. No overlay record was created → resolver returns unresolved → broken image in UI
+
+  CONTRIBUTING FACTOR:
+    The filename "Following — Bluesky.png" is an extremely common Bluesky screenshot
+    filename (164 copies in backup). Even if basename-only matching were used, it would
+    be ambiguous. The archiver has NO disambiguation mechanism for common filenames with
+    mismatched GUID directories.
+
+--- 133595 (CONTROL/SUCCESS) ---
+  message_id   : 133595
+  sent_at_utc  : 2026-03-24T22:12:23.000Z (Mar 24, 2:34 PM PDT)
+  transfer_name: IMG_4986.png
+
+  CLASSIFICATION: >>> successfully archived and resolved <<<
+
+  The backup retained the same GUID directory structure as the working DB
+  (33219550-7F53-4D10-900D-C3C591242DC6). Path-tail matching succeeded
+  despite NULL sha256_hex. File was copied to archive, overlay record
+  created (provenance: imported_historical), and resolver serves it.
+
+============================================================
+DIFFERENTIAL ANALYSIS — WHY ONE FAILED AND THE OTHER SUCCEEDED
+============================================================
+
+Both attachments share the SAME deficiency: sha256_hex = NULL in the working DB
+(iCloud-evicted files that were never fully downloaded). Hash matching was
+impossible for BOTH.
+
+The difference lies in path-tail matching:
+
+  133595 (SUCCESS):
+    Working DB GUID dir:  33219550-7F53-4D10-900D-C3C591242DC6
+    Backup GUID dir:      33219550-7F53-4D10-900D-C3C591242DC6  ← SAME
+    _pathTail match:      12/33219550-.../IMG_4986.png == 12/33219550-.../IMG_4986.png ✓
+
+  133484 (FAILURE):
+    Working DB GUID dir:  at_0_E9F8AA4C-8288-4790-9F96-FA310932E252
+    Backup GUID dirs:     A73BC1D8-..., A43A625A-..., EE4DDA09-..., etc. ← ALL DIFFERENT
+    _pathTail match:      08/at_0_E9F8AA4C-.../Following... != 08/A73BC1D8-.../Following... ✗
+
+The "at_0_" prefix on the GUID directory is the smoking gun. iMessage uses this
+convention for SENT attachments (the "at_0" is the attachment index within the
+message). Received attachments use bare GUIDs. The backup folder structure
+preserves the RECEIVED copies, which have different GUIDs.
+
+============================================================
+SUGGESTED FIX DIRECTIONS
+============================================================
+
+1. FILENAME + FILE SIZE MATCHING (low risk):
+   When path-tail matching fails, fall back to matching by
+   (transfer_name + file_size_bytes). This would match 133484's
+   "Following — Bluesky.png" (2,952,262 bytes) against backup copies.
+   If exactly one backup file matches both filename AND size, use it.
+   If multiple match (likely for identical screenshots), archive ALL
+   copies — the content-addressable store deduplicates anyway.
+
+2. SIZE-ONLY DEDUPLICATION FOR COMMON FILENAMES:
+   When the filename has >1 backup hit, hash each candidate from the
+   backup and check if any hash matches an un-archived attachment's
+   file_size_bytes. Since the archive is content-addressed, even
+   archiving the "wrong" copy (if file sizes match) produces the
+   correct result if the files are byte-identical.
+
+3. STRIP "at_0_" PREFIX FROM PATH-TAIL MATCHING:
+   Before path-tail lookup, normalize GUID directories by stripping
+   the "at_N_" prefix. This would make
+   "08/at_0_E9F8AA4C-.../file.png" matchable against
+   "08/E9F8AA4C-.../file.png" — but only if the backup also has the
+   same base GUID (which it may not, as seen here).
+
+============================================================
+END OF FORENSIC ANALYSIS
+============================================================

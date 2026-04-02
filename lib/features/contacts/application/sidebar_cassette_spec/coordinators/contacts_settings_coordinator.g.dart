@@ -7,7 +7,7 @@ part of 'contacts_settings_coordinator.dart';
 // **************************************************************************
 
 String _$contactsSettingsCoordinatorHash() =>
-    r'97a671332e4674e8d335195017e505013632740a';
+    r'5377329b059823a97dd84b9d7a9ab35b436dc2af';
 
 /// Coordinator for ContactsSettingsSpec variants.
 ///

@@ -24,6 +24,8 @@ CassetteSpec? resolveSidebarUtilityChild(SidebarUtilityCassetteSpec spec) {
       switch (selectedChoice) {
         case SettingsMenuChoice.actions:
           return sidebarUtilitySettingsChildActionsMenu();
+        case SettingsMenuChoice.attachmentArchive:
+          return sidebarUtilitySettingsChildAttachmentArchive();
       }
     },
   );

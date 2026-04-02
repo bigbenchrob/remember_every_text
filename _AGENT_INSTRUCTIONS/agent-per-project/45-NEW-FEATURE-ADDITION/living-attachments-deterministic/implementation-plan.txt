@@ -1,0 +1,751 @@
+DETERMINISTIC HISTORICAL ATTACHMENT RECOVERY — FORMAL IMPLEMENTATION PLAN
+=========================================================================
+
+Date: 2026-04-01
+Branch: Ftr.img-archive
+Status: Awaiting owner approval before implementation begins
+
+Supersedes: Heuristic historical recovery (folder-only path-tail/hash matching)
+Preserves: Live archive mode, overlay schema, resolver pipeline, content-addressable store
+
+Governing documents:
+  - seed.txt (feature seed)
+  - response-to-plan-concerns.txt (owner directives 1–10)
+  - FORENSIC_FAILURE_ANALYSIS_A.txt (root cause evidence)
+
+=========================================================================
+ARCHITECTURAL BOUNDARY STATEMENT
+=========================================================================
+
+The previous historical recovery flow based on file-only heuristics is
+superseded and removed as a product feature. Historical recovery is now
+supported only through deterministic intake from a matched historical
+Messages snapshot. Heuristic file-only recovery is out of product scope.
+
+=========================================================================
+HARD INVARIANTS
+=========================================================================
+
+1. Overlay/working DB separation is inviolable:
+   - Historical recovery writes ONLY to overlay DB (archived_attachments)
+   - Historical recovery NEVER writes to working DB
+   - Historical recovery NEVER reads overlay during matching decisions
+
+2. Record fidelity is inviolable:
+   - Unmapped historical records are counted and reported, never silently dropped
+   - No anomalous record suppression at any layer
+
+3. Historical snapshot is read-only:
+   - The historical chat.db must be opened SQLITE_OPEN_READONLY
+   - The importer must not checkpoint, mutate, vacuum, or alter the snapshot
+   - WAL/SHM are used read-only when present
+
+4. Historical ROWIDs are traversal-only:
+   - Historical message_id and attachment_id (ROWIDs) are valid only within
+     the historical snapshot for join traversal
+   - They must NEVER escape into overlay identity or runtime linkage
+
+5. Identity isolation:
+   - Historical traversal identity: historical ROWIDs for join walking
+   - Current runtime identity: (message_guid, import_attachment_id) for overlay keys
+   - The mapper bridges these via attachment GUID lookup in the current import DB
+
+6. No heuristic fallback in the deterministic flow:
+   - No path-tail guessing, no basename matching, no filename+size inference
+   - File resolution is deterministic path rewrite only
+
+=========================================================================
+THREE-LAYER READ TOPOLOGY
+=========================================================================
+
+During historical recovery intake, the deterministic mapper reads three
+data layers (all read-only during the mapping phase):
+
+  Layer 1: Historical snapshot DB (user-provided, read-only)
+    Source of: attachment.guid, message.guid, attachment.filename,
+              message_attachment_join relationships
+
+  Layer 2: Current import DB (via sqfliteImportDatabaseProvider)
+    Source of: attachments.guid → attachments.id bridge
+    This is the ONLY layer that holds both Apple's attachment.guid AND the
+    id that becomes import_attachment_id in the working DB
+
+  Layer 3: Current working DB + overlay (via existing providers)
+    Source of: (message_guid, import_attachment_id) runtime identity
+    Target of: overlay archived_attachments row insertion
+
+Precondition: The current import DB must be populated from at least one
+live import+migration cycle. If the import DB is empty or absent,
+historical recovery must refuse to proceed with a clear diagnostic.
+
+=========================================================================
+PHASE 0 — REMOVE HEURISTIC HISTORICAL IMPORTER
+=========================================================================
+
+Goal: Remove the folder-only heuristic recovery path as a product feature.
+
+FILES TO MODIFY OR DELETE:
+
+  DELETE:
+    lib/features/attachments/application/historical_import_provider.dart
+      Entire file. Contains _buildHashIndex(), _buildPathIndex(),
+      _processFile(), _pathTail() — all heuristic matching logic.
+
+  MODIFY:
+    lib/features/contacts/presentation/cassettes/settings/
+      attachment_archive_settings_content.dart
+      Remove the _HistoricalImportSection widget and its "Import from
+      Backup…" button. This UI surface will be replaced in Phase 4 with
+      the deterministic recovery UI.
+
+  MODIFY (if references exist):
+    Any file that imports or references historicalImportProvider.
+    Remove dead references.
+
+  MODIFY:
+    Settings/onboarding/debug text that implies folder-only recovery is
+    supported. Update wording to reflect deterministic-only recovery.
+
+ACCEPTANCE:
+  - historicalImportProvider no longer exists
+  - No UI path allows folder-only historical recovery
+  - App compiles and runs without the removed code
+  - Live archive mode is completely unaffected
+  - Existing overlay archived_attachments rows from prior heuristic runs
+    remain untouched (they are valid archived files)
+
+=========================================================================
+PHASE 1 — BUILD DETERMINISTIC SNAPSHOT READER
+=========================================================================
+
+Goal: Open a historical chat.db read-only and enumerate all
+message↔attachment relationships with resolved file paths.
+
+NEW FILE:
+  lib/features/attachments/application/
+    historical_snapshot_reader.dart
+
+This is a pure data-access class (not a Riverpod provider). It takes a
+file path to the historical chat.db and the historical Attachments root
+directory, and returns structured results.
+
+INPUT CONTRACT:
+  Required:
+    - Historical chat.db path (must exist, must be a valid SQLite DB)
+    - Historical Attachments folder path (must exist)
+  Optional:
+    - chat.db-wal path (used if present alongside chat.db)
+    - chat.db-shm path (used if present alongside chat.db)
+
+  Validation:
+    - chat.db exists and is readable
+    - Attachments folder exists
+    - WAL/SHM presence detected and reported
+    - If WAL/SHM are absent, proceed with clear warning that snapshot
+      may be incomplete (transactions in WAL at backup time are lost)
+
+DB ACCESS:
+  - Open historical chat.db with SQLITE_OPEN_READONLY flag
+  - If WAL exists, SQLite will incorporate it during read-only open
+    (this is standard SQLite behavior — no explicit merge needed)
+  - NEVER open with write permissions
+  - Use a SEPARATE connection, NOT the app's import DB connection
+  - Close connection after enumeration completes
+
+ENUMERATION QUERY (within historical snapshot):
+
+  SELECT
+    m.ROWID   AS hist_message_rowid,
+    m.guid    AS hist_message_guid,
+    a.ROWID   AS hist_attachment_rowid,
+    a.guid    AS hist_attachment_guid,
+    a.filename AS hist_local_path,
+    a.transfer_name AS hist_transfer_name,
+    a.mime_type,
+    a.uti,
+    a.total_bytes AS hist_file_size,
+    a.is_outgoing
+  FROM message_attachment_join maj
+  JOIN message m ON m.ROWID = maj.message_id
+  JOIN attachment a ON a.ROWID = maj.attachment_id
+  WHERE m.guid IS NOT NULL
+    AND LENGTH(TRIM(m.guid)) > 0
+
+  This enumerates every message↔attachment pair in the historical
+  snapshot. Historical ROWIDs are used ONLY for the JOIN within this
+  query. The output carries GUIDs as the portable identity.
+
+FILE RESOLUTION (deterministic path rewrite):
+
+  For each row where hist_local_path is not null:
+
+  1. Take hist_local_path (e.g. "~/Library/Messages/Attachments/ab/cd/...")
+  2. Strip the historical root prefix: ~/Library/Messages/Attachments/
+     (or ~/Library/Messages/ depending on path format)
+  3. Append the relative remainder to the user-selected historical
+     Attachments root directory
+  4. Test file existence at that exact path
+  5. Result: found (with full resolved path) or missing
+
+  NO searching, NO basename guessing, NO path-tail matching.
+  This is a direct prefix replacement.
+
+OUTPUT:
+  A list of HistoricalAttachmentRecord structs:
+    - hist_message_guid: String
+    - hist_attachment_guid: String? (may be null for very old records)
+    - hist_local_path: String?
+    - resolved_file_path: String? (null if file not found)
+    - file_found: bool
+    - hist_transfer_name: String?
+    - hist_mime_type: String?
+    - hist_uti: String?
+    - hist_file_size: int?
+    - hist_is_outgoing: bool
+
+  Plus summary counts:
+    - total_historical_pairs: int
+    - files_found: int
+    - files_missing: int
+    - null_path_records: int
+
+=========================================================================
+PHASE 2 — BUILD CROSS-SNAPSHOT MAPPER
+=========================================================================
+
+Goal: Map historical records to current MessageLens runtime identity so
+overlay rows can be written with the correct (message_guid,
+import_attachment_id) key.
+
+This is the crux of the deterministic design.
+
+NEW FILE:
+  lib/features/attachments/application/
+    cross_snapshot_mapper.dart
+
+PRECONDITION:
+  Current import DB must be populated (at least one live import+migration
+  cycle completed). If empty, refuse with diagnostic.
+
+--- MESSAGE-SIDE MAPPING ---
+
+  Match: historical message GUID → current working DB message GUID
+
+  These are the same Apple-assigned message GUID. If a message exists in
+  both the historical snapshot and the current live Messages, the GUID is
+  identical.
+
+  Query current working DB:
+    SELECT DISTINCT message_guid FROM attachments
+    WHERE message_guid = ?
+
+  If the message_guid from the historical snapshot is not present in the
+  current working DB's attachments table, the record is UNMAPPED.
+  Report it. Do not archive it. Do not create an orphan.
+
+--- ATTACHMENT-SIDE MAPPING (THE HINGE POINT) ---
+
+  This section defines exactly how a historical attachment row maps to a
+  current import_attachment_id. This is the critical discriminator that
+  separates "deterministic" from "quietly heuristic."
+
+  FIELD PROVENANCE — HISTORICAL SIDE:
+
+    Column: attachment.guid
+    Source: Apple's chat.db attachment table
+    Format: String, typically "at_0_{UUID}" for sent or "at_{N}_{UUID}"
+    Location in query: hist_attachment_guid from Phase 1 enumeration
+    Nullable: Yes — very old records or corrupted DBs may have NULL guid
+
+  FIELD PROVENANCE — CURRENT SIDE:
+
+    Column: attachments.guid
+    Source: Current import DB (lib/essentials/db_importers/)
+    Origin: Copied verbatim from Apple's live chat.db attachment.guid
+            during the live import pass (attachments_importer.dart)
+    Location: import DB table 'attachments', column 'guid'
+    Relation: import DB attachments.id = working DB
+              attachments.import_attachment_id
+
+    The current import DB is the ONLY data layer that holds both:
+      (a) Apple's attachment.guid (preserved from live chat.db)
+      (b) attachments.id (which becomes working.import_attachment_id)
+
+    The working DB does NOT carry attachment.guid — it was not projected
+    during migration. Therefore the import DB is the required bridge.
+
+  MAPPING STRATEGY:
+
+    Step 1 — PRIMARY MATCH (attachment GUID):
+
+      For a given (hist_message_guid, hist_attachment_guid) pair:
+
+      Query current import DB:
+        SELECT id FROM attachments WHERE guid = :hist_attachment_guid
+
+      If exactly one row matches → import_attachment_id = that row's id
+
+      Verify the matched attachment belongs to the correct message by
+      confirming the (message_guid, import_attachment_id) pair exists
+      in the current working DB:
+        SELECT 1 FROM attachments
+        WHERE message_guid = :hist_message_guid
+          AND import_attachment_id = :matched_id
+
+      If confirmed → MAPPED. Proceed to Phase 3.
+      If not confirmed → attachment exists in import DB under a different
+        message context. This is a MISMATCH. Report as unmapped.
+
+    Step 2 — FALLBACK (when hist_attachment_guid IS NULL):
+
+      This fallback is permitted ONLY when ALL of these conditions hold:
+
+      (a) hist_attachment_guid IS NULL (not merely different — NULL)
+      (b) The historical message has EXACTLY ONE attachment in the
+          historical snapshot (verified by counting rows in
+          message_attachment_join for that message_id)
+      (c) The current working DB has EXACTLY ONE attachment for that
+          message_guid (verified by counting rows in working
+          attachments table for that message_guid)
+
+      If all three conditions are satisfied:
+        The single current import_attachment_id for that message_guid
+        is the match.
+
+      If any condition fails:
+        The record is UNMAPPED. Report it. Do not guess.
+
+      Rationale: When a message has exactly one attachment on both sides,
+      there is no ambiguity. The single attachment on the historical side
+      must correspond to the single attachment on the current side,
+      regardless of missing GUID. If either side has multiple
+      attachments, GUID-less matching becomes ambiguous and is not
+      permitted.
+
+    Step 3 — NO FURTHER FALLBACK:
+
+      There is no Step 3. If Step 1 and Step 2 both fail, the record
+      is classified as UNMAPPED.
+
+      Explicitly prohibited fallbacks:
+        - transfer_name matching
+        - file size + created_at matching
+        - ordinal position matching for multi-attachment messages
+        - any string similarity or fuzzy matching
+
+      These are all heuristic and violate the deterministic contract.
+
+  FALLBACK UNACCEPTABILITY CONDITIONS (summary):
+
+    The Step 2 fallback is UNACCEPTABLE when:
+      - hist_attachment_guid is non-null but simply doesn't match
+        (this is a genuine mismatch, not a missing-data case)
+      - The historical message has multiple attachments (ambiguous)
+      - The current message has multiple attachments (ambiguous)
+      - Either side has zero attachments (structural mismatch)
+
+OUTPUT:
+
+  A list of MappedAttachmentRecord structs:
+    - hist_message_guid: String
+    - current_message_guid: String (same value, confirmed present)
+    - current_import_attachment_id: int
+    - resolved_file_path: String (from Phase 1)
+    - match_method: 'guid_match' | 'single_attachment_fallback'
+    - hist_attachment_guid: String? (for diagnostics)
+    - hist_local_path: String? (for diagnostics/original_local_path)
+
+  Plus unmapped records:
+    - hist_message_guid: String
+    - unmapped_reason: enum
+        message_not_in_working,
+        guid_mismatch,
+        guid_null_multi_attachment,
+        guid_null_no_current_attachment,
+        file_not_found,
+        ...
+
+  Plus summary counts:
+    - total_with_files: int (from Phase 1)
+    - mapped_by_guid: int
+    - mapped_by_single_fallback: int
+    - unmapped_message_missing: int
+    - unmapped_guid_mismatch: int
+    - unmapped_ambiguous: int
+    - unmapped_other: int
+
+=========================================================================
+PHASE 3 — WIRE ARCHIVE WRITER
+=========================================================================
+
+Goal: Copy resolved files to content-addressable archive store and
+create overlay rows using the current runtime identity model.
+
+IMPLEMENTATION:
+  Reuse the existing archive infrastructure. Specifically:
+
+  For each MappedAttachmentRecord from Phase 2:
+
+    1. HASH the source file (SHA-256)
+
+    2. STORE in content-addressable archive:
+       Archive directory: attachmentArchiveDirectoryProvider
+       Path: {sha256_prefix}/{sha256_hex}{extension}
+       (Same scheme as live archive — see attachment_archive_service_provider.dart)
+
+    3. IDEMPOTENCY CHECK:
+       Before inserting overlay row, check if (message_guid,
+       import_attachment_id) already exists in archived_attachments.
+       If it exists → skip (already archived, possibly from live pass)
+       Log the skip for the report.
+
+    4. INSERT OVERLAY ROW:
+       Table: archived_attachments (in user_overlays.db)
+       Values:
+         message_guid = current_message_guid
+         import_attachment_id = current_import_attachment_id
+         archive_relative_path = {sha256_prefix}/{sha256_hex}{extension}
+         archived_at_utc = current UTC timestamp
+         file_size_bytes = actual file size after copy
+         content_hash = sha256_hex
+         provenance = 'imported_historical_snapshot'
+         original_local_path = hist_local_path
+
+    5. VERIFY integrity after copy (re-hash and compare)
+
+  DATABASE ACCESS:
+    - Overlay DB: via existing Drift overlay database provider
+    - Working DB: read-only queries via driftWorkingDatabaseProvider
+    - Import DB: read-only queries via sqfliteImportDatabaseProvider
+    - NEVER instantiate direct DB connections
+
+  PROGRESS REPORTING:
+    Report after each file:
+      - files_archived (running count)
+      - files_skipped_already_exist (idempotent dedup)
+      - files_failed (copy or hash error)
+      - bytes_archived (running total)
+
+OUTPUT:
+  Final archive report:
+    - total_mapped: int (from Phase 2)
+    - archived_new: int
+    - skipped_already_archived: int
+    - failed: int
+    - total_bytes_archived: int
+
+=========================================================================
+PHASE 4 — BUILD DETERMINISTIC RECOVERY UI
+=========================================================================
+
+Goal: Replace the removed heuristic import UI with a deterministic
+snapshot recovery surface.
+
+LOCATION:
+  lib/features/contacts/presentation/cassettes/settings/
+    attachment_archive_settings_content.dart
+  (Same file where _HistoricalImportSection was removed in Phase 0)
+
+UI REQUIREMENTS:
+
+  1. INPUT SELECTION:
+     Two required inputs:
+       - "Select Historical Database…" → file picker for chat.db
+       - "Select Historical Attachments Folder…" → folder picker
+
+     Both must be selected before the import button is enabled.
+
+     Optional: Auto-detect chat.db-wal and chat.db-shm if they exist
+     alongside the selected chat.db. Display detection status.
+
+  2. VALIDATION:
+     Before import begins:
+       - Verify chat.db exists and is a valid SQLite database
+       - Verify Attachments folder exists
+       - Verify current import DB is populated (precondition)
+       - Display WAL/SHM detection status
+       - If WAL/SHM absent, show informational warning:
+         "WAL/SHM not found. Some recently-written data from the backup
+          moment may not be included."
+
+  3. PROGRESS DISPLAY:
+     During import:
+       - Phase indicator (reading snapshot / mapping / archiving)
+       - Progress count within each phase
+       - Cancel button (cooperative cancellation)
+
+  4. RESULTS DISPLAY:
+     After import completes:
+       - Historical attachment pairs examined: N
+       - Files found in snapshot folder: N
+       - Files missing from snapshot folder: N
+       - Successfully mapped to current messages: N
+         - via GUID match: N
+         - via single-attachment fallback: N
+       - Unmapped (message not in current data): N
+       - Unmapped (attachment GUID mismatch): N
+       - Unmapped (ambiguous multi-attachment): N
+       - Already archived (skipped): N
+       - Newly archived: N
+       - Archive errors: N
+       - Total bytes archived: N
+
+     This is not optional. The user must see exactly what happened.
+
+  5. PRODUCT WORDING:
+     The UI should state:
+       "Recover attachments from a historical Messages backup"
+     It should NOT say:
+       "Import from Backup" (too vague, implies folder-only)
+       "Scan backup folder" (implies heuristic search)
+
+PRESERVED UNCHANGED:
+  The existing live archive toggle/status UI remains untouched.
+  The existing archive storage info display remains untouched.
+
+=========================================================================
+PHASE 5 — TESTING AND VALIDATION
+=========================================================================
+
+TEST CATEGORIES:
+
+  1. DETERMINISTIC HAPPY PATH
+     Historical DB + Attachments match cleanly.
+     All files archive. All overlay rows created.
+     Resolver serves archived files correctly at runtime.
+
+  2. HISTORICAL FILE MISSING
+     Historical DB says attachment exists at path X.
+     File is absent from the Attachments folder.
+     Import reports "files_missing" correctly.
+     No overlay row created for missing file.
+
+  3. MESSAGE NOT IN CURRENT WORKING DB
+     Historical message GUID has no match in current working.
+     Record classified as unmapped.
+     No overlay row created.
+     Count reported accurately.
+
+  4. ATTACHMENT GUID MISMATCH
+     Historical attachment GUID exists but does not match any row
+     in current import DB.
+     Record classified as unmapped.
+     No fallback attempted.
+
+  5. GUID NULL — SINGLE ATTACHMENT (fallback exercised)
+     Historical attachment GUID is NULL.
+     Message has exactly one attachment on both sides.
+     Fallback maps correctly.
+     match_method = 'single_attachment_fallback'
+
+  6. GUID NULL — MULTI ATTACHMENT (fallback rejected)
+     Historical attachment GUID is NULL.
+     Message has multiple attachments on either side.
+     Record classified as unmapped_ambiguous.
+     No overlay row created.
+
+  7. MULTI-ATTACHMENT MESSAGE (GUID present)
+     Message has 3 attachments.
+     Each has a distinct GUID.
+     Each maps independently and correctly.
+     All three overlay rows created with correct import_attachment_ids.
+
+  8. IDEMPOTENT RE-RUN
+     Run deterministic import.
+     Run it again with same inputs.
+     No duplicate overlay rows.
+     "skipped_already_archived" count matches first run's "archived_new."
+
+  9. WAL-AWARE CORRECTNESS
+     Provide chat.db + chat.db-wal + chat.db-shm.
+     Verify that rows only in the WAL are included.
+     Provide chat.db WITHOUT wal/shm.
+     Verify import proceeds with warning.
+
+  10. IMPORT DB EMPTY PRECONDITION
+      Current import DB has no rows.
+      Historical recovery refuses to start.
+      Diagnostic message displayed.
+
+  11. LIVE ARCHIVE REGRESSION
+      Run historical recovery.
+      Verify live archive mode still works independently.
+      Verify resolver still prioritizes current local file over archive.
+
+  12. EXISTING OVERLAY PRESERVATION
+      Pre-existing overlay rows from prior heuristic imports remain valid.
+      Resolver serves them normally.
+      Deterministic import does not corrupt or duplicate them.
+
+=========================================================================
+FILE INVENTORY
+=========================================================================
+
+Files to DELETE:
+  lib/features/attachments/application/historical_import_provider.dart
+
+Files to CREATE:
+  lib/features/attachments/application/historical_snapshot_reader.dart
+  lib/features/attachments/application/cross_snapshot_mapper.dart
+  (Phase 3 archive writing may be added to an existing service or a
+   new orchestrator file — to be determined during implementation)
+
+Files to MODIFY:
+  lib/features/contacts/presentation/cassettes/settings/
+    attachment_archive_settings_content.dart
+    (Remove heuristic UI in Phase 0, add deterministic UI in Phase 4)
+
+Files PRESERVED UNCHANGED:
+  lib/features/attachments/application/
+    attachment_archive_service_provider.dart (live archive — untouched)
+  lib/features/messages/presentation/view_model/shared/hydration/
+    attachment_info_loader.dart (resolver — untouched)
+  lib/essentials/db/infrastructure/data_sources/local/overlay/
+    overlay_database.dart (schema preserved — no structural change)
+  lib/essentials/db/feature_level_providers.dart (DB access — untouched)
+  lib/essentials/db_importers/ (all importers — untouched)
+  lib/essentials/db_migrate/ (all migrators — untouched)
+
+=========================================================================
+SCHEMA IMPACT
+=========================================================================
+
+  Overlay DB (user_overlays.db):
+    Table: archived_attachments — NO STRUCTURAL CHANGE
+    New provenance value: 'imported_historical_snapshot' (TEXT field,
+    no migration needed — this is just a new conventional value)
+
+  Working DB (working.db):
+    NO CHANGES
+
+  Import DB (import.db):
+    NO CHANGES (read-only during historical recovery)
+
+=========================================================================
+ASSUMPTIONS
+=========================================================================
+
+1. Apple's message.guid is stable across chat.db snapshots taken from
+   the same iCloud account on the same device. A message present in
+   both a 2024 backup and the current 2026 live DB will have the same
+   GUID.
+
+2. Apple's attachment.guid is stable in the same manner. The GUID
+   assigned when an attachment is first created persists.
+
+3. The live import pass (attachments_importer.dart) faithfully copies
+   attachment.guid into import DB attachments.guid. This has been
+   verified by schema inspection.
+
+4. The import DB attachments.id is preserved as working DB
+   attachments.import_attachment_id during migration. This has been
+   verified by reading attachments_migrator.dart.
+
+5. Very old Apple Messages records may have NULL attachment.guid.
+   The single-attachment fallback handles this bounded case.
+
+=========================================================================
+RISKS
+=========================================================================
+
+1. If Apple ever reassigns or rotates attachment GUIDs (no evidence of
+   this), the GUID-based mapping would fail for affected records.
+   Mitigation: They would be reported as unmapped, not silently wrong.
+
+2. If the user's current import DB was built from a different iCloud
+   account or device than the historical snapshot, GUIDs will not match.
+   Mitigation: Most records reported as unmapped; user sees clear count.
+
+3. NULL-GUID attachments on multi-attachment messages are unmappable.
+   Mitigation: Reported as unmapped_ambiguous. No incorrect archiving.
+
+4. WAL-absent snapshots may be missing recent transactions.
+   Mitigation: Warning displayed to user. Reported as files_missing.
+
+=========================================================================
+PRODUCT BOUNDARY (stated for docs and UI)
+=========================================================================
+
+MessageLens supports:
+  - Live local attachment archiving (during import/migration)
+  - Deterministic recovery from a matched historical Messages snapshot
+    (requires both historical chat.db and matching Attachments folder)
+
+MessageLens does not support:
+  - Orphaned Attachments-folder-only recovery as a product feature
+  - Heuristic path-tail or filename-based recovery
+  - Probabilistic reconstruction of message↔attachment relationships
+
+=========================================================================
+POST-PLAN REQUIREMENT — LIVING ARCHIVE CONTINUATION
+=========================================================================
+
+This deterministic recovery plan does not expand real-time background
+archiving behavior. However, the product must continue to function as a
+living archive after onboarding.
+
+The archive must remain a living archive, not a frozen onboarding snapshot.
+
+PRODUCT RULE:
+
+  Once archive mode is enabled, MessageLens must continue to preserve
+  newly available local attachments, including attachments that reappear
+  later because the user downloaded them from iCloud in Apple Messages.
+
+This covers:
+  - Attachments newly received after onboarding
+  - Attachments previously evicted by iCloud that the user later
+    re-downloads in Apple Messages
+  - Any attachment that becomes locally available at any point after
+    the initial import
+
+MessageLens must preserve those files into its archive the next time an
+archive pass or equivalent continuation mechanism runs.
+
+CURRENT MECHANISM (preserved, not expanded):
+
+  The existing post-migration archiveAllAvailable() behavior already
+  provides this. After each import/migration cycle, archiveAllAvailable()
+  scans for locally-available attachments that are not yet archived and
+  copies them into the content-addressable store.
+
+  This plan MUST NOT remove, weaken, or bypass archiveAllAvailable().
+
+IMPLEMENTATION STATUS FOR THIS PLAN:
+
+  Phases 0–5 do NOT modify the live archive path. The existing
+  archiveAllAvailable() call after migration remains in place. Therefore
+  the living archive guarantee is preserved by default.
+
+  No new code is required in Phases 0–5 to satisfy this requirement.
+
+ACCEPTABLE FUTURE EXPANSION PATHS (deferred, not in scope):
+
+  1. Re-run archiveAllAvailable() after normal import/migration cycles
+     so newly local files are picked up. (ALREADY HAPPENS — preserved.)
+
+  2. Trigger archive-on-resolution: when MessageLens resolves a live
+     local file that is not yet archived, opportunistically archive it
+     at that moment. This would catch iCloud re-downloads between
+     import cycles.
+
+  3. Add a more proactive incremental/background mechanism later if
+     user feedback indicates import-cycle frequency is insufficient.
+
+OUT OF SCOPE FOR PHASES 0–5:
+
+  - Designing a real-time filesystem watcher
+  - Guaranteeing immediate archiving the instant the user clicks
+    download in Apple Messages
+  - Adding new background scheduling or polling mechanisms
+
+VERIFICATION (Phase 5 addition):
+
+  Test 11 (LIVE ARCHIVE REGRESSION) must confirm that
+  archiveAllAvailable() still runs after migration and still archives
+  newly-local files that were not available during the previous cycle.
+  This is the living archive guarantee test.
+
+=========================================================================
+END OF PLAN
+=========================================================================

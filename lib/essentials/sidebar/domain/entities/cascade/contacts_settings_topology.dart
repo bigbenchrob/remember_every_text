@@ -20,6 +20,7 @@ CassetteSpec? resolveContactsSettingsChild(ContactsSettingsSpec spec) {
     },
     sendLogsInfo: () => null,
     reimportDataInfo: () => null,
+    attachmentArchive: () => null,
   );
 }
 

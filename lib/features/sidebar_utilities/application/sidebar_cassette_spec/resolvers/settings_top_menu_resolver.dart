@@ -64,5 +64,7 @@ class SettingsTopMenuResolver extends _$SettingsTopMenuResolver {
 SidebarSettingsMenuChoice _mapSettingsMenuChoice(SettingsMenuChoice choice) {
   return switch (choice) {
     SettingsMenuChoice.actions => SidebarSettingsMenuChoice.actions,
+    SettingsMenuChoice.attachmentArchive =>
+      SidebarSettingsMenuChoice.attachmentArchive,
   };
 }

@@ -1,0 +1,123 @@
+Use this exactly (no abstraction, no summaries):
+
+⸻
+
+Perform a side-by-side forensic trace for two attachments:
+	•	CONTROL (working): message ID 133595
+	•	FAILURE (not restored): message ID 133484
+
+Goal
+
+Identify exactly why the archive restoration succeeded for 133595 but failed for 133484.
+
+Do not summarize. Output all raw values.
+
+⸻
+
+Step 1 — Identify attachment records
+
+For each message ID:
+	•	message id
+	•	message guid
+	•	attachment guid (from chat.db / import DB)
+	•	importAttachmentId
+	•	transfer_name (filename)
+	•	mime_type
+	•	original local_path (from import/working DB)
+
+⸻
+
+Step 2 — Verify working DB state
+
+For each attachment:
+	•	working DB row (full relevant fields)
+	•	expanded absolute local path
+	•	file exists at that path? (true/false)
+
+⸻
+
+Step 3 — Verify overlay archive record
+
+For each attachment:
+
+Query archived_attachments using the exact join key used in production.
+
+Output:
+	•	whether overlay row exists
+	•	attachment_guid used for lookup
+	•	archive_relative_path
+	•	provenance
+	•	content_hash
+	•	archived_at
+	•	file_size_bytes
+
+⸻
+
+Step 4 — Verify archive file on disk
+
+For each attachment:
+	•	compute full archive path
+	•	check file existence
+	•	report actual file size
+
+If overlay row exists but file does not → flag as archive corruption
+
+⸻
+
+Step 5 — Backup matching analysis (CRITICAL)
+
+For BOTH attachments:
+
+Search the original backup folder used in historical import.
+
+Report:
+	•	exact filename from DB (transfer_name)
+	•	whether exact filename exists in backup (case-sensitive)
+	•	whether case-insensitive match exists
+	•	whether partial match exists (ignore timestamps/prefixes)
+	•	full path of any matching file found
+
+If no match found:
+→ explicitly confirm file is absent from backup
+
+⸻
+
+Step 6 — Matching decision trace
+
+For BOTH attachments, explain:
+	•	which matching method was used during import
+	•	hash match (yes/no)
+	•	path-tail match (yes/no)
+	•	why it succeeded or failed
+
+This must reference actual values, not assumptions.
+
+⸻
+
+Step 7 — Resolver output
+
+Run attachmentResolverProvider for both attachments and output:
+	•	availability
+	•	provenance
+	•	resolved file path (if any)
+
+⸻
+
+Step 8 — Final classification
+
+For each attachment, classify EXACTLY one:
+	•	successfully archived and resolved
+	•	present in backup but matching failed
+	•	absent from backup
+	•	overlay record missing
+	•	archive file missing
+	•	resolver failure
+	•	UI/rendering failure
+
+⸻
+
+Rules
+	•	Do not infer — verify
+	•	Do not skip steps
+	•	Do not summarize prematurely
+	•	Show actual values for both attachments side-by-side

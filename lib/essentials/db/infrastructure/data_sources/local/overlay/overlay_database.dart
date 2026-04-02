@@ -17,13 +17,14 @@ part 'overlay_database.g.dart';
     FavoriteContacts,
     DismissedHandles,
     HandleVisibilityOverrides,
+    ArchivedAttachments,
   ],
 )
 class OverlayDatabase extends _$OverlayDatabase {
   OverlayDatabase(QueryExecutor executor) : super(executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -31,7 +32,9 @@ class OverlayDatabase extends _$OverlayDatabase {
       await m.createAll();
     },
     onUpgrade: (Migrator m, int from, int to) async {
-      // No legacy databases to migrate — all users start fresh.
+      if (from < 2) {
+        await m.createTable(archivedAttachments);
+      }
     },
   );
 
@@ -1118,4 +1121,52 @@ class DismissedHandles extends Table {
 
   @override
   Set<Column> get primaryKey => {normalizedHandle};
+}
+
+/// Tracks attachment files that MessageLens has archived locally.
+///
+/// When macOS evicts files from ~/Library/Messages/Attachments, the archive
+/// retains the copy. The resolution provider merges working attachment records
+/// with this overlay table at read time to locate the file.
+class ArchivedAttachments extends Table {
+  @override
+  String get tableName => 'archived_attachments';
+
+  /// Auto-incrementing primary key.
+  IntColumn get id => integer().named('id').autoIncrement()();
+
+  /// The GUID of the parent message. Together with [importAttachmentId],
+  /// forms the stable composite key that survives migration cycles.
+  TextColumn get messageGuid => text().named('message_guid')();
+
+  /// The attachment's ROWID from chat.db, carried through import.
+  /// Together with [messageGuid], forms the stable composite key.
+  IntColumn get importAttachmentId => integer().named('import_attachment_id')();
+
+  /// Path within the attachment_archive/ directory (relative, not absolute).
+  TextColumn get archiveRelativePath => text().named('archive_relative_path')();
+
+  /// ISO 8601 timestamp of when the file was archived.
+  TextColumn get archivedAtUtc => text().named('archived_at_utc')();
+
+  /// Size of the archived file in bytes.
+  IntColumn get fileSizeBytes => integer().named('file_size_bytes')();
+
+  /// SHA-256 hex digest of the file contents. Also used as the archive
+  /// filename for content-addressable storage.
+  TextColumn get contentHash => text().named('content_hash').nullable()();
+
+  /// How the file entered the archive: 'archived' (import-time copy) or
+  /// 'imported_historical' (user-supplied backup like Time Machine).
+  TextColumn get provenance =>
+      text().named('provenance').withDefault(const Constant('archived'))();
+
+  /// The Messages local_path at the time of archiving, for audit purposes.
+  TextColumn get originalLocalPath =>
+      text().named('original_local_path').nullable()();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {messageGuid, importAttachmentId},
+  ];
 }

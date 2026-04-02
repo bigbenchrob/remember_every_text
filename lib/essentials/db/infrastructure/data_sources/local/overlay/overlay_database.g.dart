@@ -3562,6 +3562,629 @@ class HandleVisibilityOverridesCompanion
   }
 }
 
+class $ArchivedAttachmentsTable extends ArchivedAttachments
+    with TableInfo<$ArchivedAttachmentsTable, ArchivedAttachment> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ArchivedAttachmentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _messageGuidMeta = const VerificationMeta(
+    'messageGuid',
+  );
+  @override
+  late final GeneratedColumn<String> messageGuid = GeneratedColumn<String>(
+    'message_guid',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _importAttachmentIdMeta =
+      const VerificationMeta('importAttachmentId');
+  @override
+  late final GeneratedColumn<int> importAttachmentId = GeneratedColumn<int>(
+    'import_attachment_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _archiveRelativePathMeta =
+      const VerificationMeta('archiveRelativePath');
+  @override
+  late final GeneratedColumn<String> archiveRelativePath =
+      GeneratedColumn<String>(
+        'archive_relative_path',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _archivedAtUtcMeta = const VerificationMeta(
+    'archivedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<String> archivedAtUtc = GeneratedColumn<String>(
+    'archived_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fileSizeBytesMeta = const VerificationMeta(
+    'fileSizeBytes',
+  );
+  @override
+  late final GeneratedColumn<int> fileSizeBytes = GeneratedColumn<int>(
+    'file_size_bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _contentHashMeta = const VerificationMeta(
+    'contentHash',
+  );
+  @override
+  late final GeneratedColumn<String> contentHash = GeneratedColumn<String>(
+    'content_hash',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _provenanceMeta = const VerificationMeta(
+    'provenance',
+  );
+  @override
+  late final GeneratedColumn<String> provenance = GeneratedColumn<String>(
+    'provenance',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('archived'),
+  );
+  static const VerificationMeta _originalLocalPathMeta = const VerificationMeta(
+    'originalLocalPath',
+  );
+  @override
+  late final GeneratedColumn<String> originalLocalPath =
+      GeneratedColumn<String>(
+        'original_local_path',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    messageGuid,
+    importAttachmentId,
+    archiveRelativePath,
+    archivedAtUtc,
+    fileSizeBytes,
+    contentHash,
+    provenance,
+    originalLocalPath,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'archived_attachments';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ArchivedAttachment> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('message_guid')) {
+      context.handle(
+        _messageGuidMeta,
+        messageGuid.isAcceptableOrUnknown(
+          data['message_guid']!,
+          _messageGuidMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_messageGuidMeta);
+    }
+    if (data.containsKey('import_attachment_id')) {
+      context.handle(
+        _importAttachmentIdMeta,
+        importAttachmentId.isAcceptableOrUnknown(
+          data['import_attachment_id']!,
+          _importAttachmentIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_importAttachmentIdMeta);
+    }
+    if (data.containsKey('archive_relative_path')) {
+      context.handle(
+        _archiveRelativePathMeta,
+        archiveRelativePath.isAcceptableOrUnknown(
+          data['archive_relative_path']!,
+          _archiveRelativePathMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_archiveRelativePathMeta);
+    }
+    if (data.containsKey('archived_at_utc')) {
+      context.handle(
+        _archivedAtUtcMeta,
+        archivedAtUtc.isAcceptableOrUnknown(
+          data['archived_at_utc']!,
+          _archivedAtUtcMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_archivedAtUtcMeta);
+    }
+    if (data.containsKey('file_size_bytes')) {
+      context.handle(
+        _fileSizeBytesMeta,
+        fileSizeBytes.isAcceptableOrUnknown(
+          data['file_size_bytes']!,
+          _fileSizeBytesMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_fileSizeBytesMeta);
+    }
+    if (data.containsKey('content_hash')) {
+      context.handle(
+        _contentHashMeta,
+        contentHash.isAcceptableOrUnknown(
+          data['content_hash']!,
+          _contentHashMeta,
+        ),
+      );
+    }
+    if (data.containsKey('provenance')) {
+      context.handle(
+        _provenanceMeta,
+        provenance.isAcceptableOrUnknown(data['provenance']!, _provenanceMeta),
+      );
+    }
+    if (data.containsKey('original_local_path')) {
+      context.handle(
+        _originalLocalPathMeta,
+        originalLocalPath.isAcceptableOrUnknown(
+          data['original_local_path']!,
+          _originalLocalPathMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {messageGuid, importAttachmentId},
+  ];
+  @override
+  ArchivedAttachment map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ArchivedAttachment(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      messageGuid: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}message_guid'],
+      )!,
+      importAttachmentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}import_attachment_id'],
+      )!,
+      archiveRelativePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}archive_relative_path'],
+      )!,
+      archivedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}archived_at_utc'],
+      )!,
+      fileSizeBytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}file_size_bytes'],
+      )!,
+      contentHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content_hash'],
+      ),
+      provenance: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}provenance'],
+      )!,
+      originalLocalPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}original_local_path'],
+      ),
+    );
+  }
+
+  @override
+  $ArchivedAttachmentsTable createAlias(String alias) {
+    return $ArchivedAttachmentsTable(attachedDatabase, alias);
+  }
+}
+
+class ArchivedAttachment extends DataClass
+    implements Insertable<ArchivedAttachment> {
+  /// Auto-incrementing primary key.
+  final int id;
+
+  /// The GUID of the parent message. Together with [importAttachmentId],
+  /// forms the stable composite key that survives migration cycles.
+  final String messageGuid;
+
+  /// The attachment's ROWID from chat.db, carried through import.
+  /// Together with [messageGuid], forms the stable composite key.
+  final int importAttachmentId;
+
+  /// Path within the attachment_archive/ directory (relative, not absolute).
+  final String archiveRelativePath;
+
+  /// ISO 8601 timestamp of when the file was archived.
+  final String archivedAtUtc;
+
+  /// Size of the archived file in bytes.
+  final int fileSizeBytes;
+
+  /// SHA-256 hex digest of the file contents. Also used as the archive
+  /// filename for content-addressable storage.
+  final String? contentHash;
+
+  /// How the file entered the archive: 'archived' (import-time copy) or
+  /// 'imported_historical' (user-supplied backup like Time Machine).
+  final String provenance;
+
+  /// The Messages local_path at the time of archiving, for audit purposes.
+  final String? originalLocalPath;
+  const ArchivedAttachment({
+    required this.id,
+    required this.messageGuid,
+    required this.importAttachmentId,
+    required this.archiveRelativePath,
+    required this.archivedAtUtc,
+    required this.fileSizeBytes,
+    this.contentHash,
+    required this.provenance,
+    this.originalLocalPath,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['message_guid'] = Variable<String>(messageGuid);
+    map['import_attachment_id'] = Variable<int>(importAttachmentId);
+    map['archive_relative_path'] = Variable<String>(archiveRelativePath);
+    map['archived_at_utc'] = Variable<String>(archivedAtUtc);
+    map['file_size_bytes'] = Variable<int>(fileSizeBytes);
+    if (!nullToAbsent || contentHash != null) {
+      map['content_hash'] = Variable<String>(contentHash);
+    }
+    map['provenance'] = Variable<String>(provenance);
+    if (!nullToAbsent || originalLocalPath != null) {
+      map['original_local_path'] = Variable<String>(originalLocalPath);
+    }
+    return map;
+  }
+
+  ArchivedAttachmentsCompanion toCompanion(bool nullToAbsent) {
+    return ArchivedAttachmentsCompanion(
+      id: Value(id),
+      messageGuid: Value(messageGuid),
+      importAttachmentId: Value(importAttachmentId),
+      archiveRelativePath: Value(archiveRelativePath),
+      archivedAtUtc: Value(archivedAtUtc),
+      fileSizeBytes: Value(fileSizeBytes),
+      contentHash: contentHash == null && nullToAbsent
+          ? const Value.absent()
+          : Value(contentHash),
+      provenance: Value(provenance),
+      originalLocalPath: originalLocalPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(originalLocalPath),
+    );
+  }
+
+  factory ArchivedAttachment.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ArchivedAttachment(
+      id: serializer.fromJson<int>(json['id']),
+      messageGuid: serializer.fromJson<String>(json['messageGuid']),
+      importAttachmentId: serializer.fromJson<int>(json['importAttachmentId']),
+      archiveRelativePath: serializer.fromJson<String>(
+        json['archiveRelativePath'],
+      ),
+      archivedAtUtc: serializer.fromJson<String>(json['archivedAtUtc']),
+      fileSizeBytes: serializer.fromJson<int>(json['fileSizeBytes']),
+      contentHash: serializer.fromJson<String?>(json['contentHash']),
+      provenance: serializer.fromJson<String>(json['provenance']),
+      originalLocalPath: serializer.fromJson<String?>(
+        json['originalLocalPath'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'messageGuid': serializer.toJson<String>(messageGuid),
+      'importAttachmentId': serializer.toJson<int>(importAttachmentId),
+      'archiveRelativePath': serializer.toJson<String>(archiveRelativePath),
+      'archivedAtUtc': serializer.toJson<String>(archivedAtUtc),
+      'fileSizeBytes': serializer.toJson<int>(fileSizeBytes),
+      'contentHash': serializer.toJson<String?>(contentHash),
+      'provenance': serializer.toJson<String>(provenance),
+      'originalLocalPath': serializer.toJson<String?>(originalLocalPath),
+    };
+  }
+
+  ArchivedAttachment copyWith({
+    int? id,
+    String? messageGuid,
+    int? importAttachmentId,
+    String? archiveRelativePath,
+    String? archivedAtUtc,
+    int? fileSizeBytes,
+    Value<String?> contentHash = const Value.absent(),
+    String? provenance,
+    Value<String?> originalLocalPath = const Value.absent(),
+  }) => ArchivedAttachment(
+    id: id ?? this.id,
+    messageGuid: messageGuid ?? this.messageGuid,
+    importAttachmentId: importAttachmentId ?? this.importAttachmentId,
+    archiveRelativePath: archiveRelativePath ?? this.archiveRelativePath,
+    archivedAtUtc: archivedAtUtc ?? this.archivedAtUtc,
+    fileSizeBytes: fileSizeBytes ?? this.fileSizeBytes,
+    contentHash: contentHash.present ? contentHash.value : this.contentHash,
+    provenance: provenance ?? this.provenance,
+    originalLocalPath: originalLocalPath.present
+        ? originalLocalPath.value
+        : this.originalLocalPath,
+  );
+  ArchivedAttachment copyWithCompanion(ArchivedAttachmentsCompanion data) {
+    return ArchivedAttachment(
+      id: data.id.present ? data.id.value : this.id,
+      messageGuid: data.messageGuid.present
+          ? data.messageGuid.value
+          : this.messageGuid,
+      importAttachmentId: data.importAttachmentId.present
+          ? data.importAttachmentId.value
+          : this.importAttachmentId,
+      archiveRelativePath: data.archiveRelativePath.present
+          ? data.archiveRelativePath.value
+          : this.archiveRelativePath,
+      archivedAtUtc: data.archivedAtUtc.present
+          ? data.archivedAtUtc.value
+          : this.archivedAtUtc,
+      fileSizeBytes: data.fileSizeBytes.present
+          ? data.fileSizeBytes.value
+          : this.fileSizeBytes,
+      contentHash: data.contentHash.present
+          ? data.contentHash.value
+          : this.contentHash,
+      provenance: data.provenance.present
+          ? data.provenance.value
+          : this.provenance,
+      originalLocalPath: data.originalLocalPath.present
+          ? data.originalLocalPath.value
+          : this.originalLocalPath,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArchivedAttachment(')
+          ..write('id: $id, ')
+          ..write('messageGuid: $messageGuid, ')
+          ..write('importAttachmentId: $importAttachmentId, ')
+          ..write('archiveRelativePath: $archiveRelativePath, ')
+          ..write('archivedAtUtc: $archivedAtUtc, ')
+          ..write('fileSizeBytes: $fileSizeBytes, ')
+          ..write('contentHash: $contentHash, ')
+          ..write('provenance: $provenance, ')
+          ..write('originalLocalPath: $originalLocalPath')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    messageGuid,
+    importAttachmentId,
+    archiveRelativePath,
+    archivedAtUtc,
+    fileSizeBytes,
+    contentHash,
+    provenance,
+    originalLocalPath,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ArchivedAttachment &&
+          other.id == this.id &&
+          other.messageGuid == this.messageGuid &&
+          other.importAttachmentId == this.importAttachmentId &&
+          other.archiveRelativePath == this.archiveRelativePath &&
+          other.archivedAtUtc == this.archivedAtUtc &&
+          other.fileSizeBytes == this.fileSizeBytes &&
+          other.contentHash == this.contentHash &&
+          other.provenance == this.provenance &&
+          other.originalLocalPath == this.originalLocalPath);
+}
+
+class ArchivedAttachmentsCompanion extends UpdateCompanion<ArchivedAttachment> {
+  final Value<int> id;
+  final Value<String> messageGuid;
+  final Value<int> importAttachmentId;
+  final Value<String> archiveRelativePath;
+  final Value<String> archivedAtUtc;
+  final Value<int> fileSizeBytes;
+  final Value<String?> contentHash;
+  final Value<String> provenance;
+  final Value<String?> originalLocalPath;
+  const ArchivedAttachmentsCompanion({
+    this.id = const Value.absent(),
+    this.messageGuid = const Value.absent(),
+    this.importAttachmentId = const Value.absent(),
+    this.archiveRelativePath = const Value.absent(),
+    this.archivedAtUtc = const Value.absent(),
+    this.fileSizeBytes = const Value.absent(),
+    this.contentHash = const Value.absent(),
+    this.provenance = const Value.absent(),
+    this.originalLocalPath = const Value.absent(),
+  });
+  ArchivedAttachmentsCompanion.insert({
+    this.id = const Value.absent(),
+    required String messageGuid,
+    required int importAttachmentId,
+    required String archiveRelativePath,
+    required String archivedAtUtc,
+    required int fileSizeBytes,
+    this.contentHash = const Value.absent(),
+    this.provenance = const Value.absent(),
+    this.originalLocalPath = const Value.absent(),
+  }) : messageGuid = Value(messageGuid),
+       importAttachmentId = Value(importAttachmentId),
+       archiveRelativePath = Value(archiveRelativePath),
+       archivedAtUtc = Value(archivedAtUtc),
+       fileSizeBytes = Value(fileSizeBytes);
+  static Insertable<ArchivedAttachment> custom({
+    Expression<int>? id,
+    Expression<String>? messageGuid,
+    Expression<int>? importAttachmentId,
+    Expression<String>? archiveRelativePath,
+    Expression<String>? archivedAtUtc,
+    Expression<int>? fileSizeBytes,
+    Expression<String>? contentHash,
+    Expression<String>? provenance,
+    Expression<String>? originalLocalPath,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (messageGuid != null) 'message_guid': messageGuid,
+      if (importAttachmentId != null)
+        'import_attachment_id': importAttachmentId,
+      if (archiveRelativePath != null)
+        'archive_relative_path': archiveRelativePath,
+      if (archivedAtUtc != null) 'archived_at_utc': archivedAtUtc,
+      if (fileSizeBytes != null) 'file_size_bytes': fileSizeBytes,
+      if (contentHash != null) 'content_hash': contentHash,
+      if (provenance != null) 'provenance': provenance,
+      if (originalLocalPath != null) 'original_local_path': originalLocalPath,
+    });
+  }
+
+  ArchivedAttachmentsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? messageGuid,
+    Value<int>? importAttachmentId,
+    Value<String>? archiveRelativePath,
+    Value<String>? archivedAtUtc,
+    Value<int>? fileSizeBytes,
+    Value<String?>? contentHash,
+    Value<String>? provenance,
+    Value<String?>? originalLocalPath,
+  }) {
+    return ArchivedAttachmentsCompanion(
+      id: id ?? this.id,
+      messageGuid: messageGuid ?? this.messageGuid,
+      importAttachmentId: importAttachmentId ?? this.importAttachmentId,
+      archiveRelativePath: archiveRelativePath ?? this.archiveRelativePath,
+      archivedAtUtc: archivedAtUtc ?? this.archivedAtUtc,
+      fileSizeBytes: fileSizeBytes ?? this.fileSizeBytes,
+      contentHash: contentHash ?? this.contentHash,
+      provenance: provenance ?? this.provenance,
+      originalLocalPath: originalLocalPath ?? this.originalLocalPath,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (messageGuid.present) {
+      map['message_guid'] = Variable<String>(messageGuid.value);
+    }
+    if (importAttachmentId.present) {
+      map['import_attachment_id'] = Variable<int>(importAttachmentId.value);
+    }
+    if (archiveRelativePath.present) {
+      map['archive_relative_path'] = Variable<String>(
+        archiveRelativePath.value,
+      );
+    }
+    if (archivedAtUtc.present) {
+      map['archived_at_utc'] = Variable<String>(archivedAtUtc.value);
+    }
+    if (fileSizeBytes.present) {
+      map['file_size_bytes'] = Variable<int>(fileSizeBytes.value);
+    }
+    if (contentHash.present) {
+      map['content_hash'] = Variable<String>(contentHash.value);
+    }
+    if (provenance.present) {
+      map['provenance'] = Variable<String>(provenance.value);
+    }
+    if (originalLocalPath.present) {
+      map['original_local_path'] = Variable<String>(originalLocalPath.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArchivedAttachmentsCompanion(')
+          ..write('id: $id, ')
+          ..write('messageGuid: $messageGuid, ')
+          ..write('importAttachmentId: $importAttachmentId, ')
+          ..write('archiveRelativePath: $archiveRelativePath, ')
+          ..write('archivedAtUtc: $archivedAtUtc, ')
+          ..write('fileSizeBytes: $fileSizeBytes, ')
+          ..write('contentHash: $contentHash, ')
+          ..write('provenance: $provenance, ')
+          ..write('originalLocalPath: $originalLocalPath')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$OverlayDatabase extends GeneratedDatabase {
   _$OverlayDatabase(QueryExecutor e) : super(e);
   $OverlayDatabaseManager get managers => $OverlayDatabaseManager(this);
@@ -3585,6 +4208,8 @@ abstract class _$OverlayDatabase extends GeneratedDatabase {
   );
   late final $HandleVisibilityOverridesTable handleVisibilityOverrides =
       $HandleVisibilityOverridesTable(this);
+  late final $ArchivedAttachmentsTable archivedAttachments =
+      $ArchivedAttachmentsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3599,6 +4224,7 @@ abstract class _$OverlayDatabase extends GeneratedDatabase {
     favoriteContacts,
     dismissedHandles,
     handleVisibilityOverrides,
+    archivedAttachments,
   ];
 }
 
@@ -5573,6 +6199,308 @@ typedef $$HandleVisibilityOverridesTableProcessedTableManager =
       HandleVisibilityOverride,
       PrefetchHooks Function()
     >;
+typedef $$ArchivedAttachmentsTableCreateCompanionBuilder =
+    ArchivedAttachmentsCompanion Function({
+      Value<int> id,
+      required String messageGuid,
+      required int importAttachmentId,
+      required String archiveRelativePath,
+      required String archivedAtUtc,
+      required int fileSizeBytes,
+      Value<String?> contentHash,
+      Value<String> provenance,
+      Value<String?> originalLocalPath,
+    });
+typedef $$ArchivedAttachmentsTableUpdateCompanionBuilder =
+    ArchivedAttachmentsCompanion Function({
+      Value<int> id,
+      Value<String> messageGuid,
+      Value<int> importAttachmentId,
+      Value<String> archiveRelativePath,
+      Value<String> archivedAtUtc,
+      Value<int> fileSizeBytes,
+      Value<String?> contentHash,
+      Value<String> provenance,
+      Value<String?> originalLocalPath,
+    });
+
+class $$ArchivedAttachmentsTableFilterComposer
+    extends Composer<_$OverlayDatabase, $ArchivedAttachmentsTable> {
+  $$ArchivedAttachmentsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get messageGuid => $composableBuilder(
+    column: $table.messageGuid,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get importAttachmentId => $composableBuilder(
+    column: $table.importAttachmentId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get archiveRelativePath => $composableBuilder(
+    column: $table.archiveRelativePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get archivedAtUtc => $composableBuilder(
+    column: $table.archivedAtUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get fileSizeBytes => $composableBuilder(
+    column: $table.fileSizeBytes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get contentHash => $composableBuilder(
+    column: $table.contentHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get provenance => $composableBuilder(
+    column: $table.provenance,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get originalLocalPath => $composableBuilder(
+    column: $table.originalLocalPath,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ArchivedAttachmentsTableOrderingComposer
+    extends Composer<_$OverlayDatabase, $ArchivedAttachmentsTable> {
+  $$ArchivedAttachmentsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get messageGuid => $composableBuilder(
+    column: $table.messageGuid,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get importAttachmentId => $composableBuilder(
+    column: $table.importAttachmentId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get archiveRelativePath => $composableBuilder(
+    column: $table.archiveRelativePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get archivedAtUtc => $composableBuilder(
+    column: $table.archivedAtUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get fileSizeBytes => $composableBuilder(
+    column: $table.fileSizeBytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get contentHash => $composableBuilder(
+    column: $table.contentHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get provenance => $composableBuilder(
+    column: $table.provenance,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get originalLocalPath => $composableBuilder(
+    column: $table.originalLocalPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ArchivedAttachmentsTableAnnotationComposer
+    extends Composer<_$OverlayDatabase, $ArchivedAttachmentsTable> {
+  $$ArchivedAttachmentsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get messageGuid => $composableBuilder(
+    column: $table.messageGuid,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get importAttachmentId => $composableBuilder(
+    column: $table.importAttachmentId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get archiveRelativePath => $composableBuilder(
+    column: $table.archiveRelativePath,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get archivedAtUtc => $composableBuilder(
+    column: $table.archivedAtUtc,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get fileSizeBytes => $composableBuilder(
+    column: $table.fileSizeBytes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get contentHash => $composableBuilder(
+    column: $table.contentHash,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get provenance => $composableBuilder(
+    column: $table.provenance,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get originalLocalPath => $composableBuilder(
+    column: $table.originalLocalPath,
+    builder: (column) => column,
+  );
+}
+
+class $$ArchivedAttachmentsTableTableManager
+    extends
+        RootTableManager<
+          _$OverlayDatabase,
+          $ArchivedAttachmentsTable,
+          ArchivedAttachment,
+          $$ArchivedAttachmentsTableFilterComposer,
+          $$ArchivedAttachmentsTableOrderingComposer,
+          $$ArchivedAttachmentsTableAnnotationComposer,
+          $$ArchivedAttachmentsTableCreateCompanionBuilder,
+          $$ArchivedAttachmentsTableUpdateCompanionBuilder,
+          (
+            ArchivedAttachment,
+            BaseReferences<
+              _$OverlayDatabase,
+              $ArchivedAttachmentsTable,
+              ArchivedAttachment
+            >,
+          ),
+          ArchivedAttachment,
+          PrefetchHooks Function()
+        > {
+  $$ArchivedAttachmentsTableTableManager(
+    _$OverlayDatabase db,
+    $ArchivedAttachmentsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ArchivedAttachmentsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ArchivedAttachmentsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$ArchivedAttachmentsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> messageGuid = const Value.absent(),
+                Value<int> importAttachmentId = const Value.absent(),
+                Value<String> archiveRelativePath = const Value.absent(),
+                Value<String> archivedAtUtc = const Value.absent(),
+                Value<int> fileSizeBytes = const Value.absent(),
+                Value<String?> contentHash = const Value.absent(),
+                Value<String> provenance = const Value.absent(),
+                Value<String?> originalLocalPath = const Value.absent(),
+              }) => ArchivedAttachmentsCompanion(
+                id: id,
+                messageGuid: messageGuid,
+                importAttachmentId: importAttachmentId,
+                archiveRelativePath: archiveRelativePath,
+                archivedAtUtc: archivedAtUtc,
+                fileSizeBytes: fileSizeBytes,
+                contentHash: contentHash,
+                provenance: provenance,
+                originalLocalPath: originalLocalPath,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String messageGuid,
+                required int importAttachmentId,
+                required String archiveRelativePath,
+                required String archivedAtUtc,
+                required int fileSizeBytes,
+                Value<String?> contentHash = const Value.absent(),
+                Value<String> provenance = const Value.absent(),
+                Value<String?> originalLocalPath = const Value.absent(),
+              }) => ArchivedAttachmentsCompanion.insert(
+                id: id,
+                messageGuid: messageGuid,
+                importAttachmentId: importAttachmentId,
+                archiveRelativePath: archiveRelativePath,
+                archivedAtUtc: archivedAtUtc,
+                fileSizeBytes: fileSizeBytes,
+                contentHash: contentHash,
+                provenance: provenance,
+                originalLocalPath: originalLocalPath,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ArchivedAttachmentsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$OverlayDatabase,
+      $ArchivedAttachmentsTable,
+      ArchivedAttachment,
+      $$ArchivedAttachmentsTableFilterComposer,
+      $$ArchivedAttachmentsTableOrderingComposer,
+      $$ArchivedAttachmentsTableAnnotationComposer,
+      $$ArchivedAttachmentsTableCreateCompanionBuilder,
+      $$ArchivedAttachmentsTableUpdateCompanionBuilder,
+      (
+        ArchivedAttachment,
+        BaseReferences<
+          _$OverlayDatabase,
+          $ArchivedAttachmentsTable,
+          ArchivedAttachment
+        >,
+      ),
+      ArchivedAttachment,
+      PrefetchHooks Function()
+    >;
 
 class $OverlayDatabaseManager {
   final _$OverlayDatabase _db;
@@ -5602,4 +6530,6 @@ class $OverlayDatabaseManager {
         _db,
         _db.handleVisibilityOverrides,
       );
+  $$ArchivedAttachmentsTableTableManager get archivedAttachments =>
+      $$ArchivedAttachmentsTableTableManager(_db, _db.archivedAttachments);
 }

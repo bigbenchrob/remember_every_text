@@ -87,5 +87,7 @@ class SettingsTopMenuWidget extends ConsumerWidget {
 SidebarSettingsMenuChoice _mapSettingsMenuChoice(SettingsMenuChoice choice) {
   return switch (choice) {
     SettingsMenuChoice.actions => SidebarSettingsMenuChoice.actions,
+    SettingsMenuChoice.attachmentArchive =>
+      SidebarSettingsMenuChoice.attachmentArchive,
   };
 }

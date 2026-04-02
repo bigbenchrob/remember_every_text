@@ -6,7 +6,7 @@ enum SidebarTopMenuChoice {
   recoveredNoHandleFromMeMessages,
 }
 
-enum SidebarSettingsMenuChoice { actions }
+enum SidebarSettingsMenuChoice { actions, attachmentArchive }
 
 enum SidebarSettingsActionChoice { sendLogs, reimportData }
 

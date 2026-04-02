@@ -20,6 +20,7 @@ Future<MessageListItem?> messageByOrdinal(
 }) async {
   final db = await ref.watch(driftWorkingDatabaseProvider.future);
   final overlayDb = await ref.watch(overlayDatabaseProvider.future);
+  final archiveDir = ref.watch(attachmentArchiveDirectoryProvider);
   final nameOverrides = await displayNameOverridesMap(overlayDb);
   final indexSource = MessageIndexDataSource(db);
 
@@ -56,7 +57,12 @@ Future<MessageListItem?> messageByOrdinal(
   }
 
   // Use existing mapper to convert row to MessageListItem
-  final mapper = MessageRowMapper(db, nameOverrides);
+  final mapper = MessageRowMapper(
+    db,
+    nameOverrides,
+    overlayDb: overlayDb,
+    archiveDir: archiveDir,
+  );
   final messages = await mapper.mapRows([row]);
 
   return messages.isEmpty ? null : messages.first;

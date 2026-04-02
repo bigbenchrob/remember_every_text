@@ -7,7 +7,7 @@ part of 'search_result_context_provider.dart';
 // **************************************************************************
 
 String _$searchResultContextHash() =>
-    r'7b08dbb2484176046c7a1fed54df213314c166b7';
+    r'689f9c27ff02c5932d636702bc7d909171cd707a';
 
 /// Copied from Dart SDK
 class _SystemHash {

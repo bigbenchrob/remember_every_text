@@ -23,6 +23,7 @@ Future<MessageListItem?> messageByTimelineOrdinal(
 }) async {
   final db = await ref.watch(driftWorkingDatabaseProvider.future);
   final overlayDb = await ref.watch(overlayDatabaseProvider.future);
+  final archiveDir = ref.watch(attachmentArchiveDirectoryProvider);
   final nameOverrides = await displayNameOverridesMap(overlayDb);
   final strategy = scope.toOrdinalStrategy(db);
 
@@ -58,7 +59,12 @@ Future<MessageListItem?> messageByTimelineOrdinal(
     return null;
   }
 
-  final mapper = MessageRowMapper(db, nameOverrides);
+  final mapper = MessageRowMapper(
+    db,
+    nameOverrides,
+    overlayDb: overlayDb,
+    archiveDir: archiveDir,
+  );
   final messages = await mapper.mapRows([row]);
 
   return messages.isEmpty ? null : messages.first;

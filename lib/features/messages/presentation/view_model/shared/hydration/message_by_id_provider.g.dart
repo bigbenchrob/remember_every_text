@@ -6,7 +6,7 @@ part of 'message_by_id_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$messageByIdHash() => r'a5a2d23ec20b117faefb4b8f20fbe64d14e855d4';
+String _$messageByIdHash() => r'7e36ab64ca36cc1cd7c1f3d7cb8fe4c9e83d2207';
 
 /// Copied from Dart SDK
 class _SystemHash {

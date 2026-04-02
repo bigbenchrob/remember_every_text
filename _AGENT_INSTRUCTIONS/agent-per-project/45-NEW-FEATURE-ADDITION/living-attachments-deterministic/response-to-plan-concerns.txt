@@ -1,0 +1,283 @@
+Response to plan concerns
+
+Thank you — these are the right concerns. The direction is correct. Please incorporate the following clarifications into the formal plan.
+	1.	Cross-snapshot attachment mapping is the crux
+
+Agreed. This is the hardest part of the deterministic design.
+
+The current overlay key is:
+	•	message_guid
+	•	import_attachment_id
+
+That key remains fine for runtime resolution once a recovered attachment has been linked into the current working model.
+
+However, during deterministic historical intake, the historical snapshot cannot assume attachment ROWID continuity across snapshots. Historical attachment.ROWID is valid only inside the historical snapshot.
+
+Therefore:
+	•	Use historical message_attachment_join.message_id and attachment_id only to reconstruct relationships within the historical snapshot
+	•	Do NOT use historical attachment ROWID as a cross-snapshot identity
+	•	The cross-snapshot mapper must match historical records to current working records using:
+	•	primary: message GUID
+	•	primary attachment discriminator: attachment GUID if available
+	•	fallback only if absolutely necessary: message GUID + attachment position/ordinal within that message’s attachment set, but only if this can be made deterministic and provable
+
+The plan should explicitly state:
+
+Historical ROWIDs are traversal keys within the historical snapshot, not portable identity.
+	2.	Historical local_path is the deterministic file locator
+
+Agreed.
+
+The historical attachment filename/local_path stored in the historical snapshot is the deterministic route into the historical Attachments folder.
+
+This should be implemented as a path rewrite, not as a search.
+
+Required rule:
+	•	derive the expected historical file location by replacing the historical root prefix
+~/Library/Messages/Attachments
+with the user-selected historical Attachments root
+	•	then test existence directly
+
+No basename searching, no path-tail guessing, no fuzzy discovery in the deterministic flow.
+	3.	Overlay schema likely does not need structural change
+
+Agreed in principle.
+
+If the existing overlay row can already store:
+	•	message_guid
+	•	import_attachment_id
+	•	archive_relative_path
+	•	archived_at_utc
+	•	file_size_bytes
+	•	content_hash
+	•	provenance
+	•	original_local_path
+
+then the deterministic importer should reuse it.
+
+Adding a new provenance value such as:
+	•	imported_historical_snapshot
+
+is appropriate.
+
+No schema change should be made unless the implementation proves we are missing a truly necessary field.
+
+However, the plan should explicitly review whether we also want to persist additional reference metadata for diagnostics only, such as:
+	•	message_row_id
+	•	historical_attachment_guid
+
+These are optional diagnostic/reference fields, not necessarily required for the initial implementation if they would force a migration.
+
+Default guidance:
+	•	do not migrate schema unless needed
+	•	prefer using existing schema plus richer import reporting/logging first
+
+	4.	Orphan historical records should not be archived in Phase 1
+
+For now, keep this simple.
+
+If a historical message/attachment pair cannot be mapped to a current working record, report it as unmapped and skip archive insertion.
+
+Do not introduce orphan archive records in Phase 1.
+
+Reason:
+	•	orphan archive support creates a second conceptual model
+	•	it complicates overlay semantics
+	•	it is not needed for the core user story
+	•	it can be added later if a real need emerges
+
+So the rule is:
+
+Phase 1 deterministic recovery archives only files that can be mapped cleanly into the current working identity model.
+
+Unmapped historical rows should be counted and reported, not silently dropped, but not archived.
+	5.	WAL handling must be a hard requirement
+
+Agreed.
+
+The plan must state explicitly:
+	•	the historical snapshot DB must be opened read-only
+	•	the importer must not checkpoint, mutate, vacuum, or otherwise alter the user’s historical snapshot
+	•	if WAL/SHM are present, they must be used in a read-only-safe manner
+	•	correctness is more important than permissiveness here
+
+Also state clearly in the input contract:
+
+Best supported snapshot set:
+	•	chat.db
+	•	chat.db-wal
+	•	chat.db-shm
+	•	matching Attachments folder
+
+If WAL/SHM are absent, proceed only with clear reporting that the snapshot may be incomplete.
+	6.	Live archive mode remains as-is
+
+Agreed.
+
+The current live archive path is unaffected and should remain in place.
+
+No redesign is needed there.
+	7.	Clarification on “ongoing use”
+
+Please treat “ongoing use” conservatively in this plan.
+
+For this feature plan, “live archive mode” means:
+	•	onboarding/import-time archive pass
+	•	any existing archive pass that already runs after migration
+
+Do NOT expand scope to real-time archiving of newly arriving messages unless that behavior already exists and is already stable.
+
+So for this plan:
+	•	preserve current live archive behavior
+	•	do not add new real-time/background watch behavior
+
+Real-time incremental archiving is out of scope unless explicitly planned later.
+	8.	Recommended phase structure is correct
+
+Please use this structure:
+
+Phase 0
+Remove heuristic historical importer
+	•	code
+	•	UI
+	•	docs
+	•	product wording
+
+Phase 1
+Build deterministic snapshot reader
+	•	open historical chat.db read-only
+	•	include WAL/SHM safely when available
+	•	enumerate historical message↔attachment joins
+	•	resolve historical local paths by deterministic path rewrite
+
+Phase 2
+Build cross-snapshot mapper
+	•	map historical message → current working message by message GUID
+	•	map historical attachment → current working attachment by attachment GUID where available
+	•	define and document any strictly bounded fallback if attachment GUID is missing
+
+Phase 3
+Wire archive writer
+	•	copy resolved files to content-addressable archive
+	•	create overlay rows using current runtime linkage model
+	•	provenance = imported_historical_snapshot
+
+Phase 4
+Build new deterministic recovery UI
+	•	require both historical DB snapshot and Attachments folder
+	•	validate inputs
+	•	present progress
+	•	report archived / missing / unmapped counts clearly
+
+Phase 5
+Testing and validation
+	•	deterministic happy path
+	•	missing-file cases
+	•	unmapped cases
+	•	multi-attachment messages
+	•	idempotent re-run
+	•	WAL-aware correctness
+	•	regression coverage for live archive mode and resolver behavior
+
+	9.	Architectural boundary to state explicitly
+
+Please add this sentence to the formal plan:
+
+The previous historical recovery flow based on file-only heuristics is superseded and removed as a product feature. Historical recovery is now supported only through deterministic intake from a matched historical Messages snapshot. Heuristic file-only recovery is out of product scope.
+	10.	One more implementation caution
+
+The mapper must distinguish clearly between:
+	•	historical traversal identity
+	•	current runtime identity
+
+That is:
+	•	historical joins use historical message_id / attachment_id rowids
+	•	current overlay/runtime linkage uses the current app’s stable identity model
+
+Do not let the historical rowids “escape” into overlay identity.
+
+ADDENDUM REGARDING real-time, continuing, archiving of image files:
+
+There are two separate concerns:
+	1.	deterministic historical recovery from a matched snapshot
+	2.	continued archive growth during normal use
+
+The current plan is about replacing heuristic historical recovery with deterministic snapshot intake. That is fine. But it must not accidentally narrow the product promise to “archive only what existed at onboarding/import time.”
+
+What you want is this rule:
+
+Once archive mode is enabled, MessageLens must continue to preserve newly available local attachments, including attachments that reappear later because the user downloaded them from iCloud in Apple Messages.
+
+That does not require real-time filesystem watching in Phase 1, but it does require a clearly planned continuation mechanism.
+
+I would tell the agent to add a deferred-but-explicit follow-up section like this:
+
+Post-Plan Requirement — Living Archive Continuation
+
+This deterministic recovery plan does not expand real-time background archiving behavior. However, the product must continue to function as a living archive after onboarding.
+
+Required future behavior:
+	•	If archive mode is enabled, any attachment that becomes locally available later must be eligible for archiving.
+	•	This includes attachments newly received after onboarding.
+	•	This includes attachments previously evicted by iCloud that the user later re-downloads in Apple Messages.
+	•	MessageLens must preserve those files into its archive the next time an archive pass or equivalent continuation mechanism runs.
+
+Acceptable implementation paths for a later phase:
+	1.	Re-run archiveAllAvailable() after normal import/migration cycles so newly local files are picked up.
+	2.	Trigger archive-on-resolution when MessageLens encounters a live local file that is not yet archived.
+	3.	Add a more proactive incremental/background mechanism later if needed.
+
+Out of scope for the current deterministic-snapshot plan:
+	•	designing a real-time watcher
+	•	guaranteeing immediate archiving the instant the user clicks download in Messages
+
+But the plan must explicitly preserve this product requirement:
+The archive must remain a living archive, not a frozen onboarding snapshot.
+
+I’d also add one more practical note for the agent:
+
+The easiest safe bridge may be:
+	•	keep the existing post-migration archiveAllAvailable() behavior
+	•	ensure normal imports continue to occur often enough that a re-downloaded iCloud attachment eventually gets archived
+	•	optionally keep or add on-demand archiving when MessageLens itself resolves a live local file that is not yet archivedThere are two separate concerns:
+	1.	deterministic historical recovery from a matched snapshot
+	2.	continued archive growth during normal use
+
+The current plan is about replacing heuristic historical recovery with deterministic snapshot intake. That is fine. But it must not accidentally narrow the product promise to “archive only what existed at onboarding/import time.”
+
+What you want is this rule:
+
+Once archive mode is enabled, MessageLens must continue to preserve newly available local attachments, including attachments that reappear later because the user downloaded them from iCloud in Apple Messages.
+
+That does not require real-time filesystem watching in Phase 1, but it does require a clearly planned continuation mechanism.
+
+I would tell the agent to add a deferred-but-explicit follow-up section like this:
+
+Post-Plan Requirement — Living Archive Continuation
+
+This deterministic recovery plan does not expand real-time background archiving behavior. However, the product must continue to function as a living archive after onboarding.
+
+Required future behavior:
+	•	If archive mode is enabled, any attachment that becomes locally available later must be eligible for archiving.
+	•	This includes attachments newly received after onboarding.
+	•	This includes attachments previously evicted by iCloud that the user later re-downloads in Apple Messages.
+	•	MessageLens must preserve those files into its archive the next time an archive pass or equivalent continuation mechanism runs.
+
+Acceptable implementation paths for a later phase:
+	1.	Re-run archiveAllAvailable() after normal import/migration cycles so newly local files are picked up.
+	2.	Trigger archive-on-resolution when MessageLens encounters a live local file that is not yet archived.
+	3.	Add a more proactive incremental/background mechanism later if needed.
+
+Out of scope for the current deterministic-snapshot plan:
+	•	designing a real-time watcher
+	•	guaranteeing immediate archiving the instant the user clicks download in Messages
+
+But the plan must explicitly preserve this product requirement:
+The archive must remain a living archive, not a frozen onboarding snapshot.
+
+I’d also add one more practical note for the agent:
+
+The easiest safe bridge may be:
+	•	keep the existing post-migration archiveAllAvailable() behavior
+	•	ensure normal imports continue to occur often enough that a re-downloaded iCloud attachment eventually gets archived
+	•	optionally keep or add on-demand archiving when MessageLens itself resolves a live local file that is not yet archived

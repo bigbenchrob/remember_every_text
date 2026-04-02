@@ -45,7 +45,10 @@ enum TopChatMenuChoice {
 /// Defines the possible choices for the menu.
 enum SettingsMenuChoice {
   /// Actions panel with Send Logs and other utilities
-  actions(id: 'actions', label: 'Actions');
+  actions(id: 'actions', label: 'Actions'),
+
+  /// Attachment archive settings (enable/disable, size, clear)
+  attachmentArchive(id: 'attachment_archive', label: 'Attachment Archive');
 
   const SettingsMenuChoice({required this.id, required this.label});
 

@@ -113,3 +113,16 @@ Future<OverlayDatabase> overlayDatabase(OverlayDatabaseRef ref) async {
 
   return database;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Attachment Archive Directory
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Root path for the content-addressable attachment archive.
+///
+/// Lives alongside the databases under Application Support:
+/// `~/Library/Application Support/com.bigbenchsoftware.MessageLens/attachment_archive/`
+@Riverpod(keepAlive: true)
+String attachmentArchiveDirectory(AttachmentArchiveDirectoryRef ref) {
+  return path.join(databaseDirectoryPath, 'attachment_archive');
+}

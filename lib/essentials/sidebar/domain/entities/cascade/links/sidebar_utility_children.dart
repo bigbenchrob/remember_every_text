@@ -42,3 +42,9 @@ CassetteSpec sidebarUtilitySettingsChildActionsMenu() {
     ContactsSettingsSpec.actionsMenu(),
   );
 }
+
+CassetteSpec sidebarUtilitySettingsChildAttachmentArchive() {
+  return const CassetteSpec.contactsSettings(
+    ContactsSettingsSpec.attachmentArchive(),
+  );
+}

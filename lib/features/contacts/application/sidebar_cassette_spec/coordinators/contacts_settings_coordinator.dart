@@ -4,6 +4,7 @@ import '../../../../../essentials/sidebar/presentation/view_model/sidebar_casset
 import '../../../domain/spec_classes/contacts_settings_spec.dart';
 import '../resolvers/actions_info_resolver.dart';
 import '../resolvers/actions_sub_menu_resolver.dart';
+import '../resolvers/attachment_archive_settings_resolver.dart';
 import '../resolvers/display_name_info_resolver.dart';
 import '../resolvers/reimport_data_info_resolver.dart';
 
@@ -42,6 +43,9 @@ class ContactsSettingsCoordinator extends _$ContactsSettingsCoordinator {
           .resolve(cassetteIndex: cassetteIndex),
       reimportDataInfo: () => ref
           .read(reimportDataInfoResolverProvider.notifier)
+          .resolve(cassetteIndex: cassetteIndex),
+      attachmentArchive: () => ref
+          .read(attachmentArchiveSettingsResolverProvider.notifier)
           .resolve(cassetteIndex: cassetteIndex),
     );
   }

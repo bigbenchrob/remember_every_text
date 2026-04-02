@@ -5,6 +5,8 @@ import '../../../features/contacts/domain/spec_classes/contacts_settings_spec.da
 import '../../../features/handles/application/state/stray_handle_mode_provider.dart';
 import '../../../features/handles/domain/spec_classes/handles_cassette_spec.dart';
 import '../../../features/handles/infrastructure/repositories/stray_handles_provider.dart';
+import '../../../features/messages/domain/value_objects/message_timeline_scope.dart';
+import '../../../features/messages/presentation/view_model/timeline/message_timeline_view_model_provider.dart';
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
 import '../../db/feature_level_providers.dart';
@@ -152,6 +154,22 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
       return;
     }
 
+    // If the contact timeline is already showing, scroll in place rather than
+    // tearing down and rebuilding the entire panel with a new ViewSpec.
+    final flowState = ref.read(sidebarFlowProvider);
+    if (flowState.chosenContactId == contactId &&
+        flowState.topMenuChoice == TopChatMenuChoice.contacts &&
+        flowState.messageScope == SidebarFlowMessageScope.regular) {
+      final scope = MessageTimelineScope.contact(
+        contactId: contactId,
+        filterHandleId: flowState.selectedHandleId,
+      );
+      ref
+          .read(messageTimelineViewModelProvider(scope: scope).notifier)
+          .jumpToDate(monthAnchor);
+      return;
+    }
+
     ref
         .read(sidebarFlowProvider.notifier)
         .showContactTimelineAt(contactId: contactId, scrollToDate: monthAnchor);
@@ -226,6 +244,8 @@ TopChatMenuChoice _mapTopMenuChoice(SidebarTopMenuChoice choice) {
 SettingsMenuChoice _mapSettingsMenuChoice(SidebarSettingsMenuChoice choice) {
   return switch (choice) {
     SidebarSettingsMenuChoice.actions => SettingsMenuChoice.actions,
+    SidebarSettingsMenuChoice.attachmentArchive =>
+      SettingsMenuChoice.attachmentArchive,
   };
 }
 

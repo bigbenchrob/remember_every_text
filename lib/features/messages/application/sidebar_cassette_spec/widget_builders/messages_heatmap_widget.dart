@@ -10,6 +10,7 @@ import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart';
 import '../../../domain/calendar_heatmap_timeline_data.dart';
 import '../../../domain/value_objects/message_timeline_scope.dart';
+import '../../../presentation/view_model/timeline/message_timeline_view_model_provider.dart';
 import '../../../presentation/view_model/timeline/ordinal/current_visible_month_provider.dart';
 import '../../../presentation/widgets/calendar_heatmap_timeline_widget.dart';
 import '../resolver_tools/contact_timeline_provider.dart';
@@ -133,14 +134,19 @@ class _ContactHeatmapContent extends ConsumerWidget {
         final isLastMonth =
             year == timeline.lastMessageDate.year &&
             month == timeline.lastMessageDate.month;
-        final startDate = isLastMonth ? null : DateTime(year, month, 1);
 
-        ref
-            .read(sidebarFlowProvider.notifier)
-            .showContactTimelineAt(
-              contactId: contactId,
-              scrollToDate: startDate,
-            );
+        if (isLastMonth) {
+          final scope = MessageTimelineScope.contact(contactId: contactId);
+          ref
+              .read(messageTimelineViewModelProvider(scope: scope).notifier)
+              .jumpToLatest();
+        } else {
+          final startDate = DateTime(year, month, 1);
+          final scope = MessageTimelineScope.contact(contactId: contactId);
+          ref
+              .read(messageTimelineViewModelProvider(scope: scope).notifier)
+              .jumpToDate(startDate);
+        }
       },
     );
   }

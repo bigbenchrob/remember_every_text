@@ -6,6 +6,9 @@ class AttachmentInfo {
     required this.localPath,
     required this.mimeType,
     required this.transferName,
+    this.importAttachmentId,
+    this.messageGuid,
+    this.archiveResolvedPath,
     this.mediaWidth,
     this.mediaHeight,
   });
@@ -14,6 +17,13 @@ class AttachmentInfo {
   final String? localPath;
   final String? mimeType;
   final String? transferName;
+  final int? importAttachmentId;
+  final String? messageGuid;
+
+  /// Absolute path to the archived copy of this file (if any).
+  /// Populated by the archive resolution pass during message hydration.
+  final String? archiveResolvedPath;
+
   final double? mediaWidth;
   final double? mediaHeight;
 
@@ -87,5 +97,27 @@ class AttachmentInfo {
       return rawPath.replaceFirst('~', home);
     }
     return rawPath;
+  }
+
+  /// Returns the best available [File] for this attachment by checking:
+  /// 1. The Messages local path (~/Library/Messages/Attachments)
+  /// 2. The archive copy (if [archiveResolvedPath] is set)
+  ///
+  /// Returns `null` if no file is available at either location.
+  File? bestAvailableFile() {
+    final localResolved = resolvedLocalPath();
+    if (localResolved != null) {
+      final file = File(localResolved);
+      if (file.existsSync()) {
+        return file;
+      }
+    }
+    if (archiveResolvedPath != null) {
+      final archiveFile = File(archiveResolvedPath!);
+      if (archiveFile.existsSync()) {
+        return archiveFile;
+      }
+    }
+    return null;
   }
 }

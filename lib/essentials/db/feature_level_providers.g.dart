@@ -66,5 +66,28 @@ final overlayDatabaseProvider = FutureProvider<OverlayDatabase>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef OverlayDatabaseRef = FutureProviderRef<OverlayDatabase>;
+String _$attachmentArchiveDirectoryHash() =>
+    r'58ef7cbc08da3f9b14f9e4ec324effd9c9204c40';
+
+/// Root path for the content-addressable attachment archive.
+///
+/// Lives alongside the databases under Application Support:
+/// `~/Library/Application Support/com.bigbenchsoftware.MessageLens/attachment_archive/`
+///
+/// Copied from [attachmentArchiveDirectory].
+@ProviderFor(attachmentArchiveDirectory)
+final attachmentArchiveDirectoryProvider = Provider<String>.internal(
+  attachmentArchiveDirectory,
+  name: r'attachmentArchiveDirectoryProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$attachmentArchiveDirectoryHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef AttachmentArchiveDirectoryRef = ProviderRef<String>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

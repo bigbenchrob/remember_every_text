@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../features/attachments/application/attachment_archive_service_provider.dart';
 import '../../../../features/chats/presentation/view_model/recent_chats_provider.dart';
 import '../../../db/feature_level_providers.dart';
 import '../../../db_migrate/domain/entities/db_migration_result.dart';
@@ -908,6 +909,13 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
 
       if (result.success) {
         ref.invalidate(recentChatsProvider);
+
+        // Fire-and-forget: archive locally available image attachments.
+        unawaited(
+          ref
+              .read(attachmentArchiveServiceProvider.notifier)
+              .archiveAllAvailable(),
+        );
       }
     } catch (error) {
       final message = _mapDatabaseError('Migration failed', error);

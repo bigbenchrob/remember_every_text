@@ -1,0 +1,329 @@
+LIVING ATTACHMENT DETERMINISTIC
+Outline for Formal Feature Plan
+
+Purpose
+
+Replace the current heuristic historical-attachment recovery flow with a deterministic snapshot-based recovery flow.
+
+The existing archive/resolution infrastructure remains valid and should be preserved. What changes is the intake strategy for historical recovery.
+
+The new system must treat historical recovery as a deterministic import from a matched Messages snapshot:
+	•	historical chat.db snapshot
+	•	matching historical Attachments folder
+	•	ideally matching chat.db-wal and chat.db-shm when available
+
+The system must no longer attempt to productize best-effort recovery from an Attachments folder alone.
+
+Core Product Decision
+
+Supported archive/recovery modes going forward:
+	1.	Live archive mode
+MessageLens archives attachments from the user’s current live Messages environment during onboarding/import and ongoing use.
+	2.	Deterministic historical snapshot recovery
+MessageLens recovers historical attachments only when the user provides a matched historical Messages snapshot:
+	•	chat.db
+	•	matching Attachments folder
+	•	preferably chat.db-wal and chat.db-shm
+
+Out of scope:
+	•	folder-only historical recovery as a supported product feature
+	•	heuristic path-tail matching
+	•	filename-only or filename+size matching as a productized recovery path
+	•	fuzzy or probabilistic reconstruction of message↔attachment relationships
+
+High-Level Intent
+
+The old heuristic system attempted to infer message↔attachment relationships from backup files alone. This was inherently ambiguous and was proven to fail in real cases even when the desired file was present in the backup.
+
+The new system must instead use the historical Messages database as the authoritative ledger of:
+	•	which message owned which attachment
+	•	what attachment path existed at that snapshot
+	•	which attachment metadata belonged to that file
+
+This shifts the design from probabilistic reconstruction to deterministic lookup.
+
+Architectural Principles
+	1.	Preserve valid archive infrastructure
+Keep:
+	•	archive directory/store
+	•	overlay archive metadata table
+	•	resolver pipeline
+	•	availability states
+	•	settings / opt-in archive controls
+	•	live import-time archiving from the current Messages environment
+	2.	Replace only the historical intake strategy
+Remove the heuristic historical importer as a product path.
+Add deterministic historical snapshot import.
+	3.	Historical chat.db is read-only and temporary
+A historical snapshot is used only during intake.
+It is not merged into working DB.
+It is not treated as an alternate source of truth after import completes.
+	4.	Current multi-source rendering remains unchanged
+After deterministic recovery writes archive records into overlay + archive store, the existing runtime resolution model remains:
+	•	current Messages local file first
+	•	then archived file
+	•	then cloud-only/missing state
+	5.	Overlay DB remains the place for user/archive intent
+Archive metadata continues to live in user_overlays.db.
+Working DB remains a projection of the current live Messages dataset.
+	6.	Deterministic recovery requires a matched snapshot pair
+Historical recovery must require:
+	•	historical Messages DB snapshot
+	•	matching historical Attachments folder
+Preferably also:
+	•	chat.db-wal
+	•	chat.db-shm
+	7.	Message identity should be cross-snapshot safe
+Use message GUID as primary cross-snapshot message identity in overlay/archive linkage.
+Also persist preserved message ROW_ID as a reference/diagnostic field.
+Do not rely on ROW_ID alone as the sole cross-snapshot archival identity.
+	8.	Attachment identity must remain specific
+A message-level match is not enough when a message can have multiple attachments.
+Deterministic recovery must preserve attachment-specific linkage as well.
+
+Problem Statement
+
+The heuristic historical importer was able to recover some files, but only when hash or path-tail coincidence aligned. It failed in cases where:
+	•	the working DB had sha256_hex = NULL
+	•	backup path tails differed from live path tails
+	•	sent-attachment directory conventions differed from received-copy directory structure
+	•	common filenames created ambiguity
+
+This means the historical importer can fail even when the correct file is present in the backup.
+
+Therefore the heuristic importer must be removed as a supported recovery strategy.
+
+Feature Goal
+
+Implement a deterministic historical snapshot intake flow that:
+	•	reads a historical chat.db snapshot and matching Attachments folder
+	•	reconstructs message↔attachment relationships from the historical DB joins
+	•	resolves the corresponding historical files from the historical Attachments folder
+	•	copies recovered files into the MessageLens archive
+	•	writes overlay records keyed to current MessageLens message/attachment identity
+	•	allows the existing resolver pipeline to serve those files normally
+
+Part 1 — Remove Outmoded Heuristic Recovery Flow
+
+Goal
+
+Remove the folder-only heuristic historical recovery path as a product feature so the codebase no longer contains a competing or misleading recovery model.
+
+Scope
+	1.	Remove heuristic matching logic
+Remove or retire:
+	•	path-tail matching
+	•	basename/path-suffix inference
+	•	filename+size fallback ideas
+	•	any productized backup-folder-only matching flow
+	2.	Remove or narrow folder-only import UI
+If the current historical import UI allows selecting only a recovered Attachments folder, remove that as a supported user-facing path.
+Replace with a deterministic snapshot intake surface that requires both:
+	•	database snapshot
+	•	Attachments folder
+	3.	Remove stale wording
+Update any docs/settings/onboarding/debug text that implies MessageLens supports best-effort folder-only historical recovery.
+	4.	Keep any internal/debug-only helpers only if explicitly marked non-product
+If some heuristic code is useful for diagnostics, isolate it clearly and ensure it is not part of the product flow.
+
+Part 2A — Introduce Deterministic Snapshot Intake Foundation
+
+Goal
+
+Create the intake flow, data access layer, and domain model needed to ingest a historical snapshot deterministically.
+
+Required Inputs
+	•	historical chat.db
+	•	optionally historical chat.db-wal
+	•	optionally historical chat.db-shm
+	•	matching historical Attachments folder
+
+Input Contract
+
+The user must provide snapshot components from the same backup moment or as close as possible.
+
+The system should validate:
+	•	chat.db exists
+	•	Attachments folder exists
+	•	WAL/SHM presence is detected and used when available
+	•	the selected files/folders appear structurally plausible
+
+Historical DB Access Strategy
+	1.	Open historical DB read-only
+	2.	Include WAL state if provided
+	3.	Never mutate historical files
+	4.	Never attach historical DB as a long-lived runtime source
+	5.	Use it only during the deterministic import transaction/process
+
+Historical Relationship Reconstruction
+
+Within the historical snapshot, reconstruct attachment ownership using the native Apple joins:
+	•	message_attachment_join.message_id -> message.ROWID
+	•	message_attachment_join.attachment_id -> attachment.ROWID
+
+Within that historical DB, this is the authoritative relationship and should be used directly.
+
+For each recovered attachment candidate, gather at least:
+	•	historical message ROW_ID
+	•	historical message GUID
+	•	historical attachment ROW_ID
+	•	historical attachment GUID if available
+	•	historical local path / filename
+	•	transfer name
+	•	mime type / uti
+	•	file size if available
+	•	direction metadata if useful
+
+Historical File Resolution
+
+Use the historical attachment local path from the historical DB to resolve the expected file within the historical Attachments tree.
+
+This should be deterministic:
+	•	no path-tail guessing
+	•	no basename-only matching
+	•	no probabilistic search
+
+If the historical DB says the file should exist at a certain relative structure under the historical Attachments folder, that is the path to test.
+
+Current-System Mapping
+
+Once the historical message↔attachment relationship is known, map it into the current MessageLens identity model.
+
+Message side:
+	•	primary: message GUID
+	•	reference: preserved message ROW_ID
+
+Attachment side:
+	•	use the specific attachment discriminator already used by archive overlay/runtime resolution
+	•	do not reduce recovery to message-level only
+
+Overlay Write Model
+
+When a deterministic match succeeds:
+	•	copy file into archive store
+	•	create overlay archive record
+	•	mark provenance distinctly, e.g. imported_historical_snapshot
+	•	retain original historical local path for reference
+	•	retain reference fields for message GUID / message ROW_ID / attachment-side identity
+
+Part 2B — Deterministic Import Execution Flow
+
+Goal
+
+Implement the actual end-to-end deterministic importer.
+
+Suggested flow
+	1.	Validate snapshot inputs
+	2.	Open historical DB read-only
+	3.	Enumerate historical message↔attachment relationships
+	4.	Resolve historical file paths from historical DB metadata
+	5.	For each resolvable file:
+	•	verify file exists
+	•	copy into archive store
+	•	create/update overlay archive record
+	6.	Report results:
+	•	total historical attachments examined
+	•	files found
+	•	files missing
+	•	files archived
+	•	records skipped due to no current mapping
+	•	duplicate/deduplicated count
+	•	total bytes archived
+
+Required behaviors
+	•	idempotent re-run behavior
+	•	no duplicate overlay spam
+	•	safe handling if the same file is already archived
+	•	clear reporting for “historical DB row exists but file missing from snapshot folder”
+
+Part 3 — Reconcile Existing Archive/Resolver Infrastructure
+
+Goal
+
+Ensure the current archive resolver and UI continue to work unchanged with deterministic historical imports.
+
+Checks
+	1.	Existing resolver must continue to do:
+	•	current Messages local path
+	•	archive overlay record
+	•	cloud-only / missing
+	2.	Overlay schema may need extension
+Support the deterministic importer without weakening the current live archive path.
+	3.	Provenance model should distinguish:
+	•	archived from live environment
+	•	imported from historical snapshot
+	4.	UI need not become more complex
+The user does not need to know the importer internals at render time.
+Runtime rendering should simply benefit from more reliable archive coverage.
+
+Part 4 — Remove Conceptual Mud From Docs and Product Surfaces
+
+Goal
+
+Make the product boundary explicit everywhere.
+
+Update:
+	•	onboarding wording
+	•	settings wording
+	•	import/recovery dialogs
+	•	developer docs
+	•	feature docs
+	•	test plans
+
+New product boundary should be stated plainly:
+
+MessageLens supports:
+	•	live local attachment archiving
+	•	deterministic recovery from a matched historical Messages snapshot
+
+MessageLens does not support:
+	•	orphaned Attachments-folder-only recovery as a product feature
+
+Part 5 — Testing and Validation
+
+Deterministic importer tests
+	1.	Happy path
+Historical DB and Attachments folder match cleanly
+Files archive and resolve correctly
+	2.	Historical file missing
+Historical DB row exists, file absent in snapshot folder
+Import reports skip cleanly
+	3.	Historical/current mapping mismatch
+Historical message GUID not found in current working projection
+Import reports unmapped record without corruption
+	4.	Multiple attachments on one message
+Ensure attachment-specific linkage remains correct
+	5.	Re-run idempotence
+Running deterministic import twice does not duplicate archive or overlay rows
+	6.	WAL-aware import
+If WAL/SHM are supplied, importer reads consistent snapshot correctly
+
+Regression tests
+	1.	Live archive mode still works
+	2.	Existing resolver still serves archived files
+	3.	Placeholder states still behave correctly
+	4.	No dead heuristic paths remain reachable from product UI
+
+Anti-Patterns / Strict Do-Not-Do List
+	1.	Do not keep both heuristic and deterministic historical recovery as equal first-class paths
+	2.	Do not leave product wording ambiguous about supported recovery modes
+	3.	Do not use basename/path-tail guessing in the new deterministic flow
+	4.	Do not write recovered files back into Apple’s Messages Attachments directory
+	5.	Do not merge historical DB contents into working DB as a second source of truth
+	6.	Do not rely on historical ROW_ID alone as the sole cross-snapshot archival identity
+	7.	Do not key archive recovery only at message level when attachment-level specificity is required
+	8.	Do not let historical intake contaminate normal runtime resolution logic
+	9.	Do not silently ignore historical/current identity mismatches; surface them in diagnostics/reporting
+
+Deliverables Expected From the Formal Plan
+	1.	Updated proposal / design brief
+	2.	Explicit removal plan for heuristic historical importer
+	3.	Deterministic historical snapshot importer design
+	4.	Overlay schema review / changes if needed
+	5.	UI/wording changes for recovery flow
+	6.	Test plan
+	7.	Migration / cleanup plan for any existing heuristic-only codepaths
+
+Recommended Framing Sentence for the Final Plan
+
+The previous heuristic historical recovery flow is superseded and removed as a product feature. Historical attachment recovery is now supported only through deterministic snapshot intake using a matched Messages database snapshot and Attachments folder. Existing archive storage, overlay metadata, resolver behavior, and live archiving remain in place.

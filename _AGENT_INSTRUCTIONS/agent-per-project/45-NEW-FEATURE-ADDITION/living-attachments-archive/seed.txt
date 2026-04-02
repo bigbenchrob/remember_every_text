@@ -1,0 +1,342 @@
+ATTACHMENT ARCHIVE FEATURE — MESSAGE LENS
+Purpose, Principles, Architecture, and Implementation Guidance
+
+⸻
+
+1. PURPOSE OF THIS FEATURE
+
+MessageLens currently relies on the macOS Messages attachment store at:
+
+~/Library/Messages/Attachments
+
+This directory is not a durable data source. macOS (via Messages in iCloud and storage optimization) may remove local copies of attachments at any time while leaving database records intact. When this occurs:
+	•	chat.db still references the attachment
+	•	the directory structure may remain
+	•	the file itself is gone
+	•	Apple Messages can re-download it on demand
+	•	MessageLens cannot reliably do so
+
+This creates a fundamental mismatch:
+	•	MessageLens assumes attachments are locally persistent
+	•	macOS treats them as a cache
+
+This feature resolves that mismatch by introducing a MessageLens-managed attachment archive.
+
+The archive preserves locally available attachments so they remain accessible even after macOS evicts them.
+
+This is not a workaround. It is a deliberate architectural shift:
+
+MessageLens moves from “reading Apple’s cache” → to “building a durable user-owned attachment corpus.”
+
+⸻
+
+2. CORE PRODUCT REFRAME
+
+Old model (invalid):
+
+“Attachments exist locally unless broken.”
+
+New model (correct):
+
+“Attachments have availability states and may transition between them.”
+
+MessageLens must explicitly model and communicate these states.
+
+⸻
+
+3. ATTACHMENT AVAILABILITY MODEL
+
+Every attachment must be treated as existing in one of the following states:
+	1.	Live Local
+File exists at current Messages path
+	2.	Archived Local
+File no longer exists in Messages folder, but exists in MessageLens archive
+	3.	Cloud-Only
+Known via database, not present locally
+	4.	Missing / Broken
+No file available and no viable recovery path
+	5.	Imported Historical
+Recovered from backup (e.g., Time Machine import)
+
+These states must be explicit in both data model and UI.
+
+⸻
+
+4. KEY PRINCIPLES
+
+4.1 The Messages Attachments Folder is a Cache
+
+~/Library/Messages/Attachments is:
+	•	mutable
+	•	non-authoritative
+	•	subject to eviction
+	•	subject to path changes
+
+It must NEVER be treated as a durable data store.
+
+⸻
+
+4.2 Attachment Paths Are Not Stable
+
+The local_path field in chat.db:
+	•	can change after iCloud re-download
+	•	must not be treated as identity
+	•	must be treated as cached location metadata
+
+⸻
+
+4.3 Identity Must Be Decoupled from Path
+
+Attachments must be identified by a stable key:
+	•	attachment row identity (ROWID / GUID equivalent)
+	•	message linkage
+	•	or other stable identifier
+
+File paths are not identity.
+
+⸻
+
+4.4 MessageLens Must Own Its Archive
+
+MessageLens must maintain a separate, app-controlled archive:
+	•	independent of Apple’s storage decisions
+	•	durable across time
+	•	never overwritten by system processes
+
+⸻
+
+4.5 Archiving Must Be Explicit and User-Authorized
+
+Because this feature consumes storage, it must be:
+	•	opt-in
+	•	clearly explained
+	•	configurable
+
+⸻
+
+4.6 Resolution Must Be Multi-Source
+
+Attachment rendering must not depend on a single path.
+
+Resolution must follow a prioritized pipeline.
+
+⸻
+
+5. USER-FACING FEATURE DEFINITION
+
+Feature Name (suggestion)
+
+“Preserve Attachments Locally”
+
+User Explanation
+
+macOS may remove local copies of older Messages attachments to save space. MessageLens can preserve its own local archive so your attachments remain available here.
+
+Modes
+	1.	Standard Mode
+Use only currently available local attachments
+	2.	Archive Mode (opt-in)
+MessageLens preserves attachments as they become available locally
+
+⸻
+
+6. ARCHITECTURE OVERVIEW
+
+6.1 Two Sources of Truth
+	1.	Messages Store (volatile)
+	2.	MessageLens Archive (durable)
+
+⸻
+
+6.2 Attachment Resolution Pipeline
+
+When loading an attachment:
+	1.	Attempt Messages local_path
+	2.	If missing → attempt MessageLens archive
+	3.	If missing → mark Cloud-Only
+	4.	Offer “Open in Messages” fallback
+
+⸻
+
+6.3 Archive Storage Strategy
+
+Do NOT rely on a mirrored folder structure as primary storage.
+
+Use a managed archive store:
+	•	app-controlled directory
+	•	stable naming scheme
+	•	independent of Apple path churn
+
+⸻
+
+7. DATA MODEL EXTENSIONS
+
+Each attachment record should include:
+	•	stable attachment identifier
+	•	current Messages local_path (mutable)
+	•	archive_path (nullable)
+	•	availability_state
+	•	provenance (messages_live / archive / imported)
+	•	first_seen_at
+	•	last_seen_at
+	•	archived_at
+	•	file size
+	•	optional content hash (for deduplication)
+
+⸻
+
+8. ARCHIVE INGESTION STRATEGY
+
+8.1 Primary Ingestion (during import)
+
+When importing attachments:
+
+IF file exists at local_path
+→ copy into archive store
+→ record archive_path
+
+⸻
+
+8.2 Secondary Ingestion (background)
+
+Periodic background task:
+	•	scan known attachments
+	•	detect newly available files
+	•	archive if not already stored
+
+⸻
+
+8.3 On-Demand Ingestion
+
+When user opens an attachment:
+
+IF file exists locally AND not archived
+→ archive it immediately
+
+⸻
+
+9. OPTIONAL: HISTORICAL IMPORT
+
+Advanced feature:
+
+Allow user to import a previously saved copy of:
+
+~/Library/Messages/Attachments
+
+Use case:
+	•	Time Machine recovery
+	•	manual backups
+
+Behavior:
+	•	ingest files into archive store
+	•	attempt to match to existing attachment records
+	•	mark provenance as “imported”
+
+⸻
+
+10. STORAGE MANAGEMENT
+
+Provide user controls:
+	•	enable/disable archive
+	•	archive images only / all attachments
+	•	max storage size
+	•	retention policy
+	•	clear archive
+
+Display:
+	•	current archive size
+	•	number of stored attachments
+
+⸻
+
+11. UI / UX REQUIREMENTS
+
+Replace “Image unavailable” with state-aware messaging:
+	•	“Stored in iCloud — not downloaded to this Mac”
+	•	“Available in MessageLens archive”
+	•	“Not available locally”
+
+Optionally:
+	•	button: “Open in Messages”
+	•	badge: “Archived”
+
+⸻
+
+12. IMPORT + MIGRATION CORRECTIONS (CRITICAL)
+
+This feature must be implemented alongside fixing stale path issues.
+
+Import Layer
+
+Must support updating existing attachments:
+	•	detect path changes in source DB
+	•	refresh local_path
+
+Must not be append-only.
+
+⸻
+
+Migration Layer
+
+Must support updates:
+
+IF import.local_path != working.local_path
+→ update working record
+
+⸻
+
+13. ANTI-PATTERNS (STRICTLY FORBIDDEN)
+	1.	Treating local_path as immutable
+	2.	Using file path as attachment identity
+	3.	Relying solely on Messages folder for rendering
+	4.	Overwriting Messages folder contents
+	5.	Storing archive as a blind mirror of Apple’s directory long-term
+	6.	Silent archiving without user consent
+	7.	Presenting cloud-only attachments as “broken”
+	8.	Assuming import-only (ROWID-based) synchronization is sufficient
+	9.	Ignoring path churn after iCloud redownload
+	10.	Writing recovered files back into Apple’s Attachments directory
+
+⸻
+
+14. DESIGN INTENT
+
+This feature transforms MessageLens from:
+
+“Viewer of Apple’s local cache”
+
+into:
+
+“Durable, user-owned archive and navigation layer for Messages data”
+
+This is not just resilience — it is differentiation.
+
+⸻
+
+15. CORE RULES FOR IMPLEMENTATION
+
+Rule 1
+Apple’s Attachments directory is a volatile ingestion source, not a database.
+
+Rule 2
+Attachment identity must be independent of file path.
+
+Rule 3
+MessageLens must support multi-source resolution (Messages + Archive).
+
+Rule 4
+All attachment availability states must be explicitly modeled.
+
+Rule 5
+Archive storage must be app-controlled, stable, and user-authorized.
+
+⸻
+
+16. SUCCESS CRITERIA
+
+After implementation:
+	•	Attachments remain viewable in MessageLens even after macOS eviction
+	•	Re-downloaded attachments update correctly without reimport
+	•	No stale path issues remain
+	•	Users understand availability states
+	•	Archive growth is controlled and transparent

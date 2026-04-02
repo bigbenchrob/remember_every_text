@@ -47,9 +47,11 @@ void main() {
           ),
           findsOneWidget,
         );
-        expect(find.text('Image unavailable'), findsOneWidget);
+        expect(find.textContaining('stored in iCloud'), findsOneWidget);
 
-        final imageTop = tester.getTopLeft(find.text('Image unavailable')).dy;
+        final imageTop = tester
+            .getTopLeft(find.textContaining('stored in iCloud'))
+            .dy;
         final textFinder = find.text(
           'Here is the picture from the hike yesterday. The attachment text should render as its own normal message bubble, not as a narrow caption.',
         );
@@ -98,7 +100,7 @@ void main() {
         );
 
         expect(find.text('[No text content]'), findsNothing);
-        expect(find.text('Image unavailable'), findsOneWidget);
+        expect(find.textContaining('stored in iCloud'), findsOneWidget);
       },
     );
 
@@ -135,7 +137,7 @@ void main() {
         );
 
         expect(find.text('\uFFFC'), findsNothing);
-        expect(find.text('Image unavailable'), findsOneWidget);
+        expect(find.textContaining('stored in iCloud'), findsOneWidget);
       },
     );
   });

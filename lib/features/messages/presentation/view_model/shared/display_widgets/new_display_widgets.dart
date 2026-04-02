@@ -558,6 +558,74 @@ class TextMessageTile extends ConsumerWidget {
   }
 }
 
+/// Placeholder shown when an image or video file is not locally available.
+///
+/// Differentiates between:
+/// - **cloudOnly**: The file is known in the DB but not on disk (iCloud-evicted).
+/// - **missing**: No local path was ever recorded for this attachment.
+class _MediaUnavailablePlaceholder extends ConsumerWidget {
+  const _MediaUnavailablePlaceholder({
+    required this.isCloudOnly,
+    required this.mediaLabel,
+  });
+
+  /// `true` when the attachment record has a local path but the file is
+  /// not present on disk (i.e. evicted to iCloud). `false` when no local
+  /// path exists at all.
+  final bool isCloudOnly;
+
+  /// Human label for the media type — "Image" or "Video".
+  final String mediaLabel;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+
+    final icon = isCloudOnly
+        ? Icons.cloud_outlined
+        : Icons.broken_image_outlined;
+    final message = isCloudOnly
+        ? '$mediaLabel stored in iCloud\u2009—\u2009not downloaded to this Mac'
+        : '$mediaLabel not available';
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 28, color: colors.content.iconSecondary),
+            const SizedBox(height: 6),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 11,
+                color: colors.content.textTertiary,
+              ),
+            ),
+            if (isCloudOnly) ...[
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: () => Process.run('open', ['-a', 'Messages']),
+                child: Text(
+                  'Open in Messages',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: colors.accents.primary,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class ImageMessageTile extends ConsumerWidget {
   const ImageMessageTile({
     super.key,
@@ -582,9 +650,8 @@ class ImageMessageTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final resolvedPath = attachment.resolvedLocalPath();
-    final file = resolvedPath != null ? File(resolvedPath) : null;
-    final exists = file?.existsSync() ?? false;
+    final file = attachment.bestAvailableFile();
+    final exists = file != null;
     final aspectRatio = attachment.aspectRatio ?? 4 / 3;
 
     return MessageShell(
@@ -619,12 +686,15 @@ class ImageMessageTile extends ConsumerWidget {
                       const ColoredBox(color: Colors.black12),
                       if (exists)
                         Image.file(
-                          file!,
+                          file,
                           fit: BoxFit.cover,
                           filterQuality: FilterQuality.medium,
                         )
                       else
-                        const Center(child: Text('Image unavailable')),
+                        _MediaUnavailablePlaceholder(
+                          isCloudOnly: attachment.hasLocalFile,
+                          mediaLabel: 'Image',
+                        ),
                     ],
                   ),
                 ),
@@ -679,12 +749,8 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
   @override
   void initState() {
     super.initState();
-    final resolvedPath = widget.attachment.resolvedLocalPath();
-    if (resolvedPath == null) {
-      return;
-    }
-    final file = File(resolvedPath);
-    if (!file.existsSync()) {
+    final file = widget.attachment.bestAvailableFile();
+    if (file == null) {
       return;
     }
     _controller = VideoPlayerController.file(file)
@@ -772,7 +838,10 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
                             ),
                           )
                         else
-                          const Center(child: Text('Video unavailable')),
+                          _MediaUnavailablePlaceholder(
+                            isCloudOnly: widget.attachment.hasLocalFile,
+                            mediaLabel: 'Video',
+                          ),
                         if (hasVideo)
                           Positioned.fill(
                             child: Material(

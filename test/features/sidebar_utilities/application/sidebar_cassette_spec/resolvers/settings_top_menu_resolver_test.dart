@@ -31,9 +31,9 @@ void main() {
       final dropdown = bodyModel! as SidebarDropdownBodyModel;
       expect(dropdown.promptLabel, isEmpty);
       expect(dropdown.selectedOptionId, SettingsMenuChoice.actions.id);
-      expect(dropdown.options, hasLength(1));
+      expect(dropdown.options, hasLength(2));
 
-      final intent = dropdown.options.single.selectionIntent;
+      final intent = dropdown.options.first.selectionIntent;
       expect(intent, isA<SettingsMenuChanged>());
       expect(
         (intent as SettingsMenuChanged).choice,

@@ -55,14 +55,15 @@ extension ContactsSettingsSpecPatterns on ContactsSettingsSpec {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _DisplayNameInfo value)?  displayNameInfo,TResult Function( _ActionsMenu value)?  actionsMenu,TResult Function( _SendLogsInfo value)?  sendLogsInfo,TResult Function( _ReimportDataInfo value)?  reimportDataInfo,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _DisplayNameInfo value)?  displayNameInfo,TResult Function( _ActionsMenu value)?  actionsMenu,TResult Function( _SendLogsInfo value)?  sendLogsInfo,TResult Function( _ReimportDataInfo value)?  reimportDataInfo,TResult Function( _AttachmentArchive value)?  attachmentArchive,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case _DisplayNameInfo() when displayNameInfo != null:
 return displayNameInfo(_that);case _ActionsMenu() when actionsMenu != null:
 return actionsMenu(_that);case _SendLogsInfo() when sendLogsInfo != null:
 return sendLogsInfo(_that);case _ReimportDataInfo() when reimportDataInfo != null:
-return reimportDataInfo(_that);case _:
+return reimportDataInfo(_that);case _AttachmentArchive() when attachmentArchive != null:
+return attachmentArchive(_that);case _:
   return orElse();
 
 }
@@ -80,14 +81,15 @@ return reimportDataInfo(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _DisplayNameInfo value)  displayNameInfo,required TResult Function( _ActionsMenu value)  actionsMenu,required TResult Function( _SendLogsInfo value)  sendLogsInfo,required TResult Function( _ReimportDataInfo value)  reimportDataInfo,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _DisplayNameInfo value)  displayNameInfo,required TResult Function( _ActionsMenu value)  actionsMenu,required TResult Function( _SendLogsInfo value)  sendLogsInfo,required TResult Function( _ReimportDataInfo value)  reimportDataInfo,required TResult Function( _AttachmentArchive value)  attachmentArchive,}){
 final _that = this;
 switch (_that) {
 case _DisplayNameInfo():
 return displayNameInfo(_that);case _ActionsMenu():
 return actionsMenu(_that);case _SendLogsInfo():
 return sendLogsInfo(_that);case _ReimportDataInfo():
-return reimportDataInfo(_that);case _:
+return reimportDataInfo(_that);case _AttachmentArchive():
+return attachmentArchive(_that);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -104,14 +106,15 @@ return reimportDataInfo(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _DisplayNameInfo value)?  displayNameInfo,TResult? Function( _ActionsMenu value)?  actionsMenu,TResult? Function( _SendLogsInfo value)?  sendLogsInfo,TResult? Function( _ReimportDataInfo value)?  reimportDataInfo,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _DisplayNameInfo value)?  displayNameInfo,TResult? Function( _ActionsMenu value)?  actionsMenu,TResult? Function( _SendLogsInfo value)?  sendLogsInfo,TResult? Function( _ReimportDataInfo value)?  reimportDataInfo,TResult? Function( _AttachmentArchive value)?  attachmentArchive,}){
 final _that = this;
 switch (_that) {
 case _DisplayNameInfo() when displayNameInfo != null:
 return displayNameInfo(_that);case _ActionsMenu() when actionsMenu != null:
 return actionsMenu(_that);case _SendLogsInfo() when sendLogsInfo != null:
 return sendLogsInfo(_that);case _ReimportDataInfo() when reimportDataInfo != null:
-return reimportDataInfo(_that);case _:
+return reimportDataInfo(_that);case _AttachmentArchive() when attachmentArchive != null:
+return attachmentArchive(_that);case _:
   return null;
 
 }
@@ -128,13 +131,14 @@ return reimportDataInfo(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  displayNameInfo,TResult Function( ActionsMenuChoice? selectedChoice)?  actionsMenu,TResult Function()?  sendLogsInfo,TResult Function()?  reimportDataInfo,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  displayNameInfo,TResult Function( ActionsMenuChoice? selectedChoice)?  actionsMenu,TResult Function()?  sendLogsInfo,TResult Function()?  reimportDataInfo,TResult Function()?  attachmentArchive,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _DisplayNameInfo() when displayNameInfo != null:
 return displayNameInfo();case _ActionsMenu() when actionsMenu != null:
 return actionsMenu(_that.selectedChoice);case _SendLogsInfo() when sendLogsInfo != null:
 return sendLogsInfo();case _ReimportDataInfo() when reimportDataInfo != null:
-return reimportDataInfo();case _:
+return reimportDataInfo();case _AttachmentArchive() when attachmentArchive != null:
+return attachmentArchive();case _:
   return orElse();
 
 }
@@ -152,13 +156,14 @@ return reimportDataInfo();case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  displayNameInfo,required TResult Function( ActionsMenuChoice? selectedChoice)  actionsMenu,required TResult Function()  sendLogsInfo,required TResult Function()  reimportDataInfo,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  displayNameInfo,required TResult Function( ActionsMenuChoice? selectedChoice)  actionsMenu,required TResult Function()  sendLogsInfo,required TResult Function()  reimportDataInfo,required TResult Function()  attachmentArchive,}) {final _that = this;
 switch (_that) {
 case _DisplayNameInfo():
 return displayNameInfo();case _ActionsMenu():
 return actionsMenu(_that.selectedChoice);case _SendLogsInfo():
 return sendLogsInfo();case _ReimportDataInfo():
-return reimportDataInfo();case _:
+return reimportDataInfo();case _AttachmentArchive():
+return attachmentArchive();case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -175,13 +180,14 @@ return reimportDataInfo();case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  displayNameInfo,TResult? Function( ActionsMenuChoice? selectedChoice)?  actionsMenu,TResult? Function()?  sendLogsInfo,TResult? Function()?  reimportDataInfo,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  displayNameInfo,TResult? Function( ActionsMenuChoice? selectedChoice)?  actionsMenu,TResult? Function()?  sendLogsInfo,TResult? Function()?  reimportDataInfo,TResult? Function()?  attachmentArchive,}) {final _that = this;
 switch (_that) {
 case _DisplayNameInfo() when displayNameInfo != null:
 return displayNameInfo();case _ActionsMenu() when actionsMenu != null:
 return actionsMenu(_that.selectedChoice);case _SendLogsInfo() when sendLogsInfo != null:
 return sendLogsInfo();case _ReimportDataInfo() when reimportDataInfo != null:
-return reimportDataInfo();case _:
+return reimportDataInfo();case _AttachmentArchive() when attachmentArchive != null:
+return attachmentArchive();case _:
   return null;
 
 }
@@ -343,6 +349,38 @@ int get hashCode => runtimeType.hashCode;
 @override
 String toString() {
   return 'ContactsSettingsSpec.reimportDataInfo()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class _AttachmentArchive implements ContactsSettingsSpec {
+  const _AttachmentArchive();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AttachmentArchive);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'ContactsSettingsSpec.attachmentArchive()';
 }
 
 

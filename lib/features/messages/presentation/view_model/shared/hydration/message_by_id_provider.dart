@@ -15,6 +15,8 @@ Future<MessageListItem> messageById(
   required int messageId,
 }) async {
   final db = await ref.watch(driftWorkingDatabaseProvider.future);
+  final overlayDb = await ref.watch(overlayDatabaseProvider.future);
+  final archiveDir = ref.watch(attachmentArchiveDirectoryProvider);
 
   DateTime? parseUtc(String? value) {
     if (value == null || value.isEmpty) {
@@ -65,9 +67,16 @@ Future<MessageListItem> messageById(
   final message = row.readTable(db.workingMessages);
   final participant = row.readTableOrNull(db.workingParticipants);
 
-  final attachments = message.hasAttachments
+  final rawAttachments = message.hasAttachments
       ? await loadAttachmentsForMessage(db, message.guid)
       : <AttachmentInfo>[];
+  final attachments = rawAttachments.isEmpty
+      ? rawAttachments
+      : await resolveArchivePaths(
+          attachments: rawAttachments,
+          overlayDb: overlayDb,
+          archiveDir: archiveDir,
+        );
 
   return MessageListItem(
     id: message.id,

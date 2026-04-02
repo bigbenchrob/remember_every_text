@@ -31,4 +31,8 @@ abstract class ContactsSettingsSpec with _$ContactsSettingsSpec {
 
   /// Info card with reimport data action.
   const factory ContactsSettingsSpec.reimportDataInfo() = _ReimportDataInfo;
+
+  /// Attachment archive settings panel with enable/disable toggle,
+  /// size display, and clear action.
+  const factory ContactsSettingsSpec.attachmentArchive() = _AttachmentArchive;
 }

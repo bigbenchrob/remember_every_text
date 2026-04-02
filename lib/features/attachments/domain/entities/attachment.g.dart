@@ -45,6 +45,7 @@ const _$AttachmentStatusEnumMap = {
   AttachmentStatus.pending: 'pending',
   AttachmentStatus.downloading: 'downloading',
   AttachmentStatus.available: 'available',
+  AttachmentStatus.cloudOnly: 'cloudOnly',
   AttachmentStatus.missing: 'missing',
   AttachmentStatus.failed: 'failed',
 };

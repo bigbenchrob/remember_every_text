@@ -53,4 +53,7 @@ Map<String, dynamic> _$SidebarUtilityCassetteSpecSettingsMenuToJson(
   'runtimeType': instance.$type,
 };
 
-const _$SettingsMenuChoiceEnumMap = {SettingsMenuChoice.actions: 'actions'};
+const _$SettingsMenuChoiceEnumMap = {
+  SettingsMenuChoice.actions: 'actions',
+  SettingsMenuChoice.attachmentArchive: 'attachmentArchive',
+};
