@@ -1,7 +1,9 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:remember_this_text/essentials/db/feature_level_providers/working_db_populated_provider.dart';
+import 'package:remember_this_text/essentials/navigation/application/panel_widget_providers.dart';
 import 'package:remember_this_text/essentials/navigation/application/panels_view_state_provider.dart';
 import 'package:remember_this_text/essentials/navigation/domain/entities/view_spec.dart';
 import 'package:remember_this_text/essentials/navigation/domain/navigation_constants.dart';
@@ -35,12 +37,16 @@ void main() {
       container.dispose();
     });
 
-    test(
+    testWidgets(
       'contactChosen resets subordinate state and builds chosen-contact branch',
-      () {
+      (tester) async {
+        await _mountMessagesPanelReconciliation(tester, container);
+
         container
             .read(sidebarFlowProvider.notifier)
             .contactChosen(contactId: 42, infoCardIndex: 1);
+
+        await _flushMessagesPanelReconciliation(tester);
 
         final flowState = container.read(sidebarFlowProvider);
         final rack = container.read(
@@ -69,6 +75,9 @@ void main() {
               ),
             ),
             const CassetteSpec.contacts(
+              ContactsCassetteSpec.contactSelectionControl(chosenContactId: 42),
+            ),
+            const CassetteSpec.contacts(
               ContactsCassetteSpec.messageScopeToggle(contactId: 42),
             ),
             const CassetteSpec.contacts(
@@ -88,55 +97,68 @@ void main() {
       },
     );
 
-    test('chooseAnotherContact restores picker branch and clears panels', () {
-      final flow = container.read(sidebarFlowProvider.notifier);
-      final panels = container.read(
-        panelsViewStateProvider(SidebarMode.messages).notifier,
-      );
+    testWidgets(
+      'chooseAnotherContact restores picker branch and clears panels',
+      (tester) async {
+        await _mountMessagesPanelReconciliation(tester, container);
 
-      flow.contactChosen(contactId: 42, infoCardIndex: 1);
-      panels.show(
-        panel: WindowPanel.right,
-        spec: const ViewSpec.messages(MessagesSpec.forHandle(handleId: 9001)),
-      );
+        final flow = container.read(sidebarFlowProvider.notifier);
+        final panels = container.read(
+          panelsViewStateProvider(SidebarMode.messages).notifier,
+        );
 
-      flow.chooseAnotherContact(infoCardIndex: 1);
+        flow.contactChosen(contactId: 42, infoCardIndex: 1);
+        panels.show(
+          panel: WindowPanel.right,
+          spec: const ViewSpec.messages(MessagesSpec.forHandle(handleId: 9001)),
+        );
 
-      final flowState = container.read(sidebarFlowProvider);
-      final rack = container.read(
-        cassetteRackStateProvider(SidebarMode.messages),
-      );
-      final panelState = container.read(
-        panelsViewStateProvider(SidebarMode.messages),
-      );
+        flow.chooseAnotherContact(infoCardIndex: 1);
 
-      expect(flowState.chosenContactId, isNull);
-      expect(flowState.selectedHandleId, isNull);
-      expect(flowState.messageScope, SidebarFlowMessageScope.regular);
+        await _flushMessagesPanelReconciliation(tester);
 
-      expect(
-        rack.cassettes,
-        equals([
-          const CassetteSpec.sidebarUtility(
-            SidebarUtilityCassetteSpec.topChatMenu(),
-          ),
-          const CassetteSpec.contactsInfo(
-            ContactsInfoCassetteSpec.infoCard(
-              key: ContactsInfoKey.pickerContentSources,
+        final flowState = container.read(sidebarFlowProvider);
+        final rack = container.read(
+          cassetteRackStateProvider(SidebarMode.messages),
+        );
+        final panelState = container.read(
+          panelsViewStateProvider(SidebarMode.messages),
+        );
+
+        expect(flowState.chosenContactId, isNull);
+        expect(flowState.selectedHandleId, isNull);
+        expect(flowState.messageScope, SidebarFlowMessageScope.regular);
+
+        expect(
+          rack.cassettes,
+          equals([
+            const CassetteSpec.sidebarUtility(
+              SidebarUtilityCassetteSpec.topChatMenu(),
             ),
-          ),
-          const CassetteSpec.contacts(ContactsCassetteSpec.contactChooser()),
-        ]),
-      );
-      expect(panelState[WindowPanel.center]?.isEmpty, isTrue);
-      expect(panelState[WindowPanel.right]?.isEmpty, isTrue);
-    });
+            const CassetteSpec.contactsInfo(
+              ContactsInfoCassetteSpec.infoCard(
+                key: ContactsInfoKey.pickerContentSources,
+              ),
+            ),
+            const CassetteSpec.contacts(ContactsCassetteSpec.contactChooser()),
+          ]),
+        );
+        expect(panelState[WindowPanel.center]?.isEmpty, isTrue);
+        expect(panelState[WindowPanel.right]?.isEmpty, isTrue);
+      },
+    );
 
-    test('handleSelected updates selected handle and center panel', () {
+    testWidgets('handleSelected updates selected handle and center panel', (
+      tester,
+    ) async {
+      await _mountMessagesPanelReconciliation(tester, container);
+
       final flow = container.read(sidebarFlowProvider.notifier);
 
       flow.contactChosen(contactId: 42, infoCardIndex: 1);
-      flow.handleSelected(contactId: 42, handleId: 7, cassetteIndex: 4);
+      flow.handleSelected(contactId: 42, handleId: 7, cassetteIndex: 5);
+
+      await _flushMessagesPanelReconciliation(tester);
 
       final flowState = container.read(sidebarFlowProvider);
       final rack = container.read(
@@ -148,7 +170,7 @@ void main() {
       expect(flowState.selectedHandleId, 7);
       expect(flowState.messageScope, SidebarFlowMessageScope.regular);
       expect(
-        rack.cassettes[4],
+        rack.cassettes[5],
         equals(
           const CassetteSpec.contacts(
             ContactsCassetteSpec.handleFilter(
@@ -168,9 +190,11 @@ void main() {
       );
     });
 
-    test(
+    testWidgets(
       'setContactMessageScope switches recovered mode and back to regular',
-      () {
+      (tester) async {
+        await _mountMessagesPanelReconciliation(tester, container);
+
         final flow = container.read(sidebarFlowProvider.notifier);
 
         flow.contactChosen(contactId: 42, infoCardIndex: 1);
@@ -178,6 +202,8 @@ void main() {
           contactId: 42,
           messageScope: SidebarFlowMessageScope.recoveredDeleted,
         );
+
+        await _flushMessagesPanelReconciliation(tester);
 
         expect(container.read(sidebarFlowProvider).selectedHandleId, isNull);
         expect(
@@ -198,6 +224,8 @@ void main() {
           messageScope: SidebarFlowMessageScope.regular,
         );
 
+        await _flushMessagesPanelReconciliation(tester);
+
         expect(
           container.read(sidebarFlowProvider).messageScope,
           SidebarFlowMessageScope.regular,
@@ -211,15 +239,19 @@ void main() {
       },
     );
 
-    test(
+    testWidgets(
       'showContactTimelineAt keeps handle filter in projected center spec',
-      () {
+      (tester) async {
+        await _mountMessagesPanelReconciliation(tester, container);
+
         final flow = container.read(sidebarFlowProvider.notifier);
         final anchorDate = DateTime(2024, 05, 01);
 
         flow.contactChosen(contactId: 42, infoCardIndex: 1);
-        flow.handleSelected(contactId: 42, handleId: 7, cassetteIndex: 4);
+        flow.handleSelected(contactId: 42, handleId: 7, cassetteIndex: 5);
         flow.showContactTimelineAt(contactId: 42, scrollToDate: anchorDate);
+
+        await _flushMessagesPanelReconciliation(tester);
 
         expect(container.read(sidebarFlowProvider).scrollToDate, anchorDate);
         expect(
@@ -237,13 +269,19 @@ void main() {
       },
     );
 
-    test('top menu recovered no-handle branch projects center panel', () {
+    testWidgets('top menu recovered no-handle branch projects center panel', (
+      tester,
+    ) async {
+      await _mountMessagesPanelReconciliation(tester, container);
+
       container
           .read(sidebarFlowProvider.notifier)
           .topMenuChanged(
             choice: TopChatMenuChoice.recoveredNoHandleFromMeMessages,
             cassetteIndex: 0,
           );
+
+      await _flushMessagesPanelReconciliation(tester);
 
       expect(
         _activeSpec(container, WindowPanel.center),
@@ -295,13 +333,17 @@ void main() {
       );
     });
 
-    test(
+    testWidgets(
       'showRecoveredDeletedAt stores month anchor in projected center spec',
-      () {
+      (tester) async {
+        await _mountMessagesPanelReconciliation(tester, container);
+
         final flow = container.read(sidebarFlowProvider.notifier);
         final anchorDate = DateTime(2021, 09, 01);
 
         flow.showRecoveredDeletedAt(contactId: 42, startDate: anchorDate);
+
+        await _flushMessagesPanelReconciliation(tester);
 
         expect(container.read(sidebarFlowProvider).scrollToDate, anchorDate);
         expect(
@@ -318,6 +360,38 @@ void main() {
       },
     );
   });
+}
+
+Future<void> _mountMessagesPanelReconciliation(
+  WidgetTester tester,
+  ProviderContainer container,
+) async {
+  await tester.pumpWidget(
+    UncontrolledProviderScope(
+      container: container,
+      child: const Directionality(
+        textDirection: TextDirection.ltr,
+        child: _MessagesPanelReconciliationHost(),
+      ),
+    ),
+  );
+}
+
+Future<void> _flushMessagesPanelReconciliation(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump();
+}
+
+class _MessagesPanelReconciliationHost extends ConsumerWidget {
+  const _MessagesPanelReconciliationHost();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(sidebarFlowProvider);
+    ref.watch(cassetteRackStateProvider(SidebarMode.messages));
+    ref.watch(reconcileSidebarPanelsProvider(SidebarMode.messages));
+    return const SizedBox.shrink();
+  }
 }
 
 ViewSpec? _activeSpec(ProviderContainer container, WindowPanel panel) {

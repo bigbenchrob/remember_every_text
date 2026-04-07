@@ -1,7 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
-import '../../../presentation/cassettes/settings/send_logs_action_button.dart';
+import '../payloads/send_logs_info_cassette_payload.dart';
 
 part 'actions_info_resolver.g.dart';
 
@@ -13,14 +12,7 @@ class ActionsInfoResolver extends _$ActionsInfoResolver {
   @override
   void build() {}
 
-  SidebarInfoCassetteViewModel resolve({required int cassetteIndex}) {
-    return const SidebarInfoCassetteViewModel(
-      role: SidebarCassetteRole.action,
-      title: 'Send Logs',
-      bodyText:
-          'If you encounter a problem, you can send diagnostic logs '
-          'to help with troubleshooting.',
-      content: SendLogsActionButton(),
-    );
+  SendLogsInfoCassettePayload resolve({required int cassetteIndex}) {
+    return const SendLogsInfoCassettePayload();
   }
 }

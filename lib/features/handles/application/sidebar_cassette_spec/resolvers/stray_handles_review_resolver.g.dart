@@ -7,12 +7,11 @@ part of 'stray_handles_review_resolver.dart';
 // **************************************************************************
 
 String _$strayHandlesReviewResolverHash() =>
-    r'b201f541bf9e7e11e1ee2ea16121bcf001a43382';
+    r'5f011843738934ad42c68abfd98b2c5ca8f65639';
 
 /// Resolver for the unified stray handles review list cassette.
 ///
-/// Receives explicit parameters (not specs) and produces a view model.
-/// Widget construction is inline here since it's simple.
+/// Receives explicit parameters (not specs) and produces an inert payload.
 ///
 /// Copied from [StrayHandlesReviewResolver].
 @ProviderFor(StrayHandlesReviewResolver)

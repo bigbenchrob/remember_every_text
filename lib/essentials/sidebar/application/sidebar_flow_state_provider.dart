@@ -1,7 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../features/messages/domain/spec_classes/messages_view_spec.dart';
 import '../../../features/sidebar_utilities/feature_level_providers.dart';
+import '../../logging/application/app_logger.dart';
 import '../../navigation/domain/entities/view_spec.dart';
 import '../../navigation/domain/navigation_constants.dart';
 import '../../navigation/domain/sidebar_mode.dart';
@@ -137,6 +140,19 @@ class SidebarFlow extends _$SidebarFlow {
   }
 
   void chooseAnotherContact({required int infoCardIndex}) {
+    ref
+        .read(appLoggerProvider.notifier)
+        .debug(
+          'chooseAnotherContact start',
+          source: 'SidebarFlow',
+          context: {
+            'infoCardIndex': infoCardIndex,
+            'previousChosenContactId': state.chosenContactId,
+            'previousSelectedHandleId': state.selectedHandleId,
+            'previousProjectedCenterSpec': '${state.projectedCenterSpec}',
+          },
+        );
+
     state = state.copyWith(
       chosenContactId: null,
       selectedHandleId: null,
@@ -154,6 +170,19 @@ class SidebarFlow extends _$SidebarFlow {
         .replaceAtIndexAndCascade(infoCardIndex, newSpec);
 
     _syncProjectedCenterPanel();
+
+    ref
+        .read(appLoggerProvider.notifier)
+        .debug(
+          'chooseAnotherContact complete',
+          source: 'SidebarFlow',
+          context: {
+            'infoCardIndex': infoCardIndex,
+            'chosenContactId': state.chosenContactId,
+            'selectedHandleId': state.selectedHandleId,
+            'projectedCenterSpec': '${state.projectedCenterSpec}',
+          },
+        );
   }
 
   void handleSelected({
@@ -313,6 +342,14 @@ class SidebarFlow extends _$SidebarFlow {
       panelsViewStateProvider(SidebarMode.messages).notifier,
     );
 
+    ref
+        .read(appLoggerProvider.notifier)
+        .debug(
+          'Sync projected center panel',
+          source: 'SidebarFlow',
+          context: {'projectedCenterSpec': '$projectedCenterSpec'},
+        );
+
     if (projectedCenterSpec == null) {
       _clearPanels();
       return;
@@ -325,6 +362,13 @@ class SidebarFlow extends _$SidebarFlow {
     );
 
     if (currentCenterSpec == projectedCenterSpec) {
+      ref
+          .read(appLoggerProvider.notifier)
+          .debug(
+            'Projected center matches active center; skipping show',
+            source: 'SidebarFlow',
+            context: {'currentCenterSpec': '$currentCenterSpec'},
+          );
       return;
     }
 
@@ -335,6 +379,20 @@ class SidebarFlow extends _$SidebarFlow {
     final panelState = ref.read(panelsViewStateProvider(SidebarMode.messages));
     final centerIsEmpty = panelState[WindowPanel.center]?.isEmpty ?? true;
     final rightIsEmpty = panelState[WindowPanel.right]?.isEmpty ?? true;
+
+    ref
+        .read(appLoggerProvider.notifier)
+        .debug(
+          'Clear panels requested',
+          source: 'SidebarFlow',
+          context: {
+            'centerIsEmpty': centerIsEmpty,
+            'rightIsEmpty': rightIsEmpty,
+            'centerSpec': '${panelState[WindowPanel.center]?.activePage?.spec}',
+            'rightSpec': '${panelState[WindowPanel.right]?.activePage?.spec}',
+          },
+        );
+
     if (centerIsEmpty && rightIsEmpty) {
       return;
     }

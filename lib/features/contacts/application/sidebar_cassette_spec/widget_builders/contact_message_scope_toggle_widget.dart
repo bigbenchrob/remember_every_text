@@ -1,9 +1,10 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
+import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
+import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart';
 
 /// Segmented control that toggles between regular contact messages and
@@ -65,10 +66,20 @@ class ContactMessageScopeToggleWidget extends ConsumerWidget {
                         }
 
                         ref
-                            .read(sidebarFlowProvider.notifier)
-                            .setContactMessageScope(
-                              contactId: contactId,
-                              messageScope: value,
+                            .read(sidebarActionDispatcherProvider.notifier)
+                            .dispatch(
+                              intent: ContactMessageScopeChanged(
+                                contactId: contactId,
+                                scope: switch (value) {
+                                  SidebarFlowMessageScope.regular =>
+                                    SidebarMessageScope.regular,
+                                  SidebarFlowMessageScope.recoveredDeleted =>
+                                    SidebarMessageScope.recoveredDeleted,
+                                },
+                              ),
+                              context: const SidebarActionDispatchContext(
+                                sidebarMode: SidebarMode.messages,
+                              ),
                             );
                       },
                     ),

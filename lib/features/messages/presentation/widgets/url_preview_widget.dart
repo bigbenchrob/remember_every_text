@@ -131,134 +131,36 @@ class _UrlPreviewWidgetState extends ConsumerState<UrlPreviewWidget> {
   }
 
   Widget _buildLoadingWidget(ThemeColors colors) {
-    // Show a lightweight placeholder with domain info while loading
-    // This feels much faster than a spinner
-    return _buildSurface(
+    return _buildCompactPlaceholder(
       key: const ValueKey('loading'),
       colors: colors,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          AspectRatio(
-            aspectRatio: _previewAspectRatio,
-            child: ColoredBox(color: colors.messagePanels.supportSurface),
-          ),
-          DecoratedBox(
-            decoration: BoxDecoration(gradient: _footerGradient(colors)),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 7, 12, 6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    widget.url,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: colors.content.textPrimary,
-                      height: 1.16,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 0.5),
-                  Text(
-                    _extractDomain(widget.url),
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      color: colors.content.textSecondary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+      title: widget.url,
+      subtitle: _extractDomain(widget.url),
+      statusText: 'Loading preview',
     );
   }
 
   Widget _buildLinkFallback(ThemeColors colors) {
-    return _buildSurface(
+    return _buildCompactPlaceholder(
       key: const ValueKey('fallback'),
       colors: colors,
-      child: DecoratedBox(
-        decoration: BoxDecoration(gradient: _footerGradient(colors)),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: colors.messagePanels.accentTint,
-                      borderRadius: const BorderRadius.all(Radius.circular(10)),
-                    ),
-                    child: Icon(
-                      Icons.link_rounded,
-                      size: 18,
-                      color: colors.accents.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _extractDomain(widget.url),
-                          style: TextStyle(
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w600,
-                            color: colors.content.textPrimary,
-                            height: 1.12,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 1.5),
-                        Text(
-                          widget.url,
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: colors.accents.primary,
-                            height: 1.16,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              Text(
-                'Open in browser',
-                style: TextStyle(
-                  fontSize: 10.5,
-                  color: colors.content.textSecondary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      title: _extractDomain(widget.url),
+      subtitle: widget.url,
+      statusText: 'Open in browser',
     );
   }
 
   Widget _buildNativePreview(NativeLinkMetadata metadata, ThemeColors colors) {
     final normalizedTitle = _normalizedTitle(metadata);
+
+    if (!metadata.hasAnyImage) {
+      return _buildCompactPlaceholder(
+        key: const ValueKey('native-compact'),
+        colors: colors,
+        title: normalizedTitle ?? widget.url,
+        subtitle: _extractDomain(metadata.url ?? widget.url),
+      );
+    }
 
     return _buildSurface(
       key: const ValueKey('native'),
@@ -332,6 +234,108 @@ class _UrlPreviewWidgetState extends ConsumerState<UrlPreviewWidget> {
                 borderRadius: MsgTheme.textRadius,
               ),
               child: child,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactPlaceholder({
+    required Key key,
+    required ThemeColors colors,
+    required String title,
+    required String subtitle,
+    String? statusText,
+  }) {
+    final compactMaxWidth = widget.maxWidth < 240 ? widget.maxWidth : 240.0;
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      widthFactor: 1,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: compactMaxWidth),
+        child: GestureDetector(
+          onTap: () => _launchUrl(widget.url),
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: ClipRRect(
+              borderRadius: MsgTheme.textRadius,
+              child: DecoratedBox(
+                key: key,
+                decoration: BoxDecoration(
+                  color: _surfaceBackground(colors),
+                  borderRadius: MsgTheme.textRadius,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: colors.messagePanels.accentTint,
+                              borderRadius: const BorderRadius.all(
+                                Radius.circular(10),
+                              ),
+                            ),
+                            child: const SizedBox(
+                              width: 34,
+                              height: 34,
+                              child: Icon(Icons.link_rounded, size: 18),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  title,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: colors.content.textPrimary,
+                                    height: 1.14,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 1.5),
+                                Text(
+                                  subtitle,
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    color: colors.content.textSecondary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (statusText != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          statusText,
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            color: colors.content.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
         ),

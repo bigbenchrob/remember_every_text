@@ -16,10 +16,10 @@ class ActionsSubMenuResolver extends _$ActionsSubMenuResolver {
   @override
   void build() {}
 
-  SidebarCassetteCardViewModel resolve({
+  SharedBodyModelSidebarCassettePayload resolve({
     required ActionsMenuChoice? currentChoice,
   }) {
-    return SidebarCassetteCardViewModel(
+    return SharedBodyModelSidebarCassettePayload(
       role: SidebarCassetteRole.action,
       placementMode: SidebarBodyPlacementMode.fullWidth,
       title: '',

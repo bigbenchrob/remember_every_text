@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../../essentials/db/feature_level_providers.dart';
 import '../../../../../contacts/infrastructure/repositories/participant_merge_utils.dart';
+import '../../../debug/contact_timeline_scroll_probe.dart';
 import '../../shared/hydration/messages_for_handle_provider.dart';
 import '../../shared/message_row_mapper.dart';
 
@@ -17,43 +18,54 @@ Future<MessageListItem?> messageById(
   MessageByIdRef ref, {
   required int messageId,
 }) async {
-  final db = await ref.watch(driftWorkingDatabaseProvider.future);
-  final overlayDb = await ref.watch(overlayDatabaseProvider.future);
-  final archiveDir = ref.watch(attachmentArchiveDirectoryProvider);
-  final nameOverrides = await displayNameOverridesMap(overlayDb);
+  ContactTimelineScrollProbe.count('provider.message_by_id.recompute');
 
-  final query =
-      db.select(db.workingMessages).join([
-          drift.leftOuterJoin(
-            db.handlesCanonical,
-            db.handlesCanonical.id.equalsExp(db.workingMessages.senderHandleId),
-          ),
-          drift.leftOuterJoin(
-            db.handleToParticipant,
-            db.handleToParticipant.handleId.equalsExp(db.handlesCanonical.id),
-          ),
-          drift.leftOuterJoin(
-            db.workingParticipants,
-            db.workingParticipants.id.equalsExp(
-              db.handleToParticipant.participantId,
-            ),
-          ),
-        ])
-        ..where(db.workingMessages.id.equals(messageId))
-        ..limit(1);
+  return ContactTimelineScrollProbe.traceAsync(
+    'provider.message_by_id',
+    () async {
+      final db = await ref.watch(driftWorkingDatabaseProvider.future);
+      final overlayDb = await ref.watch(overlayDatabaseProvider.future);
+      final nameOverrides = await displayNameOverridesMap(overlayDb);
 
-  final row = await query.getSingleOrNull();
-  if (row == null) {
-    return null;
-  }
+      final query =
+          db.select(db.workingMessages).join([
+              drift.leftOuterJoin(
+                db.handlesCanonical,
+                db.handlesCanonical.id.equalsExp(
+                  db.workingMessages.senderHandleId,
+                ),
+              ),
+              drift.leftOuterJoin(
+                db.handleToParticipant,
+                db.handleToParticipant.handleId.equalsExp(
+                  db.handlesCanonical.id,
+                ),
+              ),
+              drift.leftOuterJoin(
+                db.workingParticipants,
+                db.workingParticipants.id.equalsExp(
+                  db.handleToParticipant.participantId,
+                ),
+              ),
+            ])
+            ..where(db.workingMessages.id.equals(messageId))
+            ..limit(1);
 
-  final mapper = MessageRowMapper(
-    db,
-    nameOverrides,
-    overlayDb: overlayDb,
-    archiveDir: archiveDir,
+      final row = await ContactTimelineScrollProbe.traceAsync(
+        'provider.message_by_id.query',
+        query.getSingleOrNull,
+      );
+      if (row == null) {
+        return null;
+      }
+
+      final mapper = MessageRowMapper(db, nameOverrides, ref: ref);
+      final messages = await ContactTimelineScrollProbe.traceAsync(
+        'provider.message_by_id.map_rows',
+        () => mapper.mapRows([row]),
+      );
+
+      return messages.isEmpty ? null : messages.first;
+    },
   );
-  final messages = await mapper.mapRows([row]);
-
-  return messages.isEmpty ? null : messages.first;
 }

@@ -1,0 +1,311 @@
+CONTACT TIMELINE INERTIAL SCROLL FREEZE — SECOND-OPINION DIRECTIVE
+
+Purpose
+
+This note is a second-opinion directive for the current contact-timeline inertial-scroll freeze.
+
+It is meant to steer investigation away from symptom masking and toward the most likely hot-path architectural fault.
+
+This is not a request for another narrow view-layer patch.
+
+The working assumption should be:
+
+the freeze is most likely caused by expensive current-row hydration / attachment / media work being retriggered too aggressively under inertial viewport churn, rather than by the sidebar itself or by month tracking alone.
+
+⸻
+
+Executive assessment
+
+The current evidence suggests:
+	1.	Slow/manual scroll is often acceptable.
+	2.	The first inertial fling causes immediate freeze.
+	3.	Removing scroll-suppression restored visual smoothness but did not remove the freeze.
+	4.	Reducing neighbor hydration fan-out was worthwhile but did not remove the freeze.
+	5.	The remaining leading suspects are current-row attachment/provenance work and media initialization under churn.  ￼
+
+This means the likely problem is not primarily:
+	•	the viewport shell alone
+	•	visible-month tracking alone
+	•	the sidebar itself
+
+It is more likely:
+	•	repeated invalidation/recomputation during fling
+	•	expensive current-row realization too close to the scroll hot path
+	•	video/image/media setup occurring too eagerly for transient viewport entries
+
+⸻
+
+What this issue should be treated as
+
+Treat this as a hot-path layering problem, not a widget polish issue.
+
+The intended message pipeline is:
+
+scope -> ordinal -> hydration -> render  ￼
+
+The current runtime behavior suggests those layers are still too entangled during inertial motion, especially around:
+	•	current-row hydration
+	•	attachment resolution
+	•	archive/live availability checks
+	•	media widget/controller initialization  ￼
+
+The fix should therefore improve separation of hot-path responsibilities rather than suppressing rendering during scroll.
+
+⸻
+
+Immediate instructions
+
+1. Do not reintroduce symptom-masking patches
+
+Do not reintroduce:
+	•	scroll-driven row suppression
+	•	blank placeholder rows during motion
+	•	broad “skip work while scrolling” view-layer hacks
+	•	hiding media rows or anomalous records
+	•	hacks that make the list appear smooth by withholding real row content  ￼
+
+If a patch restores smoothness by making rows temporarily fake, empty, or generic, it is not an acceptable fix.
+
+⸻
+
+2. Instrument before changing behavior
+
+Before attempting another fix, gather hard runtime evidence from a single fling in a contact timeline.
+
+At minimum, measure/log counts and timing for:
+	•	viewport updates
+	•	ordinal resolution requests
+	•	message_by_ordinal_provider recomputations
+	•	message_by_id_provider recomputations
+	•	grouping metadata recomputations
+	•	visible-month updates
+	•	attachment resolver calls
+	•	archive/live file existence checks
+	•	attachment-info loads
+	•	media widget initialization
+	•	VideoPlayerController.file(...) creations  ￼
+
+The goal is to answer:
+
+Which operations explode during one inertial fling?
+
+Do not proceed based only on architectural hunch once instrumentation is available.
+
+⸻
+
+Working diagnosis to test first
+
+The first hypothesis to test should be:
+
+current-row attachment/provenance work and media activation are still happening too eagerly and too often during inertial viewport churn.  ￼
+
+Why this is the leading suspect:
+	•	bad scroll-suppression mitigation is gone
+	•	neighbor full hydration has already been reduced
+	•	freeze still occurs immediately on fling
+	•	the note already identifies current-row attachment/media work as the strongest remaining candidate
+	•	video controller initialization is explicitly a strong candidate under rapid row entry into the viewport  ￼
+
+⸻
+
+Required architectural lens
+
+Investigate the row pipeline as three distinct stages, not one blob called “hydration.”
+
+Stage A — Cheap row shell realization
+
+This stage must stay cheap enough to survive fling churn.
+
+It should provide only what is needed for a stable semantic row shell, such as:
+	•	message identity
+	•	sender/grouping fields
+	•	timestamp
+	•	text summary
+	•	“has attachments” level information
+	•	enough information to render the correct row type shell
+
+This stage must not require heavyweight media work.
+
+This preserves the invariant that every record remains visibly renderable even when attachment state is unresolved.
+
+⸻
+
+Stage B — Attachment/provenance enrichment
+
+This stage may determine:
+	•	live/archive/missing/cloud-only classification
+	•	displayable file presence
+	•	archive fallback
+	•	dimensions / richer metadata
+
+This still belongs in hydration/provenance conceptually, but it should not be allowed to dominate the fling hot path.
+
+The key question is whether this enrichment is being rerun too often, too broadly, or too eagerly.
+
+⸻
+
+Stage C — Heavy media activation
+
+This stage includes things like:
+	•	video controller creation
+	•	heavyweight media initialization
+	•	expensive file-backed display activation
+
+This stage should be treated as distinctly more expensive than ordinary row shell rendering.
+
+Especially for video, assume this must be gated more tightly than “row briefly entered viewport during inertial motion.”  ￼
+
+⸻
+
+What to investigate concretely
+
+Investigation A — Invalidation topology
+
+Do not ask only whether current-row work is expensive.
+
+Also ask:
+
+Why is it rerunning so often?
+
+Specifically determine whether inertial scroll produces a cascade like:
+
+viewport churn
+→ ordinal churn
+→ row hydration churn
+→ attachment resolver churn
+→ media setup churn
+
+If so, the primary problem may be invalidation fan-out rather than one isolated slow method.  ￼
+
+⸻
+
+Investigation B — Media activation threshold
+
+Audit exactly when media-heavy behavior begins.
+
+For each visible row with media, determine:
+	•	when attachment availability is checked
+	•	when a displayable file is computed
+	•	when media widgets are initialized
+	•	when a video controller is actually created
+
+The key question is:
+
+Are transiently visible rows during a fling triggering heavyweight setup that should only occur once a row is genuinely settled onscreen?
+
+VideoPlayerController.file(...) is the first thing to pressure-test here.  ￼
+
+⸻
+
+Investigation C — Attachment resolver cost shape
+
+Audit whether the attachment resolver is doing too much on the hot path, including:
+	•	overlay/archive metadata reads
+	•	file existence checks
+	•	archive/live fallback logic
+	•	on-demand archive side effects
+	•	repeated classification for the same row during rapid churn
+
+The purpose is not to remove provenance logic, but to establish whether cheap classification and expensive realization need to be separated more clearly.
+
+⸻
+
+Investigation D — Stable caching vs accidental recomputation
+
+Determine whether a row that rapidly leaves and re-enters the viewport during the same fling is paying the same realization cost repeatedly.
+
+Look especially for repeated work in:
+	•	attachment info loading
+	•	file classification
+	•	media setup
+	•	video controller creation
+
+⸻
+
+Narrow design direction favored by this review
+
+The preferred direction is:
+	1.	Keep row shell rendering real and stable
+	2.	Make row shell cheap
+	3.	Enrich progressively
+	4.	Gate heavyweight media activation more tightly
+	5.	Reduce invalidation fan-out rather than suppressing rendering
+
+This means:
+	•	no fake spinner rows
+	•	no hiding records
+	•	no scroll-only placeholder mode
+	•	no semantic shortcuts
+
+A row should still appear as the correct row even if richer media state is still settling.
+
+⸻
+
+What this issue does not mean
+
+This runtime problem should not be treated as proof that the overall refactor plan is wrong.
+
+Instead, it should be treated as another example of the same architectural theme already identified elsewhere:
+	•	too much cross-system work entangled on a hot path
+	•	insufficient separation between semantic scope, hydration, provenance, and rendering
+	•	too much work occurring too close to transient UI churn
+
+So the correct response is not to abandon the refactor, but to apply the same single-writer / clean-boundary discipline inside the message-row realization pipeline.
+
+⸻
+
+Required output from the next investigation slice
+
+The next report back should include:
+
+1. Evidence
+
+Concrete instrumentation results from one fling, including counts/timing for the major suspects.
+
+2. Causal read
+
+A short explanation of which operations are exploding and whether the issue is mainly:
+	•	recomputation fan-out
+	•	expensive attachment realization
+	•	video/media activation
+	•	some combination of the above
+
+3. Proposed leverage point
+
+One narrow intervention point that addresses cause, not symptom.
+
+Examples of acceptable leverage points:
+	•	separating cheap row-shell hydration from richer attachment enrichment
+	•	deferring video controller creation until stricter settled-visibility criteria
+	•	reducing repeated attachment/provenance recomputation for the same ordinal/message during fling
+
+Examples of unacceptable leverage points:
+	•	suppress row rendering while scrolling
+	•	placeholder the list during motion
+	•	hide media rows
+	•	broad view-layer hacks
+
+4. Regression check
+
+A statement confirming the proposed fix does not violate the invariants in the freeze note:
+	•	every record remains renderable
+	•	DB access remains centralized through providers
+	•	no suppression of media rows/messages
+	•	changes remain narrow and reversible  ￼
+
+⸻
+
+Final directive
+
+Do not spend another cycle patching the visible symptom first.
+
+Treat the inertial freeze as a message-row hot-path architecture problem.
+
+Investigate with instrumentation.
+Identify the exploding work.
+Then narrow the fix to:
+	•	cheaper row-shell realization
+	•	less invalidation fan-out
+	•	tighter gating of heavyweight media activation
+
+That is the direction most consistent with both the runtime evidence and the declared target architecture.

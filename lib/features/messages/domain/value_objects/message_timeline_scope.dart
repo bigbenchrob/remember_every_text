@@ -23,5 +23,12 @@ sealed class MessageTimelineScope with _$MessageTimelineScope {
   const factory MessageTimelineScope.chat({required int chatId}) =
       ChatTimelineScope;
 
+  /// Recovered deleted-message candidates outside the normal chat linkage
+  /// model, optionally narrowed to a contact or the no-handle-from-me slice.
+  const factory MessageTimelineScope.recovered({
+    int? contactId,
+    @Default(false) bool onlyNoHandleFromMe,
+  }) = RecoveredTimelineScope;
+
   const MessageTimelineScope._();
 }

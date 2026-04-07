@@ -13,11 +13,12 @@ import '../../../../essentials/navigation/application/panels_view_state_provider
 import '../../../../essentials/navigation/domain/entities/view_spec.dart';
 import '../../../../essentials/navigation/domain/navigation_constants.dart';
 import '../../../../essentials/navigation/domain/sidebar_mode.dart';
-import '../../application/view_spec/resolver_tools/recovered_visible_month_provider.dart';
 import '../../domain/entities/attachment_info.dart';
 import '../../domain/spec_classes/messages_view_spec.dart';
+import '../../domain/value_objects/message_timeline_scope.dart';
 import '../../infrastructure/repositories/recovered_unlinked_messages_provider.dart';
-import 'recovered_visible_month_key.dart';
+import '../view_model/timeline/ordinal/message_timeline_index_coordinator_provider.dart';
+import '../view_model/timeline/ordinal/message_timeline_ordinal_provider.dart';
 
 String _formatRecoveredSemanticKind(String semanticKind) {
   return switch (semanticKind) {
@@ -242,74 +243,50 @@ class _RecoveredMessagesList extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final itemScrollController = useMemoized(ItemScrollController.new);
-    final itemPositionsListener = useMemoized(ItemPositionsListener.create);
-    final lastScrollTarget = useRef<String?>(null);
-    final lastVisibleMonthKey = useRef<String?>(null);
-    final visibleMonthNotifier = ref.read(
-      recoveredVisibleMonthProvider(
-        contactId: contactId,
-        onlyNoHandleFromMe: onlyNoHandleFromMe,
-      ).notifier,
+    final scope = MessageTimelineScope.recovered(
+      contactId: contactId,
+      onlyNoHandleFromMe: onlyNoHandleFromMe,
     );
-    final targetIndex = _targetIndexForScrollDate(
-      messages: messages,
-      scrollToDate: scrollToDate,
+    final indexCoordinatorState = ref.watch(
+      messageTimelineIndexCoordinatorProvider(scope: scope),
     );
-    final targetKey = scrollToDate == null || targetIndex == null
-        ? null
-        : '${scrollToDate!.year}-${scrollToDate!.month.toString().padLeft(2, '0')}-$targetIndex';
+    final ordinalState = ref
+        .watch(messageTimelineOrdinalProvider(scope: scope))
+        .valueOrNull;
 
-    useEffect(() {
-      if (targetIndex == null || targetKey == null) {
-        return null;
-      }
-      if (lastScrollTarget.value == targetKey) {
-        return null;
-      }
+    if (ordinalState == null) {
+      return const Center(child: ProgressCircle());
+    }
 
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!itemScrollController.isAttached) {
-          return;
+    useEffect(
+      () {
+        if (!indexCoordinatorState.hasOrdinalState) {
+          return null;
         }
 
-        lastScrollTarget.value = targetKey;
-        itemScrollController.jumpTo(index: targetIndex);
-      });
+        ref
+            .read(
+              messageTimelineIndexCoordinatorProvider(scope: scope).notifier,
+            )
+            .syncViewport(
+              scrollToDate: scrollToDate,
+              jumpToLatestWhenNoTarget: false,
+            );
 
-      return null;
-    }, [targetKey, targetIndex, itemScrollController]);
-
-    useEffect(() {
-      void handlePositionsChanged() {
-        final monthKey = recoveredVisibleMonthKeyForVisiblePositions(
-          positions: itemPositionsListener.itemPositions.value,
-          messages: messages,
-        );
-        if (monthKey == null || lastVisibleMonthKey.value == monthKey) {
-          return;
-        }
-
-        lastVisibleMonthKey.value = monthKey;
-        visibleMonthNotifier.setMonthKey(monthKey);
-      }
-
-      itemPositionsListener.itemPositions.addListener(handlePositionsChanged);
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        handlePositionsChanged();
-      });
-
-      return () {
-        itemPositionsListener.itemPositions.removeListener(
-          handlePositionsChanged,
-        );
-      };
-    }, [itemPositionsListener, messages, visibleMonthNotifier]);
+        return null;
+      },
+      [
+        indexCoordinatorState.hasOrdinalState,
+        indexCoordinatorState.totalCount,
+        ref,
+        scope,
+        scrollToDate,
+      ],
+    );
 
     return ScrollablePositionedList.builder(
-      itemScrollController: itemScrollController,
-      itemPositionsListener: itemPositionsListener,
+      itemScrollController: ordinalState.itemScrollController,
+      itemPositionsListener: ordinalState.itemPositionsListener,
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
       itemCount: messages.length,
       itemBuilder: (context, index) {
@@ -324,42 +301,14 @@ class _RecoveredMessagesList extends HookConsumerWidget {
   }
 }
 
-int? _targetIndexForScrollDate({
-  required List<RecoveredUnlinkedMessageItem> messages,
-  required DateTime? scrollToDate,
-}) {
-  if (scrollToDate == null || messages.isEmpty) {
-    return null;
-  }
-
-  final monthStart = DateTime(scrollToDate.year, scrollToDate.month, 1);
-
-  for (var index = 0; index < messages.length; index += 1) {
-    final sentAt = messages[index].sentAt;
-    if (sentAt == null) {
-      continue;
-    }
-    if (!sentAt.isBefore(monthStart)) {
-      return index;
-    }
-  }
-
-  return messages.length - 1;
-}
-
 List<RecoveredUnlinkedMessageItem> _applyRecoveredBucketFilter({
   required List<RecoveredUnlinkedMessageItem> messages,
   required bool onlyNoHandleFromMe,
 }) {
-  if (!onlyNoHandleFromMe) {
-    return messages;
-  }
-
-  return messages
-      .where((message) {
-        return message.isFromMe && message.senderHandleId == null;
-      })
-      .toList(growable: false);
+  return filterRecoveredTimelineMessages(
+    messages: messages,
+    onlyNoHandleFromMe: onlyNoHandleFromMe,
+  );
 }
 
 List<RecoveredUnlinkedMessageItem> _filterMessages({

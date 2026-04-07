@@ -51,7 +51,7 @@ resolvers, resolver tools, or widget builders.
 
 | Surface | Coordinator must return | Method signature |
 |---|---|---|
-| Sidebar cassette | `Future<SidebarCassetteCardViewModel>` | `buildViewModel(spec, {required int cassetteIndex})` |
+| Sidebar cassette | `Future<SidebarCassettePayload>` | `buildViewModel(spec, {required int cassetteIndex})` |
 | View spec (panel) | `Widget` | `buildForSpec(spec)` |
 
 Do not return a different type. Do not wrap the return in additional objects.
@@ -78,7 +78,7 @@ extract it to a shared domain or application service.
 
 ## 9. App-Level Owns Chrome, Features Own Content
 
-- Features return **data** (view models) or **content** (widgets)
+- Features return **data** (sidebar payloads) or **content** (widgets)
 - App-level coordinators decide card type, chrome, layout, ordering
 - Features must not return pre-wrapped card widgets to the sidebar system
 - Features must not reach into essentials sidebar/navigation state
@@ -86,7 +86,7 @@ extract it to a shared domain or application service.
 ## 10. No Wrapper Types
 
 If the system needs additional data to cross the feature → essentials boundary:
-- For cassettes: add a field to `SidebarCassetteCardViewModel`
+- For cassettes: extend the approved `SidebarCassettePayload` family or add a field to the correct existing payload branch
 - For view specs: the Widget is self-contained
 
 Never introduce `Result`, `Response`, `WidgetWithMetadata`, or any parallel

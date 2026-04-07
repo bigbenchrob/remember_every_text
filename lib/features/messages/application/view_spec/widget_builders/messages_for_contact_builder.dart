@@ -13,6 +13,9 @@ Widget buildMessagesForContactView({
   int? filterHandleId,
 }) {
   return MessagesTimelineView(
+    key: ValueKey<String>(
+      'messages-contact:$contactId:${filterHandleId ?? 'all'}:${scrollToDate?.toIso8601String() ?? 'latest'}',
+    ),
     scope: MessageTimelineScope.contact(
       contactId: contactId,
       filterHandleId: filterHandleId,

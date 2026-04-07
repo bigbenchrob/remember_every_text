@@ -17,7 +17,7 @@ part 'settings_coordinator.g.dart';
 /// - Receives a [HandlesSettingsSpec]
 /// - Pattern-matches on the spec
 /// - Calls exactly ONE resolver
-/// - Returns the resolver's `Future<SidebarCassetteCardViewModel>`
+/// - Returns the resolver's `Future<SidebarCassettePayload>`
 @riverpod
 class HandlesSettingsCoordinator extends _$HandlesSettingsCoordinator {
   @override
@@ -25,8 +25,8 @@ class HandlesSettingsCoordinator extends _$HandlesSettingsCoordinator {
     // Stateless coordinator
   }
 
-  /// Build a cassette view model for the given [HandlesSettingsSpec].
-  Future<SidebarCassetteCardViewModel> buildViewModel(
+  /// Build a cassette payload for the given [HandlesSettingsSpec].
+  Future<SidebarCassettePayload> buildViewModel(
     HandlesSettingsSpec spec,
   ) async {
     return spec.map(

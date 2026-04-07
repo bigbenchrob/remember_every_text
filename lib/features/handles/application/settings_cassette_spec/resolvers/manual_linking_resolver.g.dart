@@ -7,7 +7,7 @@ part of 'manual_linking_resolver.dart';
 // **************************************************************************
 
 String _$manualLinkingResolverHash() =>
-    r'2c03941257aec0d5d7059ff4d19e49e71e5967b1';
+    r'fb652aeee421f5be87bd592abaeb3c8ae1427135';
 
 /// Resolver for the manual handle linking settings cassette.
 ///

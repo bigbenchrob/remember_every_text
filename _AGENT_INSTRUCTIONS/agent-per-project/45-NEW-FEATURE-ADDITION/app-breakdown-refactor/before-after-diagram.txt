@@ -1,0 +1,396 @@
+
+
+MESSAGELENS ARCHITECTURE — BEFORE vs AFTER DIAGRAM
+
+0. Purpose
+
+This diagram defines:
+	•	the CURRENT architecture (for diagnosis)
+	•	the TARGET architecture (for enforcement)
+
+The TARGET architecture is authoritative.
+All code must converge to it.
+
+⸻
+
+1. BEFORE — CURRENT MIXED ARCHITECTURE (PROBLEM STATE)
+
+1.1 High-level flow (current)
+
+User Action
+→ SidebarFlowState (sometimes)
+→ CassetteRackState
+→ (multiple competing paths)
+→ Center Panel
+→ Right Panel
+→ Message Timeline
+
+BUT ALSO:
+
+User Action
+→ Widget callbacks
+→ Local widget state
+→ Post-frame effects
+→ Reconciliation logic
+→ Panel mutation
+
+⸻
+
+1.2 Competing writers of meaning (CRITICAL PROBLEM)
+
+There is NOT a single source of truth.
+
+Meaning is authored by:
+	1.	SidebarFlowState (intended canonical state)
+	2.	CassetteRackState (partial meaning leakage)
+	3.	Transported widget subtrees (featureComplex)
+	4.	Reconciliation logic
+	5.	Deferred clearing logic
+	6.	Widget-local state / closures
+
+This creates:
+
+→ multiple overlapping semantic authorities
+
+⸻
+
+1.3 Sidebar pipeline (current)
+
+CassetteSpec
+→ ResolvedSidebarCassette
+→ SidebarCassetteCardViewModel
+
+BUT:
+
+Some payloads contain:
+
+→ prebuilt widget subtrees (featureComplex)
+
+So pipeline becomes:
+
+Spec → Payload → Widget (embedded early) → Render
+
+This violates render-edge boundary.
+
+⸻
+
+1.4 Center panel pipeline (current)
+
+SidebarFlowState.projectedCenterSpec
+→ (sometimes used)
+
+BUT ALSO:
+
+→ _syncProjectedCenterPanel()
+→ reconcileSidebarPanels()
+→ deferred clearing logic
+
+These act as alternate writers.
+
+⸻
+
+1.5 Right panel (current)
+
+Center spec
+→ compatibility rules
+
+BUT ALSO:
+
+→ independent persistence
+→ cleanup logic
+
+⸻
+
+1.6 Message pipeline (current)
+
+ViewSpec
+→ MessageTimelineScope
+
+BUT:
+
+Recovered timelines use:
+
+→ separate ordinal strategy
+→ separate surface handling
+
+So actual system is:
+
+NORMAL PATH:
+Scope → Ordinal → Hydration → Render
+
+RECOVERED PATH:
+Recovered provider → In-memory list → Special UI → Render
+
+⸻
+
+1.7 Resulting failure mode
+
+Because of the above:
+	•	semantic state ≠ rendered UI
+	•	stale widget trees persist
+	•	fixes require cleanup logic
+	•	regressions propagate across surfaces
+
+⸻
+
+2. AFTER — TARGET DETERMINISTIC ARCHITECTURE
+
+2.1 Core principle
+
+There is EXACTLY ONE pipeline:
+
+User Intent
+→ Canonical Semantic State
+→ Derived Specs
+→ Derived Payloads
+→ Render (terminal)
+
+NO other path exists.
+
+⸻
+
+2.2 Single source of truth
+
+SidebarFlowState is the ONLY owner of:
+	•	branch
+	•	contact
+	•	handle filter
+	•	mode (regular vs recovered)
+	•	scroll target
+
+Nothing else may define meaning.
+
+⸻
+
+2.3 Canonical projection pipeline
+
+FULL SYSTEM FLOW
+
+User Action
+→ SidebarFlowState (update)
+→ Derived Projections:
+
+
+1. CassetteRackSpec
+2. Center ViewSpec
+3. Right Panel Eligibility
+4. MessageTimelineScope
+
+
+→ Derived Payloads
+→ Render Edge Widgets
+
+⸻
+
+2.4 Sidebar pipeline (TARGET)
+
+CassetteSpec
+→ ResolvedSidebarCassette
+→ SidebarCassettePayload (DATA ONLY)
+→ Sidebar Render Host
+→ Widgets (built here ONLY)
+
+STRICT RULE:
+
+Payload must contain:
+	•	data
+	•	identifiers
+	•	layout roles
+
+Payload must NOT contain:
+	•	Widget
+	•	Widget subtree
+	•	UI logic
+
+⸻
+
+2.5 Center panel pipeline (TARGET)
+
+SidebarFlowState
+→ projectedCenterSpec
+→ PanelStack
+→ Center Render Host
+→ Widget
+
+NO OTHER WRITERS
+
+Remove:
+	•	reconciliation as logic
+	•	deferred clearing
+	•	sync helpers
+
+⸻
+
+2.6 Right panel pipeline (TARGET)
+
+Center ViewSpec
+→ defines capability
+
+IF compatible:
+→ Right Panel Spec exists
+→ Render
+
+IF not:
+→ Right Panel does not exist
+
+No persistence, no cleanup.
+
+⸻
+
+2.7 Message pipeline (TARGET)
+
+Unified pipeline (ALL scopes)
+
+ViewSpec
+→ MessageTimelineScope
+→ Ordinal Strategy
+→ Hydration
+→ MessageListItem
+→ Render
+
+⸻
+
+Recovered timeline (TARGET)
+
+Recovered is NOT special.
+
+It becomes:
+
+MessageTimelineScope.recovered
+
+Which plugs into SAME pipeline:
+
+Recovered Scope
+→ Ordinal Strategy (standard contract)
+→ Hydration
+→ Render
+
+No alternate UI path.
+
+⸻
+
+2.8 Attachment handling (TARGET)
+
+Attachment resolution occurs ONLY in hydration:
+
+Hydration
+→ resolve provenance:
+
+
+
+
+
+1. live path
+2. archive
+3. missing/cloud
+
+
+This affects ONLY:
+
+→ rendering details
+
+NOT:
+	•	scope
+	•	message identity
+	•	timeline structure
+
+⸻
+
+3. HARD BOUNDARIES (ENFORCED)
+
+Boundary 1 — Semantic
+
+ONLY state objects contain meaning:
+	•	SidebarFlowState
+	•	Specs
+	•	Scope objects
+
+NOT:
+	•	widgets
+	•	closures
+	•	caches
+
+⸻
+
+Boundary 2 — Transport
+
+ONLY transport:
+	•	data
+	•	specs
+	•	payloads
+
+NEVER:
+	•	Widgets
+	•	Widget subtrees
+
+⸻
+
+Boundary 3 — Render edge
+
+Widgets are built ONLY at:
+	•	sidebar host
+	•	center host
+	•	right panel host
+
+Widgets are terminal outputs.
+
+⸻
+
+4. INVALID STATES (MUST BE IMPOSSIBLE)
+
+The system must make these unrepresentable:
+	•	Sidebar shows contact A, center shows contact B
+	•	Recovered mode active, center shows regular messages
+	•	Right panel visible when unsupported
+	•	Stale picker state after flow change
+	•	Mixed timeline semantics
+
+⸻
+
+5. GOLDEN PATH EXAMPLE
+
+Contact selected:
+
+User taps contact
+→ SidebarFlowState.contactId = X
+
+→ Projections:
+
+CassetteRackSpec = contact branch
+CenterSpec = Messages.forContact(X)
+Scope = contact timeline
+
+→ Message pipeline:
+
+Scope → Ordinal → Hydration → Render
+
+→ UI updates automatically
+
+NO:
+	•	manual clearing
+	•	reconciliation
+	•	widget mutation
+
+⸻
+
+6. SUCCESS CRITERIA
+
+The architecture is correct when:
+	1.	Reading SidebarFlowState predicts ALL UI
+	2.	No cleanup logic is required
+	3.	No widget persists stale meaning
+	4.	Recovered and normal timelines share pipeline
+	5.	Attachment availability does not affect semantics
+
+⸻
+
+7. IMPLEMENTATION DIRECTIVE
+
+If code conflicts with this diagram:
+
+→ DELETE or REWRITE the code
+
+DO NOT:
+	•	adapt the diagram
+	•	preserve legacy pathways
+	•	introduce transitional hacks

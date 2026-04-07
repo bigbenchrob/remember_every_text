@@ -65,6 +65,7 @@ dependencies:
   go_router: ^14.6.1
 
   flutter_rust_bridge: 2.11.1
+  fc_native_video_thumbnail: ^2.1.1
 
 dev_dependencies:
   flutter_test:

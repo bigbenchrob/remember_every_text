@@ -7,7 +7,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
-import '../../../../../essentials/db/feature_level_providers.dart';
+import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
+import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart';
 import '../../../../messages/feature_level_providers.dart' as messages_feature;
 import '../../../infrastructure/repositories/contact_profile_provider.dart';
@@ -150,18 +151,17 @@ class _RecentContactRow extends ConsumerStatefulWidget {
 class _RecentContactRowState extends ConsumerState<_RecentContactRow> {
   bool _isHovered = false;
 
-  void _handleTap() {
-    final infoCardIndex = widget.cassetteIndex - 1;
+  Future<void> _handleTap() async {
     _prewarmContactInvestigation(widget.participantId);
-    ref
-        .read(sidebarFlowProvider.notifier)
-        .contactChosen(
-          contactId: widget.participantId,
-          infoCardIndex: infoCardIndex,
+    await ref
+        .read(sidebarActionDispatcherProvider.notifier)
+        .dispatch(
+          intent: ContactChosen(contactId: widget.participantId),
+          context: SidebarActionDispatchContext(
+            sidebarMode: SidebarMode.messages,
+            cassetteIndex: widget.cassetteIndex,
+          ),
         );
-
-    // Track as recently accessed
-    _trackContactAccess(widget.participantId);
   }
 
   void _prewarmContactInvestigation(int contactId) {
@@ -173,13 +173,6 @@ class _RecentContactRowState extends ConsumerState<_RecentContactRow> {
             .future,
       ),
     );
-  }
-
-  Future<void> _trackContactAccess(int contactId) async {
-    final overlayDb = await ref.read(overlayDatabaseProvider.future);
-    await overlayDb.trackContactAccess(contactId);
-    // Invalidate to refresh the recents list
-    ref.invalidate(recentContactsProvider);
   }
 
   @override

@@ -1,7 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
-import '../../../presentation/settings/spam_management_view.dart';
+import '../payloads/spam_management_cassette_payload.dart';
 
 part 'spam_management_resolver.g.dart';
 
@@ -16,14 +15,7 @@ class SpamManagementResolver extends _$SpamManagementResolver {
   }
 
   /// Resolve into a sidebar cassette view model.
-  Future<SidebarCassetteCardViewModel> resolve() async {
-    return const SidebarCassetteCardViewModel(
-      role: SidebarCassetteRole.action,
-      placementMode: SidebarBodyPlacementMode.inset,
-      title: 'Spam Management',
-      subtitle: 'Block unwanted handles and manage your blacklist.',
-      shouldExpand: true,
-      child: SpamManagementView(),
-    );
+  Future<SpamManagementCassettePayload> resolve() async {
+    return const SpamManagementCassettePayload();
   }
 }

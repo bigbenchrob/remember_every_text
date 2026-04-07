@@ -7,14 +7,14 @@ part of 'settings_top_menu_resolver.dart';
 // **************************************************************************
 
 String _$settingsTopMenuResolverHash() =>
-    r'd08eff4f2a6f5897c87a43725a6d32eb295b757a';
+    r'048f3b3dc25f43afdd6e2d6cb69f5eb0c50af886';
 
 /// Settings Top Menu Resolver
 ///
 /// This resolver implements the cross-surface spec system contract:
 ///
 /// - Receives explicit parameters (NOT a spec)
-/// - Returns Future<SidebarCassetteCardViewModel>
+/// - Returns Future<SidebarCassettePayload>
 /// - Determines which widget builder is used
 /// - Owns all decision-making for this cassette
 ///

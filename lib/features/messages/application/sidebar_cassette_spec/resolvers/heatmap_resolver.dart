@@ -1,23 +1,20 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
-import '../widget_builders/messages_heatmap_widget.dart';
+import '../payloads/messages_heatmap_cassette_payload.dart';
 
 part 'heatmap_resolver.g.dart';
 
 /// Resolves a messages heatmap cassette.
 ///
-/// This resolver produces a [SidebarCassetteCardViewModel] for the calendar
-/// heatmap cassette. It decides title/subtitle based on whether the heatmap
-/// is contact-scoped or global, then delegates rendering to
-/// [MessagesHeatmapWidget].
+/// This resolver returns an inert payload for the calendar heatmap cassette.
 ///
 /// ## Contract (from 00-cross-surface-spec-system.md)
 ///
 /// - Receives explicit parameters (not specs)
-/// - Returns `Future<SidebarCassetteCardViewModel>`
-/// - Determines which widget builder to use
-/// - Does NOT construct widgets itself (delegates to widget builder)
+/// - Returns `Future<SidebarCassettePayload>`
+/// - Owns all decision-making for this cassette
+/// - Does NOT construct widgets itself
 @riverpod
 class HeatmapResolver extends _$HeatmapResolver {
   @override
@@ -26,17 +23,17 @@ class HeatmapResolver extends _$HeatmapResolver {
   }
 
   /// Resolve the messages heatmap cassette.
-  Future<SidebarCassetteCardViewModel> resolve({
+  Future<SidebarCassettePayload> resolve({
     required int? contactId,
     required int cassetteIndex,
   }) async {
-    return SidebarCassetteCardViewModel.featureComplex(
+    return MessagesHeatmapCassettePayload(
+      contactId: contactId,
       role: SidebarCassetteRole.contextPrimary,
       placementMode: SidebarBodyPlacementMode.inset,
       contentAlignment: SidebarBodyContentAlignment.loose,
       title: '',
       shouldExpand: false,
-      child: MessagesHeatmapWidget(contactId: contactId),
     );
   }
 }

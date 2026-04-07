@@ -1,8 +1,6 @@
-import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../domain/spec_classes/contacts_info_cassette_spec.dart';
-import '../widget_builders/contact_selection_control_widget.dart';
 
 part 'info_content_resolver.g.dart';
 
@@ -11,10 +9,7 @@ class ContactsInfoContent {
   final String? title;
   final String body;
 
-  /// Optional escape-hatch action widget rendered at the bottom of the card.
-  final Widget? action;
-
-  const ContactsInfoContent({this.title, required this.body, this.action});
+  const ContactsInfoContent({this.title, required this.body});
 }
 
 /// Resolves info card content for [ContactsInfoKey] values.
@@ -36,15 +31,7 @@ class ContactsInfoContentResolver extends _$ContactsInfoContentResolver {
   }
 
   /// Resolve the content for a given info key.
-  ///
-  /// [cassetteIndex] is needed so that embedded action widgets
-  /// (e.g., the selection control) can replace-and-cascade at the
-  /// correct position in the rack.
-  Future<ContactsInfoContent> resolve(
-    ContactsInfoKey key, {
-    required int cassetteIndex,
-    int? chosenContactId,
-  }) async {
+  Future<ContactsInfoContent> resolve(ContactsInfoKey key) async {
     switch (key) {
       case ContactsInfoKey.pickerContentSources:
         return const ContactsInfoContent(
@@ -54,14 +41,10 @@ class ContactsInfoContentResolver extends _$ContactsInfoContentResolver {
               'numbers and email addresses.',
         );
       case ContactsInfoKey.chosenContact:
-        return ContactsInfoContent(
+        return const ContactsInfoContent(
           body:
               'Showing messages and activity for the selected contact. '
               'Click the name to edit how it appears in the app.',
-          action: ContactSelectionControlWidget(
-            contactId: chosenContactId!,
-            cassetteIndex: cassetteIndex,
-          ),
         );
     }
   }

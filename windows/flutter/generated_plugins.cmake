@@ -3,6 +3,7 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  fc_native_video_thumbnail
   media_kit_video
   url_launcher_windows
   volume_controller

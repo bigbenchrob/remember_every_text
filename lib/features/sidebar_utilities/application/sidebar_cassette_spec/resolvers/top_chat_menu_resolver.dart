@@ -3,7 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 import '../../../domain/sidebar_utilities_constants.dart';
-import '../widget_builders/top_chat_menu_widget.dart';
+import '../payloads/top_chat_menu_cassette_payload.dart';
 
 part 'top_chat_menu_resolver.g.dart';
 
@@ -12,8 +12,7 @@ part 'top_chat_menu_resolver.g.dart';
 /// This resolver implements the cross-surface spec system contract:
 ///
 /// - Receives explicit parameters (NOT a spec)
-/// - Returns Future<SidebarCassetteCardViewModel>
-/// - Determines which widget builder is used
+/// - Returns `Future<SidebarCassettePayload>`
 /// - Owns all decision-making for this cassette
 ///
 /// The resolver MUST NOT:
@@ -32,22 +31,15 @@ class TopChatMenuResolver extends _$TopChatMenuResolver {
   /// Resolve the top chat menu cassette.
   ///
   /// Parameters are explicit and fully-decided - no spec interpretation here.
-  Future<SidebarCassetteCardViewModel> resolve({
+  Future<SidebarCassettePayload> resolve({
     required TopChatMenuChoice currentChoice,
     required int cassetteIndex,
     required SidebarMode sidebarMode,
   }) async {
-    return SidebarCassetteCardViewModel(
-      role: SidebarCassetteRole.appControl,
-      placementMode: SidebarBodyPlacementMode.fullWidth,
-      contentAlignment: SidebarBodyContentAlignment.insetControl,
-      title: '',
-      isNaked: true,
-      child: TopChatMenuWidget(
-        currentChoice: currentChoice,
-        cassetteIndex: cassetteIndex,
-        sidebarMode: sidebarMode,
-      ),
+    return TopChatMenuCassettePayload(
+      currentChoice: currentChoice,
+      cassetteIndex: cassetteIndex,
+      sidebarMode: sidebarMode,
     );
   }
 }

@@ -1,11 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../../constants/domain/contact_constants.dart';
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
-import '../../../infrastructure/repositories/contacts_list_repository.dart';
-import '../resolver_tools/picker_mode_decision.dart';
-import '../widget_builders/contact_flat_list_widget.dart';
-import '../widget_builders/contact_grouped_picker_widget.dart';
+import '../payloads/contact_chooser_cassette_payload.dart';
 
 part 'contact_chooser_resolver.g.dart';
 
@@ -15,14 +11,13 @@ part 'contact_chooser_resolver.g.dart';
 /// cassette by:
 /// 1. Fetching contact count from the repository
 /// 2. Using [determinePickerMode] to decide flat vs grouped display
-/// 3. Wrapping the picker with recent contacts section
-/// 4. Returning a view model with the appropriate widget builder
+/// 3. Returning an inert payload that the render edge maps to feature widgets
 ///
 /// ## Contract (from 00-cross-surface-spec-system.md)
 ///
 /// - Receives explicit parameters (not specs)
-/// - Returns `Future<SidebarCassetteCardViewModel>`
-/// - Determines which widget builder to use
+/// - Returns `Future<SidebarCassettePayload>`
+/// - Determines which picker variant should render
 /// - Owns all decision-making for this cassette
 ///
 /// Resolvers MUST NOT:
@@ -38,39 +33,22 @@ class ContactChooserResolver extends _$ContactChooserResolver {
 
   /// Resolve the contact chooser cassette.
   ///
-  /// Fetches contact count to determine display mode (flat vs grouped),
-  /// wraps with recent contacts section, then returns a view model.
-  Future<SidebarCassetteCardViewModel> resolve({
+  /// Returns an inert payload immediately so startup/sidebar coordination does
+  /// not wait on contact queries before rendering the already-known stack.
+  ///
+  /// Feature-owned data loading now happens at the render edge inside the
+  /// chooser body, keeping the coordinator transport cheap and synchronous.
+  Future<SidebarCassettePayload> resolve({
     required int? chosenContactId,
     required int cassetteIndex,
   }) async {
-    // Fetch contacts to determine count
-    final contacts = await ref.read(contactsListRepositoryProvider.future);
-
-    // Use resolver tool to make the decision
-    final pickerMode = determinePickerMode(contacts.length);
-
-    // Build the main picker based on contact count
-    final mainPicker = switch (pickerMode) {
-      ContactPickerMode.flat => ContactFlatListWidget(
-        chosenContactId: chosenContactId,
-        cassetteIndex: cassetteIndex,
-      ),
-      ContactPickerMode.grouped => ContactGroupedPickerWidget(
-        chosenContactId: chosenContactId,
-        cassetteIndex: cassetteIndex,
-      ),
-    };
-
-    // The picker now contains FAVORITES and RECENTS sections inline
-    // via the unified picker sections provider.
-    // controlAligned matches the top menu's naked width (16pt horizontal).
-    return SidebarCassetteCardViewModel.featureComplex(
+    return ContactChooserCassettePayload(
+      chosenContactId: chosenContactId,
+      cassetteIndex: cassetteIndex,
       role: SidebarCassetteRole.contextPrimary,
       placementMode: SidebarBodyPlacementMode.fullWidth,
       title: '',
       shouldExpand: true,
-      child: mainPicker,
     );
   }
 }

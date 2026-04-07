@@ -50,3 +50,9 @@ Templates live under `_AGENT_INSTRUCTIONS/agent-instructions-shared/90-templates
 - Proposal template: `_AGENT_INSTRUCTIONS/agent-instructions-shared/90-templates/feature-proposal-template.md`
 - Checklist template: `_AGENT_INSTRUCTIONS/agent-instructions-shared/90-templates/feature-checklist-template.md`
 - Testing template: `_AGENT_INSTRUCTIONS/agent-instructions-shared/90-templates/feature-tests-template.md`
+
+## Current Feature Folders
+
+| Feature | Key Docs |
+| --- | --- |
+| `archive-canonical-attachments/` | [`PROPOSAL.md`](archive-canonical-attachments/PROPOSAL.md), [`CHECKLIST.md`](archive-canonical-attachments/CHECKLIST.md), [`DESIGN_NOTES.md`](archive-canonical-attachments/DESIGN_NOTES.md), [`TESTS.md`](archive-canonical-attachments/TESTS.md) |

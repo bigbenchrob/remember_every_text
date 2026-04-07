@@ -4,8 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
-import '../../../../../../essentials/db/feature_level_providers.dart';
 import '../../../../domain/value_objects/message_timeline_scope.dart';
+import '../../../debug/contact_timeline_scroll_probe.dart';
 import 'message_timeline_ordinal_provider.dart';
 
 part 'current_visible_month_provider.g.dart';
@@ -18,21 +18,33 @@ part 'current_visible_month_provider.g.dart';
 /// Returns null if the ordinal state is not yet loaded.
 @riverpod
 class CurrentVisibleMonthForScope extends _$CurrentVisibleMonthForScope {
+  static const Duration _scrollUpdateDebounce = Duration(milliseconds: 48);
+
   VoidCallback? _detachPositionsListener;
-  int _updateGeneration = 0;
+  Timer? _debounceTimer;
+  int _sessionGeneration = 0;
+  int _requestGeneration = 0;
   int? _lastVisibleOrdinal;
-  final Map<int, int> _messageIdByOrdinal = <int, int>{};
-  final Map<int, String> _monthKeyByMessageId = <int, String>{};
+  MessageTimelineOrdinalState? _currentOrdinalState;
+  bool _isUpdatingVisibleMonth = false;
+  bool _hasPendingVisibleMonthUpdate = false;
+  final Map<int, String?> _monthKeyByOrdinal = <int, String?>{};
 
   @override
   FutureOr<String?> build({required MessageTimelineScope scope}) async {
+    ContactTimelineScrollProbe.count('provider.current_visible_month.build');
     final ordinalAsync = ref.watch(
       messageTimelineOrdinalProvider(scope: scope),
     );
     final ordinalState = ordinalAsync.valueOrNull;
+    _sessionGeneration += 1;
+    _currentOrdinalState = ordinalState;
     _lastVisibleOrdinal = null;
-    _messageIdByOrdinal.clear();
-    _monthKeyByMessageId.clear();
+    _monthKeyByOrdinal.clear();
+    _debounceTimer?.cancel();
+    _debounceTimer = null;
+    _isUpdatingVisibleMonth = false;
+    _hasPendingVisibleMonthUpdate = false;
 
     _detachPositionsListener?.call();
     _detachPositionsListener = null;
@@ -40,14 +52,22 @@ class CurrentVisibleMonthForScope extends _$CurrentVisibleMonthForScope {
     if (ordinalState == null || ordinalState.totalCount == 0) {
       ref.onDispose(() {
         _detachPositionsListener?.call();
+        _currentOrdinalState = null;
       });
       return null;
     }
 
     final listener = ordinalState.itemPositionsListener.itemPositions;
+    final sessionGeneration = _sessionGeneration;
 
     void handlePositionsChanged() {
-      unawaited(_updateVisibleMonth(scope: scope, positionsListener: listener));
+      ContactTimelineScrollProbe.count(
+        'visible_month.positions_listener_event',
+      );
+      _debounceVisibleMonthUpdate(
+        positionsListener: listener,
+        sessionGeneration: sessionGeneration,
+      );
     }
 
     listener.addListener(handlePositionsChanged);
@@ -56,29 +76,79 @@ class CurrentVisibleMonthForScope extends _$CurrentVisibleMonthForScope {
     };
 
     ref.onDispose(() {
+      _debounceTimer?.cancel();
+      _debounceTimer = null;
       _detachPositionsListener?.call();
       _detachPositionsListener = null;
+      _currentOrdinalState = null;
     });
 
     final initialMonth = await _computeVisibleMonth(
-      scope: scope,
       positionsListener: listener,
     );
 
     return initialMonth;
   }
 
-  Future<void> _updateVisibleMonth({
-    required MessageTimelineScope scope,
+  void _debounceVisibleMonthUpdate({
     required ValueListenable<Iterable<ItemPosition>> positionsListener,
+    required int sessionGeneration,
+  }) {
+    ContactTimelineScrollProbe.count('visible_month.debounce_request');
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(_scrollUpdateDebounce, () {
+      _debounceTimer = null;
+      unawaited(
+        _scheduleVisibleMonthUpdate(
+          positionsListener: positionsListener,
+          sessionGeneration: sessionGeneration,
+        ),
+      );
+    });
+  }
+
+  Future<void> _scheduleVisibleMonthUpdate({
+    required ValueListenable<Iterable<ItemPosition>> positionsListener,
+    required int sessionGeneration,
   }) async {
-    final generation = ++_updateGeneration;
-    final monthKey = await _computeVisibleMonth(
-      scope: scope,
-      positionsListener: positionsListener,
+    ContactTimelineScrollProbe.count('visible_month.schedule_update');
+    if (_isUpdatingVisibleMonth) {
+      _hasPendingVisibleMonthUpdate = true;
+      return;
+    }
+
+    _isUpdatingVisibleMonth = true;
+    try {
+      do {
+        _hasPendingVisibleMonthUpdate = false;
+
+        if (sessionGeneration != _sessionGeneration) {
+          return;
+        }
+
+        await _updateVisibleMonth(
+          positionsListener: positionsListener,
+          sessionGeneration: sessionGeneration,
+        );
+      } while (_hasPendingVisibleMonthUpdate);
+    } finally {
+      _isUpdatingVisibleMonth = false;
+    }
+  }
+
+  Future<void> _updateVisibleMonth({
+    required ValueListenable<Iterable<ItemPosition>> positionsListener,
+    required int sessionGeneration,
+  }) async {
+    ContactTimelineScrollProbe.count('visible_month.update_request');
+    final generation = ++_requestGeneration;
+    final monthKey = await ContactTimelineScrollProbe.traceAsync(
+      'visible_month.update_compute',
+      () => _computeVisibleMonth(positionsListener: positionsListener),
     );
 
-    if (generation != _updateGeneration) {
+    if (sessionGeneration != _sessionGeneration ||
+        generation != _requestGeneration) {
       return;
     }
 
@@ -86,82 +156,58 @@ class CurrentVisibleMonthForScope extends _$CurrentVisibleMonthForScope {
       return;
     }
 
+    ContactTimelineScrollProbe.count('visible_month.state_write');
     state = AsyncData(monthKey);
   }
 
   Future<String?> _computeVisibleMonth({
-    required MessageTimelineScope scope,
     required ValueListenable<Iterable<ItemPosition>> positionsListener,
   }) async {
-    final positions = positionsListener.value;
-    if (positions.isEmpty) {
-      return state.valueOrNull;
-    }
+    return ContactTimelineScrollProbe.traceAsync(
+      'visible_month.compute',
+      () async {
+        final positions = positionsListener.value;
+        if (positions.isEmpty) {
+          return state.valueOrNull;
+        }
 
-    final visiblePositions = positions
-        .where((position) {
-          return position.itemTrailingEdge > 0 && position.itemLeadingEdge < 1;
-        })
-        .toList(growable: false);
+        final visiblePositions = positions
+            .where((position) {
+              return position.itemTrailingEdge > 0 &&
+                  position.itemLeadingEdge < 1;
+            })
+            .toList(growable: false);
 
-    if (visiblePositions.isEmpty) {
-      return state.valueOrNull;
-    }
+        if (visiblePositions.isEmpty) {
+          return state.valueOrNull;
+        }
 
-    final topPosition = visiblePositions.reduce((left, right) {
-      return left.itemLeadingEdge <= right.itemLeadingEdge ? left : right;
-    });
-    if (_lastVisibleOrdinal == topPosition.index) {
-      return state.valueOrNull;
-    }
-    _lastVisibleOrdinal = topPosition.index;
+        final topPosition = visiblePositions.reduce((left, right) {
+          return left.itemLeadingEdge <= right.itemLeadingEdge ? left : right;
+        });
+        if (_lastVisibleOrdinal == topPosition.index) {
+          return state.valueOrNull;
+        }
+        _lastVisibleOrdinal = topPosition.index;
 
-    final ordinalState = ref
-        .read(messageTimelineOrdinalProvider(scope: scope))
-        .valueOrNull;
-    final strategy = ordinalState?.strategy;
-    if (strategy == null) {
-      return state.valueOrNull;
-    }
+        final strategy = _currentOrdinalState?.strategy;
+        if (strategy == null) {
+          return state.valueOrNull;
+        }
 
-    final cachedMessageId = _messageIdByOrdinal[topPosition.index];
-    final messageId =
-        cachedMessageId ??
-        await strategy.getMessageIdByOrdinal(topPosition.index);
-    if (messageId == null) {
-      return state.valueOrNull;
-    }
-    _messageIdByOrdinal[topPosition.index] = messageId;
+        if (_monthKeyByOrdinal.containsKey(topPosition.index)) {
+          ContactTimelineScrollProbe.count('visible_month.cache_hit');
+          return _monthKeyByOrdinal[topPosition.index] ?? state.valueOrNull;
+        }
 
-    final cachedMonthKey = _monthKeyByMessageId[messageId];
-    if (cachedMonthKey != null) {
-      return cachedMonthKey;
-    }
-
-    final db = await ref.read(driftWorkingDatabaseProvider.future);
-    final sentAtRow =
-        await (db.selectOnly(db.workingMessages)
-              ..addColumns([db.workingMessages.sentAtUtc])
-              ..where(db.workingMessages.id.equals(messageId))
-              ..limit(1))
-            .getSingleOrNull();
-    final sentAtUtc = sentAtRow?.read(db.workingMessages.sentAtUtc);
-    if (sentAtUtc == null || sentAtUtc.isEmpty) {
-      return state.valueOrNull;
-    }
-
-    final sentAt = DateTime.tryParse(sentAtUtc);
-    if (sentAt == null) {
-      return state.valueOrNull;
-    }
-
-    final monthKey = _monthKeyForDate(sentAt);
-    _monthKeyByMessageId[messageId] = monthKey;
-    return monthKey;
+        ContactTimelineScrollProbe.count('visible_month.ordinal_lookup');
+        final monthKey = await ContactTimelineScrollProbe.traceAsync(
+          'visible_month.ordinal_lookup',
+          () => strategy.getMonthKeyByOrdinal(topPosition.index),
+        );
+        _monthKeyByOrdinal[topPosition.index] = monthKey;
+        return monthKey ?? state.valueOrNull;
+      },
+    );
   }
-}
-
-String _monthKeyForDate(DateTime date) {
-  final month = date.month.toString().padLeft(2, '0');
-  return '${date.year}-$month';
 }

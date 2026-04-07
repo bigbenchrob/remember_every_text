@@ -138,6 +138,28 @@ class FilteredContactOrdinalStrategy implements OrdinalStrategy {
   }
 
   @override
+  Future<String?> getMonthKeyByOrdinal(int ordinal) async {
+    final result = await _db
+        .customSelect(
+          '''
+          SELECT cmi.month_key
+          $_baseFromWhere
+          ORDER BY cmi.ordinal ASC
+          LIMIT 1 OFFSET ?
+          ''',
+          variables: [..._baseVars, Variable.withInt(ordinal)],
+          readsFrom: {
+            _db.contactMessageIndex,
+            _db.workingMessages,
+            _db.chatToHandle,
+          },
+        )
+        .getSingleOrNull();
+
+    return result?.read<String?>('month_key');
+  }
+
+  @override
   Future<int?> getOrdinalForMessage(int messageId) async {
     final targetResult = await _db
         .customSelect(

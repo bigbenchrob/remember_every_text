@@ -1,21 +1,20 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
-import '../widget_builders/contact_hero_summary_widget.dart';
+import '../payloads/contact_hero_summary_cassette_payload.dart';
 
 part 'contact_hero_summary_resolver.g.dart';
 
 /// Resolves a contact hero summary cassette.
 ///
-/// This resolver produces a fully-realized [SidebarCassetteCardViewModel]
-/// for displaying detailed contact information.
+/// This resolver produces an inert payload for displaying detailed contact
+/// information.
 ///
 /// ## Contract (from 00-cross-surface-spec-system.md)
 ///
 /// - Receives explicit parameters (not specs)
-/// - Returns `Future<SidebarCassetteCardViewModel>`
-/// - Determines which widget builder to use
-/// - Does NOT construct widgets itself (delegates to widget builder)
+/// - Returns `Future<SidebarCassettePayload>`
+/// - Returns inert semantic payload only
 @riverpod
 class ContactHeroSummaryResolver extends _$ContactHeroSummaryResolver {
   @override
@@ -24,18 +23,13 @@ class ContactHeroSummaryResolver extends _$ContactHeroSummaryResolver {
   }
 
   /// Resolve the contact hero summary cassette.
-  Future<SidebarCassetteCardViewModel> resolve({
+  Future<SidebarCassettePayload> resolve({
     required int contactId,
     required int cassetteIndex,
   }) async {
-    return SidebarCassetteCardViewModel(
-      role: SidebarCassetteRole.contextPrimary,
-      placementMode: SidebarBodyPlacementMode.fullWidth,
-      title: '',
-      subtitle: null,
-      isNaked: true, // Align edges with top menu dropdown
-      shouldExpand: false, // Hero summary wraps content, doesn't expand
-      child: ContactHeroSummaryWidget(contactId: contactId),
+    return ContactHeroSummaryCassettePayload(
+      contactId: contactId,
+      cassetteIndex: cassetteIndex,
     );
   }
 }

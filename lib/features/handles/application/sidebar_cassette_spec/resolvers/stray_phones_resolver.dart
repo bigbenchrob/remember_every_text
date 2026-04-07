@@ -1,7 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
-import '../widget_builders/stray_phone_numbers_cassette.dart';
+import '../payloads/stray_phone_numbers_cassette_payload.dart';
 
 part 'stray_phones_resolver.g.dart';
 
@@ -16,15 +15,7 @@ class StrayPhonesResolver extends _$StrayPhonesResolver {
   }
 
   /// Resolve into a sidebar cassette view model.
-  Future<SidebarCassetteCardViewModel> resolve() async {
-    // TODO: Add data fetching and conditional logic as needed
-    return const SidebarCassetteCardViewModel(
-      role: SidebarCassetteRole.contextPrimary,
-      placementMode: SidebarBodyPlacementMode.inset,
-      title: 'Stray phone numbers',
-      subtitle: 'Phone numbers not linked to any contact in your address book.',
-      shouldExpand: true,
-      child: StrayPhoneNumbersCassette(),
-    );
+  Future<StrayPhoneNumbersCassettePayload> resolve() async {
+    return const StrayPhoneNumbersCassettePayload();
   }
 }

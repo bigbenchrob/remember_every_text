@@ -53,6 +53,21 @@ class RecoveredUnlinkedMessageItem {
   final List<AttachmentInfo> attachments;
 }
 
+List<RecoveredUnlinkedMessageItem> filterRecoveredTimelineMessages({
+  required List<RecoveredUnlinkedMessageItem> messages,
+  required bool onlyNoHandleFromMe,
+}) {
+  if (!onlyNoHandleFromMe) {
+    return messages;
+  }
+
+  return messages
+      .where((message) {
+        return message.isFromMe && message.senderHandleId == null;
+      })
+      .toList(growable: false);
+}
+
 @riverpod
 Stream<List<RecoveredUnlinkedMessageItem>> recoveredUnlinkedMessages(
   Ref ref, {

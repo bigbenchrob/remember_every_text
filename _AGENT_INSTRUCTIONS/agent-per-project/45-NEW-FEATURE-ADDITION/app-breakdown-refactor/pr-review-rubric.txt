@@ -1,0 +1,261 @@
+MESSAGELENS PR REVIEW RUBRIC — MANDATORY USAGE
+
+Purpose
+
+This rubric must be used to evaluate every pull request created during the authorship refactor.
+
+It ensures that each change strengthens the architecture rather than reintroducing mixed authority, hidden state, or transported UI behavior.
+
+This rubric is not optional and not advisory.
+It is part of the implementation plan.
+
+⸻
+
+When to Use This Rubric
+
+This rubric must be applied:
+	1.	Before opening a PR
+	•	The agent must self-evaluate the change against this rubric.
+	2.	In the PR description
+	•	The agent must explicitly answer the checklist questions below.
+	3.	Before merging a PR
+	•	The checklist must still be true after all revisions.
+
+⸻
+
+How to Use This Rubric
+
+For every PR:
+	•	Include a section titled: “Architecture Review (Required)”
+	•	Answer each question directly and concretely
+	•	Do not skip questions
+	•	Do not answer with vague statements like “yes” or “looks fine”
+	•	Provide specific evidence from the code change
+
+If any question cannot be answered clearly:
+
+→ The PR is not ready
+
+If any answer reveals a violation:
+
+→ The PR must be revised before merge
+
+⸻
+
+ARCHITECTURE REVIEW CHECKLIST
+
+1. Semantic Ownership
+
+Question:
+Does this change preserve or improve single-writer semantics?
+
+Required answer must identify:
+	•	What is the semantic owner of the affected behavior (usually SidebarFlowState)
+	•	What competing writers were removed or avoided
+
+Failure examples:
+	•	introducing new reconciliation logic
+	•	adding widget-driven state that affects meaning
+	•	allowing panel content to be authored outside canonical flow state
+
+⸻
+
+2. Boundary Purity
+
+Question:
+Does any disallowed object cross a coordination boundary?
+
+You must explicitly confirm that NONE of the following cross the boundary:
+	•	Widget or widget subtree
+	•	WidgetBuilder or render callback
+	•	closure capturing UI state
+	•	BuildContext or Ref
+	•	controller / notifier / focus / scroll objects
+	•	any executable runtime behavior
+
+Failure examples:
+	•	returning a widget from a resolver
+	•	returning a builder function instead of data
+	•	embedding callbacks in payload objects
+
+⸻
+
+3. Payload Integrity
+
+Question:
+Is the transported payload purely semantic and inert?
+
+Required answer must confirm payload contains only:
+	•	IDs, enums, layout roles
+	•	immutable data structures
+	•	render discriminators
+	•	semantic action descriptors
+
+Failure examples:
+	•	payload includes function fields
+	•	payload includes stateful objects
+	•	payload includes UI lifecycle artifacts
+
+⸻
+
+4. Render-Edge Discipline
+
+Question:
+Is UI constructed only at the render edge?
+
+Required answer must identify:
+	•	where the widget tree is built
+	•	how it is derived from payload + current state
+
+Failure examples:
+	•	UI constructed in resolver
+	•	UI constructed before coordination boundary
+	•	transported builder used to defer rendering
+
+⸻
+
+5. Import and Layer Boundaries
+
+Question:
+Does this change preserve correct module boundaries?
+
+Required answer must confirm:
+	•	resolver/spec/application layers do not import widget/presentation layers
+	•	no new illegal dependency direction is introduced
+
+Failure examples:
+	•	resolver importing Flutter widget classes
+	•	payload types referencing presentation-layer types
+
+⸻
+
+6. Elimination of Legacy Escape Paths
+
+Question:
+Does this change remove or avoid forbidden legacy mechanisms?
+
+Required answer must confirm absence of:
+	•	featureComplex
+	•	_syncProjectedCenterPanel
+	•	_schedulePanelClearIfNoProjectedCenter
+	•	reconcileSidebarPanels
+
+Failure examples:
+	•	renaming instead of removing
+	•	wrapping legacy logic in helper functions
+	•	conditional use of legacy paths
+
+⸻
+
+7. Right Panel Derivation (if applicable)
+
+Question:
+If this change affects the right panel, is it purely derived from the center spec?
+
+Required answer must confirm:
+	•	no independent right-panel state persists
+	•	no hidden incompatible state exists
+
+Failure examples:
+	•	right panel state stored independently
+	•	right panel hidden instead of removed
+	•	stale right-panel state reappearing later
+
+⸻
+
+8. Recovered Timeline Integrity (if applicable)
+
+Question:
+If this change touches recovered messages, does it maintain a unified pipeline?
+
+Required answer must confirm:
+	•	no special-case UI pipeline exists
+	•	no branching outside the scope definition
+
+Failure examples:
+	•	recovered-only scaffold logic
+	•	separate rendering path disguised as shared UI
+	•	special-case ordinal logic outside standard contract
+
+⸻
+
+9. Temporary Exceptions
+
+Question:
+Does this change introduce any temporary escape hatches?
+
+If YES, you must provide:
+	•	exact location
+	•	reason
+	•	scope
+	•	removal phase
+
+If NO, explicitly state:
+	•	“No temporary exceptions introduced”
+
+Failure examples:
+	•	untracked adapters
+	•	hidden compatibility layers
+	•	exceptions without removal plan
+
+⸻
+
+10. Structural Improvement Evidence
+
+Question:
+What measurable architectural improvement does this PR deliver?
+
+Provide at least one:
+	•	removal of a legacy pathway
+	•	reduction in number of semantic writers
+	•	elimination of widget transport
+	•	improved boundary enforcement
+	•	simplification of pipeline shape
+
+Failure examples:
+	•	purely cosmetic changes
+	•	behavior fixes without structural change
+	•	“it works now” without architectural justification
+
+⸻
+
+11. Regression Prevention
+
+Question:
+What would fail if this architectural improvement regressed?
+
+Provide one or more:
+	•	specific test
+	•	CI rule
+	•	assertion
+	•	grep-able invariant
+
+Failure examples:
+	•	no enforcement mechanism
+	•	reliance on manual inspection only
+
+⸻
+
+HARD FAILURE CONDITIONS
+
+A PR must NOT be merged if ANY of the following are true:
+	•	a widget or executable object crosses a boundary
+	•	a resolver returns anything other than payload data
+	•	multiple semantic writers remain active for the same surface
+	•	legacy repair logic is still part of normal execution
+	•	hidden state persists outside canonical semantic state
+	•	architecture cannot be explained from state alone
+
+⸻
+
+FINAL RULE
+
+If a change makes the UI behave correctly but weakens architectural guarantees:
+
+→ it is a regression, not an improvement
+
+The system must move toward:
+
+one semantic state → one projection → one render outcome
+
+Every PR must move the codebase closer to that model.

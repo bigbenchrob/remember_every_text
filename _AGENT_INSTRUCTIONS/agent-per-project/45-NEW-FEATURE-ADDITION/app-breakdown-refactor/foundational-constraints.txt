@@ -1,0 +1,408 @@
+MESSAGELENS ANTI-DRIFT ENFORCEMENT PLAN
+
+Purpose
+
+This document defines the structural guard rails that must be established before and during the authorship refactor.
+
+Its purpose is to prevent the codebase from drifting back toward mixed authority after the architecture is cleaned up.
+
+This is not optional polish.
+It is part of the refactor.
+
+The goal is:
+	•	make invalid architectural moves hard to express
+	•	make boundary violations loud
+	•	make future regressions visible early
+	•	reduce reliance on comments, memory, or discipline alone
+
+⸻
+
+1. Enforcement Philosophy
+
+The architecture must be protected in this order:
+	1.	type/interface constraints
+	2.	module/import boundaries
+	3.	lint/static checks
+	4.	architecture tests
+	5.	debug assertions
+	6.	comments/docs
+
+Comments are useful, but they are the weakest layer.
+
+We do not want “please remember not to do this.”
+We want “the system makes this awkward, noisy, or impossible.”
+
+⸻
+
+2. Foundational Contracts to Define First
+
+These contracts should be introduced before large-scale resolver refactoring begins.
+
+2.1 Central resolver contract
+
+Create or formalize a resolver contract such that:
+	•	a resolver accepts a spec / semantic input
+	•	a resolver returns a data-only payload type
+	•	the return type cannot be Widget, WidgetBuilder, or an open-ended dynamic object
+
+The contract should make clear:
+	•	resolvers produce semantic payload
+	•	resolvers do not produce UI
+	•	resolvers do not transport execution objects
+
+Required property
+
+A future resolver implementation should have no legal way to return a widget subtree without deliberately violating the type contract.
+
+⸻
+
+2.2 Sealed payload hierarchy
+
+Define a sealed payload hierarchy for sidebar cassette payloads and any equivalent cross-boundary transport objects.
+
+Allowed contents:
+	•	IDs
+	•	enums
+	•	render discriminators
+	•	layout roles
+	•	immutable lists/records/maps of data
+	•	semantic action descriptors
+	•	content descriptors
+	•	inert metadata
+
+Forbidden contents:
+	•	Widget
+	•	WidgetBuilder
+	•	BuildContext
+	•	WidgetRef / Ref
+	•	controllers
+	•	focus nodes
+	•	scroll controllers
+	•	notifiers
+	•	listeners
+	•	streams used as UI state carriers
+	•	executable callbacks / closures
+	•	any stateful runtime object disguised as payload
+
+Required property
+
+Payload graphs must be inert and serializable in spirit, even if not literally serialized.
+
+⸻
+
+2.3 Render-dispatch contract
+
+Define the render-edge contract so that rendering happens by:
+	•	payload type
+	•	payload render kind
+	•	explicit feature render variant
+
+It must NOT happen by transporting:
+	•	a runtime builder callback
+	•	a feature-supplied render closure
+	•	a prebuilt subtree
+
+Required property
+
+The builder contract exists in code structure, not as a runtime object passed through coordination layers.
+
+⸻
+
+2.4 Semantic action descriptor contract
+
+Define how user actions cross the boundary.
+
+Allowed:
+	•	action descriptors
+	•	semantic intents
+	•	typed commands
+	•	identifiers needed to reconstruct actions at render time
+
+Forbidden:
+	•	executable callbacks created inside resolvers
+	•	closures that capture old semantic state
+	•	UI-time dispatch objects being passed as payload fields
+
+Example principle
+
+Good:
+	•	SidebarAction.selectContact(contactId: 42)
+
+Bad:
+	•	onTap: () => ...
+
+Required property
+
+The boundary may carry meaning, but it may not carry execution.
+
+⸻
+
+3. Module and Import Boundaries
+
+The codebase should visibly separate:
+	•	semantic/spec/application layers
+	•	render/presentation layers
+
+3.1 Rule
+
+Resolver/spec/application coordination layers should not import Flutter widget libraries except where explicitly unavoidable during migration.
+
+The intended end state is:
+	•	semantic layers know specs and payloads
+	•	presentation layers know widgets
+	•	render-edge hosts assemble widgets
+
+3.2 Required direction of dependency
+
+Allowed direction:
+
+semantic/spec/application
+→ payload models
+→ presentation/render
+
+Forbidden direction:
+
+resolver/application/spec
+→ presentation widget implementations
+
+3.3 Transitional allowance
+
+If some files temporarily violate this during migration, they must be:
+	•	explicitly marked
+	•	centrally tracked
+	•	reduced phase by phase
+
+Do not allow quiet long-term exceptions.
+
+⸻
+
+4. Banned Boundary Crossings
+
+The following must be treated as prohibited across coordination boundaries:
+	•	Widget
+	•	widget subtree
+	•	WidgetBuilder
+	•	render callback
+	•	BuildContext
+	•	Ref / WidgetRef
+	•	controller/notifier/listener objects
+	•	focus/scroll state objects
+	•	closure fields in payload classes
+	•	any object whose main purpose is to perform runtime UI behavior later
+
+This prohibition applies even if the object is wrapped in another type.
+
+A disguised runtime behavior object is still a violation.
+
+⸻
+
+5. Central Choke Points for Documentation
+
+Do not scatter weak reminders everywhere.
+
+Instead, place forceful architectural comments in the small number of places everyone must pass through:
+	1.	central resolver interface
+	2.	central payload base type
+	3.	render-dispatch host
+	4.	architecture enforcement test file
+	5.	CI/lint rule definitions
+	6.	temporary migration adapter definitions, if any
+
+These comments should state the law, not explain preferences.
+
+Example wording:
+
+“A resolver must never return a widget or executable UI object. Only immutable semantic payload may cross this boundary.”
+
+⸻
+
+6. Static and CI Enforcement
+
+Introduce lightweight anti-drift checks early.
+
+These checks do not need to be elegant. They need to be reliable and easy to maintain.
+
+6.1 Forbidden type checks
+
+Add checks that fail if payload/view-model classes reference forbidden types such as:
+	•	Widget
+	•	WidgetBuilder
+	•	BuildContext
+	•	Ref
+	•	controller/notifier types
+	•	focus/scroll state objects
+	•	function-typed fields intended as UI callbacks
+
+6.2 Forbidden import checks
+
+Add checks that fail if resolver/spec/application folders import widget/presentation layers.
+
+Examples to forbid:
+	•	resolver imports from presentation/widget paths
+	•	semantic layer imports package:flutter/widgets.dart
+	•	application coordinator imports feature widget classes directly
+
+6.3 Escape-hatch checks
+
+Add checks that fail if banned legacy constructs remain active after their phase:
+	•	featureComplex
+	•	_syncProjectedCenterPanel
+	•	_schedulePanelClearIfNoProjectedCenter
+	•	reconcileSidebarPanels
+
+Do not merely rename these.
+
+Removal means removal or debug-only assertion demotion.
+
+6.4 Exception tracking
+
+If a temporary exception is required during migration:
+	•	give it a conspicuous name
+	•	list it in one tracked file
+	•	record owner, reason, and removal phase
+	•	fail CI if exceptions grow unexpectedly
+
+⸻
+
+7. Architecture Test Suite
+
+Create a small architecture-focused test suite whose explicit purpose is to guard the design, not feature behavior.
+
+Suggested categories:
+
+7.1 Boundary purity tests
+
+Verify that:
+	•	resolver outputs are payload objects only
+	•	payload types contain no forbidden fields
+	•	render dispatch happens by payload kind / type, not transported builder
+
+7.2 Dependency boundary tests
+
+Verify that:
+	•	resolver/application/spec layers do not import widget layers
+	•	presentation types are not referenced from semantic transport models
+
+7.3 Single-writer tests
+
+Verify that for flow-managed message branches:
+	•	SidebarFlowState predicts center content
+	•	no alternate panel authoring path is required
+	•	removing repair logic does not change normal behavior
+
+7.4 Derived-right-panel tests
+
+Verify that:
+	•	right panel exists only when supported by center spec
+	•	incompatible right-panel state cannot persist invisibly
+
+7.5 Recovered-unification tests
+
+Verify that recovered scope goes through the same high-level pipeline shape:
+
+scope
+→ ordinal
+→ hydration
+→ render
+
+and does not branch into a separate UI universe.
+
+⸻
+
+8. Debug Assertions at Central Boundaries
+
+Add debug assertions in the small number of constructors and dispatch points that define the architecture.
+
+Examples:
+	•	assert payload kind is valid for the spec
+	•	assert render metadata is inert
+	•	assert no forbidden alternate panel writer is active in flow-managed mode
+	•	assert right panel is absent when center spec is incompatible
+	•	assert flow-managed center content is derivable from canonical flow state alone
+
+These assertions should fail loudly in debug/test builds.
+They must not become repair logic.
+
+⸻
+
+9. Temporary Escape Hatch Policy
+
+Temporary escape hatches are dangerous and must be treated as toxic waste.
+
+9.1 Allowed only if all of these are true
+	•	explicitly named as temporary
+	•	centrally tracked
+	•	phase-scoped
+	•	narrow in purpose
+	•	not an alternate semantic writer
+	•	not a hidden cache of UI state
+
+9.2 Forbidden
+	•	vague helper layers
+	•	compatibility shims with semantic authority
+	•	“adapter” objects that retain or infer meaning
+	•	silent fallbacks that preserve broken pathways
+
+9.3 Enforcement rule
+
+If removing the escape hatch changes behavior in a way users can observe, then it was not a harmless bridge; it was carrying meaning and must be redesigned.
+
+⸻
+
+10. Phase-Zero Enforcement Work
+
+Before major refactor coding begins, complete this setup work:
+	1.	define/finalize central resolver return contract
+	2.	define/finalize payload base types and render discriminators
+	3.	define semantic action descriptor model
+	4.	identify and document intended import boundaries
+	5.	add first-pass CI/static checks for forbidden imports/types
+	6.	create architecture test suite scaffold
+	7.	add central architectural comments at choke points
+	8.	define temporary-exception tracking mechanism
+
+This work is part of the refactor, not a postponable extra.
+
+⸻
+
+11. Review Checklist for Every PR
+
+Every PR in the refactor should answer these questions explicitly:
+	1.	Does this change reduce or remove an alternate semantic writer?
+	2.	What boundary does it strengthen?
+	3.	Does any widget, builder, closure, or stateful runtime object cross a coordination boundary?
+	4.	Are any temporary exceptions introduced?
+	5.	If yes, where are they tracked and when must they be removed?
+	6.	Do import directions remain clean?
+	7.	What structural metric proves the architecture improved?
+	8.	What test or assertion would fail if this drifted later?
+
+If these questions cannot be answered clearly, the PR is not ready.
+
+⸻
+
+12. Success Standard
+
+The anti-drift plan is working when:
+	•	resolvers can only legally return payload data
+	•	payload models cannot conveniently smuggle runtime UI behavior
+	•	semantic layers do not depend on widget layers
+	•	render happens only at the render edge
+	•	architecture regressions fail tests or CI quickly
+	•	new contributors and agents are naturally funneled into the correct design
+
+The objective is not merely to state the architecture.
+
+The objective is to make the architecture the path of least resistance.
+
+⸻
+
+13. Final Rule
+
+Do not trust future cleanliness to memory, comments, or intent.
+
+Define the contracts now.
+Enforce the boundaries now.
+Let future code be written inside those constraints.
+
+That is how the refactor stays clean after the current planning effort ends.

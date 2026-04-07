@@ -240,6 +240,7 @@ class MessageTimelineViewModel extends _$MessageTimelineViewModel {
         chatId: chatId,
         query: query,
       ),
+      RecoveredTimelineScope() => const <int>[],
     };
   }
 

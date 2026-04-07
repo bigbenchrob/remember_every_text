@@ -7,7 +7,7 @@ part of 'settings_coordinator.dart';
 // **************************************************************************
 
 String _$handlesSettingsCoordinatorHash() =>
-    r'50a62f1bdc1ebc214b6a2bcea039de1a193bcff9';
+    r'4cc7e650b79d1caba4f3df18821a484898fa51b5';
 
 /// Handles Settings Cassette Coordinator
 ///
@@ -19,7 +19,7 @@ String _$handlesSettingsCoordinatorHash() =>
 /// - Receives a [HandlesSettingsSpec]
 /// - Pattern-matches on the spec
 /// - Calls exactly ONE resolver
-/// - Returns the resolver's `Future<SidebarCassetteCardViewModel>`
+/// - Returns the resolver's `Future<SidebarCassettePayload>`
 ///
 /// Copied from [HandlesSettingsCoordinator].
 @ProviderFor(HandlesSettingsCoordinator)

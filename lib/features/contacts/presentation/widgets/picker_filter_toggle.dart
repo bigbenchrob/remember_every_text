@@ -8,11 +8,13 @@ import '../../application/sidebar_cassette_spec/resolver_tools/picker_filter_mod
 /// Segmented control that toggles the contact picker between
 /// showing all contacts and showing only favourites.
 class PickerFilterToggle extends ConsumerWidget {
-  const PickerFilterToggle({super.key});
+  const PickerFilterToggle({super.key, this.mode});
+
+  final PickerFilterMode? mode;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final mode = ref.watch(pickerFilterProvider);
+    final effectiveMode = mode ?? ref.watch(pickerFilterProvider);
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
 
@@ -22,16 +24,16 @@ class PickerFilterToggle extends ConsumerWidget {
         width: double.infinity,
         child: CupertinoSlidingSegmentedControl<PickerFilterMode>(
           thumbColor: colors.accents.primary,
-          groupValue: mode,
+          groupValue: effectiveMode,
           children: {
             PickerFilterMode.all: _SegmentLabel(
               'All',
-              isSelected: mode == PickerFilterMode.all,
+              isSelected: effectiveMode == PickerFilterMode.all,
               selectedColor: colors.buttons.primaryForeground,
             ),
             PickerFilterMode.favouritesOnly: _SegmentLabel(
               'Favourites',
-              isSelected: mode == PickerFilterMode.favouritesOnly,
+              isSelected: effectiveMode == PickerFilterMode.favouritesOnly,
               selectedColor: colors.buttons.primaryForeground,
             ),
           },

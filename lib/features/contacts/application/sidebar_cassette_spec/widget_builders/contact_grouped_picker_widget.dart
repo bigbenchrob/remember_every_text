@@ -5,12 +5,13 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../../essentials/db/feature_level_providers.dart';
+import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
+import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart';
 import '../../../../messages/feature_level_providers.dart' as messages_feature;
 import '../../../infrastructure/repositories/contact_profile_provider.dart';
-import '../../../infrastructure/repositories/recent_contacts_repository.dart';
 import '../../../presentation/widgets/grouped_contact_selector.dart';
-import '../resolver_tools/filtered_picker_sections_provider.dart';
+import '../payloads/contact_chooser_cassette_payload.dart';
 
 /// Widget builder for the grouped contact picker display.
 ///
@@ -25,17 +26,9 @@ import '../resolver_tools/filtered_picker_sections_provider.dart';
 /// - Construct specs only on user interaction (output, not interpretation)
 /// - Never make branching decisions about which UI to show
 class ContactGroupedPickerWidget extends HookConsumerWidget {
-  const ContactGroupedPickerWidget({
-    super.key,
-    required this.chosenContactId,
-    required this.cassetteIndex,
-  });
+  const ContactGroupedPickerWidget({super.key, required this.payload});
 
-  /// Currently selected contact ID, if any.
-  final int? chosenContactId;
-
-  /// Position in the cassette rack (for updates via replaceAtIndexAndCascade).
-  final int cassetteIndex;
+  final ContactChooserCassettePayload payload;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -45,27 +38,31 @@ class ContactGroupedPickerWidget extends HookConsumerWidget {
       return null;
     }, const []);
 
+    final pickerFilterMode = payload.pickerFilterMode!;
+    final filteredSections = payload.filteredSections!;
+
     return FullContactPicker(
-      selectedParticipantId: chosenContactId,
+      selectedParticipantId: payload.chosenContactId,
       onContactSelected: (contactId) => _handleContactSelection(ref, contactId),
       onContactHovered: (contactId) {
         _prewarmContactInvestigation(ref, contactId);
       },
+      currentMode: pickerFilterMode,
+      unifiedSections: filteredSections,
     );
   }
 
   Future<void> _handleContactSelection(WidgetRef ref, int contactId) async {
-    final infoCardIndex = cassetteIndex - 1;
     _prewarmContactInvestigation(ref, contactId);
     ref
-        .read(sidebarFlowProvider.notifier)
-        .contactChosen(contactId: contactId, infoCardIndex: infoCardIndex);
-
-    // Track contact as recently accessed (persists to overlay.db)
-    final overlayDb = await ref.read(overlayDatabaseProvider.future);
-    await overlayDb.trackContactAccess(contactId);
-    ref.invalidate(recentContactsProvider);
-    ref.invalidate(filteredPickerSectionsProvider);
+        .read(sidebarActionDispatcherProvider.notifier)
+        .dispatch(
+          intent: ContactChosen(contactId: contactId),
+          context: SidebarActionDispatchContext(
+            sidebarMode: SidebarMode.messages,
+            cassetteIndex: payload.cassetteIndex,
+          ),
+        );
   }
 
   void _prewarmContactInvestigation(WidgetRef ref, int contactId) {

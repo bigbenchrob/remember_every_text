@@ -13,7 +13,7 @@ part 'settings_top_menu_resolver.g.dart';
 /// This resolver implements the cross-surface spec system contract:
 ///
 /// - Receives explicit parameters (NOT a spec)
-/// - Returns Future<SidebarCassetteCardViewModel>
+/// - Returns Future<SidebarCassettePayload>
 /// - Determines which widget builder is used
 /// - Owns all decision-making for this cassette
 ///
@@ -33,10 +33,10 @@ class SettingsTopMenuResolver extends _$SettingsTopMenuResolver {
   /// Resolve the settings top menu cassette.
   ///
   /// Parameters are explicit and fully-decided - no spec interpretation here.
-  Future<SidebarCassetteCardViewModel> resolve({
+  Future<SharedBodyModelSidebarCassettePayload> resolve({
     required SettingsMenuChoice currentChoice,
   }) async {
-    return SidebarCassetteCardViewModel(
+    return SharedBodyModelSidebarCassettePayload(
       role: SidebarCassetteRole.appControl,
       placementMode: SidebarBodyPlacementMode.fullWidth,
       contentAlignment: SidebarBodyContentAlignment.insetControl,

@@ -7,7 +7,7 @@ part of 'attachment_resolver_provider.dart';
 // **************************************************************************
 
 String _$attachmentResolverHash() =>
-    r'2b00b1ffe7ecc45b86c3433a8edc1335f2cc3493';
+    r'541f46b7b6c408517b73851b24d6fa09be238680';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -30,46 +30,58 @@ class _SystemHash {
   }
 }
 
-/// Resolves an attachment file through a multi-source pipeline:
+/// Resolves an attachment file through the app's source-policy boundary.
 ///
-/// 1. Try the Messages local path (~/Library/Messages/Attachments)
-/// 2. Try the MessageLens archive (overlay DB + archive directory)
-/// 3. Report cloudOnly or missing
+/// Archive disabled:
+/// - render directly from the live Messages path when present
+/// - otherwise report unresolved availability
 ///
-/// This provider replaces inline `file.existsSync()` calls in message tiles.
+/// Archive enabled:
+/// - render only from the MessageLens archive
+/// - if a live file exists but the archive is missing, trigger archive ingestion
+///   and report a pending archive state
 ///
 /// Copied from [attachmentResolver].
 @ProviderFor(attachmentResolver)
 const attachmentResolverProvider = AttachmentResolverFamily();
 
-/// Resolves an attachment file through a multi-source pipeline:
+/// Resolves an attachment file through the app's source-policy boundary.
 ///
-/// 1. Try the Messages local path (~/Library/Messages/Attachments)
-/// 2. Try the MessageLens archive (overlay DB + archive directory)
-/// 3. Report cloudOnly or missing
+/// Archive disabled:
+/// - render directly from the live Messages path when present
+/// - otherwise report unresolved availability
 ///
-/// This provider replaces inline `file.existsSync()` calls in message tiles.
+/// Archive enabled:
+/// - render only from the MessageLens archive
+/// - if a live file exists but the archive is missing, trigger archive ingestion
+///   and report a pending archive state
 ///
 /// Copied from [attachmentResolver].
 class AttachmentResolverFamily extends Family<AsyncValue<ResolvedAttachment>> {
-  /// Resolves an attachment file through a multi-source pipeline:
+  /// Resolves an attachment file through the app's source-policy boundary.
   ///
-  /// 1. Try the Messages local path (~/Library/Messages/Attachments)
-  /// 2. Try the MessageLens archive (overlay DB + archive directory)
-  /// 3. Report cloudOnly or missing
+  /// Archive disabled:
+  /// - render directly from the live Messages path when present
+  /// - otherwise report unresolved availability
   ///
-  /// This provider replaces inline `file.existsSync()` calls in message tiles.
+  /// Archive enabled:
+  /// - render only from the MessageLens archive
+  /// - if a live file exists but the archive is missing, trigger archive ingestion
+  ///   and report a pending archive state
   ///
   /// Copied from [attachmentResolver].
   const AttachmentResolverFamily();
 
-  /// Resolves an attachment file through a multi-source pipeline:
+  /// Resolves an attachment file through the app's source-policy boundary.
   ///
-  /// 1. Try the Messages local path (~/Library/Messages/Attachments)
-  /// 2. Try the MessageLens archive (overlay DB + archive directory)
-  /// 3. Report cloudOnly or missing
+  /// Archive disabled:
+  /// - render directly from the live Messages path when present
+  /// - otherwise report unresolved availability
   ///
-  /// This provider replaces inline `file.existsSync()` calls in message tiles.
+  /// Archive enabled:
+  /// - render only from the MessageLens archive
+  /// - if a live file exists but the archive is missing, trigger archive ingestion
+  ///   and report a pending archive state
   ///
   /// Copied from [attachmentResolver].
   AttachmentResolverProvider call(
@@ -110,24 +122,30 @@ class AttachmentResolverFamily extends Family<AsyncValue<ResolvedAttachment>> {
   String? get name => r'attachmentResolverProvider';
 }
 
-/// Resolves an attachment file through a multi-source pipeline:
+/// Resolves an attachment file through the app's source-policy boundary.
 ///
-/// 1. Try the Messages local path (~/Library/Messages/Attachments)
-/// 2. Try the MessageLens archive (overlay DB + archive directory)
-/// 3. Report cloudOnly or missing
+/// Archive disabled:
+/// - render directly from the live Messages path when present
+/// - otherwise report unresolved availability
 ///
-/// This provider replaces inline `file.existsSync()` calls in message tiles.
+/// Archive enabled:
+/// - render only from the MessageLens archive
+/// - if a live file exists but the archive is missing, trigger archive ingestion
+///   and report a pending archive state
 ///
 /// Copied from [attachmentResolver].
 class AttachmentResolverProvider
     extends AutoDisposeFutureProvider<ResolvedAttachment> {
-  /// Resolves an attachment file through a multi-source pipeline:
+  /// Resolves an attachment file through the app's source-policy boundary.
   ///
-  /// 1. Try the Messages local path (~/Library/Messages/Attachments)
-  /// 2. Try the MessageLens archive (overlay DB + archive directory)
-  /// 3. Report cloudOnly or missing
+  /// Archive disabled:
+  /// - render directly from the live Messages path when present
+  /// - otherwise report unresolved availability
   ///
-  /// This provider replaces inline `file.existsSync()` calls in message tiles.
+  /// Archive enabled:
+  /// - render only from the MessageLens archive
+  /// - if a live file exists but the archive is missing, trigger archive ingestion
+  ///   and report a pending archive state
   ///
   /// Copied from [attachmentResolver].
   AttachmentResolverProvider(

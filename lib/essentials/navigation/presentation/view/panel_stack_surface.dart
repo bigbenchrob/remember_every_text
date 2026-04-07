@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../../logging/application/app_logger.dart';
 import '../../application/sidebar_mode_provider.dart';
 import '../../domain/entities/panel_stack.dart';
 import '../../domain/navigation_constants.dart';
@@ -25,6 +26,26 @@ class PanelStackSurface extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!context.mounted) {
+        return;
+      }
+
+      ref
+          .read(appLoggerProvider.notifier)
+          .debug(
+            'Panel stack surface build',
+            source: 'PanelStackSurface',
+            context: {
+              'panel': panel.name,
+              'isEmpty': stack.isEmpty,
+              'activeIndex': stack.activeIndex,
+              'pageCount': stack.pages.length,
+              'activeSpec': '${stack.activePage?.spec}',
+            },
+          );
+    });
+
     if (stack.isEmpty) {
       return placeholder;
     }

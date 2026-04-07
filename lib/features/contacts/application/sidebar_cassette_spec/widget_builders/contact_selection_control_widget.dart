@@ -3,6 +3,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
+import '../../../../../essentials/logging/application/app_logger.dart';
+import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
+import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart';
 
 /// Minimal text-link control that navigates back to the contact picker.
@@ -39,12 +42,27 @@ class _ContactSelectionControlWidgetState
     extends ConsumerState<ContactSelectionControlWidget> {
   bool _isHovered = false;
 
-  void _handleTap() {
-    final heroCassetteIndex = widget.cassetteIndex - 1;
-
+  Future<void> _handleTap() async {
     ref
-        .read(sidebarFlowProvider.notifier)
-        .chooseAnotherContact(infoCardIndex: heroCassetteIndex);
+        .read(appLoggerProvider.notifier)
+        .debug(
+          'Change contact tapped',
+          source: 'ContactSelectionControl',
+          context: {
+            'contactId': widget.contactId,
+            'cassetteIndex': widget.cassetteIndex,
+          },
+        );
+
+    await ref
+        .read(sidebarActionDispatcherProvider.notifier)
+        .dispatch(
+          intent: const ChooseAnotherContact(),
+          context: SidebarActionDispatchContext(
+            sidebarMode: SidebarMode.messages,
+            cassetteIndex: widget.cassetteIndex,
+          ),
+        );
   }
 
   @override

@@ -4,12 +4,12 @@ These rules govern the sidebar cassette stack. Violations are bugs.
 
 ---
 
-## 1. Feature Coordinators Return `Future<SidebarCassetteCardViewModel>`
+## 1. Feature Coordinators Return `Future<SidebarCassettePayload>`
 
 Every feature cassette coordinator **must** have this signature:
 
 ```dart
-Future<SidebarCassetteCardViewModel> buildViewModel(
+Future<SidebarCassettePayload> buildViewModel(
   FeatureCassetteSpec spec, {
   required int cassetteIndex,
 })
@@ -17,25 +17,26 @@ Future<SidebarCassetteCardViewModel> buildViewModel(
 
 No other return type. No widgets. No wrapper objects. No sync returns.
 
-## 2. `SidebarCassetteCardViewModel` Is the Only Boundary Payload
+## 2. `SidebarCassettePayload` Is the Boundary Contract
 
-This is the **only** object that crosses from a feature into `essentials/sidebar`.
-If additional data is needed, add a field to the view model.
-Do not introduce parallel types, tuples, records, or wrappers.
+`SidebarCassettePayload` is the contract that crosses from a feature into
+`essentials/sidebar`. Use the approved payload family (`PlacementGoverned...`,
+`FeatureInfo...`, `SharedBodyModel...`) and extend those branches when needed.
+Do not introduce ad-hoc tuples, records, wrapper types, or side-channel models.
 
-## 3. The Resolver Decides, the View Model Declares, the Card Obeys
+## 3. The Resolver Decides, the Payload Declares, the Render Router Obeys
 
-- The **resolver** determines all view model field values (title, cardType, child, etc.)
-- The **view model** carries those decisions as data
-- The **card widget** (SidebarCassetteCard, SidebarInfoCard, etc.) renders what it's told
+- The **resolver** determines all payload field values (title, placement, render-family data, etc.)
+- The **payload** carries those decisions as data
+- The **render router** and shared sidebar chrome render what the payload declares
 
 No component may override decisions made upstream.
 
 ## 4. Features Never Construct Card Chrome
 
-Features return `SidebarCassetteCardViewModel`. The `CassetteWidgetCoordinator`
-wraps it in `SidebarCassetteCard`, `SidebarInfoCard`, or `SidebarNavigationCard`
-based on `cardType`.
+Features return `SidebarCassettePayload`. The shared render router applies
+`SidebarCassetteCard`, `SidebarInfoCard`, or other essentials-owned chrome
+based on payload render kind and subtype.
 
 Features must not import, instantiate, or return card widgets.
 
@@ -53,14 +54,14 @@ Direct modification of the cassette list is not permitted.
 
 ## 7. Loading = Pending Future
 
-While the `CassetteWidgetCoordinator` awaits a feature's `Future<SidebarCassetteCardViewModel>`:
+While the `CassetteWidgetCoordinator` awaits a feature's `Future<SidebarCassettePayload>`:
 - The pending Future represents "loading"
-- The view model must not contain `isLoading` flags, skeleton states, or placeholders
+- The payload must not contain `isLoading` flags, skeleton states, or placeholders
 - The sidebar system uses stale-while-revalidate at the render level
 
 ## 8. Error/Empty States Are View Model Content
 
-Resolvers encode errors and empty states in the view model fields.
+Resolvers encode errors and empty states in the payload fields.
 Resolvers must not throw exceptions across the feature → essentials boundary.
 Resolvers must not return null.
 
@@ -79,8 +80,9 @@ or hard-coded.
 
 ## 11. Expansion Is Opt-In
 
-`SidebarCassetteCardViewModel.shouldExpand` defaults to **`false`**. Cards render
-at intrinsic height unless the resolver explicitly sets `shouldExpand: true`.
+Expandable payload families default `shouldExpand` to **`false`**. Cards render
+at intrinsic height unless the resolver explicitly sets `shouldExpand: true` on
+the payload branch that supports expansion.
 
 - **Set `shouldExpand: true`** only for cards with scrollable lists or content
   that should fill available vertical space.

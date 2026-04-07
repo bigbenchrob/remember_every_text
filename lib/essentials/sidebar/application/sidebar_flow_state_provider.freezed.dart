@@ -12,7 +12,7 @@ part of 'sidebar_flow_state_provider.dart';
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
-mixin _$SidebarFlowState {
+mixin _$SidebarFlowState implements DiagnosticableTreeMixin {
 
  TopChatMenuChoice get topMenuChoice; int? get chosenContactId; int? get selectedHandleId; DateTime? get scrollToDate; SidebarFlowMessageScope get messageScope;
 /// Create a copy of SidebarFlowState
@@ -22,6 +22,12 @@ mixin _$SidebarFlowState {
 $SidebarFlowStateCopyWith<SidebarFlowState> get copyWith => _$SidebarFlowStateCopyWithImpl<SidebarFlowState>(this as SidebarFlowState, _$identity);
 
 
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+  properties
+    ..add(DiagnosticsProperty('type', 'SidebarFlowState'))
+    ..add(DiagnosticsProperty('topMenuChoice', topMenuChoice))..add(DiagnosticsProperty('chosenContactId', chosenContactId))..add(DiagnosticsProperty('selectedHandleId', selectedHandleId))..add(DiagnosticsProperty('scrollToDate', scrollToDate))..add(DiagnosticsProperty('messageScope', messageScope));
+}
 
 @override
 bool operator ==(Object other) {
@@ -33,7 +39,7 @@ bool operator ==(Object other) {
 int get hashCode => Object.hash(runtimeType,topMenuChoice,chosenContactId,selectedHandleId,scrollToDate,messageScope);
 
 @override
-String toString() {
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
   return 'SidebarFlowState(topMenuChoice: $topMenuChoice, chosenContactId: $chosenContactId, selectedHandleId: $selectedHandleId, scrollToDate: $scrollToDate, messageScope: $messageScope)';
 }
 
@@ -209,7 +215,7 @@ return $default(_that.topMenuChoice,_that.chosenContactId,_that.selectedHandleId
 /// @nodoc
 
 
-class _SidebarFlowState extends SidebarFlowState {
+class _SidebarFlowState extends SidebarFlowState with DiagnosticableTreeMixin {
   const _SidebarFlowState({this.topMenuChoice = TopChatMenuChoice.contacts, this.chosenContactId, this.selectedHandleId, this.scrollToDate, this.messageScope = SidebarFlowMessageScope.regular}): super._();
   
 
@@ -226,6 +232,12 @@ class _SidebarFlowState extends SidebarFlowState {
 _$SidebarFlowStateCopyWith<_SidebarFlowState> get copyWith => __$SidebarFlowStateCopyWithImpl<_SidebarFlowState>(this, _$identity);
 
 
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+  properties
+    ..add(DiagnosticsProperty('type', 'SidebarFlowState'))
+    ..add(DiagnosticsProperty('topMenuChoice', topMenuChoice))..add(DiagnosticsProperty('chosenContactId', chosenContactId))..add(DiagnosticsProperty('selectedHandleId', selectedHandleId))..add(DiagnosticsProperty('scrollToDate', scrollToDate))..add(DiagnosticsProperty('messageScope', messageScope));
+}
 
 @override
 bool operator ==(Object other) {
@@ -237,7 +249,7 @@ bool operator ==(Object other) {
 int get hashCode => Object.hash(runtimeType,topMenuChoice,chosenContactId,selectedHandleId,scrollToDate,messageScope);
 
 @override
-String toString() {
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
   return 'SidebarFlowState(topMenuChoice: $topMenuChoice, chosenContactId: $chosenContactId, selectedHandleId: $selectedHandleId, scrollToDate: $scrollToDate, messageScope: $messageScope)';
 }
 

@@ -16,7 +16,7 @@ part 'info_cassette_coordinator.g.dart';
 /// - Pattern-matches on the spec
 /// - Extracts the info key
 /// - Calls the info content resolver
-/// - Returns a [SidebarCassetteCardViewModel] with cardType: info
+/// - Returns `Future<SidebarCassettePayload>`
 @riverpod
 class ContactsInfoCassetteCoordinator
     extends _$ContactsInfoCassetteCoordinator {
@@ -25,26 +25,21 @@ class ContactsInfoCassetteCoordinator
     // Stateless coordinator
   }
 
-  /// Build a sidebar cassette view model for a Contacts info cassette request.
+  /// Build a sidebar cassette payload for a Contacts info cassette request.
   Future<SidebarCassettePayload> buildViewModel(
     ContactsInfoCassetteSpec spec, {
     required int cassetteIndex,
   }) async {
     switch (spec) {
-      case ContactsInfoCassetteSpecInfoCard(:final key, :final chosenContactId):
+      case ContactsInfoCassetteSpecInfoCard(:final key):
         final content = await ref
             .read(contactsInfoContentResolverProvider.notifier)
-            .resolve(
-              key,
-              cassetteIndex: cassetteIndex,
-              chosenContactId: chosenContactId,
-            );
+            .resolve(key);
 
-        return SidebarInfoCassetteViewModel(
+        return StaticFeatureInfoSidebarCassettePayload(
           role: SidebarCassetteRole.contextSecondary,
           title: content.title,
           bodyText: content.body,
-          content: content.action,
         );
     }
 

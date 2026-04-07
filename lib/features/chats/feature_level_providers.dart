@@ -1,4 +1,3 @@
-import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
@@ -35,10 +34,9 @@ class FeatureCassetteSpecCoordinator extends _$FeatureCassetteSpecCoordinator {
   /// Build a cassette view model for the given [ChatsCassetteSpec].
   SidebarCassettePayload buildForSpec(ChatsCassetteSpec spec) {
     // TODO: Implement when ChatsCassetteSpec is defined
-    return const SidebarCassetteCardViewModel(
+    return const StaticFeatureInfoSidebarCassettePayload(
       title: 'Chats',
-      subtitle: 'Coming soon',
-      child: SizedBox.shrink(),
+      bodyText: 'Coming soon',
     );
   }
 }
@@ -55,10 +53,9 @@ class SettingsCassetteSpecCoordinator
   /// Build a cassette view model for the given [ChatsSettingsSpec].
   SidebarCassettePayload buildForSpec(ChatsSettingsSpec spec) {
     // TODO: Implement when ChatsSettingsSpec is defined
-    return const SidebarCassetteCardViewModel(
+    return const StaticFeatureInfoSidebarCassettePayload(
       title: 'Chat Settings',
-      subtitle: 'Coming soon',
-      child: SizedBox.shrink(),
+      bodyText: 'Coming soon',
     );
   }
 }

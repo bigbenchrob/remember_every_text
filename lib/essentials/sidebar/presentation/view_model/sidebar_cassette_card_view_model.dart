@@ -1,5 +1,4 @@
-import 'package:flutter/widgets.dart';
-
+import '../../domain/entities/cassette_spec.dart';
 import '../../domain/sidebar_body_model.dart';
 
 /// Semantic grouping for sidebar cassettes.
@@ -19,9 +18,6 @@ enum SidebarBodyPlacementMode { fullWidth, inset, insetWithTrailingGutter }
 
 /// How cassette content behaves once it is inside the shared sidebar envelope.
 enum SidebarBodyContentAlignment { fill, leftAnchored, insetControl, loose }
-
-/// How the cassette body is rendered within the essentials-owned sidebar host.
-enum SidebarBodyRenderKind { governedPrimitive, featureComplex }
 
 /// Centrally owned geometry constraints derived from sidebar tokens.
 class SidebarGeometryConstraints {
@@ -121,8 +117,21 @@ enum SidebarCardLayoutStyle {
   controlAligned,
 }
 
-/// Essentials-owned payload families for the sidebar cassette shell.
-sealed class SidebarCassettePayload {
+/// Explicit render families owned by the sidebar render router.
+///
+/// Rendering must be selected by this render contract plus concrete payload
+/// subtype where needed. Payloads must not carry builder callbacks or prebuilt
+/// render-selection logic.
+enum SidebarCassetteRenderKind {
+  placementGovernedFeature,
+  featureInfo,
+  sharedBodyModel,
+}
+
+/// Sidebar cassette payload transport base for the shared sidebar shell.
+///
+/// LAW: Meaning may cross this boundary as payload data. Execution may not.
+abstract base class SidebarCassettePayload {
   const SidebarCassettePayload({required this.role, this.topSpacing = 0});
 
   /// Semantic role used by essentials-owned sidebar composition.
@@ -130,133 +139,137 @@ sealed class SidebarCassettePayload {
 
   /// Extra vertical space to insert above this cassette in the sidebar stack.
   final double topSpacing;
+
+  /// Explicit render contract consumed by the sidebar render router.
+  SidebarCassetteRenderKind get renderKind;
 }
 
-/// Standard content cassette payload.
-class SidebarCassetteCardViewModel extends SidebarCassettePayload {
-  const SidebarCassetteCardViewModel({
-    SidebarCassetteRole role = SidebarCassetteRole.contextPrimary,
-    this.placementMode = SidebarBodyPlacementMode.inset,
-    this.contentAlignment = SidebarBodyContentAlignment.fill,
-    this.bodyRenderKind = SidebarBodyRenderKind.governedPrimitive,
-    required this.title,
+/// Inert cassette payload branch.
+///
+/// Payloads in this branch may carry semantic data, layout descriptors, and
+/// typed intents, but they must not transport widgets, builders, refs,
+/// contexts, controllers, or executable behavior.
+///
+/// LAW: Any field here must remain inert in spirit, even if never serialized.
+abstract base class InertSidebarCassettePayload extends SidebarCassettePayload {
+  const InertSidebarCassettePayload({
+    required super.role,
+    super.topSpacing = 0,
+  });
+}
+
+/// Shared inert payload contract for feature-owned cassettes that still render
+/// inside the essentials-owned placement-governed card shell.
+abstract base class PlacementGovernedSidebarCassettePayload
+    extends InertSidebarCassettePayload {
+  const PlacementGovernedSidebarCassettePayload({
+    required super.role,
+    super.topSpacing = 0,
+    this.title = '',
     this.subtitle,
     this.sectionTitle,
     this.footerText,
-    this.child,
-    this.bodyModel,
-    this.layoutStyle = SidebarCardLayoutStyle.standard,
-    this.isNaked = false,
-    double topSpacing = 0,
-    bool? shouldExpand,
-  }) : assert(
-         (child != null) != (bodyModel != null),
-         'Provide exactly one of child or bodyModel.',
-       ),
-       shouldExpand = shouldExpand ?? false,
-       super(role: role, topSpacing: topSpacing);
-
-  /// Explicit constructor for feature-owned complex sidebar bodies.
-  ///
-  /// Use this when the feature provides a full widget subtree and essentials
-  /// must host it inside the constrained sidebar shell.
-  const SidebarCassetteCardViewModel.featureComplex({
-    SidebarCassetteRole role = SidebarCassetteRole.contextPrimary,
     this.placementMode = SidebarBodyPlacementMode.inset,
     this.contentAlignment = SidebarBodyContentAlignment.fill,
-    required this.title,
-    this.subtitle,
-    this.sectionTitle,
-    this.footerText,
-    required Widget this.child,
     this.layoutStyle = SidebarCardLayoutStyle.standard,
     this.isNaked = false,
-    double topSpacing = 0,
-    bool? shouldExpand,
-  }) : bodyModel = null,
-       bodyRenderKind = SidebarBodyRenderKind.featureComplex,
-       shouldExpand = shouldExpand ?? false,
-       super(role: role, topSpacing: topSpacing);
+    this.shouldExpand = false,
+  });
 
-  /// Approved placement mode used by the sidebar geometry contract.
-  final SidebarBodyPlacementMode placementMode;
-
-  /// Approved content alignment used inside the shared sidebar envelope.
-  final SidebarBodyContentAlignment contentAlignment;
-
-  /// Whether the child is an essentials-governed primitive or a feature-owned
-  /// complex body that must be sandboxed by the sidebar host.
-  final SidebarBodyRenderKind bodyRenderKind;
-
-  /// Display title shown in the sidebar card header.
   final String title;
-
-  /// Optional descriptive text shown below the title.
   final String? subtitle;
-
   final String? sectionTitle;
   final String? footerText;
-
-  /// The cassette content widget rendered inside the card.
-  ///
-  /// For [CassetteCardType.standard], this is the interactive body content.
-  final Widget? child;
-
-  /// Essentials-owned semantic body model rendered by shared sidebar widgets.
-  final SidebarBodyModel? bodyModel;
-
-  /// Layout style controlling horizontal rails (margin/padding/gaps).
-  ///
-  /// Defaults to [SidebarCardLayoutStyle.standard] with generous insets.
-  /// Use [SidebarCardLayoutStyle.listDense] for space-sensitive lists.
+  final SidebarBodyPlacementMode placementMode;
+  final SidebarBodyContentAlignment contentAlignment;
   final SidebarCardLayoutStyle layoutStyle;
-
-  /// Whether this cassette should render "naked" - with only horizontal margin
-  /// to align edges with cards, but no padding, border, background, or shadow.
-  /// Use for dropdown menus and other controls that should align flush with
-  /// cassette card edges.
   final bool isNaked;
-
-  /// Extra vertical space to insert above this cassette in the sidebar stack.
-  ///
-  /// Shared sidebar wrappers own the capability; features opt into it for
-  /// layouts that need more breathing room than the default cassette rhythm.
-  /// Whether this cassette should expand to fill available vertical space.
-  ///
-  /// Defaults to `false` — cards take their intrinsic height unless the
-  /// resolver explicitly opts in with `shouldExpand: true` (e.g. scrollable
-  /// lists that should fill the remaining sidebar space).
   final bool shouldExpand;
+
+  @override
+  SidebarCassetteRenderKind get renderKind =>
+      SidebarCassetteRenderKind.placementGovernedFeature;
 }
 
-/// Canonical informational cassette payload.
-class SidebarInfoCassetteViewModel extends SidebarCassettePayload {
-  const SidebarInfoCassetteViewModel({
-    SidebarCassetteRole role = SidebarCassetteRole.contextSecondary,
-    double topSpacing = 0,
-    this.title,
+/// Shared inert payload contract for feature-owned info cassettes that render
+/// through the shared [SidebarInfoCard] chrome.
+abstract base class FeatureInfoSidebarCassettePayload
+    extends InertSidebarCassettePayload {
+  const FeatureInfoSidebarCassettePayload({
     required this.bodyText,
+    super.role = SidebarCassetteRole.contextSecondary,
+    super.topSpacing = 0,
+    this.title,
     this.footnote,
-    this.content,
-  }) : super(role: role, topSpacing: topSpacing);
+  });
 
   final String? title;
   final String bodyText;
   final String? footnote;
-  final Widget? content;
+
+  @override
+  SidebarCassetteRenderKind get renderKind =>
+      SidebarCassetteRenderKind.featureInfo;
 }
 
-/// Canonical navigation cassette payload.
-class SidebarNavigationCassetteViewModel extends SidebarCassettePayload {
-  const SidebarNavigationCassetteViewModel({
-    SidebarCassetteRole role = SidebarCassetteRole.action,
-    double topSpacing = 0,
-    required this.child,
-    this.placementMode = SidebarBodyPlacementMode.fullWidth,
-    this.contentAlignment = SidebarBodyContentAlignment.leftAnchored,
-  }) : super(role: role, topSpacing: topSpacing);
+/// Concrete inert payload for static text-only info cassettes.
+final class StaticFeatureInfoSidebarCassettePayload
+    extends FeatureInfoSidebarCassettePayload {
+  const StaticFeatureInfoSidebarCassettePayload({
+    required super.bodyText,
+    super.role = SidebarCassetteRole.contextSecondary,
+    super.topSpacing = 0,
+    super.title,
+    super.footnote,
+  });
+}
 
-  final Widget child;
+/// Shared inert payload contract for essentials-owned body-model cassettes.
+final class SharedBodyModelSidebarCassettePayload
+    extends InertSidebarCassettePayload {
+  const SharedBodyModelSidebarCassettePayload({
+    required this.bodyModel,
+    super.role = SidebarCassetteRole.contextPrimary,
+    super.topSpacing = 0,
+    this.placementMode = SidebarBodyPlacementMode.inset,
+    this.contentAlignment = SidebarBodyContentAlignment.fill,
+    this.title = '',
+    this.subtitle,
+    this.sectionTitle,
+    this.footerText,
+    this.layoutStyle = SidebarCardLayoutStyle.standard,
+    this.isNaked = false,
+    this.shouldExpand = false,
+  });
+
+  final SidebarBodyModel bodyModel;
   final SidebarBodyPlacementMode placementMode;
   final SidebarBodyContentAlignment contentAlignment;
+  final String title;
+  final String? subtitle;
+  final String? sectionTitle;
+  final String? footerText;
+  final SidebarCardLayoutStyle layoutStyle;
+  final bool isNaked;
+  final bool shouldExpand;
+
+  @override
+  SidebarCassetteRenderKind get renderKind =>
+      SidebarCassetteRenderKind.sharedBodyModel;
+}
+
+class ResolvedSidebarCassette {
+  const ResolvedSidebarCassette({
+    required this.spec,
+    required this.cassetteIndex,
+    required this.payload,
+    this.topSpacing = 0,
+  });
+
+  final CassetteSpec spec;
+  final int cassetteIndex;
+
+  /// Current inert transport object for this cassette.
+  final SidebarCassettePayload payload;
+  final double topSpacing;
 }

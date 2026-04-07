@@ -23,7 +23,7 @@ import 'sidebar_body_layout.dart';
 /// - Expansion behavior for variable-height content
 ///
 /// Visual hierarchy comes from typography tokens, not card boundaries.
-class SidebarCassetteCard extends ConsumerWidget {
+abstract class SidebarCassetteCard extends ConsumerWidget {
   final Widget child;
 
   final String title;
@@ -42,13 +42,96 @@ class SidebarCassetteCard extends ConsumerWidget {
   final SidebarCassetteRole role;
   final SidebarBodyPlacementMode placementMode;
   final SidebarBodyContentAlignment contentAlignment;
-  final SidebarBodyRenderKind bodyRenderKind;
 
   /// Layout style controlling horizontal rails.
   /// When non-null, overrides [padding] and [margin] with style-derived values.
   final SidebarCardLayoutStyle? layoutStyle;
 
-  const SidebarCassetteCard({
+  factory SidebarCassetteCard({
+    Key? key,
+    required Widget child,
+    required String title,
+    String? subtitle,
+    String? sectionTitle,
+    String? footerText,
+    EdgeInsetsGeometry padding = const EdgeInsets.only(
+      left: AppSpacing.md,
+      top: AppSpacing.md,
+      right: AppSpacing.md,
+      bottom: AppSpacing.md,
+    ),
+    EdgeInsetsGeometry margin = const EdgeInsets.symmetric(
+      horizontal: AppSpacing.md,
+    ),
+    bool isNaked = false,
+    bool shouldExpand = false,
+    SidebarCassetteRole role = SidebarCassetteRole.contextPrimary,
+    SidebarBodyPlacementMode placementMode = SidebarBodyPlacementMode.inset,
+    SidebarBodyContentAlignment contentAlignment =
+        SidebarBodyContentAlignment.fill,
+    SidebarCardLayoutStyle? layoutStyle,
+  }) {
+    return _StandardSidebarCassetteCard(
+      key: key,
+      title: title,
+      subtitle: subtitle,
+      sectionTitle: sectionTitle,
+      footerText: footerText,
+      padding: padding,
+      margin: margin,
+      isNaked: isNaked,
+      shouldExpand: shouldExpand,
+      role: role,
+      placementMode: placementMode,
+      contentAlignment: contentAlignment,
+      layoutStyle: layoutStyle,
+      child: child,
+    );
+  }
+
+  factory SidebarCassetteCard.placementGoverned({
+    Key? key,
+    required Widget child,
+    required String title,
+    String? subtitle,
+    String? sectionTitle,
+    String? footerText,
+    EdgeInsetsGeometry padding = const EdgeInsets.only(
+      left: AppSpacing.md,
+      top: AppSpacing.md,
+      right: AppSpacing.md,
+      bottom: AppSpacing.md,
+    ),
+    EdgeInsetsGeometry margin = const EdgeInsets.symmetric(
+      horizontal: AppSpacing.md,
+    ),
+    bool isNaked = false,
+    bool shouldExpand = false,
+    SidebarCassetteRole role = SidebarCassetteRole.contextPrimary,
+    SidebarBodyPlacementMode placementMode = SidebarBodyPlacementMode.inset,
+    SidebarBodyContentAlignment contentAlignment =
+        SidebarBodyContentAlignment.fill,
+    SidebarCardLayoutStyle? layoutStyle,
+  }) {
+    return _PlacementGovernedSidebarCassetteCard(
+      key: key,
+      title: title,
+      subtitle: subtitle,
+      sectionTitle: sectionTitle,
+      footerText: footerText,
+      padding: padding,
+      margin: margin,
+      isNaked: isNaked,
+      shouldExpand: shouldExpand,
+      role: role,
+      placementMode: placementMode,
+      contentAlignment: contentAlignment,
+      layoutStyle: layoutStyle,
+      child: child,
+    );
+  }
+
+  const SidebarCassetteCard._({
     super.key,
     required this.child,
     required this.title,
@@ -67,9 +150,10 @@ class SidebarCassetteCard extends ConsumerWidget {
     this.role = SidebarCassetteRole.contextPrimary,
     this.placementMode = SidebarBodyPlacementMode.inset,
     this.contentAlignment = SidebarBodyContentAlignment.fill,
-    this.bodyRenderKind = SidebarBodyRenderKind.governedPrimitive,
     this.layoutStyle,
   });
+
+  bool get _usesPlacementLayout;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -96,12 +180,17 @@ class SidebarCassetteCard extends ConsumerWidget {
 
           return Padding(
             padding: nakedPadding,
-            child: buildSidebarBodyContent(
-              child: child,
-              geometry: geometry,
-              contentAlignment: contentAlignment,
-              bodyRenderKind: bodyRenderKind,
-            ),
+            child: _usesPlacementLayout
+                ? buildPlacementGovernedSidebarBodyContent(
+                    child: child,
+                    geometry: geometry,
+                    contentAlignment: contentAlignment,
+                  )
+                : buildSidebarBodyContent(
+                    child: child,
+                    geometry: geometry,
+                    contentAlignment: contentAlignment,
+                  ),
           );
         },
       );
@@ -174,12 +263,17 @@ class SidebarCassetteCard extends ConsumerWidget {
       return child;
     }
 
-    return buildSidebarBodyContent(
-      child: child,
-      geometry: geometry,
-      contentAlignment: contentAlignment,
-      bodyRenderKind: bodyRenderKind,
-    );
+    return _usesPlacementLayout
+        ? buildPlacementGovernedSidebarBodyContent(
+            child: child,
+            geometry: geometry,
+            contentAlignment: contentAlignment,
+          )
+        : buildSidebarBodyContent(
+            child: child,
+            geometry: geometry,
+            contentAlignment: contentAlignment,
+          );
   }
 
   /// Computes (margin, padding, sectionTitleGap, geometry) based on any
@@ -187,8 +281,7 @@ class SidebarCassetteCard extends ConsumerWidget {
   (EdgeInsets, EdgeInsets, double, SidebarGeometryConstraints?) _computeLayout({
     required double maxWidth,
   }) {
-    if (layoutStyle != null &&
-        bodyRenderKind == SidebarBodyRenderKind.governedPrimitive) {
+    if (layoutStyle != null && !_usesPlacementLayout) {
       return switch (layoutStyle!) {
         SidebarCardLayoutStyle.standard => (
           const EdgeInsets.symmetric(horizontal: AppSpacing.md),
@@ -257,6 +350,64 @@ class SidebarCassetteCard extends ConsumerWidget {
     );
 
     return (effectiveMargin, placementPadding, sectionTitleGap, geometry);
+  }
+}
+
+final class _StandardSidebarCassetteCard extends SidebarCassetteCard {
+  const _StandardSidebarCassetteCard({
+    super.key,
+    required super.child,
+    required super.title,
+    super.subtitle,
+    super.sectionTitle,
+    super.footerText,
+    super.padding = const EdgeInsets.only(
+      left: AppSpacing.md,
+      top: AppSpacing.md,
+      right: AppSpacing.md,
+      bottom: AppSpacing.md,
+    ),
+    super.margin = const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+    super.isNaked = false,
+    super.shouldExpand = false,
+    super.role = SidebarCassetteRole.contextPrimary,
+    super.placementMode = SidebarBodyPlacementMode.inset,
+    super.contentAlignment = SidebarBodyContentAlignment.fill,
+    super.layoutStyle,
+  }) : super._();
+
+  @override
+  bool get _usesPlacementLayout {
+    return false;
+  }
+}
+
+final class _PlacementGovernedSidebarCassetteCard extends SidebarCassetteCard {
+  const _PlacementGovernedSidebarCassetteCard({
+    super.key,
+    required super.child,
+    required super.title,
+    super.subtitle,
+    super.sectionTitle,
+    super.footerText,
+    super.padding = const EdgeInsets.only(
+      left: AppSpacing.md,
+      top: AppSpacing.md,
+      right: AppSpacing.md,
+      bottom: AppSpacing.md,
+    ),
+    super.margin = const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+    super.isNaked = false,
+    super.shouldExpand = false,
+    super.role = SidebarCassetteRole.contextPrimary,
+    super.placementMode = SidebarBodyPlacementMode.inset,
+    super.contentAlignment = SidebarBodyContentAlignment.fill,
+    super.layoutStyle,
+  }) : super._();
+
+  @override
+  bool get _usesPlacementLayout {
+    return true;
   }
 }
 

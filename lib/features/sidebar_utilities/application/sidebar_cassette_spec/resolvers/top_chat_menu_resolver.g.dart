@@ -7,15 +7,14 @@ part of 'top_chat_menu_resolver.dart';
 // **************************************************************************
 
 String _$topChatMenuResolverHash() =>
-    r'05d98d4eff2af57ae06eee691833d859025ddc3b';
+    r'28e119d96c9a285a31aa7da06ad121fbbf1f38b1';
 
 /// Top Chat Menu Resolver
 ///
 /// This resolver implements the cross-surface spec system contract:
 ///
 /// - Receives explicit parameters (NOT a spec)
-/// - Returns Future<SidebarCassetteCardViewModel>
-/// - Determines which widget builder is used
+/// - Returns `Future<SidebarCassettePayload>`
 /// - Owns all decision-making for this cassette
 ///
 /// The resolver MUST NOT:

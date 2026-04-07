@@ -19,13 +19,16 @@ import '../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../essentials/navigation/feature_level_providers.dart';
 import '../../../contacts/infrastructure/repositories/contact_profile_provider.dart';
 import '../../domain/value_objects/message_timeline_scope.dart';
+import '../debug/contact_timeline_scroll_probe.dart';
 import '../view_model/shared/display_widgets/new_display_widgets.dart';
 import '../view_model/shared/hydration/messages_for_handle_provider.dart';
 import '../view_model/timeline/contact_timeline_display_version_provider.dart';
 import '../view_model/timeline/hydration/message_by_id_provider.dart';
+import '../view_model/timeline/hydration/message_grouping_metadata_by_ordinal_provider.dart';
 import '../view_model/timeline/hydration/message_by_ordinal_provider.dart';
 import '../view_model/timeline/message_timeline_view_model_provider.dart';
 import '../view_model/timeline/ordinal/current_visible_month_provider.dart';
+import '../view_model/timeline/ordinal/message_timeline_index_coordinator_provider.dart';
 import '../view_model/timeline/timeline_metadata_provider.dart';
 import '../widgets/message_card.dart';
 
@@ -54,8 +57,9 @@ class MessagesTimelineView extends HookConsumerWidget {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final vm = ref.watch(messageTimelineViewModelProvider(scope: scope));
-    final ordinalAsync = vm.ordinal;
-    final ordinalState = ordinalAsync.valueOrNull;
+    final indexCoordinatorState = ref.watch(
+      messageTimelineIndexCoordinatorProvider(scope: scope),
+    );
     final AsyncValue<List<int>> pendingContactMessageIdsAsync;
     if (scope is ContactTimelineScope) {
       pendingContactMessageIdsAsync = ref.watch(
@@ -68,14 +72,7 @@ class MessagesTimelineView extends HookConsumerWidget {
         pendingContactMessageIdsAsync.valueOrNull ?? const <int>[];
     final hasPendingContactMessages = pendingContactMessages.isNotEmpty;
     final pendingIndicatorDismissed = useState(false);
-    final lastAppliedInitialScrollKey = useRef<String?>(null);
-    final lastVisibleTopMessageId = useRef<int?>(null);
-    final lastVisibleTopAlignment = useRef<double?>(null);
-    final previousTotalCount = useRef<int?>(null);
-    final visibleAnchorGeneration = useRef<int>(0);
     final previousPendingMessageCount = useRef<int>(0);
-    final initialScrollKey =
-        '${scope.hashCode}:${scrollToDate?.toIso8601String() ?? 'latest'}';
 
     useEffect(() {
       final previousCount = previousPendingMessageCount.value;
@@ -93,152 +90,34 @@ class MessagesTimelineView extends HookConsumerWidget {
       return null;
     }, [pendingContactMessages.length]);
 
-    useEffect(() {
-      if (scope is ContactTimelineScope) {
-        return null;
-      }
-
-      final currentOrdinalState = ordinalState;
-      if (currentOrdinalState == null) {
-        return null;
-      }
-
-      void captureVisibleTopOrdinal() {
-        final positions =
-            currentOrdinalState.itemPositionsListener.itemPositions.value;
-
-        final visiblePositions = positions
-            .where((position) {
-              return position.itemTrailingEdge > 0 &&
-                  position.itemLeadingEdge < 1;
-            })
-            .toList(growable: false);
-
-        if (visiblePositions.isEmpty) {
-          return;
+    useEffect(
+      () {
+        if (!indexCoordinatorState.hasOrdinalState) {
+          return null;
         }
 
-        visiblePositions.sort((left, right) {
-          return left.itemLeadingEdge.compareTo(right.itemLeadingEdge);
-        });
+        ref
+            .read(
+              messageTimelineIndexCoordinatorProvider(scope: scope).notifier,
+            )
+            .syncViewport(scrollToDate: scrollToDate);
 
-        final topVisiblePosition = visiblePositions.first;
-        lastVisibleTopAlignment.value = topVisiblePosition.itemLeadingEdge;
-
-        final captureGeneration = ++visibleAnchorGeneration.value;
-        unawaited(() async {
-          final messageId = await currentOrdinalState.strategy
-              .getMessageIdByOrdinal(topVisiblePosition.index);
-
-          if (captureGeneration != visibleAnchorGeneration.value) {
-            return;
-          }
-
-          lastVisibleTopMessageId.value = messageId;
-        }());
-      }
-
-      currentOrdinalState.itemPositionsListener.itemPositions.addListener(
-        captureVisibleTopOrdinal,
-      );
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        captureVisibleTopOrdinal();
-      });
-
-      return () {
-        currentOrdinalState.itemPositionsListener.itemPositions.removeListener(
-          captureVisibleTopOrdinal,
-        );
-      };
-    }, [ordinalState?.itemPositionsListener]);
-
-    useEffect(() {
-      if (scope is ContactTimelineScope) {
         return null;
-      }
-
-      final currentOrdinalState = ordinalState;
-      if (currentOrdinalState == null) {
-        return null;
-      }
-
-      final previousCount = previousTotalCount.value;
-      previousTotalCount.value = currentOrdinalState.totalCount;
-
-      if (previousCount == null ||
-          previousCount == currentOrdinalState.totalCount) {
-        return null;
-      }
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        unawaited(() async {
-          if (!currentOrdinalState.itemScrollController.isAttached) {
-            return;
-          }
-
-          final restoreMessageId = lastVisibleTopMessageId.value;
-          if (restoreMessageId == null) {
-            return;
-          }
-
-          final restoreOrdinal = await currentOrdinalState.strategy
-              .getOrdinalForMessage(restoreMessageId);
-          if (restoreOrdinal == null) {
-            return;
-          }
-
-          final restoreAlignment = lastVisibleTopAlignment.value ?? 0;
-          final clampedOrdinal = restoreOrdinal.clamp(
-            0,
-            currentOrdinalState.totalCount - 1,
-          );
-          currentOrdinalState.itemScrollController.jumpTo(
-            index: clampedOrdinal,
-            alignment: restoreAlignment,
-          );
-        }());
-      });
-
-      return null;
-    }, [ordinalState?.totalCount, ordinalState?.itemScrollController, scope]);
-
-    // Handle initial scroll positioning
-    useEffect(() {
-      if (!ordinalAsync.hasValue) {
-        return null;
-      }
-
-      if (lastAppliedInitialScrollKey.value == initialScrollKey) {
-        return null;
-      }
-
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (lastAppliedInitialScrollKey.value == initialScrollKey) {
-          return;
-        }
-
-        lastAppliedInitialScrollKey.value = initialScrollKey;
-
-        if (scrollToDate != null) {
-          await ref
-              .read(messageTimelineViewModelProvider(scope: scope).notifier)
-              .jumpToDate(scrollToDate!);
-          return;
-        }
-
-        await ref
-            .read(messageTimelineViewModelProvider(scope: scope).notifier)
-            .jumpToLatest();
-      });
-
-      return null;
-    }, [initialScrollKey, ordinalAsync.hasValue, ref, scope, scrollToDate]);
+      },
+      [
+        indexCoordinatorState.hasOrdinalState,
+        indexCoordinatorState.totalCount,
+        ref,
+        scope,
+        scrollToDate,
+      ],
+    );
 
     final timelineSurfaceColor = switch (scope) {
       ContactTimelineScope() => colors.messagePanels.coolPanelSurface,
       GlobalTimelineScope() => colors.messagePanels.coolPanelSurface,
       ChatTimelineScope() => colors.messagePanels.surface,
+      RecoveredTimelineScope() => colors.messagePanels.coolPanelSurface,
     };
 
     // Build scope-specific scaffold
@@ -272,7 +151,25 @@ class MessagesTimelineView extends HookConsumerWidget {
         timelineSurfaceColor,
         timelineSurfaceColor,
       ),
+      RecoveredTimelineScope() => _buildRecoveredUnsupportedScaffold(
+        timelineSurfaceColor,
+      ),
     };
+  }
+
+  Widget _buildRecoveredUnsupportedScaffold(Color chromeBg) {
+    return ColoredBox(
+      color: chromeBg,
+      child: const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Text(
+            'Recovered timelines use a dedicated surface.',
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildGlobalScaffold(
@@ -418,6 +315,29 @@ class MessagesTimelineView extends HookConsumerWidget {
 
     return NotificationListener<ScrollNotification>(
       onNotification: (notification) {
+        final shouldProbe =
+            scope is ContactTimelineScope &&
+            ContactTimelineScrollProbe.shouldEnable(ref);
+
+        if (shouldProbe) {
+          if (notification is ScrollStartNotification) {
+            ContactTimelineScrollProbe.startSession(
+              scope: scope,
+              trigger: 'scroll_start',
+            );
+            ContactTimelineScrollProbe.count('viewport.notification.start');
+          } else if (notification is ScrollUpdateNotification) {
+            ContactTimelineScrollProbe.count('viewport.notification.update');
+          } else if (notification is UserScrollNotification) {
+            ContactTimelineScrollProbe.count(
+              'viewport.notification.user_${notification.direction.name}',
+            );
+          } else if (notification is ScrollEndNotification) {
+            ContactTimelineScrollProbe.count('viewport.notification.end');
+            ContactTimelineScrollProbe.scheduleFlush(reason: 'scroll_end');
+          }
+        }
+
         if (notification is ScrollStartNotification ||
             notification is ScrollUpdateNotification ||
             notification is UserScrollNotification) {
@@ -469,6 +389,7 @@ class MessagesTimelineView extends HookConsumerWidget {
       GlobalTimelineScope() => 'No messages indexed yet.',
       ContactTimelineScope() => 'No messages with this contact yet.',
       ChatTimelineScope() => 'No messages in this chat yet.',
+      RecoveredTimelineScope() => 'No recovered messages in this scope yet.',
     };
   }
 
@@ -477,6 +398,7 @@ class MessagesTimelineView extends HookConsumerWidget {
       ContactTimelineScope() => 32,
       GlobalTimelineScope() => 32,
       ChatTimelineScope() => 16,
+      RecoveredTimelineScope() => 32,
     };
   }
 }
@@ -520,9 +442,13 @@ class _PendingMessageRow extends ConsumerWidget {
         }
 
         final grouping = _groupingStyleFor(
-          current: item,
-          previous: previousItemAsync.valueOrNull,
-          next: nextItemAsync.valueOrNull,
+          current: _groupingMetadataForItem(item),
+          previous: previousItemAsync.valueOrNull == null
+              ? null
+              : _groupingMetadataForItem(previousItemAsync.valueOrNull!),
+          next: nextItemAsync.valueOrNull == null
+              ? null
+              : _groupingMetadataForItem(nextItemAsync.valueOrNull!),
           scope: scope,
         );
 
@@ -761,6 +687,7 @@ class _SearchBar extends ConsumerWidget {
       GlobalTimelineScope() => 'Search all messages',
       ContactTimelineScope() => 'Search messages with this contact',
       ChatTimelineScope() => 'Search this conversation',
+      RecoveredTimelineScope() => 'Recovered timelines use a dedicated view',
     };
 
     final decoration = BoxDecoration(
@@ -1203,22 +1130,22 @@ class _MessageRow extends ConsumerWidget {
     final itemAsync = ref.watch(
       messageByTimelineOrdinalProvider(scope: scope, ordinal: ordinal),
     );
-    final previousItemAsync = ordinal > 0 && scope is ContactTimelineScope
+    final previousMetadataAsync = ordinal > 0 && scope is ContactTimelineScope
         ? ref.watch(
-            messageByTimelineOrdinalProvider(
+            messageGroupingMetadataByTimelineOrdinalProvider(
               scope: scope,
               ordinal: ordinal - 1,
             ),
           )
-        : const AsyncValue<MessageListItem?>.data(null);
-    final nextItemAsync = scope is ContactTimelineScope
+        : const AsyncValue<MessageGroupingMetadata?>.data(null);
+    final nextMetadataAsync = scope is ContactTimelineScope
         ? ref.watch(
-            messageByTimelineOrdinalProvider(
+            messageGroupingMetadataByTimelineOrdinalProvider(
               scope: scope,
               ordinal: ordinal + 1,
             ),
           )
-        : const AsyncValue<MessageListItem?>.data(null);
+        : const AsyncValue<MessageGroupingMetadata?>.data(null);
 
     return itemAsync.when(
       data: (item) {
@@ -1226,9 +1153,9 @@ class _MessageRow extends ConsumerWidget {
           return const _SkeletonRow();
         }
         final grouping = _groupingStyleFor(
-          current: item,
-          previous: previousItemAsync.valueOrNull,
-          next: nextItemAsync.valueOrNull,
+          current: _groupingMetadataForItem(item),
+          previous: previousMetadataAsync.valueOrNull,
+          next: nextMetadataAsync.valueOrNull,
           scope: scope,
         );
         return MessageCard(
@@ -1237,6 +1164,7 @@ class _MessageRow extends ConsumerWidget {
             ContactTimelineScope() => MessageCardLayout.analysis,
             GlobalTimelineScope() => MessageCardLayout.analysis,
             ChatTimelineScope() => MessageCardLayout.bubble,
+            RecoveredTimelineScope() => MessageCardLayout.analysis,
           },
           grouping: grouping,
         );
@@ -1250,10 +1178,21 @@ class _MessageRow extends ConsumerWidget {
   }
 }
 
+MessageGroupingMetadata _groupingMetadataForItem(MessageListItem item) {
+  return MessageGroupingMetadata(
+    chatId: item.chatId,
+    isFromMe: item.isFromMe,
+    senderName: item.senderName,
+    text: item.text,
+    sentAt: item.sentAt,
+    hasAttachments: item.hasAttachments,
+  );
+}
+
 MessageGroupingStyle _groupingStyleFor({
-  required MessageListItem current,
-  required MessageListItem? previous,
-  required MessageListItem? next,
+  required MessageGroupingMetadata current,
+  required MessageGroupingMetadata? previous,
+  required MessageGroupingMetadata? next,
   required MessageTimelineScope scope,
 }) {
   if ((scope is! ContactTimelineScope && scope is! GlobalTimelineScope) ||
@@ -1308,7 +1247,10 @@ MessageGroupingStyle _groupingStyleFor({
   );
 }
 
-bool _messagesCanCluster(MessageListItem previous, MessageListItem current) {
+bool _messagesCanCluster(
+  MessageGroupingMetadata previous,
+  MessageGroupingMetadata current,
+) {
   if (_isMediaBoundaryMessage(previous) || _isMediaBoundaryMessage(current)) {
     return false;
   }
@@ -1333,8 +1275,8 @@ bool _messagesCanCluster(MessageListItem previous, MessageListItem current) {
       timeDelta <= _contactMessageGroupingThreshold;
 }
 
-bool _isMediaBoundaryMessage(MessageListItem item) {
-  if (item.attachments.isNotEmpty || item.hasAttachments) {
+bool _isMediaBoundaryMessage(MessageGroupingMetadata item) {
+  if (item.hasAttachments) {
     return true;
   }
 
@@ -1389,6 +1331,7 @@ class _SearchResultsList extends ConsumerWidget {
       ContactTimelineScope() => 32,
       GlobalTimelineScope() => 32,
       ChatTimelineScope() => 16,
+      RecoveredTimelineScope() => 32,
     };
   }
 
@@ -1469,6 +1412,7 @@ class _SearchResultRow extends ConsumerWidget {
             ContactTimelineScope() => MessageCardLayout.analysis,
             GlobalTimelineScope() => MessageCardLayout.analysis,
             ChatTimelineScope() => MessageCardLayout.bubble,
+            RecoveredTimelineScope() => MessageCardLayout.analysis,
           },
         );
       },
@@ -1489,7 +1433,8 @@ class _GlobalSearchResultCard extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final canShowContextAction =
-        item.text.trim().isNotEmpty && !_isMediaBoundaryMessage(item);
+        item.text.trim().isNotEmpty &&
+        !_isMediaBoundaryMessage(_groupingMetadataForItem(item));
 
     if (!canShowContextAction) {
       return MessageCard(message: item, layout: MessageCardLayout.analysis);

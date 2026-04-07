@@ -11,6 +11,7 @@ import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
 
 import '../../application/sidebar_cassette_spec/resolver_tools/filtered_picker_sections_provider.dart';
+import '../../application/sidebar_cassette_spec/resolver_tools/picker_filter_mode_provider.dart';
 import '../../application/sidebar_cassette_spec/resolver_tools/unified_picker_sections_provider.dart';
 import '../../infrastructure/repositories/contacts_list_repository.dart'
     show ContactSummary;
@@ -67,16 +68,24 @@ class FullContactPicker extends ConsumerWidget {
     required this.onContactSelected,
     this.onContactHovered,
     this.maxHeight,
+    this.currentMode,
+    this.unifiedSections,
   });
 
   final int? selectedParticipantId;
   final ValueChanged<int> onContactSelected;
   final ValueChanged<int>? onContactHovered;
   final double? maxHeight;
+  final PickerFilterMode? currentMode;
+  final UnifiedPickerSections? unifiedSections;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final groupedAsync = ref.watch(filteredPickerSectionsProvider);
+    final groupedAsync = switch (unifiedSections) {
+      final sections? => AsyncValue.data(sections),
+      null => ref.watch(filteredPickerSectionsProvider),
+    };
+    final effectiveMode = currentMode ?? ref.watch(pickerFilterProvider);
     // Watch the brightness state to trigger rebuilds
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
@@ -123,7 +132,7 @@ class FullContactPicker extends ConsumerWidget {
                 ? MainAxisSize.max
                 : MainAxisSize.min,
             children: [
-              const PickerFilterToggle(),
+              PickerFilterToggle(mode: effectiveMode),
               if (hasBoundedHeight)
                 Expanded(child: pickerContent)
               else

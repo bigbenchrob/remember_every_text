@@ -60,10 +60,9 @@ class FeatureCassetteSpecCoordinator extends _$FeatureCassetteSpecCoordinator {
   /// Build a cassette view model for the given [AttachmentsCassetteSpec].
   SidebarCassettePayload buildForSpec(AttachmentsCassetteSpec spec) {
     // TODO: Implement when AttachmentsCassetteSpec is defined
-    return const SidebarCassetteCardViewModel(
+    return const StaticFeatureInfoSidebarCassettePayload(
       title: 'Attachments',
-      subtitle: 'Coming soon',
-      child: SizedBox.shrink(),
+      bodyText: 'Coming soon',
     );
   }
 }
@@ -80,10 +79,9 @@ class SettingsCassetteSpecCoordinator
   /// Build a cassette view model for the given [AttachmentsSettingsSpec].
   SidebarCassettePayload buildForSpec(AttachmentsSettingsSpec spec) {
     // TODO: Implement when AttachmentsSettingsSpec is defined
-    return const SidebarCassetteCardViewModel(
+    return const StaticFeatureInfoSidebarCassettePayload(
       title: 'Attachment Settings',
-      subtitle: 'Coming soon',
-      child: SizedBox.shrink(),
+      bodyText: 'Coming soon',
     );
   }
 }

@@ -1,29 +1,30 @@
 import 'package:drift/drift.dart' as drift;
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import '../../../../../essentials/db/infrastructure/data_sources/local/working/working_database.dart';
+import '../../debug/contact_timeline_scroll_probe.dart';
 import '../shared/hydration/attachment_info.dart';
 import '../shared/hydration/attachment_info_loader.dart';
 import '../shared/hydration/messages_for_handle_provider.dart';
 
 class MessageRowMapper {
-  MessageRowMapper(
-    this._db,
-    this._displayNameOverrides, {
-    OverlayDatabase? overlayDb,
-    String? archiveDir,
-  }) : _overlayDb = overlayDb,
-       _archiveDir = archiveDir;
+  MessageRowMapper(this._db, this._displayNameOverrides, {required Ref ref})
+    : _ref = ref;
 
   final WorkingDatabase _db;
   final Map<int, String> _displayNameOverrides;
-  final OverlayDatabase? _overlayDb;
-  final String? _archiveDir;
+  final Ref _ref;
 
   Future<List<MessageListItem>> mapRows(List<drift.TypedResult> rows) async {
     if (rows.isEmpty) {
       return const [];
     }
+
+    ContactTimelineScrollProbe.count('message_row_mapper.calls');
+    ContactTimelineScrollProbe.count(
+      'message_row_mapper.rows',
+      by: rows.length,
+    );
 
     final results = <MessageListItem>[];
 
@@ -31,17 +32,21 @@ class MessageRowMapper {
       final message = row.readTable(_db.workingMessages);
       final participant = row.readTableOrNull(_db.workingParticipants);
 
-      // Fetch attachments for this message if it has any
-      var attachments = message.hasAttachments
-          ? await loadAttachmentsForMessage(_db, message.guid)
+      final rawAttachments = message.hasAttachments
+          ? await ContactTimelineScrollProbe.traceAsync(
+              'message_row_mapper.attachments.load',
+              () => loadAttachmentsForMessage(_db, message.guid),
+            )
           : <AttachmentInfo>[];
-      if (attachments.isNotEmpty && _overlayDb != null && _archiveDir != null) {
-        attachments = await resolveArchivePaths(
-          attachments: attachments,
-          overlayDb: _overlayDb,
-          archiveDir: _archiveDir,
-        );
-      }
+      final attachments = rawAttachments.isEmpty
+          ? rawAttachments
+          : await ContactTimelineScrollProbe.traceAsync(
+              'message_row_mapper.attachments.resolve',
+              () => resolveAttachmentsForDisplay(
+                ref: _ref,
+                attachments: rawAttachments,
+              ),
+            );
 
       results.add(
         MessageListItem(

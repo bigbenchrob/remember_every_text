@@ -10,5 +10,7 @@
 // =============================================================================
 
 export './application/sidebar_cassette_spec/coordinators/cassette_coordinator.dart';
+export './application/sidebar_cassette_spec/payloads/top_chat_menu_cassette_payload.dart';
+export './application/sidebar_cassette_spec/rendering/sidebar_utilities_cassette_body_builder.dart';
 export './domain/sidebar_utilities_constants.dart';
 export './domain/spec_classes/sidebar_utility_cassette_spec.dart';

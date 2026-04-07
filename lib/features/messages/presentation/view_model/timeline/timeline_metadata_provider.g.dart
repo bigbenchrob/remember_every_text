@@ -6,7 +6,7 @@ part of 'timeline_metadata_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$timelineMetadataHash() => r'84d57fad8a7a5a389b10d89a7638337a4c9a8f51';
+String _$timelineMetadataHash() => r'7c9d504c5a6ef594e1f7230b86faa5a8df08a4f8';
 
 /// Copied from Dart SDK
 class _SystemHash {

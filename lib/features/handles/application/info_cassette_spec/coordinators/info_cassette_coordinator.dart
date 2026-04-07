@@ -68,7 +68,7 @@ class HandlesInfoCassetteCoordinator extends _$HandlesInfoCassetteCoordinator {
         // We do NOT build a Text() widget here.
         // We pass plain data to the view model and let the app-level chrome builder decide
         // how an "info" card is rendered.
-        return SidebarInfoCassetteViewModel(
+        return StaticFeatureInfoSidebarCassettePayload(
           role: SidebarCassetteRole.contextSecondary,
           title: content.title,
           bodyText: content.body,

@@ -1,5 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:macos_ui/macos_ui.dart';
@@ -7,10 +6,11 @@ import 'package:macos_ui/macos_ui.dart';
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
+import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
+import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart';
 import '../../../domain/calendar_heatmap_timeline_data.dart';
 import '../../../domain/value_objects/message_timeline_scope.dart';
-import '../../../presentation/view_model/timeline/message_timeline_view_model_provider.dart';
 import '../../../presentation/view_model/timeline/ordinal/current_visible_month_provider.dart';
 import '../../../presentation/widgets/calendar_heatmap_timeline_widget.dart';
 import '../resolver_tools/contact_timeline_provider.dart';
@@ -94,9 +94,16 @@ class _GlobalHeatmapContent extends ConsumerWidget {
         final isLastMonth =
             year == timeline.lastMessageDate.year &&
             month == timeline.lastMessageDate.month;
-        final startDate = isLastMonth ? null : DateTime(year, month, 1);
+        final monthAnchor = isLastMonth ? null : DateTime(year, month, 1);
 
-        ref.read(sidebarFlowProvider.notifier).showGlobalTimelineAt(startDate);
+        ref
+            .read(sidebarActionDispatcherProvider.notifier)
+            .dispatch(
+              intent: HeatMapMonthFocused(monthAnchor: monthAnchor),
+              context: const SidebarActionDispatchContext(
+                sidebarMode: SidebarMode.messages,
+              ),
+            );
       },
     );
   }
@@ -135,18 +142,17 @@ class _ContactHeatmapContent extends ConsumerWidget {
             year == timeline.lastMessageDate.year &&
             month == timeline.lastMessageDate.month;
 
-        if (isLastMonth) {
-          final scope = MessageTimelineScope.contact(contactId: contactId);
-          ref
-              .read(messageTimelineViewModelProvider(scope: scope).notifier)
-              .jumpToLatest();
-        } else {
-          final startDate = DateTime(year, month, 1);
-          final scope = MessageTimelineScope.contact(contactId: contactId);
-          ref
-              .read(messageTimelineViewModelProvider(scope: scope).notifier)
-              .jumpToDate(startDate);
-        }
+        ref
+            .read(sidebarActionDispatcherProvider.notifier)
+            .dispatch(
+              intent: HeatMapMonthFocused(
+                contactId: contactId,
+                monthAnchor: isLastMonth ? null : DateTime(year, month, 1),
+              ),
+              context: const SidebarActionDispatchContext(
+                sidebarMode: SidebarMode.messages,
+              ),
+            );
       },
     );
   }

@@ -3,22 +3,23 @@ part of '../cassette_spec.dart';
 CassetteSpec? resolveContactsChild(ContactsCassetteSpec spec) {
   return spec.when(
     contactChooser: (_) {
-      // Terminal node — the info card above handles the transition
-      // to contactSelectionControl when a contact is chosen.
+      // Terminal node — the chooser sits beneath the picker info card.
       return null;
     },
     contactSelectionControl: (chosenContactId) {
-      // Selection control sits below info card, cascades to hero summary.
-      // Chain: infoCard(chosenContact) → selectionControl → heroSummary → handleFilter → heatMap
+      // Selection control sits below the contextual info card and above
+      // the message-scope toggle.
+      // Chain: heroSummary → infoCard(chosenContact)
+      //     → selectionControl → messageScopeToggle
+      //     → handleFilter → heatMap
       return CassetteSpec.contacts(
-        ContactsCassetteSpec.contactHeroSummary(
-          chosenContactId: chosenContactId,
-        ),
+        ContactsCassetteSpec.messageScopeToggle(contactId: chosenContactId),
       );
     },
     contactHeroSummary: (chosenContactId) {
       // Hero summary cascades to the contextual info card.
-      // Chain: heroSummary → infoCard(chosenContact) → messageScopeToggle
+      // Chain: heroSummary → infoCard(chosenContact)
+      //     → contactSelectionControl → messageScopeToggle
       //     → handleFilter → heatMap
       return CassetteSpec.contactsInfo(
         ContactsInfoCassetteSpec.infoCard(

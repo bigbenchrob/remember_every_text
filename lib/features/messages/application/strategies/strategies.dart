@@ -8,3 +8,4 @@ export 'chat_ordinal_strategy.dart';
 export 'contact_ordinal_strategy.dart';
 export 'global_ordinal_strategy.dart';
 export 'ordinal_strategy.dart';
+export 'recovered_list_ordinal_strategy.dart';

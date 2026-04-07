@@ -5,13 +5,15 @@ import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
+import '../../../../essentials/navigation/domain/sidebar_mode.dart';
+import '../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../../essentials/sidebar/feature_level_providers.dart';
-import '../../../../essentials/sidebar/presentation/view/sidebar_cassette_card.dart';
 import '../../application/sidebar_cassette_spec/widget_builders/messages_heatmap_widget.dart';
 import '../../application/view_spec/resolver_tools/recovered_messages_heatmap_data.dart';
-import '../../application/view_spec/resolver_tools/recovered_visible_month_provider.dart';
 import '../../domain/calendar_heatmap_timeline_data.dart';
+import '../../domain/value_objects/message_timeline_scope.dart';
 import '../../infrastructure/repositories/recovered_unlinked_messages_provider.dart';
+import '../view_model/timeline/ordinal/current_visible_month_provider.dart';
 
 class RecoveredMessagesHeatmapSidebar extends ConsumerWidget {
   const RecoveredMessagesHeatmapSidebar({
@@ -28,12 +30,13 @@ class RecoveredMessagesHeatmapSidebar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final typography = ref.watch(themeTypographyProvider);
-    final visibleMonthKey = ref.watch(
-      recoveredVisibleMonthProvider(
-        contactId: contactId,
-        onlyNoHandleFromMe: onlyNoHandleFromMe,
-      ),
+    final timelineScope = MessageTimelineScope.recovered(
+      contactId: contactId,
+      onlyNoHandleFromMe: onlyNoHandleFromMe,
     );
+    final visibleMonthKey = ref
+        .watch(currentVisibleMonthForScopeProvider(scope: timelineScope))
+        .valueOrNull;
     final asyncMessages = ref.watch(
       recoveredUnlinkedMessagesProvider(contactId: contactId),
     );
@@ -42,7 +45,7 @@ class RecoveredMessagesHeatmapSidebar extends ConsumerWidget {
       title: '',
       child: asyncMessages.when(
         data: (messages) {
-          final filteredMessages = _filterRecoveredMessages(
+          final filteredMessages = filterRecoveredTimelineMessages(
             messages: messages,
             onlyNoHandleFromMe: onlyNoHandleFromMe,
           );
@@ -82,16 +85,29 @@ class RecoveredMessagesHeatmapSidebar extends ConsumerWidget {
               final startDate = DateTime(year, month, 1);
               if (onlyNoHandleFromMe) {
                 ref
-                    .read(sidebarFlowProvider.notifier)
-                    .showRecoveredNoHandleFromMe(scrollToDate: startDate);
+                    .read(sidebarActionDispatcherProvider.notifier)
+                    .dispatch(
+                      intent: RecoveredMonthFocused(
+                        monthAnchor: startDate,
+                        onlyNoHandleFromMe: true,
+                      ),
+                      context: const SidebarActionDispatchContext(
+                        sidebarMode: SidebarMode.messages,
+                      ),
+                    );
                 return;
               }
 
               ref
-                  .read(sidebarFlowProvider.notifier)
-                  .showRecoveredDeletedAt(
-                    contactId: contactId,
-                    startDate: startDate,
+                  .read(sidebarActionDispatcherProvider.notifier)
+                  .dispatch(
+                    intent: RecoveredMonthFocused(
+                      contactId: contactId,
+                      monthAnchor: startDate,
+                    ),
+                    context: const SidebarActionDispatchContext(
+                      sidebarMode: SidebarMode.messages,
+                    ),
                   );
             },
           );
@@ -107,21 +123,6 @@ class RecoveredMessagesHeatmapSidebar extends ConsumerWidget {
       ),
     );
   }
-}
-
-List<RecoveredUnlinkedMessageItem> _filterRecoveredMessages({
-  required List<RecoveredUnlinkedMessageItem> messages,
-  required bool onlyNoHandleFromMe,
-}) {
-  if (!onlyNoHandleFromMe) {
-    return messages;
-  }
-
-  return messages
-      .where((message) {
-        return message.isFromMe && message.senderHandleId == null;
-      })
-      .toList(growable: false);
 }
 
 String? _monthKeyFor(DateTime? date) {

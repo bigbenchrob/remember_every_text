@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
@@ -8,7 +9,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../essentials/db/feature_level_providers.dart';
 import '../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import '../../../essentials/logging/application/app_logger.dart';
+import '../domain/entities/attachment_recovery_metadata.dart';
 import 'archive_settings_provider.dart';
+import 'attachment_recovery_hint_storage.dart';
 
 part 'attachment_archive_service_provider.g.dart';
 
@@ -56,6 +59,11 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
             .getSingleOrNull();
 
     if (existing != null) {
+      await _clearRecoveryHint(
+        overlayDb,
+        messageGuid: messageGuid,
+        importAttachmentId: importAttachmentId,
+      );
       return false;
     }
 
@@ -104,7 +112,70 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
           ),
         );
 
+    await _clearRecoveryHint(
+      overlayDb,
+      messageGuid: messageGuid,
+      importAttachmentId: importAttachmentId,
+    );
+
     return true;
+  }
+
+  Future<void> prioritizeRecovery({
+    required String messageGuid,
+    required int importAttachmentId,
+    required String? resolvedLocalPath,
+    required String? mimeType,
+  }) async {
+    final settings = await ref.read(archiveSettingsProvider.future);
+    if (!settings.isEnabled) {
+      return;
+    }
+
+    final overlayDb = await ref.read(overlayDatabaseProvider.future);
+    final hintKey = attachmentRecoveryHintSettingKey(
+      messageGuid: messageGuid,
+      importAttachmentId: importAttachmentId,
+    );
+    final existingHint = decodeAttachmentRecoveryHint(
+      await overlayDb.readOverlaySetting(hintKey),
+    );
+    final now = DateTime.now().toUtc();
+    final currentPriority = existingHint?.recoveryPriority ?? 0;
+
+    final prioritizedHint = AttachmentRecoveryMetadata(
+      lastRecoveryAttemptAt: existingHint?.lastRecoveryAttemptAt,
+      nextRecoveryAttemptAt: now,
+      recoveryAttemptCount: existingHint?.recoveryAttemptCount ?? 0,
+      recoveryPriority: currentPriority >= 10 ? currentPriority : 10,
+      userInterestRaisedAt: now,
+      lastRecoveryErrorSummary: existingHint?.lastRecoveryErrorSummary,
+      isNonRecoverable: existingHint?.isNonRecoverable ?? false,
+    );
+
+    await overlayDb.writeOverlaySetting(
+      settingKey: hintKey,
+      settingValue: encodeAttachmentRecoveryHint(prioritizedHint),
+    );
+
+    if (resolvedLocalPath == null || resolvedLocalPath.isEmpty) {
+      return;
+    }
+
+    final sourceFile = File(resolvedLocalPath);
+    if (!sourceFile.existsSync()) {
+      return;
+    }
+
+    unawaited(
+      archiveAttachment(
+        messageGuid: messageGuid,
+        importAttachmentId: importAttachmentId,
+        resolvedLocalPath: resolvedLocalPath,
+        mimeType: mimeType,
+        sha256Hex: null,
+      ),
+    );
   }
 
   /// Archive all locally available attachments from the working DB.
@@ -338,6 +409,20 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     } on Exception {
       return null;
     }
+  }
+
+  Future<void> _clearRecoveryHint(
+    OverlayDatabase overlayDb, {
+    required String messageGuid,
+    required int importAttachmentId,
+  }) async {
+    final hintKey = attachmentRecoveryHintSettingKey(
+      messageGuid: messageGuid,
+      importAttachmentId: importAttachmentId,
+    );
+    await (overlayDb.delete(
+      overlayDb.overlaySettings,
+    )..where((tbl) => tbl.key.equals(hintKey))).go();
   }
 }
 

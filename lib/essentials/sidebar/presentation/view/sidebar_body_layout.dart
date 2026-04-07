@@ -8,14 +8,20 @@ class SidebarConstrainedContent extends StatelessWidget {
     required this.child,
     required this.geometry,
     required this.contentAlignment,
-    this.bodyRenderKind = SidebarBodyRenderKind.governedPrimitive,
     super.key,
-  });
+  }) : _shouldClip = false;
+
+  const SidebarConstrainedContent.placementGoverned({
+    required this.child,
+    required this.geometry,
+    required this.contentAlignment,
+    super.key,
+  }) : _shouldClip = true;
 
   final Widget child;
   final SidebarGeometryConstraints geometry;
   final SidebarBodyContentAlignment contentAlignment;
-  final SidebarBodyRenderKind bodyRenderKind;
+  final bool _shouldClip;
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +63,7 @@ class SidebarConstrainedContent extends StatelessWidget {
       ),
     };
 
-    if (bodyRenderKind == SidebarBodyRenderKind.featureComplex) {
+    if (_shouldClip) {
       return ClipRect(child: positionedChild);
     }
 
@@ -69,13 +75,22 @@ Widget buildSidebarBodyContent({
   required Widget child,
   required SidebarGeometryConstraints geometry,
   required SidebarBodyContentAlignment contentAlignment,
-  SidebarBodyRenderKind bodyRenderKind =
-      SidebarBodyRenderKind.governedPrimitive,
 }) {
   return SidebarConstrainedContent(
     geometry: geometry,
     contentAlignment: contentAlignment,
-    bodyRenderKind: bodyRenderKind,
+    child: child,
+  );
+}
+
+Widget buildPlacementGovernedSidebarBodyContent({
+  required Widget child,
+  required SidebarGeometryConstraints geometry,
+  required SidebarBodyContentAlignment contentAlignment,
+}) {
+  return SidebarConstrainedContent.placementGoverned(
+    geometry: geometry,
+    contentAlignment: contentAlignment,
     child: child,
   );
 }

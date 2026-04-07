@@ -1,0 +1,197 @@
+ARCHIVE-CANONICAL ATTACHMENT RENDERING
+Design Summary for MessageLens
+
+⸻
+
+Purpose
+
+Simplify attachment handling by making the MessageLens archive the canonical source of truth for rendering attachments when archive mode is enabled.
+
+This eliminates the complexity and instability caused by relying on Apple’s volatile ~/Library/Messages/Attachments folder at runtime.
+
+⸻
+
+Core Insight
+
+The Messages Attachments folder is:
+	•	a cache
+	•	mutable
+	•	subject to iCloud eviction
+	•	subject to path churn
+
+The MessageLens archive is:
+	•	durable
+	•	app-controlled
+	•	stable
+	•	content-addressable
+
+Therefore:
+
+When archive mode is enabled, MessageLens should render attachments from its archive, not from Apple’s cache.
+
+⸻
+
+High-Level Model
+
+Two distinct roles:
+	1.	Messages Attachments Folder
+→ ingestion source only
+	2.	MessageLens Archive
+→ canonical render source (when enabled)
+
+⸻
+
+Modes of Operation
+
+Mode 1 — Archive Disabled
+	•	Render attachments directly from:
+~/Library/Messages/Attachments
+	•	If file is missing → show cloud-only / unavailable state
+	•	No archive involvement
+
+⸻
+
+Mode 2 — Archive Enabled (Archive-Canonical Mode)
+	•	Render attachments from MessageLens archive
+	•	Live Messages folder is used only to ingest new files
+	•	Archive becomes the authoritative source for display
+
+⸻
+
+Rendering Algorithm (Archive Mode)
+
+For each attachment:
+	1.	Check archive
+	•	If archived file exists → render from archive
+	2.	If not archived:
+	•	Check live Messages path
+	•	If file exists:
+	•	ingest (archive) it immediately
+	•	render from archive
+	3.	If neither exists:
+	•	show cloud-only / unavailable state
+
+⸻
+
+Key Rule
+
+In archive-enabled mode, the archive is the canonical attachment source. The Messages Attachments folder is not a peer render source; it is an ingestion source only.
+
+⸻
+
+Ingestion Behavior
+
+Archive must remain living and continuously updated.
+
+Required behaviors:
+	•	Archive all available attachments during onboarding/import
+	•	Continue archiving during normal use:
+	•	newly received attachments
+	•	attachments re-downloaded from iCloud via Messages
+	•	Ensure no attachment remains permanently “live-only”
+
+Acceptable implementation approaches:
+	•	Post-migration archive pass (archiveAllAvailable)
+	•	On-demand archiving when resolving a live file
+	•	Periodic or incremental ingestion (future enhancement)
+
+⸻
+
+Benefits
+
+1. Eliminates Split-Brain Complexity
+
+No need to reconcile:
+	•	live file vs archived file
+	•	path changes
+	•	partial availability
+
+⸻
+
+2. Immunity to iCloud Eviction
+
+Once archived:
+	•	file remains available regardless of Apple’s storage decisions
+
+⸻
+
+3. Simplified Resolver Logic
+
+Instead of multi-source branching:
+	•	archive-first, with ingestion fallback
+
+⸻
+
+4. Stable Paths
+
+Archive paths:
+	•	content-addressable
+	•	never change
+	•	independent of Apple’s GUID directory structure
+
+⸻
+
+5. Clear Product Story
+
+“MessageLens keeps its own copy of your attachments so they remain available even if macOS removes them.”
+
+⸻
+
+Required Guarantees
+
+When archive mode is enabled:
+	•	Attachments must not “disappear” after being shown once
+	•	Any locally available attachment must eventually be archived
+	•	Rendering must not depend on Apple’s attachment paths after ingestion
+
+⸻
+
+Subtle but Critical Rule
+
+Do NOT enforce:
+
+“Never look at Messages folder”
+
+Instead enforce:
+
+“Use Messages folder only to ingest missing archive entries”
+
+This avoids:
+	•	blank UI during ingestion gaps
+	•	race conditions after iCloud download
+
+⸻
+
+Provenance (Internal)
+
+Even with archive-canonical rendering, track:
+	•	messagesLive (ingested from Messages)
+	•	archived (standard archive)
+	•	imported_historical_snapshot (recovered from backup)
+
+This is for diagnostics and internal clarity, not user-facing complexity.
+
+⸻
+
+Non-Goals
+	•	Real-time filesystem watching (deferred)
+	•	Immediate ingestion guarantees (not required initially)
+	•	Eliminating live-path checks entirely (only demoting them)
+
+⸻
+
+Architectural Rule (Final)
+
+In archive-enabled mode, MessageLens must treat its archive as the canonical source for attachment rendering. The Messages Attachments folder is used solely as an ingestion source. If an attachment is locally available but not yet archived, MessageLens must archive it before rendering.
+
+⸻
+
+Outcome
+
+This design transforms MessageLens from:
+
+“Viewer of Apple’s attachment cache”
+
+into:
+
+“Durable, user-controlled attachment system independent of iCloud behavior”

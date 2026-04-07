@@ -1,0 +1,255 @@
+MESSAGE TIMELINE MEDIA ACTIVATION — PRODUCT + ARCHITECTURE DIRECTIVE
+
+Purpose
+
+This directive reframes the contact-timeline inertial-scroll freeze as both:
+	•	a hot-path architecture issue, and
+	•	a product decision about when expensive media behavior should activate
+
+The goal is not merely to make the current system faster.
+
+The goal is to:
+
+remove unnecessary work from the scroll hot path while preserving correct message semantics and user clarity.
+
+⸻
+
+Core Principle
+
+The timeline must optimize for recognition during scrolling, not full interaction readiness.
+
+Most messages encountered during scrolling will not be interacted with.
+
+Therefore:
+	•	recognition must be cheap and immediate
+	•	rich interaction must be explicit and on-demand
+
+⸻
+
+Key Product Decision
+
+The timeline should not eagerly activate heavyweight media behavior simply because a row enters the viewport.
+
+Instead:
+
+Expensive media activation must be gated by explicit user intent or stable on-screen presence, not transient visibility during inertial scroll.
+
+⸻
+
+Scope of This Directive
+
+This applies to:
+	•	video attachments
+	•	URL previews
+	•	any attachment type that requires non-trivial setup (controllers, decoding, metadata fetching, etc.)
+
+It does not change:
+	•	message semantics
+	•	message identity
+	•	which rows exist in the timeline
+	•	database access patterns
+
+⸻
+
+1. Video Handling (Primary Target)
+
+Current Problem
+
+Video rows likely trigger:
+	•	file resolution
+	•	media availability checks
+	•	VideoPlayerController initialization
+
+…during inertial scroll churn.
+
+This is strongly suspected to contribute to the freeze.  ￼
+
+⸻
+
+Required Behavior
+
+Default timeline state
+
+A video message row must display:
+	•	a thumbnail / poster frame (if cheaply available)
+	•	a clear video affordance (play icon, duration, etc.)
+	•	correct grouping, sender, timestamp, and message semantics
+
+Prohibited on default render
+
+Do NOT:
+	•	instantiate VideoPlayerController
+	•	prepare playback automatically
+	•	perform heavy media initialization on row entry into viewport
+
+⸻
+
+Activation behavior
+
+Only when the user explicitly interacts:
+	•	tap on row or play button
+
+Then:
+	•	initialize the video controller
+	•	transition into playback-capable UI
+
+⸻
+
+Acceptable trade-off
+	•	slight delay when starting playback: acceptable
+	•	freezing the timeline during scroll: not acceptable
+
+⸻
+
+2. URL Preview Handling
+
+Goal
+
+Maintain recognizability while avoiding unnecessary work.
+
+⸻
+
+Default timeline state
+
+A link preview row should display:
+	•	domain / host
+	•	title (if already cheaply available)
+	•	minimal preview shell
+
+Optional:
+	•	thumbnail only if already cached or trivial to load
+
+⸻
+
+Prohibited on hot path
+
+Do NOT:
+	•	trigger expensive metadata fetches during scroll
+	•	perform heavy preview rendering logic for transient rows
+	•	block row rendering on full preview resolution
+
+⸻
+
+Progressive enhancement
+
+Richer preview content may load:
+	•	after the row is stably visible
+	•	if cached
+	•	or on user interaction
+
+⸻
+
+3. Row Pipeline Clarification
+
+The row system must be treated as three layers:
+
+Layer A — Semantic Row Shell (must be cheap)
+
+Provides:
+	•	message identity
+	•	grouping fields
+	•	timestamps
+	•	text
+	•	attachment presence/type
+
+This must always render immediately and cheaply.
+
+⸻
+
+Layer B — Lightweight Enrichment
+
+Provides:
+	•	attachment availability classification
+	•	simple metadata
+	•	cached thumbnails if trivial
+
+Must remain safe under moderate churn.
+
+⸻
+
+Layer C — Heavy Activation
+
+Includes:
+	•	video controller creation
+	•	expensive media setup
+	•	rich preview expansion
+
+This must NOT be triggered by transient viewport entry.
+
+⸻
+
+4. Architectural Rule
+
+The viewport may cause row discovery, but it must not cause full activation.
+
+This is the central correction.
+
+⸻
+
+5. What Must NOT Be Done
+
+Do NOT:
+	•	reintroduce scroll suppression
+	•	render blank placeholder rows
+	•	hide real messages during scroll
+	•	degrade message identity to avoid cost
+	•	introduce view-layer hacks that mask deeper issues
+
+These are explicitly rejected in the freeze analysis.  ￼
+
+⸻
+
+6. What MUST Be Preserved
+	•	every message row remains visible and identifiable
+	•	attachment presence is always reflected
+	•	timeline semantics remain correct
+	•	attachment provenance (live/archive) does not change message meaning  ￼
+
+⸻
+
+7. Investigation Requirement
+
+Before implementing changes, confirm with instrumentation:
+	•	how often video controllers are created during a fling
+	•	how often attachment resolution runs per row during churn
+	•	whether the same rows are re-initialized repeatedly
+	•	whether media setup correlates with freeze onset
+
+This is required to validate that the change targets the real bottleneck.  ￼
+
+⸻
+
+8. Success Criteria
+
+The change is successful when:
+
+Runtime behavior
+	•	inertial scroll no longer freezes the UI
+	•	sidebar remains responsive during and after flings
+	•	rows remain visually stable and recognizable
+
+Architectural behavior
+	•	row shell remains cheap
+	•	heavy media work is no longer on the fling hot path
+	•	no suppression or placeholder hacks are required
+
+Product behavior
+	•	users can still clearly identify video and link messages
+	•	users can access full functionality on demand
+	•	perceived responsiveness improves
+
+⸻
+
+9. Final Directive
+
+Do not treat this as a micro-optimization.
+
+Treat it as a correction to the product/architecture contract:
+
+The timeline is a browsing surface, not a pre-initialized playback surface.
+
+Remove unnecessary speculative work.
+
+Preserve meaning.
+
+Activate complexity only when the user asks for it.

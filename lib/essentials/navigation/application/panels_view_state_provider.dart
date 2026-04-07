@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../logging/application/app_logger.dart';
 import '../domain/entities/panel_stack.dart';
 import '../domain/entities/view_spec.dart';
 import '../domain/navigation_constants.dart';
@@ -30,6 +31,18 @@ class PanelsViewState extends _$PanelsViewState {
       title: _defaultTitleFor(spec),
       isClosable: false,
     );
+    ref
+        .read(appLoggerProvider.notifier)
+        .debug(
+          'Show panel page',
+          source: 'PanelsViewState',
+          context: {
+            'mode': mode.name,
+            'panel': panel.name,
+            'pageId': page.id,
+            'spec': '$spec',
+          },
+        );
     state = _withUpdatedPanel(
       panel: panel,
       stack: PanelStack(pages: <PanelPage>[page]),
@@ -89,6 +102,18 @@ class PanelsViewState extends _$PanelsViewState {
 
   // Clear the panel, setting it to empty.
   void clear({required WindowPanel panel}) {
+    final activeSpec = state[panel]?.activePage?.spec;
+    ref
+        .read(appLoggerProvider.notifier)
+        .debug(
+          'Clear panel stack',
+          source: 'PanelsViewState',
+          context: {
+            'mode': mode.name,
+            'panel': panel.name,
+            'activeSpec': '$activeSpec',
+          },
+        );
     state = _withUpdatedPanel(panel: panel, stack: const PanelStack.empty());
   }
 

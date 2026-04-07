@@ -1,7 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
-import '../../../presentation/settings/manual_linking_view.dart';
+import '../payloads/manual_linking_cassette_payload.dart';
 
 part 'manual_linking_resolver.g.dart';
 
@@ -16,15 +15,7 @@ class ManualLinkingResolver extends _$ManualLinkingResolver {
   }
 
   /// Resolve into a sidebar cassette view model.
-  Future<SidebarCassetteCardViewModel> resolve() async {
-    return const SidebarCassetteCardViewModel(
-      role: SidebarCassetteRole.action,
-      placementMode: SidebarBodyPlacementMode.inset,
-      title: 'Manual Linking',
-      subtitle:
-          'Link unknown handles to contacts when automatic matching fails.',
-      shouldExpand: true,
-      child: ManualLinkingView(),
-    );
+  Future<ManualLinkingCassettePayload> resolve() async {
+    return const ManualLinkingCassettePayload();
   }
 }

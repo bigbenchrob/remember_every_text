@@ -42,7 +42,6 @@ Stream<List<MessageListItem>> messagesForHandle(
 }) async* {
   final db = await ref.watch(driftWorkingDatabaseProvider.future);
   final overlayDb = await ref.watch(overlayDatabaseProvider.future);
-  final archiveDir = ref.watch(attachmentArchiveDirectoryProvider);
   final nameOverrides = await displayNameOverridesMap(overlayDb);
 
   DateTime? parseUtc(String? value) {
@@ -111,10 +110,9 @@ Stream<List<MessageListItem>> messagesForHandle(
           : <AttachmentInfo>[];
       final attachments = rawAttachments.isEmpty
           ? rawAttachments
-          : await resolveArchivePaths(
+          : await resolveAttachmentsForDisplay(
+              ref: ref,
               attachments: rawAttachments,
-              overlayDb: overlayDb,
-              archiveDir: archiveDir,
             );
 
       items.add(

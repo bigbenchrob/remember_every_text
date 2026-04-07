@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -7,6 +8,10 @@ import 'package:video_player/video_player.dart';
 
 import '../../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../../essentials/debug/application/developer_mode_provider.dart';
+import '../../../../../attachments/application/attachment_archive_service_provider.dart';
+import '../../../../../attachments/domain/constants/resolved_attachment_availability.dart';
+import '../../../../../attachments/infrastructure/services/video_thumbnail_cache_service.dart';
+import '../../../debug/contact_timeline_scroll_probe.dart';
 import '../hydration/attachment_info.dart';
 
 // ignore: avoid_classes_with_only_static_members
@@ -565,61 +570,129 @@ class TextMessageTile extends ConsumerWidget {
 /// - **missing**: No local path was ever recorded for this attachment.
 class _MediaUnavailablePlaceholder extends ConsumerWidget {
   const _MediaUnavailablePlaceholder({
-    required this.isCloudOnly,
+    required this.hasLocalReference,
     required this.mediaLabel,
+    this.onPrioritizeRecoveryTap,
+    this.cardKey,
+    this.availability,
   });
 
-  /// `true` when the attachment record has a local path but the file is
-  /// not present on disk (i.e. evicted to iCloud). `false` when no local
-  /// path exists at all.
-  final bool isCloudOnly;
+  final bool hasLocalReference;
 
   /// Human label for the media type — "Image" or "Video".
   final String mediaLabel;
+  final VoidCallback? onPrioritizeRecoveryTap;
+  final Key? cardKey;
+  final ResolvedAttachmentAvailability? availability;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
 
-    final icon = isCloudOnly
+    final isPendingArchive =
+        availability == ResolvedAttachmentAvailability.pendingArchive;
+    final isCloudOnly = availability == null
+        ? hasLocalReference
+        : availability ==
+                  ResolvedAttachmentAvailability.unavailableAwaitingRecovery &&
+              hasLocalReference;
+
+    final icon = isPendingArchive
+        ? Icons.archive_outlined
+        : isCloudOnly
         ? Icons.cloud_outlined
         : Icons.broken_image_outlined;
-    final message = isCloudOnly
+    final label = isPendingArchive
+        ? '$mediaLabel being archived'
+        : isCloudOnly
+        ? '$mediaLabel in iCloud'
+        : availability ==
+              ResolvedAttachmentAvailability.unavailableAwaitingRecovery
+        ? '$mediaLabel awaiting recovery'
+        : '$mediaLabel unavailable';
+    final tooltipMessage = isPendingArchive
+        ? '$mediaLabel being added to the archive'
+        : isCloudOnly
         ? '$mediaLabel stored in iCloud\u2009—\u2009not downloaded to this Mac'
+        : availability ==
+              ResolvedAttachmentAvailability.unavailableAwaitingRecovery
+        ? '$mediaLabel awaiting recovery'
         : '$mediaLabel not available';
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 28, color: colors.content.iconSecondary),
-            const SizedBox(height: 6),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 11,
-                color: colors.content.textTertiary,
+    return Tooltip(
+      message: tooltipMessage,
+      waitDuration: const Duration(milliseconds: 300),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        widthFactor: 1,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 240),
+          child: DecoratedBox(
+            key: cardKey,
+            decoration: BoxDecoration(
+              color: colors.surfaces.surface,
+              borderRadius: MsgTheme.mediaRadius,
+              border: Border.all(color: colors.lines.borderSubtle),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(icon, size: 15, color: colors.content.iconSecondary),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          label,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11,
+                            height: 1.15,
+                            fontWeight: FontWeight.w600,
+                            color: colors.content.textTertiary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (!isPendingArchive && onPrioritizeRecoveryTap != null) ...[
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: onPrioritizeRecoveryTap,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: colors.surfaces.surface.withValues(
+                            alpha: 0.68,
+                          ),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          child: Text(
+                            'Prioritize recovery',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: colors.accents.primary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
-            if (isCloudOnly) ...[
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: () => Process.run('open', ['-a', 'Messages']),
-                child: Text(
-                  'Open in Messages',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: colors.accents.primary,
-                  ),
-                ),
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );
@@ -650,9 +723,18 @@ class ImageMessageTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final file = attachment.bestAvailableFile();
+    ContactTimelineScrollProbe.count('media.image.build');
+    final file = attachment.displayableFile();
     final exists = file != null;
+    ContactTimelineScrollProbe.count(
+      exists ? 'media.image.available' : 'media.image.unavailable',
+    );
     final aspectRatio = attachment.aspectRatio ?? 4 / 3;
+    final canPrioritizeRecovery =
+        attachment.messageGuid != null &&
+        attachment.importAttachmentId != null &&
+        attachment.availability !=
+            ResolvedAttachmentAvailability.pendingArchive;
 
     return MessageShell(
       isMe: isMe,
@@ -675,31 +757,48 @@ class ImageMessageTile extends ConsumerWidget {
           _alignMediaForLayout(
             layout: layout,
             isMe: isMe,
-            child: ClipRRect(
-              borderRadius: MsgTheme.mediaRadius,
-              child: _IntrinsicSizedMedia(
-                child: AspectRatio(
-                  aspectRatio: aspectRatio,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      const ColoredBox(color: Colors.black12),
-                      if (exists)
-                        Image.file(
-                          file,
-                          fit: BoxFit.cover,
-                          filterQuality: FilterQuality.medium,
-                        )
-                      else
-                        _MediaUnavailablePlaceholder(
-                          isCloudOnly: attachment.hasLocalFile,
-                          mediaLabel: 'Image',
+            child: exists
+                ? ClipRRect(
+                    borderRadius: MsgTheme.mediaRadius,
+                    child: _IntrinsicSizedMedia(
+                      child: AspectRatio(
+                        aspectRatio: aspectRatio,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            const ColoredBox(color: Colors.black12),
+                            Image.file(
+                              file,
+                              fit: BoxFit.cover,
+                              filterQuality: FilterQuality.medium,
+                            ),
+                          ],
                         ),
-                    ],
+                      ),
+                    ),
+                  )
+                : _MediaUnavailablePlaceholder(
+                    availability: attachment.availability,
+                    hasLocalReference: attachment.hasLocalFile,
+                    cardKey: const ValueKey<String>(
+                      'unavailable-media-card-Image',
+                    ),
+                    mediaLabel: 'Image',
+                    onPrioritizeRecoveryTap: canPrioritizeRecovery
+                        ? () {
+                            ref
+                                .read(attachmentArchiveServiceProvider.notifier)
+                                .prioritizeRecovery(
+                                  messageGuid: attachment.messageGuid!,
+                                  importAttachmentId:
+                                      attachment.importAttachmentId!,
+                                  resolvedLocalPath: attachment
+                                      .resolvedLocalPath(),
+                                  mimeType: attachment.mimeType,
+                                );
+                          }
+                        : null,
                   ),
-                ),
-              ),
-            ),
           ),
           if (captionText != null) ...[
             MsgTheme.gapMD,
@@ -743,52 +842,267 @@ class VideoMessageTile extends ConsumerStatefulWidget {
 }
 
 class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
+  static const _thumbnailEnrichmentDelay = Duration(milliseconds: 350);
+
   VideoPlayerController? _controller;
   bool _ready = false;
+  bool _isActivating = false;
+  bool _activationFailed = false;
+  Timer? _thumbnailEnrichmentTimer;
+  File? _thumbnailFile;
+  String? _thumbnailSourcePath;
+  int _thumbnailRequestGeneration = 0;
+  int _activationGeneration = 0;
+  double? _resolvedAspectRatio;
 
   @override
   void initState() {
     super.initState();
-    final file = widget.attachment.bestAvailableFile();
-    if (file == null) {
+    _scheduleThumbnailEnrichment();
+  }
+
+  @override
+  void didUpdateWidget(covariant VideoMessageTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    final previousVideoPath = oldWidget.attachment.displayableFile()?.path;
+    final currentVideoPath = widget.attachment.displayableFile()?.path;
+    if (previousVideoPath == currentVideoPath) {
+      if (_thumbnailFile == null && currentVideoPath != null) {
+        _scheduleThumbnailEnrichment();
+      }
       return;
     }
-    _controller = VideoPlayerController.file(file)
-      ..setLooping(true)
-      ..initialize().then((_) {
-        if (!mounted) {
-          return;
-        }
-        setState(() {
-          _ready = true;
-        });
-      });
+
+    _thumbnailEnrichmentTimer?.cancel();
+    _thumbnailEnrichmentTimer = null;
+    _thumbnailFile = null;
+    _thumbnailSourcePath = null;
+    _thumbnailRequestGeneration++;
+    _activationGeneration++;
+    _disposeActiveController();
+    _ready = false;
+    _isActivating = false;
+    _activationFailed = false;
+    _resolvedAspectRatio = null;
+    _scheduleThumbnailEnrichment();
   }
 
   @override
   void dispose() {
-    _controller?.dispose();
+    _thumbnailEnrichmentTimer?.cancel();
+    _disposeActiveController();
     super.dispose();
   }
 
-  void _toggle() {
-    if (_controller == null || !_ready) {
+  void _disposeActiveController() {
+    final controller = _controller;
+    _controller = null;
+    if (controller == null) {
       return;
     }
-    if (_controller!.value.isPlaying) {
-      _controller!.pause();
-    } else {
-      _controller!.play();
+
+    unawaited(() async {
+      try {
+        if (controller.value.isPlaying) {
+          await controller.pause();
+        }
+      } catch (_) {}
+
+      try {
+        await controller.dispose();
+      } catch (_) {}
+    }());
+  }
+
+  double _effectiveAspectRatio() {
+    final resolvedAspectRatio = _resolvedAspectRatio;
+    if (resolvedAspectRatio != null &&
+        resolvedAspectRatio.isFinite &&
+        resolvedAspectRatio > 0) {
+      return resolvedAspectRatio;
     }
-    setState(() {});
+
+    final attachmentAspectRatio = widget.attachment.aspectRatio;
+    if (attachmentAspectRatio != null &&
+        attachmentAspectRatio.isFinite &&
+        attachmentAspectRatio > 0) {
+      return attachmentAspectRatio;
+    }
+
+    return 16 / 9;
+  }
+
+  void _scheduleThumbnailEnrichment() {
+    if (_controller != null) {
+      return;
+    }
+
+    final videoFile = widget.attachment.displayableFile();
+    if (videoFile == null) {
+      return;
+    }
+    if (_thumbnailFile != null && _thumbnailSourcePath == videoFile.path) {
+      return;
+    }
+    if (_thumbnailEnrichmentTimer != null) {
+      return;
+    }
+
+    ContactTimelineScrollProbe.count('media.video.thumbnail.schedule');
+    _thumbnailEnrichmentTimer = Timer(_thumbnailEnrichmentDelay, () {
+      _thumbnailEnrichmentTimer = null;
+      unawaited(_loadThumbnail(videoFile));
+    });
+  }
+
+  Future<void> _loadThumbnail(File videoFile) async {
+    if (_controller != null) {
+      return;
+    }
+
+    final requestGeneration = ++_thumbnailRequestGeneration;
+    final thumbnailService = ref.read(videoThumbnailCacheServiceProvider);
+
+    try {
+      final thumbnailFile = await ContactTimelineScrollProbe.traceAsync(
+        'media.video.thumbnail.resolve',
+        () => thumbnailService.getOrCreateThumbnail(videoPath: videoFile.path),
+      );
+      if (!mounted || requestGeneration != _thumbnailRequestGeneration) {
+        return;
+      }
+
+      if (thumbnailFile != null) {
+        ContactTimelineScrollProbe.count('media.video.thumbnail.ready');
+      } else {
+        ContactTimelineScrollProbe.count('media.video.thumbnail.miss');
+      }
+
+      setState(() {
+        _thumbnailFile = thumbnailFile;
+        _thumbnailSourcePath = videoFile.path;
+      });
+    } catch (_) {
+      ContactTimelineScrollProbe.count('media.video.thumbnail.failed');
+      if (!mounted || requestGeneration != _thumbnailRequestGeneration) {
+        return;
+      }
+
+      setState(() {
+        _thumbnailFile = null;
+        _thumbnailSourcePath = videoFile.path;
+      });
+    }
+  }
+
+  Future<void> _toggle() async {
+    final controller = _controller;
+    if (controller == null || !_ready) {
+      return;
+    }
+
+    if (controller.value.isPlaying) {
+      await controller.pause();
+    } else {
+      await controller.play();
+    }
+  }
+
+  Future<void> _activateVideo({required bool autoplay}) async {
+    final existingController = _controller;
+    if (existingController != null) {
+      if (autoplay && _ready && !existingController.value.isPlaying) {
+        await existingController.play();
+        if (!mounted) {
+          return;
+        }
+        setState(() {});
+      }
+      return;
+    }
+
+    if (_isActivating) {
+      return;
+    }
+
+    final file = widget.attachment.displayableFile();
+    if (file == null) {
+      ContactTimelineScrollProbe.count('media.video.unavailable');
+      return;
+    }
+
+    ContactTimelineScrollProbe.count('media.video.activation_request');
+    setState(() {
+      _isActivating = true;
+      _activationFailed = false;
+    });
+    _thumbnailEnrichmentTimer?.cancel();
+    _thumbnailEnrichmentTimer = null;
+    _thumbnailRequestGeneration++;
+    final activationGeneration = ++_activationGeneration;
+
+    final controller = ContactTimelineScrollProbe.traceSync(
+      'media.video.controller_create',
+      () => VideoPlayerController.file(file),
+    );
+
+    try {
+      await ContactTimelineScrollProbe.traceAsync(
+        'media.video.initialize',
+        controller.initialize,
+      );
+
+      if (!mounted || activationGeneration != _activationGeneration) {
+        await controller.dispose();
+        return;
+      }
+
+      final controllerAspectRatio = controller.value.aspectRatio;
+
+      _controller = controller;
+
+      setState(() {
+        _ready = true;
+        _isActivating = false;
+        if (controllerAspectRatio.isFinite && controllerAspectRatio > 0) {
+          _resolvedAspectRatio = controllerAspectRatio;
+        }
+      });
+
+      if (autoplay) {
+        await controller.play();
+        if (!mounted || activationGeneration != _activationGeneration) {
+          return;
+        }
+      }
+    } catch (_) {
+      await controller.dispose();
+      ContactTimelineScrollProbe.count('media.video.activation_failed');
+      if (!mounted || activationGeneration != _activationGeneration) {
+        return;
+      }
+      setState(() {
+        _ready = false;
+        _isActivating = false;
+        _activationFailed = true;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    ContactTimelineScrollProbe.count('media.video.build');
     ref.watch(themeColorsProvider);
-    final colors = ref.read(themeColorsProvider.notifier);
-    final aspectRatio = widget.attachment.aspectRatio ?? 16 / 9;
-    final hasVideo = _controller != null;
+    final aspectRatio = _effectiveAspectRatio();
+    final file = widget.attachment.displayableFile();
+    final hasPlayableVideo = file != null;
+    final hasVideoController = _controller != null;
+    final canPrioritizeRecovery =
+        widget.attachment.messageGuid != null &&
+        widget.attachment.importAttachmentId != null &&
+        widget.attachment.availability !=
+            ResolvedAttachmentAvailability.pendingArchive;
 
     return MessageShell(
       isMe: widget.isMe,
@@ -811,87 +1125,47 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
           _alignMediaForLayout(
             layout: widget.layout,
             isMe: widget.isMe,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: colors.surfaces.surface,
-                borderRadius: MsgTheme.mediaRadius,
-                border: Border.all(color: colors.lines.borderSubtle),
-              ),
-              child: ClipRRect(
-                borderRadius: MsgTheme.mediaRadius,
-                child: _IntrinsicSizedMedia(
-                  child: AspectRatio(
-                    aspectRatio: aspectRatio,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      alignment: Alignment.center,
-                      children: [
-                        const ColoredBox(color: Colors.black26),
-                        if (hasVideo && _ready)
-                          VideoPlayer(_controller!)
-                        else if (hasVideo)
-                          const Center(
-                            child: SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          )
-                        else
-                          _MediaUnavailablePlaceholder(
-                            isCloudOnly: widget.attachment.hasLocalFile,
-                            mediaLabel: 'Video',
-                          ),
-                        if (hasVideo)
-                          Positioned.fill(
-                            child: Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                onTap: _toggle,
-                                child: AnimatedOpacity(
-                                  duration: const Duration(milliseconds: 180),
-                                  opacity: _controller!.value.isPlaying
-                                      ? 0.0
-                                      : 1.0,
-                                  child: DecoratedBox(
-                                    decoration: const BoxDecoration(
-                                      color: Colors.black45,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(10),
-                                      child: Icon(
-                                        _controller!.value.isPlaying
-                                            ? Icons.pause
-                                            : Icons.play_arrow,
-                                        color: Colors.white,
-                                        size: 22,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        if (hasVideo && _ready)
-                          Positioned(
-                            right: 0,
-                            bottom: 0,
-                            child: VideoProgressIndicator(
-                              _controller!,
-                              allowScrubbing: true,
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 6,
-                                horizontal: 8,
-                              ),
-                            ),
-                          ),
-                      ],
+            child: hasPlayableVideo
+                ? hasVideoController
+                      ? _ActivatedVideoPlayer(
+                          controller: _controller!,
+                          aspectRatio: aspectRatio,
+                          isReady: _ready,
+                          onTogglePlayback: _toggle,
+                        )
+                      : VideoActivationShell(
+                          aspectRatio: aspectRatio,
+                          isActivating: _isActivating,
+                          activationFailed: _activationFailed,
+                          thumbnailFile: _thumbnailFile,
+                          onActivate: _isActivating
+                              ? null
+                              : () {
+                                  unawaited(_activateVideo(autoplay: true));
+                                },
+                        )
+                : _MediaUnavailablePlaceholder(
+                    availability: widget.attachment.availability,
+                    hasLocalReference: widget.attachment.hasLocalFile,
+                    cardKey: const ValueKey<String>(
+                      'unavailable-media-card-Video',
                     ),
+                    mediaLabel: 'Video',
+                    onPrioritizeRecoveryTap: canPrioritizeRecovery
+                        ? () {
+                            ref
+                                .read(attachmentArchiveServiceProvider.notifier)
+                                .prioritizeRecovery(
+                                  messageGuid: widget.attachment.messageGuid!,
+                                  importAttachmentId:
+                                      widget.attachment.importAttachmentId!,
+                                  resolvedLocalPath: widget.attachment
+                                      .resolvedLocalPath(),
+                                  mimeType: widget.attachment.mimeType,
+                                );
+                          }
+                        : null,
                   ),
-                ),
-              ),
-            ),
           ),
           if (widget.captionText != null) ...[
             MsgTheme.gapMD,
@@ -903,6 +1177,313 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _ActivatedVideoPlayer extends ConsumerWidget {
+  const _ActivatedVideoPlayer({
+    required this.controller,
+    required this.aspectRatio,
+    required this.isReady,
+    required this.onTogglePlayback,
+  });
+
+  final VideoPlayerController controller;
+  final double aspectRatio;
+  final bool isReady;
+  final Future<void> Function() onTogglePlayback;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.surfaces.surface,
+        borderRadius: MsgTheme.mediaRadius,
+        border: Border.all(color: colors.lines.borderSubtle),
+      ),
+      child: ClipRRect(
+        borderRadius: MsgTheme.mediaRadius,
+        child: _IntrinsicSizedMedia(
+          child: ValueListenableBuilder<VideoPlayerValue>(
+            valueListenable: controller,
+            builder: (context, value, child) {
+              final playerAspectRatio =
+                  value.isInitialized &&
+                      value.aspectRatio.isFinite &&
+                      value.aspectRatio > 0
+                  ? value.aspectRatio
+                  : aspectRatio;
+              final isPlaying = value.isPlaying;
+
+              return AspectRatio(
+                aspectRatio: playerAspectRatio,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    const ColoredBox(color: Colors.black),
+                    if (isReady)
+                      child!
+                    else
+                      const Center(
+                        child: SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                    Positioned.fill(
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: isReady
+                              ? () {
+                                  unawaited(onTogglePlayback());
+                                }
+                              : null,
+                        ),
+                      ),
+                    ),
+                    if (!isPlaying && isReady)
+                      Center(
+                        child: IgnorePointer(
+                          child: DecoratedBox(
+                            decoration: const BoxDecoration(
+                              color: Colors.black45,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(10),
+                              child: Icon(
+                                Icons.play_arrow,
+                                color: Colors.white,
+                                size: 22,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    if (isReady)
+                      Positioned(
+                        left: 10,
+                        right: 10,
+                        bottom: 10,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
+                            child: Row(
+                              children: [
+                                IconButton(
+                                  key: const ValueKey<String>(
+                                    'active-video-toggle-button',
+                                  ),
+                                  onPressed: () {
+                                    unawaited(onTogglePlayback());
+                                  },
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(
+                                    minWidth: 28,
+                                    minHeight: 28,
+                                  ),
+                                  splashRadius: 18,
+                                  icon: Icon(
+                                    isPlaying
+                                        ? Icons.pause_rounded
+                                        : Icons.play_arrow_rounded,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: VideoProgressIndicator(
+                                    controller,
+                                    allowScrubbing: true,
+                                    padding: EdgeInsets.zero,
+                                    colors: VideoProgressColors(
+                                      playedColor:
+                                          colors.messagePanels.accentBorderSoft,
+                                      bufferedColor: Colors.white.withValues(
+                                        alpha: 0.32,
+                                      ),
+                                      backgroundColor: Colors.white.withValues(
+                                        alpha: 0.18,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
+            child: VideoPlayer(controller),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class VideoActivationShell extends ConsumerWidget {
+  const VideoActivationShell({
+    super.key,
+    required this.aspectRatio,
+    required this.isActivating,
+    required this.activationFailed,
+    required this.thumbnailFile,
+    required this.onActivate,
+  });
+
+  final double aspectRatio;
+  final bool isActivating;
+  final bool activationFailed;
+  final File? thumbnailFile;
+  final VoidCallback? onActivate;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ContactTimelineScrollProbe.count('media.video.shell.build');
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+
+    final buttonLabel = switch ((isActivating, activationFailed)) {
+      (true, _) => 'Loading video...',
+      (false, true) => 'Retry video',
+      (false, false) => 'Play video',
+    };
+
+    return DecoratedBox(
+      key: const ValueKey<String>('video-activation-shell-card'),
+      decoration: BoxDecoration(
+        color: colors.surfaces.surface,
+        borderRadius: MsgTheme.mediaRadius,
+        border: Border.all(color: colors.lines.borderSubtle),
+      ),
+      child: ClipRRect(
+        borderRadius: MsgTheme.mediaRadius,
+        child: _IntrinsicSizedMedia(
+          child: AspectRatio(
+            aspectRatio: aspectRatio,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (thumbnailFile != null)
+                  Positioned.fill(
+                    child: Image.file(
+                      thumbnailFile!,
+                      key: const ValueKey<String>('video-activation-thumbnail'),
+                      fit: BoxFit.cover,
+                      filterQuality: FilterQuality.low,
+                    ),
+                  )
+                else
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          colors.messagePanels.receivedSurface,
+                          colors.surfaces.surface,
+                        ],
+                      ),
+                    ),
+                  ),
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withValues(
+                            alpha: thumbnailFile == null ? 0.02 : 0.08,
+                          ),
+                          Colors.black.withValues(
+                            alpha: thumbnailFile == null ? 0.06 : 0.26,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 12,
+                  left: 12,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: colors.surfaces.surface.withValues(alpha: 0.84),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.ondemand_video_outlined,
+                            size: 16,
+                            color: colors.content.textPrimary,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Video',
+                            style: TextStyle(
+                              color: colors.content.textPrimary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Center(
+                  child: isActivating
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : TextButton.icon(
+                          key: const ValueKey<String>(
+                            'video-activation-shell-button',
+                          ),
+                          onPressed: onActivate,
+                          icon: const Icon(Icons.play_arrow_rounded),
+                          label: Text(buttonLabel),
+                          style: TextButton.styleFrom(
+                            foregroundColor: colors.content.textPrimary,
+                            backgroundColor: colors.surfaces.surface.withValues(
+                              alpha: thumbnailFile == null ? 0.82 : 0.9,
+                            ),
+                          ),
+                        ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

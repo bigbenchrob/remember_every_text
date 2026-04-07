@@ -9,7 +9,6 @@ import '../../../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../../../essentials/sidebar/application/sidebar_action_dispatcher.dart';
 import '../../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../domain/spec_classes/handles_cassette_spec.dart';
-import '../../state/stray_handle_mode_provider.dart';
 
 /// Shared app dropdown for filtering stray handles by mode.
 ///
@@ -19,16 +18,15 @@ import '../../state/stray_handle_mode_provider.dart';
 /// Visually quieter than the primary segmented control, acting as a
 /// secondary filter rather than primary navigation.
 class StrayHandlesModeSwitcherCassette extends ConsumerWidget {
-  const StrayHandlesModeSwitcherCassette({required this.filter, super.key});
+  const StrayHandlesModeSwitcherCassette({required this.mode, super.key});
 
-  final StrayHandleFilter filter;
+  final StrayHandleMode mode;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
-    final currentMode = ref.watch(strayHandleModeSettingProvider);
     final dispatcher = ref.read(sidebarActionDispatcherProvider.notifier);
 
     // Outer section spacing is owned by sidebar sectioning.
@@ -38,7 +36,7 @@ class StrayHandlesModeSwitcherCassette extends ConsumerWidget {
       padding: EdgeInsets.zero,
       child: AppThemeWidgets.dropdownMenu<StrayHandleMode>(
         options: StrayHandleMode.values,
-        selectedOption: currentMode,
+        selectedOption: mode,
         onSelected: (mode) async {
           await dispatcher.dispatch(
             intent: StrayHandleModeChanged(mode: _mapMode(mode)),

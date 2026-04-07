@@ -26,7 +26,7 @@ final viewSpecCoordinatorProvider =
 
 typedef _$ViewSpecCoordinator = AutoDisposeNotifier<void>;
 String _$featureCassetteSpecCoordinatorHash() =>
-    r'7e46dd02237d249ecabb93ee14547317ec26300f';
+    r'52b829c33162edefe9478fc1968f7e35e285dfc8';
 
 /// Coordinator that maps [AttachmentsCassetteSpec] to cassette widgets.
 ///
@@ -45,7 +45,7 @@ final featureCassetteSpecCoordinatorProvider =
 
 typedef _$FeatureCassetteSpecCoordinator = AutoDisposeNotifier<void>;
 String _$settingsCassetteSpecCoordinatorHash() =>
-    r'dc6dba553c518e7e23c35ae79cd846b1de6fd7bc';
+    r'37796a326094ac4c190e0fc2854dc0624502069e';
 
 /// Coordinator that maps [AttachmentsSettingsSpec] to cassette widgets.
 ///

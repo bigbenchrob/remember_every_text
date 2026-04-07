@@ -28,9 +28,7 @@ class WorkspaceLayout extends ConsumerWidget {
               : LeftPanelHost(mode: mode),
         ),
         Expanded(
-          child: ContentPlane(
-            child: ref.watch(centerPanelWidgetProvider(mode)),
-          ),
+          child: ContentPlane(child: CenterPanelHost(mode: mode)),
         ),
       ],
     );

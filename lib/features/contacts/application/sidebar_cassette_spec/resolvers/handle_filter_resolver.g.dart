@@ -7,15 +7,15 @@ part of 'handle_filter_resolver.dart';
 // **************************************************************************
 
 String _$handleFilterResolverHash() =>
-    r'1e0b6bbd349d87b920a30c767b77dd4a32b7cea5';
+    r'e2ca86b9b0600b28ce4be5c562d14f2345b6ddb0';
 
 /// Resolves a handle filter cassette — the "From phone # / email:" dropdown.
 ///
 /// ## Contract
 ///
 /// - Receives explicit parameters (not specs)
-/// - Returns `Future<SidebarCassetteCardViewModel>`
-/// - Delegates widget construction to [HandleFilterWidget]
+/// - Returns `Future<SidebarCassettePayload>`
+/// - Returns inert semantic payload only
 ///
 /// Copied from [HandleFilterResolver].
 @ProviderFor(HandleFilterResolver)

@@ -5,8 +5,10 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../../../../../../essentials/db/feature_level_providers.dart';
 import '../../../../../../essentials/db/feature_level_providers/message_data_version_provider.dart';
 import '../../../../application/strategies/ordinal_strategy.dart';
+import '../../../../application/strategies/recovered_list_ordinal_strategy.dart';
 import '../../../../domain/message_timeline_scope_extensions.dart';
 import '../../../../domain/value_objects/message_timeline_scope.dart';
+import '../../../../infrastructure/repositories/recovered_unlinked_messages_provider.dart';
 import '../contact_timeline_display_version_provider.dart';
 
 part 'message_timeline_ordinal_provider.g.dart';
@@ -71,6 +73,8 @@ class MessageTimelineOrdinal extends _$MessageTimelineOrdinal {
         ref.watch(contactTimelineDisplayVersionProvider(scope: scope));
       case GlobalTimelineScope() || ChatTimelineScope():
         ref.watch(messageDataVersionProvider);
+      case RecoveredTimelineScope(:final contactId):
+        ref.watch(recoveredUnlinkedMessagesProvider(contactId: contactId));
     }
 
     // During maintenance, return empty state to avoid DB access.
@@ -82,6 +86,33 @@ class MessageTimelineOrdinal extends _$MessageTimelineOrdinal {
         itemScrollController: _itemScrollController,
         itemPositionsListener: _itemPositionsListener,
         strategy: _EmptyOrdinalStrategy(),
+      );
+    }
+
+    if (scope case RecoveredTimelineScope(
+      :final contactId,
+      :final onlyNoHandleFromMe,
+    )) {
+      final recoveredAsync = ref.watch(
+        recoveredUnlinkedMessagesProvider(contactId: contactId),
+      );
+      final recoveredMessages =
+          recoveredAsync.valueOrNull ??
+          await ref.watch(
+            recoveredUnlinkedMessagesProvider(contactId: contactId).future,
+          ) ??
+          const <RecoveredUnlinkedMessageItem>[];
+      final filteredMessages = filterRecoveredTimelineMessages(
+        messages: recoveredMessages,
+        onlyNoHandleFromMe: onlyNoHandleFromMe,
+      );
+
+      return MessageTimelineOrdinalState(
+        scope: scope,
+        totalCount: filteredMessages.length,
+        itemScrollController: _itemScrollController,
+        itemPositionsListener: _itemPositionsListener,
+        strategy: RecoveredListOrdinalStrategy(filteredMessages),
       );
     }
 
@@ -120,7 +151,9 @@ class MessageTimelineOrdinal extends _$MessageTimelineOrdinal {
       return;
     }
 
-    final ordinal = await _strategy.getFirstOrdinalForMonth(monthKey);
+    final ordinal = await currentState.strategy.getFirstOrdinalForMonth(
+      monthKey,
+    );
     if (ordinal == null) {
       return;
     }
@@ -137,7 +170,7 @@ class MessageTimelineOrdinal extends _$MessageTimelineOrdinal {
       return;
     }
 
-    final ordinal = await _strategy.getFirstOrdinalOnOrAfter(date);
+    final ordinal = await currentState.strategy.getFirstOrdinalOnOrAfter(date);
     if (ordinal == null) {
       return;
     }
@@ -173,6 +206,9 @@ class _EmptyOrdinalStrategy implements OrdinalStrategy {
 
   @override
   Future<int?> getMessageIdByOrdinal(int ordinal) async => null;
+
+  @override
+  Future<String?> getMonthKeyByOrdinal(int ordinal) async => null;
 
   @override
   Future<int?> getOrdinalForMessage(int messageId) async => null;

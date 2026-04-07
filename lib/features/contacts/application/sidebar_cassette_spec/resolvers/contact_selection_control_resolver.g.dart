@@ -7,7 +7,7 @@ part of 'contact_selection_control_resolver.dart';
 // **************************************************************************
 
 String _$contactSelectionControlResolverHash() =>
-    r'6d7ba11e46a76280e13014b6cf972a616b2c203f';
+    r'bd7b187877e03f58049fe4ce6f20f9bdd5f1854e';
 
 /// Resolves the "back to picker" selection control.
 ///
@@ -20,8 +20,7 @@ String _$contactSelectionControlResolverHash() =>
 ///
 /// - Receives explicit parameters (not specs)
 /// - Returns `Future<SidebarCassettePayload>`
-/// - Determines which widget builder to use
-/// - Does NOT construct widgets itself (delegates to widget builder)
+/// - Returns inert semantic payload only
 ///
 /// Copied from [ContactSelectionControlResolver].
 @ProviderFor(ContactSelectionControlResolver)

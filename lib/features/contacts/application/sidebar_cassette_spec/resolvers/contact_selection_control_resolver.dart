@@ -1,7 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
-import '../widget_builders/contact_selection_control_widget.dart';
+import '../payloads/contact_selection_control_cassette_payload.dart';
 
 part 'contact_selection_control_resolver.g.dart';
 
@@ -16,8 +16,7 @@ part 'contact_selection_control_resolver.g.dart';
 ///
 /// - Receives explicit parameters (not specs)
 /// - Returns `Future<SidebarCassettePayload>`
-/// - Determines which widget builder to use
-/// - Does NOT construct widgets itself (delegates to widget builder)
+/// - Returns inert semantic payload only
 @riverpod
 class ContactSelectionControlResolver
     extends _$ContactSelectionControlResolver {
@@ -31,14 +30,9 @@ class ContactSelectionControlResolver
     required int contactId,
     required int cassetteIndex,
   }) async {
-    return SidebarNavigationCassetteViewModel(
-      role: SidebarCassetteRole.action,
-      placementMode: SidebarBodyPlacementMode.fullWidth,
-      contentAlignment: SidebarBodyContentAlignment.leftAnchored,
-      child: ContactSelectionControlWidget(
-        contactId: contactId,
-        cassetteIndex: cassetteIndex,
-      ),
+    return ContactSelectionControlCassettePayload(
+      contactId: contactId,
+      cassetteIndex: cassetteIndex,
     );
   }
 }

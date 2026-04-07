@@ -237,7 +237,7 @@ feature/application/view_spec/
 
 | Aspect | Cassette | View spec |
 |---|---|---|
-| Returns | `Future<SidebarCassetteCardViewModel>` | `Widget` (sync) |
+| Returns | `Future<SidebarCassettePayload>` | `Widget` (sync) |
 | Resolvers | `@riverpod` Notifier classes | Plain Dart classes |
 | Widget builders | `ConsumerWidget` (reactive, self-contained) | Thin — delegate to `presentation/view/` |
 | Chrome | App-level wraps in card widgets | Feature owns full rendering |

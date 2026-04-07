@@ -18,11 +18,20 @@ enum SidebarStrayHandleMode { allStrays, spamCandidates, dismissed }
 
 enum SidebarActionTone { neutral, primary, destructive }
 
+/// Typed semantic action intent transported through sidebar payload data.
+///
+/// LAW: Intents may describe meaning across the boundary, but they must not
+/// execute behavior themselves.
 sealed class SidebarActionIntent {
   const SidebarActionIntent();
 }
 
-class SidebarActionDescriptor {
+/// Immutable action descriptor for render-edge wiring.
+///
+/// This type may carry copy, tone, iconography, and a typed intent only.
+/// Callback fields, dispatcher objects, refs, and UI runtime state are not
+/// allowed here.
+final class SidebarActionDescriptor {
   const SidebarActionDescriptor({
     required this.label,
     required this.intent,
@@ -87,10 +96,10 @@ final class ContactMessageScopeChanged extends SidebarActionIntent {
 }
 
 final class HeatMapMonthFocused extends SidebarActionIntent {
-  const HeatMapMonthFocused({required this.monthAnchor, this.contactId});
+  const HeatMapMonthFocused({this.monthAnchor, this.contactId});
 
   final int? contactId;
-  final DateTime monthAnchor;
+  final DateTime? monthAnchor;
 }
 
 final class RecoveredMonthFocused extends SidebarActionIntent {

@@ -8,6 +8,7 @@ export '../../features/sidebar_utilities/feature_level_providers.dart'
 export './application/cassette_rack_state_provider.dart';
 export './application/cassette_widget_coordinator_provider.dart';
 export './application/sidebar_action_dispatcher.dart';
+export './application/sidebar_cassette_render_router.dart';
 export './application/sidebar_flow_state_provider.dart';
 export './domain/entities/cassette_spec.dart';
 export './presentation/view/sidebar_cassette_card.dart';

@@ -9,6 +9,9 @@ Widget buildRecoveredUnlinkedMessagesView({
   bool onlyNoHandleFromMe = false,
 }) {
   return RecoveredUnlinkedMessagesPlaceholderView(
+    key: ValueKey<String>(
+      'messages-recovered:${contactId ?? 'global'}:$onlyNoHandleFromMe:${scrollToDate?.toIso8601String() ?? 'latest'}',
+    ),
     contactId: contactId,
     scrollToDate: scrollToDate,
     onlyNoHandleFromMe: onlyNoHandleFromMe,

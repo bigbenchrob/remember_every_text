@@ -1,0 +1,223 @@
+IMPLEMENTATION PLAN — REQUIRED CLARIFICATIONS AND CONSTRAINTS
+
+This section refines the implementation plan.
+It is not optional guidance.
+
+All phases must comply with these constraints.
+
+⸻
+
+1. Transitional Adapters — STRICT LIMITATION
+
+The current plan allows “temporary transitional adapters.”
+
+This must be tightly constrained.
+
+Allowed
+
+Transitional adapters may ONLY:
+	•	translate old data shape → new data shape
+	•	map legacy structures into canonical semantic payloads
+	•	exist temporarily during phased migration
+
+Forbidden
+
+Transitional adapters MUST NOT:
+	•	cache UI state
+	•	retain previous widget trees
+	•	reconcile or “fix up” inconsistencies
+	•	infer semantic meaning from widget structure
+	•	perform panel mutation
+	•	delay or reorder semantic updates
+	•	act as alternate writers of truth
+
+Enforcement rule
+
+If removing the adapter changes behavior, the adapter is not a pure translator and must be redesigned.
+
+⸻
+
+2. PanelStack — RENDER CONTAINER ONLY (FLOW-MANAGED BRANCH)
+
+For flow-managed message surfaces:
+
+PanelStack MUST NOT be an author of center-panel meaning.
+
+Required model
+
+SidebarFlowState
+→ projectedCenterSpec
+→ render host (via PanelStack container)
+
+Forbidden
+	•	storing center meaning independently in PanelStack
+	•	mutating PanelStack to “correct” flow state
+	•	relying on PanelStack persistence to maintain UI state
+
+Enforcement rule
+
+If PanelStack can display content not derivable from SidebarFlowState.projectedCenterSpec, the architecture is incorrect.
+
+⸻
+
+3. Right Panel — NO HIDDEN PERSISTENCE
+
+The plan currently enforces visible derivation. This must be extended.
+
+Required model
+
+Right panel existence is a pure function of:
+
+→ current center spec
+
+Forbidden
+	•	retaining right-panel state when incompatible with current center spec
+	•	hiding the panel while preserving stale state internally
+	•	restoring prior right-panel content after re-entry unless it is re-derived
+
+Enforcement rule
+
+If a right-panel state object exists while incompatible with the current center spec, even if not visible, this is a failure.
+
+⸻
+
+4. Recovered Timeline Unification — NO “UNIFIED SHELL”
+
+Recovered timelines must not only appear unified.
+
+They must be unified at ALL layers.
+
+Required
+
+Recovered scope must use:
+	•	same scope interface
+	•	same ordinal contract
+	•	same hydration path
+	•	same rendering path
+
+Forbidden
+	•	branching inside ordinal providers for recovered vs normal
+	•	recovered-only scaffolds hidden inside shared widgets
+	•	“if recovered” branches inside rendering logic
+	•	parallel pipelines behind a unified surface
+
+Enforcement rule
+
+If recovered timelines require special-case logic outside the scope definition itself, the refactor is incomplete.
+
+⸻
+
+5. Feature UI (Chooser, Heatmap, etc.) — RENDER EDGE CONTRACT
+
+The plan removes featureComplex. This must be implemented correctly.
+
+Required
+
+Complex feature UI may still exist, BUT:
+	•	must be constructed ONLY at the render edge
+	•	must be driven by explicit semantic payload
+	•	must receive all inputs via immutable data and callbacks
+
+Forbidden
+	•	transporting feature-built widgets across boundaries
+	•	embedding UI trees in payloads
+	•	allowing feature widgets to carry semantic state
+	•	letting feature UI infer branch meaning independently
+
+Clarification
+
+This is NOT a requirement to flatten all UI into primitive data.
+
+It IS a requirement that:
+
+UI is constructed at the render edge from semantic payload, not transported as state.
+
+⸻
+
+6. Elimination Means ELIMINATION
+
+For all targeted constructs:
+	•	_syncProjectedCenterPanel
+	•	_schedulePanelClearIfNoProjectedCenter
+	•	reconcileSidebarPanels
+	•	featureComplex
+
+Required
+	•	remove OR reduce to debug-only assertions
+
+Forbidden
+	•	renaming and keeping behavior
+	•	wrapping in helper functions
+	•	conditional execution instead of removal
+
+Enforcement rule
+
+If behavior still depends on these mechanisms in normal execution, the phase has failed.
+
+⸻
+
+7. No “Compatibility Preservation” for Broken Paths
+
+The refactor must NOT preserve legacy behavior if it violates the architecture.
+
+Forbidden
+	•	keeping alternate writers “for safety”
+	•	fallback logic for stale widget state
+	•	restoring UI state from widget trees
+	•	dual-path execution
+
+Required mindset
+
+If removing a path breaks behavior, the behavior depended on a broken path.
+
+Fix the architecture, not the symptom.
+
+⸻
+
+8. Phase Completion Standard (STRENGTHENED)
+
+A phase is complete ONLY if:
+	1.	Structural success metrics are satisfied
+	2.	Tests pass
+	3.	Manual runtime behavior is correct
+	4.	No repair logic is required for correctness
+	5.	No hidden state persists outside canonical semantic state
+
+If any of the above are false:
+
+→ the phase is NOT complete
+
+⸻
+
+9. Golden Validation Rule
+
+At any point, it must be possible to:
+
+Inspect SidebarFlowState and deterministically predict:
+
+	•	sidebar contents
+	•	center panel content
+	•	right panel existence
+	•	message scope
+
+WITHOUT:
+	•	reading widget code
+	•	considering previous UI state
+	•	relying on reconciliation
+
+If this is not true, the architecture is still mixed.
+
+⸻
+
+10. Final Directive
+
+Do not attempt to:
+	•	minimize disruption
+	•	preserve incidental behavior
+	•	optimize prematurely
+
+Instead:
+
+Remove all alternate semantic writers until the system becomes strictly declarative.
+
+Only then refine.

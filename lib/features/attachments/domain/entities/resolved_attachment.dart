@@ -3,8 +3,9 @@ import 'dart:io';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../../messages/domain/entities/attachment_info.dart';
-import '../constants.dart';
 import '../constants/attachment_provenance.dart';
+import '../constants/resolved_attachment_availability.dart';
+import 'attachment_recovery_metadata.dart';
 
 part 'resolved_attachment.freezed.dart';
 
@@ -17,10 +18,16 @@ part 'resolved_attachment.freezed.dart';
 abstract class ResolvedAttachment with _$ResolvedAttachment {
   const factory ResolvedAttachment({
     required AttachmentInfo attachmentInfo,
-    required AttachmentStatus status,
+    required ResolvedAttachmentAvailability availability,
     AttachmentProvenance? provenance,
     File? resolvedFile,
+    AttachmentRecoveryMetadata? recoveryMetadata,
   }) = _ResolvedAttachment;
 
   const ResolvedAttachment._();
+
+  bool get isDisplayable {
+    return availability == ResolvedAttachmentAvailability.available &&
+        resolvedFile != null;
+  }
 }

@@ -6,11 +6,8 @@ import '../../../features/messages/feature_level_providers.dart'
     as messages_feature;
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../logging/application/app_logger.dart';
-// Import the sidebar feature barrel to access cassette widget coordinator and card.
-// The provider (cassetteWidgetCoordinatorProvider) exposes the list of cassette
-// widgets that compose the sidebar. We wrap these in a Column to produce the
-// left panel surface.
 import '../../sidebar/feature_level_providers.dart';
+import '../../sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 import '../domain/entities/panel_stack.dart';
 import '../domain/entities/view_spec.dart';
 import '../domain/navigation_constants.dart';
@@ -18,21 +15,12 @@ import '../domain/sidebar_mode.dart';
 import '../feature_level_providers.dart';
 import './panel_coordinator_provider.dart';
 
+// Import the sidebar feature barrel to access cassette widget coordinator and
+// card. The provider (cassetteWidgetCoordinatorProvider) exposes the list of
+// cassette widgets that compose the sidebar. We wrap these in a Column to
+// produce the left panel surface.
+
 part 'panel_widget_providers.g.dart';
-
-class _LeftPanelCassetteSnapshot {
-  const _LeftPanelCassetteSnapshot({
-    required this.rackSignature,
-    required this.widgets,
-  });
-
-  final String rackSignature;
-  final List<Widget> widgets;
-}
-
-String _rackSignature(CassetteRack rack) {
-  return rack.cassettes.join('|');
-}
 
 bool isPinnedAppControlCassette(Widget widget) {
   final cassetteCard = unwrapSidebarCassetteCard(widget);
@@ -94,20 +82,58 @@ void reconcileSidebarPanels(Ref ref, SidebarMode mode) {
   }
 
   WidgetsBinding.instance.addPostFrameCallback((_) {
+    final latestFlowState = ref.read(sidebarFlowProvider);
+    final latestPanels = ref.read(panelsViewStateProvider(mode));
+    final latestCenterStack =
+        latestPanels[WindowPanel.center] ?? const PanelStack.empty();
+    final latestRightStack =
+        latestPanels[WindowPanel.right] ?? const PanelStack.empty();
+    final latestCenterSpec = latestCenterStack.activePage?.spec;
+    final latestProjectedCenterSpec = latestFlowState.projectedCenterSpec;
+    final latestShouldResetCenter = _shouldResetCenterPanel(
+      flowState: latestFlowState,
+      centerSpec: latestCenterSpec,
+      projectedCenterSpec: latestProjectedCenterSpec,
+    );
+    final latestEffectiveCenterSpec = latestShouldResetCenter
+        ? latestProjectedCenterSpec
+        : latestCenterSpec;
+    final latestShouldClearRight =
+        !latestRightStack.isEmpty &&
+        (latestShouldResetCenter ||
+            !_supportsRecoveredAttachmentSidebar(latestEffectiveCenterSpec));
+
+    if (!latestShouldResetCenter && !latestShouldClearRight) {
+      return;
+    }
+
+    ref
+        .read(appLoggerProvider.notifier)
+        .debug(
+          'Running sidebar panel reconciliation',
+          source: 'PanelReconcile',
+          context: {
+            'latestCenterSpec': '$latestCenterSpec',
+            'latestProjectedCenterSpec': '$latestProjectedCenterSpec',
+            'latestShouldResetCenter': latestShouldResetCenter,
+            'latestShouldClearRight': latestShouldClearRight,
+          },
+        );
+
     final panelsNotifier = ref.read(panelsViewStateProvider(mode).notifier);
-    if (shouldResetCenter) {
-      if (projectedCenterSpec == null) {
+    if (latestShouldResetCenter) {
+      if (latestProjectedCenterSpec == null) {
         panelsNotifier.clear(panel: WindowPanel.center);
       } else {
         panelsNotifier.show(
           panel: WindowPanel.center,
-          spec: projectedCenterSpec,
+          spec: latestProjectedCenterSpec,
         );
       }
       return;
     }
 
-    if (shouldClearRight) {
+    if (latestShouldClearRight) {
       panelsNotifier.clear(panel: WindowPanel.right);
     }
   });
@@ -425,13 +451,15 @@ bool _isCenterSpecCompatibleWithSidebar({
 Widget leftPanelWidget(Ref ref, SidebarMode mode) {
   final contextualWidget = ref.watch(contextualSidebarWidgetProvider(mode));
   final rack = ref.watch(cassetteRackStateProvider(mode));
-  final asyncSnapshot = ref.watch(leftPanelCassetteSnapshotProvider(mode));
+  final asyncResolvedCassettes = ref.watch(
+    cassetteWidgetCoordinatorProvider(mode),
+  );
 
   return _buildLeftPanelSurface(
     mode: mode,
     rack: rack,
     contextualWidget: contextualWidget,
-    asyncSnapshot: asyncSnapshot,
+    asyncResolvedCassettes: asyncResolvedCassettes,
     logError: (error, stackTrace) {
       ref
           .read(appLoggerProvider.notifier)
@@ -447,13 +475,15 @@ Widget leftPanelWidget(Ref ref, SidebarMode mode) {
 Widget _buildLeftPanelFromWidgetRef(WidgetRef ref, SidebarMode mode) {
   final contextualWidget = ref.watch(contextualSidebarWidgetProvider(mode));
   final rack = ref.watch(cassetteRackStateProvider(mode));
-  final asyncSnapshot = ref.watch(leftPanelCassetteSnapshotProvider(mode));
+  final asyncResolvedCassettes = ref.watch(
+    cassetteWidgetCoordinatorProvider(mode),
+  );
 
   return _buildLeftPanelSurface(
     mode: mode,
     rack: rack,
     contextualWidget: contextualWidget,
-    asyncSnapshot: asyncSnapshot,
+    asyncResolvedCassettes: asyncResolvedCassettes,
     logError: (error, stackTrace) {
       ref
           .read(appLoggerProvider.notifier)
@@ -466,59 +496,35 @@ Widget _buildLeftPanelFromWidgetRef(WidgetRef ref, SidebarMode mode) {
   );
 }
 
-@riverpod
-Future<_LeftPanelCassetteSnapshot> leftPanelCassetteSnapshot(
-  Ref ref,
-  SidebarMode mode,
-) async {
-  final rack = ref.watch(cassetteRackStateProvider(mode));
-  final widgets = await ref.watch(
-    cassetteWidgetCoordinatorProvider(mode).future,
-  );
-
-  return _LeftPanelCassetteSnapshot(
-    rackSignature: _rackSignature(rack),
-    widgets: widgets,
-  );
-}
-
 Widget _buildLeftPanelSurface({
   required SidebarMode mode,
   required CassetteRack rack,
   required Widget? contextualWidget,
-  required AsyncValue<_LeftPanelCassetteSnapshot> asyncSnapshot,
+  required AsyncValue<List<ResolvedSidebarCassette>> asyncResolvedCassettes,
   required void Function(Object error, StackTrace? stackTrace) logError,
 }) {
-  final currentRackSignature = _rackSignature(rack);
-  final snapshot = asyncSnapshot.valueOrNull;
-  final hasCurrentSnapshot = snapshot?.rackSignature == currentRackSignature;
-
-  // Preserve stale widgets only while the rack shape is unchanged.
-  // Structural transitions should render as loading, not as the previous branch.
-  final cassetteWidgets = hasCurrentSnapshot
-      ? snapshot!.widgets
-      : const <Widget>[];
+  final cassetteWidgets = buildResolvedSidebarCassetteWidgets(
+    mode: mode,
+    resolvedCassettes:
+        asyncResolvedCassettes.valueOrNull ?? const <ResolvedSidebarCassette>[],
+  );
   final sidebarWidgets = contextualWidget == null
       ? cassetteWidgets
       : <Widget>[...cassetteWidgets, contextualWidget];
-
-  final isLoadingCurrentRack = asyncSnapshot.isLoading && !hasCurrentSnapshot;
 
   // Log errors for debugging but don't disrupt the UI.
   //
   // Future enhancement: Consider surfacing errors via a toast, badge, or
 
   // subtle inline indicator rather than silently swallowing them.
-  if (asyncSnapshot.hasError) {
+  if (asyncResolvedCassettes.hasError) {
     // TODO(sidebar): Add user-visible error indicator or recovery UI.
-    logError(asyncSnapshot.error!, asyncSnapshot.stackTrace);
+    logError(asyncResolvedCassettes.error!, asyncResolvedCassettes.stackTrace);
   }
 
-  // Show a centered loading indicator only during the initial load.
-  //
-  // This ensures the user sees feedback on first render, but subsequent
-  // updates (triggered by user actions) don't cause a jarring full-reload.
-  if (isLoadingCurrentRack) {
+  // Prefer correctness over stale sidebar UI. Structural transitions should
+  // blank to loading rather than keep previously mounted cassette subtrees.
+  if (asyncResolvedCassettes.isLoading || !asyncResolvedCassettes.hasValue) {
     return const Center(child: CircularProgressIndicator.adaptive());
   }
 
@@ -540,6 +546,45 @@ class LeftPanelHost extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return _buildLeftPanelFromWidgetRef(ref, mode);
+  }
+}
+
+class CenterPanelHost extends ConsumerWidget {
+  const CenterPanelHost({super.key, required this.mode});
+
+  final SidebarMode mode;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(reconcileSidebarPanelsProvider(mode));
+    final stack = ref.watch(
+      panelsViewStateProvider(mode).select(
+        (stacks) => stacks[WindowPanel.center] ?? const PanelStack.empty(),
+      ),
+    );
+
+    return ref
+        .read(panelCoordinatorProvider(mode).notifier)
+        .buildPanelSurface(WindowPanel.center, stack);
+  }
+}
+
+class RightPanelHost extends ConsumerWidget {
+  const RightPanelHost({super.key, required this.mode});
+
+  final SidebarMode mode;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stack = ref.watch(
+      panelsViewStateProvider(mode).select(
+        (stacks) => stacks[WindowPanel.right] ?? const PanelStack.empty(),
+      ),
+    );
+
+    return ref
+        .read(panelCoordinatorProvider(mode).notifier)
+        .buildPanelSurface(WindowPanel.right, stack);
   }
 }
 

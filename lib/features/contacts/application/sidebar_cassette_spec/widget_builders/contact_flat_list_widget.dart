@@ -4,21 +4,19 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../essentials/db/feature_level_providers.dart';
+import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
+import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart';
 import '../../../../messages/feature_level_providers.dart' as messages_feature;
 import '../../../infrastructure/repositories/contact_profile_provider.dart';
-import '../../../infrastructure/repositories/contacts_list_repository.dart';
-import '../../../infrastructure/repositories/recent_contacts_repository.dart';
 import '../../../presentation/widgets/contact_initial_badge.dart';
 import '../../../presentation/widgets/picker_filter_toggle.dart';
-import '../resolver_tools/favorite_contacts_provider.dart';
-import '../resolver_tools/picker_filter_mode_provider.dart';
+import '../payloads/contact_chooser_cassette_payload.dart';
 
 /// Widget builder for the flat contact list display.
 ///
@@ -33,17 +31,9 @@ import '../resolver_tools/picker_filter_mode_provider.dart';
 /// - Construct specs only on user interaction (output, not interpretation)
 /// - Never make branching decisions about which UI to show
 class ContactFlatListWidget extends HookConsumerWidget {
-  const ContactFlatListWidget({
-    super.key,
-    required this.chosenContactId,
-    required this.cassetteIndex,
-  });
+  const ContactFlatListWidget({super.key, required this.payload});
 
-  /// Currently selected contact ID, if any.
-  final int? chosenContactId;
-
-  /// Position in the cassette rack (for updates via replaceAtIndexAndCascade).
-  final int cassetteIndex;
+  final ContactChooserCassettePayload payload;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -53,83 +43,60 @@ class ContactFlatListWidget extends HookConsumerWidget {
       return null;
     }, const []);
 
-    final filterMode = ref.watch(pickerFilterProvider);
-    final contactsAsync = ref.watch(contactsListRepositoryProvider);
-    final favoritesAsync = ref.watch(favoriteContactsProvider);
+    final filteredSections = payload.filteredSections!;
+    final pickerFilterMode = payload.pickerFilterMode!;
+    final displayContacts = filteredSections.sections
+        .expand((section) => section.contacts)
+        .toList(growable: false);
+
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final typography = ref.watch(themeTypographyProvider);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const PickerFilterToggle(),
-        contactsAsync.when(
-          data: (contacts) {
-            final favoriteIds =
-                favoritesAsync.valueOrNull
-                    ?.map((f) => f.contact.participantId)
-                    .toSet() ??
-                <int>{};
+        PickerFilterToggle(mode: pickerFilterMode),
+        if (displayContacts.isEmpty)
+          const _EmptyState()
+        else
+          SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: displayContacts.map((contact) {
+                final isSelected =
+                    contact.participantId == payload.chosenContactId;
 
-            final displayContacts = switch (filterMode) {
-              PickerFilterMode.all => contacts,
-              PickerFilterMode.favouritesOnly =>
-                contacts
-                    .where((c) => favoriteIds.contains(c.participantId))
-                    .toList(growable: false),
-            };
-
-            if (displayContacts.isEmpty) {
-              return const _EmptyState();
-            }
-
-            ref.watch(themeColorsProvider);
-            final colors = ref.read(themeColorsProvider.notifier);
-            final typography = ref.watch(themeTypographyProvider);
-
-            return SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: displayContacts.map((contact) {
-                  final isSelected = contact.participantId == chosenContactId;
-
-                  return _ContactRow(
-                    displayName: contact.displayName,
-                    isSelected: isSelected,
-                    onHoverStart: () {
-                      _prewarmContactInvestigation(ref, contact.participantId);
-                    },
-                    onTap: () =>
-                        _handleContactSelection(ref, contact.participantId),
-                    colors: colors,
-                    typography: typography,
-                  );
-                }).toList(),
-              ),
-            );
-          },
-          loading: () => const Center(child: ProgressCircle()),
-          error: (error, _) => Center(
-            child: Text(
-              'Error loading contacts: $error',
-              style: const TextStyle(color: Colors.red),
+                return _ContactRow(
+                  displayName: contact.displayName,
+                  isSelected: isSelected,
+                  onHoverStart: () {
+                    _prewarmContactInvestigation(ref, contact.participantId);
+                  },
+                  onTap: () =>
+                      _handleContactSelection(ref, contact.participantId),
+                  colors: colors,
+                  typography: typography,
+                );
+              }).toList(),
             ),
           ),
-        ),
       ],
     );
   }
 
   Future<void> _handleContactSelection(WidgetRef ref, int contactId) async {
-    final infoCardIndex = cassetteIndex - 1;
     _prewarmContactInvestigation(ref, contactId);
     ref
-        .read(sidebarFlowProvider.notifier)
-        .contactChosen(contactId: contactId, infoCardIndex: infoCardIndex);
-
-    // Track contact as recently accessed (persists to overlay.db)
-    final overlayDb = await ref.read(overlayDatabaseProvider.future);
-    await overlayDb.trackContactAccess(contactId);
-    ref.invalidate(recentContactsProvider);
+        .read(sidebarActionDispatcherProvider.notifier)
+        .dispatch(
+          intent: ContactChosen(contactId: contactId),
+          context: SidebarActionDispatchContext(
+            sidebarMode: SidebarMode.messages,
+            cassetteIndex: payload.cassetteIndex,
+          ),
+        );
   }
 
   void _prewarmContactInvestigation(WidgetRef ref, int contactId) {

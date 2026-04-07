@@ -1,7 +1,12 @@
+import 'dart:math' as math;
+
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../features/contacts/application/sidebar_cassette_spec/resolver_tools/filtered_picker_sections_provider.dart';
+import '../../../features/contacts/domain/spec_classes/contacts_cassette_spec.dart';
 import '../../../features/contacts/domain/spec_classes/contacts_settings_spec.dart';
+import '../../../features/contacts/infrastructure/repositories/recent_contacts_repository.dart';
 import '../../../features/handles/application/state/stray_handle_mode_provider.dart';
 import '../../../features/handles/domain/spec_classes/handles_cassette_spec.dart';
 import '../../../features/handles/infrastructure/repositories/stray_handles_provider.dart';
@@ -72,17 +77,12 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
           ),
         );
       case ContactChosen(:final contactId):
-        ref
-            .read(sidebarFlowProvider.notifier)
-            .contactChosen(
-              contactId: contactId,
-              infoCardIndex: _requireCassetteIndex(context),
-            );
+        await _handleContactChosen(context: context, contactId: contactId);
       case ChooseAnotherContact():
         ref
             .read(sidebarFlowProvider.notifier)
             .chooseAnotherContact(
-              infoCardIndex: _requireCassetteIndex(context),
+              infoCardIndex: _requireContactHeroSummaryIndex(context),
             );
       case ContactHandleSelected(:final contactId, :final handleId):
         ref
@@ -147,7 +147,7 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
 
   void _dispatchHeatMapFocus({
     required int? contactId,
-    required DateTime monthAnchor,
+    required DateTime? monthAnchor,
   }) {
     if (contactId == null) {
       ref.read(sidebarFlowProvider.notifier).showGlobalTimelineAt(monthAnchor);
@@ -164,9 +164,14 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
         contactId: contactId,
         filterHandleId: flowState.selectedHandleId,
       );
-      ref
-          .read(messageTimelineViewModelProvider(scope: scope).notifier)
-          .jumpToDate(monthAnchor);
+      final timeline = ref.read(
+        messageTimelineViewModelProvider(scope: scope).notifier,
+      );
+      if (monthAnchor == null) {
+        timeline.jumpToLatest();
+      } else {
+        timeline.jumpToDate(monthAnchor);
+      }
       return;
     }
 
@@ -204,6 +209,23 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
     _invalidateStrayHandleProviders();
   }
 
+  Future<void> _handleContactChosen({
+    required SidebarActionDispatchContext context,
+    required int contactId,
+  }) async {
+    ref
+        .read(sidebarFlowProvider.notifier)
+        .contactChosen(
+          contactId: contactId,
+          infoCardIndex: _requirePreviousCassetteIndex(context),
+        );
+
+    final overlayDb = await ref.read(overlayDatabaseProvider.future);
+    await overlayDb.trackContactAccess(contactId);
+    ref.invalidate(recentContactsProvider);
+    ref.invalidate(filteredPickerSectionsProvider);
+  }
+
   void _invalidateStrayHandleProviders() {
     ref.invalidate(strayHandlesProvider);
     ref.invalidate(spamCandidateHandlesProvider);
@@ -225,6 +247,47 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
       throw StateError('Sidebar action requires a cassette index.');
     }
     return cassetteIndex;
+  }
+
+  int _requirePreviousCassetteIndex(SidebarActionDispatchContext context) {
+    final cassetteIndex = _requireCassetteIndex(context);
+    if (cassetteIndex <= 0) {
+      throw StateError(
+        'Sidebar action requires a preceding cassette index, but received '
+        '$cassetteIndex.',
+      );
+    }
+    return cassetteIndex - 1;
+  }
+
+  int _requireContactHeroSummaryIndex(SidebarActionDispatchContext context) {
+    final cassetteIndex = _requireCassetteIndex(context);
+    final rack = ref.read(cassetteRackStateProvider(context.sidebarMode));
+    if (rack.cassettes.isEmpty) {
+      throw StateError('Sidebar action requires at least one cassette.');
+    }
+
+    final upperBound = math.min(cassetteIndex, rack.cassettes.length - 1);
+    for (var index = upperBound; index >= 0; index--) {
+      final cassette = rack.cassettes[index];
+      final isContactHeroSummary = cassette.maybeMap(
+        contacts: (contactsCassette) {
+          return contactsCassette.spec.maybeWhen(
+            contactHeroSummary: (_) => true,
+            orElse: () => false,
+          );
+        },
+        orElse: () => false,
+      );
+      if (isContactHeroSummary) {
+        return index;
+      }
+    }
+
+    throw StateError(
+      'Sidebar action requires a preceding contact hero summary cassette at '
+      'or before index $cassetteIndex.',
+    );
   }
 }
 

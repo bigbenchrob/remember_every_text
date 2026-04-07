@@ -7,7 +7,7 @@ part of 'attachment_archive_settings_resolver.dart';
 // **************************************************************************
 
 String _$attachmentArchiveSettingsResolverHash() =>
-    r'41ca71adf4c733260255d52dcac7dcc409160bb6';
+    r'ab3f4b687e38c712e7f694d8ab38423096f6b02d';
 
 /// Resolver for ContactsSettingsSpec.attachmentArchive().
 ///

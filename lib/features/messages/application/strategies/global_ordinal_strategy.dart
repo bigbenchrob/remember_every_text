@@ -43,6 +43,12 @@ class GlobalOrdinalStrategy implements OrdinalStrategy {
   }
 
   @override
+  Future<String?> getMonthKeyByOrdinal(int ordinal) async {
+    final entry = await _dataSource.getByOrdinal(ordinal);
+    return entry?.monthKey;
+  }
+
+  @override
   Future<int?> getOrdinalForMessage(int messageId) {
     return _dataSource.getOrdinalForMessage(messageId);
   }

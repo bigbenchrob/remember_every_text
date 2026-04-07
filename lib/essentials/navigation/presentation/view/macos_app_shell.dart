@@ -131,7 +131,7 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
             maxWidth: 520,
             shownByDefault: false,
             builder: (context, scrollController) {
-              return ref.watch(rightPanelWidgetProvider(activeMode));
+              return RightPanelHost(mode: activeMode);
             },
           ),
           child: MacosScaffold(

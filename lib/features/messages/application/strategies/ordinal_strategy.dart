@@ -24,6 +24,12 @@ abstract class OrdinalStrategy {
   /// Returns null if ordinal is out of range.
   Future<int?> getMessageIdByOrdinal(int ordinal);
 
+  /// Get the month key at the given ordinal position.
+  ///
+  /// Month key format: 'YYYY-MM' (e.g., '2023-06'). Returns null if the
+  /// ordinal is out of range or the row has no usable month.
+  Future<String?> getMonthKeyByOrdinal(int ordinal);
+
   /// Get the current ordinal for a specific message ID.
   ///
   /// Returns null if the message is not present in this scope.

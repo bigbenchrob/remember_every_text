@@ -7,19 +7,18 @@ part of 'contact_hero_summary_resolver.dart';
 // **************************************************************************
 
 String _$contactHeroSummaryResolverHash() =>
-    r'041f1247e202166c10b103e6bc7a1b46f4f637c9';
+    r'417915bf02eab677e5a56d6a2a761495f80234b0';
 
 /// Resolves a contact hero summary cassette.
 ///
-/// This resolver produces a fully-realized [SidebarCassetteCardViewModel]
-/// for displaying detailed contact information.
+/// This resolver produces an inert payload for displaying detailed contact
+/// information.
 ///
 /// ## Contract (from 00-cross-surface-spec-system.md)
 ///
 /// - Receives explicit parameters (not specs)
-/// - Returns `Future<SidebarCassetteCardViewModel>`
-/// - Determines which widget builder to use
-/// - Does NOT construct widgets itself (delegates to widget builder)
+/// - Returns `Future<SidebarCassettePayload>`
+/// - Returns inert semantic payload only
 ///
 /// Copied from [ContactHeroSummaryResolver].
 @ProviderFor(ContactHeroSummaryResolver)

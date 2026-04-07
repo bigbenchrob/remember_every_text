@@ -7,11 +7,11 @@ part of 'stray_handles_type_switcher_resolver.dart';
 // **************************************************************************
 
 String _$strayHandlesTypeSwitcherResolverHash() =>
-    r'd4e98707bdf27b369cf56ce94fc1b9d94e17aa41';
+    r'c3737d6cc5f31d663e80a1fc8794f9d38d4121b5';
 
 /// Resolver for the stray handles type switcher cassette.
 ///
-/// Receives explicit parameters (not specs) and produces a view model.
+/// Receives explicit parameters (not specs) and produces an inert payload.
 ///
 /// Copied from [StrayHandlesTypeSwitcherResolver].
 @ProviderFor(StrayHandlesTypeSwitcherResolver)

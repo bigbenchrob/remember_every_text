@@ -7,7 +7,7 @@ part of 'contact_chooser_resolver.dart';
 // **************************************************************************
 
 String _$contactChooserResolverHash() =>
-    r'0f76ac83d0dc9cd204a35606999bf2e87e75ed7d';
+    r'93febb01cd0edb68cd395f40a690a457595560e5';
 
 /// Resolves a contact chooser cassette.
 ///
@@ -15,14 +15,13 @@ String _$contactChooserResolverHash() =>
 /// cassette by:
 /// 1. Fetching contact count from the repository
 /// 2. Using [determinePickerMode] to decide flat vs grouped display
-/// 3. Wrapping the picker with recent contacts section
-/// 4. Returning a view model with the appropriate widget builder
+/// 3. Returning an inert payload that the render edge maps to feature widgets
 ///
 /// ## Contract (from 00-cross-surface-spec-system.md)
 ///
 /// - Receives explicit parameters (not specs)
-/// - Returns `Future<SidebarCassetteCardViewModel>`
-/// - Determines which widget builder to use
+/// - Returns `Future<SidebarCassettePayload>`
+/// - Determines which picker variant should render
 /// - Owns all decision-making for this cassette
 ///
 /// Resolvers MUST NOT:

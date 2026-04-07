@@ -1,7 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
-import '../widget_builders/handle_filter_widget.dart';
+import '../payloads/handle_filter_cassette_payload.dart';
 
 part 'handle_filter_resolver.g.dart';
 
@@ -10,8 +10,8 @@ part 'handle_filter_resolver.g.dart';
 /// ## Contract
 ///
 /// - Receives explicit parameters (not specs)
-/// - Returns `Future<SidebarCassetteCardViewModel>`
-/// - Delegates widget construction to [HandleFilterWidget]
+/// - Returns `Future<SidebarCassettePayload>`
+/// - Returns inert semantic payload only
 @riverpod
 class HandleFilterResolver extends _$HandleFilterResolver {
   @override
@@ -20,22 +20,15 @@ class HandleFilterResolver extends _$HandleFilterResolver {
   }
 
   /// Resolve the handle filter cassette.
-  Future<SidebarCassetteCardViewModel> resolve({
+  Future<SidebarCassettePayload> resolve({
     required int contactId,
     int? selectedHandleId,
     required int cassetteIndex,
   }) async {
-    return SidebarCassetteCardViewModel(
-      role: SidebarCassetteRole.filter,
-      placementMode: SidebarBodyPlacementMode.fullWidth,
-      contentAlignment: SidebarBodyContentAlignment.insetControl,
-      title: '',
-      isNaked: true,
-      child: HandleFilterWidget(
-        contactId: contactId,
-        selectedHandleId: selectedHandleId,
-        cassetteIndex: cassetteIndex,
-      ),
+    return HandleFilterCassettePayload(
+      contactId: contactId,
+      selectedHandleId: selectedHandleId,
+      cassetteIndex: cassetteIndex,
     );
   }
 }

@@ -336,6 +336,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.3.3"
+  fc_native_video_thumbnail:
+    dependency: "direct main"
+    description:
+      name: fc_native_video_thumbnail
+      sha256: a6603d60628d54160d3e5a29df286c1b4baaa1a0228da00dfee6506abf1afbbf
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.1"
   ffi:
     dependency: transitive
     description:

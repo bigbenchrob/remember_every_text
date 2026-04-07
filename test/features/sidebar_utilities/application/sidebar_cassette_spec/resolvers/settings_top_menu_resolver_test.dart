@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:remember_this_text/essentials/sidebar/domain/sidebar_action_intent.dart';
 import 'package:remember_this_text/essentials/sidebar/domain/sidebar_body_model.dart';
+import 'package:remember_this_text/essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 import 'package:remember_this_text/features/sidebar_utilities/application/sidebar_cassette_spec/resolvers/settings_top_menu_resolver.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 
@@ -19,16 +20,16 @@ void main() {
     });
 
     test('returns a dropdown body model for the settings menu', () async {
-      final viewModel = await container
+      final payload = await container
           .read(settingsTopMenuResolverProvider.notifier)
           .resolve(currentChoice: SettingsMenuChoice.actions);
 
-      final bodyModel = viewModel.bodyModel;
+      final bodyModel = payload.bodyModel;
 
-      expect(viewModel.child, isNull);
+      expect(payload.renderKind, SidebarCassetteRenderKind.sharedBodyModel);
       expect(bodyModel, isA<SidebarDropdownBodyModel>());
 
-      final dropdown = bodyModel! as SidebarDropdownBodyModel;
+      final dropdown = bodyModel as SidebarDropdownBodyModel;
       expect(dropdown.promptLabel, isEmpty);
       expect(dropdown.selectedOptionId, SettingsMenuChoice.actions.id);
       expect(dropdown.options, hasLength(2));

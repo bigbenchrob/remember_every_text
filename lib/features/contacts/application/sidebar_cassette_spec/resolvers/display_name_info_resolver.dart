@@ -20,8 +20,10 @@ class DisplayNameInfoResolver extends _$DisplayNameInfoResolver {
   void build() {}
 
   /// Produces a canonical info payload about name customization.
-  SidebarInfoCassetteViewModel resolve({required int cassetteIndex}) {
-    return const SidebarInfoCassetteViewModel(
+  StaticFeatureInfoSidebarCassettePayload resolve({
+    required int cassetteIndex,
+  }) {
+    return const StaticFeatureInfoSidebarCassettePayload(
       role: SidebarCassetteRole.contextSecondary,
       title: 'Contact Names',
       bodyText:

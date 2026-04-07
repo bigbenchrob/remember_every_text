@@ -6,21 +6,18 @@ part of 'heatmap_resolver.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$heatmapResolverHash() => r'fbc81a850d3bba8e8bc0857ea3647c1da80ea307';
+String _$heatmapResolverHash() => r'ae1a43c869d93d6afd1fa9a57d427663a64ee000';
 
 /// Resolves a messages heatmap cassette.
 ///
-/// This resolver produces a [SidebarCassetteCardViewModel] for the calendar
-/// heatmap cassette. It decides title/subtitle based on whether the heatmap
-/// is contact-scoped or global, then delegates rendering to
-/// [MessagesHeatmapWidget].
+/// This resolver returns an inert payload for the calendar heatmap cassette.
 ///
 /// ## Contract (from 00-cross-surface-spec-system.md)
 ///
 /// - Receives explicit parameters (not specs)
-/// - Returns `Future<SidebarCassetteCardViewModel>`
-/// - Determines which widget builder to use
-/// - Does NOT construct widgets itself (delegates to widget builder)
+/// - Returns `Future<SidebarCassettePayload>`
+/// - Owns all decision-making for this cassette
+/// - Does NOT construct widgets itself
 ///
 /// Copied from [HeatmapResolver].
 @ProviderFor(HeatmapResolver)

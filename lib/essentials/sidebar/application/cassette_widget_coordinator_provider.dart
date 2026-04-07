@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../features/contacts/feature_level_providers.dart'
@@ -11,9 +10,6 @@ import '../../../features/sidebar_utilities/feature_level_providers.dart'
     as sidebar_utilities;
 import '../../navigation/domain/sidebar_mode.dart';
 import '../feature_level_providers.dart';
-import '../presentation/view/sidebar_body_model_content.dart';
-import '../presentation/view/sidebar_info_card.dart';
-import '../presentation/view/sidebar_navigation_card.dart';
 import '../presentation/view_model/sidebar_cassette_card_view_model.dart';
 import 'sidebar_cassette_sectioning.dart';
 
@@ -23,20 +19,25 @@ part 'cassette_widget_coordinator_provider.g.dart';
 
 @riverpod
 class CassetteWidgetCoordinator extends _$CassetteWidgetCoordinator {
+  // LAW: This coordinator may translate specs into payloads only.
+  // It must not transport widgets or create an alternate semantic writer.
   /// NOTE: This is now async because feature-side spec handling may require
   /// repositories/data access (counts, derived values, etc.).
   ///
-  /// This means the provider becomes an AsyncValue<List<Widget>> at call sites.
+  /// This means the provider becomes an AsyncValue<List<ResolvedSidebarCassette>>
+  /// at call sites.
   @override
-  Future<List<Widget>> build(SidebarMode mode) async {
+  Future<List<ResolvedSidebarCassette>> build(SidebarMode mode) async {
     final rack = ref.watch(cassetteRackStateProvider(mode));
     final flowState = mode == SidebarMode.messages
         ? ref.watch(sidebarFlowProvider)
         : null;
-    final widgets = <Widget>[];
+    final resolvedCassettes = <ResolvedSidebarCassette>[];
     SidebarCassetteSection? previousSection;
 
-    /// Build a view model for a given cassette spec by routing to the owning feature.
+    // LAW: Cross-boundary resolution ends at inert-or-tracked payloads.
+    // Widget construction belongs to the render router, not this coordinator.
+    /// Build a payload for a given cassette spec by routing to the owning feature.
     ///
     /// IMPORTANT:
     /// Every branch returns a Future, even if the underlying coordinator is sync.
@@ -44,7 +45,7 @@ class CassetteWidgetCoordinator extends _$CassetteWidgetCoordinator {
     ///
     /// The [cassetteIndex] is passed to feature coordinators so widgets can
     /// update the rack without holding specs in state.
-    Future<SidebarCassettePayload> buildViewModelForSpec(
+    Future<SidebarCassettePayload> buildPayloadForSpec(
       CassetteSpec spec, {
       required int cassetteIndex,
     }) {
@@ -93,6 +94,10 @@ class CassetteWidgetCoordinator extends _$CassetteWidgetCoordinator {
               ref.watch(handles_feature.strayHandleModeSettingProvider);
               return null;
             },
+            strayHandlesModeSwitcher: (_) {
+              ref.watch(handles_feature.strayHandleModeSettingProvider);
+              return null;
+            },
             orElse: () {
               return null;
             },
@@ -136,64 +141,15 @@ class CassetteWidgetCoordinator extends _$CassetteWidgetCoordinator {
       );
     }
 
-    /// Convert a view model into a concrete widget and append it to the list.
-    ///
-    /// This is async because it awaits buildViewModelForSpec(spec).
+    /// Resolve a payload for a cassette and append the resolved transport data.
     Future<void> addCassette(
       CassetteSpec spec, {
       required int cassetteIndex,
     }) async {
-      final payload = await buildViewModelForSpec(
+      final payload = await buildPayloadForSpec(
         spec,
         cassetteIndex: cassetteIndex,
       );
-
-      Widget widget;
-
-      switch (payload) {
-        case SidebarCassetteCardViewModel():
-          final child =
-              payload.child ??
-              SidebarBodyModelContent(
-                bodyModel: payload.bodyModel!,
-                sidebarMode: mode,
-                cassetteIndex: cassetteIndex,
-              );
-          widget = SidebarCassetteCard(
-            title: payload.title,
-            subtitle: payload.subtitle,
-            sectionTitle: payload.sectionTitle,
-            footerText: payload.footerText,
-            isNaked: payload.isNaked,
-            shouldExpand: payload.shouldExpand,
-            role: payload.role,
-            placementMode: payload.placementMode,
-            contentAlignment: payload.contentAlignment,
-            bodyRenderKind: payload.bodyRenderKind,
-            layoutStyle: payload.layoutStyle,
-            child: child,
-          );
-        case SidebarInfoCassetteViewModel():
-          widget = SidebarInfoCard(
-            title: payload.title,
-            bodyText: payload.bodyText,
-            footnote: payload.footnote,
-            content: payload.content,
-          );
-        case SidebarNavigationCassetteViewModel():
-          widget = SidebarNavigationCard(
-            placementMode: payload.placementMode,
-            contentAlignment: payload.contentAlignment,
-            child: payload.child,
-          );
-      }
-
-      if (payload.topSpacing > 0) {
-        widget = Padding(
-          padding: EdgeInsets.only(top: payload.topSpacing),
-          child: widget,
-        );
-      }
 
       final currentSection = sidebarCassetteSectionForRole(payload.role);
       final sectionTopSpacing = sidebarCassetteSectionTopSpacing(
@@ -201,14 +157,38 @@ class CassetteWidgetCoordinator extends _$CassetteWidgetCoordinator {
         currentSection: currentSection,
       );
 
-      if (sectionTopSpacing > 0) {
-        widget = Padding(
-          padding: EdgeInsets.only(top: sectionTopSpacing),
-          child: widget,
-        );
-      }
+      assert(() {
+        // The section helper is intentionally limited to section boundaries.
+        //
+        // Rule:
+        // - contiguous cassettes in the same semantic section must not receive
+        //   extra spacing from the sectioning layer.
+        // - feature payload topSpacing remains available for exceptional local
+        //   breathing room, but the section system must not become a second
+        //   author of same-section rhythm.
+        //
+        // Violating this recreates the drift we are trying to remove: a flat
+        // list starts to encode meaning through ad hoc gaps instead of role-
+        // driven section boundaries.
+        if (previousSection == currentSection && sectionTopSpacing != 0) {
+          throw StateError(
+            'sidebarCassetteSectionTopSpacing must return 0 for contiguous '
+            'same-section cassettes. Intra-section rhythm belongs to '
+            'payload.topSpacing or card chrome, not the sectioning layer.',
+          );
+        }
 
-      widgets.add(widget);
+        return true;
+      }());
+
+      resolvedCassettes.add(
+        ResolvedSidebarCassette(
+          spec: spec,
+          cassetteIndex: cassetteIndex,
+          payload: payload,
+          topSpacing: payload.topSpacing + sectionTopSpacing,
+        ),
+      );
       previousSection = currentSection;
     }
 
@@ -222,7 +202,7 @@ class CassetteWidgetCoordinator extends _$CassetteWidgetCoordinator {
       await addCassette(spec, cassetteIndex: i);
     }
 
-    return widgets;
+    return resolvedCassettes;
   }
 }
 

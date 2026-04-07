@@ -1,7 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
-import '../widget_builders/unmatched_handles_cassette.dart';
+import '../payloads/unmatched_handles_cassette_payload.dart';
 
 part 'unmatched_handles_resolver.g.dart';
 
@@ -16,16 +15,7 @@ class UnmatchedHandlesResolver extends _$UnmatchedHandlesResolver {
   }
 
   /// Resolve into a sidebar cassette view model.
-  Future<SidebarCassetteCardViewModel> resolve() async {
-    // TODO: Add data fetching and conditional logic as needed
-    return const SidebarCassetteCardViewModel(
-      role: SidebarCassetteRole.contextPrimary,
-      placementMode: SidebarBodyPlacementMode.inset,
-      title: 'Unmatched phone numbers & emails',
-      subtitle:
-          'Link stray handles to contacts to keep conversations organized.',
-      shouldExpand: true,
-      child: UnmatchedHandlesCassette(),
-    );
+  Future<UnmatchedHandlesCassettePayload> resolve() async {
+    return const UnmatchedHandlesCassettePayload();
   }
 }

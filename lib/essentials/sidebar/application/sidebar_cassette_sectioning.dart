@@ -18,12 +18,23 @@ double sidebarCassetteSectionTopSpacing({
   required SidebarCassetteSection? previousSection,
   required SidebarCassetteSection currentSection,
 }) {
+  // This helper intentionally owns only section-boundary spacing.
+  //
+  // Guardrail:
+  // - Section changes are a sidebar-system concern owned centrally here.
+  // - Intra-section rhythm is intentionally NOT owned here.
+  // - Ordinary spacing within a section must come from the cassette payload's
+  //   own topSpacing or from card/chrome internals.
+  //
+  // We must never reintroduce same-section spacing here. Doing so creates a
+  // second vertical-rhythm author on top of payload.topSpacing, which causes
+  // silent layout drift and breaks the role-driven section contract.
   if (previousSection == null) {
     return 0;
   }
 
   if (previousSection == currentSection) {
-    return AppSpacing.sm;
+    return 0;
   }
 
   return switch ((previousSection, currentSection)) {

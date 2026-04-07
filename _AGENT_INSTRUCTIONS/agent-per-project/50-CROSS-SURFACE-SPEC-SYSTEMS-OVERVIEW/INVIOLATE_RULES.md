@@ -24,7 +24,7 @@ All routing from top-level spec to feature goes through the single coordinator.
 
 | Surface | Feature returns |
 |---|---|
-| Sidebar cassettes | `Future<SidebarCassetteCardViewModel>` |
+| Sidebar cassettes | `Future<SidebarCassettePayload>` |
 | Panel content | `Widget` |
 
 Features must never return pre-wrapped card widgets to the sidebar.
@@ -78,11 +78,12 @@ widget_builders/
 This applies equally to `sidebar_cassette_spec/`, `view_spec/`, and any future
 surface folders.
 
-## 10. No Wrapper Types, No Parallel Payloads
+## 10. No Ad-Hoc Wrapper Types or Side Channels
 
-Each surface has exactly one payload type. If more data needs to cross the
-feature → essentials boundary, add fields to the existing type.
-Never introduce `Result`, `Response`, `WidgetWithMetadata`, or parallel models.
+Each surface has one canonical boundary contract. For sidebar cassettes, that
+contract is `SidebarCassettePayload`, which may have approved concrete subtypes.
+Never introduce `Result`, `Response`, `WidgetWithMetadata`, tuples, or parallel
+side-channel models to smuggle extra sidebar meaning across the boundary.
 
 ## 11. Errors and Empty States Are Content, Not Exceptions
 

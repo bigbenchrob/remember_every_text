@@ -7,7 +7,7 @@ part of 'info_cassette_coordinator.dart';
 // **************************************************************************
 
 String _$handlesInfoCassetteCoordinatorHash() =>
-    r'6106b9ed4caac5798784f23b5825df3dbce6663f';
+    r'c68a350012bf219f8f8cfad201daa60694d0e3ba';
 
 /// Handles InfoCassetteCoordinator
 ///

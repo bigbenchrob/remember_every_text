@@ -168,6 +168,7 @@ class _RecoveredAttachmentPreview extends ConsumerWidget {
           fit: BoxFit.contain,
           errorBuilder: (_, __, ___) {
             return const _RecoveredAttachmentPlaceholder(
+              cardKey: ValueKey<String>('recovered-placeholder-image-error'),
               title: 'Image preview unavailable',
               body:
                   'The recovered image file exists in metadata, but could not be rendered here.',
@@ -179,6 +180,7 @@ class _RecoveredAttachmentPreview extends ConsumerWidget {
 
     if (attachment.isVideo) {
       return const _RecoveredAttachmentPlaceholder(
+        cardKey: ValueKey<String>('recovered-placeholder-video'),
         title: 'Recovered video',
         body:
             'This recovered attachment looks like a video. Inline video playback can be added later.',
@@ -187,6 +189,7 @@ class _RecoveredAttachmentPreview extends ConsumerWidget {
 
     if (attachment.isUrlPreview) {
       return const _RecoveredAttachmentPlaceholder(
+        cardKey: ValueKey<String>('recovered-placeholder-link-preview'),
         title: 'Recovered link preview attachment',
         body:
             'This attachment appears to be a stored link-preview payload. Dedicated preview rendering can be added later.',
@@ -195,6 +198,7 @@ class _RecoveredAttachmentPreview extends ConsumerWidget {
 
     if (hasLocalPath) {
       return const _RecoveredAttachmentPlaceholder(
+        cardKey: ValueKey<String>('recovered-placeholder-file'),
         title: 'Recovered file',
         body:
             'A recovered attachment file is linked to this message. Rich inline rendering is not available for this file type yet.',
@@ -202,6 +206,7 @@ class _RecoveredAttachmentPreview extends ConsumerWidget {
     }
 
     return _RecoveredAttachmentPlaceholder(
+      cardKey: const ValueKey<String>('recovered-placeholder-metadata-only'),
       title: 'Attachment metadata only',
       body:
           'This recovered attachment still has identifying metadata, but no local file path survived into the current projection.',
@@ -215,12 +220,14 @@ class _RecoveredAttachmentPlaceholder extends ConsumerWidget {
   const _RecoveredAttachmentPlaceholder({
     required this.title,
     required this.body,
+    this.cardKey,
     this.iconColor,
     this.textStyle,
   });
 
   final String title;
   final String body;
+  final Key? cardKey;
   final Color? iconColor;
   final TextStyle? textStyle;
 
@@ -230,30 +237,38 @@ class _RecoveredAttachmentPlaceholder extends ConsumerWidget {
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colors.surfaces.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.lines.borderSubtle, width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            CupertinoIcons.doc,
-            color: iconColor ?? colors.content.textSecondary,
-            size: 28,
+    return Align(
+      alignment: Alignment.centerLeft,
+      widthFactor: 1,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 260),
+        child: Container(
+          key: cardKey,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: colors.surfaces.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: colors.lines.borderSubtle, width: 1),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            title,
-            style: typography.body.copyWith(fontWeight: FontWeight.w600),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                CupertinoIcons.doc,
+                color: iconColor ?? colors.content.textSecondary,
+                size: 24,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                title,
+                style: typography.body.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(body, style: textStyle ?? typography.body),
+            ],
           ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(body, style: textStyle ?? typography.body),
-        ],
+        ),
       ),
     );
   }

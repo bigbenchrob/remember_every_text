@@ -7,7 +7,7 @@ part of 'unmatched_handles_resolver.dart';
 // **************************************************************************
 
 String _$unmatchedHandlesResolverHash() =>
-    r'6fa8a7e112c96cfba1d08c8fa77f5ce70ad16471';
+    r'42ff71c1e6c8ddba0e937cf7ba34e33c208ceeee';
 
 /// Resolver for the unmatched handles list cassette.
 ///

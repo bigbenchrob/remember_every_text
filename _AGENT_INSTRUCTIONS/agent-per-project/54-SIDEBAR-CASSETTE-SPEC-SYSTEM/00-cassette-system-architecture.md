@@ -248,12 +248,9 @@ class CassetteWidgetCoordinator extends _$CassetteWidgetCoordinator {
      // ... one branch per CassetteSpec variant
    );
    ```
-4. **Awaits** the returned `Future<SidebarCassetteCardViewModel>` from each feature
-5. **Wraps** the view model in the appropriate card widget based on `cardType`:
-   - `CassetteCardType.standard` → `SidebarCassetteCard`
-   - `CassetteCardType.info` → `SidebarInfoCard`
-   - `CassetteCardType.sidebarNavigation` → `SidebarNavigationCard`
-6. **Returns** `List<Widget>` — the fully composed sidebar
+4. **Awaits** the returned `Future<SidebarCassettePayload>` from each feature
+5. **Returns** `List<ResolvedSidebarCassette>` — semantic payloads plus rack context
+6. **Defers** widget construction and chrome selection to the shared sidebar render router
 
 ### Feature import pattern
 
@@ -284,62 +281,42 @@ to becoming active. This is allowed, but only under the following constraints:
 
 ---
 
-## 5. SidebarCassetteCardViewModel
+## 5. SidebarCassettePayload
 
-The single canonical payload that every feature coordinator returns:
+The canonical sidebar boundary contract is `SidebarCassettePayload`. All live
+sidebar payloads are inert and declare their render family explicitly via
+`SidebarCassetteRenderKind`.
 
-```dart
-class SidebarCassetteCardViewModel {
-  const SidebarCassetteCardViewModel({
-    required this.title,
-    this.subtitle,
-    this.sectionTitle,
-    this.footerText,
-    required this.child,            // The feature-owned widget content
-    this.cardType = CassetteCardType.standard,
-    this.layoutStyle = SidebarCardLayoutStyle.standard,
-    this.infoBodyText,
-    this.infoAction,
-    this.isControl = false,
-    this.isNaked = false,
-    bool? shouldExpand,
-  });
-}
-```
+### Approved payload families
 
-### Key fields
-
-| Field | Purpose |
+| Payload family | Purpose |
 |---|---|
-| `title` | Card header text |
-| `subtitle` | Optional secondary text in header |
-| `child` | The feature's widget (a widget builder output) |
-| `cardType` | Determines which card chrome is used |
-| `layoutStyle` | Controls horizontal rails (margin/padding/gaps) |
-| `isControl` | When true, card is a navigation control (non-expanding) |
-| `isNaked` | When true, card has no chrome at all |
-| `shouldExpand` | Whether card fills available vertical space |
+| `PlacementGovernedSidebarCassettePayload` | Feature-owned bodies that render inside the shared cassette shell |
+| `FeatureInfoSidebarCassettePayload` | Shared info-card chrome with semantic body text and optional feature-owned supplemental content |
+| `SharedBodyModelSidebarCassettePayload` | Essentials-owned body-model shells such as dropdown/menu cassettes |
 
-The resolver decides all field values. The app-level coordinator reads `cardType`
-to choose the card widget. The card widget renders the chrome and slots in `child`.
+The resolver decides payload fields. The shared sidebar render router reads
+`renderKind` and subtype to select chrome, render-edge builders, and shared
+layout rules.
 
 **Location:** `lib/essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart`
 
 ---
 
-## 6. Card Widgets (Chrome)
+## 6. Shared Chrome and Render Families
 
-Three card widgets correspond to `CassetteCardType`:
+Essentials-owned presentation widgets still provide the sidebar chrome, but they
+are now chosen by the shared render router rather than by a feature-supplied
+render-family contract.
 
-| Card type | Widget | Purpose |
-|---|---|---|
-| `standard` | `SidebarCassetteCard` | Standard cassette with title, optional subtitle/footer, expandable body |
-| `info` | `SidebarInfoCard` | Informational card with body text and optional action widget |
-| `sidebarNavigation` | `SidebarNavigationCard` | Navigation control card (compact, non-expanding) |
+| Render family | Shared chrome / host |
+|---|---|
+| `placementGovernedFeature` | `SidebarCassetteCard.placementGoverned(...)` |
+| `featureInfo` | `SidebarInfoCard` |
+| `sharedBodyModel` | `SidebarCassetteCard` + `SidebarBodyModelContent` |
 
-These are **essentials-owned** presentation widgets. Features never construct or
-return these cards — they return a `SidebarCassetteCardViewModel` and the
-coordinator wraps it.
+Features never construct or return these chrome widgets. They return inert
+payloads and essentials applies the shared wrapper.
 
 ### Practical ownership guidance
 
@@ -353,25 +330,24 @@ coordinator wraps it.
 
 ---
 
-## 7. View Model → Widget Translation and Expandability
+## 7. Payload → Widget Translation and Expandability
 
-The `CassetteWidgetCoordinator` translates each `SidebarCassetteCardViewModel`
-into a card widget. This section documents exactly how VM properties map to
-widget behaviour, with particular focus on vertical sizing.
+The sidebar render router translates each `ResolvedSidebarCassette.payload`
+into a widget. This section documents how payload families map to shared chrome
+and how expandability is preserved through the shared host.
 
-### 7a. Card Type Routing
+### 7a. Render-Kind Routing
 
-The coordinator switches on `cardType` to select the chrome widget:
+The shared router switches on `payload.renderKind` to select the host widget:
 
-| `cardType` | Widget created | VM properties forwarded |
+| `renderKind` | Widget created | Key payload data used |
 |---|---|---|
-| `.standard` | `SidebarCassetteCard` | `title`, `subtitle`, `sectionTitle`, `footerText`, `isControl`, `isNaked`, **`shouldExpand`**, **`layoutStyle`**, `child` |
-| `.info` | `SidebarInfoCard` | `title` (if non-empty), `infoBodyText` → body, `footerText` → footnote, `infoAction` → action |
-| `.sidebarNavigation` | `SidebarNavigationCard` | `child` only |
+| `.placementGovernedFeature` | `SidebarCassetteCard.placementGoverned(...)` | title/subtitle/footer, placement, alignment, layout style, `shouldExpand`, feature-owned render-edge body |
+| `.featureInfo` | `SidebarInfoCard` | title, body text, footnote, optional feature-owned supplemental content |
+| `.sharedBodyModel` | `SidebarCassetteCard` + `SidebarBodyModelContent` | title/subtitle/footer, placement, alignment, layout style, `shouldExpand`, `SidebarBodyModel` |
 
-**Key detail:** Only `SidebarCassetteCard` receives `shouldExpand`. The other two
-card types are always intrinsic-height — `shouldExpand` on the VM is irrelevant
-for `.info` and `.sidebarNavigation` cards.
+**Key detail:** `shouldExpand` is only meaningful on the payload branches that
+support full card bodies (`placementGovernedFeature` and `sharedBodyModel`).
 
 ### 7b. Sidebar Surface Layout (`_LeftSidebarSurface`)
 
@@ -424,22 +400,18 @@ a safety net.
 
 ### 7e. Expandability Defaults — Opt-In System
 
-`SidebarCassetteCardViewModel` defaults `shouldExpand` to **`false`**. Cards
-are intrinsic-height unless the resolver explicitly opts in:
+Payload branches that support expansion default `shouldExpand` to **`false`**.
+Cards are intrinsic-height unless the resolver explicitly opts in:
 
 ```dart
 // Scrollable list — needs vertical space:
-SidebarCassetteCardViewModel(
-  title: 'Contacts',
+SomePlacementGovernedPayload(
   shouldExpand: true,  // explicit opt-in
-  child: ContactFlatListWidget(...),
 );
 
 // Info card — fixed content:
-SidebarCassetteCardViewModel(
-  title: 'Contact Names',
-  // shouldExpand defaults to false — no override needed
-  child: ContactDisplayNameInfoCassette(),
+StaticFeatureInfoSidebarCassettePayload(
+  bodyText: 'Contact Names are resolved from the chosen contact.',
 );
 ```
 
@@ -451,13 +423,12 @@ controls) should leave the default.
 ### 7f. Complete Height Constraint Flow
 
 ```
-Resolver sets shouldExpand on VM
+Resolver sets shouldExpand on payload (when supported)
     │
     ▼
-CassetteWidgetCoordinator
-    ├─ standard → SidebarCassetteCard(shouldExpand: vm.shouldExpand)
-    ├─ info → SidebarInfoCard (always intrinsic, mainAxisSize: min)
-    └─ nav → SidebarNavigationCard (always intrinsic)
+Sidebar render router
+  ├─ placement/sharedBodyModel → shared card host reads shouldExpand
+  └─ featureInfo → SidebarInfoCard (always intrinsic)
     │
     ▼
 _LeftSidebarSurface sorts widgets
@@ -478,23 +449,21 @@ SidebarCassetteCard.build (inner LayoutBuilder)
 
 ---
 
-## 8. Card Configuration Patterns
+## 8. Payload Configuration Patterns
 
 This section provides guidance for choosing the right card configuration based on
 the cassette's purpose and content characteristics.
 
-### 8a. Card Types (`CassetteCardType`)
+### 8a. Payload Families
 
-The `cardType` determines which **chrome widget** wraps the content:
+Choose the payload family that matches the chrome ownership and render-edge
+behavior you need:
 
-| Type | When to use | Example cassettes |
+| Family | When to use | Example cassettes |
 |---|---|---|
-| `standard` | Interactive content, lists, forms, data displays | Contact lists, message threads, stray handles review |
-| `info` | Explanatory text, onboarding, contextual help | "Why am I seeing this?", feature explanations |
-| `sidebarNavigation` | Navigation controls to return to previous states | "Back to all contacts" strip |
-
-**Default:** Most cassettes use `standard`. Use `info` sparingly for educational
-content. Use `sidebarNavigation` only for drill-down escape hatches.
+| `PlacementGovernedSidebarCassettePayload` | Feature-specific interactive content inside the shared card shell | Contact lists, heatmaps, stray handles review |
+| `FeatureInfoSidebarCassettePayload` | Explanatory text or shared info chrome | feature explanations, static settings info |
+| `SharedBodyModelSidebarCassettePayload` | Essentials-owned controls expressed as body models | top menus, settings dropdowns |
 
 ### 8b. Layout Styles (`SidebarCardLayoutStyle`)
 
@@ -541,7 +510,7 @@ the sidebar edge and need full control over their layout.
 Opts the card into **vertical space filling**:
 - When `true`, card expands to fill remaining sidebar height
 - When `false` (default), card takes intrinsic height
-- Only meaningful for `CassetteCardType.standard`
+- Only meaningful for payload families that render through `SidebarCassetteCard`
 
 **Use for:** Scrollable lists that should fill available space (contact lists,
 message threads, stray handles review). Leave `false` for fixed-height content
@@ -549,15 +518,14 @@ message threads, stray handles review). Leave `false` for fixed-height content
 
 ### 8d. Decision Matrix
 
-| Cassette purpose | `cardType` | `layoutStyle` | `isControl` | `isNaked` | `shouldExpand` |
-|---|---|---|---|---|---|
-| Scrollable contact/message list | `standard` | `standard` | `false` | `false` | `true` |
-| Dense list with action overlays | `standard` | `listDense` | `false` | `false` | `true` |
-| Menu/filter dropdown | `standard` | `standard` | `true` | `true` | `false` |
-| Mode switcher popup | `standard` | `standard` | `true` | `true` | `false` |
-| Explanatory help text | `info` | — | `false` | `false` | `false` |
-| "Back to X" navigation strip | `sidebarNavigation` | — | `false` | `false` | `false` |
-| Summary statistics card | `standard` | `standard` | `false` | `false` | `false` |
+| Cassette purpose | Payload family | `layoutStyle` | `isNaked` | `shouldExpand` |
+|---|---|---|---|---|
+| Scrollable contact/message list | `PlacementGoverned...` | `standard` | `false` | `true` |
+| Dense list with action overlays | `PlacementGoverned...` | `listDense` | `false` | `true` |
+| Menu/filter dropdown | `SharedBodyModel...` | `standard` | `true` | `false` |
+| Mode switcher popup | `SharedBodyModel...` or placement-governed | `standard` | `true` | `false` |
+| Explanatory help text | `FeatureInfo...` | — | — | `false` |
+| Summary statistics card | `PlacementGoverned...` | `standard` | `false` | `false` |
 
 ### 8e. Action Gutter Pattern
 
@@ -628,18 +596,21 @@ CassetteWidgetCoordinator.build(mode)
     │       │
     │       ├──→ Resolver.resolve(...)
     │       │       │  domain logic, data lookups
-    │       │       │  constructs widget via widget builder
-    │       │       │  returns Future<SidebarCassetteCardViewModel>
+    │       │       │  constructs SidebarCassettePayload
+    │       │       │  returns Future<SidebarCassettePayload>
     │       │       ▼
-    │       │    SidebarCassetteCardViewModel
+    │       │    SidebarCassettePayload
     │       ▼
-    │    Future<SidebarCassetteCardViewModel>
+    │    Future<SidebarCassettePayload>
     │
     ▼
-CassetteWidgetCoordinator wraps VM in card widget
-    │  standard → SidebarCassetteCard
-    │  info     → SidebarInfoCard
-    │  sidebarNavigation → SidebarNavigationCard
+  CassetteWidgetCoordinator returns ResolvedSidebarCassette list
+    │
+    ▼
+  Shared sidebar render router builds widgets
+    │  placementGovernedFeature → SidebarCassetteCard.placementGoverned(...)
+    │  featureInfo             → SidebarInfoCard
+    │  sharedBodyModel         → SidebarCassetteCard + SidebarBodyModelContent
     │
     ▼
 List<Widget>  →  leftPanelWidget()  →  _LeftSidebarSurface  →  UI

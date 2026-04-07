@@ -1,28 +1,30 @@
-import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../domain/spec_classes/messages_info_cassette_spec.dart';
-import '../widget_builders/recovered_no_handle_from_me_navigator_widget.dart';
-import '../widget_builders/recovered_unlinked_navigator_widget.dart';
 
 part 'info_content_resolver.g.dart';
+
+enum MessagesInfoNavigatorKind {
+  recoveredDeletedMessages,
+  recoveredNoHandleMessages,
+}
 
 /// Resolved content for a messages info cassette.
 class MessagesInfoContent {
   const MessagesInfoContent({
     this.title,
     this.body,
-    this.child,
+    this.navigatorKind,
     this.topSpacing = 0,
   }) : assert(
-         (body != null) != (child != null),
-         'Provide exactly one of body or child.',
+         (body != null) != (navigatorKind != null),
+         'Provide exactly one of body or navigatorKind.',
        );
 
   final String? title;
   final String? body;
-  final Widget? child;
+  final MessagesInfoNavigatorKind? navigatorKind;
   final double topSpacing;
 }
 
@@ -49,15 +51,13 @@ class MessagesInfoContentResolver extends _$MessagesInfoContentResolver {
               'list header.',
         );
       case MessagesInfoKey.recoveredDeletedMessages:
-        return MessagesInfoContent(
-          child: RecoveredUnlinkedNavigatorWidget(cassetteIndex: cassetteIndex),
+        return const MessagesInfoContent(
+          navigatorKind: MessagesInfoNavigatorKind.recoveredDeletedMessages,
           topSpacing: AppSpacing.lg,
         );
       case MessagesInfoKey.recoveredNoHandleMessages:
-        return MessagesInfoContent(
-          child: RecoveredNoHandleFromMeNavigatorWidget(
-            cassetteIndex: cassetteIndex,
-          ),
+        return const MessagesInfoContent(
+          navigatorKind: MessagesInfoNavigatorKind.recoveredNoHandleMessages,
         );
     }
   }

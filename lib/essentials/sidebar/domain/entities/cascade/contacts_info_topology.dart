@@ -10,13 +10,15 @@ CassetteSpec? resolveContactsInfoChild(ContactsInfoCassetteSpec spec) {
             ContactsCassetteSpec.contactChooser(),
           );
         case ContactsInfoKey.chosenContact:
-          // Contact chosen — this info card provides contextual guidance and
-          // the change-contact action below the hero summary.
-          // Chain: heroSummary → infoCard(chosenContact) → messageScopeToggle
+          // Contact chosen — this info card provides contextual guidance.
+          // The lightweight "change contact" control is a separate inert
+          // cassette immediately below it.
+          // Chain: heroSummary → infoCard(chosenContact)
+          //     → contactSelectionControl → messageScopeToggle
           //     → handleFilter → heatMap
           return CassetteSpec.contacts(
-            ContactsCassetteSpec.messageScopeToggle(
-              contactId: chosenContactId!,
+            ContactsCassetteSpec.contactSelectionControl(
+              chosenContactId: chosenContactId!,
             ),
           );
       }

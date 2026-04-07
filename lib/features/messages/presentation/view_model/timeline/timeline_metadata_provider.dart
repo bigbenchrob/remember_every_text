@@ -5,6 +5,7 @@ import '../../../../../essentials/db/feature_level_providers.dart';
 import '../../../../../essentials/db/feature_level_providers/message_data_version_provider.dart';
 import '../../../../../essentials/db/infrastructure/data_sources/local/working/working_database.dart';
 import '../../../domain/value_objects/message_timeline_scope.dart';
+import '../../../infrastructure/repositories/recovered_unlinked_messages_provider.dart';
 import 'contact_timeline_display_version_provider.dart';
 
 part 'timeline_metadata_provider.g.dart';
@@ -76,6 +77,28 @@ Future<TimelineMetadata> timelineMetadata(
       ref.watch(contactTimelineDisplayVersionProvider(scope: scope));
     case GlobalTimelineScope() || ChatTimelineScope():
       ref.watch(messageDataVersionProvider);
+    case RecoveredTimelineScope():
+      break;
+  }
+
+  if (scope case RecoveredTimelineScope(
+    :final contactId,
+    :final onlyNoHandleFromMe,
+  )) {
+    final recoveredAsync = ref.watch(
+      recoveredUnlinkedMessagesProvider(contactId: contactId),
+    );
+    final recoveredMessages =
+        recoveredAsync.valueOrNull ??
+        await ref.watch(
+          recoveredUnlinkedMessagesProvider(contactId: contactId).future,
+        ) ??
+        const <RecoveredUnlinkedMessageItem>[];
+    final filteredMessages = filterRecoveredTimelineMessages(
+      messages: recoveredMessages,
+      onlyNoHandleFromMe: onlyNoHandleFromMe,
+    );
+    return _buildRecoveredMetadata(filteredMessages);
   }
 
   final db = await ref.watch(driftWorkingDatabaseProvider.future);
@@ -87,7 +110,45 @@ Future<TimelineMetadata> timelineMetadata(
           ? _fetchFilteredContactMetadata(db, contactId, filterHandleId)
           : _fetchContactMetadata(db, contactId),
     ChatTimelineScope(:final chatId) => _fetchChatMetadata(db, chatId),
+    RecoveredTimelineScope() => const TimelineMetadata(
+      totalMessages: 0,
+      firstMessageDate: null,
+      lastMessageDate: null,
+    ),
   };
+}
+
+TimelineMetadata _buildRecoveredMetadata(
+  List<RecoveredUnlinkedMessageItem> messages,
+) {
+  if (messages.isEmpty) {
+    return const TimelineMetadata(
+      totalMessages: 0,
+      firstMessageDate: null,
+      lastMessageDate: null,
+    );
+  }
+
+  final datedMessages =
+      messages
+          .map((message) => message.sentAt)
+          .whereType<DateTime>()
+          .toList(growable: false)
+        ..sort();
+
+  if (datedMessages.isEmpty) {
+    return TimelineMetadata(
+      totalMessages: messages.length,
+      firstMessageDate: null,
+      lastMessageDate: null,
+    );
+  }
+
+  return TimelineMetadata(
+    totalMessages: messages.length,
+    firstMessageDate: datedMessages.first,
+    lastMessageDate: datedMessages.last,
+  );
 }
 
 Future<TimelineMetadata> _fetchGlobalMetadata(WorkingDatabase db) async {

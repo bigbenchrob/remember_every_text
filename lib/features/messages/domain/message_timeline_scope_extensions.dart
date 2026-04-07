@@ -20,6 +20,9 @@ extension MessageTimelineScopeOrdinal on MessageTimelineScope {
             ? FilteredContactOrdinalStrategy(db, contactId, filterHandleId)
             : ContactOrdinalStrategy(db, contactId),
       ChatTimelineScope(:final chatId) => ChatOrdinalStrategy(db, chatId),
+      RecoveredTimelineScope() => throw UnsupportedError(
+        'Recovered timeline scopes are constructed from recovered list data.',
+      ),
     };
   }
 }

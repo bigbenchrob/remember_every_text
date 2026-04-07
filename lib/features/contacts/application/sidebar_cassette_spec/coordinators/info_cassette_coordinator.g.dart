@@ -7,7 +7,7 @@ part of 'info_cassette_coordinator.dart';
 // **************************************************************************
 
 String _$contactsInfoCassetteCoordinatorHash() =>
-    r'143dcfbb599454084be5cf5159742365b7140b1b';
+    r'b9f266084763ae8271ccf6f5e9b60498feb510ef';
 
 /// Contacts Info Cassette Coordinator
 ///
@@ -19,7 +19,7 @@ String _$contactsInfoCassetteCoordinatorHash() =>
 /// - Pattern-matches on the spec
 /// - Extracts the info key
 /// - Calls the info content resolver
-/// - Returns a [SidebarCassetteCardViewModel] with cardType: info
+/// - Returns `Future<SidebarCassettePayload>`
 ///
 /// Copied from [ContactsInfoCassetteCoordinator].
 @ProviderFor(ContactsInfoCassetteCoordinator)

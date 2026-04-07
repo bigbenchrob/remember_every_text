@@ -7,7 +7,7 @@ part of 'cassette_widget_coordinator_provider.dart';
 // **************************************************************************
 
 String _$cassetteWidgetCoordinatorHash() =>
-    r'c7f3c029b3c265b7195b76b570d1218b6a6dbc61';
+    r'69e4258c9a50570e998c24cfdd564feb8277a77d';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -31,10 +31,10 @@ class _SystemHash {
 }
 
 abstract class _$CassetteWidgetCoordinator
-    extends BuildlessAutoDisposeAsyncNotifier<List<Widget>> {
+    extends BuildlessAutoDisposeAsyncNotifier<List<ResolvedSidebarCassette>> {
   late final SidebarMode mode;
 
-  FutureOr<List<Widget>> build(SidebarMode mode);
+  FutureOr<List<ResolvedSidebarCassette>> build(SidebarMode mode);
 }
 
 /// See also [CassetteWidgetCoordinator].
@@ -42,7 +42,8 @@ abstract class _$CassetteWidgetCoordinator
 const cassetteWidgetCoordinatorProvider = CassetteWidgetCoordinatorFamily();
 
 /// See also [CassetteWidgetCoordinator].
-class CassetteWidgetCoordinatorFamily extends Family<AsyncValue<List<Widget>>> {
+class CassetteWidgetCoordinatorFamily
+    extends Family<AsyncValue<List<ResolvedSidebarCassette>>> {
   /// See also [CassetteWidgetCoordinator].
   const CassetteWidgetCoordinatorFamily();
 
@@ -78,7 +79,7 @@ class CassetteWidgetCoordinatorProvider
     extends
         AutoDisposeAsyncNotifierProviderImpl<
           CassetteWidgetCoordinator,
-          List<Widget>
+          List<ResolvedSidebarCassette>
         > {
   /// See also [CassetteWidgetCoordinator].
   CassetteWidgetCoordinatorProvider(SidebarMode mode)
@@ -108,7 +109,7 @@ class CassetteWidgetCoordinatorProvider
   final SidebarMode mode;
 
   @override
-  FutureOr<List<Widget>> runNotifierBuild(
+  FutureOr<List<ResolvedSidebarCassette>> runNotifierBuild(
     covariant CassetteWidgetCoordinator notifier,
   ) {
     return notifier.build(mode);
@@ -133,7 +134,7 @@ class CassetteWidgetCoordinatorProvider
   @override
   AutoDisposeAsyncNotifierProviderElement<
     CassetteWidgetCoordinator,
-    List<Widget>
+    List<ResolvedSidebarCassette>
   >
   createElement() {
     return _CassetteWidgetCoordinatorProviderElement(this);
@@ -156,7 +157,7 @@ class CassetteWidgetCoordinatorProvider
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 mixin CassetteWidgetCoordinatorRef
-    on AutoDisposeAsyncNotifierProviderRef<List<Widget>> {
+    on AutoDisposeAsyncNotifierProviderRef<List<ResolvedSidebarCassette>> {
   /// The parameter `mode` of this provider.
   SidebarMode get mode;
 }
@@ -165,7 +166,7 @@ class _CassetteWidgetCoordinatorProviderElement
     extends
         AutoDisposeAsyncNotifierProviderElement<
           CassetteWidgetCoordinator,
-          List<Widget>
+          List<ResolvedSidebarCassette>
         >
     with CassetteWidgetCoordinatorRef {
   _CassetteWidgetCoordinatorProviderElement(super.provider);

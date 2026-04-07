@@ -18,11 +18,11 @@ The cross-surface spec system provides a **uniform architecture** for:
 
 | Surface | Sealed class | State model | Feature returns | Async? |
 |---|---|---|---|---|
-| **Left sidebar** (cassettes) | `CassetteSpec` | `CassetteRack` (ordered list) | `Future<SidebarCassetteCardViewModel>` | Yes |
+| **Left sidebar** (cassettes) | `CassetteSpec` | `CassetteRack` (ordered list) | `Future<SidebarCassettePayload>` | Yes |
 | **Center panel** | `ViewSpec` | `PanelStack` (pages with tabs) | `Widget` | No |
 | **Right panel** (future) | `ViewSpec` | `PanelStack` | `Widget` | No |
 | **Tooltips** (future) | TBD | TBD | TBD | TBD |
-| **Settings sidebar** (future) | `CassetteSpec` (settings mode) | `CassetteRack` | `Future<SidebarCassetteCardViewModel>` | Yes |
+| **Settings sidebar** (future) | `CassetteSpec` (settings mode) | `CassetteRack` | `Future<SidebarCassettePayload>` | Yes |
 
 ---
 
@@ -46,12 +46,12 @@ Feature coordinator (in feature/application/<surface>_spec/coordinators/)
     ▼
 Resolver (in feature/application/<surface>_spec/resolvers/)
     │  receives explicit parameters
-    │  performs logic, constructs payload
-    │  calls widget builder for UI content
+    │  performs logic, constructs the surface payload
+    │  may defer widget construction to the render edge
     │
     ▼
 Widget builder (in feature/application/<surface>_spec/widget_builders/)
-    │  assembles widgets from decided inputs
+    │  assembles widgets from decided inputs when the surface contract requires widgets
     │
     ▼
 Payload returned to app-level coordinator
@@ -135,9 +135,9 @@ Two app-level coordinators dispatch to features:
 
 - Watches `CassetteRackState` → iterates each `CassetteSpec`
 - Routes to feature cassette coordinators via `spec.when(...)`
-- Awaits `Future<SidebarCassetteCardViewModel>` from each feature
-- Wraps each view model in card chrome (`SidebarCassetteCard`, etc.)
-- Returns `List<Widget>`
+- Awaits `Future<SidebarCassettePayload>` from each feature
+- Returns `List<ResolvedSidebarCassette>`
+- Defers chrome selection and widget construction to the shared sidebar render router
 
 **Location:** `lib/essentials/sidebar/application/cassette_widget_coordinator_provider.dart`
 

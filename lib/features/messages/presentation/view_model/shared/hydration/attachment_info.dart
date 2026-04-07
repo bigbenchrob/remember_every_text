@@ -1,5 +1,8 @@
 import 'dart:io';
 
+import '../../../../../attachments/domain/constants/resolved_attachment_availability.dart';
+import '../../../../../attachments/domain/entities/attachment_recovery_metadata.dart';
+
 class AttachmentInfo {
   const AttachmentInfo({
     required this.id,
@@ -8,7 +11,9 @@ class AttachmentInfo {
     required this.transferName,
     this.importAttachmentId,
     this.messageGuid,
-    this.archiveResolvedPath,
+    this.resolvedDisplayPath,
+    this.availability,
+    this.recoveryMetadata,
     this.mediaWidth,
     this.mediaHeight,
   });
@@ -19,13 +24,40 @@ class AttachmentInfo {
   final String? transferName;
   final int? importAttachmentId;
   final String? messageGuid;
-
-  /// Absolute path to the archived copy of this file (if any).
-  /// Populated by the archive resolution pass during message hydration.
-  final String? archiveResolvedPath;
+  final String? resolvedDisplayPath;
+  final ResolvedAttachmentAvailability? availability;
+  final AttachmentRecoveryMetadata? recoveryMetadata;
 
   final double? mediaWidth;
   final double? mediaHeight;
+
+  AttachmentInfo copyWith({
+    int? id,
+    String? localPath,
+    String? mimeType,
+    String? transferName,
+    int? importAttachmentId,
+    String? messageGuid,
+    String? resolvedDisplayPath,
+    ResolvedAttachmentAvailability? availability,
+    AttachmentRecoveryMetadata? recoveryMetadata,
+    double? mediaWidth,
+    double? mediaHeight,
+  }) {
+    return AttachmentInfo(
+      id: id ?? this.id,
+      localPath: localPath ?? this.localPath,
+      mimeType: mimeType ?? this.mimeType,
+      transferName: transferName ?? this.transferName,
+      importAttachmentId: importAttachmentId ?? this.importAttachmentId,
+      messageGuid: messageGuid ?? this.messageGuid,
+      resolvedDisplayPath: resolvedDisplayPath ?? this.resolvedDisplayPath,
+      availability: availability ?? this.availability,
+      recoveryMetadata: recoveryMetadata ?? this.recoveryMetadata,
+      mediaWidth: mediaWidth ?? this.mediaWidth,
+      mediaHeight: mediaHeight ?? this.mediaHeight,
+    );
+  }
 
   bool get hasLocalFile => localPath != null && localPath!.isNotEmpty;
 
@@ -99,12 +131,29 @@ class AttachmentInfo {
     return rawPath;
   }
 
-  /// Returns the best available [File] for this attachment by checking:
-  /// 1. The Messages local path (~/Library/Messages/Attachments)
-  /// 2. The archive copy (if [archiveResolvedPath] is set)
+  bool get isDisplayable {
+    return availability == ResolvedAttachmentAvailability.available &&
+        resolvedDisplayPath != null;
+  }
+
+  /// Returns the file selected by resolver-backed hydration.
   ///
-  /// Returns `null` if no file is available at either location.
-  File? bestAvailableFile() {
+  /// Directly-constructed legacy instances fall back to the local path so
+  /// existing tests and demo content continue to render.
+  File? displayableFile() {
+    final explicitPath = resolvedDisplayPath;
+    if (explicitPath != null && explicitPath.isNotEmpty) {
+      final file = File(explicitPath);
+      if (file.existsSync()) {
+        return file;
+      }
+      return null;
+    }
+
+    if (availability != null) {
+      return null;
+    }
+
     final localResolved = resolvedLocalPath();
     if (localResolved != null) {
       final file = File(localResolved);
@@ -112,12 +161,7 @@ class AttachmentInfo {
         return file;
       }
     }
-    if (archiveResolvedPath != null) {
-      final archiveFile = File(archiveResolvedPath!);
-      if (archiveFile.existsSync()) {
-        return archiveFile;
-      }
-    }
+
     return null;
   }
 }

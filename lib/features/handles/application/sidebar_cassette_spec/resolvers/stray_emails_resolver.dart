@@ -1,7 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
-import '../widget_builders/stray_emails_cassette.dart';
+import '../payloads/stray_emails_cassette_payload.dart';
 
 part 'stray_emails_resolver.g.dart';
 
@@ -16,16 +15,7 @@ class StrayEmailsResolver extends _$StrayEmailsResolver {
   }
 
   /// Resolve into a sidebar cassette view model.
-  Future<SidebarCassetteCardViewModel> resolve() async {
-    // TODO: Add data fetching and conditional logic as needed
-    return const SidebarCassetteCardViewModel(
-      role: SidebarCassetteRole.contextPrimary,
-      placementMode: SidebarBodyPlacementMode.inset,
-      title: 'Stray emails',
-      subtitle:
-          'Email addresses not linked to any contact in your address book.',
-      shouldExpand: true,
-      child: StrayEmailsCassette(),
-    );
+  Future<StrayEmailsCassettePayload> resolve() async {
+    return const StrayEmailsCassettePayload();
   }
 }

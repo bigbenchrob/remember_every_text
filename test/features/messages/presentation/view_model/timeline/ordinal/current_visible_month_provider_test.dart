@@ -47,10 +47,10 @@ void main() {
           ),
         );
 
-    _FakeMessageTimelineOrdinal.strategy = _FakeOrdinalStrategy({
-      0: januaryMessageId,
-      1: februaryMessageId,
-    });
+    _FakeMessageTimelineOrdinal.strategy = _FakeOrdinalStrategy(
+      {0: januaryMessageId, 1: februaryMessageId},
+      {0: '2024-01', 1: '2024-02'},
+    );
     _FakeMessageTimelineOrdinal.positionsListener = positionsListener;
 
     container = ProviderContainer(
@@ -87,10 +87,110 @@ void main() {
         const ItemPosition(index: 1, itemLeadingEdge: 0, itemTrailingEdge: 0.5),
       ]);
 
-      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(const Duration(milliseconds: 80));
       await Future<void>.delayed(Duration.zero);
 
       expect(container.read(provider).valueOrNull, '2024-02');
+    },
+  );
+
+  test('debounces rapid same-month scroll updates', () async {
+    const scope = MessageTimelineScope.contact(contactId: 42);
+
+    _FakeMessageTimelineOrdinal.strategy = _TrackingOrdinalStrategy(
+      monthKeysByOrdinal: <int, Future<String?>>{
+        0: SynchronousFuture<String?>('2024-02'),
+        1: SynchronousFuture<String?>('2024-02'),
+        2: SynchronousFuture<String?>('2024-02'),
+        3: SynchronousFuture<String?>('2024-02'),
+      },
+    );
+    _FakeMessageTimelineOrdinal.positionsListener = positionsListener;
+
+    final provider = currentVisibleMonthForScopeProvider(scope: scope);
+    final subscription = container.listen<AsyncValue<String?>>(
+      provider,
+      (_, _) {},
+      fireImmediately: true,
+    );
+    addTearDown(subscription.close);
+
+    final initialMonth = await container.read(provider.future);
+    expect(initialMonth, '2024-02');
+
+    positionsListener.setPositions([
+      const ItemPosition(index: 1, itemLeadingEdge: 0, itemTrailingEdge: 0.5),
+    ]);
+    positionsListener.setPositions([
+      const ItemPosition(index: 2, itemLeadingEdge: 0, itemTrailingEdge: 0.5),
+    ]);
+    positionsListener.setPositions([
+      const ItemPosition(index: 3, itemLeadingEdge: 0, itemTrailingEdge: 0.5),
+    ]);
+
+    await Future<void>.delayed(const Duration(milliseconds: 80));
+    await Future<void>.delayed(Duration.zero);
+
+    expect(container.read(provider).valueOrNull, '2024-02');
+    expect(
+      (_FakeMessageTimelineOrdinal.strategy as _TrackingOrdinalStrategy)
+          .requestedOrdinals,
+      equals(<int>[0, 3]),
+    );
+  });
+
+  test(
+    'coalesces rapid scroll updates while a month lookup is in flight',
+    () async {
+      const scope = MessageTimelineScope.contact(contactId: 42);
+      final delayedOrdinalOne = Completer<String?>();
+
+      _FakeMessageTimelineOrdinal.strategy = _TrackingOrdinalStrategy(
+        monthKeysByOrdinal: <int, Future<String?>>{
+          0: SynchronousFuture<String?>('2024-01'),
+          1: delayedOrdinalOne.future,
+          2: SynchronousFuture<String?>('2024-03'),
+          3: SynchronousFuture<String?>('2024-04'),
+        },
+      );
+      _FakeMessageTimelineOrdinal.positionsListener = positionsListener;
+
+      final provider = currentVisibleMonthForScopeProvider(scope: scope);
+      final subscription = container.listen<AsyncValue<String?>>(
+        provider,
+        (_, _) {},
+        fireImmediately: true,
+      );
+      addTearDown(subscription.close);
+
+      final initialMonth = await container.read(provider.future);
+      expect(initialMonth, '2024-01');
+
+      positionsListener.setPositions([
+        const ItemPosition(index: 1, itemLeadingEdge: 0, itemTrailingEdge: 0.5),
+      ]);
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+
+      positionsListener.setPositions([
+        const ItemPosition(index: 2, itemLeadingEdge: 0, itemTrailingEdge: 0.5),
+      ]);
+      positionsListener.setPositions([
+        const ItemPosition(index: 3, itemLeadingEdge: 0, itemTrailingEdge: 0.5),
+      ]);
+
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+
+      delayedOrdinalOne.complete('2024-02');
+
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(container.read(provider).valueOrNull, '2024-04');
+      expect(
+        (_FakeMessageTimelineOrdinal.strategy as _TrackingOrdinalStrategy)
+            .requestedOrdinals,
+        equals(<int>[0, 1, 3]),
+      );
     },
   );
 }
@@ -103,9 +203,11 @@ class _FakeMessageTimelineOrdinal extends MessageTimelineOrdinal {
   Future<MessageTimelineOrdinalState> build({
     required MessageTimelineScope scope,
   }) async {
+    final totalCount = await strategy.getTotalCount();
+
     return MessageTimelineOrdinalState(
       scope: scope,
-      totalCount: 2,
+      totalCount: totalCount,
       itemScrollController: ItemScrollController(),
       itemPositionsListener: positionsListener,
       strategy: strategy,
@@ -114,9 +216,10 @@ class _FakeMessageTimelineOrdinal extends MessageTimelineOrdinal {
 }
 
 class _FakeOrdinalStrategy implements OrdinalStrategy {
-  _FakeOrdinalStrategy(this._messageIdsByOrdinal);
+  _FakeOrdinalStrategy(this._messageIdsByOrdinal, this._monthKeysByOrdinal);
 
   final Map<int, int> _messageIdsByOrdinal;
+  final Map<int, String> _monthKeysByOrdinal;
 
   @override
   Future<int?> getFirstOrdinalForMonth(String monthKey) async => null;
@@ -130,10 +233,43 @@ class _FakeOrdinalStrategy implements OrdinalStrategy {
   }
 
   @override
+  Future<String?> getMonthKeyByOrdinal(int ordinal) async {
+    return _monthKeysByOrdinal[ordinal];
+  }
+
+  @override
   Future<int?> getOrdinalForMessage(int messageId) async => null;
 
   @override
   Future<int> getTotalCount() async => _messageIdsByOrdinal.length;
+}
+
+class _TrackingOrdinalStrategy implements OrdinalStrategy {
+  _TrackingOrdinalStrategy({required this.monthKeysByOrdinal});
+
+  final Map<int, Future<String?>> monthKeysByOrdinal;
+  final List<int> requestedOrdinals = <int>[];
+
+  @override
+  Future<int?> getFirstOrdinalForMonth(String monthKey) async => null;
+
+  @override
+  Future<int?> getFirstOrdinalOnOrAfter(DateTime date) async => null;
+
+  @override
+  Future<int?> getMessageIdByOrdinal(int ordinal) async => ordinal;
+
+  @override
+  Future<String?> getMonthKeyByOrdinal(int ordinal) {
+    requestedOrdinals.add(ordinal);
+    return monthKeysByOrdinal[ordinal] ?? SynchronousFuture<String?>(null);
+  }
+
+  @override
+  Future<int?> getOrdinalForMessage(int messageId) async => null;
+
+  @override
+  Future<int> getTotalCount() async => monthKeysByOrdinal.length;
 }
 
 class _FakeItemPositionsListener implements ItemPositionsListener {

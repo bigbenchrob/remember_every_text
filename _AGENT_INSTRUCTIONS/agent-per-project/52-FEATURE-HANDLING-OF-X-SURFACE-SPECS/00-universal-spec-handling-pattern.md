@@ -53,7 +53,7 @@ The payload returned to the app-level coordinator varies by surface:
 
 | Surface | Coordinator returns | Async? |
 |---|---|---|
-| Sidebar cassette | `Future<SidebarCassetteCardViewModel>` | Yes |
+| Sidebar cassette | `Future<SidebarCassettePayload>` | Yes |
 | View spec (center/right panel) | `Widget` | No (sync) |
 
 Future surfaces (tooltips, settings sidebar, etc.) will define their own
@@ -105,7 +105,7 @@ The surface folder is named after the spec type it handles:
 - One file per spec variant (or per logical group)
 - Receives explicit parameters from the coordinator (never the spec itself)
 - Constructs the surface-appropriate payload
-- **Cassette resolvers** return `Future<SidebarCassetteCardViewModel>`
+- **Cassette resolvers** return `Future<SidebarCassettePayload>`
 - **View spec resolvers** return `Widget` (sync, via widget builder call)
 
 **`resolver_tools/`** — Shared helpers
@@ -212,10 +212,10 @@ spec.when(
 ### Sidebar cassettes
 
 - Coordinator method: `buildViewModel(spec, {required int cassetteIndex})`
-- Returns: `Future<SidebarCassetteCardViewModel>`
+- Returns: `Future<SidebarCassettePayload>`
 - Resolvers: `@riverpod` Notifier classes with `resolve(...)` method
-- Widget builders: `ConsumerWidget` classes (reactive, `ref.watch()`)
-- App-level wraps the returned view model in card chrome (`SidebarCassetteCard`, `SidebarInfoCard`, etc.)
+- Widget builders: feature-owned render-edge builders and `ConsumerWidget` classes when a payload family reconstructs UI at the edge
+- App-level routes the returned payload through the shared sidebar render router, which chooses chrome and shared host layout
 
 ### View spec (panel content)
 
@@ -228,8 +228,8 @@ spec.when(
 ### Why the difference
 
 Sidebar cassettes are a **managed stack** where the app-level system owns chrome,
-ordering, and composition. Features return structured data (the view model) and the
-system wraps it.
+ordering, and composition. Features return structured inert payloads and the
+system renders them through the shared sidebar router.
 
 View specs are **full-panel content** where the feature owns most of the rendering.
 The app-level system just slots the widget into a panel. There's no chrome layer to

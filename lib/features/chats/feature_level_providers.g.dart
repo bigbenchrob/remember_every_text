@@ -7,7 +7,7 @@ part of 'feature_level_providers.dart';
 // **************************************************************************
 
 String _$featureCassetteSpecCoordinatorHash() =>
-    r'9f1da0cae7998aab36da8b0405c5170d2ca25b81';
+    r'2f8fc5386ee92732d41706513e47c42a6874d2f8';
 
 /// Coordinator that maps [ChatsCassetteSpec] to cassette widgets.
 ///
@@ -26,7 +26,7 @@ final featureCassetteSpecCoordinatorProvider =
 
 typedef _$FeatureCassetteSpecCoordinator = AutoDisposeNotifier<void>;
 String _$settingsCassetteSpecCoordinatorHash() =>
-    r'7531ceb04e249497f58db7c92e0651e0e0608779';
+    r'88658b38754b7b8004f454aa71db079c3c75dadf';
 
 /// Coordinator that maps [ChatsSettingsSpec] to cassette widgets.
 ///

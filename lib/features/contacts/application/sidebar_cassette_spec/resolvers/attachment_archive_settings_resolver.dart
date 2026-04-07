@@ -1,7 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
-import '../../../presentation/cassettes/settings/attachment_archive_settings_content.dart';
+import '../payloads/attachment_archive_settings_cassette_payload.dart';
 
 part 'attachment_archive_settings_resolver.g.dart';
 
@@ -14,15 +13,9 @@ class AttachmentArchiveSettingsResolver
   @override
   void build() {}
 
-  SidebarInfoCassetteViewModel resolve({required int cassetteIndex}) {
-    return const SidebarInfoCassetteViewModel(
-      role: SidebarCassetteRole.action,
-      title: 'Attachment Archive',
-      bodyText:
-          'Images from your Messages are automatically archived to protect '
-          'against iCloud eviction. Archived images remain available even '
-          'when the originals are no longer on this Mac.',
-      content: AttachmentArchiveSettingsContent(),
-    );
+  AttachmentArchiveSettingsCassettePayload resolve({
+    required int cassetteIndex,
+  }) {
+    return const AttachmentArchiveSettingsCassettePayload();
   }
 }

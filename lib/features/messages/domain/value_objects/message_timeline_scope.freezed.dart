@@ -55,13 +55,14 @@ extension MessageTimelineScopePatterns on MessageTimelineScope {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( GlobalTimelineScope value)?  global,TResult Function( ContactTimelineScope value)?  contact,TResult Function( ChatTimelineScope value)?  chat,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( GlobalTimelineScope value)?  global,TResult Function( ContactTimelineScope value)?  contact,TResult Function( ChatTimelineScope value)?  chat,TResult Function( RecoveredTimelineScope value)?  recovered,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case GlobalTimelineScope() when global != null:
 return global(_that);case ContactTimelineScope() when contact != null:
 return contact(_that);case ChatTimelineScope() when chat != null:
-return chat(_that);case _:
+return chat(_that);case RecoveredTimelineScope() when recovered != null:
+return recovered(_that);case _:
   return orElse();
 
 }
@@ -79,13 +80,14 @@ return chat(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( GlobalTimelineScope value)  global,required TResult Function( ContactTimelineScope value)  contact,required TResult Function( ChatTimelineScope value)  chat,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( GlobalTimelineScope value)  global,required TResult Function( ContactTimelineScope value)  contact,required TResult Function( ChatTimelineScope value)  chat,required TResult Function( RecoveredTimelineScope value)  recovered,}){
 final _that = this;
 switch (_that) {
 case GlobalTimelineScope():
 return global(_that);case ContactTimelineScope():
 return contact(_that);case ChatTimelineScope():
-return chat(_that);}
+return chat(_that);case RecoveredTimelineScope():
+return recovered(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -99,13 +101,14 @@ return chat(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( GlobalTimelineScope value)?  global,TResult? Function( ContactTimelineScope value)?  contact,TResult? Function( ChatTimelineScope value)?  chat,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( GlobalTimelineScope value)?  global,TResult? Function( ContactTimelineScope value)?  contact,TResult? Function( ChatTimelineScope value)?  chat,TResult? Function( RecoveredTimelineScope value)?  recovered,}){
 final _that = this;
 switch (_that) {
 case GlobalTimelineScope() when global != null:
 return global(_that);case ContactTimelineScope() when contact != null:
 return contact(_that);case ChatTimelineScope() when chat != null:
-return chat(_that);case _:
+return chat(_that);case RecoveredTimelineScope() when recovered != null:
+return recovered(_that);case _:
   return null;
 
 }
@@ -122,12 +125,13 @@ return chat(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  global,TResult Function( int contactId,  int? filterHandleId)?  contact,TResult Function( int chatId)?  chat,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  global,TResult Function( int contactId,  int? filterHandleId)?  contact,TResult Function( int chatId)?  chat,TResult Function( int? contactId,  bool onlyNoHandleFromMe)?  recovered,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case GlobalTimelineScope() when global != null:
 return global();case ContactTimelineScope() when contact != null:
 return contact(_that.contactId,_that.filterHandleId);case ChatTimelineScope() when chat != null:
-return chat(_that.chatId);case _:
+return chat(_that.chatId);case RecoveredTimelineScope() when recovered != null:
+return recovered(_that.contactId,_that.onlyNoHandleFromMe);case _:
   return orElse();
 
 }
@@ -145,12 +149,13 @@ return chat(_that.chatId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  global,required TResult Function( int contactId,  int? filterHandleId)  contact,required TResult Function( int chatId)  chat,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  global,required TResult Function( int contactId,  int? filterHandleId)  contact,required TResult Function( int chatId)  chat,required TResult Function( int? contactId,  bool onlyNoHandleFromMe)  recovered,}) {final _that = this;
 switch (_that) {
 case GlobalTimelineScope():
 return global();case ContactTimelineScope():
 return contact(_that.contactId,_that.filterHandleId);case ChatTimelineScope():
-return chat(_that.chatId);}
+return chat(_that.chatId);case RecoveredTimelineScope():
+return recovered(_that.contactId,_that.onlyNoHandleFromMe);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -164,12 +169,13 @@ return chat(_that.chatId);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  global,TResult? Function( int contactId,  int? filterHandleId)?  contact,TResult? Function( int chatId)?  chat,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  global,TResult? Function( int contactId,  int? filterHandleId)?  contact,TResult? Function( int chatId)?  chat,TResult? Function( int? contactId,  bool onlyNoHandleFromMe)?  recovered,}) {final _that = this;
 switch (_that) {
 case GlobalTimelineScope() when global != null:
 return global();case ContactTimelineScope() when contact != null:
 return contact(_that.contactId,_that.filterHandleId);case ChatTimelineScope() when chat != null:
-return chat(_that.chatId);case _:
+return chat(_that.chatId);case RecoveredTimelineScope() when recovered != null:
+return recovered(_that.contactId,_that.onlyNoHandleFromMe);case _:
   return null;
 
 }
@@ -337,6 +343,74 @@ class _$ChatTimelineScopeCopyWithImpl<$Res>
   return _then(ChatTimelineScope(
 chatId: null == chatId ? _self.chatId : chatId // ignore: cast_nullable_to_non_nullable
 as int,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class RecoveredTimelineScope extends MessageTimelineScope {
+  const RecoveredTimelineScope({this.contactId, this.onlyNoHandleFromMe = false}): super._();
+  
+
+ final  int? contactId;
+@JsonKey() final  bool onlyNoHandleFromMe;
+
+/// Create a copy of MessageTimelineScope
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$RecoveredTimelineScopeCopyWith<RecoveredTimelineScope> get copyWith => _$RecoveredTimelineScopeCopyWithImpl<RecoveredTimelineScope>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RecoveredTimelineScope&&(identical(other.contactId, contactId) || other.contactId == contactId)&&(identical(other.onlyNoHandleFromMe, onlyNoHandleFromMe) || other.onlyNoHandleFromMe == onlyNoHandleFromMe));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,contactId,onlyNoHandleFromMe);
+
+@override
+String toString() {
+  return 'MessageTimelineScope.recovered(contactId: $contactId, onlyNoHandleFromMe: $onlyNoHandleFromMe)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $RecoveredTimelineScopeCopyWith<$Res> implements $MessageTimelineScopeCopyWith<$Res> {
+  factory $RecoveredTimelineScopeCopyWith(RecoveredTimelineScope value, $Res Function(RecoveredTimelineScope) _then) = _$RecoveredTimelineScopeCopyWithImpl;
+@useResult
+$Res call({
+ int? contactId, bool onlyNoHandleFromMe
+});
+
+
+
+
+}
+/// @nodoc
+class _$RecoveredTimelineScopeCopyWithImpl<$Res>
+    implements $RecoveredTimelineScopeCopyWith<$Res> {
+  _$RecoveredTimelineScopeCopyWithImpl(this._self, this._then);
+
+  final RecoveredTimelineScope _self;
+  final $Res Function(RecoveredTimelineScope) _then;
+
+/// Create a copy of MessageTimelineScope
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? contactId = freezed,Object? onlyNoHandleFromMe = null,}) {
+  return _then(RecoveredTimelineScope(
+contactId: freezed == contactId ? _self.contactId : contactId // ignore: cast_nullable_to_non_nullable
+as int?,onlyNoHandleFromMe: null == onlyNoHandleFromMe ? _self.onlyNoHandleFromMe : onlyNoHandleFromMe // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 

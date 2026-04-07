@@ -17,7 +17,7 @@ part 'cassette_coordinator.g.dart';
 /// - Pattern-matches on the spec variant
 /// - Extracts payload parameters
 /// - Calls exactly ONE resolver
-/// - Returns the resolver's Future<SidebarCassetteCardViewModel>
+/// - Returns the resolver's `Future<SidebarCassettePayload>`
 ///
 /// The coordinator MUST NOT:
 /// - Perform IO
@@ -38,7 +38,7 @@ class SidebarUtilitiesCassetteCoordinator
   ///
   /// The [cassetteIndex] is passed through to resolvers so that widget
   /// builders can update the cassette rack without holding specs in state.
-  Future<SidebarCassetteCardViewModel> buildViewModel(
+  Future<SidebarCassettePayload> buildViewModel(
     SidebarUtilityCassetteSpec spec, {
     required int cassetteIndex,
   }) async {

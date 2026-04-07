@@ -8,8 +8,8 @@ The sidebar is a **managed stack** of cassettes. Each cassette is described by a
 `CassetteSpec`, which wraps a feature-specific inner spec. The system:
 
 1. Maintains an ordered list of specs (the **rack**)
-2. Resolves each spec to a `SidebarCassetteCardViewModel` via feature coordinators
-3. Wraps each view model in the appropriate card chrome
+2. Resolves each spec to a `SidebarCassettePayload` via feature coordinators
+3. Routes each payload through the shared sidebar render router to apply the appropriate chrome
 4. Renders the stack
 
 Features own the content. Essentials owns the stack, chrome, and composition.

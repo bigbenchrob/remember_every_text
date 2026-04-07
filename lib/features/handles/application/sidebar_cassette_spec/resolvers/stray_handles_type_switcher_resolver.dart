@@ -2,13 +2,13 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 import '../../../domain/spec_classes/handles_cassette_spec.dart';
-import '../widget_builders/stray_handles_type_switcher_cassette.dart';
+import '../payloads/stray_handles_type_switcher_cassette_payload.dart';
 
 part 'stray_handles_type_switcher_resolver.g.dart';
 
 /// Resolver for the stray handles type switcher cassette.
 ///
-/// Receives explicit parameters (not specs) and produces a view model.
+/// Receives explicit parameters (not specs) and produces an inert payload.
 @riverpod
 class StrayHandlesTypeSwitcherResolver
     extends _$StrayHandlesTypeSwitcherResolver {
@@ -17,21 +17,14 @@ class StrayHandlesTypeSwitcherResolver
     // Stateless resolver
   }
 
-  /// Resolve selected filter and cassette index into a sidebar cassette view model.
-  Future<SidebarCassetteCardViewModel> resolve({
+  /// Resolve selected filter and cassette index into a sidebar cassette payload.
+  Future<SidebarCassettePayload> resolve({
     required StrayHandleFilter selectedFilter,
     required int cassetteIndex,
   }) async {
-    return SidebarCassetteCardViewModel(
-      role: SidebarCassetteRole.filter,
-      placementMode: SidebarBodyPlacementMode.fullWidth,
-      title: '', // Intentionally empty - control is self-explanatory
-      shouldExpand: false,
-      isNaked: true, // Tight spacing control for filter controls
-      child: StrayHandlesTypeSwitcherCassette(
-        selectedFilter: selectedFilter,
-        cassetteIndex: cassetteIndex,
-      ),
+    return StrayHandlesTypeSwitcherCassettePayload(
+      selectedFilter: selectedFilter,
+      cassetteIndex: cassetteIndex,
     );
   }
 }

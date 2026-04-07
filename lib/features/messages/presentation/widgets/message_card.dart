@@ -39,16 +39,14 @@ class MessageCard extends ConsumerWidget {
     final urlPreviewAttachment = message.attachments
         .cast<AttachmentInfo?>()
         .firstWhere((attachment) {
-          return attachment != null &&
-              attachment.isUrlPreview &&
-              attachment.localPath != null;
+          return attachment != null && attachment.isUrlPreview;
         }, orElse: () => null);
 
     final imageAttachments = message.attachments.where(
-      (attachment) => attachment.isImage && attachment.localPath != null,
+      (attachment) => attachment.isImage,
     );
     final videoAttachments = message.attachments.where(
-      (attachment) => attachment.isVideo && attachment.localPath != null,
+      (attachment) => attachment.isVideo,
     );
 
     // Link preview (has priority if present)

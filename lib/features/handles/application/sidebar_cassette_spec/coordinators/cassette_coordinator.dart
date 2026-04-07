@@ -23,7 +23,7 @@ part 'cassette_coordinator.g.dart';
 /// - Pattern-matches on the spec
 /// - Extracts payload parameters
 /// - Calls exactly ONE resolver
-/// - Returns the resolver's `Future<SidebarCassetteCardViewModel>`
+/// - Returns the resolver's `Future<SidebarCassettePayload>`
 ///
 /// The coordinator MUST NOT:
 /// - Perform IO
@@ -38,7 +38,7 @@ class HandlesCassetteCoordinator extends _$HandlesCassetteCoordinator {
   }
 
   /// Build a sidebar cassette view model for the given handles cassette spec.
-  Future<SidebarCassetteCardViewModel> buildViewModel(
+  Future<SidebarCassettePayload> buildViewModel(
     HandlesCassetteSpec spec, {
     required int cassetteIndex,
   }) async {
@@ -58,7 +58,10 @@ class HandlesCassetteCoordinator extends _$HandlesCassetteCoordinator {
       },
       strayHandlesModeSwitcher: (switcherSpec) => ref
           .read(strayHandlesModeSwitcherResolverProvider.notifier)
-          .resolve(filter: switcherSpec.filter),
+          .resolve(
+            filter: switcherSpec.filter,
+            mode: ref.watch(strayHandleModeSettingProvider),
+          ),
       strayHandlesTypeSwitcher: (typeSpec) => ref
           .read(strayHandlesTypeSwitcherResolverProvider.notifier)
           .resolve(

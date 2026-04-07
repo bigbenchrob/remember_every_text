@@ -1,0 +1,349 @@
+MESSAGELENS ARCHITECTURAL VERDICT + REFACTOR DIRECTIVE
+
+0. Executive verdict (read this first)
+
+The system is currently in a mixed-authority state:
+	•	Canonical semantic state exists (SidebarFlowState)
+	•	BUT widget subtrees, reconciliation logic, and special-case pipelines still participate in meaning
+	•	This creates multiple competing writers of truth
+
+This is the root cause of:
+	•	stale center panel content
+	•	broken toggle behavior (e.g. All/Favourites)
+	•	non-responsive widgets (e.g. heat map)
+	•	cascading regressions after local fixes
+
+This is not a bug-fixing problem.
+This is an authorship problem.
+
+The system must be refactored so that:
+
+ONE semantic state → ONE projection path → ONE rendered outcome
+
+Anything else is considered architectural failure.
+
+⸻
+
+1. Non-negotiable architectural laws
+
+These are hard constraints.
+If any are violated, the architecture is considered broken.
+
+LAW 1 — Single semantic writer
+
+For flow-managed message branches:
+	•	ONLY SidebarFlowState owns meaning
+	•	NOTHING else may author:
+	•	center panel content
+	•	right panel eligibility
+	•	message scope
+
+Remove or demote all alternate writers:
+	•	_syncProjectedCenterPanel
+	•	reconcileSidebarPanels
+	•	deferred clearing logic
+
+These may exist ONLY as:
+	•	debug assertions
+	•	invariant enforcement
+
+NOT as normal execution paths.
+
+⸻
+
+LAW 2 — No widget transport across boundaries
+
+Across coordination layers, ONLY transport:
+	•	specs
+	•	payload data
+	•	identifiers
+	•	layout roles
+
+NEVER transport:
+	•	Widget
+	•	Widget subtree
+	•	Prebuilt UI
+
+Specifically:
+
+SidebarCassetteCardViewModel.featureComplex must be eliminated
+
+Any feature using it (e.g. contact chooser) must be rewritten.
+
+⸻
+
+LAW 3 — Render is terminal
+
+Widgets must be:
+
+pure functions of current semantic state
+
+Widgets must NOT:
+	•	carry state forward
+	•	capture stale closures
+	•	re-author meaning post-build
+	•	influence upstream state
+
+⸻
+
+LAW 4 — Provenance does not affect meaning
+
+Message identity must be invariant across:
+	•	live attachment
+	•	archived attachment
+	•	missing/cloud-only attachment
+
+Attachment handling belongs ONLY in:
+
+hydration / provenance layer
+
+It must NEVER:
+	•	change scope
+	•	change message identity
+	•	fork UI logic paths
+
+⸻
+
+LAW 5 — Recovered timelines are first-class scopes
+
+Recovered messages must:
+	•	implement the SAME pipeline:
+	•	scope → ordinal → hydration → render
+	•	NOT use special UI paths
+	•	NOT use alternate timeline scaffolding
+
+Eliminate “recovered as special case”.
+
+⸻
+
+LAW 6 — Invalid states must be unrepresentable
+
+The system must make these impossible:
+	•	sidebar shows contact A, center shows contact B
+	•	recovered mode active but center shows regular messages
+	•	right panel visible when center spec does not support it
+	•	stale picker state after canonical change
+
+If cleanup logic is required, the design is wrong.
+
+⸻
+
+2. Identified root violations
+
+These are the current architectural faults.
+
+VIOLATION A — Widget subtree transport
+	•	Contact chooser is transported as widget subtree
+	•	This bypasses semantic state
+	•	Causes stale UI behavior and broken toggles
+
+This is the MOST critical issue.
+
+⸻
+
+VIOLATION B — Multiple panel writers
+
+Panel state is influenced by:
+	•	flow projection
+	•	reconciliation logic
+	•	deferred clearing
+
+This creates race conditions and stale persistence.
+
+⸻
+
+VIOLATION C — Special-cased recovered pipeline
+
+Recovered timelines:
+	•	use different ordinal strategy
+	•	use different surface logic
+	•	partially bypass unified pipeline
+
+This creates semantic leakage across branches.
+
+⸻
+
+VIOLATION D — Layout depends on widget inspection
+
+Sidebar layout:
+	•	inspects built widgets for behavior (expand/pinned/etc.)
+
+This is impure (but lower priority than A/B).
+
+⸻
+
+3. Refactor plan (strict order)
+
+Follow this order. Do NOT parallelize.
+
+⸻
+
+STEP 1 — Eliminate widget transport (CRITICAL FIRST)
+
+Target:
+	•	Remove featureComplex
+	•	Rewrite contact chooser as:
+→ pure semantic payload
+→ rendered at edge
+
+The chooser must become:
+	•	state-driven
+	•	stateless UI
+	•	no internal authority
+
+Success condition:
+	•	Changing canonical picker state ALWAYS updates UI
+	•	No stale toggle behavior is possible
+
+⸻
+
+STEP 2 — Collapse panel writing to single path
+
+Target:
+	•	Remove multi-writer system
+
+Replace with:
+
+SidebarFlowState
+→ projectedCenterSpec
+→ PanelStack render
+
+Remove:
+	•	reconciliation as active logic
+	•	deferred clearing hacks
+
+Success condition:
+	•	Changing flow state deterministically updates center panel
+	•	No stale content can persist
+
+⸻
+
+STEP 3 — Enforce right-panel derivation
+
+Right panel must:
+	•	derive strictly from center spec compatibility
+
+NOT:
+	•	maintain independent state
+	•	rely on cleanup logic
+
+Success condition:
+	•	invalid right panel states never appear
+
+⸻
+
+STEP 4 — Unify recovered timelines
+
+Replace:
+	•	RecoveredListOrdinalStrategy (special case)
+
+With:
+	•	standard ordinal contract
+
+Recovered becomes:
+
+just another MessageTimelineScope
+
+Success condition:
+	•	no branching logic in UI layer for recovered vs normal
+	•	same rendering pipeline
+
+⸻
+
+STEP 5 — Remove widget-based layout inference
+
+Replace:
+	•	widget inspection
+
+With:
+	•	explicit semantic layout descriptors
+
+Success condition:
+	•	layout decisions require no widget introspection
+
+⸻
+
+4. Architectural test criteria
+
+After refactor, the system must satisfy:
+
+Test 1 — Predictability
+
+Given ONLY SidebarFlowState, a developer can predict:
+	•	sidebar structure
+	•	center panel content
+	•	right panel presence
+
+WITHOUT reading UI code.
+
+⸻
+
+Test 2 — No stale rendering
+
+After ANY state transition:
+	•	no previous UI remains visible
+	•	no manual clearing required
+
+⸻
+
+Test 3 — No repair logic required
+
+Removing reconciliation code must NOT break behavior.
+
+If it does, architecture is still incorrect.
+
+⸻
+
+Test 4 — Provenance independence
+
+Switching an image from:
+	•	live → archived → missing
+
+must NOT:
+	•	change message identity
+	•	affect timeline structure
+
+⸻
+
+Test 5 — Scope purity
+
+Switching between:
+	•	contact timeline
+	•	recovered timeline
+	•	global timeline
+
+must:
+	•	fully replace UI
+	•	share same pipeline
+
+⸻
+
+5. Anti-patterns (forbidden)
+
+The agent must NOT introduce:
+	•	“quick fixes” in widget layer
+	•	post-frame corrections
+	•	hidden state inside widgets
+	•	fallback reconciliation logic
+	•	special-case branches for recovered content
+	•	transport of any Widget across layers
+
+⸻
+
+6. Final directive
+
+Do NOT fix symptoms.
+
+Do NOT patch behavior.
+
+Do NOT preserve compatibility with broken pathways.
+
+Instead:
+
+Remove all alternate sources of truth until the system becomes strictly declarative again.
+
+The goal is not “working UI”.
+
+The goal is:
+
+a system where invalid UI states cannot be constructed.

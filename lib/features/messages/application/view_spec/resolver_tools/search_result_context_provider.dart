@@ -41,14 +41,8 @@ Future<SearchResultContextState> searchResultContext(
 }) async {
   final db = await ref.watch(driftWorkingDatabaseProvider.future);
   final overlayDb = await ref.watch(overlayDatabaseProvider.future);
-  final archiveDir = ref.watch(attachmentArchiveDirectoryProvider);
   final nameOverrides = await displayNameOverridesMap(overlayDb);
-  final mapper = MessageRowMapper(
-    db,
-    nameOverrides,
-    overlayDb: overlayDb,
-    archiveDir: archiveDir,
-  );
+  final mapper = MessageRowMapper(db, nameOverrides, ref: ref);
 
   final selectedQuery =
       db.select(db.workingMessages).join([
