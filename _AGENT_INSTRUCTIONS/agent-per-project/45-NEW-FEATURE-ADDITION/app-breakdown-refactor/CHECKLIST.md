@@ -40,12 +40,17 @@ gate for that phase has been satisfied.
 - [x] Record whether flow-managed center meaning can survive inside
       `PanelStack` independently of canonical semantic state
 - [x] Record whether incompatible right-panel state can survive while hidden
-- [ ] Formalize central resolver return contract as data-only payload
-- [ ] Define sealed inert payload hierarchy for cross-boundary transport
-  Status 2026-04-04: public coordinator/resolver signatures now converge on
-  `SidebarCassettePayload`, and transport is explicitly split into inert vs
-  tracked legacy widget-carrying branches. These remain unchecked until the
-  legacy branch is removed from normal cross-boundary transport.
+- [x] Formalize central resolver return contract as data-only payload
+      Status 2026-04-07: app-level cassette coordination now routes through
+      `Future<SidebarCassettePayload>`, feature coordinators/resolvers return
+      payloads rather than widgets, and the sidebar render router selects rendering
+      from explicit payload render kind plus payload subtype at the render edge.
+- [x] Define sealed inert payload hierarchy for cross-boundary transport
+      Status 2026-04-07: sidebar transport is now explicitly split into
+      `InertSidebarCassettePayload`, `PlacementGovernedSidebarCassettePayload`,
+      `FeatureInfoSidebarCassettePayload`, and
+      `SharedBodyModelSidebarCassettePayload`, with no remaining tracked widget
+      payload exception in the architecture tripwire.
 - [x] Define render-dispatch contract by payload type/render kind, not builders
 - [x] Define semantic action descriptor model with no executable callbacks
       Status 2026-04-04: `SidebarActionIntent` remains the sealed semantic
@@ -105,16 +110,38 @@ gate for that phase has been satisfied.
       placement-governed inert payloads, the runtime `featureComplex` symbol is
       gone from `lib`, and focused resolver/coordinator/render tests cover the
       migrated paths.
-- [ ] Verify no renamed helper or wrapped pathway preserves `featureComplex`
+- [x] Verify no renamed helper or wrapped pathway preserves `featureComplex`
       behavior in normal execution
+      Status 2026-04-07: the shared sidebar render contract now has only
+      `placementGovernedFeature`, `featureInfo`, and `sharedBodyModel`, the
+      router dispatches placement-governed payloads directly to feature-owned
+      body builders, and focused heatmap/handles resolver tests continue to
+      prove direct inert payload resolution with no `featureComplex` symbol,
+      legacy widget payload, or alternate wrapped render family left in `lib`.
 
 ### Phase 1 gate
 
-- [ ] Sidebar payload transport contains no `Widget` or widget subtree
-- [ ] Sidebar payload transport contains no builder callback or executable
-      runtime object by stealth
+- [x] Sidebar payload transport contains no `Widget` or widget subtree
+      Status 2026-04-07: `test/architecture/forbidden_imports_test.dart` now
+      expects zero tracked widget-payload exceptions, matching the current inert
+      payload base types.
+- [x] Sidebar payload transport contains no builder callback or executable
+                  runtime object by stealth
+      Status 2026-04-07: the payload tripwire remains focused on forbidden runtime
+      UI types, and the current sidebar payload base plus feature payload files are
+      widget-free and callback-free.
 - [ ] Any temporary adapter can be removed without behavior change
-- [ ] Focused tests pass
+      Status 2026-04-07: the attempt to move chooser readiness into the shared
+      cassette coordinator caused relaunch-time sidebar flicker and a sidebar
+      spinner, so the chooser now upgrades its loading payload from the
+      feature-owned snapshot at the render edge again. This keeps startup
+      stable, but the temporary chooser adapter is still present and Phase 1
+      cannot claim this gate complete yet.
+- [x] Focused tests pass
+      Status 2026-04-07: the documented focused baseline suite was rerun after
+      the chooser snapshot/payload cleanup and remained green at 71 passed,
+      0 failed across sidebar, panel, message timeline, recovered timeline,
+      message card, and attachment snapshot surfaces.
 - [ ] Live picker behavior is deterministic
 
 ## Phase 2 - Collapse Panel Writing to a Single Path

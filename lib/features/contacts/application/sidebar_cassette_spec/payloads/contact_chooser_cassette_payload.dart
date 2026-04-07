@@ -3,6 +3,8 @@ import '../../../../../essentials/sidebar/presentation/view_model/sidebar_casset
 import '../resolver_tools/picker_filter_mode_provider.dart';
 import '../resolver_tools/unified_picker_sections_provider.dart';
 
+enum ContactChooserLoadState { loading, ready, error }
+
 /// Inert transport payload for the contacts chooser cassette.
 ///
 /// This carries only semantic chooser state across the cassette coordination
@@ -10,6 +12,7 @@ import '../resolver_tools/unified_picker_sections_provider.dart';
 final class ContactChooserCassettePayload
     extends PlacementGovernedSidebarCassettePayload {
   const ContactChooserCassettePayload({
+    required this.loadState,
     this.pickerMode,
     this.pickerFilterMode,
     this.filteredSections,
@@ -28,6 +31,7 @@ final class ContactChooserCassettePayload
     super.topSpacing = 0,
   });
 
+  final ContactChooserLoadState loadState;
   final ContactPickerMode? pickerMode;
   final PickerFilterMode? pickerFilterMode;
   final UnifiedPickerSections? filteredSections;

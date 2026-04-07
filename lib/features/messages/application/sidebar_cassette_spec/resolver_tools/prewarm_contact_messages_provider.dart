@@ -1,7 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../timeline/ordinal/message_timeline_ordinal_provider.dart';
 import '../../../domain/value_objects/message_timeline_scope.dart';
-import '../../../presentation/view_model/timeline/ordinal/message_timeline_ordinal_provider.dart';
 import 'contact_timeline_provider.dart';
 
 part 'prewarm_contact_messages_provider.g.dart';

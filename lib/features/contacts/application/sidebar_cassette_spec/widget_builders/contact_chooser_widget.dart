@@ -5,16 +5,14 @@ import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../constants/domain/contact_constants.dart';
-import '../../../infrastructure/repositories/contacts_list_repository.dart';
 import '../payloads/contact_chooser_cassette_payload.dart';
-import '../resolver_tools/filtered_picker_sections_provider.dart';
-import '../resolver_tools/picker_filter_mode_provider.dart';
-import '../resolver_tools/picker_mode_decision.dart';
+import '../resolver_tools/contact_chooser_snapshot_provider.dart';
 import 'contact_flat_list_widget.dart';
 import 'contact_grouped_picker_widget.dart';
 
-/// Render-edge chooser body that resolves contact data without blocking the
-/// entire sidebar coordinator during startup.
+/// Render-edge chooser body that upgrades a loading payload using the
+/// feature-owned chooser snapshot without invalidating the shared sidebar
+/// coordinator.
 class ContactChooserWidget extends ConsumerWidget {
   const ContactChooserWidget({super.key, required this.payload});
 
@@ -22,24 +20,40 @@ class ContactChooserWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final contactsAsync = ref.watch(contactsListRepositoryProvider);
-    final pickerFilterMode = ref.watch(pickerFilterProvider);
-    final filteredSectionsAsync = ref.watch(filteredPickerSectionsProvider);
+    final snapshot = payload.loadState == ContactChooserLoadState.loading
+        ? ref.watch(contactChooserSnapshotProvider)
+        : null;
+    final effectiveLoadState = snapshot?.loadState ?? payload.loadState;
 
-    if (contactsAsync.isLoading || filteredSectionsAsync.isLoading) {
-      return const _ContactChooserLoadingState();
+    return switch (effectiveLoadState) {
+      ContactChooserLoadState.loading => const _ContactChooserLoadingState(),
+      ContactChooserLoadState.error => const _ContactChooserErrorState(),
+      ContactChooserLoadState.ready => switch (_resolveReadyPayload(
+        snapshot: snapshot,
+      ).pickerMode!) {
+        ContactPickerMode.flat => ContactFlatListWidget(
+          payload: _resolveReadyPayload(snapshot: snapshot),
+        ),
+        ContactPickerMode.grouped => ContactGroupedPickerWidget(
+          payload: _resolveReadyPayload(snapshot: snapshot),
+        ),
+      },
+    };
+  }
+
+  ContactChooserCassettePayload _resolveReadyPayload({
+    required ContactChooserSnapshot? snapshot,
+  }) {
+    if (snapshot == null ||
+        snapshot.loadState != ContactChooserLoadState.ready) {
+      return payload;
     }
 
-    if (contactsAsync.hasError || filteredSectionsAsync.hasError) {
-      return const _ContactChooserErrorState();
-    }
-
-    final contacts = contactsAsync.requireValue;
-    final filteredSections = filteredSectionsAsync.requireValue;
-    final resolvedPayload = ContactChooserCassettePayload(
-      pickerMode: determinePickerMode(contacts.length),
-      pickerFilterMode: pickerFilterMode,
-      filteredSections: filteredSections,
+    return ContactChooserCassettePayload(
+      loadState: snapshot.loadState,
+      pickerMode: snapshot.pickerMode,
+      pickerFilterMode: snapshot.pickerFilterMode,
+      filteredSections: snapshot.filteredSections,
       chosenContactId: payload.chosenContactId,
       cassetteIndex: payload.cassetteIndex,
       title: payload.title,
@@ -54,13 +68,6 @@ class ContactChooserWidget extends ConsumerWidget {
       role: payload.role,
       topSpacing: payload.topSpacing,
     );
-
-    return switch (resolvedPayload.pickerMode!) {
-      ContactPickerMode.flat => ContactFlatListWidget(payload: resolvedPayload),
-      ContactPickerMode.grouped => ContactGroupedPickerWidget(
-        payload: resolvedPayload,
-      ),
-    };
   }
 }
 

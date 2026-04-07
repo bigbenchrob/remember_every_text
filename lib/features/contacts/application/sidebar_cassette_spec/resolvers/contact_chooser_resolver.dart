@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 import '../payloads/contact_chooser_cassette_payload.dart';
+import '../resolver_tools/contact_chooser_snapshot_provider.dart';
 
 part 'contact_chooser_resolver.g.dart';
 
@@ -36,13 +37,21 @@ class ContactChooserResolver extends _$ContactChooserResolver {
   /// Returns an inert payload immediately so startup/sidebar coordination does
   /// not wait on contact queries before rendering the already-known stack.
   ///
-  /// Feature-owned data loading now happens at the render edge inside the
-  /// chooser body, keeping the coordinator transport cheap and synchronous.
+  /// If the chooser snapshot is already available, the payload includes that
+  /// ready/error state. Otherwise the render edge may upgrade a loading payload
+  /// from the same feature-owned snapshot provider without invalidating the
+  /// shared cassette coordinator.
   Future<SidebarCassettePayload> resolve({
     required int? chosenContactId,
     required int cassetteIndex,
   }) async {
+    final snapshot = ref.read(contactChooserSnapshotProvider);
+
     return ContactChooserCassettePayload(
+      loadState: snapshot.loadState,
+      pickerMode: snapshot.pickerMode,
+      pickerFilterMode: snapshot.pickerFilterMode,
+      filteredSections: snapshot.filteredSections,
       chosenContactId: chosenContactId,
       cassetteIndex: cassetteIndex,
       role: SidebarCassetteRole.contextPrimary,

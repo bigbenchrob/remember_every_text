@@ -2,14 +2,9 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-const Set<String> _legacySidebarPresentationImportExceptions = {
-  'lib/features/messages/application/sidebar_cassette_spec/resolver_tools/contact_timeline_provider.dart',
-  'lib/features/messages/application/sidebar_cassette_spec/resolver_tools/prewarm_contact_messages_provider.dart',
-};
+const Set<String> _legacySidebarPresentationImportExceptions = <String>{};
 
-const Set<String> _legacyWidgetPayloadFiles = {
-  'lib/essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart',
-};
+const Set<String> _legacyWidgetPayloadFiles = <String>{};
 
 const Set<String> _sidebarSemanticActionTransportFiles = {
   'lib/essentials/sidebar/domain/sidebar_action_intent.dart',
@@ -123,22 +118,18 @@ void main() {
       },
     );
 
-    test(
-      'Forbidden runtime UI types stay isolated to tracked legacy payload files',
-      () async {
-        final payloadFiles = await _collectSidebarPayloadFiles();
-        final offenders = await _findPayloadTypeOffenders(payloadFiles);
+    test('Sidebar payload transport contains no runtime UI types', () async {
+      final payloadFiles = await _collectSidebarPayloadFiles();
+      final offenders = await _findPayloadTypeOffenders(payloadFiles);
 
-        expect(
-          offenders,
-          orderedEquals(_legacyWidgetPayloadFiles.toList()..sort()),
-          reason:
-              'Payload transport picked up forbidden runtime UI types outside '
-              'the tracked legacy payload exception.\n'
-              'Actual offenders:\n${offenders.join('\n')}',
-        );
-      },
-    );
+      expect(
+        offenders,
+        orderedEquals(_legacyWidgetPayloadFiles.toList()..sort()),
+        reason:
+            'Payload transport picked up forbidden runtime UI types.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
 
     test('Sidebar semantic action transport stays data-only', () async {
       final offenders = await _findSemanticActionTransportOffenders(

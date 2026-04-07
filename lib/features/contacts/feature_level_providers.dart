@@ -30,6 +30,7 @@ export './application/sidebar_cassette_spec/payloads/handle_filter_cassette_payl
 export './application/sidebar_cassette_spec/payloads/reimport_data_info_cassette_payload.dart';
 export './application/sidebar_cassette_spec/payloads/send_logs_info_cassette_payload.dart';
 export './application/sidebar_cassette_spec/rendering/contacts_cassette_body_builder.dart';
+export './application/sidebar_cassette_spec/resolver_tools/contact_chooser_snapshot_provider.dart';
 export './application/sidebar_cassette_spec/resolver_tools/filtered_picker_sections_provider.dart';
 export './application/sidebar_cassette_spec/resolver_tools/picker_filter_mode_provider.dart';
 export './application/tooltips_spec/coordinators/contacts_tooltip_coordinator.dart';

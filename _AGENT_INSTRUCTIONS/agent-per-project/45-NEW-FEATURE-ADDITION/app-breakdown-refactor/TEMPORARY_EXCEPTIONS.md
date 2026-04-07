@@ -14,25 +14,15 @@ Rules:
 
 ## Current Status
 
-### Exception: Legacy widget-carrying sidebar payloads
+### Exception: Contact chooser render-edge snapshot adapter
 
-- Location: `lib/essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart`
-- Reason: standard/info/navigation cassette payloads still carry widget fields while Phase 1 removes transported UI subtrees incrementally.
-- Scope: `SidebarCassetteCardViewModel`, `SidebarInfoCassetteViewModel`, and `SidebarNavigationCassetteViewModel` remain available through the temporary `LegacyWidgetSidebarCassettePayload` branch.
+- Location: `lib/features/contacts/application/sidebar_cassette_spec/widget_builders/contact_chooser_widget.dart`
+- Reason: moving chooser readiness into the shared cassette coordinator caused relaunch-time sidebar flicker and a sidebar spinner because chooser async state invalidated the app-level async coordinator.
+- Scope: the chooser widget may upgrade a loading inert payload from the feature-owned `contactChooserSnapshotProvider`, but it does not author sidebar meaning, mutate panels, or transport runtime UI types across the cassette boundary.
 - Removal phase: Phase 1 - Eliminate Widget Transport
-- Why it is not a semantic writer: feature and app-level coordinators still route through `SidebarCassettePayload`; these legacy payloads do not author sidebar flow or panel meaning.
-- Why it does not retain hidden state: the exception only preserves existing render-edge inputs already consumed synchronously by the sidebar host; it does not add new callback transport, coordinator state, or alternate persistence.
-- What test/assertion/check will fail if it survives too long: Phase 1 completion requires sidebar payload transport to contain no `Widget` or builder transport, and runtime `featureComplex` usage must reach zero.
-
-### Exception: Legacy sidebar semantic-layer presentation imports
-
-- Location: `lib/features/**/application/{sidebar_cassette_spec,settings_cassette_spec,info_cassette_spec}/{resolvers,resolver_tools}/*.dart`
-- Reason: several sidebar resolvers still construct legacy widget-carrying payloads or pull presentation/view-model helpers directly while the Phase 1 transport cleanup is incomplete.
-- Scope: the exact current offender set is frozen by `test/architecture/forbidden_imports_test.dart`; new presentation or widget-builder imports in sidebar semantic/application files are not allowed.
-- Removal phase: Phase 1 - Eliminate Widget Transport
-- Why it is not a semantic writer: these files still route through the same cassette coordinator and payload boundary; the exception preserves existing render dependencies but does not create a second source of sidebar or panel meaning.
-- Why it does not retain hidden state: the imports are structural dependencies only; hidden state risk remains confined to the already-tracked legacy widget payload pathway and will surface if the offender set grows.
-- What test/assertion/check will fail if it survives too long: the architecture tripwire in `test/architecture/forbidden_imports_test.dart` will fail if the exception set grows, and the Phase 1 gate requires removing widget transport and builder-based behavior from sidebar payload flow.
+- Why it is not a semantic writer: canonical chooser meaning still originates from `ContactChooserResolver` and `ContactChooserCassettePayload`; the widget only fills in already-feature-owned chooser snapshot data for render-time loading-to-ready transition.
+- Why it does not retain hidden state: the adapter watches a provider snapshot and rebuilds directly from current data; it does not cache prior widget trees or preserve alternate chooser state.
+- What test/assertion/check will fail if it survives too long: the Phase 1 checklist item `Any temporary adapter can be removed without behavior change` remains open, while `cassette_widget_coordinator_provider_test.dart` now freezes the no-flicker shared-coordinator behavior and the chooser snapshot upgrade separately.
 
 ## Required Entry Format
 
