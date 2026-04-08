@@ -3,7 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers/working_db_populated_provider.dart';
 import 'package:remember_this_text/essentials/navigation/application/panel_widget_providers.dart';
+import 'package:remember_this_text/essentials/navigation/application/panels_view_state_provider.dart';
+import 'package:remember_this_text/essentials/navigation/domain/entities/view_spec.dart';
+import 'package:remember_this_text/essentials/navigation/domain/navigation_constants.dart';
 import 'package:remember_this_text/essentials/navigation/domain/sidebar_mode.dart';
+import 'package:remember_this_text/essentials/onboarding/domain/import_spec.dart';
 import 'package:remember_this_text/essentials/sidebar/application/cassette_rack_state_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/application/cassette_widget_coordinator_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/application/sidebar_flow_state_provider.dart';
@@ -74,10 +78,74 @@ void main() {
     });
   });
 
-  group('reconcileSidebarPanels', () {
-    testWidgets('preserves import panel when sidebar flow projects messages', (
-      tester,
-    ) async {
+  group('effectiveCenterPanelSpec', () {
+    test(
+      'derives flow-managed messages center without stored center stack',
+      () {
+        final container = ProviderContainer(
+          overrides: [
+            workingDbPopulatedProvider.overrideWith(
+              _AlwaysPopulatedWorkingDb.new,
+            ),
+          ],
+        );
+
+        container.read(sidebarFlowProvider.notifier).showGlobalTimeline();
+
+        final storedCenter = container.read(
+          panelsViewStateProvider(SidebarMode.messages),
+        )[WindowPanel.center];
+
+        expect(storedCenter?.isEmpty ?? true, isTrue);
+        expect(
+          container.read(
+            effectiveCenterPanelSpecProvider(SidebarMode.messages),
+          ),
+          equals(const ViewSpec.messages(MessagesSpec.globalTimeline())),
+        );
+
+        container.dispose();
+      },
+    );
+
+    testWidgets(
+      'center panel host renders derived flow-managed messages view',
+      (tester) async {
+        final container = ProviderContainer(
+          overrides: [
+            workingDbPopulatedProvider.overrideWith(
+              _AlwaysPopulatedWorkingDb.new,
+            ),
+            messages_view_spec.viewSpecCoordinatorProvider.overrideWith(
+              _FakeMessagesViewSpecCoordinator.new,
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const Directionality(
+              textDirection: TextDirection.ltr,
+              child: CenterPanelHost(mode: SidebarMode.messages),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        container.read(sidebarFlowProvider.notifier).showGlobalTimeline();
+        await tester.pump();
+
+        expect(find.text('global'), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        container.dispose();
+        await tester.pump();
+      },
+    );
+
+    test('preserves sidebar-independent center stack over flow projection', () {
       final container = ProviderContainer(
         overrides: [
           workingDbPopulatedProvider.overrideWith(
@@ -85,21 +153,144 @@ void main() {
           ),
         ],
       );
-      final reconciliationSubscription = container.listen(
-        reconcileSidebarPanelsProvider(SidebarMode.messages),
-        (_, __) {},
-        fireImmediately: true,
+
+      container.read(sidebarFlowProvider.notifier).showGlobalTimeline();
+      container
+          .read(panelsViewStateProvider(SidebarMode.messages).notifier)
+          .show(
+            panel: WindowPanel.center,
+            spec: const ViewSpec.import(ImportSpec.forImport()),
+          );
+
+      expect(
+        container.read(effectiveCenterPanelSpecProvider(SidebarMode.messages)),
+        equals(const ViewSpec.import(ImportSpec.forImport())),
+      );
+
+      container.dispose();
+    });
+  });
+
+  group('effectiveRightPanelSpec', () {
+    test('derives stored right panel when effective center supports it', () {
+      final container = ProviderContainer(
+        overrides: [
+          workingDbPopulatedProvider.overrideWith(
+            _AlwaysPopulatedWorkingDb.new,
+          ),
+        ],
       );
 
       container.read(sidebarFlowProvider.notifier).showGlobalTimeline();
-      expect(container.read(sidebarFlowProvider).chosenContactId, isNull);
+      container
+          .read(panelsViewStateProvider(SidebarMode.messages).notifier)
+          .show(
+            panel: WindowPanel.right,
+            spec: const ViewSpec.messages(
+              MessagesSpec.searchResultContext(messageId: 99, chatId: 5),
+            ),
+          );
 
-      reconciliationSubscription.close();
-      await tester.idle();
-      await tester.pump();
+      expect(
+        container.read(effectiveRightPanelSpecProvider(SidebarMode.messages)),
+        equals(
+          const ViewSpec.messages(
+            MessagesSpec.searchResultContext(messageId: 99, chatId: 5),
+          ),
+        ),
+      );
+
       container.dispose();
     });
 
+    test(
+      'flow-managed center change clears incompatible stored right panel',
+      () {
+        final container = ProviderContainer(
+          overrides: [
+            workingDbPopulatedProvider.overrideWith(
+              _AlwaysPopulatedWorkingDb.new,
+            ),
+          ],
+        );
+
+        container.read(sidebarFlowProvider.notifier).showGlobalTimeline();
+        container
+            .read(panelsViewStateProvider(SidebarMode.messages).notifier)
+            .show(
+              panel: WindowPanel.right,
+              spec: const ViewSpec.messages(
+                MessagesSpec.searchResultContext(messageId: 99, chatId: 5),
+              ),
+            );
+
+        container
+            .read(sidebarFlowProvider.notifier)
+            .showContactTimelineAt(contactId: 42);
+
+        expect(
+          container.read(effectiveRightPanelSpecProvider(SidebarMode.messages)),
+          isNull,
+        );
+        expect(
+          container
+              .read(
+                panelsViewStateProvider(SidebarMode.messages),
+              )[WindowPanel.right]
+              ?.isEmpty,
+          isTrue,
+        );
+
+        container.dispose();
+      },
+    );
+
+    testWidgets('right panel host renders derived right content', (
+      tester,
+    ) async {
+      final container = ProviderContainer(
+        overrides: [
+          workingDbPopulatedProvider.overrideWith(
+            _AlwaysPopulatedWorkingDb.new,
+          ),
+          messages_view_spec.viewSpecCoordinatorProvider.overrideWith(
+            _FakeMessagesViewSpecCoordinator.new,
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const Directionality(
+            textDirection: TextDirection.ltr,
+            child: RightPanelHost(mode: SidebarMode.messages),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      container.read(sidebarFlowProvider.notifier).showGlobalTimeline();
+      container
+          .read(panelsViewStateProvider(SidebarMode.messages).notifier)
+          .show(
+            panel: WindowPanel.right,
+            spec: const ViewSpec.messages(
+              MessagesSpec.searchResultContext(messageId: 99, chatId: 5),
+            ),
+          );
+      await tester.pump();
+
+      expect(find.text('search:99'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      container.dispose();
+      await tester.pump();
+    });
+  });
+
+  group('panel host coordination', () {
     testWidgets(
       'center host removes rendered contact panel after choosing another contact',
       (tester) async {

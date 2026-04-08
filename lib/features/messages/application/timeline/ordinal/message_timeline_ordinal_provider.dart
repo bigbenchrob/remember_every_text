@@ -3,13 +3,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../../../../../essentials/db/feature_level_providers.dart';
-import '../../../../../essentials/db/feature_level_providers/message_data_version_provider.dart';
-import '../../strategies/ordinal_strategy.dart';
-import '../../strategies/recovered_list_ordinal_strategy.dart';
-import '../../../domain/message_timeline_scope_extensions.dart';
 import '../../../domain/value_objects/message_timeline_scope.dart';
-import '../../../infrastructure/repositories/recovered_unlinked_messages_provider.dart';
-import '../contact_timeline_display_version_provider.dart';
+import './message_timeline_scope_ordinal_extensions.dart';
+import '../../strategies/ordinal_strategy.dart';
 
 part 'message_timeline_ordinal_provider.g.dart';
 
@@ -58,7 +54,6 @@ class MessageTimelineOrdinalState {
 /// Uses the strategy pattern to delegate to scope-specific data sources.
 @riverpod
 class MessageTimelineOrdinal extends _$MessageTimelineOrdinal {
-  late OrdinalStrategy _strategy;
   late final ItemScrollController _itemScrollController =
       ItemScrollController();
   late final ItemPositionsListener _itemPositionsListener =
@@ -68,15 +63,6 @@ class MessageTimelineOrdinal extends _$MessageTimelineOrdinal {
   Future<MessageTimelineOrdinalState> build({
     required MessageTimelineScope scope,
   }) async {
-    switch (scope) {
-      case ContactTimelineScope():
-        ref.watch(contactTimelineDisplayVersionProvider(scope: scope));
-      case GlobalTimelineScope() || ChatTimelineScope():
-        ref.watch(messageDataVersionProvider);
-      case RecoveredTimelineScope(:final contactId):
-        ref.watch(recoveredUnlinkedMessagesProvider(contactId: contactId));
-    }
-
     // During maintenance, return empty state to avoid DB access.
     final isMaintenance = ref.watch(dbMaintenanceLockProvider);
     if (isMaintenance) {
@@ -89,44 +75,15 @@ class MessageTimelineOrdinal extends _$MessageTimelineOrdinal {
       );
     }
 
-    if (scope case RecoveredTimelineScope(
-      :final contactId,
-      :final onlyNoHandleFromMe,
-    )) {
-      final recoveredAsync = ref.watch(
-        recoveredUnlinkedMessagesProvider(contactId: contactId),
-      );
-      final recoveredMessages =
-          recoveredAsync.valueOrNull ??
-          await ref.watch(
-            recoveredUnlinkedMessagesProvider(contactId: contactId).future,
-          ) ??
-          const <RecoveredUnlinkedMessageItem>[];
-      final filteredMessages = filterRecoveredTimelineMessages(
-        messages: recoveredMessages,
-        onlyNoHandleFromMe: onlyNoHandleFromMe,
-      );
-
-      return MessageTimelineOrdinalState(
-        scope: scope,
-        totalCount: filteredMessages.length,
-        itemScrollController: _itemScrollController,
-        itemPositionsListener: _itemPositionsListener,
-        strategy: RecoveredListOrdinalStrategy(filteredMessages),
-      );
-    }
-
-    final db = await ref.watch(driftWorkingDatabaseProvider.future);
-    _strategy = scope.toOrdinalStrategy(db);
-
-    final totalCount = await _strategy.getTotalCount();
+    final strategy = await scope.resolveOrdinalStrategy(ref);
+    final totalCount = await strategy.getTotalCount();
 
     return MessageTimelineOrdinalState(
       scope: scope,
       totalCount: totalCount,
       itemScrollController: _itemScrollController,
       itemPositionsListener: _itemPositionsListener,
-      strategy: _strategy,
+      strategy: strategy,
     );
   }
 

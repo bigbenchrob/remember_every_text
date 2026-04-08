@@ -1249,15 +1249,15 @@ class _ActivatedVideoPlayer extends ConsumerWidget {
                       ),
                     ),
                     if (!isPlaying && isReady)
-                      Center(
+                      const Center(
                         child: IgnorePointer(
                           child: DecoratedBox(
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               color: Colors.black45,
                               shape: BoxShape.circle,
                             ),
                             child: Padding(
-                              padding: const EdgeInsets.all(10),
+                              padding: EdgeInsets.all(10),
                               child: Icon(
                                 Icons.play_arrow,
                                 color: Colors.white,

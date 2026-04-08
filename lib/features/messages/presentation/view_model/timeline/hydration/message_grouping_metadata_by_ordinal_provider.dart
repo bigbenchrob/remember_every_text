@@ -4,8 +4,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../../../essentials/db/feature_level_providers.dart';
 import '../../../../../../essentials/db/infrastructure/data_sources/local/working/working_database.dart';
 import '../../../../../contacts/infrastructure/repositories/participant_merge_utils.dart';
-import '../../../../domain/message_timeline_scope_extensions.dart';
 import '../../../../domain/value_objects/message_timeline_scope.dart';
+import '../../../../infrastructure/repositories/recovered_unlinked_messages_provider.dart';
+import '../../../../application/timeline/ordinal/message_timeline_scope_ordinal_extensions.dart';
 import '../../../debug/contact_timeline_scroll_probe.dart';
 
 part 'message_grouping_metadata_by_ordinal_provider.g.dart';
@@ -41,10 +42,7 @@ Future<MessageGroupingMetadata?> messageGroupingMetadataByTimelineOrdinal(
   return ContactTimelineScrollProbe.traceAsync(
     'provider.grouping_metadata_by_ordinal',
     () async {
-      final db = await ref.watch(driftWorkingDatabaseProvider.future);
-      final overlayDb = await ref.watch(overlayDatabaseProvider.future);
-      final nameOverrides = await displayNameOverridesMap(overlayDb);
-      final strategy = scope.toOrdinalStrategy(db);
+      final strategy = await scope.resolveOrdinalStrategy(ref);
 
       ContactTimelineScrollProbe.count('ordinal_lookup.grouping_metadata');
       final messageId = await ContactTimelineScrollProbe.traceAsync(
@@ -54,6 +52,18 @@ Future<MessageGroupingMetadata?> messageGroupingMetadataByTimelineOrdinal(
       if (messageId == null) {
         return null;
       }
+
+      if (scope case RecoveredTimelineScope()) {
+        return _loadRecoveredGroupingMetadata(
+          ref: ref,
+          scope: scope,
+          messageId: messageId,
+        );
+      }
+
+      final db = await ref.watch(driftWorkingDatabaseProvider.future);
+      final overlayDb = await ref.watch(overlayDatabaseProvider.future);
+      final nameOverrides = await displayNameOverridesMap(overlayDb);
 
       final query =
           db.select(db.workingMessages).join([
@@ -104,6 +114,62 @@ Future<MessageGroupingMetadata?> messageGroupingMetadataByTimelineOrdinal(
       );
     },
   );
+}
+
+Future<MessageGroupingMetadata?> _loadRecoveredGroupingMetadata({
+  required MessageGroupingMetadataByTimelineOrdinalRef ref,
+  required MessageTimelineScope scope,
+  required int messageId,
+}) async {
+  final recoveredScope = scope as RecoveredTimelineScope;
+  final recoveredAsync = ref.watch(
+    recoveredUnlinkedMessagesProvider(contactId: recoveredScope.contactId),
+  );
+  final recoveredMessages =
+      recoveredAsync.valueOrNull ??
+      await ref.watch(
+        recoveredUnlinkedMessagesProvider(
+          contactId: recoveredScope.contactId,
+        ).future,
+      ) ??
+      const <RecoveredUnlinkedMessageItem>[];
+  final filteredMessages = filterRecoveredTimelineMessages(
+    messages: recoveredMessages,
+    onlyNoHandleFromMe: recoveredScope.onlyNoHandleFromMe,
+  );
+  final recoveredMessage = filteredMessages.where((message) {
+    return message.id == messageId;
+  }).firstOrNull;
+  if (recoveredMessage == null) {
+    return null;
+  }
+
+  return MessageGroupingMetadata(
+    chatId: -recoveredMessage.id,
+    isFromMe: recoveredMessage.isFromMe,
+    senderName: _recoveredSenderName(recoveredMessage),
+    text: recoveredMessage.text,
+    sentAt: recoveredMessage.sentAt,
+    hasAttachments: recoveredMessage.hasAttachments,
+  );
+}
+
+String _recoveredSenderName(RecoveredUnlinkedMessageItem message) {
+  if (message.isFromMe) {
+    return 'You';
+  }
+
+  final contactName = message.contactName?.trim();
+  if (contactName != null && contactName.isNotEmpty) {
+    return contactName;
+  }
+
+  final senderLabel = message.senderLabel.trim();
+  if (senderLabel.isNotEmpty) {
+    return senderLabel;
+  }
+
+  return 'Unknown sender';
 }
 
 DateTime? _parseUtc(String? value) {

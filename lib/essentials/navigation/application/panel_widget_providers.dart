@@ -53,90 +53,62 @@ SidebarCassetteCard? unwrapSidebarCassetteCard(Widget widget) {
 
 @riverpod
 void reconcileSidebarPanels(Ref ref, SidebarMode mode) {
+  // Phase 3 derivation owns right-panel visibility. This provider remains as a
+  // compatibility hook and no longer mutates panel state during normal runtime.
+}
+
+@riverpod
+PanelStack effectiveCenterPanelStack(Ref ref, SidebarMode mode) {
+  final centerStack = ref.watch(
+    panelsViewStateProvider(mode).select(
+      (stacks) => stacks[WindowPanel.center] ?? const PanelStack.empty(),
+    ),
+  );
+
   if (mode != SidebarMode.messages) {
-    return;
+    return centerStack;
   }
 
   final flowState = ref.watch(sidebarFlowProvider);
-  final panels = ref.watch(panelsViewStateProvider(mode));
-  final centerStack = panels[WindowPanel.center] ?? const PanelStack.empty();
-  final rightStack = panels[WindowPanel.right] ?? const PanelStack.empty();
-  final centerSpec = centerStack.activePage?.spec;
   final projectedCenterSpec = flowState.projectedCenterSpec;
 
-  final shouldResetCenter = _shouldResetCenterPanel(
+  return _resolveEffectiveCenterStack(
     flowState: flowState,
-    centerSpec: centerSpec,
+    centerStack: centerStack,
     projectedCenterSpec: projectedCenterSpec,
   );
-  final effectiveCenterSpec = shouldResetCenter
-      ? projectedCenterSpec
-      : centerSpec;
-  final shouldClearRight =
-      !rightStack.isEmpty &&
-      (shouldResetCenter ||
-          !_supportsRecoveredAttachmentSidebar(effectiveCenterSpec));
+}
 
-  if (!shouldResetCenter && !shouldClearRight) {
-    return;
+@riverpod
+ViewSpec? effectiveCenterPanelSpec(Ref ref, SidebarMode mode) {
+  final stack = ref.watch(effectiveCenterPanelStackProvider(mode));
+  return stack.activePage?.spec;
+}
+
+@riverpod
+PanelStack effectiveRightPanelStack(Ref ref, SidebarMode mode) {
+  final rightStack = ref.watch(
+    panelsViewStateProvider(
+      mode,
+    ).select((stacks) => stacks[WindowPanel.right] ?? const PanelStack.empty()),
+  );
+
+  if (mode != SidebarMode.messages) {
+    return rightStack;
   }
 
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    final latestFlowState = ref.read(sidebarFlowProvider);
-    final latestPanels = ref.read(panelsViewStateProvider(mode));
-    final latestCenterStack =
-        latestPanels[WindowPanel.center] ?? const PanelStack.empty();
-    final latestRightStack =
-        latestPanels[WindowPanel.right] ?? const PanelStack.empty();
-    final latestCenterSpec = latestCenterStack.activePage?.spec;
-    final latestProjectedCenterSpec = latestFlowState.projectedCenterSpec;
-    final latestShouldResetCenter = _shouldResetCenterPanel(
-      flowState: latestFlowState,
-      centerSpec: latestCenterSpec,
-      projectedCenterSpec: latestProjectedCenterSpec,
-    );
-    final latestEffectiveCenterSpec = latestShouldResetCenter
-        ? latestProjectedCenterSpec
-        : latestCenterSpec;
-    final latestShouldClearRight =
-        !latestRightStack.isEmpty &&
-        (latestShouldResetCenter ||
-            !_supportsRecoveredAttachmentSidebar(latestEffectiveCenterSpec));
+  final effectiveCenterSpec = ref.watch(effectiveCenterPanelSpecProvider(mode));
+  if (!_supportsRecoveredAttachmentSidebar(effectiveCenterSpec)) {
+    return const PanelStack.empty();
+  }
 
-    if (!latestShouldResetCenter && !latestShouldClearRight) {
-      return;
-    }
+  return rightStack;
+}
 
-    ref
-        .read(appLoggerProvider.notifier)
-        .debug(
-          'Running sidebar panel reconciliation',
-          source: 'PanelReconcile',
-          context: {
-            'latestCenterSpec': '$latestCenterSpec',
-            'latestProjectedCenterSpec': '$latestProjectedCenterSpec',
-            'latestShouldResetCenter': latestShouldResetCenter,
-            'latestShouldClearRight': latestShouldClearRight,
-          },
-        );
-
-    final panelsNotifier = ref.read(panelsViewStateProvider(mode).notifier);
-    if (latestShouldResetCenter) {
-      if (latestProjectedCenterSpec == null) {
-        panelsNotifier.clear(panel: WindowPanel.center);
-      } else {
-        panelsNotifier.show(
-          panel: WindowPanel.center,
-          spec: latestProjectedCenterSpec,
-        );
-      }
-      return;
-    }
-
-    if (latestShouldClearRight) {
-      panelsNotifier.clear(panel: WindowPanel.right);
-    }
-  });
+@riverpod
+ViewSpec? effectiveRightPanelSpec(Ref ref, SidebarMode mode) {
+  final stack = ref.watch(effectiveRightPanelStackProvider(mode));
+  return stack.activePage?.spec;
 }
 
 /// Whether the center panel is showing content that operates independently
@@ -146,12 +118,7 @@ void reconcileSidebarPanels(Ref ref, SidebarMode mode) {
 /// dismiss action rather than the cassette rack.
 @riverpod
 bool isSidebarParked(Ref ref, SidebarMode mode) {
-  final stack = ref.watch(
-    panelsViewStateProvider(mode).select(
-      (stacks) => stacks[WindowPanel.center] ?? const PanelStack.empty(),
-    ),
-  );
-  final spec = stack.activePage?.spec;
+  final spec = ref.watch(effectiveCenterPanelSpecProvider(mode));
   if (spec == null) {
     return false;
   }
@@ -161,12 +128,7 @@ bool isSidebarParked(Ref ref, SidebarMode mode) {
 /// Widget provider for center panel
 @riverpod
 Widget centerPanelWidget(Ref ref, SidebarMode mode) {
-  ref.watch(reconcileSidebarPanelsProvider(mode));
-  final stack = ref.watch(
-    panelsViewStateProvider(mode).select(
-      (stacks) => stacks[WindowPanel.center] ?? const PanelStack.empty(),
-    ),
-  );
+  final stack = ref.watch(effectiveCenterPanelStackProvider(mode));
   return ref
       .read(panelCoordinatorProvider(mode).notifier)
       .buildPanelSurface(WindowPanel.center, stack);
@@ -174,11 +136,7 @@ Widget centerPanelWidget(Ref ref, SidebarMode mode) {
 
 @riverpod
 Widget rightPanelWidget(Ref ref, SidebarMode mode) {
-  final stack = ref.watch(
-    panelsViewStateProvider(
-      mode,
-    ).select((stacks) => stacks[WindowPanel.right] ?? const PanelStack.empty()),
-  );
+  final stack = ref.watch(effectiveRightPanelStackProvider(mode));
   return ref
       .read(panelCoordinatorProvider(mode).notifier)
       .buildPanelSurface(WindowPanel.right, stack);
@@ -190,15 +148,8 @@ bool shouldShowEndSidebar(Ref ref, SidebarMode mode) {
     return false;
   }
 
-  final stacks = ref.watch(panelsViewStateProvider(mode));
-  final centerSpec = stacks[WindowPanel.center]?.activePage?.spec;
-  final rightStack = stacks[WindowPanel.right] ?? const PanelStack.empty();
-
-  if (rightStack.isEmpty) {
-    return false;
-  }
-
-  return _supportsRecoveredAttachmentSidebar(centerSpec);
+  final rightStack = ref.watch(effectiveRightPanelStackProvider(mode));
+  return !rightStack.isEmpty;
 }
 
 @riverpod
@@ -208,12 +159,7 @@ Widget? contextualSidebarWidget(Ref ref, SidebarMode mode) {
   }
 
   final flowState = ref.watch(sidebarFlowProvider);
-
-  final centerSpec = ref.watch(
-    panelsViewStateProvider(
-      mode,
-    ).select((stacks) => stacks[WindowPanel.center]?.activePage?.spec),
-  );
+  final centerSpec = ref.watch(effectiveCenterPanelSpecProvider(mode));
 
   if (centerSpec == null) {
     return null;
@@ -280,6 +226,69 @@ bool _shouldShowRecoveredContextFor(SidebarFlowState flowState) {
   return flowState.isContactsBranch &&
       flowState.messageScope == SidebarFlowMessageScope.recoveredDeleted &&
       flowState.chosenContactId != null;
+}
+
+PanelStack _resolveEffectiveCenterStack({
+  required SidebarFlowState flowState,
+  required PanelStack centerStack,
+  required ViewSpec? projectedCenterSpec,
+}) {
+  if (_shouldUseStoredCenterStack(
+    flowState: flowState,
+    centerStack: centerStack,
+    projectedCenterSpec: projectedCenterSpec,
+  )) {
+    return centerStack;
+  }
+
+  if (projectedCenterSpec == null) {
+    return const PanelStack.empty();
+  }
+
+  return PanelStack(
+    pages: <PanelPage>[
+      PanelPage(
+        id: 'derived:$projectedCenterSpec',
+        spec: projectedCenterSpec,
+        title: _defaultPanelTitle(projectedCenterSpec),
+        isClosable: false,
+      ),
+    ],
+  );
+}
+
+bool _shouldUseStoredCenterStack({
+  required SidebarFlowState flowState,
+  required PanelStack centerStack,
+  required ViewSpec? projectedCenterSpec,
+}) {
+  final centerSpec = centerStack.activePage?.spec;
+  if (centerSpec == null) {
+    return false;
+  }
+
+  if (centerSpec.isSidebarIndependent) {
+    return true;
+  }
+
+  if (_isFlowManagedCenterSpec(centerSpec)) {
+    return false;
+  }
+
+  return !_shouldResetCenterPanel(
+    flowState: flowState,
+    centerSpec: centerSpec,
+    projectedCenterSpec: projectedCenterSpec,
+  );
+}
+
+String _defaultPanelTitle(ViewSpec spec) {
+  return spec.map(
+    messages: (_) => 'Messages',
+    import: (_) => 'Import',
+    environmentReadiness: (_) => 'Environment Readiness',
+    onboarding: (_) => 'Onboarding',
+  );
 }
 
 bool _shouldResetCenterPanel({
@@ -556,16 +565,7 @@ class CenterPanelHost extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(reconcileSidebarPanelsProvider(mode));
-    final stack = ref.watch(
-      panelsViewStateProvider(mode).select(
-        (stacks) => stacks[WindowPanel.center] ?? const PanelStack.empty(),
-      ),
-    );
-
-    return ref
-        .read(panelCoordinatorProvider(mode).notifier)
-        .buildPanelSurface(WindowPanel.center, stack);
+    return ref.watch(centerPanelWidgetProvider(mode));
   }
 }
 
@@ -576,15 +576,7 @@ class RightPanelHost extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final stack = ref.watch(
-      panelsViewStateProvider(mode).select(
-        (stacks) => stacks[WindowPanel.right] ?? const PanelStack.empty(),
-      ),
-    );
-
-    return ref
-        .read(panelCoordinatorProvider(mode).notifier)
-        .buildPanelSurface(WindowPanel.right, stack);
+    return ref.watch(rightPanelWidgetProvider(mode));
   }
 }
 

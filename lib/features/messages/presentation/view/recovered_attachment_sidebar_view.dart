@@ -9,6 +9,10 @@ import 'package:macos_ui/macos_ui.dart';
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
+import '../../../attachments/application/attachment_resolver_provider.dart';
+import '../../../attachments/domain/constants/attachment_provenance.dart';
+import '../../../attachments/domain/constants/resolved_attachment_availability.dart';
+import '../../../attachments/domain/entities/resolved_attachment.dart';
 import '../../../../essentials/navigation/domain/navigation_constants.dart';
 import '../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../essentials/navigation/feature_level_providers.dart';
@@ -24,13 +28,14 @@ class RecoveredAttachmentSidebarView extends ConsumerWidget {
   final int messageId;
   final AttachmentInfo attachment;
 
-  String _displayName() {
+  String _displayName({String? fallbackPath}) {
     final transferName = attachment.transferName?.trim();
     if (transferName != null && transferName.isNotEmpty) {
       return transferName;
     }
 
-    final resolvedPath = attachment.resolvedLocalPath()?.trim();
+    final resolvedPath =
+        fallbackPath?.trim() ?? attachment.resolvedLocalPath()?.trim();
     if (resolvedPath == null || resolvedPath.isEmpty) {
       return 'Recovered attachment';
     }
@@ -62,8 +67,10 @@ class RecoveredAttachmentSidebarView extends ConsumerWidget {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
-    final resolvedPath = attachment.resolvedLocalPath();
-    final hasLocalPath = resolvedPath != null && resolvedPath.isNotEmpty;
+    final presentation = _RecoveredAttachmentSidebarPresentation.from(
+      attachment: attachment,
+      resolvedAttachmentAsync: _watchResolvedAttachment(ref),
+    );
 
     Future<void> closeSidebar() async {
       ref
@@ -84,7 +91,7 @@ class RecoveredAttachmentSidebarView extends ConsumerWidget {
                   Text('Recovered attachment', style: typography.headline),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    _displayName(),
+                    _displayName(fallbackPath: presentation.displayNamePath),
                     style: typography.body.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -99,18 +106,21 @@ class RecoveredAttachmentSidebarView extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.md),
                   _RecoveredAttachmentPreview(
                     attachment: attachment,
-                    resolvedPath: resolvedPath,
+                    presentation: presentation,
                   ),
-                  if (hasLocalPath) ...[
+                  if (presentation.pathLabel case final pathLabel?) ...[
                     const SizedBox(height: AppSpacing.md),
                     Text(
-                      'Recovered file path',
+                      pathLabel,
                       style: typography.caption.copyWith(
                         color: colors.content.textSecondary,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xs),
-                    SelectableText(resolvedPath, style: typography.caption1),
+                    SelectableText(
+                      presentation.pathValue!,
+                      style: typography.caption1,
+                    ),
                   ],
                   if (attachment.mimeType != null &&
                       attachment.mimeType!.isNotEmpty) ...[
@@ -142,43 +152,68 @@ class RecoveredAttachmentSidebarView extends ConsumerWidget {
       ),
     );
   }
+
+  AsyncValue<ResolvedAttachment>? _watchResolvedAttachment(WidgetRef ref) {
+    final messageGuid = attachment.messageGuid;
+    if (messageGuid == null || messageGuid.isEmpty) {
+      return null;
+    }
+
+    return ref.watch(
+      attachmentResolverProvider(
+        attachment,
+        messageGuid: messageGuid,
+        importAttachmentId: attachment.importAttachmentId,
+      ),
+    );
+  }
 }
 
 class _RecoveredAttachmentPreview extends ConsumerWidget {
   const _RecoveredAttachmentPreview({
     required this.attachment,
-    required this.resolvedPath,
+    required this.presentation,
   });
 
   final AttachmentInfo attachment;
-  final String? resolvedPath;
+  final _RecoveredAttachmentSidebarPresentation presentation;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
-    final hasLocalPath = resolvedPath != null && resolvedPath!.isNotEmpty;
+    final previewFile = presentation.previewFile;
+    final hasResolvedFile = previewFile != null;
 
-    if (hasLocalPath && attachment.isImage) {
+    if (hasResolvedFile && attachment.isImage) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Image.file(
-          File(resolvedPath!),
+          previewFile,
           fit: BoxFit.contain,
           errorBuilder: (_, __, ___) {
             return const _RecoveredAttachmentPlaceholder(
               cardKey: ValueKey<String>('recovered-placeholder-image-error'),
               title: 'Image preview unavailable',
               body:
-                  'The recovered image file exists in metadata, but could not be rendered here.',
+                  'A file was resolved for this image, but Flutter could not render it here.',
             );
           },
         ),
       );
     }
 
-    if (attachment.isVideo) {
+    if (presentation.isResolving) {
+      return const _RecoveredAttachmentPlaceholder(
+        cardKey: ValueKey<String>('recovered-placeholder-loading'),
+        title: 'Checking attachment availability',
+        body:
+            'MessageLens is checking the live Messages folder and the attachment archive for a displayable file.',
+      );
+    }
+
+    if (hasResolvedFile && attachment.isVideo) {
       return const _RecoveredAttachmentPlaceholder(
         cardKey: ValueKey<String>('recovered-placeholder-video'),
         title: 'Recovered video',
@@ -187,7 +222,7 @@ class _RecoveredAttachmentPreview extends ConsumerWidget {
       );
     }
 
-    if (attachment.isUrlPreview) {
+    if (hasResolvedFile && attachment.isUrlPreview) {
       return const _RecoveredAttachmentPlaceholder(
         cardKey: ValueKey<String>('recovered-placeholder-link-preview'),
         title: 'Recovered link preview attachment',
@@ -196,7 +231,7 @@ class _RecoveredAttachmentPreview extends ConsumerWidget {
       );
     }
 
-    if (hasLocalPath) {
+    if (hasResolvedFile) {
       return const _RecoveredAttachmentPlaceholder(
         cardKey: ValueKey<String>('recovered-placeholder-file'),
         title: 'Recovered file',
@@ -206,13 +241,185 @@ class _RecoveredAttachmentPreview extends ConsumerWidget {
     }
 
     return _RecoveredAttachmentPlaceholder(
-      cardKey: const ValueKey<String>('recovered-placeholder-metadata-only'),
-      title: 'Attachment metadata only',
-      body:
-          'This recovered attachment still has identifying metadata, but no local file path survived into the current projection.',
+      cardKey: presentation.cardKey,
+      title: presentation.placeholderTitle,
+      body: presentation.placeholderBody,
       iconColor: colors.content.textSecondary,
       textStyle: typography.body,
     );
+  }
+}
+
+class _RecoveredAttachmentSidebarPresentation {
+  const _RecoveredAttachmentSidebarPresentation({
+    required this.cardKey,
+    required this.displayNamePath,
+    required this.isResolving,
+    required this.pathLabel,
+    required this.pathValue,
+    required this.placeholderBody,
+    required this.placeholderTitle,
+    required this.previewFile,
+  });
+
+  factory _RecoveredAttachmentSidebarPresentation.from({
+    required AttachmentInfo attachment,
+    required AsyncValue<ResolvedAttachment>? resolvedAttachmentAsync,
+  }) {
+    final recordedPath = attachment.resolvedLocalPath();
+    final resolvedAttachment = resolvedAttachmentAsync?.valueOrNull;
+    final resolvedFile = resolvedAttachment?.resolvedFile;
+    final resolvedFilePath = resolvedFile?.path;
+    final hasRecordedPath = recordedPath != null && recordedPath.isNotEmpty;
+    final hasResolvedFile =
+        resolvedFilePath != null && resolvedFilePath.isNotEmpty;
+    final availability = resolvedAttachment?.availability;
+    final provenance = resolvedAttachment?.provenance;
+
+    return _RecoveredAttachmentSidebarPresentation(
+      cardKey: _placeholderCardKey(
+        attachment: attachment,
+        availability: availability,
+        hasRecordedPath: hasRecordedPath,
+      ),
+      displayNamePath: recordedPath ?? resolvedFilePath,
+      isResolving: resolvedAttachmentAsync?.isLoading ?? false,
+      pathLabel: _pathLabel(
+        hasRecordedPath: hasRecordedPath,
+        hasResolvedFile: hasResolvedFile,
+        provenance: provenance,
+      ),
+      pathValue: hasResolvedFile ? resolvedFilePath : recordedPath,
+      placeholderBody: _placeholderBody(
+        attachment: attachment,
+        availability: availability,
+        hasRecordedPath: hasRecordedPath,
+      ),
+      placeholderTitle: _placeholderTitle(
+        attachment: attachment,
+        availability: availability,
+        hasRecordedPath: hasRecordedPath,
+      ),
+      previewFile: hasResolvedFile ? resolvedFile : null,
+    );
+  }
+
+  final Key cardKey;
+  final String? displayNamePath;
+  final bool isResolving;
+  final String? pathLabel;
+  final String? pathValue;
+  final String placeholderBody;
+  final String placeholderTitle;
+  final File? previewFile;
+
+  static Key _placeholderCardKey({
+    required AttachmentInfo attachment,
+    required ResolvedAttachmentAvailability? availability,
+    required bool hasRecordedPath,
+  }) {
+    if (attachment.isImage) {
+      if (availability == null && !hasRecordedPath) {
+        return const ValueKey<String>('recovered-placeholder-metadata-only');
+      }
+
+      return const ValueKey<String>('recovered-placeholder-image-unavailable');
+    }
+
+    if (attachment.isVideo) {
+      return switch (availability) {
+        ResolvedAttachmentAvailability.pendingArchive => const ValueKey<String>(
+          'recovered-placeholder-video-pending',
+        ),
+        ResolvedAttachmentAvailability.unavailableAwaitingRecovery =>
+          const ValueKey<String>('recovered-placeholder-video-missing'),
+        ResolvedAttachmentAvailability.nonRecoverable => const ValueKey<String>(
+          'recovered-placeholder-video-unavailable',
+        ),
+        _ => const ValueKey<String>('recovered-placeholder-video-metadata'),
+      };
+    }
+
+    return const ValueKey<String>('recovered-placeholder-metadata-only');
+  }
+
+  static String? _pathLabel({
+    required bool hasRecordedPath,
+    required bool hasResolvedFile,
+    required AttachmentProvenance? provenance,
+  }) {
+    if (hasResolvedFile) {
+      return switch (provenance) {
+        AttachmentProvenance.archived => 'Archived file path',
+        AttachmentProvenance.importedHistorical => 'Recovered backup path',
+        _ => 'Recovered file path',
+      };
+    }
+
+    if (hasRecordedPath) {
+      return 'Recorded source path';
+    }
+
+    return null;
+  }
+
+  static String _placeholderTitle({
+    required AttachmentInfo attachment,
+    required ResolvedAttachmentAvailability? availability,
+    required bool hasRecordedPath,
+  }) {
+    final mediaLabel = _mediaLabel(attachment);
+
+    return switch (availability) {
+      ResolvedAttachmentAvailability.pendingArchive =>
+        '$mediaLabel being archived',
+      ResolvedAttachmentAvailability.unavailableAwaitingRecovery =>
+        hasRecordedPath
+            ? '$mediaLabel no longer present'
+            : '$mediaLabel awaiting recovery',
+      ResolvedAttachmentAvailability.nonRecoverable =>
+        '$mediaLabel unavailable',
+      _ =>
+        hasRecordedPath
+            ? '$mediaLabel no longer present'
+            : 'Attachment metadata only',
+    };
+  }
+
+  static String _placeholderBody({
+    required AttachmentInfo attachment,
+    required ResolvedAttachmentAvailability? availability,
+    required bool hasRecordedPath,
+  }) {
+    final mediaNoun = _mediaLabel(attachment).toLowerCase();
+
+    return switch (availability) {
+      ResolvedAttachmentAvailability.pendingArchive =>
+        'The original $mediaNoun file is present, but MessageLens is still adding it to the archive before showing it here.',
+      ResolvedAttachmentAvailability.unavailableAwaitingRecovery =>
+        hasRecordedPath
+            ? 'This $mediaNoun is no longer present at the recorded Messages attachment path on this Mac. If an archived or backup copy becomes available, it will appear here.'
+            : 'This $mediaNoun is not displayable yet, but MessageLens still has enough metadata to try recovery later.',
+      ResolvedAttachmentAvailability.nonRecoverable =>
+        'This $mediaNoun still has identifying metadata, but no displayable local or archived file is currently available.',
+      _ =>
+        hasRecordedPath
+            ? 'This $mediaNoun is no longer present at the recorded Messages attachment path on this Mac.'
+            : 'This recovered attachment still has identifying metadata, but no local file path survived into the current projection.',
+    };
+  }
+
+  static String _mediaLabel(AttachmentInfo attachment) {
+    if (attachment.isImage) {
+      return 'Image';
+    }
+    if (attachment.isVideo) {
+      return 'Video';
+    }
+    if (attachment.isUrlPreview) {
+      return 'Link preview attachment';
+    }
+    return 'Attachment';
   }
 }
 

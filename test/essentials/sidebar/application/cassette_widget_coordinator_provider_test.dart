@@ -24,9 +24,9 @@ import 'package:remember_this_text/features/contacts/application/sidebar_cassett
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/resolver_tools/picker_filter_mode_provider.dart';
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/resolver_tools/unified_picker_sections_provider.dart';
 import 'package:remember_this_text/features/contacts/domain/participant_origin.dart';
-import 'package:remember_this_text/features/contacts/infrastructure/repositories/contacts_list_repository.dart';
 import 'package:remember_this_text/features/contacts/domain/spec_classes/contacts_cassette_spec.dart';
 import 'package:remember_this_text/features/contacts/domain/spec_classes/contacts_settings_spec.dart';
+import 'package:remember_this_text/features/contacts/infrastructure/repositories/contacts_list_repository.dart';
 import 'package:remember_this_text/features/handles/application/sidebar_cassette_spec/payloads/stray_emails_cassette_payload.dart';
 import 'package:remember_this_text/features/handles/application/sidebar_cassette_spec/payloads/stray_handles_mode_switcher_cassette_payload.dart';
 import 'package:remember_this_text/features/handles/application/sidebar_cassette_spec/payloads/stray_handles_review_cassette_payload.dart';

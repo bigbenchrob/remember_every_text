@@ -6,6 +6,8 @@ class AttachmentInfo {
     required this.localPath,
     required this.mimeType,
     required this.transferName,
+    this.importAttachmentId,
+    this.messageGuid,
     this.mediaWidth,
     this.mediaHeight,
   });
@@ -14,6 +16,8 @@ class AttachmentInfo {
   final String? localPath;
   final String? mimeType;
   final String? transferName;
+  final int? importAttachmentId;
+  final String? messageGuid;
   final double? mediaWidth;
   final double? mediaHeight;
 

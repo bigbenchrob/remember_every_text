@@ -5,10 +5,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../features/messages/domain/spec_classes/messages_view_spec.dart';
 import '../../../features/sidebar_utilities/feature_level_providers.dart';
 import '../../logging/application/app_logger.dart';
+import '../../navigation/application/panels_view_state_provider.dart';
 import '../../navigation/domain/entities/view_spec.dart';
 import '../../navigation/domain/navigation_constants.dart';
 import '../../navigation/domain/sidebar_mode.dart';
-import '../../navigation/feature_level_providers.dart';
 import '../feature_level_providers.dart';
 
 part 'sidebar_flow_state_provider.freezed.dart';
@@ -85,11 +85,24 @@ class SidebarFlow extends _$SidebarFlow {
     return const SidebarFlowState();
   }
 
+  void _setStateAndClearRightIfNeeded(SidebarFlowState nextState) {
+    final previousProjectedCenterSpec = state.projectedCenterSpec;
+    state = nextState;
+
+    if (previousProjectedCenterSpec == state.projectedCenterSpec) {
+      return;
+    }
+
+    ref
+        .read(panelsViewStateProvider(SidebarMode.messages).notifier)
+        .clear(panel: WindowPanel.right);
+  }
+
   void topMenuChanged({
     required TopChatMenuChoice choice,
     required int cassetteIndex,
   }) {
-    state = switch (choice) {
+    _setStateAndClearRightIfNeeded(switch (choice) {
       TopChatMenuChoice.contacts => const SidebarFlowState(
         topMenuChoice: TopChatMenuChoice.contacts,
       ),
@@ -107,7 +120,7 @@ class SidebarFlow extends _$SidebarFlow {
         const SidebarFlowState(
           topMenuChoice: TopChatMenuChoice.recoveredNoHandleFromMeMessages,
         ),
-    };
+    });
 
     final newSpec = CassetteSpec.sidebarUtility(
       SidebarUtilityCassetteSpec.topChatMenu(selectedChoice: choice),
@@ -116,16 +129,16 @@ class SidebarFlow extends _$SidebarFlow {
     ref
         .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
         .replaceAtIndexAndCascade(cassetteIndex, newSpec);
-
-    _syncProjectedCenterPanel();
   }
 
   void contactChosen({required int contactId, required int infoCardIndex}) {
-    state = state.copyWith(
-      topMenuChoice: TopChatMenuChoice.contacts,
-      chosenContactId: contactId,
-      selectedHandleId: null,
-      messageScope: SidebarFlowMessageScope.regular,
+    _setStateAndClearRightIfNeeded(
+      state.copyWith(
+        topMenuChoice: TopChatMenuChoice.contacts,
+        chosenContactId: contactId,
+        selectedHandleId: null,
+        messageScope: SidebarFlowMessageScope.regular,
+      ),
     );
 
     final newSpec = CassetteSpec.contacts(
@@ -135,8 +148,6 @@ class SidebarFlow extends _$SidebarFlow {
     ref
         .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
         .replaceAtIndexAndCascade(infoCardIndex, newSpec);
-
-    _syncProjectedCenterPanel();
   }
 
   void chooseAnotherContact({required int infoCardIndex}) {
@@ -153,10 +164,12 @@ class SidebarFlow extends _$SidebarFlow {
           },
         );
 
-    state = state.copyWith(
-      chosenContactId: null,
-      selectedHandleId: null,
-      messageScope: SidebarFlowMessageScope.regular,
+    _setStateAndClearRightIfNeeded(
+      state.copyWith(
+        chosenContactId: null,
+        selectedHandleId: null,
+        messageScope: SidebarFlowMessageScope.regular,
+      ),
     );
 
     const newSpec = CassetteSpec.contactsInfo(
@@ -168,8 +181,6 @@ class SidebarFlow extends _$SidebarFlow {
     ref
         .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
         .replaceAtIndexAndCascade(infoCardIndex, newSpec);
-
-    _syncProjectedCenterPanel();
 
     ref
         .read(appLoggerProvider.notifier)
@@ -190,11 +201,13 @@ class SidebarFlow extends _$SidebarFlow {
     required int? handleId,
     required int cassetteIndex,
   }) {
-    state = state.copyWith(
-      topMenuChoice: TopChatMenuChoice.contacts,
-      chosenContactId: contactId,
-      selectedHandleId: handleId,
-      messageScope: SidebarFlowMessageScope.regular,
+    _setStateAndClearRightIfNeeded(
+      state.copyWith(
+        topMenuChoice: TopChatMenuChoice.contacts,
+        chosenContactId: contactId,
+        selectedHandleId: handleId,
+        messageScope: SidebarFlowMessageScope.regular,
+      ),
     );
 
     final newSpec = CassetteSpec.contacts(
@@ -207,8 +220,6 @@ class SidebarFlow extends _$SidebarFlow {
     ref
         .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
         .replaceAtIndexAndCascade(cassetteIndex, newSpec);
-
-    _syncProjectedCenterPanel();
   }
 
   void setContactMessageScope({
@@ -216,37 +227,39 @@ class SidebarFlow extends _$SidebarFlow {
     required SidebarFlowMessageScope messageScope,
   }) {
     if (messageScope == SidebarFlowMessageScope.regular) {
-      state = state.copyWith(
-        topMenuChoice: TopChatMenuChoice.contacts,
-        chosenContactId: contactId,
-        scrollToDate: null,
-        messageScope: SidebarFlowMessageScope.regular,
+      _setStateAndClearRightIfNeeded(
+        state.copyWith(
+          topMenuChoice: TopChatMenuChoice.contacts,
+          chosenContactId: contactId,
+          scrollToDate: null,
+          messageScope: SidebarFlowMessageScope.regular,
+        ),
       );
-
-      _syncProjectedCenterPanel();
       return;
     }
 
-    state = state.copyWith(
-      topMenuChoice: TopChatMenuChoice.contacts,
-      chosenContactId: contactId,
-      selectedHandleId: null,
-      scrollToDate: null,
-      messageScope: SidebarFlowMessageScope.recoveredDeleted,
+    _setStateAndClearRightIfNeeded(
+      state.copyWith(
+        topMenuChoice: TopChatMenuChoice.contacts,
+        chosenContactId: contactId,
+        selectedHandleId: null,
+        scrollToDate: null,
+        messageScope: SidebarFlowMessageScope.recoveredDeleted,
+      ),
     );
-
-    _syncProjectedCenterPanel();
   }
 
   void showRecoveredDeletedForContact({
     required int contactId,
     required int heroCassetteIndex,
   }) {
-    state = state.copyWith(
-      topMenuChoice: TopChatMenuChoice.contacts,
-      chosenContactId: contactId,
-      selectedHandleId: null,
-      messageScope: SidebarFlowMessageScope.recoveredDeleted,
+    _setStateAndClearRightIfNeeded(
+      state.copyWith(
+        topMenuChoice: TopChatMenuChoice.contacts,
+        chosenContactId: contactId,
+        selectedHandleId: null,
+        messageScope: SidebarFlowMessageScope.recoveredDeleted,
+      ),
     );
 
     final heroSpec = CassetteSpec.contacts(
@@ -256,151 +269,81 @@ class SidebarFlow extends _$SidebarFlow {
     ref
         .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
         .replaceAtIndexAndCascade(heroCassetteIndex, heroSpec);
-
-    _syncProjectedCenterPanel();
   }
 
   void showGlobalRecoveredDeleted() {
-    state = state.copyWith(
-      topMenuChoice: TopChatMenuChoice.recoveredUnlinkedMessages,
-      chosenContactId: null,
-      selectedHandleId: null,
-      scrollToDate: null,
-      messageScope: SidebarFlowMessageScope.recoveredDeleted,
+    _setStateAndClearRightIfNeeded(
+      state.copyWith(
+        topMenuChoice: TopChatMenuChoice.recoveredUnlinkedMessages,
+        chosenContactId: null,
+        selectedHandleId: null,
+        scrollToDate: null,
+        messageScope: SidebarFlowMessageScope.recoveredDeleted,
+      ),
     );
-
-    _syncProjectedCenterPanel();
   }
 
   void showRecoveredNoHandleFromMe({DateTime? scrollToDate}) {
-    state = state.copyWith(
-      topMenuChoice: TopChatMenuChoice.recoveredNoHandleFromMeMessages,
-      chosenContactId: null,
-      selectedHandleId: null,
-      scrollToDate: scrollToDate,
-      messageScope: SidebarFlowMessageScope.regular,
+    _setStateAndClearRightIfNeeded(
+      state.copyWith(
+        topMenuChoice: TopChatMenuChoice.recoveredNoHandleFromMeMessages,
+        chosenContactId: null,
+        selectedHandleId: null,
+        scrollToDate: scrollToDate,
+        messageScope: SidebarFlowMessageScope.regular,
+      ),
     );
-
-    _syncProjectedCenterPanel();
   }
 
   void showGlobalTimeline() {
-    state = state.copyWith(
-      topMenuChoice: TopChatMenuChoice.searchAllMessages,
-      chosenContactId: null,
-      selectedHandleId: null,
-      scrollToDate: null,
-      messageScope: SidebarFlowMessageScope.regular,
+    _setStateAndClearRightIfNeeded(
+      state.copyWith(
+        topMenuChoice: TopChatMenuChoice.searchAllMessages,
+        chosenContactId: null,
+        selectedHandleId: null,
+        scrollToDate: null,
+        messageScope: SidebarFlowMessageScope.regular,
+      ),
     );
-
-    _syncProjectedCenterPanel();
   }
 
   void showGlobalTimelineAt(DateTime? scrollToDate) {
-    state = state.copyWith(
-      topMenuChoice: TopChatMenuChoice.searchAllMessages,
-      chosenContactId: null,
-      selectedHandleId: null,
-      scrollToDate: scrollToDate,
-      messageScope: SidebarFlowMessageScope.regular,
+    _setStateAndClearRightIfNeeded(
+      state.copyWith(
+        topMenuChoice: TopChatMenuChoice.searchAllMessages,
+        chosenContactId: null,
+        selectedHandleId: null,
+        scrollToDate: scrollToDate,
+        messageScope: SidebarFlowMessageScope.regular,
+      ),
     );
-
-    _syncProjectedCenterPanel();
   }
 
   void showContactTimelineAt({required int contactId, DateTime? scrollToDate}) {
-    state = state.copyWith(
-      topMenuChoice: TopChatMenuChoice.contacts,
-      chosenContactId: contactId,
-      scrollToDate: scrollToDate,
-      messageScope: SidebarFlowMessageScope.regular,
+    _setStateAndClearRightIfNeeded(
+      state.copyWith(
+        topMenuChoice: TopChatMenuChoice.contacts,
+        chosenContactId: contactId,
+        scrollToDate: scrollToDate,
+        messageScope: SidebarFlowMessageScope.regular,
+      ),
     );
-
-    _syncProjectedCenterPanel();
   }
 
   void showRecoveredDeletedAt({
     required int? contactId,
     required DateTime startDate,
   }) {
-    state = state.copyWith(
-      topMenuChoice: contactId == null
-          ? TopChatMenuChoice.recoveredUnlinkedMessages
-          : TopChatMenuChoice.contacts,
-      chosenContactId: contactId,
-      selectedHandleId: null,
-      scrollToDate: startDate,
-      messageScope: SidebarFlowMessageScope.recoveredDeleted,
+    _setStateAndClearRightIfNeeded(
+      state.copyWith(
+        topMenuChoice: contactId == null
+            ? TopChatMenuChoice.recoveredUnlinkedMessages
+            : TopChatMenuChoice.contacts,
+        chosenContactId: contactId,
+        selectedHandleId: null,
+        scrollToDate: startDate,
+        messageScope: SidebarFlowMessageScope.recoveredDeleted,
+      ),
     );
-
-    _syncProjectedCenterPanel();
-  }
-
-  void _syncProjectedCenterPanel() {
-    final projectedCenterSpec = state.projectedCenterSpec;
-    final panelsNotifier = ref.read(
-      panelsViewStateProvider(SidebarMode.messages).notifier,
-    );
-
-    ref
-        .read(appLoggerProvider.notifier)
-        .debug(
-          'Sync projected center panel',
-          source: 'SidebarFlow',
-          context: {'projectedCenterSpec': '$projectedCenterSpec'},
-        );
-
-    if (projectedCenterSpec == null) {
-      _clearPanels();
-      return;
-    }
-
-    final currentCenterSpec = ref.read(
-      panelsViewStateProvider(
-        SidebarMode.messages,
-      ).select((stacks) => stacks[WindowPanel.center]?.activePage?.spec),
-    );
-
-    if (currentCenterSpec == projectedCenterSpec) {
-      ref
-          .read(appLoggerProvider.notifier)
-          .debug(
-            'Projected center matches active center; skipping show',
-            source: 'SidebarFlow',
-            context: {'currentCenterSpec': '$currentCenterSpec'},
-          );
-      return;
-    }
-
-    panelsNotifier.show(panel: WindowPanel.center, spec: projectedCenterSpec);
-  }
-
-  void _clearPanels() {
-    final panelState = ref.read(panelsViewStateProvider(SidebarMode.messages));
-    final centerIsEmpty = panelState[WindowPanel.center]?.isEmpty ?? true;
-    final rightIsEmpty = panelState[WindowPanel.right]?.isEmpty ?? true;
-
-    ref
-        .read(appLoggerProvider.notifier)
-        .debug(
-          'Clear panels requested',
-          source: 'SidebarFlow',
-          context: {
-            'centerIsEmpty': centerIsEmpty,
-            'rightIsEmpty': rightIsEmpty,
-            'centerSpec': '${panelState[WindowPanel.center]?.activePage?.spec}',
-            'rightSpec': '${panelState[WindowPanel.right]?.activePage?.spec}',
-          },
-        );
-
-    if (centerIsEmpty && rightIsEmpty) {
-      return;
-    }
-
-    final panels = ref.read(
-      panelsViewStateProvider(SidebarMode.messages).notifier,
-    );
-    panels.clear(panel: WindowPanel.right);
-    panels.clear(panel: WindowPanel.center);
   }
 }

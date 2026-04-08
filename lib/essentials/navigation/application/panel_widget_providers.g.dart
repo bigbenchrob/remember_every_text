@@ -7,7 +7,7 @@ part of 'panel_widget_providers.dart';
 // **************************************************************************
 
 String _$reconcileSidebarPanelsHash() =>
-    r'5741fe563f3983c89f80d84b3de532f2a9c9592c';
+    r'9418341e100053f6806b8bbeb4f60119f63c5518';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -148,7 +148,498 @@ class _ReconcileSidebarPanelsProviderElement
   SidebarMode get mode => (origin as ReconcileSidebarPanelsProvider).mode;
 }
 
-String _$isSidebarParkedHash() => r'3e78e9ac13a4c1f0fc2151cde86b0a68f04f3516';
+String _$effectiveCenterPanelStackHash() =>
+    r'5bc942188143563c0443e4291678c837f4e44af5';
+
+/// See also [effectiveCenterPanelStack].
+@ProviderFor(effectiveCenterPanelStack)
+const effectiveCenterPanelStackProvider = EffectiveCenterPanelStackFamily();
+
+/// See also [effectiveCenterPanelStack].
+class EffectiveCenterPanelStackFamily extends Family<PanelStack> {
+  /// See also [effectiveCenterPanelStack].
+  const EffectiveCenterPanelStackFamily();
+
+  /// See also [effectiveCenterPanelStack].
+  EffectiveCenterPanelStackProvider call(SidebarMode mode) {
+    return EffectiveCenterPanelStackProvider(mode);
+  }
+
+  @override
+  EffectiveCenterPanelStackProvider getProviderOverride(
+    covariant EffectiveCenterPanelStackProvider provider,
+  ) {
+    return call(provider.mode);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'effectiveCenterPanelStackProvider';
+}
+
+/// See also [effectiveCenterPanelStack].
+class EffectiveCenterPanelStackProvider
+    extends AutoDisposeProvider<PanelStack> {
+  /// See also [effectiveCenterPanelStack].
+  EffectiveCenterPanelStackProvider(SidebarMode mode)
+    : this._internal(
+        (ref) => effectiveCenterPanelStack(
+          ref as EffectiveCenterPanelStackRef,
+          mode,
+        ),
+        from: effectiveCenterPanelStackProvider,
+        name: r'effectiveCenterPanelStackProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$effectiveCenterPanelStackHash,
+        dependencies: EffectiveCenterPanelStackFamily._dependencies,
+        allTransitiveDependencies:
+            EffectiveCenterPanelStackFamily._allTransitiveDependencies,
+        mode: mode,
+      );
+
+  EffectiveCenterPanelStackProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.mode,
+  }) : super.internal();
+
+  final SidebarMode mode;
+
+  @override
+  Override overrideWith(
+    PanelStack Function(EffectiveCenterPanelStackRef provider) create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: EffectiveCenterPanelStackProvider._internal(
+        (ref) => create(ref as EffectiveCenterPanelStackRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        mode: mode,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeProviderElement<PanelStack> createElement() {
+    return _EffectiveCenterPanelStackProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is EffectiveCenterPanelStackProvider && other.mode == mode;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, mode.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin EffectiveCenterPanelStackRef on AutoDisposeProviderRef<PanelStack> {
+  /// The parameter `mode` of this provider.
+  SidebarMode get mode;
+}
+
+class _EffectiveCenterPanelStackProviderElement
+    extends AutoDisposeProviderElement<PanelStack>
+    with EffectiveCenterPanelStackRef {
+  _EffectiveCenterPanelStackProviderElement(super.provider);
+
+  @override
+  SidebarMode get mode => (origin as EffectiveCenterPanelStackProvider).mode;
+}
+
+String _$effectiveCenterPanelSpecHash() =>
+    r'8d32ced3cec68de0dfa2d88c89c6c705c993b5c7';
+
+/// See also [effectiveCenterPanelSpec].
+@ProviderFor(effectiveCenterPanelSpec)
+const effectiveCenterPanelSpecProvider = EffectiveCenterPanelSpecFamily();
+
+/// See also [effectiveCenterPanelSpec].
+class EffectiveCenterPanelSpecFamily extends Family<ViewSpec?> {
+  /// See also [effectiveCenterPanelSpec].
+  const EffectiveCenterPanelSpecFamily();
+
+  /// See also [effectiveCenterPanelSpec].
+  EffectiveCenterPanelSpecProvider call(SidebarMode mode) {
+    return EffectiveCenterPanelSpecProvider(mode);
+  }
+
+  @override
+  EffectiveCenterPanelSpecProvider getProviderOverride(
+    covariant EffectiveCenterPanelSpecProvider provider,
+  ) {
+    return call(provider.mode);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'effectiveCenterPanelSpecProvider';
+}
+
+/// See also [effectiveCenterPanelSpec].
+class EffectiveCenterPanelSpecProvider extends AutoDisposeProvider<ViewSpec?> {
+  /// See also [effectiveCenterPanelSpec].
+  EffectiveCenterPanelSpecProvider(SidebarMode mode)
+    : this._internal(
+        (ref) =>
+            effectiveCenterPanelSpec(ref as EffectiveCenterPanelSpecRef, mode),
+        from: effectiveCenterPanelSpecProvider,
+        name: r'effectiveCenterPanelSpecProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$effectiveCenterPanelSpecHash,
+        dependencies: EffectiveCenterPanelSpecFamily._dependencies,
+        allTransitiveDependencies:
+            EffectiveCenterPanelSpecFamily._allTransitiveDependencies,
+        mode: mode,
+      );
+
+  EffectiveCenterPanelSpecProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.mode,
+  }) : super.internal();
+
+  final SidebarMode mode;
+
+  @override
+  Override overrideWith(
+    ViewSpec? Function(EffectiveCenterPanelSpecRef provider) create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: EffectiveCenterPanelSpecProvider._internal(
+        (ref) => create(ref as EffectiveCenterPanelSpecRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        mode: mode,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeProviderElement<ViewSpec?> createElement() {
+    return _EffectiveCenterPanelSpecProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is EffectiveCenterPanelSpecProvider && other.mode == mode;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, mode.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin EffectiveCenterPanelSpecRef on AutoDisposeProviderRef<ViewSpec?> {
+  /// The parameter `mode` of this provider.
+  SidebarMode get mode;
+}
+
+class _EffectiveCenterPanelSpecProviderElement
+    extends AutoDisposeProviderElement<ViewSpec?>
+    with EffectiveCenterPanelSpecRef {
+  _EffectiveCenterPanelSpecProviderElement(super.provider);
+
+  @override
+  SidebarMode get mode => (origin as EffectiveCenterPanelSpecProvider).mode;
+}
+
+String _$effectiveRightPanelStackHash() =>
+    r'8d70ce7f73fb6e66cdceb18609b241082c161a05';
+
+/// See also [effectiveRightPanelStack].
+@ProviderFor(effectiveRightPanelStack)
+const effectiveRightPanelStackProvider = EffectiveRightPanelStackFamily();
+
+/// See also [effectiveRightPanelStack].
+class EffectiveRightPanelStackFamily extends Family<PanelStack> {
+  /// See also [effectiveRightPanelStack].
+  const EffectiveRightPanelStackFamily();
+
+  /// See also [effectiveRightPanelStack].
+  EffectiveRightPanelStackProvider call(SidebarMode mode) {
+    return EffectiveRightPanelStackProvider(mode);
+  }
+
+  @override
+  EffectiveRightPanelStackProvider getProviderOverride(
+    covariant EffectiveRightPanelStackProvider provider,
+  ) {
+    return call(provider.mode);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'effectiveRightPanelStackProvider';
+}
+
+/// See also [effectiveRightPanelStack].
+class EffectiveRightPanelStackProvider extends AutoDisposeProvider<PanelStack> {
+  /// See also [effectiveRightPanelStack].
+  EffectiveRightPanelStackProvider(SidebarMode mode)
+    : this._internal(
+        (ref) =>
+            effectiveRightPanelStack(ref as EffectiveRightPanelStackRef, mode),
+        from: effectiveRightPanelStackProvider,
+        name: r'effectiveRightPanelStackProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$effectiveRightPanelStackHash,
+        dependencies: EffectiveRightPanelStackFamily._dependencies,
+        allTransitiveDependencies:
+            EffectiveRightPanelStackFamily._allTransitiveDependencies,
+        mode: mode,
+      );
+
+  EffectiveRightPanelStackProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.mode,
+  }) : super.internal();
+
+  final SidebarMode mode;
+
+  @override
+  Override overrideWith(
+    PanelStack Function(EffectiveRightPanelStackRef provider) create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: EffectiveRightPanelStackProvider._internal(
+        (ref) => create(ref as EffectiveRightPanelStackRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        mode: mode,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeProviderElement<PanelStack> createElement() {
+    return _EffectiveRightPanelStackProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is EffectiveRightPanelStackProvider && other.mode == mode;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, mode.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin EffectiveRightPanelStackRef on AutoDisposeProviderRef<PanelStack> {
+  /// The parameter `mode` of this provider.
+  SidebarMode get mode;
+}
+
+class _EffectiveRightPanelStackProviderElement
+    extends AutoDisposeProviderElement<PanelStack>
+    with EffectiveRightPanelStackRef {
+  _EffectiveRightPanelStackProviderElement(super.provider);
+
+  @override
+  SidebarMode get mode => (origin as EffectiveRightPanelStackProvider).mode;
+}
+
+String _$effectiveRightPanelSpecHash() =>
+    r'07b58eaa2007dc11cbf9aae4dcb1a99996fa0455';
+
+/// See also [effectiveRightPanelSpec].
+@ProviderFor(effectiveRightPanelSpec)
+const effectiveRightPanelSpecProvider = EffectiveRightPanelSpecFamily();
+
+/// See also [effectiveRightPanelSpec].
+class EffectiveRightPanelSpecFamily extends Family<ViewSpec?> {
+  /// See also [effectiveRightPanelSpec].
+  const EffectiveRightPanelSpecFamily();
+
+  /// See also [effectiveRightPanelSpec].
+  EffectiveRightPanelSpecProvider call(SidebarMode mode) {
+    return EffectiveRightPanelSpecProvider(mode);
+  }
+
+  @override
+  EffectiveRightPanelSpecProvider getProviderOverride(
+    covariant EffectiveRightPanelSpecProvider provider,
+  ) {
+    return call(provider.mode);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'effectiveRightPanelSpecProvider';
+}
+
+/// See also [effectiveRightPanelSpec].
+class EffectiveRightPanelSpecProvider extends AutoDisposeProvider<ViewSpec?> {
+  /// See also [effectiveRightPanelSpec].
+  EffectiveRightPanelSpecProvider(SidebarMode mode)
+    : this._internal(
+        (ref) =>
+            effectiveRightPanelSpec(ref as EffectiveRightPanelSpecRef, mode),
+        from: effectiveRightPanelSpecProvider,
+        name: r'effectiveRightPanelSpecProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$effectiveRightPanelSpecHash,
+        dependencies: EffectiveRightPanelSpecFamily._dependencies,
+        allTransitiveDependencies:
+            EffectiveRightPanelSpecFamily._allTransitiveDependencies,
+        mode: mode,
+      );
+
+  EffectiveRightPanelSpecProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.mode,
+  }) : super.internal();
+
+  final SidebarMode mode;
+
+  @override
+  Override overrideWith(
+    ViewSpec? Function(EffectiveRightPanelSpecRef provider) create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: EffectiveRightPanelSpecProvider._internal(
+        (ref) => create(ref as EffectiveRightPanelSpecRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        mode: mode,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeProviderElement<ViewSpec?> createElement() {
+    return _EffectiveRightPanelSpecProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is EffectiveRightPanelSpecProvider && other.mode == mode;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, mode.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin EffectiveRightPanelSpecRef on AutoDisposeProviderRef<ViewSpec?> {
+  /// The parameter `mode` of this provider.
+  SidebarMode get mode;
+}
+
+class _EffectiveRightPanelSpecProviderElement
+    extends AutoDisposeProviderElement<ViewSpec?>
+    with EffectiveRightPanelSpecRef {
+  _EffectiveRightPanelSpecProviderElement(super.provider);
+
+  @override
+  SidebarMode get mode => (origin as EffectiveRightPanelSpecProvider).mode;
+}
+
+String _$isSidebarParkedHash() => r'68b5bfb67126e36b1347605de9f07193616c26d1';
 
 /// Whether the center panel is showing content that operates independently
 /// of the sidebar (e.g. import/migration, workbench).
@@ -301,7 +792,7 @@ class _IsSidebarParkedProviderElement extends AutoDisposeProviderElement<bool>
   SidebarMode get mode => (origin as IsSidebarParkedProvider).mode;
 }
 
-String _$centerPanelWidgetHash() => r'cc418e5ac3e6dfdf48fff5e47b7b80c95e8438bb';
+String _$centerPanelWidgetHash() => r'4451794ace006b1ba9266dbe1d0509d965acd806';
 
 /// Widget provider for center panel
 ///
@@ -431,7 +922,7 @@ class _CenterPanelWidgetProviderElement
   SidebarMode get mode => (origin as CenterPanelWidgetProvider).mode;
 }
 
-String _$rightPanelWidgetHash() => r'5cbd207bc7cbd9c0d172adcf9b882a038118037b';
+String _$rightPanelWidgetHash() => r'36471825d67925cbaf2b4abb38aced08cae2d989';
 
 /// See also [rightPanelWidget].
 @ProviderFor(rightPanelWidget)
@@ -550,7 +1041,7 @@ class _RightPanelWidgetProviderElement
 }
 
 String _$shouldShowEndSidebarHash() =>
-    r'd77dc4076f2b8fa4317db7e77d21527752921f40';
+    r'720daf657d8d94671ee3503b36de1f91e5821ed0';
 
 /// See also [shouldShowEndSidebar].
 @ProviderFor(shouldShowEndSidebar)
@@ -671,7 +1162,7 @@ class _ShouldShowEndSidebarProviderElement
 }
 
 String _$contextualSidebarWidgetHash() =>
-    r'2fc17780f311f338d230acd610bb7f9c521a025c';
+    r'f4dc031d7599379921ba0b49589ada1514da91c1';
 
 /// See also [contextualSidebarWidget].
 @ProviderFor(contextualSidebarWidget)

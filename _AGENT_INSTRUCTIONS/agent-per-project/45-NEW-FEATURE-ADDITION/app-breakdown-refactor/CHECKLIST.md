@@ -166,39 +166,103 @@ gate for that phase has been satisfied.
 
 ## Phase 3 - Enforce Right-Panel Derivation
 
-- [ ] Define right-panel eligibility strictly from active center-spec capability
-- [ ] Remove normal cleanup logic that clears right panel after incompatibility
-- [ ] Ensure unsupported center specs cannot coexist with a visible right panel
-- [ ] Ensure incompatible right-panel state cannot survive while hidden
-- [ ] Add deterministic right-panel derivation tests
+- [x] Define right-panel eligibility strictly from active center-spec capability
+      Status 2026-04-07: the live right-panel surface now flows through
+      `effectiveRightPanelStack` / `effectiveRightPanelSpec`, so both right
+      rendering and end-sidebar visibility are derived from the active
+      effective center surface instead of the stored right stack alone.
+- [x] Remove normal cleanup logic that clears right panel after incompatibility
+      Status 2026-04-07: `SidebarFlow` now clears stored right-panel state at
+      the point where `projectedCenterSpec` changes, and
+      `reconcileSidebarPanels` no longer mutates panel state during normal
+      runtime.
+- [x] Ensure unsupported center specs cannot coexist with a visible right panel
+      Status 2026-04-07: `effectiveRightPanelSpec` still derives visibility
+      strictly from the effective center surface, so unsupported center specs
+      cannot render a visible right panel even if stale stored state exists.
+- [x] Ensure incompatible right-panel state cannot survive while hidden
+      Status 2026-04-07: the stored right panel is cleared immediately on
+      flow-managed center transitions, so incompatible hidden right state no
+      longer persists behind derived visibility.
+- [x] Add deterministic right-panel derivation tests
+      Status 2026-04-07: focused navigation/sidebar tests now assert both
+      derived right-surface visibility and transition-time clearing of stored
+      right state.
 
 ### Phase 3 gate
 
-- [ ] Right panel exists only when center spec supports it
-- [ ] No incompatible hidden right-panel state object survives
-- [ ] No stale right sidebar remains after center-scope changes
-- [ ] Focused navigation tests pass
+- [x] Right panel exists only when center spec supports it
+- [x] No incompatible hidden right-panel state object survives
+- [x] No stale right sidebar remains after center-scope changes
+- [x] Focused navigation tests pass
 
 ## Phase 4 - Unify Recovered Timelines
 
 - [ ] Replace recovered special casing with a standard scope -> ordinal ->
       hydration -> render pipeline
-- [ ] Remove recovered-only scaffold behavior from the unified timeline surface
-- [ ] Remove ordinal-provider branching for recovered vs normal outside the
+      Status 2026-04-07: recovered scopes now resolve both ordinal state and
+      row hydration through the shared timeline provider contract, and
+      recovered search/filter semantics now flow through the shared
+      `MessageTimelineViewModel`. The shared `MessagesTimelineView` now also
+      owns the recovered scaffold contract, so the remaining divergence is the
+      recovered-specific scaffold and row/search-result chrome internal to that
+      shared surface rather than a separate center-panel widget contract.
+      Recovered rows now render through the shared `_MessageRow` /
+      `_SearchResultRow` pathways instead of a dedicated recovered list widget.
+- [x] Remove recovered-only scaffold behavior from the unified timeline surface
+- [x] Remove ordinal-provider branching for recovered vs normal outside the
       scope definition itself
+      Status 2026-04-07: `message_timeline_ordinal_provider.dart` now resolves
+      ordinal strategies through `message_timeline_scope_ordinal_extensions.dart`,
+      so the recovered-vs-normal fork no longer lives inside the ordinal
+      provider itself. Recovered row hydration is now also resolved through the
+      shared providers, and `RecoveredListOrdinalStrategy` is only constructed
+      from the scope-resolution extension.
 - [ ] Remove recovered-only rendering branches outside the scope definition
       itself
+      Status 2026-04-07: the remaining recovered-only branches are localized to
+      `MessagesTimelineView` for scaffold copy, legend/chrome, recovered row
+      presentation, recovered search-result hydration, and attachment-viewer
+      affordances. Recovered ordinal/search lookup now flows through one shared
+      resolved-row path and recovered scaffold copy/state is centralized behind
+      a local presentation config. Recovered row chrome now also resolves
+      through a local presentation object instead of carrying selection,
+      labeling, and color decisions inline in the widget. Legend and
+      attachment-chip styling now also render from local presentation data.
+      The recovered content wrapper now receives a single content-presentation
+      object instead of raw count and legend inputs, and the recovered
+      scaffold delegates async/filter/body branching to one local section
+      widget. The old dedicated recovered center-surface contract is the only
+      part that is fully gone.
 - [ ] Remove or internalize `RecoveredListOrdinalStrategy` only if no
       recovered-specific logic remains outside the scope definition itself
+      Status 2026-04-07: `RecoveredListOrdinalStrategy` has already been
+      reduced to a scope-owned ordinal helper and is only instantiated from
+      `message_timeline_scope_ordinal_extensions.dart`. This remains open until
+      the last recovered-specific rendering branches are either internalized
+      further or deemed the final intentional surface-specific behavior.
 - [ ] Ensure recovered timelines use the same render path as other message
       scopes
+      Status 2026-04-07: recovered timelines now share the center-surface shell
+      plus the `_MessageRow` / `_SearchResultRow` entry points, but they do not
+      yet share the full render path because recovered scaffolding and
+      recovered-item presentation still branch inside `MessagesTimelineView`.
 
 ### Phase 4 gate
 
-- [ ] Recovered timelines no longer use a dedicated surface contract
+- [x] Recovered timelines no longer use a dedicated surface contract
 - [ ] Recovered timelines are not a unified shell over parallel pipelines
-- [ ] Recovered scope tests pass through the unified pipeline
-- [ ] Manual recovered-message browsing matches normal timeline behavior
+- [x] Recovered scope tests pass through the unified pipeline
+      Status 2026-04-07: focused tests now cover scope-based ordinal
+      resolution, recovered ordinal strategy behavior, recovered builder-key
+      routing, and unified-surface search/filter plus recovered attachment
+      right-panel behavior.
+- [x] Manual recovered-message browsing matches normal timeline behavior
+      Status 2026-04-08: manual runtime validation completed across global
+      recovered, contact-scoped recovered, and recovered no-handle-from-me
+      flows. Search/filter behavior, row rendering, scope switching, and the
+      recovered attachment sidebar now match the expected unified behavior,
+      including archive-aware attachment resolution in the right sidebar.
 
 ## Phase 5 - Remove Widget-Based Layout Inference
 

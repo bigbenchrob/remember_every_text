@@ -148,7 +148,9 @@ Stream<List<RecoveredUnlinkedMessageItem>> recoveredUnlinkedMessages(
           .map((attachment) {
             return AttachmentInfo(
               id: attachment.id,
+              importAttachmentId: attachment.importAttachmentId,
               localPath: attachment.localPath,
+              messageGuid: row.guid,
               mimeType: attachment.mimeType,
               transferName: _resolvedRecoveredAttachmentName(attachment),
             );

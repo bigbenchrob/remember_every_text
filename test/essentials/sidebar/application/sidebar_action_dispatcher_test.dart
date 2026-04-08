@@ -410,6 +410,12 @@ class _MessagesPanelReconciliationHost extends ConsumerWidget {
 }
 
 ViewSpec? _activeSpec(ProviderContainer container, WindowPanel panel) {
+  if (panel == WindowPanel.center) {
+    return container.read(
+      effectiveCenterPanelSpecProvider(SidebarMode.messages),
+    );
+  }
+
   final stacks = container.read(panelsViewStateProvider(SidebarMode.messages));
   return stacks[panel]?.activePage?.spec;
 }

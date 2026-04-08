@@ -4,8 +4,8 @@ import 'package:drift/drift.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../essentials/db/feature_level_providers.dart';
-import '../../messages/presentation/debug/contact_timeline_scroll_probe.dart';
 import '../../messages/domain/entities/attachment_info.dart';
+import '../../messages/presentation/debug/contact_timeline_scroll_probe.dart';
 import '../domain/constants/attachment_provenance.dart';
 import '../domain/constants/resolved_attachment_availability.dart';
 import '../domain/entities/attachment_recovery_metadata.dart';

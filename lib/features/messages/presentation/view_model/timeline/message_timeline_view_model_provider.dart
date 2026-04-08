@@ -7,6 +7,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../../essentials/search/application/search_service.dart';
 import '../../../../../essentials/search/feature_level_providers.dart';
 import '../../../domain/value_objects/message_timeline_scope.dart';
+import '../../../infrastructure/repositories/recovered_unlinked_messages_provider.dart';
 import 'ordinal/message_timeline_ordinal_provider.dart';
 
 part 'message_timeline_view_model_provider.g.dart';
@@ -183,13 +184,12 @@ class MessageTimelineViewModel extends _$MessageTimelineViewModel {
 
   Future<void> _executeSearch(String query) async {
     try {
-      final searchService = ref.read(searchServiceProvider);
       final mode = state.searchMode == MessageSearchMode.allTerms
           ? SearchMode.allTerms
           : SearchMode.anyTerm;
 
       // Execute scope-specific search - returns just IDs for fast response
-      final resultIds = await _searchForScope(searchService, query, mode);
+      final resultIds = await _searchForScope(query, mode);
 
       // Check if the query is still relevant
       if (state.debouncedQuery != query) {
@@ -221,11 +221,9 @@ class MessageTimelineViewModel extends _$MessageTimelineViewModel {
     }
   }
 
-  Future<List<int>> _searchForScope(
-    SearchService searchService,
-    String query,
-    SearchMode mode,
-  ) async {
+  Future<List<int>> _searchForScope(String query, SearchMode mode) async {
+    final searchService = ref.read(searchServiceProvider);
+
     return switch (state.scope) {
       GlobalTimelineScope() => searchService.searchGlobalMessageIds(
         query: query,
@@ -240,8 +238,74 @@ class MessageTimelineViewModel extends _$MessageTimelineViewModel {
         chatId: chatId,
         query: query,
       ),
-      RecoveredTimelineScope() => const <int>[],
+      RecoveredTimelineScope(:final contactId, :final onlyNoHandleFromMe) =>
+        _searchRecoveredMessageIds(
+          contactId: contactId,
+          onlyNoHandleFromMe: onlyNoHandleFromMe,
+          query: query,
+          mode: mode,
+        ),
     };
+  }
+
+  Future<List<int>> _searchRecoveredMessageIds({
+    required int? contactId,
+    required bool onlyNoHandleFromMe,
+    required String query,
+    required SearchMode mode,
+  }) async {
+    final normalizedQuery = query.trim().toLowerCase();
+    if (normalizedQuery.isEmpty) {
+      return const <int>[];
+    }
+
+    final terms = normalizedQuery
+        .split(RegExp(r'\s+'))
+        .where((term) {
+          return term.isNotEmpty;
+        })
+        .toList(growable: false);
+    if (terms.isEmpty) {
+      return const <int>[];
+    }
+
+    final recoveredMessages = await ref.read(
+      recoveredUnlinkedMessagesProvider(contactId: contactId).future,
+    );
+    final filteredMessages = filterRecoveredTimelineMessages(
+      messages: recoveredMessages,
+      onlyNoHandleFromMe: onlyNoHandleFromMe,
+    );
+
+    return filteredMessages
+        .where((message) {
+          final attachmentText = message.attachments
+              .map((attachment) {
+                return attachment.transferName?.trim();
+              })
+              .whereType<String>()
+              .where((name) {
+                return name.isNotEmpty;
+              })
+              .join(' ')
+              .toLowerCase();
+          final haystack = [
+            message.senderLabel.toLowerCase(),
+            message.service.toLowerCase(),
+            message.itemType.toLowerCase(),
+            message.text.toLowerCase(),
+            attachmentText,
+          ].join(' ');
+
+          return switch (mode) {
+            SearchMode.allTerms => terms.every(haystack.contains),
+            SearchMode.anyTerm => terms.any(haystack.contains),
+          };
+        })
+        .map((message) {
+          return message.id;
+        })
+        .toList(growable: false);
   }
 
   /// Set the search mode (all terms / any term).

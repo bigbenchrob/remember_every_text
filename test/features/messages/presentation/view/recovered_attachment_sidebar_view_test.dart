@@ -2,6 +2,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
+import 'package:remember_this_text/features/attachments/application/attachment_resolver_provider.dart';
+import 'package:remember_this_text/features/attachments/domain/constants/resolved_attachment_availability.dart';
+import 'package:remember_this_text/features/attachments/domain/entities/resolved_attachment.dart';
 import 'package:remember_this_text/features/messages/domain/entities/attachment_info.dart';
 import 'package:remember_this_text/features/messages/presentation/view/recovered_attachment_sidebar_view.dart';
 
@@ -10,9 +13,11 @@ void main() {
     Future<void> pumpSidebar(
       WidgetTester tester, {
       required AttachmentInfo attachment,
+      List<Override> overrides = const <Override>[],
     }) async {
       await tester.pumpWidget(
         ProviderScope(
+          overrides: overrides,
           child: MacosApp(
             home: MacosWindow(
               child: RecoveredAttachmentSidebarView(
@@ -23,7 +28,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump();
     }
 
     testWidgets('renders metadata-only placeholder as a compact card', (
@@ -65,14 +71,54 @@ void main() {
         ),
       );
 
-      expect(find.text('Recovered video'), findsOneWidget);
+      expect(find.text('Video no longer present'), findsOneWidget);
       expect(
         tester
             .getRect(
-              find.byKey(const ValueKey<String>('recovered-placeholder-video')),
+              find.byKey(
+                const ValueKey<String>('recovered-placeholder-video-metadata'),
+              ),
             )
             .width,
         lessThan(300),
+      );
+    });
+
+    testWidgets('shows explicit missing-image copy for unavailable images', (
+      tester,
+    ) async {
+      const attachment = AttachmentInfo(
+        id: 3,
+        importAttachmentId: 88,
+        localPath: '~/Library/Messages/Attachments/missing/missing.jpg',
+        messageGuid: 'guid-3',
+        mimeType: 'image/jpeg',
+        transferName: 'missing.jpg',
+      );
+
+      await pumpSidebar(
+        tester,
+        attachment: attachment,
+        overrides: <Override>[
+          attachmentResolverProvider(
+            attachment,
+            messageGuid: 'guid-3',
+            importAttachmentId: 88,
+          ).overrideWith((ref) async {
+            return const ResolvedAttachment(
+              attachmentInfo: attachment,
+              availability:
+                  ResolvedAttachmentAvailability.unavailableAwaitingRecovery,
+            );
+          }),
+        ],
+      );
+
+      expect(find.text('Image no longer present'), findsOneWidget);
+      expect(find.text('Recorded source path'), findsOneWidget);
+      expect(
+        find.textContaining('recorded Messages attachment path on this Mac'),
+        findsOneWidget,
       );
     });
   });

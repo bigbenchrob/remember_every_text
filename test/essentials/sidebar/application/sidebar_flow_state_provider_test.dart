@@ -269,6 +269,42 @@ void main() {
       },
     );
 
+    testWidgets(
+      'projected center change clears stored right panel immediately',
+      (tester) async {
+        await _mountMessagesPanelReconciliation(tester, container);
+
+        final flow = container.read(sidebarFlowProvider.notifier);
+        final panels = container.read(
+          panelsViewStateProvider(SidebarMode.messages).notifier,
+        );
+
+        flow.showGlobalTimeline();
+        panels.show(
+          panel: WindowPanel.right,
+          spec: const ViewSpec.messages(
+            MessagesSpec.searchResultContext(messageId: 99, chatId: 5),
+          ),
+        );
+
+        expect(_activeSpec(container, WindowPanel.right), isNotNull);
+
+        flow.showContactTimelineAt(contactId: 42);
+
+        await _flushMessagesPanelReconciliation(tester);
+
+        expect(_activeSpec(container, WindowPanel.right), isNull);
+        expect(
+          container
+              .read(
+                panelsViewStateProvider(SidebarMode.messages),
+              )[WindowPanel.right]
+              ?.isEmpty,
+          isTrue,
+        );
+      },
+    );
+
     testWidgets('top menu recovered no-handle branch projects center panel', (
       tester,
     ) async {
@@ -395,6 +431,12 @@ class _MessagesPanelReconciliationHost extends ConsumerWidget {
 }
 
 ViewSpec? _activeSpec(ProviderContainer container, WindowPanel panel) {
+  if (panel == WindowPanel.center) {
+    return container.read(
+      effectiveCenterPanelSpecProvider(SidebarMode.messages),
+    );
+  }
+
   final stacks = container.read(panelsViewStateProvider(SidebarMode.messages));
   return stacks[panel]?.activePage?.spec;
 }
