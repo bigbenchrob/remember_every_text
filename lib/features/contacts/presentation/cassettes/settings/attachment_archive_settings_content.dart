@@ -5,6 +5,7 @@ import 'package:macos_ui/macos_ui.dart' show ProgressBar;
 
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
+import '../../../../../essentials/debug/application/developer_mode_provider.dart';
 import '../../../../attachments/application/archive_settings_provider.dart';
 import '../../../../attachments/application/attachment_archive_service_provider.dart';
 import '../../../../attachments/application/deterministic_recovery_provider.dart';
@@ -41,6 +42,9 @@ class AttachmentArchiveSettingsContent extends ConsumerWidget {
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
     final settingsAsync = ref.watch(archiveSettingsProvider);
+    final developerMode = ref.watch(developerModeProvider);
+    final showDeveloperSweepPanel =
+        developerMode.valueOrNull == DeveloperModeValue.developer;
 
     return settingsAsync.when(
       loading: () => const Center(
@@ -99,6 +103,15 @@ class AttachmentArchiveSettingsContent extends ConsumerWidget {
           // Deterministic historical recovery section
           const SizedBox(height: 12),
           _DeterministicRecoverySection(colors: colors, typography: typography),
+
+          if (settings.isEnabled && showDeveloperSweepPanel) ...[
+            const SizedBox(height: 12),
+            _ArchiveSweepDeveloperPanel(
+              colors: colors,
+              typography: typography,
+              settings: settings,
+            ),
+          ],
 
           // Clear archive button (only if there are archived files)
           if (settings.archivedCount > 0) ...[
@@ -189,6 +202,157 @@ class AttachmentArchiveSettingsContent extends ConsumerWidget {
           // Inline status message (replaces SnackBar)
           _ArchiveStatusMessage(colors: colors, typography: typography),
         ],
+      ),
+    );
+  }
+}
+
+class _ArchiveSweepDeveloperPanel extends ConsumerWidget {
+  const _ArchiveSweepDeveloperPanel({
+    required this.colors,
+    required this.typography,
+    required this.settings,
+  });
+
+  final ThemeColors colors;
+  final ThemeTypography typography;
+  final ArchiveSettingsState settings;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sweepDebug = settings.sweepDebug;
+    final manualSweepDebug = settings.manualSweepDebug;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.surfaces.control,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: colors.lines.borderSubtle, width: 0.5),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Developer Sweep Panel',
+              style: typography.infoCardBody.copyWith(
+                color: colors.content.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Background sweep checks a small rolling chunk of unarchived '
+              'image attachments about every 5 minutes.',
+              style: typography.infoCardBody.copyWith(
+                color: colors.content.textTertiary,
+                fontSize: 11,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Last background chunk started: ${sweepDebug.lastStartedLabel}',
+              style: typography.infoCardBody.copyWith(
+                color: colors.content.textSecondary,
+                fontSize: 11,
+              ),
+            ),
+            Text(
+              'Last background chunk completed: ${sweepDebug.lastCompletedLabel}',
+              style: typography.infoCardBody.copyWith(
+                color: colors.content.textSecondary,
+                fontSize: 11,
+              ),
+            ),
+            Text(
+              sweepDebug.hasCompletedRun
+                  ? 'Last background chunk result: ${sweepDebug.lastResultLabel}'
+                  : 'Last background chunk result: No maintenance chunk has completed yet.',
+              style: typography.infoCardBody.copyWith(
+                color: colors.content.textSecondary,
+                fontSize: 11,
+              ),
+            ),
+            Text(
+              'Current cursor: ${sweepDebug.cursor}',
+              style: typography.infoCardBody.copyWith(
+                color: colors.content.textSecondary,
+                fontSize: 11,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Last manual burst started: ${manualSweepDebug.lastStartedLabel}',
+              style: typography.infoCardBody.copyWith(
+                color: colors.content.textSecondary,
+                fontSize: 11,
+              ),
+            ),
+            Text(
+              'Last manual burst completed: ${manualSweepDebug.lastCompletedLabel}',
+              style: typography.infoCardBody.copyWith(
+                color: colors.content.textSecondary,
+                fontSize: 11,
+              ),
+            ),
+            Text(
+              manualSweepDebug.hasCompletedRun
+                  ? 'Last manual burst result: ${manualSweepDebug.lastResultLabel}'
+                  : 'Last manual burst result: No manual burst has completed yet.',
+              style: typography.infoCardBody.copyWith(
+                color: colors.content.textSecondary,
+                fontSize: 11,
+              ),
+            ),
+            if (manualSweepDebug.lastSkippedSamples.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                'Sample skipped rows:',
+                style: typography.infoCardBody.copyWith(
+                  color: colors.content.textSecondary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              for (final sample in manualSweepDebug.lastSkippedSamples)
+                Text(
+                  sample,
+                  style: typography.infoCardBody.copyWith(
+                    color: colors.content.textTertiary,
+                    fontSize: 10,
+                  ),
+                ),
+            ],
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: () async {
+                final result = await ref
+                    .read(attachmentArchiveServiceProvider.notifier)
+                    .archiveWorkingSweepBurst();
+                if (!context.mounted) {
+                  return;
+                }
+                ref
+                    .read(_archiveStatusMessageProvider.notifier)
+                    .show(
+                      'Manual burst scanned ${result.totalScanned}, archived '
+                      '${result.newlyArchived}, skipped ${result.skipped}, '
+                      'failed ${result.failed}',
+                    );
+              },
+              child: Text(
+                'Run Sweep Now',
+                style: typography.infoCardBody.copyWith(
+                  color: colors.accents.primary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 11,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

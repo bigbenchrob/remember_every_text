@@ -6,8 +6,28 @@ part of 'attachment_archive_service_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
+String _$attachmentArchiveMessagesDatabasePathHash() =>
+    r'c20562b40f4c8f0d64822ea05e53bf9f913e2e5a';
+
+/// See also [attachmentArchiveMessagesDatabasePath].
+@ProviderFor(attachmentArchiveMessagesDatabasePath)
+final attachmentArchiveMessagesDatabasePathProvider =
+    AutoDisposeFutureProvider<String>.internal(
+      attachmentArchiveMessagesDatabasePath,
+      name: r'attachmentArchiveMessagesDatabasePathProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$attachmentArchiveMessagesDatabasePathHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef AttachmentArchiveMessagesDatabasePathRef =
+    AutoDisposeFutureProviderRef<String>;
 String _$attachmentArchiveServiceHash() =>
-    r'23e1332796111b2e96b92cab339267154fde134e';
+    r'891a38ce018c70d63c17b652c248a984f5faa71d';
 
 /// Service that copies attachment files into the MessageLens archive and
 /// records them in the overlay database.

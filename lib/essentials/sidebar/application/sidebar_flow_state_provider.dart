@@ -16,6 +16,90 @@ part 'sidebar_flow_state_provider.g.dart';
 
 enum SidebarFlowMessageScope { regular, recoveredDeleted }
 
+@visibleForTesting
+void debugAssertValidSidebarFlowState(SidebarFlowState state) {
+  switch (state.topMenuChoice) {
+    case TopChatMenuChoice.contacts:
+      if (state.selectedHandleId != null && state.chosenContactId == null) {
+        throw StateError(
+          'SidebarFlowState.selectedHandleId requires a chosen contact on '
+          'the contacts branch.',
+        );
+      }
+
+      if (state.messageScope == SidebarFlowMessageScope.recoveredDeleted &&
+          state.chosenContactId == null) {
+        throw StateError(
+          'Recovered contact scope requires a chosen contact on the contacts '
+          'branch.',
+        );
+      }
+
+      if (state.messageScope == SidebarFlowMessageScope.recoveredDeleted &&
+          state.selectedHandleId != null) {
+        throw StateError(
+          'Recovered contact scope cannot retain a selected handle filter.',
+        );
+      }
+
+    case TopChatMenuChoice.strayHandles:
+      if (state.chosenContactId != null || state.selectedHandleId != null) {
+        throw StateError(
+          'Stray handles branch cannot retain contact-specific selection '
+          'state.',
+        );
+      }
+
+      if (state.messageScope != SidebarFlowMessageScope.regular) {
+        throw StateError(
+          'Stray handles branch must remain in regular message scope.',
+        );
+      }
+
+    case TopChatMenuChoice.searchAllMessages:
+      if (state.chosenContactId != null || state.selectedHandleId != null) {
+        throw StateError(
+          'Global timeline branch cannot retain contact-specific selection '
+          'state.',
+        );
+      }
+
+      if (state.messageScope != SidebarFlowMessageScope.regular) {
+        throw StateError(
+          'Global timeline branch must remain in regular message scope.',
+        );
+      }
+
+    case TopChatMenuChoice.recoveredUnlinkedMessages:
+      if (state.chosenContactId != null || state.selectedHandleId != null) {
+        throw StateError(
+          'Global recovered branch cannot retain contact-specific selection '
+          'state.',
+        );
+      }
+
+      if (state.messageScope != SidebarFlowMessageScope.recoveredDeleted) {
+        throw StateError(
+          'Global recovered branch must remain in recoveredDeleted scope.',
+        );
+      }
+
+    case TopChatMenuChoice.recoveredNoHandleFromMeMessages:
+      if (state.chosenContactId != null || state.selectedHandleId != null) {
+        throw StateError(
+          'Recovered no-handle branch cannot retain contact-specific '
+          'selection state.',
+        );
+      }
+
+      if (state.messageScope != SidebarFlowMessageScope.regular) {
+        throw StateError(
+          'Recovered no-handle branch must remain in regular message scope.',
+        );
+      }
+  }
+}
+
 @freezed
 abstract class SidebarFlowState with _$SidebarFlowState {
   const factory SidebarFlowState({
@@ -34,6 +118,11 @@ abstract class SidebarFlowState with _$SidebarFlowState {
   }
 
   ViewSpec? get projectedCenterSpec {
+    assert(() {
+      debugAssertValidSidebarFlowState(this);
+      return true;
+    }());
+
     switch (topMenuChoice) {
       case TopChatMenuChoice.contacts:
         final contactId = chosenContactId;
@@ -82,20 +171,73 @@ abstract class SidebarFlowState with _$SidebarFlowState {
 class SidebarFlow extends _$SidebarFlow {
   @override
   SidebarFlowState build() {
-    return const SidebarFlowState();
+    const initialState = SidebarFlowState();
+    assert(() {
+      debugAssertValidSidebarFlowState(initialState);
+      return true;
+    }());
+    return initialState;
   }
 
   void _setStateAndClearRightIfNeeded(SidebarFlowState nextState) {
+    assert(() {
+      debugAssertValidSidebarFlowState(nextState);
+      return true;
+    }());
+
     final previousProjectedCenterSpec = state.projectedCenterSpec;
     state = nextState;
 
-    if (previousProjectedCenterSpec == state.projectedCenterSpec) {
+    final nextProjectedCenterSpec = state.projectedCenterSpec;
+
+    if (previousProjectedCenterSpec == nextProjectedCenterSpec) {
       return;
     }
 
-    ref
-        .read(panelsViewStateProvider(SidebarMode.messages).notifier)
-        .clear(panel: WindowPanel.right);
+    final panelsState = ref.read(panelsViewStateProvider(SidebarMode.messages));
+    final centerSpec = panelsState[WindowPanel.center]?.activePage?.spec;
+    final panelsNotifier = ref.read(
+      panelsViewStateProvider(SidebarMode.messages).notifier,
+    );
+
+    if (_shouldClearStoredFlowManagedCenterSpec(
+      centerSpec: centerSpec,
+      projectedCenterSpec: nextProjectedCenterSpec,
+    )) {
+      panelsNotifier.clear(panel: WindowPanel.center);
+    }
+
+    panelsNotifier.clear(panel: WindowPanel.right);
+  }
+
+  bool _shouldClearStoredFlowManagedCenterSpec({
+    required ViewSpec? centerSpec,
+    required ViewSpec? projectedCenterSpec,
+  }) {
+    if (centerSpec == null) {
+      return false;
+    }
+
+    if (!_isFlowManagedCenterSpec(centerSpec)) {
+      return false;
+    }
+
+    return centerSpec != projectedCenterSpec;
+  }
+
+  bool _isFlowManagedCenterSpec(ViewSpec spec) {
+    return spec.maybeWhen(
+      messages: (messagesSpec) {
+        return messagesSpec.maybeWhen(
+          forContact: (_, __, ___) => true,
+          globalTimeline: (_) => true,
+          recoveredUnlinkedMessages: (_, __) => true,
+          recoveredNoHandleFromMeMessages: (_) => true,
+          orElse: () => false,
+        );
+      },
+      orElse: () => false,
+    );
   }
 
   void topMenuChanged({

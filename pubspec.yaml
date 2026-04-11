@@ -71,6 +71,8 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
+  video_player_platform_interface: ^6.4.0
+
   flutter_lints: ^5.0.0
 
   freezed: ^3.1.0

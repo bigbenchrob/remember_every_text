@@ -20,6 +20,64 @@ import 'package:remember_this_text/features/sidebar_utilities/domain/sidebar_uti
 import 'package:remember_this_text/features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
 
 void main() {
+  group('debugAssertValidSidebarFlowState', () {
+    test('allows canonical chooser state', () {
+      expect(
+        () => debugAssertValidSidebarFlowState(const SidebarFlowState()),
+        returnsNormally,
+      );
+    });
+
+    test('rejects selected handle without chosen contact', () {
+      expect(
+        () => debugAssertValidSidebarFlowState(
+          const SidebarFlowState(selectedHandleId: 7),
+        ),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            contains('selectedHandleId requires a chosen contact'),
+          ),
+        ),
+      );
+    });
+
+    test('rejects contact recovered scope without chosen contact', () {
+      expect(
+        () => debugAssertValidSidebarFlowState(
+          const SidebarFlowState(
+            messageScope: SidebarFlowMessageScope.recoveredDeleted,
+          ),
+        ),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            contains('Recovered contact scope requires a chosen contact'),
+          ),
+        ),
+      );
+    });
+
+    test('rejects global recovered branch outside recovered scope', () {
+      expect(
+        () => debugAssertValidSidebarFlowState(
+          const SidebarFlowState(
+            topMenuChoice: TopChatMenuChoice.recoveredUnlinkedMessages,
+          ),
+        ),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            contains('Global recovered branch must remain in recoveredDeleted'),
+          ),
+        ),
+      );
+    });
+  });
+
   group('sidebarFlowProvider', () {
     late ProviderContainer container;
 
@@ -145,6 +203,35 @@ void main() {
         );
         expect(panelState[WindowPanel.center]?.isEmpty, isTrue);
         expect(panelState[WindowPanel.right]?.isEmpty, isTrue);
+      },
+    );
+
+    testWidgets(
+      'chooseAnotherContact clears incompatible stored flow-managed center panel',
+      (tester) async {
+        await _mountMessagesPanelReconciliation(tester, container);
+
+        final flow = container.read(sidebarFlowProvider.notifier);
+        final panels = container.read(
+          panelsViewStateProvider(SidebarMode.messages).notifier,
+        );
+
+        flow.contactChosen(contactId: 42, infoCardIndex: 1);
+        panels.show(
+          panel: WindowPanel.center,
+          spec: const ViewSpec.messages(MessagesSpec.forContact(contactId: 42)),
+        );
+
+        flow.chooseAnotherContact(infoCardIndex: 1);
+
+        await _flushMessagesPanelReconciliation(tester);
+
+        final panelState = container.read(
+          panelsViewStateProvider(SidebarMode.messages),
+        );
+
+        expect(_activeSpec(container, WindowPanel.center), isNull);
+        expect(panelState[WindowPanel.center]?.isEmpty, isTrue);
       },
     );
 
@@ -425,7 +512,8 @@ class _MessagesPanelReconciliationHost extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(sidebarFlowProvider);
     ref.watch(cassetteRackStateProvider(SidebarMode.messages));
-    ref.watch(reconcileSidebarPanelsProvider(SidebarMode.messages));
+    ref.watch(effectiveCenterPanelSpecProvider(SidebarMode.messages));
+    ref.watch(effectiveRightPanelSpecProvider(SidebarMode.messages));
     return const SizedBox.shrink();
   }
 }

@@ -5,9 +5,8 @@ import 'package:intl/intl.dart';
 
 import '../../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../../config/theme/theme_typography.dart';
-import '../../../../../../essentials/navigation/domain/entities/panel_stack.dart';
+import '../../../../../../essentials/navigation/application/panel_widget_providers.dart';
 import '../../../../../../essentials/navigation/domain/entities/view_spec.dart';
-import '../../../../../../essentials/navigation/domain/navigation_constants.dart';
 import '../../../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../../../essentials/navigation/feature_level_providers.dart';
 import '../../../../../../essentials/sidebar/application/sidebar_action_dispatcher.dart';
@@ -62,12 +61,10 @@ class StrayHandlesReviewCassette extends HookConsumerWidget {
         final filtered = _applyFilter(handles);
 
         // Determine which handle is currently displayed in the center panel.
-        final centerStack = ref.watch(
-          panelsViewStateProvider(SidebarMode.messages).select(
-            (stacks) => stacks[WindowPanel.center] ?? const PanelStack.empty(),
-          ),
+        final centerSpec = ref.watch(
+          effectiveCenterPanelSpecProvider(SidebarMode.messages),
         );
-        final activeHandleId = centerStack.activePage?.spec.map(
+        final activeHandleId = centerSpec?.map(
           messages: (m) => m.spec.maybeMap(
             handleLens: (hl) => hl.handleId,
             forHandle: (fh) => fh.handleId,

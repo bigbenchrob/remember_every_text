@@ -86,6 +86,7 @@ Future<List<AttachmentInfo>> resolveAttachmentsForDisplay({
         return attachment.copyWith(
           resolvedDisplayPath: resolved.resolvedFile?.path,
           availability: resolved.availability,
+          provenance: resolved.provenance,
           recoveryMetadata: resolved.recoveryMetadata,
         );
       }),

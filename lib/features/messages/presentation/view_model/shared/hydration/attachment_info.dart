@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import '../../../../../attachments/domain/constants/attachment_provenance.dart';
 import '../../../../../attachments/domain/constants/resolved_attachment_availability.dart';
 import '../../../../../attachments/domain/entities/attachment_recovery_metadata.dart';
 
@@ -13,6 +14,7 @@ class AttachmentInfo {
     this.messageGuid,
     this.resolvedDisplayPath,
     this.availability,
+    this.provenance,
     this.recoveryMetadata,
     this.mediaWidth,
     this.mediaHeight,
@@ -26,6 +28,7 @@ class AttachmentInfo {
   final String? messageGuid;
   final String? resolvedDisplayPath;
   final ResolvedAttachmentAvailability? availability;
+  final AttachmentProvenance? provenance;
   final AttachmentRecoveryMetadata? recoveryMetadata;
 
   final double? mediaWidth;
@@ -40,6 +43,7 @@ class AttachmentInfo {
     String? messageGuid,
     String? resolvedDisplayPath,
     ResolvedAttachmentAvailability? availability,
+    AttachmentProvenance? provenance,
     AttachmentRecoveryMetadata? recoveryMetadata,
     double? mediaWidth,
     double? mediaHeight,
@@ -53,6 +57,7 @@ class AttachmentInfo {
       messageGuid: messageGuid ?? this.messageGuid,
       resolvedDisplayPath: resolvedDisplayPath ?? this.resolvedDisplayPath,
       availability: availability ?? this.availability,
+      provenance: provenance ?? this.provenance,
       recoveryMetadata: recoveryMetadata ?? this.recoveryMetadata,
       mediaWidth: mediaWidth ?? this.mediaWidth,
       mediaHeight: mediaHeight ?? this.mediaHeight,

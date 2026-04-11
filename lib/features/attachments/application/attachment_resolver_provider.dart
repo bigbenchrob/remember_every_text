@@ -62,12 +62,12 @@ Future<ResolvedAttachment> _resolveForArchiveEnabledMode(
     () async {
       final resolvedPath = attachmentInfo.resolvedLocalPath();
       final liveFile = resolvedPath == null ? null : File(resolvedPath);
-      final liveFileExists = liveFile == null
-          ? false
-          : ContactTimelineScrollProbe.traceSync(
-              'attachment_resolver.live_exists_sync',
-              liveFile.existsSync,
-            );
+      final liveFileExists =
+          liveFile != null &&
+          ContactTimelineScrollProbe.traceSync(
+            'attachment_resolver.live_exists_sync',
+            liveFile.existsSync,
+          );
       AttachmentRecoveryMetadata? persistedRecoveryHint;
 
       if (importAttachmentId != null) {

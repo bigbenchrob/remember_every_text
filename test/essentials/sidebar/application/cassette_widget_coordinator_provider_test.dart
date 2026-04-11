@@ -42,7 +42,7 @@ import 'package:remember_this_text/features/sidebar_utilities/domain/sidebar_uti
 import 'package:remember_this_text/features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
 
 void main() {
-  group('cassetteWidgetCoordinatorProvider', () {
+  group('sidebarCassetteResolutionStateProvider', () {
     late ProviderContainer container;
 
     setUp(() {
@@ -70,9 +70,10 @@ void main() {
     });
 
     test('rebuilds stray handle review cassette when mode changes', () async {
-      final provider = cassetteWidgetCoordinatorProvider(SidebarMode.messages);
-
-      final initialWidgets = await container.read(provider.future);
+      final initialWidgets = await _resolveSidebarCassettes(
+        container,
+        SidebarMode.messages,
+      );
       expect(
         _strayHandlesReviewPayload(initialWidgets).mode,
         StrayHandleMode.allStrays,
@@ -82,7 +83,10 @@ void main() {
           .read(strayHandleModeSettingProvider.notifier)
           .setMode(StrayHandleMode.spamCandidates);
 
-      final updatedWidgets = await container.read(provider.future);
+      final updatedWidgets = await _resolveSidebarCassettes(
+        container,
+        SidebarMode.messages,
+      );
       expect(
         _strayHandlesReviewPayload(updatedWidgets).mode,
         StrayHandleMode.spamCandidates,
@@ -102,11 +106,10 @@ void main() {
               ),
             ]);
 
-        final provider = cassetteWidgetCoordinatorProvider(
+        final initialWidgets = await _resolveSidebarCassettes(
+          container,
           SidebarMode.messages,
         );
-
-        final initialWidgets = await container.read(provider.future);
         expect(
           _strayHandlesModeSwitcherPayload(initialWidgets).mode,
           StrayHandleMode.allStrays,
@@ -116,7 +119,10 @@ void main() {
             .read(strayHandleModeSettingProvider.notifier)
             .setMode(StrayHandleMode.dismissed);
 
-        final updatedWidgets = await container.read(provider.future);
+        final updatedWidgets = await _resolveSidebarCassettes(
+          container,
+          SidebarMode.messages,
+        );
         expect(
           _strayHandlesModeSwitcherPayload(updatedWidgets).mode,
           StrayHandleMode.dismissed,
@@ -135,8 +141,9 @@ void main() {
               ),
             ]);
 
-        final widgets = await container.read(
-          cassetteWidgetCoordinatorProvider(SidebarMode.settings).future,
+        final widgets = await _resolveSidebarCassettes(
+          container,
+          SidebarMode.settings,
         );
 
         expect(
@@ -162,9 +169,7 @@ void main() {
             ]);
 
         final payload = _sendLogsInfoPayload(
-          await container.read(
-            cassetteWidgetCoordinatorProvider(SidebarMode.settings).future,
-          ),
+          await _resolveSidebarCassettes(container, SidebarMode.settings),
         );
 
         expect(payload.renderKind, SidebarCassetteRenderKind.featureInfo);
@@ -184,9 +189,7 @@ void main() {
             ]);
 
         final payload = _reimportDataInfoPayload(
-          await container.read(
-            cassetteWidgetCoordinatorProvider(SidebarMode.settings).future,
-          ),
+          await _resolveSidebarCassettes(container, SidebarMode.settings),
         );
 
         expect(payload.renderKind, SidebarCassetteRenderKind.featureInfo);
@@ -206,9 +209,7 @@ void main() {
             ]);
 
         final payload = _attachmentArchiveSettingsPayload(
-          await container.read(
-            cassetteWidgetCoordinatorProvider(SidebarMode.settings).future,
-          ),
+          await _resolveSidebarCassettes(container, SidebarMode.settings),
         );
 
         expect(payload.renderKind, SidebarCassetteRenderKind.featureInfo);
@@ -228,9 +229,7 @@ void main() {
             ]);
 
         final payload = _staticFeatureInfoPayload(
-          await container.read(
-            cassetteWidgetCoordinatorProvider(SidebarMode.settings).future,
-          ),
+          await _resolveSidebarCassettes(container, SidebarMode.settings),
         );
 
         expect(payload.title, 'Contact Names');
@@ -249,9 +248,7 @@ void main() {
           ]);
 
       final payload = _unmatchedHandlesPayload(
-        await container.read(
-          cassetteWidgetCoordinatorProvider(SidebarMode.messages).future,
-        ),
+        await _resolveSidebarCassettes(container, SidebarMode.messages),
       );
 
       expect(
@@ -270,9 +267,7 @@ void main() {
           ]);
 
       final payload = _strayPhoneNumbersPayload(
-        await container.read(
-          cassetteWidgetCoordinatorProvider(SidebarMode.messages).future,
-        ),
+        await _resolveSidebarCassettes(container, SidebarMode.messages),
       );
 
       expect(
@@ -291,9 +286,7 @@ void main() {
           ]);
 
       final payload = _strayEmailsPayload(
-        await container.read(
-          cassetteWidgetCoordinatorProvider(SidebarMode.messages).future,
-        ),
+        await _resolveSidebarCassettes(container, SidebarMode.messages),
       );
 
       expect(
@@ -318,9 +311,7 @@ void main() {
             ]);
 
         final payload = _recoveredUnlinkedNavigatorPayload(
-          await container.read(
-            cassetteWidgetCoordinatorProvider(SidebarMode.messages).future,
-          ),
+          await _resolveSidebarCassettes(container, SidebarMode.messages),
         );
 
         expect(payload.cassetteIndex, 0);
@@ -346,9 +337,7 @@ void main() {
             ]);
 
         final payload = _staticFeatureInfoPayload(
-          await container.read(
-            cassetteWidgetCoordinatorProvider(SidebarMode.messages).future,
-          ),
+          await _resolveSidebarCassettes(container, SidebarMode.messages),
         );
 
         expect(
@@ -373,9 +362,7 @@ void main() {
             ]);
 
         final payload = _recoveredNoHandleNavigatorPayload(
-          await container.read(
-            cassetteWidgetCoordinatorProvider(SidebarMode.messages).future,
-          ),
+          await _resolveSidebarCassettes(container, SidebarMode.messages),
         );
 
         expect(payload.cassetteIndex, 0);
@@ -399,9 +386,7 @@ void main() {
           ]);
 
       final payload = _topChatMenuPayload(
-        await container.read(
-          cassetteWidgetCoordinatorProvider(SidebarMode.messages).future,
-        ),
+        await _resolveSidebarCassettes(container, SidebarMode.messages),
       );
 
       expect(payload.currentChoice, TopChatMenuChoice.contacts);
@@ -441,9 +426,7 @@ void main() {
             ]);
 
         final payload = _contactChooserPayload(
-          await container.read(
-            cassetteWidgetCoordinatorProvider(SidebarMode.messages).future,
-          ),
+          await _resolveSidebarCassettes(container, SidebarMode.messages),
         );
 
         expect(payload.cassetteIndex, 0);
@@ -456,7 +439,7 @@ void main() {
     );
 
     test(
-      'chooser readiness does not invalidate the shared cassette coordinator',
+      'chooser readiness updates the shared cassette resolution payload',
       () async {
         const chosenContactId = 42;
         const readySections = UnifiedPickerSections(
@@ -504,8 +487,9 @@ void main() {
             ]);
 
         final initialPayload = _contactChooserPayload(
-          await container.read(
-            cassetteWidgetCoordinatorProvider(SidebarMode.messages).future,
+          await _awaitFirstResolvedSidebarCassettes(
+            container,
+            SidebarMode.messages,
           ),
         );
 
@@ -516,16 +500,14 @@ void main() {
         await container.read(filteredPickerSectionsProvider.future);
 
         final stablePayload = _contactChooserPayload(
-          await container.read(
-            cassetteWidgetCoordinatorProvider(SidebarMode.messages).future,
-          ),
+          await _resolveSidebarCassettes(container, SidebarMode.messages),
         );
 
         expect(stablePayload.chosenContactId, chosenContactId);
-        expect(stablePayload.loadState, ContactChooserLoadState.loading);
-        expect(stablePayload.pickerMode, isNull);
-        expect(stablePayload.pickerFilterMode, isNull);
-        expect(stablePayload.filteredSections, isNull);
+        expect(stablePayload.loadState, ContactChooserLoadState.ready);
+        expect(stablePayload.pickerMode, ContactPickerMode.flat);
+        expect(stablePayload.pickerFilterMode, PickerFilterMode.all);
+        expect(stablePayload.filteredSections, same(readySections));
       },
     );
 
@@ -587,9 +569,7 @@ void main() {
           ]);
 
       final payload = _contactMessageScopeTogglePayload(
-        await container.read(
-          cassetteWidgetCoordinatorProvider(SidebarMode.messages).future,
-        ),
+        await _resolveSidebarCassettes(container, SidebarMode.messages),
       );
 
       expect(payload.contactId, 42);
@@ -606,9 +586,7 @@ void main() {
           ]);
 
       final payload = _contactHeroSummaryPayload(
-        await container.read(
-          cassetteWidgetCoordinatorProvider(SidebarMode.messages).future,
-        ),
+        await _resolveSidebarCassettes(container, SidebarMode.messages),
       );
 
       expect(payload.contactId, 42);
@@ -627,9 +605,7 @@ void main() {
           ]);
 
       final payload = _contactSelectionControlPayload(
-        await container.read(
-          cassetteWidgetCoordinatorProvider(SidebarMode.messages).future,
-        ),
+        await _resolveSidebarCassettes(container, SidebarMode.messages),
       );
 
       expect(payload.contactId, 42);
@@ -650,17 +626,79 @@ void main() {
           ]);
 
       final payload = _handleFilterPayload(
-        await container.read(
-          cassetteWidgetCoordinatorProvider(SidebarMode.messages).future,
-        ),
+        await _resolveSidebarCassettes(container, SidebarMode.messages),
       );
 
       expect(payload.contactId, 42);
       expect(payload.selectedHandleId, 7);
+
       expect(payload.cassetteIndex, 0);
       expect(payload.isNaked, isTrue);
     });
   });
+}
+
+Future<List<ResolvedSidebarCassette>> _resolveSidebarCassettes(
+  ProviderContainer container,
+  SidebarMode mode,
+) async {
+  final initialState = container.read(
+    sidebarCassetteResolutionStateProvider(mode),
+  );
+  if (_isCompleteResolutionState(initialState)) {
+    return initialState.resolvedCassettes;
+  }
+
+  final completer = Completer<SidebarCassetteResolutionState>();
+  final subscription = container.listen<SidebarCassetteResolutionState>(
+    sidebarCassetteResolutionStateProvider(mode),
+    (previous, next) {
+      if (_isCompleteResolutionState(next) && !completer.isCompleted) {
+        completer.complete(next);
+      }
+    },
+    fireImmediately: true,
+  );
+
+  try {
+    final state = await completer.future.timeout(const Duration(seconds: 5));
+    return state.resolvedCassettes;
+  } finally {
+    subscription.close();
+  }
+}
+
+Future<List<ResolvedSidebarCassette>> _awaitFirstResolvedSidebarCassettes(
+  ProviderContainer container,
+  SidebarMode mode,
+) async {
+  final initialState = container.read(
+    sidebarCassetteResolutionStateProvider(mode),
+  );
+  if (initialState.resolvedCassettes.isNotEmpty) {
+    return initialState.resolvedCassettes;
+  }
+
+  final completer = Completer<List<ResolvedSidebarCassette>>();
+  final subscription = container.listen<SidebarCassetteResolutionState>(
+    sidebarCassetteResolutionStateProvider(mode),
+    (previous, next) {
+      if (next.resolvedCassettes.isNotEmpty && !completer.isCompleted) {
+        completer.complete(next.resolvedCassettes);
+      }
+    },
+    fireImmediately: true,
+  );
+
+  try {
+    return await completer.future.timeout(const Duration(seconds: 5));
+  } finally {
+    subscription.close();
+  }
+}
+
+bool _isCompleteResolutionState(SidebarCassetteResolutionState state) {
+  return state.hasCompleteResolvedRack && !state.isLoading;
 }
 
 SharedBodyModelSidebarCassettePayload _sharedBodyModelPayload(

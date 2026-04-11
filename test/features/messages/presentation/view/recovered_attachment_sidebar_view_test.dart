@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:remember_this_text/features/attachments/application/attachment_resolver_provider.dart';
+import 'package:remember_this_text/features/attachments/domain/constants/attachment_provenance.dart';
 import 'package:remember_this_text/features/attachments/domain/constants/resolved_attachment_availability.dart';
 import 'package:remember_this_text/features/attachments/domain/entities/resolved_attachment.dart';
 import 'package:remember_this_text/features/messages/domain/entities/attachment_info.dart';
@@ -120,6 +123,58 @@ void main() {
         find.textContaining('recorded Messages attachment path on this Mac'),
         findsOneWidget,
       );
+    });
+
+    testWidgets('shows a Backup source badge for historical recovered files', (
+      tester,
+    ) async {
+      final tempDir = Directory.systemTemp.createTempSync(
+        'recovered_attachment_sidebar_backup_',
+      );
+      addTearDown(() {
+        if (tempDir.existsSync()) {
+          tempDir.deleteSync(recursive: true);
+        }
+      });
+      final recoveredFile = File('${tempDir.path}/historical.jpg')
+        ..writeAsBytesSync(<int>[0, 1, 2, 3], flush: true);
+
+      const attachment = AttachmentInfo(
+        id: 4,
+        importAttachmentId: 99,
+        localPath: '~/Library/Messages/Attachments/historical/original.jpg',
+        messageGuid: 'guid-4',
+        mimeType: 'image/jpeg',
+        transferName: 'historical.jpg',
+      );
+
+      await pumpSidebar(
+        tester,
+        attachment: attachment,
+        overrides: <Override>[
+          attachmentResolverProvider(
+            attachment,
+            messageGuid: 'guid-4',
+            importAttachmentId: 99,
+          ).overrideWith((ref) async {
+            return ResolvedAttachment(
+              attachmentInfo: attachment,
+              availability: ResolvedAttachmentAvailability.available,
+              provenance: AttachmentProvenance.importedHistorical,
+              resolvedFile: recoveredFile,
+            );
+          }),
+        ],
+      );
+
+      expect(
+        find.byKey(
+          const ValueKey<String>('recovered-attachment-source-badge-Backup'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Backup'), findsOneWidget);
+      expect(find.text('Recovered backup path'), findsOneWidget);
     });
   });
 }

@@ -7,6 +7,7 @@ import '../resolvers/contact_hero_summary_resolver.dart';
 import '../resolvers/contact_selection_control_resolver.dart';
 import '../resolvers/handle_filter_resolver.dart';
 import '../resolvers/message_scope_toggle_resolver.dart';
+import 'contact_chooser_cassette_state_provider.dart';
 
 part 'cassette_coordinator.g.dart';
 
@@ -41,12 +42,16 @@ class ContactsCassetteCoordinator extends _$ContactsCassetteCoordinator {
     required int cassetteIndex,
   }) async {
     return spec.map(
-      contactChooser: (chooser) => ref
-          .read(contactChooserResolverProvider.notifier)
-          .resolve(
-            chosenContactId: chooser.chosenContactId,
-            cassetteIndex: cassetteIndex,
-          ),
+      contactChooser: (chooser) {
+        final snapshot = ref.read(contactChooserCassetteStateProvider);
+        return ref
+            .read(contactChooserResolverProvider.notifier)
+            .resolve(
+              chosenContactId: chooser.chosenContactId,
+              cassetteIndex: cassetteIndex,
+              snapshot: snapshot,
+            );
+      },
       contactSelectionControl: (control) => ref
           .read(contactSelectionControlResolverProvider.notifier)
           .resolve(

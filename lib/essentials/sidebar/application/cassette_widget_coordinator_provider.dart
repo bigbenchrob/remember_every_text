@@ -1,3 +1,4 @@
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../features/contacts/feature_level_providers.dart'
@@ -13,197 +14,293 @@ import '../feature_level_providers.dart';
 import '../presentation/view_model/sidebar_cassette_card_view_model.dart';
 import 'sidebar_cassette_sectioning.dart';
 
-/// utility widgets to wrap each cassette in a card
-
 part 'cassette_widget_coordinator_provider.g.dart';
 
+final class SidebarCassetteResolutionError {
+  const SidebarCassetteResolutionError({
+    required this.error,
+    required this.stackTrace,
+  });
+
+  final Object error;
+  final StackTrace? stackTrace;
+}
+
+final class SidebarCassetteResolutionState {
+  const SidebarCassetteResolutionState({
+    required this.resolvedCassettes,
+    required this.expectedVisibleCount,
+    required this.isLoading,
+    this.errors = const <SidebarCassetteResolutionError>[],
+  });
+
+  final List<ResolvedSidebarCassette> resolvedCassettes;
+  final int expectedVisibleCount;
+  final bool isLoading;
+  final List<SidebarCassetteResolutionError> errors;
+
+  bool get hasCompleteResolvedRack {
+    return resolvedCassettes.length == expectedVisibleCount;
+  }
+}
+
+final class _IndexedCassetteSpec {
+  const _IndexedCassetteSpec({required this.spec, required this.cassetteIndex});
+
+  final CassetteSpec spec;
+  final int cassetteIndex;
+}
+
 @riverpod
-class CassetteWidgetCoordinator extends _$CassetteWidgetCoordinator {
-  // LAW: This coordinator may translate specs into payloads only.
-  // It must not transport widgets or create an alternate semantic writer.
-  /// NOTE: This is now async because feature-side spec handling may require
-  /// repositories/data access (counts, derived values, etc.).
-  ///
-  /// This means the provider becomes an AsyncValue<List<ResolvedSidebarCassette>>
-  /// at call sites.
-  @override
-  Future<List<ResolvedSidebarCassette>> build(SidebarMode mode) async {
-    final rack = ref.watch(cassetteRackStateProvider(mode));
-    final flowState = mode == SidebarMode.messages
-        ? ref.watch(sidebarFlowProvider)
-        : null;
-    final resolvedCassettes = <ResolvedSidebarCassette>[];
-    SidebarCassetteSection? previousSection;
+Future<ResolvedSidebarCassette> resolvedSidebarCassette(
+  Ref ref,
+  SidebarMode mode,
+  CassetteSpec spec,
+  int cassetteIndex,
+) async {
+  final payload = await _buildPayloadForSpec(
+    ref,
+    spec,
+    cassetteIndex: cassetteIndex,
+  );
 
-    // LAW: Cross-boundary resolution ends at inert-or-tracked payloads.
-    // Widget construction belongs to the render router, not this coordinator.
-    /// Build a payload for a given cassette spec by routing to the owning feature.
-    ///
-    /// IMPORTANT:
-    /// Every branch returns a Future, even if the underlying coordinator is sync.
-    /// This avoids mixed return types inside `spec.when(...)`.
-    ///
-    /// The [cassetteIndex] is passed to feature coordinators so widgets can
-    /// update the rack without holding specs in state.
-    Future<SidebarCassettePayload> buildPayloadForSpec(
-      CassetteSpec spec, {
-      required int cassetteIndex,
-    }) {
-      return spec.when(
-        sidebarUtility: (sidebarSpec) async {
-          final coordinator = ref.read(
-            sidebar_utilities
-                .sidebarUtilitiesCassetteCoordinatorProvider
-                .notifier,
-          );
-          return coordinator.buildViewModel(
-            sidebarSpec,
-            cassetteIndex: cassetteIndex,
-          );
-        },
-        contacts: (contactsSpec) async {
-          final coordinator = ref.read(
-            contacts_feature.contactsCassetteCoordinatorProvider.notifier,
-          );
-          return coordinator.buildViewModel(
-            contactsSpec,
-            cassetteIndex: cassetteIndex,
-          );
-        },
-        contactsSettings: (settingsSpec) async {
-          final coordinator = ref.read(
-            contacts_feature.contactsSettingsCoordinatorProvider.notifier,
-          );
-          return coordinator.buildViewModel(
-            settingsSpec,
-            cassetteIndex: cassetteIndex,
-          );
-        },
-        contactsInfo: (infoSpec) async {
-          final coordinator = ref.read(
-            contacts_feature.contactsInfoCassetteCoordinatorProvider.notifier,
-          );
-          return coordinator.buildViewModel(
-            infoSpec,
-            cassetteIndex: cassetteIndex,
-          );
-        },
-        handles: (handlesSpec) async {
-          handlesSpec.maybeMap(
-            strayHandlesReview: (_) {
-              ref.watch(handles_feature.strayHandleModeSettingProvider);
-              return null;
-            },
-            strayHandlesModeSwitcher: (_) {
-              ref.watch(handles_feature.strayHandleModeSettingProvider);
-              return null;
-            },
-            orElse: () {
-              return null;
-            },
-          );
+  return ResolvedSidebarCassette(
+    spec: spec,
+    cassetteIndex: cassetteIndex,
+    payload: payload,
+  );
+}
 
-          final coordinator = ref.read(
-            handles_feature.handlesCassetteCoordinatorProvider.notifier,
-          );
-          return coordinator.buildViewModel(
-            handlesSpec,
-            cassetteIndex: cassetteIndex,
-          );
-        },
-        handlesInfo: (handlesInfoSpec) async {
-          final coordinator = ref.read(
-            handles_feature.handlesInfoCassetteCoordinatorProvider.notifier,
-          );
-          return coordinator.buildViewModel(
-            handlesInfoSpec,
-            cassetteIndex: cassetteIndex,
-          );
-        },
-        messages: (messagesSpec) async {
-          final coordinator = ref.read(
-            messages_feature.messagesCassetteCoordinatorProvider.notifier,
-          );
-          return coordinator.buildViewModel(
-            messagesSpec,
-            cassetteIndex: cassetteIndex,
-          );
-        },
-        messagesInfo: (messagesInfoSpec) async {
-          final coordinator = ref.read(
-            messages_feature.messagesInfoCassetteCoordinatorProvider.notifier,
-          );
-          return coordinator.buildViewModel(
-            messagesInfoSpec,
-            cassetteIndex: cassetteIndex,
-          );
-        },
-      );
+@riverpod
+SidebarCassetteResolutionState sidebarCassetteResolutionState(
+  Ref ref,
+  SidebarMode mode,
+) {
+  final visibleSpecs = _visibleSidebarSpecsForMode(ref, mode);
+  return _buildSidebarCassetteResolutionState(
+    ref,
+    mode: mode,
+    visibleSpecs: visibleSpecs,
+  );
+}
+
+SidebarCassetteResolutionState _buildSidebarCassetteResolutionState(
+  Ref ref, {
+  required SidebarMode mode,
+  required List<_IndexedCassetteSpec> visibleSpecs,
+}) {
+  final resolvedCassettes = <ResolvedSidebarCassette>[];
+  final errors = <SidebarCassetteResolutionError>[];
+  var isLoading = false;
+
+  for (final visibleSpec in visibleSpecs) {
+    final asyncResolvedCassette = ref.watch(
+      resolvedSidebarCassetteProvider(
+        mode,
+        visibleSpec.spec,
+        visibleSpec.cassetteIndex,
+      ),
+    );
+
+    if (asyncResolvedCassette.isLoading || !asyncResolvedCassette.hasValue) {
+      isLoading = true;
     }
 
-    /// Resolve a payload for a cassette and append the resolved transport data.
-    Future<void> addCassette(
-      CassetteSpec spec, {
-      required int cassetteIndex,
-    }) async {
-      final payload = await buildPayloadForSpec(
-        spec,
-        cassetteIndex: cassetteIndex,
-      );
-
-      final currentSection = sidebarCassetteSectionForRole(payload.role);
-      final sectionTopSpacing = sidebarCassetteSectionTopSpacing(
-        previousSection: previousSection,
-        currentSection: currentSection,
-      );
-
-      assert(() {
-        // The section helper is intentionally limited to section boundaries.
-        //
-        // Rule:
-        // - contiguous cassettes in the same semantic section must not receive
-        //   extra spacing from the sectioning layer.
-        // - feature payload topSpacing remains available for exceptional local
-        //   breathing room, but the section system must not become a second
-        //   author of same-section rhythm.
-        //
-        // Violating this recreates the drift we are trying to remove: a flat
-        // list starts to encode meaning through ad hoc gaps instead of role-
-        // driven section boundaries.
-        if (previousSection == currentSection && sectionTopSpacing != 0) {
-          throw StateError(
-            'sidebarCassetteSectionTopSpacing must return 0 for contiguous '
-            'same-section cassettes. Intra-section rhythm belongs to '
-            'payload.topSpacing or card chrome, not the sectioning layer.',
-          );
-        }
-
-        return true;
-      }());
-
-      resolvedCassettes.add(
-        ResolvedSidebarCassette(
-          spec: spec,
-          cassetteIndex: cassetteIndex,
-          payload: payload,
-          topSpacing: payload.topSpacing + sectionTopSpacing,
+    final error = asyncResolvedCassette.asError;
+    if (error != null) {
+      errors.add(
+        SidebarCassetteResolutionError(
+          error: error.error,
+          stackTrace: error.stackTrace,
         ),
       );
-      previousSection = currentSection;
     }
 
-    // Build widgets for the explicit rack cassettes.
-    for (var i = 0; i < rack.cassettes.length; i++) {
-      final spec = rack.cassettes[i];
-      if (_shouldHideSpecForFlow(spec: spec, flowState: flowState)) {
-        continue;
+    final resolvedCassette = asyncResolvedCassette.valueOrNull;
+    if (resolvedCassette != null) {
+      resolvedCassettes.add(resolvedCassette);
+    }
+  }
+
+  return SidebarCassetteResolutionState(
+    resolvedCassettes: _applySidebarSectionSpacing(resolvedCassettes),
+    expectedVisibleCount: visibleSpecs.length,
+    isLoading: isLoading,
+    errors: errors,
+  );
+}
+
+List<_IndexedCassetteSpec> _visibleSidebarSpecsForMode(
+  Ref ref,
+  SidebarMode mode,
+) {
+  final rack = ref.watch(cassetteRackStateProvider(mode));
+  final flowState = mode == SidebarMode.messages
+      ? ref.watch(sidebarFlowProvider)
+      : null;
+
+  return _visibleSidebarSpecs(rack: rack, flowState: flowState);
+}
+
+Future<SidebarCassettePayload> _buildPayloadForSpec(
+  Ref ref,
+  CassetteSpec spec, {
+  required int cassetteIndex,
+}) {
+  return spec.when(
+    sidebarUtility: (sidebarSpec) async {
+      final coordinator = ref.read(
+        sidebar_utilities.sidebarUtilitiesCassetteCoordinatorProvider.notifier,
+      );
+      return coordinator.buildViewModel(
+        sidebarSpec,
+        cassetteIndex: cassetteIndex,
+      );
+    },
+    contacts: (contactsSpec) async {
+      contactsSpec.maybeMap(
+        contactChooser: (_) {
+          ref.watch(contacts_feature.contactChooserCassetteStateProvider);
+          return null;
+        },
+        orElse: () {
+          return null;
+        },
+      );
+
+      final coordinator = ref.read(
+        contacts_feature.contactsCassetteCoordinatorProvider.notifier,
+      );
+      return coordinator.buildViewModel(
+        contactsSpec,
+        cassetteIndex: cassetteIndex,
+      );
+    },
+    contactsSettings: (settingsSpec) async {
+      final coordinator = ref.read(
+        contacts_feature.contactsSettingsCoordinatorProvider.notifier,
+      );
+      return coordinator.buildViewModel(
+        settingsSpec,
+        cassetteIndex: cassetteIndex,
+      );
+    },
+    contactsInfo: (infoSpec) async {
+      final coordinator = ref.read(
+        contacts_feature.contactsInfoCassetteCoordinatorProvider.notifier,
+      );
+      return coordinator.buildViewModel(infoSpec, cassetteIndex: cassetteIndex);
+    },
+    handles: (handlesSpec) async {
+      handlesSpec.maybeMap(
+        strayHandlesReview: (_) {
+          ref.watch(handles_feature.strayHandleModeSettingProvider);
+          return null;
+        },
+        strayHandlesModeSwitcher: (_) {
+          ref.watch(handles_feature.strayHandleModeSettingProvider);
+          return null;
+        },
+        orElse: () {
+          return null;
+        },
+      );
+
+      final coordinator = ref.read(
+        handles_feature.handlesCassetteCoordinatorProvider.notifier,
+      );
+      return coordinator.buildViewModel(
+        handlesSpec,
+        cassetteIndex: cassetteIndex,
+      );
+    },
+    handlesInfo: (handlesInfoSpec) async {
+      final coordinator = ref.read(
+        handles_feature.handlesInfoCassetteCoordinatorProvider.notifier,
+      );
+      return coordinator.buildViewModel(
+        handlesInfoSpec,
+        cassetteIndex: cassetteIndex,
+      );
+    },
+    messages: (messagesSpec) async {
+      final coordinator = ref.read(
+        messages_feature.messagesCassetteCoordinatorProvider.notifier,
+      );
+      return coordinator.buildViewModel(
+        messagesSpec,
+        cassetteIndex: cassetteIndex,
+      );
+    },
+    messagesInfo: (messagesInfoSpec) async {
+      final coordinator = ref.read(
+        messages_feature.messagesInfoCassetteCoordinatorProvider.notifier,
+      );
+      return coordinator.buildViewModel(
+        messagesInfoSpec,
+        cassetteIndex: cassetteIndex,
+      );
+    },
+  );
+}
+
+List<_IndexedCassetteSpec> _visibleSidebarSpecs({
+  required CassetteRack rack,
+  required SidebarFlowState? flowState,
+}) {
+  final visibleSpecs = <_IndexedCassetteSpec>[];
+
+  for (var i = 0; i < rack.cassettes.length; i++) {
+    final spec = rack.cassettes[i];
+    if (_shouldHideSpecForFlow(spec: spec, flowState: flowState)) {
+      continue;
+    }
+
+    visibleSpecs.add(_IndexedCassetteSpec(spec: spec, cassetteIndex: i));
+  }
+
+  return visibleSpecs;
+}
+
+List<ResolvedSidebarCassette> _applySidebarSectionSpacing(
+  List<ResolvedSidebarCassette> resolvedCassettes,
+) {
+  final spacedCassettes = <ResolvedSidebarCassette>[];
+  SidebarCassetteSection? previousSection;
+
+  for (final resolvedCassette in resolvedCassettes) {
+    final currentSection = sidebarCassetteSectionForRole(
+      resolvedCassette.payload.role,
+    );
+    final sectionTopSpacing = sidebarCassetteSectionTopSpacing(
+      previousSection: previousSection,
+      currentSection: currentSection,
+    );
+
+    assert(() {
+      if (previousSection == currentSection && sectionTopSpacing != 0) {
+        throw StateError(
+          'sidebarCassetteSectionTopSpacing must return 0 for contiguous '
+          'same-section cassettes. Intra-section rhythm belongs to '
+          'payload.topSpacing or card chrome, not the sectioning layer.',
+        );
       }
 
-      await addCassette(spec, cassetteIndex: i);
-    }
+      return true;
+    }());
 
-    return resolvedCassettes;
+    spacedCassettes.add(
+      ResolvedSidebarCassette(
+        spec: resolvedCassette.spec,
+        cassetteIndex: resolvedCassette.cassetteIndex,
+        payload: resolvedCassette.payload,
+        topSpacing: resolvedCassette.payload.topSpacing + sectionTopSpacing,
+      ),
+    );
+    previousSection = currentSection;
   }
+
+  return spacedCassettes;
 }
 
 bool _shouldHideSpecForFlow({

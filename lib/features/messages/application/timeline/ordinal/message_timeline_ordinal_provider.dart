@@ -4,8 +4,8 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../../../../../essentials/db/feature_level_providers.dart';
 import '../../../domain/value_objects/message_timeline_scope.dart';
-import './message_timeline_scope_ordinal_extensions.dart';
 import '../../strategies/ordinal_strategy.dart';
+import './message_timeline_scope_ordinal_extensions.dart';
 
 part 'message_timeline_ordinal_provider.g.dart';
 

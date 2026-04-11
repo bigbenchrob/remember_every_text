@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sqlite3/sqlite3.dart';
 
+import '../../../../features/attachments/application/attachment_archive_service_provider.dart';
 import '../../../../providers.dart';
 import '../../../db/feature_level_providers.dart';
 import '../../../db_migrate/domain/entities/db_migration_result.dart';
@@ -41,9 +42,13 @@ class ChatDbChangeMonitorState {
 
 @Riverpod(keepAlive: true)
 class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
+  static const Duration _attachmentSweepInterval = Duration(minutes: 5);
+
   Timer? _debounceTimer;
   Timer? _pollingTimer;
+  Timer? _attachmentSweepTimer;
   bool _importInFlight = false;
+  bool _attachmentSweepInFlight = false;
   bool _pendingProbe = false;
   String? _chatDbPath;
 
@@ -58,6 +63,7 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
     ref.onDispose(() {
       _debounceTimer?.cancel();
       _pollingTimer?.cancel();
+      _attachmentSweepTimer?.cancel();
     });
 
     return const ChatDbChangeMonitorState();
@@ -76,6 +82,7 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
       await _checkForNewMessagesOnStartup(chatDbPath);
 
       _startPolling(chatDbPath);
+      _startAttachmentSweep();
     } catch (error, stackTrace) {
       _handleError('Failed to initialize chat.db monitor: $error', stackTrace);
     }
@@ -144,6 +151,55 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
         // Silently continue on polling errors
       }
     });
+  }
+
+  void _startAttachmentSweep() {
+    _attachmentSweepTimer = Timer.periodic(_attachmentSweepInterval, (timer) {
+      unawaited(_runAttachmentSweep());
+    });
+  }
+
+  Future<void> _runAttachmentSweep() async {
+    if (_importInFlight || _attachmentSweepInFlight) {
+      return;
+    }
+
+    final archiveProgress = ref.read(attachmentArchiveServiceProvider);
+    if (archiveProgress.phase == BulkArchivePhase.running ||
+        archiveProgress.phase == BulkArchivePhase.paused) {
+      return;
+    }
+
+    _attachmentSweepInFlight = true;
+
+    try {
+      final archiveService = ref.read(
+        attachmentArchiveServiceProvider.notifier,
+      );
+      final sweepResult = await archiveService.archiveNextWorkingSweepChunk();
+
+      if (sweepResult.newlyArchived > 0 || sweepResult.failed > 0) {
+        ref
+            .read(appLoggerProvider.notifier)
+            .info(
+              'Attachment maintenance sweep completed: '
+              '${sweepResult.newlyArchived} archived, '
+              '${sweepResult.skipped} skipped, '
+              '${sweepResult.failed} failed.',
+              source: 'ChatDbMonitor',
+            );
+      }
+    } catch (error, stackTrace) {
+      ref
+          .read(appLoggerProvider.notifier)
+          .warn(
+            'Attachment maintenance sweep failed: $error',
+            source: 'ChatDbMonitor',
+            context: {'stackTrace': '$stackTrace'},
+          );
+    } finally {
+      _attachmentSweepInFlight = false;
+    }
   }
 
   void _scheduleProbe() {
@@ -221,7 +277,28 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
           ref
               .read(appLoggerProvider.notifier)
               .info(
-                'Incremental import successful. Triggering migration',
+                'Incremental import successful. Archiving new attachments before migration',
+                source: 'ChatDbMonitor',
+              );
+          final archiveService = ref.read(
+            attachmentArchiveServiceProvider.notifier,
+          );
+          final archiveResult = await archiveService.archiveImportedBatch(
+            batchId: importResult.batchId,
+          );
+          ref
+              .read(appLoggerProvider.notifier)
+              .info(
+                'Incremental attachment archive completed: '
+                '${archiveResult.newlyArchived} archived, '
+                '${archiveResult.skipped} skipped, '
+                '${archiveResult.failed} failed.',
+                source: 'ChatDbMonitor',
+              );
+          ref
+              .read(appLoggerProvider.notifier)
+              .info(
+                'Incremental batch ready. Triggering migration',
                 source: 'ChatDbMonitor',
               );
           final migrationService = ref.read(handlesMigrationServiceProvider);

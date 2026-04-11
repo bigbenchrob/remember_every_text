@@ -6,8 +6,8 @@ part of 'cassette_widget_coordinator_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$cassetteWidgetCoordinatorHash() =>
-    r'69e4258c9a50570e998c24cfdd564feb8277a77d';
+String _$resolvedSidebarCassetteHash() =>
+    r'bc5264fdbf483f79852ac8be5acdb36862161da8';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -30,31 +30,188 @@ class _SystemHash {
   }
 }
 
-abstract class _$CassetteWidgetCoordinator
-    extends BuildlessAutoDisposeAsyncNotifier<List<ResolvedSidebarCassette>> {
-  late final SidebarMode mode;
+/// See also [resolvedSidebarCassette].
+@ProviderFor(resolvedSidebarCassette)
+const resolvedSidebarCassetteProvider = ResolvedSidebarCassetteFamily();
 
-  FutureOr<List<ResolvedSidebarCassette>> build(SidebarMode mode);
-}
+/// See also [resolvedSidebarCassette].
+class ResolvedSidebarCassetteFamily
+    extends Family<AsyncValue<ResolvedSidebarCassette>> {
+  /// See also [resolvedSidebarCassette].
+  const ResolvedSidebarCassetteFamily();
 
-/// See also [CassetteWidgetCoordinator].
-@ProviderFor(CassetteWidgetCoordinator)
-const cassetteWidgetCoordinatorProvider = CassetteWidgetCoordinatorFamily();
-
-/// See also [CassetteWidgetCoordinator].
-class CassetteWidgetCoordinatorFamily
-    extends Family<AsyncValue<List<ResolvedSidebarCassette>>> {
-  /// See also [CassetteWidgetCoordinator].
-  const CassetteWidgetCoordinatorFamily();
-
-  /// See also [CassetteWidgetCoordinator].
-  CassetteWidgetCoordinatorProvider call(SidebarMode mode) {
-    return CassetteWidgetCoordinatorProvider(mode);
+  /// See also [resolvedSidebarCassette].
+  ResolvedSidebarCassetteProvider call(
+    SidebarMode mode,
+    CassetteSpec spec,
+    int cassetteIndex,
+  ) {
+    return ResolvedSidebarCassetteProvider(mode, spec, cassetteIndex);
   }
 
   @override
-  CassetteWidgetCoordinatorProvider getProviderOverride(
-    covariant CassetteWidgetCoordinatorProvider provider,
+  ResolvedSidebarCassetteProvider getProviderOverride(
+    covariant ResolvedSidebarCassetteProvider provider,
+  ) {
+    return call(provider.mode, provider.spec, provider.cassetteIndex);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'resolvedSidebarCassetteProvider';
+}
+
+/// See also [resolvedSidebarCassette].
+class ResolvedSidebarCassetteProvider
+    extends AutoDisposeFutureProvider<ResolvedSidebarCassette> {
+  /// See also [resolvedSidebarCassette].
+  ResolvedSidebarCassetteProvider(
+    SidebarMode mode,
+    CassetteSpec spec,
+    int cassetteIndex,
+  ) : this._internal(
+        (ref) => resolvedSidebarCassette(
+          ref as ResolvedSidebarCassetteRef,
+          mode,
+          spec,
+          cassetteIndex,
+        ),
+        from: resolvedSidebarCassetteProvider,
+        name: r'resolvedSidebarCassetteProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$resolvedSidebarCassetteHash,
+        dependencies: ResolvedSidebarCassetteFamily._dependencies,
+        allTransitiveDependencies:
+            ResolvedSidebarCassetteFamily._allTransitiveDependencies,
+        mode: mode,
+        spec: spec,
+        cassetteIndex: cassetteIndex,
+      );
+
+  ResolvedSidebarCassetteProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.mode,
+    required this.spec,
+    required this.cassetteIndex,
+  }) : super.internal();
+
+  final SidebarMode mode;
+  final CassetteSpec spec;
+  final int cassetteIndex;
+
+  @override
+  Override overrideWith(
+    FutureOr<ResolvedSidebarCassette> Function(
+      ResolvedSidebarCassetteRef provider,
+    )
+    create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: ResolvedSidebarCassetteProvider._internal(
+        (ref) => create(ref as ResolvedSidebarCassetteRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        mode: mode,
+        spec: spec,
+        cassetteIndex: cassetteIndex,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<ResolvedSidebarCassette> createElement() {
+    return _ResolvedSidebarCassetteProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ResolvedSidebarCassetteProvider &&
+        other.mode == mode &&
+        other.spec == spec &&
+        other.cassetteIndex == cassetteIndex;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, mode.hashCode);
+    hash = _SystemHash.combine(hash, spec.hashCode);
+    hash = _SystemHash.combine(hash, cassetteIndex.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin ResolvedSidebarCassetteRef
+    on AutoDisposeFutureProviderRef<ResolvedSidebarCassette> {
+  /// The parameter `mode` of this provider.
+  SidebarMode get mode;
+
+  /// The parameter `spec` of this provider.
+  CassetteSpec get spec;
+
+  /// The parameter `cassetteIndex` of this provider.
+  int get cassetteIndex;
+}
+
+class _ResolvedSidebarCassetteProviderElement
+    extends AutoDisposeFutureProviderElement<ResolvedSidebarCassette>
+    with ResolvedSidebarCassetteRef {
+  _ResolvedSidebarCassetteProviderElement(super.provider);
+
+  @override
+  SidebarMode get mode => (origin as ResolvedSidebarCassetteProvider).mode;
+  @override
+  CassetteSpec get spec => (origin as ResolvedSidebarCassetteProvider).spec;
+  @override
+  int get cassetteIndex =>
+      (origin as ResolvedSidebarCassetteProvider).cassetteIndex;
+}
+
+String _$sidebarCassetteResolutionStateHash() =>
+    r'd8f72d73bedd3e0ef2d3136158357c79004fb795';
+
+/// See also [sidebarCassetteResolutionState].
+@ProviderFor(sidebarCassetteResolutionState)
+const sidebarCassetteResolutionStateProvider =
+    SidebarCassetteResolutionStateFamily();
+
+/// See also [sidebarCassetteResolutionState].
+class SidebarCassetteResolutionStateFamily
+    extends Family<SidebarCassetteResolutionState> {
+  /// See also [sidebarCassetteResolutionState].
+  const SidebarCassetteResolutionStateFamily();
+
+  /// See also [sidebarCassetteResolutionState].
+  SidebarCassetteResolutionStateProvider call(SidebarMode mode) {
+    return SidebarCassetteResolutionStateProvider(mode);
+  }
+
+  @override
+  SidebarCassetteResolutionStateProvider getProviderOverride(
+    covariant SidebarCassetteResolutionStateProvider provider,
   ) {
     return call(provider.mode);
   }
@@ -71,32 +228,31 @@ class CassetteWidgetCoordinatorFamily
       _allTransitiveDependencies;
 
   @override
-  String? get name => r'cassetteWidgetCoordinatorProvider';
+  String? get name => r'sidebarCassetteResolutionStateProvider';
 }
 
-/// See also [CassetteWidgetCoordinator].
-class CassetteWidgetCoordinatorProvider
-    extends
-        AutoDisposeAsyncNotifierProviderImpl<
-          CassetteWidgetCoordinator,
-          List<ResolvedSidebarCassette>
-        > {
-  /// See also [CassetteWidgetCoordinator].
-  CassetteWidgetCoordinatorProvider(SidebarMode mode)
+/// See also [sidebarCassetteResolutionState].
+class SidebarCassetteResolutionStateProvider
+    extends AutoDisposeProvider<SidebarCassetteResolutionState> {
+  /// See also [sidebarCassetteResolutionState].
+  SidebarCassetteResolutionStateProvider(SidebarMode mode)
     : this._internal(
-        () => CassetteWidgetCoordinator()..mode = mode,
-        from: cassetteWidgetCoordinatorProvider,
-        name: r'cassetteWidgetCoordinatorProvider',
+        (ref) => sidebarCassetteResolutionState(
+          ref as SidebarCassetteResolutionStateRef,
+          mode,
+        ),
+        from: sidebarCassetteResolutionStateProvider,
+        name: r'sidebarCassetteResolutionStateProvider',
         debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
             ? null
-            : _$cassetteWidgetCoordinatorHash,
-        dependencies: CassetteWidgetCoordinatorFamily._dependencies,
+            : _$sidebarCassetteResolutionStateHash,
+        dependencies: SidebarCassetteResolutionStateFamily._dependencies,
         allTransitiveDependencies:
-            CassetteWidgetCoordinatorFamily._allTransitiveDependencies,
+            SidebarCassetteResolutionStateFamily._allTransitiveDependencies,
         mode: mode,
       );
 
-  CassetteWidgetCoordinatorProvider._internal(
+  SidebarCassetteResolutionStateProvider._internal(
     super._createNotifier, {
     required super.name,
     required super.dependencies,
@@ -109,18 +265,16 @@ class CassetteWidgetCoordinatorProvider
   final SidebarMode mode;
 
   @override
-  FutureOr<List<ResolvedSidebarCassette>> runNotifierBuild(
-    covariant CassetteWidgetCoordinator notifier,
+  Override overrideWith(
+    SidebarCassetteResolutionState Function(
+      SidebarCassetteResolutionStateRef provider,
+    )
+    create,
   ) {
-    return notifier.build(mode);
-  }
-
-  @override
-  Override overrideWith(CassetteWidgetCoordinator Function() create) {
     return ProviderOverride(
       origin: this,
-      override: CassetteWidgetCoordinatorProvider._internal(
-        () => create()..mode = mode,
+      override: SidebarCassetteResolutionStateProvider._internal(
+        (ref) => create(ref as SidebarCassetteResolutionStateRef),
         from: from,
         name: null,
         dependencies: null,
@@ -132,17 +286,14 @@ class CassetteWidgetCoordinatorProvider
   }
 
   @override
-  AutoDisposeAsyncNotifierProviderElement<
-    CassetteWidgetCoordinator,
-    List<ResolvedSidebarCassette>
-  >
-  createElement() {
-    return _CassetteWidgetCoordinatorProviderElement(this);
+  AutoDisposeProviderElement<SidebarCassetteResolutionState> createElement() {
+    return _SidebarCassetteResolutionStateProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is CassetteWidgetCoordinatorProvider && other.mode == mode;
+    return other is SidebarCassetteResolutionStateProvider &&
+        other.mode == mode;
   }
 
   @override
@@ -156,23 +307,20 @@ class CassetteWidgetCoordinatorProvider
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin CassetteWidgetCoordinatorRef
-    on AutoDisposeAsyncNotifierProviderRef<List<ResolvedSidebarCassette>> {
+mixin SidebarCassetteResolutionStateRef
+    on AutoDisposeProviderRef<SidebarCassetteResolutionState> {
   /// The parameter `mode` of this provider.
   SidebarMode get mode;
 }
 
-class _CassetteWidgetCoordinatorProviderElement
-    extends
-        AutoDisposeAsyncNotifierProviderElement<
-          CassetteWidgetCoordinator,
-          List<ResolvedSidebarCassette>
-        >
-    with CassetteWidgetCoordinatorRef {
-  _CassetteWidgetCoordinatorProviderElement(super.provider);
+class _SidebarCassetteResolutionStateProviderElement
+    extends AutoDisposeProviderElement<SidebarCassetteResolutionState>
+    with SidebarCassetteResolutionStateRef {
+  _SidebarCassetteResolutionStateProviderElement(super.provider);
 
   @override
-  SidebarMode get mode => (origin as CassetteWidgetCoordinatorProvider).mode;
+  SidebarMode get mode =>
+      (origin as SidebarCassetteResolutionStateProvider).mode;
 }
 
 // ignore_for_file: type=lint

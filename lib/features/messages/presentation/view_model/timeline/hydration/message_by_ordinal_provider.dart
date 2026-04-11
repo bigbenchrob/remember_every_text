@@ -3,9 +3,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../../essentials/db/feature_level_providers.dart';
 import '../../../../../contacts/infrastructure/repositories/participant_merge_utils.dart';
+import '../../../../application/timeline/ordinal/message_timeline_scope_ordinal_extensions.dart';
 import '../../../../domain/value_objects/message_timeline_scope.dart';
 import '../../../../infrastructure/repositories/recovered_unlinked_messages_provider.dart';
-import '../../../../application/timeline/ordinal/message_timeline_scope_ordinal_extensions.dart';
 import '../../../debug/contact_timeline_scroll_probe.dart';
 import '../../shared/hydration/attachment_info.dart' as hydrated;
 import '../../shared/hydration/messages_for_handle_provider.dart';

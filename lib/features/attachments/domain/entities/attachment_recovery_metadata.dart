@@ -1,3 +1,6 @@
+import 'package:flutter/foundation.dart';
+
+@immutable
 class AttachmentRecoveryMetadata {
   const AttachmentRecoveryMetadata({
     this.lastRecoveryAttemptAt,

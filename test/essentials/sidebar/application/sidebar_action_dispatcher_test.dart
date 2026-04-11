@@ -404,7 +404,8 @@ class _MessagesPanelReconciliationHost extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(sidebarFlowProvider);
     ref.watch(cassetteRackStateProvider(SidebarMode.messages));
-    ref.watch(reconcileSidebarPanelsProvider(SidebarMode.messages));
+    ref.watch(effectiveCenterPanelSpecProvider(SidebarMode.messages));
+    ref.watch(effectiveRightPanelSpecProvider(SidebarMode.messages));
     return const SizedBox.shrink();
   }
 }

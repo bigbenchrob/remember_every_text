@@ -9,6 +9,7 @@ import 'package:video_player/video_player.dart';
 import '../../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../../essentials/debug/application/developer_mode_provider.dart';
 import '../../../../../attachments/application/attachment_archive_service_provider.dart';
+import '../../../../../attachments/domain/constants/attachment_provenance.dart';
 import '../../../../../attachments/domain/constants/resolved_attachment_availability.dart';
 import '../../../../../attachments/infrastructure/services/video_thumbnail_cache_service.dart';
 import '../../../debug/contact_timeline_scroll_probe.dart';
@@ -572,6 +573,7 @@ class _MediaUnavailablePlaceholder extends ConsumerWidget {
   const _MediaUnavailablePlaceholder({
     required this.hasLocalReference,
     required this.mediaLabel,
+    this.sourceProvenance,
     this.onPrioritizeRecoveryTap,
     this.cardKey,
     this.availability,
@@ -581,6 +583,7 @@ class _MediaUnavailablePlaceholder extends ConsumerWidget {
 
   /// Human label for the media type — "Image" or "Video".
   final String mediaLabel;
+  final AttachmentProvenance? sourceProvenance;
   final VoidCallback? onPrioritizeRecoveryTap;
   final Key? cardKey;
   final ResolvedAttachmentAvailability? availability;
@@ -661,6 +664,13 @@ class _MediaUnavailablePlaceholder extends ConsumerWidget {
                       ),
                     ],
                   ),
+                  if (sourceProvenance case final provenance?) ...[
+                    const SizedBox(height: 8),
+                    _AttachmentSourceBadge(
+                      provenance: provenance,
+                      showTooltip: false,
+                    ),
+                  ],
                   if (!isPendingArchive && onPrioritizeRecoveryTap != null) ...[
                     const SizedBox(height: 8),
                     GestureDetector(
@@ -699,6 +709,93 @@ class _MediaUnavailablePlaceholder extends ConsumerWidget {
   }
 }
 
+class _AttachmentSourceBadge extends ConsumerWidget {
+  const _AttachmentSourceBadge({
+    required this.provenance,
+    this.showTooltip = true,
+  });
+
+  final AttachmentProvenance provenance;
+  final bool showTooltip;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final isLive = provenance == AttachmentProvenance.messagesLive;
+    final isBackup = provenance == AttachmentProvenance.importedHistorical;
+    final label = switch (provenance) {
+      AttachmentProvenance.messagesLive => 'Live',
+      AttachmentProvenance.archived => 'Archive',
+      AttachmentProvenance.importedHistorical => 'Backup',
+    };
+    final tooltipMessage = switch (provenance) {
+      AttachmentProvenance.messagesLive =>
+        'Attachment source: Live Messages file',
+      AttachmentProvenance.archived => 'Attachment source: MessageLens archive',
+      AttachmentProvenance.importedHistorical =>
+        'Attachment source: recovered backup archive',
+    };
+
+    final badge = DecoratedBox(
+      key: ValueKey<String>('attachment-source-badge-$label'),
+      decoration: BoxDecoration(
+        color: isLive
+            ? colors.surfaces.surface.withValues(alpha: 0.88)
+            : isBackup
+            ? colors.messagePanels.mutedTint
+            : colors.accents.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: isLive
+              ? colors.lines.borderSubtle
+              : isBackup
+              ? colors.messagePanels.mutedBorder
+              : colors.accents.primary.withValues(alpha: 0.28),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            color: isLive
+                ? colors.content.textSecondary
+                : isBackup
+                ? colors.content.textSecondary
+                : colors.accents.primary,
+          ),
+        ),
+      ),
+    );
+
+    if (!showTooltip) {
+      return badge;
+    }
+
+    return Tooltip(
+      message: tooltipMessage,
+      waitDuration: const Duration(milliseconds: 300),
+      child: badge,
+    );
+  }
+}
+
+AttachmentProvenance? _placeholderSourceProvenance(AttachmentInfo attachment) {
+  final provenance = attachment.provenance;
+  if (provenance != null) {
+    return provenance;
+  }
+
+  if (attachment.hasLocalFile) {
+    return AttachmentProvenance.messagesLive;
+  }
+
+  return null;
+}
+
 class ImageMessageTile extends ConsumerWidget {
   const ImageMessageTile({
     super.key,
@@ -735,6 +832,7 @@ class ImageMessageTile extends ConsumerWidget {
         attachment.importAttachmentId != null &&
         attachment.availability !=
             ResolvedAttachmentAvailability.pendingArchive;
+    final provenance = attachment.provenance;
 
     return MessageShell(
       isMe: isMe,
@@ -780,6 +878,7 @@ class ImageMessageTile extends ConsumerWidget {
                 : _MediaUnavailablePlaceholder(
                     availability: attachment.availability,
                     hasLocalReference: attachment.hasLocalFile,
+                    sourceProvenance: _placeholderSourceProvenance(attachment),
                     cardKey: const ValueKey<String>(
                       'unavailable-media-card-Image',
                     ),
@@ -800,6 +899,20 @@ class ImageMessageTile extends ConsumerWidget {
                         : null,
                   ),
           ),
+          if (exists)
+            if (provenance case final attachmentProvenance?) ...[
+              const SizedBox(height: 8),
+              _alignMediaForLayout(
+                layout: layout,
+                isMe: isMe,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: _AttachmentSourceBadge(
+                    provenance: attachmentProvenance,
+                  ),
+                ),
+              ),
+            ],
           if (captionText != null) ...[
             MsgTheme.gapMD,
             _AttachedTextBubble(
@@ -1103,6 +1216,7 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
         widget.attachment.importAttachmentId != null &&
         widget.attachment.availability !=
             ResolvedAttachmentAvailability.pendingArchive;
+    final provenance = widget.attachment.provenance;
 
     return MessageShell(
       isMe: widget.isMe,
@@ -1147,6 +1261,9 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
                 : _MediaUnavailablePlaceholder(
                     availability: widget.attachment.availability,
                     hasLocalReference: widget.attachment.hasLocalFile,
+                    sourceProvenance: _placeholderSourceProvenance(
+                      widget.attachment,
+                    ),
                     cardKey: const ValueKey<String>(
                       'unavailable-media-card-Video',
                     ),
@@ -1167,6 +1284,20 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
                         : null,
                   ),
           ),
+          if (hasPlayableVideo)
+            if (provenance case final attachmentProvenance?) ...[
+              const SizedBox(height: 8),
+              _alignMediaForLayout(
+                layout: widget.layout,
+                isMe: widget.isMe,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: _AttachmentSourceBadge(
+                    provenance: attachmentProvenance,
+                  ),
+                ),
+              ),
+            ],
           if (widget.captionText != null) ...[
             MsgTheme.gapMD,
             _AttachedTextBubble(

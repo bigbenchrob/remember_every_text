@@ -6,6 +6,7 @@ import 'package:remember_this_text/essentials/db_importers/application/debug_set
 import 'package:remember_this_text/essentials/db_importers/application/importers/chat_to_handle_importer.dart';
 import 'package:remember_this_text/essentials/db_importers/application/importers/chat_to_message_importer.dart';
 import 'package:remember_this_text/essentials/db_importers/application/importers/message_attachments_importer.dart';
+import 'package:remember_this_text/essentials/db_importers/application/importers/messages_importer.dart';
 import 'package:remember_this_text/essentials/db_importers/domain/base_table_importer.dart';
 import 'package:remember_this_text/essentials/db_importers/infrastructure/sqlite/import_context_sqlite.dart';
 import 'package:sqflite/sqflite.dart';
@@ -237,6 +238,86 @@ void main() {
     );
 
     test(
+      'messages importer promotes recovered messages when a chat join appears',
+      () async {
+        await messagesDb.execute(
+          'CREATE TABLE chat (ROWID INTEGER PRIMARY KEY, guid TEXT, service_name TEXT)',
+        );
+        await messagesDb.execute(
+          'CREATE TABLE message (ROWID INTEGER PRIMARY KEY, guid TEXT, text TEXT)',
+        );
+        await messagesDb.execute(
+          'CREATE TABLE chat_message_join (chat_id INTEGER NOT NULL, message_id INTEGER NOT NULL)',
+        );
+        await messagesDb.insert('chat', <String, Object?>{
+          'ROWID': 17,
+          'guid': 'chat-17',
+          'service_name': 'iMessage',
+        });
+        await messagesDb.insert('message', <String, Object?>{
+          'ROWID': 100,
+          'guid': 'message-100',
+          'text': 'Recovered first, linked later',
+        });
+        await messagesDb.insert('chat_message_join', <String, Object?>{
+          'chat_id': 17,
+          'message_id': 100,
+        });
+
+        final ctx = await _buildContext(
+          ledgerDb: ledgerDb,
+          messagesDb: messagesDb,
+          addressBookDb: addressBookDb,
+          hasExistingLedgerData: true,
+          previousMaxMessageRowId: 100,
+        );
+        await ledgerDb.insertChat(
+          id: 17,
+          sourceRowid: 17,
+          guid: 'chat-17',
+          service: 'iMessage',
+          batchId: ctx.batchId,
+        );
+        await ledgerDb.insertRecoveredUnlinkedMessage(
+          id: 100,
+          sourceRowid: 100,
+          guid: 'message-100',
+          service: 'iMessage',
+          isFromMe: false,
+          text: 'Recovered first, linked later',
+          hasAttributedBodySource: false,
+          hasMessageSummaryInfo: false,
+          hasPayloadDataSource: false,
+          isSystemMessage: false,
+          batchId: ctx.batchId,
+        );
+
+        await MessagesImporter().copy(ctx);
+
+        final linkedRows = await ledgerDb.rawQuery(
+          'SELECT id, chat_id FROM messages WHERE id = 100',
+        );
+        final recoveredRows = await ledgerDb.rawQuery(
+          'SELECT id FROM recovered_unlinked_messages WHERE id = 100',
+        );
+
+        expect(linkedRows, hasLength(1));
+        expect(linkedRows.single['chat_id'], 17);
+        expect(recoveredRows, isEmpty);
+        expect(ctx.readScratch<int>('messages.inserted'), 1);
+        expect(
+          ctx.readScratch<List<int>>('messages.insertedIds'),
+          contains(100),
+        );
+
+        expect(
+          () => ChatToMessageImporter().validatePrereqs(ctx),
+          returnsNormally,
+        );
+      },
+    );
+
+    test(
       'message_attachments importer fails early on broken source joins',
       () async {
         await messagesDb.execute(
@@ -344,6 +425,8 @@ Future<ImportContextSqlite> _buildContext({
   required SqfliteImportDatabase ledgerDb,
   required Database messagesDb,
   required Database addressBookDb,
+  bool hasExistingLedgerData = false,
+  int? previousMaxMessageRowId,
 }) async {
   final batchId = await ledgerDb.insertImportBatch(
     startedAtUtc: DateTime.now().toUtc().toIso8601String(),
@@ -355,6 +438,7 @@ Future<ImportContextSqlite> _buildContext({
     messagesDbPath: messagesDb.path,
     addressBookDb: addressBookDb,
     batchId: batchId,
-    hasExistingLedgerData: false,
+    hasExistingLedgerData: hasExistingLedgerData,
+    previousMaxMessageRowId: previousMaxMessageRowId,
   );
 }

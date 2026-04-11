@@ -6,8 +6,8 @@ part of 'panel_widget_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$reconcileSidebarPanelsHash() =>
-    r'9418341e100053f6806b8bbeb4f60119f63c5518';
+String _$effectiveCenterPanelStackHash() =>
+    r'5bc942188143563c0443e4291678c837f4e44af5';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -29,127 +29,6 @@ class _SystemHash {
     return 0x1fffffff & (hash + ((0x00003fff & hash) << 15));
   }
 }
-
-/// See also [reconcileSidebarPanels].
-@ProviderFor(reconcileSidebarPanels)
-const reconcileSidebarPanelsProvider = ReconcileSidebarPanelsFamily();
-
-/// See also [reconcileSidebarPanels].
-class ReconcileSidebarPanelsFamily extends Family<void> {
-  /// See also [reconcileSidebarPanels].
-  const ReconcileSidebarPanelsFamily();
-
-  /// See also [reconcileSidebarPanels].
-  ReconcileSidebarPanelsProvider call(SidebarMode mode) {
-    return ReconcileSidebarPanelsProvider(mode);
-  }
-
-  @override
-  ReconcileSidebarPanelsProvider getProviderOverride(
-    covariant ReconcileSidebarPanelsProvider provider,
-  ) {
-    return call(provider.mode);
-  }
-
-  static const Iterable<ProviderOrFamily>? _dependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
-
-  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
-      _allTransitiveDependencies;
-
-  @override
-  String? get name => r'reconcileSidebarPanelsProvider';
-}
-
-/// See also [reconcileSidebarPanels].
-class ReconcileSidebarPanelsProvider extends AutoDisposeProvider<void> {
-  /// See also [reconcileSidebarPanels].
-  ReconcileSidebarPanelsProvider(SidebarMode mode)
-    : this._internal(
-        (ref) => reconcileSidebarPanels(ref as ReconcileSidebarPanelsRef, mode),
-        from: reconcileSidebarPanelsProvider,
-        name: r'reconcileSidebarPanelsProvider',
-        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-            ? null
-            : _$reconcileSidebarPanelsHash,
-        dependencies: ReconcileSidebarPanelsFamily._dependencies,
-        allTransitiveDependencies:
-            ReconcileSidebarPanelsFamily._allTransitiveDependencies,
-        mode: mode,
-      );
-
-  ReconcileSidebarPanelsProvider._internal(
-    super._createNotifier, {
-    required super.name,
-    required super.dependencies,
-    required super.allTransitiveDependencies,
-    required super.debugGetCreateSourceHash,
-    required super.from,
-    required this.mode,
-  }) : super.internal();
-
-  final SidebarMode mode;
-
-  @override
-  Override overrideWith(
-    void Function(ReconcileSidebarPanelsRef provider) create,
-  ) {
-    return ProviderOverride(
-      origin: this,
-      override: ReconcileSidebarPanelsProvider._internal(
-        (ref) => create(ref as ReconcileSidebarPanelsRef),
-        from: from,
-        name: null,
-        dependencies: null,
-        allTransitiveDependencies: null,
-        debugGetCreateSourceHash: null,
-        mode: mode,
-      ),
-    );
-  }
-
-  @override
-  AutoDisposeProviderElement<void> createElement() {
-    return _ReconcileSidebarPanelsProviderElement(this);
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return other is ReconcileSidebarPanelsProvider && other.mode == mode;
-  }
-
-  @override
-  int get hashCode {
-    var hash = _SystemHash.combine(0, runtimeType.hashCode);
-    hash = _SystemHash.combine(hash, mode.hashCode);
-
-    return _SystemHash.finish(hash);
-  }
-}
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-mixin ReconcileSidebarPanelsRef on AutoDisposeProviderRef<void> {
-  /// The parameter `mode` of this provider.
-  SidebarMode get mode;
-}
-
-class _ReconcileSidebarPanelsProviderElement
-    extends AutoDisposeProviderElement<void>
-    with ReconcileSidebarPanelsRef {
-  _ReconcileSidebarPanelsProviderElement(super.provider);
-
-  @override
-  SidebarMode get mode => (origin as ReconcileSidebarPanelsProvider).mode;
-}
-
-String _$effectiveCenterPanelStackHash() =>
-    r'5bc942188143563c0443e4291678c837f4e44af5';
 
 /// See also [effectiveCenterPanelStack].
 @ProviderFor(effectiveCenterPanelStack)
@@ -792,7 +671,7 @@ class _IsSidebarParkedProviderElement extends AutoDisposeProviderElement<bool>
   SidebarMode get mode => (origin as IsSidebarParkedProvider).mode;
 }
 
-String _$centerPanelWidgetHash() => r'4451794ace006b1ba9266dbe1d0509d965acd806';
+String _$centerPanelWidgetHash() => r'bc55f70ad1cc50730fb3dd953e3bdf566b8a3202';
 
 /// Widget provider for center panel
 ///
@@ -1283,248 +1162,56 @@ class _ContextualSidebarWidgetProviderElement
   SidebarMode get mode => (origin as ContextualSidebarWidgetProvider).mode;
 }
 
-String _$leftPanelWidgetHash() => r'5bb599b1f121b6f6c42ad9faa7c8364185ff8412';
+String _$leftPanelWidgetHash() => r'928ccb41a756cb0b182ebe8412a4a459e20a2972';
 
-/// Widget provider for left panel (sidebar).
+/// Widget provider for the left sidebar surface.
 ///
-/// This provider builds the left panel by reading the current list of
-/// cassette widgets from [CassetteWidgetCoordinator].  The resulting list
-/// is wrapped in a [Column] so that the cassettes are laid out vertically.
+/// The host reads the aggregate per-cassette resolution state for the current
+/// rack and renders only when the visible rack is complete. Per-cassette
+/// providers preserve previously resolved values during same-rack reloads,
+/// while structural rack changes still blank until the new rack is fully
+/// resolved.
 ///
-/// ## Async Handling Strategy
-///
-/// The [CassetteWidgetCoordinator] returns `AsyncValue<List<Widget>>` because
-/// feature-side spec coordinators may need to fetch data from repositories
-/// (e.g., contact counts, derived values, async formatting).
-///
-/// We use a **stale-while-revalidate** pattern here:
-///
-/// 1. **Initial load**: Show a loading indicator until the first cassette list
-///    resolves. This only happens once per sidebar mode on app startup or when
-///    the mode changes.
-///
-/// 2. **Subsequent updates**: Keep displaying the previous cassette list while
-///    the new list builds asynchronously. This prevents jarring full-sidebar
-///    reloads when the user interacts with a cassette (e.g., toggles a setting,
-///    selects a filter).
-///
-/// 3. **Errors**: Currently logged but not displayed. The previous valid state
-///    is preserved. Future enhancement: consider a subtle error toast or badge.
-///
-/// ## Why `valueOrNull` instead of `when()`?
-///
-/// Using `asyncCassettes.valueOrNull` with explicit state checks gives us more
-/// control than `AsyncValue.when()`:
-///
-/// - **Easier to add loading overlays**: We can later add a subtle progress
-///   indicator (e.g., a thin bar at the top) without restructuring the code.
-///
-/// - **Partial update support**: If we ever want to show incremental cassette
-///   updates (e.g., stream-based), this pattern accommodates that.
-///
-/// - **Cleaner error handling**: We can log errors and preserve the UI without
-///   forcing an error widget into the layout.
-///
-/// - **No callback nesting**: The linear flow is easier to read and extend.
-///
-/// ## Future Extension Points
-///
-/// - **Loading indicator overlay**: Add a `Stack` with an `AnimatedOpacity`
-///   progress bar that fades in during `isLoading && hasValue`.
-///
-/// - **Per-cassette loading**: If individual cassettes need independent async
-///   states, consider returning `List<AsyncValue<Widget>>` from the coordinator
-///   and handling loading per-slot.
-///
-/// - **Error recovery UI**: Add a "Retry" affordance or error badge that
-///   appears when `hasError` is true but we're still showing stale data.
-///
-/// - **Optimistic updates**: For user-initiated changes (e.g., toggling a
-///   setting), consider updating the UI optimistically before the async
-///   operation completes.
+/// Errors are logged but do not currently surface user-visible recovery UI.
 ///
 /// Copied from [leftPanelWidget].
 @ProviderFor(leftPanelWidget)
 const leftPanelWidgetProvider = LeftPanelWidgetFamily();
 
-/// Widget provider for left panel (sidebar).
+/// Widget provider for the left sidebar surface.
 ///
-/// This provider builds the left panel by reading the current list of
-/// cassette widgets from [CassetteWidgetCoordinator].  The resulting list
-/// is wrapped in a [Column] so that the cassettes are laid out vertically.
+/// The host reads the aggregate per-cassette resolution state for the current
+/// rack and renders only when the visible rack is complete. Per-cassette
+/// providers preserve previously resolved values during same-rack reloads,
+/// while structural rack changes still blank until the new rack is fully
+/// resolved.
 ///
-/// ## Async Handling Strategy
-///
-/// The [CassetteWidgetCoordinator] returns `AsyncValue<List<Widget>>` because
-/// feature-side spec coordinators may need to fetch data from repositories
-/// (e.g., contact counts, derived values, async formatting).
-///
-/// We use a **stale-while-revalidate** pattern here:
-///
-/// 1. **Initial load**: Show a loading indicator until the first cassette list
-///    resolves. This only happens once per sidebar mode on app startup or when
-///    the mode changes.
-///
-/// 2. **Subsequent updates**: Keep displaying the previous cassette list while
-///    the new list builds asynchronously. This prevents jarring full-sidebar
-///    reloads when the user interacts with a cassette (e.g., toggles a setting,
-///    selects a filter).
-///
-/// 3. **Errors**: Currently logged but not displayed. The previous valid state
-///    is preserved. Future enhancement: consider a subtle error toast or badge.
-///
-/// ## Why `valueOrNull` instead of `when()`?
-///
-/// Using `asyncCassettes.valueOrNull` with explicit state checks gives us more
-/// control than `AsyncValue.when()`:
-///
-/// - **Easier to add loading overlays**: We can later add a subtle progress
-///   indicator (e.g., a thin bar at the top) without restructuring the code.
-///
-/// - **Partial update support**: If we ever want to show incremental cassette
-///   updates (e.g., stream-based), this pattern accommodates that.
-///
-/// - **Cleaner error handling**: We can log errors and preserve the UI without
-///   forcing an error widget into the layout.
-///
-/// - **No callback nesting**: The linear flow is easier to read and extend.
-///
-/// ## Future Extension Points
-///
-/// - **Loading indicator overlay**: Add a `Stack` with an `AnimatedOpacity`
-///   progress bar that fades in during `isLoading && hasValue`.
-///
-/// - **Per-cassette loading**: If individual cassettes need independent async
-///   states, consider returning `List<AsyncValue<Widget>>` from the coordinator
-///   and handling loading per-slot.
-///
-/// - **Error recovery UI**: Add a "Retry" affordance or error badge that
-///   appears when `hasError` is true but we're still showing stale data.
-///
-/// - **Optimistic updates**: For user-initiated changes (e.g., toggling a
-///   setting), consider updating the UI optimistically before the async
-///   operation completes.
+/// Errors are logged but do not currently surface user-visible recovery UI.
 ///
 /// Copied from [leftPanelWidget].
 class LeftPanelWidgetFamily extends Family<Widget> {
-  /// Widget provider for left panel (sidebar).
+  /// Widget provider for the left sidebar surface.
   ///
-  /// This provider builds the left panel by reading the current list of
-  /// cassette widgets from [CassetteWidgetCoordinator].  The resulting list
-  /// is wrapped in a [Column] so that the cassettes are laid out vertically.
+  /// The host reads the aggregate per-cassette resolution state for the current
+  /// rack and renders only when the visible rack is complete. Per-cassette
+  /// providers preserve previously resolved values during same-rack reloads,
+  /// while structural rack changes still blank until the new rack is fully
+  /// resolved.
   ///
-  /// ## Async Handling Strategy
-  ///
-  /// The [CassetteWidgetCoordinator] returns `AsyncValue<List<Widget>>` because
-  /// feature-side spec coordinators may need to fetch data from repositories
-  /// (e.g., contact counts, derived values, async formatting).
-  ///
-  /// We use a **stale-while-revalidate** pattern here:
-  ///
-  /// 1. **Initial load**: Show a loading indicator until the first cassette list
-  ///    resolves. This only happens once per sidebar mode on app startup or when
-  ///    the mode changes.
-  ///
-  /// 2. **Subsequent updates**: Keep displaying the previous cassette list while
-  ///    the new list builds asynchronously. This prevents jarring full-sidebar
-  ///    reloads when the user interacts with a cassette (e.g., toggles a setting,
-  ///    selects a filter).
-  ///
-  /// 3. **Errors**: Currently logged but not displayed. The previous valid state
-  ///    is preserved. Future enhancement: consider a subtle error toast or badge.
-  ///
-  /// ## Why `valueOrNull` instead of `when()`?
-  ///
-  /// Using `asyncCassettes.valueOrNull` with explicit state checks gives us more
-  /// control than `AsyncValue.when()`:
-  ///
-  /// - **Easier to add loading overlays**: We can later add a subtle progress
-  ///   indicator (e.g., a thin bar at the top) without restructuring the code.
-  ///
-  /// - **Partial update support**: If we ever want to show incremental cassette
-  ///   updates (e.g., stream-based), this pattern accommodates that.
-  ///
-  /// - **Cleaner error handling**: We can log errors and preserve the UI without
-  ///   forcing an error widget into the layout.
-  ///
-  /// - **No callback nesting**: The linear flow is easier to read and extend.
-  ///
-  /// ## Future Extension Points
-  ///
-  /// - **Loading indicator overlay**: Add a `Stack` with an `AnimatedOpacity`
-  ///   progress bar that fades in during `isLoading && hasValue`.
-  ///
-  /// - **Per-cassette loading**: If individual cassettes need independent async
-  ///   states, consider returning `List<AsyncValue<Widget>>` from the coordinator
-  ///   and handling loading per-slot.
-  ///
-  /// - **Error recovery UI**: Add a "Retry" affordance or error badge that
-  ///   appears when `hasError` is true but we're still showing stale data.
-  ///
-  /// - **Optimistic updates**: For user-initiated changes (e.g., toggling a
-  ///   setting), consider updating the UI optimistically before the async
-  ///   operation completes.
+  /// Errors are logged but do not currently surface user-visible recovery UI.
   ///
   /// Copied from [leftPanelWidget].
   const LeftPanelWidgetFamily();
 
-  /// Widget provider for left panel (sidebar).
+  /// Widget provider for the left sidebar surface.
   ///
-  /// This provider builds the left panel by reading the current list of
-  /// cassette widgets from [CassetteWidgetCoordinator].  The resulting list
-  /// is wrapped in a [Column] so that the cassettes are laid out vertically.
+  /// The host reads the aggregate per-cassette resolution state for the current
+  /// rack and renders only when the visible rack is complete. Per-cassette
+  /// providers preserve previously resolved values during same-rack reloads,
+  /// while structural rack changes still blank until the new rack is fully
+  /// resolved.
   ///
-  /// ## Async Handling Strategy
-  ///
-  /// The [CassetteWidgetCoordinator] returns `AsyncValue<List<Widget>>` because
-  /// feature-side spec coordinators may need to fetch data from repositories
-  /// (e.g., contact counts, derived values, async formatting).
-  ///
-  /// We use a **stale-while-revalidate** pattern here:
-  ///
-  /// 1. **Initial load**: Show a loading indicator until the first cassette list
-  ///    resolves. This only happens once per sidebar mode on app startup or when
-  ///    the mode changes.
-  ///
-  /// 2. **Subsequent updates**: Keep displaying the previous cassette list while
-  ///    the new list builds asynchronously. This prevents jarring full-sidebar
-  ///    reloads when the user interacts with a cassette (e.g., toggles a setting,
-  ///    selects a filter).
-  ///
-  /// 3. **Errors**: Currently logged but not displayed. The previous valid state
-  ///    is preserved. Future enhancement: consider a subtle error toast or badge.
-  ///
-  /// ## Why `valueOrNull` instead of `when()`?
-  ///
-  /// Using `asyncCassettes.valueOrNull` with explicit state checks gives us more
-  /// control than `AsyncValue.when()`:
-  ///
-  /// - **Easier to add loading overlays**: We can later add a subtle progress
-  ///   indicator (e.g., a thin bar at the top) without restructuring the code.
-  ///
-  /// - **Partial update support**: If we ever want to show incremental cassette
-  ///   updates (e.g., stream-based), this pattern accommodates that.
-  ///
-  /// - **Cleaner error handling**: We can log errors and preserve the UI without
-  ///   forcing an error widget into the layout.
-  ///
-  /// - **No callback nesting**: The linear flow is easier to read and extend.
-  ///
-  /// ## Future Extension Points
-  ///
-  /// - **Loading indicator overlay**: Add a `Stack` with an `AnimatedOpacity`
-  ///   progress bar that fades in during `isLoading && hasValue`.
-  ///
-  /// - **Per-cassette loading**: If individual cassettes need independent async
-  ///   states, consider returning `List<AsyncValue<Widget>>` from the coordinator
-  ///   and handling loading per-slot.
-  ///
-  /// - **Error recovery UI**: Add a "Retry" affordance or error badge that
-  ///   appears when `hasError` is true but we're still showing stale data.
-  ///
-  /// - **Optimistic updates**: For user-initiated changes (e.g., toggling a
-  ///   setting), consider updating the UI optimistically before the async
-  ///   operation completes.
+  /// Errors are logged but do not currently surface user-visible recovery UI.
   ///
   /// Copied from [leftPanelWidget].
   LeftPanelWidgetProvider call(SidebarMode mode) {
@@ -1553,123 +1240,27 @@ class LeftPanelWidgetFamily extends Family<Widget> {
   String? get name => r'leftPanelWidgetProvider';
 }
 
-/// Widget provider for left panel (sidebar).
+/// Widget provider for the left sidebar surface.
 ///
-/// This provider builds the left panel by reading the current list of
-/// cassette widgets from [CassetteWidgetCoordinator].  The resulting list
-/// is wrapped in a [Column] so that the cassettes are laid out vertically.
+/// The host reads the aggregate per-cassette resolution state for the current
+/// rack and renders only when the visible rack is complete. Per-cassette
+/// providers preserve previously resolved values during same-rack reloads,
+/// while structural rack changes still blank until the new rack is fully
+/// resolved.
 ///
-/// ## Async Handling Strategy
-///
-/// The [CassetteWidgetCoordinator] returns `AsyncValue<List<Widget>>` because
-/// feature-side spec coordinators may need to fetch data from repositories
-/// (e.g., contact counts, derived values, async formatting).
-///
-/// We use a **stale-while-revalidate** pattern here:
-///
-/// 1. **Initial load**: Show a loading indicator until the first cassette list
-///    resolves. This only happens once per sidebar mode on app startup or when
-///    the mode changes.
-///
-/// 2. **Subsequent updates**: Keep displaying the previous cassette list while
-///    the new list builds asynchronously. This prevents jarring full-sidebar
-///    reloads when the user interacts with a cassette (e.g., toggles a setting,
-///    selects a filter).
-///
-/// 3. **Errors**: Currently logged but not displayed. The previous valid state
-///    is preserved. Future enhancement: consider a subtle error toast or badge.
-///
-/// ## Why `valueOrNull` instead of `when()`?
-///
-/// Using `asyncCassettes.valueOrNull` with explicit state checks gives us more
-/// control than `AsyncValue.when()`:
-///
-/// - **Easier to add loading overlays**: We can later add a subtle progress
-///   indicator (e.g., a thin bar at the top) without restructuring the code.
-///
-/// - **Partial update support**: If we ever want to show incremental cassette
-///   updates (e.g., stream-based), this pattern accommodates that.
-///
-/// - **Cleaner error handling**: We can log errors and preserve the UI without
-///   forcing an error widget into the layout.
-///
-/// - **No callback nesting**: The linear flow is easier to read and extend.
-///
-/// ## Future Extension Points
-///
-/// - **Loading indicator overlay**: Add a `Stack` with an `AnimatedOpacity`
-///   progress bar that fades in during `isLoading && hasValue`.
-///
-/// - **Per-cassette loading**: If individual cassettes need independent async
-///   states, consider returning `List<AsyncValue<Widget>>` from the coordinator
-///   and handling loading per-slot.
-///
-/// - **Error recovery UI**: Add a "Retry" affordance or error badge that
-///   appears when `hasError` is true but we're still showing stale data.
-///
-/// - **Optimistic updates**: For user-initiated changes (e.g., toggling a
-///   setting), consider updating the UI optimistically before the async
-///   operation completes.
+/// Errors are logged but do not currently surface user-visible recovery UI.
 ///
 /// Copied from [leftPanelWidget].
 class LeftPanelWidgetProvider extends AutoDisposeProvider<Widget> {
-  /// Widget provider for left panel (sidebar).
+  /// Widget provider for the left sidebar surface.
   ///
-  /// This provider builds the left panel by reading the current list of
-  /// cassette widgets from [CassetteWidgetCoordinator].  The resulting list
-  /// is wrapped in a [Column] so that the cassettes are laid out vertically.
+  /// The host reads the aggregate per-cassette resolution state for the current
+  /// rack and renders only when the visible rack is complete. Per-cassette
+  /// providers preserve previously resolved values during same-rack reloads,
+  /// while structural rack changes still blank until the new rack is fully
+  /// resolved.
   ///
-  /// ## Async Handling Strategy
-  ///
-  /// The [CassetteWidgetCoordinator] returns `AsyncValue<List<Widget>>` because
-  /// feature-side spec coordinators may need to fetch data from repositories
-  /// (e.g., contact counts, derived values, async formatting).
-  ///
-  /// We use a **stale-while-revalidate** pattern here:
-  ///
-  /// 1. **Initial load**: Show a loading indicator until the first cassette list
-  ///    resolves. This only happens once per sidebar mode on app startup or when
-  ///    the mode changes.
-  ///
-  /// 2. **Subsequent updates**: Keep displaying the previous cassette list while
-  ///    the new list builds asynchronously. This prevents jarring full-sidebar
-  ///    reloads when the user interacts with a cassette (e.g., toggles a setting,
-  ///    selects a filter).
-  ///
-  /// 3. **Errors**: Currently logged but not displayed. The previous valid state
-  ///    is preserved. Future enhancement: consider a subtle error toast or badge.
-  ///
-  /// ## Why `valueOrNull` instead of `when()`?
-  ///
-  /// Using `asyncCassettes.valueOrNull` with explicit state checks gives us more
-  /// control than `AsyncValue.when()`:
-  ///
-  /// - **Easier to add loading overlays**: We can later add a subtle progress
-  ///   indicator (e.g., a thin bar at the top) without restructuring the code.
-  ///
-  /// - **Partial update support**: If we ever want to show incremental cassette
-  ///   updates (e.g., stream-based), this pattern accommodates that.
-  ///
-  /// - **Cleaner error handling**: We can log errors and preserve the UI without
-  ///   forcing an error widget into the layout.
-  ///
-  /// - **No callback nesting**: The linear flow is easier to read and extend.
-  ///
-  /// ## Future Extension Points
-  ///
-  /// - **Loading indicator overlay**: Add a `Stack` with an `AnimatedOpacity`
-  ///   progress bar that fades in during `isLoading && hasValue`.
-  ///
-  /// - **Per-cassette loading**: If individual cassettes need independent async
-  ///   states, consider returning `List<AsyncValue<Widget>>` from the coordinator
-  ///   and handling loading per-slot.
-  ///
-  /// - **Error recovery UI**: Add a "Retry" affordance or error badge that
-  ///   appears when `hasError` is true but we're still showing stale data.
-  ///
-  /// - **Optimistic updates**: For user-initiated changes (e.g., toggling a
-  ///   setting), consider updating the UI optimistically before the async
-  ///   operation completes.
+  /// Errors are logged but do not currently surface user-visible recovery UI.
   ///
   /// Copied from [leftPanelWidget].
   LeftPanelWidgetProvider(SidebarMode mode)

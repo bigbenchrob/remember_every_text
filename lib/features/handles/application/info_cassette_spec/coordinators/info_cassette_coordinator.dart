@@ -31,7 +31,8 @@ part 'info_cassette_coordinator.g.dart';
 ///
 /// Why return a view model instead of a widget?
 ///
-/// - The app-level CassetteWidgetCoordinator centralizes UI chrome decisions.
+/// - The app-level sidebar resolution/render layer centralizes UI chrome
+///   decisions.
 /// - This keeps card layout/padding/header policies consistent across features.
 /// - Features remain agnostic to how cards are visually framed.
 /// - Future changes to card chrome happen in one place, not N features.

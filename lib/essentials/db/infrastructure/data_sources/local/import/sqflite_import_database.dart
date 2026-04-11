@@ -897,6 +897,88 @@ AND Z_PK NOT IN (
     );
   }
 
+  Future<List<int>> promoteRecoveredMessagesToLinked({
+    required Map<int, int> messageIdToChatId,
+    required int batchId,
+  }) async {
+    if (messageIdToChatId.isEmpty) {
+      return const <int>[];
+    }
+
+    final db = await database;
+    final candidateIds = messageIdToChatId.keys.toList()..sort();
+    final promotedIds = <int>[];
+
+    await db.transaction((txn) async {
+      const chunkSize = 200;
+      for (var offset = 0; offset < candidateIds.length; offset += chunkSize) {
+        final end = offset + chunkSize > candidateIds.length
+            ? candidateIds.length
+            : offset + chunkSize;
+        final chunk = candidateIds.sublist(offset, end);
+        final placeholders = List<String>.filled(chunk.length, '?').join(', ');
+        final recoveredRows = await txn.rawQuery(
+          'SELECT id FROM recovered_unlinked_messages '
+          'WHERE id IN ($placeholders)',
+          chunk,
+        );
+
+        for (final row in recoveredRows) {
+          final messageId = row['id'] as int?;
+          final chatId = messageId == null
+              ? null
+              : messageIdToChatId[messageId];
+          if (messageId == null || chatId == null) {
+            continue;
+          }
+
+          await txn.rawInsert(
+            'INSERT OR REPLACE INTO messages ( '
+            'id, source_rowid, guid, chat_id, sender_handle_id, service, '
+            'is_from_me, date_utc, date_read_utc, date_delivered_utc, '
+            'subject, text, attributed_body_blob, raw_item_type, '
+            'raw_associated_message_type, message_summary_info_blob, '
+            'payload_data_blob, has_attributed_body_source, '
+            'has_message_summary_info, has_payload_data_source, item_type, '
+            'error_code, is_system_message, thread_originator_guid, '
+            'associated_message_guid, balloon_bundle_id, payload_json, '
+            'batch_id'
+            ' ) '
+            'SELECT '
+            'id, source_rowid, guid, ?, sender_handle_id, service, '
+            'is_from_me, date_utc, date_read_utc, date_delivered_utc, '
+            'subject, text, attributed_body_blob, raw_item_type, '
+            'raw_associated_message_type, message_summary_info_blob, '
+            'payload_data_blob, has_attributed_body_source, '
+            'has_message_summary_info, has_payload_data_source, item_type, '
+            'error_code, is_system_message, thread_originator_guid, '
+            'associated_message_guid, balloon_bundle_id, payload_json, ? '
+            'FROM recovered_unlinked_messages WHERE id = ?',
+            <Object>[chatId, batchId, messageId],
+          );
+
+          await txn.rawInsert(
+            'INSERT OR REPLACE INTO message_attachments '
+            '(message_id, attachment_id, source_rowid) '
+            'SELECT message_id, attachment_id, source_rowid '
+            'FROM recovered_unlinked_message_attachments '
+            'WHERE message_id = ?',
+            <Object>[messageId],
+          );
+
+          await txn.delete(
+            'recovered_unlinked_messages',
+            where: 'id = ?',
+            whereArgs: <Object>[messageId],
+          );
+          promotedIds.add(messageId);
+        }
+      }
+    });
+
+    return promotedIds;
+  }
+
   Future<void> updateMessageText({
     required int messageId,
     required String text,

@@ -129,12 +129,12 @@ Future<void> _pumpPlaceholder({
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
-      child: MacosApp(
+      child: const MacosApp(
         home: MacosWindow(
           child: SizedBox(
             width: 960,
             height: 720,
-            child: const RecoveredUnlinkedMessagesPlaceholderView(contactId: 7),
+            child: RecoveredUnlinkedMessagesPlaceholderView(contactId: 7),
           ),
         ),
       ),
@@ -210,7 +210,7 @@ List<RecoveredUnlinkedMessageItem> _buildRecoveredMessages() {
       hasAttachments: true,
       attachmentCount: 1,
       attachments: <AttachmentInfo>[
-        AttachmentInfo(
+        const AttachmentInfo(
           id: 501,
           localPath: null,
           mimeType: 'image/png',

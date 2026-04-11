@@ -6,7 +6,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../essentials/debug/application/developer_mode_provider.dart';
 import '../../domain/value_objects/message_timeline_scope.dart';
 
-class ContactTimelineScrollProbe {
+mixin ContactTimelineScrollProbe {
   static const Duration _flushDelay = Duration(milliseconds: 1200);
 
   static final Stopwatch _sessionStopwatch = Stopwatch();

@@ -15,46 +15,22 @@ import '../domain/sidebar_mode.dart';
 import '../feature_level_providers.dart';
 import './panel_coordinator_provider.dart';
 
-// Import the sidebar feature barrel to access cassette widget coordinator and
-// card. The provider (cassetteWidgetCoordinatorProvider) exposes the list of
-// cassette widgets that compose the sidebar. We wrap these in a Column to
-// produce the left panel surface.
+// Import the sidebar feature barrel for rack state, cassette resolution, and
+// render helpers used to compose the left panel surface.
 
 part 'panel_widget_providers.g.dart';
 
-bool isPinnedAppControlCassette(Widget widget) {
-  final cassetteCard = unwrapSidebarCassetteCard(widget);
-  return cassetteCard != null &&
-      cassetteCard.role == SidebarCassetteRole.appControl;
+bool isPinnedAppControlCassette(ResolvedSidebarCassette resolvedCassette) {
+  return resolvedCassette.payload.role == SidebarCassetteRole.appControl;
 }
 
-bool shouldExpandSidebarCassette(Widget widget) {
-  final cassetteCard = unwrapSidebarCassetteCard(widget);
-  return cassetteCard?.shouldExpand ?? false;
-}
-
-SidebarCassetteCard? unwrapSidebarCassetteCard(Widget widget) {
-  var current = widget;
-
-  while (current is Padding) {
-    final child = current.child;
-    if (child == null) {
-      return null;
-    }
-    current = child;
-  }
-
-  if (current is SidebarCassetteCard) {
-    return current;
-  }
-
-  return null;
-}
-
-@riverpod
-void reconcileSidebarPanels(Ref ref, SidebarMode mode) {
-  // Phase 3 derivation owns right-panel visibility. This provider remains as a
-  // compatibility hook and no longer mutates panel state during normal runtime.
+bool shouldExpandSidebarCassette(ResolvedSidebarCassette resolvedCassette) {
+  return switch (resolvedCassette.payload) {
+    PlacementGovernedSidebarCassettePayload(:final shouldExpand) =>
+      shouldExpand,
+    SharedBodyModelSidebarCassettePayload(:final shouldExpand) => shouldExpand,
+    SidebarCassettePayload() => false,
+  };
 }
 
 @riverpod
@@ -399,76 +375,28 @@ bool _isCenterSpecCompatibleWithSidebar({
   );
 }
 
-/// Widget provider for left panel (sidebar).
+/// Widget provider for the left sidebar surface.
 ///
-/// This provider builds the left panel by reading the current list of
-/// cassette widgets from [CassetteWidgetCoordinator].  The resulting list
-/// is wrapped in a [Column] so that the cassettes are laid out vertically.
+/// The host reads the aggregate per-cassette resolution state for the current
+/// rack and renders only when the visible rack is complete. Per-cassette
+/// providers preserve previously resolved values during same-rack reloads,
+/// while structural rack changes still blank until the new rack is fully
+/// resolved.
 ///
-/// ## Async Handling Strategy
-///
-/// The [CassetteWidgetCoordinator] returns `AsyncValue<List<Widget>>` because
-/// feature-side spec coordinators may need to fetch data from repositories
-/// (e.g., contact counts, derived values, async formatting).
-///
-/// We use a **stale-while-revalidate** pattern here:
-///
-/// 1. **Initial load**: Show a loading indicator until the first cassette list
-///    resolves. This only happens once per sidebar mode on app startup or when
-///    the mode changes.
-///
-/// 2. **Subsequent updates**: Keep displaying the previous cassette list while
-///    the new list builds asynchronously. This prevents jarring full-sidebar
-///    reloads when the user interacts with a cassette (e.g., toggles a setting,
-///    selects a filter).
-///
-/// 3. **Errors**: Currently logged but not displayed. The previous valid state
-///    is preserved. Future enhancement: consider a subtle error toast or badge.
-///
-/// ## Why `valueOrNull` instead of `when()`?
-///
-/// Using `asyncCassettes.valueOrNull` with explicit state checks gives us more
-/// control than `AsyncValue.when()`:
-///
-/// - **Easier to add loading overlays**: We can later add a subtle progress
-///   indicator (e.g., a thin bar at the top) without restructuring the code.
-///
-/// - **Partial update support**: If we ever want to show incremental cassette
-///   updates (e.g., stream-based), this pattern accommodates that.
-///
-/// - **Cleaner error handling**: We can log errors and preserve the UI without
-///   forcing an error widget into the layout.
-///
-/// - **No callback nesting**: The linear flow is easier to read and extend.
-///
-/// ## Future Extension Points
-///
-/// - **Loading indicator overlay**: Add a `Stack` with an `AnimatedOpacity`
-///   progress bar that fades in during `isLoading && hasValue`.
-///
-/// - **Per-cassette loading**: If individual cassettes need independent async
-///   states, consider returning `List<AsyncValue<Widget>>` from the coordinator
-///   and handling loading per-slot.
-///
-/// - **Error recovery UI**: Add a "Retry" affordance or error badge that
-///   appears when `hasError` is true but we're still showing stale data.
-///
-/// - **Optimistic updates**: For user-initiated changes (e.g., toggling a
-///   setting), consider updating the UI optimistically before the async
-///   operation completes.
+/// Errors are logged but do not currently surface user-visible recovery UI.
 @riverpod
 Widget leftPanelWidget(Ref ref, SidebarMode mode) {
   final contextualWidget = ref.watch(contextualSidebarWidgetProvider(mode));
   final rack = ref.watch(cassetteRackStateProvider(mode));
-  final asyncResolvedCassettes = ref.watch(
-    cassetteWidgetCoordinatorProvider(mode),
+  final resolutionState = ref.watch(
+    sidebarCassetteResolutionStateProvider(mode),
   );
 
   return _buildLeftPanelSurface(
     mode: mode,
     rack: rack,
     contextualWidget: contextualWidget,
-    asyncResolvedCassettes: asyncResolvedCassettes,
+    resolutionState: resolutionState,
     logError: (error, stackTrace) {
       ref
           .read(appLoggerProvider.notifier)
@@ -484,15 +412,15 @@ Widget leftPanelWidget(Ref ref, SidebarMode mode) {
 Widget _buildLeftPanelFromWidgetRef(WidgetRef ref, SidebarMode mode) {
   final contextualWidget = ref.watch(contextualSidebarWidgetProvider(mode));
   final rack = ref.watch(cassetteRackStateProvider(mode));
-  final asyncResolvedCassettes = ref.watch(
-    cassetteWidgetCoordinatorProvider(mode),
+  final resolutionState = ref.watch(
+    sidebarCassetteResolutionStateProvider(mode),
   );
 
   return _buildLeftPanelSurface(
     mode: mode,
     rack: rack,
     contextualWidget: contextualWidget,
-    asyncResolvedCassettes: asyncResolvedCassettes,
+    resolutionState: resolutionState,
     logError: (error, stackTrace) {
       ref
           .read(appLoggerProvider.notifier)
@@ -509,31 +437,32 @@ Widget _buildLeftPanelSurface({
   required SidebarMode mode,
   required CassetteRack rack,
   required Widget? contextualWidget,
-  required AsyncValue<List<ResolvedSidebarCassette>> asyncResolvedCassettes,
+  required SidebarCassetteResolutionState resolutionState,
   required void Function(Object error, StackTrace? stackTrace) logError,
 }) {
-  final cassetteWidgets = buildResolvedSidebarCassetteWidgets(
-    mode: mode,
-    resolvedCassettes:
-        asyncResolvedCassettes.valueOrNull ?? const <ResolvedSidebarCassette>[],
-  );
-  final sidebarWidgets = contextualWidget == null
-      ? cassetteWidgets
-      : <Widget>[...cassetteWidgets, contextualWidget];
+  final cassetteEntries =
+      <({ResolvedSidebarCassette resolvedCassette, Widget widget})>[
+        for (final resolvedCassette in resolutionState.resolvedCassettes)
+          (
+            resolvedCassette: resolvedCassette,
+            widget: buildResolvedSidebarCassetteWidget(
+              mode: mode,
+              resolvedCassette: resolvedCassette,
+            ),
+          ),
+      ];
 
   // Log errors for debugging but don't disrupt the UI.
   //
   // Future enhancement: Consider surfacing errors via a toast, badge, or
 
   // subtle inline indicator rather than silently swallowing them.
-  if (asyncResolvedCassettes.hasError) {
+  for (final error in resolutionState.errors) {
     // TODO(sidebar): Add user-visible error indicator or recovery UI.
-    logError(asyncResolvedCassettes.error!, asyncResolvedCassettes.stackTrace);
+    logError(error.error, error.stackTrace);
   }
 
-  // Prefer correctness over stale sidebar UI. Structural transitions should
-  // blank to loading rather than keep previously mounted cassette subtrees.
-  if (asyncResolvedCassettes.isLoading || !asyncResolvedCassettes.hasValue) {
+  if (!resolutionState.hasCompleteResolvedRack) {
     return const Center(child: CircularProgressIndicator.adaptive());
   }
 
@@ -543,7 +472,10 @@ Widget _buildLeftPanelSurface({
   // (e.g., showing cassette actions on hover).
   return MouseRegion(
     key: ValueKey<String>('left-panel-$mode-${rack.cassettes.join('|')}'),
-    child: _LeftSidebarSurface(cassetteWidgets: sidebarWidgets),
+    child: _LeftSidebarSurface(
+      cassetteEntries: cassetteEntries,
+      contextualWidget: contextualWidget,
+    ),
   );
 }
 
@@ -582,9 +514,14 @@ class RightPanelHost extends ConsumerWidget {
 
 /// Sidebar surface that separates pinned controls from scrollable content.
 class _LeftSidebarSurface extends StatelessWidget {
-  const _LeftSidebarSurface({required this.cassetteWidgets});
+  const _LeftSidebarSurface({
+    required this.cassetteEntries,
+    required this.contextualWidget,
+  });
 
-  final List<Widget> cassetteWidgets;
+  final List<({ResolvedSidebarCassette resolvedCassette, Widget widget})>
+  cassetteEntries;
+  final Widget? contextualWidget;
 
   @override
   Widget build(BuildContext context) {
@@ -594,13 +531,15 @@ class _LeftSidebarSurface extends StatelessWidget {
         final content = <({Widget widget, bool shouldExpand})>[];
         var encounteredMainContent = false;
 
-        for (final widget in cassetteWidgets) {
+        for (final entry in cassetteEntries) {
           final constrained = ConstrainedBox(
             constraints: BoxConstraints(maxWidth: constraints.maxWidth),
-            child: widget,
+            child: entry.widget,
           );
 
-          final isPinnedControlCandidate = isPinnedAppControlCassette(widget);
+          final isPinnedControlCandidate = isPinnedAppControlCassette(
+            entry.resolvedCassette,
+          );
 
           // Only keep the leading control block pinned. Once main content
           // starts, preserve the authored cassette order even if later items
@@ -610,11 +549,21 @@ class _LeftSidebarSurface extends StatelessWidget {
           } else {
             encounteredMainContent = true;
 
-            // SidebarCassetteCard carries its own shouldExpand flag.
-            // All other widget types default to false (intrinsic height).
-            final shouldExpand = shouldExpandSidebarCassette(widget);
+            final shouldExpand = shouldExpandSidebarCassette(
+              entry.resolvedCassette,
+            );
             content.add((widget: constrained, shouldExpand: shouldExpand));
           }
+        }
+
+        if (contextualWidget case final contextualWidgetValue?) {
+          content.add((
+            widget: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: constraints.maxWidth),
+              child: contextualWidgetValue,
+            ),
+            shouldExpand: false,
+          ));
         }
 
         final hasExpandingContent = content.any((c) => c.shouldExpand);

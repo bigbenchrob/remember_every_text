@@ -130,39 +130,93 @@ gate for that phase has been satisfied.
       Status 2026-04-07: the payload tripwire remains focused on forbidden runtime
       UI types, and the current sidebar payload base plus feature payload files are
       widget-free and callback-free.
-- [ ] Any temporary adapter can be removed without behavior change
-      Status 2026-04-07: the attempt to move chooser readiness into the shared
-      cassette coordinator caused relaunch-time sidebar flicker and a sidebar
-      spinner, so the chooser now upgrades its loading payload from the
-      feature-owned snapshot at the render edge again. This keeps startup
-      stable, but the temporary chooser adapter is still present and Phase 1
-      cannot claim this gate complete yet.
+- [x] Any temporary adapter can be removed without behavior change
+      Status 2026-04-09: the shared sidebar layer now resolves cassettes
+      independently instead of funnelling the whole rack through one async
+      value, so the chooser-specific render-edge snapshot upgrade has been
+      removed again. Focused sidebar/navigation and chooser coordinator tests
+      are green, and live runtime verification confirmed the picker still
+      appears and works in the sidebar with the adapter-free path.
 - [x] Focused tests pass
       Status 2026-04-07: the documented focused baseline suite was rerun after
       the chooser snapshot/payload cleanup and remained green at 71 passed,
       0 failed across sidebar, panel, message timeline, recovered timeline,
       message card, and attachment snapshot surfaces.
-- [ ] Live picker behavior is deterministic
+- [x] Live picker behavior is deterministic
+      Status 2026-04-09: live runtime verification confirmed that the picker
+      appears and works in the sidebar after restoring the adapter-free path on
+      top of the per-cassette shared resolution flow.
 
 ## Phase 2 - Collapse Panel Writing to a Single Path
 
-- [ ] Separate flow-managed center-panel behavior from sidebar-independent panel
+- [x] Separate flow-managed center-panel behavior from sidebar-independent panel
       behavior
-- [ ] Replace normal center-panel mutation path with derivation from
+      Status 2026-04-08: effective center rendering remains derived from
+      `SidebarFlowState.projectedCenterSpec`, sidebar-independent and
+      compatible non-flow surfaces still ride the stored center stack, and the
+      flow notifier now clears incompatible stored flow-managed center pages at
+      transition time so the two ownership modes do not leak into each other.
+- [x] Replace normal center-panel mutation path with derivation from
       `SidebarFlowState.projectedCenterSpec`
-- [ ] Restrict flow-managed `PanelStack` usage to render-container behavior only
-- [ ] Remove `_syncProjectedCenterPanel()` from normal execution
-- [ ] Remove `_schedulePanelClearIfNoProjectedCenter()` from normal execution
-- [ ] Demote or delete `reconcileSidebarPanels(...)` as active repair logic
-- [ ] Verify no renamed or wrapped helper preserves the same repair behavior
-- [ ] Verify canonical flow state predicts the flow-managed center surface
+      Status 2026-04-08: the active contacts/messages sidebar flow now routes
+      through `SidebarFlowState.projectedCenterSpec` and the effective center
+      panel providers rather than imperative center-panel writes. The remaining
+      direct center writes are sidebar-independent or non-flow navigation
+      surfaces, not the canonical messages flow.
+- [x] Restrict flow-managed `PanelStack` usage to render-container behavior only
+      Status 2026-04-08: focused navigation tests now prove that a conflicting
+      stored flow-managed messages page cannot override the derived effective
+      center spec, and overlay/observer logic reads the effective center spec
+      instead of the raw stored center stack.
+- [x] Remove `_syncProjectedCenterPanel()` from normal execution
+      Status 2026-04-08: the legacy helper is no longer present anywhere in
+      `lib` or `test`; flow-managed center projection now runs through
+      `SidebarFlowState.projectedCenterSpec` and the effective center panel
+      providers instead.
+- [x] Remove `_schedulePanelClearIfNoProjectedCenter()` from normal execution
+      Status 2026-04-08: the old clear-helper name is no longer present
+      anywhere in `lib` or `test`; center clearing is no longer driven by a
+      sidebar-flow repair hook.
+- [x] Demote or delete `reconcileSidebarPanels(...)` as active repair logic
+      Status 2026-04-08: the compatibility provider has been removed from
+      normal execution and focused sidebar/navigation tests now watch the
+      effective derived center/right panel providers directly instead of a
+      no-op reconciliation hook.
+- [x] Verify no renamed or wrapped helper preserves the same repair behavior
+      Status 2026-04-08: the remaining messages-mode center show/clear sites
+      are direct user or system navigation entry points (toolbar import /
+      onboarding, chat selection, date-range jumps, stray-handle lens) rather
+      than hidden sidebar-flow repair helpers. Feature-side readers that only
+      need the active center meaning now consume `effectiveCenterPanelSpec`
+      instead of inspecting the stored center stack directly.
+- [x] Verify canonical flow state predicts the flow-managed center surface
+      Status 2026-04-08: `effectiveCenterPanelSpec` is now the shared source
+      for panel-state reasoning in the parked overlay and onboarding observer,
+      and focused tests prove canonical flow wins over conflicting stored
+      flow-managed center pages.
 
 ### Phase 2 gate
 
-- [ ] No stale center content can persist after branch transitions
-- [ ] `PanelStack` cannot retain incompatible flow-managed center meaning
-- [ ] Focused sidebar/navigation tests pass
-- [ ] Manual "Change contact..." scenario clears by derivation, not rescue logic
+- [x] No stale center content can persist after branch transitions
+      Status 2026-04-08: focused sidebar flow tests now cover
+      `chooseAnotherContact()` with a conflicting stored flow-managed center
+      page already present and confirm both the effective center surface and
+      the stored center stack clear on the branch reset.
+- [x] `PanelStack` cannot retain incompatible flow-managed center meaning
+      Status 2026-04-08: flow-managed messages pages that diverge from the
+      canonical projected center spec are now cleared at the single
+      `SidebarFlow` transition point, preventing stale contact/global/recovered
+      meanings from lingering in the stored center stack.
+- [x] Focused sidebar/navigation tests pass
+      Status 2026-04-08: focused Phase 2 coverage is green across the derived
+      center/right provider tests, sidebar flow/action dispatch tests, the
+      onboarding center sync observer tests, and the stray-handles review
+      cassette regression that now reads `effectiveCenterPanelSpec` instead of
+      the stored center stack. Latest focused rerun: 32 passed, 0 failed.
+- [x] Manual "Change contact..." scenario clears by derivation, not rescue logic
+      Status 2026-04-08: manual runtime validation confirmed that the Change
+      Contact flow clears both the center panel and end sidebar cleanly with no
+      visible stale content or rescue-style repair behavior.
 
 ## Phase 3 - Enforce Right-Panel Derivation
 
@@ -266,23 +320,36 @@ gate for that phase has been satisfied.
 
 ## Phase 5 - Remove Widget-Based Layout Inference
 
-- [ ] Move pinned/expand/layout decisions into explicit descriptor data
-- [ ] Remove widget-unwrapping helpers from the sidebar host
-- [ ] Prove layout can be computed from resolved descriptors only
-- [ ] Add layout-contract regression tests
+- [x] Move pinned/expand/layout decisions into explicit descriptor data
+- [x] Remove widget-unwrapping helpers from the sidebar host
+- [x] Prove layout can be computed from resolved descriptors only
+- [x] Add layout-contract regression tests
 
 ### Phase 5 gate
 
-- [ ] `unwrapSidebarCassetteCard(...)` removed
-- [ ] Widget inspection is no longer required for sidebar layout
-- [ ] Visual layout remains correct in runtime checks
+- [x] `unwrapSidebarCassetteCard(...)` removed
+- [x] Widget inspection is no longer required for sidebar layout
+- [x] Visual layout remains correct in runtime checks
 
 ## Phase 6 - Final Hardening and Fail-Fast Invariants
 
-- [ ] Add or preserve fail-fast assertions for impossible cross-surface states
-- [ ] Remove remaining compatibility shims for broken pathways
+- [x] Add or preserve fail-fast assertions for impossible cross-surface states
+- [x] Remove remaining compatibility shims for broken pathways
+      Status 2026-04-10: the stale chooser temporary exception has been
+      removed from tracking, the shared sidebar layer now depends only on the
+      feature-owned `contactChooserCassetteStateProvider`, and essentials no
+      longer reach into contacts-internal chooser resolver tools or invalidation
+      paths.
 - [ ] Re-run the full focused suite and manual scenario matrix
-- [ ] Document any residual debt explicitly
+      Status 2026-04-10: the documented focused suite reran green at 119
+      passed, 0 failed across sidebar, panel, message timeline, recovered
+      timeline, message card, and attachment surfaces. Manual scenario-matrix
+      verification still remains.
+- [x] Document any residual debt explicitly
+      Status 2026-04-10: no active runtime compatibility shims or temporary
+      exceptions remain. The remaining Phase 6 debt is explicit and non-code:
+      complete the manual scenario matrix and confirm the mandatory PR review
+      rubric was applied to each refactor PR.
 - [ ] Confirm PR review rubric was applied to every refactor PR
 
 ### Final gate

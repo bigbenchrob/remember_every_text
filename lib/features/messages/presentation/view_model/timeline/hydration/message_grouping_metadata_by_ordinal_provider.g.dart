@@ -7,7 +7,7 @@ part of 'message_grouping_metadata_by_ordinal_provider.dart';
 // **************************************************************************
 
 String _$messageGroupingMetadataByTimelineOrdinalHash() =>
-    r'95aace89f1994d814bbdbb272e9df266acc84b16';
+    r'4787703b731b6d0608ee69e7e1eb5fa40cff3c84';
 
 /// Copied from Dart SDK
 class _SystemHash {

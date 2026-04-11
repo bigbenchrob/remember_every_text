@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../features/contacts/application/sidebar_cassette_spec/resolver_tools/filtered_picker_sections_provider.dart';
 import '../../../features/contacts/domain/spec_classes/contacts_cassette_spec.dart';
 import '../../../features/contacts/domain/spec_classes/contacts_settings_spec.dart';
 import '../../../features/contacts/infrastructure/repositories/recent_contacts_repository.dart';
@@ -223,7 +222,6 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
     final overlayDb = await ref.read(overlayDatabaseProvider.future);
     await overlayDb.trackContactAccess(contactId);
     ref.invalidate(recentContactsProvider);
-    ref.invalidate(filteredPickerSectionsProvider);
   }
 
   void _invalidateStrayHandleProviders() {

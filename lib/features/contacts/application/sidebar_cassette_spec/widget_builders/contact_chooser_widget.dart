@@ -6,68 +6,27 @@ import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../constants/domain/contact_constants.dart';
 import '../payloads/contact_chooser_cassette_payload.dart';
-import '../resolver_tools/contact_chooser_snapshot_provider.dart';
 import 'contact_flat_list_widget.dart';
 import 'contact_grouped_picker_widget.dart';
 
-/// Render-edge chooser body that upgrades a loading payload using the
-/// feature-owned chooser snapshot without invalidating the shared sidebar
-/// coordinator.
-class ContactChooserWidget extends ConsumerWidget {
+/// Render-edge chooser body built directly from the inert chooser payload.
+class ContactChooserWidget extends StatelessWidget {
   const ContactChooserWidget({super.key, required this.payload});
 
   final ContactChooserCassettePayload payload;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final snapshot = payload.loadState == ContactChooserLoadState.loading
-        ? ref.watch(contactChooserSnapshotProvider)
-        : null;
-    final effectiveLoadState = snapshot?.loadState ?? payload.loadState;
-
-    return switch (effectiveLoadState) {
+  Widget build(BuildContext context) {
+    return switch (payload.loadState) {
       ContactChooserLoadState.loading => const _ContactChooserLoadingState(),
       ContactChooserLoadState.error => const _ContactChooserErrorState(),
-      ContactChooserLoadState.ready => switch (_resolveReadyPayload(
-        snapshot: snapshot,
-      ).pickerMode!) {
-        ContactPickerMode.flat => ContactFlatListWidget(
-          payload: _resolveReadyPayload(snapshot: snapshot),
-        ),
+      ContactChooserLoadState.ready => switch (payload.pickerMode!) {
+        ContactPickerMode.flat => ContactFlatListWidget(payload: payload),
         ContactPickerMode.grouped => ContactGroupedPickerWidget(
-          payload: _resolveReadyPayload(snapshot: snapshot),
+          payload: payload,
         ),
       },
     };
-  }
-
-  ContactChooserCassettePayload _resolveReadyPayload({
-    required ContactChooserSnapshot? snapshot,
-  }) {
-    if (snapshot == null ||
-        snapshot.loadState != ContactChooserLoadState.ready) {
-      return payload;
-    }
-
-    return ContactChooserCassettePayload(
-      loadState: snapshot.loadState,
-      pickerMode: snapshot.pickerMode,
-      pickerFilterMode: snapshot.pickerFilterMode,
-      filteredSections: snapshot.filteredSections,
-      chosenContactId: payload.chosenContactId,
-      cassetteIndex: payload.cassetteIndex,
-      title: payload.title,
-      subtitle: payload.subtitle,
-      sectionTitle: payload.sectionTitle,
-      footerText: payload.footerText,
-      placementMode: payload.placementMode,
-      contentAlignment: payload.contentAlignment,
-      layoutStyle: payload.layoutStyle,
-      isNaked: payload.isNaked,
-      shouldExpand: payload.shouldExpand,
-      role: payload.role,
-      topSpacing: payload.topSpacing,
-    );
   }
 }
 

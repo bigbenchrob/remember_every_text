@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:remember_this_text/features/attachments/domain/constants/attachment_provenance.dart';
 import 'package:remember_this_text/features/attachments/domain/constants/resolved_attachment_availability.dart';
 import 'package:remember_this_text/features/messages/presentation/view_model/shared/display_widgets/new_display_widgets.dart';
 import 'package:remember_this_text/features/messages/presentation/view_model/shared/hydration/attachment_info.dart';
@@ -244,6 +245,254 @@ void main() {
         expect(find.text('Prioritize recovery'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'renders a Live source badge for unavailable image placeholders with a recorded path',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp(
+              home: Scaffold(
+                body: MessageCard(
+                  message: MessageListItem(
+                    id: 132296,
+                    chatId: 42,
+                    guid: 'guid-132296-live-placeholder',
+                    isFromMe: false,
+                    senderName: 'Alex',
+                    text: '[No text content]',
+                    sentAt: DateTime(2026, 3, 22, 10, 34),
+                    hasAttachments: true,
+                    attachments: const [
+                      AttachmentInfo(
+                        id: 6,
+                        localPath:
+                            '/tmp/unavailable-live-placeholder-image.jpg',
+                        mimeType: 'image/jpeg',
+                        transferName: 'unavailable-live-placeholder-image.jpg',
+                        availability: ResolvedAttachmentAvailability
+                            .unavailableAwaitingRecovery,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('Image in iCloud'), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey<String>('attachment-source-badge-Live')),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'renders a Backup source badge for unavailable video placeholders when provenance is known',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp(
+              home: Scaffold(
+                body: MessageCard(
+                  message: MessageListItem(
+                    id: 1322961,
+                    chatId: 42,
+                    guid: 'guid-132296-backup-placeholder',
+                    isFromMe: false,
+                    senderName: 'Alex',
+                    text: '[No text content]',
+                    sentAt: DateTime(2026, 3, 22, 10, 34),
+                    hasAttachments: true,
+                    attachments: const [
+                      AttachmentInfo(
+                        id: 61,
+                        localPath: null,
+                        mimeType: 'video/quicktime',
+                        transferName: 'historical-placeholder.mov',
+                        availability: ResolvedAttachmentAvailability
+                            .unavailableAwaitingRecovery,
+                        provenance: AttachmentProvenance.importedHistorical,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('Video awaiting recovery'), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey<String>('attachment-source-badge-Backup')),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('renders a Live provenance badge for displayable images', (
+      tester,
+    ) async {
+      final tempDir = Directory.systemTemp.createTempSync(
+        'message_card_live_badge_',
+      );
+      addTearDown(() {
+        if (tempDir.existsSync()) {
+          tempDir.deleteSync(recursive: true);
+        }
+      });
+      final imageFile = File('${tempDir.path}/sample-live.png')
+        ..writeAsBytesSync(_transparentThumbnailBytes, flush: true);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: MessageCard(
+                message: MessageListItem(
+                  id: 132297,
+                  chatId: 42,
+                  guid: 'guid-132297',
+                  isFromMe: false,
+                  senderName: 'Alex',
+                  text: '[No text content]',
+                  sentAt: DateTime(2026, 3, 22, 10, 35),
+                  hasAttachments: true,
+                  attachments: [
+                    AttachmentInfo(
+                      id: 7,
+                      localPath: imageFile.path,
+                      mimeType: 'image/png',
+                      transferName: 'sample-live.png',
+                      resolvedDisplayPath: imageFile.path,
+                      availability: ResolvedAttachmentAvailability.available,
+                      provenance: AttachmentProvenance.messagesLive,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        find.byKey(const ValueKey<String>('attachment-source-badge-Live')),
+        findsOneWidget,
+      );
+      expect(find.text('Live'), findsOneWidget);
+    });
+
+    testWidgets('renders an Archive provenance badge for archived images', (
+      tester,
+    ) async {
+      final tempDir = Directory.systemTemp.createTempSync(
+        'message_card_archive_badge_',
+      );
+      addTearDown(() {
+        if (tempDir.existsSync()) {
+          tempDir.deleteSync(recursive: true);
+        }
+      });
+      final imageFile = File('${tempDir.path}/sample-archive.png')
+        ..writeAsBytesSync(_transparentThumbnailBytes, flush: true);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: MessageCard(
+                message: MessageListItem(
+                  id: 132298,
+                  chatId: 42,
+                  guid: 'guid-132298',
+                  isFromMe: true,
+                  senderName: 'You',
+                  text: '[No text content]',
+                  sentAt: DateTime(2026, 3, 22, 10, 36),
+                  hasAttachments: true,
+                  attachments: [
+                    AttachmentInfo(
+                      id: 8,
+                      localPath: imageFile.path,
+                      mimeType: 'image/png',
+                      transferName: 'sample-archive.png',
+                      resolvedDisplayPath: imageFile.path,
+                      availability: ResolvedAttachmentAvailability.available,
+                      provenance: AttachmentProvenance.archived,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        find.byKey(const ValueKey<String>('attachment-source-badge-Archive')),
+        findsOneWidget,
+      );
+      expect(find.text('Archive'), findsOneWidget);
+    });
+
+    testWidgets('renders a Backup provenance badge for historical images', (
+      tester,
+    ) async {
+      final tempDir = Directory.systemTemp.createTempSync(
+        'message_card_backup_badge_',
+      );
+      addTearDown(() {
+        if (tempDir.existsSync()) {
+          tempDir.deleteSync(recursive: true);
+        }
+      });
+      final imageFile = File('${tempDir.path}/sample-backup.png')
+        ..writeAsBytesSync(_transparentThumbnailBytes, flush: true);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: MessageCard(
+                message: MessageListItem(
+                  id: 132299,
+                  chatId: 42,
+                  guid: 'guid-132299',
+                  isFromMe: false,
+                  senderName: 'Alex',
+                  text: '[No text content]',
+                  sentAt: DateTime(2026, 3, 22, 10, 37),
+                  hasAttachments: true,
+                  attachments: [
+                    AttachmentInfo(
+                      id: 9,
+                      localPath: imageFile.path,
+                      mimeType: 'image/png',
+                      transferName: 'sample-backup.png',
+                      resolvedDisplayPath: imageFile.path,
+                      availability: ResolvedAttachmentAvailability.available,
+                      provenance: AttachmentProvenance.importedHistorical,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        find.byKey(const ValueKey<String>('attachment-source-badge-Backup')),
+        findsOneWidget,
+      );
+      expect(find.text('Backup'), findsOneWidget);
+    });
 
     testWidgets(
       'renders a lightweight video shell before explicit activation',

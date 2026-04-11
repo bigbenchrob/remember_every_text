@@ -34,19 +34,16 @@ class ContactChooserResolver extends _$ContactChooserResolver {
 
   /// Resolve the contact chooser cassette.
   ///
-  /// Returns an inert payload immediately so startup/sidebar coordination does
-  /// not wait on contact queries before rendering the already-known stack.
+  /// Returns the current chooser snapshot state as an inert payload.
   ///
-  /// If the chooser snapshot is already available, the payload includes that
-  /// ready/error state. Otherwise the render edge may upgrade a loading payload
-  /// from the same feature-owned snapshot provider without invalidating the
-  /// shared cassette coordinator.
+  /// The shared sidebar layer resolves cassettes independently, so chooser
+  /// readiness changes propagate through the shared payload path without
+  /// requiring a feature-local render-edge upgrade.
   Future<SidebarCassettePayload> resolve({
     required int? chosenContactId,
     required int cassetteIndex,
+    required ContactChooserSnapshot snapshot,
   }) async {
-    final snapshot = ref.read(contactChooserSnapshotProvider);
-
     return ContactChooserCassettePayload(
       loadState: snapshot.loadState,
       pickerMode: snapshot.pickerMode,

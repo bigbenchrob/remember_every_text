@@ -10,6 +10,31 @@ import '../../../essentials/db/infrastructure/data_sources/local/overlay/overlay
 part 'archive_settings_provider.g.dart';
 
 const _kArchiveEnabledKey = 'attachment_archive_enabled';
+const kArchiveSweepCursorKey = 'attachment_archive_sweep_cursor';
+const kArchiveSweepLastStartedAtUtcKey =
+    'attachment_archive_sweep_last_started_at_utc';
+const kArchiveSweepLastCompletedAtUtcKey =
+    'attachment_archive_sweep_last_completed_at_utc';
+const kArchiveSweepLastTotalScannedKey =
+    'attachment_archive_sweep_last_total_scanned';
+const kArchiveSweepLastNewlyArchivedKey =
+    'attachment_archive_sweep_last_newly_archived';
+const kArchiveSweepLastSkippedKey = 'attachment_archive_sweep_last_skipped';
+const kArchiveSweepLastFailedKey = 'attachment_archive_sweep_last_failed';
+const kArchiveManualSweepLastStartedAtUtcKey =
+    'attachment_archive_manual_sweep_last_started_at_utc';
+const kArchiveManualSweepLastCompletedAtUtcKey =
+    'attachment_archive_manual_sweep_last_completed_at_utc';
+const kArchiveManualSweepLastTotalScannedKey =
+    'attachment_archive_manual_sweep_last_total_scanned';
+const kArchiveManualSweepLastNewlyArchivedKey =
+    'attachment_archive_manual_sweep_last_newly_archived';
+const kArchiveManualSweepLastSkippedKey =
+    'attachment_archive_manual_sweep_last_skipped';
+const kArchiveManualSweepLastFailedKey =
+    'attachment_archive_manual_sweep_last_failed';
+const kArchiveManualSweepLastSkippedSamplesKey =
+    'attachment_archive_manual_sweep_last_skipped_samples';
 
 /// Manages the attachment archive user preferences.
 ///
@@ -28,11 +53,15 @@ class ArchiveSettings extends _$ArchiveSettings {
 
     // Compute archive stats from filesystem and overlay table.
     final stats = await _computeStats(archiveDir, overlayDb);
+    final sweepDebug = await _readSweepDebugState(overlayDb);
+    final manualSweepDebug = await _readManualSweepDebugState(overlayDb);
 
     return ArchiveSettingsState(
       isEnabled: enabled,
       archivedCount: stats.count,
       archiveSizeBytes: stats.sizeBytes,
+      sweepDebug: sweepDebug,
+      manualSweepDebug: manualSweepDebug,
     );
   }
 
@@ -129,6 +158,88 @@ class ArchiveSettings extends _$ArchiveSettings {
 
     return _ArchiveStats(count: count, sizeBytes: sizeBytes);
   }
+
+  static Future<ArchiveSweepDebugState> _readSweepDebugState(
+    OverlayDatabase overlayDb,
+  ) async {
+    return ArchiveSweepDebugState(
+      cursor: _parseInt(
+        await overlayDb.readOverlaySetting(kArchiveSweepCursorKey),
+      ),
+      lastStartedAtUtc: await overlayDb.readOverlaySetting(
+        kArchiveSweepLastStartedAtUtcKey,
+      ),
+      lastCompletedAtUtc: await overlayDb.readOverlaySetting(
+        kArchiveSweepLastCompletedAtUtcKey,
+      ),
+      lastTotalScanned: _parseInt(
+        await overlayDb.readOverlaySetting(kArchiveSweepLastTotalScannedKey),
+      ),
+      lastNewlyArchived: _parseInt(
+        await overlayDb.readOverlaySetting(kArchiveSweepLastNewlyArchivedKey),
+      ),
+      lastSkipped: _parseInt(
+        await overlayDb.readOverlaySetting(kArchiveSweepLastSkippedKey),
+      ),
+      lastFailed: _parseInt(
+        await overlayDb.readOverlaySetting(kArchiveSweepLastFailedKey),
+      ),
+    );
+  }
+
+  static Future<ArchiveSweepRunDebugState> _readManualSweepDebugState(
+    OverlayDatabase overlayDb,
+  ) async {
+    return ArchiveSweepRunDebugState(
+      lastStartedAtUtc: await overlayDb.readOverlaySetting(
+        kArchiveManualSweepLastStartedAtUtcKey,
+      ),
+      lastCompletedAtUtc: await overlayDb.readOverlaySetting(
+        kArchiveManualSweepLastCompletedAtUtcKey,
+      ),
+      lastTotalScanned: _parseInt(
+        await overlayDb.readOverlaySetting(
+          kArchiveManualSweepLastTotalScannedKey,
+        ),
+      ),
+      lastNewlyArchived: _parseInt(
+        await overlayDb.readOverlaySetting(
+          kArchiveManualSweepLastNewlyArchivedKey,
+        ),
+      ),
+      lastSkipped: _parseInt(
+        await overlayDb.readOverlaySetting(kArchiveManualSweepLastSkippedKey),
+      ),
+      lastFailed: _parseInt(
+        await overlayDb.readOverlaySetting(kArchiveManualSweepLastFailedKey),
+      ),
+      lastSkippedSamples: _parseLines(
+        await overlayDb.readOverlaySetting(
+          kArchiveManualSweepLastSkippedSamplesKey,
+        ),
+      ),
+    );
+  }
+
+  static int _parseInt(String? rawValue) {
+    if (rawValue == null || rawValue.isEmpty) {
+      return 0;
+    }
+
+    return int.tryParse(rawValue) ?? 0;
+  }
+
+  static List<String> _parseLines(String? rawValue) {
+    if (rawValue == null || rawValue.isEmpty) {
+      return const [];
+    }
+
+    return rawValue
+        .split('\n')
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .toList(growable: false);
+  }
 }
 
 class _ArchiveStats {
@@ -142,11 +253,15 @@ class ArchiveSettingsState {
     required this.isEnabled,
     required this.archivedCount,
     required this.archiveSizeBytes,
+    required this.sweepDebug,
+    required this.manualSweepDebug,
   });
 
   final bool isEnabled;
   final int archivedCount;
   final int archiveSizeBytes;
+  final ArchiveSweepDebugState sweepDebug;
+  final ArchiveSweepRunDebugState manualSweepDebug;
 
   String get formattedSize => _formatBytes(archiveSizeBytes);
 
@@ -162,4 +277,87 @@ class ArchiveSettingsState {
     }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
   }
+}
+
+class ArchiveSweepDebugState {
+  const ArchiveSweepDebugState({
+    required this.cursor,
+    required this.lastStartedAtUtc,
+    required this.lastCompletedAtUtc,
+    required this.lastTotalScanned,
+    required this.lastNewlyArchived,
+    required this.lastSkipped,
+    required this.lastFailed,
+  });
+
+  final int cursor;
+  final String? lastStartedAtUtc;
+  final String? lastCompletedAtUtc;
+  final int lastTotalScanned;
+  final int lastNewlyArchived;
+  final int lastSkipped;
+  final int lastFailed;
+
+  bool get hasCompletedRun => lastCompletedAtUtc != null;
+
+  String get lastStartedLabel => _formatTimestamp(lastStartedAtUtc);
+
+  String get lastCompletedLabel => _formatTimestamp(lastCompletedAtUtc);
+
+  String get lastResultLabel =>
+      'Scanned $lastTotalScanned, archived $lastNewlyArchived, '
+      'skipped $lastSkipped, failed $lastFailed';
+
+  static String _formatTimestamp(String? rawValue) {
+    if (rawValue == null || rawValue.isEmpty) {
+      return 'Never';
+    }
+
+    final parsed = DateTime.tryParse(rawValue);
+    if (parsed == null) {
+      return rawValue;
+    }
+
+    final local = parsed.toLocal();
+    final year = local.year.toString().padLeft(4, '0');
+    final month = local.month.toString().padLeft(2, '0');
+    final day = local.day.toString().padLeft(2, '0');
+    final hour = local.hour.toString().padLeft(2, '0');
+    final minute = local.minute.toString().padLeft(2, '0');
+    final second = local.second.toString().padLeft(2, '0');
+
+    return '$year-$month-$day $hour:$minute:$second';
+  }
+}
+
+class ArchiveSweepRunDebugState {
+  const ArchiveSweepRunDebugState({
+    required this.lastStartedAtUtc,
+    required this.lastCompletedAtUtc,
+    required this.lastTotalScanned,
+    required this.lastNewlyArchived,
+    required this.lastSkipped,
+    required this.lastFailed,
+    required this.lastSkippedSamples,
+  });
+
+  final String? lastStartedAtUtc;
+  final String? lastCompletedAtUtc;
+  final int lastTotalScanned;
+  final int lastNewlyArchived;
+  final int lastSkipped;
+  final int lastFailed;
+  final List<String> lastSkippedSamples;
+
+  bool get hasCompletedRun => lastCompletedAtUtc != null;
+
+  String get lastStartedLabel =>
+      ArchiveSweepDebugState._formatTimestamp(lastStartedAtUtc);
+
+  String get lastCompletedLabel =>
+      ArchiveSweepDebugState._formatTimestamp(lastCompletedAtUtc);
+
+  String get lastResultLabel =>
+      'Scanned $lastTotalScanned, archived $lastNewlyArchived, '
+      'skipped $lastSkipped, failed $lastFailed';
 }

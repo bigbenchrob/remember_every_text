@@ -12,7 +12,9 @@ import 'package:remember_this_text/essentials/sidebar/application/cassette_rack_
 import 'package:remember_this_text/essentials/sidebar/application/cassette_widget_coordinator_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/application/sidebar_flow_state_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/domain/entities/cassette_spec.dart';
-import 'package:remember_this_text/essentials/sidebar/presentation/view/sidebar_cassette_card.dart';
+import 'package:remember_this_text/essentials/sidebar/domain/sidebar_action_intent.dart';
+import 'package:remember_this_text/essentials/sidebar/domain/sidebar_body_model.dart';
+import 'package:remember_this_text/essentials/sidebar/domain/sidebar_body_option.dart';
 import 'package:remember_this_text/essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 import 'package:remember_this_text/features/contacts/domain/spec_classes/contacts_cassette_spec.dart';
 import 'package:remember_this_text/features/contacts/domain/spec_classes/contacts_info_cassette_spec.dart';
@@ -21,61 +23,164 @@ import 'package:remember_this_text/features/messages/application/view_spec/coord
 import 'package:remember_this_text/features/messages/domain/spec_classes/messages_view_spec.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
 
-void main() {
-  group('isPinnedAppControlCassette', () {
-    test('returns true only for app control cassette cards', () {
-      final appControlCard = SidebarCassetteCard(
-        title: '',
-        role: SidebarCassetteRole.appControl,
-        isNaked: true,
-        child: const SizedBox.shrink(),
+final _testSidebarResolutionStateProvider =
+    StateProvider<SidebarCassetteResolutionState>((ref) {
+      return const SidebarCassetteResolutionState(
+        resolvedCassettes: <ResolvedSidebarCassette>[],
+        expectedVisibleCount: 0,
+        isLoading: false,
       );
-      final contextCard = SidebarCassetteCard(
-        title: '',
-        role: SidebarCassetteRole.contextPrimary,
-        isNaked: true,
-        child: const SizedBox.shrink(),
-      );
-
-      expect(isPinnedAppControlCassette(appControlCard), isTrue);
-      expect(isPinnedAppControlCassette(contextCard), isFalse);
-      expect(isPinnedAppControlCassette(const SizedBox.shrink()), isFalse);
     });
 
-    test('unwraps padded cassette cards before checking pinned role', () {
-      final wrappedAppControlCard = Padding(
-        padding: const EdgeInsets.only(top: 8),
-        child: SidebarCassetteCard(
-          title: '',
+void main() {
+  group('isPinnedAppControlCassette', () {
+    test('returns true only for app-control resolved cassettes', () {
+      final appControlCassette = _resolvedCassette(
+        payload: const StaticFeatureInfoSidebarCassettePayload(
+          bodyText: 'top-menu',
           role: SidebarCassetteRole.appControl,
-          isNaked: true,
-          child: const SizedBox.shrink(),
+        ),
+      );
+      final contextCassette = _resolvedCassette(
+        payload: const StaticFeatureInfoSidebarCassettePayload(
+          bodyText: 'context',
+          role: SidebarCassetteRole.contextPrimary,
         ),
       );
 
-      expect(isPinnedAppControlCassette(wrappedAppControlCard), isTrue);
+      expect(isPinnedAppControlCassette(appControlCassette), isTrue);
+      expect(isPinnedAppControlCassette(contextCassette), isFalse);
     });
   });
 
   group('shouldExpandSidebarCassette', () {
-    test('unwraps padded cassette cards before checking expansion', () {
-      final wrappedExpandingCard = Padding(
-        padding: const EdgeInsets.only(top: 8),
-        child: SidebarCassetteCard(
-          title: '',
+    test('reads expansion directly from resolved cassette payloads', () {
+      final expandingCassette = _resolvedCassette(
+        payload: const SharedBodyModelSidebarCassettePayload(
+          bodyModel: SidebarInfoBodyModel(bodyText: 'body'),
           shouldExpand: true,
-          child: const SizedBox.shrink(),
         ),
       );
-      final wrappedIntrinsicCard = Padding(
-        padding: const EdgeInsets.only(top: 8),
-        child: SidebarCassetteCard(title: '', child: const SizedBox.shrink()),
+      final intrinsicCassette = _resolvedCassette(
+        payload: const SharedBodyModelSidebarCassettePayload(
+          bodyModel: SidebarInfoBodyModel(bodyText: 'body'),
+        ),
+      );
+      final infoCassette = _resolvedCassette(
+        payload: const StaticFeatureInfoSidebarCassettePayload(
+          bodyText: 'info',
+        ),
       );
 
-      expect(shouldExpandSidebarCassette(wrappedExpandingCard), isTrue);
-      expect(shouldExpandSidebarCassette(wrappedIntrinsicCard), isFalse);
-      expect(shouldExpandSidebarCassette(const SizedBox.shrink()), isFalse);
+      expect(shouldExpandSidebarCassette(expandingCassette), isTrue);
+      expect(shouldExpandSidebarCassette(intrinsicCassette), isFalse);
+      expect(shouldExpandSidebarCassette(infoCassette), isFalse);
     });
+  });
+
+  group('left sidebar layout contract', () {
+    testWidgets(
+      'pins app controls and uses expanding layout from descriptors',
+      (tester) async {
+        const topMenuSpec = CassetteSpec.sidebarUtility(
+          SidebarUtilityCassetteSpec.topChatMenu(),
+        );
+        const heroSpec = CassetteSpec.contacts(
+          ContactsCassetteSpec.contactHeroSummary(chosenContactId: 42),
+        );
+        final container = ProviderContainer(
+          overrides: [
+            workingDbPopulatedProvider.overrideWith(
+              _AlwaysPopulatedWorkingDb.new,
+            ),
+            sidebarCassetteResolutionStateProvider(
+              SidebarMode.messages,
+            ).overrideWith((ref) {
+              return ref.watch(_testSidebarResolutionStateProvider);
+            }),
+          ],
+        );
+        final rackSubscription = container.listen(
+          cassetteRackStateProvider(SidebarMode.messages),
+          (_, __) {},
+          fireImmediately: true,
+        );
+        final resolutionSubscription = container.listen(
+          sidebarCassetteResolutionStateProvider(SidebarMode.messages),
+          (_, __) {},
+          fireImmediately: true,
+        );
+
+        container
+            .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
+            .setRack([topMenuSpec, heroSpec]);
+        container
+            .read(_testSidebarResolutionStateProvider.notifier)
+            .state = const SidebarCassetteResolutionState(
+          resolvedCassettes: <ResolvedSidebarCassette>[
+            ResolvedSidebarCassette(
+              spec: topMenuSpec,
+              cassetteIndex: 0,
+              payload: StaticFeatureInfoSidebarCassettePayload(
+                bodyText: 'top-menu',
+                role: SidebarCassetteRole.appControl,
+              ),
+            ),
+            ResolvedSidebarCassette(
+              spec: heroSpec,
+              cassetteIndex: 1,
+              payload: SharedBodyModelSidebarCassettePayload(
+                bodyModel: SidebarDropdownBodyModel(
+                  promptLabel: '',
+                  selectedOptionId: 'hero',
+                  options: <SidebarDropdownOption>[
+                    SidebarDropdownOption(
+                      id: 'hero',
+                      label: 'hero',
+                      selectionIntent: ChooseAnotherContact(),
+                    ),
+                  ],
+                ),
+                shouldExpand: true,
+              ),
+            ),
+          ],
+          expectedVisibleCount: 2,
+          isLoading: false,
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const Directionality(
+              textDirection: TextDirection.ltr,
+              child: LeftPanelHost(mode: SidebarMode.messages),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('top-menu'), findsOneWidget);
+        expect(find.text('hero'), findsOneWidget);
+        expect(find.byType(CustomScrollView), findsNothing);
+        expect(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is Expanded &&
+                widget.child.runtimeType.toString() == '_ContentFillColumn',
+          ),
+          findsOneWidget,
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        resolutionSubscription.close();
+        rackSubscription.close();
+        await tester.idle();
+        container.dispose();
+        await tester.pump();
+      },
+    );
   });
 
   group('effectiveCenterPanelSpec', () {
@@ -169,6 +274,49 @@ void main() {
 
       container.dispose();
     });
+
+    test(
+      'stored flow-managed center cannot override projected center spec',
+      () {
+        final container = ProviderContainer(
+          overrides: [
+            workingDbPopulatedProvider.overrideWith(
+              _AlwaysPopulatedWorkingDb.new,
+            ),
+          ],
+        );
+
+        container.read(sidebarFlowProvider.notifier).showGlobalTimeline();
+        container
+            .read(panelsViewStateProvider(SidebarMode.messages).notifier)
+            .show(
+              panel: WindowPanel.center,
+              spec: const ViewSpec.messages(
+                MessagesSpec.forContact(contactId: 42),
+              ),
+            );
+
+        expect(
+          container.read(
+            effectiveCenterPanelSpecProvider(SidebarMode.messages),
+          ),
+          equals(const ViewSpec.messages(MessagesSpec.globalTimeline())),
+        );
+        expect(
+          container
+              .read(
+                panelsViewStateProvider(SidebarMode.messages),
+              )[WindowPanel.center]
+              ?.activePage
+              ?.spec,
+          equals(
+            const ViewSpec.messages(MessagesSpec.forContact(contactId: 42)),
+          ),
+        );
+
+        container.dispose();
+      },
+    );
   });
 
   group('effectiveRightPanelSpec', () {
@@ -291,30 +439,181 @@ void main() {
   });
 
   group('panel host coordination', () {
+    testWidgets('keeps prior sidebar content during same-rack async reloads', (
+      tester,
+    ) async {
+      const chooserSpec = CassetteSpec.contacts(
+        ContactsCassetteSpec.contactChooser(),
+      );
+      final container = ProviderContainer(
+        overrides: [
+          workingDbPopulatedProvider.overrideWith(
+            _AlwaysPopulatedWorkingDb.new,
+          ),
+          sidebarCassetteResolutionStateProvider(
+            SidebarMode.messages,
+          ).overrideWith((ref) {
+            return ref.watch(_testSidebarResolutionStateProvider);
+          }),
+        ],
+      );
+      final rackSubscription = container.listen(
+        cassetteRackStateProvider(SidebarMode.messages),
+        (_, __) {},
+        fireImmediately: true,
+      );
+      final resolutionSubscription = container.listen(
+        sidebarCassetteResolutionStateProvider(SidebarMode.messages),
+        (_, __) {},
+        fireImmediately: true,
+      );
+      addTearDown(rackSubscription.close);
+      addTearDown(resolutionSubscription.close);
+      container
+          .read(_testSidebarResolutionStateProvider.notifier)
+          .state = const SidebarCassetteResolutionState(
+        resolvedCassettes: <ResolvedSidebarCassette>[
+          ResolvedSidebarCassette(
+            spec: chooserSpec,
+            cassetteIndex: 0,
+            payload: StaticFeatureInfoSidebarCassettePayload(
+              bodyText: 'loading-payload',
+            ),
+          ),
+        ],
+        expectedVisibleCount: 1,
+        isLoading: false,
+      );
+
+      container
+          .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
+          .setRack([chooserSpec]);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const Directionality(
+            textDirection: TextDirection.ltr,
+            child: LeftPanelHost(mode: SidebarMode.messages),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('loading-payload'), findsOneWidget);
+
+      container
+          .read(_testSidebarResolutionStateProvider.notifier)
+          .state = const SidebarCassetteResolutionState(
+        resolvedCassettes: <ResolvedSidebarCassette>[
+          ResolvedSidebarCassette(
+            spec: chooserSpec,
+            cassetteIndex: 0,
+            payload: StaticFeatureInfoSidebarCassettePayload(
+              bodyText: 'loading-payload',
+            ),
+          ),
+        ],
+        expectedVisibleCount: 1,
+        isLoading: true,
+      );
+      await tester.pump();
+
+      expect(find.text('loading-payload'), findsOneWidget);
+
+      container
+          .read(_testSidebarResolutionStateProvider.notifier)
+          .state = const SidebarCassetteResolutionState(
+        resolvedCassettes: <ResolvedSidebarCassette>[
+          ResolvedSidebarCassette(
+            spec: chooserSpec,
+            cassetteIndex: 0,
+            payload: StaticFeatureInfoSidebarCassettePayload(
+              bodyText: 'ready-payload',
+            ),
+          ),
+        ],
+        expectedVisibleCount: 1,
+        isLoading: false,
+      );
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const Directionality(
+            textDirection: TextDirection.ltr,
+            child: LeftPanelHost(mode: SidebarMode.messages),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('ready-payload'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 1));
+      container.dispose();
+      await tester.pump(const Duration(milliseconds: 1));
+    });
+
     testWidgets(
       'center host removes rendered contact panel after choosing another contact',
       (tester) async {
+        const topMenuSpec = CassetteSpec.sidebarUtility(
+          SidebarUtilityCassetteSpec.topChatMenu(),
+        );
+        const pickerInfoSpec = CassetteSpec.contactsInfo(
+          ContactsInfoCassetteSpec.infoCard(
+            key: ContactsInfoKey.pickerContentSources,
+          ),
+        );
         final container = ProviderContainer(
           overrides: [
             workingDbPopulatedProvider.overrideWith(
               _AlwaysPopulatedWorkingDb.new,
             ),
-            cassetteWidgetCoordinatorProvider(
+            sidebarCassetteResolutionStateProvider(
               SidebarMode.messages,
-            ).overrideWith(_DelayedCassetteWidgetCoordinator.new),
+            ).overrideWith((ref) {
+              return ref.watch(_testSidebarResolutionStateProvider);
+            }),
             messages_view_spec.viewSpecCoordinatorProvider.overrideWith(
               _FakeMessagesViewSpecCoordinator.new,
             ),
           ],
         );
+        final rackSubscription = container.listen(
+          cassetteRackStateProvider(SidebarMode.messages),
+          (_, __) {},
+          fireImmediately: true,
+        );
+        final resolutionSubscription = container.listen(
+          sidebarCassetteResolutionStateProvider(SidebarMode.messages),
+          (_, __) {},
+          fireImmediately: true,
+        );
+        addTearDown(rackSubscription.close);
+        addTearDown(resolutionSubscription.close);
+        container
+            .read(_testSidebarResolutionStateProvider.notifier)
+            .state = const SidebarCassetteResolutionState(
+          resolvedCassettes: <ResolvedSidebarCassette>[
+            ResolvedSidebarCassette(
+              spec: topMenuSpec,
+              cassetteIndex: 0,
+              payload: StaticFeatureInfoSidebarCassettePayload(
+                bodyText: 'top-menu',
+                role: SidebarCassetteRole.appControl,
+              ),
+            ),
+          ],
+          expectedVisibleCount: 1,
+          isLoading: false,
+        );
 
         container
             .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-            .setRack([
-              const CassetteSpec.sidebarUtility(
-                SidebarUtilityCassetteSpec.topChatMenu(),
-              ),
-            ]);
+            .setRack([topMenuSpec]);
 
         await tester.pumpWidget(
           UncontrolledProviderScope(
@@ -331,54 +630,138 @@ void main() {
 
         container
             .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-            .setRack([
-              const CassetteSpec.sidebarUtility(
-                SidebarUtilityCassetteSpec.topChatMenu(),
+            .setRack([topMenuSpec, pickerInfoSpec]);
+        container
+            .read(_testSidebarResolutionStateProvider.notifier)
+            .state = const SidebarCassetteResolutionState(
+          resolvedCassettes: <ResolvedSidebarCassette>[
+            ResolvedSidebarCassette(
+              spec: topMenuSpec,
+              cassetteIndex: 0,
+              payload: StaticFeatureInfoSidebarCassettePayload(
+                bodyText: 'top-menu',
+                role: SidebarCassetteRole.appControl,
               ),
-              const CassetteSpec.contactsInfo(
-                ContactsInfoCassetteSpec.infoCard(
-                  key: ContactsInfoKey.pickerContentSources,
-                ),
-              ),
-            ]);
+            ),
+          ],
+          expectedVisibleCount: 2,
+          isLoading: true,
+        );
 
         await tester.pump();
 
         expect(find.text('top-menu'), findsNothing);
         expect(find.text('picker'), findsNothing);
 
-        await tester.pump(const Duration(milliseconds: 20));
+        container
+            .read(_testSidebarResolutionStateProvider.notifier)
+            .state = const SidebarCassetteResolutionState(
+          resolvedCassettes: <ResolvedSidebarCassette>[
+            ResolvedSidebarCassette(
+              spec: topMenuSpec,
+              cassetteIndex: 0,
+              payload: StaticFeatureInfoSidebarCassettePayload(
+                bodyText: 'top-menu',
+                role: SidebarCassetteRole.appControl,
+              ),
+            ),
+            ResolvedSidebarCassette(
+              spec: pickerInfoSpec,
+              cassetteIndex: 1,
+              payload: StaticFeatureInfoSidebarCassettePayload(
+                bodyText: 'picker',
+              ),
+            ),
+          ],
+          expectedVisibleCount: 2,
+          isLoading: false,
+        );
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const Directionality(
+              textDirection: TextDirection.ltr,
+              child: LeftPanelHost(mode: SidebarMode.messages),
+            ),
+          ),
+        );
+        await tester.pump();
         await tester.pump();
 
         expect(find.text('picker'), findsOneWidget);
 
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 1));
         container.dispose();
+        await tester.pump(const Duration(milliseconds: 1));
       },
     );
 
     testWidgets(
       'does not reuse picker widgets during selected-contact transition',
       (tester) async {
+        const topMenuSpec = CassetteSpec.sidebarUtility(
+          SidebarUtilityCassetteSpec.topChatMenu(),
+        );
+        const pickerInfoSpec = CassetteSpec.contactsInfo(
+          ContactsInfoCassetteSpec.infoCard(
+            key: ContactsInfoKey.pickerContentSources,
+          ),
+        );
+        const heroSpec = CassetteSpec.contacts(
+          ContactsCassetteSpec.contactHeroSummary(chosenContactId: 42),
+        );
         final container = ProviderContainer(
           overrides: [
-            cassetteWidgetCoordinatorProvider(
+            workingDbPopulatedProvider.overrideWith(
+              _AlwaysPopulatedWorkingDb.new,
+            ),
+            sidebarCassetteResolutionStateProvider(
               SidebarMode.messages,
-            ).overrideWith(_PickerToHeroCassetteWidgetCoordinator.new),
+            ).overrideWith((ref) {
+              return ref.watch(_testSidebarResolutionStateProvider);
+            }),
           ],
+        );
+        final rackSubscription = container.listen(
+          cassetteRackStateProvider(SidebarMode.messages),
+          (_, __) {},
+          fireImmediately: true,
+        );
+        final resolutionSubscription = container.listen(
+          sidebarCassetteResolutionStateProvider(SidebarMode.messages),
+          (_, __) {},
+          fireImmediately: true,
+        );
+        addTearDown(rackSubscription.close);
+        addTearDown(resolutionSubscription.close);
+        container
+            .read(_testSidebarResolutionStateProvider.notifier)
+            .state = const SidebarCassetteResolutionState(
+          resolvedCassettes: <ResolvedSidebarCassette>[
+            ResolvedSidebarCassette(
+              spec: topMenuSpec,
+              cassetteIndex: 0,
+              payload: StaticFeatureInfoSidebarCassettePayload(
+                bodyText: 'top-menu',
+                role: SidebarCassetteRole.appControl,
+              ),
+            ),
+            ResolvedSidebarCassette(
+              spec: pickerInfoSpec,
+              cassetteIndex: 1,
+              payload: StaticFeatureInfoSidebarCassettePayload(
+                bodyText: 'picker',
+              ),
+            ),
+          ],
+          expectedVisibleCount: 2,
+          isLoading: false,
         );
 
         container
             .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-            .setRack([
-              const CassetteSpec.sidebarUtility(
-                SidebarUtilityCassetteSpec.topChatMenu(),
-              ),
-              const CassetteSpec.contactsInfo(
-                ContactsInfoCassetteSpec.infoCard(
-                  key: ContactsInfoKey.pickerContentSources,
-                ),
-              ),
-            ]);
+            .setRack([topMenuSpec, pickerInfoSpec]);
 
         await tester.pumpWidget(
           UncontrolledProviderScope(
@@ -395,135 +778,73 @@ void main() {
 
         container
             .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-            .setRack([
-              const CassetteSpec.sidebarUtility(
-                SidebarUtilityCassetteSpec.topChatMenu(),
+            .setRack([topMenuSpec, heroSpec]);
+        container
+            .read(_testSidebarResolutionStateProvider.notifier)
+            .state = const SidebarCassetteResolutionState(
+          resolvedCassettes: <ResolvedSidebarCassette>[
+            ResolvedSidebarCassette(
+              spec: topMenuSpec,
+              cassetteIndex: 0,
+              payload: StaticFeatureInfoSidebarCassettePayload(
+                bodyText: 'top-menu',
+                role: SidebarCassetteRole.appControl,
               ),
-              const CassetteSpec.contacts(
-                ContactsCassetteSpec.contactHeroSummary(chosenContactId: 42),
-              ),
-            ]);
+            ),
+          ],
+          expectedVisibleCount: 2,
+          isLoading: true,
+        );
 
         await tester.pump();
 
         expect(find.text('picker'), findsNothing);
         expect(find.text('hero'), findsNothing);
 
-        await tester.pump(const Duration(milliseconds: 20));
+        container
+            .read(_testSidebarResolutionStateProvider.notifier)
+            .state = const SidebarCassetteResolutionState(
+          resolvedCassettes: <ResolvedSidebarCassette>[
+            ResolvedSidebarCassette(
+              spec: topMenuSpec,
+              cassetteIndex: 0,
+              payload: StaticFeatureInfoSidebarCassettePayload(
+                bodyText: 'top-menu',
+                role: SidebarCassetteRole.appControl,
+              ),
+            ),
+            ResolvedSidebarCassette(
+              spec: heroSpec,
+              cassetteIndex: 1,
+              payload: StaticFeatureInfoSidebarCassettePayload(
+                bodyText: 'hero',
+              ),
+            ),
+          ],
+          expectedVisibleCount: 2,
+          isLoading: false,
+        );
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const Directionality(
+              textDirection: TextDirection.ltr,
+              child: LeftPanelHost(mode: SidebarMode.messages),
+            ),
+          ),
+        );
+        await tester.pump();
         await tester.pump();
 
         expect(find.text('hero'), findsOneWidget);
 
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 1));
         container.dispose();
+        await tester.pump(const Duration(milliseconds: 1));
       },
     );
   });
-}
-
-class _DelayedCassetteWidgetCoordinator extends CassetteWidgetCoordinator {
-  @override
-  Future<List<ResolvedSidebarCassette>> build(SidebarMode mode) async {
-    final rack = ref.watch(cassetteRackStateProvider(mode));
-
-    if (rack.cassettes.length == 1) {
-      return <ResolvedSidebarCassette>[
-        ResolvedSidebarCassette(
-          spec: rack.cassettes.first,
-          cassetteIndex: 0,
-          payload: const StaticFeatureInfoSidebarCassettePayload(
-            bodyText: 'top-menu',
-            role: SidebarCassetteRole.appControl,
-          ),
-        ),
-      ];
-    }
-
-    await Future<void>.delayed(const Duration(milliseconds: 10));
-    return <ResolvedSidebarCassette>[
-      ResolvedSidebarCassette(
-        spec: rack.cassettes.last,
-        cassetteIndex: rack.cassettes.length - 1,
-        payload: const StaticFeatureInfoSidebarCassettePayload(
-          bodyText: 'picker',
-        ),
-      ),
-    ];
-  }
-}
-
-class _PickerToHeroCassetteWidgetCoordinator extends CassetteWidgetCoordinator {
-  @override
-  Future<List<ResolvedSidebarCassette>> build(SidebarMode mode) async {
-    final rack = ref.watch(cassetteRackStateProvider(mode));
-    final trailingSpec = rack.cassettes.last;
-
-    final isPicker = trailingSpec.maybeWhen(
-      contactsInfo: (infoSpec) {
-        return infoSpec.maybeWhen(
-          infoCard: (key, _) {
-            return key == ContactsInfoKey.pickerContentSources;
-          },
-          orElse: () {
-            return false;
-          },
-        );
-      },
-      orElse: () {
-        return false;
-      },
-    );
-
-    if (isPicker) {
-      return <ResolvedSidebarCassette>[
-        ResolvedSidebarCassette(
-          spec: trailingSpec,
-          cassetteIndex: rack.cassettes.length - 1,
-          payload: const StaticFeatureInfoSidebarCassettePayload(
-            bodyText: 'picker',
-          ),
-        ),
-      ];
-    }
-
-    final isHero = trailingSpec.maybeWhen(
-      contacts: (contactsSpec) {
-        return contactsSpec.maybeWhen(
-          contactHeroSummary: (_) {
-            return true;
-          },
-          orElse: () {
-            return false;
-          },
-        );
-      },
-      orElse: () {
-        return false;
-      },
-    );
-
-    if (isHero) {
-      await Future<void>.delayed(const Duration(milliseconds: 10));
-      return <ResolvedSidebarCassette>[
-        ResolvedSidebarCassette(
-          spec: trailingSpec,
-          cassetteIndex: rack.cassettes.length - 1,
-          payload: const StaticFeatureInfoSidebarCassettePayload(
-            bodyText: 'hero',
-          ),
-        ),
-      ];
-    }
-
-    return <ResolvedSidebarCassette>[
-      ResolvedSidebarCassette(
-        spec: trailingSpec,
-        cassetteIndex: rack.cassettes.length - 1,
-        payload: const StaticFeatureInfoSidebarCassettePayload(
-          bodyText: 'unexpected',
-        ),
-      ),
-    ];
-  }
 }
 
 class _AlwaysPopulatedWorkingDb extends WorkingDbPopulated {
@@ -531,6 +852,19 @@ class _AlwaysPopulatedWorkingDb extends WorkingDbPopulated {
   bool build() {
     return true;
   }
+}
+
+ResolvedSidebarCassette _resolvedCassette({
+  required SidebarCassettePayload payload,
+}) {
+  return ResolvedSidebarCassette(
+    spec: const CassetteSpec.sidebarUtility(
+      SidebarUtilityCassetteSpec.settingsMenu(),
+    ),
+    cassetteIndex: 0,
+    payload: payload,
+    topSpacing: payload.topSpacing,
+  );
 }
 
 class _FakeMessagesViewSpecCoordinator

@@ -30,29 +30,6 @@ class MessagesImporter extends BaseTableImporter with RowProgressReporter {
 
   @override
   Future<void> copy(IImportContext ctx) async {
-    final minRowId = ctx.previousMaxMessageRowId;
-    final rows = await ctx.messagesDb.query(
-      'message',
-      where: minRowId == null ? null : 'ROWID > ?',
-      whereArgs: minRowId == null ? null : <Object>[minRowId],
-      orderBy: 'ROWID ASC',
-    );
-
-    if (rows.isEmpty) {
-      ctx.info('MessagesImporter: no new messages detected.');
-      ctx.writeScratch('messages.inserted', 0);
-      ctx.writeScratch('messages.insertedIds', <int>[]);
-      ctx.writeScratch('messages.extractionCandidates', <int>[]);
-      ctx.writeScratch('messages.messageToChat', <String, int>{});
-      ctx.writeScratch('recoveredUnlinkedMessages.inserted', 0);
-      ctx.writeScratch('recoveredUnlinkedMessages.insertedIds', <int>[]);
-      ctx.writeScratch(
-        'recoveredUnlinkedMessages.extractionCandidates',
-        <int>[],
-      );
-      return;
-    }
-
     // Pre-load all chat_message_join mappings to avoid per-row queries.
     final chatJoinRows = await ctx.messagesDb.query(
       'chat_message_join',
@@ -67,14 +44,73 @@ class MessagesImporter extends BaseTableImporter with RowProgressReporter {
       }
     }
 
+    final minRowId = ctx.previousMaxMessageRowId;
+    final rows = await ctx.messagesDb.query(
+      'message',
+      where: minRowId == null ? null : 'ROWID > ?',
+      whereArgs: minRowId == null ? null : <Object>[minRowId],
+      orderBy: 'ROWID ASC',
+    );
+
     final insertedIds = <int>[];
     final extractionCandidates = <int>{};
     final messageToChat = <int, int>{};
     final recoveredInsertedIds = <int>[];
     final recoveredExtractionCandidates = <int>{};
 
+    final db = await ctx.importDb.database;
+    final recoveredRows = await db.rawQuery(
+      'SELECT id FROM recovered_unlinked_messages',
+    );
+    final recoveredMessageToChat = <int, int>{};
+    for (final recoveredRow in recoveredRows) {
+      final recoveredMessageId = recoveredRow['id'] as int?;
+      final chatId = recoveredMessageId == null
+          ? null
+          : chatIdByMessage[recoveredMessageId];
+      if (recoveredMessageId != null && chatId != null) {
+        recoveredMessageToChat[recoveredMessageId] = chatId;
+      }
+    }
+
+    final promotedIds = await ctx.importDb.promoteRecoveredMessagesToLinked(
+      messageIdToChatId: recoveredMessageToChat,
+      batchId: ctx.batchId,
+    );
+    if (promotedIds.isNotEmpty) {
+      insertedIds.addAll(promotedIds);
+      for (final promotedId in promotedIds) {
+        final chatId = recoveredMessageToChat[promotedId];
+        if (chatId != null) {
+          messageToChat[promotedId] = chatId;
+        }
+      }
+      ctx.info(
+        'MessagesImporter: promoted ${promotedIds.length} recovered '
+        'message(s) into linked messages.',
+      );
+    }
+
+    if (rows.isEmpty) {
+      ctx.info('MessagesImporter: no new messages detected.');
+      ctx.writeScratch('messages.inserted', insertedIds.length);
+      ctx.writeScratch('messages.insertedIds', insertedIds);
+      ctx.writeScratch('messages.extractionCandidates', <int>[]);
+      ctx.writeScratch(
+        'messages.messageToChat',
+        messageToChat.map((key, value) => MapEntry(key.toString(), value)),
+      );
+      ctx.writeScratch('recoveredUnlinkedMessages.inserted', 0);
+      ctx.writeScratch('recoveredUnlinkedMessages.insertedIds', <int>[]);
+      ctx.writeScratch(
+        'recoveredUnlinkedMessages.extractionCandidates',
+        <int>[],
+      );
+      return;
+    }
+
     var processed = 0;
-    var inserted = 0;
+    var inserted = insertedIds.length;
     var recoveredInserted = 0;
 
     for (final row in rows) {

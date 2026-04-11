@@ -1,21 +1,20 @@
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' show SelectableText;
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart' show SelectableText, Tooltip;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
+import '../../../../essentials/navigation/domain/navigation_constants.dart';
+import '../../../../essentials/navigation/domain/sidebar_mode.dart';
+import '../../../../essentials/navigation/feature_level_providers.dart';
 import '../../../attachments/application/attachment_resolver_provider.dart';
 import '../../../attachments/domain/constants/attachment_provenance.dart';
 import '../../../attachments/domain/constants/resolved_attachment_availability.dart';
 import '../../../attachments/domain/entities/resolved_attachment.dart';
-import '../../../../essentials/navigation/domain/navigation_constants.dart';
-import '../../../../essentials/navigation/domain/sidebar_mode.dart';
-import '../../../../essentials/navigation/feature_level_providers.dart';
 import '../../domain/entities/attachment_info.dart';
 
 class RecoveredAttachmentSidebarView extends ConsumerWidget {
@@ -103,6 +102,13 @@ class RecoveredAttachmentSidebarView extends ConsumerWidget {
                       color: colors.content.textSecondary,
                     ),
                   ),
+                  if (presentation.sourceLabel case final sourceLabel?) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    _RecoveredAttachmentSourceBadge(
+                      label: sourceLabel,
+                      tooltipMessage: presentation.sourceTooltipMessage!,
+                    ),
+                  ],
                   const SizedBox(height: AppSpacing.md),
                   _RecoveredAttachmentPreview(
                     attachment: attachment,
@@ -260,6 +266,8 @@ class _RecoveredAttachmentSidebarPresentation {
     required this.placeholderBody,
     required this.placeholderTitle,
     required this.previewFile,
+    required this.sourceLabel,
+    required this.sourceTooltipMessage,
   });
 
   factory _RecoveredAttachmentSidebarPresentation.from({
@@ -301,6 +309,8 @@ class _RecoveredAttachmentSidebarPresentation {
         hasRecordedPath: hasRecordedPath,
       ),
       previewFile: hasResolvedFile ? resolvedFile : null,
+      sourceLabel: _sourceLabel(provenance),
+      sourceTooltipMessage: _sourceTooltipMessage(provenance),
     );
   }
 
@@ -312,6 +322,8 @@ class _RecoveredAttachmentSidebarPresentation {
   final String placeholderBody;
   final String placeholderTitle;
   final File? previewFile;
+  final String? sourceLabel;
+  final String? sourceTooltipMessage;
 
   static Key _placeholderCardKey({
     required AttachmentInfo attachment,
@@ -420,6 +432,82 @@ class _RecoveredAttachmentSidebarPresentation {
       return 'Link preview attachment';
     }
     return 'Attachment';
+  }
+
+  static String? _sourceLabel(AttachmentProvenance? provenance) {
+    return switch (provenance) {
+      AttachmentProvenance.messagesLive => 'Live',
+      AttachmentProvenance.archived => 'Archive',
+      AttachmentProvenance.importedHistorical => 'Backup',
+      null => null,
+    };
+  }
+
+  static String? _sourceTooltipMessage(AttachmentProvenance? provenance) {
+    return switch (provenance) {
+      AttachmentProvenance.messagesLive =>
+        'Attachment source: Live Messages file',
+      AttachmentProvenance.archived => 'Attachment source: MessageLens archive',
+      AttachmentProvenance.importedHistorical =>
+        'Attachment source: recovered backup archive',
+      null => null,
+    };
+  }
+}
+
+class _RecoveredAttachmentSourceBadge extends ConsumerWidget {
+  const _RecoveredAttachmentSourceBadge({
+    required this.label,
+    required this.tooltipMessage,
+  });
+
+  final String label;
+  final String tooltipMessage;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final isLive = label == 'Live';
+    final isBackup = label == 'Backup';
+
+    return Tooltip(
+      message: tooltipMessage,
+      waitDuration: const Duration(milliseconds: 300),
+      child: DecoratedBox(
+        key: ValueKey<String>('recovered-attachment-source-badge-$label'),
+        decoration: BoxDecoration(
+          color: isLive
+              ? colors.surfaces.surface.withValues(alpha: 0.88)
+              : isBackup
+              ? colors.messagePanels.mutedTint
+              : colors.accents.primary.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: isLive
+                ? colors.lines.borderSubtle
+                : isBackup
+                ? colors.messagePanels.mutedBorder
+                : colors.accents.primary.withValues(alpha: 0.28),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Text(
+            label,
+            style: ref
+                .watch(themeTypographyProvider)
+                .caption1
+                .copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: isLive || isBackup
+                      ? colors.content.textSecondary
+                      : colors.accents.primary,
+                ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

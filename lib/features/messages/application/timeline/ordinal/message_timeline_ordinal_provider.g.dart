@@ -7,7 +7,7 @@ part of 'message_timeline_ordinal_provider.dart';
 // **************************************************************************
 
 String _$messageTimelineOrdinalHash() =>
-    r'b7ce914513684e00bcbe27009958f208445ba8ab';
+    r'afb82ce6d8a608537c426471633efc266944dbc7';
 
 /// Copied from Dart SDK
 class _SystemHash {

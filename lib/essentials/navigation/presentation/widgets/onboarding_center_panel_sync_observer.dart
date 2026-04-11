@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../features/environment_readiness/domain/spec_classes/environment_readiness_view_spec.dart';
 import '../../../onboarding/application/onboarding_gate_provider.dart';
 import '../../../onboarding/domain/onboarding_status.dart';
+import '../../application/panel_widget_providers.dart';
 import '../../application/panels_view_state_provider.dart';
 import '../../application/sidebar_mode_provider.dart';
 import '../../domain/entities/view_spec.dart';
@@ -17,9 +18,7 @@ class OnboardingCenterPanelSyncObserver extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final onboardingStatus = ref.watch(onboardingGateProvider);
     final centerSpec = ref.watch(
-      panelsViewStateProvider(
-        SidebarMode.messages,
-      ).select((stacks) => stacks[WindowPanel.center]?.activePage?.spec),
+      effectiveCenterPanelSpecProvider(SidebarMode.messages),
     );
 
     final shouldShowReadiness =

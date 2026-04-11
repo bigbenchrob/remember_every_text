@@ -1,0 +1,245 @@
+MessageLens context-anchor highlight token set
+
+Purpose
+
+These tokens define the visual treatment for a message card that is acting as the anchor between:
+	•	the search results list
+	•	the right-side message context panel
+
+The goal is to make the two corresponding cards feel unmistakably related without introducing visual clutter or breaking the calm macOS-style aesthetic.
+
+⸻
+
+Semantic state
+
+Use a dedicated semantic state for both cards:
+
+contextAnchor
+
+This state should apply to:
+	•	the originating message card in search results
+	•	the matching anchor card in the context sidebar
+
+It should not apply to neighboring contextual messages.
+
+⸻
+
+Core visual treatment
+
+The anchor state should combine four things:
+	•	a tinted background
+	•	a stronger border
+	•	a small identifying badge/icon
+	•	a short activation animation
+
+This should be implemented at the outer card container level, not as an underlay.
+
+⸻
+
+Token names
+
+Color tokens
+
+messageContextAnchorBackground
+	•	Purpose: shared tinted fill for both anchor cards
+	•	Recommendation: a soft cool tint, slightly stronger than standard selected-state fill, but still quiet
+	•	Target effect: clearly distinct from ordinary cards, not neon, not saturated
+
+messageContextAnchorBorder
+	•	Purpose: primary border color for the anchor card
+	•	Recommendation: same hue family as background tint, but substantially darker and clearer
+	•	Must be visually obvious in both light and dark mode
+
+messageContextAnchorBadgeBackground
+	•	Purpose: fill color for the small anchor badge or icon chip
+	•	Recommendation: same family as border color, slightly stronger than the card border
+
+messageContextAnchorBadgeForeground
+	•	Purpose: icon or glyph color inside the badge
+	•	Recommendation: high contrast against the badge background
+
+messageContextAnchorGlow
+	•	Purpose: optional glow / focus ring / pulse color during activation animation
+	•	Recommendation: derived from border color with reduced opacity
+
+⸻
+
+Border and shape tokens
+
+messageContextAnchorBorderWidth
+	•	Value: 2.0
+
+messageContextAnchorCornerRadius
+	•	Value: cardCornerRadius
+	•	Recommendation: do not invent a new radius; match the existing message card shape exactly
+
+messageContextAnchorInnerStrokeInset
+	•	Value: 0
+	•	Recommendation: border should align exactly with the card frame, not float loosely inside it
+
+⸻
+
+Background tokens
+
+messageContextAnchorTintOpacity
+	•	Light mode recommendation: 0.10 to 0.14
+	•	Dark mode recommendation: 0.16 to 0.22
+
+This is strong enough to register immediately, but not so strong that it looks like a warning or system selection.
+
+⸻
+
+Badge tokens
+
+messageContextAnchorBadgeSize
+	•	Value: 16
+
+messageContextAnchorBadgeCornerRadius
+	•	Value: 8
+
+messageContextAnchorBadgePlacement
+	•	Value: topTrailing
+
+messageContextAnchorBadgeInsetTop
+	•	Value: 10
+
+messageContextAnchorBadgeInsetTrailing
+	•	Value: 10
+
+messageContextAnchorBadgeIcon
+	•	Recommendation: magnifying glass, link glyph, or small target marker
+	•	Best thematic choice for MessageLens: magnifying glass
+
+messageContextAnchorBadgeOpacity
+	•	Value: 1.0
+
+The badge should be small and crisp, not decorative. Its job is recognition.
+
+⸻
+
+Shadow / elevation tokens
+
+messageContextAnchorShadowOpacity
+	•	Light mode recommendation: 0.10
+	•	Dark mode recommendation: 0.18
+
+messageContextAnchorShadowBlur
+	•	Value: 8
+
+messageContextAnchorShadowYOffset
+	•	Value: 1
+
+messageContextAnchorElevationDelta
+	•	Purpose: anchor cards should feel slightly lifted relative to ordinary cards
+	•	Recommendation: one elevation step above standard message cards, not dramatic
+
+If your system already has card elevation tokens, reuse them rather than inventing separate shadow logic.
+
+⸻
+
+Animation tokens
+
+messageContextAnchorPulseDuration
+	•	Value: 180ms
+
+messageContextAnchorPulseScaleFrom
+	•	Value: 1.0
+
+messageContextAnchorPulseScaleTo
+	•	Value: 1.012
+
+messageContextAnchorGlowFadeDuration
+	•	Value: 220ms
+
+messageContextAnchorActivationCurve
+	•	Recommendation: easeOut
+
+messageContextAnchorActivationDelayBetweenSourceAndTarget
+	•	Value: 70ms
+
+Interaction sequence recommendation:
+	•	source card pulses first
+	•	target card in sidebar pulses immediately after
+	•	both settle into persistent anchor styling
+
+This creates a visual handoff without feeling flashy.
+
+⸻
+
+Optional dimming tokens
+
+These are optional, but helpful if the highlight still feels too subtle.
+
+messageContextNonAnchorDimOpacity
+	•	Recommendation: 0.92 to 0.96
+
+messageContextNonAnchorContrastReduction
+	•	Recommendation: very slight only
+
+Use sparingly. Do not make neighboring messages look disabled. The goal is just to let the anchor stand forward a bit.
+
+⸻
+
+Behavioral rules
+
+Rule 1
+
+The anchor styling must appear on both instances of the same message at the same time.
+
+Rule 2
+
+The styling must be identical in both locations, except for layout-driven differences in card size.
+
+Rule 3
+
+The highlight must be applied to the card chrome itself, not drawn as a misaligned background layer.
+
+Rule 4
+
+The border must follow the exact rounded shape of the existing message card container.
+
+Rule 5
+
+The badge position must be consistent across both panels.
+
+Rule 6
+
+The activation animation should happen only when the user opens the contextual view, not continuously.
+
+Rule 7
+
+Hover, selection, and contextAnchor states must have a clear precedence order so they do not fight.
+
+Recommended precedence:
+drag/pressed > selected > contextAnchor > hover > normal
+
+If a card is both selected and a context anchor, selection may strengthen the border slightly, but the semantic anchor treatment must remain recognizable.
+
+⸻
+
+Practical default recipe
+
+If the agent wants one concrete default implementation, use this combination:
+	•	background tint: soft blue-gray accent wash
+	•	border: 2 px accent border
+	•	badge: 16 px circular or rounded-square magnifying glass chip at top trailing
+	•	shadow: one step stronger than normal card
+	•	animation: 180 ms pulse on source, then 180 ms pulse on target
+
+That will already be much better than the current underlay approach.
+
+⸻
+
+Suggested implementation naming
+
+If you want names that fit a structured token system, I would use:
+	•	ColorTokens.messageContextAnchorBackground
+	•	ColorTokens.messageContextAnchorBorder
+	•	ColorTokens.messageContextAnchorBadgeBackground
+	•	ColorTokens.messageContextAnchorBadgeForeground
+	•	MotionTokens.messageContextAnchorPulseDuration
+	•	MotionTokens.messageContextAnchorGlowFadeDuration
+	•	DimensionTokens.messageContextAnchorBorderWidth
+	•	DimensionTokens.messageContextAnchorBadgeSize
+	•	ElevationTokens.messageContextAnchor
+	•	StateTokens.contextAnchor
