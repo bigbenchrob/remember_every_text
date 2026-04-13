@@ -27,7 +27,7 @@ final attachmentArchiveMessagesDatabasePathProvider =
 typedef AttachmentArchiveMessagesDatabasePathRef =
     AutoDisposeFutureProviderRef<String>;
 String _$attachmentArchiveServiceHash() =>
-    r'891a38ce018c70d63c17b652c248a984f5faa71d';
+    r'bca226d4d28ac40d6c626a86b78fc1d563cded54';
 
 /// Service that copies attachment files into the MessageLens archive and
 /// records them in the overlay database.

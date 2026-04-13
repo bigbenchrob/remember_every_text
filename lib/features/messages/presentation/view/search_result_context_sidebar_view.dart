@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/spacing/app_spacing.dart';
@@ -8,11 +10,13 @@ import '../../../../config/theme/theme_typography.dart';
 import '../../../../essentials/navigation/domain/navigation_constants.dart';
 import '../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../essentials/navigation/feature_level_providers.dart';
+import '../../application/view_spec/resolver_tools/message_context_anchor_provider.dart';
 import '../../application/view_spec/resolver_tools/search_result_context_provider.dart';
 import '../view_model/shared/hydration/messages_for_handle_provider.dart';
 import '../widgets/message_card.dart';
+import '../widgets/message_context_anchor_chrome.dart';
 
-class SearchResultContextSidebarView extends ConsumerWidget {
+class SearchResultContextSidebarView extends HookConsumerWidget {
   const SearchResultContextSidebarView({
     required this.messageId,
     required this.chatId,
@@ -31,6 +35,7 @@ class SearchResultContextSidebarView extends ConsumerWidget {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
+    final activeContextAnchor = ref.watch(messageContextAnchorProvider);
     final contextAsync = ref.watch(
       searchResultContextProvider(
         messageId: messageId,
@@ -38,6 +43,50 @@ class SearchResultContextSidebarView extends ConsumerWidget {
         beforeCount: beforeCount,
         afterCount: afterCount,
       ),
+    );
+    final itemScrollController = useMemoized(ItemScrollController.new);
+    final lastAppliedAnchorKey = useRef<String?>(null);
+    final contextState = contextAsync.valueOrNull;
+    final visibleMessageCount = contextState == null
+        ? 0
+        : contextState.beforeMessages.length +
+              contextState.afterMessages.length +
+              (contextState.selectedMessage == null ? 0 : 1);
+    final anchorIndex = contextState?.selectedMessage == null
+        ? null
+        : contextState!.beforeMessages.length + 1;
+    final anchorActivationKey =
+        activeContextAnchor?.activationKey ??
+        '$chatId::$messageId::$beforeCount::$afterCount';
+
+    useEffect(
+      () {
+        if (contextState?.selectedMessage == null || anchorIndex == null) {
+          return null;
+        }
+
+        final scrollKey = '$anchorActivationKey::$visibleMessageCount';
+        if (lastAppliedAnchorKey.value == scrollKey) {
+          return null;
+        }
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!itemScrollController.isAttached) {
+            return;
+          }
+
+          itemScrollController.jumpTo(index: anchorIndex, alignment: 0.45);
+          lastAppliedAnchorKey.value = scrollKey;
+        });
+
+        return null;
+      },
+      [
+        anchorActivationKey,
+        anchorIndex,
+        contextState?.selectedMessage?.id,
+        visibleMessageCount,
+      ],
     );
 
     Future<void> closeSidebar() async {
@@ -109,31 +158,41 @@ class SearchResultContextSidebarView extends ConsumerWidget {
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Expanded(
-                  child: ListView.separated(
+                  child: ScrollablePositionedList.builder(
+                    key: const ValueKey<String>('search-result-context-list'),
+                    itemScrollController: itemScrollController,
                     itemCount: visibleMessages.length + 2,
-                    separatorBuilder: (_, __) =>
-                        const SizedBox(height: AppSpacing.sm),
                     itemBuilder: (context, index) {
                       if (index == 0) {
-                        return _ContextBoundaryHint(
-                          visible: state.hasMoreBefore,
-                          text: 'Earlier messages exist above this window.',
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                          child: _ContextBoundaryHint(
+                            visible: state.hasMoreBefore,
+                            text: 'Earlier messages exist above this window.',
+                          ),
                         );
                       }
 
                       if (index == visibleMessages.length + 1) {
-                        return _ContextBoundaryHint(
-                          visible: state.hasMoreAfter,
-                          text: 'Later messages exist below this window.',
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                          child: _ContextBoundaryHint(
+                            visible: state.hasMoreAfter,
+                            text: 'Later messages exist below this window.',
+                          ),
                         );
                       }
 
                       final message = visibleMessages[index - 1];
                       final isSelected = message.id == selectedMessage.id;
 
-                      return _ContextMessageCard(
-                        message: message,
-                        isSelected: isSelected,
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                        child: _ContextMessageCard(
+                          message: message,
+                          isSelected: isSelected,
+                          activationKey: anchorActivationKey,
+                        ),
                       );
                     },
                   ),
@@ -190,33 +249,25 @@ class SearchResultContextSidebarView extends ConsumerWidget {
 }
 
 class _ContextMessageCard extends ConsumerWidget {
-  const _ContextMessageCard({required this.message, required this.isSelected});
+  const _ContextMessageCard({
+    required this.message,
+    required this.isSelected,
+    required this.activationKey,
+  });
 
   final MessageListItem message;
   final bool isSelected;
+  final String activationKey;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(themeColorsProvider);
-    final colors = ref.read(themeColorsProvider.notifier);
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: isSelected
-            ? colors.messagePanels.selectionTint
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(14),
-        border: isSelected
-            ? Border.all(color: colors.messagePanels.accentBorderSoft)
-            : null,
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(isSelected ? 4 : 0),
-        child: MessageCard(
-          message: message,
-          layout: MessageCardLayout.analysis,
-        ),
-      ),
+    return MessageContextAnchorChrome(
+      isContextAnchor: isSelected,
+      isSelected: isSelected,
+      activationKey: activationKey,
+      activationDelay: const Duration(milliseconds: 70),
+      debugId: 'search-context-${message.id}',
+      child: MessageCard(message: message, layout: MessageCardLayout.analysis),
     );
   }
 }

@@ -49,6 +49,7 @@ PanelStack effectiveCenterPanelStack(Ref ref, SidebarMode mode) {
   final projectedCenterSpec = flowState.projectedCenterSpec;
 
   return _resolveEffectiveCenterStack(
+    ref: ref,
     flowState: flowState,
     centerStack: centerStack,
     projectedCenterSpec: projectedCenterSpec,
@@ -73,8 +74,14 @@ PanelStack effectiveRightPanelStack(Ref ref, SidebarMode mode) {
     return rightStack;
   }
 
+  final flowState = ref.watch(sidebarFlowProvider);
   final effectiveCenterSpec = ref.watch(effectiveCenterPanelSpecProvider(mode));
-  if (!_supportsRecoveredAttachmentSidebar(effectiveCenterSpec)) {
+  if (_shouldHideStoredRightPanel(
+    ref: ref,
+    flowState: flowState,
+    centerSpec: effectiveCenterSpec,
+    rightStack: rightStack,
+  )) {
     return const PanelStack.empty();
   }
 
@@ -204,12 +211,36 @@ bool _shouldShowRecoveredContextFor(SidebarFlowState flowState) {
       flowState.chosenContactId != null;
 }
 
+bool _shouldHideStoredRightPanel({
+  required Ref ref,
+  required SidebarFlowState flowState,
+  required ViewSpec? centerSpec,
+  required PanelStack rightStack,
+}) {
+  final rightSpec = rightStack.activePage?.spec;
+  if (rightSpec == null) {
+    return false;
+  }
+
+  if (!_supportsRecoveredAttachmentSidebar(centerSpec)) {
+    return true;
+  }
+
+  return !_isCenterSpecCompatibleWithSidebar(
+    ref: ref,
+    flowState: flowState,
+    centerSpec: rightSpec,
+  );
+}
+
 PanelStack _resolveEffectiveCenterStack({
+  required Ref ref,
   required SidebarFlowState flowState,
   required PanelStack centerStack,
   required ViewSpec? projectedCenterSpec,
 }) {
   if (_shouldUseStoredCenterStack(
+    ref: ref,
     flowState: flowState,
     centerStack: centerStack,
     projectedCenterSpec: projectedCenterSpec,
@@ -234,6 +265,7 @@ PanelStack _resolveEffectiveCenterStack({
 }
 
 bool _shouldUseStoredCenterStack({
+  required Ref ref,
   required SidebarFlowState flowState,
   required PanelStack centerStack,
   required ViewSpec? projectedCenterSpec,
@@ -252,6 +284,7 @@ bool _shouldUseStoredCenterStack({
   }
 
   return !_shouldResetCenterPanel(
+    ref: ref,
     flowState: flowState,
     centerSpec: centerSpec,
     projectedCenterSpec: projectedCenterSpec,
@@ -268,6 +301,7 @@ String _defaultPanelTitle(ViewSpec spec) {
 }
 
 bool _shouldResetCenterPanel({
+  required Ref ref,
   required SidebarFlowState flowState,
   required ViewSpec? centerSpec,
   required ViewSpec? projectedCenterSpec,
@@ -286,6 +320,7 @@ bool _shouldResetCenterPanel({
     }
 
     return !_isCenterSpecCompatibleWithSidebar(
+      ref: ref,
       flowState: flowState,
       centerSpec: centerSpec,
     );
@@ -300,6 +335,7 @@ bool _shouldResetCenterPanel({
   }
 
   return !_isCenterSpecCompatibleWithSidebar(
+    ref: ref,
     flowState: flowState,
     centerSpec: centerSpec,
   );
@@ -321,6 +357,7 @@ bool _isFlowManagedCenterSpec(ViewSpec spec) {
 }
 
 bool _isCenterSpecCompatibleWithSidebar({
+  required Ref ref,
   required SidebarFlowState flowState,
   required ViewSpec? centerSpec,
 }) {
@@ -361,7 +398,9 @@ bool _isCenterSpecCompatibleWithSidebar({
         },
         recoveredAttachmentViewer: (_, __) => true,
         searchResultContext: (_, __, ___, ____) {
-          return flowState.topMenuChoice == TopChatMenuChoice.searchAllMessages;
+          return flowState.topMenuChoice ==
+                  TopChatMenuChoice.searchAllMessages &&
+              _isGlobalTimelineSearchActive(ref);
         },
         handleLens: (_) {
           return flowState.topMenuChoice == TopChatMenuChoice.strayHandles;
@@ -373,6 +412,16 @@ bool _isCenterSpecCompatibleWithSidebar({
     environmentReadiness: (_) => true,
     onboarding: (_) => true,
   );
+}
+
+bool _isGlobalTimelineSearchActive(Ref ref) {
+  final globalTimelineViewModel = ref.watch(
+    messages_feature.messageTimelineViewModelProvider(
+      scope: const messages_feature.MessageTimelineScope.global(),
+    ),
+  );
+
+  return globalTimelineViewModel.isSearching;
 }
 
 /// Widget provider for the left sidebar surface.

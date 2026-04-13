@@ -20,6 +20,7 @@ import '../../../../essentials/navigation/domain/navigation_constants.dart';
 import '../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../essentials/navigation/feature_level_providers.dart';
 import '../../../contacts/infrastructure/repositories/contact_profile_provider.dart';
+import '../../application/view_spec/resolver_tools/message_context_anchor_provider.dart';
 import '../../domain/entities/attachment_info.dart' as message_domain;
 import '../../domain/value_objects/message_timeline_scope.dart';
 import '../../infrastructure/repositories/recovered_unlinked_messages_provider.dart';
@@ -35,6 +36,7 @@ import '../view_model/timeline/ordinal/current_visible_month_provider.dart';
 import '../view_model/timeline/ordinal/message_timeline_index_coordinator_provider.dart';
 import '../view_model/timeline/timeline_metadata_provider.dart';
 import '../widgets/message_card.dart';
+import '../widgets/message_context_anchor_chrome.dart';
 
 const Duration _contactMessageGroupingThreshold = Duration(minutes: 5);
 const double _contactPendingIndicatorLaneHeight = 28;
@@ -1763,12 +1765,21 @@ class _GlobalSearchResultCard extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final activeContextAnchor = ref.watch(messageContextAnchorProvider);
     final canShowContextAction =
         item.text.trim().isNotEmpty &&
         !_isMediaBoundaryMessage(_groupingMetadataForItem(item));
+    final isContextAnchor =
+        activeContextAnchor?.matches(messageId: item.id, chatId: item.chatId) ??
+        false;
 
     if (!canShowContextAction) {
-      return MessageCard(message: item, layout: MessageCardLayout.analysis);
+      return MessageContextAnchorChrome(
+        isContextAnchor: isContextAnchor,
+        activationKey: activeContextAnchor?.activationKey,
+        debugId: 'global-search-${item.id}',
+        child: MessageCard(message: item, layout: MessageCardLayout.analysis),
+      );
     }
 
     final isHovered = useState(false);
@@ -1780,12 +1791,19 @@ class _GlobalSearchResultCard extends HookConsumerWidget {
       onExit: (_) {
         isHovered.value = false;
       },
-      child: MessageCard(
-        message: item,
-        layout: MessageCardLayout.analysis,
-        inlineTextAction: _ContextSidebarIconAction(
-          item: item,
-          isRowHovered: isHovered.value,
+      child: MessageContextAnchorChrome(
+        isContextAnchor: isContextAnchor,
+        activationKey: activeContextAnchor?.activationKey,
+        debugId: 'global-search-${item.id}',
+        child: MessageCard(
+          message: item,
+          layout: MessageCardLayout.analysis,
+          inlineTextAction: isContextAnchor
+              ? null
+              : _ContextSidebarIconAction(
+                  item: item,
+                  isRowHovered: isHovered.value,
+                ),
         ),
       ),
     );

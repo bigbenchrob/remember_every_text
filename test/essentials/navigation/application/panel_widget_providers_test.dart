@@ -18,9 +18,12 @@ import 'package:remember_this_text/essentials/sidebar/domain/sidebar_body_option
 import 'package:remember_this_text/essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 import 'package:remember_this_text/features/contacts/domain/spec_classes/contacts_cassette_spec.dart';
 import 'package:remember_this_text/features/contacts/domain/spec_classes/contacts_info_cassette_spec.dart';
+import 'package:remember_this_text/features/messages/application/timeline/ordinal/message_timeline_ordinal_provider.dart';
 import 'package:remember_this_text/features/messages/application/view_spec/coordinators/view_spec_coordinator.dart'
     as messages_view_spec;
 import 'package:remember_this_text/features/messages/domain/spec_classes/messages_view_spec.dart';
+import 'package:remember_this_text/features/messages/domain/value_objects/message_timeline_scope.dart';
+import 'package:remember_this_text/features/messages/presentation/view_model/timeline/message_timeline_view_model_provider.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
 
 final _testSidebarResolutionStateProvider =
@@ -321,11 +324,15 @@ void main() {
 
   group('effectiveRightPanelSpec', () {
     test('derives stored right panel when effective center supports it', () {
+      const globalScope = MessageTimelineScope.global();
       final container = ProviderContainer(
         overrides: [
           workingDbPopulatedProvider.overrideWith(
             _AlwaysPopulatedWorkingDb.new,
           ),
+          messageTimelineViewModelProvider(
+            scope: globalScope,
+          ).overrideWith(_FakeSearchingGlobalTimelineViewModel.new),
         ],
       );
 
@@ -354,11 +361,15 @@ void main() {
     test(
       'flow-managed center change clears incompatible stored right panel',
       () {
+        const globalScope = MessageTimelineScope.global();
         final container = ProviderContainer(
           overrides: [
             workingDbPopulatedProvider.overrideWith(
               _AlwaysPopulatedWorkingDb.new,
             ),
+            messageTimelineViewModelProvider(
+              scope: globalScope,
+            ).overrideWith(_FakeSearchingGlobalTimelineViewModel.new),
           ],
         );
 
@@ -393,14 +404,73 @@ void main() {
       },
     );
 
-    testWidgets('right panel host renders derived right content', (
-      tester,
-    ) async {
+    test('clearing global search hides search-result context right panel', () {
+      const globalScope = MessageTimelineScope.global();
       final container = ProviderContainer(
         overrides: [
           workingDbPopulatedProvider.overrideWith(
             _AlwaysPopulatedWorkingDb.new,
           ),
+          messageTimelineViewModelProvider(
+            scope: globalScope,
+          ).overrideWith(_FakeSearchingGlobalTimelineViewModel.new),
+        ],
+      );
+
+      container.read(sidebarFlowProvider.notifier).showGlobalTimeline();
+      container
+          .read(panelsViewStateProvider(SidebarMode.messages).notifier)
+          .show(
+            panel: WindowPanel.right,
+            spec: const ViewSpec.messages(
+              MessagesSpec.searchResultContext(messageId: 99, chatId: 5),
+            ),
+          );
+
+      expect(
+        container.read(effectiveRightPanelSpecProvider(SidebarMode.messages)),
+        equals(
+          const ViewSpec.messages(
+            MessagesSpec.searchResultContext(messageId: 99, chatId: 5),
+          ),
+        ),
+      );
+      expect(
+        container.read(shouldShowEndSidebarProvider(SidebarMode.messages)),
+        isTrue,
+      );
+
+      final notifier =
+          container.read(
+                messageTimelineViewModelProvider(scope: globalScope).notifier,
+              )
+              as _FakeSearchingGlobalTimelineViewModel;
+      notifier.setSearchActive(isActive: false);
+
+      expect(
+        container.read(effectiveRightPanelSpecProvider(SidebarMode.messages)),
+        isNull,
+      );
+      expect(
+        container.read(shouldShowEndSidebarProvider(SidebarMode.messages)),
+        isFalse,
+      );
+
+      container.dispose();
+    });
+
+    testWidgets('right panel host renders derived right content', (
+      tester,
+    ) async {
+      const globalScope = MessageTimelineScope.global();
+      final container = ProviderContainer(
+        overrides: [
+          workingDbPopulatedProvider.overrideWith(
+            _AlwaysPopulatedWorkingDb.new,
+          ),
+          messageTimelineViewModelProvider(
+            scope: globalScope,
+          ).overrideWith(_FakeSearchingGlobalTimelineViewModel.new),
           messages_view_spec.viewSpecCoordinatorProvider.overrideWith(
             _FakeMessagesViewSpecCoordinator.new,
           ),
@@ -851,6 +921,38 @@ class _AlwaysPopulatedWorkingDb extends WorkingDbPopulated {
   @override
   bool build() {
     return true;
+  }
+}
+
+class _FakeSearchingGlobalTimelineViewModel extends MessageTimelineViewModel {
+  @override
+  MessageTimelineViewModelState build({required MessageTimelineScope scope}) {
+    final searchController = TextEditingController(text: 'anchor');
+    ref.onDispose(searchController.dispose);
+
+    return MessageTimelineViewModelState(
+      scope: scope,
+      searchController: searchController,
+      searchQuery: 'anchor',
+      debouncedQuery: 'anchor',
+      searchMode: MessageSearchMode.allTerms,
+      searchResultIds: const AsyncValue<List<int>>.data(<int>[99]),
+      ordinal: const AsyncValue<MessageTimelineOrdinalState>.loading(),
+    );
+  }
+
+  void setSearchActive({required bool isActive}) {
+    state = MessageTimelineViewModelState(
+      scope: state.scope,
+      searchController: state.searchController,
+      searchQuery: isActive ? 'anchor' : '',
+      debouncedQuery: isActive ? 'anchor' : '',
+      searchMode: state.searchMode,
+      searchResultIds: isActive
+          ? const AsyncValue<List<int>>.data(<int>[99])
+          : const AsyncValue<List<int>>.data(<int>[]),
+      ordinal: state.ordinal,
+    );
   }
 }
 

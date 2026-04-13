@@ -302,6 +302,11 @@ class MessagePanels {
   /// Selected-row accent tint.
   Color get selectionTint => _t.accents.primary.withValues(alpha: 0.12);
 
+  /// Shared tint used when a message acts as the context anchor between
+  /// the global search results and the end-sidebar context view.
+  Color get contextAnchorBackground =>
+      _t.accents.primary.withValues(alpha: _t.isDark ? 0.20 : 0.12);
+
   /// Subtle neutral tint for sparse or metadata-heavy content.
   Color get mutedTint => _t.content.textTertiary.withValues(alpha: 0.08);
 
@@ -316,6 +321,22 @@ class MessagePanels {
 
   /// Strong selected accent border.
   Color get selectionBorder => _t.accents.primary.withValues(alpha: 0.72);
+
+  /// Primary border for context-anchor message chrome.
+  Color get contextAnchorBorder =>
+      _t.accents.primary.withValues(alpha: _t.isDark ? 0.76 : 0.42);
+
+  /// Badge fill for the context-anchor marker.
+  Color get contextAnchorBadgeBackground =>
+      _t.accents.primary.withValues(alpha: _t.isDark ? 0.88 : 0.82);
+
+  /// Foreground for the context-anchor badge glyph.
+  Color get contextAnchorBadgeForeground =>
+      _r(const ColorPair(Color(0xFFFFFFFF), Color(0xFFFFFFFF)));
+
+  /// Glow/focus color used during the one-shot anchor activation pulse.
+  Color get contextAnchorGlow =>
+      _t.accents.primary.withValues(alpha: _t.isDark ? 0.28 : 0.18);
 
   /// Neutral muted border.
   Color get mutedBorder => _t.content.textTertiary.withValues(alpha: 0.24);
