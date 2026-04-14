@@ -7,7 +7,7 @@ part of 'message_context_anchor_provider.dart';
 // **************************************************************************
 
 String _$messageContextAnchorHash() =>
-    r'0d5e66efef79b6f9e25665f053d974eb76263574';
+    r'c5edba148d85dcc19ccce7fba437c454fd61207f';
 
 /// See also [messageContextAnchor].
 @ProviderFor(messageContextAnchor)

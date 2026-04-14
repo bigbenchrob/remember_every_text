@@ -42,7 +42,7 @@ Future<SearchResultContextState> searchResultContext(
   final db = await ref.watch(driftWorkingDatabaseProvider.future);
   final overlayDb = await ref.watch(overlayDatabaseProvider.future);
   final nameOverrides = await displayNameOverridesMap(overlayDb);
-  final mapper = MessageRowMapper(db, nameOverrides, ref: ref);
+  final mapper = MessageRowMapper(db, overlayDb, nameOverrides, ref: ref);
 
   final selectedQuery =
       db.select(db.workingMessages).join([

@@ -459,6 +459,96 @@ void main() {
       container.dispose();
     });
 
+    test('active contact search keeps search-result context right panel', () {
+      const contactScope = MessageTimelineScope.contact(contactId: 42);
+      final container = ProviderContainer(
+        overrides: [
+          workingDbPopulatedProvider.overrideWith(
+            _AlwaysPopulatedWorkingDb.new,
+          ),
+          messageTimelineViewModelProvider(
+            scope: contactScope,
+          ).overrideWith(_FakeSearchingContactTimelineViewModel.new),
+        ],
+      );
+
+      container
+          .read(sidebarFlowProvider.notifier)
+          .showContactTimelineAt(contactId: 42);
+      container
+          .read(panelsViewStateProvider(SidebarMode.messages).notifier)
+          .show(
+            panel: WindowPanel.right,
+            spec: const ViewSpec.messages(
+              MessagesSpec.searchResultContext(messageId: 99, chatId: 5),
+            ),
+          );
+
+      expect(
+        container.read(effectiveRightPanelSpecProvider(SidebarMode.messages)),
+        equals(
+          const ViewSpec.messages(
+            MessagesSpec.searchResultContext(messageId: 99, chatId: 5),
+          ),
+        ),
+      );
+      expect(
+        container.read(shouldShowEndSidebarProvider(SidebarMode.messages)),
+        isTrue,
+      );
+
+      container.dispose();
+    });
+
+    test('clearing contact search hides search-result context right panel', () {
+      const contactScope = MessageTimelineScope.contact(contactId: 42);
+      final container = ProviderContainer(
+        overrides: [
+          workingDbPopulatedProvider.overrideWith(
+            _AlwaysPopulatedWorkingDb.new,
+          ),
+          messageTimelineViewModelProvider(
+            scope: contactScope,
+          ).overrideWith(_FakeSearchingContactTimelineViewModel.new),
+        ],
+      );
+
+      container
+          .read(sidebarFlowProvider.notifier)
+          .showContactTimelineAt(contactId: 42);
+      container
+          .read(panelsViewStateProvider(SidebarMode.messages).notifier)
+          .show(
+            panel: WindowPanel.right,
+            spec: const ViewSpec.messages(
+              MessagesSpec.searchResultContext(messageId: 99, chatId: 5),
+            ),
+          );
+
+      expect(
+        container.read(shouldShowEndSidebarProvider(SidebarMode.messages)),
+        isTrue,
+      );
+
+      final notifier =
+          container.read(
+                messageTimelineViewModelProvider(scope: contactScope).notifier,
+              )
+              as _FakeSearchingContactTimelineViewModel;
+      notifier.setSearchActive(isActive: false);
+
+      expect(
+        container.read(effectiveRightPanelSpecProvider(SidebarMode.messages)),
+        isNull,
+      );
+      expect(
+        container.read(shouldShowEndSidebarProvider(SidebarMode.messages)),
+        isFalse,
+      );
+
+      container.dispose();
+    });
+
     testWidgets('right panel host renders derived right content', (
       tester,
     ) async {
@@ -925,6 +1015,38 @@ class _AlwaysPopulatedWorkingDb extends WorkingDbPopulated {
 }
 
 class _FakeSearchingGlobalTimelineViewModel extends MessageTimelineViewModel {
+  @override
+  MessageTimelineViewModelState build({required MessageTimelineScope scope}) {
+    final searchController = TextEditingController(text: 'anchor');
+    ref.onDispose(searchController.dispose);
+
+    return MessageTimelineViewModelState(
+      scope: scope,
+      searchController: searchController,
+      searchQuery: 'anchor',
+      debouncedQuery: 'anchor',
+      searchMode: MessageSearchMode.allTerms,
+      searchResultIds: const AsyncValue<List<int>>.data(<int>[99]),
+      ordinal: const AsyncValue<MessageTimelineOrdinalState>.loading(),
+    );
+  }
+
+  void setSearchActive({required bool isActive}) {
+    state = MessageTimelineViewModelState(
+      scope: state.scope,
+      searchController: state.searchController,
+      searchQuery: isActive ? 'anchor' : '',
+      debouncedQuery: isActive ? 'anchor' : '',
+      searchMode: state.searchMode,
+      searchResultIds: isActive
+          ? const AsyncValue<List<int>>.data(<int>[99])
+          : const AsyncValue<List<int>>.data(<int>[]),
+      ordinal: state.ordinal,
+    );
+  }
+}
+
+class _FakeSearchingContactTimelineViewModel extends MessageTimelineViewModel {
   @override
   MessageTimelineViewModelState build({required MessageTimelineScope scope}) {
     final searchController = TextEditingController(text: 'anchor');

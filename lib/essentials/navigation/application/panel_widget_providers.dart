@@ -189,6 +189,7 @@ bool _supportsRecoveredAttachmentSidebar(ViewSpec? spec) {
   return spec.maybeWhen(
     messages: (messagesSpec) {
       return messagesSpec.maybeWhen(
+        forContact: (_, __, ___) => true,
         globalTimeline: (_) => true,
         recoveredUnlinkedMessages: (_, __) => true,
         recoveredNoHandleFromMeMessages: (_) => true,
@@ -206,7 +207,7 @@ bool _shouldShowRecoveredContextFor(SidebarFlowState flowState) {
     return true;
   }
 
-  return flowState.isContactsBranch &&
+  return flowState.topMenuChoice == TopChatMenuChoice.contacts &&
       flowState.messageScope == SidebarFlowMessageScope.recoveredDeleted &&
       flowState.chosenContactId != null;
 }
@@ -231,6 +232,18 @@ bool _shouldHideStoredRightPanel({
     flowState: flowState,
     centerSpec: rightSpec,
   );
+}
+
+bool _isContactTimelineSearchActive(Ref ref, {required int contactId}) {
+  final contactTimelineViewModel = ref.watch(
+    messages_feature.messageTimelineViewModelProvider(
+      scope: messages_feature.MessageTimelineScope.contact(
+        contactId: contactId,
+      ),
+    ),
+  );
+
+  return contactTimelineViewModel.isSearching;
 }
 
 PanelStack _resolveEffectiveCenterStack({
@@ -398,9 +411,21 @@ bool _isCenterSpecCompatibleWithSidebar({
         },
         recoveredAttachmentViewer: (_, __) => true,
         searchResultContext: (_, __, ___, ____) {
-          return flowState.topMenuChoice ==
-                  TopChatMenuChoice.searchAllMessages &&
-              _isGlobalTimelineSearchActive(ref);
+          if (flowState.topMenuChoice == TopChatMenuChoice.searchAllMessages) {
+            return _isGlobalTimelineSearchActive(ref);
+          }
+
+          final chosenContactId = flowState.chosenContactId;
+          if (flowState.topMenuChoice == TopChatMenuChoice.contacts &&
+              flowState.messageScope == SidebarFlowMessageScope.regular &&
+              chosenContactId != null) {
+            return _isContactTimelineSearchActive(
+              ref,
+              contactId: chosenContactId,
+            );
+          }
+
+          return false;
         },
         handleLens: (_) {
           return flowState.topMenuChoice == TopChatMenuChoice.strayHandles;

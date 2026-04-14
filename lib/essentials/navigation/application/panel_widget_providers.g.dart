@@ -7,7 +7,7 @@ part of 'panel_widget_providers.dart';
 // **************************************************************************
 
 String _$effectiveCenterPanelStackHash() =>
-    r'5bc942188143563c0443e4291678c837f4e44af5';
+    r'4c42bd48ca2b7fb73563093b3b83cab3c7dcf93f';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -275,7 +275,7 @@ class _EffectiveCenterPanelSpecProviderElement
 }
 
 String _$effectiveRightPanelStackHash() =>
-    r'8d70ce7f73fb6e66cdceb18609b241082c161a05';
+    r'c01f13da628386de71fb3f2f9c6f30cdb1360fc6';
 
 /// See also [effectiveRightPanelStack].
 @ProviderFor(effectiveRightPanelStack)

@@ -1,0 +1,328 @@
+MessageLens v1 — Message Bookmarking and Tagging
+
+Purpose
+
+Add a lightweight user-owned metadata layer to messages so that specific messages can be saved and easily found again later.
+
+Primary use case:
+A user finds a message they know they may want again in future and wants to attach personal retrieval handles such as:
+	•	milosz
+	•	preparation
+	•	pat
+	•	poem
+
+These handles are not part of the original message content. They are user-authored overlay metadata attached to a message by message GUID.
+
+Core product goals
+	1.	Make it extremely easy to mark a message as important.
+	2.	Make it easy to attach short retrieval tags to a message.
+	3.	Keep retrieval unified: the existing search field should search both original content and user-added metadata.
+	4.	Keep the UI lightweight and calm; do not burden every message row with noisy controls.
+	5.	Preserve the existing MessageLens architecture: user metadata belongs in overlay storage, not in imported message records.
+
+Scope for v1
+
+Implement these user features:
+	1.	Bookmark / save a message
+
+	•	A message can be marked saved/bookmarked with a simple toggle.
+
+	2.	Add tags to a message
+
+	•	A message can have zero or more user tags.
+	•	Tags are short retrieval handles, not long prose notes.
+
+	3.	Unified search
+
+	•	The main search field should match:
+	•	original message text
+	•	contact names / identifiers already searched today
+	•	user tags
+	•	bookmarked/saved status if an operator or quick filter is later added
+
+	4.	Visible match reason
+
+	•	When a result matched because of user tags, the UI should expose that fact clearly.
+
+Out of scope for v1
+
+Do not implement yet unless it falls out naturally:
+	•	long-form per-message notes
+	•	hierarchical tags
+	•	tag categories
+	•	complex saved-message views
+	•	separate tagging search UI
+	•	mandatory tag entry when bookmarking
+	•	enterprise-style taxonomy management
+
+Product language
+
+Use the term “tags” consistently.
+Use either “Saved” or “Bookmarked” consistently for the simple important-message flag.
+Do not introduce multiple overlapping terms such as labels / keywords / categories unless there is a strong reason.
+
+Recommended user model
+
+Treat this as personal retrieval metadata.
+
+A message remains the original imported message.
+The user may attach personal metadata to it:
+	•	saved/bookmarked flag
+	•	zero or more tags
+
+This metadata must be:
+	•	searchable
+	•	editable
+	•	inspectable
+
+A result must never feel magical or unexplainable.
+
+Recommended UX for v1
+
+Message-level affordance
+
+Each message should expose a low-friction way to:
+	•	toggle bookmark/save
+	•	open a lightweight add/edit tags UI
+
+Good candidates:
+	•	context menu item
+	•	trailing message action
+	•	hover action
+	•	action in the existing message action cluster
+
+Do not require a heavy modal if a popover/sheet/inline editor is sufficient.
+
+Recommended tag editing UI
+
+A compact popover or small sheet with:
+	•	bookmark toggle
+	•	existing tags rendered as removable chips/tokens
+	•	single tag entry field
+	•	autocomplete suggestions from previously used tags
+	•	add-on-enter / comma / tokenizing behavior
+
+Behavior:
+	•	trim whitespace
+	•	ignore empty tokens
+	•	avoid duplicate tags on the same message
+	•	preserve display text while also storing normalized form for retrieval
+
+Search UX
+
+Use the existing main search field.
+Do not force the user to select between “content search” and “tag search.”
+
+The intended behavior is:
+	•	user types what they remember
+	•	MessageLens searches across all relevant surfaces
+	•	results surface the right message
+	•	if a match came from user tags, show the matching tags
+
+This is the key UX principle:
+Search should search the user’s personal overlay metadata as naturally as it searches message text.
+
+Result presentation
+
+When a result matched on tag metadata, show that clearly in the result UI.
+Examples:
+	•	subtle line: Matched tags: milosz, preparation
+	•	chip row beneath preview
+	•	icon plus chips in detail/sidebar/context view
+
+The result should not require the user to guess why it appeared.
+
+Tagging guidelines
+
+Encourage tags to be:
+	•	short
+	•	memorable
+	•	reusable
+	•	concept-oriented
+
+Examples of good tags:
+	•	milosz
+	•	preparation
+	•	pat
+	•	harpers
+	•	router
+	•	archive-plan
+
+Examples of poor tags:
+	•	that message pat sent me about the poem I wanted to find again
+
+That kind of longer thought belongs in a future notes field, not in tags.
+
+Normalization and matching rules
+
+Store both:
+	1.	display form
+	2.	normalized search form
+
+Recommended normalization:
+	•	lowercase
+	•	trim surrounding whitespace
+	•	collapse repeated internal spaces
+	•	strip or normalize diacritics for matching
+	•	optionally normalize punctuation differences
+
+Goal:
+Miłosz, Milosz, and milosz should all retrieve the same tagged message.
+
+Preserve the user-entered display form for rendering where practical, but search against the normalized form.
+
+Search behavior recommendations
+
+Unified search should search across:
+	•	message text
+	•	contact/person identifiers already in the search system
+	•	user tags
+	•	later: user notes if notes are added
+
+Ranking recommendations:
+	•	exact tag match = strong boost
+	•	multiple tag matches = very strong boost
+	•	bookmark-only saved messages = moderate boost when otherwise relevant
+	•	plain text body match = normal ranking
+	•	exact phrase body match = keep existing ranking behavior unless it conflicts with tag prominence
+
+Important principle:
+A direct user tag match is a very strong intent signal and should usually rank above incidental body matches.
+
+Suggested data model
+
+This should live in overlay storage keyed by imported message identity.
+
+Minimum recommended schema:
+
+message_user_flags
+	•	message_guid TEXT PRIMARY KEY
+	•	is_bookmarked INTEGER NOT NULL DEFAULT 0
+	•	created_at
+	•	updated_at
+
+message_user_tags
+	•	id
+	•	message_guid TEXT NOT NULL
+	•	tag_display TEXT NOT NULL
+	•	tag_normalized TEXT NOT NULL
+	•	created_at
+	•	updated_at
+
+Recommended constraints/indexes:
+	•	unique(message_guid, tag_normalized)
+	•	index on tag_normalized
+	•	index on message_guid
+
+Optional later table:
+message_user_notes
+	•	message_guid TEXT PRIMARY KEY
+	•	note_text
+	•	note_normalized or FTS-backed representation
+	•	created_at
+	•	updated_at
+
+Architectural placement
+
+This is overlay/user-authored metadata.
+It should not be mixed into imported source-of-truth message records.
+
+Fit it into the existing overlay DB approach:
+	•	message identity = message GUID
+	•	retrieval metadata = overlay layer
+	•	search layer composes imported content + overlay metadata
+
+This aligns with the current MessageLens architecture and avoids contaminating import models.
+
+Retrieval composition model
+
+At query time, the search system should be able to combine:
+	•	base message hit(s)
+	•	user tag hit(s)
+	•	bookmark flag
+	•	later note hit(s)
+
+A result object should ideally expose match reasons, e.g.:
+	•	matchedMessageText
+	•	matchedTagValues
+	•	matchedContact
+	•	isBookmarked
+
+This will make result rendering and explainability much cleaner.
+
+Minimal UI surfacing plan
+
+For v1, do not plaster tag chips everywhere.
+
+Recommended visibility:
+	•	search results: yes, show matched tags if relevant
+	•	context/detail/sidebar view of a selected message: yes
+	•	ordinary timeline rows: maybe just a subtle bookmark/tag indicator, not full chips by default
+
+Rationale:
+The metadata should be available and visible when useful, but not visually noisy in the timeline.
+
+Recommended first-pass interaction flow
+	1.	User finds a message.
+	2.	User opens message action or context menu.
+	3.	User chooses Save or Add tags.
+	4.	User enters one or more short tags.
+	5.	Later, user types remembered handles into the existing search field.
+	6.	Search finds the message using either body text or tags.
+	7.	Result explicitly shows matching tags.
+
+Potential future operators, but not required for v1
+
+These may be added later as power features:
+	•	tag:milosz
+	•	is:saved
+	•	has:tags
+
+Do not make them necessary for normal use.
+Default search should already “just work.”
+
+Important non-goals / anti-patterns
+
+Do not create a separate disconnected “saved messages world” that users must remember to enter.
+Do not require bookmarking and tagging as separate retrieval systems with separate search boxes.
+Do not make tagging cumbersome.
+Do not hide the reason a result matched.
+Do not overdesign the taxonomy in v1.
+Do not store comma-separated tags in one field if a normalized relational table is easy to implement.
+
+Acceptance criteria for v1
+	1.	A user can bookmark/save any message.
+	2.	A user can add one or more tags to any message.
+	3.	Tags are stored in overlay storage keyed by message GUID.
+	4.	Duplicate normalized tags for the same message are prevented.
+	5.	The main search field can retrieve messages by tag text.
+	6.	Search results clearly indicate when a result matched on tags.
+	7.	The UI for tagging is lightweight enough to be used frequently.
+	8.	Timeline UI remains calm and uncluttered.
+
+Suggested implementation priority
+
+Phase 1
+	•	overlay schema for bookmark + tags
+	•	message action entry point
+	•	add/edit tags popover
+	•	bookmark toggle
+	•	normalized storage rules
+
+Phase 2
+	•	search integration across tags
+	•	result ranking boost for tag matches
+	•	result rendering of matched tags
+
+Phase 3
+	•	tag autocomplete from previously used tags
+	•	optional quick filter for saved/bookmarked messages
+	•	optional subtle per-message saved/tag indicator in timeline
+
+Short rationale
+
+This feature should be treated as a personal memory aid for retrieval, not a complex knowledge-management system.
+The main success metric is simple:
+Can the user quickly save a message now and easily find it again later using whatever handles they are most likely to remember?
+
+If yes, the feature is doing its job.

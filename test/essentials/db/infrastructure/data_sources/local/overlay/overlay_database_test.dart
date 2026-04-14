@@ -100,4 +100,55 @@ void main() {
       await db.deleteHandleOverride(999);
     });
   });
+
+  group('Message user metadata', () {
+    test(
+      'stores tags by guid with normalized per-message uniqueness',
+      () async {
+        await db.addMessageUserTags(
+          messageGuid: 'guid-1',
+          tags: const <String>['Miłosz', 'milosz', ' preparation '],
+        );
+
+        final tags = await db.getMessageUserTags('guid-1');
+
+        expect(
+          tags.map((tag) => tag.tagDisplay).toList(),
+          equals(['Miłosz', 'preparation']),
+        );
+        expect(
+          tags.map((tag) => tag.tagNormalized).toList(),
+          equals(['milosz', 'preparation']),
+        );
+      },
+    );
+
+    test('saved flag is keyed by message guid', () async {
+      await db.setMessageSaved(messageGuid: 'guid-saved', isSaved: true);
+
+      final savedFlag = await db.getMessageUserFlag('guid-saved');
+
+      expect(savedFlag, isNotNull);
+      expect(savedFlag!.messageGuid, equals('guid-saved'));
+      expect(savedFlag.isSaved, isTrue);
+    });
+
+    test(
+      'tag suggestions use normalized matching while preserving display text',
+      () async {
+        await db.addMessageUserTags(
+          messageGuid: 'guid-suggestions-a',
+          tags: const <String>['Miłosz', 'Archive Plan'],
+        );
+        await db.addMessageUserTags(
+          messageGuid: 'guid-suggestions-b',
+          tags: const <String>['Preparation'],
+        );
+
+        final suggestions = await db.getMessageTagSuggestions(query: 'milo');
+
+        expect(suggestions, equals(['Miłosz']));
+      },
+    );
+  });
 }

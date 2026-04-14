@@ -1,6 +1,8 @@
 import 'package:characters/characters.dart';
 import 'package:drift/drift.dart';
 
+import '../../../../../../core/util/message_tag_normalizer.dart';
+
 part 'overlay_database.g.dart';
 
 /// Overlay database for user preferences and customizations (user_overlays.db).
@@ -11,6 +13,8 @@ part 'overlay_database.g.dart';
     ParticipantOverrides,
     ChatOverrides,
     MessageAnnotations,
+    MessageUserFlags,
+    MessageUserTags,
     HandleToParticipantOverrides,
     VirtualParticipants,
     OverlaySettings,
@@ -24,19 +28,34 @@ class OverlayDatabase extends _$OverlayDatabase {
   OverlayDatabase(QueryExecutor executor) : super(executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (Migrator m) async {
       await m.createAll();
+      await _createOverlayIndexes();
     },
     onUpgrade: (Migrator m, int from, int to) async {
       if (from < 2) {
         await m.createTable(archivedAttachments);
       }
+      if (from < 3) {
+        await m.createTable(messageUserFlags);
+        await m.createTable(messageUserTags);
+      }
+      await _createOverlayIndexes();
     },
   );
+
+  Future<void> _createOverlayIndexes() async {
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_message_user_tags_message_guid ON message_user_tags(message_guid)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_message_user_tags_tag_normalized ON message_user_tags(tag_normalized)',
+    );
+  }
 
   // Helper methods for participant overrides
 
@@ -351,6 +370,205 @@ class OverlayDatabase extends _$OverlayDatabase {
     await (delete(
       messageAnnotations,
     )..where((tbl) => tbl.messageId.equals(messageId))).go();
+  }
+
+  Future<MessageUserFlag?> getMessageUserFlag(String messageGuid) {
+    return (select(messageUserFlags)..where((tbl) {
+          return tbl.messageGuid.equals(messageGuid);
+        }))
+        .getSingleOrNull();
+  }
+
+  Future<List<MessageUserTag>> getMessageUserTags(String messageGuid) {
+    return (select(messageUserTags)
+          ..where((tbl) => tbl.messageGuid.equals(messageGuid))
+          ..orderBy([(tbl) => OrderingTerm.asc(tbl.tagDisplay)]))
+        .get();
+  }
+
+  Future<Map<String, bool>> getSavedFlagsByGuids(
+    Iterable<String> messageGuids,
+  ) async {
+    final guidList = messageGuids.where((guid) => guid.isNotEmpty).toList();
+    if (guidList.isEmpty) {
+      return const <String, bool>{};
+    }
+
+    final rows =
+        await (select(messageUserFlags)..where((tbl) {
+              return tbl.messageGuid.isIn(guidList);
+            }))
+            .get();
+
+    return {for (final row in rows) row.messageGuid: row.isSaved};
+  }
+
+  Future<List<String>> getAllSavedMessageGuids() async {
+    final rows =
+        await (select(messageUserFlags)..where((tbl) {
+              return tbl.isSaved.equals(true);
+            }))
+            .get();
+
+    return rows.map((row) => row.messageGuid).toList(growable: false);
+  }
+
+  Future<Map<String, List<MessageUserTag>>> getTagsByGuids(
+    Iterable<String> messageGuids,
+  ) async {
+    final guidList = messageGuids.where((guid) => guid.isNotEmpty).toList();
+    if (guidList.isEmpty) {
+      return const <String, List<MessageUserTag>>{};
+    }
+
+    final rows =
+        await (select(messageUserTags)
+              ..where((tbl) => tbl.messageGuid.isIn(guidList))
+              ..orderBy([
+                (tbl) => OrderingTerm.asc(tbl.messageGuid),
+                (tbl) => OrderingTerm.asc(tbl.tagDisplay),
+              ]))
+            .get();
+
+    final byGuid = <String, List<MessageUserTag>>{};
+    for (final row in rows) {
+      byGuid.putIfAbsent(row.messageGuid, () => <MessageUserTag>[]).add(row);
+    }
+    return byGuid;
+  }
+
+  Future<void> setMessageSaved({
+    required String messageGuid,
+    required bool isSaved,
+  }) async {
+    final normalizedGuid = messageGuid.trim();
+    if (normalizedGuid.isEmpty) {
+      return;
+    }
+
+    if (!isSaved) {
+      await (delete(messageUserFlags)..where((tbl) {
+            return tbl.messageGuid.equals(normalizedGuid);
+          }))
+          .go();
+      return;
+    }
+
+    final now = DateTime.now().toUtc().toIso8601String();
+    final existing = await getMessageUserFlag(normalizedGuid);
+
+    await into(messageUserFlags).insertOnConflictUpdate(
+      MessageUserFlagsCompanion.insert(
+        messageGuid: normalizedGuid,
+        isSaved: const Value(true),
+        createdAtUtc: existing?.createdAtUtc ?? now,
+        updatedAtUtc: now,
+      ),
+    );
+  }
+
+  Future<bool> toggleMessageSaved(String messageGuid) async {
+    final existing = await getMessageUserFlag(messageGuid);
+    final nextValue = !(existing?.isSaved ?? false);
+    await setMessageSaved(messageGuid: messageGuid, isSaved: nextValue);
+    return nextValue;
+  }
+
+  Future<void> addMessageUserTags({
+    required String messageGuid,
+    required Iterable<String> tags,
+  }) async {
+    final normalizedGuid = messageGuid.trim();
+    if (normalizedGuid.isEmpty) {
+      return;
+    }
+
+    final now = DateTime.now().toUtc().toIso8601String();
+    final uniqueTags = <String, String>{};
+    for (final rawTag in tags) {
+      final display = normalizeMessageTagDisplay(rawTag);
+      final normalized = normalizeMessageTagValue(rawTag);
+      if (display.isEmpty || normalized.isEmpty) {
+        continue;
+      }
+      uniqueTags.putIfAbsent(normalized, () => display);
+    }
+
+    if (uniqueTags.isEmpty) {
+      return;
+    }
+
+    for (final entry in uniqueTags.entries) {
+      final existing =
+          await (select(messageUserTags)..where((tbl) {
+                return tbl.messageGuid.equals(normalizedGuid) &
+                    tbl.tagNormalized.equals(entry.key);
+              }))
+              .getSingleOrNull();
+
+      await into(messageUserTags).insertOnConflictUpdate(
+        MessageUserTagsCompanion.insert(
+          messageGuid: normalizedGuid,
+          tagDisplay: existing?.tagDisplay ?? entry.value,
+          tagNormalized: entry.key,
+          createdAtUtc: existing?.createdAtUtc ?? now,
+          updatedAtUtc: now,
+        ),
+      );
+    }
+  }
+
+  Future<void> removeMessageUserTag({
+    required String messageGuid,
+    required String normalizedTag,
+  }) async {
+    final normalizedGuid = messageGuid.trim();
+    final normalizedValue = normalizeMessageTagValue(normalizedTag);
+    if (normalizedGuid.isEmpty || normalizedValue.isEmpty) {
+      return;
+    }
+
+    await (delete(messageUserTags)..where((tbl) {
+          return tbl.messageGuid.equals(normalizedGuid) &
+              tbl.tagNormalized.equals(normalizedValue);
+        }))
+        .go();
+  }
+
+  Future<void> removeMessageUserTags({
+    required String messageGuid,
+    required Iterable<String> tags,
+  }) async {
+    for (final tag in tags) {
+      await removeMessageUserTag(messageGuid: messageGuid, normalizedTag: tag);
+    }
+  }
+
+  Future<List<MessageUserTag>> getAllMessageUserTags() {
+    return (select(
+      messageUserTags,
+    )..orderBy([(tbl) => OrderingTerm.asc(tbl.tagDisplay)])).get();
+  }
+
+  Future<List<String>> getMessageTagSuggestions({String query = ''}) async {
+    final normalizedQuery = normalizeMessageTagValue(query);
+    final allTags = await getAllMessageUserTags();
+    final suggestions = allTags
+        .where((tag) {
+          if (normalizedQuery.isEmpty) {
+            return true;
+          }
+          return tag.tagNormalized.contains(normalizedQuery);
+        })
+        .map((tag) {
+          return tag.tagDisplay;
+        })
+        .toSet()
+        .toList(growable: false);
+    suggestions.sort((left, right) {
+      return left.toLowerCase().compareTo(right.toLowerCase());
+    });
+    return suggestions;
   }
 
   /// Get messages with reminders due before a given time
@@ -971,6 +1189,43 @@ class MessageAnnotations extends Table {
 
   @override
   Set<Column> get primaryKey => {messageId};
+}
+
+class MessageUserFlags extends Table {
+  @override
+  String get tableName => 'message_user_flags';
+
+  TextColumn get messageGuid => text().named('message_guid')();
+
+  BoolColumn get isSaved =>
+      boolean().named('is_saved').withDefault(const Constant(false))();
+
+  TextColumn get createdAtUtc => text().named('created_at_utc')();
+  TextColumn get updatedAtUtc => text().named('updated_at_utc')();
+
+  @override
+  Set<Column> get primaryKey => {messageGuid};
+}
+
+class MessageUserTags extends Table {
+  @override
+  String get tableName => 'message_user_tags';
+
+  IntColumn get id => integer().autoIncrement()();
+
+  TextColumn get messageGuid => text().named('message_guid')();
+
+  TextColumn get tagDisplay => text().named('tag_display')();
+
+  TextColumn get tagNormalized => text().named('tag_normalized')();
+
+  TextColumn get createdAtUtc => text().named('created_at_utc')();
+  TextColumn get updatedAtUtc => text().named('updated_at_utc')();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {messageGuid, tagNormalized},
+  ];
 }
 
 /// User-defined manual links from handles to participants or virtual participants.

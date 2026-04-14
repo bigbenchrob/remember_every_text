@@ -59,7 +59,7 @@ Future<MessageListItem?> messageById(
         return null;
       }
 
-      final mapper = MessageRowMapper(db, nameOverrides, ref: ref);
+      final mapper = MessageRowMapper(db, overlayDb, nameOverrides, ref: ref);
       final messages = await ContactTimelineScrollProbe.traceAsync(
         'provider.message_by_id.map_rows',
         () => mapper.mapRows([row]),
