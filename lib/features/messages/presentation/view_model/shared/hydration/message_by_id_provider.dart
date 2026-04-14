@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../../essentials/db/feature_level_providers.dart';
 import '../../../../../../essentials/db/infrastructure/data_sources/local/working/working_database.dart';
+import '../../../../application/user_metadata/message_user_metadata_loader.dart';
 import '../../../debug/contact_timeline_scroll_probe.dart';
 import 'attachment_info.dart';
 import 'attachment_info_loader.dart';
@@ -21,6 +22,7 @@ Future<MessageListItem> messageById(
     'provider.shared_message_by_id',
     () async {
       final db = await ref.watch(driftWorkingDatabaseProvider.future);
+      final overlayDb = await ref.watch(overlayDatabaseProvider.future);
 
       DateTime? parseUtc(String? value) {
         if (value == null || value.isEmpty) {
@@ -93,6 +95,10 @@ Future<MessageListItem> messageById(
                 attachments: rawAttachments,
               ),
             );
+      final metadata = await loadMessageUserMetadataByGuid(
+        overlayDb: overlayDb,
+        messageGuid: message.guid,
+      );
 
       return MessageListItem(
         id: message.id,
@@ -106,6 +112,8 @@ Future<MessageListItem> messageById(
         text: message.textContent ?? '[No text content]',
         sentAt: parseUtc(message.sentAtUtc),
         hasAttachments: message.hasAttachments,
+        isSaved: metadata.isSaved,
+        tags: metadata.tags,
         attachments: attachments,
       );
     },

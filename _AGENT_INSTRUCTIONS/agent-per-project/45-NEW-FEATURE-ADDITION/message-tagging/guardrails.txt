@@ -1,0 +1,234 @@
+You are implementing a new MessageLens feature: lightweight user-owned bookmarking and tagging of messages for future retrieval.
+
+Read and follow these instructions carefully. This feature must preserve the current architectural boundaries and must not introduce shortcuts that violate existing system rules.
+
+Primary product goal
+
+Allow the user to mark a message as saved/bookmarked and attach short personal tags so that the message can be found again later through the existing unified search field.
+
+Example use case:
+A user finds a message about the Czesław Miłosz poem “Preparation” from a friend named Pat. They want to attach tags such as:
+	•	milosz
+	•	czeslaw
+	•	preparation
+	•	pat
+Later, typing those remembered handles into the normal search field should surface that message quickly.
+
+Non-negotiable architectural constraints
+
+These rules are iron-clad.
+	1.	User-authored message metadata belongs in overlay storage only.
+
+	•	Do not mix bookmark/tag state into imported source-of-truth message records.
+	•	Key overlay metadata by message GUID.
+
+	2.	Do not violate app/feature rendering boundaries.
+
+	•	No resolver/coordinator may return a Widget, WidgetBuilder, ConsumerWidget, subtree, BuildContext-dependent artifact, or any UI object.
+	•	Coordinators/resolvers must return inert data/view-model structures only, consistent with project conventions.
+	•	Existing “no widgets across boundaries” rules must be preserved exactly.
+
+	3.	Preserve calm UI.
+
+	•	Do not clutter every message row with noisy controls or persistent full tag chips.
+	•	The tagging UI must be lightweight and discoverable, not visually heavy.
+
+	4.	Use the existing unified search model.
+
+	•	Do not create a separate tag-search surface for v1.
+	•	The normal search field should search both original content and user-authored tag metadata.
+
+	5.	Make search explainable.
+
+	•	If a result matched because of tags, the result UI must be able to show that clearly.
+	•	Do not create “mysterious” results whose match reason is opaque.
+
+Product scope for v1
+
+Implement:
+	1.	Bookmark/save toggle on a message
+	2.	Add/remove tags on a message
+	3.	Overlay persistence for both
+	4.	Search integration so tag text is searchable from the main search field
+	5.	Result metadata so the UI can show matched tags
+	6.	Lightweight message-level UI entry point for bookmark/tags
+
+Do not implement unless it naturally falls out:
+	•	long-form notes
+	•	hierarchical tags
+	•	separate tag-management screen
+	•	complicated taxonomy system
+	•	mandatory tagging when bookmarking
+
+Required conceptual model
+
+Treat bookmark/tagging as a lightweight personal retrieval layer.
+
+A message remains the original imported message.
+The user may add overlay metadata:
+	•	bookmarked flag
+	•	zero or more tags
+
+This metadata must be:
+	•	searchable
+	•	editable
+	•	inspectable
+
+Recommended data model
+
+Implement overlay storage keyed by message GUID.
+
+Minimum suggested schema:
+
+message_user_flags
+	•	message_guid TEXT PRIMARY KEY
+	•	is_bookmarked INTEGER NOT NULL DEFAULT 0
+	•	created_at
+	•	updated_at
+
+message_user_tags
+	•	id
+	•	message_guid TEXT NOT NULL
+	•	tag_display TEXT NOT NULL
+	•	tag_normalized TEXT NOT NULL
+	•	created_at
+	•	updated_at
+
+Required constraints/indexes:
+	•	unique(message_guid, tag_normalized)
+	•	index on tag_normalized
+	•	index on message_guid
+
+If there is an existing overlay schema pattern that better matches project conventions, follow that pattern while preserving the same semantics.
+
+Tag normalization requirements
+
+Store both display and normalized forms.
+
+Normalization should at minimum:
+	•	lowercase
+	•	trim surrounding whitespace
+	•	collapse repeated internal whitespace
+	•	provide diacritic-insensitive matching if practical within current stack
+
+Goal:
+Miłosz, Milosz, and milosz should retrieve the same tagged message.
+
+Preserve user-entered display text where practical for rendering, but search against normalized form.
+
+Search requirements
+
+Integrate tags into the existing main search pipeline.
+
+Main search should be able to match:
+	•	existing message/body text
+	•	existing contact/person fields already supported
+	•	user tags
+
+Do not require users to type operators like tag:milosz for basic retrieval.
+Operators may come later, but normal search must already work.
+
+Ranking guidance:
+	•	exact tag match should receive a strong boost
+	•	multiple matching tags should receive a stronger boost
+	•	incidental body-text matches should not bury a direct tag match
+
+Search result composition / explainability
+
+Search results must carry enough inert metadata for the UI to render why a result matched.
+
+At minimum, design the result pipeline so the UI can know:
+	•	whether the message is bookmarked
+	•	which tags exist on the message
+	•	which tags matched the current query, if any
+
+This can be done with existing result/view-model structures if appropriate, or by extending them cleanly.
+
+UI requirements
+
+Add a lightweight message-level entry point to:
+	•	toggle bookmarked/saved state
+	•	add/edit/remove tags
+
+Acceptable affordances include:
+	•	context menu action
+	•	hover action
+	•	trailing message action
+	•	action in an existing message action cluster
+
+Choose the approach that best fits the existing UI patterns and calm design language.
+
+Tag editing UI should be lightweight:
+	•	popover, compact sheet, or similarly low-friction editor
+	•	show current tags as removable tokens/chips if appropriate
+	•	allow quick entry of one or more tags
+	•	avoid heavy modal workflow if not necessary
+
+Do not add persistent visual noise to all timeline rows.
+For v1, it is acceptable to show only subtle indicators in ordinary rows, while exposing richer tag information in search results, selected-message context, or detail/sidebar views.
+
+Implementation expectations
+
+Before writing code, inspect the existing code paths for:
+	•	overlay DB patterns
+	•	message action/context menu patterns
+	•	search pipeline and ranking
+	•	result/view-model structures
+	•	any existing chip/token/tag editor patterns
+	•	naming conventions and folder placement conventions
+
+Follow project structure and Riverpod/provider conventions already established in this codebase.
+
+Important:
+Do not invent a parallel architecture when an existing pattern already exists.
+
+Suggested implementation phases
+
+Phase 1
+	•	inspect existing architecture and identify insertion points
+	•	implement overlay schema / repository support for bookmark + tags
+	•	add normalization logic and uniqueness enforcement
+
+Phase 2
+	•	add message-level UI entry point
+	•	add lightweight bookmark/tag editing UI
+	•	wire writes through the proper application layer
+
+Phase 3
+	•	integrate tag metadata into main search
+	•	add ranking boost for tag matches
+	•	extend result metadata so UI can display matched tags
+
+Phase 4
+	•	add restrained result presentation for tags/bookmark state
+	•	ensure ordinary timeline rows remain visually calm
+	•	test editing/search/retrieval loop end to end
+
+Testing / safety requirements
+
+Add or update tests where appropriate for:
+	•	normalized duplicate prevention
+	•	persistence keyed by message GUID
+	•	search retrieving by tag text
+	•	tag-match metadata reaching result rendering layer
+	•	bookmark/tag actions not violating architectural boundaries
+
+Most important:
+Do not introduce any code path that returns widgets across boundaries where the project rules forbid that.
+If there are existing interface contracts or tests that can be extended to guard this, do so.
+
+Deliverable expectations
+
+When you report back:
+	1.	summarize the architecture you found and the insertion points chosen
+	2.	list files created/changed
+	3.	explain how bookmark/tag overlay storage works
+	4.	explain how unified search now incorporates tags
+	5.	call out any architectural risks or decisions needing confirmation before further polish
+
+Execution style
+
+Proceed step by step.
+Prefer a clean first pass over overengineering.
+Preserve existing architecture and UI calmness.
+When in doubt, choose the simpler v1 that keeps the system coherent.

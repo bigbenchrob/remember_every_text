@@ -84,7 +84,7 @@ Future<MessageListItem?> messageByTimelineOrdinal(
         return null;
       }
 
-      final mapper = MessageRowMapper(db, nameOverrides, ref: ref);
+      final mapper = MessageRowMapper(db, overlayDb, nameOverrides, ref: ref);
       final messages = await ContactTimelineScrollProbe.traceAsync(
         'provider.message_by_ordinal.map_rows',
         () => mapper.mapRows([row]),
@@ -120,6 +120,8 @@ Future<MessageListItem?> _loadRecoveredMessageById({
     text: recoveredMessage.text,
     sentAt: recoveredMessage.sentAt,
     hasAttachments: recoveredMessage.hasAttachments,
+    isSaved: false,
+    tags: const <String>[],
     attachments: recoveredMessage.attachments
         .map((attachment) {
           return hydrated.AttachmentInfo(

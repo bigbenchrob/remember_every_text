@@ -56,7 +56,7 @@ Future<MessageListItem?> messageByOrdinal(
   }
 
   // Use existing mapper to convert row to MessageListItem
-  final mapper = MessageRowMapper(db, nameOverrides, ref: ref);
+  final mapper = MessageRowMapper(db, overlayDb, nameOverrides, ref: ref);
   final messages = await mapper.mapRows([row]);
 
   return messages.isEmpty ? null : messages.first;

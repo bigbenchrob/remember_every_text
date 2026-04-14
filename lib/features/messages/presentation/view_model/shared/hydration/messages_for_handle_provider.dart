@@ -4,6 +4,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../../../essentials/db/feature_level_providers.dart';
 import '../../../../../../essentials/db/infrastructure/data_sources/local/working/working_database.dart';
 import '../../../../../contacts/infrastructure/repositories/participant_merge_utils.dart';
+import '../../../../application/user_metadata/message_user_metadata_loader.dart';
+import '../../../../domain/entities/message_user_metadata.dart';
 import 'attachment_info.dart';
 import 'attachment_info_loader.dart';
 
@@ -21,6 +23,8 @@ class MessageListItem {
     required this.text,
     required this.sentAt,
     required this.hasAttachments,
+    this.isSaved = false,
+    this.tags = const <String>[],
     this.attachments = const [],
   });
 
@@ -32,6 +36,8 @@ class MessageListItem {
   final String text;
   final DateTime? sentAt;
   final bool hasAttachments;
+  final bool isSaved;
+  final List<String> tags;
   final List<AttachmentInfo> attachments;
 }
 
@@ -99,10 +105,19 @@ Stream<List<MessageListItem>> messagesForHandle(
 
   yield* query.watch().asyncMap((rows) async {
     final items = <MessageListItem>[];
+    final metadataByGuid = await loadMessageUserMetadataByGuids(
+      overlayDb: overlayDb,
+      messageGuids: rows.map((row) {
+        return row.readTable(db.workingMessages).guid;
+      }),
+    );
 
     for (final row in rows) {
       final message = row.readTable(db.workingMessages);
       final participant = row.readTableOrNull(db.workingParticipants);
+      final metadata =
+          metadataByGuid[message.guid] ??
+          MessageUserMetadata.empty(messageGuid: message.guid);
 
       // Fetch attachments for this message if it has any
       final rawAttachments = message.hasAttachments
@@ -128,6 +143,8 @@ Stream<List<MessageListItem>> messagesForHandle(
           text: message.textContent ?? '[No text content]',
           sentAt: parseUtc(message.sentAtUtc),
           hasAttachments: message.hasAttachments,
+          isSaved: metadata.isSaved,
+          tags: metadata.tags,
           attachments: attachments,
         ),
       );

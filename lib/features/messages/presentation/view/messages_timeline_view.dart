@@ -37,6 +37,7 @@ import '../view_model/timeline/ordinal/message_timeline_index_coordinator_provid
 import '../view_model/timeline/timeline_metadata_provider.dart';
 import '../widgets/message_card.dart';
 import '../widgets/message_context_anchor_chrome.dart';
+import '../widgets/message_user_metadata_widgets.dart';
 
 const Duration _contactMessageGroupingThreshold = Duration(minutes: 5);
 const double _contactPendingIndicatorLaneHeight = 28;
@@ -796,10 +797,13 @@ class _PendingMessageRow extends ConsumerWidget {
           scope: scope,
         );
 
-        return MessageCard(
+        return MessageUserMetadataCardDecorator(
           message: item,
-          layout: MessageCardLayout.analysis,
-          grouping: grouping,
+          child: MessageCard(
+            message: item,
+            layout: MessageCardLayout.analysis,
+            grouping: grouping,
+          ),
         );
       },
       loading: () => const _SkeletonRow(),
@@ -1502,10 +1506,13 @@ class _MessageRow extends ConsumerWidget {
           next: nextMetadataAsync.valueOrNull,
           scope: scope,
         );
-        return MessageCard(
+        return MessageUserMetadataCardDecorator(
           message: item,
-          layout: _messageCardLayout(scope),
-          grouping: grouping,
+          child: MessageCard(
+            message: item,
+            layout: _messageCardLayout(scope),
+            grouping: grouping,
+          ),
         );
       },
       loading: () => const _SkeletonRow(),
@@ -1707,6 +1714,7 @@ class _SearchResultsList extends ConsumerWidget {
                   return _SearchResultRow(
                     messageId: resultIds[index],
                     scope: scope,
+                    query: vm.debouncedQuery,
                   );
                 },
               ),
@@ -1722,10 +1730,15 @@ class _SearchResultsList extends ConsumerWidget {
 
 /// Single search result row with on-demand hydration.
 class _SearchResultRow extends ConsumerWidget {
-  const _SearchResultRow({required this.messageId, required this.scope});
+  const _SearchResultRow({
+    required this.messageId,
+    required this.scope,
+    required this.query,
+  });
 
   final int messageId;
   final MessageTimelineScope scope;
+  final String query;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1744,10 +1757,34 @@ class _SearchResultRow extends ConsumerWidget {
           return const _SkeletonRow();
         }
         if (scope is GlobalTimelineScope) {
-          return _GlobalSearchResultCard(item: item);
+          return _SearchResultMessageCard(
+            item: item,
+            debugIdPrefix: 'global-search',
+            query: query,
+          );
         }
 
-        return MessageCard(message: item, layout: _messageCardLayout(scope));
+        if (scope is ContactTimelineScope) {
+          return _SearchResultMessageCard(
+            item: item,
+            debugIdPrefix: 'contact-search',
+            query: query,
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            MessageUserMetadataCardDecorator(
+              message: item,
+              child: MessageCard(
+                message: item,
+                layout: _messageCardLayout(scope),
+              ),
+            ),
+            MessageSearchMatchMetadata(message: item, query: query),
+          ],
+        );
       },
       loading: () => const _SkeletonRow(),
       error: (error, _) => Padding(
@@ -1758,10 +1795,16 @@ class _SearchResultRow extends ConsumerWidget {
   }
 }
 
-class _GlobalSearchResultCard extends HookConsumerWidget {
-  const _GlobalSearchResultCard({required this.item});
+class _SearchResultMessageCard extends HookConsumerWidget {
+  const _SearchResultMessageCard({
+    required this.item,
+    required this.debugIdPrefix,
+    required this.query,
+  });
 
   final MessageListItem item;
+  final String debugIdPrefix;
+  final String query;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1773,38 +1816,27 @@ class _GlobalSearchResultCard extends HookConsumerWidget {
         activeContextAnchor?.matches(messageId: item.id, chatId: item.chatId) ??
         false;
 
-    if (!canShowContextAction) {
-      return MessageContextAnchorChrome(
-        isContextAnchor: isContextAnchor,
-        activationKey: activeContextAnchor?.activationKey,
-        debugId: 'global-search-${item.id}',
-        child: MessageCard(message: item, layout: MessageCardLayout.analysis),
-      );
-    }
+    final secondaryAction = canShowContextAction && !isContextAnchor
+        ? _ContextSidebarIconAction(item: item, isRowHovered: true)
+        : null;
 
-    final isHovered = useState(false);
-
-    return MouseRegion(
-      onEnter: (_) {
-        isHovered.value = true;
-      },
-      onExit: (_) {
-        isHovered.value = false;
-      },
-      child: MessageContextAnchorChrome(
-        isContextAnchor: isContextAnchor,
-        activationKey: activeContextAnchor?.activationKey,
-        debugId: 'global-search-${item.id}',
-        child: MessageCard(
-          message: item,
-          layout: MessageCardLayout.analysis,
-          inlineTextAction: isContextAnchor
-              ? null
-              : _ContextSidebarIconAction(
-                  item: item,
-                  isRowHovered: isHovered.value,
-                ),
-        ),
+    return MessageContextAnchorChrome(
+      isContextAnchor: isContextAnchor,
+      activationKey: activeContextAnchor?.activationKey,
+      debugId: '$debugIdPrefix-${item.id}',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          MessageUserMetadataCardDecorator(
+            message: item,
+            secondaryAction: secondaryAction,
+            child: MessageCard(
+              message: item,
+              layout: MessageCardLayout.analysis,
+            ),
+          ),
+          MessageSearchMatchMetadata(message: item, query: query),
+        ],
       ),
     );
   }

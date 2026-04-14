@@ -1461,6 +1461,775 @@ class MessageAnnotationsCompanion extends UpdateCompanion<MessageAnnotation> {
   }
 }
 
+class $MessageUserFlagsTable extends MessageUserFlags
+    with TableInfo<$MessageUserFlagsTable, MessageUserFlag> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MessageUserFlagsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _messageGuidMeta = const VerificationMeta(
+    'messageGuid',
+  );
+  @override
+  late final GeneratedColumn<String> messageGuid = GeneratedColumn<String>(
+    'message_guid',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isSavedMeta = const VerificationMeta(
+    'isSaved',
+  );
+  @override
+  late final GeneratedColumn<bool> isSaved = GeneratedColumn<bool>(
+    'is_saved',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_saved" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _createdAtUtcMeta = const VerificationMeta(
+    'createdAtUtc',
+  );
+  @override
+  late final GeneratedColumn<String> createdAtUtc = GeneratedColumn<String>(
+    'created_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtUtcMeta = const VerificationMeta(
+    'updatedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAtUtc = GeneratedColumn<String>(
+    'updated_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    messageGuid,
+    isSaved,
+    createdAtUtc,
+    updatedAtUtc,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'message_user_flags';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MessageUserFlag> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('message_guid')) {
+      context.handle(
+        _messageGuidMeta,
+        messageGuid.isAcceptableOrUnknown(
+          data['message_guid']!,
+          _messageGuidMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_messageGuidMeta);
+    }
+    if (data.containsKey('is_saved')) {
+      context.handle(
+        _isSavedMeta,
+        isSaved.isAcceptableOrUnknown(data['is_saved']!, _isSavedMeta),
+      );
+    }
+    if (data.containsKey('created_at_utc')) {
+      context.handle(
+        _createdAtUtcMeta,
+        createdAtUtc.isAcceptableOrUnknown(
+          data['created_at_utc']!,
+          _createdAtUtcMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtUtcMeta);
+    }
+    if (data.containsKey('updated_at_utc')) {
+      context.handle(
+        _updatedAtUtcMeta,
+        updatedAtUtc.isAcceptableOrUnknown(
+          data['updated_at_utc']!,
+          _updatedAtUtcMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtUtcMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {messageGuid};
+  @override
+  MessageUserFlag map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MessageUserFlag(
+      messageGuid: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}message_guid'],
+      )!,
+      isSaved: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_saved'],
+      )!,
+      createdAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_at_utc'],
+      )!,
+      updatedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at_utc'],
+      )!,
+    );
+  }
+
+  @override
+  $MessageUserFlagsTable createAlias(String alias) {
+    return $MessageUserFlagsTable(attachedDatabase, alias);
+  }
+}
+
+class MessageUserFlag extends DataClass implements Insertable<MessageUserFlag> {
+  final String messageGuid;
+  final bool isSaved;
+  final String createdAtUtc;
+  final String updatedAtUtc;
+  const MessageUserFlag({
+    required this.messageGuid,
+    required this.isSaved,
+    required this.createdAtUtc,
+    required this.updatedAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['message_guid'] = Variable<String>(messageGuid);
+    map['is_saved'] = Variable<bool>(isSaved);
+    map['created_at_utc'] = Variable<String>(createdAtUtc);
+    map['updated_at_utc'] = Variable<String>(updatedAtUtc);
+    return map;
+  }
+
+  MessageUserFlagsCompanion toCompanion(bool nullToAbsent) {
+    return MessageUserFlagsCompanion(
+      messageGuid: Value(messageGuid),
+      isSaved: Value(isSaved),
+      createdAtUtc: Value(createdAtUtc),
+      updatedAtUtc: Value(updatedAtUtc),
+    );
+  }
+
+  factory MessageUserFlag.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MessageUserFlag(
+      messageGuid: serializer.fromJson<String>(json['messageGuid']),
+      isSaved: serializer.fromJson<bool>(json['isSaved']),
+      createdAtUtc: serializer.fromJson<String>(json['createdAtUtc']),
+      updatedAtUtc: serializer.fromJson<String>(json['updatedAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'messageGuid': serializer.toJson<String>(messageGuid),
+      'isSaved': serializer.toJson<bool>(isSaved),
+      'createdAtUtc': serializer.toJson<String>(createdAtUtc),
+      'updatedAtUtc': serializer.toJson<String>(updatedAtUtc),
+    };
+  }
+
+  MessageUserFlag copyWith({
+    String? messageGuid,
+    bool? isSaved,
+    String? createdAtUtc,
+    String? updatedAtUtc,
+  }) => MessageUserFlag(
+    messageGuid: messageGuid ?? this.messageGuid,
+    isSaved: isSaved ?? this.isSaved,
+    createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+    updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+  );
+  MessageUserFlag copyWithCompanion(MessageUserFlagsCompanion data) {
+    return MessageUserFlag(
+      messageGuid: data.messageGuid.present
+          ? data.messageGuid.value
+          : this.messageGuid,
+      isSaved: data.isSaved.present ? data.isSaved.value : this.isSaved,
+      createdAtUtc: data.createdAtUtc.present
+          ? data.createdAtUtc.value
+          : this.createdAtUtc,
+      updatedAtUtc: data.updatedAtUtc.present
+          ? data.updatedAtUtc.value
+          : this.updatedAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MessageUserFlag(')
+          ..write('messageGuid: $messageGuid, ')
+          ..write('isSaved: $isSaved, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(messageGuid, isSaved, createdAtUtc, updatedAtUtc);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MessageUserFlag &&
+          other.messageGuid == this.messageGuid &&
+          other.isSaved == this.isSaved &&
+          other.createdAtUtc == this.createdAtUtc &&
+          other.updatedAtUtc == this.updatedAtUtc);
+}
+
+class MessageUserFlagsCompanion extends UpdateCompanion<MessageUserFlag> {
+  final Value<String> messageGuid;
+  final Value<bool> isSaved;
+  final Value<String> createdAtUtc;
+  final Value<String> updatedAtUtc;
+  final Value<int> rowid;
+  const MessageUserFlagsCompanion({
+    this.messageGuid = const Value.absent(),
+    this.isSaved = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MessageUserFlagsCompanion.insert({
+    required String messageGuid,
+    this.isSaved = const Value.absent(),
+    required String createdAtUtc,
+    required String updatedAtUtc,
+    this.rowid = const Value.absent(),
+  }) : messageGuid = Value(messageGuid),
+       createdAtUtc = Value(createdAtUtc),
+       updatedAtUtc = Value(updatedAtUtc);
+  static Insertable<MessageUserFlag> custom({
+    Expression<String>? messageGuid,
+    Expression<bool>? isSaved,
+    Expression<String>? createdAtUtc,
+    Expression<String>? updatedAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (messageGuid != null) 'message_guid': messageGuid,
+      if (isSaved != null) 'is_saved': isSaved,
+      if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
+      if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MessageUserFlagsCompanion copyWith({
+    Value<String>? messageGuid,
+    Value<bool>? isSaved,
+    Value<String>? createdAtUtc,
+    Value<String>? updatedAtUtc,
+    Value<int>? rowid,
+  }) {
+    return MessageUserFlagsCompanion(
+      messageGuid: messageGuid ?? this.messageGuid,
+      isSaved: isSaved ?? this.isSaved,
+      createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+      updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (messageGuid.present) {
+      map['message_guid'] = Variable<String>(messageGuid.value);
+    }
+    if (isSaved.present) {
+      map['is_saved'] = Variable<bool>(isSaved.value);
+    }
+    if (createdAtUtc.present) {
+      map['created_at_utc'] = Variable<String>(createdAtUtc.value);
+    }
+    if (updatedAtUtc.present) {
+      map['updated_at_utc'] = Variable<String>(updatedAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MessageUserFlagsCompanion(')
+          ..write('messageGuid: $messageGuid, ')
+          ..write('isSaved: $isSaved, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $MessageUserTagsTable extends MessageUserTags
+    with TableInfo<$MessageUserTagsTable, MessageUserTag> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MessageUserTagsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _messageGuidMeta = const VerificationMeta(
+    'messageGuid',
+  );
+  @override
+  late final GeneratedColumn<String> messageGuid = GeneratedColumn<String>(
+    'message_guid',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tagDisplayMeta = const VerificationMeta(
+    'tagDisplay',
+  );
+  @override
+  late final GeneratedColumn<String> tagDisplay = GeneratedColumn<String>(
+    'tag_display',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tagNormalizedMeta = const VerificationMeta(
+    'tagNormalized',
+  );
+  @override
+  late final GeneratedColumn<String> tagNormalized = GeneratedColumn<String>(
+    'tag_normalized',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtUtcMeta = const VerificationMeta(
+    'createdAtUtc',
+  );
+  @override
+  late final GeneratedColumn<String> createdAtUtc = GeneratedColumn<String>(
+    'created_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtUtcMeta = const VerificationMeta(
+    'updatedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAtUtc = GeneratedColumn<String>(
+    'updated_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    messageGuid,
+    tagDisplay,
+    tagNormalized,
+    createdAtUtc,
+    updatedAtUtc,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'message_user_tags';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MessageUserTag> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('message_guid')) {
+      context.handle(
+        _messageGuidMeta,
+        messageGuid.isAcceptableOrUnknown(
+          data['message_guid']!,
+          _messageGuidMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_messageGuidMeta);
+    }
+    if (data.containsKey('tag_display')) {
+      context.handle(
+        _tagDisplayMeta,
+        tagDisplay.isAcceptableOrUnknown(data['tag_display']!, _tagDisplayMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tagDisplayMeta);
+    }
+    if (data.containsKey('tag_normalized')) {
+      context.handle(
+        _tagNormalizedMeta,
+        tagNormalized.isAcceptableOrUnknown(
+          data['tag_normalized']!,
+          _tagNormalizedMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_tagNormalizedMeta);
+    }
+    if (data.containsKey('created_at_utc')) {
+      context.handle(
+        _createdAtUtcMeta,
+        createdAtUtc.isAcceptableOrUnknown(
+          data['created_at_utc']!,
+          _createdAtUtcMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtUtcMeta);
+    }
+    if (data.containsKey('updated_at_utc')) {
+      context.handle(
+        _updatedAtUtcMeta,
+        updatedAtUtc.isAcceptableOrUnknown(
+          data['updated_at_utc']!,
+          _updatedAtUtcMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtUtcMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {messageGuid, tagNormalized},
+  ];
+  @override
+  MessageUserTag map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MessageUserTag(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      messageGuid: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}message_guid'],
+      )!,
+      tagDisplay: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tag_display'],
+      )!,
+      tagNormalized: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tag_normalized'],
+      )!,
+      createdAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_at_utc'],
+      )!,
+      updatedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at_utc'],
+      )!,
+    );
+  }
+
+  @override
+  $MessageUserTagsTable createAlias(String alias) {
+    return $MessageUserTagsTable(attachedDatabase, alias);
+  }
+}
+
+class MessageUserTag extends DataClass implements Insertable<MessageUserTag> {
+  final int id;
+  final String messageGuid;
+  final String tagDisplay;
+  final String tagNormalized;
+  final String createdAtUtc;
+  final String updatedAtUtc;
+  const MessageUserTag({
+    required this.id,
+    required this.messageGuid,
+    required this.tagDisplay,
+    required this.tagNormalized,
+    required this.createdAtUtc,
+    required this.updatedAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['message_guid'] = Variable<String>(messageGuid);
+    map['tag_display'] = Variable<String>(tagDisplay);
+    map['tag_normalized'] = Variable<String>(tagNormalized);
+    map['created_at_utc'] = Variable<String>(createdAtUtc);
+    map['updated_at_utc'] = Variable<String>(updatedAtUtc);
+    return map;
+  }
+
+  MessageUserTagsCompanion toCompanion(bool nullToAbsent) {
+    return MessageUserTagsCompanion(
+      id: Value(id),
+      messageGuid: Value(messageGuid),
+      tagDisplay: Value(tagDisplay),
+      tagNormalized: Value(tagNormalized),
+      createdAtUtc: Value(createdAtUtc),
+      updatedAtUtc: Value(updatedAtUtc),
+    );
+  }
+
+  factory MessageUserTag.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MessageUserTag(
+      id: serializer.fromJson<int>(json['id']),
+      messageGuid: serializer.fromJson<String>(json['messageGuid']),
+      tagDisplay: serializer.fromJson<String>(json['tagDisplay']),
+      tagNormalized: serializer.fromJson<String>(json['tagNormalized']),
+      createdAtUtc: serializer.fromJson<String>(json['createdAtUtc']),
+      updatedAtUtc: serializer.fromJson<String>(json['updatedAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'messageGuid': serializer.toJson<String>(messageGuid),
+      'tagDisplay': serializer.toJson<String>(tagDisplay),
+      'tagNormalized': serializer.toJson<String>(tagNormalized),
+      'createdAtUtc': serializer.toJson<String>(createdAtUtc),
+      'updatedAtUtc': serializer.toJson<String>(updatedAtUtc),
+    };
+  }
+
+  MessageUserTag copyWith({
+    int? id,
+    String? messageGuid,
+    String? tagDisplay,
+    String? tagNormalized,
+    String? createdAtUtc,
+    String? updatedAtUtc,
+  }) => MessageUserTag(
+    id: id ?? this.id,
+    messageGuid: messageGuid ?? this.messageGuid,
+    tagDisplay: tagDisplay ?? this.tagDisplay,
+    tagNormalized: tagNormalized ?? this.tagNormalized,
+    createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+    updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+  );
+  MessageUserTag copyWithCompanion(MessageUserTagsCompanion data) {
+    return MessageUserTag(
+      id: data.id.present ? data.id.value : this.id,
+      messageGuid: data.messageGuid.present
+          ? data.messageGuid.value
+          : this.messageGuid,
+      tagDisplay: data.tagDisplay.present
+          ? data.tagDisplay.value
+          : this.tagDisplay,
+      tagNormalized: data.tagNormalized.present
+          ? data.tagNormalized.value
+          : this.tagNormalized,
+      createdAtUtc: data.createdAtUtc.present
+          ? data.createdAtUtc.value
+          : this.createdAtUtc,
+      updatedAtUtc: data.updatedAtUtc.present
+          ? data.updatedAtUtc.value
+          : this.updatedAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MessageUserTag(')
+          ..write('id: $id, ')
+          ..write('messageGuid: $messageGuid, ')
+          ..write('tagDisplay: $tagDisplay, ')
+          ..write('tagNormalized: $tagNormalized, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    messageGuid,
+    tagDisplay,
+    tagNormalized,
+    createdAtUtc,
+    updatedAtUtc,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MessageUserTag &&
+          other.id == this.id &&
+          other.messageGuid == this.messageGuid &&
+          other.tagDisplay == this.tagDisplay &&
+          other.tagNormalized == this.tagNormalized &&
+          other.createdAtUtc == this.createdAtUtc &&
+          other.updatedAtUtc == this.updatedAtUtc);
+}
+
+class MessageUserTagsCompanion extends UpdateCompanion<MessageUserTag> {
+  final Value<int> id;
+  final Value<String> messageGuid;
+  final Value<String> tagDisplay;
+  final Value<String> tagNormalized;
+  final Value<String> createdAtUtc;
+  final Value<String> updatedAtUtc;
+  const MessageUserTagsCompanion({
+    this.id = const Value.absent(),
+    this.messageGuid = const Value.absent(),
+    this.tagDisplay = const Value.absent(),
+    this.tagNormalized = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+  });
+  MessageUserTagsCompanion.insert({
+    this.id = const Value.absent(),
+    required String messageGuid,
+    required String tagDisplay,
+    required String tagNormalized,
+    required String createdAtUtc,
+    required String updatedAtUtc,
+  }) : messageGuid = Value(messageGuid),
+       tagDisplay = Value(tagDisplay),
+       tagNormalized = Value(tagNormalized),
+       createdAtUtc = Value(createdAtUtc),
+       updatedAtUtc = Value(updatedAtUtc);
+  static Insertable<MessageUserTag> custom({
+    Expression<int>? id,
+    Expression<String>? messageGuid,
+    Expression<String>? tagDisplay,
+    Expression<String>? tagNormalized,
+    Expression<String>? createdAtUtc,
+    Expression<String>? updatedAtUtc,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (messageGuid != null) 'message_guid': messageGuid,
+      if (tagDisplay != null) 'tag_display': tagDisplay,
+      if (tagNormalized != null) 'tag_normalized': tagNormalized,
+      if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
+      if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
+    });
+  }
+
+  MessageUserTagsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? messageGuid,
+    Value<String>? tagDisplay,
+    Value<String>? tagNormalized,
+    Value<String>? createdAtUtc,
+    Value<String>? updatedAtUtc,
+  }) {
+    return MessageUserTagsCompanion(
+      id: id ?? this.id,
+      messageGuid: messageGuid ?? this.messageGuid,
+      tagDisplay: tagDisplay ?? this.tagDisplay,
+      tagNormalized: tagNormalized ?? this.tagNormalized,
+      createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+      updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (messageGuid.present) {
+      map['message_guid'] = Variable<String>(messageGuid.value);
+    }
+    if (tagDisplay.present) {
+      map['tag_display'] = Variable<String>(tagDisplay.value);
+    }
+    if (tagNormalized.present) {
+      map['tag_normalized'] = Variable<String>(tagNormalized.value);
+    }
+    if (createdAtUtc.present) {
+      map['created_at_utc'] = Variable<String>(createdAtUtc.value);
+    }
+    if (updatedAtUtc.present) {
+      map['updated_at_utc'] = Variable<String>(updatedAtUtc.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MessageUserTagsCompanion(')
+          ..write('id: $id, ')
+          ..write('messageGuid: $messageGuid, ')
+          ..write('tagDisplay: $tagDisplay, ')
+          ..write('tagNormalized: $tagNormalized, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $HandleToParticipantOverridesTable extends HandleToParticipantOverrides
     with
         TableInfo<
@@ -4193,6 +4962,12 @@ abstract class _$OverlayDatabase extends GeneratedDatabase {
   late final $ChatOverridesTable chatOverrides = $ChatOverridesTable(this);
   late final $MessageAnnotationsTable messageAnnotations =
       $MessageAnnotationsTable(this);
+  late final $MessageUserFlagsTable messageUserFlags = $MessageUserFlagsTable(
+    this,
+  );
+  late final $MessageUserTagsTable messageUserTags = $MessageUserTagsTable(
+    this,
+  );
   late final $HandleToParticipantOverridesTable handleToParticipantOverrides =
       $HandleToParticipantOverridesTable(this);
   late final $VirtualParticipantsTable virtualParticipants =
@@ -4218,6 +4993,8 @@ abstract class _$OverlayDatabase extends GeneratedDatabase {
     participantOverrides,
     chatOverrides,
     messageAnnotations,
+    messageUserFlags,
+    messageUserTags,
     handleToParticipantOverrides,
     virtualParticipants,
     overlaySettings,
@@ -4979,6 +5756,436 @@ typedef $$MessageAnnotationsTableProcessedTableManager =
         >,
       ),
       MessageAnnotation,
+      PrefetchHooks Function()
+    >;
+typedef $$MessageUserFlagsTableCreateCompanionBuilder =
+    MessageUserFlagsCompanion Function({
+      required String messageGuid,
+      Value<bool> isSaved,
+      required String createdAtUtc,
+      required String updatedAtUtc,
+      Value<int> rowid,
+    });
+typedef $$MessageUserFlagsTableUpdateCompanionBuilder =
+    MessageUserFlagsCompanion Function({
+      Value<String> messageGuid,
+      Value<bool> isSaved,
+      Value<String> createdAtUtc,
+      Value<String> updatedAtUtc,
+      Value<int> rowid,
+    });
+
+class $$MessageUserFlagsTableFilterComposer
+    extends Composer<_$OverlayDatabase, $MessageUserFlagsTable> {
+  $$MessageUserFlagsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get messageGuid => $composableBuilder(
+    column: $table.messageGuid,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isSaved => $composableBuilder(
+    column: $table.isSaved,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$MessageUserFlagsTableOrderingComposer
+    extends Composer<_$OverlayDatabase, $MessageUserFlagsTable> {
+  $$MessageUserFlagsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get messageGuid => $composableBuilder(
+    column: $table.messageGuid,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isSaved => $composableBuilder(
+    column: $table.isSaved,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MessageUserFlagsTableAnnotationComposer
+    extends Composer<_$OverlayDatabase, $MessageUserFlagsTable> {
+  $$MessageUserFlagsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get messageGuid => $composableBuilder(
+    column: $table.messageGuid,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isSaved =>
+      $composableBuilder(column: $table.isSaved, builder: (column) => column);
+
+  GeneratedColumn<String> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => column,
+  );
+}
+
+class $$MessageUserFlagsTableTableManager
+    extends
+        RootTableManager<
+          _$OverlayDatabase,
+          $MessageUserFlagsTable,
+          MessageUserFlag,
+          $$MessageUserFlagsTableFilterComposer,
+          $$MessageUserFlagsTableOrderingComposer,
+          $$MessageUserFlagsTableAnnotationComposer,
+          $$MessageUserFlagsTableCreateCompanionBuilder,
+          $$MessageUserFlagsTableUpdateCompanionBuilder,
+          (
+            MessageUserFlag,
+            BaseReferences<
+              _$OverlayDatabase,
+              $MessageUserFlagsTable,
+              MessageUserFlag
+            >,
+          ),
+          MessageUserFlag,
+          PrefetchHooks Function()
+        > {
+  $$MessageUserFlagsTableTableManager(
+    _$OverlayDatabase db,
+    $MessageUserFlagsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MessageUserFlagsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MessageUserFlagsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MessageUserFlagsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> messageGuid = const Value.absent(),
+                Value<bool> isSaved = const Value.absent(),
+                Value<String> createdAtUtc = const Value.absent(),
+                Value<String> updatedAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MessageUserFlagsCompanion(
+                messageGuid: messageGuid,
+                isSaved: isSaved,
+                createdAtUtc: createdAtUtc,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String messageGuid,
+                Value<bool> isSaved = const Value.absent(),
+                required String createdAtUtc,
+                required String updatedAtUtc,
+                Value<int> rowid = const Value.absent(),
+              }) => MessageUserFlagsCompanion.insert(
+                messageGuid: messageGuid,
+                isSaved: isSaved,
+                createdAtUtc: createdAtUtc,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$MessageUserFlagsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$OverlayDatabase,
+      $MessageUserFlagsTable,
+      MessageUserFlag,
+      $$MessageUserFlagsTableFilterComposer,
+      $$MessageUserFlagsTableOrderingComposer,
+      $$MessageUserFlagsTableAnnotationComposer,
+      $$MessageUserFlagsTableCreateCompanionBuilder,
+      $$MessageUserFlagsTableUpdateCompanionBuilder,
+      (
+        MessageUserFlag,
+        BaseReferences<
+          _$OverlayDatabase,
+          $MessageUserFlagsTable,
+          MessageUserFlag
+        >,
+      ),
+      MessageUserFlag,
+      PrefetchHooks Function()
+    >;
+typedef $$MessageUserTagsTableCreateCompanionBuilder =
+    MessageUserTagsCompanion Function({
+      Value<int> id,
+      required String messageGuid,
+      required String tagDisplay,
+      required String tagNormalized,
+      required String createdAtUtc,
+      required String updatedAtUtc,
+    });
+typedef $$MessageUserTagsTableUpdateCompanionBuilder =
+    MessageUserTagsCompanion Function({
+      Value<int> id,
+      Value<String> messageGuid,
+      Value<String> tagDisplay,
+      Value<String> tagNormalized,
+      Value<String> createdAtUtc,
+      Value<String> updatedAtUtc,
+    });
+
+class $$MessageUserTagsTableFilterComposer
+    extends Composer<_$OverlayDatabase, $MessageUserTagsTable> {
+  $$MessageUserTagsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get messageGuid => $composableBuilder(
+    column: $table.messageGuid,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tagDisplay => $composableBuilder(
+    column: $table.tagDisplay,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tagNormalized => $composableBuilder(
+    column: $table.tagNormalized,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$MessageUserTagsTableOrderingComposer
+    extends Composer<_$OverlayDatabase, $MessageUserTagsTable> {
+  $$MessageUserTagsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get messageGuid => $composableBuilder(
+    column: $table.messageGuid,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tagDisplay => $composableBuilder(
+    column: $table.tagDisplay,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tagNormalized => $composableBuilder(
+    column: $table.tagNormalized,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MessageUserTagsTableAnnotationComposer
+    extends Composer<_$OverlayDatabase, $MessageUserTagsTable> {
+  $$MessageUserTagsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get messageGuid => $composableBuilder(
+    column: $table.messageGuid,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get tagDisplay => $composableBuilder(
+    column: $table.tagDisplay,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get tagNormalized => $composableBuilder(
+    column: $table.tagNormalized,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => column,
+  );
+}
+
+class $$MessageUserTagsTableTableManager
+    extends
+        RootTableManager<
+          _$OverlayDatabase,
+          $MessageUserTagsTable,
+          MessageUserTag,
+          $$MessageUserTagsTableFilterComposer,
+          $$MessageUserTagsTableOrderingComposer,
+          $$MessageUserTagsTableAnnotationComposer,
+          $$MessageUserTagsTableCreateCompanionBuilder,
+          $$MessageUserTagsTableUpdateCompanionBuilder,
+          (
+            MessageUserTag,
+            BaseReferences<
+              _$OverlayDatabase,
+              $MessageUserTagsTable,
+              MessageUserTag
+            >,
+          ),
+          MessageUserTag,
+          PrefetchHooks Function()
+        > {
+  $$MessageUserTagsTableTableManager(
+    _$OverlayDatabase db,
+    $MessageUserTagsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MessageUserTagsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MessageUserTagsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MessageUserTagsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> messageGuid = const Value.absent(),
+                Value<String> tagDisplay = const Value.absent(),
+                Value<String> tagNormalized = const Value.absent(),
+                Value<String> createdAtUtc = const Value.absent(),
+                Value<String> updatedAtUtc = const Value.absent(),
+              }) => MessageUserTagsCompanion(
+                id: id,
+                messageGuid: messageGuid,
+                tagDisplay: tagDisplay,
+                tagNormalized: tagNormalized,
+                createdAtUtc: createdAtUtc,
+                updatedAtUtc: updatedAtUtc,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String messageGuid,
+                required String tagDisplay,
+                required String tagNormalized,
+                required String createdAtUtc,
+                required String updatedAtUtc,
+              }) => MessageUserTagsCompanion.insert(
+                id: id,
+                messageGuid: messageGuid,
+                tagDisplay: tagDisplay,
+                tagNormalized: tagNormalized,
+                createdAtUtc: createdAtUtc,
+                updatedAtUtc: updatedAtUtc,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$MessageUserTagsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$OverlayDatabase,
+      $MessageUserTagsTable,
+      MessageUserTag,
+      $$MessageUserTagsTableFilterComposer,
+      $$MessageUserTagsTableOrderingComposer,
+      $$MessageUserTagsTableAnnotationComposer,
+      $$MessageUserTagsTableCreateCompanionBuilder,
+      $$MessageUserTagsTableUpdateCompanionBuilder,
+      (
+        MessageUserTag,
+        BaseReferences<
+          _$OverlayDatabase,
+          $MessageUserTagsTable,
+          MessageUserTag
+        >,
+      ),
+      MessageUserTag,
       PrefetchHooks Function()
     >;
 typedef $$HandleToParticipantOverridesTableCreateCompanionBuilder =
@@ -6511,6 +7718,10 @@ class $OverlayDatabaseManager {
       $$ChatOverridesTableTableManager(_db, _db.chatOverrides);
   $$MessageAnnotationsTableTableManager get messageAnnotations =>
       $$MessageAnnotationsTableTableManager(_db, _db.messageAnnotations);
+  $$MessageUserFlagsTableTableManager get messageUserFlags =>
+      $$MessageUserFlagsTableTableManager(_db, _db.messageUserFlags);
+  $$MessageUserTagsTableTableManager get messageUserTags =>
+      $$MessageUserTagsTableTableManager(_db, _db.messageUserTags);
   $$HandleToParticipantOverridesTableTableManager
   get handleToParticipantOverrides =>
       $$HandleToParticipantOverridesTableTableManager(
