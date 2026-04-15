@@ -4,7 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../essentials/logging/application/app_logger.dart';
-import '../../../../../essentials/logging/infrastructure/log_export_service.dart';
+import '../../../../../essentials/logging/application/diagnostic_report_actions.dart';
 
 /// A small button that triggers the log export + email compose flow.
 ///
@@ -21,7 +21,7 @@ class SendLogsActionButton extends ConsumerWidget {
     return GestureDetector(
       onTap: () {
         final writer = ref.read(appLoggerProvider.notifier).writer;
-        LogExportService(writer).exportAndPresent();
+        exportDiagnosticReport(writer);
       },
       child: DecoratedBox(
         decoration: BoxDecoration(

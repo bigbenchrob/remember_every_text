@@ -4,6 +4,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
+import '../../../../essentials/logging/application/app_logger.dart';
+import '../../../../essentials/logging/application/diagnostic_report_actions.dart';
+import '../../../../essentials/logging/infrastructure/log_export_service.dart';
 import '../../../../essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import '../../../../essentials/onboarding/application/onboarding_gate_provider.dart';
 import '../../../../essentials/onboarding/domain/onboarding_environment_report.dart';
@@ -493,6 +496,32 @@ class _DetailPane extends ConsumerWidget {
                       ),
                       child: Text(action.label),
                     ),
+                    EnvironmentReadinessActionKind.sendReport => OutlinedButton(
+                      onPressed: report == null
+                          ? null
+                          : () async {
+                              final writer = ref
+                                  .read(appLoggerProvider.notifier)
+                                  .writer;
+                              final result =
+                                  await exportOnboardingFailureDiagnosticReport(
+                                    writer,
+                                    report: report!,
+                                  );
+                              if (!context.mounted) {
+                                return;
+                              }
+                              _showDiagnosticReportSnackBar(
+                                context,
+                                result: result,
+                              );
+                            },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: colors.content.textPrimary,
+                        side: BorderSide(color: colors.lines.borderSubtle),
+                      ),
+                      child: Text(action.label),
+                    ),
                   },
               ],
             ),
@@ -501,6 +530,24 @@ class _DetailPane extends ConsumerWidget {
       ),
     );
   }
+}
+
+void _showDiagnosticReportSnackBar(
+  BuildContext context, {
+  required DiagnosticReportPresentationResult result,
+}) {
+  final messenger = ScaffoldMessenger.maybeOf(context);
+  if (messenger == null) {
+    return;
+  }
+
+  final message = result.exportPath == null
+      ? 'MessageLens could not prepare a diagnostic report right now.'
+      : result.attachedToMailDraft
+      ? 'Email draft prepared with the diagnostic report attached.'
+      : 'Diagnostic report prepared. Attach the file opened in Finder to the email draft.';
+
+  messenger.showSnackBar(SnackBar(content: Text(message)));
 }
 
 class _InstructionRow extends StatelessWidget {

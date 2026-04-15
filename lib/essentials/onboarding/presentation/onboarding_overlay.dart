@@ -3,6 +3,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../config/theme/colors/theme_colors.dart';
 import '../../../config/theme/theme_typography.dart';
+import '../../logging/application/app_logger.dart';
+import '../../logging/application/diagnostic_report_actions.dart';
+import '../../logging/infrastructure/log_export_service.dart';
 import '../../db_importers/domain/entities/db_import_result.dart';
 import '../../db_importers/presentation/view_model/db_import_control_provider.dart';
 import '../../db_migrate/domain/entities/db_migration_result.dart';
@@ -337,21 +340,58 @@ class _WelcomeContent extends ConsumerWidget {
         ],
         const SizedBox(height: 32),
         if (presentation.canImportImmediately)
-          FilledButton(
-            onPressed: () {
-              ref
-                  .read(onboardingGateProvider.notifier)
-                  .startImportAndMigration();
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: colors.buttons.primaryBackground,
-              foregroundColor: colors.buttons.primaryForeground,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              FilledButton(
+                onPressed: () {
+                  ref
+                      .read(onboardingGateProvider.notifier)
+                      .startImportAndMigration();
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: colors.buttons.primaryBackground,
+                  foregroundColor: colors.buttons.primaryForeground,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(presentation.primaryActionLabel),
               ),
-            ),
-            child: Text(presentation.primaryActionLabel),
+              if (presentation.canSendDiagnosticReport && report != null)
+                OutlinedButton(
+                  onPressed: () async {
+                    final writer = ref.read(appLoggerProvider.notifier).writer;
+                    final result =
+                        await exportOnboardingFailureDiagnosticReport(
+                          writer,
+                          report: report!,
+                        );
+                    if (!context.mounted) {
+                      return;
+                    }
+                    _showDiagnosticReportSnackBar(context, result: result);
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: colors.content.textPrimary,
+                    side: BorderSide(color: colors.lines.borderSubtle),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 14,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text('Send Report To Developer'),
+                ),
+            ],
           )
         else ...[
           FilledButton(
@@ -390,6 +430,16 @@ class _WelcomeContent extends ConsumerWidget {
               child: const Text('Import Anyway'),
             ),
           ],
+        ],
+        if (presentation.canSendDiagnosticReport && report != null) ...[
+          const SizedBox(height: 12),
+          Text(
+            'MessageLens will try to open an email draft to bigbenchrob@gmail.com with the report already attached. If that is not possible, it will reveal the file in Finder so it can be attached manually.',
+            style: typography.caption.copyWith(
+              color: colors.content.textTertiary,
+            ),
+            textAlign: TextAlign.center,
+          ),
         ],
       ],
     );
@@ -620,6 +670,7 @@ _AwaitingUserActionPresentation _awaitingUserActionPresentation(
           'Contacts data. This is a one-time process.',
       notes: [],
       canImportImmediately: true,
+      canSendDiagnosticReport: false,
       allowsManualImport: false,
       primaryActionLabel: 'Import My Messages',
       icon: Icons.message_rounded,
@@ -636,6 +687,7 @@ _AwaitingUserActionPresentation _awaitingUserActionPresentation(
             'this Mac. Importing will copy that data into the app.',
         notes: [],
         canImportImmediately: true,
+        canSendDiagnosticReport: false,
         allowsManualImport: false,
         primaryActionLabel: 'Import My Messages',
         icon: Icons.message_rounded,
@@ -650,6 +702,7 @@ _AwaitingUserActionPresentation _awaitingUserActionPresentation(
             'issue below.',
         notes: _sourceUnavailableNotes(report),
         canImportImmediately: false,
+        canSendDiagnosticReport: false,
         allowsManualImport: false,
         primaryActionLabel: 'Import My Messages',
         icon: Icons.storage_rounded,
@@ -663,6 +716,7 @@ _AwaitingUserActionPresentation _awaitingUserActionPresentation(
             'to have little or no local message history right now.',
         notes: _sourceSparseNotes(report),
         canImportImmediately: false,
+        canSendDiagnosticReport: false,
         allowsManualImport: true,
         primaryActionLabel: 'Import My Messages',
         icon: Icons.cloud_off_rounded,
@@ -673,9 +727,11 @@ _AwaitingUserActionPresentation _awaitingUserActionPresentation(
         title: 'Import Attempt Failed',
         body:
             'MessageLens could reach your local sources, but the last import '
-            'attempt did not finish successfully.',
+            'attempt did not finish successfully. You can retry now or send '
+            'a report to the developer.',
         notes: _importFailureNotes(report),
         canImportImmediately: true,
+        canSendDiagnosticReport: true,
         allowsManualImport: false,
         primaryActionLabel: 'Try Import Again',
         icon: Icons.error_outline_rounded,
@@ -686,9 +742,11 @@ _AwaitingUserActionPresentation _awaitingUserActionPresentation(
         title: 'Imported Data Could Not Be Prepared',
         body:
             'MessageLens imported source data, but the app could not finish '
-            'preparing it for use.',
+            'preparing it for use. You can retry now or send a report to the '
+            'developer.',
         notes: _migrationFailureNotes(report),
         canImportImmediately: true,
+        canSendDiagnosticReport: true,
         allowsManualImport: false,
         primaryActionLabel: 'Retry Import and Migration',
         icon: Icons.sync_problem_rounded,
@@ -700,6 +758,7 @@ _AwaitingUserActionPresentation _awaitingUserActionPresentation(
         body: _permissionBodyText(report),
         notes: const [],
         canImportImmediately: false,
+        canSendDiagnosticReport: false,
         allowsManualImport: false,
         primaryActionLabel: 'Import My Messages',
         icon: Icons.lock_outline_rounded,
@@ -713,6 +772,7 @@ _AwaitingUserActionPresentation _awaitingUserActionPresentation(
             'its imported data on this Mac.',
         notes: [],
         canImportImmediately: false,
+        canSendDiagnosticReport: false,
         allowsManualImport: false,
         primaryActionLabel: 'Import My Messages',
         icon: Icons.check_circle_outline,
@@ -742,6 +802,9 @@ List<String> _importFailureNotes(OnboardingEnvironmentReport report) {
 
   notes.add(
     'Confirm Messages and Contacts are still available on this Mac, then retry the import.',
+  );
+  notes.add(
+    'If the import fails again, use "Send Report To Developer" to have MessageLens prepare an email with the diagnostic report attached when possible.',
   );
 
   if (!report.importDatabase.exists || !report.importDatabase.hasData) {
@@ -785,10 +848,28 @@ List<String> _migrationFailureNotes(OnboardingEnvironmentReport report) {
   }
 
   notes.add(
-    'If this keeps happening, capture the error above and inspect the migration diagnostics in the dev panel.',
+    'If this keeps happening, use "Send Report To Developer" to have MessageLens prepare an email with the diagnostic report attached when possible.',
   );
 
   return notes;
+}
+
+void _showDiagnosticReportSnackBar(
+  BuildContext context, {
+  required DiagnosticReportPresentationResult result,
+}) {
+  final messenger = ScaffoldMessenger.maybeOf(context);
+  if (messenger == null) {
+    return;
+  }
+
+  final message = result.exportPath == null
+      ? 'MessageLens could not prepare a diagnostic report right now.'
+      : result.attachedToMailDraft
+      ? 'Email draft prepared with the diagnostic report attached.'
+      : 'Diagnostic report prepared. Attach the file opened in Finder to the email draft.';
+
+  messenger.showSnackBar(SnackBar(content: Text(message)));
 }
 
 String _formatRecordedAt(DateTime timestamp) {
@@ -929,6 +1010,7 @@ class _AwaitingUserActionPresentation {
     required this.body,
     required this.notes,
     required this.canImportImmediately,
+    required this.canSendDiagnosticReport,
     required this.allowsManualImport,
     required this.primaryActionLabel,
     required this.icon,
@@ -939,6 +1021,7 @@ class _AwaitingUserActionPresentation {
   final String body;
   final List<String> notes;
   final bool canImportImmediately;
+  final bool canSendDiagnosticReport;
   final bool allowsManualImport;
   final String primaryActionLabel;
   final IconData icon;

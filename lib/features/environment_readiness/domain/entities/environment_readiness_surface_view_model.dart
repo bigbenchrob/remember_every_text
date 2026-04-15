@@ -9,7 +9,12 @@ enum EnvironmentReadinessStepStatus { pending, active, success }
 
 enum EnvironmentReadinessTone { primary, warning, success }
 
-enum EnvironmentReadinessActionKind { openSettings, recheck, startImport }
+enum EnvironmentReadinessActionKind {
+  openSettings,
+  recheck,
+  startImport,
+  sendReport,
+}
 
 class EnvironmentReadinessAction {
   const EnvironmentReadinessAction({required this.kind, required this.label});

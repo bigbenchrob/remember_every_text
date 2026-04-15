@@ -93,6 +93,11 @@ void main() {
       );
       expect(surface.detail.title, 'Retry Setup');
       expect(surface.detail.actions.first.label, 'Try Import Again');
+      expect(surface.detail.actions.map((action) => action.kind), [
+        EnvironmentReadinessActionKind.startImport,
+        EnvironmentReadinessActionKind.sendReport,
+        EnvironmentReadinessActionKind.recheck,
+      ]);
       expect(surface.detail.tone, EnvironmentReadinessTone.warning);
     });
   });

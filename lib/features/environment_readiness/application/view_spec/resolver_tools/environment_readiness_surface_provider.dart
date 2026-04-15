@@ -187,12 +187,13 @@ EnvironmentReadinessDetailViewModel _detailFor({
         stepKey: EnvironmentReadinessStepKey.importReadiness,
         title: isRetry ? 'Retry Setup' : 'Ready To Import',
         body: isRetry
-            ? 'MessageLens reached the import pipeline, but the last setup attempt did not finish cleanly. You can retry from here once you are ready.'
+            ? 'MessageLens reached the import pipeline, but the last setup attempt did not finish cleanly. You can retry from here or send a report to the developer with diagnostic logs.'
             : 'The required local permissions and sources appear ready. The next step is importing your Messages and Contacts data into the app.',
         instructions: isRetry
             ? [
                 'Review the machine view below to confirm the local sources still look healthy.',
                 'Start setup again to retry import and migration.',
+                'If the problem repeats, use Send Report To Developer to have MessageLens prepare an email with the diagnostic report attached when possible.',
               ]
             : [
                 'Start the import when you are ready.',
@@ -204,6 +205,11 @@ EnvironmentReadinessDetailViewModel _detailFor({
             kind: EnvironmentReadinessActionKind.startImport,
             label: label,
           ),
+          if (isRetry)
+            const EnvironmentReadinessAction(
+              kind: EnvironmentReadinessActionKind.sendReport,
+              label: 'Send Report To Developer',
+            ),
           const EnvironmentReadinessAction(
             kind: EnvironmentReadinessActionKind.recheck,
             label: 'Re-check',

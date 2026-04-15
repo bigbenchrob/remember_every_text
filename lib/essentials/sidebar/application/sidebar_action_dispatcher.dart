@@ -15,7 +15,7 @@ import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.d
 import '../../../features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
 import '../../db/feature_level_providers.dart';
 import '../../logging/application/app_logger.dart';
-import '../../logging/infrastructure/log_export_service.dart';
+import '../../logging/application/diagnostic_report_actions.dart';
 import '../../navigation/domain/entities/view_spec.dart';
 import '../../navigation/domain/navigation_constants.dart';
 import '../../navigation/domain/sidebar_mode.dart';
@@ -140,7 +140,7 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
         await ref.read(onboardingGateProvider.notifier).startReimport();
       case SendLogsRequested():
         final writer = ref.read(appLoggerProvider.notifier).writer;
-        LogExportService(writer).exportAndPresent();
+        await exportDiagnosticReport(writer);
     }
   }
 
