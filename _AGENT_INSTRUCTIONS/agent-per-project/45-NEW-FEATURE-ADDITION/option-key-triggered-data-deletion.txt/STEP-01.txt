@@ -1,0 +1,22 @@
+Goal: Detect whether the Option key is held at app launch on macOS and expose this via a platform channel.
+
+Requirements:
+	•	Implement detection in the macOS host code (AppKit), not in Flutter widgets.
+	•	Determine whether the Option key is held at launch.
+	•	Expose a platform channel method:
+channel: com.bigbenchsoftware.messagelens/startup
+method: getStartupFlags
+return: { optionLaunchResetRequested: bool }
+	•	Provide minimal Dart code to call this method and retrieve the flag.
+
+Strict constraints:
+	•	Do NOT implement any UI.
+	•	Do NOT implement deletion logic.
+	•	Do NOT reference or reason about reset behavior.
+	•	Do NOT plan future steps.
+	•	Do NOT modify anything unrelated to this task.
+
+Output only:
+	•	macOS host code changes
+	•	platform channel wiring
+	•	minimal Dart call to retrieve the flag

@@ -1,0 +1,105 @@
+Handoff document 1 — implementation plan and preferred UX path
+
+MessageLens macOS recovery path: Option-at-launch → confirm → export logs → reset only app data → reimport
+
+Objective
+
+Implement a safe and supportable “Start Over” path for MessageLens on macOS so a tester can recover from repeated broken import/migration attempts without needing to manually navigate to ~/Library. The preferred experience is:
+	•	user holds Option while launching the app
+	•	native macOS startup code detects that modifier state
+	•	Flutter receives a one-time startup flag through a platform channel
+	•	Flutter shows a destructive confirmation dialog
+	•	user can first export/send logs
+	•	if confirmed, the app deletes only the MessageLens-owned local app-data root
+	•	app then proceeds as a fresh install / onboarding / reimport flow
+
+This design is preferred because Flutter’s HardwareKeyboard manages key events for the running Flutter application, while Flutter’s documented mechanism for platform-specific behavior is platform channels, and AppKit provides native modifier-flag support through NSEvent.ModifierFlags.  ￼
+
+Why this should not be implemented as a normal Flutter keyboard shortcut
+
+Do not treat this as a widget-level key-listener problem. Flutter’s keyboard APIs and KeyboardListener are for key events delivered to the running Flutter app, typically after the app is already up and handling focus/key routing. That makes them appropriate for in-app shortcuts, but not the best foundation for a true “modifier held at launch” recovery path.  ￼
+
+Recommended architecture
+
+1. Native macOS startup detection
+In the macOS host layer, detect whether the Option key is down as early in startup as practical. Use AppKit modifier flags for this. Apple documents NSEvent.ModifierFlags as the flags representing key states in an event object.  ￼
+
+2. Bridge startup state into Flutter
+Expose a small platform channel from macOS to Flutter, for example:
+	•	channel: com.bigbenchsoftware.messagelens/startup
+	•	method: getStartupFlags
+	•	response: { optionLaunchResetRequested: true | false }
+
+Flutter documents platform channels as the standard way to call platform-specific code from Dart.  ￼
+
+3. Flutter bootstrap coordinator
+Very early in app startup, before any normal migration/import work begins:
+	•	query startup flags
+	•	if optionLaunchResetRequested == false, continue normal boot
+	•	if true, show a destructive confirmation dialog
+	•	do not perform any deletion unless the user explicitly confirms
+
+4. Preferred dialog flow
+Use a confirmation dialog with explicit wording.
+
+Title:
+Start Over?
+
+Body:
+MessageLens can delete its local app data and rebuild everything from scratch. This deletes only MessageLens’s own local data folder, including imported databases, caches, indexes, migration state, and other generated app data. It does not delete your system Library folder or other applications’ data.
+
+Buttons:
+	•	Cancel
+	•	Export Logs
+	•	Delete MessageLens App Data
+
+Do not use vague labels like “OK” or “Continue”.
+
+5. Preferred support flow before deletion
+The recovery path should prefer this sequence:
+	1.	Detect Option-at-launch
+	2.	Show confirmation dialog
+	3.	Offer log export/send first
+	4.	Only then allow destructive reset
+	5.	After successful reset, route to onboarding/import as a fresh install
+
+This is the preferred support flow because it gives you diagnostics before the wipe while still keeping the tester inside the app.
+
+Reset service responsibilities
+
+Create a dedicated reset service with a narrow API, for example:
+
+Future<ResetResult> deleteValidatedMessageLensAppData()
+
+That service should:
+	•	close open database handles
+	•	stop background tasks/watchers
+	•	resolve the app-data root
+	•	validate it
+	•	delete only the validated MessageLens app-data root
+	•	recreate minimal required folder structure if needed
+	•	clear bootstrap state
+	•	route app to clean onboarding/import flow
+	•	return a structured success/failure result
+
+Visible non-hidden reset path
+
+Do not make Option-at-launch the only recovery path. Also add a normal in-app entry point, such as:
+	•	MessageLens > Reset App Data…
+
+That menu path should call the exact same validator and reset service. The hidden Option-launch gesture is the emergency path; the visible menu command is the day-to-day support path.
+
+Acceptance criteria
+
+This work is complete only if all of the following are true:
+	•	holding Option while launching produces a startup reset flag in Flutter through a platform channel  ￼
+	•	launching normally does not show reset UI
+	•	user sees a destructive confirmation dialog before anything is deleted
+	•	user can cancel safely
+	•	user can export logs before deletion
+	•	on success, app enters first-run/onboarding/import flow
+	•	on failure, app shows a clear error and does not continue in a half-reset state
+
+Bottom line
+
+Implement launch-time Option-key detection in the native macOS host layer, not as a Flutter widget shortcut. Pass the result into Flutter via a platform channel. In Flutter, show a destructive confirmation dialog with an “Export Logs” path before deletion, then delete only the validated MessageLens app-data root and proceed as a fresh install. This matches Flutter’s documented platform-integration model and uses macOS’s native modifier-flag mechanism where it is strongest.  ￼

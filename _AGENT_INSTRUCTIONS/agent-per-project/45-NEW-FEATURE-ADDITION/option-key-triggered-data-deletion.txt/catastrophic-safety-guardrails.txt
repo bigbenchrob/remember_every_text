@@ -1,0 +1,128 @@
+Handoff document 2 — catastrophic-safety guardrails
+
+MessageLens macOS reset feature: mandatory guardrails and forbidden implementation patterns
+
+Most important rule
+
+Under no circumstances may this feature delete, move, or recursively remove any directory except the single MessageLens-owned app-data root that has been explicitly resolved, canonicalized, and validated.
+
+The reset feature must never delete:
+	•	~/Library
+	•	~/Library/Application Support
+	•	the parent of the MessageLens app-data root
+	•	any sibling directory inside Application Support
+	•	any path inferred by weak string matching
+	•	any path not first canonicalized and validated
+
+This is the highest-priority requirement.
+
+Mandatory design constraints
+
+1. One validated root only
+The implementation must resolve exactly one app-owned deletion target: the MessageLens app-data root.
+
+It must not derive the deletion target by:
+	•	trimming path strings
+	•	going “up one directory”
+	•	deleting a parent and recreating a child
+	•	pattern-matching on folder names
+	•	deleting “all MessageLens-related folders”
+	•	globbing multiple directories
+
+2. Canonicalize before deletion
+Before any destructive step, the code must:
+	•	resolve the target to an absolute path
+	•	normalize it
+	•	canonicalize it
+	•	compare that canonical path against the exact expected MessageLens-owned root
+
+If canonicalization or validation fails, abort immediately.
+
+3. Validate against forbidden roots
+Before deletion, explicitly reject any candidate path that equals, or would amount in practice to, any of the following:
+	•	the user home directory
+	•	~/Library
+	•	~/Library/Application Support
+	•	the parent of the MessageLens data root
+	•	any sibling app directory
+
+If any such condition is encountered, return failure and show an error. Do not continue.
+
+4. Require a sentinel file
+Inside the true MessageLens app-data root, maintain a marker file such as:
+
+.messagelens_app_data_root
+
+Deletion may proceed only if that sentinel exists inside the exact root being deleted.
+
+If the sentinel is missing:
+	•	abort deletion
+	•	show an error
+	•	do not guess
+	•	do not fall back to deleting a nearby directory
+
+This rule is mandatory.
+
+5. No deletion from UI code
+UI code must never directly perform file deletion. The dialog/button layer may only invoke a dedicated deletion service. The validator and deletion service must be isolated, narrow, and test-covered.
+
+6. No best-effort reset
+This feature must not be implemented as “try to delete what we can.” If validation fails or deletion partially fails:
+	•	stop immediately
+	•	surface the error
+	•	do not continue into import/migration
+	•	do not leave the app in a half-reset state
+
+Mandatory deletion service contract
+
+Create a dedicated service with an auditable API, such as:
+
+Future<ResetResult> deleteValidatedMessageLensAppData()
+
+That service must:
+	1.	close DB handles
+	2.	stop watchers/background tasks
+	3.	resolve the app-data root
+	4.	canonicalize it
+	5.	validate forbidden roots
+	6.	validate sentinel file presence
+	7.	log the raw and canonical target paths
+	8.	perform deletion only after all checks pass
+	9.	recreate minimal structure if needed
+	10.	return structured success/failure
+
+Hard prohibitions
+
+The agent must not do any of the following:
+	•	must not delete Application Support
+	•	must not delete the parent of the app-specific root
+	•	must not skip canonicalization
+	•	must not skip sentinel validation
+	•	must not delete based on substring matching
+	•	must not issue broad recursive deletes on a parent folder
+	•	must not keep separate deletion logic for Option-launch and menu reset
+	•	must not proceed after validation failure
+	•	must not proceed after partial deletion failure
+
+Any of those is a failed implementation.
+
+Mandatory tests
+
+The PR is not acceptable without tests that prove deletion is rejected for at least the following:
+	•	/Users/<user>
+	•	/Users/<user>/Library
+	•	/Users/<user>/Library/Application Support
+	•	parent of MessageLens app-data root
+	•	sibling app folder inside Application Support
+	•	a similar-looking MessageLens-ish path that is not the exact validated root
+	•	exact root but with sentinel file missing
+
+Also include a positive test proving that deletion is allowed only for the exact canonical MessageLens app-data root when the sentinel is present.
+
+Why this architecture is preferred
+
+Flutter’s keyboard APIs are for the running app’s key-event system, and Flutter’s official mechanism for platform-specific functionality is platform channels. Therefore the launch-time modifier check belongs in native macOS code, while the dangerous file operation belongs in a dedicated, validated service on the app side, not in ad hoc UI logic.  ￼
+
+Final instruction to the agent
+
+Implement this feature so that the deletion scope is physically constrained to one canonical, sentinel-validated MessageLens-owned app-data root and cannot expand to ~/Library/Application Support or any parent directory, even by mistake. The launch gesture should be detected in native macOS startup code and bridged into Flutter via a platform channel; the destructive operation must live behind a heavily tested validator and reset service.
