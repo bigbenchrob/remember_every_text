@@ -1,0 +1,87 @@
+name: Release Metadata Check
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - edited
+      - ready_for_review
+
+jobs:
+  release-metadata:
+    name: Validate Release Metadata
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Validate versioning and changelog updates
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const appSurfacePatterns = [
+              /^lib\//,
+              /^assets\//,
+              /^rust\//,
+              /^packages\//,
+              /^macos\//,
+              /^ios\//,
+              /^android\//,
+              /^linux\//,
+              /^windows\//,
+              /^web\//,
+            ];
+            const internalOnlyOverridePattern =
+              /- \[[xX]\] This PR intentionally skips version\/changelog updates because it is internal-only\./;
+
+            const pullRequest = context.payload.pull_request;
+            if (pullRequest.draft) {
+              core.info('Pull request is still a draft; release metadata validation is deferred until it is ready for review.');
+              return;
+            }
+
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pullRequest.number,
+              per_page: 100,
+            });
+
+            const changedFiles = files.map((file) => file.filename);
+            const touchesAppSurface = changedFiles.some((fileName) =>
+              appSurfacePatterns.some((pattern) => pattern.test(fileName)),
+            );
+            const touchesPubspec = changedFiles.includes('pubspec.yaml');
+            const touchesChangelog = changedFiles.includes('CHANGELOG.md');
+            const hasInternalOnlyOverride = internalOnlyOverridePattern.test(
+              pullRequest.body ?? '',
+            );
+
+            if (!touchesAppSurface) {
+              core.info('No app-surface changes detected; release metadata update not required.');
+              return;
+            }
+
+            if (touchesPubspec && touchesChangelog) {
+              core.info('Both pubspec.yaml and CHANGELOG.md were updated in this pull request.');
+              return;
+            }
+
+            if (hasInternalOnlyOverride) {
+              core.info('Internal-only override detected in pull request body; skipping release metadata requirement.');
+              return;
+            }
+
+            const missingFiles = [];
+            if (!touchesPubspec) {
+              missingFiles.push('pubspec.yaml');
+            }
+            if (!touchesChangelog) {
+              missingFiles.push('CHANGELOG.md');
+            }
+
+            core.setFailed(
+              `This pull request changes app surfaces but is missing required release metadata updates: ${missingFiles.join(', ')}. Significant user-facing or tester-facing changes must update both pubspec.yaml and CHANGELOG.md. If the change is truly internal-only, check the internal-only release metadata override box in the pull request template.`,
+            );

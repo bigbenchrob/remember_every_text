@@ -94,3 +94,27 @@ If the extractor is missing, imports will still work but message text will be la
 ## Development
 
 See `_AGENT_CONTEXT/AGENT_CONTEXT.md` for comprehensive development guidelines and architecture documentation.
+
+## Release Versioning
+
+MessageLens should use Flutter's standard version format in `pubspec.yaml`:
+
+- `x.y.z` is the user-visible semantic version.
+- `+build` is the monotonically increasing build number.
+
+For this repo, keep the release process simple:
+
+- `pubspec.yaml` is the source of truth for the current app version.
+- `CHANGELOG.md` records all significant user-facing and tester-facing changes.
+- Any significant change should include both a version bump and a new changelog entry in the same change.
+
+Recommended solo workflow:
+
+- Housekeeping, maintenance, and small bug fixes that do not merit a version bump may be committed directly to `main`.
+- Feature additions and other release-worthy changes should be developed on a feature branch.
+- Release-worthy changes should open a non-draft pull request before merging to `main` so the GitHub checks run and the final diff can be reviewed in one place.
+- Before merging a release-worthy change, update both `pubspec.yaml` and `CHANGELOG.md`.
+
+GitHub can validate this policy, but it should not replace the in-repo source of truth. This repo now includes a pull request check that requires both `pubspec.yaml` and `CHANGELOG.md` to change whenever a non-draft PR touches core app surfaces, unless the PR explicitly marks itself as internal-only.
+
+If a PR is truly internal-only and does not need release metadata, use the internal-only override checkbox in the PR template.

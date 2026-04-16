@@ -75,7 +75,14 @@ This README contains the canonical index to all project documentation including:
 - ✅ Async functions: Return `Future<void>`, never `void`
 - ✅ Containers: Use `ColoredBox` when only setting color
 - ✅ **Theme access**: Use `themeColorsProvider` and `themeTypographyProvider` exclusively
+- ✅ **Release metadata**: Significant user-facing or tester-facing changes must include both a `pubspec.yaml` version bump and a `CHANGELOG.md` entry
 - ❌ **Never**: Use `MacosTheme.of(context)` or `Theme.of(context)` for colors/typography
+
+### Solo Git Workflow
+- ✅ Housekeeping, maintenance, and small bug fixes that do not merit a version bump may be committed directly to `main`
+- ✅ Feature additions and other release-worthy changes should use a feature branch and pull request before merging to `main`
+- ✅ For release-worthy changes, agents should ensure checks are run and both `pubspec.yaml` and `CHANGELOG.md` are updated before merge
+- ❌ **Do not** require a PR for trivial housekeeping changes that are intentionally staying off the release track
 
 ### Riverpod Patterns
 - ✅ **Use documented patterns only** - Do NOT scan codebase for examples

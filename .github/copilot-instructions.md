@@ -60,6 +60,9 @@ You MUST read these files in order before any code changes:
 - **Run app**: `flutter run -d macos`
 - **Production builds**: Read `_AGENT_INSTRUCTIONS/agent-per-project/60-BUILD-CONSIDERATIONS/02-macos-fda-grant-continuity.md` first and preserve `com.bigbenchsoftware.MessageLens` plus release signing identity so prior FDA grants continue to apply
 - **Lint compliance**: Fix all violations immediately - strict analysis_options.yaml enforced
+- **Release metadata**: Any significant user-facing or tester-facing change must include both a `pubspec.yaml` version bump and a new `CHANGELOG.md` entry in the same change
+- **Solo Git workflow**: Housekeeping and small bug fixes may go directly to `main`; feature additions and release-worthy changes should use a feature branch plus pull request before merging
+- **Release-worthy merge gate**: For release-worthy changes, make sure the pull request is non-draft, checks have run, and both `pubspec.yaml` and `CHANGELOG.md` are updated before merge
 
 ## Project Architecture
 - **`lib/essentials/`** - Core systems (navigation, import, databases, window state)
