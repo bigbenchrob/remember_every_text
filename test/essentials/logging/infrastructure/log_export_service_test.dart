@@ -3,9 +3,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/logging/infrastructure/log_export_service.dart';
 
 void main() {
-  test('buildAppleMailComposeScriptArgs escapes subject path and recipient', () {
+  test('buildAppleMailComposeScriptArgs escapes attachments subject and recipient', () {
     final args = buildAppleMailComposeScriptArgs(
-      exportFilePath: '/Users/test/Logs/diagnostic "final".log',
+      attachmentFilePaths: [
+        '/Users/test/Logs/diagnostic "final".log',
+        '/Users/test/Library/Application Support/com.bigbenchsoftware.MessageLens/import_log',
+        '/Users/test/Library/Application Support/com.bigbenchsoftware.MessageLens/migrate_log',
+      ],
       recipientEmail: 'bigbenchrob@gmail.com',
       subject: 'MessageLens "Report"',
       bodyText: 'Please review the attached report.',
@@ -15,7 +19,19 @@ void main() {
     expect(
       args,
       contains(
-        r'set reportFile to POSIX file "/Users/test/Logs/diagnostic \"final\".log"',
+        r'set attachmentFile1 to POSIX file "/Users/test/Logs/diagnostic \"final\".log"',
+      ),
+    );
+    expect(
+      args,
+      contains(
+        'set attachmentFile2 to POSIX file "/Users/test/Library/Application Support/com.bigbenchsoftware.MessageLens/import_log"',
+      ),
+    );
+    expect(
+      args,
+      contains(
+        'set attachmentFile3 to POSIX file "/Users/test/Library/Application Support/com.bigbenchsoftware.MessageLens/migrate_log"',
       ),
     );
     expect(
@@ -28,6 +44,24 @@ void main() {
       args,
       contains(
         'make new to recipient at end of to recipients with properties {address:"bigbenchrob@gmail.com"}',
+      ),
+    );
+    expect(
+      args,
+      contains(
+        'make new attachment with properties {file name:attachmentFile1} at after the last paragraph',
+      ),
+    );
+    expect(
+      args,
+      contains(
+        'make new attachment with properties {file name:attachmentFile2} at after the last paragraph',
+      ),
+    );
+    expect(
+      args,
+      contains(
+        'make new attachment with properties {file name:attachmentFile3} at after the last paragraph',
       ),
     );
   });

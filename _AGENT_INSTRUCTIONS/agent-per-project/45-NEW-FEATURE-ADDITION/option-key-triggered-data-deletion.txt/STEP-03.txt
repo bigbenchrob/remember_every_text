@@ -1,0 +1,49 @@
+STEP-03 — Scope Contract
+•	This step is isolated.
+•	Do not reference future steps.
+•	Do not modify unrelated code.
+•	Output only what is requested.
+
+Implement ONLY STEP-03.
+
+Goal:
+Make the “Export Logs” button perform a real, minimal log-export action from the startup confirmation dialog. Do not implement any deletion or reset behavior.
+
+Requirements:
+	•	Keep Cancel behavior unchanged.
+	•	Keep Delete MessageLens App Data behavior as a no-op/log only.
+	•	Make Export Logs perform a real export of MessageLens logs.
+	•	Keep this step confined to startup/bootstrap and log-export code only.
+
+Preferred behavior:
+	•	When the user clicks Export Logs, export the app’s logs to a user-accessible location using existing app logging/file patterns if they already exist.
+	•	If the app already has a log file location and/or existing log-export helper, reuse it.
+	•	If no export helper exists, implement the smallest safe version:
+	•	locate the current MessageLens log file(s)
+	•	copy them to a clearly named export destination
+	•	log/report success or failure
+
+Acceptable export destination for this step:
+	•	Desktop, Downloads, or a standard Save dialog destination
+	•	Choose the narrowest approach that best fits existing app patterns
+
+User-facing behavior:
+	•	On success, show a simple success confirmation indicating where the logs were exported.
+	•	On failure, show a simple error message and remain in the startup dialog flow.
+	•	After a successful export, remain in the dialog flow; do not automatically continue startup unless that already follows naturally from your chosen minimal UX.
+	•	Cancel should still continue normal startup.
+	•	Delete MessageLens App Data must still do nothing except optional logging.
+
+Constraints:
+	•	Do NOT implement deletion logic.
+	•	Do NOT implement reset logic.
+	•	Do NOT touch database, migration, import, or filesystem-deletion code.
+	•	Do NOT broaden scope beyond log export from this startup dialog.
+	•	Reuse existing logging infrastructure if present; do not invent a large new subsystem.
+
+Output only:
+	•	files created or modified
+	•	the log-export implementation
+	•	the exact behavior of Export Logs on success and failure
+
+Do not discuss future steps.

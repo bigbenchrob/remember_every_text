@@ -1,0 +1,598 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://messagelens.app/schemas/database_health.schema.json",
+  "title": "MessageLens Database Health Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "generated_at",
+    "audit_version",
+    "app",
+    "environment",
+    "databases",
+    "table_inventory",
+    "relationship_checks",
+    "invariant_checks",
+    "summary",
+    "errors"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "audit_version": {
+      "type": "string",
+      "enum": ["phase1", "phase2", "phase3"]
+    },
+    "app": {
+      "$ref": "#/$defs/AppInfo"
+    },
+    "environment": {
+      "$ref": "#/$defs/EnvironmentInfo"
+    },
+    "databases": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/AuditedDatabaseInfo"
+      }
+    },
+    "table_inventory": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/TableInventoryEntry"
+      }
+    },
+    "relationship_checks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/RelationshipCheckResult"
+      }
+    },
+    "invariant_checks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/InvariantCheckResult"
+      }
+    },
+    "summary": {
+      "$ref": "#/$defs/HealthReportSummary"
+    },
+    "phase2_samples": {
+      "$ref": "#/$defs/Phase2SamplesSection"
+    },
+    "phase3_snapshot": {
+      "$ref": "#/$defs/Phase3SnapshotSection"
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/HealthReportError"
+      }
+    }
+  },
+  "$defs": {
+    "Status": {
+      "type": "string",
+      "enum": ["pass", "warning", "fail", "error", "not_applicable"]
+    },
+    "Severity": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"]
+    },
+    "StringArray": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "AppInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "bundle_id", "version"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "bundle_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "build_number": {
+          "type": "string"
+        },
+        "build_channel": {
+          "type": "string"
+        }
+      }
+    },
+    "EnvironmentInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["platform"],
+      "properties": {
+        "platform": {
+          "type": "string",
+          "minLength": 1
+        },
+        "platform_version": {
+          "type": "string"
+        },
+        "device_model": {
+          "type": "string"
+        },
+        "timezone": {
+          "type": "string"
+        },
+        "has_full_disk_access": {
+          "type": "boolean"
+        },
+        "startup_flags": {
+          "type": "object",
+          "additionalProperties": {
+            "type": ["boolean", "string", "number", "integer", "null"]
+          }
+        },
+        "diagnostic_notes": {
+          "$ref": "#/$defs/StringArray"
+        }
+      }
+    },
+    "AuditedDatabaseInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "database_key",
+        "role",
+        "accessible",
+        "read_only_open_succeeded"
+      ],
+      "properties": {
+        "database_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "accessible": {
+          "type": "boolean"
+        },
+        "read_only_open_succeeded": {
+          "type": "boolean"
+        },
+        "schema_user_version": {
+          "type": "integer"
+        },
+        "migration_version": {
+          "oneOf": [{ "type": "string" }, { "type": "integer" }]
+        },
+        "error": {
+          "type": "string"
+        }
+      }
+    },
+    "PrimaryKeyInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["column_name"],
+      "properties": {
+        "column_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "min_value": {
+          "type": "integer"
+        },
+        "max_value": {
+          "type": "integer"
+        }
+      }
+    },
+    "ImportantColumnSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["column_name"],
+      "properties": {
+        "column_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "null_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "non_null_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "distinct_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "omitted_for_privacy": {
+          "type": "boolean"
+        },
+        "notes": {
+          "$ref": "#/$defs/StringArray"
+        }
+      }
+    },
+    "TableInventoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["database_key", "table_name", "exists"],
+      "properties": {
+        "database_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "table_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "exists": {
+          "type": "boolean"
+        },
+        "row_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "primary_key": {
+          "$ref": "#/$defs/PrimaryKeyInfo"
+        },
+        "important_columns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ImportantColumnSummary"
+          }
+        },
+        "notes": {
+          "$ref": "#/$defs/StringArray"
+        },
+        "error": {
+          "type": "string"
+        }
+      }
+    },
+    "RelationshipCheckResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "check_key",
+        "database_key",
+        "relationship_type",
+        "parent_table",
+        "join_expression_description",
+        "status"
+      ],
+      "properties": {
+        "check_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "database_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "relationship_type": {
+          "type": "string",
+          "enum": [
+            "one_to_one_expected",
+            "one_to_many_expected",
+            "join_table_coverage",
+            "existence_check"
+          ]
+        },
+        "parent_table": {
+          "type": "string",
+          "minLength": 1
+        },
+        "child_table": {
+          "type": "string"
+        },
+        "join_expression_description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent_row_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "child_row_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "matched_row_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unmatched_parent_row_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unmatched_child_row_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "$ref": "#/$defs/Status"
+        },
+        "notes": {
+          "$ref": "#/$defs/StringArray"
+        },
+        "error": {
+          "type": "string"
+        }
+      }
+    },
+    "InvariantCheckResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["check_key", "severity", "description", "status"],
+      "properties": {
+        "check_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "severity": {
+          "$ref": "#/$defs/Severity"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "$ref": "#/$defs/Status"
+        },
+        "violation_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "evaluated_row_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "notes": {
+          "$ref": "#/$defs/StringArray"
+        },
+        "error": {
+          "type": "string"
+        }
+      }
+    },
+    "HealthReportSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "overall_status",
+        "table_count",
+        "relationship_check_count",
+        "invariant_check_count",
+        "pass_count",
+        "warning_count",
+        "fail_count",
+        "error_count"
+      ],
+      "properties": {
+        "overall_status": {
+          "$ref": "#/$defs/Status"
+        },
+        "table_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "relationship_check_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "invariant_check_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pass_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "warning_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "fail_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "error_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "headline_findings": {
+          "$ref": "#/$defs/StringArray"
+        }
+      }
+    },
+    "HashingInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["used"],
+      "properties": {
+        "used": {
+          "type": "boolean"
+        },
+        "algorithm": {
+          "type": "string"
+        },
+        "salt_scope": {
+          "type": "string"
+        }
+      }
+    },
+    "Phase2SampleRowValue": {
+      "oneOf": [
+        { "type": "integer" },
+        { "type": "number" },
+        { "type": "boolean" },
+        { "type": "string" },
+        { "type": "null" }
+      ]
+    },
+    "Phase2SampleRow": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/Phase2SampleRowValue"
+      }
+    },
+    "Phase2SampleSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sample_key", "description", "row_count", "rows"],
+      "properties": {
+        "sample_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "row_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Phase2SampleRow"
+          }
+        }
+      }
+    },
+    "Phase2SamplesSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["included", "sample_sets"],
+      "properties": {
+        "included": {
+          "type": "boolean",
+          "const": true
+        },
+        "hashing": {
+          "$ref": "#/$defs/HashingInfo"
+        },
+        "sample_sets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Phase2SampleSet"
+          }
+        }
+      }
+    },
+    "Phase3SnapshotRowValue": {
+      "oneOf": [
+        { "type": "integer" },
+        { "type": "number" },
+        { "type": "boolean" },
+        { "type": "string" },
+        { "type": "null" }
+      ]
+    },
+    "Phase3SnapshotRow": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/Phase3SnapshotRowValue"
+      }
+    },
+    "Phase3TableSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["table_name", "row_count", "columns", "rows"],
+      "properties": {
+        "table_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "row_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Phase3SnapshotRow"
+          }
+        },
+        "sampling_notes": {
+          "$ref": "#/$defs/StringArray"
+        }
+      }
+    },
+    "Phase3SnapshotSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["included", "table_snapshots"],
+      "properties": {
+        "included": {
+          "type": "boolean",
+          "const": true
+        },
+        "hashing": {
+          "$ref": "#/$defs/HashingInfo"
+        },
+        "table_snapshots": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Phase3TableSnapshot"
+          }
+        }
+      }
+    },
+    "HealthReportError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "message"],
+      "properties": {
+        "scope": {
+          "type": "string",
+          "enum": [
+            "database_open",
+            "table_inventory",
+            "relationship_check",
+            "invariant_check",
+            "phase2_samples",
+            "phase3_snapshot"
+          ]
+        },
+        "database_key": {
+          "type": "string"
+        },
+        "table_name": {
+          "type": "string"
+        },
+        "check_key": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

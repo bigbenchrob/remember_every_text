@@ -86,8 +86,12 @@ class LogExportService {
       await sink.close();
 
       final subject = '$subjectPrefix - $stamp';
+      final mailAttachments = <File>[
+        exportFile,
+        ..._pipelineAuditLogFiles().map((auditLog) => auditLog.$2),
+      ].where((file) => file.existsSync()).toList();
       final attachedToMailDraft = await _tryComposeAppleMailDraft(
-        exportFile: exportFile,
+        attachmentFiles: mailAttachments,
         recipientEmail: recipientEmail,
         subject: subject,
         emailBodyLines: emailBodyLines,
@@ -174,7 +178,7 @@ class LogExportService {
   }
 
   Future<bool> _tryComposeAppleMailDraft({
-    required File exportFile,
+    required List<File> attachmentFiles,
     required String recipientEmail,
     required String subject,
     required List<String> emailBodyLines,
@@ -187,7 +191,9 @@ class LogExportService {
       final result = await Process.run(
         'osascript',
         buildAppleMailComposeScriptArgs(
-          exportFilePath: exportFile.path,
+          attachmentFilePaths: attachmentFiles
+              .map((file) => file.path)
+              .toList(),
           recipientEmail: recipientEmail,
           subject: subject,
           bodyText: emailBodyLines.join(' '),
@@ -212,19 +218,25 @@ class LogExportService {
 }
 
 List<String> buildAppleMailComposeScriptArgs({
-  required String exportFilePath,
+  required List<String> attachmentFilePaths,
   required String recipientEmail,
   required String subject,
   required String bodyText,
 }) {
-  final reportFile = _toAppleScriptString(exportFilePath);
   final recipient = _toAppleScriptString(recipientEmail);
   final escapedSubject = _toAppleScriptString(subject);
   final escapedBody = _toAppleScriptString(bodyText);
+  final attachmentStatements = <String>[
+    for (var index = 0; index < attachmentFilePaths.length; index++)
+      'set attachmentFile${index + 1} to POSIX file "${_toAppleScriptString(attachmentFilePaths[index])}"',
+  ];
+  final attachmentAddStatements = <String>[
+    for (var index = 0; index < attachmentFilePaths.length; index++)
+      'make new attachment with properties {file name:attachmentFile${index + 1}} at after the last paragraph',
+  ];
 
   return [
-    '-e',
-    'set reportFile to POSIX file "$reportFile"',
+    for (final statement in attachmentStatements) ...['-e', statement],
     '-e',
     'tell application "Mail"',
     '-e',
@@ -233,8 +245,7 @@ List<String> buildAppleMailComposeScriptArgs({
     'tell newMessage',
     '-e',
     'make new to recipient at end of to recipients with properties {address:"$recipient"}',
-    '-e',
-    'make new attachment with properties {file name:reportFile} at after the last paragraph',
+    for (final statement in attachmentAddStatements) ...['-e', statement],
     '-e',
     'end tell',
     '-e',

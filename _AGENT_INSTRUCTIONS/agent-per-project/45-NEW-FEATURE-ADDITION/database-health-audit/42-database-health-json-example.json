@@ -1,0 +1,104 @@
+{
+  "schema_version": "1.0.0",
+  "generated_at": "2026-04-16T15:23:11Z",
+  "audit_version": "phase1",
+  "app": {
+    "name": "MessageLens",
+    "bundle_id": "com.bigbenchsoftware.MessageLens",
+    "version": "0.9.0",
+    "build_number": "123",
+    "build_channel": "debug"
+  },
+  "environment": {
+    "platform": "macOS",
+    "platform_version": "15.4",
+    "device_model": "Macmini",
+    "timezone": "America/Vancouver",
+    "has_full_disk_access": true,
+    "startup_flags": {
+      "option_launch_reset_requested": false
+    }
+  },
+  "databases": [
+    {
+      "database_key": "main",
+      "role": "application_primary",
+      "accessible": true,
+      "read_only_open_succeeded": true,
+      "schema_user_version": 8
+    }
+  ],
+  "table_inventory": [
+    {
+      "database_key": "main",
+      "table_name": "messages",
+      "exists": true,
+      "row_count": 182442,
+      "primary_key": {
+        "column_name": "id",
+        "min_value": 1,
+        "max_value": 182442
+      },
+      "important_columns": [
+        {
+          "column_name": "guid",
+          "null_count": 0,
+          "non_null_count": 182442,
+          "distinct_count": 182442
+        },
+        {
+          "column_name": "text",
+          "omitted_for_privacy": true,
+          "notes": ["Sensitive content field intentionally omitted."]
+        }
+      ]
+    },
+    {
+      "database_key": "main",
+      "table_name": "handle_message_join",
+      "exists": true,
+      "row_count": 0
+    }
+  ],
+  "relationship_checks": [
+    {
+      "check_key": "messages_to_chat_message_join",
+      "database_key": "main",
+      "relationship_type": "join_table_coverage",
+      "parent_table": "messages",
+      "child_table": "chat_message_join",
+      "join_expression_description": "messages.guid = chat_message_join.message_guid",
+      "parent_row_count": 182442,
+      "child_row_count": 181993,
+      "matched_row_count": 181993,
+      "unmatched_parent_row_count": 449,
+      "unmatched_child_row_count": 0,
+      "status": "warning"
+    }
+  ],
+  "invariant_checks": [
+    {
+      "check_key": "messages_should_have_chat_linkage",
+      "severity": "high",
+      "description": "Every imported message intended for timeline display should have at least one chat relationship.",
+      "status": "warning",
+      "violation_count": 449,
+      "evaluated_row_count": 182442
+    }
+  ],
+  "summary": {
+    "overall_status": "warning",
+    "table_count": 2,
+    "relationship_check_count": 1,
+    "invariant_check_count": 1,
+    "pass_count": 0,
+    "warning_count": 2,
+    "fail_count": 0,
+    "error_count": 0,
+    "headline_findings": [
+      "handle_message_join is empty",
+      "449 messages are missing chat linkage"
+    ]
+  },
+  "errors": []
+}

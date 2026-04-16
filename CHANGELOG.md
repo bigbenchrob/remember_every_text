@@ -10,6 +10,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - No unreleased changes yet.
 
+## [0.1.3] — 2026-04-16
+
+### Added
+- Holding Option at launch on macOS now opens a startup recovery dialog before normal app flow continues.
+- The startup recovery dialog can export a diagnostic email draft with the app log plus import and migration audit logs when present.
+
 ## [0.1.2] — 2026-04-15
 
 ### Fixed

@@ -13,6 +13,7 @@
       subsystem: Bundle.main.bundleIdentifier ?? "com.bigbenchsoftware.MessageLens",
       category: "AppLogger"
     )
+    private var optionLaunchResetRequested = false
 
     override func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
       return true
@@ -20,6 +21,13 @@
 
     override func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
       return true
+    }
+
+    override func applicationWillFinishLaunching(_ notification: Notification) {
+      optionLaunchResetRequested = CGEventSource.flagsState(.combinedSessionState).contains(
+        .maskAlternate
+      )
+      super.applicationWillFinishLaunching(notification)
     }
 
     override func applicationDidFinishLaunching(_ notification: Notification) {
@@ -46,6 +54,29 @@
         self.handleUnifiedLogMethodCall(call, result: result)
       }
 
+      let startupChannel = FlutterMethodChannel(
+        name: "com.bigbenchsoftware.messagelens/startup",
+        binaryMessenger: messenger
+      )
+      startupChannel.setMethodCallHandler {
+        (call: FlutterMethodCall, result: @escaping FlutterResult) in
+        self.handleStartupMethodCall(call, result: result)
+      }
+
+    }
+
+    private func handleStartupMethodCall(
+      _ call: FlutterMethodCall,
+      result: @escaping FlutterResult
+    ) {
+      guard call.method == "getStartupFlags" else {
+        result(FlutterMethodNotImplemented)
+        return
+      }
+
+      result([
+        "optionLaunchResetRequested": optionLaunchResetRequested
+      ])
     }
 
     private func handleUnifiedLogMethodCall(

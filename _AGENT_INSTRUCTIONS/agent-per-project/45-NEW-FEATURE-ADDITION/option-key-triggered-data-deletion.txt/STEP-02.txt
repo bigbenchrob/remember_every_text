@@ -1,0 +1,72 @@
+STEP-02 — Scope Contract
+• This step is isolated.
+• Do not reference future steps.
+• Do not modify unrelated code.
+• Output only what is requested.
+
+⸻
+
+Implement ONLY STEP-02.
+
+Goal:
+If optionLaunchResetRequested == true, present a blocking confirmation dialog at startup. No deletion or reset behavior is allowed yet.
+
+⸻
+
+Requirements:
+	•	Trigger the dialog only when optionLaunchResetRequested == true
+	•	The dialog must appear before normal app flow continues
+	•	The dialog must block further startup until the user chooses an option
+
+⸻
+
+Dialog specification:
+
+Title:
+Start Over?
+
+Body:
+MessageLens can delete its local app data and rebuild everything from scratch.
+
+This deletes only MessageLens’s own local data folder, including imported databases, caches, indexes, migration state, and other generated app data. It does not delete your system Library folder or other applications’ data.
+
+Buttons:
+	•	Cancel
+	•	Export Logs
+	•	Delete MessageLens App Data
+
+⸻
+
+Behavior (IMPORTANT):
+
+For this step, NONE of the buttons perform destructive or real actions yet.
+	•	Cancel → simply continue normal app startup
+	•	Export Logs → no-op (may log “Export Logs clicked”)
+	•	Delete MessageLens App Data → no-op (may log “Delete requested”)
+
+⸻
+
+Constraints:
+	•	Do NOT implement deletion logic
+	•	Do NOT implement reset logic
+	•	Do NOT implement log export functionality
+	•	Do NOT modify data layer, database, or filesystem code
+	•	Do NOT introduce new services beyond what is strictly needed to show the dialog
+	•	Keep all changes confined to startup/bootstrap/UI layer only
+
+⸻
+
+Implementation notes:
+	•	Use existing macOS/Flutter UI patterns already present in the app
+	•	Keep the dialog implementation minimal and consistent with current architecture
+	•	Ensure the dialog is shown exactly once at startup when the flag is true
+	•	Ensure normal startup resumes correctly after Cancel
+
+⸻
+
+Output only:
+	•	files created or modified
+	•	the dialog implementation
+	•	where in startup flow the dialog is triggered
+
+Do not discuss future steps.
