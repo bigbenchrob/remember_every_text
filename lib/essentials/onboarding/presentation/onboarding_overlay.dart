@@ -3,12 +3,12 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../config/theme/colors/theme_colors.dart';
 import '../../../config/theme/theme_typography.dart';
-import '../../logging/application/app_logger.dart';
-import '../../logging/application/diagnostic_report_actions.dart';
-import '../../logging/infrastructure/log_export_service.dart';
 import '../../db_importers/domain/entities/db_import_result.dart';
 import '../../db_importers/presentation/view_model/db_import_control_provider.dart';
 import '../../db_migrate/domain/entities/db_migration_result.dart';
+import '../../logging/application/app_logger.dart';
+import '../../logging/application/diagnostic_report_actions.dart';
+import '../../logging/infrastructure/log_export_service.dart';
 import '../application/onboarding_environment_report_provider.dart';
 import '../application/onboarding_gate_provider.dart';
 import '../domain/onboarding_environment_report.dart';
@@ -66,6 +66,11 @@ class OnboardingOverlay extends ConsumerWidget {
                 ],
               ),
               child: switch (status) {
+                OnboardingStatus.recoveringFailedAttempt => _RecoveryContent(
+                  report: report,
+                  colors: colors,
+                  typography: typography,
+                ),
                 OnboardingStatus.awaitingFda => _FdaContent(
                   report: report,
                   colors: colors,
@@ -1160,6 +1165,85 @@ class _CompleteContent extends ConsumerWidget {
           ),
           child: Text(dismissLabel),
         ),
+      ],
+    );
+  }
+}
+
+class _RecoveryContent extends ConsumerWidget {
+  const _RecoveryContent({
+    required this.report,
+    required this.colors,
+    required this.typography,
+  });
+
+  final OnboardingEnvironmentReport? report;
+  final ThemeColors colors;
+  final ThemeTypography typography;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final controlState = ref.watch(dbImportControlViewModelProvider);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.cleaning_services_outlined,
+          size: 56,
+          color: colors.accents.primary,
+        ),
+        const SizedBox(height: 20),
+        Text(
+          'Cleaning Up A Previous Setup Attempt',
+          style: typography.headline.copyWith(
+            color: colors.content.textPrimary,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'MessageLens detected signs that an earlier import or migration left incomplete app databases. It is deleting the app databases now so setup can restart from a clean slate.',
+          style: typography.body.copyWith(color: colors.content.textSecondary),
+          textAlign: TextAlign.center,
+        ),
+        if (report?.resetAppDatabasesReason != null) ...[
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: colors.surfaces.control,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: colors.lines.borderSubtle, width: 0.5),
+            ),
+            child: Text(
+              report!.resetAppDatabasesReason!,
+              style: typography.caption.copyWith(
+                color: colors.content.textSecondary,
+              ),
+            ),
+          ),
+        ],
+        const SizedBox(height: 20),
+        SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: colors.accents.primary,
+          ),
+        ),
+        if (controlState.statusMessage != null) ...[
+          const SizedBox(height: 12),
+          Text(
+            controlState.statusMessage!,
+            style: typography.caption.copyWith(
+              color: colors.content.textTertiary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ],
     );
   }

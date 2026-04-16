@@ -132,6 +132,13 @@ class OnboardingDevPanel extends ConsumerWidget {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 520),
                   child: switch (status) {
+                    OnboardingStatus.recoveringFailedAttempt =>
+                      _DevRecoveryContent(
+                        colors: colors,
+                        typography: typography,
+                        controlState: controlState,
+                        report: report,
+                      ),
                     OnboardingStatus.awaitingFda => _DevFdaContent(
                       colors: colors,
                       typography: typography,
@@ -597,6 +604,60 @@ class _DevProgressContent extends StatelessWidget {
             stages: controlState.stages,
             colors: colors,
             typography: typography,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DevRecoveryContent extends StatelessWidget {
+  const _DevRecoveryContent({
+    required this.colors,
+    required this.typography,
+    required this.controlState,
+    required this.report,
+  });
+
+  final ThemeColors colors;
+  final ThemeTypography typography;
+  final DbImportControlState controlState;
+  final OnboardingEnvironmentReport? report;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Cleaning up previous setup attempt…',
+          style: typography.headline.copyWith(
+            color: colors.content.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          report?.resetAppDatabasesReason ??
+              'MessageLens is deleting stale app databases before allowing setup to continue.',
+          style: typography.body.copyWith(color: colors.content.textSecondary),
+        ),
+        if (controlState.statusMessage != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            controlState.statusMessage!,
+            style: typography.caption.copyWith(
+              color: colors.content.textTertiary,
+            ),
+          ),
+        ],
+        const SizedBox(height: 16),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            backgroundColor: colors.lines.borderSubtle,
+            valueColor: AlwaysStoppedAnimation<Color>(colors.accents.primary),
+            minHeight: 6,
           ),
         ),
       ],

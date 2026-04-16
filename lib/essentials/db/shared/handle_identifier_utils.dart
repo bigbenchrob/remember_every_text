@@ -6,6 +6,60 @@ String sanitizeHandleService(String? rawService) {
   return trimmed;
 }
 
+String? normalizeHandleIdentifier(String? value) {
+  if (value == null) {
+    return null;
+  }
+
+  final trimmed = stripMeaninglessHandlePrefix(value)?.trim() ?? '';
+  if (trimmed.isEmpty) {
+    return null;
+  }
+
+  final withoutScheme = _stripKnownSchemes(trimmed);
+  final lowered = withoutScheme.toLowerCase();
+  if (lowered.contains('@')) {
+    return lowered;
+  }
+
+  final digits = withoutScheme.replaceAll(RegExp(r'[^0-9+]'), '');
+  if (digits.isEmpty) {
+    return null;
+  }
+
+  var normalized = digits;
+  if (normalized.startsWith('+')) {
+    normalized = normalized.substring(1);
+  }
+  if (normalized.isEmpty) {
+    return null;
+  }
+  if (normalized.length == 11 && normalized.startsWith('1')) {
+    normalized = normalized.substring(1);
+  }
+  return normalized;
+}
+
+String buildCanonicalHandleGroupingKey({
+  String? normalizedIdentifier,
+  String? rawIdentifier,
+}) {
+  final normalized =
+      normalizeHandleIdentifier(normalizedIdentifier) ??
+      normalizeHandleIdentifier(rawIdentifier);
+  if (normalized != null && normalized.isNotEmpty) {
+    return normalized;
+  }
+
+  final fallback = _fallbackCompoundBase(rawIdentifier);
+  if (fallback != null && fallback.isNotEmpty) {
+    return fallback;
+  }
+
+  return stripMeaninglessHandlePrefix(rawIdentifier)?.trim().toLowerCase() ??
+      'unknown';
+}
+
 String? stripMeaninglessHandlePrefix(String? rawIdentifier) {
   if (rawIdentifier == null) {
     return null;

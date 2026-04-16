@@ -136,9 +136,7 @@ class LogExportService {
       ..writeln('Exported: ${now.toUtc().toIso8601String()}')
       ..writeln('====================================');
 
-    for (final line in headerLines) {
-      buf.writeln(line);
-    }
+    headerLines.forEach(buf.writeln);
 
     buf.writeln();
     return buf.toString();
@@ -247,5 +245,5 @@ List<String> buildAppleMailComposeScriptArgs({
 }
 
 String _toAppleScriptString(String value) {
-  return value.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
+  return value.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
 }

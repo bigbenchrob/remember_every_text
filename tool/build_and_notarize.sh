@@ -25,6 +25,7 @@ APP_PATH="$PROJECT_DIR/build/macos/Build/Products/Release/$APP_NAME.app"
 DMG_PATH="$HOME/Desktop/$APP_NAME.dmg"
 KEYCHAIN_PROFILE="notarytool-password"
 SIGNING_IDENTITY="Developer ID Application: Robert Campbell (FQHT2QP3NE)"
+EXTRACTOR_PATH="$APP_PATH/Contents/MacOS/extract_messages_limited"
 
 # ── Helpers ───────────────────────────────────────────────────────────
 
@@ -68,6 +69,14 @@ if [[ -d "$FRAMEWORKS_DIR" ]]; then
       --timestamp \
       "$fw"
   done
+fi
+
+if [[ -f "$EXTRACTOR_PATH" ]]; then
+  echo "  Signing: $(basename "$EXTRACTOR_PATH")"
+  codesign --force --sign "$SIGNING_IDENTITY" \
+    --options runtime \
+    --timestamp \
+    "$EXTRACTOR_PATH"
 fi
 
 # Re-sign the main app bundle (picks up the freshly signed frameworks)

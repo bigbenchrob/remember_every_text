@@ -20,6 +20,8 @@ import 'fda_checker.dart';
 part 'onboarding_environment_report_provider.g.dart';
 
 const int _sparseMessagesThreshold = 10;
+const int _automaticRecoveryMinimumImportRows = 25;
+const double _automaticRecoveryWorkingToImportRatio = 0.5;
 
 class OnboardingDevOverridesState {
   const OnboardingDevOverridesState({
@@ -230,6 +232,16 @@ class _OnboardingEnvironmentEvaluator {
         !simulatedPipelineFailureActive &&
         controlState.lastMigrationResult == null &&
         persistedMigrationEntry != null;
+    final resetAppDatabasesReason = _detectResetAppDatabasesReason(
+      isProcessing: controlState.isProcessing,
+      hasLiveImportFailure: hasLiveImportFailure,
+      hasLiveMigrationFailure: hasLiveMigrationFailure,
+      usingPersistedImportFailure: usingPersistedImportFailure,
+      usingPersistedMigrationFailure: usingPersistedMigrationFailure,
+      sourceMessageCount: sourceMessageCount,
+      importProbe: importProbe,
+      workingProbe: workingProbe,
+    );
 
     final state = _classifyState(
       hasFullDiskAccess: hasFullDiskAccess,
@@ -242,6 +254,7 @@ class _OnboardingEnvironmentEvaluator {
       hasLiveMigrationFailure: hasLiveMigrationFailure,
       usingPersistedImportFailure: usingPersistedImportFailure,
       usingPersistedMigrationFailure: usingPersistedMigrationFailure,
+      resetAppDatabasesReason: resetAppDatabasesReason,
       importProbe: importProbe,
       workingProbe: workingProbe,
     );
@@ -258,6 +271,7 @@ class _OnboardingEnvironmentEvaluator {
       hasLiveMigrationFailure: hasLiveMigrationFailure,
       usingPersistedImportFailure: usingPersistedImportFailure,
       usingPersistedMigrationFailure: usingPersistedMigrationFailure,
+      resetAppDatabasesReason: resetAppDatabasesReason,
       importProbe: importProbe,
       workingProbe: workingProbe,
     );
@@ -284,6 +298,8 @@ class _OnboardingEnvironmentEvaluator {
       lastMigrationFailureRecordedAt: persistedMigrationEntry?.recordedAt,
       usingPersistedImportFailure: usingPersistedImportFailure,
       usingPersistedMigrationFailure: usingPersistedMigrationFailure,
+      shouldResetAppDatabasesBeforeImport: resetAppDatabasesReason != null,
+      resetAppDatabasesReason: resetAppDatabasesReason,
     );
   }
 
@@ -298,6 +314,7 @@ class _OnboardingEnvironmentEvaluator {
     required bool hasLiveMigrationFailure,
     required bool usingPersistedImportFailure,
     required bool usingPersistedMigrationFailure,
+    required String? resetAppDatabasesReason,
     required OnboardingDatabaseProbe importProbe,
     required OnboardingDatabaseProbe workingProbe,
   }) {
@@ -320,6 +337,10 @@ class _OnboardingEnvironmentEvaluator {
 
     if (forceImportFailure) {
       return OnboardingEnvironmentState.importFailed;
+    }
+
+    if (resetAppDatabasesReason != null) {
+      return OnboardingEnvironmentState.migrationFailed;
     }
 
     if (importProbe.hasData && workingProbe.hasData) {
@@ -361,6 +382,7 @@ class _OnboardingEnvironmentEvaluator {
     required bool hasLiveMigrationFailure,
     required bool usingPersistedImportFailure,
     required bool usingPersistedMigrationFailure,
+    required String? resetAppDatabasesReason,
     required OnboardingDatabaseProbe importProbe,
     required OnboardingDatabaseProbe workingProbe,
   }) {
@@ -388,6 +410,10 @@ class _OnboardingEnvironmentEvaluator {
 
     if (forceImportFailure) {
       return OnboardingBlockerKind.importFailed;
+    }
+
+    if (resetAppDatabasesReason != null) {
+      return OnboardingBlockerKind.migrationFailed;
     }
 
     if (_shouldSurfaceMigrationFailure(
@@ -604,6 +630,58 @@ class _OnboardingEnvironmentEvaluator {
       return value.toInt();
     }
     return int.tryParse('$value');
+  }
+
+  String? _detectResetAppDatabasesReason({
+    required bool isProcessing,
+    required bool hasLiveImportFailure,
+    required bool hasLiveMigrationFailure,
+    required bool usingPersistedImportFailure,
+    required bool usingPersistedMigrationFailure,
+    required int? sourceMessageCount,
+    required OnboardingDatabaseProbe importProbe,
+    required OnboardingDatabaseProbe workingProbe,
+  }) {
+    if (isProcessing || !importProbe.hasData) {
+      return null;
+    }
+
+    final importCount = importProbe.rowCount;
+    if (importCount == null ||
+        importCount < _automaticRecoveryMinimumImportRows) {
+      return null;
+    }
+
+    final workingCount = workingProbe.rowCount ?? 0;
+    final hasRecordedFailure =
+        hasLiveImportFailure ||
+        hasLiveMigrationFailure ||
+        usingPersistedImportFailure ||
+        usingPersistedMigrationFailure;
+    final importTracksSource =
+        sourceMessageCount == null ||
+        sourceMessageCount <= _sparseMessagesThreshold ||
+        importCount >=
+            (sourceMessageCount * _automaticRecoveryWorkingToImportRatio)
+                .round();
+    final workingClearlyIncomplete =
+        !workingProbe.hasData ||
+        workingCount <
+            (importCount * _automaticRecoveryWorkingToImportRatio).round();
+
+    if (!importTracksSource || !workingClearlyIncomplete) {
+      return null;
+    }
+
+    if (hasRecordedFailure) {
+      return 'A previous import or migration failure left a populated import ledger but an incomplete working database.';
+    }
+
+    if (workingProbe.hasData) {
+      return 'The working database contains far fewer messages than the import ledger, which strongly suggests a stale partial migration.';
+    }
+
+    return null;
   }
 }
 

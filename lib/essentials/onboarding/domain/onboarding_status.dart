@@ -3,6 +3,9 @@ enum OnboardingStatus {
   /// Both databases exist and contain data — no overlay needed.
   notNeeded,
 
+  /// MessageLens is clearing stale app databases before setup restarts.
+  recoveringFailedAttempt,
+
   /// Full Disk Access has not been granted — show FDA instruction screen.
   ///
   /// Gate 1: nothing else can proceed until this is resolved.

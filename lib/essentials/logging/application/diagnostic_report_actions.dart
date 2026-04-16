@@ -1,6 +1,6 @@
 import '../../onboarding/domain/onboarding_environment_report.dart';
-import '../infrastructure/log_file_writer.dart';
 import '../infrastructure/log_export_service.dart';
+import '../infrastructure/log_file_writer.dart';
 
 const developerDiagnosticRecipientEmail = 'bigbenchrob@gmail.com';
 

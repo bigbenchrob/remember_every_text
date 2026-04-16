@@ -8,23 +8,5 @@ import '../../../db/shared/handle_identifier_utils.dart';
 /// - Phone numbers are stripped to digits (plus leading '+' removed),
 ///   and US-style 11-digit numbers starting with '1' are trimmed to 10 digits.
 String? normalizeIdentifier(String? value) {
-  if (value == null) {
-    return null;
-  }
-  final trimmed = stripMeaninglessHandlePrefix(value)?.trim() ?? '';
-  if (trimmed.isEmpty) {
-    return null;
-  }
-  if (trimmed.contains('@')) {
-    return trimmed.toLowerCase();
-  }
-  final digits = trimmed.replaceAll(RegExp(r'[^0-9+]'), '');
-  if (digits.isEmpty) {
-    return null;
-  }
-  final normalized = digits.startsWith('+') ? digits.substring(1) : digits;
-  if (normalized.length == 11 && normalized.startsWith('1')) {
-    return normalized.substring(1);
-  }
-  return normalized;
+  return normalizeHandleIdentifier(value);
 }

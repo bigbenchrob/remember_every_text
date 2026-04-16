@@ -110,6 +110,7 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
 
     final onboardingStatus = ref.watch(onboardingGateProvider);
     final showOnboardingOverlay = switch (onboardingStatus) {
+      OnboardingStatus.recoveringFailedAttempt ||
       OnboardingStatus.importing ||
       OnboardingStatus.migrating ||
       OnboardingStatus.complete ||

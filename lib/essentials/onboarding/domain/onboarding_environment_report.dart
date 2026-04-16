@@ -71,6 +71,8 @@ class OnboardingEnvironmentReport {
     this.lastMigrationFailureRecordedAt,
     this.usingPersistedImportFailure = false,
     this.usingPersistedMigrationFailure = false,
+    this.shouldResetAppDatabasesBeforeImport = false,
+    this.resetAppDatabasesReason,
   });
 
   final OnboardingEnvironmentState state;
@@ -89,6 +91,8 @@ class OnboardingEnvironmentReport {
   final DateTime? lastMigrationFailureRecordedAt;
   final bool usingPersistedImportFailure;
   final bool usingPersistedMigrationFailure;
+  final bool shouldResetAppDatabasesBeforeImport;
+  final String? resetAppDatabasesReason;
 
   bool get hasPopulatedAppDatabases {
     return importDatabase.hasData && workingDatabase.hasData;

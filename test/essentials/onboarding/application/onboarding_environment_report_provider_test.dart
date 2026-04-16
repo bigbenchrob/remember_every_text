@@ -4,11 +4,13 @@ import 'package:dartz/dartz.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-
 import 'package:remember_this_text/domain_driven_development/value_objects.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
+import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/import/sqflite_import_database.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import 'package:remember_this_text/essentials/db_importers/application/debug_settings_provider.dart';
 import 'package:remember_this_text/essentials/db_importers/domain/entities/db_import_result.dart';
+import 'package:remember_this_text/essentials/db_migrate/domain/entities/db_migration_result.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
 import 'package:remember_this_text/essentials/onboarding/infrastructure/persistence/overlay_onboarding_failure_storage.dart';
@@ -16,6 +18,7 @@ import 'package:remember_this_text/features/address_book_folders/domain/entities
 import 'package:remember_this_text/features/address_book_folders/domain/entities/address_book_folder_entity.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/value_objects/value_objects.dart';
 import 'package:remember_this_text/features/address_book_folders/feature_level_providers.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 void main() {
@@ -23,6 +26,11 @@ void main() {
     late Directory tempDir;
     late OverlayDatabase overlayDb;
     late ProviderContainer container;
+
+    setUpAll(() {
+      sqfliteFfiInit();
+      databaseFactory = databaseFactoryFfi;
+    });
 
     setUp(() async {
       tempDir = await Directory.systemTemp.createTemp(
@@ -178,6 +186,90 @@ void main() {
       );
       expect(report.usingPersistedImportFailure, isFalse);
     });
+
+    test(
+      'flags a populated import ledger plus tiny working database for automatic reset',
+      () async {
+        final messagesDbPath = _createMessagesDatabase(
+          tempDir.path,
+          messageCount: 120,
+        );
+        final addressBookPath = _createReadableFile(
+          tempDir.path,
+          'AddressBook-v22.abcddb',
+        );
+        final importDb = SqfliteImportDatabase(
+          databaseDirectory: tempDir.path,
+          databaseName: 'macos_import.db',
+          debugSettings: const ImportDebugSettingsState(),
+        );
+        addTearDown(() async {
+          await importDb.close();
+        });
+
+        final storage = OverlayOnboardingFailureStorage(
+          overlayDb: Future<OverlayDatabase>.value(overlayDb),
+        );
+        final batchId = await importDb.insertImportBatch(
+          startedAtUtc: DateTime.utc(2026, 03, 24).toIso8601String(),
+        );
+        await importDb.insertChat(
+          id: 1,
+          guid: 'chat-1',
+          service: 'iMessage',
+          batchId: batchId,
+        );
+        for (var index = 0; index < 120; index++) {
+          await importDb.insertMessage(
+            id: index + 1,
+            guid: 'message-$index',
+            chatId: 1,
+            service: 'iMessage',
+            isFromMe: false,
+            text: 'message-$index',
+            hasAttributedBodySource: false,
+            hasMessageSummaryInfo: false,
+            hasPayloadDataSource: false,
+            isSystemMessage: false,
+            batchId: batchId,
+          );
+        }
+        await storage.saveMigrationResult(
+          const DbMigrationResult(
+            batchId: 99,
+            success: false,
+            error: 'Persisted migration failure',
+          ),
+          recordedAt: DateTime.utc(2026, 03, 24, 12, 45),
+        );
+
+        container = ProviderContainer(
+          overrides: [
+            overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
+            sqfliteImportDatabaseProvider.overrideWith((ref) async => importDb),
+            onboardingFullDiskAccessProvider.overrideWith((ref) => true),
+            onboardingMessagesDatabasePathProvider.overrideWith(
+              (ref) => messagesDbPath,
+            ),
+            onboardingDatabaseDirectoryPathProvider.overrideWith(
+              (ref) => tempDir.path,
+            ),
+            futureGetFolderAggregateProvider.overrideWith(
+              (ref) async => right(_addressBookAggregate(addressBookPath)),
+            ),
+          ],
+        );
+
+        final report = await container.read(
+          onboardingEnvironmentReportProvider.future,
+        );
+
+        expect(report.state, OnboardingEnvironmentState.migrationFailed);
+        expect(report.blockerKind, OnboardingBlockerKind.migrationFailed);
+        expect(report.shouldResetAppDatabasesBeforeImport, isTrue);
+        expect(report.resetAppDatabasesReason, isNotNull);
+      },
+    );
   });
 }
 
@@ -201,12 +293,18 @@ String _createMessagesDatabase(
   return filePath;
 }
 
-String _createProjectionDatabase(String directoryPath, String fileName) {
+String _createProjectionDatabase(
+  String directoryPath,
+  String fileName, {
+  int rowCount = 1,
+}) {
   final filePath = '$directoryPath/$fileName';
   final db = sqlite3.open(filePath);
   try {
     db.execute('CREATE TABLE messages (ROWID INTEGER PRIMARY KEY, value TEXT)');
-    db.execute('INSERT INTO messages (value) VALUES (?)', ['fixture']);
+    for (var index = 0; index < rowCount; index++) {
+      db.execute('INSERT INTO messages (value) VALUES (?)', ['fixture-$index']);
+    }
   } finally {
     db.dispose();
   }

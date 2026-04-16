@@ -125,8 +125,8 @@ class HandlesMigrator extends BaseTableMigrator with RowProgressReporter {
           currentItem: parsed.rawIdentifier,
         );
       }
-      // Group by normalized identifier only (not compound identifier)
-      // This merges handles like +17789908506 across iMessage/SMS/iMessageLite
+      // Group by the shared canonical identity contract used across import and
+      // migration so text fallback rows cannot split before projection.
       final key = parsed.canonicalNormalized;
 
       // Debug logging to trace grouping behavior for Claire's handles
@@ -201,6 +201,8 @@ class HandlesMigrator extends BaseTableMigrator with RowProgressReporter {
 
     canonicalHandles.sort((a, b) => a.id.compareTo(b.id));
 
+    await _validateCanonicalProjection(canonicalHandles);
+
     await ctx.workingDb.transaction(() async {
       await ctx.workingDb.customStatement('PRAGMA foreign_keys = ON');
 
@@ -212,7 +214,6 @@ class HandlesMigrator extends BaseTableMigrator with RowProgressReporter {
 
       await ctx.workingDb.batch((batch) {
         for (final handle in canonicalHandles) {
-          // NEW TABLE - Only populate this one
           batch.insert(
             ctx.workingDb.handlesCanonical,
             HandlesCanonicalCompanion.insert(
@@ -228,33 +229,11 @@ class HandlesMigrator extends BaseTableMigrator with RowProgressReporter {
               lastSeenUtc: Value(handle.lastSeenUtc),
               batchId: Value(handle.batchId),
             ),
-            mode: InsertMode.insertOrReplace,
           );
         }
       });
 
       if (aliasRows.isNotEmpty) {
-        // Legacy dual-write disabled while verifying handles_canonical_to_alias coverage.
-        // Keeping the original block for quick rollback if issues surface.
-        // await ctx.workingDb.batch((batch) {
-        //   for (final alias in aliasRows) {
-        //     batch.insert(
-        //       ctx.workingDb.handleCanonicalMap,
-        //       HandleCanonicalMapCompanion.insert(
-        //         sourceHandleId: Value(alias.sourceId),
-        //         canonicalHandleId: alias.canonicalId,
-        //         rawIdentifier: alias.rawIdentifier,
-        //         compoundIdentifier: alias.compoundIdentifier,
-        //         normalizedIdentifier: alias.normalizedIdentifier,
-        //         service: Value(alias.service),
-        //         aliasKind: Value(alias.aliasKind),
-        //       ),
-        //       mode: InsertMode.insertOrReplace,
-        //     );
-        //   }
-        // });
-
-        // NEW TABLE - Dual write to handles_canonical_to_alias
         await ctx.workingDb.batch((batch) {
           for (final alias in aliasRows) {
             batch.insert(
@@ -268,7 +247,6 @@ class HandlesMigrator extends BaseTableMigrator with RowProgressReporter {
                 service: Value(alias.service),
                 aliasKind: Value(alias.aliasKind),
               ),
-              mode: InsertMode.insertOrReplace,
             );
           }
         });
@@ -336,6 +314,34 @@ class HandlesMigrator extends BaseTableMigrator with RowProgressReporter {
       return value.toInt();
     }
     return int.tryParse(value.toString()) ?? 0;
+  }
+
+  Future<void> _validateCanonicalProjection(
+    List<_CanonicalHandle> canonicalHandles,
+  ) async {
+    final duplicateCompounds = _collectCanonicalDuplicates(
+      canonicalHandles,
+      (handle) => handle.compoundIdentifier,
+    );
+    await expectTrueOrThrow(
+      ok: duplicateCompounds.isEmpty,
+      errorCode: 'HANDLES_CANONICAL_DUPLICATE_COMPOUND',
+      message:
+          'handles: canonical projection produced duplicate compound identifiers: '
+          '${_formatDuplicatePreview(duplicateCompounds)}',
+    );
+
+    final duplicateRawService = _collectCanonicalDuplicates(
+      canonicalHandles,
+      (handle) => '${handle.rawIdentifier}::${handle.service}',
+    );
+    await expectTrueOrThrow(
+      ok: duplicateRawService.isEmpty,
+      errorCode: 'HANDLES_CANONICAL_DUPLICATE_RAW_SERVICE',
+      message:
+          'handles: canonical projection produced duplicate raw/service pairs: '
+          '${_formatDuplicatePreview(duplicateRawService)}',
+    );
   }
 }
 
@@ -488,7 +494,10 @@ _ParsedHandle? _parseImportHandle(Map<String, Object?> row) {
   final id = _coerceToInt(idValue);
   final resolvedService = sanitizeHandleService(row['service'] as String?);
   final normalizedFromRow = row['normalized_identifier'] as String?;
-  final canonicalNormalized = _resolveNormalized(raw, normalizedFromRow);
+  final canonicalNormalized = buildCanonicalHandleGroupingKey(
+    normalizedIdentifier: normalizedFromRow,
+    rawIdentifier: raw,
+  );
   final compoundFromRow = (row['compound_identifier'] as String?)?.trim();
   final compoundIdentifier =
       (compoundFromRow != null && compoundFromRow.isNotEmpty)
@@ -514,51 +523,6 @@ _ParsedHandle? _parseImportHandle(Map<String, Object?> row) {
     lastSeenUtc: lastSeenRaw?.isEmpty == true ? null : lastSeenRaw,
     batchId: batchId,
   );
-}
-
-String _resolveNormalized(String raw, String? normalized) {
-  final candidateFromRow = _normalizeIdentifier(normalized);
-  final computed = _normalizeIdentifier(raw);
-  final fallback = _fallbackNormalized(raw);
-  return candidateFromRow ?? computed ?? fallback;
-}
-
-String? _normalizeIdentifier(String? value) {
-  if (value == null) {
-    return null;
-  }
-  final trimmed = value.trim();
-  if (trimmed.isEmpty) {
-    return null;
-  }
-
-  final withoutScheme = _stripKnownSchemes(trimmed);
-  final lowered = withoutScheme.toLowerCase();
-  if (lowered.contains('@')) {
-    return lowered;
-  }
-
-  final digits = withoutScheme.replaceAll(RegExp(r'[^0-9+]'), '');
-  if (digits.isEmpty) {
-    return null;
-  }
-
-  var normalized = digits.replaceAll('+', '');
-  if (normalized.isEmpty) {
-    return null;
-  }
-  if (normalized.length == 11 && normalized.startsWith('1')) {
-    normalized = normalized.substring(1);
-  }
-  return normalized;
-}
-
-String _fallbackNormalized(String raw) {
-  final stripped = _stripKnownSchemes(raw).trim();
-  if (stripped.isEmpty) {
-    return raw.trim().toLowerCase();
-  }
-  return stripped.toLowerCase();
 }
 
 int _compareHandlePreference(
@@ -654,6 +618,34 @@ String _stripKnownSchemes(String value) {
     return trimmed.substring(trimmed.indexOf(':') + 1).trim();
   }
   return trimmed;
+}
+
+Map<String, List<int>> _collectCanonicalDuplicates(
+  List<_CanonicalHandle> handles,
+  String Function(_CanonicalHandle handle) selectKey,
+) {
+  final grouped = <String, List<int>>{};
+  for (final handle in handles) {
+    final key = selectKey(handle);
+    grouped.putIfAbsent(key, () => <int>[]).add(handle.id);
+  }
+
+  return Map<String, List<int>>.fromEntries(
+    grouped.entries
+        .where((entry) => entry.value.length > 1)
+        .map((entry) => MapEntry(entry.key, entry.value..sort())),
+  );
+}
+
+String _formatDuplicatePreview(Map<String, List<int>> duplicates) {
+  if (duplicates.isEmpty) {
+    return 'none';
+  }
+
+  return duplicates.entries
+      .take(3)
+      .map((entry) => '${entry.key} => ${entry.value.join(', ')}')
+      .join('; ');
 }
 
 String? _pickLatestTimestamp(Iterable<String?> values) {

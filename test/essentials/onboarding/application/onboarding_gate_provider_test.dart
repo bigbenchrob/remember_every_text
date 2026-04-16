@@ -1,13 +1,16 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:dartz/dartz.dart';
 import 'package:drift/native.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:remember_this_text/domain_driven_development/value_objects.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import 'package:remember_this_text/essentials/db_importers/presentation/view_model/db_import_control_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_gate_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
@@ -18,8 +21,24 @@ import 'package:remember_this_text/features/address_book_folders/domain/value_ob
 import 'package:remember_this_text/features/address_book_folders/feature_level_providers.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('onboardingGateProvider', () {
+    late Directory sharedDatabaseDir;
     late ProviderContainer container;
+
+    setUpAll(() async {
+      sharedDatabaseDir = await Directory.systemTemp.createTemp(
+        'onboarding_gate_provider_shared_db_dir',
+      );
+      databaseDirectoryPath = sharedDatabaseDir.path;
+    });
+
+    tearDownAll(() async {
+      if (sharedDatabaseDir.existsSync()) {
+        await sharedDatabaseDir.delete(recursive: true);
+      }
+    });
 
     tearDown(() {
       container.dispose();
@@ -146,6 +165,21 @@ void main() {
       expect(status, OnboardingStatus.complete);
     });
 
+    test('preserves recovery status during report rebuilds', () {
+      final status = OnboardingGate.resolveBuildStatus(
+        reportAsync: AsyncData(
+          _report(
+            state: OnboardingEnvironmentState.migrationFailed,
+            blockerKind: OnboardingBlockerKind.migrationFailed,
+          ),
+        ),
+        workflowOverrideStatus: OnboardingStatus.recoveringFailedAttempt,
+        fallbackBuildStatus: () => OnboardingStatus.awaitingUserAction,
+      );
+
+      expect(status, OnboardingStatus.recoveringFailedAttempt);
+    });
+
     test('falls back to derived status when no workflow override exists', () {
       final status = OnboardingGate.resolveBuildStatus(
         reportAsync: AsyncData(
@@ -208,6 +242,86 @@ void main() {
 
       expect(await _readGateStatus(container), OnboardingStatus.awaitingFda);
     });
+
+    testWidgets(
+      'automatically resets stale app databases once before returning to awaitingUserAction',
+      (tester) async {
+        var shouldReset = true;
+        final seenStatuses = <OnboardingStatus>[];
+        final resetCompleter = Completer<void>();
+        _FakeDbImportControlViewModel.resetCallCount = 0;
+        _FakeDbImportControlViewModel.resetCompleter = resetCompleter;
+        _FakeDbImportControlViewModel.onResetStarted = () {
+          shouldReset = false;
+        };
+
+        addTearDown(() {
+          _FakeDbImportControlViewModel.resetCallCount = 0;
+          _FakeDbImportControlViewModel.resetCompleter = null;
+          _FakeDbImportControlViewModel.onResetStarted = null;
+        });
+
+        container = ProviderContainer(
+          overrides: [
+            onboardingEnvironmentReportProvider.overrideWith((ref) async {
+              return _report(
+                state: shouldReset
+                    ? OnboardingEnvironmentState.migrationFailed
+                    : OnboardingEnvironmentState.readyToImport,
+                blockerKind: shouldReset
+                    ? OnboardingBlockerKind.migrationFailed
+                    : OnboardingBlockerKind.importDatabaseMissing,
+                shouldResetAppDatabasesBeforeImport: shouldReset,
+                resetAppDatabasesReason: shouldReset
+                    ? 'Synthetic stale setup state for gate recovery test'
+                    : null,
+              );
+            }),
+            dbImportControlViewModelProvider.overrideWith(
+              _FakeDbImportControlViewModel.new,
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: Consumer(
+                builder: (context, ref, child) {
+                  final status = ref.watch(onboardingGateProvider);
+                  seenStatuses.add(status);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          ),
+        );
+
+        await container.read(onboardingEnvironmentReportProvider.future);
+
+        await tester.pump();
+        await tester.pump();
+
+        expect(_FakeDbImportControlViewModel.resetCallCount, 1);
+        expect(seenStatuses, contains(OnboardingStatus.awaitingUserAction));
+        expect(
+          seenStatuses,
+          contains(OnboardingStatus.recoveringFailedAttempt),
+        );
+
+        resetCompleter.complete();
+        await tester.pump();
+        await tester.pump();
+
+        expect(
+          container.read(onboardingGateProvider),
+          OnboardingStatus.awaitingUserAction,
+        );
+        expect(_FakeDbImportControlViewModel.resetCallCount, 1);
+      },
+    );
   });
 }
 
@@ -220,6 +334,8 @@ OnboardingEnvironmentReport _report({
   required OnboardingEnvironmentState state,
   required OnboardingBlockerKind blockerKind,
   bool hasFullDiskAccess = true,
+  bool shouldResetAppDatabasesBeforeImport = false,
+  String? resetAppDatabasesReason,
 }) {
   return OnboardingEnvironmentReport(
     state: state,
@@ -250,7 +366,35 @@ OnboardingEnvironmentReport _report({
       rowCount: 100,
     ),
     hasFullDiskAccess: hasFullDiskAccess,
+    shouldResetAppDatabasesBeforeImport: shouldResetAppDatabasesBeforeImport,
+    resetAppDatabasesReason: resetAppDatabasesReason,
   );
+}
+
+class _FakeDbImportControlViewModel extends DbImportControlViewModel {
+  static int resetCallCount = 0;
+  static Completer<void>? resetCompleter;
+  static void Function()? onResetStarted;
+
+  @override
+  DbImportControlState build() {
+    return const DbImportControlState();
+  }
+
+  @override
+  Future<void> resetAllDatabases() async {
+    resetCallCount += 1;
+    onResetStarted?.call();
+    state = state.copyWith(
+      isProcessing: true,
+      statusMessage: 'Resetting databases...',
+    );
+    await resetCompleter?.future;
+    state = state.copyWith(
+      isProcessing: false,
+      statusMessage: 'Databases reset.',
+    );
+  }
 }
 
 String _createReadableFile(String directoryPath, String fileName) {

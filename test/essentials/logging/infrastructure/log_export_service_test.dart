@@ -15,13 +15,13 @@ void main() {
     expect(
       args,
       contains(
-        'set reportFile to POSIX file "/Users/test/Logs/diagnostic \\\"final\\\".log"',
+        r'set reportFile to POSIX file "/Users/test/Logs/diagnostic \"final\".log"',
       ),
     );
     expect(
       args,
       contains(
-        'set newMessage to make new outgoing message with properties {subject:"MessageLens \\\"Report\\\"", content:"Please review the attached report.", visible:true}',
+        r'set newMessage to make new outgoing message with properties {subject:"MessageLens \"Report\"", content:"Please review the attached report.", visible:true}',
       ),
     );
     expect(

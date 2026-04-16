@@ -10,6 +10,7 @@ import '../../db/feature_level_providers.dart'
     show databaseDirectoryPath, sqfliteImportDatabaseProvider;
 import '../../db/feature_level_providers/message_data_version_provider.dart';
 import '../../db_importers/presentation/view_model/db_import_control_provider.dart';
+import '../../logging/application/app_logger.dart';
 import '../../navigation/application/sidebar_mode_provider.dart';
 import '../../navigation/domain/sidebar_mode.dart';
 import '../domain/onboarding_environment_report.dart';
@@ -39,10 +40,13 @@ class OnboardingGate extends _$OnboardingGate {
   static const _checker = DatabaseExistenceChecker();
   static const _fdaChecker = FdaChecker();
   OnboardingStatus? _workflowOverrideStatus;
+  bool _automaticRecoveryInFlight = false;
+  bool _automaticRecoverySuppressed = false;
 
   @override
   OnboardingStatus build() {
     final reportAsync = ref.watch(onboardingEnvironmentReportProvider);
+    reportAsync.whenData(_maybeTriggerAutomaticRecovery);
 
     return resolveBuildStatus(
       reportAsync: reportAsync,
@@ -86,6 +90,7 @@ class OnboardingGate extends _$OnboardingGate {
 
   static bool _shouldPreserveWorkflowOverride(OnboardingStatus? status) {
     return switch (status) {
+      OnboardingStatus.recoveringFailedAttempt ||
       OnboardingStatus.importing ||
       OnboardingStatus.migrating ||
       OnboardingStatus.complete ||
@@ -131,9 +136,7 @@ class OnboardingGate extends _$OnboardingGate {
       return;
     }
 
-    // Remove stale import DB files from a previous failed or aborted run
-    // so the pipeline starts from a clean slate.
-    await _deleteImportDatabaseFiles();
+    await _prepareForFreshStartIfNeeded();
 
     // ── Import phase ──
     _setWorkflowOverride(OnboardingStatus.importing);
@@ -209,6 +212,7 @@ class OnboardingGate extends _$OnboardingGate {
   }
 
   void refreshEnvironment() {
+    _automaticRecoverySuppressed = false;
     _clearWorkflowOverride();
     ref.invalidate(onboardingFullDiskAccessProvider);
     ref.invalidate(onboardingEnvironmentReportProvider);
@@ -298,6 +302,65 @@ class OnboardingGate extends _$OnboardingGate {
 
   void _clearWorkflowOverride() {
     _workflowOverrideStatus = null;
+  }
+
+  void _maybeTriggerAutomaticRecovery(OnboardingEnvironmentReport report) {
+    if (!report.shouldResetAppDatabasesBeforeImport) {
+      _automaticRecoverySuppressed = false;
+      return;
+    }
+
+    if (_automaticRecoveryInFlight || _automaticRecoverySuppressed) {
+      return;
+    }
+
+    _automaticRecoveryInFlight = true;
+    _automaticRecoverySuppressed = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _setWorkflowOverride(OnboardingStatus.recoveringFailedAttempt);
+      unawaited(_runAutomaticRecovery(report));
+    });
+  }
+
+  Future<void> _runAutomaticRecovery(OnboardingEnvironmentReport report) async {
+    try {
+      ref
+          .read(appLoggerProvider.notifier)
+          .warn(
+            'Auto-resetting app databases before onboarding retry: ${report.resetAppDatabasesReason ?? 'no reason provided'}',
+            source: 'OnboardingGate',
+          );
+      await ref
+          .read(dbImportControlViewModelProvider.notifier)
+          .resetAllDatabases();
+    } catch (error) {
+      _automaticRecoverySuppressed = true;
+      ref
+          .read(appLoggerProvider.notifier)
+          .error(
+            'Automatic onboarding DB reset failed: $error',
+            source: 'OnboardingGate',
+          );
+    } finally {
+      _automaticRecoveryInFlight = false;
+      _clearWorkflowOverride();
+      ref.invalidate(onboardingEnvironmentReportProvider);
+      ref.invalidateSelf();
+      state = OnboardingStatus.awaitingUserAction;
+    }
+  }
+
+  Future<void> _prepareForFreshStartIfNeeded() async {
+    final report = ref.read(onboardingEnvironmentReportProvider).valueOrNull;
+    if (report?.shouldResetAppDatabasesBeforeImport ?? false) {
+      await ref
+          .read(dbImportControlViewModelProvider.notifier)
+          .resetAllDatabases();
+      ref.invalidate(onboardingEnvironmentReportProvider);
+      return;
+    }
+
+    await _deleteImportDatabaseFiles();
   }
 
   void _finishFirstRunWithFailure() {
