@@ -1,0 +1,125 @@
+PROMPT:
+
+Summarize the implementation you just created.
+
+Specifically:
+- list all generated files and their responsibilities
+- explain the structure of DatabaseHealthAuditService
+- describe how SQL queries are organized and executed
+- explain how relationship checks and invariant checks are implemented
+- identify any assumptions you made about the schema
+
+Do not modify code.
+
+
+RESPONSE:
+
+The new Phase 1 implementation lives in lib/essentials/db/application/database_health_audit.
+
+Generated files and responsibilities:
+
+database_health_audit_models.dart: Freezed/json model definitions for the full database_health.json report shape, including enums, report sections, summary, and error objects.
+database_health_audit_models.freezed.dart: generated Freezed value-type implementation.
+database_health_audit_models.g.dart: generated JSON serialization.
+database_health_audit_queries.dart: query-layer abstractions and DB-specific adapters for import, working, and overlay databases; also contains table/column spec helper types.
+database_health_audit_service.dart: orchestration service plus Riverpod provider; builds the Phase 1 report and writes database_health.json.
+database_health_audit_service.g.dart: generated Riverpod provider wiring.
+DatabaseHealthAuditService structure:
+
+databaseHealthAuditServiceProvider resolves the existing provider-managed DB instances and wraps each in a query-layer adapter.
+DatabaseHealthAuditService receives a list of DatabaseHealthQueryLayers.
+buildPhase1Report() orchestrates the full report:
+database metadata
+table inventory
+relationship checks
+invariant checks
+summary
+accumulated errors
+writePhase1Report() creates the output directory and writes database_health.json.
+Private helpers split the work by concern:
+_buildDatabaseInfo
+_buildTableInventory
+_buildRelationshipChecks
+_buildInvariantChecks
+_buildSummary
+_buildAppInfo
+_buildEnvironmentInfo
+How SQL queries are organized and executed:
+
+DatabaseHealthQueryLayer is the shared abstraction.
+It exposes a low-level query(String sql) method plus shared helpers:
+listTables()
+listColumns()
+countRows()
+primaryKeyInfo()
+summarizeImportantColumn()
+schemaUserVersion()
+Concrete adapters are:
+ImportDatabaseHealthQueryLayer
+WorkingDatabaseHealthQueryLayer
+OverlayDatabaseHealthQueryLayer
+Execution stays within existing project DB access rules:
+import uses SqfliteImportDatabase.rawQuery
+working and overlay use Drift customSelect(...).get()
+Query specs are data-driven:
+_tableSpecsByDatabase
+_relationshipSpecsByDatabase
+_invariantSpecsByDatabase
+Inventory is partly introspective:
+tables are discovered from sqlite_master
+columns from PRAGMA table_info
+PK bounds from MIN/MAX on single integer PKs
+How relationship checks are implemented:
+
+Each relationship check is declared with:
+checkKey
+relationship type
+parent/child tables
+join description
+parent-side predicate
+child-side predicate
+_evaluateRelationshipCheck() computes:
+parent row count
+child row count
+matched parent rows via EXISTS
+unmatched parent rows via NOT EXISTS
+unmatched child rows via reverse NOT EXISTS
+Status logic is simple Phase 1 logic:
+no unmatched rows => pass
+zero matches with non-empty tables => fail
+otherwise => warning
+Checks are currently intra-database only, for documented relationships like:
+import messages -> chat_to_message
+import message_attachments -> messages/attachments
+working messages -> chats
+working attachments -> messages by message_guid
+working index tables -> messages
+How invariant checks are implemented:
+
+Each invariant is declared with:
+checkKey
+severity
+description
+one SQL for evaluated row count
+one SQL for violation count
+_buildInvariantChecks() runs both queries and converts the result to:
+pass when violations are zero
+not_applicable when evaluated rows are zero
+fail when every evaluated row violates
+warning otherwise
+Examples implemented:
+import messages should have chat linkage
+import message_attachments should reference valid message and attachment rows
+working messages should map to chats
+working attachments should preserve import_attachment_id
+global_message_index should cover messages
+projection_state singleton row should exist
+Assumptions I made about the schema:
+
+Phase 1 should audit the three app-owned DBs only: macos_import.db, working.db, user_overlays.db.
+Existing provider-managed DB connections should be used instead of opening separate read-only connections, because project rules prohibit extra direct DB instances.
+Cross-database relationship checks were deferred; overlay is inventoried, but not joined against working in Phase 1.
+A few fields are treated as sensitive and only reported as omitted-for-privacy notes, such as message text, attributed body blobs, URLs, filenames, archive paths, and user notes.
+Single-column integer primary keys get min/max; composite PKs and non-integer PKs do not.
+attachments.import_attachment_id in working is expected to be present for traceability, but I left a TODO because a legacy recovery path may intentionally allow nulls.
+App/build metadata is populated from stable constants and compile-time environment defaults rather than a dedicated runtime package-info source.
