@@ -327,7 +327,7 @@ void main() {
     );
 
     testWidgets(
-      'showContactTimelineAt keeps handle filter in projected center spec',
+      'showContactTimelineAt clears handle filter in projected center spec',
       (tester) async {
         await _mountMessagesPanelReconciliation(tester, container);
 
@@ -340,16 +340,13 @@ void main() {
 
         await _flushMessagesPanelReconciliation(tester);
 
+        expect(container.read(sidebarFlowProvider).selectedHandleId, isNull);
         expect(container.read(sidebarFlowProvider).scrollToDate, anchorDate);
         expect(
           _activeSpec(container, WindowPanel.center),
           equals(
             ViewSpec.messages(
-              MessagesSpec.forContact(
-                contactId: 42,
-                scrollToDate: anchorDate,
-                filterHandleId: 7,
-              ),
+              MessagesSpec.forContact(contactId: 42, scrollToDate: anchorDate),
             ),
           ),
         );

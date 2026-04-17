@@ -17,6 +17,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import './providers.dart';
 import 'config/theme/colors/theme_colors.dart';
 import 'config/theme/theme_typography.dart';
+import 'essentials/db/application/database_health_audit/database_health_audit_service.dart';
 import 'essentials/db/feature_level_providers.dart';
 import 'essentials/db_importers/application/monitor/chat_db_change_monitor_provider.dart';
 import 'essentials/logging/application/app_logger.dart';
@@ -368,7 +369,13 @@ class _StartupResetConfirmationDialogState
 
     logger.info('Export Logs clicked', source: 'StartupDialog');
 
-    final result = await exportDiagnosticReport(logger.writer);
+    final databaseHealthAuditService = await ref.read(
+      databaseHealthAuditServiceProvider.future,
+    );
+    final result = await exportDiagnosticReport(
+      logger.writer,
+      databaseHealthAuditService: databaseHealthAuditService,
+    );
     if (!mounted) {
       return;
     }

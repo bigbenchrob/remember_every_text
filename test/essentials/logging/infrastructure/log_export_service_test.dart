@@ -1,8 +1,41 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:remember_this_text/essentials/logging/infrastructure/log_export_service.dart';
 
 void main() {
+  test('createSupportBundleMailArchive creates zip on macOS', () async {
+    final tempDirectory = await Directory.systemTemp.createTemp(
+      'support_bundle_mail_archive_test_',
+    );
+    final bundleDirectory = Directory(
+      '${tempDirectory.path}/support_bundle_2026-04-16_111443',
+    );
+    await bundleDirectory.create();
+    await File(
+      '${bundleDirectory.path}/diagnostic_report.log',
+    ).writeAsString('diagnostic log');
+
+    addTearDown(() async {
+      if (tempDirectory.existsSync()) {
+        await tempDirectory.delete(recursive: true);
+      }
+    });
+
+    final archive = await createSupportBundleMailArchive(bundleDirectory);
+
+    if (!Platform.isMacOS) {
+      expect(archive, isNull);
+      return;
+    }
+
+    expect(archive, isNotNull);
+    expect(archive!.existsSync(), isTrue);
+    expect(archive.path, endsWith('support_bundle_2026-04-16_111443.zip'));
+    expect(archive.lengthSync(), greaterThan(0));
+  });
+
   test('buildAppleMailComposeScriptArgs escapes attachments subject and recipient', () {
     final args = buildAppleMailComposeScriptArgs(
       attachmentFilePaths: [

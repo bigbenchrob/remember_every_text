@@ -13,6 +13,7 @@ import '../../../features/messages/domain/value_objects/message_timeline_scope.d
 import '../../../features/messages/presentation/view_model/timeline/message_timeline_view_model_provider.dart';
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
+import '../../db/application/database_health_audit/database_health_audit_service.dart';
 import '../../db/feature_level_providers.dart';
 import '../../logging/application/app_logger.dart';
 import '../../logging/application/diagnostic_report_actions.dart';
@@ -140,7 +141,13 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
         await ref.read(onboardingGateProvider.notifier).startReimport();
       case SendLogsRequested():
         final writer = ref.read(appLoggerProvider.notifier).writer;
-        await exportDiagnosticReport(writer);
+        final databaseHealthAuditService = await ref.read(
+          databaseHealthAuditServiceProvider.future,
+        );
+        await exportDiagnosticReport(
+          writer,
+          databaseHealthAuditService: databaseHealthAuditService,
+        );
     }
   }
 

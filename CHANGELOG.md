@@ -10,6 +10,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - No unreleased changes yet.
 
+## [0.1.4] — 2026-04-17
+
+### Added
+- Diagnostic export now produces a support bundle that can include a privacy-safe `database_health.json` structural audit of the app-owned databases.
+
+### Changed
+- “Send Logs” and onboarding failure report flows now reveal or attach the support bundle instead of only a standalone diagnostic log file.
+
 ## [0.1.3] — 2026-04-16
 
 ### Added

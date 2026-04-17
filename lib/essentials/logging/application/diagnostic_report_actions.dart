@@ -1,14 +1,17 @@
+import '../../db/application/database_health_audit/database_health_audit_service.dart';
 import '../../onboarding/domain/onboarding_environment_report.dart';
 import '../infrastructure/log_export_service.dart';
 import '../infrastructure/log_file_writer.dart';
+import '../infrastructure/support_bundle_export_service.dart';
 
 const developerDiagnosticRecipientEmail = 'bigbenchrob@gmail.com';
 
 Future<DiagnosticReportPresentationResult> exportDiagnosticReport(
-  LogFileWriter writer,
-) {
+  LogFileWriter writer, {
+  required DatabaseHealthAuditService databaseHealthAuditService,
+}) {
   return LogExportService(
-    writer,
+    SupportBundleExportService(writer, databaseHealthAuditService),
   ).exportAndPresent(recipientEmail: developerDiagnosticRecipientEmail);
 }
 
@@ -16,12 +19,25 @@ Future<DiagnosticReportPresentationResult>
 exportOnboardingFailureDiagnosticReport(
   LogFileWriter writer, {
   required OnboardingEnvironmentReport report,
+  required DatabaseHealthAuditService databaseHealthAuditService,
 }) {
-  return LogExportService(writer).exportAndPresent(
+  return LogExportService(
+    SupportBundleExportService(writer, databaseHealthAuditService),
+  ).exportAndPresent(
     recipientEmail: developerDiagnosticRecipientEmail,
     subjectPrefix: 'MessageLens Onboarding Failure Report',
-    emailBodyLines: [
-      'Please attach the diagnostic report that was just revealed in Finder.',
+    attachedEmailBodyLines: [
+      'MessageLens attached the support bundle to this draft.',
+      '',
+      'This report was prepared from the onboarding failure screen.',
+      'Observed state: ${report.state.name}',
+      'Blocker kind: ${report.blockerKind.name}',
+      '',
+      'Describe what happened just before setup failed:',
+    ],
+    manualAttachmentEmailBodyLines: [
+      'MessageLens prepared a support bundle but could not attach it automatically.',
+      'It has been revealed in Finder so it can be attached manually.',
       '',
       'This report was prepared from the onboarding failure screen.',
       'Observed state: ${report.state.name}',

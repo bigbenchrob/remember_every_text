@@ -30,9 +30,9 @@ const _defaultBuildNumber = String.fromEnvironment(
 
 @Riverpod(keepAlive: true)
 Future<DatabaseHealthAuditService> databaseHealthAuditService(Ref ref) async {
-  final importDb = await ref.watch(sqfliteImportDatabaseProvider.future);
-  final workingDb = await ref.watch(driftWorkingDatabaseProvider.future);
-  final overlayDb = await ref.watch(overlayDatabaseProvider.future);
+  final importDb = await ref.read(sqfliteImportDatabaseProvider.future);
+  final workingDb = await ref.read(driftWorkingDatabaseProvider.future);
+  final overlayDb = await ref.read(overlayDatabaseProvider.future);
 
   return DatabaseHealthAuditService(
     queryLayers: <DatabaseHealthQueryLayer>[
@@ -143,7 +143,7 @@ class DatabaseHealthAuditService {
       diagnosticNotes: const <String>[
         'Phase 1 audits aggregate structure only; no row-level samples are exported.',
         'TODO: enrich build metadata from a dedicated runtime package-info source.',
-        'TODO: add provider-safe cross-database overlay relationship checks in a later pass.',
+        'Cross-database overlay relationship diagnostics are intentionally deferred to a later audit phase.',
       ],
     );
   }
@@ -358,6 +358,15 @@ class DatabaseHealthAuditService {
       matchedRowCount: matchedRowCount,
       unmatchedParentRowCount: unmatchedParentRowCount,
       unmatchedChildRowCount: unmatchedChildRowCount,
+      matchedPercentage: _percentageOrNull(matchedRowCount, parentRowCount),
+      unmatchedParentPercentage: _percentageOrNull(
+        unmatchedParentRowCount,
+        parentRowCount,
+      ),
+      unmatchedChildPercentage: _percentageOrNull(
+        unmatchedChildRowCount,
+        childRowCount,
+      ),
       status: status,
       notes: spec.notes,
     );
@@ -446,17 +455,19 @@ class DatabaseHealthAuditService {
       ...relationshipChecks
           .where((check) => check.status != DatabaseHealthStatus.pass)
           .take(5)
-          .map(
-            (check) =>
-                '${check.checkKey}: ${check.unmatchedParentRowCount ?? 0} unmatched parent rows, ${check.unmatchedChildRowCount ?? 0} unmatched child rows',
-          ),
+          .map(_headlineForRelationshipCheck),
       ...invariantChecks
-          .where((check) => check.status != DatabaseHealthStatus.pass)
-          .take(5)
-          .map(
+          .where(
             (check) =>
-                '${check.checkKey}: ${check.violationCount ?? 0} violations',
-          ),
+                check.status != DatabaseHealthStatus.pass &&
+                check.status != DatabaseHealthStatus.notApplicable,
+          )
+          .take(5)
+          .map(_headlineForInvariantCheck),
+      ...invariantChecks
+          .where((check) => check.status == DatabaseHealthStatus.notApplicable)
+          .take(2)
+          .map((check) => '${check.checkKey}: phase1 not applicable'),
       ...errors.take(5).map((error) => '${error.scope.name}: ${error.message}'),
     ];
 
@@ -554,11 +565,11 @@ DatabaseHealthStatus _statusFromInvariantCounts({
   required int violationCount,
   required int evaluatedRowCount,
 }) {
-  if (violationCount == 0) {
-    return DatabaseHealthStatus.pass;
-  }
   if (evaluatedRowCount == 0) {
     return DatabaseHealthStatus.notApplicable;
+  }
+  if (violationCount == 0) {
+    return DatabaseHealthStatus.pass;
   }
   if (violationCount == evaluatedRowCount) {
     return DatabaseHealthStatus.fail;
@@ -587,6 +598,54 @@ int _countStatus(
   DatabaseHealthStatus status,
 ) {
   return statuses.where((value) => value == status).length;
+}
+
+double? _percentageOrNull(int numerator, int denominator) {
+  if (denominator == 0) {
+    return null;
+  }
+  return ((numerator / denominator) * 1000).round() / 10.0;
+}
+
+String _headlineForRelationshipCheck(RelationshipCheckResult check) {
+  final parentCount = check.parentRowCount ?? 0;
+  final childCount = check.childRowCount ?? 0;
+  final unmatchedParents = check.unmatchedParentRowCount ?? 0;
+  final unmatchedChildren = check.unmatchedChildRowCount ?? 0;
+  final parentRate = _formatPercentage(check.unmatchedParentPercentage);
+  final childRate = _formatPercentage(check.unmatchedChildPercentage);
+
+  final segments = <String>[];
+  if (parentCount > 0 && unmatchedParents > 0) {
+    segments.add('$unmatchedParents/$parentCount parent unmatched$parentRate');
+  }
+  if (childCount > 0 && unmatchedChildren > 0) {
+    segments.add('$unmatchedChildren/$childCount child unmatched$childRate');
+  }
+  if (segments.isEmpty) {
+    final matched = check.matchedRowCount ?? 0;
+    final matchedRate = _formatPercentage(check.matchedPercentage);
+    segments.add('$matched matched$matchedRate');
+  }
+
+  return '${check.checkKey}: ${segments.join(', ')}';
+}
+
+String _headlineForInvariantCheck(InvariantCheckResult check) {
+  final violations = check.violationCount ?? 0;
+  final evaluated = check.evaluatedRowCount ?? 0;
+  final rate = _formatPercentage(_percentageOrNull(violations, evaluated));
+  if (evaluated > 0) {
+    return '${check.checkKey}: $violations/$evaluated violations$rate';
+  }
+  return '${check.checkKey}: $violations violations';
+}
+
+String _formatPercentage(double? value) {
+  if (value == null) {
+    return '';
+  }
+  return ' (${value.toStringAsFixed(1)}%)';
 }
 
 String _quoted(String value) {
@@ -1152,6 +1211,19 @@ _invariantSpecsByDatabase = <String, List<_InvariantCheckSpec>>{
               ELSE 1
             END AS c
           ''',
+    ),
+  ],
+  'overlay': <_InvariantCheckSpec>[
+    _InvariantCheckSpec(
+      checkKey: 'overlay_cross_database_relationship_checks_deferred',
+      severity: DatabaseHealthSeverity.low,
+      description:
+          'Cross-database overlay-to-working relationship checks are intentionally deferred in Phase 1.',
+      evaluatedRowCountSql: 'SELECT 0 AS c',
+      violationCountSql: 'SELECT 0 AS c',
+      notes: <String>[
+        'Phase 1 inventories overlay tables but does not execute cross-database relationship checks.',
+      ],
     ),
   ],
 };

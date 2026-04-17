@@ -2398,7 +2398,7 @@ as List<String>,
 /// @nodoc
 mixin _$RelationshipCheckResult {
 
- String get checkKey; String get databaseKey; DatabaseHealthRelationshipType get relationshipType; String get parentTable; String? get childTable; String get joinExpressionDescription; int? get parentRowCount; int? get childRowCount; int? get matchedRowCount; int? get unmatchedParentRowCount; int? get unmatchedChildRowCount; DatabaseHealthStatus get status; List<String> get notes; String? get error;
+ String get checkKey; String get databaseKey; DatabaseHealthRelationshipType get relationshipType; String get parentTable; String? get childTable; String get joinExpressionDescription; int? get parentRowCount; int? get childRowCount; int? get matchedRowCount; int? get unmatchedParentRowCount; int? get unmatchedChildRowCount; double? get matchedPercentage; double? get unmatchedParentPercentage; double? get unmatchedChildPercentage; DatabaseHealthStatus get status; List<String> get notes; String? get error;
 /// Create a copy of RelationshipCheckResult
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2411,16 +2411,16 @@ $RelationshipCheckResultCopyWith<RelationshipCheckResult> get copyWith => _$Rela
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RelationshipCheckResult&&(identical(other.checkKey, checkKey) || other.checkKey == checkKey)&&(identical(other.databaseKey, databaseKey) || other.databaseKey == databaseKey)&&(identical(other.relationshipType, relationshipType) || other.relationshipType == relationshipType)&&(identical(other.parentTable, parentTable) || other.parentTable == parentTable)&&(identical(other.childTable, childTable) || other.childTable == childTable)&&(identical(other.joinExpressionDescription, joinExpressionDescription) || other.joinExpressionDescription == joinExpressionDescription)&&(identical(other.parentRowCount, parentRowCount) || other.parentRowCount == parentRowCount)&&(identical(other.childRowCount, childRowCount) || other.childRowCount == childRowCount)&&(identical(other.matchedRowCount, matchedRowCount) || other.matchedRowCount == matchedRowCount)&&(identical(other.unmatchedParentRowCount, unmatchedParentRowCount) || other.unmatchedParentRowCount == unmatchedParentRowCount)&&(identical(other.unmatchedChildRowCount, unmatchedChildRowCount) || other.unmatchedChildRowCount == unmatchedChildRowCount)&&(identical(other.status, status) || other.status == status)&&const DeepCollectionEquality().equals(other.notes, notes)&&(identical(other.error, error) || other.error == error));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RelationshipCheckResult&&(identical(other.checkKey, checkKey) || other.checkKey == checkKey)&&(identical(other.databaseKey, databaseKey) || other.databaseKey == databaseKey)&&(identical(other.relationshipType, relationshipType) || other.relationshipType == relationshipType)&&(identical(other.parentTable, parentTable) || other.parentTable == parentTable)&&(identical(other.childTable, childTable) || other.childTable == childTable)&&(identical(other.joinExpressionDescription, joinExpressionDescription) || other.joinExpressionDescription == joinExpressionDescription)&&(identical(other.parentRowCount, parentRowCount) || other.parentRowCount == parentRowCount)&&(identical(other.childRowCount, childRowCount) || other.childRowCount == childRowCount)&&(identical(other.matchedRowCount, matchedRowCount) || other.matchedRowCount == matchedRowCount)&&(identical(other.unmatchedParentRowCount, unmatchedParentRowCount) || other.unmatchedParentRowCount == unmatchedParentRowCount)&&(identical(other.unmatchedChildRowCount, unmatchedChildRowCount) || other.unmatchedChildRowCount == unmatchedChildRowCount)&&(identical(other.matchedPercentage, matchedPercentage) || other.matchedPercentage == matchedPercentage)&&(identical(other.unmatchedParentPercentage, unmatchedParentPercentage) || other.unmatchedParentPercentage == unmatchedParentPercentage)&&(identical(other.unmatchedChildPercentage, unmatchedChildPercentage) || other.unmatchedChildPercentage == unmatchedChildPercentage)&&(identical(other.status, status) || other.status == status)&&const DeepCollectionEquality().equals(other.notes, notes)&&(identical(other.error, error) || other.error == error));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,checkKey,databaseKey,relationshipType,parentTable,childTable,joinExpressionDescription,parentRowCount,childRowCount,matchedRowCount,unmatchedParentRowCount,unmatchedChildRowCount,status,const DeepCollectionEquality().hash(notes),error);
+int get hashCode => Object.hash(runtimeType,checkKey,databaseKey,relationshipType,parentTable,childTable,joinExpressionDescription,parentRowCount,childRowCount,matchedRowCount,unmatchedParentRowCount,unmatchedChildRowCount,matchedPercentage,unmatchedParentPercentage,unmatchedChildPercentage,status,const DeepCollectionEquality().hash(notes),error);
 
 @override
 String toString() {
-  return 'RelationshipCheckResult(checkKey: $checkKey, databaseKey: $databaseKey, relationshipType: $relationshipType, parentTable: $parentTable, childTable: $childTable, joinExpressionDescription: $joinExpressionDescription, parentRowCount: $parentRowCount, childRowCount: $childRowCount, matchedRowCount: $matchedRowCount, unmatchedParentRowCount: $unmatchedParentRowCount, unmatchedChildRowCount: $unmatchedChildRowCount, status: $status, notes: $notes, error: $error)';
+  return 'RelationshipCheckResult(checkKey: $checkKey, databaseKey: $databaseKey, relationshipType: $relationshipType, parentTable: $parentTable, childTable: $childTable, joinExpressionDescription: $joinExpressionDescription, parentRowCount: $parentRowCount, childRowCount: $childRowCount, matchedRowCount: $matchedRowCount, unmatchedParentRowCount: $unmatchedParentRowCount, unmatchedChildRowCount: $unmatchedChildRowCount, matchedPercentage: $matchedPercentage, unmatchedParentPercentage: $unmatchedParentPercentage, unmatchedChildPercentage: $unmatchedChildPercentage, status: $status, notes: $notes, error: $error)';
 }
 
 
@@ -2431,7 +2431,7 @@ abstract mixin class $RelationshipCheckResultCopyWith<$Res>  {
   factory $RelationshipCheckResultCopyWith(RelationshipCheckResult value, $Res Function(RelationshipCheckResult) _then) = _$RelationshipCheckResultCopyWithImpl;
 @useResult
 $Res call({
- String checkKey, String databaseKey, DatabaseHealthRelationshipType relationshipType, String parentTable, String? childTable, String joinExpressionDescription, int? parentRowCount, int? childRowCount, int? matchedRowCount, int? unmatchedParentRowCount, int? unmatchedChildRowCount, DatabaseHealthStatus status, List<String> notes, String? error
+ String checkKey, String databaseKey, DatabaseHealthRelationshipType relationshipType, String parentTable, String? childTable, String joinExpressionDescription, int? parentRowCount, int? childRowCount, int? matchedRowCount, int? unmatchedParentRowCount, int? unmatchedChildRowCount, double? matchedPercentage, double? unmatchedParentPercentage, double? unmatchedChildPercentage, DatabaseHealthStatus status, List<String> notes, String? error
 });
 
 
@@ -2448,7 +2448,7 @@ class _$RelationshipCheckResultCopyWithImpl<$Res>
 
 /// Create a copy of RelationshipCheckResult
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? checkKey = null,Object? databaseKey = null,Object? relationshipType = null,Object? parentTable = null,Object? childTable = freezed,Object? joinExpressionDescription = null,Object? parentRowCount = freezed,Object? childRowCount = freezed,Object? matchedRowCount = freezed,Object? unmatchedParentRowCount = freezed,Object? unmatchedChildRowCount = freezed,Object? status = null,Object? notes = null,Object? error = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? checkKey = null,Object? databaseKey = null,Object? relationshipType = null,Object? parentTable = null,Object? childTable = freezed,Object? joinExpressionDescription = null,Object? parentRowCount = freezed,Object? childRowCount = freezed,Object? matchedRowCount = freezed,Object? unmatchedParentRowCount = freezed,Object? unmatchedChildRowCount = freezed,Object? matchedPercentage = freezed,Object? unmatchedParentPercentage = freezed,Object? unmatchedChildPercentage = freezed,Object? status = null,Object? notes = null,Object? error = freezed,}) {
   return _then(_self.copyWith(
 checkKey: null == checkKey ? _self.checkKey : checkKey // ignore: cast_nullable_to_non_nullable
 as String,databaseKey: null == databaseKey ? _self.databaseKey : databaseKey // ignore: cast_nullable_to_non_nullable
@@ -2461,7 +2461,10 @@ as int?,childRowCount: freezed == childRowCount ? _self.childRowCount : childRow
 as int?,matchedRowCount: freezed == matchedRowCount ? _self.matchedRowCount : matchedRowCount // ignore: cast_nullable_to_non_nullable
 as int?,unmatchedParentRowCount: freezed == unmatchedParentRowCount ? _self.unmatchedParentRowCount : unmatchedParentRowCount // ignore: cast_nullable_to_non_nullable
 as int?,unmatchedChildRowCount: freezed == unmatchedChildRowCount ? _self.unmatchedChildRowCount : unmatchedChildRowCount // ignore: cast_nullable_to_non_nullable
-as int?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as int?,matchedPercentage: freezed == matchedPercentage ? _self.matchedPercentage : matchedPercentage // ignore: cast_nullable_to_non_nullable
+as double?,unmatchedParentPercentage: freezed == unmatchedParentPercentage ? _self.unmatchedParentPercentage : unmatchedParentPercentage // ignore: cast_nullable_to_non_nullable
+as double?,unmatchedChildPercentage: freezed == unmatchedChildPercentage ? _self.unmatchedChildPercentage : unmatchedChildPercentage // ignore: cast_nullable_to_non_nullable
+as double?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as DatabaseHealthStatus,notes: null == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as List<String>,error: freezed == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
 as String?,
@@ -2549,10 +2552,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String checkKey,  String databaseKey,  DatabaseHealthRelationshipType relationshipType,  String parentTable,  String? childTable,  String joinExpressionDescription,  int? parentRowCount,  int? childRowCount,  int? matchedRowCount,  int? unmatchedParentRowCount,  int? unmatchedChildRowCount,  DatabaseHealthStatus status,  List<String> notes,  String? error)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String checkKey,  String databaseKey,  DatabaseHealthRelationshipType relationshipType,  String parentTable,  String? childTable,  String joinExpressionDescription,  int? parentRowCount,  int? childRowCount,  int? matchedRowCount,  int? unmatchedParentRowCount,  int? unmatchedChildRowCount,  double? matchedPercentage,  double? unmatchedParentPercentage,  double? unmatchedChildPercentage,  DatabaseHealthStatus status,  List<String> notes,  String? error)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RelationshipCheckResult() when $default != null:
-return $default(_that.checkKey,_that.databaseKey,_that.relationshipType,_that.parentTable,_that.childTable,_that.joinExpressionDescription,_that.parentRowCount,_that.childRowCount,_that.matchedRowCount,_that.unmatchedParentRowCount,_that.unmatchedChildRowCount,_that.status,_that.notes,_that.error);case _:
+return $default(_that.checkKey,_that.databaseKey,_that.relationshipType,_that.parentTable,_that.childTable,_that.joinExpressionDescription,_that.parentRowCount,_that.childRowCount,_that.matchedRowCount,_that.unmatchedParentRowCount,_that.unmatchedChildRowCount,_that.matchedPercentage,_that.unmatchedParentPercentage,_that.unmatchedChildPercentage,_that.status,_that.notes,_that.error);case _:
   return orElse();
 
 }
@@ -2570,10 +2573,10 @@ return $default(_that.checkKey,_that.databaseKey,_that.relationshipType,_that.pa
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String checkKey,  String databaseKey,  DatabaseHealthRelationshipType relationshipType,  String parentTable,  String? childTable,  String joinExpressionDescription,  int? parentRowCount,  int? childRowCount,  int? matchedRowCount,  int? unmatchedParentRowCount,  int? unmatchedChildRowCount,  DatabaseHealthStatus status,  List<String> notes,  String? error)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String checkKey,  String databaseKey,  DatabaseHealthRelationshipType relationshipType,  String parentTable,  String? childTable,  String joinExpressionDescription,  int? parentRowCount,  int? childRowCount,  int? matchedRowCount,  int? unmatchedParentRowCount,  int? unmatchedChildRowCount,  double? matchedPercentage,  double? unmatchedParentPercentage,  double? unmatchedChildPercentage,  DatabaseHealthStatus status,  List<String> notes,  String? error)  $default,) {final _that = this;
 switch (_that) {
 case _RelationshipCheckResult():
-return $default(_that.checkKey,_that.databaseKey,_that.relationshipType,_that.parentTable,_that.childTable,_that.joinExpressionDescription,_that.parentRowCount,_that.childRowCount,_that.matchedRowCount,_that.unmatchedParentRowCount,_that.unmatchedChildRowCount,_that.status,_that.notes,_that.error);case _:
+return $default(_that.checkKey,_that.databaseKey,_that.relationshipType,_that.parentTable,_that.childTable,_that.joinExpressionDescription,_that.parentRowCount,_that.childRowCount,_that.matchedRowCount,_that.unmatchedParentRowCount,_that.unmatchedChildRowCount,_that.matchedPercentage,_that.unmatchedParentPercentage,_that.unmatchedChildPercentage,_that.status,_that.notes,_that.error);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -2590,10 +2593,10 @@ return $default(_that.checkKey,_that.databaseKey,_that.relationshipType,_that.pa
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String checkKey,  String databaseKey,  DatabaseHealthRelationshipType relationshipType,  String parentTable,  String? childTable,  String joinExpressionDescription,  int? parentRowCount,  int? childRowCount,  int? matchedRowCount,  int? unmatchedParentRowCount,  int? unmatchedChildRowCount,  DatabaseHealthStatus status,  List<String> notes,  String? error)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String checkKey,  String databaseKey,  DatabaseHealthRelationshipType relationshipType,  String parentTable,  String? childTable,  String joinExpressionDescription,  int? parentRowCount,  int? childRowCount,  int? matchedRowCount,  int? unmatchedParentRowCount,  int? unmatchedChildRowCount,  double? matchedPercentage,  double? unmatchedParentPercentage,  double? unmatchedChildPercentage,  DatabaseHealthStatus status,  List<String> notes,  String? error)?  $default,) {final _that = this;
 switch (_that) {
 case _RelationshipCheckResult() when $default != null:
-return $default(_that.checkKey,_that.databaseKey,_that.relationshipType,_that.parentTable,_that.childTable,_that.joinExpressionDescription,_that.parentRowCount,_that.childRowCount,_that.matchedRowCount,_that.unmatchedParentRowCount,_that.unmatchedChildRowCount,_that.status,_that.notes,_that.error);case _:
+return $default(_that.checkKey,_that.databaseKey,_that.relationshipType,_that.parentTable,_that.childTable,_that.joinExpressionDescription,_that.parentRowCount,_that.childRowCount,_that.matchedRowCount,_that.unmatchedParentRowCount,_that.unmatchedChildRowCount,_that.matchedPercentage,_that.unmatchedParentPercentage,_that.unmatchedChildPercentage,_that.status,_that.notes,_that.error);case _:
   return null;
 
 }
@@ -2605,7 +2608,7 @@ return $default(_that.checkKey,_that.databaseKey,_that.relationshipType,_that.pa
 
 @JsonSerializable(fieldRename: FieldRename.snake, includeIfNull: false)
 class _RelationshipCheckResult implements RelationshipCheckResult {
-  const _RelationshipCheckResult({required this.checkKey, required this.databaseKey, required this.relationshipType, required this.parentTable, this.childTable, required this.joinExpressionDescription, this.parentRowCount, this.childRowCount, this.matchedRowCount, this.unmatchedParentRowCount, this.unmatchedChildRowCount, required this.status, final  List<String> notes = const <String>[], this.error}): _notes = notes;
+  const _RelationshipCheckResult({required this.checkKey, required this.databaseKey, required this.relationshipType, required this.parentTable, this.childTable, required this.joinExpressionDescription, this.parentRowCount, this.childRowCount, this.matchedRowCount, this.unmatchedParentRowCount, this.unmatchedChildRowCount, this.matchedPercentage, this.unmatchedParentPercentage, this.unmatchedChildPercentage, required this.status, final  List<String> notes = const <String>[], this.error}): _notes = notes;
   factory _RelationshipCheckResult.fromJson(Map<String, dynamic> json) => _$RelationshipCheckResultFromJson(json);
 
 @override final  String checkKey;
@@ -2619,6 +2622,9 @@ class _RelationshipCheckResult implements RelationshipCheckResult {
 @override final  int? matchedRowCount;
 @override final  int? unmatchedParentRowCount;
 @override final  int? unmatchedChildRowCount;
+@override final  double? matchedPercentage;
+@override final  double? unmatchedParentPercentage;
+@override final  double? unmatchedChildPercentage;
 @override final  DatabaseHealthStatus status;
  final  List<String> _notes;
 @override@JsonKey() List<String> get notes {
@@ -2642,16 +2648,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RelationshipCheckResult&&(identical(other.checkKey, checkKey) || other.checkKey == checkKey)&&(identical(other.databaseKey, databaseKey) || other.databaseKey == databaseKey)&&(identical(other.relationshipType, relationshipType) || other.relationshipType == relationshipType)&&(identical(other.parentTable, parentTable) || other.parentTable == parentTable)&&(identical(other.childTable, childTable) || other.childTable == childTable)&&(identical(other.joinExpressionDescription, joinExpressionDescription) || other.joinExpressionDescription == joinExpressionDescription)&&(identical(other.parentRowCount, parentRowCount) || other.parentRowCount == parentRowCount)&&(identical(other.childRowCount, childRowCount) || other.childRowCount == childRowCount)&&(identical(other.matchedRowCount, matchedRowCount) || other.matchedRowCount == matchedRowCount)&&(identical(other.unmatchedParentRowCount, unmatchedParentRowCount) || other.unmatchedParentRowCount == unmatchedParentRowCount)&&(identical(other.unmatchedChildRowCount, unmatchedChildRowCount) || other.unmatchedChildRowCount == unmatchedChildRowCount)&&(identical(other.status, status) || other.status == status)&&const DeepCollectionEquality().equals(other._notes, _notes)&&(identical(other.error, error) || other.error == error));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RelationshipCheckResult&&(identical(other.checkKey, checkKey) || other.checkKey == checkKey)&&(identical(other.databaseKey, databaseKey) || other.databaseKey == databaseKey)&&(identical(other.relationshipType, relationshipType) || other.relationshipType == relationshipType)&&(identical(other.parentTable, parentTable) || other.parentTable == parentTable)&&(identical(other.childTable, childTable) || other.childTable == childTable)&&(identical(other.joinExpressionDescription, joinExpressionDescription) || other.joinExpressionDescription == joinExpressionDescription)&&(identical(other.parentRowCount, parentRowCount) || other.parentRowCount == parentRowCount)&&(identical(other.childRowCount, childRowCount) || other.childRowCount == childRowCount)&&(identical(other.matchedRowCount, matchedRowCount) || other.matchedRowCount == matchedRowCount)&&(identical(other.unmatchedParentRowCount, unmatchedParentRowCount) || other.unmatchedParentRowCount == unmatchedParentRowCount)&&(identical(other.unmatchedChildRowCount, unmatchedChildRowCount) || other.unmatchedChildRowCount == unmatchedChildRowCount)&&(identical(other.matchedPercentage, matchedPercentage) || other.matchedPercentage == matchedPercentage)&&(identical(other.unmatchedParentPercentage, unmatchedParentPercentage) || other.unmatchedParentPercentage == unmatchedParentPercentage)&&(identical(other.unmatchedChildPercentage, unmatchedChildPercentage) || other.unmatchedChildPercentage == unmatchedChildPercentage)&&(identical(other.status, status) || other.status == status)&&const DeepCollectionEquality().equals(other._notes, _notes)&&(identical(other.error, error) || other.error == error));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,checkKey,databaseKey,relationshipType,parentTable,childTable,joinExpressionDescription,parentRowCount,childRowCount,matchedRowCount,unmatchedParentRowCount,unmatchedChildRowCount,status,const DeepCollectionEquality().hash(_notes),error);
+int get hashCode => Object.hash(runtimeType,checkKey,databaseKey,relationshipType,parentTable,childTable,joinExpressionDescription,parentRowCount,childRowCount,matchedRowCount,unmatchedParentRowCount,unmatchedChildRowCount,matchedPercentage,unmatchedParentPercentage,unmatchedChildPercentage,status,const DeepCollectionEquality().hash(_notes),error);
 
 @override
 String toString() {
-  return 'RelationshipCheckResult(checkKey: $checkKey, databaseKey: $databaseKey, relationshipType: $relationshipType, parentTable: $parentTable, childTable: $childTable, joinExpressionDescription: $joinExpressionDescription, parentRowCount: $parentRowCount, childRowCount: $childRowCount, matchedRowCount: $matchedRowCount, unmatchedParentRowCount: $unmatchedParentRowCount, unmatchedChildRowCount: $unmatchedChildRowCount, status: $status, notes: $notes, error: $error)';
+  return 'RelationshipCheckResult(checkKey: $checkKey, databaseKey: $databaseKey, relationshipType: $relationshipType, parentTable: $parentTable, childTable: $childTable, joinExpressionDescription: $joinExpressionDescription, parentRowCount: $parentRowCount, childRowCount: $childRowCount, matchedRowCount: $matchedRowCount, unmatchedParentRowCount: $unmatchedParentRowCount, unmatchedChildRowCount: $unmatchedChildRowCount, matchedPercentage: $matchedPercentage, unmatchedParentPercentage: $unmatchedParentPercentage, unmatchedChildPercentage: $unmatchedChildPercentage, status: $status, notes: $notes, error: $error)';
 }
 
 
@@ -2662,7 +2668,7 @@ abstract mixin class _$RelationshipCheckResultCopyWith<$Res> implements $Relatio
   factory _$RelationshipCheckResultCopyWith(_RelationshipCheckResult value, $Res Function(_RelationshipCheckResult) _then) = __$RelationshipCheckResultCopyWithImpl;
 @override @useResult
 $Res call({
- String checkKey, String databaseKey, DatabaseHealthRelationshipType relationshipType, String parentTable, String? childTable, String joinExpressionDescription, int? parentRowCount, int? childRowCount, int? matchedRowCount, int? unmatchedParentRowCount, int? unmatchedChildRowCount, DatabaseHealthStatus status, List<String> notes, String? error
+ String checkKey, String databaseKey, DatabaseHealthRelationshipType relationshipType, String parentTable, String? childTable, String joinExpressionDescription, int? parentRowCount, int? childRowCount, int? matchedRowCount, int? unmatchedParentRowCount, int? unmatchedChildRowCount, double? matchedPercentage, double? unmatchedParentPercentage, double? unmatchedChildPercentage, DatabaseHealthStatus status, List<String> notes, String? error
 });
 
 
@@ -2679,7 +2685,7 @@ class __$RelationshipCheckResultCopyWithImpl<$Res>
 
 /// Create a copy of RelationshipCheckResult
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? checkKey = null,Object? databaseKey = null,Object? relationshipType = null,Object? parentTable = null,Object? childTable = freezed,Object? joinExpressionDescription = null,Object? parentRowCount = freezed,Object? childRowCount = freezed,Object? matchedRowCount = freezed,Object? unmatchedParentRowCount = freezed,Object? unmatchedChildRowCount = freezed,Object? status = null,Object? notes = null,Object? error = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? checkKey = null,Object? databaseKey = null,Object? relationshipType = null,Object? parentTable = null,Object? childTable = freezed,Object? joinExpressionDescription = null,Object? parentRowCount = freezed,Object? childRowCount = freezed,Object? matchedRowCount = freezed,Object? unmatchedParentRowCount = freezed,Object? unmatchedChildRowCount = freezed,Object? matchedPercentage = freezed,Object? unmatchedParentPercentage = freezed,Object? unmatchedChildPercentage = freezed,Object? status = null,Object? notes = null,Object? error = freezed,}) {
   return _then(_RelationshipCheckResult(
 checkKey: null == checkKey ? _self.checkKey : checkKey // ignore: cast_nullable_to_non_nullable
 as String,databaseKey: null == databaseKey ? _self.databaseKey : databaseKey // ignore: cast_nullable_to_non_nullable
@@ -2692,7 +2698,10 @@ as int?,childRowCount: freezed == childRowCount ? _self.childRowCount : childRow
 as int?,matchedRowCount: freezed == matchedRowCount ? _self.matchedRowCount : matchedRowCount // ignore: cast_nullable_to_non_nullable
 as int?,unmatchedParentRowCount: freezed == unmatchedParentRowCount ? _self.unmatchedParentRowCount : unmatchedParentRowCount // ignore: cast_nullable_to_non_nullable
 as int?,unmatchedChildRowCount: freezed == unmatchedChildRowCount ? _self.unmatchedChildRowCount : unmatchedChildRowCount // ignore: cast_nullable_to_non_nullable
-as int?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as int?,matchedPercentage: freezed == matchedPercentage ? _self.matchedPercentage : matchedPercentage // ignore: cast_nullable_to_non_nullable
+as double?,unmatchedParentPercentage: freezed == unmatchedParentPercentage ? _self.unmatchedParentPercentage : unmatchedParentPercentage // ignore: cast_nullable_to_non_nullable
+as double?,unmatchedChildPercentage: freezed == unmatchedChildPercentage ? _self.unmatchedChildPercentage : unmatchedChildPercentage // ignore: cast_nullable_to_non_nullable
+as double?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as DatabaseHealthStatus,notes: null == notes ? _self._notes : notes // ignore: cast_nullable_to_non_nullable
 as List<String>,error: freezed == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
 as String?,

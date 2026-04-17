@@ -243,6 +243,11 @@ _RelationshipCheckResult _$RelationshipCheckResultFromJson(
   unmatchedParentRowCount: (json['unmatched_parent_row_count'] as num?)
       ?.toInt(),
   unmatchedChildRowCount: (json['unmatched_child_row_count'] as num?)?.toInt(),
+  matchedPercentage: (json['matched_percentage'] as num?)?.toDouble(),
+  unmatchedParentPercentage: (json['unmatched_parent_percentage'] as num?)
+      ?.toDouble(),
+  unmatchedChildPercentage: (json['unmatched_child_percentage'] as num?)
+      ?.toDouble(),
   status: $enumDecode(_$DatabaseHealthStatusEnumMap, json['status']),
   notes:
       (json['notes'] as List<dynamic>?)?.map((e) => e as String).toList() ??
@@ -267,6 +272,11 @@ Map<String, dynamic> _$RelationshipCheckResultToJson(
     'unmatched_parent_row_count': value,
   if (instance.unmatchedChildRowCount case final value?)
     'unmatched_child_row_count': value,
+  if (instance.matchedPercentage case final value?) 'matched_percentage': value,
+  if (instance.unmatchedParentPercentage case final value?)
+    'unmatched_parent_percentage': value,
+  if (instance.unmatchedChildPercentage case final value?)
+    'unmatched_child_percentage': value,
   'status': _$DatabaseHealthStatusEnumMap[instance.status]!,
   'notes': instance.notes,
   if (instance.error case final value?) 'error': value,

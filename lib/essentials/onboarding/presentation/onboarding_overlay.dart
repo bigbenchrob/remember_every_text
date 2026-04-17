@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../config/theme/colors/theme_colors.dart';
 import '../../../config/theme/theme_typography.dart';
+import '../../db/application/database_health_audit/database_health_audit_service.dart';
 import '../../db_importers/domain/entities/db_import_result.dart';
 import '../../db_importers/presentation/view_model/db_import_control_provider.dart';
 import '../../db_migrate/domain/entities/db_migration_result.dart';
@@ -373,10 +374,15 @@ class _WelcomeContent extends ConsumerWidget {
                 OutlinedButton(
                   onPressed: () async {
                     final writer = ref.read(appLoggerProvider.notifier).writer;
+                    final databaseHealthAuditService = await ref.read(
+                      databaseHealthAuditServiceProvider.future,
+                    );
                     final result =
                         await exportOnboardingFailureDiagnosticReport(
                           writer,
                           report: report!,
+                          databaseHealthAuditService:
+                              databaseHealthAuditService,
                         );
                     if (!context.mounted) {
                       return;
@@ -853,7 +859,7 @@ List<String> _migrationFailureNotes(OnboardingEnvironmentReport report) {
   }
 
   notes.add(
-    'If this keeps happening, use "Send Report To Developer" to have MessageLens prepare an email with the diagnostic report attached when possible.',
+    'If this keeps happening, use "Send Report To Developer" to have MessageLens prepare an email with the support bundle attached when possible.',
   );
 
   return notes;
@@ -871,8 +877,8 @@ void _showDiagnosticReportSnackBar(
   final message = result.exportPath == null
       ? 'MessageLens could not prepare a diagnostic report right now.'
       : result.attachedToMailDraft
-      ? 'Email draft prepared with the diagnostic report attached.'
-      : 'Diagnostic report prepared. Attach the file opened in Finder to the email draft.';
+      ? 'Email draft prepared with the support bundle attached.'
+      : 'Support bundle prepared. It was opened in Finder so it can be attached manually.';
 
   messenger.showSnackBar(SnackBar(content: Text(message)));
 }

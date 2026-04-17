@@ -466,6 +466,7 @@ class SidebarFlow extends _$SidebarFlow {
       state.copyWith(
         topMenuChoice: TopChatMenuChoice.contacts,
         chosenContactId: contactId,
+        selectedHandleId: null,
         scrollToDate: scrollToDate,
         messageScope: SidebarFlowMessageScope.regular,
       ),

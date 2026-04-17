@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
+import '../../../../../essentials/db/application/database_health_audit/database_health_audit_service.dart';
 import '../../../../../essentials/logging/application/app_logger.dart';
 import '../../../../../essentials/logging/application/diagnostic_report_actions.dart';
 
@@ -19,9 +20,15 @@ class SendLogsActionButton extends ConsumerWidget {
     final typography = ref.watch(themeTypographyProvider);
 
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
         final writer = ref.read(appLoggerProvider.notifier).writer;
-        exportDiagnosticReport(writer);
+        final databaseHealthAuditService = await ref.read(
+          databaseHealthAuditServiceProvider.future,
+        );
+        await exportDiagnosticReport(
+          writer,
+          databaseHealthAuditService: databaseHealthAuditService,
+        );
       },
       child: DecoratedBox(
         decoration: BoxDecoration(

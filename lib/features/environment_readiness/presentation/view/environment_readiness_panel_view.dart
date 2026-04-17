@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
+import '../../../../essentials/db/application/database_health_audit/database_health_audit_service.dart';
 import '../../../../essentials/logging/application/app_logger.dart';
 import '../../../../essentials/logging/application/diagnostic_report_actions.dart';
 import '../../../../essentials/logging/infrastructure/log_export_service.dart';
@@ -503,10 +504,15 @@ class _DetailPane extends ConsumerWidget {
                               final writer = ref
                                   .read(appLoggerProvider.notifier)
                                   .writer;
+                              final databaseHealthAuditService = await ref.read(
+                                databaseHealthAuditServiceProvider.future,
+                              );
                               final result =
                                   await exportOnboardingFailureDiagnosticReport(
                                     writer,
                                     report: report!,
+                                    databaseHealthAuditService:
+                                        databaseHealthAuditService,
                                   );
                               if (!context.mounted) {
                                 return;
@@ -544,8 +550,8 @@ void _showDiagnosticReportSnackBar(
   final message = result.exportPath == null
       ? 'MessageLens could not prepare a diagnostic report right now.'
       : result.attachedToMailDraft
-      ? 'Email draft prepared with the diagnostic report attached.'
-      : 'Diagnostic report prepared. Attach the file opened in Finder to the email draft.';
+      ? 'Email draft prepared with the support bundle attached.'
+      : 'Support bundle prepared. It was opened in Finder so it can be attached manually.';
 
   messenger.showSnackBar(SnackBar(content: Text(message)));
 }

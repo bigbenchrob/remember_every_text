@@ -3,12 +3,17 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../db/feature_level_providers.dart' show databaseDirectoryPath;
-import '../infrastructure/log_file_writer.dart';
+import 'support_bundle_export_service.dart';
 
 const _defaultDiagnosticRecipientEmail = 'bigbenchrob@gmail.com';
-const _defaultEmailBodyLines = <String>[
-  'Please attach the diagnostic report that was just revealed in Finder.',
+const _defaultAttachedEmailBodyLines = <String>[
+  'MessageLens attached the support bundle to this draft.',
+  '',
+  'Describe the issue here:',
+];
+const _defaultManualAttachmentEmailBodyLines = <String>[
+  'MessageLens prepared a support bundle but could not attach it automatically.',
+  'It has been revealed in Finder so it can be attached manually.',
   '',
   'Describe the issue here:',
 ];
@@ -26,9 +31,9 @@ class DiagnosticReportPresentationResult {
 /// Collects log files, prepends a system info header, and presents the
 /// exported log to the user via email (mailto:) and Finder reveal.
 class LogExportService {
-  final LogFileWriter _writer;
+  final SupportBundleExportService _supportBundleExportService;
 
-  LogExportService(this._writer);
+  LogExportService(this._supportBundleExportService);
 
   /// Export logs, open email client, and reveal file in Finder.
   ///
@@ -37,69 +42,33 @@ class LogExportService {
   Future<DiagnosticReportPresentationResult> exportAndPresent({
     String recipientEmail = _defaultDiagnosticRecipientEmail,
     String subjectPrefix = 'MessageLens Diagnostic Report',
-    List<String> emailBodyLines = _defaultEmailBodyLines,
+    List<String> attachedEmailBodyLines = _defaultAttachedEmailBodyLines,
+    List<String> manualAttachmentEmailBodyLines =
+        _defaultManualAttachmentEmailBodyLines,
     List<String> headerLines = const <String>[],
   }) async {
     try {
-      // Flush in-memory buffer to disk before reading.
-      await _writer.flush();
-
-      final logDir = _writer.logDir;
-      if (!logDir.existsSync()) {
-        return const DiagnosticReportPresentationResult(
-          exportPath: null,
-          attachedToMailDraft: false,
-        );
-      }
-
-      final now = DateTime.now();
-      final stamp =
-          '${now.year}-${_pad(now.month)}-${_pad(now.day)}_${_pad(now.hour)}${_pad(now.minute)}${_pad(now.second)}';
-      final exportFile = File('${logDir.path}/diagnostic_$stamp.log');
-
-      // Build the header.
-      final header = _buildHeader(now, headerLines: headerLines);
-
-      // Concatenate current + previous app logs and pipeline audit logs.
-      final sink = exportFile.openWrite();
-      sink.write(header);
-
-      final currentLog = _writer.logFile;
-      await _appendFileIfPresent(
-        sink,
-        file: currentLog,
-        title: 'Application Log (Current Session)',
+      final bundle = await _supportBundleExportService.export(
+        headerLines: headerLines,
       );
-
-      final prevLog = _writer.prevLogFile;
-      await _appendFileIfPresent(
-        sink,
-        file: prevLog,
-        title: 'Application Log (Previous Session)',
+      final exportPath = bundle.bundleDirectory.path;
+      final subject =
+          '$subjectPrefix - ${bundle.bundleDirectory.uri.pathSegments.last}';
+      final mailAttachmentArchive = await createSupportBundleMailArchive(
+        bundle.bundleDirectory,
       );
-
-      for (final auditLog in _pipelineAuditLogFiles()) {
-        await _appendFileIfPresent(sink, file: auditLog.$2, title: auditLog.$1);
-      }
-
-      await sink.flush();
-      await sink.close();
-
-      final subject = '$subjectPrefix - $stamp';
-      final mailAttachments = <File>[
-        exportFile,
-        ..._pipelineAuditLogFiles().map((auditLog) => auditLog.$2),
-      ].where((file) => file.existsSync()).toList();
-      final attachedToMailDraft = await _tryComposeAppleMailDraft(
-        attachmentFiles: mailAttachments,
-        recipientEmail: recipientEmail,
-        subject: subject,
-        emailBodyLines: emailBodyLines,
-      );
+      final attachedToMailDraft = mailAttachmentArchive == null
+          ? false
+          : await _tryComposeAppleMailDraft(
+              attachmentFiles: [mailAttachmentArchive],
+              recipientEmail: recipientEmail,
+              subject: subject,
+              emailBodyLines: attachedEmailBodyLines,
+            );
 
       if (attachedToMailDraft) {
         return DiagnosticReportPresentationResult(
-          exportPath: exportFile.path,
+          exportPath: exportPath,
           attachedToMailDraft: true,
         );
       }
@@ -111,16 +80,16 @@ class LogExportService {
         path: recipientEmail,
         queryParameters: {
           'subject': subject,
-          'body': emailBodyLines.join('\n'),
+          'body': manualAttachmentEmailBodyLines.join('\n'),
         },
       );
       await launchUrl(mailto);
 
-      // Reveal the exported file in Finder.
-      await Process.run('open', ['-R', exportFile.path]);
+      // Reveal the exported bundle in Finder.
+      await Process.run('open', ['-R', exportPath]);
 
       return DiagnosticReportPresentationResult(
-        exportPath: exportFile.path,
+        exportPath: exportPath,
         attachedToMailDraft: false,
       );
     } catch (e) {
@@ -129,51 +98,6 @@ class LogExportService {
         exportPath: null,
         attachedToMailDraft: false,
       );
-    }
-  }
-
-  String _buildHeader(DateTime now, {List<String> headerLines = const []}) {
-    final macosVersion = Platform.operatingSystemVersion;
-    final buf = StringBuffer()
-      ..writeln('=== MessageLens — Diagnostic Log ===')
-      ..writeln('macOS: $macosVersion')
-      ..writeln('Exported: ${now.toUtc().toIso8601String()}')
-      ..writeln('====================================');
-
-    headerLines.forEach(buf.writeln);
-
-    buf.writeln();
-    return buf.toString();
-  }
-
-  Future<void> _appendFileIfPresent(
-    IOSink sink, {
-    required File file,
-    required String title,
-  }) async {
-    if (!file.existsSync()) {
-      return;
-    }
-
-    sink.write('--- $title ---\n');
-    sink.write(await file.readAsString());
-    sink.write('\n');
-  }
-
-  List<(String, File)> _pipelineAuditLogFiles() {
-    try {
-      return [
-        (
-          'Import Pipeline Audit Log',
-          File('$databaseDirectoryPath/import_log'),
-        ),
-        (
-          'Migration Pipeline Audit Log',
-          File('$databaseDirectoryPath/migrate_log'),
-        ),
-      ];
-    } catch (_) {
-      return const <(String, File)>[];
     }
   }
 
@@ -213,8 +137,44 @@ class LogExportService {
       return false;
     }
   }
+}
 
-  String _pad(int n) => n.toString().padLeft(2, '0');
+Future<File?> createSupportBundleMailArchive(Directory bundleDirectory) async {
+  if (!Platform.isMacOS) {
+    return null;
+  }
+
+  final bundleName = bundleDirectory.uri.pathSegments
+      .where((segment) => segment.isNotEmpty)
+      .last;
+  final archiveFile = File('${bundleDirectory.parent.path}/$bundleName.zip');
+
+  try {
+    if (archiveFile.existsSync()) {
+      await archiveFile.delete();
+    }
+
+    final result = await Process.run('/usr/bin/ditto', [
+      '-c',
+      '-k',
+      '--sequesterRsrc',
+      '--keepParent',
+      bundleDirectory.path,
+      archiveFile.path,
+    ]);
+
+    if (result.exitCode != 0 || !archiveFile.existsSync()) {
+      debugPrint(
+        'LogExportService: support bundle archive failed: ${result.stderr}',
+      );
+      return null;
+    }
+
+    return archiveFile;
+  } catch (error) {
+    debugPrint('LogExportService: support bundle archive threw: $error');
+    return null;
+  }
 }
 
 List<String> buildAppleMailComposeScriptArgs({
