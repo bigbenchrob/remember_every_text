@@ -56,3 +56,4 @@ Templates live under `_AGENT_INSTRUCTIONS/agent-instructions-shared/90-templates
 | Feature | Key Docs |
 | --- | --- |
 | `archive-canonical-attachments/` | [`PROPOSAL.md`](archive-canonical-attachments/PROPOSAL.md), [`CHECKLIST.md`](archive-canonical-attachments/CHECKLIST.md), [`DESIGN_NOTES.md`](archive-canonical-attachments/DESIGN_NOTES.md), [`TESTS.md`](archive-canonical-attachments/TESTS.md) |
+| `ephemeral-sidebar-projection/` | [`PROPOSAL.md`](ephemeral-sidebar-projection/PROPOSAL.md), [`CHECKLIST.md`](ephemeral-sidebar-projection/CHECKLIST.md), [`DESIGN_NOTES.md`](ephemeral-sidebar-projection/DESIGN_NOTES.md), [`TESTS.md`](ephemeral-sidebar-projection/TESTS.md) |
