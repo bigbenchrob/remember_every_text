@@ -1,0 +1,39 @@
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
+import '../../../domain/spec_classes/settings_cassette_spec.dart';
+import '../resolvers/attachment_archive_settings_resolver.dart';
+import '../resolvers/reset_message_data_settings_resolver.dart';
+import '../resolvers/send_logs_settings_resolver.dart';
+import '../resolvers/settings_info_resolver.dart';
+
+part 'settings_coordinator.g.dart';
+
+@riverpod
+class SettingsCassetteCoordinator extends _$SettingsCassetteCoordinator {
+  @override
+  void build() {}
+
+  Future<SidebarCassettePayload> buildViewModel(
+    SettingsCassetteSpec spec, {
+    required int cassetteIndex,
+  }) async {
+    return spec.when(
+      sendLogsPanel: () => ref
+          .read(sendLogsSettingsResolverProvider.notifier)
+          .resolve(cassetteIndex: cassetteIndex),
+      resetMessageDataPanel: () => ref
+          .read(resetMessageDataSettingsResolverProvider.notifier)
+          .resolve(cassetteIndex: cassetteIndex),
+      textSizePlaceholder: () => ref
+          .read(settingsInfoResolverProvider.notifier)
+          .resolve(title: 'Text Size', bodyText: 'Coming soon'),
+      imageSizePlaceholder: () => ref
+          .read(settingsInfoResolverProvider.notifier)
+          .resolve(title: 'Image Size', bodyText: 'Coming soon'),
+      attachmentArchive: () => ref
+          .read(attachmentArchiveSettingsResolverProvider.notifier)
+          .resolve(cassetteIndex: cassetteIndex),
+    );
+  }
+}

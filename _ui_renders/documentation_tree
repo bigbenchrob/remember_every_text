@@ -1,0 +1,430 @@
+─ 00-PROJECT
+│   ├── 00-overview.md
+│   ├── 01-aggregate-boundaries.md
+│   ├── 02-architecture-overview.md
+│   ├── 03-data-locations.md
+│   └── 04-env-and-secrets.md
+├── 05-COLOR-AND-TYPOGRAPHY-THEMING
+│   └── 05-dark-mode-theming.md
+├── 10-DATABASES
+│   ├── 00-all-databases-accessed.md
+│   ├── 01-db-import.md
+│   ├── 02-db-working.md
+│   ├── 03-db-address-book.md
+│   ├── 04-db-chat.md
+│   ├── 05-db-overlay.md
+│   ├── 06-addressbook-path-resolution.md
+│   ├── 07-overlay-database-independence.md
+│   ├── 10-group-import-working.md
+│   ├── 11-contact-to-chat-linking.md
+│   └── INVIOLATE_RULES.md
+├── 12-DATABASE-HEALTH-AUDIT
+│   ├── 00-overview.md
+│   ├── 10-support-bundle-integration.md
+│   └── README.md
+├── 15-MACOS-SOURCE-DATABASES
+│   ├── 00-overview.md
+│   ├── 10-chat-db-orphan-messages.md
+│   ├── 20-external-tools-and-rust-crates.md
+│   ├── README.md
+│   └── apple-typedstream-format-reference.md
+├── 20-DATA-IMPORT-MIGRATION
+│   ├── 01-overview.md
+│   ├── 02-import-migration-schema-reference.md
+│   ├── 10-import-orchestrator.md
+│   ├── 11-rust-message-extractor.md
+│   ├── 15-table-importers.md
+│   ├── 20-migration-orchestrator.md
+│   ├── 25-table-migrators.md
+│   ├── 30-incremental-mode-flag.md
+│   └── apple-typedstream-format-reference.md
+├── 25-ONBOARDING-AND-ARCHIVE
+│   ├── 00-overview.md
+│   ├── 10-onboarding-gate.md
+│   ├── 20-environment-readiness.md
+│   ├── 30-import-migration-coordination.md
+│   ├── 40-attachment-archive.md
+│   ├── 50-deterministic-recovery.md
+│   ├── 60-reimport-and-ongoing-sync.md
+│   ├── README.md
+│   └── handoff.txt
+├── 30-ESSENTIALS
+├── 40-FEATURES
+│   ├── README.md
+│   ├── chat-handles
+│   │   ├── CHARTER.md
+│   │   ├── DOMAIN_AND_DATA_MAP.md
+│   │   ├── INTERACTIONS_AND_NAVIGATION.md
+│   │   ├── STATE_AND_PROVIDER_INVENTORY.md
+│   │   ├── TESTING_AND_MONITORING.md
+│   │   └── WORK_LOG.md
+│   ├── chats
+│   │   ├── CHARTER.md
+│   │   ├── DOMAIN_AND_DATA_MAP.md
+│   │   ├── INTERACTIONS_AND_NAVIGATION.md
+│   │   ├── STATE_AND_PROVIDER_INVENTORY.md
+│   │   ├── TESTING_AND_MONITORING.md
+│   │   └── WORK_LOG.md
+│   ├── contact-favourites
+│   │   └── RECENTS-FAVORITES.md
+│   ├── contact-names
+│   │   ├── DB_TABLES_FOR_CONTACTS.md
+│   │   └── VIRTUAL_PARTICIPANTS.md
+│   ├── identify-stray-handles
+│   │   ├── MASTER_PLAN.md
+│   │   ├── phase-1-foundation
+│   │   │   ├── CHECKLIST.md
+│   │   │   └── PROPOSAL.md
+│   │   ├── phase-2-sidebar-and-lens
+│   │   │   ├── CHECKLIST.md
+│   │   │   └── PROPOSAL.md
+│   │   └── phase-3-polish
+│   │       └── PROPOSAL.md
+│   ├── messages
+│   │   ├── CHARTER.md
+│   │   ├── DOMAIN_AND_DATA_MAP.md
+│   │   ├── INTERACTIONS_AND_NAVIGATION.md
+│   │   ├── STATE_AND_PROVIDER_INVENTORY.md
+│   │   ├── TESTING_AND_MONITORING.md
+│   │   ├── WORK_LOG.md
+│   │   └── message-display-flow-walkthrough.md
+│   ├── onboarding
+│   │   ├── CHARTER.md
+│   │   ├── DOMAIN_AND_DATA_MAP.md
+│   │   ├── INTERACTIONS_AND_NAVIGATION.md
+│   │   ├── STATE_AND_PROVIDER_INVENTORY.md
+│   │   ├── TESTING_AND_MONITORING.md
+│   │   └── WORK_LOG.md
+│   ├── rationalized-message-views
+│   │   ├── CHECKLIST.md
+│   │   ├── DESIGN_NOTES.md
+│   │   ├── PROPOSAL.md
+│   │   ├── STATUS.md
+│   │   └── TESTS.md
+│   ├── search
+│   │   ├── CHARTER.md
+│   │   ├── DOMAIN_AND_DATA_MAP.md
+│   │   ├── INTERACTIONS_AND_NAVIGATION.md
+│   │   ├── STATE_AND_PROVIDER_INVENTORY.md
+│   │   ├── TESTING_AND_MONITORING.md
+│   │   └── WORK_LOG.md
+│   └── tooltips
+│       └── README.md
+├── 45-NEW-FEATURE-ADDITION
+│   ├── README.md
+│   ├── app-breakdown-refactor
+│   │   ├── CHECKLIST.md
+│   │   ├── CONTACT_TIMELINE_INERTIAL_SCROLL_FREEZE_NOTE.md
+│   │   ├── IMPLEMENTATION_PLAN.md
+│   │   ├── INERTIAL_SCROLL_FREEZE_2ND_OPINION.TXT
+│   │   ├── PHASE0_ENFORCEMENT_CONTRACTS.md
+│   │   ├── PR_ARCHITECTURE_REVIEW_TEMPLATE.md
+│   │   ├── README.md
+│   │   ├── TEMPORARY_EXCEPTIONS.md
+│   │   ├── TESTS.md
+│   │   ├── TIMELINE_MEDIA_ACTIVATION_DELTA.txt
+│   │   ├── agent-seed.txt
+│   │   ├── before-after-diagram.txt
+│   │   ├── foundational-constraints.txt
+│   │   ├── live-vs-archive-message-src-redefinition.txt
+│   │   ├── plan-revisions.txt
+│   │   └── pr-review-rubric.txt
+│   ├── app-data-reset
+│   ├── app-mode-toggle-ui-design
+│   │   ├── CHECKLIST.md
+│   │   ├── PROPOSAL.md
+│   │   ├── seed.txt
+│   │   └── toggle-redesign.txt
+│   ├── archive-canonical-attachments
+│   │   ├── CHECKLIST.md
+│   │   ├── DESIGN_NOTES.md
+│   │   ├── PROPOSAL.md
+│   │   └── TESTS.md
+│   ├── clean-up-contacts-for-cross-surface
+│   │   ├── CHECKLIST.md
+│   │   ├── DESIGN_NOTES.md
+│   │   ├── PROPOSAL.md
+│   │   └── TESTS.md
+│   ├── contact-menu-enhancements
+│   │   ├── CHECKLIST.md
+│   │   ├── DESIGN_NOTES.md
+│   │   ├── PROPOSAL.md
+│   │   ├── TESTS.md
+│   │   └── seed.txt
+│   ├── contact-menu-enhancements.zip
+│   ├── contact-picker-refactoring
+│   │   ├── CHECKLIST.md
+│   │   ├── DESIGN_NOTES.md
+│   │   ├── PROPOSAL.md
+│   │   ├── TESTS.md
+│   │   └── seed.txt
+│   ├── contacts-cassette-cross-surface-migration
+│   │   ├── CHECKLIST.md
+│   │   ├── DESIGN_NOTES.md
+│   │   ├── PROPOSAL.md
+│   │   ├── STATUS.md
+│   │   └── TESTS.md
+│   ├── database-health-audit
+│   │   ├── 00-overview.md
+│   │   ├── 10-phase-1-structural-health.md
+│   │   ├── 20-phase-2-sanitized-sampling.md
+│   │   ├── 30-phase-3-sanitized-relational-snapshot.md
+│   │   ├── 40-database-health-json-schema.md
+│   │   ├── 42-database-health-json-example.json
+│   │   ├── 90-integration-notes.md
+│   │   ├── appendix-codex-1st-pass-summary.txt
+│   │   └── database-health-json-schema-formal.json
+│   ├── enhanced-message-search
+│   │   ├── CHECKLIST.md
+│   │   ├── DESIGN_NOTES.md
+│   │   ├── PROPOSAL.md
+│   │   ├── TESTS.md
+│   │   └── seed.txt
+│   ├── enhanced-onboarding-flow
+│   │   ├── CHECKLIST.md
+│   │   ├── DESIGN_NOTES.md
+│   │   ├── PROPOSAL.md
+│   │   └── TESTS.md
+│   ├── enhanced-onboarding-readiness-panel
+│   │   ├── CHECKLIST.md
+│   │   ├── DESIGN_NOTES.md
+│   │   ├── PROPOSAL.md
+│   │   ├── TESTS.md
+│   │   ├── seed(developer).txt
+│   │   └── seed.txt
+│   ├── global-messages-timeline
+│   │   ├── CHECKLIST.md
+│   │   ├── DESIGN_NOTES.md
+│   │   ├── PHASES.md
+│   │   ├── PROPOSAL.md
+│   │   └── TESTS.md
+│   ├── identify-stray-handles
+│   │   ├── provisional-spec.txt
+│   │   └── seed.txt
+│   ├── import-rationalization
+│   │   ├── CHECKLIST.md
+│   │   └── PLAN.md
+│   ├── living-attachments-archive
+│   │   ├── CHECKLIST.md
+│   │   ├── DESIGN_NOTES.md
+│   │   ├── FORENSIC_FAILURE_ANALYSIS_A.txt
+│   │   ├── FORENSIC_FAILURE_INSTRUCTIONS_A.txt
+│   │   ├── PROPOSAL.md
+│   │   ├── TESTS.md
+│   │   └── seed.txt
+│   ├── living-attachments-deterministic
+│   │   ├── CHECKLIST.md
+│   │   ├── DESIGN_NOTES.md
+│   │   ├── PROPOSAL.md
+│   │   ├── TESTS.md
+│   │   ├── implementation-plan.txt
+│   │   ├── response-to-plan-concerns.txt
+│   │   └── seed.txt
+│   ├── logging
+│   │   └── PROPOSAL.md
+│   ├── macos-db-onboarding
+│   │   ├── 2026-02-27_status.md
+│   │   ├── CHECKLIST.md
+│   │   ├── PLAN.md
+│   │   └── onboarding-vs-bootstrap-date.txt
+│   ├── manage-stray-handles
+│   │   ├── CHECKLIST.md
+│   │   ├── DESIGN_NOTES.md
+│   │   ├── PROPOSAL.md
+│   │   ├── TESTS.md
+│   │   └── implementation_summary.txt
+│   ├── manual-handle-to-contact-linking
+│   │   ├── CHECKLIST.md
+│   │   ├── PROPOSAL.md
+│   │   └── provider_strategy_contact_menus.md
+│   ├── merge-window-panels
+│   │   ├── CHECKLIST.md
+│   │   ├── DESIGN_NOTES.md
+│   │   ├── PROPOSAL.md
+│   │   ├── STATUS.md
+│   │   └── TESTS.md
+│   ├── message-endbar-context-linking.txt
+│   │   └── agent-seed.txt
+│   ├── message-sidebar-focus
+│   │   ├── CHECKLIST.md
+│   │   ├── DESIGN_NOTES.md
+│   │   ├── PROPOSAL.md
+│   │   └── TESTS.md
+│   ├── message-tagging
+│   │   ├── guardrails.txt
+│   │   └── seed.txt
+│   ├── message-variant-preservation
+│   │   ├── CHECKLIST.md
+│   │   ├── DESIGN_NOTES.md
+│   │   ├── PROPOSAL.md
+│   │   ├── RETROSPECTIVE.md
+│   │   └── TESTS.md
+│   ├── messages-workspace-decoupling
+│   │   ├── CHECKLIST.md
+│   │   ├── DESIGN_NOTES.md
+│   │   ├── PROPOSAL.md
+│   │   └── TESTS.md
+│   ├── modular-fts-indexing
+│   │   ├── AGENT_INSTRUCTIONS_MODULAR_FTS.md
+│   │   ├── CHECKLIST.md
+│   │   ├── DESIGN_NOTES.md
+│   │   ├── PROPOSAL.md
+│   │   ├── TESTS.md
+│   │   ├── background
+│   │   │   ├── existing_message_indexing.md
+│   │   │   ├── preliminary_proposal.md
+│   │   │   └── seed_proposal.md
+│   │   └── human_testing_steps.txt
+│   ├── option-key-triggered-data-deletion.txt
+│   │   ├── STEP-01.txt
+│   │   ├── STEP-02.txt
+│   │   ├── STEP-03.txt
+│   │   ├── catastrophic-safety-guardrails.txt
+│   │   └── seed.txt
+│   ├── ordinal-index-all-messages
+│   │   ├── CHECKLIST.md
+│   │   ├── DESIGN_NOTES.md
+│   │   ├── PHASES.md
+│   │   ├── PROPOSAL.md
+│   │   └── TESTS.md
+│   ├── orphaned-messages
+│   │   ├── CHECKLIST.md
+│   │   ├── DESIGN_NOTES.md
+│   │   ├── PROPOSAL.md
+│   │   ├── RETROSPECTIVE.md
+│   │   └── TESTS.md
+│   ├── panel-theme-revision
+│   │   ├── full-width-and-grouping.txt
+│   │   ├── incremental-message-grouping.txt
+│   │   ├── seed.txt
+│   │   └── tone-adjustment.txt
+│   ├── picker-recents-cleanup.txt
+│   ├── picker-transition
+│   │   ├── IMPLEMENTATION_PLAN.md
+│   │   └── seed.txt
+│   ├── polish-stray-handles-sidebar-ui
+│   │   ├── review-notes.txt
+│   │   ├── revisions-five.txt
+│   │   ├── revisions-four.txt
+│   │   ├── revisions-one.txt
+│   │   ├── revisions-six.txt
+│   │   ├── revisions-three.txt
+│   │   └── revisions-two.txt
+│   ├── refactor-handles-to-cross-surface-spec-pattern
+│   │   ├── CHECKLIST.md
+│   │   └── PLAN.md
+│   ├── revised-sidebar-feature-contract
+│   │   ├── BODY_MODELS_AND_ACTION_INTENTS.md
+│   │   ├── contect-refinement-seed.txt
+│   │   ├── contract-refinement-1.txt
+│   │   ├── contract.txt
+│   │   └── optical-composition-refinement.txt
+│   ├── right-sidebar-focus-card
+│   │   ├── seed_agent_response.txt
+│   │   └── seed_idea.txt
+│   ├── self-assembling-sidebar
+│   │   ├── PROPOSAL.md
+│   │   └── developer-seed.txt
+│   ├── settings-cassette-system
+│   │   ├── CHECKLIST.md
+│   │   ├── DESIGN_NOTES.md
+│   │   ├── PROPOSAL.md
+│   │   ├── TESTS.md
+│   │   ├── merging_control_and_settings_sidebars.dart
+│   │   └── seed.txt
+│   ├── settings-sidebar-redesign
+│   │   ├── PROPOSAL.md
+│   │   ├── implementation-details.md
+│   │   ├── overview.md
+│   │   ├── send-logs-corrective-revision.txt
+│   │   ├── settings-top-menu-agent-clarification.txt
+│   │   └── settings-top-menu-definitive-revision.txt
+│   ├── sidebar-cassette-role-system
+│   │   ├── API_SKETCH.md
+│   │   ├── CHECKLIST.md
+│   │   ├── DESIGN_NOTES.md
+│   │   ├── PROPOSAL.md
+│   │   ├── SIDEBAR_GEOMETRY_CONTRACT.md
+│   │   ├── TESTS.md
+│   │   ├── configuration_issue.txt
+│   │   ├── layout-tweak_1.txt
+│   │   └── seed.txt
+│   ├── sidebar-cassette-system
+│   │   ├── description.md
+│   │   └── instructions.txt
+│   ├── sidebar-context-enhancement
+│   │   ├──  seed.txt
+│   │   ├── refinement-2.txt
+│   │   ├── refinement-3.txt
+│   │   └── refinement.txt
+│   ├── sidebar-flow-state-introduction
+│   │   ├── CHECKLIST.md
+│   │   ├── DESIGN_NOTES.md
+│   │   ├── PROPOSAL.md
+│   │   └── TESTS.md
+│   ├── spec-topology
+│   │   ├── CHECKLIST.md
+│   │   ├── DESIGN_NOTES.md
+│   │   ├── PROPOSAL.md
+│   │   ├── TESTS.md
+│   │   └── rationalize-next-spec-system.txt
+│   ├── style-heatmap.txt
+│   ├── style-top-menu.txt
+│   ├── tooltips
+│   │   ├── CHECKLIST.md
+│   │   ├── DESIGN_NOTES.md
+│   │   ├── PROPOSAL.md
+│   │   ├── STATUS.md
+│   │   └── TESTS.md
+│   ├── ui-sweep
+│   │   ├── CHECKLIST.md
+│   │   ├── DESIGN_NOTES.md
+│   │   ├── PROPOSAL.md
+│   │   ├── TESTS.md
+│   │   ├── seed.txt
+│   │   └── ui-design-contract.md
+│   ├── update-cassette-surface-vocabulary
+│   │   └── terminology-glossary.txt
+│   └── virtual-overlay-contacts
+│       ├── CHECKLIST.md
+│       ├── DESIGN_NOTES.md
+│       ├── PROPOSAL.md
+│       └── TESTS.md
+├── 50-CROSS-SURFACE-SPEC-SYSTEMS-OVERVIEW
+│   ├── 00-cross-surface-spec-system.md
+│   ├── INVIOLATE_RULES.md
+│   └── README.md
+├── 52-FEATURE-HANDLING-OF-X-SURFACE-SPECS
+│   ├── 00-universal-spec-handling-pattern.md
+│   ├── INVIOLATE_RULES.md
+│   └── README.md
+├── 54-SIDEBAR-CASSETTE-SPEC-SYSTEM
+│   ├── 00-cassette-system-architecture.md
+│   ├── 10-layout-and-optical-composition.md
+│   ├── INVIOLATE_RULES.md
+│   └── README.md
+├── 56-VIEW-SPEC-PANEL-CONTENT-SYSTEM
+│   ├── 00-view-spec-panel-architecture.md
+│   ├── INVIOLATE_RULES.md
+│   └── README.md
+├── 58-COORDINATED-SPEC-DRIVEN-CONTENT-SYSTEM
+│   ├── 00-system-objectives-and-invariants.md
+│   ├── 10-sidebar-panel-coordination.md
+│   ├── 20-message-display-pipeline.md
+│   ├── 30-current-state-caveats-and-audit-focus.md
+│   └── README.md
+├── 60-BUILD-CONSIDERATIONS
+│   ├── 01-rust-ffi-dylib-bundling.md
+│   ├── 02-macos-fda-grant-continuity.md
+│   ├── 03-onboarding-import-debug-handoff.md
+│   └── README.md
+├── 70-REMOTE-DEBUGGING-REPORTS
+│   └── support_bundle_2026-04-16_113829
+│       ├── database_health.json
+│       ├── diagnostic_report.log
+│       ├── import_log
+│       └── migrate_log
+├── 90-USE-CASE-ILLUSTRATIONS
+│   ├── README.md
+│   └── manual-handle-to-contact-linking.md
+└── README.md
