@@ -10,6 +10,7 @@ import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../../essentials/sidebar/application/sidebar_action_dispatcher.dart';
 import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../domain/settings_top_menu_row.dart';
+import '../../../domain/sidebar_utilities_constants.dart';
 import '../payloads/settings_top_menu_cassette_payload.dart';
 
 class SettingsTopMenuWidget extends HookConsumerWidget {
@@ -31,11 +32,29 @@ class SettingsTopMenuWidget extends HookConsumerWidget {
 
     Future<void> handleActionSelected(SettingsTopMenuActionRow row) async {
       isOpen.value = false;
+      final SidebarActionIntent intent;
+
+      switch (row.semantic) {
+        case SettingsTopMenuActionSemantic.persistentContext:
+          intent = SettingsTopMenuActionChosen(
+            actionId: row.actionId,
+            semantic: row.semantic,
+          );
+        case SettingsTopMenuActionSemantic.transientAction:
+          intent = switch (row.actionId) {
+            SettingsMenuActionId.sendLogs => const ShowSendLogsFlow(),
+            SettingsMenuActionId.resetMessageData =>
+              const ShowResetMessageDataFlow(),
+            SettingsMenuActionId.textSize ||
+            SettingsMenuActionId.imageSize => throw StateError(
+              'Persistent settings rows must not dispatch transient flow '
+              'intents.',
+            ),
+          };
+      }
+
       await dispatcher.dispatch(
-        intent: SettingsTopMenuActionChosen(
-          actionId: row.actionId,
-          semantic: row.semantic,
-        ),
+        intent: intent,
         context: SidebarActionDispatchContext(
           sidebarMode: SidebarMode.settings,
           cassetteIndex: payload.cassetteIndex,
@@ -315,8 +334,8 @@ BorderRadius _insetBorderRadius(BorderRadius radius, double inset) {
       return Radius.zero;
     }
 
-    final double x = math.max<double>(0.0, original.x - inset);
-    final double y = math.max<double>(0.0, original.y - inset);
+    final x = math.max<double>(0.0, original.x - inset);
+    final y = math.max<double>(0.0, original.y - inset);
     return Radius.elliptical(x, y);
   }
 

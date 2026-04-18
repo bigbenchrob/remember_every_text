@@ -7,6 +7,8 @@ export '../../features/sidebar_utilities/feature_level_providers.dart'
     show SidebarUtilityCassetteSpec;
 export './application/cassette_rack_state_provider.dart';
 export './application/cassette_widget_coordinator_provider.dart';
+export './application/ephemeral_cassette_projection_provider.dart';
+export './application/renderable_sidebar_cassette_specs_provider.dart';
 export './application/sidebar_action_dispatcher.dart';
 export './application/sidebar_cassette_render_router.dart';
 export './application/sidebar_flow_state_provider.dart';

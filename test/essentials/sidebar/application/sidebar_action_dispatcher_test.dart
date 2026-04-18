@@ -10,6 +10,7 @@ import 'package:remember_this_text/essentials/navigation/domain/sidebar_mode.dar
 import 'package:remember_this_text/essentials/navigation/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/onboarding/application/message_data_reset_service.dart';
 import 'package:remember_this_text/essentials/sidebar/application/cassette_rack_state_provider.dart';
+import 'package:remember_this_text/essentials/sidebar/application/ephemeral_cassette_projection_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/application/sidebar_action_dispatcher.dart';
 import 'package:remember_this_text/essentials/sidebar/application/sidebar_flow_state_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/domain/entities/cassette_spec.dart';
@@ -195,7 +196,7 @@ void main() {
     );
 
     test(
-      'dispatches send logs transient selection without clearing persistent context',
+      'dispatches send logs transient selection into ephemeral projection without clearing persistent context',
       () async {
         final rackNotifier = container.read(
           cassetteRackStateProvider(SidebarMode.settings).notifier,
@@ -210,10 +211,7 @@ void main() {
         ]);
 
         await dispatcher.dispatch(
-          intent: const SettingsTopMenuActionChosen(
-            actionId: SettingsMenuActionId.sendLogs,
-            semantic: SettingsTopMenuActionSemantic.transientAction,
-          ),
+          intent: const ShowSendLogsFlow(),
           context: const SidebarActionDispatchContext(
             sidebarMode: SidebarMode.settings,
             cassetteIndex: 0,
@@ -226,10 +224,15 @@ void main() {
               .cassettes,
           equals([
             const CassetteSpec.sidebarUtility(
-              SidebarUtilityCassetteSpec.settingsMenu(
-                expandedActionId: SettingsMenuActionId.sendLogs,
-              ),
+              SidebarUtilityCassetteSpec.settingsMenu(),
             ),
+          ]),
+        );
+        expect(
+          container
+              .read(ephemeralCassetteProjectionProvider(SidebarMode.settings))
+              .cassettes,
+          equals([
             const CassetteSpec.settings(SettingsCassetteSpec.sendLogsPanel()),
           ]),
         );
@@ -241,7 +244,7 @@ void main() {
     );
 
     test(
-      'dispatches reset transient selection without clearing persistent context',
+      'dispatches reset transient selection into ephemeral projection without clearing persistent context',
       () async {
         final rackNotifier = container.read(
           cassetteRackStateProvider(SidebarMode.settings).notifier,
@@ -256,10 +259,7 @@ void main() {
         ]);
 
         await dispatcher.dispatch(
-          intent: const SettingsTopMenuActionChosen(
-            actionId: SettingsMenuActionId.resetMessageData,
-            semantic: SettingsTopMenuActionSemantic.transientAction,
-          ),
+          intent: const ShowResetMessageDataFlow(),
           context: const SidebarActionDispatchContext(
             sidebarMode: SidebarMode.settings,
             cassetteIndex: 0,
@@ -272,10 +272,15 @@ void main() {
               .cassettes,
           equals([
             const CassetteSpec.sidebarUtility(
-              SidebarUtilityCassetteSpec.settingsMenu(
-                expandedActionId: SettingsMenuActionId.resetMessageData,
-              ),
+              SidebarUtilityCassetteSpec.settingsMenu(),
             ),
+          ]),
+        );
+        expect(
+          container
+              .read(ephemeralCassetteProjectionProvider(SidebarMode.settings))
+              .cassettes,
+          equals([
             const CassetteSpec.settings(
               SettingsCassetteSpec.resetMessageDataPanel(),
             ),
@@ -289,7 +294,7 @@ void main() {
     );
 
     test(
-      'cancelling reset transient projection restores durable settings child',
+      'cancelling reset transient projection clears only ephemeral settings flow',
       () async {
         final rackNotifier = container.read(
           cassetteRackStateProvider(SidebarMode.settings).notifier,
@@ -299,20 +304,29 @@ void main() {
             .setPersistentSettingsContext(SettingsMenuActionId.textSize);
         rackNotifier.setRack([
           const CassetteSpec.sidebarUtility(
-            SidebarUtilityCassetteSpec.settingsMenu(
-              expandedActionId: SettingsMenuActionId.resetMessageData,
-            ),
+            SidebarUtilityCassetteSpec.settingsMenu(),
           ),
           const CassetteSpec.settings(
-            SettingsCassetteSpec.resetMessageDataPanel(),
+            SettingsCassetteSpec.textSizePlaceholder(),
           ),
         ]);
+        container
+            .read(
+              ephemeralCassetteProjectionProvider(
+                SidebarMode.settings,
+              ).notifier,
+            )
+            .replaceProjection(
+              const CassetteSpec.settings(
+                SettingsCassetteSpec.resetMessageDataPanel(),
+              ),
+            );
 
         await dispatcher.dispatch(
           intent: const SettingsTransientActionCancelled(),
           context: const SidebarActionDispatchContext(
             sidebarMode: SidebarMode.settings,
-            cassetteIndex: 1,
+            cassetteIndex: 2,
           ),
         );
 
@@ -330,8 +344,70 @@ void main() {
           ]),
         );
         expect(
+          container
+              .read(ephemeralCassetteProjectionProvider(SidebarMode.settings))
+              .cassettes,
+          isEmpty,
+        );
+        expect(
           container.read(sidebarFlowProvider).persistentSettingsContext,
           SettingsMenuActionId.textSize,
+        );
+      },
+    );
+
+    test(
+      'changing persistent settings context clears incompatible ephemeral projection',
+      () async {
+        final rackNotifier = container.read(
+          cassetteRackStateProvider(SidebarMode.settings).notifier,
+        );
+        rackNotifier.setRack([
+          const CassetteSpec.sidebarUtility(
+            SidebarUtilityCassetteSpec.settingsMenu(),
+          ),
+        ]);
+        container
+            .read(
+              ephemeralCassetteProjectionProvider(
+                SidebarMode.settings,
+              ).notifier,
+            )
+            .replaceProjection(
+              const CassetteSpec.settings(SettingsCassetteSpec.sendLogsPanel()),
+            );
+
+        await dispatcher.dispatch(
+          intent: const SettingsTopMenuActionChosen(
+            actionId: SettingsMenuActionId.textSize,
+            semantic: SettingsTopMenuActionSemantic.persistentContext,
+          ),
+          context: const SidebarActionDispatchContext(
+            sidebarMode: SidebarMode.settings,
+            cassetteIndex: 0,
+          ),
+        );
+
+        expect(
+          container
+              .read(ephemeralCassetteProjectionProvider(SidebarMode.settings))
+              .cassettes,
+          isEmpty,
+        );
+        expect(
+          container
+              .read(cassetteRackStateProvider(SidebarMode.settings))
+              .cassettes,
+          equals([
+            const CassetteSpec.sidebarUtility(
+              SidebarUtilityCassetteSpec.settingsMenu(
+                expandedActionId: SettingsMenuActionId.textSize,
+              ),
+            ),
+            const CassetteSpec.settings(
+              SettingsCassetteSpec.textSizePlaceholder(),
+            ),
+          ]),
         );
       },
     );

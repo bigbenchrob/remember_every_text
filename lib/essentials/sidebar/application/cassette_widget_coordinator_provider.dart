@@ -14,6 +14,7 @@ import '../../../features/sidebar_utilities/feature_level_providers.dart'
 import '../../navigation/domain/sidebar_mode.dart';
 import '../feature_level_providers.dart';
 import '../presentation/view_model/sidebar_cassette_card_view_model.dart';
+import 'renderable_sidebar_cassette_specs_provider.dart';
 import 'sidebar_cassette_sectioning.dart';
 
 part 'cassette_widget_coordinator_provider.g.dart';
@@ -46,13 +47,6 @@ final class SidebarCassetteResolutionState {
   }
 }
 
-final class _IndexedCassetteSpec {
-  const _IndexedCassetteSpec({required this.spec, required this.cassetteIndex});
-
-  final CassetteSpec spec;
-  final int cassetteIndex;
-}
-
 @riverpod
 Future<ResolvedSidebarCassette> resolvedSidebarCassette(
   Ref ref,
@@ -78,29 +72,31 @@ SidebarCassetteResolutionState sidebarCassetteResolutionState(
   Ref ref,
   SidebarMode mode,
 ) {
-  final visibleSpecs = _visibleSidebarSpecsForMode(ref, mode);
+  final renderableSpecs = ref.watch(
+    renderableSidebarCassetteSpecsProvider(mode),
+  );
   return _buildSidebarCassetteResolutionState(
     ref,
     mode: mode,
-    visibleSpecs: visibleSpecs,
+    renderableSpecs: renderableSpecs,
   );
 }
 
 SidebarCassetteResolutionState _buildSidebarCassetteResolutionState(
   Ref ref, {
   required SidebarMode mode,
-  required List<_IndexedCassetteSpec> visibleSpecs,
+  required List<RenderableSidebarCassetteSpec> renderableSpecs,
 }) {
   final resolvedCassettes = <ResolvedSidebarCassette>[];
   final errors = <SidebarCassetteResolutionError>[];
   var isLoading = false;
 
-  for (final visibleSpec in visibleSpecs) {
+  for (final renderableSpec in renderableSpecs) {
     final asyncResolvedCassette = ref.watch(
       resolvedSidebarCassetteProvider(
         mode,
-        visibleSpec.spec,
-        visibleSpec.cassetteIndex,
+        renderableSpec.spec,
+        renderableSpec.cassetteIndex,
       ),
     );
 
@@ -126,22 +122,10 @@ SidebarCassetteResolutionState _buildSidebarCassetteResolutionState(
 
   return SidebarCassetteResolutionState(
     resolvedCassettes: _applySidebarSectionSpacing(resolvedCassettes),
-    expectedVisibleCount: visibleSpecs.length,
+    expectedVisibleCount: renderableSpecs.length,
     isLoading: isLoading,
     errors: errors,
   );
-}
-
-List<_IndexedCassetteSpec> _visibleSidebarSpecsForMode(
-  Ref ref,
-  SidebarMode mode,
-) {
-  final rack = ref.watch(cassetteRackStateProvider(mode));
-  final flowState = mode == SidebarMode.messages
-      ? ref.watch(sidebarFlowProvider)
-      : null;
-
-  return _visibleSidebarSpecs(rack: rack, flowState: flowState);
 }
 
 Future<SidebarCassettePayload> _buildPayloadForSpec(
@@ -258,24 +242,6 @@ Future<SidebarCassettePayload> _buildPayloadForSpec(
   );
 }
 
-List<_IndexedCassetteSpec> _visibleSidebarSpecs({
-  required CassetteRack rack,
-  required SidebarFlowState? flowState,
-}) {
-  final visibleSpecs = <_IndexedCassetteSpec>[];
-
-  for (var i = 0; i < rack.cassettes.length; i++) {
-    final spec = rack.cassettes[i];
-    if (_shouldHideSpecForFlow(spec: spec, flowState: flowState)) {
-      continue;
-    }
-
-    visibleSpecs.add(_IndexedCassetteSpec(spec: spec, cassetteIndex: i));
-  }
-
-  return visibleSpecs;
-}
-
 List<ResolvedSidebarCassette> _applySidebarSectionSpacing(
   List<ResolvedSidebarCassette> resolvedCassettes,
 ) {
@@ -315,34 +281,4 @@ List<ResolvedSidebarCassette> _applySidebarSectionSpacing(
   }
 
   return spacedCassettes;
-}
-
-bool _shouldHideSpecForFlow({
-  required CassetteSpec spec,
-  required SidebarFlowState? flowState,
-}) {
-  if (flowState == null) {
-    return false;
-  }
-
-  if (!flowState.isContactsBranch ||
-      flowState.messageScope != SidebarFlowMessageScope.recoveredDeleted) {
-    return false;
-  }
-
-  return spec.maybeWhen(
-    messages: (messagesSpec) {
-      return messagesSpec.maybeWhen(
-        heatMap: (contactId) {
-          return contactId != null;
-        },
-        orElse: () {
-          return false;
-        },
-      );
-    },
-    orElse: () {
-      return false;
-    },
-  );
 }

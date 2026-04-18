@@ -336,6 +336,36 @@ void main() {
             ),
           ),
         );
+        expect(
+          container
+              .read(cassetteRackStateProvider(SidebarMode.messages))
+              .cassettes,
+          equals([
+            const CassetteSpec.sidebarUtility(
+              SidebarUtilityCassetteSpec.topChatMenu(
+                selectedChoice: TopChatMenuChoice.contacts,
+              ),
+            ),
+            const CassetteSpec.contacts(
+              ContactsCassetteSpec.contactHeroSummary(chosenContactId: 42),
+            ),
+            const CassetteSpec.contactsInfo(
+              ContactsInfoCassetteSpec.infoCard(
+                key: ContactsInfoKey.chosenContact,
+                chosenContactId: 42,
+              ),
+            ),
+            const CassetteSpec.contacts(
+              ContactsCassetteSpec.contactSelectionControl(chosenContactId: 42),
+            ),
+            const CassetteSpec.contacts(
+              ContactsCassetteSpec.messageScopeToggle(contactId: 42),
+            ),
+            const CassetteSpec.contacts(
+              ContactsCassetteSpec.handleFilter(contactId: 42),
+            ),
+          ]),
+        );
 
         flow.setContactMessageScope(
           contactId: 42,
@@ -353,6 +383,39 @@ void main() {
           equals(
             const ViewSpec.messages(MessagesSpec.forContact(contactId: 42)),
           ),
+        );
+        expect(
+          container
+              .read(cassetteRackStateProvider(SidebarMode.messages))
+              .cassettes,
+          equals([
+            const CassetteSpec.sidebarUtility(
+              SidebarUtilityCassetteSpec.topChatMenu(
+                selectedChoice: TopChatMenuChoice.contacts,
+              ),
+            ),
+            const CassetteSpec.contacts(
+              ContactsCassetteSpec.contactHeroSummary(chosenContactId: 42),
+            ),
+            const CassetteSpec.contactsInfo(
+              ContactsInfoCassetteSpec.infoCard(
+                key: ContactsInfoKey.chosenContact,
+                chosenContactId: 42,
+              ),
+            ),
+            const CassetteSpec.contacts(
+              ContactsCassetteSpec.contactSelectionControl(chosenContactId: 42),
+            ),
+            const CassetteSpec.contacts(
+              ContactsCassetteSpec.messageScopeToggle(contactId: 42),
+            ),
+            const CassetteSpec.contacts(
+              ContactsCassetteSpec.handleFilter(contactId: 42),
+            ),
+            const CassetteSpec.messages(
+              MessagesCassetteSpec.heatMap(contactId: 42),
+            ),
+          ]),
         );
       },
     );

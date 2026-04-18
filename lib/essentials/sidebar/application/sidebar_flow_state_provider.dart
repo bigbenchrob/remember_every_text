@@ -388,6 +388,7 @@ class SidebarFlow extends _$SidebarFlow {
           messageScope: SidebarFlowMessageScope.regular,
         ),
       );
+      _syncContactBranchRackForCurrentFlow(contactId: contactId);
       return;
     }
 
@@ -400,6 +401,7 @@ class SidebarFlow extends _$SidebarFlow {
         messageScope: SidebarFlowMessageScope.recoveredDeleted,
       ),
     );
+    _syncContactBranchRackForCurrentFlow(contactId: contactId);
   }
 
   void showRecoveredDeletedForContact({
@@ -414,14 +416,49 @@ class SidebarFlow extends _$SidebarFlow {
         messageScope: SidebarFlowMessageScope.recoveredDeleted,
       ),
     );
+    _syncContactBranchRackForCurrentFlow(contactId: contactId);
+  }
 
-    final heroSpec = CassetteSpec.contacts(
-      ContactsCassetteSpec.contactHeroSummary(chosenContactId: contactId),
-    );
+  void _syncContactBranchRackForCurrentFlow({required int contactId}) {
+    final selectedHandleId =
+        state.messageScope == SidebarFlowMessageScope.regular
+        ? state.selectedHandleId
+        : null;
 
-    ref
-        .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-        .replaceAtIndexAndCascade(heroCassetteIndex, heroSpec);
+    ref.read(cassetteRackStateProvider(SidebarMode.messages).notifier).setRack([
+      const CassetteSpec.sidebarUtility(
+        SidebarUtilityCassetteSpec.topChatMenu(
+          selectedChoice: TopChatMenuChoice.contacts,
+        ),
+      ),
+      CassetteSpec.contacts(
+        ContactsCassetteSpec.contactHeroSummary(chosenContactId: contactId),
+      ),
+      CassetteSpec.contactsInfo(
+        ContactsInfoCassetteSpec.infoCard(
+          key: ContactsInfoKey.chosenContact,
+          chosenContactId: contactId,
+        ),
+      ),
+      CassetteSpec.contacts(
+        ContactsCassetteSpec.contactSelectionControl(
+          chosenContactId: contactId,
+        ),
+      ),
+      CassetteSpec.contacts(
+        ContactsCassetteSpec.messageScopeToggle(contactId: contactId),
+      ),
+      CassetteSpec.contacts(
+        ContactsCassetteSpec.handleFilter(
+          contactId: contactId,
+          selectedHandleId: selectedHandleId,
+        ),
+      ),
+      if (state.messageScope == SidebarFlowMessageScope.regular)
+        CassetteSpec.messages(
+          MessagesCassetteSpec.heatMap(contactId: contactId),
+        ),
+    ]);
   }
 
   void showGlobalRecoveredDeleted() {

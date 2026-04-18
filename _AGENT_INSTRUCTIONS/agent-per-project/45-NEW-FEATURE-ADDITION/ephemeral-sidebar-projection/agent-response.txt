@@ -1,0 +1,83 @@
+I’ve confirmed the current topology hardcodes one contact chain ending in heatmap. I’m reading the existing contact/message info spec keys now so the proposal can reuse the smallest possible topology surface instead of inventing unnecessary new concepts.
+
+I have the current topology surface. I’m checking how recovered-deleted is already represented in the message-info layer so the proposal can use the smallest existing branch node instead of inventing a parallel concept.
+
+I found an existing recovered-deleted info node in the message topology, which is promising for the minimal refactor. I’m reading that resolver/test surface so I can anchor the proposal on the branch node that already exists today.
+
+The smallest clean refactor is to make recovered-deleted contact scope a topology-bearing property of the contact branch specs themselves, so the child resolver can derive one canonical chain without any flow-layer rack authoring.
+
+Refactor Shape
+
+Represent recoveredDeleted contact scope as a different valid topology.
+Add a feature-owned contact-branch scope enum in contacts_cassette_spec.dart, not an application-layer enum from SidebarFlow. Then thread that scope through the contact branch specs that sit above the divergence point.
+The minimal set is:
+
+ContactsCassetteSpec.contactHeroSummary
+ContactsInfoCassetteSpec.infoCard for ContactsInfoKey.chosenContact
+ContactsCassetteSpec.contactSelectionControl
+ContactsCassetteSpec.messageScopeToggle
+That gives the topology enough information to derive the next child deterministically at every step.
+
+Then the two canonical chains become:
+
+Regular chosen-contact scope:
+hero -> chosen-contact info -> selection control -> message scope toggle -> handle filter -> heatmap
+
+Recovered-deleted chosen-contact scope:
+hero -> chosen-contact info -> selection control -> message scope toggle -> recovered-deleted messages info
+
+That second chain is not “normal minus heatmap.” It is a different next-child decision at messageScopeToggle.
+
+Make the topology files the single authority again.
+The authoritative child decisions should move back into contacts_cassette_topology.dart and contacts_info_topology.dart.
+The minimal topology changes are:
+
+In contacts_info_topology.dart:
+chosenContact should derive contactSelectionControl with the carried contact-branch scope.
+
+In contacts_cassette_topology.dart:
+contactSelectionControl should derive messageScopeToggle with the carried scope.
+
+In contacts_cassette_topology.dart:
+messageScopeToggle should branch topologically:
+
+regular -> handleFilter(contactId: ...)
+recoveredDeleted -> messagesInfo.infoCard(key: MessagesInfoKey.recoveredDeletedMessages)
+handleFilter remains unchanged and still derives heatmap, which means heatmap remains part of regular topology only.
+
+That restores one authoritative child-spec chain because the branch decision becomes “what child does this scoped messageScopeToggle have?” instead of “what extra node does flow code add or omit?”
+
+The linked topology/helper surface can stay very small:
+
+contacts_children.dart can either remain as-is plus one helper for recovered-deleted messages info, or you can inline the recovered-deleted child in contacts_cassette_topology.dart. Either is fine. The key requirement is that the child is chosen in topology, not in flow code.
+messages_info_topology.dart likely needs no semantic change, because MessagesInfoKey.recoveredDeletedMessages is already an existing terminal branch node.
+Remove stable rack authorship from SidebarFlow.
+sidebar_flow_state_provider.dart should stop calling setRack([...]) for contact-branch reconstruction and should lose _syncContactBranchRackForCurrentFlow entirely.
+The flow layer should only do two things:
+
+update durable flow meaning
+replace one cassette spec at the interaction point, letting cascade derive the rest
+Concretely:
+
+contactChosen(...) stays topology-driven by replacing the root chosen-contact entry with contactHeroSummary(..., scope: regular) and cascading.
+
+setContactMessageScope(...) should stop rebuilding the whole rack. It should take the current message-scope-toggle cassette index and call replaceAtIndexAndCascade(...) with a scoped messageScopeToggle. That one replacement lets topology derive either the regular child chain or the recovered-deleted child chain.
+
+showRecoveredDeletedForContact(...) should not rebuild the branch. If this method stays, it should replace the chosen-contact root with contactHeroSummary(..., scope: recoveredDeleted) and let cascade derive the recovered branch from that root. If the app no longer needs this entry point, it can be removed entirely in favor of the normal message-scope-toggle path.
+
+handleSelected(...) is already conceptually acceptable because it replaces the handleFilter spec and lets topology derive its child heatmap. That is spec replacement, not rack authorship.
+
+There is one small dispatcher consequence:
+sidebar_action_dispatcher.dart will need to pass the current cassette index into setContactMessageScope(...), because the flow layer should update the current topology node, not reconstruct the branch externally.
+
+Why This Is The Smallest Clean Fix
+It does not introduce a parallel topology system.
+It does not add tactical visibility logic.
+It does not require a new branch builder service.
+It only:
+
+adds a scoped durable meaning to the contact branch specs above the divergence point
+moves the recovered-vs-regular next-child decision into the topology files
+removes manual stable rack assembly from flow code
+That gets you back to one rule:
+for each durable state, there is one canonical spec chain, and the chain exists because each spec knows its child.

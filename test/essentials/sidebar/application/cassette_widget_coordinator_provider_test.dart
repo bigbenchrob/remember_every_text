@@ -8,6 +8,8 @@ import 'package:remember_this_text/essentials/db/feature_level_providers/working
 import 'package:remember_this_text/essentials/navigation/domain/sidebar_mode.dart';
 import 'package:remember_this_text/essentials/sidebar/application/cassette_rack_state_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/application/cassette_widget_coordinator_provider.dart';
+import 'package:remember_this_text/essentials/sidebar/application/ephemeral_cassette_projection_provider.dart';
+import 'package:remember_this_text/essentials/sidebar/application/renderable_sidebar_cassette_specs_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/domain/entities/cassette_spec.dart';
 import 'package:remember_this_text/essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/payloads/contact_chooser_cassette_payload.dart';
@@ -31,6 +33,7 @@ import 'package:remember_this_text/features/handles/application/state/stray_hand
 import 'package:remember_this_text/features/handles/domain/spec_classes/handles_cassette_spec.dart';
 import 'package:remember_this_text/features/messages/application/sidebar_cassette_spec/payloads/recovered_no_handle_from_me_navigator_cassette_payload.dart';
 import 'package:remember_this_text/features/messages/application/sidebar_cassette_spec/payloads/recovered_unlinked_navigator_cassette_payload.dart';
+import 'package:remember_this_text/features/messages/domain/spec_classes/messages_cassette_spec.dart';
 import 'package:remember_this_text/features/messages/domain/spec_classes/messages_info_cassette_spec.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/payloads/attachment_archive_settings_cassette_payload.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/payloads/settings_info_actions_cassette_payload.dart';
@@ -154,6 +157,87 @@ void main() {
         expect(payload.rows, hasLength(6));
       },
     );
+
+    test(
+      'renders stable settings cassettes before ephemeral settings projection',
+      () async {
+        container
+            .read(cassetteRackStateProvider(SidebarMode.settings).notifier)
+            .setRack([
+              const CassetteSpec.sidebarUtility(
+                SidebarUtilityCassetteSpec.settingsMenu(),
+              ),
+              const CassetteSpec.settings(
+                SettingsCassetteSpec.textSizePlaceholder(),
+              ),
+            ]);
+        container
+            .read(
+              ephemeralCassetteProjectionProvider(
+                SidebarMode.settings,
+              ).notifier,
+            )
+            .replaceProjection(
+              const CassetteSpec.settings(SettingsCassetteSpec.sendLogsPanel()),
+            );
+
+        final resolved = await _resolveSidebarCassettes(
+          container,
+          SidebarMode.settings,
+        );
+
+        expect(resolved, hasLength(3));
+        expect(
+          resolved.map((cassette) => cassette.spec).toList(growable: false),
+          equals([
+            const CassetteSpec.sidebarUtility(
+              SidebarUtilityCassetteSpec.settingsMenu(),
+            ),
+            const CassetteSpec.settings(
+              SettingsCassetteSpec.textSizePlaceholder(),
+            ),
+            const CassetteSpec.settings(SettingsCassetteSpec.sendLogsPanel()),
+          ]),
+        );
+      },
+    );
+
+    test('renderable sidebar cassette specs concatenate without filtering', () {
+      container
+          .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
+          .setRack([
+            const CassetteSpec.contacts(
+              ContactsCassetteSpec.messageScopeToggle(contactId: 42),
+            ),
+            const CassetteSpec.messages(
+              MessagesCassetteSpec.heatMap(contactId: 42),
+            ),
+          ]);
+      container
+          .read(
+            ephemeralCassetteProjectionProvider(SidebarMode.messages).notifier,
+          )
+          .replaceProjection(
+            const CassetteSpec.settings(SettingsCassetteSpec.sendLogsPanel()),
+          );
+
+      final specs = container.read(
+        renderableSidebarCassetteSpecsProvider(SidebarMode.messages),
+      );
+
+      expect(
+        specs.map((entry) => entry.spec).toList(growable: false),
+        equals([
+          const CassetteSpec.contacts(
+            ContactsCassetteSpec.messageScopeToggle(contactId: 42),
+          ),
+          const CassetteSpec.messages(
+            MessagesCassetteSpec.heatMap(contactId: 42),
+          ),
+          const CassetteSpec.settings(SettingsCassetteSpec.sendLogsPanel()),
+        ]),
+      );
+    });
 
     test(
       'resolves send logs settings spec to a single feature-info payload',
