@@ -2,8 +2,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
+import '../../../domain/sidebar_utilities_constants.dart';
 import '../../../domain/spec_classes/sidebar_utility_cassette_spec.dart';
-import '../resolvers/settings_top_menu_resolver.dart';
+import '../resolvers/settings_root_resolver.dart';
 import '../resolvers/top_chat_menu_resolver.dart';
 
 part 'cassette_coordinator.g.dart';
@@ -41,6 +42,7 @@ class SidebarUtilitiesCassetteCoordinator
   Future<SidebarCassettePayload> buildViewModel(
     SidebarUtilityCassetteSpec spec, {
     required int cassetteIndex,
+    SettingsMenuActionId? persistentSettingsContextActionId,
   }) async {
     return spec.map(
       topChatMenu: (menu) => ref
@@ -51,8 +53,11 @@ class SidebarUtilitiesCassetteCoordinator
             sidebarMode: SidebarMode.messages,
           ),
       settingsMenu: (menu) => ref
-          .read(settingsTopMenuResolverProvider.notifier)
-          .resolve(currentChoice: menu.selectedChoice),
+          .read(settingsRootResolverProvider.notifier)
+          .resolve(
+            cassetteIndex: cassetteIndex,
+            persistentContextActionId: persistentSettingsContextActionId,
+          ),
     );
   }
 }

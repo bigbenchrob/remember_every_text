@@ -41,50 +41,31 @@ enum TopChatMenuChoice {
   }
 }
 
-/// For the "Settings" menu in the sidebar (SidebarUtilityCassetteSpec.settingsMenu).
-/// Defines the possible choices for the menu.
-enum SettingsMenuChoice {
-  /// Actions panel with Send Logs and other utilities
-  actions(id: 'actions', label: 'Actions'),
+enum SettingsMenuActionId {
+  sendLogs(id: 'send_logs', label: 'Send logs…'),
+  resetMessageData(id: 'reset_message_data', label: 'Reset message data…'),
+  textSize(id: 'text_size', label: 'Text size…'),
+  imageSize(id: 'image_size', label: 'Image size…');
 
-  /// Attachment archive settings (enable/disable, size, clear)
-  attachmentArchive(id: 'attachment_archive', label: 'Attachment Archive');
+  const SettingsMenuActionId({required this.id, required this.label});
 
-  const SettingsMenuChoice({required this.id, required this.label});
-
-  /// A stable, non-display identifier that you can use
-  /// for serialization, logging, etc.
   final String id;
-
-  /// Human-oriented label.
   final String label;
 
-  static SettingsMenuChoice fromId(String id) {
-    return SettingsMenuChoice.values.firstWhere(
-      (c) => c.id == id,
-      orElse: () => SettingsMenuChoice.actions,
+  static SettingsMenuActionId fromId(String id) {
+    return SettingsMenuActionId.values.firstWhere(
+      (actionId) => actionId.id == id,
+      orElse: () => SettingsMenuActionId.sendLogs,
     );
   }
 }
 
-/// For the "Actions" submenu in settings mode.
-/// Defines the possible actions available to the user.
-enum ActionsMenuChoice {
-  /// Send diagnostic logs for troubleshooting
-  sendLogs(id: 'send_logs', label: 'Send Logs\u2026'),
-
-  /// Reimport all chat and address book data
-  reimportData(id: 'reimport_data', label: 'Reimport Data\u2026');
-
-  const ActionsMenuChoice({required this.id, required this.label});
-
-  final String id;
-  final String label;
-
-  static ActionsMenuChoice fromId(String id) {
-    return ActionsMenuChoice.values.firstWhere(
-      (c) => c.id == id,
-      orElse: () => ActionsMenuChoice.sendLogs,
-    );
+extension SettingsMenuActionIdX on SettingsMenuActionId {
+  bool get isPersistentContext {
+    return switch (this) {
+      SettingsMenuActionId.textSize || SettingsMenuActionId.imageSize => true,
+      SettingsMenuActionId.sendLogs ||
+      SettingsMenuActionId.resetMessageData => false,
+    };
   }
 }

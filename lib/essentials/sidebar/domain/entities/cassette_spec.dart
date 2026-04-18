@@ -2,11 +2,11 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../../../features/contacts/domain/spec_classes/contacts_cassette_spec.dart';
 import '../../../../features/contacts/domain/spec_classes/contacts_info_cassette_spec.dart';
-import '../../../../features/contacts/domain/spec_classes/contacts_settings_spec.dart';
 import '../../../../features/handles/domain/spec_classes/handles_cassette_spec.dart';
 import '../../../../features/handles/domain/spec_classes/handles_info_cassette_spec.dart';
 import '../../../../features/messages/domain/spec_classes/messages_cassette_spec.dart';
 import '../../../../features/messages/domain/spec_classes/messages_info_cassette_spec.dart';
+import '../../../../features/settings/domain/spec_classes/settings_cassette_spec.dart';
 import '../../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../../features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
 
@@ -15,11 +15,11 @@ part 'cascade/cassette_child_resolver.dart';
 part 'cascade/sidebar_utility_topology.dart';
 part 'cascade/contacts_cassette_topology.dart';
 part 'cascade/contacts_info_topology.dart';
-part 'cascade/contacts_settings_topology.dart';
 part 'cascade/handles_cassette_topology.dart';
 part 'cascade/handles_info_topology.dart';
 part 'cascade/messages_cassette_topology.dart';
 part 'cascade/messages_info_topology.dart';
+part 'cascade/settings_cassette_topology.dart';
 part 'cascade/links/contacts_children.dart';
 part 'cascade/links/sidebar_utility_children.dart';
 
@@ -29,8 +29,6 @@ abstract class CassetteSpec with _$CassetteSpec {
       _CassetteSidebarWidget;
   const factory CassetteSpec.contacts(ContactsCassetteSpec spec) =
       _CassetteContacts;
-  const factory CassetteSpec.contactsSettings(ContactsSettingsSpec spec) =
-      _CassetteContactsSettings;
   const factory CassetteSpec.contactsInfo(ContactsInfoCassetteSpec spec) =
       _CassetteContactsInfo;
   const factory CassetteSpec.handles(HandlesCassetteSpec spec) =
@@ -41,6 +39,8 @@ abstract class CassetteSpec with _$CassetteSpec {
       _CassetteMessages;
   const factory CassetteSpec.messagesInfo(MessagesInfoCassetteSpec spec) =
       _CassetteMessagesInfo;
+  const factory CassetteSpec.settings(SettingsCassetteSpec spec) =
+      _CassetteSettings;
 }
 
 extension CassetteSpecX on CassetteSpec {

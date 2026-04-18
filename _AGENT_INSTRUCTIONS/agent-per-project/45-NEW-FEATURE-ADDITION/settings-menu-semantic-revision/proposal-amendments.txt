@@ -1,0 +1,52 @@
+🔧 Add this to “Hard Invariants”
+
+Add a new invariant:
+
+Transient actions must not be stored in global flow state. They must be expressed only as derived cassette stack expansions resulting from a dispatched intent and must not be reconstructible from persisted or bookmarkable state.
+
+⸻
+
+🔧 Strengthen Step 2 (this is the most important fix)
+
+Replace this idea:
+
+selectedPersistentActionId
+
+With:
+
+Persistent context must be stored in the global flow state as a first-class field. The Settings menu must not own selection state; it must reflect the current persistent context derived from flow state.
+
+Transient actions must not write to this field.
+
+⸻
+
+🔧 Add a “State Ownership” section
+
+Add a new section:
+
+State Ownership
+
+* Global flow state owns persistent settings context
+* The Settings menu is a projection of that state
+* Transient actions do not create persistent state
+* Transient flows exist only as cassette stack expansions and are not persisted
+
+⸻
+
+🔧 Clarify transient lifecycle
+
+Add:
+
+Transient action lifecycle is owned by the dispatcher + topology, not by the menu widget. The menu triggers the action, but does not track its progress or completion.
+
+⸻
+
+🔧 De-risk the Appearance coupling
+
+Change:
+
+Introduce the first persistent settings context…
+
+To:
+
+A persistent settings context (e.g. Appearance) should be introduced in a subsequent phase. This proposal does not require that change in order to establish correct semantics.

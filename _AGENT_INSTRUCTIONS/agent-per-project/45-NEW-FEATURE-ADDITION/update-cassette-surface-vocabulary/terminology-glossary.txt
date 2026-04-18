@@ -1,0 +1,218 @@
+Agent Instruction: Insert Authoritative Terminology Glossary
+
+Objective:
+Create a single authoritative terminology glossary for the spec-driven architecture and ensure it is referenced consistently across the Agent Instructions folder.
+
+⸻
+
+Step 1 — Create New Document
+
+Create the following file if it does not already exist:
+
+/Agent Instructions/90-CROSS-SURFACE-SPEC-SYSTEMS/00-TERMINOLOGY.md
+
+If a terminology or glossary file already exists in this location, merge this content into it rather than creating a duplicate.
+
+⸻
+
+Step 2 — Insert the Following Content
+
+Insert the following content as the full contents of the file (or merge carefully if the file exists):
+
+⸻
+
+Terminology (Authoritative)
+
+Purpose
+
+This document defines the canonical vocabulary for the MessageLens spec-driven architecture.
+
+All agents and contributors must use these terms consistently.
+These definitions are normative (contractual), not descriptive.
+
+⸻
+
+Global Rule
+
+Use the simplest correct term.
+
+* Use hierarchy for strict parent/child trees
+* Use topology only when multiple transitions or non-tree relationships exist
+* Do not substitute terms casually (e.g., do not use “topology” when “hierarchy” is intended)
+
+⸻
+
+Core Concepts
+
+State
+
+A discrete, serializable configuration of the application.
+
+* Examples:
+    * A specific CassetteSpec
+    * A specific ViewSpec
+* States are pure descriptions, not UI widgets
+* States are the nodes of the system
+
+⸻
+
+Transition
+
+A valid movement from one state to another.
+
+* Defined explicitly by coordinators or routing logic
+* May be conditional
+* Must be deterministic given input + current state
+
+⸻
+
+Topology
+
+The full set of states and allowed transitions between them.
+
+* Represents the system as a graph
+* Not restricted to a tree
+* Includes branching, convergence, and loops
+
+Use this term when:
+
+* Multiple next states are possible
+* Structure is not strictly hierarchical
+* You are describing allowed connectivity
+
+⸻
+
+Flow
+
+A specific runtime path through the topology.
+
+* A sequence of states produced during execution
+* May be user-driven or system-driven
+* A flow is not the structure, it is a traversal of the structure
+
+⸻
+
+Hierarchy
+
+A strict parent/child tree structure.
+
+* Each node has exactly one parent (except root)
+* No cross-links or cycles
+* Typical use cases:
+    * Menus
+    * Static content organization
+
+Do not use “topology” when “hierarchy” is sufficient.
+
+⸻
+
+UI / UX Concepts
+
+Surface
+
+A distinct user-facing context or visual layer.
+
+Two valid uses:
+
+1. Visual surface
+    * A container layer (sidebar, card, modal)
+    * Defines background, elevation, and layout boundaries
+2. Interaction surface
+    * A place where the user encounters functionality
+    * Examples: search surface, onboarding surface
+
+⸻
+
+Entry Point
+
+A place where a user or system begins interacting with a feature or flow.
+
+* Examples:
+    * App launch
+    * Search field
+    * Deep link
+* Entry points lead into flows
+
+⸻
+
+System Boundary Concepts
+
+Endpoint
+
+A callable interface exposed by a system.
+
+* Typically: URL + method (REST)
+* Represents a specific operation
+* Not a UI concept
+
+⸻
+
+Cassette System Mapping (Critical)
+
+The cassette system MUST be interpreted using these mappings:
+
+* CassetteSpec = State
+* CassetteRackState = Current position in state space
+* Coordinator = Transition authority
+* Resolver = State data provider (no UI)
+* Widget builder = Presentation only
+
+⸻
+
+Non-Negotiable Constraints
+
+* States MUST NOT contain UI widgets
+* Coordinators MUST NOT return widgets
+* Topology MUST be expressible without reference to UI
+* UI is always a projection of state, never the state itself
+
+⸻
+
+Anti-Drift Rules
+
+Avoid the following incorrect usages:
+
+* Calling a simple menu a “topology” when it is a hierarchy
+* Referring to widgets as “states”
+* Referring to a single screen as a “flow”
+* Using “endpoint” to describe UI actions
+
+⸻
+
+Summary
+
+* State = what the app is
+* Transition = how it changes
+* Topology = all possible changes
+* Flow = one actual path
+* Hierarchy = a constrained topology (tree)
+* Surface = where the user interacts
+
+⸻
+
+Step 3 — Add Cross-References
+
+Open the following documents if they exist:
+
+* 80-FEATURE-SPEC-HANDLING/...cassette...
+* Any onboarding or cross-surface spec docs
+
+At the top of each file (after the title), insert:
+
+See: 90-CROSS-SURFACE-SPEC-SYSTEMS/00-TERMINOLOGY.md for canonical definitions.
+
+Do not duplicate definitions in those files.
+
+⸻
+
+Step 4 — Enforce Usage
+
+When generating or modifying code, comments, or documentation:
+
+* Use these terms exactly as defined
+* Do not introduce alternative terminology unless explicitly approved
+* When ambiguity exists, default to this document
+
+⸻
+
+End of Instruction

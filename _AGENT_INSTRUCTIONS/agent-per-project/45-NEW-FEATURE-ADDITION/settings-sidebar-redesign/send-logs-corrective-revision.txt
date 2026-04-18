@@ -1,0 +1,52 @@
+Interpretation
+
+The current implementation is technically behaving as designed, but the design is wrong for this case.
+
+“Send Logs” should not be modeled as:
+
+* sendLogsInfo()
+* child: sendLogsAction()
+
+because that topology implies two separate sidebar cassettes.
+
+Instead it should be modeled as a single settings outcome cassette for the selected action, containing:
+
+* explanatory body text
+* one primary action affordance
+
+In other words, the parent/child cassette relationship is too strong a separation for this UX. The button is not a downstream cassette. It is part of the same semantic unit as the explanatory text.
+
+What to ask the agent to change
+
+Please revise the Send Logs implementation so that it is rendered as a single cassette, not as an info cassette with a child action cassette.
+
+Required changes:
+
+1. Remove the separate child topology step from sendLogsInfo() to sendLogsAction()
+2. Replace that pair with one spec representing the full Send Logs panel state
+3. Resolve that spec to one payload containing:
+    * body copy only, with no redundant title/header
+    * one action descriptor for “Send log data…”
+4. Render the action inside the same cassette body so it follows the same sidebar card layout rules and does not appear as a separate free-floating cassette below
+
+UX rule to preserve
+
+For top-menu-driven Settings content:
+
+* the selected menu item already provides the title/context
+* the resulting cassette should usually omit a repeated header unless there is a strong reason to restate it
+* explanatory text + primary action should live in one cassette when they form one conceptual unit
+
+Architectural rule
+
+This is not a request to let widgets bypass the spec system.
+
+It is a request to represent the correct semantic unit in the spec system.
+
+The correct semantic unit here is:
+
+* one selected setting/action
+* one explanatory panel
+* one associated primary action
+
+not two cassettes in a parent-child chain.

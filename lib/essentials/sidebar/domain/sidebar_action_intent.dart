@@ -1,3 +1,6 @@
+import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
+import '../../../features/sidebar_utilities/domain/settings_top_menu_row.dart';
+
 enum SidebarTopMenuChoice {
   contacts,
   strayHandles,
@@ -5,10 +8,6 @@ enum SidebarTopMenuChoice {
   recoveredUnlinkedMessages,
   recoveredNoHandleFromMeMessages,
 }
-
-enum SidebarSettingsMenuChoice { actions, attachmentArchive }
-
-enum SidebarSettingsActionChoice { sendLogs, reimportData }
 
 enum SidebarMessageScope { regular, recoveredDeleted }
 
@@ -53,16 +52,14 @@ final class TopMenuChanged extends SidebarActionIntent {
   final SidebarTopMenuChoice choice;
 }
 
-final class SettingsMenuChanged extends SidebarActionIntent {
-  const SettingsMenuChanged({required this.choice});
+final class SettingsTopMenuActionChosen extends SidebarActionIntent {
+  const SettingsTopMenuActionChosen({
+    required this.actionId,
+    required this.semantic,
+  });
 
-  final SidebarSettingsMenuChoice choice;
-}
-
-final class SettingsActionChosen extends SidebarActionIntent {
-  const SettingsActionChosen({required this.choice});
-
-  final SidebarSettingsActionChoice choice;
+  final SettingsMenuActionId actionId;
+  final SettingsTopMenuActionSemantic semantic;
 }
 
 final class ContactChosen extends SidebarActionIntent {
@@ -144,10 +141,14 @@ final class StrayHandleRestored extends SidebarActionIntent {
   final String normalizedHandle;
 }
 
-final class ReimportDataRequested extends SidebarActionIntent {
-  const ReimportDataRequested();
-}
-
 final class SendLogsRequested extends SidebarActionIntent {
   const SendLogsRequested();
+}
+
+final class SettingsTransientActionCancelled extends SidebarActionIntent {
+  const SettingsTransientActionCancelled();
+}
+
+final class ResetMessageDataRequested extends SidebarActionIntent {
+  const ResetMessageDataRequested();
 }

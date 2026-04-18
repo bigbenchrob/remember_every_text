@@ -7,7 +7,7 @@ part of 'sidebar_action_dispatcher.dart';
 // **************************************************************************
 
 String _$sidebarActionDispatcherHash() =>
-    r'782691f83a31a8dc1daac57576fff0212b30bfe9';
+    r'2aba8666251bff496a3cf4f92ecaf8b380448fc2';
 
 /// See also [SidebarActionDispatcher].
 @ProviderFor(SidebarActionDispatcher)

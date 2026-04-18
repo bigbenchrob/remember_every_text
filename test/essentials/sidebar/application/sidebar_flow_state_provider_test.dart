@@ -76,6 +76,26 @@ void main() {
         ),
       );
     });
+
+    test(
+      'rejects transient settings action as persistent settings context',
+      () {
+        expect(
+          () => debugAssertValidSidebarFlowState(
+            const SidebarFlowState(
+              persistentSettingsContext: SettingsMenuActionId.sendLogs,
+            ),
+          ),
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              contains('persistentSettingsContext cannot hold transient'),
+            ),
+          ),
+        );
+      },
+    );
   });
 
   group('sidebarFlowProvider', () {
@@ -154,6 +174,17 @@ void main() {
         );
       },
     );
+
+    test('setPersistentSettingsContext stores durable settings context', () {
+      container
+          .read(sidebarFlowProvider.notifier)
+          .setPersistentSettingsContext(SettingsMenuActionId.textSize);
+
+      expect(
+        container.read(sidebarFlowProvider).persistentSettingsContext,
+        SettingsMenuActionId.textSize,
+      );
+    });
 
     testWidgets(
       'chooseAnotherContact restores picker branch and clears panels',

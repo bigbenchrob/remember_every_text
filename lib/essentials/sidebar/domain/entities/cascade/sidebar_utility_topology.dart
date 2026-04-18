@@ -20,12 +20,18 @@ CassetteSpec? resolveSidebarUtilityChild(SidebarUtilityCassetteSpec spec) {
           return sidebarUtilityChildSearchAllMessagesInfoCard();
       }
     },
-    settingsMenu: (selectedChoice) {
-      switch (selectedChoice) {
-        case SettingsMenuChoice.actions:
-          return sidebarUtilitySettingsChildActionsMenu();
-        case SettingsMenuChoice.attachmentArchive:
-          return sidebarUtilitySettingsChildAttachmentArchive();
+    settingsMenu: (expandedActionId) {
+      switch (expandedActionId) {
+        case SettingsMenuActionId.sendLogs:
+          return sidebarUtilitySettingsChildSendLogsPanel();
+        case SettingsMenuActionId.resetMessageData:
+          return sidebarUtilitySettingsChildResetMessageDataPanel();
+        case SettingsMenuActionId.textSize:
+          return sidebarUtilitySettingsChildTextSizeInfo();
+        case SettingsMenuActionId.imageSize:
+          return sidebarUtilitySettingsChildImageSizeInfo();
+        case null:
+          return null;
       }
     },
   );

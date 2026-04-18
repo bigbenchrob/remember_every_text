@@ -5,6 +5,14 @@ import '../sidebar_utilities_constants.dart';
 part 'sidebar_utility_cassette_spec.freezed.dart';
 part 'sidebar_utility_cassette_spec.g.dart';
 
+SettingsMenuActionId? _expandedActionIdFromJson(Object? _) {
+  return null;
+}
+
+Object? _expandedActionIdToJson(SettingsMenuActionId? _) {
+  return null;
+}
+
 /// Spec for sidebar utility cassettes (top-level navigation menus).
 ///
 /// These are the control cassettes that determine what cascade follows.
@@ -19,7 +27,12 @@ abstract class SidebarUtilityCassetteSpec with _$SidebarUtilityCassetteSpec {
 
   /// Top-level menu for settings mode.
   const factory SidebarUtilityCassetteSpec.settingsMenu({
-    @Default(SettingsMenuChoice.actions) SettingsMenuChoice selectedChoice,
+    @JsonKey(
+      includeIfNull: false,
+      fromJson: _expandedActionIdFromJson,
+      toJson: _expandedActionIdToJson,
+    )
+    SettingsMenuActionId? expandedActionId,
   }) = _SidebarUtilityCassetteSpecSettingsMenu;
 
   factory SidebarUtilityCassetteSpec.fromJson(Map<String, dynamic> json) =>

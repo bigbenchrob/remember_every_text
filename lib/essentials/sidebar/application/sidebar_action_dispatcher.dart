@@ -4,13 +4,13 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../features/contacts/domain/spec_classes/contacts_cassette_spec.dart';
-import '../../../features/contacts/domain/spec_classes/contacts_settings_spec.dart';
 import '../../../features/contacts/infrastructure/repositories/recent_contacts_repository.dart';
 import '../../../features/handles/application/state/stray_handle_mode_provider.dart';
 import '../../../features/handles/domain/spec_classes/handles_cassette_spec.dart';
 import '../../../features/handles/infrastructure/repositories/stray_handles_provider.dart';
 import '../../../features/messages/domain/value_objects/message_timeline_scope.dart';
 import '../../../features/messages/presentation/view_model/timeline/message_timeline_view_model_provider.dart';
+import '../../../features/sidebar_utilities/domain/settings_top_menu_row.dart';
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
 import '../../db/application/database_health_audit/database_health_audit_service.dart';
@@ -21,7 +21,7 @@ import '../../navigation/domain/entities/view_spec.dart';
 import '../../navigation/domain/navigation_constants.dart';
 import '../../navigation/domain/sidebar_mode.dart';
 import '../../navigation/feature_level_providers.dart';
-import '../../onboarding/application/onboarding_gate_provider.dart';
+import '../../onboarding/application/message_data_reset_service.dart';
 import '../application/cassette_rack_state_provider.dart';
 import '../application/sidebar_flow_state_provider.dart';
 import '../domain/entities/cassette_spec.dart';
@@ -58,22 +58,17 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
               choice: _mapTopMenuChoice(choice),
               cassetteIndex: _requireCassetteIndex(context),
             );
-      case SettingsMenuChanged(:final choice):
+      case SettingsTopMenuActionChosen(:final actionId, :final semantic):
+        if (semantic == SettingsTopMenuActionSemantic.persistentContext) {
+          ref
+              .read(sidebarFlowProvider.notifier)
+              .setPersistentSettingsContext(actionId);
+        }
+
         _replaceCassetteAtContext(
           context: context,
           spec: CassetteSpec.sidebarUtility(
-            SidebarUtilityCassetteSpec.settingsMenu(
-              selectedChoice: _mapSettingsMenuChoice(choice),
-            ),
-          ),
-        );
-      case SettingsActionChosen(:final choice):
-        _replaceCassetteAtContext(
-          context: context,
-          spec: CassetteSpec.contactsSettings(
-            ContactsSettingsSpec.actionsMenu(
-              selectedChoice: _mapSettingsActionChoice(choice),
-            ),
+            SidebarUtilityCassetteSpec.settingsMenu(expandedActionId: actionId),
           ),
         );
       case ContactChosen(:final contactId):
@@ -137,8 +132,10 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
         await _dismissHandle(normalizedHandle);
       case StrayHandleRestored(:final normalizedHandle):
         await _restoreHandle(normalizedHandle);
-      case ReimportDataRequested():
-        await ref.read(onboardingGateProvider.notifier).startReimport();
+      case SettingsTransientActionCancelled():
+        ref
+            .read(cassetteRackStateProvider(context.sidebarMode).notifier)
+            .resetToInitial();
       case SendLogsRequested():
         final writer = ref.read(appLoggerProvider.notifier).writer;
         final databaseHealthAuditService = await ref.read(
@@ -148,6 +145,9 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
           writer,
           databaseHealthAuditService: databaseHealthAuditService,
         );
+      case ResetMessageDataRequested():
+        final resetService = ref.read(messageDataResetServiceProvider);
+        await resetService.resetAndQuit();
     }
   }
 
@@ -306,21 +306,6 @@ TopChatMenuChoice _mapTopMenuChoice(SidebarTopMenuChoice choice) {
       TopChatMenuChoice.recoveredUnlinkedMessages,
     SidebarTopMenuChoice.recoveredNoHandleFromMeMessages =>
       TopChatMenuChoice.recoveredNoHandleFromMeMessages,
-  };
-}
-
-SettingsMenuChoice _mapSettingsMenuChoice(SidebarSettingsMenuChoice choice) {
-  return switch (choice) {
-    SidebarSettingsMenuChoice.actions => SettingsMenuChoice.actions,
-    SidebarSettingsMenuChoice.attachmentArchive =>
-      SettingsMenuChoice.attachmentArchive,
-  };
-}
-
-ActionsMenuChoice _mapSettingsActionChoice(SidebarSettingsActionChoice choice) {
-  return switch (choice) {
-    SidebarSettingsActionChoice.sendLogs => ActionsMenuChoice.sendLogs,
-    SidebarSettingsActionChoice.reimportData => ActionsMenuChoice.reimportData,
   };
 }
 

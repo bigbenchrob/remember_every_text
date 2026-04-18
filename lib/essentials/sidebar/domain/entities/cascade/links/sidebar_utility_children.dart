@@ -37,14 +37,24 @@ CassetteSpec sidebarUtilityChildRecoveredNoHandleFromMeNavigator() {
   );
 }
 
-CassetteSpec sidebarUtilitySettingsChildActionsMenu() {
-  return const CassetteSpec.contactsSettings(
-    ContactsSettingsSpec.actionsMenu(),
+CassetteSpec sidebarUtilitySettingsChildSendLogsPanel() {
+  return const CassetteSpec.settings(SettingsCassetteSpec.sendLogsPanel());
+}
+
+CassetteSpec sidebarUtilitySettingsChildResetMessageDataPanel() {
+  return const CassetteSpec.settings(
+    SettingsCassetteSpec.resetMessageDataPanel(),
   );
 }
 
-CassetteSpec sidebarUtilitySettingsChildAttachmentArchive() {
-  return const CassetteSpec.contactsSettings(
-    ContactsSettingsSpec.attachmentArchive(),
+CassetteSpec sidebarUtilitySettingsChildTextSizeInfo() {
+  return const CassetteSpec.settings(
+    SettingsCassetteSpec.textSizePlaceholder(),
+  );
+}
+
+CassetteSpec sidebarUtilitySettingsChildImageSizeInfo() {
+  return const CassetteSpec.settings(
+    SettingsCassetteSpec.imageSizePlaceholder(),
   );
 }

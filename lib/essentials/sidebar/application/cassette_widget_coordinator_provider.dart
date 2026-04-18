@@ -7,6 +7,8 @@ import '../../../features/handles/feature_level_providers.dart'
     as handles_feature;
 import '../../../features/messages/feature_level_providers.dart'
     as messages_feature;
+import '../../../features/settings/feature_level_providers.dart'
+    as settings_feature;
 import '../../../features/sidebar_utilities/feature_level_providers.dart'
     as sidebar_utilities;
 import '../../navigation/domain/sidebar_mode.dart';
@@ -149,12 +151,24 @@ Future<SidebarCassettePayload> _buildPayloadForSpec(
 }) {
   return spec.when(
     sidebarUtility: (sidebarSpec) async {
+      final persistentSettingsContextActionId = sidebarSpec.maybeMap(
+        settingsMenu: (_) {
+          return ref.watch(
+            sidebarFlowProvider.select(
+              (flowState) => flowState.persistentSettingsContext,
+            ),
+          );
+        },
+        orElse: () => null,
+      );
+
       final coordinator = ref.read(
         sidebar_utilities.sidebarUtilitiesCassetteCoordinatorProvider.notifier,
       );
       return coordinator.buildViewModel(
         sidebarSpec,
         cassetteIndex: cassetteIndex,
+        persistentSettingsContextActionId: persistentSettingsContextActionId,
       );
     },
     contacts: (contactsSpec) async {
@@ -173,15 +187,6 @@ Future<SidebarCassettePayload> _buildPayloadForSpec(
       );
       return coordinator.buildViewModel(
         contactsSpec,
-        cassetteIndex: cassetteIndex,
-      );
-    },
-    contactsSettings: (settingsSpec) async {
-      final coordinator = ref.read(
-        contacts_feature.contactsSettingsCoordinatorProvider.notifier,
-      );
-      return coordinator.buildViewModel(
-        settingsSpec,
         cassetteIndex: cassetteIndex,
       );
     },
@@ -238,6 +243,15 @@ Future<SidebarCassettePayload> _buildPayloadForSpec(
       );
       return coordinator.buildViewModel(
         messagesInfoSpec,
+        cassetteIndex: cassetteIndex,
+      );
+    },
+    settings: (settingsSpec) async {
+      final coordinator = ref.read(
+        settings_feature.settingsCassetteCoordinatorProvider.notifier,
+      );
+      return coordinator.buildViewModel(
+        settingsSpec,
         cassetteIndex: cassetteIndex,
       );
     },

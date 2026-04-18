@@ -1,0 +1,274 @@
+Settings Top Menu: Flat Mixed-Type Menu With Inert Group Headers
+
+Purpose
+
+Implement the Settings top menu as a single flat menu containing two distinct row types:
+
+* actionable menu choices
+* inert group headers
+
+This is not a nested menu, not a submenu system, and not a tree. It is a single flat list whose rows are visually grouped by the presence of inert section headers.
+
+The critical requirement is that group headers are present in the same menu model as selectable items, but are not themselves selectable and produce no behavior.
+
+Desired UX
+
+The Settings dropdown should behave as follows:
+
+Initial dropdown chrome text:
+
+* Choose setting or action
+
+This is placeholder text only. It is not itself a menu item.
+
+The opened menu should contain rows like this:
+
+* Troubleshooting  ← inert group header
+* Send logs…  ← actionable item
+* Reset message data…  ← actionable item
+* Appearance  ← inert group header
+* Text size…  ← actionable item
+* Image size…  ← actionable item
+
+Behavior rules:
+
+* Clicking a group header does nothing
+* Clicking a group header must not update the dropdown label
+* Clicking a group header must not dispatch any action
+* Clicking a group header must not append cassette specs
+* Clicking an actionable item dispatches its semantic action
+* Clicking an actionable item updates the selected label shown in the dropdown chrome
+* Clicking an actionable item causes the appropriate cassette spec or specs to be appended to the sidebar stack
+
+Architectural intent
+
+The Settings menu must model menu structure separately from menu behavior.
+
+That means the menu row model must explicitly distinguish between:
+
+* structural rows used only for grouping and labeling
+* actionable rows used to trigger semantic intent
+
+Do not fake group headers by making them disabled actions. They are not actions that happen to be disabled. They are a distinct semantic row type with purely presentational meaning.
+
+This distinction matters because the sidebar action system is semantic and flow-driven. Only real action rows should dispatch to the SidebarActionDispatcher.
+
+Required menu model
+
+Introduce a dedicated menu row union for Settings top-menu content.
+
+Suggested shape:
+
+SettingsMenuRow
+
+* groupHeader
+* action
+
+Suggested variant details:
+
+SettingsMenuRow.groupHeader
+
+* label
+
+SettingsMenuRow.action
+
+* label
+* actionId
+
+The important point is not the exact type name, but the explicit distinction.
+
+The menu must be driven from a flat ordered list of these rows.
+
+Example canonical list:
+
+* groupHeader(“Troubleshooting”)
+* action(“Send logs…”, sendLogs)
+* action(“Reset message data…”, resetMessageData)
+* groupHeader(“Appearance”)
+* action(“Text size…”, textSize)
+* action(“Image size…”, imageSize)
+
+Again: flat list, not nested children.
+
+Rendering contract
+
+When rendering the opened dropdown list:
+
+Group header rows
+
+Render with styling that communicates “section label, not option,” for example:
+
+* smaller text
+* lighter weight or lower contrast
+* no hover affordance
+* no press state
+* no trailing checkmark
+* default cursor rather than pointer if feasible in this component system
+
+Group headers must appear visually inside the same dropdown surface as the action rows. They are part of the list, but not part of the selectable set.
+
+Action rows
+
+Render as normal selectable menu options:
+
+* normal text styling
+* hover affordance
+* selectable
+* updates selected value
+* dispatches semantic action
+
+Selection behavior
+
+The selected value shown in the closed dropdown chrome must only ever reflect an action row.
+
+Rules:
+
+* Before any action is selected, show the placeholder text: “Choose setting or action”
+* After an action row is selected, show that action row’s label in the dropdown chrome
+* Group header rows can never become the selected value
+* Placeholder text is not a real menu row and should not be inserted into the open list as a selectable item
+
+Dispatch behavior
+
+Only action rows dispatch.
+
+When an action row is selected:
+
+1. translate the selected row into a semantic action id
+2. dispatch that semantic action through the existing sidebar action pathway
+3. allow the dispatcher / flow logic to determine what cassette specs are added
+
+Do not let the menu widget itself construct sidebar UI directly. The menu only emits semantic intent.
+
+Concrete examples
+
+Send logs…
+
+Selecting “Send logs…” should result in semantic dispatch, after which the sidebar stack receives content such as:
+
+* an info card explaining what will be sent
+* a button card or action card allowing the user to proceed
+
+Suggested informational copy:
+
+“This will send information about recent MessageLens activity directly to the developer. No sensitive data, such as message text or contact names, will be included.”
+
+Suggested action button label:
+
+* Send log data…
+
+Reset message data…
+
+Selecting “Reset message data…” should similarly dispatch a semantic action and allow the existing flow / cassette system to produce the appropriate explanatory and confirmatory UI.
+
+The top menu should never directly own that downstream UI composition.
+
+Important implementation rule
+
+Do not build this as a standard typed dropdown whose value must equal one of the rendered rows if that dropdown API cannot cleanly support inert rows.
+
+If the existing dropdown widget assumes that every visible row is selectable, then the correct solution is one of the following:
+
+* adapt the widget to support mixed row types
+* replace the menu body implementation with a custom popup/list implementation that supports inert rows cleanly
+
+What should not happen is a compromise where group headers become fake disabled selections and pollute the selection model.
+
+Anti-patterns to avoid
+
+Do not do any of the following:
+
+* treat group headers as disabled action rows
+* allow group headers to become the selected dropdown value
+* dispatch actions from group headers
+* create a submenu or nested hierarchy
+* encode sidebar cassette creation directly in the menu item model
+* let the menu widget bypass the semantic dispatch system
+* insert the placeholder text as though it were a real selectable item
+
+Relationship to sidebar architecture
+
+This Settings menu should fit the existing architecture exactly:
+
+* the menu is a flat selector surface
+* action rows emit semantic intents only
+* SidebarActionDispatcher remains the canonical routing point
+* global flow state remains authoritative
+* cassette specs are appended as a consequence of semantic action handling, not from ad hoc widget logic
+
+This preserves the same architectural boundary already used elsewhere in the app:
+UI choice → semantic intent → dispatcher / flow logic → cassette specs → rendered sidebar content
+
+Suggested implementation breakdown
+
+1. Add a settings-menu row model
+
+Create a small domain model dedicated to the Settings top menu with explicit row variants for:
+
+* group header
+* action
+
+This model should be easy to map into rendering and easy to map from action rows into semantic intents.
+
+2. Replace any “all rows are selectable values” assumption
+
+Inspect the current settings dropdown implementation.
+
+If it assumes every row is a valid selection:
+
+* refactor so only action rows participate in selection state
+
+The open menu should still render both row types.
+
+3. Keep selected state separate from row list
+
+Selection state should be something like:
+
+* currentlySelectedActionId
+    or
+* currentlySelectedActionLabel
+
+It should not be a reference that can accidentally point to a group header row.
+
+4. Route actions through existing semantic dispatcher
+
+When an action row is clicked:
+
+* resolve the action id
+* dispatch using the established SidebarActionDispatcher pathway
+
+Do not have the dropdown widget append specs directly.
+
+5. Preserve placeholder behavior
+
+If no action has been selected yet:
+
+* closed dropdown label shows “Choose setting or action”
+
+As soon as an action is selected:
+
+* closed dropdown label shows that selected action’s label
+
+Acceptance criteria
+
+The feature is complete only when all of the following are true:
+
+* The Settings top menu is a single flat list
+* The list contains both inert group headers and actionable items
+* Group headers are visually distinct from action rows
+* Group headers are not selectable
+* Group headers never become the dropdown’s selected value
+* The placeholder text appears only before a real action is chosen
+* Selecting an action dispatches a semantic intent
+* Downstream sidebar content is produced via cassette specs
+* No submenu structure is introduced
+* No fake “disabled action row” workaround is used for headers
+
+Short version for implementation decisions
+
+The Settings top menu is a flat mixed-type menu.
+Group headers are inert structural rows, not disabled actions.
+Only action rows participate in selection and dispatch.
+Selection updates the dropdown label.
+Dispatch flows through the existing semantic action architecture.
+Cassette specs are added downstream as a consequence of action handling.

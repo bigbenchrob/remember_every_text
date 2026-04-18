@@ -1,9 +1,12 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../features/settings/domain/spec_classes/settings_cassette_spec.dart';
+import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../db/feature_level_providers/working_db_populated_provider.dart';
 import '../../navigation/domain/sidebar_mode.dart';
 import '../feature_level_providers.dart';
+import './sidebar_flow_state_provider.dart';
 
 part 'cassette_rack_state_provider.freezed.dart';
 part 'cassette_rack_state_provider.g.dart';
@@ -16,6 +19,22 @@ List<CassetteSpec> _cascadeFromSpec(CassetteSpec root) {
     next = next.childSpec();
   }
   return List<CassetteSpec>.unmodifiable(chain);
+}
+
+CassetteSpec? _durableSettingsChildSpec(
+  SettingsMenuActionId? persistentSettingsContext,
+) {
+  return switch (persistentSettingsContext) {
+    SettingsMenuActionId.textSize => const CassetteSpec.settings(
+      SettingsCassetteSpec.textSizePlaceholder(),
+    ),
+    SettingsMenuActionId.imageSize => const CassetteSpec.settings(
+      SettingsCassetteSpec.imageSizePlaceholder(),
+    ),
+    SettingsMenuActionId.sendLogs ||
+    SettingsMenuActionId.resetMessageData ||
+    null => null,
+  };
 }
 
 /// A value object representing the current stack of cassettes in the sidebar.
@@ -47,8 +66,7 @@ abstract class CassetteRack with _$CassetteRack {
     return CassetteRack(cassettes: _cascadeFromSpec(topMenu));
   }
 
-  /// Returns a fresh [CassetteRack] containing a single settings menu
-  /// cassette.
+  /// Returns a fresh [CassetteRack] containing the settings menu cassette.
   factory CassetteRack.settingsInitial() {
     const settingsMenu = CassetteSpec.sidebarUtility(
       SidebarUtilityCassetteSpec.settingsMenu(),
@@ -82,7 +100,7 @@ class CassetteRackState extends _$CassetteRackState {
         }
         return CassetteRack.initial();
       case SidebarMode.settings:
-        return CassetteRack.settingsInitial();
+        return _settingsInitialRack();
     }
   }
 
@@ -92,8 +110,25 @@ class CassetteRackState extends _$CassetteRackState {
       case SidebarMode.messages:
         state = CassetteRack.initial();
       case SidebarMode.settings:
-        state = CassetteRack.settingsInitial();
+        state = _settingsInitialRack();
     }
+  }
+
+  CassetteRack _settingsInitialRack() {
+    const settingsMenu = CassetteSpec.sidebarUtility(
+      SidebarUtilityCassetteSpec.settingsMenu(),
+    );
+    final persistentSettingsContext = ref
+        .read(sidebarFlowProvider)
+        .persistentSettingsContext;
+    final durableChild = _durableSettingsChildSpec(persistentSettingsContext);
+
+    return CassetteRack(
+      cassettes: List<CassetteSpec>.unmodifiable([
+        settingsMenu,
+        if (durableChild != null) durableChild,
+      ]),
+    );
   }
 
   /// Replace the entire rack at once.
@@ -237,12 +272,12 @@ class CassetteRackState extends _$CassetteRackState {
             handleFilter: (contactId, _) => contactId,
           );
         },
-        contactsSettings: (_) => null,
         contactsInfo: (_) => null,
         handles: (_) => null,
         handlesInfo: (_) => null,
         messages: (_) => null,
         messagesInfo: (_) => null,
+        settings: (_) => null,
       );
       if (result != null) {
         return result;

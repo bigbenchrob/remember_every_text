@@ -38,7 +38,7 @@ SidebarUtilityCassetteSpec _$SidebarUtilityCassetteSpecFromJson(
 /// @nodoc
 mixin _$SidebarUtilityCassetteSpec {
 
- Enum get selectedChoice;
+
 
   /// Serializes this SidebarUtilityCassetteSpec to a JSON map.
   Map<String, dynamic> toJson();
@@ -46,16 +46,16 @@ mixin _$SidebarUtilityCassetteSpec {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SidebarUtilityCassetteSpec&&(identical(other.selectedChoice, selectedChoice) || other.selectedChoice == selectedChoice));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SidebarUtilityCassetteSpec);
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,selectedChoice);
+int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'SidebarUtilityCassetteSpec(selectedChoice: $selectedChoice)';
+  return 'SidebarUtilityCassetteSpec()';
 }
 
 
@@ -148,11 +148,11 @@ return settingsMenu(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( TopChatMenuChoice selectedChoice)?  topChatMenu,TResult Function( SettingsMenuChoice selectedChoice)?  settingsMenu,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( TopChatMenuChoice selectedChoice)?  topChatMenu,TResult Function(@JsonKey(includeIfNull: false, fromJson: _expandedActionIdFromJson, toJson: _expandedActionIdToJson)  SettingsMenuActionId? expandedActionId)?  settingsMenu,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SidebarUtilityCassetteSpecTopChatMenu() when topChatMenu != null:
 return topChatMenu(_that.selectedChoice);case _SidebarUtilityCassetteSpecSettingsMenu() when settingsMenu != null:
-return settingsMenu(_that.selectedChoice);case _:
+return settingsMenu(_that.expandedActionId);case _:
   return orElse();
 
 }
@@ -170,11 +170,11 @@ return settingsMenu(_that.selectedChoice);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( TopChatMenuChoice selectedChoice)  topChatMenu,required TResult Function( SettingsMenuChoice selectedChoice)  settingsMenu,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( TopChatMenuChoice selectedChoice)  topChatMenu,required TResult Function(@JsonKey(includeIfNull: false, fromJson: _expandedActionIdFromJson, toJson: _expandedActionIdToJson)  SettingsMenuActionId? expandedActionId)  settingsMenu,}) {final _that = this;
 switch (_that) {
 case _SidebarUtilityCassetteSpecTopChatMenu():
 return topChatMenu(_that.selectedChoice);case _SidebarUtilityCassetteSpecSettingsMenu():
-return settingsMenu(_that.selectedChoice);case _:
+return settingsMenu(_that.expandedActionId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -191,11 +191,11 @@ return settingsMenu(_that.selectedChoice);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( TopChatMenuChoice selectedChoice)?  topChatMenu,TResult? Function( SettingsMenuChoice selectedChoice)?  settingsMenu,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( TopChatMenuChoice selectedChoice)?  topChatMenu,TResult? Function(@JsonKey(includeIfNull: false, fromJson: _expandedActionIdFromJson, toJson: _expandedActionIdToJson)  SettingsMenuActionId? expandedActionId)?  settingsMenu,}) {final _that = this;
 switch (_that) {
 case _SidebarUtilityCassetteSpecTopChatMenu() when topChatMenu != null:
 return topChatMenu(_that.selectedChoice);case _SidebarUtilityCassetteSpecSettingsMenu() when settingsMenu != null:
-return settingsMenu(_that.selectedChoice);case _:
+return settingsMenu(_that.expandedActionId);case _:
   return null;
 
 }
@@ -210,7 +210,7 @@ class _SidebarUtilityCassetteSpecTopChatMenu implements SidebarUtilityCassetteSp
   const _SidebarUtilityCassetteSpecTopChatMenu({this.selectedChoice = TopChatMenuChoice.contacts, final  String? $type}): $type = $type ?? 'topChatMenu';
   factory _SidebarUtilityCassetteSpecTopChatMenu.fromJson(Map<String, dynamic> json) => _$SidebarUtilityCassetteSpecTopChatMenuFromJson(json);
 
-@override@JsonKey() final  TopChatMenuChoice selectedChoice;
+@JsonKey() final  TopChatMenuChoice selectedChoice;
 
 @JsonKey(name: 'runtimeType')
 final String $type;
@@ -280,10 +280,10 @@ as TopChatMenuChoice,
 @JsonSerializable()
 
 class _SidebarUtilityCassetteSpecSettingsMenu implements SidebarUtilityCassetteSpec {
-  const _SidebarUtilityCassetteSpecSettingsMenu({this.selectedChoice = SettingsMenuChoice.actions, final  String? $type}): $type = $type ?? 'settingsMenu';
+  const _SidebarUtilityCassetteSpecSettingsMenu({@JsonKey(includeIfNull: false, fromJson: _expandedActionIdFromJson, toJson: _expandedActionIdToJson) this.expandedActionId, final  String? $type}): $type = $type ?? 'settingsMenu';
   factory _SidebarUtilityCassetteSpecSettingsMenu.fromJson(Map<String, dynamic> json) => _$SidebarUtilityCassetteSpecSettingsMenuFromJson(json);
 
-@override@JsonKey() final  SettingsMenuChoice selectedChoice;
+@JsonKey(includeIfNull: false, fromJson: _expandedActionIdFromJson, toJson: _expandedActionIdToJson) final  SettingsMenuActionId? expandedActionId;
 
 @JsonKey(name: 'runtimeType')
 final String $type;
@@ -302,16 +302,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SidebarUtilityCassetteSpecSettingsMenu&&(identical(other.selectedChoice, selectedChoice) || other.selectedChoice == selectedChoice));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SidebarUtilityCassetteSpecSettingsMenu&&(identical(other.expandedActionId, expandedActionId) || other.expandedActionId == expandedActionId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,selectedChoice);
+int get hashCode => Object.hash(runtimeType,expandedActionId);
 
 @override
 String toString() {
-  return 'SidebarUtilityCassetteSpec.settingsMenu(selectedChoice: $selectedChoice)';
+  return 'SidebarUtilityCassetteSpec.settingsMenu(expandedActionId: $expandedActionId)';
 }
 
 
@@ -322,7 +322,7 @@ abstract mixin class _$SidebarUtilityCassetteSpecSettingsMenuCopyWith<$Res> impl
   factory _$SidebarUtilityCassetteSpecSettingsMenuCopyWith(_SidebarUtilityCassetteSpecSettingsMenu value, $Res Function(_SidebarUtilityCassetteSpecSettingsMenu) _then) = __$SidebarUtilityCassetteSpecSettingsMenuCopyWithImpl;
 @useResult
 $Res call({
- SettingsMenuChoice selectedChoice
+@JsonKey(includeIfNull: false, fromJson: _expandedActionIdFromJson, toJson: _expandedActionIdToJson) SettingsMenuActionId? expandedActionId
 });
 
 
@@ -339,10 +339,10 @@ class __$SidebarUtilityCassetteSpecSettingsMenuCopyWithImpl<$Res>
 
 /// Create a copy of SidebarUtilityCassetteSpec
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? selectedChoice = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? expandedActionId = freezed,}) {
   return _then(_SidebarUtilityCassetteSpecSettingsMenu(
-selectedChoice: null == selectedChoice ? _self.selectedChoice : selectedChoice // ignore: cast_nullable_to_non_nullable
-as SettingsMenuChoice,
+expandedActionId: freezed == expandedActionId ? _self.expandedActionId : expandedActionId // ignore: cast_nullable_to_non_nullable
+as SettingsMenuActionId?,
   ));
 }
 

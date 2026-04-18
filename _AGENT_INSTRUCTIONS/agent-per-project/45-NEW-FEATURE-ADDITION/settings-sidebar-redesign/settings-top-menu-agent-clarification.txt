@@ -1,0 +1,209 @@
+agent-clarification.md
+
+Settings Menu Must Be Flat With Inert Group Headers
+
+Purpose
+
+Prevent incorrect implementations of the Settings top menu.
+
+This document defines non-negotiable constraints for how the menu must be modeled and rendered.
+
+⸻
+
+Core Rule (read this first)
+
+The Settings menu is:
+
+A single flat list with mixed row types.
+
+It is not:
+
+* a hierarchy
+* a tree
+* a submenu system
+* a grouped selection widget
+
+⸻
+
+Row Types (must be explicit)
+
+Every row in the menu is exactly one of:
+
+* groupHeader (inert, non-selectable)
+* action (selectable, dispatches intent)
+
+There are no other types.
+
+⸻
+
+Group Headers (critical constraints)
+
+Group headers:
+
+* are not selectable
+* do not dispatch actions
+* do not update dropdown label
+* do not close the menu
+* exist only for visual grouping
+
+They must be treated as structural UI elements, not as disabled options.
+
+⸻
+
+Forbidden Implementation Shortcut
+
+Do NOT implement group headers as:
+
+* disabled menu items
+* action items with no-op handlers
+* selectable rows that “just don’t do anything”
+
+This breaks the selection model and is considered incorrect.
+
+⸻
+
+Flat Structure (no nesting)
+
+The menu must be implemented as:
+
+a single ordered list like:
+
+* groupHeader(“Troubleshooting”)
+* action(“Send logs…”)
+* action(“Reset message data…”)
+* groupHeader(“Appearance”)
+* action(“Text size…”)
+* action(“Image size…”)
+
+There are:
+
+* no children
+* no parent/child relationships
+* no submenu expansions
+
+Grouping is achieved only by adjacency.
+
+⸻
+
+Selection Model
+
+Only action rows participate in selection.
+
+Rules:
+
+* group headers can never be selected
+* the dropdown value must always correspond to an action row
+* the placeholder text is not a selectable item
+
+⸻
+
+Placeholder Behavior
+
+Initial state:
+
+* dropdown label shows: “Choose setting or action”
+
+After selection:
+
+* label shows selected action text
+
+The placeholder must not appear as a selectable row in the menu.
+
+⸻
+
+Dispatch Contract
+
+Action rows must:
+
+* map to a semantic action id
+* dispatch through SidebarActionDispatcher
+
+The menu must NOT:
+
+* construct cassette specs
+* directly modify sidebar state
+
+It only emits semantic intent.
+
+⸻
+
+Rendering Rules (non-negotiable)
+
+Group headers must:
+
+* look visually distinct (smaller / lighter)
+* have no hover highlight
+* have no press state
+* not appear interactive
+
+Action rows must:
+
+* have normal menu affordances
+* be clearly clickable
+
+⸻
+
+If the UI Component Fights This Design
+
+If the existing dropdown widget assumes:
+
+“all rows must be selectable”
+
+Then:
+
+* do NOT hack around it
+* do NOT degrade the model
+
+Instead:
+
+* adapt or replace the menu body implementation
+
+Correct behavior is more important than reusing a convenience widget.
+
+⸻
+
+One-line mental model
+
+If you are unsure:
+
+“This behaves like a macOS menu with section labels inside a single menu, not like a nested menu.”
+
+⸻
+
+Red Flags (stop immediately if you see these)
+
+If your implementation includes any of the following, it is wrong:
+
+* submenu creation
+* nested data structures
+* disabled items representing headers
+* headers becoming selected values
+* action logic inside menu row definitions
+* direct cassette spec creation from menu
+
+⸻
+
+Final Reminder
+
+This menu exists to:
+
+* present grouped choices cleanly
+* emit semantic actions
+* integrate with the global flow system
+
+It must NOT:
+
+* own behavior
+* own UI composition beyond the menu itself
+* bypass the dispatcher
+
+⸻
+
+TL;DR
+
+Flat list.
+Two row types.
+Headers are inert.
+Actions dispatch intent.
+No nesting.
+No shortcuts.

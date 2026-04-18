@@ -10,6 +10,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - No unreleased changes yet.
 
+## [0.1.5] — 2026-04-17
+
+### Changed
+- Settings now uses a single flat top menu with inert section headers and direct action choices instead of the previous nested submenu structure.
+- Settings troubleshooting now routes through dedicated settings-owned cassettes, including a guided `Send logs…` flow and a `Reset message data…` flow that preserves user preferences and quits after reset.
+
+### Added
+- Appearance placeholders for `Text size…` and `Image size…` are now available from the flat settings top menu as direct action selections.
+
 ## [0.1.4] — 2026-04-17
 
 ### Added

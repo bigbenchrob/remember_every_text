@@ -6,6 +6,8 @@ import '../../../features/handles/feature_level_providers.dart'
     as handles_feature;
 import '../../../features/messages/feature_level_providers.dart'
     as messages_feature;
+import '../../../features/settings/feature_level_providers.dart'
+    as settings_feature;
 import '../../../features/sidebar_utilities/feature_level_providers.dart'
     as sidebar_utilities_feature;
 import '../../navigation/domain/sidebar_mode.dart';
@@ -105,12 +107,10 @@ Widget? _buildFeatureInfoSupplementalContent({
   required FeatureInfoSidebarCassettePayload payload,
 }) {
   return switch (payload) {
-    contacts_feature.SendLogsInfoCassettePayload() =>
-      contacts_feature.buildFeatureInfoSupplementalContent(payload: payload),
-    contacts_feature.ReimportDataInfoCassettePayload() =>
-      contacts_feature.buildFeatureInfoSupplementalContent(payload: payload),
-    contacts_feature.AttachmentArchiveSettingsCassettePayload() =>
-      contacts_feature.buildFeatureInfoSupplementalContent(payload: payload),
+    settings_feature.SettingsInfoActionsCassettePayload() =>
+      settings_feature.buildFeatureInfoSupplementalContent(payload: payload),
+    settings_feature.AttachmentArchiveSettingsCassettePayload() =>
+      settings_feature.buildFeatureInfoSupplementalContent(payload: payload),
     StaticFeatureInfoSidebarCassettePayload() => null,
     FeatureInfoSidebarCassettePayload() => throw UnsupportedError(
       'Unhandled feature-info payload type: ${payload.runtimeType}',
@@ -199,6 +199,12 @@ Widget _buildPlacementGovernedCassetteBody({
       messages_feature.buildPlacementGovernedCassetteBody(payload: payload),
     messages_feature.RecoveredNoHandleFromMeNavigatorCassettePayload() =>
       messages_feature.buildPlacementGovernedCassetteBody(payload: payload),
+    settings_feature.SettingsActionCardCassettePayload() =>
+      settings_feature.buildPlacementGovernedCassetteBody(payload: payload),
+    sidebar_utilities_feature.SettingsTopMenuCassettePayload() =>
+      sidebar_utilities_feature.buildPlacementGovernedCassetteBody(
+        payload: payload,
+      ),
     sidebar_utilities_feature.TopChatMenuCassettePayload() =>
       sidebar_utilities_feature.buildPlacementGovernedCassetteBody(
         payload: payload,

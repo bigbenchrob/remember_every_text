@@ -9,23 +9,18 @@ import 'package:remember_this_text/essentials/navigation/domain/sidebar_mode.dar
 import 'package:remember_this_text/essentials/sidebar/application/cassette_rack_state_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/application/cassette_widget_coordinator_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/domain/entities/cassette_spec.dart';
-import 'package:remember_this_text/essentials/sidebar/domain/sidebar_body_model.dart';
 import 'package:remember_this_text/essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
-import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/payloads/attachment_archive_settings_cassette_payload.dart';
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/payloads/contact_chooser_cassette_payload.dart';
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/payloads/contact_hero_summary_cassette_payload.dart';
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/payloads/contact_message_scope_toggle_cassette_payload.dart';
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/payloads/contact_selection_control_cassette_payload.dart';
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/payloads/handle_filter_cassette_payload.dart';
-import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/payloads/reimport_data_info_cassette_payload.dart';
-import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/payloads/send_logs_info_cassette_payload.dart';
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/resolver_tools/contact_chooser_snapshot_provider.dart';
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/resolver_tools/filtered_picker_sections_provider.dart';
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/resolver_tools/picker_filter_mode_provider.dart';
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/resolver_tools/unified_picker_sections_provider.dart';
 import 'package:remember_this_text/features/contacts/domain/participant_origin.dart';
 import 'package:remember_this_text/features/contacts/domain/spec_classes/contacts_cassette_spec.dart';
-import 'package:remember_this_text/features/contacts/domain/spec_classes/contacts_settings_spec.dart';
 import 'package:remember_this_text/features/contacts/infrastructure/repositories/contacts_list_repository.dart';
 import 'package:remember_this_text/features/handles/application/sidebar_cassette_spec/payloads/stray_emails_cassette_payload.dart';
 import 'package:remember_this_text/features/handles/application/sidebar_cassette_spec/payloads/stray_handles_mode_switcher_cassette_payload.dart';
@@ -37,6 +32,10 @@ import 'package:remember_this_text/features/handles/domain/spec_classes/handles_
 import 'package:remember_this_text/features/messages/application/sidebar_cassette_spec/payloads/recovered_no_handle_from_me_navigator_cassette_payload.dart';
 import 'package:remember_this_text/features/messages/application/sidebar_cassette_spec/payloads/recovered_unlinked_navigator_cassette_payload.dart';
 import 'package:remember_this_text/features/messages/domain/spec_classes/messages_info_cassette_spec.dart';
+import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/payloads/attachment_archive_settings_cassette_payload.dart';
+import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/payloads/settings_info_actions_cassette_payload.dart';
+import 'package:remember_this_text/features/settings/domain/spec_classes/settings_cassette_spec.dart';
+import 'package:remember_this_text/features/sidebar_utilities/application/sidebar_cassette_spec/payloads/settings_top_menu_cassette_payload.dart';
 import 'package:remember_this_text/features/sidebar_utilities/application/sidebar_cassette_spec/payloads/top_chat_menu_cassette_payload.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
@@ -131,7 +130,7 @@ void main() {
     );
 
     test(
-      'renders settings menu cassettes through body model content',
+      'resolves settings menu cassette to mixed-row top menu payload',
       () async {
         container
             .read(cassetteRackStateProvider(SidebarMode.settings).notifier)
@@ -141,59 +140,84 @@ void main() {
               ),
             ]);
 
-        final widgets = await _resolveSidebarCassettes(
-          container,
-          SidebarMode.settings,
+        final payload = _settingsTopMenuPayload(
+          await _resolveSidebarCassettes(container, SidebarMode.settings),
         );
 
         expect(
-          _sharedBodyModelPayload(widgets).renderKind,
-          SidebarCassetteRenderKind.sharedBodyModel,
+          payload.renderKind,
+          SidebarCassetteRenderKind.placementGovernedFeature,
         );
-        expect(
-          _sharedBodyModelPayload(widgets).bodyModel,
-          isA<SidebarDropdownBodyModel>(),
-        );
+        expect(payload.role, SidebarCassetteRole.appControl);
+        expect(payload.promptLabel, 'Choose setting or action');
+        expect(payload.persistentContextActionId, isNull);
+        expect(payload.rows, hasLength(6));
       },
     );
 
     test(
-      'resolves send logs settings spec to inert feature-info payload',
+      'resolves send logs settings spec to a single feature-info payload',
       () async {
         container
             .read(cassetteRackStateProvider(SidebarMode.settings).notifier)
             .setRack([
-              const CassetteSpec.contactsSettings(
-                ContactsSettingsSpec.sendLogsInfo(),
-              ),
+              const CassetteSpec.settings(SettingsCassetteSpec.sendLogsPanel()),
             ]);
 
-        final payload = _sendLogsInfoPayload(
+        final payload = _settingsInfoActionsPayload(
           await _resolveSidebarCassettes(container, SidebarMode.settings),
         );
 
         expect(payload.renderKind, SidebarCassetteRenderKind.featureInfo);
         expect(payload.role, SidebarCassetteRole.action);
+        expect(payload.actions, hasLength(1));
+        expect(payload.actions.single.label, 'Send log data…');
+        expect(payload.title, isNull);
       },
     );
 
     test(
-      'resolves reimport data settings spec to inert feature-info payload',
+      'resolves reset message data settings spec to a single feature-info payload',
       () async {
         container
             .read(cassetteRackStateProvider(SidebarMode.settings).notifier)
             .setRack([
-              const CassetteSpec.contactsSettings(
-                ContactsSettingsSpec.reimportDataInfo(),
+              const CassetteSpec.settings(
+                SettingsCassetteSpec.resetMessageDataPanel(),
               ),
             ]);
 
-        final payload = _reimportDataInfoPayload(
+        final payload = _settingsInfoActionsPayload(
           await _resolveSidebarCassettes(container, SidebarMode.settings),
         );
 
         expect(payload.renderKind, SidebarCassetteRenderKind.featureInfo);
         expect(payload.role, SidebarCassetteRole.action);
+        expect(payload.bodyText, contains('keeps your preferences'));
+        expect(payload.actions, hasLength(2));
+        expect(payload.actions.first.label, 'Cancel');
+        expect(payload.actions.last.label, 'Reset message data…');
+        expect(payload.title, 'Reset Message Data');
+      },
+    );
+
+    test(
+      'resolves text size placeholder settings spec to feature-info payload',
+      () async {
+        container
+            .read(cassetteRackStateProvider(SidebarMode.settings).notifier)
+            .setRack([
+              const CassetteSpec.settings(
+                SettingsCassetteSpec.textSizePlaceholder(),
+              ),
+            ]);
+
+        final payload = _staticFeatureInfoPayload(
+          await _resolveSidebarCassettes(container, SidebarMode.settings),
+        );
+
+        expect(payload.title, 'Text Size');
+        expect(payload.bodyText, 'Coming soon');
       },
     );
 
@@ -203,8 +227,8 @@ void main() {
         container
             .read(cassetteRackStateProvider(SidebarMode.settings).notifier)
             .setRack([
-              const CassetteSpec.contactsSettings(
-                ContactsSettingsSpec.attachmentArchive(),
+              const CassetteSpec.settings(
+                SettingsCassetteSpec.attachmentArchive(),
               ),
             ]);
 
@@ -214,27 +238,6 @@ void main() {
 
         expect(payload.renderKind, SidebarCassetteRenderKind.featureInfo);
         expect(payload.role, SidebarCassetteRole.action);
-      },
-    );
-
-    test(
-      'resolves display name settings spec to static feature-info payload',
-      () async {
-        container
-            .read(cassetteRackStateProvider(SidebarMode.settings).notifier)
-            .setRack([
-              const CassetteSpec.contactsSettings(
-                ContactsSettingsSpec.displayNameInfo(),
-              ),
-            ]);
-
-        final payload = _staticFeatureInfoPayload(
-          await _resolveSidebarCassettes(container, SidebarMode.settings),
-        );
-
-        expect(payload.title, 'Contact Names');
-        expect(payload.renderKind, SidebarCassetteRenderKind.featureInfo);
-        expect(payload.role, SidebarCassetteRole.contextSecondary);
       },
     );
 
@@ -701,15 +704,6 @@ bool _isCompleteResolutionState(SidebarCassetteResolutionState state) {
   return state.hasCompleteResolvedRack && !state.isLoading;
 }
 
-SharedBodyModelSidebarCassettePayload _sharedBodyModelPayload(
-  List<ResolvedSidebarCassette> resolvedCassettes,
-) {
-  expect(resolvedCassettes, hasLength(1));
-  final payload = resolvedCassettes.single.payload;
-  expect(payload, isA<SharedBodyModelSidebarCassettePayload>());
-  return payload as SharedBodyModelSidebarCassettePayload;
-}
-
 StrayHandlesReviewCassettePayload _strayHandlesReviewPayload(
   List<ResolvedSidebarCassette> resolvedCassettes,
 ) {
@@ -755,22 +749,22 @@ StrayEmailsCassettePayload _strayEmailsPayload(
   return payload as StrayEmailsCassettePayload;
 }
 
-SendLogsInfoCassettePayload _sendLogsInfoPayload(
+SettingsTopMenuCassettePayload _settingsTopMenuPayload(
   List<ResolvedSidebarCassette> resolvedCassettes,
 ) {
   expect(resolvedCassettes, hasLength(1));
   final payload = resolvedCassettes.single.payload;
-  expect(payload, isA<SendLogsInfoCassettePayload>());
-  return payload as SendLogsInfoCassettePayload;
+  expect(payload, isA<SettingsTopMenuCassettePayload>());
+  return payload as SettingsTopMenuCassettePayload;
 }
 
-ReimportDataInfoCassettePayload _reimportDataInfoPayload(
+SettingsInfoActionsCassettePayload _settingsInfoActionsPayload(
   List<ResolvedSidebarCassette> resolvedCassettes,
 ) {
   expect(resolvedCassettes, hasLength(1));
   final payload = resolvedCassettes.single.payload;
-  expect(payload, isA<ReimportDataInfoCassettePayload>());
-  return payload as ReimportDataInfoCassettePayload;
+  expect(payload, isA<SettingsInfoActionsCassettePayload>());
+  return payload as SettingsInfoActionsCassettePayload;
 }
 
 AttachmentArchiveSettingsCassettePayload _attachmentArchiveSettingsPayload(

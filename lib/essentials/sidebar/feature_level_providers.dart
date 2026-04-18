@@ -1,8 +1,8 @@
 export '../../features/contacts/domain/spec_classes/contacts_cassette_spec.dart';
 export '../../features/contacts/domain/spec_classes/contacts_info_cassette_spec.dart';
-export '../../features/contacts/domain/spec_classes/contacts_settings_spec.dart';
 export '../../features/handles/domain/spec_classes/handles_cassette_spec.dart';
 export '../../features/messages/domain/spec_classes/messages_cassette_spec.dart';
+export '../../features/settings/domain/spec_classes/settings_cassette_spec.dart';
 export '../../features/sidebar_utilities/feature_level_providers.dart'
     show SidebarUtilityCassetteSpec;
 export './application/cassette_rack_state_provider.dart';

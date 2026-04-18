@@ -14,11 +14,11 @@ CassetteSpec? resolveCassetteChild(CassetteSpec spec) {
   return spec.when(
     sidebarUtility: (inner) => inner.childSpec(),
     contacts: (inner) => inner.childSpec(),
-    contactsSettings: (inner) => inner.childSpec(),
     contactsInfo: (inner) => inner.childSpec(),
     handles: (inner) => inner.childSpec(),
     handlesInfo: (inner) => inner.childSpec(),
     messages: (inner) => inner.childSpec(),
     messagesInfo: (inner) => inner.childSpec(),
+    settings: (inner) => inner.childSpec(),
   );
 }

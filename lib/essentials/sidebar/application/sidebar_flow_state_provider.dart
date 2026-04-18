@@ -3,6 +3,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../features/messages/domain/spec_classes/messages_view_spec.dart';
+import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../features/sidebar_utilities/feature_level_providers.dart';
 import '../../logging/application/app_logger.dart';
 import '../../navigation/application/panels_view_state_provider.dart';
@@ -18,6 +19,15 @@ enum SidebarFlowMessageScope { regular, recoveredDeleted }
 
 @visibleForTesting
 void debugAssertValidSidebarFlowState(SidebarFlowState state) {
+  final persistentSettingsContext = state.persistentSettingsContext;
+  if (persistentSettingsContext != null &&
+      !persistentSettingsContext.isPersistentContext) {
+    throw StateError(
+      'SidebarFlowState.persistentSettingsContext cannot hold transient '
+      'settings actions.',
+    );
+  }
+
   switch (state.topMenuChoice) {
     case TopChatMenuChoice.contacts:
       if (state.selectedHandleId != null && state.chosenContactId == null) {
@@ -106,6 +116,7 @@ abstract class SidebarFlowState with _$SidebarFlowState {
     @Default(TopChatMenuChoice.contacts) TopChatMenuChoice topMenuChoice,
     int? chosenContactId,
     int? selectedHandleId,
+    SettingsMenuActionId? persistentSettingsContext,
     DateTime? scrollToDate,
     @Default(SidebarFlowMessageScope.regular)
     SidebarFlowMessageScope messageScope,
@@ -487,6 +498,12 @@ class SidebarFlow extends _$SidebarFlow {
         scrollToDate: startDate,
         messageScope: SidebarFlowMessageScope.recoveredDeleted,
       ),
+    );
+  }
+
+  void setPersistentSettingsContext(SettingsMenuActionId? actionId) {
+    _setStateAndClearRightIfNeeded(
+      state.copyWith(persistentSettingsContext: actionId),
     );
   }
 }
