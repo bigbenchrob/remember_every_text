@@ -2,18 +2,23 @@
 tier: feature
 scope: tests
 owner: agent-per-project
-last_reviewed: 2026-04-17
+last_reviewed: 2026-04-19
 source_of_truth: doc
 links:
   - ./PROPOSAL.md
   - ./CHECKLIST.md
+  - ../ephemeral-sidebar-projection/CHECKLIST.md
 tests: []
 feature: settings-menu-semantic-revision
-status: proposed
+status: superseded
 created: 2026-04-17
 ---
 
 # Test Plan - Settings Menu Semantic Revision
+
+Historical note: this test plan predates the stable/ephemeral projection split.
+
+Current verification for the shipped behavior lives in the sidebar projection tests and the `../ephemeral-sidebar-projection/` docs.
 
 ## Flow State Tests
 

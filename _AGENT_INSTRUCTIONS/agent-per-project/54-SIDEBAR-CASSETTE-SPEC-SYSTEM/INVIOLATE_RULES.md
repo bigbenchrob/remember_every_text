@@ -49,7 +49,7 @@ other's specs directly in coordinators or resolvers.
 ## 6. Rack Mutations Use Provided Methods Only
 
 Cassettes must be added, removed, or replaced through `CassetteRackState` methods
-(`replaceAtIndexAndCascade`, `truncateAfter`, `pushCassette`, etc.).
+(`replaceAtIndexAndCascade`, `resetToInitial`, etc.).
 Direct modification of the cassette list is not permitted.
 
 ## 7. Loading = Pending Future

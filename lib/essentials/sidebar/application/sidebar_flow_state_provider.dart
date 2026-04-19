@@ -378,6 +378,7 @@ class SidebarFlow extends _$SidebarFlow {
   void setContactMessageScope({
     required int contactId,
     required SidebarFlowMessageScope messageScope,
+    required int cassetteIndex,
   }) {
     if (messageScope == SidebarFlowMessageScope.regular) {
       _setStateAndClearRightIfNeeded(
@@ -388,7 +389,14 @@ class SidebarFlow extends _$SidebarFlow {
           messageScope: SidebarFlowMessageScope.regular,
         ),
       );
-      _syncContactBranchRackForCurrentFlow(contactId: contactId);
+      ref
+          .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
+          .replaceAtIndexAndCascade(
+            cassetteIndex,
+            CassetteSpec.contacts(
+              ContactsCassetteSpec.messageScopeToggle(contactId: contactId),
+            ),
+          );
       return;
     }
 
@@ -401,64 +409,15 @@ class SidebarFlow extends _$SidebarFlow {
         messageScope: SidebarFlowMessageScope.recoveredDeleted,
       ),
     );
-    _syncContactBranchRackForCurrentFlow(contactId: contactId);
-  }
 
-  void showRecoveredDeletedForContact({
-    required int contactId,
-    required int heroCassetteIndex,
-  }) {
-    _setStateAndClearRightIfNeeded(
-      state.copyWith(
-        topMenuChoice: TopChatMenuChoice.contacts,
-        chosenContactId: contactId,
-        selectedHandleId: null,
-        messageScope: SidebarFlowMessageScope.recoveredDeleted,
-      ),
-    );
-    _syncContactBranchRackForCurrentFlow(contactId: contactId);
-  }
-
-  void _syncContactBranchRackForCurrentFlow({required int contactId}) {
-    final selectedHandleId =
-        state.messageScope == SidebarFlowMessageScope.regular
-        ? state.selectedHandleId
-        : null;
-
-    ref.read(cassetteRackStateProvider(SidebarMode.messages).notifier).setRack([
-      const CassetteSpec.sidebarUtility(
-        SidebarUtilityCassetteSpec.topChatMenu(
-          selectedChoice: TopChatMenuChoice.contacts,
-        ),
-      ),
-      CassetteSpec.contacts(
-        ContactsCassetteSpec.contactHeroSummary(chosenContactId: contactId),
-      ),
-      CassetteSpec.contactsInfo(
-        ContactsInfoCassetteSpec.infoCard(
-          key: ContactsInfoKey.chosenContact,
-          chosenContactId: contactId,
-        ),
-      ),
-      CassetteSpec.contacts(
-        ContactsCassetteSpec.contactSelectionControl(
-          chosenContactId: contactId,
-        ),
-      ),
-      CassetteSpec.contacts(
-        ContactsCassetteSpec.messageScopeToggle(contactId: contactId),
-      ),
-      CassetteSpec.contacts(
-        ContactsCassetteSpec.handleFilter(
-          contactId: contactId,
-          selectedHandleId: selectedHandleId,
-        ),
-      ),
-      if (state.messageScope == SidebarFlowMessageScope.regular)
-        CassetteSpec.messages(
-          MessagesCassetteSpec.heatMap(contactId: contactId),
-        ),
-    ]);
+    ref
+        .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
+        .replaceAtIndexAndCascade(
+          cassetteIndex,
+          CassetteSpec.contacts(
+            ContactsCassetteSpec.messageScopeToggle(contactId: contactId),
+          ),
+        );
   }
 
   void showGlobalRecoveredDeleted() {

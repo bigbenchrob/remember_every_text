@@ -83,6 +83,40 @@ part of '../cassette_spec.dart';
 //
 // ============================================================================
 
+enum StableCascadeMessageScope { regular, recoveredDeleted }
+
+/// Minimal durable-flow facts exposed to the stable cascade path.
+///
+/// This is intentionally narrow. It exists only so local topology rules can
+/// consult the specific durable fact needed to determine their immediate next
+/// child during stable cascade.
+final class StableCassetteTopologyContext {
+  const StableCassetteTopologyContext({
+    required this.messageScope,
+    this.persistentSettingsContext,
+  });
+
+  final StableCascadeMessageScope messageScope;
+  final SettingsMenuActionId? persistentSettingsContext;
+}
+
+CassetteSpec? resolveStableCascadeChild(
+  CassetteSpec spec, {
+  required StableCassetteTopologyContext context,
+}) {
+  return spec.when(
+    sidebarUtility: (inner) =>
+        resolveSidebarUtilityChild(inner, context: context),
+    contacts: (inner) => resolveContactsChild(inner, context: context),
+    contactsInfo: (inner) => inner.childSpec(),
+    handles: (inner) => inner.childSpec(),
+    handlesInfo: (inner) => inner.childSpec(),
+    messages: (inner) => inner.childSpec(),
+    messagesInfo: (inner) => inner.childSpec(),
+    settings: (inner) => inner.childSpec(),
+  );
+}
+
 /// Resolve the child cassette spec for the given cassette spec, if any.
 ///
 /// This function delegates to each inner spec's `childSpec()` extension method.

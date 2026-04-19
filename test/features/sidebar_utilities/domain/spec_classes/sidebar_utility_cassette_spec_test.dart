@@ -17,26 +17,26 @@ void main() {
       expect(restored, spec);
     });
 
-    test('settings menu does not serialize transient expanded action', () {
-      const spec = SidebarUtilityCassetteSpec.settingsMenu(
-        expandedActionId: SettingsMenuActionId.sendLogs,
-      );
+    test('settings menu serializes as a stateless root spec', () {
+      const spec = SidebarUtilityCassetteSpec.settingsMenu();
 
       final json = spec.toJson();
       final restored = SidebarUtilityCassetteSpec.fromJson(json);
 
-      expect(json.containsKey('expandedActionId'), isFalse);
       expect(json, equals({'runtimeType': 'settingsMenu'}));
       expect(restored, const SidebarUtilityCassetteSpec.settingsMenu());
     });
 
-    test('settings menu ignores injected expanded action during fromJson', () {
-      final restored = SidebarUtilityCassetteSpec.fromJson({
-        'runtimeType': 'settingsMenu',
-        'expandedActionId': 'sendLogs',
-      });
+    test(
+      'settings menu ignores injected legacy expanded action during fromJson',
+      () {
+        final restored = SidebarUtilityCassetteSpec.fromJson({
+          'runtimeType': 'settingsMenu',
+          'expandedActionId': 'sendLogs',
+        });
 
-      expect(restored, const SidebarUtilityCassetteSpec.settingsMenu());
-    });
+        expect(restored, const SidebarUtilityCassetteSpec.settingsMenu());
+      },
+    );
   });
 }

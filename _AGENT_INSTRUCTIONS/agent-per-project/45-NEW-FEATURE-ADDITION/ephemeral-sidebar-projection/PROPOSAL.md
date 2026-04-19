@@ -2,7 +2,7 @@
 tier: feature
 scope: proposal
 owner: agent-per-project
-last_reviewed: 2026-04-18
+last_reviewed: 2026-04-19
 source_of_truth: doc
 links:
   - ../../55-EPHEMERAL-SPEC-HANDLING/README.md
@@ -63,14 +63,14 @@ Under the new 55-series architecture, mode-specific cleanup is explicitly a hack
 - `SidebarFlowState` owns durable meaning for flow-managed sidebar branches.
 - `cassetteRackStateProvider(mode)` currently stores the stable rendered cassette stack for a mode, even though that role has not yet been named explicitly as the stable projection layer.
 - `CassetteWidgetCoordinator` currently reads one rack and resolves every visible spec through the shared sidebar pipeline.
-- Settings transient behavior is still represented through the stable settings root spec via `expandedActionId`.
-- The dispatcher still contains mixed settings-menu transport that was added to distinguish persistent and transient behavior inside a single flow.
+- The settings migration was the first feature slice because the older implementation mixed stable and transient meaning in one retained path.
+- The dispatcher used to distinguish persistent and transient settings choices inside a single transport surface.
 
 This is the architectural conflict:
 
 - the current cassette rack is doing double duty as both durable projection and temporary action projection
-- the settings root spec is still carrying ephemeral expansion state
-- the dispatcher still accepts a mixed intent type for settings top-menu selection
+- the historical settings path previously encoded temporary action state in the stable layer
+- the historical dispatcher path previously relied on a mixed settings selection transport
 
 ## User Value
 
@@ -88,7 +88,9 @@ After this work:
 3. `SidebarFlowState.persistentSettingsContext` remains valid durable state.
 4. `cassetteRackStateProvider(mode)` remains the stable projection provider; this work adds an ephemeral projection provider rather than replacing the stable one.
 5. Stable projection must remain logically derivable from durable flow state, even if that derivation continues to be expressed partly through explicit rack mutations rather than a fully reactive recomputation model.
-6. Existing shared sidebar payload, render-router, chrome, and layout rules remain correct and should not be replaced.
+6. Stable topology may consult durable flow state only for the fact needed to determine the immediate next child of the current spec.
+7. Stable topology must not perform branch construction, list assembly, truncation, omission reasoning, or other multi-step planning.
+8. Existing shared sidebar payload, render-router, chrome, and layout rules remain correct and should not be replaced.
 
 ## Hard Invariants
 
@@ -100,6 +102,8 @@ After this work:
 6. The coordinator must render stable projection first and ephemeral projection second.
 7. Ephemeral specs must still flow through spec -> coordinator -> resolver -> payload -> render router.
 8. No mode-specific lifecycle workaround may remain as the actual architecture.
+9. Stable child decisions must occur only at the local topology decision point for the current spec.
+10. Topology may consult durable flow state, but only for the immediate next-child decision of the current spec.
 
 ## Scope
 
@@ -140,6 +144,8 @@ Ephemeral projection remains live-only UI projection.
 
 This is a projection-layer separation, not a replacement of the existing stable rack.
 
+Stable reconstruction remains topology-driven. For any current stable spec, the topology rule may consult durable flow state only for the local fact needed to decide that spec's immediate child. It must not reason about later descendants or construct a longer branch procedurally.
+
 The ephemeral provider should intentionally expose a narrower mutation surface than the stable rack provider.
 
 Because ephemeral projection is replace-only, the plan should assume:
@@ -147,17 +153,17 @@ Because ephemeral projection is replace-only, the plan should assume:
 - replace the current ephemeral projection from a new ephemeral root
 - clear the current ephemeral projection
 
-It should not mirror stable-rack mutations such as `pushCassette`, `truncateAfter`, or index-relative structure editing as public ephemeral APIs.
+It should not mirror non-topological stable-rack structure editing as public ephemeral APIs.
 
 ### 2. Remove Ephemeral Meaning From Stable Settings Specs
 
-The stable settings root spec must stop carrying `expandedActionId`.
+The stable settings root spec must remain stateless and free of transient action meaning.
 
 Ephemeral action chains such as send logs and reset confirmation should instead originate from the ephemeral projection provider.
 
 ### 3. Encode Durability In Intent Type
 
-Replace mixed transport like `SettingsTopMenuActionChosen(actionId, semantic)` with typed intent classes whose durability is intrinsic.
+Use typed settings intent classes whose durability is intrinsic.
 
 Examples:
 
@@ -177,8 +183,11 @@ Ephemeral topology must be a distinct topology path from stable topology.
 It may reuse shared helper patterns where appropriate, but it must remain explicitly separated so that:
 
 - stable topology never consults ephemeral projection
+- stable topology may consult durable flow state only for the immediate next-child decision of the current spec
 - ephemeral topology never feeds back into durable meaning
 - no stable cassette is ever derived beneath an ephemeral root
+
+The important boundary is local decision scope. A topology rule may ask only, "what is the next child of this current spec given the durable state fact relevant to this decision?" It must not widen that into branch planning, list construction, omission logic, or multi-step reasoning.
 
 ### 5. Keep One Sidebar Rendering System
 
@@ -215,7 +224,7 @@ Visible cassette indices may no longer map directly to the stable rack. Any acti
 
 ### Risk 2 - Stable topology may accidentally remain coupled to settings transient expansion
 
-If `expandedActionId` survives in stable topology or stable specs, the architecture remains broken even if tests pass locally.
+If transient settings action meaning survives in stable topology or stable specs, the architecture remains broken even if tests pass locally.
 
 ### Risk 3 - Mixed intents may survive in UI emitters
 
@@ -224,6 +233,10 @@ If widgets still emit generic action intents that require downstream interpretat
 ### Risk 4 - Stable and ephemeral topology may accidentally share logic paths
 
 If ephemeral derivation is threaded through existing stable topology entry points, the layer boundary may blur and ephemeral behavior can leak back into stable logic.
+
+### Risk 5 - Topology rules may overreach into branch planning
+
+If a topology rule reads more durable state than needed for the current spec's immediate successor, or reasons about multiple future children at once, the system can regress back into procedural branch assembly even if no `setRack([...])` call appears nearby.
 
 ## Success Criteria
 
@@ -235,3 +248,4 @@ The feature is not complete unless all of the following are true:
 - the coordinator renders stable projection followed by ephemeral projection
 - leaving and re-entering a mode restores only stable projection
 - no mode-specific cleanup hack is required to maintain transient behavior
+- stable topology rules consult only the local durable fact needed for each current spec's immediate child

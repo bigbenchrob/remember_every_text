@@ -2,21 +2,27 @@
 tier: feature
 scope: proposal
 owner: agent-per-project
-last_reviewed: 2026-04-17
+last_reviewed: 2026-04-19
 source_of_truth: doc
 links:
   - ../../50-CROSS-SURFACE-SPEC-SYSTEMS-OVERVIEW/settings-menu-semantics.md
   - ../settings-sidebar-redesign/PROPOSAL.md
+   - ../ephemeral-sidebar-projection/PROPOSAL.md
+   - ../ephemeral-sidebar-projection/DESIGN_NOTES.md
   - ../../52-FEATURE-HANDLING-OF-X-SURFACE-SPECS/00-universal-spec-handling-pattern.md
   - ../../54-SIDEBAR-CASSETTE-SPEC-SYSTEM/00-cassette-system-architecture.md
   - ../../54-SIDEBAR-CASSETTE-SPEC-SYSTEM/INVIOLATE_RULES.md
 tests: []
 feature: settings-menu-semantic-revision
-status: proposed
+status: superseded
 created: 2026-04-17
 ---
 
 # Feature Proposal — Settings Menu Semantic Revision
+
+Historical note: this proposal predates the stable/ephemeral sidebar projection split and is retained only as pre-migration context.
+
+Do not use this file as current implementation guidance. The shipped direction lives under `../ephemeral-sidebar-projection/`.
 
 **Proposed Branch**: `Ftr.settings-menu-semantics`
 **Status**: Proposed

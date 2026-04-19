@@ -2,7 +2,7 @@
 tier: feature
 scope: design
 owner: agent-per-project
-last_reviewed: 2026-04-18
+last_reviewed: 2026-04-19
 source_of_truth: doc
 links:
   - ./PROPOSAL.md
@@ -34,8 +34,8 @@ The prior settings-only path treated transient action flow as if it were a speci
 
 That approach introduced three architecture smells:
 
-- the stable settings root spec carried temporary action meaning via `expandedActionId`
-- the dispatcher accepted a mixed intent and rediscovered durability downstream
+- the stable settings root spec carried temporary action meaning in the stable layer
+- the dispatcher forced downstream rediscovery of durability
 - mode exit required a settings-specific cleanup path to prevent transient UI from behaving like durable state
 
 All three should be removed.
@@ -52,6 +52,7 @@ It should:
 
 - be keyed by `SidebarMode`
 - reconstruct from durable flow state
+- derive each successor through the topology rule for the current spec
 - remain safe to retain in providers
 - never contain temporary one-off action flow
 
@@ -64,6 +65,7 @@ It should not:
 - encode send-logs or reset-message-data expansion
 - depend on temporary UI lifecycle
 - be scanned to recover durable meaning that already belongs in flow state
+- perform list assembly or other imperative branch construction outside topology
 
 ## Ephemeral Projection
 
@@ -83,7 +85,7 @@ The intended public operations are:
 - replace the current ephemeral projection
 - clear the current ephemeral projection
 
-The ephemeral layer should not expose stable-rack style editing operations such as `pushCassette`, `truncateAfter`, or index-relative mutation as part of its public contract.
+The ephemeral layer should not expose non-topological stable-rack editing operations or index-relative mutation as part of its public contract.
 
 It should not:
 
@@ -132,6 +134,10 @@ The important rule is that stable topology must never descend from an ephemeral 
 
 Stable topology must never consult ephemeral provider state.
 
+Stable topology may consult durable flow state, but only for the immediate next-child decision of the current spec.
+
+That consultation is intentionally narrow. A topology rule may read only the durable fact required to answer, "what comes next from here?" It must not widen that into branch construction, chain prediction, truncation, omission logic, or any other multi-step reasoning.
+
 Ephemeral topology may consult stable context when it needs rendering context, but it must never convert that consultation into durable branch meaning.
 
 ## Cassette Index Debt
@@ -156,12 +162,12 @@ The opening sequence should be constrained deliberately:
 3. update the coordinator to consume the merged ordered list
 4. add the typed persistent and typed ephemeral base intent classes
 5. migrate only the Settings menu emission path for send logs and reset message data
-6. keep stable settings behavior unchanged except where required to remove transient expansion from the stable path
+6. keep stable settings behavior unchanged except where required to isolate transient flows from the stable path
 
 That slice is enough to prove the architecture if it also removes:
 
-- stable settings `expandedActionId`
-- the mixed settings menu selection intent
+- transient action meaning from the stable settings root
+- the mixed settings menu selection transport
 - the settings-mode exit cleanup hack
 
 ## Testing Strategy
@@ -181,3 +187,4 @@ The most important regressions to protect are:
 - mode change clears ephemeral projection only
 - durable state still reconstructs stable settings context
 - stable logic never consults ephemeral projection
+- stable topology rules consult only the local durable fact needed for the current spec's immediate child

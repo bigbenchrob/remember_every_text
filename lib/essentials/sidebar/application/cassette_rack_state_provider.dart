@@ -1,8 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../features/settings/domain/spec_classes/settings_cassette_spec.dart';
-import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../db/feature_level_providers/working_db_populated_provider.dart';
 import '../../navigation/domain/sidebar_mode.dart';
 import '../feature_level_providers.dart';
@@ -11,30 +9,21 @@ import './sidebar_flow_state_provider.dart';
 part 'cassette_rack_state_provider.freezed.dart';
 part 'cassette_rack_state_provider.g.dart';
 
-List<CassetteSpec> _cascadeFromSpec(CassetteSpec root) {
+List<CassetteSpec> _cascadeFromSpec(
+  CassetteSpec root, {
+  StableCassetteTopologyContext? topologyContext,
+}) {
   final chain = <CassetteSpec>[root];
-  var next = root.childSpec();
+  var next = topologyContext == null
+      ? root.childSpec()
+      : resolveStableCascadeChild(root, context: topologyContext);
   while (next != null) {
     chain.add(next);
-    next = next.childSpec();
+    next = topologyContext == null
+        ? next.childSpec()
+        : resolveStableCascadeChild(next, context: topologyContext);
   }
   return List<CassetteSpec>.unmodifiable(chain);
-}
-
-CassetteSpec? _durableSettingsChildSpec(
-  SettingsMenuActionId? persistentSettingsContext,
-) {
-  return switch (persistentSettingsContext) {
-    SettingsMenuActionId.textSize => const CassetteSpec.settings(
-      SettingsCassetteSpec.textSizePlaceholder(),
-    ),
-    SettingsMenuActionId.imageSize => const CassetteSpec.settings(
-      SettingsCassetteSpec.imageSizePlaceholder(),
-    ),
-    SettingsMenuActionId.sendLogs ||
-    SettingsMenuActionId.resetMessageData ||
-    null => null,
-  };
 }
 
 /// A value object representing the current stack of cassettes in the sidebar.
@@ -67,12 +56,6 @@ abstract class CassetteRack with _$CassetteRack {
   }
 
   /// Returns a fresh [CassetteRack] containing the settings menu cassette.
-  factory CassetteRack.settingsInitial() {
-    const settingsMenu = CassetteSpec.sidebarUtility(
-      SidebarUtilityCassetteSpec.settingsMenu(),
-    );
-    return CassetteRack(cassettes: _cascadeFromSpec(settingsMenu));
-  }
 }
 
 /// A Riverpod notifier managing the current [CassetteRack].
@@ -118,73 +101,25 @@ class CassetteRackState extends _$CassetteRackState {
     const settingsMenu = CassetteSpec.sidebarUtility(
       SidebarUtilityCassetteSpec.settingsMenu(),
     );
-    final persistentSettingsContext = ref
-        .read(sidebarFlowProvider)
-        .persistentSettingsContext;
-    final durableChild = _durableSettingsChildSpec(persistentSettingsContext);
 
-    return CassetteRack(
-      cassettes: List<CassetteSpec>.unmodifiable([
-        settingsMenu,
-        if (durableChild != null) durableChild,
-      ]),
+    return CassetteRack(cassettes: _cascadeForCurrentMode(settingsMenu));
+  }
+
+  StableCassetteTopologyContext _stableTopologyContext() {
+    final flowState = ref.read(sidebarFlowProvider);
+    final messageScope = flowState.messageScope;
+    return StableCassetteTopologyContext(
+      messageScope: switch (messageScope) {
+        SidebarFlowMessageScope.regular => StableCascadeMessageScope.regular,
+        SidebarFlowMessageScope.recoveredDeleted =>
+          StableCascadeMessageScope.recoveredDeleted,
+      },
+      persistentSettingsContext: flowState.persistentSettingsContext,
     );
   }
 
-  /// Replace the entire rack at once.
-  void setRack(List<CassetteSpec> newCassettes) {
-    state = CassetteRack(
-      cassettes: List<CassetteSpec>.unmodifiable(newCassettes),
-    );
-  }
-
-  /// Push a new cassette onto the bottom of the stack (i.e. add after the
-  /// existing ones).  This corresponds to adding a deeper level to the
-  /// sidebar’s hierarchy when the user drills down into a feature.
-  void pushCassette(CassetteSpec spec) {
-    state = state.copyWith(
-      cassettes: [...state.cassettes, ..._cascadeFromSpec(spec)],
-    );
-  }
-
-  /// Replace the cassette at [index], without modifying the rest of the stack.
-  ///
-  /// Useful when a user interaction changes a cassette’s spec but downstream
-  /// cassettes remain valid (for example, selecting a different menu item
-  /// within the top chat menu).  If the index is out of bounds, this is a
-  /// no‑op.
-  void updateCassetteAt(
-    int index,
-    CassetteSpec Function(CassetteSpec current) update,
-  ) {
-    if (index < 0 || index >= state.cassettes.length) {
-      return;
-    }
-    final updated = [...state.cassettes];
-    updated[index] = update(updated[index]);
-    state = state.copyWith(cassettes: updated);
-  }
-
-  /// Truncate the stack so that only cassettes up to [indexInclusive] remain.
-  ///
-  /// When a cassette changes in a way that invalidates downstream cassettes,
-  /// call this after [updateCassetteAt] to remove all deeper levels.  If the
-  /// index is negative, the entire rack is cleared.  If the index is beyond
-  /// the end of the stack, nothing happens.
-  void truncateAfter(int indexInclusive) {
-    if (state.cassettes.isEmpty) {
-      return;
-    }
-    if (indexInclusive < 0) {
-      state = state.copyWith(cassettes: const []);
-      return;
-    }
-    if (indexInclusive >= state.cassettes.length) {
-      return;
-    }
-    state = state.copyWith(
-      cassettes: state.cassettes.sublist(0, indexInclusive + 1),
-    );
+  List<CassetteSpec> _cascadeForCurrentMode(CassetteSpec root) {
+    return _cascadeFromSpec(root, topologyContext: _stableTopologyContext());
   }
 
   /// Convenience for just updating the top chat menu cassette.  The
@@ -201,27 +136,6 @@ class CassetteRackState extends _$CassetteRackState {
   //   );
   //   state = state.copyWith(cassettes: _cascadeFromSpec(topMenu));
   // }
-
-  /// Update a cassette at its current position by matching the old spec,
-  /// and optionally append a child cassette based on the new spec.  This
-  /// method takes both the old and new specs so that the caller doesn’t
-  /// need to know the index of the cassette in the stack.  If the old
-  /// spec isn’t found, no action is taken.
-  ///
-  /// **Deprecated**: Prefer [replaceAtIndexAndCascade] which avoids requiring
-  /// widgets to hold specs in state. This method will be removed once all
-  /// callers are migrated.
-  void updateSpecAndChild(CassetteSpec oldSpec, CassetteSpec newSpec) {
-    final index = state.cassettes.indexOf(oldSpec);
-    if (index < 0) {
-      return;
-    }
-    final preserved = state.cassettes.take(index).toList(growable: false);
-    final cascaded = _cascadeFromSpec(newSpec);
-    state = state.copyWith(
-      cassettes: List<CassetteSpec>.unmodifiable([...preserved, ...cascaded]),
-    );
-  }
 
   /// Replace the cassette at [index] with [newSpec] and re-cascade children.
   ///
@@ -242,7 +156,7 @@ class CassetteRackState extends _$CassetteRackState {
     final preserved = state.cassettes.take(index).toList(growable: false);
     final isPopulated = ref.read(workingDbPopulatedProvider);
     final cascaded = isPopulated
-        ? _cascadeFromSpec(newSpec)
+        ? _cascadeForCurrentMode(newSpec)
         : <CassetteSpec>[newSpec];
     state = state.copyWith(
       cassettes: List<CassetteSpec>.unmodifiable([...preserved, ...cascaded]),

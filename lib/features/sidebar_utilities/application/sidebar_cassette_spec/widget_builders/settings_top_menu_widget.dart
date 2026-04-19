@@ -8,9 +8,7 @@ import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../../essentials/sidebar/application/sidebar_action_dispatcher.dart';
-import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../domain/settings_top_menu_row.dart';
-import '../../../domain/sidebar_utilities_constants.dart';
 import '../payloads/settings_top_menu_cassette_payload.dart';
 
 class SettingsTopMenuWidget extends HookConsumerWidget {
@@ -32,29 +30,9 @@ class SettingsTopMenuWidget extends HookConsumerWidget {
 
     Future<void> handleActionSelected(SettingsTopMenuActionRow row) async {
       isOpen.value = false;
-      final SidebarActionIntent intent;
-
-      switch (row.semantic) {
-        case SettingsTopMenuActionSemantic.persistentContext:
-          intent = SettingsTopMenuActionChosen(
-            actionId: row.actionId,
-            semantic: row.semantic,
-          );
-        case SettingsTopMenuActionSemantic.transientAction:
-          intent = switch (row.actionId) {
-            SettingsMenuActionId.sendLogs => const ShowSendLogsFlow(),
-            SettingsMenuActionId.resetMessageData =>
-              const ShowResetMessageDataFlow(),
-            SettingsMenuActionId.textSize ||
-            SettingsMenuActionId.imageSize => throw StateError(
-              'Persistent settings rows must not dispatch transient flow '
-              'intents.',
-            ),
-          };
-      }
 
       await dispatcher.dispatch(
-        intent: intent,
+        intent: row.intent,
         context: SidebarActionDispatchContext(
           sidebarMode: SidebarMode.settings,
           cassetteIndex: payload.cassetteIndex,

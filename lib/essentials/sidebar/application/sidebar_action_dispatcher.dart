@@ -11,7 +11,6 @@ import '../../../features/handles/infrastructure/repositories/stray_handles_prov
 import '../../../features/messages/domain/value_objects/message_timeline_scope.dart';
 import '../../../features/messages/presentation/view_model/timeline/message_timeline_view_model_provider.dart';
 import '../../../features/settings/domain/spec_classes/settings_cassette_spec.dart';
-import '../../../features/sidebar_utilities/domain/settings_top_menu_row.dart';
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
 import '../../db/application/database_health_audit/database_health_audit_service.dart';
@@ -60,13 +59,7 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
               choice: _mapTopMenuChoice(choice),
               cassetteIndex: _requireCassetteIndex(context),
             );
-      case SettingsTopMenuActionChosen(:final actionId, :final semantic):
-        if (semantic != SettingsTopMenuActionSemantic.persistentContext) {
-          throw StateError(
-            'Transient settings actions must use typed ephemeral intents.',
-          );
-        }
-
+      case SettingsPersistentContextChosen(:final actionId):
         ref
             .read(
               ephemeralCassetteProjectionProvider(context.sidebarMode).notifier,
@@ -78,8 +71,8 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
 
         _replaceCassetteAtContext(
           context: context,
-          spec: CassetteSpec.sidebarUtility(
-            SidebarUtilityCassetteSpec.settingsMenu(expandedActionId: actionId),
+          spec: const CassetteSpec.sidebarUtility(
+            SidebarUtilityCassetteSpec.settingsMenu(),
           ),
         );
       case ShowSendLogsFlow():
@@ -122,6 +115,7 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
             .setContactMessageScope(
               contactId: contactId,
               messageScope: _mapMessageScope(scope),
+              cassetteIndex: _requireCassetteIndex(context),
             );
       case HeatMapMonthFocused(:final monthAnchor, :final contactId):
         _dispatchHeatMapFocus(contactId: contactId, monthAnchor: monthAnchor);

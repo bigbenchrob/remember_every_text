@@ -25,6 +25,7 @@ import 'package:remember_this_text/features/messages/domain/spec_classes/message
 import 'package:remember_this_text/features/messages/domain/value_objects/message_timeline_scope.dart';
 import 'package:remember_this_text/features/messages/presentation/view_model/timeline/message_timeline_view_model_provider.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
+import '../../../test_support/cassette_rack_test_harness.dart';
 
 final _testSidebarResolutionStateProvider =
     StateProvider<SidebarCassetteResolutionState>((ref) {
@@ -96,6 +97,7 @@ void main() {
             workingDbPopulatedProvider.overrideWith(
               _AlwaysPopulatedWorkingDb.new,
             ),
+            ...cassetteRackTestHarnessOverrides(),
             sidebarCassetteResolutionStateProvider(
               SidebarMode.messages,
             ).overrideWith((ref) {
@@ -116,7 +118,7 @@ void main() {
 
         container
             .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-            .setRack([topMenuSpec, heroSpec]);
+            .setRackForTesting([topMenuSpec, heroSpec]);
         container
             .read(_testSidebarResolutionStateProvider.notifier)
             .state = const SidebarCassetteResolutionState(
@@ -610,6 +612,7 @@ void main() {
           workingDbPopulatedProvider.overrideWith(
             _AlwaysPopulatedWorkingDb.new,
           ),
+          ...cassetteRackTestHarnessOverrides(),
           sidebarCassetteResolutionStateProvider(
             SidebarMode.messages,
           ).overrideWith((ref) {
@@ -647,7 +650,7 @@ void main() {
 
       container
           .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-          .setRack([chooserSpec]);
+          .setRackForTesting([chooserSpec]);
 
       await tester.pumpWidget(
         UncontrolledProviderScope(
@@ -732,6 +735,7 @@ void main() {
             workingDbPopulatedProvider.overrideWith(
               _AlwaysPopulatedWorkingDb.new,
             ),
+            ...cassetteRackTestHarnessOverrides(),
             sidebarCassetteResolutionStateProvider(
               SidebarMode.messages,
             ).overrideWith((ref) {
@@ -773,7 +777,7 @@ void main() {
 
         container
             .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-            .setRack([topMenuSpec]);
+            .setRackForTesting([topMenuSpec]);
 
         await tester.pumpWidget(
           UncontrolledProviderScope(
@@ -790,7 +794,7 @@ void main() {
 
         container
             .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-            .setRack([topMenuSpec, pickerInfoSpec]);
+            .setRackForTesting([topMenuSpec, pickerInfoSpec]);
         container
             .read(_testSidebarResolutionStateProvider.notifier)
             .state = const SidebarCassetteResolutionState(
@@ -876,6 +880,7 @@ void main() {
             workingDbPopulatedProvider.overrideWith(
               _AlwaysPopulatedWorkingDb.new,
             ),
+            ...cassetteRackTestHarnessOverrides(),
             sidebarCassetteResolutionStateProvider(
               SidebarMode.messages,
             ).overrideWith((ref) {
@@ -921,7 +926,7 @@ void main() {
 
         container
             .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-            .setRack([topMenuSpec, pickerInfoSpec]);
+            .setRackForTesting([topMenuSpec, pickerInfoSpec]);
 
         await tester.pumpWidget(
           UncontrolledProviderScope(
@@ -938,7 +943,7 @@ void main() {
 
         container
             .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-            .setRack([topMenuSpec, heroSpec]);
+            .setRackForTesting([topMenuSpec, heroSpec]);
         container
             .read(_testSidebarResolutionStateProvider.notifier)
             .state = const SidebarCassetteResolutionState(

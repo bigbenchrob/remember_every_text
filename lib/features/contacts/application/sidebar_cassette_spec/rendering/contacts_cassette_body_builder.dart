@@ -22,7 +22,10 @@ Widget buildPlacementGovernedCassetteBody({
       contactId: payload.contactId,
     ),
     ContactMessageScopeToggleCassettePayload() =>
-      ContactMessageScopeToggleWidget(contactId: payload.contactId),
+      ContactMessageScopeToggleWidget(
+        contactId: payload.contactId,
+        cassetteIndex: payload.cassetteIndex,
+      ),
     ContactSelectionControlCassettePayload() => ContactSelectionControlWidget(
       contactId: payload.contactId,
       cassetteIndex: payload.cassetteIndex,

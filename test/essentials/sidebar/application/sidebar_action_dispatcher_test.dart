@@ -21,9 +21,9 @@ import 'package:remember_this_text/features/handles/application/state/stray_hand
 import 'package:remember_this_text/features/handles/domain/spec_classes/handles_cassette_spec.dart';
 import 'package:remember_this_text/features/messages/domain/spec_classes/messages_cassette_spec.dart';
 import 'package:remember_this_text/features/settings/domain/spec_classes/settings_cassette_spec.dart';
-import 'package:remember_this_text/features/sidebar_utilities/domain/settings_top_menu_row.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
+import '../../../test_support/cassette_rack_test_harness.dart';
 
 void main() {
   group('sidebarActionDispatcherProvider', () {
@@ -39,6 +39,7 @@ void main() {
             _AlwaysPopulatedWorkingDb.new,
           ),
           messageDataResetServiceProvider.overrideWith((ref) => resetService),
+          ...cassetteRackTestHarnessOverrides(),
         ],
       );
       dispatcher = container.read(sidebarActionDispatcherProvider.notifier);
@@ -81,7 +82,7 @@ void main() {
         final rackNotifier = container.read(
           cassetteRackStateProvider(SidebarMode.messages).notifier,
         );
-        rackNotifier.setRack([
+        rackNotifier.seedRackForTest([
           const CassetteSpec.handles(
             HandlesCassetteSpec.strayHandlesTypeSwitcher(),
           ),
@@ -156,16 +157,15 @@ void main() {
         final rackNotifier = container.read(
           cassetteRackStateProvider(SidebarMode.settings).notifier,
         );
-        rackNotifier.setRack([
+        rackNotifier.seedRackForTest([
           const CassetteSpec.sidebarUtility(
             SidebarUtilityCassetteSpec.settingsMenu(),
           ),
         ]);
 
         await dispatcher.dispatch(
-          intent: const SettingsTopMenuActionChosen(
+          intent: const SettingsPersistentContextChosen(
             actionId: SettingsMenuActionId.textSize,
-            semantic: SettingsTopMenuActionSemantic.persistentContext,
           ),
           context: const SidebarActionDispatchContext(
             sidebarMode: SidebarMode.settings,
@@ -179,9 +179,7 @@ void main() {
               .cassettes,
           equals([
             const CassetteSpec.sidebarUtility(
-              SidebarUtilityCassetteSpec.settingsMenu(
-                expandedActionId: SettingsMenuActionId.textSize,
-              ),
+              SidebarUtilityCassetteSpec.settingsMenu(),
             ),
             const CassetteSpec.settings(
               SettingsCassetteSpec.textSizePlaceholder(),
@@ -204,7 +202,7 @@ void main() {
         container
             .read(sidebarFlowProvider.notifier)
             .setPersistentSettingsContext(SettingsMenuActionId.textSize);
-        rackNotifier.setRack([
+        rackNotifier.seedRackForTest([
           const CassetteSpec.sidebarUtility(
             SidebarUtilityCassetteSpec.settingsMenu(),
           ),
@@ -252,7 +250,7 @@ void main() {
         container
             .read(sidebarFlowProvider.notifier)
             .setPersistentSettingsContext(SettingsMenuActionId.textSize);
-        rackNotifier.setRack([
+        rackNotifier.seedRackForTest([
           const CassetteSpec.sidebarUtility(
             SidebarUtilityCassetteSpec.settingsMenu(),
           ),
@@ -302,7 +300,7 @@ void main() {
         container
             .read(sidebarFlowProvider.notifier)
             .setPersistentSettingsContext(SettingsMenuActionId.textSize);
-        rackNotifier.setRack([
+        rackNotifier.seedRackForTest([
           const CassetteSpec.sidebarUtility(
             SidebarUtilityCassetteSpec.settingsMenu(),
           ),
@@ -362,7 +360,7 @@ void main() {
         final rackNotifier = container.read(
           cassetteRackStateProvider(SidebarMode.settings).notifier,
         );
-        rackNotifier.setRack([
+        rackNotifier.seedRackForTest([
           const CassetteSpec.sidebarUtility(
             SidebarUtilityCassetteSpec.settingsMenu(),
           ),
@@ -378,9 +376,8 @@ void main() {
             );
 
         await dispatcher.dispatch(
-          intent: const SettingsTopMenuActionChosen(
+          intent: const SettingsPersistentContextChosen(
             actionId: SettingsMenuActionId.textSize,
-            semantic: SettingsTopMenuActionSemantic.persistentContext,
           ),
           context: const SidebarActionDispatchContext(
             sidebarMode: SidebarMode.settings,
@@ -400,9 +397,7 @@ void main() {
               .cassettes,
           equals([
             const CassetteSpec.sidebarUtility(
-              SidebarUtilityCassetteSpec.settingsMenu(
-                expandedActionId: SettingsMenuActionId.textSize,
-              ),
+              SidebarUtilityCassetteSpec.settingsMenu(),
             ),
             const CassetteSpec.settings(
               SettingsCassetteSpec.textSizePlaceholder(),
@@ -444,7 +439,7 @@ void main() {
         final rackNotifier = container.read(
           cassetteRackStateProvider(SidebarMode.messages).notifier,
         );
-        rackNotifier.setRack([
+        rackNotifier.seedRackForTest([
           const CassetteSpec.sidebarUtility(
             SidebarUtilityCassetteSpec.topChatMenu(),
           ),
@@ -548,6 +543,7 @@ void main() {
           ),
           context: const SidebarActionDispatchContext(
             sidebarMode: SidebarMode.messages,
+            cassetteIndex: 4,
           ),
         );
 

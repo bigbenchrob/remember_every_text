@@ -12,9 +12,9 @@ void main() {
     final constraints = _extractServiceConstraints(workingDatabaseSource);
     expect(
       constraints.length,
-      3,
+      4,
       reason:
-          'handles, chats, and chat_to_handle each declare a service constraint',
+          'canonical handles, handle aliases, chats, and recovered messages each declare a service constraint',
     );
 
     constraints.forEach(_expectConstraintMatchesValues);

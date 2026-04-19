@@ -42,6 +42,7 @@ import 'package:remember_this_text/features/sidebar_utilities/application/sideba
 import 'package:remember_this_text/features/sidebar_utilities/application/sidebar_cassette_spec/payloads/top_chat_menu_cassette_payload.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
+import '../../../test_support/cassette_rack_test_harness.dart';
 
 void main() {
   group('sidebarCassetteResolutionStateProvider', () {
@@ -53,12 +54,13 @@ void main() {
           workingDbPopulatedProvider.overrideWith(
             _AlwaysPopulatedWorkingDb.new,
           ),
+          ...cassetteRackTestHarnessOverrides(),
         ],
       );
 
       container
           .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-          .setRack([
+          .setRackForTesting([
             const CassetteSpec.handles(
               HandlesCassetteSpec.strayHandlesReview(
                 filter: StrayHandleFilter.phones,
@@ -100,7 +102,7 @@ void main() {
       () async {
         container
             .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-            .setRack([
+            .setRackForTesting([
               const CassetteSpec.handles(
                 HandlesCassetteSpec.strayHandlesModeSwitcher(
                   filter: StrayHandleFilter.phones,
@@ -137,7 +139,7 @@ void main() {
       () async {
         container
             .read(cassetteRackStateProvider(SidebarMode.settings).notifier)
-            .setRack([
+            .setRackForTesting([
               const CassetteSpec.sidebarUtility(
                 SidebarUtilityCassetteSpec.settingsMenu(),
               ),
@@ -163,7 +165,7 @@ void main() {
       () async {
         container
             .read(cassetteRackStateProvider(SidebarMode.settings).notifier)
-            .setRack([
+            .setRackForTesting([
               const CassetteSpec.sidebarUtility(
                 SidebarUtilityCassetteSpec.settingsMenu(),
               ),
@@ -205,7 +207,7 @@ void main() {
     test('renderable sidebar cassette specs concatenate without filtering', () {
       container
           .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-          .setRack([
+          .setRackForTesting([
             const CassetteSpec.contacts(
               ContactsCassetteSpec.messageScopeToggle(contactId: 42),
             ),
@@ -244,7 +246,7 @@ void main() {
       () async {
         container
             .read(cassetteRackStateProvider(SidebarMode.settings).notifier)
-            .setRack([
+            .setRackForTesting([
               const CassetteSpec.settings(SettingsCassetteSpec.sendLogsPanel()),
             ]);
 
@@ -265,7 +267,7 @@ void main() {
       () async {
         container
             .read(cassetteRackStateProvider(SidebarMode.settings).notifier)
-            .setRack([
+            .setRackForTesting([
               const CassetteSpec.settings(
                 SettingsCassetteSpec.resetMessageDataPanel(),
               ),
@@ -290,7 +292,7 @@ void main() {
       () async {
         container
             .read(cassetteRackStateProvider(SidebarMode.settings).notifier)
-            .setRack([
+            .setRackForTesting([
               const CassetteSpec.settings(
                 SettingsCassetteSpec.textSizePlaceholder(),
               ),
@@ -310,7 +312,7 @@ void main() {
       () async {
         container
             .read(cassetteRackStateProvider(SidebarMode.settings).notifier)
-            .setRack([
+            .setRackForTesting([
               const CassetteSpec.settings(
                 SettingsCassetteSpec.attachmentArchive(),
               ),
@@ -328,7 +330,7 @@ void main() {
     test('resolves unmatched handles spec to inert payload', () async {
       container
           .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-          .setRack([
+          .setRackForTesting([
             const CassetteSpec.handles(
               HandlesCassetteSpec.unmatchedHandlesList(),
             ),
@@ -349,7 +351,7 @@ void main() {
     test('resolves stray phones spec to inert payload', () async {
       container
           .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-          .setRack([
+          .setRackForTesting([
             const CassetteSpec.handles(HandlesCassetteSpec.strayPhoneNumbers()),
           ]);
 
@@ -368,7 +370,7 @@ void main() {
     test('resolves stray emails spec to inert payload', () async {
       container
           .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-          .setRack([
+          .setRackForTesting([
             const CassetteSpec.handles(HandlesCassetteSpec.strayEmails()),
           ]);
 
@@ -389,7 +391,7 @@ void main() {
       () async {
         container
             .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-            .setRack([
+            .setRackForTesting([
               const CassetteSpec.messagesInfo(
                 MessagesInfoCassetteSpec.infoCard(
                   key: MessagesInfoKey.recoveredDeletedMessages,
@@ -415,7 +417,7 @@ void main() {
       () async {
         container
             .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-            .setRack([
+            .setRackForTesting([
               const CassetteSpec.messagesInfo(
                 MessagesInfoCassetteSpec.infoCard(
                   key: MessagesInfoKey.searchAllMessages,
@@ -440,7 +442,7 @@ void main() {
       () async {
         container
             .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-            .setRack([
+            .setRackForTesting([
               const CassetteSpec.messagesInfo(
                 MessagesInfoCassetteSpec.infoCard(
                   key: MessagesInfoKey.recoveredNoHandleMessages,
@@ -464,7 +466,7 @@ void main() {
     test('resolves top chat menu spec to inert payload', () async {
       container
           .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-          .setRack([
+          .setRackForTesting([
             const CassetteSpec.sidebarUtility(
               SidebarUtilityCassetteSpec.topChatMenu(
                 selectedChoice: TopChatMenuChoice.contacts,
@@ -501,12 +503,13 @@ void main() {
               (ref) => delayedSections.future,
             ),
             pickerFilterProvider.overrideWith(_TestPickerFilter.new),
+            ...cassetteRackTestHarnessOverrides(),
           ],
         );
 
         container
             .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-            .setRack([
+            .setRackForTesting([
               const CassetteSpec.contacts(
                 ContactsCassetteSpec.contactChooser(),
               ),
@@ -560,12 +563,13 @@ void main() {
               (ref) async => readySections,
             ),
             pickerFilterProvider.overrideWith(_TestPickerFilter.new),
+            ...cassetteRackTestHarnessOverrides(),
           ],
         );
 
         container
             .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-            .setRack([
+            .setRackForTesting([
               const CassetteSpec.contacts(
                 ContactsCassetteSpec.contactChooser(
                   chosenContactId: chosenContactId,
@@ -649,7 +653,7 @@ void main() {
     test('resolves message scope toggle spec to inert payload', () async {
       container
           .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-          .setRack([
+          .setRackForTesting([
             const CassetteSpec.contacts(
               ContactsCassetteSpec.messageScopeToggle(contactId: 42),
             ),
@@ -666,7 +670,7 @@ void main() {
     test('resolves contact hero summary spec to inert payload', () async {
       container
           .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-          .setRack([
+          .setRackForTesting([
             const CassetteSpec.contacts(
               ContactsCassetteSpec.contactHeroSummary(chosenContactId: 42),
             ),
@@ -685,7 +689,7 @@ void main() {
     test('resolves contact selection control spec to inert payload', () async {
       container
           .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-          .setRack([
+          .setRackForTesting([
             const CassetteSpec.contacts(
               ContactsCassetteSpec.contactSelectionControl(chosenContactId: 42),
             ),
@@ -703,7 +707,7 @@ void main() {
     test('resolves handle filter spec to inert payload', () async {
       container
           .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-          .setRack([
+          .setRackForTesting([
             const CassetteSpec.contacts(
               ContactsCassetteSpec.handleFilter(
                 contactId: 42,

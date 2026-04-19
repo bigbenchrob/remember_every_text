@@ -1,4 +1,3 @@
-import '../../../features/sidebar_utilities/domain/settings_top_menu_row.dart';
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 
 enum SidebarTopMenuChoice {
@@ -60,14 +59,10 @@ final class TopMenuChanged extends SidebarPersistentIntent {
   final SidebarTopMenuChoice choice;
 }
 
-final class SettingsTopMenuActionChosen extends SidebarActionIntent {
-  const SettingsTopMenuActionChosen({
-    required this.actionId,
-    required this.semantic,
-  });
+final class SettingsPersistentContextChosen extends SidebarPersistentIntent {
+  const SettingsPersistentContextChosen({required this.actionId});
 
   final SettingsMenuActionId actionId;
-  final SettingsTopMenuActionSemantic semantic;
 }
 
 final class ContactChosen extends SidebarPersistentIntent {

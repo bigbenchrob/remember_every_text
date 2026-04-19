@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import 'package:remember_this_text/essentials/sidebar/domain/sidebar_action_intent.dart';
 import 'package:remember_this_text/essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 import 'package:remember_this_text/features/sidebar_utilities/application/sidebar_cassette_spec/payloads/settings_top_menu_cassette_payload.dart';
 import 'package:remember_this_text/features/sidebar_utilities/application/sidebar_cassette_spec/resolvers/settings_root_resolver.dart';
@@ -46,16 +47,20 @@ void main() {
           SettingsMenuActionId.sendLogs,
         );
         expect(
-          (payload.rows[1] as SettingsTopMenuActionRow).semantic,
-          SettingsTopMenuActionSemantic.transientAction,
+          (payload.rows[1] as SettingsTopMenuActionRow).intent,
+          isA<ShowSendLogsFlow>(),
         );
         expect(
           (payload.rows[4] as SettingsTopMenuActionRow).actionId,
           SettingsMenuActionId.textSize,
         );
         expect(
-          (payload.rows[4] as SettingsTopMenuActionRow).semantic,
-          SettingsTopMenuActionSemantic.persistentContext,
+          (payload.rows[4] as SettingsTopMenuActionRow).intent,
+          isA<SettingsPersistentContextChosen>().having(
+            (intent) => intent.actionId,
+            'actionId',
+            SettingsMenuActionId.textSize,
+          ),
         );
       },
     );
