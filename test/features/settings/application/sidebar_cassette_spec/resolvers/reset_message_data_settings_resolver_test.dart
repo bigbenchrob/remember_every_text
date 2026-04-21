@@ -26,15 +26,10 @@ void main() {
 
         expect(payload, isA<SettingsInfoActionsCassettePayload>());
         expect(payload.title, 'Reset Message Data');
-        expect(payload.bodyText, contains('keeps your preferences'));
-        expect(payload.actions, hasLength(2));
-        expect(payload.actions.first.label, 'Cancel');
-        expect(
-          payload.actions.first.intent,
-          isA<SettingsTransientActionCancelled>(),
-        );
-        expect(payload.actions.last.label, 'Reset message data…');
-        expect(payload.actions.last.intent, isA<ResetMessageDataRequested>());
+        expect(payload.bodyText, contains('confirmation dialog'));
+        expect(payload.actions, hasLength(1));
+        expect(payload.actions.single.label, 'Reset message data…');
+        expect(payload.actions.single.intent, isA<ResetMessageDataRequested>());
       },
     );
   });

@@ -172,7 +172,7 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
         );
       case ResetMessageDataRequested():
         final resetService = ref.read(messageDataResetServiceProvider);
-        await resetService.resetAndQuit();
+        await resetService.confirmResetAndPrepareReimport();
     }
   }
 

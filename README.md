@@ -95,6 +95,20 @@ If the extractor is missing, imports will still work but message text will be la
 
 See `_AGENT_CONTEXT/AGENT_CONTEXT.md` for comprehensive development guidelines and architecture documentation.
 
+## macOS Distribution Builds
+
+For anything that will be distributed outside your machine, the default build path is:
+
+```bash
+./tool/build_and_notarize.sh
+```
+
+That script performs the full distribution pipeline: release build, re-signing, DMG packaging, notarization, stapling, and final verification.
+
+Its default output artifact is a notarized DMG placed at `~/Desktop/MessageLens.dmg`.
+
+Use `flutter build macos --release` only for local release verification or as an intermediate step inside the notarized distribution pipeline. By itself, it is not the repo's default distribution artifact.
+
 ## Release Versioning
 
 MessageLens should use Flutter's standard version format in `pubspec.yaml`:

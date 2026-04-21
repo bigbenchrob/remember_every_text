@@ -279,10 +279,9 @@ void main() {
 
         expect(payload.renderKind, SidebarCassetteRenderKind.featureInfo);
         expect(payload.role, SidebarCassetteRole.action);
-        expect(payload.bodyText, contains('keeps your preferences'));
-        expect(payload.actions, hasLength(2));
-        expect(payload.actions.first.label, 'Cancel');
-        expect(payload.actions.last.label, 'Reset message data…');
+        expect(payload.bodyText, contains('confirmation dialog'));
+        expect(payload.actions, hasLength(1));
+        expect(payload.actions.single.label, 'Reset message data…');
         expect(payload.title, 'Reset Message Data');
       },
     );

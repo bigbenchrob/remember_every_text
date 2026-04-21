@@ -128,10 +128,23 @@ class OnboardingGate extends _$OnboardingGate {
       return;
     }
 
+    ref
+        .read(appLoggerProvider.notifier)
+        .info(
+          'Starting fresh onboarding import and migration',
+          source: 'OnboardingGate',
+        );
+
     // Gate 2 safety check: verify we can still read chat.db before
     // committing to the import.  If FDA was revoked after the earlier
     // check, fall back to the FDA screen.
     if (!_fdaChecker.canReadMessagesDatabase()) {
+      ref
+          .read(appLoggerProvider.notifier)
+          .warn(
+            'Aborting fresh onboarding import because Messages database is no longer readable',
+            source: 'OnboardingGate',
+          );
       state = OnboardingStatus.awaitingFda;
       return;
     }
@@ -187,6 +200,13 @@ class OnboardingGate extends _$OnboardingGate {
     // Signal all data-dependent providers (contacts, messages, etc.) to
     // rebuild with the freshly-populated working database.
     ref.read(messageDataVersionProvider.notifier).bump();
+
+    ref
+        .read(appLoggerProvider.notifier)
+        .info(
+          'Fresh onboarding import and migration completed successfully',
+          source: 'OnboardingGate',
+        );
 
     _setWorkflowOverride(OnboardingStatus.complete);
   }
@@ -353,6 +373,13 @@ class OnboardingGate extends _$OnboardingGate {
   Future<void> _prepareForFreshStartIfNeeded() async {
     final report = ref.read(onboardingEnvironmentReportProvider).valueOrNull;
     if (report?.shouldResetAppDatabasesBeforeImport ?? false) {
+      ref
+          .read(appLoggerProvider.notifier)
+          .warn(
+            'Preparing for fresh onboarding start by resetting app databases',
+            source: 'OnboardingGate',
+            context: {'reason': report?.resetAppDatabasesReason},
+          );
       await ref
           .read(dbImportControlViewModelProvider.notifier)
           .resetAllDatabases();
@@ -360,10 +387,22 @@ class OnboardingGate extends _$OnboardingGate {
       return;
     }
 
+    ref
+        .read(appLoggerProvider.notifier)
+        .info(
+          'Preparing for fresh onboarding start by deleting import ledger only',
+          source: 'OnboardingGate',
+        );
     await _deleteImportDatabaseFiles();
   }
 
   void _finishFirstRunWithFailure() {
+    ref
+        .read(appLoggerProvider.notifier)
+        .warn(
+          'Fresh onboarding import/migration failed; returning to awaiting user action',
+          source: 'OnboardingGate',
+        );
     _clearWorkflowOverride();
     ref.invalidate(onboardingEnvironmentReportProvider);
     state = OnboardingStatus.awaitingUserAction;
@@ -372,6 +411,8 @@ class OnboardingGate extends _$OnboardingGate {
   /// Close any open import DB connection, delete the files, and
   /// invalidate the provider so the next access creates a fresh instance.
   Future<void> _deleteImportDatabaseFiles() async {
+    final deletedFiles = <String>[];
+
     // Close an existing connection if the provider was already accessed.
     try {
       final ledgerDb = await ref.read(sqfliteImportDatabaseProvider.future);
@@ -387,8 +428,20 @@ class OnboardingGate extends _$OnboardingGate {
       final file = File('$basePath$suffix');
       if (file.existsSync()) {
         await file.delete();
+        deletedFiles.add(file.path);
       }
     }
+
+    ref
+        .read(appLoggerProvider.notifier)
+        .info(
+          'Deleted import ledger files for fresh onboarding start',
+          source: 'OnboardingGate',
+          context: {
+            'deletedCount': deletedFiles.length,
+            'deletedFiles': deletedFiles,
+          },
+        );
     ref.invalidate(sqfliteImportDatabaseProvider);
   }
 }

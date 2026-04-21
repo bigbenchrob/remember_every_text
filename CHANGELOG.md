@@ -10,6 +10,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - No unreleased changes yet.
 
+## [0.1.10] — 2026-04-19
+
+### Changed
+- Reset Message Data no longer quits the app after clearing the MessageLens databases. After the reset completes, the final dialog now dismisses back to the onboarding reimport panel already shown underneath.
+
+## [0.1.9] — 2026-04-19
+
+### Changed
+- Reset Message Data now uses a two-dialog flow: the settings cassette shows only the destructive reset action, a pre-reset confirmation explains exactly what will and will not be deleted, and a final quit dialog appears only after the MessageLens databases have been cleared.
+
+## [0.1.8] — 2026-04-19
+
+### Changed
+- Reset Message Data now shows a final completion dialog after the derived databases are deleted and waits for an explicit `OK` before quitting, making the forced quit and first-launch-style reimport path explicit.
+
+## [0.1.7] — 2026-04-19
+
+### Fixed
+- Incremental message migrations now preserve declared migrator order for equally ready steps, preventing failed later migrators from leaving `chat_to_handle` empty and contact timelines stuck behind the latest imported messages.
+
 ## [0.1.6] — 2026-04-19
 
 ### Changed

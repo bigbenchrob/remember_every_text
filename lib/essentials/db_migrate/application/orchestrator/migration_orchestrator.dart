@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import '../../domain/base_table_migrator.dart';
 import '../../domain/i_migrators.dart/table_migrator.dart';
 import '../../domain/row_progress_reporter.dart';
@@ -34,10 +36,10 @@ class MigrationOrchestrator {
         indeg[m.name] = (indeg[m.name] ?? 0) + 1;
       }
     }
-    final q = <String>[...indeg.keys.where((k) => indeg[k] == 0)];
+    final q = Queue<String>.from(indeg.keys.where((k) => indeg[k] == 0));
     final order = <TableMigrator>[];
     while (q.isNotEmpty) {
-      final n = q.removeLast();
+      final n = q.removeFirst();
       order.add(byName[n]!);
       for (final nxt in graph[n] ?? const <String>[]) {
         indeg[nxt] = (indeg[nxt] ?? 0) - 1;

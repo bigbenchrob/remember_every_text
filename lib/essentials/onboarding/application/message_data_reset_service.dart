@@ -1,18 +1,21 @@
 import 'dart:io';
 
+import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:macos_ui/macos_ui.dart';
 import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../db/feature_level_providers.dart';
 import '../../logging/application/app_logger.dart';
+import '../../navigation/application/app_navigator_key.dart';
 
 part 'message_data_reset_service.g.dart';
 
 abstract interface class MessageDataResetService {
   Future<void> resetDerivedData();
 
-  Future<void> resetAndQuit();
+  Future<void> confirmResetAndPrepareReimport();
 }
 
 final class MessageDataResetServiceImpl implements MessageDataResetService {
@@ -30,13 +33,35 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
 
     _ref.read(dbMaintenanceLockProvider.notifier).begin();
     try {
+      logger.info(
+        'Closing import database before reset',
+        source: 'MessageDataResetService',
+      );
       await _closeImportDatabase();
+      logger.info(
+        'Closing working database before reset',
+        source: 'MessageDataResetService',
+      );
       await _closeWorkingDatabase();
-      await _deleteDerivedDatabaseFiles();
+
+      final deletedFilePaths = await _deleteDerivedDatabaseFiles();
+      logger.info(
+        'Deleted derived database files',
+        source: 'MessageDataResetService',
+        context: {
+          'deletedCount': deletedFilePaths.length,
+          'deletedFiles': deletedFilePaths,
+        },
+      );
 
       _ref.invalidate(sqfliteImportDatabaseProvider);
       _ref.invalidate(driftWorkingDatabaseProvider);
       _ref.read(messageDataVersionProvider.notifier).bump();
+
+      logger.info(
+        'Invalidated import and working database providers after reset',
+        source: 'MessageDataResetService',
+      );
 
       logger.warn(
         'Derived message data reset complete',
@@ -61,12 +86,59 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
   }
 
   @override
-  Future<void> resetAndQuit() async {
+  Future<void> confirmResetAndPrepareReimport() async {
+    final logger = _ref.read(appLoggerProvider.notifier);
+    final navigatorContext = appNavigatorKey.currentContext;
+
+    if (navigatorContext == null) {
+      logger.error(
+        'Reset requested without a navigator context; aborting destructive action',
+        source: 'MessageDataResetService',
+      );
+      return;
+    }
+
+    bool shouldProceed;
+    try {
+      shouldProceed = await _showResetProceedDialog(navigatorContext);
+    } catch (error, stackTrace) {
+      logger.error(
+        'Failed to show reset confirmation dialog',
+        source: 'MessageDataResetService',
+        context: {
+          'error': error.toString(),
+          'stack': stackTrace.toString().split('\n').take(10).join('\n'),
+        },
+      );
+      return;
+    }
+
+    if (!shouldProceed) {
+      logger.warn(
+        'Reset Message Data canceled before deletion',
+        source: 'MessageDataResetService',
+      );
+      return;
+    }
+
     await resetDerivedData();
 
-    final writer = _ref.read(appLoggerProvider.notifier).writer;
-    await writer.close();
-    exit(0);
+    logger.info(
+      'Showing reset completion dialog before onboarding reimport flow',
+      source: 'MessageDataResetService',
+    );
+    try {
+      await _showResetCompletionDialog(navigatorContext);
+    } catch (error, stackTrace) {
+      logger.error(
+        'Failed to show reset completion dialog',
+        source: 'MessageDataResetService',
+        context: {
+          'error': error.toString(),
+          'stack': stackTrace.toString().split('\n').take(10).join('\n'),
+        },
+      );
+    }
   }
 
   Future<void> _closeImportDatabase() async {
@@ -83,7 +155,8 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
     } catch (_) {}
   }
 
-  Future<void> _deleteDerivedDatabaseFiles() async {
+  Future<List<String>> _deleteDerivedDatabaseFiles() async {
+    final deletedFilePaths = <String>[];
     for (final baseName in <String>['macos_import.db', 'working.db']) {
       final basePath = path.join(databaseDirectoryPath, baseName);
       for (final filePath in <String>[
@@ -94,9 +167,67 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
         final file = File(filePath);
         if (file.existsSync()) {
           await file.delete();
+          deletedFilePaths.add(filePath);
         }
       }
     }
+
+    return deletedFilePaths;
+  }
+
+  Future<bool> _showResetProceedDialog(BuildContext context) async {
+    final result = await showMacosAlertDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return MacosAlertDialog(
+          appIcon: const FlutterLogo(size: 64),
+          title: const Text('Reset MessageLens Databases?'),
+          message: const Text(
+            'Clicking Proceed will delete the database files belonging to MessageLens but will not touch the original macOS databases. No Messages or Contacts data will be lost; this only returns MessageLens to a clean import state. Your preference settings, including contact favourites, will be preserved. Any recovered image files that were already archived will also be left intact.\n\nClick Proceed to continue or Cancel to abort.',
+          ),
+          primaryButton: PushButton(
+            controlSize: ControlSize.large,
+            onPressed: () {
+              Navigator.of(dialogContext, rootNavigator: true).pop(true);
+            },
+            child: const Text('Proceed'),
+          ),
+          secondaryButton: PushButton(
+            controlSize: ControlSize.large,
+            onPressed: () {
+              Navigator.of(dialogContext, rootNavigator: true).pop(false);
+            },
+            child: const Text('Cancel'),
+          ),
+        );
+      },
+    );
+
+    return result ?? false;
+  }
+
+  Future<void> _showResetCompletionDialog(BuildContext context) async {
+    await showMacosAlertDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return MacosAlertDialog(
+          appIcon: const FlutterLogo(size: 64),
+          title: const Text('MessageLens Databases Cleared'),
+          message: const Text(
+            'Your MessageLens databases have been cleared. You will now be guided through reimporting your data.',
+          ),
+          primaryButton: PushButton(
+            controlSize: ControlSize.large,
+            onPressed: () {
+              Navigator.of(dialogContext, rootNavigator: true).pop();
+            },
+            child: const Text('OK'),
+          ),
+        );
+      },
+    );
   }
 }
 

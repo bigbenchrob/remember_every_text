@@ -148,7 +148,7 @@ void main() {
         ),
       );
 
-      expect(resetService.resetAndQuitCalls, 1);
+      expect(resetService.confirmResetAndPrepareReimportCalls, 1);
     });
 
     test(
@@ -619,7 +619,7 @@ class _AlwaysPopulatedWorkingDb extends WorkingDbPopulated {
 
 final class _FakeMessageDataResetService implements MessageDataResetService {
   int resetDerivedDataCalls = 0;
-  int resetAndQuitCalls = 0;
+  int confirmResetAndPrepareReimportCalls = 0;
 
   @override
   Future<void> resetDerivedData() async {
@@ -627,7 +627,7 @@ final class _FakeMessageDataResetService implements MessageDataResetService {
   }
 
   @override
-  Future<void> resetAndQuit() async {
-    resetAndQuitCalls += 1;
+  Future<void> confirmResetAndPrepareReimport() async {
+    confirmResetAndPrepareReimportCalls += 1;
   }
 }
