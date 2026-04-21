@@ -10,9 +10,14 @@ import '../../../../../essentials/sidebar/feature_level_providers.dart';
 /// Segmented control that toggles between regular contact messages and
 /// recovered deleted messages for the selected contact.
 class ContactMessageScopeToggleWidget extends ConsumerWidget {
-  const ContactMessageScopeToggleWidget({required this.contactId, super.key});
+  const ContactMessageScopeToggleWidget({
+    required this.contactId,
+    required this.cassetteIndex,
+    super.key,
+  });
 
   final int contactId;
+  final int cassetteIndex;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -77,8 +82,9 @@ class ContactMessageScopeToggleWidget extends ConsumerWidget {
                                     SidebarMessageScope.recoveredDeleted,
                                 },
                               ),
-                              context: const SidebarActionDispatchContext(
+                              context: SidebarActionDispatchContext(
                                 sidebarMode: SidebarMode.messages,
+                                cassetteIndex: cassetteIndex,
                               ),
                             );
                       },

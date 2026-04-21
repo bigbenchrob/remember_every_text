@@ -7,7 +7,7 @@ part of 'message_scope_toggle_resolver.dart';
 // **************************************************************************
 
 String _$messageScopeToggleResolverHash() =>
-    r'290352995380cba9682800a78248f74a1d19e82f';
+    r'6aa62e886d9819d415b6c614c8f8ec15426dd12a';
 
 /// Resolves the contact message-scope toggle cassette.
 ///

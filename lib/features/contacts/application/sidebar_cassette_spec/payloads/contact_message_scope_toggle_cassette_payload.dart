@@ -5,6 +5,7 @@ final class ContactMessageScopeToggleCassettePayload
     extends PlacementGovernedSidebarCassettePayload {
   const ContactMessageScopeToggleCassettePayload({
     required this.contactId,
+    required this.cassetteIndex,
     super.title = '',
     super.subtitle,
     super.sectionTitle,
@@ -19,4 +20,5 @@ final class ContactMessageScopeToggleCassettePayload
   });
 
   final int contactId;
+  final int cassetteIndex;
 }

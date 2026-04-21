@@ -108,9 +108,6 @@ The rack state provider exposes methods for modifying the stack:
 | Method | Purpose |
 |---|---|
 | `replaceAtIndexAndCascade(index, newSpec)` | Replace a cassette and re-cascade everything below it |
-| `truncateAfter(index)` | Remove all cassettes after a given position |
-| `pushCassette(spec)` | Append a cassette to the end |
-| `updateCassetteAt(index, update)` | Transform a cassette in place |
 | `resetToInitial()` | Return to the mode's initial state |
 
 **Location:** `lib/essentials/sidebar/application/cassette_rack_state_provider.dart`

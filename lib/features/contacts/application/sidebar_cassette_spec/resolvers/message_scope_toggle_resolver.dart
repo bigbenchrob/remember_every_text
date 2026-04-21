@@ -17,6 +17,9 @@ class MessageScopeToggleResolver extends _$MessageScopeToggleResolver {
     required int contactId,
     required int cassetteIndex,
   }) async {
-    return ContactMessageScopeToggleCassettePayload(contactId: contactId);
+    return ContactMessageScopeToggleCassettePayload(
+      contactId: contactId,
+      cassetteIndex: cassetteIndex,
+    );
   }
 }

@@ -147,7 +147,8 @@ The Flutter client lives in `lib/`, organized by domain-driven modules: shared u
 ## Build, Test, and Development Commands
 - `flutter pub get` installs Flutter and plugin dependencies.
 - `flutter run -d macos` launches the desktop app against the live macOS databases.
-- `flutter build macos --release` generates a distributable bundle.
+- `./tool/build_and_notarize.sh` is the default distribution pipeline for a shareable macOS release build and produces a notarized `MessageLens.dmg` on the Desktop.
+- `flutter build macos --release` generates a local release build for verification; by itself it is not the default distribution artifact.
 - `flutter analyze` enforces Dart lint rules from `analysis_options.yaml`.
 - `flutter test` executes widget and integration tests in `test/`.
 - `cargo build --release` and `cargo test` run within `rust/rust/attributed-string-decoder/` for the extractor.

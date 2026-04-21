@@ -16,12 +16,11 @@ Each feature can extend this pattern by adding its own spec type (e.g. `Messages
 
 `CassetteRackState` is a value object holding an ordered list of `CassetteSpec`s.  The **rack provider** is a class‑based Riverpod notifier (`CassetteRackStateNotifier`) that exposes methods to mutate the stack:
 
-* `setRack(List<CassetteSpec>)` – replace the entire stack.
-* `pushCassette(CassetteSpec)` – append a spec to the bottom of the stack.
-* `updateSpecAndChild(oldSpec, newSpec)` – replace an existing spec with an updated spec and append its child (see below).
+* `resetToInitial()` – rebuild the stable rack from the mode's topology-derived root.
+* `replaceAtIndexAndCascade(index, newSpec)` – replace a local cassette and rebuild everything below it through topology.
 * `findLatestContactId()` – helper used by deeper cassettes to fetch the most recently selected contact ID from the stack.
 
-There is **no external provider** for state like selected menu index or chosen contact.  All view state lives on the spec itself (e.g. `SidebarUtilityCassetteSpec.topChatMenu(chosenMenuIndex: 0)`).  When the user interacts with a cassette, the widget constructs a new spec with updated state and calls `updateSpecAndChild()`.  This simplifies the code and avoids a “messy collection of providers.”
+There is **no external provider** for state like selected menu index or chosen contact.  All view state lives on the spec itself. When the user interacts with a cassette, the widget constructs a new spec with updated state and calls `replaceAtIndexAndCascade()` using the cassette's resolved index.
 
 ### SideBarCassetteCard
 
@@ -33,9 +32,9 @@ The top chat menu is the only implemented cassette at this point.  Its spec vari
 
 1. Creates a new spec by calling `spec.copyWith(chosenMenuIndex: newIndex)`.
 2. Wraps both old and new specs in the `CassetteSpec.sidebarUtility` wrapper.
-3. Calls `ref.read(cassetteRackStateProvider.notifier).updateSpecAndChild(oldWrapper, newWrapper)`.
+3. Calls `ref.read(cassetteRackStateProvider.notifier).replaceAtIndexAndCascade(cassetteIndex, newWrapper)`.
 
-The rack provider locates the index of `oldWrapper`, replaces it with `newWrapper`, truncates anything below it, and pushes the next spec as determined by the spec’s `childSpec()` method (see below).
+The rack provider uses the resolved `cassetteIndex`, replaces that local node, and re-cascades everything below it through topology.
 
 ## Coordinators
 
@@ -126,14 +125,13 @@ The high‑level logic of the rack is in place, but the **cassette widget coordi
 
    The spec should return `null` when there is no next cassette.
 
-2. **Update `CassetteRackStateNotifier.updateSpecAndChild()`.**  This method should:
+2. **Use `CassetteRackStateNotifier.replaceAtIndexAndCascade()`.**  This method should:
 
-   * Find the index of `oldSpec` in `state.cassettes`.
-   * Replace it with `newSpec`.
-   * Truncate the stack below this index.
-   * Call `newSpec.childSpec()` and, if it returns a non‑null spec, push it onto the stack.
+  * Receive the cassette's resolved index from the coordinator/resolver path.
+  * Replace that local cassette with `newSpec`.
+  * Rebuild everything below that index through topology.
 
-   This ensures that when a cassette changes state it regenerates any cassettes below it.
+  This ensures that when a cassette changes state it regenerates any cassettes below it without requiring widgets to hold old specs in state.
 
 3. **Iteratively build children in the widget coordinator.**  The `CassetteWidgetCoordinator` should no longer stop after building the existing stack.  Instead, after rendering the last spec in the rack, it should look at that spec’s `childSpec()`.  If `childSpec()` returns a spec, it should build a widget for it (using the appropriate feature coordinator) and append it to the list.  Then it should repeat the process until `childSpec()` returns `null`.  This will create a continuous chain of widgets without needing explicit calls from the widgets themselves.
 

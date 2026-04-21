@@ -378,6 +378,7 @@ class SidebarFlow extends _$SidebarFlow {
   void setContactMessageScope({
     required int contactId,
     required SidebarFlowMessageScope messageScope,
+    required int cassetteIndex,
   }) {
     if (messageScope == SidebarFlowMessageScope.regular) {
       _setStateAndClearRightIfNeeded(
@@ -388,6 +389,14 @@ class SidebarFlow extends _$SidebarFlow {
           messageScope: SidebarFlowMessageScope.regular,
         ),
       );
+      ref
+          .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
+          .replaceAtIndexAndCascade(
+            cassetteIndex,
+            CassetteSpec.contacts(
+              ContactsCassetteSpec.messageScopeToggle(contactId: contactId),
+            ),
+          );
       return;
     }
 
@@ -400,28 +409,15 @@ class SidebarFlow extends _$SidebarFlow {
         messageScope: SidebarFlowMessageScope.recoveredDeleted,
       ),
     );
-  }
-
-  void showRecoveredDeletedForContact({
-    required int contactId,
-    required int heroCassetteIndex,
-  }) {
-    _setStateAndClearRightIfNeeded(
-      state.copyWith(
-        topMenuChoice: TopChatMenuChoice.contacts,
-        chosenContactId: contactId,
-        selectedHandleId: null,
-        messageScope: SidebarFlowMessageScope.recoveredDeleted,
-      ),
-    );
-
-    final heroSpec = CassetteSpec.contacts(
-      ContactsCassetteSpec.contactHeroSummary(chosenContactId: contactId),
-    );
 
     ref
         .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
-        .replaceAtIndexAndCascade(heroCassetteIndex, heroSpec);
+        .replaceAtIndexAndCascade(
+          cassetteIndex,
+          CassetteSpec.contacts(
+            ContactsCassetteSpec.messageScopeToggle(contactId: contactId),
+          ),
+        );
   }
 
   void showGlobalRecoveredDeleted() {

@@ -1,30 +1,9 @@
-I’m reviewing the Phase 1 diff with a bug-risk lens now, including the test file you mentioned changed, so I can call out any real issues before we move on.
+Historical note: this interim review captured pre-migration concerns during the settings semantics transition.
 
-Compacted conversation
+Those concerns are now obsolete. The current sidebar architecture derives stable settings children from durable settings context, emits intrinsic typed settings intents, and keeps temporary settings flows on the ephemeral projection path.
 
-I’ve pulled the current diff and the latest test file state. Next I’m checking the settings root/widget/reset paths for semantic regressions and gaps against the Phase 1 contract.
+Do not use this file as current implementation guidance. The active reference set for the shipped direction is:
 
-I’ve narrowed it down to a couple of places where the semantics may still leak or the contract may be incompletely enforced. I’m checking persistence and lifecycle paths now so the review is evidence-based rather than speculative.
-
-I’ve confirmed the key invariants in code. I’m running the focused sidebar/settings suite once more against the current workspace state so the review reflects today’s tree, not the earlier pass.
-
-One semantic gap has emerged: the durable settings context is projected into the menu label, but I need to confirm whether it also rehydrates the durable child cassette after a rack rebuild or mode re-entry. That’s the main thing I’m verifying now.
-
-High: durable settings context still is not the source of durable settings topology. sidebar_utility_topology.dart:21 derives the settings child only from expandedActionId, while cassette_rack_state_provider.dart:51 rebuilds settings mode from a bare settingsMenu root, and cassette_widget_coordinator_provider.dart:154 uses persistentSettingsContext only to build the menu payload. That means the “durable” choice currently survives only as menu chrome; if the settings rack is reconstructed, the label can still project Text size/Image size while the corresponding child cassette is gone. This is the main semantic gap I’d fix before calling the Phase 1 ownership split complete.
-
-Medium: the current reset flow is modal and widget-owned, which breaks the documented sidebar-local transient-flow contract. settings_action_list.dart:83 opens a confirmation dialog before dispatch, and reset_message_data_confirmation_dialog.dart:12 makes it blocking with barrierDismissible false. Even if this landed after the original Phase 1 work, it is a real regression against the approved non-modal dispatcher/topology-owned lifecycle.
-
-Assumptions:
-
-I reviewed the current tree, not just the earlier snapshot, because newer edits are now present.
-I treated the approved semantics docs as the review baseline.
-Verification:
-
-Focused sidebar/settings tests still pass in the current workspace: 58 passed, 0 failed.
-I did not make any edits.
-Aside from the two items above, the persistent-vs-transient split itself still looks structurally sound: transient expandedActionId is kept out of JSON, transient actions do not overwrite persistentSettingsContext, and the menu chrome is no longer using transient selections as durable state.
-
-Natural next steps:
-
-Make durable settings child derivation come from persistentSettingsContext whenever the settings rack is rebuilt, then add a regression test for “select persistent context -> rebuild settings rack -> durable child still present”.
-Move reset confirmation back into a sidebar cassette flow so dispatch/topology own the transient lifecycle before continuing with the next phase.
+- ../ephemeral-sidebar-projection/PROPOSAL.md
+- ../ephemeral-sidebar-projection/DESIGN_NOTES.md
+- ../ephemeral-sidebar-projection/CHECKLIST.md

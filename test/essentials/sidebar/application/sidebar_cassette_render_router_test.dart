@@ -1,11 +1,10 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-
 import 'package:remember_this_text/essentials/navigation/domain/sidebar_mode.dart';
-import 'package:remember_this_text/essentials/sidebar/domain/sidebar_action_intent.dart';
 import 'package:remember_this_text/essentials/sidebar/application/sidebar_cassette_render_router.dart';
 import 'package:remember_this_text/essentials/sidebar/domain/entities/cassette_spec.dart';
+import 'package:remember_this_text/essentials/sidebar/domain/sidebar_action_intent.dart';
 import 'package:remember_this_text/essentials/sidebar/domain/sidebar_body_model.dart';
 import 'package:remember_this_text/essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 import 'package:remember_this_text/features/messages/application/sidebar_cassette_spec/payloads/messages_heatmap_cassette_payload.dart';
@@ -145,12 +144,8 @@ void main() {
             cassetteIndex: 1,
             title: 'Reset Message Data',
             bodyText:
-                'Use this if the messages or contacts shown in MessageLens do not match what you see in Messages or Contacts on your Mac. Resetting deletes imported message and contact data, keeps your preferences, and re-imports from your Mac the next time you open the app.',
+                'Use this if the messages or contacts shown in MessageLens do not match what you see in Messages or Contacts on your Mac. Selecting Reset message data opens a confirmation dialog before anything is deleted. Resetting clears only MessageLens databases, keeps your preferences, and re-imports from your Mac the next time you open the app.',
             actions: [
-              SidebarActionDescriptor(
-                label: 'Cancel',
-                intent: SettingsTransientActionCancelled(),
-              ),
               SidebarActionDescriptor(
                 label: 'Reset message data…',
                 intent: ResetMessageDataRequested(),
@@ -170,9 +165,8 @@ void main() {
         ),
       );
 
-      expect(find.textContaining('keeps your preferences'), findsOneWidget);
+      expect(find.textContaining('confirmation dialog'), findsOneWidget);
       expect(find.text('Reset Message Data'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
       expect(find.text('Reset message data…'), findsOneWidget);
     });
   });

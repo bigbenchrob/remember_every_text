@@ -319,6 +319,7 @@ void main() {
         flow.setContactMessageScope(
           contactId: 42,
           messageScope: SidebarFlowMessageScope.recoveredDeleted,
+          cassetteIndex: 4,
         );
 
         await _flushMessagesPanelReconciliation(tester);
@@ -340,6 +341,7 @@ void main() {
         flow.setContactMessageScope(
           contactId: 42,
           messageScope: SidebarFlowMessageScope.regular,
+          cassetteIndex: 4,
         );
 
         await _flushMessagesPanelReconciliation(tester);

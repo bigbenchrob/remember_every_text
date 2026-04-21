@@ -1,10 +1,9 @@
+import '../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import 'sidebar_utilities_constants.dart';
 
 sealed class SettingsTopMenuRow {
   const SettingsTopMenuRow();
 }
-
-enum SettingsTopMenuActionSemantic { persistentContext, transientAction }
 
 final class SettingsTopMenuGroupHeaderRow extends SettingsTopMenuRow {
   const SettingsTopMenuGroupHeaderRow({required this.label});
@@ -16,24 +15,35 @@ final class SettingsTopMenuActionRow extends SettingsTopMenuRow {
   const SettingsTopMenuActionRow({
     required this.label,
     required this.actionId,
-    required this.semantic,
+    required this.isPersistentContext,
   });
 
   const SettingsTopMenuActionRow.persistentContext({
     required this.label,
     required this.actionId,
-  }) : semantic = SettingsTopMenuActionSemantic.persistentContext;
+  }) : isPersistentContext = true;
 
   const SettingsTopMenuActionRow.transientAction({
     required this.label,
     required this.actionId,
-  }) : semantic = SettingsTopMenuActionSemantic.transientAction;
+  }) : isPersistentContext = false;
 
   final String label;
   final SettingsMenuActionId actionId;
-  final SettingsTopMenuActionSemantic semantic;
+  final bool isPersistentContext;
 
-  bool get isPersistentContext {
-    return semantic == SettingsTopMenuActionSemantic.persistentContext;
+  SidebarActionIntent get intent {
+    if (isPersistentContext) {
+      return SettingsPersistentContextChosen(actionId: actionId);
+    }
+
+    return switch (actionId) {
+      SettingsMenuActionId.sendLogs => const ShowSendLogsFlow(),
+      SettingsMenuActionId.resetMessageData => const ShowResetMessageDataFlow(),
+      SettingsMenuActionId.textSize ||
+      SettingsMenuActionId.imageSize => throw StateError(
+        'Persistent settings rows must not use transient action transport.',
+      ),
+    };
   }
 }

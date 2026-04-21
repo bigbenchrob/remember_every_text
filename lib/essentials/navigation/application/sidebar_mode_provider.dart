@@ -1,6 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../sidebar/application/cassette_rack_state_provider.dart';
+import '../../sidebar/application/ephemeral_cassette_projection_provider.dart';
 import '../domain/sidebar_mode.dart';
 
 part 'sidebar_mode_provider.g.dart';
@@ -19,11 +19,9 @@ class ActiveSidebarMode extends _$ActiveSidebarMode {
       return;
     }
 
-    if (previousMode == SidebarMode.settings) {
-      ref
-          .read(cassetteRackStateProvider(SidebarMode.settings).notifier)
-          .resetToInitial();
-    }
+    ref
+        .read(ephemeralCassetteProjectionProvider(previousMode).notifier)
+        .clear();
 
     state = mode;
   }

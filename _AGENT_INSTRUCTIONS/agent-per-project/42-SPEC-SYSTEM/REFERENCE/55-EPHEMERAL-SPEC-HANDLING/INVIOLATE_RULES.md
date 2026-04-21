@@ -170,6 +170,125 @@ The coordinator must:
 
 No implicit merging. No loss of ordering.
 
+---
+
+INVIOLATE RULE — Topology Decisions Are Local and Single-Step
+
+Topology must operate strictly as a sequence of local, single-step decisions.
+
+For any given cassette spec:
+
+The topology rule for that spec may determine only its immediate next child.
+
+⸻
+
+Allowed Pattern
+
+The only valid topology pattern is:
+
+* given the current spec
+* consult the minimal durable fact from flow state required for this decision
+* return exactly one next child spec, or null
+
+Expressed informally:
+
+“What is my next child?”
+
+Nothing more.
+
+⸻
+
+Flow State Access
+
+Topology rules may consult durable flow state.
+
+However:
+
+Flow state may be read only as input to the immediate next-child decision for the current spec.
+
+Topology must not:
+
+* derive meaning from other specs
+* depend on downstream structure
+* cache or propagate derived branch state
+
+⸻
+
+Forbidden Patterns
+
+The following are strictly prohibited:
+
+1. Branch Planning
+
+* deciding multiple future successors
+* reasoning about “the branch as a whole”
+* encoding entire chains in a single decision
+
+2. Chain Assembly
+
+* constructing lists of specs
+* calling setRack([...])
+* assembling partial or full branches procedurally
+
+3. Conditional Omission
+
+* “omit X”
+* “stop before Y”
+* “append Z only if condition”
+* any logic that treats a branch as a modified version of another branch
+
+4. Lookahead or Lookbehind
+
+* inspecting future nodes
+* scanning previous specs
+* making decisions based on anything other than:
+    * current spec
+    * minimal required durable state
+
+⸻
+
+Correct Mental Model
+
+Topology is not:
+
+* a builder
+* a planner
+* a filter
+
+Topology is:
+
+a function that maps (current spec + durable state) → next spec
+
+Repeated until termination.
+
+⸻
+
+Example
+
+Correct:
+
+* messageScopeToggle asks:
+    * if scope is regular → next = handleFilter
+    * if scope is recoveredDeleted → next = recoveredDeletedInfo
+
+Incorrect:
+
+* “build contact branch, but don’t include heatmap”
+* “truncate the chain before heatmap”
+* “omit heatmap in recoveredDeleted scope”
+
+⸻
+
+Summary
+
+If a topology rule does more than answer:
+
+“What is the next child of this spec?”
+
+then it is violating the architecture.
+
+No exceptions.
+
 ⸻
 
 Summary Rule

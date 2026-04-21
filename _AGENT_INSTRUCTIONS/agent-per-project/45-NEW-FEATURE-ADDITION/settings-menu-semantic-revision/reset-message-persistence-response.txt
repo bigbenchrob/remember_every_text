@@ -1,30 +1,5 @@
-’m investigating the retention path first, because this sounds like a stored rack or mode-scoped notifier surviving the mode switch rather than the transient spec JSON path we already sealed. I’m reading the current settings rack/state lifecycle and the mode-switch plumbing before touching anything.
+Historical note: this response captured an intermediate diagnosis before the stable/ephemeral sidebar projection work was completed.
 
-I’m tracing the mode-switch lifecycle end to end: settings rack state, any per-mode keep-alive provider behavior, and the code that rehydrates the visible rack when you return to Settings. The goal is to prove whether the reset cassette is coming from stored rack state, a re-cascade path, or a retained widget/notifier.
+The current shipped behavior is broader than the mode-exit fix described here: temporary settings flows now live on the ephemeral projection layer, while durable settings context rebuilds through stable topology.
 
-The likely failure mode is now clear enough to target: the settings rack provider is family-scoped by mode and appears to stay alive in memory, so switching away doesn’t reconstruct it from durable state when you come back. I’m verifying that by reading the sidebar mode provider and shell layout, then I’ll patch the mode-exit path to clear transient settings rack state on leaving Settings.
-
-The retention path is more specific now: the Settings workspace is kept alive in an IndexedStack, and the settings rack provider is stateful and not auto-disposed, so nothing currently clears its transient rack state when you leave Settings. I’m checking whether there’s already a mode-provider test seam; if not, I’ll add focused regression coverage around mode exit and then patch the mode switch to rebuild Settings from durable state only.
-
-I’ve isolated the retention mechanism. The reset cassette is not coming back from JSON or durable flow state; it’s being kept alive in memory because the app uses an IndexedStack for the two workspaces and the settings rack notifier is never reset when mode changes away from Settings. I’m patching the mode switch so leaving Settings clears the mode-scoped settings rack back to its durable projection, then I’ll add a regression test that covers the exact leave-and-return scenario.
-
-The lifecycle fix is in. I’m validating the mode provider and the new regression test now, plus the existing settings rack/dispatcher tests to make sure the exit-reset change didn’t break the earlier durable-context behavior.
-
-Checked sidebar_mode_provider.dart, sidebar_mode_provider_test.dart, cassette_rack_state_provider_test.dart, sidebar_action_dispatcher_test.dart, no problems found
-
-14/14 tests passed (100%)
-
-The bug is fixed and the regression test is green. I’m pulling the exact source locations for the retention path and the fix so I can give you a precise explanation of what was storing the transient reset cassette and how it now gets cleared on mode exit.
-
-I found the exact retention path, and it was not JSON persistence or durable flow state.
-
-The reset cassette was being retained as live notifier state in cassette_rack_state_provider.dart:86. The app shell keeps both workspaces alive in an IndexedStack at macos_app_shell.dart:263, including macos_app_shell.dart:267. Because the settings rack provider is a mode-keyed stateful provider, its current state survived while Settings was inactive. The actual stored thing causing the reset cassette to reappear was the in-memory cassettes list inside the settings rack notifier state, not SidebarFlowState.
-
-The missing lifecycle step was in sidebar_mode_provider.dart:16. Switching mode only changed the active mode flag, so leaving Settings never cleared the transient settings rack. When you came back, the same retained settings rack was reused, including the transient reset projection.
-
-I fixed that by resetting the settings rack when mode exits Settings in sidebar_mode_provider.dart:22. That reset goes through cassette_rack_state_provider.dart:108, which already rebuilds Settings from durable state only: root settings menu plus any durable child derived from persistent settings context. That means:
-
-persistent settings context may still restore
-transient settings cassettes are cleared on mode exit
-re-entering Settings now comes back from durable state, not from the old transient rack
-I added a focused regression test for the exact leave-and-return scenario in sidebar_mode_provider_test.dart:36. It verifies that a transient reset flow is present while Settings is active, gets cleared when switching to Messages, and does not reappear when switching back to Settings, while durable text-size context remains.
+Do not use this file as the current fix description. Refer to `../ephemeral-sidebar-projection/PROPOSAL.md`, `../ephemeral-sidebar-projection/DESIGN_NOTES.md`, and `../ephemeral-sidebar-projection/CHECKLIST.md` instead.

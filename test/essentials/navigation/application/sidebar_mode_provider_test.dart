@@ -5,12 +5,12 @@ import 'package:remember_this_text/essentials/db/feature_level_providers/working
 import 'package:remember_this_text/essentials/navigation/application/sidebar_mode_provider.dart';
 import 'package:remember_this_text/essentials/navigation/domain/sidebar_mode.dart';
 import 'package:remember_this_text/essentials/sidebar/application/cassette_rack_state_provider.dart';
+import 'package:remember_this_text/essentials/sidebar/application/ephemeral_cassette_projection_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/application/sidebar_action_dispatcher.dart';
 import 'package:remember_this_text/essentials/sidebar/application/sidebar_flow_state_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/domain/entities/cassette_spec.dart';
 import 'package:remember_this_text/essentials/sidebar/domain/sidebar_action_intent.dart';
 import 'package:remember_this_text/features/settings/domain/spec_classes/settings_cassette_spec.dart';
-import 'package:remember_this_text/features/sidebar_utilities/domain/settings_top_menu_row.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
 
@@ -33,7 +33,7 @@ void main() {
     });
 
     test(
-      'leaving settings clears transient rack state and preserves only durable settings context',
+      'leaving settings clears ephemeral projection and preserves durable settings context',
       () async {
         final modeNotifier = container.read(activeSidebarModeProvider.notifier);
         final dispatcher = container.read(
@@ -43,9 +43,8 @@ void main() {
         modeNotifier.setMode(SidebarMode.settings);
 
         await dispatcher.dispatch(
-          intent: const SettingsTopMenuActionChosen(
+          intent: const SettingsPersistentContextChosen(
             actionId: SettingsMenuActionId.textSize,
-            semantic: SettingsTopMenuActionSemantic.persistentContext,
           ),
           context: const SidebarActionDispatchContext(
             sidebarMode: SidebarMode.settings,
@@ -54,10 +53,7 @@ void main() {
         );
 
         await dispatcher.dispatch(
-          intent: const SettingsTopMenuActionChosen(
-            actionId: SettingsMenuActionId.resetMessageData,
-            semantic: SettingsTopMenuActionSemantic.transientAction,
-          ),
+          intent: const ShowResetMessageDataFlow(),
           context: const SidebarActionDispatchContext(
             sidebarMode: SidebarMode.settings,
             cassetteIndex: 0,
@@ -70,10 +66,18 @@ void main() {
               .cassettes,
           equals([
             const CassetteSpec.sidebarUtility(
-              SidebarUtilityCassetteSpec.settingsMenu(
-                expandedActionId: SettingsMenuActionId.resetMessageData,
-              ),
+              SidebarUtilityCassetteSpec.settingsMenu(),
             ),
+            const CassetteSpec.settings(
+              SettingsCassetteSpec.textSizePlaceholder(),
+            ),
+          ]),
+        );
+        expect(
+          container
+              .read(ephemeralCassetteProjectionProvider(SidebarMode.settings))
+              .cassettes,
+          equals([
             const CassetteSpec.settings(
               SettingsCassetteSpec.resetMessageDataPanel(),
             ),
@@ -95,6 +99,12 @@ void main() {
               SettingsCassetteSpec.textSizePlaceholder(),
             ),
           ]),
+        );
+        expect(
+          container
+              .read(ephemeralCassetteProjectionProvider(SidebarMode.settings))
+              .cassettes,
+          isEmpty,
         );
         expect(
           container.read(sidebarFlowProvider).persistentSettingsContext,

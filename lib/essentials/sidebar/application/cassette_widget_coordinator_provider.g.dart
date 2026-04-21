@@ -191,7 +191,7 @@ class _ResolvedSidebarCassetteProviderElement
 }
 
 String _$sidebarCassetteResolutionStateHash() =>
-    r'd8f72d73bedd3e0ef2d3136158357c79004fb795';
+    r'aa838aa4f97e4394a346966fb8a8d4251fdcff8a';
 
 /// See also [sidebarCassetteResolutionState].
 @ProviderFor(sidebarCassetteResolutionState)

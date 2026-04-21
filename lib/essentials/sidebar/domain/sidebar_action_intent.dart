@@ -1,5 +1,4 @@
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
-import '../../../features/sidebar_utilities/domain/settings_top_menu_row.dart';
 
 enum SidebarTopMenuChoice {
   contacts,
@@ -25,6 +24,14 @@ sealed class SidebarActionIntent {
   const SidebarActionIntent();
 }
 
+sealed class SidebarPersistentIntent extends SidebarActionIntent {
+  const SidebarPersistentIntent();
+}
+
+sealed class SidebarEphemeralIntent extends SidebarActionIntent {
+  const SidebarEphemeralIntent();
+}
+
 /// Immutable action descriptor for render-edge wiring.
 ///
 /// This type may carry copy, tone, iconography, and a typed intent only.
@@ -46,33 +53,29 @@ final class SidebarActionDescriptor {
   final bool isEnabled;
 }
 
-final class TopMenuChanged extends SidebarActionIntent {
+final class TopMenuChanged extends SidebarPersistentIntent {
   const TopMenuChanged({required this.choice});
 
   final SidebarTopMenuChoice choice;
 }
 
-final class SettingsTopMenuActionChosen extends SidebarActionIntent {
-  const SettingsTopMenuActionChosen({
-    required this.actionId,
-    required this.semantic,
-  });
+final class SettingsPersistentContextChosen extends SidebarPersistentIntent {
+  const SettingsPersistentContextChosen({required this.actionId});
 
   final SettingsMenuActionId actionId;
-  final SettingsTopMenuActionSemantic semantic;
 }
 
-final class ContactChosen extends SidebarActionIntent {
+final class ContactChosen extends SidebarPersistentIntent {
   const ContactChosen({required this.contactId});
 
   final int contactId;
 }
 
-final class ChooseAnotherContact extends SidebarActionIntent {
+final class ChooseAnotherContact extends SidebarPersistentIntent {
   const ChooseAnotherContact();
 }
 
-final class ContactHandleSelected extends SidebarActionIntent {
+final class ContactHandleSelected extends SidebarPersistentIntent {
   const ContactHandleSelected({
     required this.contactId,
     required this.handleId,
@@ -82,7 +85,7 @@ final class ContactHandleSelected extends SidebarActionIntent {
   final int? handleId;
 }
 
-final class ContactMessageScopeChanged extends SidebarActionIntent {
+final class ContactMessageScopeChanged extends SidebarPersistentIntent {
   const ContactMessageScopeChanged({
     required this.contactId,
     required this.scope,
@@ -92,14 +95,14 @@ final class ContactMessageScopeChanged extends SidebarActionIntent {
   final SidebarMessageScope scope;
 }
 
-final class HeatMapMonthFocused extends SidebarActionIntent {
+final class HeatMapMonthFocused extends SidebarPersistentIntent {
   const HeatMapMonthFocused({this.monthAnchor, this.contactId});
 
   final int? contactId;
   final DateTime? monthAnchor;
 }
 
-final class RecoveredMonthFocused extends SidebarActionIntent {
+final class RecoveredMonthFocused extends SidebarPersistentIntent {
   const RecoveredMonthFocused({
     required this.monthAnchor,
     this.contactId,
@@ -111,44 +114,52 @@ final class RecoveredMonthFocused extends SidebarActionIntent {
   final bool onlyNoHandleFromMe;
 }
 
-final class StrayHandleFilterChanged extends SidebarActionIntent {
+final class StrayHandleFilterChanged extends SidebarPersistentIntent {
   const StrayHandleFilterChanged({required this.filter});
 
   final SidebarStrayHandleFilter filter;
 }
 
-final class StrayHandleModeChanged extends SidebarActionIntent {
+final class StrayHandleModeChanged extends SidebarPersistentIntent {
   const StrayHandleModeChanged({required this.mode});
 
   final SidebarStrayHandleMode mode;
 }
 
-final class StrayHandleOpened extends SidebarActionIntent {
+final class StrayHandleOpened extends SidebarPersistentIntent {
   const StrayHandleOpened({required this.handleId});
 
   final int handleId;
 }
 
-final class StrayHandleDismissed extends SidebarActionIntent {
+final class StrayHandleDismissed extends SidebarPersistentIntent {
   const StrayHandleDismissed({required this.normalizedHandle});
 
   final String normalizedHandle;
 }
 
-final class StrayHandleRestored extends SidebarActionIntent {
+final class StrayHandleRestored extends SidebarPersistentIntent {
   const StrayHandleRestored({required this.normalizedHandle});
 
   final String normalizedHandle;
 }
 
-final class SendLogsRequested extends SidebarActionIntent {
+final class ShowSendLogsFlow extends SidebarEphemeralIntent {
+  const ShowSendLogsFlow();
+}
+
+final class ShowResetMessageDataFlow extends SidebarEphemeralIntent {
+  const ShowResetMessageDataFlow();
+}
+
+final class SendLogsRequested extends SidebarEphemeralIntent {
   const SendLogsRequested();
 }
 
-final class SettingsTransientActionCancelled extends SidebarActionIntent {
+final class SettingsTransientActionCancelled extends SidebarEphemeralIntent {
   const SettingsTransientActionCancelled();
 }
 
-final class ResetMessageDataRequested extends SidebarActionIntent {
+final class ResetMessageDataRequested extends SidebarEphemeralIntent {
   const ResetMessageDataRequested();
 }

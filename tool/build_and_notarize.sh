@@ -3,6 +3,12 @@
 # build_and_notarize.sh — Build, sign, package, and notarize MessageLens
 # ──────────────────────────────────────────────────────────────────────
 #
+# Default distribution path:
+#   Use this script for any build that will be shared outside the local
+#   machine. A plain `flutter build macos --release` is only a local release
+#   build; it is not the repo's default distribution artifact. The default
+#   output is a notarized `MessageLens.dmg` written to the Desktop.
+#
 # Prerequisites (one-time setup):
 #   1. Developer ID Application certificate in Keychain
 #   2. App-specific password from https://appleid.apple.com
@@ -13,8 +19,8 @@
 #          --password "YOUR_APP_SPECIFIC_PASSWORD"
 #
 # Usage:
-#   ./tool/build_and_notarize.sh          # Full pipeline
-#   ./tool/build_and_notarize.sh --skip-build   # Repackage existing build
+#   ./tool/build_and_notarize.sh               # Default distribution pipeline -> ~/Desktop/MessageLens.dmg
+#   ./tool/build_and_notarize.sh --skip-build  # Repackage existing release build
 #
 set -euo pipefail
 

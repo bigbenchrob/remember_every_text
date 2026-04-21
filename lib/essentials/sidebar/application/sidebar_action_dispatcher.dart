@@ -10,7 +10,7 @@ import '../../../features/handles/domain/spec_classes/handles_cassette_spec.dart
 import '../../../features/handles/infrastructure/repositories/stray_handles_provider.dart';
 import '../../../features/messages/domain/value_objects/message_timeline_scope.dart';
 import '../../../features/messages/presentation/view_model/timeline/message_timeline_view_model_provider.dart';
-import '../../../features/sidebar_utilities/domain/settings_top_menu_row.dart';
+import '../../../features/settings/domain/spec_classes/settings_cassette_spec.dart';
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
 import '../../db/application/database_health_audit/database_health_audit_service.dart';
@@ -23,6 +23,7 @@ import '../../navigation/domain/sidebar_mode.dart';
 import '../../navigation/feature_level_providers.dart';
 import '../../onboarding/application/message_data_reset_service.dart';
 import '../application/cassette_rack_state_provider.dart';
+import '../application/ephemeral_cassette_projection_provider.dart';
 import '../application/sidebar_flow_state_provider.dart';
 import '../domain/entities/cassette_spec.dart';
 import '../domain/sidebar_action_intent.dart';
@@ -58,19 +59,40 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
               choice: _mapTopMenuChoice(choice),
               cassetteIndex: _requireCassetteIndex(context),
             );
-      case SettingsTopMenuActionChosen(:final actionId, :final semantic):
-        if (semantic == SettingsTopMenuActionSemantic.persistentContext) {
-          ref
-              .read(sidebarFlowProvider.notifier)
-              .setPersistentSettingsContext(actionId);
-        }
+      case SettingsPersistentContextChosen(:final actionId):
+        ref
+            .read(
+              ephemeralCassetteProjectionProvider(context.sidebarMode).notifier,
+            )
+            .clear();
+        ref
+            .read(sidebarFlowProvider.notifier)
+            .setPersistentSettingsContext(actionId);
 
         _replaceCassetteAtContext(
           context: context,
-          spec: CassetteSpec.sidebarUtility(
-            SidebarUtilityCassetteSpec.settingsMenu(expandedActionId: actionId),
+          spec: const CassetteSpec.sidebarUtility(
+            SidebarUtilityCassetteSpec.settingsMenu(),
           ),
         );
+      case ShowSendLogsFlow():
+        ref
+            .read(
+              ephemeralCassetteProjectionProvider(context.sidebarMode).notifier,
+            )
+            .replaceProjection(
+              const CassetteSpec.settings(SettingsCassetteSpec.sendLogsPanel()),
+            );
+      case ShowResetMessageDataFlow():
+        ref
+            .read(
+              ephemeralCassetteProjectionProvider(context.sidebarMode).notifier,
+            )
+            .replaceProjection(
+              const CassetteSpec.settings(
+                SettingsCassetteSpec.resetMessageDataPanel(),
+              ),
+            );
       case ContactChosen(:final contactId):
         await _handleContactChosen(context: context, contactId: contactId);
       case ChooseAnotherContact():
@@ -93,6 +115,7 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
             .setContactMessageScope(
               contactId: contactId,
               messageScope: _mapMessageScope(scope),
+              cassetteIndex: _requireCassetteIndex(context),
             );
       case HeatMapMonthFocused(:final monthAnchor, :final contactId):
         _dispatchHeatMapFocus(contactId: contactId, monthAnchor: monthAnchor);
@@ -134,8 +157,10 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
         await _restoreHandle(normalizedHandle);
       case SettingsTransientActionCancelled():
         ref
-            .read(cassetteRackStateProvider(context.sidebarMode).notifier)
-            .resetToInitial();
+            .read(
+              ephemeralCassetteProjectionProvider(context.sidebarMode).notifier,
+            )
+            .clear();
       case SendLogsRequested():
         final writer = ref.read(appLoggerProvider.notifier).writer;
         final databaseHealthAuditService = await ref.read(
@@ -147,7 +172,7 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
         );
       case ResetMessageDataRequested():
         final resetService = ref.read(messageDataResetServiceProvider);
-        await resetService.resetAndQuit();
+        await resetService.confirmResetAndPrepareReimport();
     }
   }
 

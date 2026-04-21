@@ -1,6 +1,14 @@
 part of '../cassette_spec.dart';
 
-CassetteSpec? resolveContactsChild(ContactsCassetteSpec spec) {
+// TOPOLOGY RULE:
+// Determine ONLY the immediate next child of this spec.
+// May consult flow state, but must not plan or assemble a chain.
+// See cassette_child_resolver.dart for full contract.
+
+CassetteSpec? resolveContactsChild(
+  ContactsCassetteSpec spec, {
+  StableCassetteTopologyContext? context,
+}) {
   return spec.when(
     contactChooser: (_) {
       // Terminal node — the chooser sits beneath the picker info card.
@@ -29,9 +37,19 @@ CassetteSpec? resolveContactsChild(ContactsCassetteSpec spec) {
       );
     },
     messageScopeToggle: (contactId) {
-      return CassetteSpec.contacts(
-        ContactsCassetteSpec.handleFilter(contactId: contactId),
-      );
+      switch (context?.messageScope) {
+        case StableCascadeMessageScope.recoveredDeleted:
+          return const CassetteSpec.messagesInfo(
+            MessagesInfoCassetteSpec.infoCard(
+              key: MessagesInfoKey.recoveredDeletedMessages,
+            ),
+          );
+        case StableCascadeMessageScope.regular:
+        case null:
+          return CassetteSpec.contacts(
+            ContactsCassetteSpec.handleFilter(contactId: contactId),
+          );
+      }
     },
     handleFilter: (contactId, _) {
       // Handle filter cascades to messages heat map

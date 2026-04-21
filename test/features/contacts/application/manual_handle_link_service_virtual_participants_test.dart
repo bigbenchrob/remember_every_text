@@ -5,8 +5,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/working/working_database.dart';
-import 'package:remember_this_text/essentials/logging/application/app_logger.dart';
-import 'package:remember_this_text/essentials/logging/domain/log_entry.dart';
 import 'package:remember_this_text/features/contacts/application/services/manual_handle_link_service.dart';
 import 'package:remember_this_text/features/contacts/infrastructure/repositories/virtual_participants_provider.dart';
 
@@ -63,22 +61,32 @@ void main() {
     );
 
     test(
-      'createVirtualParticipant logs warning when name duplicates',
+      'createVirtualParticipant returns failure when name duplicates',
       () async {
         final service = container.read(
           manualHandleLinkServiceProvider.notifier,
         );
 
-        await service.createVirtualParticipant(displayName: 'Jamie');
-        await service.createVirtualParticipant(displayName: 'jamie');
-
-        final logs = container.read(appLoggerProvider);
-        final warningLog = logs.where((entry) => entry.level == LogLevel.warn);
-        expect(warningLog, isNotEmpty);
-        expect(
-          warningLog.last.message,
-          contains('Duplicate virtual contact name requested'),
+        final firstResult = await service.createVirtualParticipant(
+          displayName: 'Jamie',
         );
+        final duplicateResult = await service.createVirtualParticipant(
+          displayName: 'jamie',
+        );
+
+        expect(firstResult.isRight(), isTrue);
+        expect(duplicateResult.isLeft(), isTrue);
+        duplicateResult.fold(
+          (failure) => expect(
+            failure.message,
+            contains('A contact named "jamie" already exists.'),
+          ),
+          (_) => fail('Expected duplicate-name failure'),
+        );
+
+        final participants = await overlayDb.getVirtualParticipants();
+        expect(participants, hasLength(1));
+        expect(participants.single.displayName, 'Jamie');
       },
     );
 

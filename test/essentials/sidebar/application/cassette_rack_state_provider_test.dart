@@ -9,7 +9,6 @@ import 'package:remember_this_text/essentials/sidebar/application/sidebar_flow_s
 import 'package:remember_this_text/essentials/sidebar/domain/entities/cassette_spec.dart';
 import 'package:remember_this_text/essentials/sidebar/domain/sidebar_action_intent.dart';
 import 'package:remember_this_text/features/settings/domain/spec_classes/settings_cassette_spec.dart';
-import 'package:remember_this_text/features/sidebar_utilities/domain/settings_top_menu_row.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
 
@@ -39,9 +38,8 @@ void main() {
         );
 
         await dispatcher.dispatch(
-          intent: const SettingsTopMenuActionChosen(
+          intent: const SettingsPersistentContextChosen(
             actionId: SettingsMenuActionId.textSize,
-            semantic: SettingsTopMenuActionSemantic.persistentContext,
           ),
           context: const SidebarActionDispatchContext(
             sidebarMode: SidebarMode.settings,

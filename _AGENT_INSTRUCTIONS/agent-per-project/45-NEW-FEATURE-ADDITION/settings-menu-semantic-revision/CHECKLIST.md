@@ -2,19 +2,24 @@
 tier: feature
 scope: checklist
 owner: agent-per-project
-last_reviewed: 2026-04-17
+last_reviewed: 2026-04-19
 source_of_truth: doc
 links:
   - ./PROPOSAL.md
   - ./DESIGN_NOTES.md
   - ./TESTS.md
+  - ../ephemeral-sidebar-projection/CHECKLIST.md
 tests: []
 feature: settings-menu-semantic-revision
-status: proposed
+status: superseded
 created: 2026-04-17
 ---
 
 # Checklist - Settings Menu Semantic Revision
+
+Historical note: this checklist captured an intermediate plan before the stable/ephemeral projection split became the shipped architecture.
+
+Use `../ephemeral-sidebar-projection/CHECKLIST.md` for the current closeout state.
 
 ## Phase 0 - Planning Alignment
 

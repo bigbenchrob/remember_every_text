@@ -1,6 +1,14 @@
 part of '../cassette_spec.dart';
 
-CassetteSpec? resolveSidebarUtilityChild(SidebarUtilityCassetteSpec spec) {
+// TOPOLOGY RULE:
+// Determine ONLY the immediate next child of this spec.
+// May consult flow state, but must not plan or assemble a chain.
+// See cassette_child_resolver.dart for full contract.
+
+CassetteSpec? resolveSidebarUtilityChild(
+  SidebarUtilityCassetteSpec spec, {
+  StableCassetteTopologyContext? context,
+}) {
   return spec.when(
     topChatMenu: (selectedChoice) {
       switch (selectedChoice) {
@@ -20,16 +28,14 @@ CassetteSpec? resolveSidebarUtilityChild(SidebarUtilityCassetteSpec spec) {
           return sidebarUtilityChildSearchAllMessagesInfoCard();
       }
     },
-    settingsMenu: (expandedActionId) {
-      switch (expandedActionId) {
-        case SettingsMenuActionId.sendLogs:
-          return sidebarUtilitySettingsChildSendLogsPanel();
-        case SettingsMenuActionId.resetMessageData:
-          return sidebarUtilitySettingsChildResetMessageDataPanel();
+    settingsMenu: () {
+      switch (context?.persistentSettingsContext) {
         case SettingsMenuActionId.textSize:
           return sidebarUtilitySettingsChildTextSizeInfo();
         case SettingsMenuActionId.imageSize:
           return sidebarUtilitySettingsChildImageSizeInfo();
+        case SettingsMenuActionId.sendLogs:
+        case SettingsMenuActionId.resetMessageData:
         case null:
           return null;
       }

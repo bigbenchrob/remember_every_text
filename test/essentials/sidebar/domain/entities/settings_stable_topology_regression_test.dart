@@ -1,0 +1,79 @@
+import 'package:flutter_test/flutter_test.dart';
+
+import 'package:remember_this_text/essentials/sidebar/domain/entities/cassette_spec.dart';
+import 'package:remember_this_text/features/settings/domain/spec_classes/settings_cassette_spec.dart';
+import 'package:remember_this_text/features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
+import 'package:remember_this_text/features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
+
+void main() {
+  group('settings stable topology regression', () {
+    test(
+      'settings root immediate child follows durable persistent context',
+      () {
+        const currentSpec = CassetteSpec.sidebarUtility(
+          SidebarUtilityCassetteSpec.settingsMenu(),
+        );
+
+        const textSizeContext = StableCassetteTopologyContext(
+          messageScope: StableCascadeMessageScope.regular,
+          persistentSettingsContext: SettingsMenuActionId.textSize,
+        );
+        const imageSizeContext = StableCassetteTopologyContext(
+          messageScope: StableCascadeMessageScope.regular,
+          persistentSettingsContext: SettingsMenuActionId.imageSize,
+        );
+        const noContext = StableCassetteTopologyContext(
+          messageScope: StableCascadeMessageScope.regular,
+        );
+
+        expect(
+          resolveStableCascadeChild(currentSpec, context: textSizeContext),
+          equals(
+            const CassetteSpec.settings(
+              SettingsCassetteSpec.textSizePlaceholder(),
+            ),
+          ),
+        );
+        expect(
+          resolveStableCascadeChild(currentSpec, context: imageSizeContext),
+          equals(
+            const CassetteSpec.settings(
+              SettingsCassetteSpec.imageSizePlaceholder(),
+            ),
+          ),
+        );
+        expect(
+          resolveStableCascadeChild(currentSpec, context: noContext),
+          isNull,
+        );
+      },
+    );
+
+    test(
+      'transient settings actions are not stable children of settings root',
+      () {
+        const currentSpec = CassetteSpec.sidebarUtility(
+          SidebarUtilityCassetteSpec.settingsMenu(),
+        );
+
+        const sendLogsContext = StableCassetteTopologyContext(
+          messageScope: StableCascadeMessageScope.regular,
+          persistentSettingsContext: SettingsMenuActionId.sendLogs,
+        );
+        const resetContext = StableCassetteTopologyContext(
+          messageScope: StableCascadeMessageScope.regular,
+          persistentSettingsContext: SettingsMenuActionId.resetMessageData,
+        );
+
+        expect(
+          resolveStableCascadeChild(currentSpec, context: sendLogsContext),
+          isNull,
+        );
+        expect(
+          resolveStableCascadeChild(currentSpec, context: resetContext),
+          isNull,
+        );
+      },
+    );
+  });
+}

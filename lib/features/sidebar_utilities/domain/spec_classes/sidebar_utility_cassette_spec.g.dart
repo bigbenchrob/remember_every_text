@@ -37,14 +37,9 @@ const _$TopChatMenuChoiceEnumMap = {
 _SidebarUtilityCassetteSpecSettingsMenu
 _$SidebarUtilityCassetteSpecSettingsMenuFromJson(Map<String, dynamic> json) =>
     _SidebarUtilityCassetteSpecSettingsMenu(
-      expandedActionId: _expandedActionIdFromJson(json['expandedActionId']),
       $type: json['runtimeType'] as String?,
     );
 
 Map<String, dynamic> _$SidebarUtilityCassetteSpecSettingsMenuToJson(
   _SidebarUtilityCassetteSpecSettingsMenu instance,
-) => <String, dynamic>{
-  if (_expandedActionIdToJson(instance.expandedActionId) case final value?)
-    'expandedActionId': value,
-  'runtimeType': instance.$type,
-};
+) => <String, dynamic>{'runtimeType': instance.$type};
