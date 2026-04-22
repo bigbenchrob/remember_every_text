@@ -1,8 +1,10 @@
 # Identify Stray Handles — Master Plan
 
 > **Branch:** `Ftr.stray`
-> **Status:** Phase 1 — in planning
-> **Last updated:** 2026-02-09
+> **Status:** Historical implementation plan; current code has implemented substantial Phase 1/2 pieces under `lib/features/handles` and `lib/features/contacts`.
+> **Last updated:** 2026-04-21 conformance note
+
+> Current conformance note: keep this document as historical context. For current code, use `HandlesCassetteSpec` variants such as `strayPhoneNumbers`, `strayEmails`, `strayHandlesReview`, `strayHandlesModeSwitcher`, and `strayHandlesTypeSwitcher`; use `MessagesSpec.handleLens(handleId: ...)` for Handle Lens. There is no separate current `StrayHandlesSpec` or `HandleLensSpec` type.
 
 ## Problem
 
@@ -53,14 +55,14 @@ Once linked, a virtual participant is **indistinguishable** from an AddressBook 
 
 ### Provider layer
 
-- **`allParticipantsProvider`** — unions working-DB participants + overlay-DB virtual participants into a single stream. Overlay wins on conflict (per inviolable rule).
+- Current implementation uses contacts providers/repositories such as `participantsForPickerProvider`, `contactsListRepositoryProvider`, `virtualParticipantsProvider`, and `participant_merge_utils.dart` to merge working-DB participants with overlay virtual participants and overrides. Overlay wins on conflict (per inviolable rule).
 - Contact picker, hero card, heatmap, message views all consume this merged provider. Virtual participants get the same treatment as real ones.
 - **`strayHandlesProvider`** — returns handles that have no participant link in *either* DB (working join miss + no overlay override). Drives sidebar list in Phase 2.
 
 ### Prerequisite cleanup
 
-- Audit `ManualHandleLinkService` dual-write → refactor to overlay-only writes.
-- Ensure no code writes `is_blacklisted` to working DB.
+- Current `ManualHandleLinkService` writes overlay-only; keep it that way.
+- Ensure user-intent visibility/spam flags remain overlay-only and are not written to working DB.
 
 ### Exit criteria
 
@@ -79,13 +81,14 @@ A virtual participant created in the overlay DB appears in the contact picker an
 
 ### Sidebar (CassetteSpec)
 
-- New `StrayHandlesSpec` cassette in the sidebar.
+- Current implementation uses `HandlesCassetteSpec` variants in the sidebar cassette system.
 - Flat list of handles with no participant link, sorted by message count (most messages first) or recency.
 - Each row: formatted handle value, message count, most recent message date.
 - Tapping a handle opens the Handle Lens in the center panel.
 
 ### Handle Lens (center panel ViewSpec)
 
+- Current implementation uses `MessagesSpec.handleLens(handleId: ...)` and `handle_lens_view.dart`.
 - Utilitarian layout: handle value at top, action buttons, scrollable message list below.
 - Message list: bare-minimum rendering — timestamp + text body, newest first. No avatars, no bubbles, no heatmap.
 - **Action buttons:**
@@ -132,4 +135,4 @@ User can browse stray handles, identify them via message previews, and either li
 | Unlinked handle display | Zero investment — "link it or forget it" | 2026-02-09 |
 | reviewed_at | Auto-set on Lens open; semantics deferred | 2026-02-09 |
 | Overlay / working separation | Inviolable; documented in 3 agent surfaces | 2026-02-09 |
-| ManualHandleLinkService dual-write | Must refactor to overlay-only in Phase 1 | 2026-02-09 |
+| ManualHandleLinkService dual-write | Refactored: current `ManualHandleLinkService` writes overlay-only and invalidates merged providers. | 2026-04-21 |

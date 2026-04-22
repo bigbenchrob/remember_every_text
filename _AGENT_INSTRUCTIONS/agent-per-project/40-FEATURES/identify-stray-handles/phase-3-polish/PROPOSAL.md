@@ -3,6 +3,8 @@
 > **Status:** Not started
 > **Depends on:** Phase 2 (core review flow working)
 
+> Current conformance note (2026-04-21): this remains deferred polish/planning material. Verify current `handles` providers and sidebar cassette variants before implementing any item.
+
 ## Objective
 
 Quality-of-life improvements once the core stray-handle review flow is proven and in use.

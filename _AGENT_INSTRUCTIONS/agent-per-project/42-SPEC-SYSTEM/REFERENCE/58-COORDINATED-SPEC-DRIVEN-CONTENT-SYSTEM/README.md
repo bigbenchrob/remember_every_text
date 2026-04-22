@@ -1,5 +1,10 @@
 # 58 - Coordinated Spec-Driven Content System
 
+> Reference note: This folder is deep-dive reference material. Prefer
+> [42-SPEC-SYSTEM/README.md](../../README.md) and
+> [CANONICAL-ARCHITECTURE/00-overview.md](../../CANONICAL-ARCHITECTURE/00-overview.md)
+> as entry points before using these details.
+
 This folder is a working architecture brief for the system we were actively
 stabilizing during this session.
 

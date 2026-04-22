@@ -15,6 +15,8 @@ last_updated: 2025-11-06
 
 # Feature Charter — Search
 
+> Legacy note (2026-04-21): this folder is an early feature scaffold. Current search services and indexing live under `lib/essentials/search`, not `lib/features/search`. Message timeline search consumes `searchServiceProvider` from `essentials/search/feature_level_providers.dart`.
+
 ## Mission
 - Deliver unified search across chats, messages, and contacts with performant indexing and responsive UI.
 - Provide extensible query capabilities (text, participants, dates, attachments) while respecting aggregate boundaries.

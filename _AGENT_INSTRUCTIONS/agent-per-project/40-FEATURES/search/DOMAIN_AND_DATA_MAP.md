@@ -15,6 +15,8 @@ last_updated: 2025-11-06
 
 # Domain & Data Map — Search
 
+> Legacy note (2026-04-21): current search is essentials-owned (`lib/essentials/search`). The working DB has search/indexing support used by `SearchService`, `SearchIndexOrchestrator`, `FtsMultiTermIndexer`, and `SimpleLexicalIndexer`; there is no current `lib/features/search` module.
+
 ## Core Components
 - Search index (candidate: SQLite FTS tables) covering chats + messages.
 - Query service orchestrating filtering and ranking.

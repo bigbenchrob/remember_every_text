@@ -1,0 +1,1505 @@
+
+========================================================================
+MIGRATION AUDIT — 2026-04-15T00:36:36.066580Z
+========================================================================
+  Success                                            false
+  Mode                                               full
+  ✗ ERROR: SqliteException(787): while executing statement, FOREIGN KEY constraint failed, constraint failed (code 787)
+  Causing statement: INSERT OR REPLACE INTO "handles_canonical_to_alias" ("source_handle_id", "canonical_handle_id", "raw_identifier", "compound_identifier", "normalized_identifier", "service", "alias_kind") VALUES (?, ?, ?, ?, ?, ?, ?), parameters: 259, 259, city center, citycenter-SMS, city center, SMS, canonical
+
+--- SOURCE: import.db ---
+  handles rows                                       1348
+  chats rows                                         1182
+  chat_to_handle rows                                1990
+  contacts rows                                      1413
+  contact_phone_email rows                           2720
+  contact_to_chat_handle rows                        550
+  messages rows                                      112371
+  chat_to_message rows                               112371
+  attachments rows                                   41403
+  message_attachments rows                           39973
+  reactions rows                                     0
+
+  import messages with text                          690
+  import messages without text                       111681
+
+--- DESTINATION: working.db ---
+  handles_canonical rows                             0
+  handles_canonical_to_alias rows                    0
+  chats rows                                         0
+  chat_to_handle rows                                0
+  participants rows                                  0
+  handle_to_participant rows                         0
+  messages rows                                      0
+  recovered_unlinked_messages rows                   0
+  attachments rows                                   0
+  recovered_unlinked_attachments rows                0
+  reactions rows                                     0
+  reaction_counts rows                               0
+  message_read_marks rows                            0
+  read_state rows                                    0
+
+--- IMPORT vs WORKING COMPARISON ---
+  handles → handles_canonical              src=1348  dst=0  delta=-1348
+  chats → chats                            src=1182  dst=0  delta=-1182
+  chat_to_handle → chat_to_handle          src=1990  dst=0  delta=-1990
+  contacts → participants                  src=1413  dst=0  delta=-1413
+  messages → messages                      src=112371  dst=0  delta=-112371
+  attachments → attachments                src=41403  dst=0  delta=-41403
+  reactions → reactions                    src=0  dst=0  delta=+0
+
+--- WORKING DB MESSAGE TEXT DIAGNOSTICS ---
+  working messages with text                         0
+  working messages without text                      0
+
+  Working messages by item_type:
+
+--- JOIN-DROP DIAGNOSTICS ---
+  import messages with no matching chat              0
+  import messages with unmappable sender_handle_id   0
+  chat_to_handle with missing chat                   0
+  chat_to_handle with missing handle                 0
+  message_attachments with missing message           0
+
+  working messages with null/empty text              0
+
+--- end of migration audit ---
+
+
+========================================================================
+MIGRATION AUDIT — 2026-04-15T00:47:12.008672Z
+========================================================================
+  Success                                            false
+  Mode                                               incremental
+  ✗ ERROR: SqliteException(787): while executing statement, FOREIGN KEY constraint failed, constraint failed (code 787)
+  Causing statement: INSERT OR REPLACE INTO "handles_canonical_to_alias" ("source_handle_id", "canonical_handle_id", "raw_identifier", "compound_identifier", "normalized_identifier", "service", "alias_kind") VALUES (?, ?, ?, ?, ?, ?, ?), parameters: 259, 259, city center, citycenter-SMS, city center, SMS, canonical
+
+--- SOURCE: import.db ---
+  handles rows                                       1348
+  chats rows                                         1182
+  chat_to_handle rows                                1990
+  contacts rows                                      1413
+  contact_phone_email rows                           2720
+  contact_to_chat_handle rows                        550
+  messages rows                                      97003
+  chat_to_message rows                               0
+  attachments rows                                   0
+  message_attachments rows                           0
+  reactions rows                                     0
+
+  import messages with text                          52
+  import messages without text                       96951
+
+--- DESTINATION: working.db ---
+  handles_canonical rows                             0
+  handles_canonical_to_alias rows                    0
+  chats rows                                         0
+  chat_to_handle rows                                0
+  participants rows                                  0
+  handle_to_participant rows                         0
+  messages rows                                      0
+  recovered_unlinked_messages rows                   0
+  attachments rows                                   0
+  recovered_unlinked_attachments rows                0
+  reactions rows                                     0
+  reaction_counts rows                               0
+  message_read_marks rows                            0
+  read_state rows                                    0
+
+--- IMPORT vs WORKING COMPARISON ---
+  handles → handles_canonical              src=1348  dst=0  delta=-1348
+  chats → chats                            src=1182  dst=0  delta=-1182
+  chat_to_handle → chat_to_handle          src=1990  dst=0  delta=-1990
+  contacts → participants                  src=1413  dst=0  delta=-1413
+  messages → messages                      src=97003  dst=0  delta=-97003
+  attachments → attachments                src=0  dst=0  delta=+0
+  reactions → reactions                    src=0  dst=0  delta=+0
+
+--- WORKING DB MESSAGE TEXT DIAGNOSTICS ---
+  working messages with text                         0
+  working messages without text                      0
+
+  Working messages by item_type:
+
+--- JOIN-DROP DIAGNOSTICS ---
+  import messages with no matching chat              0
+  import messages with unmappable sender_handle_id   0
+  chat_to_handle with missing chat                   0
+  chat_to_handle with missing handle                 0
+  message_attachments with missing message           0
+
+  working messages with null/empty text              0
+
+--- end of migration audit ---
+
+
+========================================================================
+MIGRATION AUDIT — 2026-04-15T00:47:43.921547Z
+========================================================================
+  Success                                            false
+  Mode                                               incremental
+  ✗ ERROR: SqliteException(787): while executing statement, FOREIGN KEY constraint failed, constraint failed (code 787)
+  Causing statement: INSERT OR REPLACE INTO "handles_canonical_to_alias" ("source_handle_id", "canonical_handle_id", "raw_identifier", "compound_identifier", "normalized_identifier", "service", "alias_kind") VALUES (?, ?, ?, ?, ?, ?, ?), parameters: 259, 259, city center, citycenter-SMS, city center, SMS, canonical
+
+--- SOURCE: import.db ---
+  handles rows                                       1348
+  chats rows                                         1182
+  chat_to_handle rows                                1990
+  contacts rows                                      1413
+  contact_phone_email rows                           2720
+  contact_to_chat_handle rows                        550
+  messages rows                                      112373
+  chat_to_message rows                               15370
+  attachments rows                                   41404
+  message_attachments rows                           39974
+  reactions rows                                     0
+
+  import messages with text                          691
+  import messages without text                       111682
+
+--- DESTINATION: working.db ---
+  handles_canonical rows                             0
+  handles_canonical_to_alias rows                    0
+  chats rows                                         0
+  chat_to_handle rows                                0
+  participants rows                                  0
+  handle_to_participant rows                         0
+  messages rows                                      0
+  recovered_unlinked_messages rows                   0
+  attachments rows                                   0
+  recovered_unlinked_attachments rows                0
+  reactions rows                                     0
+  reaction_counts rows                               0
+  message_read_marks rows                            0
+  read_state rows                                    0
+
+--- IMPORT vs WORKING COMPARISON ---
+  handles → handles_canonical              src=1348  dst=0  delta=-1348
+  chats → chats                            src=1182  dst=0  delta=-1182
+  chat_to_handle → chat_to_handle          src=1990  dst=0  delta=-1990
+  contacts → participants                  src=1413  dst=0  delta=-1413
+  messages → messages                      src=112373  dst=0  delta=-112373
+  attachments → attachments                src=41404  dst=0  delta=-41404
+  reactions → reactions                    src=0  dst=0  delta=+0
+
+--- WORKING DB MESSAGE TEXT DIAGNOSTICS ---
+  working messages with text                         0
+  working messages without text                      0
+
+  Working messages by item_type:
+
+--- JOIN-DROP DIAGNOSTICS ---
+  import messages with no matching chat              0
+  import messages with unmappable sender_handle_id   0
+  chat_to_handle with missing chat                   0
+  chat_to_handle with missing handle                 0
+  message_attachments with missing message           0
+
+  working messages with null/empty text              0
+
+--- end of migration audit ---
+
+
+========================================================================
+MIGRATION AUDIT — 2026-04-16T06:22:25.188522Z
+========================================================================
+  Success                                            false
+  Mode                                               full
+  ✗ ERROR: MigrationException[CHAT_TO_HANDLE_ROW_MISMATCH]: chat_to_handle: working has 1988 rows but expected 1991
+
+--- SOURCE: import.db ---
+  handles rows                                       1348
+  chats rows                                         1183
+  chat_to_handle rows                                1991
+  contacts rows                                      1413
+  contact_phone_email rows                           2720
+  contact_to_chat_handle rows                        550
+  messages rows                                      112478
+  chat_to_message rows                               112478
+  attachments rows                                   41423
+  message_attachments rows                           39993
+  reactions rows                                     0
+
+  import messages with text                          112256
+  import messages without text                       222
+
+--- DESTINATION: working.db ---
+  handles_canonical rows                             978
+  handles_canonical_to_alias rows                    1348
+  chats rows                                         1183
+  chat_to_handle rows                                1988
+  participants rows                                  1408
+  handle_to_participant rows                         366
+  messages rows                                      112478
+  recovered_unlinked_messages rows                   827
+  attachments rows                                   39993
+  recovered_unlinked_attachments rows                47
+  reactions rows                                     0
+  reaction_counts rows                               0
+  message_read_marks rows                            73153
+  read_state rows                                    144
+
+--- IMPORT vs WORKING COMPARISON ---
+  handles → handles_canonical              src=1348  dst=978  delta=-370
+  chats → chats                            src=1183  dst=1183  delta=+0
+  chat_to_handle → chat_to_handle          src=1991  dst=1988  delta=-3
+  contacts → participants                  src=1413  dst=1408  delta=-5
+  messages → messages                      src=112478  dst=112478  delta=+0
+  attachments → attachments                src=41423  dst=39993  delta=-1430
+  reactions → reactions                    src=0  dst=0  delta=+0
+
+--- WORKING DB MESSAGE TEXT DIAGNOSTICS ---
+  working messages with text                         112256
+  working messages without text                      222
+
+  Working messages by item_type:
+      text                                           108266
+      reaction-carrier                               4143
+      attachment-only                                56
+      balloon                                        13
+
+--- JOIN-DROP DIAGNOSTICS ---
+  import messages with no matching chat              0
+  import messages with unmappable sender_handle_id   0
+  chat_to_handle with missing chat                   0
+  chat_to_handle with missing handle                 0
+  message_attachments with missing message           0
+
+  working messages with null/empty text              222
+
+--- end of migration audit ---
+
+
+========================================================================
+MIGRATION AUDIT — 2026-04-16T06:22:42.098925Z
+========================================================================
+  Success                                            false
+  Mode                                               incremental
+  ✗ ERROR: MigrationException[CHAT_TO_HANDLE_INCREMENTAL_UNDERCOUNT]: chat_to_handle: working has 1988 rows but expected >= 1991
+
+--- SOURCE: import.db ---
+  handles rows                                       1348
+  chats rows                                         1183
+  chat_to_handle rows                                1991
+  contacts rows                                      1413
+  contact_phone_email rows                           2720
+  contact_to_chat_handle rows                        550
+  messages rows                                      112479
+  chat_to_message rows                               112479
+  attachments rows                                   41424
+  message_attachments rows                           39994
+  reactions rows                                     0
+
+  import messages with text                          112257
+  import messages without text                       222
+
+--- DESTINATION: working.db ---
+  handles_canonical rows                             978
+  handles_canonical_to_alias rows                    1348
+  chats rows                                         1183
+  chat_to_handle rows                                1988
+  participants rows                                  1408
+  handle_to_participant rows                         366
+  messages rows                                      112479
+  recovered_unlinked_messages rows                   827
+  attachments rows                                   39994
+  recovered_unlinked_attachments rows                47
+  reactions rows                                     0
+  reaction_counts rows                               0
+  message_read_marks rows                            73153
+  read_state rows                                    144
+
+--- IMPORT vs WORKING COMPARISON ---
+  handles → handles_canonical              src=1348  dst=978  delta=-370
+  chats → chats                            src=1183  dst=1183  delta=+0
+  chat_to_handle → chat_to_handle          src=1991  dst=1988  delta=-3
+  contacts → participants                  src=1413  dst=1408  delta=-5
+  messages → messages                      src=112479  dst=112479  delta=+0
+  attachments → attachments                src=41424  dst=39994  delta=-1430
+  reactions → reactions                    src=0  dst=0  delta=+0
+
+--- WORKING DB MESSAGE TEXT DIAGNOSTICS ---
+  working messages with text                         112257
+  working messages without text                      222
+
+  Working messages by item_type:
+      text                                           108267
+      reaction-carrier                               4143
+      attachment-only                                56
+      balloon                                        13
+
+--- JOIN-DROP DIAGNOSTICS ---
+  import messages with no matching chat              0
+  import messages with unmappable sender_handle_id   0
+  chat_to_handle with missing chat                   0
+  chat_to_handle with missing handle                 0
+  message_attachments with missing message           0
+
+  working messages with null/empty text              222
+
+--- end of migration audit ---
+
+
+========================================================================
+MIGRATION AUDIT — 2026-04-16T06:23:40.304553Z
+========================================================================
+  Success                                            false
+  Mode                                               incremental
+  ✗ ERROR: MigrationException[CHAT_TO_HANDLE_INCREMENTAL_UNDERCOUNT]: chat_to_handle: working has 1988 rows but expected >= 1991
+
+--- SOURCE: import.db ---
+  handles rows                                       1348
+  chats rows                                         1183
+  chat_to_handle rows                                1991
+  contacts rows                                      1413
+  contact_phone_email rows                           2720
+  contact_to_chat_handle rows                        550
+  messages rows                                      112480
+  chat_to_message rows                               112480
+  attachments rows                                   41425
+  message_attachments rows                           39995
+  reactions rows                                     0
+
+  import messages with text                          112258
+  import messages without text                       222
+
+--- DESTINATION: working.db ---
+  handles_canonical rows                             978
+  handles_canonical_to_alias rows                    1348
+  chats rows                                         1183
+  chat_to_handle rows                                1988
+  participants rows                                  1408
+  handle_to_participant rows                         366
+  messages rows                                      112480
+  recovered_unlinked_messages rows                   827
+  attachments rows                                   39995
+  recovered_unlinked_attachments rows                47
+  reactions rows                                     0
+  reaction_counts rows                               0
+  message_read_marks rows                            73153
+  read_state rows                                    144
+
+--- IMPORT vs WORKING COMPARISON ---
+  handles → handles_canonical              src=1348  dst=978  delta=-370
+  chats → chats                            src=1183  dst=1183  delta=+0
+  chat_to_handle → chat_to_handle          src=1991  dst=1988  delta=-3
+  contacts → participants                  src=1413  dst=1408  delta=-5
+  messages → messages                      src=112480  dst=112480  delta=+0
+  attachments → attachments                src=41425  dst=39995  delta=-1430
+  reactions → reactions                    src=0  dst=0  delta=+0
+
+--- WORKING DB MESSAGE TEXT DIAGNOSTICS ---
+  working messages with text                         112258
+  working messages without text                      222
+
+  Working messages by item_type:
+      text                                           108268
+      reaction-carrier                               4143
+      attachment-only                                56
+      balloon                                        13
+
+--- JOIN-DROP DIAGNOSTICS ---
+  import messages with no matching chat              0
+  import messages with unmappable sender_handle_id   0
+  chat_to_handle with missing chat                   0
+  chat_to_handle with missing handle                 0
+  message_attachments with missing message           0
+
+  working messages with null/empty text              222
+
+--- end of migration audit ---
+
+
+========================================================================
+MIGRATION AUDIT — 2026-04-16T10:59:03.144109Z
+========================================================================
+  Success                                            false
+  Mode                                               incremental
+  ✗ ERROR: MigrationException[CHAT_TO_HANDLE_INCREMENTAL_UNDERCOUNT]: chat_to_handle: working has 1988 rows but expected >= 1991
+
+--- SOURCE: import.db ---
+  handles rows                                       1348
+  chats rows                                         1183
+  chat_to_handle rows                                1991
+  contacts rows                                      1413
+  contact_phone_email rows                           2720
+  contact_to_chat_handle rows                        550
+  messages rows                                      112505
+  chat_to_message rows                               112505
+  attachments rows                                   41426
+  message_attachments rows                           39996
+  reactions rows                                     0
+
+  import messages with text                          112283
+  import messages without text                       222
+
+--- DESTINATION: working.db ---
+  handles_canonical rows                             978
+  handles_canonical_to_alias rows                    1348
+  chats rows                                         1183
+  chat_to_handle rows                                1988
+  participants rows                                  1408
+  handle_to_participant rows                         366
+  messages rows                                      112505
+  recovered_unlinked_messages rows                   827
+  attachments rows                                   39996
+  recovered_unlinked_attachments rows                47
+  reactions rows                                     0
+  reaction_counts rows                               0
+  message_read_marks rows                            73176
+  read_state rows                                    144
+
+--- IMPORT vs WORKING COMPARISON ---
+  handles → handles_canonical              src=1348  dst=978  delta=-370
+  chats → chats                            src=1183  dst=1183  delta=+0
+  chat_to_handle → chat_to_handle          src=1991  dst=1988  delta=-3
+  contacts → participants                  src=1413  dst=1408  delta=-5
+  messages → messages                      src=112505  dst=112505  delta=+0
+  attachments → attachments                src=41426  dst=39996  delta=-1430
+  reactions → reactions                    src=0  dst=0  delta=+0
+
+--- WORKING DB MESSAGE TEXT DIAGNOSTICS ---
+  working messages with text                         112283
+  working messages without text                      222
+
+  Working messages by item_type:
+      text                                           108292
+      reaction-carrier                               4144
+      attachment-only                                56
+      balloon                                        13
+
+--- JOIN-DROP DIAGNOSTICS ---
+  import messages with no matching chat              0
+  import messages with unmappable sender_handle_id   0
+  chat_to_handle with missing chat                   0
+  chat_to_handle with missing handle                 0
+  message_attachments with missing message           0
+
+  working messages with null/empty text              222
+
+--- end of migration audit ---
+
+
+========================================================================
+MIGRATION AUDIT — 2026-04-16T11:44:57.908279Z
+========================================================================
+  Success                                            false
+  Mode                                               incremental
+  ✗ ERROR: MigrationException[CHAT_TO_HANDLE_INCREMENTAL_UNDERCOUNT]: chat_to_handle: working has 1988 rows but expected >= 1991
+
+--- SOURCE: import.db ---
+  handles rows                                       1348
+  chats rows                                         1183
+  chat_to_handle rows                                1991
+  contacts rows                                      1413
+  contact_phone_email rows                           2720
+  contact_to_chat_handle rows                        550
+  messages rows                                      112518
+  chat_to_message rows                               112518
+  attachments rows                                   41436
+  message_attachments rows                           40005
+  reactions rows                                     0
+
+  import messages with text                          112296
+  import messages without text                       222
+
+--- DESTINATION: working.db ---
+  handles_canonical rows                             978
+  handles_canonical_to_alias rows                    1348
+  chats rows                                         1183
+  chat_to_handle rows                                1988
+  participants rows                                  1408
+  handle_to_participant rows                         366
+  messages rows                                      112518
+  recovered_unlinked_messages rows                   827
+  attachments rows                                   40005
+  recovered_unlinked_attachments rows                47
+  reactions rows                                     0
+  reaction_counts rows                               0
+  message_read_marks rows                            73183
+  read_state rows                                    144
+
+--- IMPORT vs WORKING COMPARISON ---
+  handles → handles_canonical              src=1348  dst=978  delta=-370
+  chats → chats                            src=1183  dst=1183  delta=+0
+  chat_to_handle → chat_to_handle          src=1991  dst=1988  delta=-3
+  contacts → participants                  src=1413  dst=1408  delta=-5
+  messages → messages                      src=112518  dst=112518  delta=+0
+  attachments → attachments                src=41436  dst=40005  delta=-1431
+  reactions → reactions                    src=0  dst=0  delta=+0
+
+--- WORKING DB MESSAGE TEXT DIAGNOSTICS ---
+  working messages with text                         112296
+  working messages without text                      222
+
+  Working messages by item_type:
+      text                                           108305
+      reaction-carrier                               4144
+      attachment-only                                56
+      balloon                                        13
+
+--- JOIN-DROP DIAGNOSTICS ---
+  import messages with no matching chat              0
+  import messages with unmappable sender_handle_id   0
+  chat_to_handle with missing chat                   0
+  chat_to_handle with missing handle                 0
+  message_attachments with missing message           0
+
+  working messages with null/empty text              222
+
+--- end of migration audit ---
+
+
+========================================================================
+MIGRATION AUDIT — 2026-04-16T11:47:55.020559Z
+========================================================================
+  Success                                            false
+  Mode                                               incremental
+  ✗ ERROR: MigrationException[CHAT_TO_HANDLE_INCREMENTAL_UNDERCOUNT]: chat_to_handle: working has 1988 rows but expected >= 1991
+
+--- SOURCE: import.db ---
+  handles rows                                       1348
+  chats rows                                         1183
+  chat_to_handle rows                                1991
+  contacts rows                                      1413
+  contact_phone_email rows                           2720
+  contact_to_chat_handle rows                        550
+  messages rows                                      112519
+  chat_to_message rows                               112519
+  attachments rows                                   41437
+  message_attachments rows                           40006
+  reactions rows                                     0
+
+  import messages with text                          112297
+  import messages without text                       222
+
+--- DESTINATION: working.db ---
+  handles_canonical rows                             978
+  handles_canonical_to_alias rows                    1348
+  chats rows                                         1183
+  chat_to_handle rows                                1988
+  participants rows                                  1408
+  handle_to_participant rows                         366
+  messages rows                                      112519
+  recovered_unlinked_messages rows                   827
+  attachments rows                                   40006
+  recovered_unlinked_attachments rows                47
+  reactions rows                                     0
+  reaction_counts rows                               0
+  message_read_marks rows                            73183
+  read_state rows                                    144
+
+--- IMPORT vs WORKING COMPARISON ---
+  handles → handles_canonical              src=1348  dst=978  delta=-370
+  chats → chats                            src=1183  dst=1183  delta=+0
+  chat_to_handle → chat_to_handle          src=1991  dst=1988  delta=-3
+  contacts → participants                  src=1413  dst=1408  delta=-5
+  messages → messages                      src=112519  dst=112519  delta=+0
+  attachments → attachments                src=41437  dst=40006  delta=-1431
+  reactions → reactions                    src=0  dst=0  delta=+0
+
+--- WORKING DB MESSAGE TEXT DIAGNOSTICS ---
+  working messages with text                         112297
+  working messages without text                      222
+
+  Working messages by item_type:
+      text                                           108306
+      reaction-carrier                               4144
+      attachment-only                                56
+      balloon                                        13
+
+--- JOIN-DROP DIAGNOSTICS ---
+  import messages with no matching chat              0
+  import messages with unmappable sender_handle_id   0
+  chat_to_handle with missing chat                   0
+  chat_to_handle with missing handle                 0
+  message_attachments with missing message           0
+
+  working messages with null/empty text              222
+
+--- end of migration audit ---
+
+
+========================================================================
+MIGRATION AUDIT — 2026-04-16T11:49:55.255463Z
+========================================================================
+  Success                                            false
+  Mode                                               incremental
+  ✗ ERROR: MigrationException[CHAT_TO_HANDLE_INCREMENTAL_UNDERCOUNT]: chat_to_handle: working has 1988 rows but expected >= 1991
+
+--- SOURCE: import.db ---
+  handles rows                                       1348
+  chats rows                                         1183
+  chat_to_handle rows                                1991
+  contacts rows                                      1413
+  contact_phone_email rows                           2720
+  contact_to_chat_handle rows                        550
+  messages rows                                      112520
+  chat_to_message rows                               112520
+  attachments rows                                   41437
+  message_attachments rows                           40006
+  reactions rows                                     0
+
+  import messages with text                          112298
+  import messages without text                       222
+
+--- DESTINATION: working.db ---
+  handles_canonical rows                             978
+  handles_canonical_to_alias rows                    1348
+  chats rows                                         1183
+  chat_to_handle rows                                1988
+  participants rows                                  1408
+  handle_to_participant rows                         366
+  messages rows                                      112520
+  recovered_unlinked_messages rows                   827
+  attachments rows                                   40006
+  recovered_unlinked_attachments rows                47
+  reactions rows                                     0
+  reaction_counts rows                               0
+  message_read_marks rows                            73183
+  read_state rows                                    144
+
+--- IMPORT vs WORKING COMPARISON ---
+  handles → handles_canonical              src=1348  dst=978  delta=-370
+  chats → chats                            src=1183  dst=1183  delta=+0
+  chat_to_handle → chat_to_handle          src=1991  dst=1988  delta=-3
+  contacts → participants                  src=1413  dst=1408  delta=-5
+  messages → messages                      src=112520  dst=112520  delta=+0
+  attachments → attachments                src=41437  dst=40006  delta=-1431
+  reactions → reactions                    src=0  dst=0  delta=+0
+
+--- WORKING DB MESSAGE TEXT DIAGNOSTICS ---
+  working messages with text                         112298
+  working messages without text                      222
+
+  Working messages by item_type:
+      text                                           108307
+      reaction-carrier                               4144
+      attachment-only                                56
+      balloon                                        13
+
+--- JOIN-DROP DIAGNOSTICS ---
+  import messages with no matching chat              0
+  import messages with unmappable sender_handle_id   0
+  chat_to_handle with missing chat                   0
+  chat_to_handle with missing handle                 0
+  message_attachments with missing message           0
+
+  working messages with null/empty text              222
+
+--- end of migration audit ---
+
+
+========================================================================
+MIGRATION AUDIT — 2026-04-16T11:53:43.200495Z
+========================================================================
+  Success                                            false
+  Mode                                               incremental
+  ✗ ERROR: MigrationException[CHAT_TO_HANDLE_INCREMENTAL_UNDERCOUNT]: chat_to_handle: working has 1988 rows but expected >= 1991
+
+--- SOURCE: import.db ---
+  handles rows                                       1348
+  chats rows                                         1183
+  chat_to_handle rows                                1991
+  contacts rows                                      1413
+  contact_phone_email rows                           2720
+  contact_to_chat_handle rows                        550
+  messages rows                                      112521
+  chat_to_message rows                               112521
+  attachments rows                                   41440
+  message_attachments rows                           40009
+  reactions rows                                     0
+
+  import messages with text                          112299
+  import messages without text                       222
+
+--- DESTINATION: working.db ---
+  handles_canonical rows                             978
+  handles_canonical_to_alias rows                    1348
+  chats rows                                         1183
+  chat_to_handle rows                                1988
+  participants rows                                  1408
+  handle_to_participant rows                         366
+  messages rows                                      112521
+  recovered_unlinked_messages rows                   827
+  attachments rows                                   40009
+  recovered_unlinked_attachments rows                47
+  reactions rows                                     0
+  reaction_counts rows                               0
+  message_read_marks rows                            73184
+  read_state rows                                    144
+
+--- IMPORT vs WORKING COMPARISON ---
+  handles → handles_canonical              src=1348  dst=978  delta=-370
+  chats → chats                            src=1183  dst=1183  delta=+0
+  chat_to_handle → chat_to_handle          src=1991  dst=1988  delta=-3
+  contacts → participants                  src=1413  dst=1408  delta=-5
+  messages → messages                      src=112521  dst=112521  delta=+0
+  attachments → attachments                src=41440  dst=40009  delta=-1431
+  reactions → reactions                    src=0  dst=0  delta=+0
+
+--- WORKING DB MESSAGE TEXT DIAGNOSTICS ---
+  working messages with text                         112299
+  working messages without text                      222
+
+  Working messages by item_type:
+      text                                           108308
+      reaction-carrier                               4144
+      attachment-only                                56
+      balloon                                        13
+
+--- JOIN-DROP DIAGNOSTICS ---
+  import messages with no matching chat              0
+  import messages with unmappable sender_handle_id   0
+  chat_to_handle with missing chat                   0
+  chat_to_handle with missing handle                 0
+  message_attachments with missing message           0
+
+  working messages with null/empty text              222
+
+--- end of migration audit ---
+
+
+========================================================================
+MIGRATION AUDIT — 2026-04-16T11:55:44.110783Z
+========================================================================
+  Success                                            false
+  Mode                                               incremental
+  ✗ ERROR: MigrationException[CHAT_TO_HANDLE_INCREMENTAL_UNDERCOUNT]: chat_to_handle: working has 1988 rows but expected >= 1991
+
+--- SOURCE: import.db ---
+  handles rows                                       1348
+  chats rows                                         1183
+  chat_to_handle rows                                1991
+  contacts rows                                      1413
+  contact_phone_email rows                           2720
+  contact_to_chat_handle rows                        550
+  messages rows                                      112522
+  chat_to_message rows                               112522
+  attachments rows                                   41441
+  message_attachments rows                           40010
+  reactions rows                                     0
+
+  import messages with text                          112300
+  import messages without text                       222
+
+--- DESTINATION: working.db ---
+  handles_canonical rows                             978
+  handles_canonical_to_alias rows                    1348
+  chats rows                                         1183
+  chat_to_handle rows                                1988
+  participants rows                                  1408
+  handle_to_participant rows                         366
+  messages rows                                      112522
+  recovered_unlinked_messages rows                   827
+  attachments rows                                   40010
+  recovered_unlinked_attachments rows                47
+  reactions rows                                     0
+  reaction_counts rows                               0
+  message_read_marks rows                            73184
+  read_state rows                                    144
+
+--- IMPORT vs WORKING COMPARISON ---
+  handles → handles_canonical              src=1348  dst=978  delta=-370
+  chats → chats                            src=1183  dst=1183  delta=+0
+  chat_to_handle → chat_to_handle          src=1991  dst=1988  delta=-3
+  contacts → participants                  src=1413  dst=1408  delta=-5
+  messages → messages                      src=112522  dst=112522  delta=+0
+  attachments → attachments                src=41441  dst=40010  delta=-1431
+  reactions → reactions                    src=0  dst=0  delta=+0
+
+--- WORKING DB MESSAGE TEXT DIAGNOSTICS ---
+  working messages with text                         112300
+  working messages without text                      222
+
+  Working messages by item_type:
+      text                                           108309
+      reaction-carrier                               4144
+      attachment-only                                56
+      balloon                                        13
+
+--- JOIN-DROP DIAGNOSTICS ---
+  import messages with no matching chat              0
+  import messages with unmappable sender_handle_id   0
+  chat_to_handle with missing chat                   0
+  chat_to_handle with missing handle                 0
+  message_attachments with missing message           0
+
+  working messages with null/empty text              222
+
+--- end of migration audit ---
+
+
+========================================================================
+MIGRATION AUDIT — 2026-04-16T11:57:45.680726Z
+========================================================================
+  Success                                            false
+  Mode                                               incremental
+  ✗ ERROR: CouldNotRollBackException: SqliteException(1): while executing, cannot rollback - no transaction is active, SQL logic error (code 1)
+  Causing statement: ROLLBACK TRANSACTION, parameters: . 
+For context: The transaction was rolled back because of SqliteException(6922): while executing, disk I/O error, disk I/O error (code 6922)
+  Causing statement:         UPDATE messages
+        SET sender_handle_id = (
+          SELECT map.canonical_handle_id
+          FROM import_messages.messages m
+          JOIN handles_canonical_to_alias map ON map.source_handle_id = m.sender_handle_id
+          WHERE m.guid = messages.guid
+        )
+        WHERE sender_handle_id IS NULL 
+          AND is_from_me = 0
+          AND EXISTS (
+            SELECT 1
+            FROM import_messages.messages m
+            JOIN handles_canonical_to_alias map ON map.source_handle_id = m.sender_handle_id
+            WHERE m.guid = messages.guid
+          );
+      , parameters: , which was thrown here: 
+package:sqlite3/src/implementation/exception.dart 95                                                             throwException
+package:sqlite3/src/implementation/database.dart 306                                                             DatabaseImplementation.execute
+package:drift/src/sqlite3/database.dart 145                                                                      Sqlite3Delegate.runWithArgsSync
+package:drift/native.dart 420                                                                                    _NativeDelegate.runCustom.<fn>
+dart:async/future.dart 315                                                                                       new Future.sync
+package:drift/native.dart 420                                                                                    _NativeDelegate.runCustom
+package:drift/src/runtime/executor/helpers/engines.dart 116                                                      _BaseExecutor.runCustom.<fn>
+package:drift/src/runtime/executor/helpers/engines.dart 62                                                       _BaseExecutor._synchronized
+package:drift/src/runtime/executor/helpers/engines.dart 112                                                      _BaseExecutor.runCustom
+package:drift/src/remote/server_impl.dart 154                                                                    ServerImplementation._runQuery
+package:drift/src/remote/server_impl.dart 119                                                                    ServerImplementation._handleRequest.<fn>
+package:drift/src/remote/communication.dart 165                                                                  DriftCommunication.setRequestHandler.<fn>
+===== asynchronous gap ===========================
+package:drift/src/remote/communication.dart 113                                                                  DriftCommunication.request
+package:drift/src/remote/client_impl.dart 101                                                                    _BaseExecutor._runRequest
+package:drift/src/remote/client_impl.dart 116                                                                    _BaseExecutor.runCustom
+package:drift/src/runtime/api/connection_user.dart 427                                                           DatabaseConnectionUser.customStatement.<fn>
+package:drift/src/runtime/api/connection_user.dart 171                                                           DatabaseConnectionUser.doWhenOpened.<fn>
+dart:async/zone.dart 1538                                                                                        _rootRunUnary
+dart:async/zone.dart 1429                                                                                        _CustomZone.runUnary
+package:remember_this_text/essentials/db_migrate/application/migrators/messages_migrator.dart 233                MessagesMigrator.copy.<fn>
+package:drift/src/runtime/api/connection_user.dart 505                                                           DatabaseConnectionUser.transaction.<fn>.<fn>
+package:drift/src/runtime/api/connection_user.dart 496                                                           DatabaseConnectionUser.transaction
+package:remember_this_text/essentials/db_migrate/application/migrators/messages_migrator.dart 428                MessagesMigrator._withAttachedImport
+package:remember_this_text/essentials/db_migrate/application/migrators/messages_migrator.dart 59                 MessagesMigrator.copy
+package:remember_this_text/essentials/db_migrate/application/orchestrator/migration_orchestrator.dart 183        MigrationOrchestrator._runPhase
+package:remember_this_text/essentials/db_migrate/application/orchestrator/migration_orchestrator.dart 79         MigrationOrchestrator.run
+package:remember_this_text/essentials/db_migrate/application/orchestrator/handles_migration_service.dart 134     HandlesMigrationService.run
+package:remember_this_text/essentials/db_importers/application/monitor/chat_db_change_monitor_provider.dart 305  ChatDbChangeMonitor._processPendingChanges
+
+
+--- SOURCE: import.db ---
+  handles rows                                       0
+  chats rows                                         0
+  chat_to_handle rows                                0
+  contacts rows                                      0
+  contact_phone_email rows                           0
+  contact_to_chat_handle rows                        0
+  messages rows                                      0
+  chat_to_message rows                               0
+  attachments rows                                   0
+  message_attachments rows                           0
+  reactions rows                                     0
+
+  import messages with text                          0
+  import messages without text                       0
+
+--- DESTINATION: working.db ---
+  handles_canonical rows                             978
+  handles_canonical_to_alias rows                    1348
+  chats rows                                         1183
+  chat_to_handle rows                                0
+  participants rows                                  1408
+  handle_to_participant rows                         366
+  messages rows                                      112522
+  recovered_unlinked_messages rows                   827
+  attachments rows                                   40010
+  recovered_unlinked_attachments rows                47
+  reactions rows                                     0
+  reaction_counts rows                               0
+  message_read_marks rows                            73184
+  read_state rows                                    144
+
+--- IMPORT vs WORKING COMPARISON ---
+  handles → handles_canonical              src=0  dst=978  delta=+978
+  chats → chats                            src=0  dst=1183  delta=+1183
+  chat_to_handle → chat_to_handle          src=0  dst=0  delta=+0
+  contacts → participants                  src=0  dst=1408  delta=+1408
+  messages → messages                      src=0  dst=112522  delta=+112522
+  attachments → attachments                src=0  dst=40010  delta=+40010
+  reactions → reactions                    src=0  dst=0  delta=+0
+
+--- WORKING DB MESSAGE TEXT DIAGNOSTICS ---
+  working messages with text                         112300
+  working messages without text                      222
+
+  Working messages by item_type:
+      text                                           108309
+      reaction-carrier                               4144
+      attachment-only                                56
+      balloon                                        13
+
+--- JOIN-DROP DIAGNOSTICS ---
+  import messages with no matching chat              0
+  import messages with unmappable sender_handle_id   0
+  chat_to_handle with missing chat                   0
+  chat_to_handle with missing handle                 0
+  message_attachments with missing message           0
+
+  working messages with null/empty text              222
+
+--- end of migration audit ---
+
+
+========================================================================
+MIGRATION AUDIT — 2026-04-16T12:00:31.594184Z
+========================================================================
+  Success                                            false
+  Mode                                               incremental
+  ✗ ERROR: MigrationException[RECOVERED_UNLINKED_ATTACHMENTS_ROW_MISMATCH]: recovered_unlinked_attachments: working has 47 rows but expected 0
+
+--- SOURCE: import.db ---
+  handles rows                                       1348
+  chats rows                                         1183
+  chat_to_handle rows                                1991
+  contacts rows                                      1413
+  contact_phone_email rows                           2720
+  contact_to_chat_handle rows                        550
+  messages rows                                      112526
+  chat_to_message rows                               0
+  attachments rows                                   41442
+  message_attachments rows                           0
+  reactions rows                                     0
+
+  import messages with text                          707
+  import messages without text                       111819
+
+--- DESTINATION: working.db ---
+  handles_canonical rows                             978
+  handles_canonical_to_alias rows                    1348
+  chats rows                                         1183
+  chat_to_handle rows                                0
+  participants rows                                  1408
+  handle_to_participant rows                         0
+  messages rows                                      112522
+  recovered_unlinked_messages rows                   827
+  attachments rows                                   40010
+  recovered_unlinked_attachments rows                47
+  reactions rows                                     0
+  reaction_counts rows                               0
+  message_read_marks rows                            73184
+  read_state rows                                    144
+
+--- IMPORT vs WORKING COMPARISON ---
+  handles → handles_canonical              src=1348  dst=978  delta=-370
+  chats → chats                            src=1183  dst=1183  delta=+0
+  chat_to_handle → chat_to_handle          src=1991  dst=0  delta=-1991
+  contacts → participants                  src=1413  dst=1408  delta=-5
+  messages → messages                      src=112526  dst=112522  delta=-4
+  attachments → attachments                src=41442  dst=40010  delta=-1432
+  reactions → reactions                    src=0  dst=0  delta=+0
+
+--- WORKING DB MESSAGE TEXT DIAGNOSTICS ---
+  working messages with text                         112300
+  working messages without text                      222
+
+  Working messages by item_type:
+      text                                           108309
+      reaction-carrier                               4144
+      attachment-only                                56
+      balloon                                        13
+
+--- JOIN-DROP DIAGNOSTICS ---
+  import messages with no matching chat              0
+  import messages with unmappable sender_handle_id   0
+  chat_to_handle with missing chat                   0
+  chat_to_handle with missing handle                 0
+  message_attachments with missing message           0
+
+  working messages with null/empty text              222
+
+--- end of migration audit ---
+
+
+========================================================================
+MIGRATION AUDIT — 2026-04-16T12:00:36.759072Z
+========================================================================
+  Success                                            false
+  Mode                                               incremental
+  ✗ ERROR: MigrationException[RECOVERED_UNLINKED_ATTACHMENTS_ROW_MISMATCH]: recovered_unlinked_attachments: working has 47 rows but expected 0
+
+--- SOURCE: import.db ---
+  handles rows                                       1348
+  chats rows                                         1183
+  chat_to_handle rows                                1991
+  contacts rows                                      1413
+  contact_phone_email rows                           2720
+  contact_to_chat_handle rows                        550
+  messages rows                                      112530
+  chat_to_message rows                               4
+  attachments rows                                   41444
+  message_attachments rows                           3
+  reactions rows                                     0
+
+  import messages with text                          711
+  import messages without text                       111819
+
+--- DESTINATION: working.db ---
+  handles_canonical rows                             978
+  handles_canonical_to_alias rows                    1348
+  chats rows                                         1183
+  chat_to_handle rows                                0
+  participants rows                                  1408
+  handle_to_participant rows                         0
+  messages rows                                      112522
+  recovered_unlinked_messages rows                   827
+  attachments rows                                   40010
+  recovered_unlinked_attachments rows                47
+  reactions rows                                     0
+  reaction_counts rows                               0
+  message_read_marks rows                            73184
+  read_state rows                                    144
+
+--- IMPORT vs WORKING COMPARISON ---
+  handles → handles_canonical              src=1348  dst=978  delta=-370
+  chats → chats                            src=1183  dst=1183  delta=+0
+  chat_to_handle → chat_to_handle          src=1991  dst=0  delta=-1991
+  contacts → participants                  src=1413  dst=1408  delta=-5
+  messages → messages                      src=112530  dst=112522  delta=-8
+  attachments → attachments                src=41444  dst=40010  delta=-1434
+  reactions → reactions                    src=0  dst=0  delta=+0
+
+--- WORKING DB MESSAGE TEXT DIAGNOSTICS ---
+  working messages with text                         112300
+  working messages without text                      222
+
+  Working messages by item_type:
+      text                                           108309
+      reaction-carrier                               4144
+      attachment-only                                56
+      balloon                                        13
+
+--- JOIN-DROP DIAGNOSTICS ---
+  import messages with no matching chat              0
+  import messages with unmappable sender_handle_id   0
+  chat_to_handle with missing chat                   0
+  chat_to_handle with missing handle                 0
+  message_attachments with missing message           0
+
+  working messages with null/empty text              222
+
+--- end of migration audit ---
+
+
+========================================================================
+MIGRATION AUDIT — 2026-04-16T12:00:54.179216Z
+========================================================================
+  Success                                            false
+  Mode                                               incremental
+  ✗ ERROR: MigrationException[RECOVERED_UNLINKED_ATTACHMENTS_ROW_MISMATCH]: recovered_unlinked_attachments: working has 47 rows but expected 0
+
+--- SOURCE: import.db ---
+  handles rows                                       1348
+  chats rows                                         1183
+  chat_to_handle rows                                1991
+  contacts rows                                      1413
+  contact_phone_email rows                           2720
+  contact_to_chat_handle rows                        550
+  messages rows                                      112532
+  chat_to_message rows                               6
+  attachments rows                                   41445
+  message_attachments rows                           4
+  reactions rows                                     0
+
+  import messages with text                          713
+  import messages without text                       111819
+
+--- DESTINATION: working.db ---
+  handles_canonical rows                             978
+  handles_canonical_to_alias rows                    1348
+  chats rows                                         1183
+  chat_to_handle rows                                0
+  participants rows                                  1408
+  handle_to_participant rows                         0
+  messages rows                                      112522
+  recovered_unlinked_messages rows                   827
+  attachments rows                                   40010
+  recovered_unlinked_attachments rows                47
+  reactions rows                                     0
+  reaction_counts rows                               0
+  message_read_marks rows                            73184
+  read_state rows                                    144
+
+--- IMPORT vs WORKING COMPARISON ---
+  handles → handles_canonical              src=1348  dst=978  delta=-370
+  chats → chats                            src=1183  dst=1183  delta=+0
+  chat_to_handle → chat_to_handle          src=1991  dst=0  delta=-1991
+  contacts → participants                  src=1413  dst=1408  delta=-5
+  messages → messages                      src=112532  dst=112522  delta=-10
+  attachments → attachments                src=41445  dst=40010  delta=-1435
+  reactions → reactions                    src=0  dst=0  delta=+0
+
+--- WORKING DB MESSAGE TEXT DIAGNOSTICS ---
+  working messages with text                         112300
+  working messages without text                      222
+
+  Working messages by item_type:
+      text                                           108309
+      reaction-carrier                               4144
+      attachment-only                                56
+      balloon                                        13
+
+--- JOIN-DROP DIAGNOSTICS ---
+  import messages with no matching chat              0
+  import messages with unmappable sender_handle_id   0
+  chat_to_handle with missing chat                   0
+  chat_to_handle with missing handle                 0
+  message_attachments with missing message           0
+
+  working messages with null/empty text              222
+
+--- end of migration audit ---
+
+
+========================================================================
+MIGRATION AUDIT — 2026-04-16T12:01:08.038385Z
+========================================================================
+  Success                                            false
+  Mode                                               incremental
+  ✗ ERROR: MigrationException[RECOVERED_UNLINKED_ATTACHMENTS_ROW_MISMATCH]: recovered_unlinked_attachments: working has 47 rows but expected 0
+
+--- SOURCE: import.db ---
+  handles rows                                       1348
+  chats rows                                         1183
+  chat_to_handle rows                                1991
+  contacts rows                                      1413
+  contact_phone_email rows                           2720
+  contact_to_chat_handle rows                        550
+  messages rows                                      112532
+  chat_to_message rows                               6
+  attachments rows                                   41445
+  message_attachments rows                           4
+  reactions rows                                     0
+
+  import messages with text                          713
+  import messages without text                       111819
+
+--- DESTINATION: working.db ---
+  handles_canonical rows                             978
+  handles_canonical_to_alias rows                    1348
+  chats rows                                         1183
+  chat_to_handle rows                                0
+  participants rows                                  1408
+  handle_to_participant rows                         0
+  messages rows                                      112522
+  recovered_unlinked_messages rows                   827
+  attachments rows                                   40010
+  recovered_unlinked_attachments rows                47
+  reactions rows                                     0
+  reaction_counts rows                               0
+  message_read_marks rows                            73184
+  read_state rows                                    144
+
+--- IMPORT vs WORKING COMPARISON ---
+  handles → handles_canonical              src=1348  dst=978  delta=-370
+  chats → chats                            src=1183  dst=1183  delta=+0
+  chat_to_handle → chat_to_handle          src=1991  dst=0  delta=-1991
+  contacts → participants                  src=1413  dst=1408  delta=-5
+  messages → messages                      src=112532  dst=112522  delta=-10
+  attachments → attachments                src=41445  dst=40010  delta=-1435
+  reactions → reactions                    src=0  dst=0  delta=+0
+
+--- WORKING DB MESSAGE TEXT DIAGNOSTICS ---
+  working messages with text                         112300
+  working messages without text                      222
+
+  Working messages by item_type:
+      text                                           108309
+      reaction-carrier                               4144
+      attachment-only                                56
+      balloon                                        13
+
+--- JOIN-DROP DIAGNOSTICS ---
+  import messages with no matching chat              0
+  import messages with unmappable sender_handle_id   0
+  chat_to_handle with missing chat                   0
+  chat_to_handle with missing handle                 0
+  message_attachments with missing message           0
+
+  working messages with null/empty text              222
+
+--- end of migration audit ---
+
+
+========================================================================
+MIGRATION AUDIT — 2026-04-16T12:01:39.167391Z
+========================================================================
+  Success                                            false
+  Mode                                               incremental
+  ✗ ERROR: MigrationException[RECOVERED_UNLINKED_ATTACHMENTS_ROW_MISMATCH]: recovered_unlinked_attachments: working has 47 rows but expected 0
+
+--- SOURCE: import.db ---
+  handles rows                                       1348
+  chats rows                                         1183
+  chat_to_handle rows                                1991
+  contacts rows                                      1413
+  contact_phone_email rows                           2720
+  contact_to_chat_handle rows                        550
+  messages rows                                      112534
+  chat_to_message rows                               8
+  attachments rows                                   41446
+  message_attachments rows                           5
+  reactions rows                                     0
+
+  import messages with text                          715
+  import messages without text                       111819
+
+--- DESTINATION: working.db ---
+  handles_canonical rows                             978
+  handles_canonical_to_alias rows                    1348
+  chats rows                                         1183
+  chat_to_handle rows                                0
+  participants rows                                  1408
+  handle_to_participant rows                         0
+  messages rows                                      112522
+  recovered_unlinked_messages rows                   827
+  attachments rows                                   40010
+  recovered_unlinked_attachments rows                47
+  reactions rows                                     0
+  reaction_counts rows                               0
+  message_read_marks rows                            73184
+  read_state rows                                    144
+
+--- IMPORT vs WORKING COMPARISON ---
+  handles → handles_canonical              src=1348  dst=978  delta=-370
+  chats → chats                            src=1183  dst=1183  delta=+0
+  chat_to_handle → chat_to_handle          src=1991  dst=0  delta=-1991
+  contacts → participants                  src=1413  dst=1408  delta=-5
+  messages → messages                      src=112534  dst=112522  delta=-12
+  attachments → attachments                src=41446  dst=40010  delta=-1436
+  reactions → reactions                    src=0  dst=0  delta=+0
+
+--- WORKING DB MESSAGE TEXT DIAGNOSTICS ---
+  working messages with text                         112300
+  working messages without text                      222
+
+  Working messages by item_type:
+      text                                           108309
+      reaction-carrier                               4144
+      attachment-only                                56
+      balloon                                        13
+
+--- JOIN-DROP DIAGNOSTICS ---
+  import messages with no matching chat              0
+  import messages with unmappable sender_handle_id   0
+  chat_to_handle with missing chat                   0
+  chat_to_handle with missing handle                 0
+  message_attachments with missing message           0
+
+  working messages with null/empty text              222
+
+--- end of migration audit ---
+
+
+========================================================================
+MIGRATION AUDIT — 2026-04-18T05:25:57.739489Z
+========================================================================
+  Success                                            false
+  Mode                                               incremental
+  ✗ ERROR: MigrationException[RECOVERED_UNLINKED_ATTACHMENTS_ROW_MISMATCH]: recovered_unlinked_attachments: working has 47 rows but expected 0
+
+--- SOURCE: import.db ---
+  handles rows                                       1348
+  chats rows                                         1183
+  chat_to_handle rows                                1991
+  contacts rows                                      1413
+  contact_phone_email rows                           2720
+  contact_to_chat_handle rows                        550
+  messages rows                                      112659
+  chat_to_message rows                               133
+  attachments rows                                   41475
+  message_attachments rows                           34
+  reactions rows                                     0
+
+  import messages with text                          838
+  import messages without text                       111821
+
+--- DESTINATION: working.db ---
+  handles_canonical rows                             978
+  handles_canonical_to_alias rows                    1348
+  chats rows                                         1183
+  chat_to_handle rows                                0
+  participants rows                                  1408
+  handle_to_participant rows                         0
+  messages rows                                      112522
+  recovered_unlinked_messages rows                   827
+  attachments rows                                   40010
+  recovered_unlinked_attachments rows                47
+  reactions rows                                     0
+  reaction_counts rows                               0
+  message_read_marks rows                            73184
+  read_state rows                                    144
+
+--- IMPORT vs WORKING COMPARISON ---
+  handles → handles_canonical              src=1348  dst=978  delta=-370
+  chats → chats                            src=1183  dst=1183  delta=+0
+  chat_to_handle → chat_to_handle          src=1991  dst=0  delta=-1991
+  contacts → participants                  src=1413  dst=1408  delta=-5
+  messages → messages                      src=112659  dst=112522  delta=-137
+  attachments → attachments                src=41475  dst=40010  delta=-1465
+  reactions → reactions                    src=0  dst=0  delta=+0
+
+--- WORKING DB MESSAGE TEXT DIAGNOSTICS ---
+  working messages with text                         112300
+  working messages without text                      222
+
+  Working messages by item_type:
+      text                                           108309
+      reaction-carrier                               4144
+      attachment-only                                56
+      balloon                                        13
+
+--- JOIN-DROP DIAGNOSTICS ---
+  import messages with no matching chat              0
+  import messages with unmappable sender_handle_id   0
+  chat_to_handle with missing chat                   0
+  chat_to_handle with missing handle                 0
+  message_attachments with missing message           0
+
+  working messages with null/empty text              222
+
+--- end of migration audit ---
+
+
+========================================================================
+MIGRATION AUDIT — 2026-04-21T06:47:22.127347Z
+========================================================================
+  Success                                            false
+  Mode                                               incremental
+  ✗ ERROR: MigrationException[CHAT_TO_HANDLE_INCREMENTAL_UNDERCOUNT]: chat_to_handle: working has 1988 rows but expected >= 1991
+
+--- SOURCE: import.db ---
+  handles rows                                       1348
+  chats rows                                         1183
+  chat_to_handle rows                                1991
+  contacts rows                                      1413
+  contact_phone_email rows                           2720
+  contact_to_chat_handle rows                        550
+  messages rows                                      112825
+  chat_to_message rows                               299
+  attachments rows                                   41555
+  message_attachments rows                           112
+  reactions rows                                     0
+
+  import messages with text                          1002
+  import messages without text                       111823
+
+--- DESTINATION: working.db ---
+  handles_canonical rows                             978
+  handles_canonical_to_alias rows                    1348
+  chats rows                                         1183
+  chat_to_handle rows                                1988
+  participants rows                                  1408
+  handle_to_participant rows                         0
+  messages rows                                      112522
+  recovered_unlinked_messages rows                   827
+  attachments rows                                   40010
+  recovered_unlinked_attachments rows                47
+  reactions rows                                     0
+  reaction_counts rows                               0
+  message_read_marks rows                            73184
+  read_state rows                                    144
+
+--- IMPORT vs WORKING COMPARISON ---
+  handles → handles_canonical              src=1348  dst=978  delta=-370
+  chats → chats                            src=1183  dst=1183  delta=+0
+  chat_to_handle → chat_to_handle          src=1991  dst=1988  delta=-3
+  contacts → participants                  src=1413  dst=1408  delta=-5
+  messages → messages                      src=112825  dst=112522  delta=-303
+  attachments → attachments                src=41555  dst=40010  delta=-1545
+  reactions → reactions                    src=0  dst=0  delta=+0
+
+--- WORKING DB MESSAGE TEXT DIAGNOSTICS ---
+  working messages with text                         112300
+  working messages without text                      222
+
+  Working messages by item_type:
+      text                                           108309
+      reaction-carrier                               4144
+      attachment-only                                56
+      balloon                                        13
+
+--- JOIN-DROP DIAGNOSTICS ---
+  import messages with no matching chat              0
+  import messages with unmappable sender_handle_id   0
+  chat_to_handle with missing chat                   0
+  chat_to_handle with missing handle                 0
+  message_attachments with missing message           0
+
+  working messages with null/empty text              222
+
+--- end of migration audit ---
+
+
+========================================================================
+MIGRATION AUDIT — 2026-04-22T07:25:34.442813Z
+========================================================================
+  Success                                            false
+  Mode                                               full
+  ✗ ERROR: MigrationException[CHAT_TO_HANDLE_ROW_MISMATCH]: chat_to_handle: working has 1986 rows but expected 1989
+
+--- SOURCE: import.db ---
+  handles rows                                       1347
+  chats rows                                         1181
+  chat_to_handle rows                                1989
+  contacts rows                                      1413
+  contact_phone_email rows                           2720
+  contact_to_chat_handle rows                        550
+  messages rows                                      112930
+  chat_to_message rows                               112930
+  attachments rows                                   41586
+  message_attachments rows                           40158
+  reactions rows                                     0
+
+  import messages with text                          112704
+  import messages without text                       226
+
+--- DESTINATION: working.db ---
+  handles_canonical rows                             977
+  handles_canonical_to_alias rows                    1347
+  chats rows                                         1181
+  chat_to_handle rows                                1986
+  participants rows                                  1408
+  handle_to_participant rows                         0
+  messages rows                                      0
+  recovered_unlinked_messages rows                   809
+  attachments rows                                   0
+  recovered_unlinked_attachments rows                0
+  reactions rows                                     0
+  reaction_counts rows                               0
+  message_read_marks rows                            0
+  read_state rows                                    0
+
+--- IMPORT vs WORKING COMPARISON ---
+  handles → handles_canonical              src=1347  dst=977  delta=-370
+  chats → chats                            src=1181  dst=1181  delta=+0
+  chat_to_handle → chat_to_handle          src=1989  dst=1986  delta=-3
+  contacts → participants                  src=1413  dst=1408  delta=-5
+  messages → messages                      src=112930  dst=0  delta=-112930
+  attachments → attachments                src=41586  dst=0  delta=-41586
+  reactions → reactions                    src=0  dst=0  delta=+0
+
+--- WORKING DB MESSAGE TEXT DIAGNOSTICS ---
+  working messages with text                         0
+  working messages without text                      0
+
+  Working messages by item_type:
+
+--- JOIN-DROP DIAGNOSTICS ---
+  import messages with no matching chat              0
+  import messages with unmappable sender_handle_id   0
+  chat_to_handle with missing chat                   0
+  chat_to_handle with missing handle                 0
+  message_attachments with missing message           0
+
+  working messages with null/empty text              0
+
+--- end of migration audit ---
+

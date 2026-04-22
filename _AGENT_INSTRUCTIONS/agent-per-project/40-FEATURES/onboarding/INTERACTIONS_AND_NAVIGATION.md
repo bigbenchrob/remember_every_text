@@ -1,5 +1,7 @@
 # Onboarding — Interactions & Navigation
 
+> Legacy note (2026-04-21): the blocking overlay still exists outside normal user navigation, but current code also uses `ViewSpec.onboarding(OnboardingSpec.devPanel())` for the developer panel and `ViewSpec.environmentReadiness(EnvironmentReadinessSpec.readinessPanel())` for readiness surfaces. Do not use the V1 statements below to argue that onboarding has no ViewSpec participation.
+
 ## Integration Point
 
 The onboarding overlay lives **outside** the ViewSpec navigation system. It does not use `ViewSpec`, `WindowPanel`, or the sidebar. It is a `Stack` child in `MacosAppShell.build()` that sits above the `MacosWindow` and absorbs all input until dismissed.

@@ -11,28 +11,34 @@ recovery scenarios.
 ### Mechanism
 
 `ChatDbChangeMonitor` polls `~/Library/Messages/chat.db` every 15 seconds by
-checking the file's modification timestamp.
+reading source `MAX(ROWID)` from the `message` table. On startup it primes
+from the import ledger's max imported message row ID when available, then runs
+an immediate catch-up check before periodic polling begins.
 
 **Location:** `lib/essentials/db_importers/application/monitor/`
 
 ### On Change Detected
 
-1. Run incremental import (only new/changed rows)
-2. Run incremental migration (project changes to working DB)
-3. Run `archiveAllAvailable()` for any newly available attachments
-4. Providers that watch the working DB update reactively
+1. Run incremental import.
+2. Archive the imported batch with `archiveImportedBatch(batchId:)`.
+3. Run incremental migration.
+4. Bump `messageDataVersionProvider` so data-dependent providers rebuild.
+
+In parallel with message polling, the monitor also runs a 5-minute attachment
+maintenance sweep with `archiveNextWorkingSweepChunk()`.
 
 ### User Experience
 
-- New messages appear in the app within ~15–20 seconds of arrival in macOS Messages
+- New messages appear after the polling/debounce/import/migration cycle
 - No user action required
-- No visible indicator during sync (seamless background operation)
+- No visible indicator during normal sync; errors are logged in monitor state
 
 ### Constraints
 
-- Requires FDA to remain granted (monitored continuously)
+- Requires FDA to remain granted for source reads
 - If `chat.db` is locked by another process, the poll retries on the next cycle
-- The monitor starts after initial onboarding completes (not during first import)
+- The monitor initializes on macOS and is meaningful after import data exists
+- It uses a debounce and in-flight guard so overlapping probes coalesce
 
 ## Manual Re-Import
 
@@ -48,14 +54,14 @@ Settings → "Re-scan & Import"
   ├─ OnboardingGate.startReimport()
   │
   ├─ status = reimporting
-  │   └─ Full import pipeline runs (same as first run)
-  │   └─ Skips FDA gate (already granted)
+  │   └─ Full import pipeline runs through DbImportControlViewModel
+  │   └─ No separate readiness gate is shown
   │   └─ No welcome preamble in overlay
   │
   ├─ status = reimportMigrating
   │   └─ Full migration pipeline runs
-  │   └─ Working DB is rebuilt from scratch
-  │   └─ archiveAllAvailable() runs after migration
+  │   └─ Working tables are rebuilt from the import projection
+  │   └─ archiveAllAvailable() is launched after successful migration
   │
   └─ status = reimportComplete
       └─ Summary shown, "Done" button
@@ -72,7 +78,8 @@ Common reasons a user might re-import:
 
 ### Data Safety
 
-- Re-import rebuilds `import.db` and `working.db` from scratch
+- Re-import deletes the import ledger first, then full migration rebuilds
+  working tables from the current import projection
 - Overlay DB rows (archive metadata, user preferences, favorites, etc.)
   survive re-import because overlay is never touched by migration
 - Archive files on disk are preserved — `archiveAllAvailable()` is additive
@@ -82,8 +89,8 @@ Common reasons a user might re-import:
 
 Each auto-sync cycle maintains the living archive:
 
-1. **New attachments:** Files that arrived since the last sync are archived
-   if they are locally available and not already in the archive.
+1. **New attachments:** Imported-batch files are archived before incremental
+   migration when locally available and not already in the archive.
 
 2. **Evicted files:** If a file was archived previously and Apple has since
    evicted the original, the archive copy remains valid. The resolution
@@ -91,15 +98,15 @@ Each auto-sync cycle maintains the living archive:
 
 3. **Re-downloaded files:** If Apple re-downloads a previously evicted file
    (e.g., user opened it in Messages.app), the Messages path becomes valid
-   again. The resolution provider finds it at Step 1, and the archive copy
-   also remains as a safety net.
+   again. In archive-enabled mode the resolver can trigger on-demand archive
+   ingestion, and the periodic sweep can archive it later.
 
 ## Relationship to Onboarding
 
 | Phase | Sync mechanism | Archive behavior |
 |-------|---------------|-----------------|
 | First run | OnboardingGate → full import + migration | `archiveAllAvailable()` — bulk initial archive |
-| Normal use | ChatDbChangeMonitor every 15 seconds | Incremental archive of new attachments |
+| Normal use | ChatDbChangeMonitor every 15 seconds plus 5-minute sweep | Imported-batch archive, on-demand archive, and rolling working sweep |
 | Re-import | Manual trigger from Settings | Full rebuild + `archiveAllAvailable()` |
 | Historical recovery | User-initiated from Settings | Deterministic snapshot → archive |
 
@@ -107,7 +114,7 @@ Each auto-sync cycle maintains the living archive:
 
 | File | Role |
 |------|------|
-| `lib/essentials/db_importers/application/monitor/chat_db_change_monitor.dart` | Poll-based auto-sync |
+| `lib/essentials/db_importers/application/monitor/chat_db_change_monitor_provider.dart` | Poll-based auto-sync and attachment sweep |
 | `lib/essentials/db_importers/presentation/view_model/db_import_control_provider.dart` | Import progress and control |
 | `lib/essentials/onboarding/application/onboarding_gate_provider.dart` | `startReimport()` trigger |
-| `lib/features/attachments/application/attachment_archive_service_provider.dart` | `archiveAllAvailable()` |
+| `lib/features/attachments/application/attachment_archive_service_provider.dart` | `archiveAllAvailable()`, `archiveImportedBatch()`, working sweeps |

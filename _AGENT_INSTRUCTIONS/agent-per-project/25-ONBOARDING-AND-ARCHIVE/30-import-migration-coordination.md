@@ -12,11 +12,11 @@ migration systems. This document describes how the three systems interact.
 | Bootstrap gate and user-facing status | Onboarding | `lib/essentials/onboarding/` |
 | Table importers and import orchestration | db_importers | `lib/essentials/db_importers/` |
 | Table migrators and migration orchestration | db_migrate | `lib/essentials/db_migrate/` |
-| Attachment archiving (post-migration) | attachments feature | `lib/features/attachments/` |
+| Attachment archiving and recovery | attachments feature | `lib/features/attachments/` |
 
-**Rule:** Onboarding calls `startImportAndMigration()` which triggers the
-import orchestrator, then the migration orchestrator, then the archive service.
-It does not implement any of those pipelines.
+**Rule:** `OnboardingGate` delegates to `DbImportControlViewModel`, which
+triggers the import and migration services. Onboarding does not implement
+those pipelines.
 
 ## Pipeline Sequence
 
@@ -26,11 +26,12 @@ OnboardingGate.startImportAndMigration()
   ├─ 1. Import Phase
   │   └─ ImportOrchestrator.run()
   │       Topological order (Kahn's algorithm):
-  │       prepare_sources → handles → chats → messages →
-  │       attachments → message_attachments → contacts →
-  │       message_rich_text (Rust FFI) → reactions →
-  │       contact_channels → chat_to_handle →
-  │       contact_to_chat_handle → clear_ledger
+  │       Derived from TableImporter.dependsOn at runtime.
+  │       Current importer set:
+  │       prepare_sources, clear_ledger, handles, chats,
+  │       chat_to_handle, contacts, contact_phone_email,
+  │       contact_to_chat_handle, messages, message_rich_text,
+  │       chat_to_message, attachments, message_attachments
   │
   │       Each importer: validatePrereqs → copy → postValidate
   │       Source: ~/Library/Messages/chat.db (FDA-gated)
@@ -39,29 +40,30 @@ OnboardingGate.startImportAndMigration()
   ├─ 2. Migration Phase
   │   └─ MigrationOrchestrator.run()
   │       Topological order:
-  │       handles (dedup) → participants → chats → messages →
-  │       attachments → reactions → message_read_marks →
-  │       reaction_counts → app_settings → read_state →
-  │       handle_to_participant → projection_state
+  │       Derived from TableMigrator.dependsOn at runtime.
+  │       Current migrator set:
+  │       handles, chats, chat_to_handle, participants,
+  │       handle_to_participant, messages,
+  │       recovered_unlinked_messages, attachments,
+  │       recovered_unlinked_attachments, reactions,
+  │       reaction_counts, message_read_marks, read_state
   │
   │       Each migrator: validatePrereqs → copy → postValidate
   │       Source: ./macos_import.db
   │       Target: ./working.db
   │
-  │       attachment_migrator triggers archive copy for each
-  │       migrated attachment (if archive mode enabled)
+  │       Post-orchestrator synthetic steps rebuild working indexes
+  │       and search indexes.
   │
-  ├─ 3. Archive Phase
-  │   └─ AttachmentArchiveService.archiveAllAvailable()
-  │       Bulk-copies all locally available image attachments
-  │       into content-addressable storage
-  │       Source: ~/Library/Messages/Attachments/
-  │       Target: ./attachment_archive/
-  │       Metadata: overlay DB archived_attachments table
+  ├─ 3. Archive Maintenance
+  │   └─ DbImportControlViewModel launches
+  │       AttachmentArchiveService.archiveAllAvailable()
+  │       after successful full migration. It is fire-and-forget
+  │       and respects the archive-enabled setting.
   │
   └─ 4. Completion
       └─ OnboardingGate sets status = complete
-          Persists result to overlay DB
+          Import/migration results are persisted by DbImportControlViewModel
           Overlay shows summary
 ```
 
@@ -86,6 +88,7 @@ onboarding progress view consumes directly.
 | Import succeeds, migration fails | Migration result persisted, status → `awaitingUserAction` |
 | User clicks retry | Full pipeline re-runs from import phase |
 | App crashes mid-pipeline | On next launch, failure history detected, user sees retry option |
+| Stale partial import/working DB state detected | `OnboardingGate` enters `recoveringFailedAttempt`, resets app-owned DBs, then returns to `awaitingUserAction` |
 
 **Persistence:** Results are stored as JSON in the overlay DB `OverlaySettings`
 table, surviving app restarts.
@@ -114,17 +117,21 @@ When a user triggers re-import from Settings:
 
 1. `OnboardingGate.startReimport()` is called
 2. Status transitions: `reimporting` → `reimportMigrating` → `reimportComplete`
-3. The same pipeline runs, but the overlay skips the FDA gate and welcome preamble
-4. Existing working DB data is rebuilt from scratch (migration is a full projection)
+3. The same import/migration control pipeline runs with reimport-specific overlay status
+4. The import ledger is deleted first; full migration rebuilds working tables from the import projection
 5. Archive rows in overlay are additive — existing entries survive
 
 ## Auto-Sync Integration
 
-After initial onboarding completes, `ChatDbChangeMonitor` takes over:
+After initial onboarding completes, `ChatDbChangeMonitor` keeps the app current:
 
-- Polls `~/Library/Messages/chat.db` modification timestamp every 15 seconds
-- On change: runs incremental import + migration
-- Archive service processes newly available attachments
+- Primes from the max imported message ROWID and checks startup catch-up.
+- Polls `MAX(ROWID)` in `~/Library/Messages/chat.db` every 15 seconds.
+- On change: runs incremental import.
+- Archives the imported batch before incremental migration.
+- Runs incremental migration and bumps `messageDataVersionProvider` on success.
+- Runs a periodic working-attachment sweep every 5 minutes for attachments
+  that become locally available later.
 - No user interaction required
 
 See [`60-reimport-and-ongoing-sync.md`](60-reimport-and-ongoing-sync.md) for

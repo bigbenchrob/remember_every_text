@@ -1,6 +1,8 @@
 # Tooltips System
 
-A cross-surface tooltips system following the same coordinator/resolver/widget-builder pattern as the sidebar cassette system.
+A small cross-surface tooltips system following the spec-driven coordinator/resolver pattern.
+
+> Current conformance note (2026-04-21): only contacts tooltip routing is implemented. Tooltip coordinators resolve `Future<String>` tooltip text; they do not return widgets. `TooltipWrapper` is the render edge.
 
 ## Overview
 
@@ -19,7 +21,7 @@ Feature Coordinators
     │
     └─► contacts: ContactsTooltipCoordinator
             │
-            └─► editDisplayName: "Edit display name"
+            └─► editDisplayName: Future<String>("Edit display name")
 ```
 
 ## Key Components
@@ -29,7 +31,7 @@ Feature Coordinators
 | `TooltipSpec` | `essentials/tooltips/domain/entities/` | Sealed class routing to features |
 | `TooltipCoordinator` | `essentials/tooltips/application/` | Routes specs to feature coordinators |
 | `TooltipWrapper` | `essentials/tooltips/presentation/` | Flutter `Tooltip`-based wrapper widget |
-| `TooltipConfig` | `essentials/tooltips/domain/` | Configurable delays (default 500ms) |
+| `TooltipConfig` | `essentials/tooltips/domain/` | Configurable delays (default show delay 500ms; display duration 4s) |
 
 ## Usage
 
@@ -80,7 +82,7 @@ class HandlesTooltipCoordinator extends _$HandlesTooltipCoordinator {
   @override
   void build() {}
 
-  String resolve(HandlesTooltipSpec spec) {
+  Future<String> resolve(HandlesTooltipSpec spec) async {
     return spec.map(
       linkToContact: (_) => 'Link this handle to a contact',
       unlinkHandle: (_) => 'Remove handle from contact',

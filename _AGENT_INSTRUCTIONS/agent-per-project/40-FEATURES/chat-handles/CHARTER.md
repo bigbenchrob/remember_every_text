@@ -15,6 +15,8 @@ last_updated: 2025-11-06
 
 # Feature Charter — Chat Handles
 
+> Current conformance note (2026-04-21): this folder is a draft scaffold for handle identity concerns. Current concrete handle review/linking code lives primarily under `lib/features/handles`, while manual handle-to-contact writes are overlay-only through `lib/features/contacts/application/services/manual_handle_link_service.dart`.
+
 ## Mission
 - Capture how canonical handle identities are created, normalized, and associated with participants.
 - Document inbound data sources (macOS Messages handles, manual overrides) and the invariants we must preserve.

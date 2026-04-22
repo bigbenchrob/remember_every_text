@@ -1,5 +1,7 @@
 # Rationalize Message Views — Design Notes
 
+> Historical context note (2026-04-21): this design note records the implementation plan for the rationalized message views work. Use `STATUS.md` and `../messages/` for current names and provider locations before making code changes.
+
 ## Architecture Decision: Strategy Pattern
 
 The consolidation uses the **Strategy Pattern** to handle scope-specific differences without polluting core logic with conditionals.

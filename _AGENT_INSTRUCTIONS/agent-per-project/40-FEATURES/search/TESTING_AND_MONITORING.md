@@ -15,6 +15,8 @@ last_updated: 2025-11-06
 
 # Testing & Monitoring — Search
 
+> Legacy note (2026-04-21): apply this as general intent only. Current tests should target `lib/essentials/search`, message timeline search modes, index rebuild orchestration, and fallback behavior from FTS to legacy queries.
+
 ## Automated Coverage Targets
 - Unit: query parser, ranking heuristics, filter logic.
 - Integration: index rebuild pipeline from import delta to queryable state.

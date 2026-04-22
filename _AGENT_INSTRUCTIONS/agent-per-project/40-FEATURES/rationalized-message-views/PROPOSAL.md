@@ -2,6 +2,8 @@
 
 **Status**: APPROVED — Implementation in progress on branch `Ftr.msgview`
 
+> Historical context note (2026-04-21): this proposal has been implemented and is no longer current guidance by itself. Use `STATUS.md` and `../messages/` for the current unified timeline structure. Some proposed names/scopes differ from the final code, which now includes `MessageTimelineScope.global`, `contact`, `chat`, and `recovered`.
+
 ## Summary
 
 Consolidate the duplicated code between `GlobalMessagesView` and `MessagesForContactView` (and their supporting view model infrastructure) into a unified, parameterized architecture that supports both global and contact-scoped message timelines.

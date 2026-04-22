@@ -2,7 +2,7 @@
 tier: project
 scope: databases
 owner: agent-per-project
-last_reviewed: 2025-11-06
+last_reviewed: 2026-04-21
 source_of_truth: doc
 links:
        - ../00-PROJECT/03-data-locations.md
@@ -34,13 +34,13 @@ Use these aliases consistently across docs, code comments, and conversations.
 | --- | --- | --- | --- | --- |
 | `db-address-book` | `AddressBook-v22.abcddb` inside the most recent `/Library/Application Support/AddressBook/Sources/<UUID>/` | macOS contact source of truth | `getFolderAggregateEitherProvider` → `AddressBookFolderAggregate.mostRecentFolderPath` | Resolved dynamically at runtime |
 | `db-chat` | `chat.db` | macOS Messages source ledger | `PathsHelper.messagesDatabasePath` (import pipeline) | `~/Library/Messages/chat.db` |
-| `db-import` | `macos_import.db` | Immutable staging register of Messages + AddressBook data | `sqfliteImportDatabaseProvider` | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/macos_import.db` |
+| `db-import` | `macos_import.db` | Source-derived import ledger for Messages + AddressBook data | `sqfliteImportDatabaseProvider` | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/macos_import.db` |
 | `db-working` | `working.db` | Drift projection consumed by the Flutter UI | `driftWorkingDatabaseProvider` | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/working.db` |
 | `db-overlay` | `user_overlays.db` | Long-lived user overrides and preferences | `overlayDatabaseProvider` | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/user_overlays.db` |
 
 ## Coupled Database Groups
 
-- **`group-import-working-db`**: `db-import` and `db-working` operate as a pipeline. Source data (Messages + AddressBook) lands in `db-import`, then migrators/projectors translate it into normalized structures in `db-working`. All primary keys and relationships from the macOS sources are preserved during the import → projection handoff.
+- **`group-import-working-db`**: `db-import` and `db-working` operate as a pipeline. Source data (Messages + AddressBook) lands in `db-import`, then migrators/projectors translate it into normalized structures in `db-working`. Source identifiers and documented relationships are preserved during the import → projection handoff.
 
 ## Source → Projection Flow
 
@@ -59,7 +59,7 @@ macOS AddressBook (db-address-book)
 ## Provider Access Map
 
 - `db-address-book`: `getFolderAggregateEitherProvider` (features/address_book_folders) → `AddressBookFolderAggregate.mostRecentFolderPath`.
-- `db-chat`: retrieved via `PathsHelper` inside the import pipeline (never opened directly by app code).
+- `db-chat`: retrieved via `PathsHelper` inside import/monitor infrastructure; feature and presentation code must not open it directly.
 - `db-import`: `sqfliteImportDatabaseProvider` (generated from `sqfliteImportDatabase`).
 - `db-working`: `driftWorkingDatabaseProvider` (generated from `driftWorkingDatabase`).
 - `db-overlay`: `overlayDatabaseProvider` (generated from `overlayDatabase`).
@@ -69,8 +69,8 @@ macOS AddressBook (db-address-book)
 | Need | Database(s) | Notes |
 | --- | --- | --- |
 | Inspect raw macOS Contacts | `db-address-book` | Only via provider overrides in tooling/tests; ensure Full Disk Access. |
-| Inspect raw macOS Messages | `db-chat` | Read-only; consumed exclusively by the import orchestrator. |
-| Verify import batches or schema diffs | `db-import` | Treat as append-only audit log; never mutate rows manually. |
+| Inspect raw macOS Messages | `db-chat` | Read-only; consumed by import/monitor infrastructure. |
+| Verify import batches or schema diffs | `db-import` | Treat as source-derived and importer-owned; full/reimport flows may clear/rebuild ledger data through import code, but agents must never mutate rows manually. |
 | Debug app-visible state | `db-working` | Projection backing the UI. Manual edits are overwritten on the next migration. |
 | Review manual overrides (handles, UI prefs) | `db-overlay` | Persistent user customizations. Follow overlay independence rules before editing. |
 

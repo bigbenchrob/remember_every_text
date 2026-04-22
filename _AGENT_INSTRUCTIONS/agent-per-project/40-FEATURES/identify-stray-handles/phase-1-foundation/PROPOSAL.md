@@ -1,8 +1,10 @@
 # Phase 1 — Foundation: Overlay Schema + Virtual Participants
 
-> **Status:** Not started
+> **Status:** Historical proposal. Substantial pieces are implemented; use current code for names and contracts.
 > **Depends on:** None (first phase)
 > **Blocks:** Phase 2
+
+> Current conformance note (2026-04-21): `virtual_participants` and `handle_to_participant_overrides` exist in the overlay DB. `ManualHandleLinkService` writes overlay-only. The proposed `allParticipantsProvider` name did not become the current public API; current merge behavior is distributed through contacts repositories/providers such as `participantsForPickerProvider`, `contactsListRepositoryProvider`, `virtualParticipantsProvider`, and `participant_merge_utils.dart`.
 
 ## Objective
 

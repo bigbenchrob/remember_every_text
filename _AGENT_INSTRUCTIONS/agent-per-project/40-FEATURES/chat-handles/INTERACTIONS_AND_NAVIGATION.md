@@ -15,8 +15,12 @@ last_updated: 2025-11-06
 
 # Interactions & Navigation — Chat Handles
 
+> Current conformance note (2026-04-21): manual linking is no longer a TBD standalone panel. Current user-facing handle review uses handles sidebar cassettes and `MessagesSpec.handleLens(...)`; settings/manual-linking surfaces live under `lib/features/handles/application/settings_cassette_spec/`.
+
 ## Primary Entry Points
-- Manual handle linking panel (center panel ViewSpec TBD).
+- Handle review via handles sidebar cassettes.
+- Handle Lens via `MessagesSpec.handleLens(handleId: ...)`.
+- Manual linking/settings cassettes under `handles/application/settings_cassette_spec/`.
 - Import diagnostics tooling when handle normalization fails.
 
 ## User Flows

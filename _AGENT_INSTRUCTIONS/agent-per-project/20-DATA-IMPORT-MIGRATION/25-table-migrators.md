@@ -2,7 +2,7 @@
 tier: project
 scope: data-import-migration
 owner: agent-per-project
-last_reviewed: 2025-11-06
+last_reviewed: 2026-04-21
 source_of_truth: code
 links:
   - ./01-overview.md
@@ -12,7 +12,7 @@ links:
   - ../10-DATABASES/10-group-import-working.md
   - lib/essentials/db_migrate/application/orchestrator/migration_orchestrator.dart
   - lib/essentials/db_migrate/application/orchestrator/handles_migration_service.dart
-  - lib/essentials/db_migrate/application/services/base_table_migrator.dart
+  - lib/essentials/db_migrate/domain/base_table_migrator.dart
   - lib/essentials/db_migrate/domain/i_migrators.dart/table_migrator.dart
   - lib/essentials/db_migrate/infrastructure/sqlite/migration_context_sqlite.dart
 ---
@@ -37,17 +37,18 @@ Migrators receive a shared `MigrationContext` instance from `HandlesMigrationSer
 ## MigrationContext Summary
 
 `MigrationContext` (see `migration_context_sqlite.dart`) includes:
-- `importDb`: Attached `Database` handle for `macos_import.db`.
-- `workingDb`: Drift-backed `DatabaseConnectionUser` for `working.db` operations.
+- `importDb`: `SqfliteImportDatabase` handle for `macos_import.db`.
+- `workingDb`: Drift `WorkingDatabase` for `working.db` operations.
 - `log`: Optional logger used by `ctx.log(...)` to emit orchestrator transcripts.
 - `dryRun`: When true, preparation and validation run but copy steps skip writes.
-- `handleIdCanonicalMap`, `chatIdMap`, and similar helpers: Provide deterministic ID lookups between ledger and working tables.
+- `incrementalMode`: When true, orchestrator preparation skips table truncation and migrators must preserve existing projection rows.
+- `handleIdCanonicalMap` and `canonicalHandleInfo`: Deterministic identity lookup state shared by identity-related migrators.
 - `ensureImportReady(label)` / `ensureImportClean(label)`: Safety checks that assert ledger attachment state before and after each phase.
 
 ### Utilities
-- `ctx.transaction((txn) async { ... })`: Helper for transactional copy work when using raw SQL.
-- `ctx.attachImport()` / `ctx.detachImport()`: Managed automatically by migrator helpers; call explicitly only for advanced flows.
-- `ctx.expectTrue` / `ctx.expectZero`: Assertion helpers mirroring those on `BaseTableMigrator`.
+- `BaseTableMigrator.count(...)`: Count rows in either database with consistent type handling.
+- `BaseTableMigrator.expectTrueOrThrow(...)` / `expectZeroOrThrow(...)`: Assertion helpers that throw `MigrationException`.
+- `MigrationContextSqlite.ensureImportReady(...)` / `ensureImportClean(...)`: Remove lingering `import_*` attachments and verify the import database can still be attached.
 
 ## Execution Lifecycle
 
@@ -57,13 +58,13 @@ Migrators receive a shared `MigrationContext` instance from `HandlesMigrationSer
    - Confirm the ledger contains rows for required tables.
    - Verify canonical ID maps have entries for the relationships this migrator expects.
 2. **copy**
-   - Perform `INSERT ... SELECT` statements from the attached ledger into `working.db`.
-   - Use `INSERT OR REPLACE` semantics unless the table is append-only by design.
+   - Perform deterministic SQL from the ledger into `working.db`.
+   - Use full-mode or incremental-mode insert/update semantics appropriate for the table.
    - Respect `ctx.dryRun`; always log planned work when skipping writes.
    - Do not restore or replay user overrides into `working.db`. User intent lives in `user_overlays.db` and is merged at read time by providers.
 3. **postValidate**
    - Recount rows to confirm the projection matches the ledger.
-   - Rebuild derived indexes if the migrator invalidates them (handled in the service once messages and attachments finish).
+   - Derived message indexes and search indexes are rebuilt by `HandlesMigrationService` after all registered migrators finish.
    - Surface metrics via `TableMigrationProgressEvent` so the UI can display detailed stage information.
 
 ## Dependency Rules
@@ -78,7 +79,7 @@ Migrators receive a shared `MigrationContext` instance from `HandlesMigrationSer
 - Use `BaseTableMigrator` helpers (`count`, `expectTrueOrThrow`, `expectZeroOrThrow`) to provide consistent assertion messaging.
 - Call `ctx.ensureImportReady` at the start of each phase and `ctx.ensureImportClean` afterward to avoid lingering attachments or write locks.
 - Preserve ledger identifiers verbatim; migrators should not mint new IDs.
-- When migrating denormalized tables, compare hash or timestamp columns to catch drift between ledger and projection.
+- When migrating denormalized tables, compare stable source identifiers, counts, or timestamps that the current schema actually stores.
 - Log before and after each phase using `ctx.log(...)` so progress transcripts identify failing migrators quickly.
 
 ## Adding or Modifying Migrators
@@ -96,4 +97,4 @@ Migrators receive a shared `MigrationContext` instance from `HandlesMigrationSer
 - `./10-import-orchestrator.md` to compare importer responsibilities with projection work.
 - `../10-DATABASES/02-db-working.md` for working database schema highlights.
 - `lib/essentials/db_migrate/application/orchestrator/handles_migration_service.dart` for the service that sequences migrators and coordinates projection rebuilds.
-- `lib/essentials/db_migrate/infrastructure/sqlite/migrators/messages_migrator.dart` as the canonical example.
+- `lib/essentials/db_migrate/application/migrators/messages_migrator.dart` as the canonical example.

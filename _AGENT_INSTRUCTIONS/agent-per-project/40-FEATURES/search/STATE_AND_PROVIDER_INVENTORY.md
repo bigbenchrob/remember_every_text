@@ -15,6 +15,8 @@ last_updated: 2025-11-06
 
 # State & Provider Inventory — Search
 
+> Legacy note (2026-04-21): provider names below are planning names, not current code. Current public providers include `searchServiceProvider`, `searchIndexMetricsRepositoryProvider`, `searchIndexersProvider`, `useFtsSearchByDefaultProvider`, and `searchIndexOrchestratorProvider` from `lib/essentials/search/feature_level_providers.dart`.
+
 | Provider | Type | Parameters | Description | Downstream Users |
 | --- | --- | --- | --- | --- |
 | `searchQueryStateProvider` | @riverpod notifier | N/A | Holds active query string, filters, sorting state. | Search UI components.
@@ -32,5 +34,5 @@ last_updated: 2025-11-06
 - Query state changes drive result provider recomputation.
 
 ## TODO
-- Define canonical provider locations (likely under `features/search/application`).
+- Do not add new search providers under `features/search/application` without first deciding to move search out of `essentials/search`.
 - Investigate streaming results for long-running queries.

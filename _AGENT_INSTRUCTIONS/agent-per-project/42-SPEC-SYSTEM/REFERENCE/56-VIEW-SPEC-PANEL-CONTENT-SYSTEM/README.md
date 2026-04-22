@@ -1,5 +1,10 @@
 # 56 — View Spec Panel Content System
 
+> Reference note: This folder is deep-dive reference material. Prefer
+> [42-SPEC-SYSTEM/README.md](../../README.md) and
+> [CANONICAL-ARCHITECTURE/00-overview.md](../../CANONICAL-ARCHITECTURE/00-overview.md)
+> as entry points before using these details.
+
 How the center and right panels display feature-owned content driven by sealed ViewSpec types.
 
 ## Key Idea
@@ -37,5 +42,4 @@ view specs return **full widgets** — the feature owns most of the rendering.
 ## Prerequisite Reading
 
 - [52 — Feature Handling of X-Surface Specs](../52-FEATURE-HANDLING-OF-X-SURFACE-SPECS/) for the general coordinator → resolver → widget_builder pattern
-
 

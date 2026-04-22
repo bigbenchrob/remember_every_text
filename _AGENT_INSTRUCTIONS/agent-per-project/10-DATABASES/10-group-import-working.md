@@ -2,7 +2,7 @@
 tier: project
 scope: databases
 owner: agent-per-project
-last_reviewed: 2026-03-13
+last_reviewed: 2026-04-21
 source_of_truth: doc
 links:
        - ./00-all-databases-accessed.md
@@ -29,39 +29,43 @@ macOS AddressBook (db-address-book)
             +
  macOS Messages (db-chat)
             ↓  import orchestrator
-     db-import (ledger; append-only)
+     db-import (source-derived ledger)
             ↓  migration orchestrator
      db-working (projection for UI)
 ```
 
-- **Import orchestrator** (`../40-INTEGRATION/import-orchestrator.md`) copies raw data into `db-import`, preserving all source ROWIDs and batch metadata.
+- **Import orchestrator** (`../20-DATA-IMPORT-MIGRATION/10-import-orchestrator.md`) copies source-derived data into `db-import`, preserving source identifiers and batch metadata.
 - **Migration orchestrator** (`../20-DATA-IMPORT-MIGRATION/20-migration-orchestrator.md`) projects ledger tables into Drift models with UI-friendly indexing.
 
 ## 2. ID Preservation Rules (**Do Not Break**)
 
-1. **Contact IDs** (`Z_PK`) from AddressBook become `working_participants.id`. No remapping, no new sequences.
-2. **Handle IDs** from the Messages ledger remain the canonical handle IDs in `handles_canonical`.
+1. **Contact IDs** (`Z_PK`) from AddressBook become `participants.id` in `db-working`. No remapping, no new sequences.
+2. **Handle IDs** from the Messages ledger are mapped through `MigrationContext.handleIdCanonicalMap`; canonical rows use a stable source handle ID, and every raw source handle is preserved in `handles_canonical_to_alias`.
 3. **Chat GUIDs / IDs** from Messages remain identical throughout ledger and projection tables.
-4. **Message GUIDs / ROWIDs** propagate untouched into `db-working.messages`.
+4. **Message GUIDs / ROWIDs** remain traceable in `db-working.messages`; source rows without chat-message joins use the recovered-unlinked path.
 
-If a proposed change requires remapping IDs, stop and revisit this contract—remapping introduces data drift and breaks downstream joins. See `./11-contact-to-chat-linking.md` for an end-to-end walkthrough of the contact → chat relationship without ID changes.
+If a proposed change requires remapping IDs outside the documented canonical handle map, stop and revisit this contract. Undocumented remapping introduces data drift and breaks downstream joins. See `./11-contact-to-chat-linking.md` for an end-to-end walkthrough of the contact → chat relationship.
 
 ## 3. Table Mapping Snapshot
 
 | Working Table | Source Table | Notes |
 | --- | --- | --- |
-| `handles_canonical` | `db-import.handles` | Canonicalization wraps the raw handles but retains the original IDs. |
-| `handles_canonical_to_alias` | Canonical map derived during import | Records every variant pointing to the canonical ID. |
-| `working_participants` | `db-import.contacts` | Uses original AddressBook `Z_PK`. |
+| `handles_canonical` | `db-import.handles` | Canonicalization groups raw handles and chooses a stable source handle ID for each canonical row. |
+| `handles_canonical_to_alias` | Canonical map derived during migration | Records every raw source handle variant pointing to the canonical ID. |
+| `participants` | `db-import.contacts` | Uses original AddressBook `Z_PK`. Drift class name: `WorkingParticipants`. |
 | `handle_to_participant` | `db-import.contact_to_chat_handle` | Links canonical handles to participants with confidence scores. |
 | `chat_to_handle` | `db-import.chat_to_handle` | Rebuilds memberships using the same handle IDs. |
 | `messages` | `db-import.messages` | Preserves GUIDs/ROWIDs; adds derived columns only. |
+| `recovered_unlinked_messages` | `db-import.recovered_unlinked_messages` | Preserves source rows that are not linked through normal chat-message joins. |
+| `attachments` / `recovered_unlinked_attachments` | `db-import.attachments` plus normal/recovered attachment joins | Preserves attachment source identity and separates normal chat-linked rows from recovered rows. |
+| `read_state` / `message_read_marks` | `db-import.messages` | Projects read timestamps and message-level read markers. |
+| `global_message_index` / `message_index` / `contact_message_index` | Built from `db-working.messages` and related joins | Rebuilt after migration for timeline and search access. |
 
 ## 4. Lifecycle Expectations
 
-- **Import batches append-only**: Never mutate rows in `db-import`. Corrections happen by rerunning imports, generating new batches.
-- **Projection is disposable**: `db-working` may be dropped and rebuilt at any time; migrators re-materialize it from the ledger.
-- **Write policy**: Runtime features never mutate `db-import`. `db-working` writes happen only through sanctioned services (e.g., overlay merges) and must respect the overlay independence rules.
+- **Import ledger is importer-owned**: Runtime features never mutate `db-import`. Incremental import preserves prior rows; full/reimport flows may clear and rebuild source-derived ledger tables through import code while preserving import metadata.
+- **Projection is disposable but mode-aware**: Full migration may clear and rebuild target tables; incremental migration skips truncation and applies migrator-specific insert/update semantics.
+- **Write policy**: Runtime features never mutate `db-import`. Durable user intent never writes to `db-working`; provider-layer merges must respect the overlay independence rules.
 
 ## 5. Current Import Reality: Source Message Orphans
 

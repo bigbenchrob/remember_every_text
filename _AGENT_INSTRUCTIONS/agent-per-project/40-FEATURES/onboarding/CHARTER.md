@@ -1,5 +1,7 @@
 # Onboarding — Feature Charter
 
+> Legacy note (2026-04-21): this folder is V1 planning material. Current onboarding architecture lives primarily in `lib/essentials/onboarding`; readiness panel UI lives in `lib/features/environment_readiness`; canonical docs are under `../25-ONBOARDING-AND-ARCHIVE/`. Several V1 assumptions below are no longer current, including deferred FDA handling, happy-path-only failure handling, and the absence of ViewSpec participation for onboarding dev/readiness panels.
+
 ## Mission
 
 Present a full-window blocking overlay on first launch that detects absent/empty databases, lets the user kick off data import + migration with a single button, and shows the exact same stage-by-stage progress the developer pane shows — without adding, removing, or altering any orchestrator or migrator behavior.

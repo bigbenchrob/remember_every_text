@@ -15,6 +15,8 @@ last_updated: 2025-11-06
 
 # Feature Charter — Chats
 
+> Current conformance note (2026-04-21): this folder is a draft scaffold. Current `lib/features/chats` contains repository, recent-chat, view-model, and heatmap/timeline support, but the current top-level `ViewSpec` does not include `ViewSpec.chats`; chat-specific message display is routed through `MessagesSpec` where implemented.
+
 ## Mission
 - Maintain the chat aggregate responsible for conversation metadata, membership, and derived counters.
 - Provide a coherent experience across list views, detail panels, and background projections.

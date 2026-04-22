@@ -1,4 +1,9 @@
 
+Reference note: This folder is deep-dive reference material. Prefer
+[42-SPEC-SYSTEM/README.md](../../README.md) and
+[CANONICAL-ARCHITECTURE/00-overview.md](../../CANONICAL-ARCHITECTURE/00-overview.md)
+as entry points before using these details.
+
 
 README.md
 

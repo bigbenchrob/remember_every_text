@@ -2,6 +2,8 @@
 
 **Status**: ✅ COMPLETE — Merged to main
 
+> Historical context note (2026-04-21): this checklist describes completed migration work. Do not treat old path references as current missing work without checking current code.
+
 ## Phase 1: Foundation — Sealed Class & Strategies ✅
 
 - [x] **1.1** Create `MessageTimelineScope` sealed class

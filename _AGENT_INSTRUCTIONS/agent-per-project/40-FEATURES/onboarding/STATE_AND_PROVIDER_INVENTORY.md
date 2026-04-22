@@ -1,5 +1,7 @@
 # Onboarding — State & Provider Inventory
 
+> Legacy note (2026-04-21): current providers include `onboardingGateProvider`, `onboardingEnvironmentReportProvider`, `onboardingDevOverridesProvider`, `onboardingFullDiskAccessProvider`, `onboardingMessagesDatabasePathProvider`, and `onboardingDatabaseDirectoryPathProvider`. Current code also has `message_data_reset_service.dart`, `fda_checker.dart`, and overlay failure persistence. Treat the "New Providers" language below as historical.
+
 ## New Providers
 
 ### `onboardingGateProvider` (essentials/onboarding/application/)

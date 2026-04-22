@@ -2,17 +2,17 @@
 tier: project
 scope: data-import-migration
 owner: agent-per-project
-last_reviewed: 2025-11-06
+last_reviewed: 2026-04-21
 source_of_truth: code
 links:
   - ./01-overview.md
   - ./10-import-orchestrator.md
-   - ./11-rust-message-extractor.md
+  - ./11-rust-message-extractor.md
   - ./02-import-migration-schema-reference.md
   - ../10-DATABASES/01-db-import.md
   - lib/essentials/db_importers/infrastructure/sqlite/import_context_sqlite.dart
-  - lib/essentials/db_importers/infrastructure/sqlite/importers/messages_importer.dart
-  - lib/essentials/db_importers/application/services/base_table_importer.dart
+  - lib/essentials/db_importers/application/importers/messages_importer.dart
+  - lib/essentials/db_importers/domain/base_table_importer.dart
   - lib/essentials/db_importers/domain/i_importers.dart/table_importer.dart
 ---
 
@@ -60,10 +60,10 @@ When `ImportOrchestrator` runs, each importer goes through three phases:
    - Verify source row availability, detect duplicate primary keys, check foreign keys.
    - Abort early with descriptive exceptions (`expectTrueOrThrow`, etc.).
 2. **copy**
-   - Wrap inserts in a transaction (handled by `BaseTableImporter` helper methods).
+   - Use importer-owned deterministic SQL and transactions where the importer needs atomic multi-statement work.
    - Prefer deterministic `INSERT OR REPLACE` / `INSERT OR IGNORE` statements.
    - Respect `ctx.dryRun`; skip writes but still log intent.
-   - For append-style importers, compare against `previousMax*RowId` to avoid reprocessing.
+   - For incremental importers, compare against `previousMax*RowId` fields and preserve prior imported rows.
 3. **postValidate**
    - Confirm row counts match expectations (`count` helper).
    - Re-run key integrity checks, ensuring new rows have valid foreign keys into previously imported tables.
@@ -71,7 +71,7 @@ When `ImportOrchestrator` runs, each importer goes through three phases:
 
 ## Dependency Rules
 
-- Declare upstream tables in `dependsOn` so `_sorted()` can enforce ordering (e.g., `MessagesImporter` depends on `ChatsImporter` and `HandlesImporter`).
+- Declare upstream tables in `dependsOn` so `_sorted()` can enforce ordering. Current registry ordering is owned by `OrchestratedLedgerImportService`; the topological sort is the contract, not the literal source order.
 - Avoid cross-importer coordination via global state; use `scratchpad` instead.
 - When introducing new dependencies, update `../10-DATABASES/10-group-import-working.md` and revisit migration ordering so projection remains aligned.
 
@@ -95,4 +95,4 @@ When `ImportOrchestrator` runs, each importer goes through three phases:
 - `./10-import-orchestrator.md` for orchestration details.
 - `./11-rust-message-extractor.md` for the rich text helper binary contract.
 - `../10-DATABASES/10-group-import-working.md` for cross-database responsibilities.
-- `lib/essentials/db_importers/infrastructure/sqlite/importers/messages_importer.dart` as the canonical example importer.
+- `lib/essentials/db_importers/application/importers/messages_importer.dart` as the canonical example importer.

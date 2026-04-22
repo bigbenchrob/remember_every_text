@@ -94,6 +94,7 @@ with a specific reason.
 |--------|-------|
 | `message_not_in_working` | Historical `message.guid` not found in current working DB |
 | `guid_mismatch` | GUID doesn't match any import DB record |
+| `guid_message_mismatch` | GUID matched import DB, but belongs to a different current message |
 | `guid_null_multi_attachment` | NULL GUID + multiple attachments (ambiguous) |
 | `guid_null_no_current_attachment` | NULL GUID + no current attachment for that message |
 | `file_not_found` | Mapped successfully but file missing from backup folder |
@@ -131,6 +132,7 @@ The `DeterministicRecoveryProvider` tracks progress through phases:
 | `mapping` | Cross-snapshot GUID mapping through import DB bridge |
 | `archiving` | Copying files and writing overlay rows |
 | `complete` | Done — results available |
+| `error` | Validation or recovery failed before completion |
 
 ## Results Model
 
@@ -139,12 +141,20 @@ DeterministicRecoveryResult:
   totalHistoricalPairs: int     — total message↔attachment pairs in snapshot
   filesFound: int               — files physically present in backup folder
   filesMissing: int             — files absent from backup folder
+  nullPathRecords: int          — historical rows with no local path
   mappedByGuid: int             — matched via GUID (Step 1)
   mappedBySingleFallback: int   — matched via single-attachment fallback (Step 2)
-  unmappedVariants: Map<UnmappedReason, int>  — breakdown by reason
+  unmappedMessageMissing: int
+  unmappedGuidMismatch: int     — includes message-mismatch cases
+  unmappedAmbiguous: int
+  unmappedNoCurrentAttachment: int
+  unmappedFileMissing: int
   archivedNew: int              — new archive entries written
-  alreadyArchived: int          — skipped (idempotent)
+  skippedAlreadyArchived: int   — skipped (idempotent)
+  archiveFailed: int
   totalBytesArchived: int       — storage consumed
+  walDetected: bool
+  shmDetected: bool
 ```
 
 ## User-Facing Flow
@@ -174,3 +184,16 @@ DeterministicRecoveryResult:
 6. Unmapped records are counted and reported, never silently dropped.
 7. `archiveAllAvailable()` remains unchanged — the living archive is preserved.
 8. Idempotent re-run creates no duplicates.
+
+## Current Caveat: Attachment Provenance Naming
+
+Attachment provenance naming is currently inconsistent:
+
+* deterministic recovery writes `imported_historical_snapshot`
+* the overlay schema comment and resolver logic may still reference
+  `imported_historical`
+* this inconsistency is known and should not be relied on for branching logic
+
+Treat the recovery provider's written value as current behavior, but review
+provenance normalization before relying on historical provenance for UI
+branching.
