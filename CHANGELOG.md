@@ -10,6 +10,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - No unreleased changes yet.
 
+## [0.1.11] — 2026-04-22
+
+### Fixed
+- `chat_to_handle` migration validation now counts distinct final canonical memberships after handle alias collapse, so datasets with normalized handle variants like `citycenter` and `city center` no longer fail onboarding just because multiple source handles project to one canonical chat membership.
+
 ## [0.1.10] — 2026-04-19
 
 ### Changed
