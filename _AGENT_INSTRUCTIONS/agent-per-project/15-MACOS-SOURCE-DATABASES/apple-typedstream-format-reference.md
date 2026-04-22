@@ -4,6 +4,19 @@
 **Author:** Christopher Sardegna (@rxcs)  
 **Date:** January 31, 2025
 
+## Repository Use Note
+
+This is source-format reference material copied for typedstream research. It does not define MessageLens runtime architecture.
+
+Current MessageLens behavior is:
+
+- `message.attributedBody` is imported as source data.
+- MessageLens's Rust extractor decodes rich text during import and updates the import ledger.
+- Normal thread-linked and recovered-unlinked message paths are both eligible for decoded text updates.
+- Rendering must consume resolved import/working data, not typedstream blobs directly.
+
+Use this reference to debug or improve decoding logic, then reconcile any implementation change with `../20-DATA-IMPORT-MIGRATION/11-rust-message-extractor.md`.
+
 ---
 
 ## Table of Contents

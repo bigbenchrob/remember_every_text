@@ -15,8 +15,10 @@ last_updated: 2025-11-06
 
 # Interactions & Navigation — Chats
 
+> Current conformance note (2026-04-21): there is no current `ViewSpec.chats` variant. Treat chat-list panel references below as draft/historical until code introduces a top-level chat ViewSpec or another canonical entry point.
+
 ## Primary Entry Points
-- Center panel chat list (`ViewSpec.chats` TBD).
+- Recent chat/timeline support through `lib/features/chats` providers and widgets.
 - Deep links from search and notifications to specific chat detail.
 
 ## User Flows

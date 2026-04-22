@@ -18,26 +18,31 @@ and explains why each layer exists.
 2. Do the app-owned databases (`macos_import.db`, `working.db`) exist and
    contain data?
 
-If either check failed, the app presented a modal overlay with a stepper UI
-that guided the user through:
+If either check failed, the earlier implementation presented a modal overlay
+with a stepper UI that guided the user through:
 
 - Granting Full Disk Access in System Settings
 - Starting the initial import of Messages and Contacts data
 - Waiting for migration to project imported data into the working database
 
-This was implemented as `OnboardingGate` in `lib/essentials/onboarding/`,
-rendering an `OnboardingOverlay` that blocked the main app UI until bootstrap
-completed.
+This established `OnboardingGate` in `lib/essentials/onboarding/`.
+
+**Current state:** FDA and ready-to-import states are now synchronized into the
+center panel through `ViewSpec.environmentReadiness` by
+`OnboardingCenterPanelSyncObserver`. `OnboardingOverlay` remains the
+full-window blocking surface for active workflow phases such as recovery,
+import, migration, completion, and reimport completion.
 
 **Key code:**
 
 | File | Role |
 |------|------|
-| `onboarding_gate_provider.dart` | State machine tracking 9 lifecycle states |
-| `onboarding_overlay.dart` | Full-window blocking overlay |
+| `onboarding_gate_provider.dart` | State machine tracking 10 lifecycle states |
+| `onboarding_overlay.dart` | Full-window blocking overlay for workflow phases |
 | `onboarding_progress_view.dart` | Live progress bars during import/migration |
 | `database_existence_checker.dart` | Filesystem-only DB presence check |
 | `fda_checker.dart` | FDA probe via `File.openSync()` on `chat.db` |
+| `navigation/presentation/widgets/onboarding_center_panel_sync_observer.dart` | Syncs FDA/user-action states into the readiness panel |
 
 **Architectural rule:** Onboarding coordinates and presents. Import logic
 stays in `db_importers`, migration logic stays in `db_migrate`. Onboarding
@@ -67,7 +72,7 @@ readiness report before and during bootstrap. The report evaluates:
 - Sync plausibility — whether this Mac appears to have meaningful local
   Messages history
 
-This was implemented as `OnboardingEnvironmentReportProvider`, which probes the
+This is implemented by `onboardingEnvironmentReportProvider`, which probes the
 environment and classifies the result into user-facing states:
 
 | State | Meaning |
@@ -76,16 +81,14 @@ environment and classifies the result into user-facing states:
 | `sourceUnavailable` | `chat.db` or AddressBook not found |
 | `sourceSparseOrUnsynced` | Source exists but has very little data |
 | `readyToImport` | Sources healthy, app databases empty |
-| `importing` | Import pipeline in progress |
 | `importFailed` | Last import attempt failed |
-| `migrating` | Migration pipeline in progress |
 | `migrationFailed` | Last migration attempt failed |
 | `ready` | App databases populated and healthy |
 
-**Enhancement path:** The proposal for an environment readiness center panel
-(see `45-NEW-FEATURE-ADDITION/enhanced-onboarding-readiness-panel/`) would
-move this from an overlay model to a first-class ViewSpec-driven center-panel
-surface. That work is not yet complete.
+**Current surface:** `features/environment_readiness` owns readiness panel
+content for `EnvironmentReadinessSpec.readinessPanel`. Essentials owns the
+onboarding gate, panel-stack synchronization, active sidebar mode, and sidebar
+parking.
 
 ---
 
@@ -106,10 +109,12 @@ MessageLens cannot.
 
 1. **Copies locally available attachment files at import time** into app-owned
    content-addressable storage
-2. **Models availability state explicitly** (`available`, `cloudOnly`, `missing`)
-   rather than treating missing files as broken
-3. **Resolves attachments through a multi-source pipeline** — Messages path
-   first, then archive, then cloud-only status
+2. **Models availability state explicitly** (`pendingArchive`, `available`,
+   `unavailableAwaitingRecovery`, `nonRecoverable`) rather than treating
+   missing files as broken
+3. **Resolves attachments through a source-policy pipeline** — archive-enabled
+   mode displays from the MessageLens archive and uses live files as ingestion
+   sources; live-only mode can display directly from Messages paths
 4. **Stores archive metadata in the overlay database** — the working database
    remains a pure projection of `chat.db`
 
@@ -120,9 +125,9 @@ attachment_archive/
     └── {full-sha256}.{original-extension}
 ```
 
-The archive is initialized during the first migration cycle and maintained
-automatically on every subsequent import/migration and by the auto-sync
-monitor.
+The archive service runs after successful full migrations, before incremental
+migrations for newly imported batches, on demand when a live file is seen by
+the resolver, and through a periodic working-attachment sweep.
 
 See [`40-attachment-archive.md`](40-attachment-archive.md) for full
 architectural details.
@@ -168,18 +173,22 @@ mapping logic and edge cases.
 The onboarding pipeline today works as follows:
 
 1. **App launches** → `OnboardingGate` evaluates environment via
-   `OnboardingEnvironmentReportProvider`
-2. **FDA gate** → if blocked, overlay shows FDA instructions with
-   "Open System Settings" action
-3. **Data gate** → if databases are empty, overlay shows "Import" button
+   `onboardingEnvironmentReportProvider`
+2. **FDA/user-action gate** → `OnboardingCenterPanelSyncObserver` projects
+   `awaitingFda` and `awaitingUserAction` into the center panel with
+   `ViewSpec.environmentReadiness`
+3. **Recovery gate** → if stale partial app databases are detected,
+   `OnboardingGate` can enter `recoveringFailedAttempt` and reset app-owned
+   import/working data before returning to user action
 4. **Import** → `ImportOrchestrator` runs topologically-ordered table importers
 5. **Migration** → `MigrationOrchestrator` projects imported data into
-   working DB; attachment migrator triggers archive service
-6. **Archive initialization** → `archiveAllAvailable()` copies all locally
-   available image files into content-addressable storage
+   working DB and rebuilds indexes/search
+6. **Archive maintenance** → `archiveAllAvailable()` is launched after
+   successful full migration; incremental sync archives the imported batch
+   before migration and runs periodic working sweeps
 7. **Completion** → overlay shows summary, user clicks "Get Started"
-8. **Ongoing** → `ChatDbChangeMonitor` polls `chat.db` every 15 seconds,
-   auto-importing new messages and maintaining the archive
+8. **Ongoing** → `ChatDbChangeMonitor` polls `chat.db` every 15 seconds by
+   source `MAX(ROWID)`, auto-importing new messages and maintaining the archive
 
 Historical recovery from a backup snapshot is available as a separate
 user-initiated flow via the Settings panel.

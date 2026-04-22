@@ -2,7 +2,7 @@
 tier: project
 scope: data-import-migration
 owner: agent-per-project
-last_reviewed: 2026-03-13
+last_reviewed: 2026-04-21
 source_of_truth: code
 links:
   - ./01-overview.md
@@ -14,7 +14,7 @@ links:
 
 ## Purpose
 - Decode the binary `attributedBody` column from macOS `chat.db` so that messages missing plain `text` still display content.
-- Run as a standalone native binary (`extract_messages_limited`) that the import pipeline shells out to during stage 7 "Extracting rich message content".
+- Run as a standalone native binary (`extract_messages_limited`) that the `MessageRichTextImporter` shells out to during ledger import.
 - Without this binary roughly 90% of messages land in the ledger with empty bodies, breaking search and UI rendering.
 
 ## Component Map
@@ -22,16 +22,16 @@ links:
 - Rust crate: `rust/rust/attributed-string-decoder/` (Cargo project that produces the binary and flutter_rust_bridge bindings).
 - Flutter adapter: `lib/essentials/db_importers/infrastructure/extraction/rust_message_extractor.dart` implements `MessageExtractorPort`.
 - Provider wiring: `lib/essentials/db_importers/feature_level_providers.dart` exposes `dbImportMessageExtractorProvider` for orchestrators.
-- Import consumer: `lib/essentials/db_importers/infrastructure/sqlite/importers/message_rich_text_importer.dart` invokes the extractor and applies results to the ledger.
+- Import consumer: `lib/essentials/db_importers/application/importers/message_rich_text_importer.dart` invokes the extractor and applies results to the ledger.
 - Database sink: `SqfliteImportDatabase.updateMessageText` persists decoded bodies into `macos_import.db`.
 
 ## Runtime Flow (Ledger Import)
-1. `_importMessages` records extraction candidates where `message.text` is empty and `message.attributedBody` is a non-null blob.
-2. `_extractRichText` checks `extract_messages_limited` availability via `MessageExtractorPort.isAvailable()` (toggled by `importDebugSettingsProvider`).
+1. `MessagesImporter` stages extraction candidates where `message.text` is empty and `message.attributedBody` is a non-null blob.
+2. `MessageRichTextImporter` checks `extract_messages_limited` availability via `MessageExtractorPort.isAvailable()` (toggled by `importDebugSettingsProvider`).
 3. On success the service invokes `extractAllMessageTexts(limit: rustExtractionLimit, dbPath: messagesDbPath)`.
 4. The adapter shells out with `Process.run(extractorPath, args)` and expects JSON shaped like:
    ```json
-  {"messages":[{"rowid":123,"text":"..."}]}
+   {"messages":[{"rowid":123,"text":"..."}]}
    ```
 5. `SqfliteImportDatabase.updateMessageText` trims each string, writes it to `messages.text`, and promotes misclassified text-bearing rows from `attachment-only` / `unknown` / `balloon` to `text` while preserving meaningful types like `reaction-carrier`.
 6. The orchestrated importer persists scratchpad stats (`messages.richTextApplied`) so migration and UI telemetry can confirm the extractor ran.
@@ -56,7 +56,7 @@ links:
 
 ### Production Packaging Playbook (macOS App Bundle)
 - Flutter copies everything under `macos/Runner/` when registered as a resource or Copy Files build phase. Keep the Rust binary under source control at `macos/Runner/Resources/extract_messages_limited`.
-- In Xcode, add the binary to the "Copy Files" build phase targeting `Contents/MacOS`. This ensures the release bundle contains `MyApp.app/Contents/MacOS/extract_messages_limited`, the first lookup location used by `RustMessageExtractor`.
+- In Xcode, add the binary to the "Copy Files" build phase targeting `Contents/MacOS`. This ensures the release bundle contains `MessageLens.app/Contents/MacOS/extract_messages_limited`, the first lookup location used by `RustMessageExtractor`.
 - After `flutter build macos`, run a post-build script (e.g., `_scripts/package_rust_extractor.sh`) that copies the binary into the bundle and sets executable bits:
   ```bash
   #!/usr/bin/env bash
@@ -97,7 +97,5 @@ links:
 - After an import, `macos_import.db` `messages.text` is populated for rows that previously had only `attributedBody`.
 
 ## Related References
-- `_AGENT_CONTEXT/08-rust-message-extractor.md` (high-level background).
-- `_AGENT_CONTEXT/11-orchestration-strategy.md` (import/migration overview).
 - `../10-DATABASES/10-group-import-working.md` (contract binding import and projection).
 - `./20-migration-orchestrator.md` (downstream projection responsibilities).

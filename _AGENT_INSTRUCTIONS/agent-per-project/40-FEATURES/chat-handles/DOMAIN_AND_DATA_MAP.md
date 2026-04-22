@@ -15,6 +15,8 @@ last_updated: 2025-11-06
 
 # Domain & Data Map — Chat Handles
 
+> Current conformance note (2026-04-21): the current overlay table for manual links is `handle_to_participant_overrides`, not `handle_overrides`. The current handles table is `handles_canonical`; stray-handle providers live under `lib/features/handles/infrastructure/repositories/stray_handles_provider.dart`.
+
 ## Core Entities
 - `HandleId` value object — canonical identifier shared across aggregates.
 - `Handle` projection rows in `working.db` (`working.handles`).
@@ -26,7 +28,7 @@ last_updated: 2025-11-06
 | `db-import` | `handles` | Raw Apple handle rows with service + identifier. | Immutable staging data.
 | `db-import` | `chat_handle_join` | Relates handles to chats in source ledger. | Feeds chat membership.
 | `db-working` | `handles` | Canonicalized handles powering UI queries. | Updated via migrators.
-| `db-overlay` | `handle_overrides` (planned) | User overrides for handle → participant mapping. | Consult manual link workflow.
+| `db-overlay` | `handle_to_participant_overrides` | User overrides for handle → participant or virtual participant mapping. | Overlay-only; working DB is not modified by manual linking.
 
 ## External Inputs
 - Rust extractor surfaces raw handle metadata from `chat.db`.

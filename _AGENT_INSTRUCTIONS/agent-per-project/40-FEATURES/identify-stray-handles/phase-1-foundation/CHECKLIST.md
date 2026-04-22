@@ -1,5 +1,7 @@
 # Phase 1 — Checklist
 
+> Historical checklist: this was written before implementation. Several items are now complete in code under `lib/essentials/db/.../overlay`, `lib/features/contacts`, and `lib/features/handles`, but this checklist has not been line-by-line reconciled. Do not treat unchecked boxes as current missing work without inspecting code.
+
 ## Schema
 - [ ] Bump overlay DB schema version
 - [ ] Add `virtual_participants` table definition (Drift)

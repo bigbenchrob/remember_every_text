@@ -2,7 +2,7 @@
 tier: project
 scope: macos-source-databases
 owner: agent-per-project
-last_reviewed: 2026-03-13
+last_reviewed: 2026-04-21
 source_of_truth: external-references
 links:
   - ./00-overview.md
@@ -14,6 +14,12 @@ tests: []
 # External Tools And Rust Crates
 
 These references are useful when validating assumptions about Apple’s source databases outside the MessageLens codebase.
+
+## Authority Boundary
+
+This document is external validation reference. External tools may clarify Apple source-schema behavior, but they do not define MessageLens import, migration, archive, or UI architecture.
+
+The current runtime typedstream path is MessageLens's own Rust extractor, documented in `../20-DATA-IMPORT-MIGRATION/11-rust-message-extractor.md`, invoked by the import pipeline, and written back into the import ledger. New app behavior must follow the internal pipeline contracts even when an external crate models the same Apple data differently.
 
 ## `imessage_database` Rust Crate
 
@@ -65,3 +71,10 @@ External tools are for:
 - sanity checks when source-db behavior contradicts import assumptions
 
 They are not the source of truth for MessageLens architecture. Internal import, migration, and UI decisions remain governed by this repository’s docs and code.
+
+Do not copy external export semantics into MessageLens without reconciling them against current internal boundaries:
+
+- source `chat.db` rows map through the import ledger before reaching `working.db`
+- recovered-unlinked rows stay separate from normal chat-linked messages
+- Apple attachment paths are volatile source hints, not durable archive guarantees
+- overlay archive and deterministic recovery decisions remain MessageLens-owned

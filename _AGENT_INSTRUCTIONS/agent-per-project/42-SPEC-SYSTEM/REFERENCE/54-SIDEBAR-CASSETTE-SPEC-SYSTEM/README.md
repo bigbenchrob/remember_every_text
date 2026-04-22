@@ -1,5 +1,10 @@
 # 54 — Sidebar Cassette Spec System
 
+> Reference note: This folder is deep-dive reference material. Prefer
+> [42-SPEC-SYSTEM/README.md](../../README.md) and
+> [CANONICAL-ARCHITECTURE/00-overview.md](../../CANONICAL-ARCHITECTURE/00-overview.md)
+> as entry points before using these details.
+
 How the sidebar composes and displays a vertical stack of multi-feature cassette cards.
 
 ## Key Idea
@@ -43,5 +48,4 @@ routing are expected to remain coherent with that state.
 ## Prerequisite Reading
 
 - [52 — Feature Handling of X-Surface Specs](../52-FEATURE-HANDLING-OF-X-SURFACE-SPECS/) for the general coordinator → resolver → widget_builder pattern
-
 

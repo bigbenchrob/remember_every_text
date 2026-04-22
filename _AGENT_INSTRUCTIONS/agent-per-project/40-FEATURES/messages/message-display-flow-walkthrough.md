@@ -10,17 +10,18 @@ tests: []
 feature: messages
 doc_type: walkthrough
 status: active
-last_updated: 2025-12-24
+last_updated: 2026-04-21
 ---
 
-# Message Display Flow Walkthrough (Contact Messages)
+# Message Display Flow Walkthrough (Unified Timeline)
 
 This is the *human-readable* walkthrough of how message display works today.
-It’s written to answer the question: **“If I open Messages for a contact, what code runs, in what order, and why is it split up this way?”**
+It’s written to answer the question: **“If I open a message timeline, what code runs, in what order, and why is it split up this way?”**
 
-This doc is canonical for the **contact messages** path:
-- ✅ `MessagesSpec.forContact(...)` is the real implementation.
-- ⚠️ Chat-specific message UI was intentionally hard-deleted (stubs may remain in navigation/coordinator).
+This doc is current for the unified timeline path:
+- ✅ `MessagesSpec.globalTimeline(...)`, `MessagesSpec.forContact(...)`, `MessagesSpec.forHandle(...)`, recovered specs, and routed chat specs all flow through the spec system.
+- ✅ `MessagesTimelineView` is the unified render surface selected by `MessageTimelineScope`.
+- ⚠️ Panel coordinators still return widgets in current code; this is the legacy/current-state migration boundary described in `42-SPEC-SYSTEM`, not a pattern for new work.
 
 ## Organization
 
@@ -30,18 +31,18 @@ Everything else is a helper behind that facade.
 Think of the layout like this:
 
 - **View (dumb):** renders a list and binds inputs.
-- **View model (coordinator):** owns UI state (search), watches ordinal state, and triggers jumps.
+- **View model:** owns UI state (search), watches ordinal state, and triggers jumps.
 - **Jump/ordinal helper:** computes list size + owns scroll controllers + provides jump helpers.
-- **Hydration helper:** turns an `ordinal` into a fully-formed `ChatMessageListItem`.
+- **Hydration helper:** turns an `ordinal` into a fully-formed `MessageListItem`.
 
 ## Key files & folders
 
 ### View
 
-- `lib/features/messages/presentation/view/messages_for_contact_view.dart`
+- `lib/features/messages/presentation/view/messages_timeline_view.dart`
 
 Responsibilities:
-- Displays the header, search field, and either:
+- Displays scope-specific header/search content and either:
   - the **ordinal timeline list**, or
   - the **search results list**.
 - Delegates navigation behaviors to the VM (`jumpToLatest`, `jumpToMonthForDate`).
@@ -49,7 +50,7 @@ Responsibilities:
 
 ### View model (the hub)
 
-- `lib/features/messages/presentation/view_model/contact_messages/contact_messages_view_model.dart`
+- `lib/features/messages/presentation/view_model/timeline/message_timeline_view_model_provider.dart`
 
 Responsibilities:
 - The single place you should look first.
@@ -65,7 +66,7 @@ Why this exists:
 
 ### `jump/` folder (ordinal + scrolling + jumps)
 
-- `lib/features/messages/presentation/view_model/contact_messages/jump/contact_messages_ordinal_provider.dart`
+- `lib/features/messages/application/timeline/ordinal/message_timeline_ordinal_provider.dart`
 
 Responsibilities:
 - Defines the concept of a **skeleton list**:
@@ -80,13 +81,13 @@ Mental model:
 
 ### `hydration/` folder (ordinal → message)
 
-- `lib/features/messages/presentation/view_model/contact_messages/hydration/message_by_contact_ordinal_provider.dart`
+- `lib/features/messages/presentation/view_model/timeline/hydration/message_by_ordinal_provider.dart`
 
 Responsibilities:
-- Given `(contactId, ordinal)`, produce a **fully hydrated** `ChatMessageListItem`.
+- Given `(MessageTimelineScope, ordinal)`, produce a **fully hydrated** `MessageListItem`.
 - Internally maps:
   1) `ordinal` → `messageId` (via the contact-message index)
-  2) `messageId` → message joins/projection → `ChatMessageListItem`
+  2) `messageId` → message joins/projection → `MessageListItem`
 
 Mental model:
 - This layer knows *what to render* for a given row.
@@ -95,13 +96,13 @@ Mental model:
 
 This is the “movie” from user action → pixels.
 
-### 1) User opens “Messages for Contact”
+### 1) User opens a message timeline
 
 Entry point:
-- The center panel shows `MessagesForContactView(contactId: ...)`.
+- The center panel shows `MessagesTimelineView(scope: ...)` after `ViewSpec.messages(MessagesSpec...)` routing.
 
 First provider read:
-- The view watches `contactMessagesViewModelProvider(contactId: ...)`.
+- The view watches `messageTimelineViewModelProvider(scope: ...)`.
 
 ### 2) Data retrieval: build the skeleton list (fast)
 
@@ -110,7 +111,7 @@ Goal:
 
 Mechanism:
 - The view model watches:
-  - `contactMessagesOrdinalProvider(contactId: ...)`
+  - `messageTimelineOrdinalProvider(scope: ...)`
 
 That provider returns:
 - `totalCount`
@@ -127,10 +128,10 @@ Goal:
 
 Mechanism:
 - Each list row widget watches:
-  - `messageByContactOrdinalProvider(contactId: ..., ordinal: ...)`
+  - `messageByOrdinalProvider(scope: ..., ordinal: ...)`
 
 That hydration provider performs (conceptually):
-- `ordinal → messageId → joins → ChatMessageListItem`
+- `ordinal → messageId → joins → MessageListItem`
 
 UI effect:
 - As you scroll, only the visible ordinals (and a few around them) are hydrated.
@@ -142,7 +143,7 @@ UI effect:
 Goal:
 - Start the user somewhere sensible.
 
-Mechanism (in `messages_for_contact_view.dart`):
+Mechanism (in `messages_timeline_view.dart`):
 - Post-frame:
   - if `scrollToDate != null`: `vm.jumpToMonthForDate(scrollToDate)`
   - else: `vm.jumpToLatest()`
@@ -157,7 +158,7 @@ Goal:
 
 Mechanism:
 - `ScrollablePositionedList` builds rows on demand.
-- Each row independently hydrates via the `messageByContactOrdinalProvider`.
+- Each row independently hydrates via `messageByOrdinalProvider`.
 
 Important considerations:
 - **Jitter prevention:** hydration must not radically change row height.
@@ -175,7 +176,7 @@ Mechanism:
   - `contactMessageSearchResultsProvider(contactId: ..., query: ...)`
 
 UI effect:
-- When `vm.isSearching == true`, the view shows a normal `ListView` of results instead of the ordinal timeline.
+- When `vm.isSearching == true`, the view shows search results instead of the ordinal timeline.
 
 ## Jumping (heatmap month selection)
 
@@ -187,8 +188,8 @@ Mechanism:
   - `vm.jumpToMonthKey('YYYY-MM')`
 
 Under the hood:
-- `ContactMessagesViewModel.jumpToMonthKey` delegates to:
-  - `contactMessagesOrdinalProvider(...).notifier.jumpToMonth(monthKey)`
+- `MessageTimelineViewModel.jumpToMonthKey` delegates to:
+  - `messageTimelineOrdinalProvider(...).notifier.jumpToMonth(monthKey)`
 
 Why this is smooth:
 - The ordinal provider owns the list scroll controller and can jump by index.
@@ -196,10 +197,10 @@ Why this is smooth:
 
 ## “Where do I look first?” (quick triage)
 
-- **Something wrong with scroll/jumps/count:** start at `contact_messages_ordinal_provider.dart`.
-- **A row shows the wrong message / missing data:** start at `message_by_contact_ordinal_provider.dart` and the index data source.
-- **Search weirdness / repeated rebuild issues:** start at `contact_messages_view_model.dart` (controller lifecycle + debounce).
-- **UI rendering glitches:** start at `messages_for_contact_view.dart` (view should remain mostly dumb).
+- **Something wrong with scroll/jumps/count:** start at `message_timeline_ordinal_provider.dart` and the scope strategy.
+- **A row shows the wrong message / missing data:** start at `message_by_ordinal_provider.dart` and the active scope's index/strategy.
+- **Search weirdness / repeated rebuild issues:** start at `message_timeline_view_model_provider.dart` (controller lifecycle + debounce).
+- **UI rendering glitches:** start at `messages_timeline_view.dart` (view should remain mostly dumb).
 
 ## Related docs
 

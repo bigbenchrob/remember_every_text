@@ -2,7 +2,7 @@
 tier: project
 scope: data-import-migration
 owner: agent-per-project
-last_reviewed: 2026-03-13
+last_reviewed: 2026-04-21
 source_of_truth: code
 links:
   - ./01-overview.md
@@ -41,8 +41,9 @@ The app includes a `ChatDbChangeMonitor` provider that continuously watches macO
 │  4. If increased → schedule probe (350ms debounce)                  │
 │  5. Probe runs:                                                     │
 │     a. orchestratedLedgerImportServiceProvider.runImport()          │
-│     b. handlesMigrationServiceProvider.run(incrementalMode: true)   │
-│     c. ref.invalidate(driftWorkingDatabaseProvider) → UI refresh    │
+│     b. archiveImportedBatch(batchId) for the imported attachments   │
+│     c. handlesMigrationServiceProvider.run(incrementalMode: true)   │
+│     d. messageDataVersionProvider.bump() → provider refresh signal  │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -53,13 +54,14 @@ The monitor is activated in `main.dart` via:
 ref.watch(chatDbChangeMonitorProvider);
 ```
 
-This ensures the monitor starts at app launch and runs continuously.
+This ensures the monitor starts at app launch and runs continuously. It is macOS-only and also performs a startup catch-up check so messages that arrived while the app was closed do not wait for the first 15-second polling tick.
 
 ### Implications for Debugging
 
 - **New messages appear automatically** within ~15-20 seconds of arrival
-- **If messages aren't showing**, the monitor may have encountered an error — check console for `chat.db monitor` logs
+- **If messages aren't showing**, the monitor may have encountered an error — check `ChatDbMonitor` logs and `import_log` / `migrate_log`
 - **Manual import is only needed** for initial setup or recovery scenarios
+- **Do not invalidate `driftWorkingDatabaseProvider` from the incremental path**. The monitor deliberately keeps the Drift connection alive and bumps `messageDataVersionProvider` after successful migration.
 
 ---
 
@@ -71,17 +73,18 @@ This ensures the monitor starts at app launch and runs continuously.
 ## Location
 - Orchestrator: `lib/essentials/db_importers/application/orchestrator/import_orchestrator.dart`
 - Shared context: `lib/essentials/db_importers/infrastructure/sqlite/import_context_sqlite.dart`
-- Base importer helpers: `lib/essentials/db_importers/application/services/base_table_importer.dart`
+- Base importer helpers: `lib/essentials/db_importers/domain/base_table_importer.dart`
 - Importer contract: `lib/essentials/db_importers/domain/i_importers.dart/table_importer.dart`
 - Progress events: `lib/essentials/db_importers/domain/states/table_import_progress.dart`
 - Riverpod wiring: `lib/essentials/db_importers/feature_level_providers.dart`
+- Service registry: `lib/essentials/db_importers/application/services/orchestrated_ledger_import_service.dart`
 
 ## Execution Model
 1. **Importer registry** - The orchestrator receives a list of `TableImporter` instances (one per ledger table) and keeps them in `_importers` as an unmodifiable list.
 2. **Dependency sorting** - `_sorted()` runs a Kahn topological sort over each importer's `dependsOn`. Any unresolved cycle throws before work begins, preventing partial runs.
 3. **Phase lifecycle** - For every importer the orchestrator executes:
   - `validatePrereqs(ctx)` - must not mutate data; catches duplicate IDs, broken foreign keys, invalid enums, missing sources.
-  - `copy(ctx)` - wrapped in a single transaction. Skipped automatically when `ImportContext.dryRun` is true.
+  - `copy(ctx)` - importer-owned deterministic SQL. Skipped automatically when `ImportContext.dryRun` is true.
   - `postValidate(ctx)` - confirms row counts, FK integrity, and any importer-specific invariants.
 4. **Progress events** - `_runPhase()` publishes `TableImportProgressEvent`s (`started`, `succeeded`, `failed`) with human-friendly names via `BaseTableImporter.displayName`. UI view models surface these updates in the import control panel.
 5. **Structured logging** - Every phase prints a timestamped banner (`=== [ISO8601] importer :: phase ===`) through `ImportContext.info()`, giving a chronological trace in console logs and batch notes.
@@ -92,6 +95,7 @@ This ensures the monitor starts at app launch and runs continuously.
 - Exposes the `SqfliteImportDatabase`, live `chat.db` / AddressBook handles, active `batchId`, and an optional `MessageExtractorPort`.
 - Stores previously imported max ROWIDs so append importers can detect true deltas.
 - Includes a scratchpad map for importer-to-importer coordination (e.g., sharing statistics or staging paths).
+- Detects truncated or incomplete imported baselines and can force a full reimport by clearing previous max-row cursors before importer execution.
 
 ## Importer Responsibilities
 - Own one logical ledger table (or tight cluster) and copy rows from macOS sources into `macos_import.db` without altering source primary keys.

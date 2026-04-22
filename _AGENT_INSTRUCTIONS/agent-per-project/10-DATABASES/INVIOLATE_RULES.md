@@ -2,7 +2,7 @@
 tier: project
 scope: inviolate-rules
 owner: 10-DATABASES
-last_reviewed: 2026-03-13
+last_reviewed: 2026-04-21
 source_of_truth: doc
 tests: []
 ---
@@ -18,7 +18,7 @@ These rules are **absolute constraints**. They apply to every agent, every sessi
 > **Canonical doc:** [`07-overlay-database-independence.md`](07-overlay-database-independence.md)
 
 - User intent → overlay DB **ONLY**
-- Import/migration → working DB **ONLY**
+- Import → import DB **ONLY**; migration → working DB **ONLY**
 - Providers merge at read time; overlay wins on conflict
 - ❌ NEVER dual-write to both overlay AND working DB
 - ❌ NEVER have migration read or consult overlay DB
@@ -37,7 +37,7 @@ These rules are **absolute constraints**. They apply to every agent, every sessi
 
 ### What This Means In Practice
 
-1. **Import pipeline**: If a row exists in macOS `chat.db` or the AddressBook, it MUST appear in `import.db`. The importer may flag it, annotate it, or log a warning — but it MUST NOT skip it.
+1. **Import pipeline**: If a row exists in macOS `chat.db` or the AddressBook, it MUST appear in `import.db` on either the normal path or a documented recovery path such as `recovered_unlinked_messages`. The importer may flag it, annotate it, or log a warning — but it MUST NOT skip it silently.
 
 2. **Migration pipeline**: If a row exists in `import.db`, it MUST appear in `working.db` (subject only to documented, intentional JOIN semantics). A migrator may add metadata columns to describe anomalies — but it MUST NOT filter the row out.
 
@@ -82,8 +82,9 @@ The correct response is **always investigation, never concealment**:
 
 ## Rule 3: Database Access Via Centralized Providers Only
 
-- **Import DB**: `ref.watch(importDatabaseProvider)` or `ref.watch(sqfliteImportDatabaseProvider)`
-- **Working DB**: `ref.watch(workingDatabaseProvider)` or `ref.watch(driftWorkingDatabaseProvider)`
+- **Import DB**: `ref.watch(sqfliteImportDatabaseProvider.future)`
+- **Working DB**: `ref.watch(driftWorkingDatabaseProvider.future)`
+- **Overlay DB**: `ref.watch(overlayDatabaseProvider.future)`
 - ❌ NEVER instantiate `ImportDatabase()` or `WorkingDatabase()` directly
 - **Reason**: Multiple connections to the same SQLite file cause locking failures
 

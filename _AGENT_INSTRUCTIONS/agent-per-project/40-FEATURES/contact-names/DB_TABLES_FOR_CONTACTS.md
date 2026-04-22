@@ -1,5 +1,7 @@
 # Contact Name Data Storage Analysis
 
+> Current conformance note (2026-04-21): this document reflects the current overlay/working split for participant naming. The old recommendation to add a generic `displayName` override column is superseded; `participant_overrides.display_name_override` already exists and is the current full-name override field.
+
 ## 1. Primary Storage: `working.db` (Projection)
 This database stores the "source of truth" data projected from macOS AddressBook and Messages. It is generally treated as **read-only** by the UI, as it is overwritten during imports.
 
@@ -58,10 +60,15 @@ These functions are located in `OverlayDatabase` (`lib/essentials/db/infrastruct
 *   **`createVirtualParticipant({required String displayName, ...})`**
     *   **Action:** Creates a new purely local contact.
 
-## 4. Recommendation for "User-Modifiable Display Names"
+## 4. Current Pattern for User-Modifiable Display Names
 
-To implement user-modifiable display names for existing contacts, you will need to:
+User-modifiable display names for existing contacts are already implemented through `participant_overrides.display_name_override`.
 
-1.  **Modify Schema:** Add a `displayName` `TextColumn` to the `ParticipantOverrides` table in `overlay_database.dart`.
-2.  **Migration:** Increment `schemaVersion` in `OverlayDatabase` and write a migration to add the column.
-3.  **Add Accessor:** Create a `setParticipantDisplayName(int id, String? name)` method in `OverlayDatabase` mirroring the logic of `setParticipantShortName`.
+Current implementation:
+
+1.  **Schema:** `ParticipantOverrides.displayNameOverride` stores the sparse user override.
+2.  **Accessor:** `OverlayDatabase.setParticipantDisplayNameOverride(int participantId, String? displayName)` persists or clears the override.
+3.  **UI:** contact name editing writes to the overlay DB only.
+4.  **Read model:** contacts repositories merge working participants with overlay overrides at read time; overlay values win.
+
+Do not add a second display-name override column or write name overrides into `working.db`.

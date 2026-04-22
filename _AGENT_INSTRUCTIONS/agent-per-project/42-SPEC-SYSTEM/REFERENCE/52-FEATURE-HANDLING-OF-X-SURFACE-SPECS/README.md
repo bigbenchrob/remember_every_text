@@ -1,5 +1,10 @@
 # 52 — Feature Handling of X-Surface Specs
 
+> Reference note: This folder is deep-dive reference material. Prefer
+> [42-SPEC-SYSTEM/README.md](../../README.md) and
+> [CANONICAL-ARCHITECTURE/00-overview.md](../../CANONICAL-ARCHITECTURE/00-overview.md)
+> as entry points before using these details.
+
 How a feature receives, interprets, and renders a spec from **any** UI surface.
 
 This folder documents the **universal pattern** shared by all spec types:
@@ -29,5 +34,4 @@ This folder defines the **shared pattern**. For surface-specific architecture:
 
 - **Sidebar cassettes** → [`54-SIDEBAR-CASSETTE-SPEC-SYSTEM/`](../54-SIDEBAR-CASSETTE-SPEC-SYSTEM/)
 - **View spec / panel content** → [`56-VIEW-SPEC-PANEL-CONTENT-SYSTEM/`](../56-VIEW-SPEC-PANEL-CONTENT-SYSTEM/)
-
 

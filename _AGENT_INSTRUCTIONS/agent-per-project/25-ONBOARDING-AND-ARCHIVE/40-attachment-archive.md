@@ -20,8 +20,8 @@ content-addressable storage, independent of Apple's eviction decisions.
 ### Core Principle
 
 The Messages Attachments folder is treated as a cache — useful when available,
-but never trusted as permanent. The MessageLens archive is the authoritative
-local copy.
+but never trusted as permanent. When archive mode is enabled, the MessageLens
+archive is the display source; live Messages files are ingestion sources.
 
 ## Architecture
 
@@ -77,36 +77,56 @@ on every migration cycle. Archive metadata must survive migration rebuilds.
 | `archived` | Copied from live Messages Attachments during import/migration |
 | `imported_historical_snapshot` | Recovered from a Time Machine or backup snapshot |
 
+### Current Caveat: Attachment Provenance Naming
+
+Attachment provenance naming is currently inconsistent:
+
+* deterministic recovery writes `imported_historical_snapshot`
+* the overlay schema comment and resolver logic may still reference
+  `imported_historical`
+* this inconsistency is known and should not be relied on for branching logic
+
+The current docs use the value written by the recovery provider. Resolver
+normalization should be reviewed in follow-up.
+
 ## Resolution Pipeline
 
 When a widget needs to display an attachment, it uses the resolution provider
-instead of inline `File.existsSync()` calls:
+instead of inline `File.existsSync()` calls.
+
+Archive-enabled mode:
 
 ```
 AttachmentResolverProvider(attachment)
   │
-  ├─ 1. Expand localPath from working DB
-  │   └─ Check file exists at ~/Library/Messages/Attachments/...
-  │       ├─ YES → available (provenance: messagesLive)
-  │       └─ NO → continue
-  │
-  ├─ 2. Query overlay archived_attachments
+  ├─ 1. Query overlay archived_attachments
   │   └─ Check file exists at attachment_archive/...
   │       ├─ YES → available (provenance: archived)
   │       └─ NO → continue
   │
-  └─ 3. No file found
-      ├─ Record exists in DB → cloudOnly
-      └─ Record anomalous → missing
+  ├─ 2. Expand live localPath from working DB
+  │   └─ Check file exists at ~/Library/Messages/Attachments/...
+  │       ├─ YES + import_attachment_id → trigger archive ingestion,
+  │       │   return pendingArchive
+  │       ├─ YES without archive key → unavailableAwaitingRecovery
+  │       └─ NO → continue
+  │
+  └─ 3. No displayable archive file
+      ├─ has local path or import_attachment_id → unavailableAwaitingRecovery
+      └─ no viable key/path → nonRecoverable
 ```
+
+Live-only mode, when the archive is disabled, can display directly from the
+Messages path and otherwise returns the same recoverability states.
 
 ### Availability States
 
 | State | Meaning | UI treatment |
 |-------|---------|-------------|
-| `available` | File resolved from Messages path or archive | Render image normally |
-| `cloudOnly` | Known in `chat.db`, no local file anywhere | Show "Image stored in iCloud" |
-| `missing` | No file, no viable recovery path | Show availability state |
+| `pendingArchive` | Live file exists and archive ingestion has been triggered | Show pending/recovery state until archive-backed display is ready |
+| `available` | A displayable file exists under the current source policy | Render normally |
+| `unavailableAwaitingRecovery` | Not displayable now, but recovery or later local availability may make it displayable | Show recoverable unavailable state |
+| `nonRecoverable` | No viable live or archive recovery key/path | Show terminal unavailable state |
 
 **Rule:** No attachment record is ever suppressed because its file is missing.
 The record renders with an appropriate availability state. See
@@ -116,11 +136,11 @@ The record renders with an appropriate availability state. See
 
 ### Import-Time (Bulk) Archiving
 
-After migration completes, `AttachmentArchiveService.archiveAllAvailable()`
-processes all image attachments:
+After a successful full migration, `DbImportControlViewModel` launches
+`AttachmentArchiveService.archiveAllAvailable()` fire-and-forget. It processes
+working attachments with local paths when the archive is enabled.
 
 For each attachment where:
-- `mimeType` starts with `image/` (Phase 1 scope)
 - File exists at `localPath`
 - No overlay record exists for this `(message_guid, import_attachment_id)` pair
 
@@ -134,14 +154,19 @@ Actions:
 
 ### Ongoing Archiving
 
-The `ChatDbChangeMonitor` auto-sync cycle runs the archive service after each
-incremental import/migration, ensuring newly received attachments are archived
-before Apple can evict them.
+The `ChatDbChangeMonitor` auto-sync cycle archives newly imported batches before
+incremental migration by calling `archiveImportedBatch(batchId:)`. It also runs
+a bounded working-attachment sweep every 5 minutes via
+`archiveNextWorkingSweepChunk()` so files that appear later can be ingested.
+
+The resolver can also trigger on-demand archive ingestion when archive mode is
+enabled and it sees a live file that is not yet archived.
 
 ### Concurrency
 
-File copy and hash computation run in an isolate to avoid blocking the UI.
-The overlay write happens on the main isolate via the standard provider path.
+Bulk archive progress supports pause/cancel. Current file copy and hash work is
+performed by the archive service; do not assume there is a separate isolate
+boundary unless current code introduces one.
 
 ## File Inventory
 
@@ -150,17 +175,17 @@ The overlay write happens on the main isolate via the standard provider path.
 | `lib/features/attachments/application/attachment_archive_service_provider.dart` | Archive copy, hash, overlay write |
 | `lib/features/attachments/application/attachment_resolver_provider.dart` | Multi-source resolution pipeline |
 | `lib/features/attachments/application/archive_settings_provider.dart` | Archive directory, retention config |
-| `lib/features/attachments/domain/resolved_attachment.dart` | Resolution result with availability + provenance |
-| `lib/features/attachments/domain/attachment_provenance.dart` | Provenance enum |
-| `lib/features/attachments/domain/constants.dart` | Archive directory paths |
+| `lib/features/attachments/domain/entities/resolved_attachment.dart` | Resolution result with availability + provenance |
+| `lib/features/attachments/domain/constants/attachment_provenance.dart` | Provenance enum |
+| `lib/features/attachments/domain/constants/resolved_attachment_availability.dart` | Runtime display availability enum |
 | `lib/essentials/db/infrastructure/.../overlay_database.dart` | `archived_attachments` table schema |
 
 ## Invariants
 
 1. Archive metadata lives in overlay DB only — never in working DB.
 2. Working DB `attachments` table is unchanged — pure `chat.db` projection.
-3. `archiveAllAvailable()` is called after every migration cycle.
+3. `archiveAllAvailable()` is launched after successful full migrations; incremental sync uses batch archiving plus periodic sweeps.
 4. The Messages Attachments folder is never written to.
 5. Content-addressable naming provides natural deduplication.
 6. The archive is additive — entries survive re-import and migration rebuilds.
-7. Resolution tries Messages path first (most recent data), archive second.
+7. Archive-enabled resolution displays from the archive and treats live Messages paths as ingestion sources.

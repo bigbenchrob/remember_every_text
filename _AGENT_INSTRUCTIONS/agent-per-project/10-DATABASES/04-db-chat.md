@@ -2,7 +2,7 @@
 tier: project
 scope: databases
 owner: agent-per-project
-last_reviewed: 2026-03-13
+last_reviewed: 2026-04-21
 source_of_truth: doc
 links:
   - ./00-all-databases-accessed.md
@@ -30,7 +30,7 @@ tests: []
 | Access pattern | Resolved via `PathsHelper.messagesDatabasePath` inside the import infrastructure |
 | Permissions | Requires Full Disk Access |
 
-The Flutter application never opens `chat.db` directly. The import pipeline copies data into `db-import`, where migrations can safely project it forward.
+Feature and presentation code must not open `chat.db` directly. The import and monitoring infrastructure opens it read-only through `PathsHelper` to detect new rows and copy source data into `db-import`, where migrations can safely project it forward.
 
 ## Important Reality Check
 
@@ -56,7 +56,7 @@ Do not assume `message` plus `chat_message_join` gives a complete picture of all
 | `chat_message_join` | Mapping needed to associate messages with chats. |
 | `attachment` / `message_attachment_join` | Attachments tied to messages. |
 
-Importers persist these tables into ledger equivalents (`chats`, `handles`, `messages`, `chat_to_handle`, `chat_message_join`, `message_attachments`) while preserving the original ROWIDs. See `01-db-import.md` for ledger schema expectations.
+Importers persist these tables into ledger equivalents (`chats`, `handles`, `messages`, `recovered_unlinked_messages`, `chat_to_handle`, `chat_to_message`, `attachments`, `message_attachments`, `recovered_unlinked_message_attachments`) while preserving source identifiers. See `01-db-import.md` for ledger schema expectations.
 
 ## Usage Rules
 

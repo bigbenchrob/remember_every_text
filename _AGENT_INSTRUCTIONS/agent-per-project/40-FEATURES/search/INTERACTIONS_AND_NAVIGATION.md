@@ -5,7 +5,7 @@ owner: agent-per-project
 last_reviewed: 2025-11-06
 links:
 	- ./CHARTER.md
-	- ../../60-NAVIGATION/navigation-overview.md
+	- ../../42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/30-panel-viewspec-system.md
 tests: []
 feature: search
 doc_type: interactions
@@ -14,6 +14,8 @@ last_updated: 2025-11-06
 ---
 
 # Interactions & Navigation — Search
+
+> Legacy note (2026-04-21): there is no standalone current Search `ViewSpec` or search feature panel. Search is currently embedded in message timeline surfaces and context sidebars through `MessagesSpec` variants and essentials search services.
 
 ## Primary Entry Points
 - Search panel/ViewSpec (global command palette or dedicated panel).

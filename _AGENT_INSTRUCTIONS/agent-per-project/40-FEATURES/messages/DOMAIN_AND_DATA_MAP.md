@@ -2,7 +2,7 @@
 tier: feature
 scope: domain-data-map
 owner: agent-per-project
-last_reviewed: 2025-11-06
+last_reviewed: 2026-04-21
 links:
 	- ./CHARTER.md
 	- ./STATE_AND_PROVIDER_INVENTORY.md
@@ -10,25 +10,28 @@ tests: []
 feature: messages
 doc_type: domain-data-map
 status: draft
-last_updated: 2025-12-23
+last_updated: 2026-04-21
 ---
 
 # Domain & Data Map — Messages
 
-This document nails down the *contact-scoped messages* implementation (“Messages for Contact”).
-Chat-specific message UI has been intentionally removed for now.
+This document describes the current unified message timeline implementation. Older contact-only docs were superseded by the rationalized message views work.
 
 ## Core Entities
 - **Message projection (working DB):** `workingMessages` (Drift table: `db.workingMessages`)
-	- Consumed by UI as `ChatMessageListItem` (defined in `lib/features/messages/presentation/view_model/messages_for_chat_provider.dart`).
+	- Hydrated into `MessageListItem` via `lib/features/messages/presentation/view_model/shared/message_row_mapper.dart` and timeline hydration providers.
 - **Contact ↔ message mapping:** `contact_message_index` (Drift table: `db.contactMessageIndex`)
 	- Provides a stable ordering context for “messages with contact across all chats”.
+- **Global message mapping:** `global_message_index` (Drift table: `db.globalMessageIndex`)
+	- Provides global timeline ordering and month lookup.
+- **Timeline scope:** `MessageTimelineScope` (`global`, `contact`, `chat`, `recovered`)
+	- Selects the ordinal strategy and hydration behavior for `MessagesTimelineView`.
 
-## Contact Messages Ordering Model (Ordinal)
+## Message Timeline Ordering Model (Ordinal)
 
 The UI never pages by “offset + limit” directly. Instead it uses an **ordinal** model:
 
-- For a given `contactId`, the index layer exposes:
+- For a given `MessageTimelineScope`, the index/strategy layer exposes:
 	- `totalCount`: number of messages available
 	- `ordinal -> messageId` mapping
 	- `monthKey -> firstOrdinal` mapping
@@ -39,28 +42,32 @@ This enables:
 - per-row hydration (`ordinal -> message`) without rebuilding the whole list
 
 Canonical files:
-- Ordinal/jump provider: `lib/features/messages/presentation/view_model/contact_messages/jump/contact_messages_ordinal_provider.dart`
+- Scope model: `lib/features/messages/domain/value_objects/message_timeline_scope.dart`
+- Ordinal provider: `lib/features/messages/application/timeline/ordinal/message_timeline_ordinal_provider.dart`
+- Index coordinator: `lib/features/messages/presentation/view_model/timeline/ordinal/message_timeline_index_coordinator_provider.dart`
+- Hydration provider: `lib/features/messages/presentation/view_model/timeline/hydration/message_by_ordinal_provider.dart`
 - Index data source: `lib/features/messages/infrastructure/data_sources/contact_message_index_data_source.dart`
-- Hydration provider: `lib/features/messages/presentation/view_model/contact_messages/hydration/message_by_contact_ordinal_provider.dart`
+- Global index data source: `lib/features/messages/infrastructure/data_sources/global_message_index_data_source.dart`
 
 ## Supporting Tables & Views
 | Database | Table/View | Purpose | Notes |
 | --- | --- | --- | --- |
 | `db-working` | `workingMessages` | Primary UI projection for message rows. | Must include stable `id`, `guid`, `sentAtUtc`, sender handle refs.
+| `db-working` | `globalMessageIndex` | Global ordering and month lookup. | Used by global scope.
 | `db-working` | `contactMessageIndex` | Contact-scoped ordering and lookup. | Provides `messageId` ordering and month bucketing.
-| `db-working` | `workingAttachments` (+ joins) | Attachments referenced by `ChatMessageListItem.attachments`. | Loaded via `attachment_info_loader.dart` when needed.
+| `db-working` | `workingAttachments` (+ joins) | Attachments referenced by hydrated message rows. | Loaded via `attachment_info_loader.dart` when needed.
 
 Notes:
-- Import DB tables still exist and are essential to migration/import pipelines, but the contact-messages UI depends on the *working* projection.
+- Import DB tables still exist and are essential to migration/import pipelines, but message UI depends on the *working* projection and recovered-message repositories.
 
 ## External Inputs
-- Message import/migration populates `workingMessages` and `contactMessageIndex`.
-- Rust extractor may enrich attributed bodies; contact messages UI currently uses `textContent` and attachment metadata.
+- Message import/migration populates `workingMessages`, `globalMessageIndex`, and `contactMessageIndex`.
+- Rust extractor may enrich attributed bodies; message UI uses `textContent`, attachment metadata, user metadata, and recovered-message provenance where available.
 
 ## Downstream Consumers
-- Contact Messages center panel UI.
-- Search feature:
-	- `contactMessageSearchResultsProvider` calls into `SearchService.searchContactMessages`, which joins `contactMessageIndex`.
+- Messages center panel UI via `MessagesSpec` variants.
+- Sidebar heatmaps and recovered-message navigators.
+- Search services under `lib/essentials/search`, consumed by `messageTimelineViewModelProvider`.
 
 ## Data Contracts
 - **ID stability:** `workingMessages.id` must be stable enough for scroll targeting and linking.

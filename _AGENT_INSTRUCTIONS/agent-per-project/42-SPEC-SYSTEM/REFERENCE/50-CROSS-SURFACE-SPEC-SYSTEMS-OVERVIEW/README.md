@@ -1,5 +1,10 @@
 # 50 — Cross-Surface Spec Systems Overview
 
+> Reference note: This folder is deep-dive reference material. Prefer
+> [42-SPEC-SYSTEM/README.md](../../README.md) and
+> [CANONICAL-ARCHITECTURE/00-overview.md](../../CANONICAL-ARCHITECTURE/00-overview.md)
+> as entry points before using these details.
+
 High-level architecture for how sealed spec classes coordinate UI content
 across all app surfaces: sidebar, center panel, right panel, tooltips.
 
@@ -29,5 +34,4 @@ surfaces follow a **shared architectural pattern**:
 | [52 — Feature Handling](../52-FEATURE-HANDLING-OF-X-SURFACE-SPECS/) | How features process specs (coordinator → resolver → widget_builder) |
 | [54 — Sidebar Cassette System](../54-SIDEBAR-CASSETTE-SPEC-SYSTEM/) | CassetteSpec, rack state, cascade, card chrome |
 | [56 — View Spec Panel System](../56-VIEW-SPEC-PANEL-CONTENT-SYSTEM/) | ViewSpec, PanelStack, panel coordinator, feature dispatch |
-
 

@@ -1,3 +1,13 @@
+Historical handoff note — Ftr.img-archive Branch
+
+Legacy note:
+This file is a historical branch handoff and bug-investigation note. It is not
+current architecture guidance for onboarding, environment readiness, import,
+migration, sidebar flow, or attachment archive work. Use README.md and the
+numbered docs in this folder for current guidance.
+
+Original note follows.
+
 Handoff Summary — Ftr.img-archive Branch
 Branch & Git State
 Branch: Ftr.img-archive (1 commit ahead of main)

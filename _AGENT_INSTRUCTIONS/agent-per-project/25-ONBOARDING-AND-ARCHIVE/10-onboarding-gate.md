@@ -3,8 +3,15 @@
 ## Purpose
 
 The `OnboardingGate` is the top-level bootstrap coordinator. It evaluates
-whether the app is ready for normal use and, if not, blocks the main UI with
-a status overlay until all prerequisites are satisfied.
+whether the app is ready for normal use and coordinates the readiness,
+recovery, import, migration, and reimport lifecycle.
+
+Current surface split:
+
+- `awaitingFda` and `awaitingUserAction` are projected into the center panel
+  with `ViewSpec.environmentReadiness`.
+- `recoveringFailedAttempt`, import/migration progress, completion, and
+  reimport completion use the blocking `OnboardingOverlay`.
 
 ## Ownership
 
@@ -15,13 +22,14 @@ a status overlay until all prerequisites are satisfied.
 
 ## State Machine
 
-The gate tracks a single `OnboardingStatus` enum with 9 states:
+The gate tracks a single `OnboardingStatus` enum with 10 states:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     OnboardingStatus                        │
 ├─────────────────────────────────────────────────────────────┤
 │ notNeeded               — App databases populated, skip     │
+│ recoveringFailedAttempt — Reset stale app DBs before retry  │
 │ awaitingFda             — FDA not granted, show instructions│
 │ awaitingUserAction      — FDA OK, databases empty, show UI  │
 │ importing               — Import pipeline running           │
@@ -43,16 +51,23 @@ App Start
   │
   ├─ environment report → FDA blocked?
   │   └─ YES → awaitingFda
+  │       └─ center panel shows environment readiness
   │       └─ user grants FDA → refreshEnvironment()
   │           └─ awaitingUserAction
   │
   ├─ environment report → sources readable, DBs empty?
   │   └─ YES → awaitingUserAction
+  │       └─ center panel shows environment readiness
   │       └─ user clicks "Import" → startImportAndMigration()
   │           ├─ importing (import orchestrator running)
   │           ├─ migrating (migration orchestrator running)
-  │           │   └─ includes archiveAllAvailable()
+  │           │   └─ launches archiveAllAvailable() after success
   │           └─ complete (show summary, "Get Started" button)
+  │
+  ├─ environment report → stale partial app DBs?
+  │   └─ recoveringFailedAttempt
+  │       └─ reset app-owned import/working DBs
+  │           └─ awaitingUserAction
   │
   └─ environment report → import/migration previously failed?
       └─ awaitingUserAction (show failure details + retry)
@@ -72,7 +87,7 @@ Settings → "Re-scan & Import"
 
 ```dart
 // lib/essentials/onboarding/application/onboarding_gate_provider.dart
-@riverpod
+@Riverpod(keepAlive: true)
 class OnboardingGate extends _$OnboardingGate {
   @override
   OnboardingStatus build() {
@@ -80,10 +95,10 @@ class OnboardingGate extends _$OnboardingGate {
     // Classifies into status via resolveBuildStatus()
   }
 
-  Future<void> refreshEnvironment() async { ... }
+  void refreshEnvironment() { ... }
   Future<void> startImportAndMigration() async { ... }
   Future<void> startReimport() async { ... }
-  void openFdaSettings() { ... }
+  Future<void> openFdaSettings() async { ... }
 }
 ```
 
@@ -93,17 +108,22 @@ class OnboardingGate extends _$OnboardingGate {
 
 1. If `permissionBlocked` → `awaitingFda`
 2. If `ready` (both DBs populated) → `notNeeded`
-3. All other states → `awaitingUserAction`
+3. `importFailed`, `migrationFailed`, `sourceUnavailable`,
+   `sourceSparseOrUnsynced`, and `readyToImport` → `awaitingUserAction`
+
+Workflow override states are preserved while recovery, import, migration,
+completion, or reimport is in progress. The environment report can also set
+`shouldResetAppDatabasesBeforeImport`, which triggers automatic recovery into
+`recoveringFailedAttempt`.
 
 ## Overlay Rendering
 
-`OnboardingOverlay` is a full-window widget rendered above the main app shell.
-It switches content based on the current status:
+`OnboardingOverlay` is a full-window widget rendered above the main app shell
+for blocking workflow phases. It switches content based on the current status:
 
 | Status | Overlay Content |
 |--------|-----------------|
-| `awaitingFda` | FDA instructions, "Open System Settings" button, "Re-check" button |
-| `awaitingUserAction` | Welcome message, environment summary, "Import" button |
+| `recoveringFailedAttempt` | Recovery/reset progress |
 | `importing` | Progress view with row counts and duration per table |
 | `migrating` | Progress view continuing from import |
 | `complete` | Summary (total counts, warnings, archive size), "Get Started" button |
@@ -112,11 +132,15 @@ It switches content based on the current status:
 | `reimportComplete` | Summary, "Done" button |
 | `notNeeded` | Not rendered — overlay is absent |
 
+Legacy note: `OnboardingOverlay` still contains branches for `awaitingFda` and
+`awaitingUserAction`, but the current app shell normally presents those states
+through the readiness center panel instead of mounting the overlay.
+
 ### Overlay Blocking
 
 The overlay renders a `ModalBarrier` that prevents interaction with the main
-app during onboarding states. When status is `notNeeded`, the overlay returns
-`SizedBox.shrink()` and the barrier is absent.
+app during blocking workflow states. When the shell does not mount the overlay,
+FDA and user-action states are handled by panel content and sidebar parking.
 
 ## Failure Persistence
 
@@ -135,11 +159,12 @@ Import and migration results are persisted as JSON in the overlay database's
 | `application/onboarding_environment_report_provider.dart` | Environment evaluation |
 | `application/database_existence_checker.dart` | Filesystem DB presence check |
 | `application/fda_checker.dart` | Full Disk Access probe |
-| `domain/onboarding_status.dart` | Status enum (9 states) |
+| `domain/onboarding_status.dart` | Status enum (10 states) |
 | `domain/onboarding_environment_report.dart` | Typed environment snapshot |
 | `domain/import_spec.dart` | Import/migration tagging |
-| `domain/onboarding_view_spec.dart` | Overlay navigation spec |
+| `domain/spec_classes/onboarding_view_spec.dart` | Onboarding panel spec for dev/debug surfaces |
 | `infrastructure/overlay_onboarding_failure_storage.dart` | Failure persistence |
 | `presentation/onboarding_overlay.dart` | Full-window blocking overlay |
 | `presentation/onboarding_progress_view.dart` | Live progress rendering |
 | `presentation/onboarding_dev_panel.dart` | Debug/simulation overrides |
+| `navigation/presentation/widgets/onboarding_center_panel_sync_observer.dart` | Syncs onboarding gate states into `ViewSpec.environmentReadiness` |

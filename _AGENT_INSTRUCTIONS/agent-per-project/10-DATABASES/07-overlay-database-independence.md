@@ -2,7 +2,7 @@
 tier: project
 scope: databases
 owner: agent-per-project
-last_reviewed: 2025-11-06
+last_reviewed: 2026-04-21
 source_of_truth: doc
 links:
   - ./00-all-databases-accessed.md
@@ -30,11 +30,12 @@ Breaking these rules jeopardizes user data persistence and invalidates the impor
 
 | Concern | Writes to | Reads from | Survives migration |
 |---|---|---|---|
-| **Source data** (import/migration) | Working DB only | Source DBs only | Rebuilt from scratch |
+| **Import source data** | Import DB only | Source DBs only | Rebuilt or extended by import flows |
+| **Projection data** (migration) | Working DB only | Import DB only | Rebuilt or incrementally updated by migration |
 | **User intent** (overlay) | Overlay DB only | — | Always persists |
 | **Providers** (read path) | — | Working ∪ Overlay, overlay wins | N/A |
 
-Migration is a **pure function** of source data → working DB. It never reads overlay.
+Import is a **pure function** of macOS source databases → import DB. Migration is a **pure function** of import DB → working DB. Neither path reads overlay.
 User actions are **pure writes** to overlay. They never write to working.
 Providers are the **sole merge point** where both databases are read and combined.
 
@@ -47,7 +48,7 @@ Providers are the **sole merge point** where both databases are read and combine
 │                                                             │
 │  Example: chatsForParticipantProvider                       │
 │    1. Read automatic links from working.handle_to_participant│
-│    2. Read manual links from overlay.handle_to_participant   │
+│    2. Read manual links from overlay.handle_to_participant_overrides │
 │    3. Merge/override results                                 │
 │    4. Return unified view to the UI                          │
 └───────────────────────┬────────────────────┬─────────────────┘
@@ -195,7 +196,7 @@ in providers via `overlayDb.getAllHandleVisibilities()`.
 | Ownership | Import/migration pipeline | User-facing services |
 | Lifecycle | Disposable, rebuilt often | Persistent |
 | Writes | Migration orchestrator only | User actions/services only |
-| Contents | Chats, messages, participants, automatic links | Manual handle links, custom names, visibility preferences, future annotations |
+| Contents | Chats, messages, participants, automatic links, read/index/search projection inputs | Manual handle links, custom names, visibility preferences, message user metadata, favorites, archived attachment metadata |
 | Foreign Keys | Enforced by Drift schema | Enforced by Drift schema |
 
 ## Debugging Checklist

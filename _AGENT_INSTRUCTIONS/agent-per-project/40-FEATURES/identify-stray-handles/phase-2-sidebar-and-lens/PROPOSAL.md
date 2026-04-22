@@ -1,8 +1,10 @@
 # Phase 2 — Stray Handle Review: Sidebar List + Handle Lens
 
-> **Status:** Not started
+> **Status:** Historical proposal. Sidebar stray-handle review and Handle Lens concepts are now represented by current `HandlesCassetteSpec` and `MessagesSpec.handleLens(...)` code.
 > **Depends on:** Phase 1 (schema, providers, virtual participants working)
 > **Blocks:** Phase 3
+
+> Current conformance note (2026-04-21): the current code does not use separate `StrayHandlesSpec` or `HandleLensSpec` types. Sidebar review is under `lib/features/handles/application/sidebar_cassette_spec/`; Handle Lens is a messages ViewSpec variant (`MessagesSpec.handleLens`) rendered by `lib/features/messages/presentation/view/handle_lens_view.dart`.
 
 ## Objective
 

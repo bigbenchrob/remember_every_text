@@ -15,6 +15,8 @@ last_updated: 2025-11-06
 
 # State & Provider Inventory — Chats
 
+> Current conformance note (2026-04-21): provider names below are draft names. Current concrete providers include `chatsRepositoryProvider`, `recentChatsProvider`, `chatsViewModelProvider`, and `chatsByAgeProvider`.
+
 | Provider | Type | Parameters | Description | Downstream Users |
 | --- | --- | --- | --- | --- |
 | `chatListProvider` | @riverpod stream | filters, paging | Streams paginated chat summaries ordered by recency. | Chat sidebar UI, search suggestions. |

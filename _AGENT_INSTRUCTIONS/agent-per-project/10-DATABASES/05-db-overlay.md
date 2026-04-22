@@ -2,7 +2,7 @@
 tier: project
 scope: databases
 owner: agent-per-project
-last_reviewed: 2025-11-06
+last_reviewed: 2026-04-21
 source_of_truth: doc
 links:
   - ./00-all-databases-accessed.md
@@ -27,7 +27,7 @@ tests: []
 | Directory | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/` |
 | Filename | `user_overlays.db` |
 | Provisioning | Created/opened by `overlayDatabaseProvider` (Drift) |
-| Backups | Included in nightly `/sqlite_rmc/backups/` snapshot |
+| Backups | External/operational backup if configured; not owned by the overlay database provider |
 
 ## Provider Access
 
@@ -50,9 +50,15 @@ Providers that merge overlay and working data must request both databases separa
 | `handle_to_participant_overrides` | Manual links between handles and participants (supersedes automatic matches when present). |
 | `participant_overrides` | Custom participant metadata (short names, notes, display preferences). |
 | `chat_overrides` | Chat-specific preferences (custom titles, colours, pin states) that persist across rebuilds. |
-| `message_annotations` (planned) | Future table for per-message user notes and flags. |
+| `message_annotations` | Per-message annotations keyed by working message ID; newer saved/tag metadata uses GUID-keyed tables below. |
+| `message_user_flags` / `message_user_tags` | Message saved state and user tags keyed by message GUID. |
+| `favorite_contacts` | Favorite/recent contact state keyed by `participants.id`. |
+| `handle_visibility_overrides` / `dismissed_handles` | User-controlled visibility, blacklist, and dismissal state. |
+| `virtual_participants` | Overlay-scoped participants created by the user. |
+| `archived_attachments` | Attachment archive metadata keyed by message GUID + import attachment ID. |
+| `overlay_settings` | Overlay-scoped key/value settings. |
 
-Full definitions live in `lib/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart` and `_AGENT_INSTRUCTIONS/agent-per-project/20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md`.
+Full definitions live in `lib/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart`. The `20-DATA-IMPORT-MIGRATION` schema reference covers import and working databases; overlay details are owned here and in the code schema.
 
 ## Usage Rules
 

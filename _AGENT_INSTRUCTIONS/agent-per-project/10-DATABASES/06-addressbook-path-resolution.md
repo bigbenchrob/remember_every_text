@@ -2,7 +2,7 @@
 tier: project
 scope: databases
 owner: agent-per-project
-last_reviewed: 2025-11-06
+last_reviewed: 2026-04-21
 source_of_truth: doc
 links:
   - ./03-db-address-book.md
@@ -132,4 +132,4 @@ Avoid replicating the provider chain in tests. Override once, supply fixture dat
 
 - `03-db-address-book.md` — Source database overview.
 - `01-db-import.md` — Ledger staging after AddressBook data is copied.
-- `10-group-import-working.md` — Guarantees that `Z_PK` identifiers propagate into `db-working`.
+- `10-group-import-working.md` — Guarantees that `Z_PK` identifiers propagate into `db-working.participants`.

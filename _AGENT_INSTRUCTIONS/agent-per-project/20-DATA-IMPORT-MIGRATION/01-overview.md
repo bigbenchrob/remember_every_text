@@ -2,7 +2,7 @@
 tier: project
 scope: data-import-migration
 owner: agent-per-project
-last_reviewed: 2026-03-13
+last_reviewed: 2026-04-21
 source_of_truth: doc
 links:
       - ./02-import-migration-schema-reference.md
@@ -16,7 +16,7 @@ tests: []
 
 # Import ⟶ Migration Overview
 
-This folder documents the end-to-end data pipeline that keeps Remember Every Text in sync with the macOS Messages and AddressBook sources. Use it as the starting point whenever you touch ledger ingestion, projection, or the Rust helper binary.
+This folder documents the end-to-end data pipeline that keeps MessageLens in sync with the macOS Messages and AddressBook sources. Use it as the starting point whenever you touch ledger ingestion, projection, archive coordination, search rebuilds, or the Rust helper binary.
 
 ## 🔥 Automatic Background Sync
 
@@ -27,7 +27,8 @@ This folder documents the end-to-end data pipeline that keeps Remember Every Tex
 | `ChatDbChangeMonitor` | Polls `MAX(ROWID)` from `chat.db`, triggers import on change |
 | `ImportOrchestrator` | Runs table importers to stage new data in `macos_import.db` |
 | `MigrationOrchestrator` | Projects ledger data into `working.db` (incremental mode) |
-| `driftWorkingDatabaseProvider` | Invalidated after migration → UI automatically refreshes |
+| `messageDataVersionProvider` | Bumped after successful incremental migration so UI providers refresh without closing Drift connections |
+| `AttachmentArchiveService` | Archives new imported attachment batches before incremental migration and performs periodic maintenance sweeps |
 
 **Result:** New messages appear in the UI within ~15-20 seconds of arrival without user action.
 
@@ -50,6 +51,9 @@ chat.db + AddressBook.sqlite
      macos_import.db (ledger)
             │
             ▼
+ attachment archive coordination
+            │
+            ▼
      MigrationOrchestrator
             │ (per-table migrators)
             ▼
@@ -59,8 +63,10 @@ chat.db + AddressBook.sqlite
  overlay merge providers
 ```
 
-- **Import phase** pulls raw data out of the system databases and stages it in `macos_import.db` without mutating the originals. Each table importer owns validation, copying, and post-flight checks for a single ledger table.
-- **Migration phase** reads the ledger and constructs the UI-facing projection in `working.db`, preserving every identifier emitted by import. Migrators are sequenced so dependency ordering (handles -> chats -> messages, etc.) is enforced automatically.
+- **Import phase** pulls raw data out of the system databases and stages it in `macos_import.db` without mutating the originals. Each table importer owns validation, copying, and post-flight checks for a single ledger table or tight table cluster.
+- **Archive coordination** belongs to the attachment feature, not the importer or migrator. The automatic path archives the imported batch before incremental migration; full onboarding/manual migration launches `archiveAllAvailable()` after successful migration.
+- **Migration phase** reads the ledger and constructs the UI-facing projection in `working.db`, preserving every identifier emitted by import. Migrators are sequenced so dependency ordering is enforced automatically.
+- **Search/index rebuild** runs after orchestrated migration: working message indexes are rebuilt, triggers are recreated, then the search index orchestrator rebuilds search data.
 - **Overlay providers** merge user overrides at runtime; they are documented in `../10-DATABASES/05-db-overlay.md` and operate strictly after projection.
 
 ## Responsibilities
@@ -70,8 +76,9 @@ chat.db + AddressBook.sqlite
 | Table import sequencing, validation, logging | `ImportOrchestrator` | `10-import-orchestrator.md` |
 | Rich text extraction for attributed bodies | Rust helper binary | `11-rust-message-extractor.md` |
 | Projection + canonical ID preservation | `MigrationOrchestrator` | `20-migration-orchestrator.md` |
-| Incremental mode for existing data | Migrators + MigrationContext | `30-incremental-mode-flag.md` |
+| Incremental mode for automatic sync | Migrators + MigrationContext | `30-incremental-mode-flag.md` |
 | Schema expectations for both databases | Drift + Sqflite schema | `02-import-migration-schema-reference.md` |
+| Attachment archive + deterministic recovery | Attachments feature + onboarding/archive docs | `../25-ONBOARDING-AND-ARCHIVE/40-attachment-archive.md`, `../25-ONBOARDING-AND-ARCHIVE/50-deterministic-recovery.md` |
 
 ## Audit Logs
 
@@ -121,10 +128,11 @@ This is an app-side recovery heuristic, not a claim that the source database pro
 ## Operational Guardrails
 
 - **Never bypass orchestrators.** Manual SQL shortcuts risk breaking the ID contracts that downstream providers rely on.
-- **Treat ledger tables as append-only.** Corrections happen by re-running importers, not by editing rows in place.
+- **Do not edit ledger tables manually.** Full/reimport paths may clear and rebuild import ledger tables through `ClearLedgerImporter`; incremental paths preserve prior imported rows and add new source rows by high-water marks.
 - **Run migration after every successful import batch.** Projection is disposable; rebuilding is cheaper than debugging drift.
 - **Keep the Rust extractor available.** Without `extract_messages_limited` the majority of messages land without bodies, crippling search and UI rendering.
-- **Use incremental mode for existing data.** When working.db has existing rows, use `incrementalMode: true` to avoid DELETE bottlenecks. See `30-incremental-mode-flag.md` for details.
+- **Use the correct migration mode for the entry point.** `ChatDbChangeMonitor` always calls `HandlesMigrationService.run(incrementalMode: true)` after a successful incremental import. Full onboarding/manual rebuild paths use `startMigration()` through the import control view model.
+- **Do not invalidate the working DB connection after incremental migration.** The monitor bumps `messageDataVersionProvider`; Drift streams and provider refreshes must not be forced by closing `driftWorkingDatabaseProvider`.
 
 ## Runbook Snapshot
 
@@ -132,11 +140,11 @@ This is an app-side recovery heuristic, not a claim that the source database pro
 | --- | --- | --- |
 | **Automatic sync** | Always running | `ChatDbChangeMonitor` polls every 15s; no user action required. |
 | Manual full import + migration | `flutter run` -> Import control panel | Only needed for initial setup or recovery. |
-| Headless import | `dart run tool/import.dart --dry-run` | Uses the same orchestrator stack; dry-run leaves the ledger untouched. |
+| Headless import | No current documented supported command | Use the app control panels unless a maintained tool is added. Older references to `tool/import.dart` are legacy. |
 | Inspect latest batch | `sqlite3 macos_import.db 'SELECT * FROM import_batches ORDER BY started_at DESC LIMIT 1;'` | Confirms source paths, batch IDs, and row counts. |
 | Inspect latest audit logs | Open `import_log` / `migrate_log` in app-support directory | Use before inspecting tables manually; logs already summarize row deltas, text counts, and extractor health. |
-| Rerun migration only | `HandlesMigrationService` via admin UI or script | Auto-detects incremental mode when working.db has data. Uses INSERT OR IGNORE for performance. |
-| Force full migration | Set `incrementalMode: false` explicitly | Clears all tables and rebuilds from scratch. See `30-incremental-mode-flag.md`. |
+| Rerun migration only | `HandlesMigrationService` via maintained UI/provider entry point | Pass `incrementalMode` deliberately; automatic sync uses `true`, full rebuilds use `false`. |
+| Force full migration | Set `incrementalMode: false` explicitly | Clears migrator target tables and rebuilds from the ledger. See `30-incremental-mode-flag.md`. |
 
 ## Related Reading
 

@@ -1,5 +1,7 @@
 # Onboarding — Domain & Data Map
 
+> Legacy note (2026-04-21): this is V1 planning material. Current code includes `OnboardingStatus.awaitingFda`, environment reports, onboarding failure persistence in overlay settings, reset/retry support, `OnboardingSpec.devPanel`, and `EnvironmentReadinessSpec.readinessPanel`. Use `../25-ONBOARDING-AND-ARCHIVE/` plus `lib/essentials/onboarding` and `lib/features/environment_readiness` for current implementation guidance.
+
 ## Domain Concepts
 
 ### OnboardingStatus (enum)

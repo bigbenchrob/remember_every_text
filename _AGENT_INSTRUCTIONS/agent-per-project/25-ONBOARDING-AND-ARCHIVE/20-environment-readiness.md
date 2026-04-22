@@ -7,15 +7,18 @@ system evaluates the macOS environment to determine what is accessible, what
 is missing, and what action the user should take. This prevents ambiguous
 error states and provides evidence-backed advice.
 
+Current readiness presentation is split across essentials and a feature:
+`lib/essentials/onboarding/` owns the report and gate state,
+`lib/essentials/navigation/` projects gate states into the panel stack, and
+`lib/features/environment_readiness/` owns the readiness panel content for
+`EnvironmentReadinessSpec`.
+
 ## Provider
 
 ```dart
 // lib/essentials/onboarding/application/onboarding_environment_report_provider.dart
-@riverpod
-class OnboardingEnvironmentReportProvider extends _$OnboardingEnvironmentReportProvider {
-  @override
-  Future<OnboardingEnvironmentReport> build() async { ... }
-}
+@Riverpod(keepAlive: true)
+Future<OnboardingEnvironmentReport> onboardingEnvironmentReport(Ref ref) async { ... }
 ```
 
 ## Evaluation Steps
@@ -71,14 +74,16 @@ path logic (see [`10-DATABASES/06-addressbook-path-resolution.md`](../10-DATABAS
 - Contact row count available
 
 **Outcomes:**
-- Path resolution fails → contacts will be unavailable (non-blocking warning)
+- Path resolution fails or DB unreadable → `sourceUnavailable` with
+  `addressBookUnavailable`
 - Path resolves, DB readable → contacts healthy
 
 ### 4. App Database Probe
 
-**Check:** `DatabaseExistenceChecker` — pure filesystem check for
-`macos_import.db` and `working.db` (file exists and size > 0). No SQLite
-connection opened.
+**Check:** Probe `macos_import.db` and `working.db` for file existence,
+readability, and message row counts. `DatabaseExistenceChecker` remains the
+fallback filesystem check used by `OnboardingGate` while the async report is
+loading or unavailable.
 
 **Evidence gathered:**
 - Import DB present/absent/empty
@@ -107,17 +112,22 @@ connection opened.
 
 ```dart
 // lib/essentials/onboarding/domain/onboarding_environment_report.dart
-@freezed
-abstract class OnboardingEnvironmentReport with _$OnboardingEnvironmentReport {
-  const factory OnboardingEnvironmentReport({
-    required OnboardingEnvironmentState state,
-    OnboardingBlockerKind? blockerKind,
-    required SyncPlausibility syncPlausibility,
-    required DatabaseProbes databaseProbes,
-    DbImportResult? lastImportResult,
-    DbMigrationResult? lastMigrationResult,
-    bool? failureIsFresh,
-  }) = _OnboardingEnvironmentReport;
+class OnboardingEnvironmentReport {
+  const OnboardingEnvironmentReport({
+    required this.state,
+    required this.blockerKind,
+    required this.syncPlausibility,
+    required this.messagesDatabase,
+    required this.addressBookDatabase,
+    required this.importDatabase,
+    required this.workingDatabase,
+    required this.hasFullDiskAccess,
+    this.sourceAttachmentCount,
+    this.lastImportResult,
+    this.lastMigrationResult,
+    this.shouldResetAppDatabasesBeforeImport = false,
+    this.resetAppDatabasesReason,
+  });
 }
 ```
 
@@ -129,11 +139,26 @@ abstract class OnboardingEnvironmentReport with _$OnboardingEnvironmentReport {
 | `sourceUnavailable` | `chat.db` not found | Explanation + guidance |
 | `sourceSparseOrUnsynced` | Source has < 10 messages | Warning about likely missing sync + proceed option |
 | `readyToImport` | Sources healthy, DBs empty | "Import" button |
-| `importing` | Import in progress | Progress view |
 | `importFailed` | Last import failed | Error details + "Retry" |
-| `migrating` | Migration in progress | Progress view |
 | `migrationFailed` | Last migration failed | Error details + "Retry" |
 | `ready` | App databases populated | No overlay (normal app) |
+
+Import and migration progress are `OnboardingStatus` workflow states, not
+`OnboardingEnvironmentState` values.
+
+## Current Readiness Surface
+
+`OnboardingCenterPanelSyncObserver` watches `OnboardingGate`:
+
+* `awaitingFda` and `awaitingUserAction` show
+  `ViewSpec.environmentReadiness(EnvironmentReadinessSpec.readinessPanel())`
+  in the center panel.
+* Existing import panel content is not overwritten.
+* When readiness is no longer needed, the observer clears the readiness center
+  panel.
+
+This makes readiness a first-class panel surface. It is not an overlay-only
+flow.
 
 ## Design Principles
 
@@ -154,13 +179,11 @@ Every recommendation is tied to a concrete signal:
 The user sees a clear readiness assessment, not raw exceptions or internal
 pipeline details.
 
-## Future: Center Panel Readiness Surface
+## Historical Context
 
-A proposal exists to move the readiness experience from an overlay model to
-a first-class ViewSpec-driven center panel with a vertical checklist of
-readiness steps (FDA → Messages → Contacts → Import). This would replace
-the overlay's modal presentation with a calmer, more informational surface.
-
-See `45-NEW-FEATURE-ADDITION/enhanced-onboarding-readiness-panel/` for the
-full proposal. When implemented, the environment evaluation layer documented
-here would serve as the evidence source for the new surface.
+Older planning material under
+`45-NEW-FEATURE-ADDITION/enhanced-onboarding-readiness-panel/` describes the
+readiness panel as proposed work. That proposal has been partially implemented:
+the current app has `ViewSpec.environmentReadiness`, an environment readiness
+feature, and an essentials-owned panel sync observer. Treat overlay-only
+wording in older docs as legacy unless current code confirms it.

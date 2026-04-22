@@ -2,20 +2,63 @@
 tier: project
 scope: overview
 owner: agent-per-project
-last_reviewed: 2025-10-25
+last_reviewed: 2026-04-21
 source_of_truth: doc
 links:
-  - ../agent-instructions-shared/INDEX.md
+  - ../../agent-instructions-shared/INDEX.md
+  - ./01-aggregate-boundaries.md
+  - ./02-architecture-overview.md
   - ./03-data-locations.md
+  - ../42-SPEC-SYSTEM/README.md
+  - ../30-ESSENTIALS/README.md
+  - ../40-FEATURES/README.md
+  - ../10-DATABASES/00-all-databases-accessed.md
+  - ../20-DATA-IMPORT-MIGRATION/01-overview.md
+  - ../25-ONBOARDING-AND-ARCHIVE/README.md
 tests: []
 ---
 
 # Project Overview
 
-- Purpose: <one-liner>
-- Platforms: <macOS/iOS/Android/Web>
-- Build flavors: <dev/staging/prod>
-- Code owners: <handles>
-- Test strategy: <smoke/golden/unit>
-- Data access quickstart: see `00-PROJECT/03-data-locations.md`
-- Database schemas: see `20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md`
+MessageLens is a macOS-first Flutter app for importing, projecting, searching,
+and browsing local Apple Messages and AddressBook data. The repository may still
+be named `remember_every_text`; runtime storage, bundle identity, and user-facing
+documentation use MessageLens.
+
+This folder is the project-level map. It should stay high level and defer to
+the subsystem docs when details matter.
+
+## Current Top-Level Shape
+
+| Area | Current owner |
+| --- | --- |
+| App shell, navigation, global flow, sidebar, panel stacks, search, onboarding gate, database providers, import/migration services | `lib/essentials/` |
+| Business feature content, feature-owned specs, domain repositories, terminal feature rendering | `lib/features/` |
+| Shared DDD helpers and generic utilities | `lib/domain_driven_development/`, `lib/core/` |
+| Import, working, and overlay database infrastructure | `lib/essentials/db/` |
+| Attachment archive, deterministic recovery, attachment resolution | `lib/features/attachments/` plus overlay database metadata |
+
+## Authoritative Reading Paths
+
+- Spec-driven surfaces: start at `../42-SPEC-SYSTEM/README.md`.
+- Essentials vs feature ownership: read `../30-ESSENTIALS/README.md` and `../40-FEATURES/README.md`.
+- Database access and boundaries: read `../10-DATABASES/00-all-databases-accessed.md` and `../10-DATABASES/INVIOLATE_RULES.md`.
+- Import/migration behavior: read `../20-DATA-IMPORT-MIGRATION/01-overview.md`.
+- Onboarding, environment readiness, archive, and recovery: read `../25-ONBOARDING-AND-ARCHIVE/README.md`.
+- Build/FDA continuity: read `../60-BUILD-CONSIDERATIONS/02-macos-fda-grant-continuity.md` before production builds.
+
+## Non-Negotiable Architectural Contracts
+
+- Specs are the declarative bridge between state and rendering:
+  `Spec → Coordinator → Resolver → Payload / ViewModel → Rendering`.
+- Features provide content and approved feature-owned spec interpretation; they
+  do not own app-level orchestration, global flow state, sidebar topology, panel
+  stack policy, or shared chrome.
+- Import writes source-derived data to `macos_import.db`; migration writes the
+  projection to `working.db`; user intent writes to `user_overlays.db`.
+- Providers merge working + overlay at read time, and overlay wins on conflict.
+- Onboarding coordinates and presents import/migration readiness; it does not own
+  importer or migrator logic.
+- Attachment archive metadata lives in overlay; archive files live under the app
+  support archive directory and are never written back to Apple's Messages
+  Attachments folder.

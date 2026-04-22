@@ -2,7 +2,7 @@
 tier: project
 scope: macos-source-databases
 owner: agent-per-project
-last_reviewed: 2026-03-14
+last_reviewed: 2026-04-21
 source_of_truth: live-source-db-analysis
 links:
   - ./00-overview.md
@@ -16,6 +16,20 @@ tests: []
 # `chat.db` Orphan Message Findings
 
 This document records direct read-only analysis of `~/Library/Messages/chat.db` performed against a live user database in March 2026.
+
+## Interpretation Boundary
+
+The counts and patterns in this document are source observations from one inspected database. They are useful for diagnostics and for explaining why the importer preserves recovered-unlinked records, but they are not durable guarantees about Apple behavior. Only the import pipeline defines the durable MessageLens semantics for normal messages, recovered-unlinked messages, attachment joins, and working projection.
+
+## Current Status
+
+This is no longer a future-only finding. Current import and migration code preserve these source rows on a dedicated recovered-unlinked path:
+
+- source `message` + `chat_message_join` mapping -> import `messages` -> working `messages`
+- source `message` without `chat_message_join` mapping -> import `recovered_unlinked_messages` -> working `recovered_unlinked_messages`
+- source `message_attachment_join` rows follow the same split into `message_attachments` or `recovered_unlinked_message_attachments`, then working `attachments` or `recovered_unlinked_attachments`
+
+The architectural rule remains: do not fabricate normal chat membership for rows that lack source topology. Recovered-unlinked records must remain distinguishable in import data, working projection, diagnostics, and UI surfaces.
 
 ## Definition
 
@@ -35,7 +49,7 @@ WHERE m.ROWID NOT IN (SELECT message_id FROM chat_message_join);
 - source `chat_message_join` rows: `106997`
 - orphan `message` rows: `9618`
 
-These counts exactly match the source-vs-ledger delta seen in `import_log` during a fresh rebuild.
+Historical note: before the recovered-unlinked path existed, these counts matched the source-vs-imported-normal-message delta seen in `import_log` during a fresh rebuild. Current rebuilds should preserve this population through `recovered_unlinked_messages` instead of leaving it outside the ledger.
 
 ## High-Value Signal
 
@@ -181,4 +195,10 @@ The result is not a proof of original chat membership, but it does reveal user-m
 
 ## Import Implication
 
-If the app later imports orphan rows, do not fabricate a normal chat relationship. Preserve their orphan status explicitly and expose that status in both audit logs and UI metadata.
+Current import already preserves orphan rows. New work must keep their orphan status explicit and expose that status in audit logs and UI metadata.
+
+## Attachment Caveat
+
+Some recovered-unlinked rows carry attachment joins. The join is source evidence that an attachment belonged to the recovered source row, but `attachment.filename` / imported `local_path` is not durable proof that the file is locally available. iCloud and macOS storage optimization can leave the source row and path while removing the file.
+
+Recovered attachment display must therefore use the normal attachment resolution pipeline: overlay archive first when present, current source path only when available, and deterministic recovery when a historical snapshot can map the attachment back to `(message_guid, import_attachment_id)`.

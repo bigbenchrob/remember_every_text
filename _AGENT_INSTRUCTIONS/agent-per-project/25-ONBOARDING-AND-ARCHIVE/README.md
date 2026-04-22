@@ -5,6 +5,11 @@ attachment preservation. It covers how MessageLens evaluates the macOS
 environment, gates access, imports and migrates data, and maintains a durable
 image archive independent of Apple's volatile storage.
 
+Current code reality wins over older narrative in this folder. Where this
+folder intersects with app surfaces, `ViewSpec`, or coordinator boundaries,
+follow [`../42-SPEC-SYSTEM/`](../42-SPEC-SYSTEM/) and treat older overlay-only
+wording as legacy/transitional.
+
 ## Reading Order
 
 | Doc | Purpose |
@@ -16,10 +21,13 @@ image archive independent of Apple's volatile storage.
 | [`40-attachment-archive.md`](40-attachment-archive.md) | Living attachments archive: overlay schema, content-addressable storage, resolution pipeline, import-time archiving |
 | [`50-deterministic-recovery.md`](50-deterministic-recovery.md) | Deterministic historical recovery from Time Machine or backup snapshots via GUID-based mapping |
 | [`60-reimport-and-ongoing-sync.md`](60-reimport-and-ongoing-sync.md) | Re-import flow, `ChatDbChangeMonitor` auto-sync, and how the archive stays current |
+| [`handoff.txt`](handoff.txt) | Historical branch handoff only; not current architecture guidance |
 
 ## Key Ownership Boundaries
 
-- **`lib/essentials/onboarding/`** — bootstrap gate, environment evaluation, overlay presentation
+- **`lib/essentials/onboarding/`** — bootstrap gate, environment evaluation, overlay presentation for workflow phases
+- **`lib/features/environment_readiness/`** — current readiness panel content for `ViewSpec.environmentReadiness`
+- **`lib/essentials/navigation/`** — readiness panel synchronization, panel stack ownership, and sidebar parking
 - **`lib/essentials/db_importers/`** — import orchestration and table importers (NOT owned by onboarding)
 - **`lib/essentials/db_migrate/`** — migration orchestration and table migrators (NOT owned by onboarding)
 - **`lib/features/attachments/`** — archive service, resolver, deterministic recovery, settings
@@ -34,6 +42,8 @@ image archive independent of Apple's volatile storage.
 5. No attachment record is ever suppressed because its file is missing — the record renders with an availability state.
 6. The Messages Attachments folder is **never written to** by MessageLens.
 7. Historical snapshots are opened **read-only** — never mutated.
+8. FDA and ready-to-import states are current center-panel readiness states, not overlay-only states.
+9. New work must not bypass `ViewSpec` or introduce widget-returning coordinator patterns for onboarding/readiness surfaces.
 
 ## Related Documentation
 

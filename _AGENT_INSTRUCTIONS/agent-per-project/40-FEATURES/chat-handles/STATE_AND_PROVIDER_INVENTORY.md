@@ -15,6 +15,8 @@ last_updated: 2025-11-06
 
 # State & Provider Inventory — Chat Handles
 
+> Current conformance note (2026-04-21): provider names below were draft placeholders. Current concrete providers include `strayHandlesProvider`, `spamCandidateHandlesProvider`, `dismissedHandlesProvider`, `strayHandleModeProvider`, `virtualParticipantsProvider`, and contacts/handles merge repositories.
+
 | Provider | Type | Parameters | Description | Downstream Users |
 | --- | --- | --- | --- | --- |
 | `handleCanonicalizerProvider` | @riverpod class | N/A | Normalizes raw handle data into canonical identifiers. | Import + migration orchestration. |

@@ -2,7 +2,7 @@
 tier: project
 scope: databases
 owner: agent-per-project
-last_reviewed: 2025-11-06
+last_reviewed: 2026-04-21
 source_of_truth: doc
 links:
   - ./00-all-databases-accessed.md
@@ -15,7 +15,7 @@ tests: []
 
 # `db-address-book` — macOS Contacts Source (`AddressBook-v22.abcddb`)
 
-`db-address-book` is the live macOS AddressBook database shipped with the operating system. It is the canonical source of truth for contacts that ultimately populate `working_participants` and participate in handle linking.
+`db-address-book` is the live macOS AddressBook database shipped with the operating system. It is the canonical source of truth for contacts that ultimately populate `db-working.participants` and participate in handle linking.
 
 - **Alias**: `db-address-book`
 - **Physical File**: `AddressBook-v22.abcddb` inside the most recent `~/Library/Application Support/AddressBook/Sources/<UUID>/` folder
