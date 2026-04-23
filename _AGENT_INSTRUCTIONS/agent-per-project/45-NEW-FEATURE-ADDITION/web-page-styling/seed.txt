@@ -1,0 +1,63 @@
+My recommended first-pass palette:
+
+* deep charcoal / blue-black: #1E2B31
+* muted light text on dark: #A8B1AF
+* primary aqua background: #8CC9C4
+* secondary aqua line color: #98C8C2
+* pale sand highlight: #E5D69A
+* burnt orange accent: #C65E22
+
+I would treat those as approximate starting values, not sacred final values. The screenshot and generated mockup are enough to establish direction; later you can tune them by eye once the real site is taking shape.
+
+The most important design decision is how to assign roles:
+
+Suggested role mapping
+
+* page background: off-white or very pale aqua, not the saturated green
+* header/footer dark band: #1E2B31
+* primary text on light backgrounds: near-black, not gray
+* secondary UI surfaces: softened aqua tones
+* borders and dividers: muted aqua line color
+* primary CTA buttons: burnt orange
+* small highlights, badges, and “active” markers: pale sand
+* muted text on dark surfaces: #A8B1AF
+
+For the tester portal specifically, I would use the palette like this:
+
+* Home / hero
+    pale aqua field with dark text
+* Navigation bar
+    deep charcoal
+* Primary buttons
+    burnt orange
+* Download panel
+    cream or very pale aqua with subtle border
+* Status tags
+    sand for neutral / orange for important
+* Instruction sections
+    white or pale cream backgrounds so the content stays readable
+
+That keeps the site elegant without drowning everything in color.
+
+I think the right move now is to establish the palette as design tokens, even if the CSS is very light at first. That gives you a stable visual foundation before the site grows.
+
+A clean starter token set would be:
+
+:root {
+–ml-color-ink: #1E2B31;
+–ml-color-ink-soft: #A8B1AF;
+–ml-color-aqua: #8CC9C4;
+–ml-color-aqua-soft: #98C8C2;
+–ml-color-sand: #E5D69A;
+–ml-color-accent: #C65E22;
+–ml-color-paper: #F7F4EA;
+–ml-color-white: #FFFFFF;
+–ml-color-border: rgba(30, 43, 49, 0.16);
+–ml-color-shadow: rgba(30, 43, 49, 0.10);
+}
+
+If you want a slightly more modern and less vintage version, I would also add a cooler neutral background:
+
+–ml-color-page: #EEF4F2;
+
+Then your site can feel clean and contemporary while still clearly coming from this palette.

@@ -10,6 +10,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - No unreleased changes yet.
 
+## [0.1.12] — 2026-04-23
+
+### Added
+- Added a standalone MessageLens tester portal foundation under `web/tester-portal/` with centralized CSS palette tokens and shell styling for navigation, cards, links, buttons, and footer surfaces.
+
 ## [0.1.11] — 2026-04-22
 
 ### Fixed

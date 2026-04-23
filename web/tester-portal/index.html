@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta
+    name="description"
+    content="MessageLens tester portal for release notes, download access, and structured validation guidance."
+  >
+  <title>MessageLens Tester Portal</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="portal-shell">
+    <header class="site-header">
+      <div class="brand-lockup">
+        <p class="eyebrow">MessageLens</p>
+        <a class="brandmark" href="#top">Tester Portal</a>
+      </div>
+
+      <nav class="site-nav" aria-label="Primary">
+        <a href="#latest-build">Latest Build</a>
+        <a href="#test-focus">Test Focus</a>
+        <a href="#support">Support</a>
+      </nav>
+
+      <a class="button button-secondary button-compact" href="#support">
+        Report Feedback
+      </a>
+    </header>
+
+    <main id="top">
+      <section class="hero-card panel-frame">
+        <div class="hero-copy">
+          <p class="section-kicker">Current Cycle</p>
+          <h1>Quietly structured release access for MessageLens testers.</h1>
+          <p class="hero-summary">
+            The portal keeps build distribution, validation notes, and support
+            routes in one calm surface. The visual system is tuned for clarity:
+            dark architectural surfaces, soft aqua fields, restrained sand
+            highlights, and a precise burnt-orange call to action.
+          </p>
+
+          <div class="hero-actions">
+            <a class="button button-primary" href="#latest-build">
+              Download Latest Build
+            </a>
+            <a class="button button-secondary" href="#test-focus">
+              Review Test Focus
+            </a>
+          </div>
+
+          <dl class="signal-list">
+            <div>
+              <dt>Distribution</dt>
+              <dd>Signed macOS tester builds</dd>
+            </div>
+            <div>
+              <dt>Cadence</dt>
+              <dd>Targeted drops with explicit validation notes</dd>
+            </div>
+            <div>
+              <dt>Support</dt>
+              <dd>Structured feedback and issue reporting</dd>
+            </div>
+          </dl>
+        </div>
+
+        <aside class="status-card inset-card" aria-label="Portal status">
+          <p class="status-label">Portal Status</p>
+          <div class="status-pill">Ready for build postings</div>
+          <div class="status-stack">
+            <div>
+              <span class="status-term">Active lane</span>
+              <strong>macOS release candidates</strong>
+            </div>
+            <div>
+              <span class="status-term">Expected contents</span>
+              <strong>Build links, notes, test targets</strong>
+            </div>
+            <div>
+              <span class="status-term">Default response path</span>
+              <strong>Email or issue-form submission</strong>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="content-grid" id="latest-build">
+        <article class="info-card panel-frame">
+          <p class="section-kicker">Latest Build</p>
+          <h2>Release package</h2>
+          <p>
+            Publish the current tester DMG, its short release note, and any
+            gating instructions here. The card uses the lightest portal surface
+            so high-signal actions remain visually stable.
+          </p>
+          <a class="text-link" href="#">Attach build artifact</a>
+        </article>
+
+        <article class="info-card panel-frame accent-card" id="test-focus">
+          <p class="section-kicker">Test Focus</p>
+          <h2>Validation priorities</h2>
+          <p>
+            Call out the narrow behaviors that matter for this drop: onboarding,
+            import continuity, archive integrity, and regression checks.
+          </p>
+          <ul class="bullet-list">
+            <li>Document setup blockers immediately.</li>
+            <li>Verify any changed flow against release notes.</li>
+            <li>Include support bundle or screenshots for anomalies.</li>
+          </ul>
+        </article>
+
+        <article class="info-card panel-frame quiet-card">
+          <p class="section-kicker">Notes</p>
+          <h2>Tester guidance</h2>
+          <p>
+            Keep instructions concise, chronological, and specific. The visual
+            treatment stays archival rather than promotional so the portal reads
+            like a controlled release surface, not a marketing page.
+          </p>
+          <a class="text-link" href="#support">Open support workflow</a>
+        </article>
+      </section>
+
+      <section class="support-band panel-frame" id="support">
+        <div>
+          <p class="section-kicker">Support</p>
+          <h2>Feedback should arrive with enough context to reproduce.</h2>
+          <p>
+            Encourage testers to include the build identifier, the exact path
+            they took, the expected result, and whether the issue blocks daily
+            use.
+          </p>
+        </div>
+
+        <div class="support-actions">
+          <a class="button button-primary" href="mailto:testers@messagelens.app">
+            Email Test Notes
+          </a>
+          <a class="button button-secondary" href="#">
+            Open Issue Template
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>MessageLens tester portal foundation</p>
+      <div class="footer-links">
+        <a href="#latest-build">Builds</a>
+        <a href="#test-focus">Priorities</a>
+        <a href="#support">Support</a>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
