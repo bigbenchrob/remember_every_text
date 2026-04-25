@@ -38,6 +38,7 @@ TESTER_PORTAL_ROOT="${TESTER_PORTAL_ROOT:-$HOME/Development/website/MessageLens}
 TESTER_PORTAL_DOWNLOADS_DIR="${TESTER_PORTAL_DOWNLOADS_DIR:-$TESTER_PORTAL_ROOT/assets/downloads}"
 TESTER_PORTAL_DATA_DIR="${TESTER_PORTAL_DATA_DIR:-$TESTER_PORTAL_ROOT/assets/data}"
 LATEST_BUILD_METADATA_FILE="${LATEST_BUILD_METADATA_FILE:-$TESTER_PORTAL_DATA_DIR/latest-build.json}"
+TESTER_PORTAL_PACKAGE_FILE="${TESTER_PORTAL_PACKAGE_FILE:-$TESTER_PORTAL_ROOT/package.json}"
 PORTAL_BUILD_STATUS="${PORTAL_BUILD_STATUS:-Beta}"
 PORTAL_BUILD_PLATFORM="${PORTAL_BUILD_PLATFORM:-macOS}"
 PORTAL_BUILD_CHANNEL="${PORTAL_BUILD_CHANNEL:-Production tester build}"
@@ -92,18 +93,18 @@ EOF
 # ── Step 1: Build ─────────────────────────────────────────────────────
 
 if [[ "${1:-}" != "--skip-build" ]]; then
-  step "Step 1/8: Building release"
+  step "Step 1/9: Building release"
   cd "$PROJECT_DIR"
   flutter build macos --release
 else
-  step "Step 1/8: Skipping build (--skip-build)"
+  step "Step 1/9: Skipping build (--skip-build)"
 fi
 
 [[ -d "$APP_PATH" ]] || fail "App not found at $APP_PATH"
 
 # ── Step 2: Re-sign embedded frameworks and the app ──────────────────
 
-step "Step 2/8: Re-signing embedded frameworks and app bundle"
+step "Step 2/9: Re-signing embedded frameworks and app bundle"
 
 # Re-sign every embedded framework with the Developer ID identity
 # and hardened runtime.  This fixes stale signatures left by build tools.
@@ -137,14 +138,14 @@ codesign --force --sign "$SIGNING_IDENTITY" \
 
 # ── Step 3: Verify code signature ────────────────────────────────────
 
-step "Step 3/8: Verifying code signature"
+step "Step 3/9: Verifying code signature"
 codesign --verify --deep --strict "$APP_PATH" 2>&1
 echo "Signing identity:"
 codesign -dvv "$APP_PATH" 2>&1 | grep "Authority=" | head -1
 
 # ── Step 4: Create DMG ───────────────────────────────────────────────
 
-step "Step 4/8: Creating DMG"
+step "Step 4/9: Creating DMG"
 rm -f "$DMG_PATH"
 hdiutil create \
   -volname "$APP_NAME" \
@@ -156,19 +157,19 @@ echo "DMG created: $DMG_PATH"
 
 # ── Step 5: Submit for notarization ──────────────────────────────────
 
-step "Step 5/8: Submitting for notarization (this may take a few minutes)"
+step "Step 5/9: Submitting for notarization (this may take a few minutes)"
 xcrun notarytool submit "$DMG_PATH" \
   --keychain-profile "$KEYCHAIN_PROFILE" \
   --wait
 
 # ── Step 6: Staple the ticket ────────────────────────────────────────
 
-step "Step 6/8: Stapling notarization ticket to DMG"
+step "Step 6/9: Stapling notarization ticket to DMG"
 xcrun stapler staple "$DMG_PATH"
 
 # ── Step 7: Final verification ───────────────────────────────────────
 
-step "Step 7/8: Verifying notarization"
+step "Step 7/9: Verifying notarization"
 # spctl --assess on DMGs can give false "rejected" results.
 # Instead, verify the staple is present and the app itself passes.
 xcrun stapler validate "$DMG_PATH" 2>&1
@@ -177,13 +178,24 @@ echo ""
 echo "Verifying app bundle signature:"
 spctl --assess --verbose=2 "$APP_PATH" 2>&1 || true
 
-# ── Step 8: Publish tester portal metadata ───────────────────────────
+# ── Step 8: Build tester portal pages ────────────────────────────────
 
-step "Step 8/8: Publishing tester portal release metadata"
+step "Step 8/9: Building tester portal pages"
 
 [[ -f "$PUBSPEC_FILE" ]] || fail "pubspec.yaml not found at $PUBSPEC_FILE"
 [[ -d "$TESTER_PORTAL_ROOT" ]] || fail "Tester portal root not found at $TESTER_PORTAL_ROOT"
 [[ -f "$DMG_PATH" ]] || fail "Finalized DMG not found at $DMG_PATH"
+[[ -f "$TESTER_PORTAL_PACKAGE_FILE" ]] || fail "Tester portal package.json not found at $TESTER_PORTAL_PACKAGE_FILE"
+command -v npm >/dev/null 2>&1 || fail "npm is required to build tester portal pages"
+
+(
+  cd "$TESTER_PORTAL_ROOT"
+  npm run build
+)
+
+# ── Step 9: Publish tester portal metadata ───────────────────────────
+
+step "Step 9/9: Publishing tester portal release metadata"
 
 mkdir -p "$TESTER_PORTAL_DOWNLOADS_DIR"
 mkdir -p "$TESTER_PORTAL_DATA_DIR"
