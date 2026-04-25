@@ -10,12 +10,14 @@ import '../../../../providers.dart';
 import '../../../db/feature_level_providers.dart';
 import '../../../db/infrastructure/data_sources/local/import/sqflite_import_database.dart';
 import '../../../logging/application/import_audit_writer.dart';
+import '../../../logging/application/pipeline_incident_tracker_provider.dart';
 import '../../domain/entities/db_import_result.dart';
 import '../../domain/i_importers.dart/table_importer.dart';
 import '../../domain/ports/message_extractor_port.dart';
 import '../../domain/states/table_import_progress.dart';
 import '../../infrastructure/sqlite/import_context_sqlite.dart';
 import '../debug_settings_provider.dart';
+import '../import_execution_gate_provider.dart';
 import '../importers/attachments_importer.dart';
 import '../importers/chat_to_handle_importer.dart';
 import '../importers/chat_to_message_importer.dart';
@@ -49,9 +51,21 @@ class OrchestratedLedgerImportService {
   static const String _logContext = 'OrchestratedLedgerImportService';
 
   Future<DbImportResult> runImport({
+    required String executionOwner,
     ExecutionPlanCallback? onExecutionPlan,
     TableImportProgressCallback? onTableProgress,
   }) async {
+    final executionGate = ref.read(importExecutionGateProvider.notifier);
+    if (!executionGate.tryAcquire(executionOwner)) {
+      final gateState = ref.read(importExecutionGateProvider);
+      final activeOwner = gateState.owner ?? 'unknown';
+      return DbImportResult(
+        batchId: -1,
+        success: false,
+        error: 'Import is already running for $activeOwner.',
+      );
+    }
+
     final debugSettings = ref.read(importDebugSettingsProvider);
     final ledgerDb = await ref.read(sqfliteImportDatabaseProvider.future);
     final pathsHelper = await ref.read(pathsHelperProvider.future);
@@ -177,6 +191,23 @@ class OrchestratedLedgerImportService {
       messagesDb = await openDatabase(messagesFile.path, readOnly: true);
       addressBookDb = await openDatabase(addressBookFile.path, readOnly: true);
 
+      final sourceMaxHandleRowIdAtBatchStart = await _readMaxSourceRowId(
+        messagesDb,
+        'handle',
+      );
+      final sourceMaxChatRowIdAtBatchStart = await _readMaxSourceRowId(
+        messagesDb,
+        'chat',
+      );
+      final sourceMaxMessageRowIdAtBatchStart = await _readMaxSourceRowId(
+        messagesDb,
+        'message',
+      );
+      final sourceMaxAttachmentRowIdAtBatchStart = await _readMaxSourceRowId(
+        messagesDb,
+        'attachment',
+      );
+
       final context = ImportContextSqlite(
         importDb: ledgerDb,
         messagesDb: messagesDb,
@@ -191,6 +222,11 @@ class OrchestratedLedgerImportService {
         previousMaxMessageRowId: previousMaxMessageRowId,
         previousMaxAttachmentRowId: previousMaxAttachmentRowId,
         previousMaxMessageAttachmentRowId: previousMaxMessageAttachmentRowId,
+        sourceMaxHandleRowIdAtBatchStart: sourceMaxHandleRowIdAtBatchStart,
+        sourceMaxChatRowIdAtBatchStart: sourceMaxChatRowIdAtBatchStart,
+        sourceMaxMessageRowIdAtBatchStart: sourceMaxMessageRowIdAtBatchStart,
+        sourceMaxAttachmentRowIdAtBatchStart:
+            sourceMaxAttachmentRowIdAtBatchStart,
         hasExistingLedgerData: hasExistingLedgerData,
         scratchpad: scratchpad,
       );
@@ -285,7 +321,7 @@ class OrchestratedLedgerImportService {
         'contact_to_chat_handle',
       );
 
-      return DbImportResult(
+      final result = DbImportResult(
         batchId: batchId,
         success: true,
         handlesImported: handlesImported,
@@ -314,6 +350,10 @@ class OrchestratedLedgerImportService {
           'Contact links inserted this run: $contactLinksImported',
         ],
       );
+      await ref
+          .read(pipelineIncidentTrackerProvider.notifier)
+          .recordImportResult(result: result, executionOwner: executionOwner);
+      return result;
     } catch (error, stackTrace) {
       debugSettings.logError('$_logContext: import failed: $error');
       debugSettings.logProgress(stackTrace.toString());
@@ -338,10 +378,19 @@ class OrchestratedLedgerImportService {
         }
       }
 
-      return DbImportResult(batchId: batchId, success: false, error: '$error');
+      final result = DbImportResult(
+        batchId: batchId,
+        success: false,
+        error: '$error',
+      );
+      await ref
+          .read(pipelineIncidentTrackerProvider.notifier)
+          .recordImportResult(result: result, executionOwner: executionOwner);
+      return result;
     } finally {
       await messagesDb?.close();
       await addressBookDb?.close();
+      executionGate.release(executionOwner);
     }
   }
 
@@ -373,4 +422,22 @@ class OrchestratedLedgerImportService {
       return null;
     }
   }
+}
+
+Future<int?> _readMaxSourceRowId(Database db, String tableName) async {
+  final rows = await db.rawQuery(
+    'SELECT MAX(ROWID) AS max_rowid FROM $tableName',
+  );
+  if (rows.isEmpty) {
+    return null;
+  }
+
+  final value = rows.first['max_rowid'];
+  if (value is int) {
+    return value;
+  }
+  if (value is num) {
+    return value.toInt();
+  }
+  return null;
 }

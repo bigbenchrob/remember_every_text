@@ -1,0 +1,18 @@
+
+========================================================================
+PIPELINE INCIDENT — import — 2026-04-25T16:59:41.957779Z
+========================================================================
+  Report id                                          import-1777136381957779
+  Stage                                              import
+  Batch id                                           1
+  Dismissed                                          false
+  Blocking incident                                  true
+Import failed
+The import pipeline stopped before MessageLens could finish reading source data.
+
+--- ENTRIES ---
+[blocking] import: ImportException(temporary-pipeline-error-triggered, Temporary pipeline incident trigger matched decoded message text "PIPELINE ERROR TRIGGER".)
+  Execution owner: db-import-control
+
+--- end of pipeline incident report ---
+

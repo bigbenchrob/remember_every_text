@@ -30,10 +30,24 @@ class HandlesImporter extends BaseTableImporter with RowProgressReporter {
   @override
   Future<void> copy(IImportContext ctx) async {
     final minRowId = ctx.previousMaxHandleRowId;
+    final maxRowId = ctx.sourceMaxHandleRowIdAtBatchStart;
+    String? whereClause;
+    final whereArgs = <Object>[];
+    if (minRowId != null) {
+      whereClause = 'ROWID > ?';
+      whereArgs.add(minRowId);
+    }
+    if (maxRowId != null) {
+      whereClause = whereClause == null
+          ? 'ROWID <= ?'
+          : '$whereClause AND ROWID <= ?';
+      whereArgs.add(maxRowId);
+    }
+
     final rows = await ctx.messagesDb.query(
       'handle',
-      where: minRowId == null ? null : 'ROWID > ?',
-      whereArgs: minRowId == null ? null : <Object>[minRowId],
+      where: whereClause,
+      whereArgs: whereArgs.isEmpty ? null : whereArgs,
       orderBy: 'ROWID ASC',
     );
 

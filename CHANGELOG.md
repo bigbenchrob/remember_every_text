@@ -10,39 +10,67 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - No unreleased changes yet.
 
+## [0.1.14] — 2026-04-25
+
+### Added
+
+- MessageLens now records structured import and migration pipeline incidents in a dedicated diagnostic layer, exports them with support bundles, and can show a direct center-panel failure page with a one-click “Send Report To Developer” action when a blocking pipeline failure occurs.
+
+### Fixed
+
+- Automatic import and migration diagnostics now surface post-onboarding pipeline failures inside the app instead of relying on users to navigate to the sidebar troubleshooting flow before sending logs.
+
+## [0.1.13] — 2026-04-24
+
+### Fixed
+
+- Reset Message Data now refreshes onboarding after the completion dialog so testers are guided back into the reimport flow instead of being left on the settings reset panel.
+- macOS startup no longer blocks the app shell on a redundant window-state load that could leave VS Code debug launches stuck on a black screen.
+
+### Added
+
+- Support bundles now include targeted reset-to-onboarding diagnostics so tester logs show when the databases were deleted, when the onboarding gate reclassified the environment, and when the readiness panel was shown.
+
 ## [0.1.12] — 2026-04-23
 
 ### Added
+
 - Added a standalone MessageLens tester portal foundation under `web/tester-portal/` with centralized CSS palette tokens and shell styling for navigation, cards, links, buttons, and footer surfaces.
 
 ## [0.1.11] — 2026-04-22
 
 ### Fixed
+
 - `chat_to_handle` migration validation now counts distinct final canonical memberships after handle alias collapse, so datasets with normalized handle variants like `citycenter` and `city center` no longer fail onboarding just because multiple source handles project to one canonical chat membership.
 
 ## [0.1.10] — 2026-04-19
 
 ### Changed
+
 - Reset Message Data no longer quits the app after clearing the MessageLens databases. After the reset completes, the final dialog now dismisses back to the onboarding reimport panel already shown underneath.
 
 ## [0.1.9] — 2026-04-19
 
 ### Changed
+
 - Reset Message Data now uses a two-dialog flow: the settings cassette shows only the destructive reset action, a pre-reset confirmation explains exactly what will and will not be deleted, and a final quit dialog appears only after the MessageLens databases have been cleared.
 
 ## [0.1.8] — 2026-04-19
 
 ### Changed
+
 - Reset Message Data now shows a final completion dialog after the derived databases are deleted and waits for an explicit `OK` before quitting, making the forced quit and first-launch-style reimport path explicit.
 
 ## [0.1.7] — 2026-04-19
 
 ### Fixed
+
 - Incremental message migrations now preserve declared migrator order for equally ready steps, preventing failed later migrators from leaving `chat_to_handle` empty and contact timelines stuck behind the latest imported messages.
 
 ## [0.1.6] — 2026-04-19
 
 ### Changed
+
 - The settings sidebar now separates stable durable projection from ephemeral temporary flows, so one-off actions like `Send logs…` and `Reset message data…` no longer persist as if they were durable settings context.
 - Durable settings context now rebuilds from flow state through local stable topology decisions, keeping `Text size…` and `Image size…` as persistent settings choices while temporary settings actions stay out of stable settings reconstruction.
 - Sidebar topology and tests now enforce the stable-first then ephemeral-second projection model, including replace-only ephemeral settings flows and stable reconstruction from durable state.
@@ -50,35 +78,42 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [0.1.5] — 2026-04-17
 
 ### Changed
+
 - Settings now uses a single flat top menu with inert section headers and direct action choices instead of the previous nested submenu structure.
 - Settings troubleshooting now routes through dedicated settings-owned cassettes, including a guided `Send logs…` flow and a `Reset message data…` flow that preserves user preferences and quits after reset.
 
 ### Added
+
 - Appearance placeholders for `Text size…` and `Image size…` are now available from the flat settings top menu as direct action selections.
 
 ## [0.1.4] — 2026-04-17
 
 ### Added
+
 - Diagnostic export now produces a support bundle that can include a privacy-safe `database_health.json` structural audit of the app-owned databases.
 
 ### Changed
+
 - “Send Logs” and onboarding failure report flows now reveal or attach the support bundle instead of only a standalone diagnostic log file.
 
 ## [0.1.3] — 2026-04-16
 
 ### Added
+
 - Holding Option at launch on macOS now opens a startup recovery dialog before normal app flow continues.
 - The startup recovery dialog can export a diagnostic email draft with the app log plus import and migration audit logs when present.
 
 ## [0.1.2] — 2026-04-15
 
 ### Fixed
+
 - macOS release builds now bundle and sign the Rust message-text extractor so fresh imports can decode `attributedBody` content instead of leaving nearly all messages blank.
 - URL preview cards now receive the decoded message text they depend on, preventing false "Message does not contain a URL" placeholder errors after a clean import.
 
 ## [0.1.1] — 2026-04-15
 
 ### Fixed
+
 - Handle canonicalization now uses a shared normalization contract across import and migration so the same real-world participant does not split into separate canonical handles.
 - Onboarding now detects stale partial app-database state and automatically resets incomplete app databases before asking the user to retry setup.
 
@@ -87,6 +122,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 First build sent to testers.
 
 ### Added
+
 - Full Disk Access gate — app detects missing FDA on first launch and walks the user through granting it in System Settings
 - Data import onboarding — imports Messages and AddressBook databases on first run with progress overlay
 - Reimport from Settings — "Reimport Data" action in Settings sidebar re-runs the full import pipeline

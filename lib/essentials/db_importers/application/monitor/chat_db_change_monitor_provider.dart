@@ -12,6 +12,7 @@ import '../../../db_migrate/feature_level_providers.dart';
 import '../../../logging/application/app_logger.dart';
 import '../../domain/entities/db_import_result.dart';
 import '../../feature_level_providers.dart';
+import '../import_execution_gate_provider.dart';
 
 part 'chat_db_change_monitor_provider.g.dart';
 
@@ -50,6 +51,7 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
   bool _importInFlight = false;
   bool _attachmentSweepInFlight = false;
   bool _pendingProbe = false;
+  bool _retryWhenGateReleases = false;
   String? _chatDbPath;
 
   @override
@@ -57,6 +59,8 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
     if (!Platform.isMacOS) {
       return const ChatDbChangeMonitorState();
     }
+
+    ref.listen(importExecutionGateProvider, _handleExecutionGateChange);
 
     unawaited(_initialize());
 
@@ -222,6 +226,8 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
     }
 
     _importInFlight = true;
+    int? attemptPreviousMaxRowId;
+    DateTime? attemptDetectedAt;
 
     try {
       while (_pendingProbe) {
@@ -240,10 +246,9 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
             ? currentMaxRowId - previousMaxRowId
             : 0;
 
-        state = state.copyWith(
-          lastMaxRowId: currentMaxRowId,
-          lastChangeDetected: now,
-        );
+        attemptPreviousMaxRowId = previousMaxRowId;
+        attemptDetectedAt = now;
+        state = state.copyWith(lastChangeDetected: now, clearError: true);
 
         ref
             .read(appLoggerProvider.notifier)
@@ -261,7 +266,20 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
             );
 
         final importService = ref.read(orchestratedLedgerImportServiceProvider);
-        final importResult = await importService.runImport();
+        final importResult = await importService.runImport(
+          executionOwner: 'chat-db-monitor',
+        );
+
+        if (_isImportExecutionDenied(importResult)) {
+          _retryWhenGateReleases = true;
+          ref
+              .read(appLoggerProvider.notifier)
+              .debug(
+                'Skipping incremental import because another import is already running',
+                source: 'ChatDbMonitor',
+              );
+          continue;
+        }
 
         if (importResult.success) {
           ref
@@ -308,6 +326,11 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
 
           if (migrationResult.success) {
             final completedAt = DateTime.now();
+            state = state.copyWith(
+              lastMaxRowId: currentMaxRowId,
+              lastChangeDetected: now,
+              clearError: true,
+            );
             ref
                 .read(appLoggerProvider.notifier)
                 .info(
@@ -331,15 +354,31 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
               'Incremental migration failed: ${migrationResult.error}',
               null,
             );
+            _restoreStableCursor(
+              previousMaxRowId: previousMaxRowId,
+              detectedAt: now,
+            );
           }
         } else {
           _handleError(
             'Incremental import failed: ${importResult.error}',
             null,
           );
+          _restoreStableCursor(
+            previousMaxRowId: previousMaxRowId,
+            detectedAt: now,
+          );
         }
+
+        _retryWhenGateReleases = false;
+        attemptPreviousMaxRowId = null;
+        attemptDetectedAt = null;
       }
     } catch (error, stackTrace) {
+      _restoreStableCursor(
+        previousMaxRowId: attemptPreviousMaxRowId,
+        detectedAt: attemptDetectedAt,
+      );
       _handleError('Change detection failed: $error', stackTrace);
     } finally {
       _importInFlight = false;
@@ -390,6 +429,44 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
           source: 'ChatDbMonitor',
           context: {if (stackTrace != null) 'stackTrace': '$stackTrace'},
         );
+  }
+
+  void _handleExecutionGateChange(
+    ImportExecutionGateState? previous,
+    ImportExecutionGateState next,
+  ) {
+    final gateJustReleased = previous?.owner != null && next.owner == null;
+    if (!gateJustReleased || !_retryWhenGateReleases) {
+      return;
+    }
+
+    _retryWhenGateReleases = false;
+    ref
+        .read(appLoggerProvider.notifier)
+        .debug(
+          'Execution gate released. Retrying pending incremental import immediately',
+          source: 'ChatDbMonitor',
+        );
+    _scheduleProbe();
+  }
+
+  void _restoreStableCursor({
+    required int? previousMaxRowId,
+    required DateTime? detectedAt,
+  }) {
+    state = state.copyWith(
+      lastMaxRowId: previousMaxRowId,
+      lastChangeDetected: detectedAt,
+    );
+  }
+
+  bool _isImportExecutionDenied(DbImportResult result) {
+    final error = result.error;
+    if (result.success || error == null) {
+      return false;
+    }
+
+    return error.startsWith('Import is already running for ');
   }
 
   String _buildImportSummaryLog({

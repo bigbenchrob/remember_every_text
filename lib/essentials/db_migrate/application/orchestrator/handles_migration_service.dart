@@ -6,6 +6,7 @@ import 'package:sqflite/sqflite.dart';
 import '../../../db/feature_level_providers.dart';
 import '../../../db_importers/application/debug_settings_provider.dart';
 import '../../../logging/application/migration_audit_writer.dart';
+import '../../../logging/application/pipeline_incident_tracker_provider.dart';
 import '../../../search/feature_level_providers.dart';
 import '../../domain/base_table_migrator.dart';
 import '../../domain/entities/db_migration_result.dart';
@@ -258,7 +259,7 @@ class HandlesMigrationService {
         );
       }
 
-      return DbMigrationResult(
+      final result = DbMigrationResult(
         batchId: latestBatch ?? 0,
         success: true,
         identitiesProjected: handlesCount,
@@ -269,6 +270,13 @@ class HandlesMigrationService {
         attachmentsProjected: attachmentsCount,
         reactionsProjected: reactionsCount,
       );
+      await ref
+          .read(pipelineIncidentTrackerProvider.notifier)
+          .recordMigrationResult(
+            result: result,
+            incrementalMode: incrementalMode,
+          );
+      return result;
     } catch (error, stackTrace) {
       debugSettings.logError('$_logContext: migration failed: $error');
       debugSettings.logProgress(stackTrace.toString());
@@ -286,11 +294,18 @@ class HandlesMigrationService {
         // Audit logging is best-effort; don't mask the real error.
       }
 
-      return DbMigrationResult(
+      final result = DbMigrationResult(
         batchId: 0,
         success: false,
         error: 'Identity + message migration failed: $error',
       );
+      await ref
+          .read(pipelineIncidentTrackerProvider.notifier)
+          .recordMigrationResult(
+            result: result,
+            incrementalMode: incrementalMode,
+          );
+      return result;
     }
   }
 

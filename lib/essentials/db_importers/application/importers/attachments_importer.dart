@@ -28,6 +28,7 @@ class AttachmentsImporter extends BaseTableImporter with RowProgressReporter {
   @override
   Future<void> copy(IImportContext ctx) async {
     final minRowId = ctx.previousMaxAttachmentRowId;
+    final maxRowId = ctx.sourceMaxAttachmentRowIdAtBatchStart;
     final sql = StringBuffer()
       ..writeln('SELECT')
       ..writeln('  attachment.ROWID AS source_rowid,')
@@ -42,9 +43,19 @@ class AttachmentsImporter extends BaseTableImporter with RowProgressReporter {
       ..writeln('  attachment.filename')
       ..writeln('FROM attachment');
     final args = <Object>[];
+    if (minRowId != null || maxRowId != null) {
+      sql.write('WHERE ');
+    }
     if (minRowId != null) {
-      sql.writeln('WHERE attachment.ROWID > ?');
+      sql.write('attachment.ROWID > ?');
       args.add(minRowId);
+    }
+    if (maxRowId != null) {
+      if (minRowId != null) {
+        sql.write(' AND ');
+      }
+      sql.write('attachment.ROWID <= ?');
+      args.add(maxRowId);
     }
 
     final rows = await ctx.messagesDb.rawQuery(sql.toString(), args);

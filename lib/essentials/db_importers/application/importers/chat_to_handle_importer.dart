@@ -30,7 +30,27 @@ class ChatToHandleImporter extends BaseTableImporter {
 
   @override
   Future<void> copy(IImportContext ctx) async {
-    final rows = await ctx.messagesDb.query('chat_handle_join');
+    String? whereClause;
+    final whereArgs = <Object>[];
+    final maxChatRowId = ctx.sourceMaxChatRowIdAtBatchStart;
+    final maxHandleRowId = ctx.sourceMaxHandleRowIdAtBatchStart;
+
+    if (maxChatRowId != null) {
+      whereClause = 'chat_id <= ?';
+      whereArgs.add(maxChatRowId);
+    }
+    if (maxHandleRowId != null) {
+      whereClause = whereClause == null
+          ? 'handle_id <= ?'
+          : '$whereClause AND handle_id <= ?';
+      whereArgs.add(maxHandleRowId);
+    }
+
+    final rows = await ctx.messagesDb.query(
+      'chat_handle_join',
+      where: whereClause,
+      whereArgs: whereArgs.isEmpty ? null : whereArgs,
+    );
     if (rows.isEmpty) {
       ctx.info('ChatToHandleImporter: no chat memberships detected.');
       ctx.writeScratch('chatMemberships.inserted', 0);

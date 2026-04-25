@@ -5,4 +5,6 @@ part 'environment_readiness_view_spec.freezed.dart';
 @freezed
 abstract class EnvironmentReadinessSpec with _$EnvironmentReadinessSpec {
   const factory EnvironmentReadinessSpec.readinessPanel() = _ReadinessPanel;
+  const factory EnvironmentReadinessSpec.pipelineIncidentPanel() =
+      _PipelineIncidentPanel;
 }

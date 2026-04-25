@@ -9,8 +9,12 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../db/feature_level_providers.dart';
 import '../../logging/application/app_logger.dart';
 import '../../navigation/application/app_navigator_key.dart';
+import 'onboarding_environment_report_provider.dart';
+import 'onboarding_gate_provider.dart';
 
 part 'message_data_reset_service.g.dart';
+
+const _resetCompletionDialogExitDelay = Duration(milliseconds: 140);
 
 abstract interface class MessageDataResetService {
   Future<void> resetDerivedData();
@@ -58,9 +62,16 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
       _ref.invalidate(driftWorkingDatabaseProvider);
       _ref.read(messageDataVersionProvider.notifier).bump();
 
+      final importDbPath = path.join(databaseDirectoryPath, 'macos_import.db');
+      final workingDbPath = path.join(databaseDirectoryPath, 'working.db');
+
       logger.info(
         'Invalidated import and working database providers after reset',
         source: 'MessageDataResetService',
+        context: {
+          'importDbExistsAfterReset': File(importDbPath).existsSync(),
+          'workingDbExistsAfterReset': File(workingDbPath).existsSync(),
+        },
       );
 
       logger.warn(
@@ -123,6 +134,28 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
 
     await resetDerivedData();
 
+    final onboardingStatusBeforeDialog = _ref.read(onboardingGateProvider);
+    final environmentReportAsync = _ref.read(
+      onboardingEnvironmentReportProvider,
+    );
+    final environmentReport = environmentReportAsync.valueOrNull;
+
+    logger.info(
+      'Reset flow snapshot before completion dialog',
+      source: 'MessageDataResetService',
+      context: {
+        'onboardingStatus': onboardingStatusBeforeDialog.name,
+        'environmentReportLoading': environmentReportAsync.isLoading,
+        'environmentState': environmentReport?.state.name,
+        'environmentBlocker': environmentReport?.blockerKind.name,
+        'hasPopulatedAppDatabases': environmentReport?.hasPopulatedAppDatabases,
+        'importDbExists': environmentReport?.importDatabase.exists,
+        'importDbRowCount': environmentReport?.importDatabase.rowCount,
+        'workingDbExists': environmentReport?.workingDatabase.exists,
+        'workingDbRowCount': environmentReport?.workingDatabase.rowCount,
+      },
+    );
+
     logger.info(
       'Showing reset completion dialog before onboarding reimport flow',
       source: 'MessageDataResetService',
@@ -139,6 +172,14 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
         },
       );
     }
+
+    await Future<void>.delayed(_resetCompletionDialogExitDelay);
+
+    logger.info(
+      'Refreshing onboarding environment after message data reset',
+      source: 'MessageDataResetService',
+    );
+    _ref.read(onboardingGateProvider.notifier).refreshEnvironment();
   }
 
   Future<void> _closeImportDatabase() async {

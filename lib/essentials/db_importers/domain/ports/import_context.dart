@@ -32,6 +32,15 @@ abstract class IImportContext {
   int? get previousMaxMessageAttachmentRowId;
 
   // ---------------------------------------------------------------------------
+  // Stable source snapshot - highest ROWIDs visible when this batch started
+  // ---------------------------------------------------------------------------
+
+  int? get sourceMaxHandleRowIdAtBatchStart;
+  int? get sourceMaxChatRowIdAtBatchStart;
+  int? get sourceMaxMessageRowIdAtBatchStart;
+  int? get sourceMaxAttachmentRowIdAtBatchStart;
+
+  // ---------------------------------------------------------------------------
   // Rich text extraction support
   // ---------------------------------------------------------------------------
 

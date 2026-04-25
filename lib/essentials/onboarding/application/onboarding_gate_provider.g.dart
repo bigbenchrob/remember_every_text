@@ -6,7 +6,7 @@ part of 'onboarding_gate_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$onboardingGateHash() => r'00bba89b3c40e97bee6eb458ca6499de3d4e8ac3';
+String _$onboardingGateHash() => r'a04e0730f4942155f13ce74d501a2bad31dde83d';
 
 /// Controls the onboarding overlay lifecycle.
 ///

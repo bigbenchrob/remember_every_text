@@ -26,6 +26,10 @@ class ImportContextSqlite implements IImportContext {
     this.previousMaxMessageRowId,
     this.previousMaxAttachmentRowId,
     this.previousMaxMessageAttachmentRowId,
+    this.sourceMaxHandleRowIdAtBatchStart,
+    this.sourceMaxChatRowIdAtBatchStart,
+    this.sourceMaxMessageRowIdAtBatchStart,
+    this.sourceMaxAttachmentRowIdAtBatchStart,
     this.hasExistingLedgerData = false,
     Map<String, Object?>? scratchpad,
   }) : scratchpad = scratchpad ?? <String, Object?>{};
@@ -70,6 +74,18 @@ class ImportContextSqlite implements IImportContext {
 
   @override
   final int? previousMaxMessageAttachmentRowId;
+
+  @override
+  final int? sourceMaxHandleRowIdAtBatchStart;
+
+  @override
+  final int? sourceMaxChatRowIdAtBatchStart;
+
+  @override
+  final int? sourceMaxMessageRowIdAtBatchStart;
+
+  @override
+  final int? sourceMaxAttachmentRowIdAtBatchStart;
 
   @override
   final bool hasExistingLedgerData;

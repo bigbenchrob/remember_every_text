@@ -741,6 +741,7 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
     try {
       final service = ref.read(orchestratedLedgerImportServiceProvider);
       final result = await service.runImport(
+        executionOwner: 'db-import-control',
         onExecutionPlan: (steps) {
           // Build UI step list from the orchestrator's topological order.
           state = state.copyWith(

@@ -31,9 +31,15 @@ class MessagesImporter extends BaseTableImporter with RowProgressReporter {
   @override
   Future<void> copy(IImportContext ctx) async {
     // Pre-load all chat_message_join mappings to avoid per-row queries.
+    final joinBounds = _buildJoinBounds(
+      maxMessageRowIdInclusive: ctx.sourceMaxMessageRowIdAtBatchStart,
+      maxChatRowIdInclusive: ctx.sourceMaxChatRowIdAtBatchStart,
+    );
     final chatJoinRows = await ctx.messagesDb.query(
       'chat_message_join',
       columns: <String>['message_id', 'chat_id'],
+      where: joinBounds.whereClause,
+      whereArgs: joinBounds.whereArgs,
     );
     final chatIdByMessage = <int, int>{};
     for (final jr in chatJoinRows) {
@@ -45,10 +51,24 @@ class MessagesImporter extends BaseTableImporter with RowProgressReporter {
     }
 
     final minRowId = ctx.previousMaxMessageRowId;
+    final maxRowId = ctx.sourceMaxMessageRowIdAtBatchStart;
+    String? whereClause;
+    final whereArgs = <Object>[];
+    if (minRowId != null) {
+      whereClause = 'ROWID > ?';
+      whereArgs.add(minRowId);
+    }
+    if (maxRowId != null) {
+      whereClause = whereClause == null
+          ? 'ROWID <= ?'
+          : '$whereClause AND ROWID <= ?';
+      whereArgs.add(maxRowId);
+    }
+
     final rows = await ctx.messagesDb.query(
       'message',
-      where: minRowId == null ? null : 'ROWID > ?',
-      whereArgs: minRowId == null ? null : <Object>[minRowId],
+      where: whereClause,
+      whereArgs: whereArgs.isEmpty ? null : whereArgs,
       orderBy: 'ROWID ASC',
     );
 
@@ -268,6 +288,29 @@ class MessagesImporter extends BaseTableImporter with RowProgressReporter {
       '$recoveredTotal recovered unlinked messages.',
     );
   }
+}
+
+({String? whereClause, List<Object>? whereArgs}) _buildJoinBounds({
+  required int? maxMessageRowIdInclusive,
+  required int? maxChatRowIdInclusive,
+}) {
+  String? whereClause;
+  final whereArgs = <Object>[];
+  if (maxMessageRowIdInclusive != null) {
+    whereClause = 'message_id <= ?';
+    whereArgs.add(maxMessageRowIdInclusive);
+  }
+  if (maxChatRowIdInclusive != null) {
+    whereClause = whereClause == null
+        ? 'chat_id <= ?'
+        : '$whereClause AND chat_id <= ?';
+    whereArgs.add(maxChatRowIdInclusive);
+  }
+
+  return (
+    whereClause: whereClause,
+    whereArgs: whereArgs.isEmpty ? null : whereArgs,
+  );
 }
 
 String _inferItemType(Map<String, Object?> row) {

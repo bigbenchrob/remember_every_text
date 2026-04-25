@@ -42,17 +42,75 @@ class OnboardingGate extends _$OnboardingGate {
   OnboardingStatus? _workflowOverrideStatus;
   bool _automaticRecoveryInFlight = false;
   bool _automaticRecoverySuppressed = false;
+  OnboardingStatus? _lastLoggedResolvedStatus;
+  OnboardingEnvironmentState? _lastLoggedEnvironmentState;
+  OnboardingBlockerKind? _lastLoggedBlockerKind;
+  bool? _lastLoggedHasPopulatedAppDatabases;
 
   @override
   OnboardingStatus build() {
     final reportAsync = ref.watch(onboardingEnvironmentReportProvider);
     reportAsync.whenData(_maybeTriggerAutomaticRecovery);
 
-    return resolveBuildStatus(
+    final resolvedStatus = resolveBuildStatus(
       reportAsync: reportAsync,
       workflowOverrideStatus: _workflowOverrideStatus,
       fallbackBuildStatus: _fallbackBuildStatus,
     );
+
+    _maybeLogResolvedStatus(
+      resolvedStatus: resolvedStatus,
+      report: reportAsync.valueOrNull,
+    );
+
+    return resolvedStatus;
+  }
+
+  void _maybeLogResolvedStatus({
+    required OnboardingStatus resolvedStatus,
+    required OnboardingEnvironmentReport? report,
+  }) {
+    final hasPopulatedAppDatabases = report?.hasPopulatedAppDatabases;
+    final shouldLog =
+        _lastLoggedResolvedStatus != resolvedStatus ||
+        _lastLoggedEnvironmentState != report?.state ||
+        _lastLoggedBlockerKind != report?.blockerKind ||
+        _lastLoggedHasPopulatedAppDatabases != hasPopulatedAppDatabases;
+
+    if (!shouldLog) {
+      return;
+    }
+
+    _lastLoggedResolvedStatus = resolvedStatus;
+    _lastLoggedEnvironmentState = report?.state;
+    _lastLoggedBlockerKind = report?.blockerKind;
+    _lastLoggedHasPopulatedAppDatabases = hasPopulatedAppDatabases;
+
+    final logContext = <String, dynamic>{
+      'resolvedStatus': resolvedStatus.name,
+      'workflowOverrideStatus': _workflowOverrideStatus?.name,
+      'environmentState': report?.state.name,
+      'environmentBlocker': report?.blockerKind.name,
+      'hasFullDiskAccess': report?.hasFullDiskAccess,
+      'hasPopulatedAppDatabases': hasPopulatedAppDatabases,
+      'importDbExists': report?.importDatabase.exists,
+      'importDbRowCount': report?.importDatabase.rowCount,
+      'workingDbExists': report?.workingDatabase.exists,
+      'workingDbRowCount': report?.workingDatabase.rowCount,
+      'shouldResetAppDatabasesBeforeImport':
+          report?.shouldResetAppDatabasesBeforeImport,
+      'resetAppDatabasesReason': report?.resetAppDatabasesReason,
+    };
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref
+          .read(appLoggerProvider.notifier)
+          .info(
+            'Resolved onboarding gate status',
+            source: 'OnboardingGate',
+            context: logContext,
+          );
+    });
   }
 
   @visibleForTesting

@@ -164,6 +164,10 @@ class SupportBundleExportService {
           'Migration Pipeline Audit Log',
           File('$databaseDirectoryPath/migrate_log'),
         ),
+        (
+          'Pipeline Incident Log',
+          File('$databaseDirectoryPath/pipeline_incident_log'),
+        ),
       ];
     } catch (_) {
       return const <(String, File)>[];

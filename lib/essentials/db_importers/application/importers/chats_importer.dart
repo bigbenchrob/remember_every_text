@@ -29,10 +29,24 @@ class ChatsImporter extends BaseTableImporter with RowProgressReporter {
   @override
   Future<void> copy(IImportContext ctx) async {
     final minRowId = ctx.previousMaxChatRowId;
+    final maxRowId = ctx.sourceMaxChatRowIdAtBatchStart;
+    String? whereClause;
+    final whereArgs = <Object>[];
+    if (minRowId != null) {
+      whereClause = 'ROWID > ?';
+      whereArgs.add(minRowId);
+    }
+    if (maxRowId != null) {
+      whereClause = whereClause == null
+          ? 'ROWID <= ?'
+          : '$whereClause AND ROWID <= ?';
+      whereArgs.add(maxRowId);
+    }
+
     final rows = await ctx.messagesDb.query(
       'chat',
-      where: minRowId == null ? null : 'ROWID > ?',
-      whereArgs: minRowId == null ? null : <Object>[minRowId],
+      where: whereClause,
+      whereArgs: whereArgs.isEmpty ? null : whereArgs,
       orderBy: 'ROWID ASC',
     );
 

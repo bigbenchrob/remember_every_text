@@ -37,7 +37,6 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
   static const double _toolbarHorizontalPadding = 8.0;
   static const double _toolbarVerticalPadding = 4.0;
   static const double _defaultEndSidebarWidth = 360.0;
-  bool _initialized = false;
   Timer? _windowFrameDebounce;
   DateTime _lastFrameSave = DateTime.fromMillisecondsSinceEpoch(0);
   bool _pendingTrailingFrameSave = false;
@@ -45,25 +44,6 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
   @override
   void initState() {
     super.initState();
-    _restore();
-  }
-
-  Future<void> _restore() async {
-    try {
-      final svc = ref.read(windowStateServiceProvider);
-      await svc.loadWindowState();
-      if (mounted) {
-        setState(() {
-          _initialized = true;
-        });
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          _initialized = true;
-        });
-      }
-    }
   }
 
   @override
@@ -74,13 +54,6 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_initialized) {
-      return const ColoredBox(
-        color: Colors.black,
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
-
     final windowSvc = ref.watch(windowStateServiceProvider);
 
     // Capture window size/position after each frame (debounced)

@@ -1,18 +1,18 @@
 {
   "schema_version": "1.0.0",
-  "generated_at": "2026-04-22T07:26:14.671216Z",
+  "generated_at": "2026-04-25T17:03:14.376783Z",
   "audit_version": "phase1",
   "app": {
     "name": "MessageLens",
     "bundle_id": "com.bigbenchsoftware.MessageLens",
     "version": "0.1.3",
     "build_number": "4",
-    "build_channel": "release"
+    "build_channel": "debug"
   },
   "environment": {
     "platform": "macos",
-    "platform_version": "Version 26.4.1 (Build 25E253)",
-    "timezone": "JST",
+    "platform_version": "Version 26.2 (Build 25C56)",
+    "timezone": "PDT",
     "has_full_disk_access": true,
     "startup_flags": {
       "option_launch_reset_requested": false
@@ -1003,7 +1003,7 @@
       "database_key": "overlay",
       "table_name": "overlay_settings",
       "exists": true,
-      "row_count": 11,
+      "row_count": 10,
       "primary_key": {
         "column_name": "key"
       },
@@ -1014,14 +1014,14 @@
       "database_key": "overlay",
       "table_name": "favorite_contacts",
       "exists": true,
-      "row_count": 5,
+      "row_count": 0,
       "primary_key": {
-        "column_name": "participant_id",
-        "min_value": 2182,
-        "max_value": 3353
+        "column_name": "participant_id"
       },
       "important_columns": [],
-      "notes": []
+      "notes": [
+        "Table is empty."
+      ]
     },
     {
       "database_key": "overlay",
@@ -1053,25 +1053,19 @@
       "database_key": "overlay",
       "table_name": "archived_attachments",
       "exists": true,
-      "row_count": 39750,
+      "row_count": 0,
       "primary_key": {
-        "column_name": "id",
-        "min_value": 1,
-        "max_value": 39750
+        "column_name": "id"
       },
       "important_columns": [
         {
           "column_name": "message_guid",
-          "null_count": 0,
-          "non_null_count": 39750,
-          "distinct_count": 23333,
+          "distinct_count": 0,
           "notes": []
         },
         {
           "column_name": "import_attachment_id",
-          "null_count": 0,
-          "non_null_count": 39750,
-          "distinct_count": 39747,
+          "distinct_count": 0,
           "notes": []
         },
         {
@@ -1089,7 +1083,9 @@
           ]
         }
       ],
-      "notes": []
+      "notes": [
+        "Table is empty."
+      ]
     }
   ],
   "relationship_checks": [

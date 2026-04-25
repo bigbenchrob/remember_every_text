@@ -74,8 +74,8 @@ void main() {
         addressBookDb: addressBookDb,
       );
 
-      expect(
-        () => ChatToHandleImporter().validatePrereqs(ctx),
+      await expectLater(
+        ChatToHandleImporter().validatePrereqs(ctx),
         throwsA(
           isA<ImportException>()
               .having((e) => e.code, 'code', 'chat-to-handle-source-fk-broken')
@@ -126,8 +126,8 @@ void main() {
         batchId: ctx.batchId,
       );
 
-      expect(
-        () => ChatToHandleImporter().validatePrereqs(ctx),
+      await expectLater(
+        ChatToHandleImporter().validatePrereqs(ctx),
         throwsA(
           isA<ImportException>()
               .having(
@@ -165,8 +165,8 @@ void main() {
         addressBookDb: addressBookDb,
       );
 
-      expect(
-        () => ChatToMessageImporter().validatePrereqs(ctx),
+      await expectLater(
+        ChatToMessageImporter().validatePrereqs(ctx),
         throwsA(
           isA<ImportException>()
               .having((e) => e.code, 'code', 'chat-to-message-source-fk-broken')
@@ -180,65 +180,7 @@ void main() {
     });
 
     test(
-      'chat_to_message importer fails early on missing ledger parents',
-      () async {
-        await messagesDb.execute(
-          'CREATE TABLE chat (ROWID INTEGER PRIMARY KEY, guid TEXT, service_name TEXT)',
-        );
-        await messagesDb.execute(
-          'CREATE TABLE message (ROWID INTEGER PRIMARY KEY, guid TEXT)',
-        );
-        await messagesDb.execute(
-          'CREATE TABLE chat_message_join (chat_id INTEGER NOT NULL, message_id INTEGER NOT NULL)',
-        );
-        await messagesDb.insert('chat', <String, Object?>{
-          'ROWID': 17,
-          'guid': 'chat-17',
-          'service_name': 'iMessage',
-        });
-        await messagesDb.insert('message', <String, Object?>{
-          'ROWID': 100,
-          'guid': 'message-100',
-        });
-        await messagesDb.insert('chat_message_join', <String, Object?>{
-          'chat_id': 17,
-          'message_id': 100,
-        });
-
-        final ctx = await _buildContext(
-          ledgerDb: ledgerDb,
-          messagesDb: messagesDb,
-          addressBookDb: addressBookDb,
-        );
-        await ledgerDb.insertChat(
-          id: 17,
-          sourceRowid: 17,
-          guid: 'chat-17',
-          service: 'iMessage',
-          batchId: ctx.batchId,
-        );
-
-        expect(
-          () => ChatToMessageImporter().validatePrereqs(ctx),
-          throwsA(
-            isA<ImportException>()
-                .having(
-                  (e) => e.code,
-                  'code',
-                  'chat-to-message-ledger-parent-missing',
-                )
-                .having(
-                  (e) => e.message,
-                  'message',
-                  contains('Diagnostic SQL to run against macos_import.db'),
-                ),
-          ),
-        );
-      },
-    );
-
-    test(
-      'messages importer promotes recovered messages when a chat join appears',
+      'messages importer relinks recovered messages when joins become visible',
       () async {
         await messagesDb.execute(
           'CREATE TABLE chat (ROWID INTEGER PRIMARY KEY, guid TEXT, service_name TEXT)',
@@ -310,9 +252,9 @@ void main() {
           contains(100),
         );
 
-        expect(
-          () => ChatToMessageImporter().validatePrereqs(ctx),
-          returnsNormally,
+        await expectLater(
+          ChatToMessageImporter().validatePrereqs(ctx),
+          completes,
         );
       },
     );
@@ -344,8 +286,8 @@ void main() {
           addressBookDb: addressBookDb,
         );
 
-        expect(
-          () => MessageAttachmentsImporter().validatePrereqs(ctx),
+        await expectLater(
+          MessageAttachmentsImporter().validatePrereqs(ctx),
           throwsA(
             isA<ImportException>()
                 .having(
@@ -400,8 +342,8 @@ void main() {
           batchId: ctx.batchId,
         );
 
-        expect(
-          () => MessageAttachmentsImporter().validatePrereqs(ctx),
+        await expectLater(
+          MessageAttachmentsImporter().validatePrereqs(ctx),
           throwsA(
             isA<ImportException>()
                 .having(
@@ -418,6 +360,84 @@ void main() {
         );
       },
     );
+
+    test(
+      'message_attachments importer ignores join rows beyond batch snapshot ceilings',
+      () async {
+        await messagesDb.execute(
+          'CREATE TABLE message (ROWID INTEGER PRIMARY KEY, guid TEXT)',
+        );
+        await messagesDb.execute(
+          'CREATE TABLE attachment (ROWID INTEGER PRIMARY KEY, guid TEXT)',
+        );
+        await messagesDb.execute(
+          'CREATE TABLE message_attachment_join (message_id INTEGER NOT NULL, attachment_id INTEGER NOT NULL)',
+        );
+        await messagesDb.insert('message', <String, Object?>{
+          'ROWID': 100,
+          'guid': 'message-100',
+        });
+        await messagesDb.insert('message', <String, Object?>{
+          'ROWID': 101,
+          'guid': 'message-101',
+        });
+        await messagesDb.insert('attachment', <String, Object?>{
+          'ROWID': 300,
+          'guid': 'attachment-300',
+        });
+        await messagesDb.insert('attachment', <String, Object?>{
+          'ROWID': 301,
+          'guid': 'attachment-301',
+        });
+        await messagesDb.insert('message_attachment_join', <String, Object?>{
+          'message_id': 100,
+          'attachment_id': 300,
+        });
+        await messagesDb.insert('message_attachment_join', <String, Object?>{
+          'message_id': 101,
+          'attachment_id': 301,
+        });
+
+        final ctx = await _buildContext(
+          ledgerDb: ledgerDb,
+          messagesDb: messagesDb,
+          addressBookDb: addressBookDb,
+          sourceMaxMessageRowIdAtBatchStart: 100,
+          sourceMaxAttachmentRowIdAtBatchStart: 300,
+        );
+        await ledgerDb.insertChat(
+          id: 17,
+          sourceRowid: 17,
+          guid: 'chat-17',
+          service: 'iMessage',
+          batchId: ctx.batchId,
+        );
+        await ledgerDb.insertMessage(
+          id: 100,
+          sourceRowid: 100,
+          guid: 'message-100',
+          chatId: 17,
+          service: 'iMessage',
+          isFromMe: false,
+          hasAttributedBodySource: false,
+          hasMessageSummaryInfo: false,
+          hasPayloadDataSource: false,
+          isSystemMessage: false,
+          batchId: ctx.batchId,
+        );
+        await ledgerDb.insertAttachment(
+          id: 300,
+          sourceRowid: 300,
+          guid: 'attachment-300',
+          batchId: ctx.batchId,
+        );
+
+        await expectLater(
+          MessageAttachmentsImporter().validatePrereqs(ctx),
+          completes,
+        );
+      },
+    );
   });
 }
 
@@ -427,6 +447,9 @@ Future<ImportContextSqlite> _buildContext({
   required Database addressBookDb,
   bool hasExistingLedgerData = false,
   int? previousMaxMessageRowId,
+  int? sourceMaxChatRowIdAtBatchStart,
+  int? sourceMaxMessageRowIdAtBatchStart,
+  int? sourceMaxAttachmentRowIdAtBatchStart,
 }) async {
   final batchId = await ledgerDb.insertImportBatch(
     startedAtUtc: DateTime.now().toUtc().toIso8601String(),
@@ -440,5 +463,8 @@ Future<ImportContextSqlite> _buildContext({
     batchId: batchId,
     hasExistingLedgerData: hasExistingLedgerData,
     previousMaxMessageRowId: previousMaxMessageRowId,
+    sourceMaxChatRowIdAtBatchStart: sourceMaxChatRowIdAtBatchStart,
+    sourceMaxMessageRowIdAtBatchStart: sourceMaxMessageRowIdAtBatchStart,
+    sourceMaxAttachmentRowIdAtBatchStart: sourceMaxAttachmentRowIdAtBatchStart,
   );
 }

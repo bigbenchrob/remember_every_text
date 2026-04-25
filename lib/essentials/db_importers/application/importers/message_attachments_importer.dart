@@ -43,6 +43,9 @@ class MessageAttachmentsImporter extends BaseTableImporter
       messageIds: <int>{...messageIds, ...recoveredMessageIds},
       attachmentIds: attachmentIds.toSet(),
       minAttachmentSourceRowIdExclusive: ctx.previousMaxMessageAttachmentRowId,
+      maxMessageSourceRowIdInclusive: ctx.sourceMaxMessageRowIdAtBatchStart,
+      maxAttachmentSourceRowIdInclusive:
+          ctx.sourceMaxAttachmentRowIdAtBatchStart,
     );
 
     if (joinPairs.isEmpty) {
@@ -188,6 +191,8 @@ Future<Set<({int messageId, int attachmentId})>> _collectJoinPairs(
   required Set<int> messageIds,
   required Set<int> attachmentIds,
   int? minAttachmentSourceRowIdExclusive,
+  int? maxMessageSourceRowIdInclusive,
+  int? maxAttachmentSourceRowIdInclusive,
 }) async {
   final pairs = <({int messageId, int attachmentId})>{};
 
@@ -224,10 +229,23 @@ Future<Set<({int messageId, int attachmentId})>> _collectJoinPairs(
   await collectForIds(attachmentIds, 'attachment_id');
 
   if (pairs.isEmpty && minAttachmentSourceRowIdExclusive != null) {
-    final fallbackRows = await messagesDb.rawQuery(
+    final fallbackSql = StringBuffer(
       'SELECT message_id, attachment_id FROM message_attachment_join '
       'WHERE attachment_id > ?',
-      <Object>[minAttachmentSourceRowIdExclusive],
+    );
+    final fallbackArgs = <Object>[minAttachmentSourceRowIdExclusive];
+    if (maxAttachmentSourceRowIdInclusive != null) {
+      fallbackSql.write(' AND attachment_id <= ?');
+      fallbackArgs.add(maxAttachmentSourceRowIdInclusive);
+    }
+    if (maxMessageSourceRowIdInclusive != null) {
+      fallbackSql.write(' AND message_id <= ?');
+      fallbackArgs.add(maxMessageSourceRowIdInclusive);
+    }
+
+    final fallbackRows = await messagesDb.rawQuery(
+      fallbackSql.toString(),
+      fallbackArgs,
     );
     for (final row in fallbackRows) {
       final messageId = row['message_id'] as int?;
