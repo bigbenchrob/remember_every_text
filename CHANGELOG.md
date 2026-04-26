@@ -10,6 +10,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - No unreleased changes yet.
 
+## [0.1.15] — 2026-04-26
+
+### Added
+
+- Settings now includes a Message History Coverage report with a durable sidebar selection and a derived center-panel report so testers can review coverage status in a stronger, more readable report surface.
+
+### Fixed
+
+- Transient Settings actions such as `Send logs…` and `Reset message data…` now fully replace the visible Settings child flow and no longer restore an older durable Settings child after switching away from Settings and back.
+
 ## [0.1.14] — 2026-04-25
 
 ### Added
