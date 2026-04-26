@@ -1,0 +1,50 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'message_history_coverage_settings_resolver.dart';
+
+// **************************************************************************
+// RiverpodGenerator
+// **************************************************************************
+
+String _$messageHistoryCoverageReportHash() =>
+    r'89a27df9cb67931e0bb3f3943000aeb2b484a383';
+
+/// See also [messageHistoryCoverageReport].
+@ProviderFor(messageHistoryCoverageReport)
+final messageHistoryCoverageReportProvider =
+    AutoDisposeFutureProvider<MessageHistoryCoverageReport>.internal(
+      messageHistoryCoverageReport,
+      name: r'messageHistoryCoverageReportProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$messageHistoryCoverageReportHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef MessageHistoryCoverageReportRef =
+    AutoDisposeFutureProviderRef<MessageHistoryCoverageReport>;
+String _$messageHistoryCoverageSettingsResolverHash() =>
+    r'1e0d232c0484e76562834e4599d17e767d89cc46';
+
+/// See also [MessageHistoryCoverageSettingsResolver].
+@ProviderFor(MessageHistoryCoverageSettingsResolver)
+final messageHistoryCoverageSettingsResolverProvider =
+    AutoDisposeNotifierProvider<
+      MessageHistoryCoverageSettingsResolver,
+      void
+    >.internal(
+      MessageHistoryCoverageSettingsResolver.new,
+      name: r'messageHistoryCoverageSettingsResolverProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$messageHistoryCoverageSettingsResolverHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+typedef _$MessageHistoryCoverageSettingsResolver = AutoDisposeNotifier<void>;
+// ignore_for_file: type=lint
+// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

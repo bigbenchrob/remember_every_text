@@ -6,7 +6,7 @@ part of 'sidebar_mode_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$activeSidebarModeHash() => r'1a4730de5b8ab96100b74b19548c77fea48d6779';
+String _$activeSidebarModeHash() => r'580a4232ea5cdb42a3d0987bf437ed2378b961b0';
 
 /// Controls the active sidebar mode (Messages vs Settings).
 ///

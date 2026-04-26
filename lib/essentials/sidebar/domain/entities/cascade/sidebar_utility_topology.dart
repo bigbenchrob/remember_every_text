@@ -30,6 +30,10 @@ CassetteSpec? resolveSidebarUtilityChild(
     },
     settingsMenu: () {
       switch (context?.persistentSettingsContext) {
+        case SettingsMenuActionId.messageHistoryCoverage:
+          return const CassetteSpec.settings(
+            SettingsCassetteSpec.messageHistoryCoverageOverview(),
+          );
         case SettingsMenuActionId.textSize:
           return sidebarUtilitySettingsChildTextSizeInfo();
         case SettingsMenuActionId.imageSize:

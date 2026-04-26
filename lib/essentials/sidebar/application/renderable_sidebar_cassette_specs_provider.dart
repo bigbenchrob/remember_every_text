@@ -1,6 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
 import '../../navigation/domain/sidebar_mode.dart';
 import '../domain/entities/cassette_spec.dart';
 import 'cassette_rack_state_provider.dart';
@@ -26,6 +27,20 @@ List<RenderableSidebarCassetteSpec> renderableSidebarCassetteSpecs(
   final stableRack = ref.watch(cassetteRackStateProvider(mode));
   final ephemeralRack = ref.watch(ephemeralCassetteProjectionProvider(mode));
 
+  if (_shouldOverlaySettingsEphemeralFlow(
+    mode: mode,
+    stableRack: stableRack,
+    ephemeralRack: ephemeralRack,
+  )) {
+    return List<RenderableSidebarCassetteSpec>.unmodifiable([
+      ..._renderableSidebarSpecs(
+        rack: CassetteRack(cassettes: [stableRack.cassettes.first]),
+        cassetteIndexOffset: 0,
+      ),
+      ..._renderableSidebarSpecs(rack: ephemeralRack, cassetteIndexOffset: 1),
+    ]);
+  }
+
   return List<RenderableSidebarCassetteSpec>.unmodifiable([
     ..._renderableSidebarSpecs(rack: stableRack, cassetteIndexOffset: 0),
     ..._renderableSidebarSpecs(
@@ -33,6 +48,30 @@ List<RenderableSidebarCassetteSpec> renderableSidebarCassetteSpecs(
       cassetteIndexOffset: stableRack.cassettes.length,
     ),
   ]);
+}
+
+bool _shouldOverlaySettingsEphemeralFlow({
+  required SidebarMode mode,
+  required CassetteRack stableRack,
+  required CassetteRack ephemeralRack,
+}) {
+  if (mode != SidebarMode.settings) {
+    return false;
+  }
+
+  if (ephemeralRack.cassettes.isEmpty || stableRack.cassettes.isEmpty) {
+    return false;
+  }
+
+  return stableRack.cassettes.first.maybeWhen(
+    sidebarUtility: (sidebarUtilitySpec) {
+      return sidebarUtilitySpec ==
+          const SidebarUtilityCassetteSpec.settingsMenu();
+    },
+    orElse: () {
+      return false;
+    },
+  );
 }
 
 List<RenderableSidebarCassetteSpec> _renderableSidebarSpecs({

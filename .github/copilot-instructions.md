@@ -24,15 +24,17 @@ You MUST read these files in order before any code changes:
 4. **`_AGENT_INSTRUCTIONS/agent-instructions-shared/20-flutter/widgets.md`** - Flutter-specific standards, widget patterns, and state expectations
 5. **`_AGENT_INSTRUCTIONS/agent-instructions-shared/20-flutter/riverpod-provider-patterns.md`** - MANDATORY provider code generation patterns
 6. **`_AGENT_INSTRUCTIONS/agent-per-project/05-COLOR-AND-TYPOGRAPHY-THEMING/05-dark-mode-theming.md`** - Dark mode hierarchy principles and semantic token design
-7. **`_AGENT_INSTRUCTIONS/agent-per-project/10-DATABASES/00-all-databases-accessed.md`** - Database access patterns and schema references
-8. **`_AGENT_INSTRUCTIONS/agent-per-project/10-DATABASES/06-addressbook-path-resolution.md`** - AddressBook path resolution (CRITICAL for imports)
-9. **`_AGENT_INSTRUCTIONS/agent-per-project/00-PROJECT/01-aggregate-boundaries.md`** - DDD structure and aggregate boundaries
-10. **`_AGENT_INSTRUCTIONS/agent-per-project/00-PROJECT/02-architecture-overview.md`** - Project architecture and DDD layer responsibilities
-11. **`_AGENT_INSTRUCTIONS/agent-per-project/50-CROSS-SURFACE-SPEC-SYSTEMS-OVERVIEW/`** - 🔥 CRITICAL: How sealed spec classes coordinate UI across all surfaces
-12. **`_AGENT_INSTRUCTIONS/agent-per-project/52-FEATURE-HANDLING-OF-X-SURFACE-SPECS/`** - Universal coordinator → resolver → widget_builder pattern
-13. **`_AGENT_INSTRUCTIONS/agent-per-project/54-SIDEBAR-CASSETTE-SPEC-SYSTEM/`** - Sidebar cassette rack, cascade, card chrome
-14. **`_AGENT_INSTRUCTIONS/agent-per-project/56-VIEW-SPEC-PANEL-CONTENT-SYSTEM/`** - ViewSpec panel navigation and feature dispatch
-15. **`_AGENT_INSTRUCTIONS/agent-per-project/60-BUILD-CONSIDERATIONS/02-macos-fda-grant-continuity.md`** - 🔥 MUST-READ before any production build; preserve bundle id and release signing so macOS Full Disk Access grants carry over across shipped builds
+7. **`_AGENT_INSTRUCTIONS/agent-per-project/07-CENTER-PANEL-LAYOUTS/00-center-panel-control-panels-and-infographics.md`** - Center-panel report, control-panel, and infographic composition rules
+8. **`_AGENT_INSTRUCTIONS/agent-per-project/08-SIDEBAR-LAYOUTS/00-sidebar-cassettes-controls-and-info-cards.md`** - Sidebar cassette, control-stack, and info-card composition rules
+9. **`_AGENT_INSTRUCTIONS/agent-per-project/10-DATABASES/00-all-databases-accessed.md`** - Database access patterns and schema references
+10. **`_AGENT_INSTRUCTIONS/agent-per-project/10-DATABASES/06-addressbook-path-resolution.md`** - AddressBook path resolution (CRITICAL for imports)
+11. **`_AGENT_INSTRUCTIONS/agent-per-project/00-PROJECT/01-aggregate-boundaries.md`** - DDD structure and aggregate boundaries
+12. **`_AGENT_INSTRUCTIONS/agent-per-project/00-PROJECT/02-architecture-overview.md`** - Project architecture and DDD layer responsibilities
+13. **`_AGENT_INSTRUCTIONS/agent-per-project/50-CROSS-SURFACE-SPEC-SYSTEMS-OVERVIEW/`** - 🔥 CRITICAL: How sealed spec classes coordinate UI across all surfaces
+14. **`_AGENT_INSTRUCTIONS/agent-per-project/52-FEATURE-HANDLING-OF-X-SURFACE-SPECS/`** - Universal coordinator → resolver → widget_builder pattern
+15. **`_AGENT_INSTRUCTIONS/agent-per-project/54-SIDEBAR-CASSETTE-SPEC-SYSTEM/`** - Sidebar cassette rack, cascade, card chrome
+16. **`_AGENT_INSTRUCTIONS/agent-per-project/56-VIEW-SPEC-PANEL-CONTENT-SYSTEM/`** - ViewSpec panel navigation and feature dispatch
+17. **`_AGENT_INSTRUCTIONS/agent-per-project/60-BUILD-CONSIDERATIONS/02-macos-fda-grant-continuity.md`** - 🔥 MUST-READ before any production build; preserve bundle id and release signing so macOS Full Disk Access grants carry over across shipped builds
 
 ## Quick Reference Code Standards
 - **Primary import**: Always use `hooks_riverpod`, never `flutter_riverpod`

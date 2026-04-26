@@ -1,0 +1,660 @@
+FEATURE REFACTOR SEED: Message History Coverage Center Panel
+
+Feature Folder
+
+message-history-coverage-REFACTOR
+
+Purpose
+
+Refactor Message History Coverage from a sidebar-only diagnostic summary into a stronger center-panel trust experience.
+
+The current implementation is technically useful, but visually underwhelming. It reports the numbers, but it does not strongly communicate the core reassurance:
+
+Every message available in this Mac’s chat.db has been accounted for.
+
+This refactor should turn Message History Coverage into a clear, confidence-building visual report.
+
+Product Goal
+
+Users who worry that MessageLens is missing messages should be able to open this panel and immediately understand:
+
+1. How many messages exist in this Mac’s local Messages database.
+2. How many are visible in normal MessageLens timelines.
+3. How many are recovered/unlinked.
+4. Whether any messages are truly missing from the MessageLens import.
+5. What date range this Mac’s local Messages history actually covers.
+
+This feature should distinguish between:
+
+* “MessageLens missed messages”
+* “This Mac’s chat.db does not contain older messages”
+* “Some messages exist but are not linked to normal chats”
+* “The user is looking through a filtered or incomplete view”
+
+Core Reframe
+
+Do not treat this as a raw diagnostic readout.
+
+Treat it as a message reconciliation report.
+
+The center panel should answer:
+
+“Did every message from chat.db end up somewhere in MessageLens?”
+
+The emotional takeaway should be:
+
+“Yes. Nothing disappeared.”
+
+Placement
+
+Keep the existing Settings / Support entry point.
+
+Sidebar cassette:
+
+Title: Message History Coverage
+
+Primary purpose:
+
+* Introduce the diagnostic
+* Provide the entry point
+* Show brief status only
+
+The detailed report belongs in the center panel.
+
+The sidebar should not carry the full visual or numerical burden.
+
+Desired User Experience
+
+User chooses:
+
+Settings → Support → Message History Coverage
+
+Then the center panel shows a rich report.
+
+The top of the panel should be a hero reassurance section:
+
+Every message on this Mac has been accounted for
+
+or, when incomplete:
+
+Some messages could not be accounted for
+
+or, when source history is limited:
+
+MessageLens imported everything available on this Mac, but this Mac’s Messages history starts on {earliest date}
+
+Required Center Panel Sections
+
+1. Hero Status
+
+Show a large status statement.
+
+For complete status:
+
+Every message on this Mac has been accounted for.
+
+Supporting text:
+
+MessageLens reconciled the messages in your Mac’s local Messages database with the messages imported into MessageLens.
+
+For incomplete import:
+
+Some messages in your Mac’s Messages database were not imported into MessageLens.
+
+For incomplete source history:
+
+MessageLens accounted for all messages available on this Mac, but this Mac’s local Messages history begins on {earliest date}.
+
+For unknown:
+
+MessageLens could not complete the coverage check.
+
+2. Message Accounting Bar
+
+Add a prominent horizontal visual bar representing all messages found in chat.db.
+
+The bar should be split into categories:
+
+* Visible in MessageLens timelines
+* Recovered / unlinked
+* Missing
+
+When missing is zero, the missing segment should either be omitted or represented only as a small “0 missing” badge.
+
+This should visually communicate:
+
+All source messages are accounted for somewhere.
+
+The bar should not be decorative only. It should be driven by the report payload.
+
+Example conceptual model:
+
+Total messages on this Mac = visible + recovered + missing
+
+Important:
+
+The current report may show “accounted” greater than “chatDbTotal” because of reconciliation or duplicate accounting edge cases. The UI must not allow this to undermine trust.
+
+If accounted > chatDbTotal, the visual bar should be normalized against chatDbTotal and the report should include a small technical note such as:
+
+MessageLens found a small overlap while reconciling visible and recovered messages. The coverage result is still complete because no source messages are missing.
+
+Do not display “119,068 accounted for out of 119,065” as the primary message.
+
+3. Reconciliation Statement
+
+Show an explicit equation-style summary.
+
+For example:
+
+119,065 messages in chat.db
+
+109,411 visible in MessageLens timelines
+
+9,657 recovered / unlinked
+
+0 missing
+
+Result: complete
+
+Do not overemphasize “accounted” if it exceeds chatDbTotal. Prefer “missing = 0” as the trust anchor.
+
+The phrase “fully reconciled” is preferred over “import complete” because it captures the visible/recovered distinction.
+
+4. Timeline Coverage Strip
+
+Show a date range visualization.
+
+At minimum:
+
+* earliest message date
+* latest message date
+* visual strip from earliest year to latest year
+
+For the current user’s sample report:
+
+Earliest: Jan 1, 2014
+
+Latest: Apr 26, 2026
+
+The strip should reinforce:
+
+This is the date coverage of this Mac’s local Messages database.
+
+It must not imply that MessageLens can know whether older messages exist on another device.
+
+Suggested copy:
+
+This Mac’s local Messages history covers:
+
+Jan 1, 2014 → Apr 26, 2026
+
+If the earliest date seems unexpectedly recent, the panel should suggest checking another Apple device or iCloud sync.
+
+5. Recovered Messages Explanation
+
+Recovered / unlinked messages should not be treated as an error.
+
+Explain:
+
+Recovered messages are messages that exist in the Messages database but are not linked to a normal chat thread in the way MessageLens expects. They are still accounted for.
+
+If there is or will be a recovered-messages browser, provide an action:
+
+Explore Recovered Messages
+
+If that feature does not exist yet, include it as a disabled or future action only if consistent with current UI conventions.
+
+6. Troubleshooting / Next Steps
+
+Include concise next steps only when useful.
+
+For complete status:
+
+No action needed. MessageLens has accounted for all messages available on this Mac.
+
+If the user expected older messages:
+
+* Check the same conversation on an iPhone, iPad, or another Mac.
+* Search for a specific older message you remember.
+* On this Mac, open Messages → Settings → iMessage → Sync Now.
+* Ensure Messages in iCloud is enabled.
+
+For incomplete import:
+
+* Recommend rerunning import or reset/rebuild flow only if that is a supported safe path.
+* Avoid destructive language.
+* Do not suggest deleting user data.
+
+For unknown:
+
+* Recommend exporting diagnostic data.
+
+Visual / Interaction Goals
+
+The center panel should feel like a polished report, not a log dump.
+
+Desired feel:
+
+* Calm
+* Trustworthy
+* Evidence-based
+* Reassuring
+* Slightly celebratory when complete
+
+Avoid:
+
+* Dense raw text
+* Debug jargon
+* Overly technical explanations at the top
+* Making recovered messages sound like lost messages
+* Showing contradictory arithmetic as the headline
+
+Suggested Layout
+
+Top:
+
+Message History Coverage
+
+Large status badge:
+
+Complete / Needs Attention / Source History Limited / Unknown
+
+Hero sentence:
+
+Every message on this Mac has been accounted for.
+
+Middle:
+
+Message Accounting Bar
+
+Legend:
+
+Visible in timelines
+Recovered / unlinked
+Missing
+
+Then:
+
+Reconciliation card
+
+Source messages: X
+Visible: Y
+Recovered: Z
+Missing: M
+
+Bottom:
+
+Timeline Coverage card
+
+This Mac’s local Messages history:
+{earliest} → {latest}
+
+Then:
+
+Actions:
+
+Export Coverage Report
+Explore Recovered Messages
+Show Troubleshooting Steps
+
+Data Requirements
+
+Existing report fields appear sufficient for first refactor:
+
+generatedAt
+chatDbTotal
+visible
+recovered
+accounted
+missing
+earliest
+latest
+status
+detail
+
+The UI should be robust when:
+
+* earliest is null
+* latest is null
+* status is unknown
+* accounted differs from chatDbTotal
+* recovered is zero
+* visible is zero
+* missing is nonzero
+* chatDbTotal is zero
+
+Important Sample Report
+
+Use this as a representative report during development:
+
+generatedAt: 2026-04-26T16:27:04.963771Z
+chatDbTotal: 119065
+visible: 109411
+recovered: 9657
+accounted: 119068
+missing: 0
+earliest: 2014-01-01T22:34:07.000Z
+latest: 2026-04-26T16:21:42.000Z
+status: complete
+detail: null
+
+Note the small +3 accounted discrepancy. The UI must handle this gracefully and must not present it as the main story.
+
+Architecture Requirements
+
+Respect existing MessageLens architecture:
+
+* Coordinators route; they do not build widgets.
+* Coordinators must not ref.watch.
+* Resolvers return data/view models, not widgets.
+* Center panel should be driven by a durable view spec or equivalent existing center-panel mechanism.
+* Sidebar entry should dispatch a typed intent or otherwise update flow state according to current topology rules.
+* Feature payloads should be immutable data.
+* Presentation should live in widget builders / feature UI layer.
+* No database access from widgets.
+* No ad hoc state hidden inside widgets that affects durable navigation.
+
+Suggested Refactor Shape
+
+Sidebar
+
+The sidebar cassette should become a compact entry/status card.
+
+It may show:
+
+Message History Coverage
+
+Status: Complete
+
+Every message on this Mac is accounted for.
+
+Open Coverage Report
+
+The full numbers belong in the center panel.
+
+Center Panel
+
+Add or reuse a center-panel view spec for support diagnostics.
+
+Potential names:
+
+SupportCoverageReportViewSpec
+MessageHistoryCoveragePanelSpec
+MessageCoverageReportViewSpec
+
+The selected name should fit existing project conventions.
+
+The center panel should receive a payload or view model that includes:
+
+* headline
+* status
+* counts
+* normalized bar segments
+* date coverage
+* explanatory notes
+* available actions
+
+View Model Recommendations
+
+Create a view model specifically for presentation so the widget is not doing business logic.
+
+Suggested fields:
+
+MessageCoveragePanelViewModel
+
+* statusLabel
+* headline
+* summaryText
+* chatDbTotal
+* visibleCount
+* recoveredCount
+* missingCount
+* earliestLabel
+* latestLabel
+* generatedAtLabel
+* segments
+* notes
+* actions
+
+Segment model:
+
+CoverageSegmentViewModel
+
+* id
+* label
+* count
+* fraction
+* semanticKind
+
+semanticKind values:
+
+* visible
+* recovered
+* missing
+
+Important:
+
+fractions should be normalized safely.
+
+If chatDbTotal > 0:
+
+visible fraction = min(visible / chatDbTotal, 1.0)
+recovered fraction should fit remaining space when missing is zero and visible + recovered exceeds chatDbTotal because of overlap.
+
+Avoid drawing a bar whose total exceeds 100%.
+
+Handling the +3 Accounted Discrepancy
+
+The current sample report has:
+
+chatDbTotal = 119,065
+visible = 109,411
+recovered = 9,657
+accounted = 119,068
+missing = 0
+
+visible + recovered exceeds chatDbTotal by 3.
+
+This should be treated as a reconciliation overlap, not a failure.
+
+Recommended display behavior:
+
+Primary:
+
+Missing: 0
+
+Secondary note:
+
+MessageLens detected a small overlap between visible and recovered accounting. No source messages are missing.
+
+Do not show:
+
+119,068 / 119,065 accounted
+
+as the main headline.
+
+Longer-term, consider having the resolver compute:
+
+uniqueAccountedCount
+overlapCount
+duplicateAccountingCount
+
+But this refactor can handle the existing fields gracefully.
+
+Copy Guidelines
+
+Prefer:
+
+Every message on this Mac has been accounted for.
+
+All source messages were reconciled.
+
+No missing messages were detected.
+
+Recovered messages are accounted for, but not linked to ordinary chat timelines.
+
+This Mac’s local Messages history begins on {date}.
+
+Avoid:
+
+All your messages are present.
+
+This is too broad because older messages may exist on another Apple device.
+
+Avoid:
+
+Recovered messages were deleted.
+
+This may be true in some cases, but should not be asserted without evidence.
+
+Avoid:
+
+Your iCloud is incomplete.
+
+The app cannot know this directly.
+
+Acceptance Criteria
+
+The feature is successful when:
+
+1. Selecting Message History Coverage in Settings opens a center-panel report.
+2. The sidebar no longer carries the full report burden.
+3. Complete status produces an immediately reassuring headline.
+4. Counts are still available but visually organized.
+5. A horizontal accounting bar shows visible / recovered / missing proportions.
+6. Missing = 0 is prominent.
+7. Recovered messages are explained as accounted-for, not lost.
+8. Earliest/latest date range is shown clearly.
+9. The sample report with accounted > chatDbTotal does not create confusing UI.
+10. Export Coverage Report remains available.
+11. No widgets are returned from coordinators.
+12. No resolver logic leaks into widgets.
+13. Existing tests for message coverage continue to pass or are updated to reflect the center-panel model.
+14. New tests cover the view model logic for complete, incomplete_import, incomplete_source_history, unknown, and accounted-greater-than-source cases.
+
+Suggested Test Cases
+
+Complete
+
+Input:
+
+chatDbTotal 100
+visible 90
+recovered 10
+accounted 100
+missing 0
+status complete
+
+Expected:
+
+headline says every message is accounted for
+missing displays as 0
+bar has visible and recovered segments
+no warning
+
+Complete with accounting overlap
+
+Input:
+
+chatDbTotal 100
+visible 90
+recovered 12
+accounted 102
+missing 0
+status complete
+
+Expected:
+
+headline remains complete
+bar normalizes to 100%
+note explains small overlap
+does not display 102 / 100 as headline
+
+Incomplete import
+
+Input:
+
+chatDbTotal 100
+visible 80
+recovered 10
+accounted 90
+missing 10
+status incomplete_import
+
+Expected:
+
+headline says some messages could not be accounted for
+missing segment is visible
+next step suggests safe import/rebuild guidance if supported
+
+Incomplete source history
+
+Input:
+
+chatDbTotal 100
+visible 95
+recovered 5
+missing 0
+earliest recent
+status incomplete_source_history
+
+Expected:
+
+headline says MessageLens accounted for this Mac’s messages, but this Mac’s history starts on earliest date
+troubleshooting suggests checking other devices / Sync Now
+
+Unknown
+
+Input:
+
+status unknown
+
+Expected:
+
+panel explains coverage check could not be completed
+export diagnostic/report action remains available if possible
+
+Non-Goals For This Refactor
+
+Do not implement Historical Archive Merge in this slice.
+
+Do not implement iCloud sync detection in this slice.
+
+Do not implement per-contact coverage in this slice.
+
+Do not implement attachment coverage in this slice.
+
+Do not redesign the entire Settings topology.
+
+Do not make destructive repair/reset actions part of this report.
+
+Future Hooks
+
+This panel should be designed so it can later incorporate:
+
+* Historical archive sources such as Archive_2012
+* Per-source provenance
+* Per-year coverage
+* Per-contact coverage
+* Attachment coverage
+* Multi-device comparison notes
+* Recovered message browser
+
+In particular, avoid hardcoding that there is only one source forever. Current Mac is the first source, not necessarily the only eventual source.
+
+Product Rationale
+
+This feature is strategically important because message-history anxiety is a major trust risk.
+
+When a user says:
+
+“I know I had more messages than this,”
+
+MessageLens needs a calm answer:
+
+“Here is what exists on this Mac. Here is what MessageLens imported. Here is what is visible. Here is what is recovered. Here is what is missing.”
+
+That turns a support problem into a trust-building experience.
+
+The center panel should feel like a clear audit certificate for the user’s message history.

@@ -161,7 +161,7 @@ void main() {
     );
 
     test(
-      'renders stable settings cassettes before ephemeral settings projection',
+      'renders settings menu plus ephemeral settings projection while hiding durable settings children',
       () async {
         container
             .read(cassetteRackStateProvider(SidebarMode.settings).notifier)
@@ -188,15 +188,12 @@ void main() {
           SidebarMode.settings,
         );
 
-        expect(resolved, hasLength(3));
+        expect(resolved, hasLength(2));
         expect(
           resolved.map((cassette) => cassette.spec).toList(growable: false),
           equals([
             const CassetteSpec.sidebarUtility(
               SidebarUtilityCassetteSpec.settingsMenu(),
-            ),
-            const CassetteSpec.settings(
-              SettingsCassetteSpec.textSizePlaceholder(),
             ),
             const CassetteSpec.settings(SettingsCassetteSpec.sendLogsPanel()),
           ]),

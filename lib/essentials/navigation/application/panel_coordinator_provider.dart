@@ -5,6 +5,8 @@ import '../../../features/environment_readiness/feature_level_providers.dart'
     as environment_readiness_feature;
 import '../../../features/messages/feature_level_providers.dart'
     as messages_feature;
+import '../../../features/settings/feature_level_providers.dart'
+    as settings_feature;
 import '../../db_importers/presentation/view/db_import_control_panel.dart';
 import '../../db_importers/presentation/view_model/db_import_control_provider.dart';
 import '../../onboarding/domain/import_spec.dart';
@@ -63,6 +65,9 @@ class PanelCoordinator extends _$PanelCoordinator {
       messages: (messagesSpec) => ref
           .read(messages_feature.viewSpecCoordinatorProvider.notifier)
           .buildForSpec(messagesSpec),
+      settings: (settingsSpec) => ref
+          .read(settings_feature.viewSpecCoordinatorProvider.notifier)
+          .buildForSpec(settingsSpec),
       import: _buildImportPanel,
       environmentReadiness: (readinessSpec) => ref
           .read(

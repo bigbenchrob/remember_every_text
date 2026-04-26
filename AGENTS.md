@@ -9,6 +9,7 @@
 🚨 **MANDATORY SECOND STEP**: Read [`_AGENT_INSTRUCTIONS/agent-per-project/README.md`](_AGENT_INSTRUCTIONS/agent-per-project/README.md) before making ANY code changes.
 
 This README contains the canonical index to all project documentation including:
+
 - Critical import patterns and database access rules
 - DDD architecture and aggregate boundaries
 - Riverpod provider code generation patterns
@@ -18,36 +19,44 @@ This README contains the canonical index to all project documentation including:
 ## Essential Documentation
 
 ### Must-Read Before Coding
+
 1. **[Agent Guardrails](_AGENT_INSTRUCTIONS/agent-instructions-shared/00-global/agent-guardrails.md)** - Global planning and change-control rules
 2. **[Project README](_AGENT_INSTRUCTIONS/agent-per-project/README.md)** - Canonical index
 3. **[Dart Guidelines](_AGENT_INSTRUCTIONS/agent-instructions-shared/10-language/dart.md)** - Language rules, async patterns, null-safety expectations
 4. **[Flutter Widget Guidelines](_AGENT_INSTRUCTIONS/agent-instructions-shared/20-flutter/widgets.md)** - Composition, navigation, and state management rules
 5. **[Riverpod Patterns](_AGENT_INSTRUCTIONS/agent-instructions-shared/20-flutter/riverpod-provider-patterns.md)** - MANDATORY code generation patterns
-6. **[Database Access](_AGENT_INSTRUCTIONS/agent-per-project/10-DATABASES/00-all-databases-accessed.md)** - Critical: Use centralized providers only
-7. **[Dark Mode Theming](_AGENT_INSTRUCTIONS/agent-per-project/05-COLOR-AND-TYPOGRAPHY-THEMING/05-dark-mode-theming.md)** - Luminance hierarchy, selection contrast, semantic token rules
-8. **[Architecture Overview](_AGENT_INSTRUCTIONS/agent-per-project/00-PROJECT/02-architecture-overview.md)** - DDD layers and responsibilities
-9. **[Cross-Surface Spec Systems](_AGENT_INSTRUCTIONS/agent-per-project/50-CROSS-SURFACE-SPEC-SYSTEMS-OVERVIEW/)** - 🔥 CRITICAL: How sealed spec classes coordinate UI across all surfaces
-10. **[Feature Spec Handling](_AGENT_INSTRUCTIONS/agent-per-project/52-FEATURE-HANDLING-OF-X-SURFACE-SPECS/)** - Universal coordinator → resolver → widget_builder pattern
-11. **[Sidebar Cassette System](_AGENT_INSTRUCTIONS/agent-per-project/54-SIDEBAR-CASSETTE-SPEC-SYSTEM/)** - Rack state, cascade, card chrome
-12. **[View Spec Panel System](_AGENT_INSTRUCTIONS/agent-per-project/56-VIEW-SPEC-PANEL-CONTENT-SYSTEM/)** - ViewSpec panel navigation and feature dispatch
-13. **[macOS FDA Grant Continuity](_AGENT_INSTRUCTIONS/agent-per-project/60-BUILD-CONSIDERATIONS/02-macos-fda-grant-continuity.md)** - 🔥 MUST-READ before any production build; preserve bundle id and release signing so existing Full Disk Access grants carry over
+6. **[Dark Mode Theming](_AGENT_INSTRUCTIONS/agent-per-project/05-COLOR-AND-TYPOGRAPHY-THEMING/05-dark-mode-theming.md)** - Luminance hierarchy, selection contrast, semantic token rules
+7. **[Center Panel Layouts](_AGENT_INSTRUCTIONS/agent-per-project/07-CENTER-PANEL-LAYOUTS/00-center-panel-control-panels-and-infographics.md)** - Report, control-panel, and infographic composition rules
+8. **[Sidebar Layouts](_AGENT_INSTRUCTIONS/agent-per-project/08-SIDEBAR-LAYOUTS/00-sidebar-cassettes-controls-and-info-cards.md)** - Cassette, control-stack, and info-card composition rules
+9. **[Database Access](_AGENT_INSTRUCTIONS/agent-per-project/10-DATABASES/00-all-databases-accessed.md)** - Critical: Use centralized providers only
+10. **[Architecture Overview](_AGENT_INSTRUCTIONS/agent-per-project/00-PROJECT/02-architecture-overview.md)** - DDD layers and responsibilities
+11. **[Cross-Surface Spec Systems](_AGENT_INSTRUCTIONS/agent-per-project/50-CROSS-SURFACE-SPEC-SYSTEMS-OVERVIEW/)** - 🔥 CRITICAL: How sealed spec classes coordinate UI across all surfaces
+12. **[Feature Spec Handling](_AGENT_INSTRUCTIONS/agent-per-project/52-FEATURE-HANDLING-OF-X-SURFACE-SPECS/)** - Universal coordinator → resolver → widget_builder pattern
+13. **[Sidebar Cassette System](_AGENT_INSTRUCTIONS/agent-per-project/54-SIDEBAR-CASSETTE-SPEC-SYSTEM/)** - Rack state, cascade, card chrome
+14. **[View Spec Panel System](_AGENT_INSTRUCTIONS/agent-per-project/56-VIEW-SPEC-PANEL-CONTENT-SYSTEM/)** - ViewSpec panel navigation and feature dispatch
+15. **[macOS FDA Grant Continuity](_AGENT_INSTRUCTIONS/agent-per-project/60-BUILD-CONSIDERATIONS/02-macos-fda-grant-continuity.md)** - 🔥 MUST-READ before any production build; preserve bundle id and release signing so existing Full Disk Access grants carry over
 
 ### Quick Reference
+
 - **Lint Antipatterns**: [`_AGENT_INSTRUCTIONS/agent-instructions-shared/10-language/linter-antipatterns.md`](_AGENT_INSTRUCTIONS/agent-instructions-shared/10-language/linter-antipatterns.md) - One-stop list of analyzer tripwires
 - **Navigation / View Spec System**: [`_AGENT_INSTRUCTIONS/agent-per-project/56-VIEW-SPEC-PANEL-CONTENT-SYSTEM/`](_AGENT_INSTRUCTIONS/agent-per-project/56-VIEW-SPEC-PANEL-CONTENT-SYSTEM/)
 - **AddressBook Imports**: [`_AGENT_INSTRUCTIONS/agent-per-project/10-DATABASES/06-addressbook-path-resolution.md`](_AGENT_INSTRUCTIONS/agent-per-project/10-DATABASES/06-addressbook-path-resolution.md)
 - **Dark Mode Theming**: [`_AGENT_INSTRUCTIONS/agent-per-project/05-COLOR-AND-TYPOGRAPHY-THEMING/05-dark-mode-theming.md`](_AGENT_INSTRUCTIONS/agent-per-project/05-COLOR-AND-TYPOGRAPHY-THEMING/05-dark-mode-theming.md) - Luminance hierarchy and dark mode selection rules
+- **Center Panel Layouts**: [`_AGENT_INSTRUCTIONS/agent-per-project/07-CENTER-PANEL-LAYOUTS/00-center-panel-control-panels-and-infographics.md`](_AGENT_INSTRUCTIONS/agent-per-project/07-CENTER-PANEL-LAYOUTS/00-center-panel-control-panels-and-infographics.md) - Report composition rules for center-panel control surfaces and infographics
+- **Sidebar Layouts**: [`_AGENT_INSTRUCTIONS/agent-per-project/08-SIDEBAR-LAYOUTS/00-sidebar-cassettes-controls-and-info-cards.md`](_AGENT_INSTRUCTIONS/agent-per-project/08-SIDEBAR-LAYOUTS/00-sidebar-cassettes-controls-and-info-cards.md) - Composition rules for sidebar branches, controls, and explanatory cards
 - **Cross-Surface Spec Systems**: [`_AGENT_INSTRUCTIONS/agent-per-project/50-CROSS-SURFACE-SPEC-SYSTEMS-OVERVIEW/`](_AGENT_INSTRUCTIONS/agent-per-project/50-CROSS-SURFACE-SPEC-SYSTEMS-OVERVIEW/) - Architecture overview and inviolate rules
 - **Production Build / FDA Continuity**: [`_AGENT_INSTRUCTIONS/agent-per-project/60-BUILD-CONSIDERATIONS/02-macos-fda-grant-continuity.md`](_AGENT_INSTRUCTIONS/agent-per-project/60-BUILD-CONSIDERATIONS/02-macos-fda-grant-continuity.md) - Keep `com.bigbenchsoftware.MessageLens` and production signing stable so macOS FDA grants persist across shipped builds
 
 ## Critical Rules (Quick Reference)
 
 ### Imports & Dependencies
+
 - ✅ **Always use**: `hooks_riverpod` (never `flutter_riverpod`)
 - ✅ **Database access**: Use `sqfliteImportDatabaseProvider` & `driftWorkingDatabaseProvider` from `lib/essentials/db/feature_level_providers.dart`
 - ❌ **Never**: Create direct database instances (causes SQLite locking)
 
 ### 🔥 INVIOLABLE: Overlay / Working DB Separation
+
 - ✅ **User intent** (labels, favorites, spam flags, manual links): Write ONLY to overlay DB
 - ✅ **Import/migration**: Write ONLY to working DB (pure function of source data)
 - ✅ **Providers**: Merge working ∪ overlay at read time; **overlay always wins on conflict**
@@ -58,6 +67,7 @@ This README contains the canonical index to all project documentation including:
 - 📖 See [`_AGENT_INSTRUCTIONS/agent-per-project/10-DATABASES/07-overlay-database-independence.md`](_AGENT_INSTRUCTIONS/agent-per-project/10-DATABASES/07-overlay-database-independence.md)
 
 ### 🔥 INVIOLABLE: Record-Level Data Fidelity — No Suppression of Anomalous Records
+
 - ✅ **Every source record** MUST be faithfully imported, migrated, and **rendered visibly** in the UI
 - ✅ **Anomalies are diagnostic signals** — a NULL-text message may be attachment-only, a reaction, a system event, or evidence of a pipeline bug
 - ✅ **Correct response to anomalous data**: log it, render it (even imperfectly), flag it, investigate the root cause
@@ -69,6 +79,7 @@ This README contains the canonical index to all project documentation including:
 - 📖 See [`_AGENT_INSTRUCTIONS/agent-per-project/10-DATABASES/INVIOLATE_RULES.md`](_AGENT_INSTRUCTIONS/agent-per-project/10-DATABASES/INVIOLATE_RULES.md) Rule 2
 
 ### Code Standards
+
 - ✅ Color opacity: `withValues(alpha: 0.5)` (never `withOpacity`)
 - ✅ Control flow: Always use braces (never single-line statements)
 - ✅ Freezed classes: MUST be `abstract class`, never just `class`
@@ -79,12 +90,14 @@ This README contains the canonical index to all project documentation including:
 - ❌ **Never**: Use `MacosTheme.of(context)` or `Theme.of(context)` for colors/typography
 
 ### Solo Git Workflow
+
 - ✅ Housekeeping, maintenance, and small bug fixes that do not merit a version bump may be committed directly to `main`
 - ✅ Feature additions and other release-worthy changes should use a feature branch and pull request before merging to `main`
 - ✅ For release-worthy changes, agents should ensure checks are run and both `pubspec.yaml` and `CHANGELOG.md` are updated before merge
 - ❌ **Do not** require a PR for trivial housekeeping changes that are intentionally staying off the release track
 
 ### Riverpod Patterns
+
 - ✅ **Use documented patterns only** - Do NOT scan codebase for examples
 - ✅ All providers: Use `@riverpod` annotation with code generation
 - ✅ Class naming: `MyFeature extends _$MyFeature` → generates `myFeatureProvider`
@@ -127,6 +140,7 @@ test/                    # Tests mirroring lib/ structure
 ## For More Details
 
 See the comprehensive documentation in [`_AGENT_INSTRUCTIONS/`](_AGENT_INSTRUCTIONS/) for:
+
 - Detailed architecture and DDD boundaries
 - Complete code standards and linting rules
 - Database schema and migration patterns
@@ -142,9 +156,11 @@ See the comprehensive documentation in [`_AGENT_INSTRUCTIONS/`](_AGENT_INSTRUCTI
 ## Original Content (For Reference)
 
 ## Project Structure & Module Organization
+
 The Flutter client lives in `lib/`, organized by domain-driven modules: shared utilities in `core/` and `essentials/`, feature flows inside `features/`, and Riverpod providers in `providers.dart` plus generated `providers.g.dart`. Platform scaffolds remain in `macos/`, `ios/`, and `web/`. Mac database and Supabase artifacts are tracked under `supabase/`. The Rust message extractor is in `rust/rust/attributed-string-decoder/` with its release binary expected at `target/release/extract_messages_limited`. Tests sit in `test/` with scenario-focused groupings, and developer tooling such as data reformatters lives under `tool/`.
 
 ## Build, Test, and Development Commands
+
 - `flutter pub get` installs Flutter and plugin dependencies.
 - `flutter run -d macos` launches the desktop app against the live macOS databases.
 - `./tool/build_and_notarize.sh` is the default distribution pipeline for a shareable macOS release build and produces a notarized `MessageLens.dmg` on the Desktop.
@@ -154,13 +170,17 @@ The Flutter client lives in `lib/`, organized by domain-driven modules: shared u
 - `cargo build --release` and `cargo test` run within `rust/rust/attributed-string-decoder/` for the extractor.
 
 ## Coding Style & Naming Conventions
+
 Use `dart format .` (2-space indentation) before submitting. Prefer PascalCase for classes, camelCase for methods and variables, and snake_case for file names such as `timeline_view.dart`. Hook-based Riverpod providers should follow the `<feature>Provider` pattern. Keep generated files (`*.g.dart`, `frb_generated*.dart`) untouched; update them via the relevant build step instead of manual edits.
 
 ## Testing Guidelines
+
 Add `*_test.dart` files mirroring the `lib/` structure, grouping tests by feature name. Mock external I/O such as database imports; integration flows can use the extractor binary stubbed at `target/release/extract_messages_limited`. When modifying the Rust extractor, accompany changes with focused `#[test]` cases in `src/`. Aim to keep Flutter tests deterministic and runnable via `flutter test --coverage` before review.
 
 ## Commit & Pull Request Guidelines
+
 Recent history favors concise, present-tense commit messages (`fix scroll jitter`). Scope commits narrowly and explain intent in the first line. Pull requests should include a summary of user-visible behavior, linked tracking issue or TODO reference, screenshots for UI updates, and notes on manual verification (e.g., `flutter run -d macos`). Request review from a teammate familiar with the touched module.
 
 ## Security & Configuration Tips
+
 Never commit personal database exports or credential files; `.db` artifacts should stay in your local workspace. Confirm Full Disk Access permissions when testing imports, and verify the Rust binary’s execute bit (`chmod +x target/release/extract_messages_limited`) after rebuilding.

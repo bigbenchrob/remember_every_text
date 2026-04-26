@@ -1,0 +1,24 @@
+The center panel layout must be row-based, not panel-based.
+
+Each row must explicitly define its layout:
+
+* singleColumn (full width)
+* twoColumn (split evenly)
+
+Panels must not independently choose half-width or full-width.
+
+Update the layout builder so that:
+
+* Hero panel is placed in a singleColumn row
+* Accounting panel is placed in a singleColumn row
+* Reconciliation and Timeline panels are placed together in a twoColumn row
+* Recovered Messages panel is placed in a singleColumn row
+* Notes panel is placed in a singleColumn row
+
+Additionally:
+
+* In twoColumn rows, both panels must share equal height
+* Do not allow a single panel to occupy half a row by itself
+* Do not allow empty horizontal space within a row
+
+This should be enforced structurally in the layout system, not by individual panel styling.

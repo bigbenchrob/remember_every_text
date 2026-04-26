@@ -35,7 +35,7 @@ void main() {
         expect(payload.role, SidebarCassetteRole.appControl);
         expect(payload.promptLabel, 'Choose setting or action');
         expect(payload.persistentContextActionId, isNull);
-        expect(payload.rows, hasLength(6));
+        expect(payload.rows, hasLength(7));
         expect(payload.rows.first, isA<SettingsTopMenuGroupHeaderRow>());
         expect(
           (payload.rows.first as SettingsTopMenuGroupHeaderRow).label,
@@ -44,18 +44,31 @@ void main() {
         expect(payload.rows[1], isA<SettingsTopMenuActionRow>());
         expect(
           (payload.rows[1] as SettingsTopMenuActionRow).actionId,
-          SettingsMenuActionId.sendLogs,
+          SettingsMenuActionId.messageHistoryCoverage,
         );
         expect(
           (payload.rows[1] as SettingsTopMenuActionRow).intent,
+          isA<SettingsPersistentContextChosen>().having(
+            (intent) => intent.actionId,
+            'actionId',
+            SettingsMenuActionId.messageHistoryCoverage,
+          ),
+        );
+        expect(payload.rows[2], isA<SettingsTopMenuActionRow>());
+        expect(
+          (payload.rows[2] as SettingsTopMenuActionRow).actionId,
+          SettingsMenuActionId.sendLogs,
+        );
+        expect(
+          (payload.rows[2] as SettingsTopMenuActionRow).intent,
           isA<ShowSendLogsFlow>(),
         );
         expect(
-          (payload.rows[4] as SettingsTopMenuActionRow).actionId,
+          (payload.rows[5] as SettingsTopMenuActionRow).actionId,
           SettingsMenuActionId.textSize,
         );
         expect(
-          (payload.rows[4] as SettingsTopMenuActionRow).intent,
+          (payload.rows[5] as SettingsTopMenuActionRow).intent,
           isA<SettingsPersistentContextChosen>().having(
             (intent) => intent.actionId,
             'actionId',

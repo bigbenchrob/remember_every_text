@@ -3,6 +3,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../features/messages/domain/spec_classes/messages_view_spec.dart';
+import '../../../features/settings/domain/spec_classes/settings_view_spec.dart';
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../features/sidebar_utilities/feature_level_providers.dart';
 import '../../logging/application/app_logger.dart';
@@ -175,6 +176,31 @@ abstract class SidebarFlowState with _$SidebarFlowState {
           ),
         );
     }
+  }
+
+  ViewSpec? get projectedSettingsCenterSpec {
+    assert(() {
+      debugAssertValidSidebarFlowState(this);
+      return true;
+    }());
+
+    return switch (persistentSettingsContext) {
+      SettingsMenuActionId.messageHistoryCoverage => const ViewSpec.settings(
+        SettingsViewSpec.messageHistoryCoverageReport(),
+      ),
+      SettingsMenuActionId.textSize ||
+      SettingsMenuActionId.imageSize ||
+      SettingsMenuActionId.sendLogs ||
+      SettingsMenuActionId.resetMessageData ||
+      null => null,
+    };
+  }
+
+  ViewSpec? projectedCenterSpecForMode(SidebarMode mode) {
+    return switch (mode) {
+      SidebarMode.messages => projectedCenterSpec,
+      SidebarMode.settings => projectedSettingsCenterSpec,
+    };
   }
 }
 

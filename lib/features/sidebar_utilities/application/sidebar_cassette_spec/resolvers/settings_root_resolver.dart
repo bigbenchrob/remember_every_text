@@ -23,6 +23,10 @@ class SettingsRootResolver extends _$SettingsRootResolver {
       persistentContextActionId: persistentContextActionId,
       rows: const [
         SettingsTopMenuGroupHeaderRow(label: 'Troubleshooting'),
+        SettingsTopMenuActionRow.persistentContext(
+          label: 'Message history coverage report',
+          actionId: SettingsMenuActionId.messageHistoryCoverage,
+        ),
         SettingsTopMenuActionRow.transientAction(
           label: 'Send logs…',
           actionId: SettingsMenuActionId.sendLogs,
@@ -33,11 +37,11 @@ class SettingsRootResolver extends _$SettingsRootResolver {
         ),
         SettingsTopMenuGroupHeaderRow(label: 'Appearance'),
         SettingsTopMenuActionRow.persistentContext(
-          label: 'Text size…',
+          label: 'Text size',
           actionId: SettingsMenuActionId.textSize,
         ),
         SettingsTopMenuActionRow.persistentContext(
-          label: 'Image size…',
+          label: 'Image size',
           actionId: SettingsMenuActionId.imageSize,
         ),
       ],

@@ -47,6 +47,12 @@ CassetteSpec sidebarUtilitySettingsChildResetMessageDataPanel() {
   );
 }
 
+CassetteSpec sidebarUtilitySettingsChildMessageHistoryCoveragePanel() {
+  return const CassetteSpec.settings(
+    SettingsCassetteSpec.messageHistoryCoverageOverview(),
+  );
+}
+
 CassetteSpec sidebarUtilitySettingsChildTextSizeInfo() {
   return const CassetteSpec.settings(
     SettingsCassetteSpec.textSizePlaceholder(),

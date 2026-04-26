@@ -10,6 +10,8 @@ import '../../../features/handles/domain/spec_classes/handles_cassette_spec.dart
 import '../../../features/handles/infrastructure/repositories/stray_handles_provider.dart';
 import '../../../features/messages/domain/value_objects/message_timeline_scope.dart';
 import '../../../features/messages/presentation/view_model/timeline/message_timeline_view_model_provider.dart';
+import '../../../features/settings/application/sidebar_cassette_spec/actions/message_history_coverage_report_actions.dart';
+import '../../../features/settings/application/sidebar_cassette_spec/resolvers/message_history_coverage_settings_resolver.dart';
 import '../../../features/settings/domain/spec_classes/settings_cassette_spec.dart';
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
@@ -77,6 +79,15 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
         );
       case ShowSendLogsFlow():
         ref
+            .read(sidebarFlowProvider.notifier)
+            .setPersistentSettingsContext(null);
+        _replaceCassetteAtContext(
+          context: context,
+          spec: const CassetteSpec.sidebarUtility(
+            SidebarUtilityCassetteSpec.settingsMenu(),
+          ),
+        );
+        ref
             .read(
               ephemeralCassetteProjectionProvider(context.sidebarMode).notifier,
             )
@@ -84,6 +95,15 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
               const CassetteSpec.settings(SettingsCassetteSpec.sendLogsPanel()),
             );
       case ShowResetMessageDataFlow():
+        ref
+            .read(sidebarFlowProvider.notifier)
+            .setPersistentSettingsContext(null);
+        _replaceCassetteAtContext(
+          context: context,
+          spec: const CassetteSpec.sidebarUtility(
+            SidebarUtilityCassetteSpec.settingsMenu(),
+          ),
+        );
         ref
             .read(
               ephemeralCassetteProjectionProvider(context.sidebarMode).notifier,
@@ -169,6 +189,15 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
         await exportDiagnosticReport(
           writer,
           databaseHealthAuditService: databaseHealthAuditService,
+        );
+      case ExportMessageHistoryCoverageReportRequested():
+        final writer = ref.read(appLoggerProvider.notifier).writer;
+        final report = await ref.read(
+          messageHistoryCoverageReportProvider.future,
+        );
+        await exportMessageHistoryCoverageReport(
+          report: report,
+          exportDirectory: writer.logDir,
         );
       case ResetMessageDataRequested():
         final resetService = ref.read(messageDataResetServiceProvider);

@@ -1,0 +1,58 @@
+For Message History Coverage, model the sidebar explanation as three real cassettes, not one payload with internal nested cards.
+
+Use the existing cassette topology/projection system. The selected top Settings menu item should project an ordered ephemeral chain:
+
+1. MessageHistoryCoverageOverview
+2. MessageHistoryCoverageHowToRead
+3. MessageHistoryCoverageOlderMessagesNote
+
+These are not three user navigation states. They are three presentational explanation cassettes emitted by one selected support diagnostic. They should be stable, always-visible siblings in the projected sidebar stack for this selection.
+
+Do not add buttons. Do not add collapsible sections. Do not add widget-local fake cards.
+
+The center panel remains the primary report and should appear immediately when the top menu item is selected.
+
+Implementation guidance:
+
+* Add explicit SettingsCassetteSpec variants for the three explanation cards.
+* Update ephemeral_cassette_projection_provider.dart so selecting Message History Coverage projects all three specs in order.
+* Update settings_coordinator.dart, or a dedicated resolver if cleaner, so each spec resolves to one static info payload.
+* Keep the payloads simple: title + body + optional info styling for the older-messages note.
+* Do not put the coverage numbers in the sidebar.
+* Do not expose export actions.
+* Do not make this a nested widget workaround.
+* Keep the sidebar as context only.
+
+Suggested card copy:
+
+Card 1 title: Message History Coverage
+
+Body:
+
+MessageLens compares the messages stored in your Mac’s Messages database (chat.db) with the messages it has imported and organized.
+
+This report shows whether everything on this Mac has been accounted for.
+
+Card 2 title: How to Read the Report
+
+Body:
+
+Messages on this Mac are grouped into:
+
+• Messages visible in your chat timelines
+• Messages recovered but not linked to a conversation
+• Messages that could not be accounted for
+
+If no messages are missing, then MessageLens has successfully accounted for everything available on this Mac.
+
+Card 3 title: About Older Messages
+
+Body:
+
+This report only reflects the messages stored on this Mac.
+
+If you expected to see older messages, they may exist on another device or in iCloud but are not present here.
+
+Architecture constraint:
+
+Although these three cards are emitted together, they should still be represented as real specs and resolved through the normal coordinator path. The topology/projection may be feature-specific, but the rendering contract must remain ordinary sidebar cassette rendering.

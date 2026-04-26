@@ -7,7 +7,7 @@ part of 'panel_widget_providers.dart';
 // **************************************************************************
 
 String _$effectiveCenterPanelStackHash() =>
-    r'4c42bd48ca2b7fb73563093b3b83cab3c7dcf93f';
+    r'36c8b5c78216cac762ba409d8201e4cda31fe707';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -1041,7 +1041,7 @@ class _ShouldShowEndSidebarProviderElement
 }
 
 String _$contextualSidebarWidgetHash() =>
-    r'f4dc031d7599379921ba0b49589ada1514da91c1';
+    r'0d6ec1bd7f343c9cbf9d8a323a7e81b372e73b18';
 
 /// See also [contextualSidebarWidget].
 @ProviderFor(contextualSidebarWidget)

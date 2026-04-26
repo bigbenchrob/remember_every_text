@@ -156,6 +156,11 @@ final class SendLogsRequested extends SidebarEphemeralIntent {
   const SendLogsRequested();
 }
 
+final class ExportMessageHistoryCoverageReportRequested
+    extends SidebarEphemeralIntent {
+  const ExportMessageHistoryCoverageReportRequested();
+}
+
 final class SettingsTransientActionCancelled extends SidebarEphemeralIntent {
   const SettingsTransientActionCancelled();
 }

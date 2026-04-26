@@ -150,6 +150,7 @@ class OnboardingCenterPanelSyncObserver extends ConsumerWidget {
 
     return spec.map(
       messages: (_) => 'messages',
+      settings: (_) => 'settings',
       import: (_) => 'import',
       environmentReadiness: (value) => value.spec.maybeWhen(
         readinessPanel: () => 'environmentReadiness.readinessPanel',

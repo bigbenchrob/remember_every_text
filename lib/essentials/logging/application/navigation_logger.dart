@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../features/settings/domain/spec_classes/settings_view_spec.dart';
 import '../../navigation/domain/entities/view_spec.dart';
 import '../../navigation/domain/navigation_constants.dart';
 import '../../navigation/feature_level_providers.dart';
@@ -100,6 +101,14 @@ class NavigationLogEntry {
           handleLens: (handleId) => {
             'variant': 'handleLens',
             'handleId': handleId,
+          },
+        ),
+      },
+      settings: (settingsSpec) => {
+        'type': 'settings',
+        'spec': settingsSpec.when(
+          messageHistoryCoverageReport: () => {
+            'variant': 'messageHistoryCoverageReport',
           },
         ),
       },

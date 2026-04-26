@@ -16,6 +16,7 @@ import 'package:remember_this_text/features/contacts/domain/spec_classes/contact
 import 'package:remember_this_text/features/handles/domain/spec_classes/handles_cassette_spec.dart';
 import 'package:remember_this_text/features/messages/domain/spec_classes/messages_cassette_spec.dart';
 import 'package:remember_this_text/features/messages/domain/spec_classes/messages_view_spec.dart';
+import 'package:remember_this_text/features/settings/domain/spec_classes/settings_view_spec.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
 
@@ -183,6 +184,33 @@ void main() {
       expect(
         container.read(sidebarFlowProvider).persistentSettingsContext,
         SettingsMenuActionId.textSize,
+      );
+    });
+
+    test('message history coverage projects a settings-mode center spec', () {
+      container
+          .read(sidebarFlowProvider.notifier)
+          .setPersistentSettingsContext(
+            SettingsMenuActionId.messageHistoryCoverage,
+          );
+
+      expect(
+        container.read(sidebarFlowProvider).projectedSettingsCenterSpec,
+        equals(
+          const ViewSpec.settings(
+            SettingsViewSpec.messageHistoryCoverageReport(),
+          ),
+        ),
+      );
+      expect(
+        container
+            .read(sidebarFlowProvider)
+            .projectedCenterSpecForMode(SidebarMode.settings),
+        equals(
+          const ViewSpec.settings(
+            SettingsViewSpec.messageHistoryCoverageReport(),
+          ),
+        ),
       );
     });
 

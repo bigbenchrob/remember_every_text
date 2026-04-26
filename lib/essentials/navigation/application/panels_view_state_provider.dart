@@ -157,6 +157,7 @@ class PanelsViewState extends _$PanelsViewState {
 
     return spec.map(
       messages: (_) => 'Messages',
+      settings: (_) => 'Settings',
       import: (_) => 'Import',
       environmentReadiness: (_) => 'Environment Readiness',
       onboarding: (_) => 'Onboarding',

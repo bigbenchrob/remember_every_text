@@ -1,0 +1,251 @@
+DOCUMENT 2: Coordinator + View Spec Wiring
+
+Purpose
+
+Define how Message History Coverage transitions from a sidebar action into a center panel experience, while strictly adhering to MessageLens architecture rules:
+
+* Coordinators route only
+* No ref.watch in coordinators
+* No widgets returned from coordinators
+* Center panel driven by specs and view models
+
+⸻
+
+High-Level Flow
+
+User action:
+
+Settings → Support → Message History Coverage
+
+This must result in:
+
+1. A durable flow state update (or equivalent intent)
+2. A deterministic spec being selected
+3. Coordinator resolving that spec into a panel view model
+4. Center panel rendering the coverage report
+
+⸻
+
+New Spec
+
+Introduce a new center-panel spec:
+
+MessageCoverageReportPanelSpec
+
+This spec represents:
+
+“Render the Message History Coverage report panel using the latest coverage report data.”
+
+This spec should contain no logic, only identity and minimal parameters if needed.
+
+⸻
+
+Spec Ownership
+
+This spec belongs to:
+
+features/support
+
+Do not place it in essentials.
+
+⸻
+
+Flow State Integration
+
+Add a new durable selection in settings flow state:
+
+Example conceptual value:
+
+selectedSupportPanel = messageCoverageReport
+
+This should be treated similarly to other persistent settings selections.
+
+The selection must be:
+
+* Durable across rebuilds
+* Deterministic
+* Not dependent on ephemeral UI state
+
+⸻
+
+Sidebar Action Dispatch
+
+When user selects Message History Coverage:
+
+Dispatch a persistent intent:
+
+SupportPanelSelected(messageCoverageReport)
+
+This updates flow state.
+
+Do not directly trigger UI rendering from the sidebar.
+
+⸻
+
+Topology Integration
+
+In support/settings topology:
+
+When selectedSupportPanel == messageCoverageReport
+
+Return:
+
+MessageCoverageReportPanelSpec
+
+This ensures:
+
+* Deterministic mapping from flow state → spec
+* No procedural branching in UI
+
+⸻
+
+Coordinator Responsibilities
+
+Add or extend a coordinator:
+
+SupportPanelCoordinator
+
+Routing logic:
+
+If spec is MessageCoverageReportPanelSpec:
+
+* Read coverage report via resolver (using ref.read only)
+* Transform into MessageCoveragePanelViewModel
+* Return SidebarCassetteCardViewModel or PanelViewModel (depending on your panel system)
+
+Important:
+
+Coordinator must:
+
+* Not watch providers
+* Not build widgets
+* Not perform layout logic
+* Only assemble data
+
+⸻
+
+Resolver Integration
+
+Use existing or create:
+
+message_coverage_resolver.dart
+
+Expose method:
+
+getLatestCoverageReport()
+
+This should:
+
+* Return MessageCoverageReport (domain entity)
+* Be synchronous or async depending on current implementation
+* Not depend on UI state
+
+⸻
+
+View Model Construction
+
+Coordinator converts:
+
+MessageCoverageReport → MessageCoveragePanelViewModel
+
+This transformation is critical:
+
+All display logic must live here, not in widgets.
+
+Examples of transformation:
+
+* status → headline text
+* counts → normalized segments
+* earliest/latest → formatted labels
+* discrepancy handling → explanatory notes
+
+⸻
+
+Center Panel Rendering
+
+The center panel system (existing) should:
+
+* Receive MessageCoveragePanelViewModel
+* Pass it to a widget builder
+
+Widget builder responsibility:
+
+* Pure rendering
+* No business logic
+* No database access
+* No state mutation affecting flow
+
+⸻
+
+Sidebar Behavior
+
+Sidebar cassette should be simplified:
+
+Message History Coverage
+
+Status: Complete / Needs Attention / etc.
+
+Short summary line:
+
+Every message on this Mac has been accounted for.
+
+Primary action:
+
+Open Coverage Report
+
+This action dispatches the persistent intent described above.
+
+⸻
+
+Navigation Contract
+
+This feature must obey:
+
+Flow state is the single source of truth.
+
+Spec is derived from flow state.
+
+Coordinator resolves spec to view model.
+
+Widget renders view model.
+
+No shortcuts, no direct UI mutation.
+
+⸻
+
+Testing Requirements
+
+Add or update tests to verify:
+
+* Selecting Message History Coverage updates flow state
+* Flow state produces MessageCoverageReportPanelSpec
+* Coordinator resolves spec without watching providers
+* Coordinator returns correct view model for:
+    * complete
+    * incomplete_import
+    * incomplete_source_history
+    * unknown
+* No widget leakage from coordinator
+
+⸻
+
+Non-Goals
+
+Do not:
+
+* Introduce ad hoc navigation
+* Bypass spec pipeline
+* Add UI logic into resolver
+* Add business logic into widgets
+
+⸻
+
+Future Compatibility
+
+This wiring must support future expansion:
+
+* Multiple data sources (archive_2012, etc.)
+* Additional diagnostics panels
+* Deep linking into recovered messages
+
+Do not hardcode assumptions about single-source coverage.

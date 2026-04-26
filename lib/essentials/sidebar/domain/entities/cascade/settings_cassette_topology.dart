@@ -7,6 +7,19 @@ part of '../cassette_spec.dart';
 
 CassetteSpec? resolveSettingsChild(SettingsCassetteSpec spec) {
   return spec.when(
+    messageHistoryCoverageOverview: () {
+      return const CassetteSpec.settings(
+        SettingsCassetteSpec.messageHistoryCoverageHowToRead(),
+      );
+    },
+    messageHistoryCoverageHowToRead: () {
+      return const CassetteSpec.settings(
+        SettingsCassetteSpec.messageHistoryCoverageOlderMessagesNote(),
+      );
+    },
+    messageHistoryCoverageOlderMessagesNote: () {
+      return null;
+    },
     sendLogsPanel: () {
       return null;
     },

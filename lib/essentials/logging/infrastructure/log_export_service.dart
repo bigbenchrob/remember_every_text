@@ -57,14 +57,13 @@ class LogExportService {
       final mailAttachmentArchive = await createSupportBundleMailArchive(
         bundle.bundleDirectory,
       );
-      final attachedToMailDraft = mailAttachmentArchive == null
-          ? false
-          : await _tryComposeAppleMailDraft(
-              attachmentFiles: [mailAttachmentArchive],
-              recipientEmail: recipientEmail,
-              subject: subject,
-              emailBodyLines: attachedEmailBodyLines,
-            );
+      final attachedToMailDraft = mailAttachmentArchive != null &&
+          await _tryComposeAppleMailDraft(
+            attachmentFiles: [mailAttachmentArchive],
+            recipientEmail: recipientEmail,
+            subject: subject,
+            emailBodyLines: attachedEmailBodyLines,
+          );
 
       if (attachedToMailDraft) {
         return DiagnosticReportPresentationResult(

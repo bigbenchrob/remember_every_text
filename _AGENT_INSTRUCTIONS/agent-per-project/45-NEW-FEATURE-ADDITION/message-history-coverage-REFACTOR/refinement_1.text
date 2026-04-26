@@ -1,0 +1,261 @@
+he Core Principle
+
+Each layer of text should answer a different question:
+
+1. Headline → “Am I okay?”
+2. Subheadline → “What does that mean?”
+3. Sections → “Show me the proof”
+4. Notes → “Explain edge cases”
+
+Right now, you’re slightly over-explaining too early.
+
+⸻
+
+✨ Proposed Tone Refinement (Copyable)
+
+1. Hero Section (MOST IMPORTANT)
+
+Current (good, but slightly formal)
+
+Every message on this Mac has been accounted for.
+
+MessageLens reconciled the messages in this Mac’s local Messages database with the messages it imported.
+
+⸻
+
+Refined Version
+
+Every message on this Mac has been accounted for.
+
+Nothing in this Mac’s Messages database is missing from MessageLens.
+
+Generated Apr 26, 2026 at 10:37 AM
+
+⸻
+
+Why this works
+
+* “Nothing is missing” is stronger and clearer than “reconciled”
+* Removes jargon (“reconciled” can stay lower)
+* Feels conclusive, not analytical
+
+⸻
+
+2. Message Accounting Section
+
+Current
+
+All source messages on this Mac should resolve into visible, recovered, or missing totals.
+
+⸻
+
+Refined
+
+All messages on this Mac fall into one of these categories:
+
+⸻
+
+Legend stays the same:
+
+* Visible in timelines
+* Recovered / unlinked
+* Missing
+
+⸻
+
+Why this works
+
+* Replaces “should resolve” (uncertain language)
+* Makes it feel factual, not theoretical
+
+⸻
+
+3. Reconciliation Section
+
+Current
+
+Result: fully reconciled
+
+⸻
+
+Refined
+
+Result: fully reconciled
+No source messages are missing.
+
+⸻
+
+Optional micro-improvement (nice touch)
+
+If overlap exists:
+
+Add subtle line:
+
+A small overlap was detected while reconciling visible and recovered messages. This does not indicate missing data.
+
+⸻
+
+Why this works
+
+* Reinforces the key reassurance again
+* Handles your +3 edge case without raising alarm
+
+⸻
+
+4. Timeline Coverage Section
+
+Current
+
+This Mac’s local Messages history covers:
+
+⸻
+
+Refined
+
+This Mac’s Messages history spans:
+
+Jan 1, 2014 → Apr 26, 2026
+
+⸻
+
+Add (important nuance line)
+
+If you expected older messages, they may exist on another device or in iCloud but are not present in this Mac’s local database.
+
+⸻
+
+Why this works
+
+* “Spans” feels more natural and less technical
+* Gently introduces the “missing from Mac vs missing from app” distinction
+
+⸻
+
+5. Recovered Messages Section
+
+Current
+
+Recovered messages exist in the Messages database but are not linked to a normal chat thread the way MessageLens expects. They are still accounted for.
+
+⸻
+
+Refined
+
+Recovered messages are present in the Messages database but are not linked to a normal conversation thread.
+
+They are still included in MessageLens and fully accounted for.
+
+⸻
+
+Why this works
+
+* Shorter
+* Removes “the way MessageLens expects” (internal framing)
+* Keeps focus on reassurance
+
+⸻
+
+6. Notes & Next Steps Section
+
+Current
+
+• No missing messages were detected.
+• MessageLens detected a small overlap…
+
+⸻
+
+Refined
+
+No missing messages were detected.
+
+MessageLens detected a small overlap while reconciling visible and recovered messages. No source messages are missing.
+
+⸻
+
+Optional (only when relevant)
+
+If incomplete_source_history:
+
+Older messages may exist on another Apple device or in iCloud.
+
+⸻
+
+Why this works
+
+* Clean, declarative
+* No bullets needed unless multiple independent points
+* Reads like a conclusion, not a debug log
+
+⸻
+
+🧠 Tone Hierarchy Summary
+
+Here’s the structure you now have:
+
+Level 1 — Emotional reassurance
+
+“Every message on this Mac has been accounted for.”
+
+Level 2 — Plain-language clarification
+
+“Nothing… is missing from MessageLens.”
+
+Level 3 — Visual proof
+
+Bar + counts
+
+Level 4 — Technical explanation
+
+Reconciliation + notes
+
+⸻
+
+⚠️ Key Things to Avoid
+
+These are subtle but important:
+
+Avoid hedging language
+
+* “should”
+* “appears to”
+* “likely”
+
+→ makes users doubt the result
+
+⸻
+
+Avoid internal terminology high up
+
+* “reconciled”
+* “resolver”
+* “pipeline”
+
+→ fine lower down, not in the headline
+
+⸻
+
+Avoid implying global truth
+
+Never say:
+
+“All your messages are here”
+
+Always say:
+
+“on this Mac”
+
+You’re already doing this correctly — keep it tight.
+
+⸻
+
+🔥 One High-Impact Micro-Tweak
+
+Change:
+
+Complete
+
+to:
+
+Fully Accounted For
+
+This aligns perfectly with your headline and reinforces the core concept.
