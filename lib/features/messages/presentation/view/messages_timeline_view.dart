@@ -1956,6 +1956,7 @@ _SelectedRecoveredAttachment? _selectedRecoveredAttachment(WidgetRef ref) {
         attachmentId: selectedSpec.attachment.id,
       ),
     ),
+    settings: (_) => null,
     import: (_) => null,
     onboarding: (_) => null,
     environmentReadiness: (_) => null,

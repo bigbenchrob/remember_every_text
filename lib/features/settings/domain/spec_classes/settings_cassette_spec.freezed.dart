@@ -55,10 +55,13 @@ extension SettingsCassetteSpecPatterns on SettingsCassetteSpec {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _SendLogsPanel value)?  sendLogsPanel,TResult Function( _ResetMessageDataPanel value)?  resetMessageDataPanel,TResult Function( _TextSizePlaceholder value)?  textSizePlaceholder,TResult Function( _ImageSizePlaceholder value)?  imageSizePlaceholder,TResult Function( _AttachmentArchive value)?  attachmentArchive,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _MessageHistoryCoverageOverview value)?  messageHistoryCoverageOverview,TResult Function( _MessageHistoryCoverageHowToRead value)?  messageHistoryCoverageHowToRead,TResult Function( _MessageHistoryCoverageOlderMessagesNote value)?  messageHistoryCoverageOlderMessagesNote,TResult Function( _SendLogsPanel value)?  sendLogsPanel,TResult Function( _ResetMessageDataPanel value)?  resetMessageDataPanel,TResult Function( _TextSizePlaceholder value)?  textSizePlaceholder,TResult Function( _ImageSizePlaceholder value)?  imageSizePlaceholder,TResult Function( _AttachmentArchive value)?  attachmentArchive,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _SendLogsPanel() when sendLogsPanel != null:
+case _MessageHistoryCoverageOverview() when messageHistoryCoverageOverview != null:
+return messageHistoryCoverageOverview(_that);case _MessageHistoryCoverageHowToRead() when messageHistoryCoverageHowToRead != null:
+return messageHistoryCoverageHowToRead(_that);case _MessageHistoryCoverageOlderMessagesNote() when messageHistoryCoverageOlderMessagesNote != null:
+return messageHistoryCoverageOlderMessagesNote(_that);case _SendLogsPanel() when sendLogsPanel != null:
 return sendLogsPanel(_that);case _ResetMessageDataPanel() when resetMessageDataPanel != null:
 return resetMessageDataPanel(_that);case _TextSizePlaceholder() when textSizePlaceholder != null:
 return textSizePlaceholder(_that);case _ImageSizePlaceholder() when imageSizePlaceholder != null:
@@ -81,10 +84,13 @@ return attachmentArchive(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _SendLogsPanel value)  sendLogsPanel,required TResult Function( _ResetMessageDataPanel value)  resetMessageDataPanel,required TResult Function( _TextSizePlaceholder value)  textSizePlaceholder,required TResult Function( _ImageSizePlaceholder value)  imageSizePlaceholder,required TResult Function( _AttachmentArchive value)  attachmentArchive,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _MessageHistoryCoverageOverview value)  messageHistoryCoverageOverview,required TResult Function( _MessageHistoryCoverageHowToRead value)  messageHistoryCoverageHowToRead,required TResult Function( _MessageHistoryCoverageOlderMessagesNote value)  messageHistoryCoverageOlderMessagesNote,required TResult Function( _SendLogsPanel value)  sendLogsPanel,required TResult Function( _ResetMessageDataPanel value)  resetMessageDataPanel,required TResult Function( _TextSizePlaceholder value)  textSizePlaceholder,required TResult Function( _ImageSizePlaceholder value)  imageSizePlaceholder,required TResult Function( _AttachmentArchive value)  attachmentArchive,}){
 final _that = this;
 switch (_that) {
-case _SendLogsPanel():
+case _MessageHistoryCoverageOverview():
+return messageHistoryCoverageOverview(_that);case _MessageHistoryCoverageHowToRead():
+return messageHistoryCoverageHowToRead(_that);case _MessageHistoryCoverageOlderMessagesNote():
+return messageHistoryCoverageOlderMessagesNote(_that);case _SendLogsPanel():
 return sendLogsPanel(_that);case _ResetMessageDataPanel():
 return resetMessageDataPanel(_that);case _TextSizePlaceholder():
 return textSizePlaceholder(_that);case _ImageSizePlaceholder():
@@ -106,10 +112,13 @@ return attachmentArchive(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _SendLogsPanel value)?  sendLogsPanel,TResult? Function( _ResetMessageDataPanel value)?  resetMessageDataPanel,TResult? Function( _TextSizePlaceholder value)?  textSizePlaceholder,TResult? Function( _ImageSizePlaceholder value)?  imageSizePlaceholder,TResult? Function( _AttachmentArchive value)?  attachmentArchive,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _MessageHistoryCoverageOverview value)?  messageHistoryCoverageOverview,TResult? Function( _MessageHistoryCoverageHowToRead value)?  messageHistoryCoverageHowToRead,TResult? Function( _MessageHistoryCoverageOlderMessagesNote value)?  messageHistoryCoverageOlderMessagesNote,TResult? Function( _SendLogsPanel value)?  sendLogsPanel,TResult? Function( _ResetMessageDataPanel value)?  resetMessageDataPanel,TResult? Function( _TextSizePlaceholder value)?  textSizePlaceholder,TResult? Function( _ImageSizePlaceholder value)?  imageSizePlaceholder,TResult? Function( _AttachmentArchive value)?  attachmentArchive,}){
 final _that = this;
 switch (_that) {
-case _SendLogsPanel() when sendLogsPanel != null:
+case _MessageHistoryCoverageOverview() when messageHistoryCoverageOverview != null:
+return messageHistoryCoverageOverview(_that);case _MessageHistoryCoverageHowToRead() when messageHistoryCoverageHowToRead != null:
+return messageHistoryCoverageHowToRead(_that);case _MessageHistoryCoverageOlderMessagesNote() when messageHistoryCoverageOlderMessagesNote != null:
+return messageHistoryCoverageOlderMessagesNote(_that);case _SendLogsPanel() when sendLogsPanel != null:
 return sendLogsPanel(_that);case _ResetMessageDataPanel() when resetMessageDataPanel != null:
 return resetMessageDataPanel(_that);case _TextSizePlaceholder() when textSizePlaceholder != null:
 return textSizePlaceholder(_that);case _ImageSizePlaceholder() when imageSizePlaceholder != null:
@@ -131,9 +140,12 @@ return attachmentArchive(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  sendLogsPanel,TResult Function()?  resetMessageDataPanel,TResult Function()?  textSizePlaceholder,TResult Function()?  imageSizePlaceholder,TResult Function()?  attachmentArchive,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  messageHistoryCoverageOverview,TResult Function()?  messageHistoryCoverageHowToRead,TResult Function()?  messageHistoryCoverageOlderMessagesNote,TResult Function()?  sendLogsPanel,TResult Function()?  resetMessageDataPanel,TResult Function()?  textSizePlaceholder,TResult Function()?  imageSizePlaceholder,TResult Function()?  attachmentArchive,required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _SendLogsPanel() when sendLogsPanel != null:
+case _MessageHistoryCoverageOverview() when messageHistoryCoverageOverview != null:
+return messageHistoryCoverageOverview();case _MessageHistoryCoverageHowToRead() when messageHistoryCoverageHowToRead != null:
+return messageHistoryCoverageHowToRead();case _MessageHistoryCoverageOlderMessagesNote() when messageHistoryCoverageOlderMessagesNote != null:
+return messageHistoryCoverageOlderMessagesNote();case _SendLogsPanel() when sendLogsPanel != null:
 return sendLogsPanel();case _ResetMessageDataPanel() when resetMessageDataPanel != null:
 return resetMessageDataPanel();case _TextSizePlaceholder() when textSizePlaceholder != null:
 return textSizePlaceholder();case _ImageSizePlaceholder() when imageSizePlaceholder != null:
@@ -156,9 +168,12 @@ return attachmentArchive();case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  sendLogsPanel,required TResult Function()  resetMessageDataPanel,required TResult Function()  textSizePlaceholder,required TResult Function()  imageSizePlaceholder,required TResult Function()  attachmentArchive,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  messageHistoryCoverageOverview,required TResult Function()  messageHistoryCoverageHowToRead,required TResult Function()  messageHistoryCoverageOlderMessagesNote,required TResult Function()  sendLogsPanel,required TResult Function()  resetMessageDataPanel,required TResult Function()  textSizePlaceholder,required TResult Function()  imageSizePlaceholder,required TResult Function()  attachmentArchive,}) {final _that = this;
 switch (_that) {
-case _SendLogsPanel():
+case _MessageHistoryCoverageOverview():
+return messageHistoryCoverageOverview();case _MessageHistoryCoverageHowToRead():
+return messageHistoryCoverageHowToRead();case _MessageHistoryCoverageOlderMessagesNote():
+return messageHistoryCoverageOlderMessagesNote();case _SendLogsPanel():
 return sendLogsPanel();case _ResetMessageDataPanel():
 return resetMessageDataPanel();case _TextSizePlaceholder():
 return textSizePlaceholder();case _ImageSizePlaceholder():
@@ -180,9 +195,12 @@ return attachmentArchive();case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  sendLogsPanel,TResult? Function()?  resetMessageDataPanel,TResult? Function()?  textSizePlaceholder,TResult? Function()?  imageSizePlaceholder,TResult? Function()?  attachmentArchive,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  messageHistoryCoverageOverview,TResult? Function()?  messageHistoryCoverageHowToRead,TResult? Function()?  messageHistoryCoverageOlderMessagesNote,TResult? Function()?  sendLogsPanel,TResult? Function()?  resetMessageDataPanel,TResult? Function()?  textSizePlaceholder,TResult? Function()?  imageSizePlaceholder,TResult? Function()?  attachmentArchive,}) {final _that = this;
 switch (_that) {
-case _SendLogsPanel() when sendLogsPanel != null:
+case _MessageHistoryCoverageOverview() when messageHistoryCoverageOverview != null:
+return messageHistoryCoverageOverview();case _MessageHistoryCoverageHowToRead() when messageHistoryCoverageHowToRead != null:
+return messageHistoryCoverageHowToRead();case _MessageHistoryCoverageOlderMessagesNote() when messageHistoryCoverageOlderMessagesNote != null:
+return messageHistoryCoverageOlderMessagesNote();case _SendLogsPanel() when sendLogsPanel != null:
 return sendLogsPanel();case _ResetMessageDataPanel() when resetMessageDataPanel != null:
 return resetMessageDataPanel();case _TextSizePlaceholder() when textSizePlaceholder != null:
 return textSizePlaceholder();case _ImageSizePlaceholder() when imageSizePlaceholder != null:
@@ -194,6 +212,102 @@ return attachmentArchive();case _:
 }
 
 }
+
+/// @nodoc
+
+
+class _MessageHistoryCoverageOverview implements SettingsCassetteSpec {
+  const _MessageHistoryCoverageOverview();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MessageHistoryCoverageOverview);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'SettingsCassetteSpec.messageHistoryCoverageOverview()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class _MessageHistoryCoverageHowToRead implements SettingsCassetteSpec {
+  const _MessageHistoryCoverageHowToRead();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MessageHistoryCoverageHowToRead);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'SettingsCassetteSpec.messageHistoryCoverageHowToRead()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class _MessageHistoryCoverageOlderMessagesNote implements SettingsCassetteSpec {
+  const _MessageHistoryCoverageOlderMessagesNote();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MessageHistoryCoverageOlderMessagesNote);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'SettingsCassetteSpec.messageHistoryCoverageOlderMessagesNote()';
+}
+
+
+}
+
+
+
 
 /// @nodoc
 

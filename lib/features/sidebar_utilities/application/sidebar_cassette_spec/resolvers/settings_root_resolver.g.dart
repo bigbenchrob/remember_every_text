@@ -7,7 +7,7 @@ part of 'settings_root_resolver.dart';
 // **************************************************************************
 
 String _$settingsRootResolverHash() =>
-    r'8dc5463adca467aeff03f02df2a5d6f80974f577';
+    r'a4f570195ebb22d87bba28cea43c07647de393d3';
 
 /// See also [SettingsRootResolver].
 @ProviderFor(SettingsRootResolver)

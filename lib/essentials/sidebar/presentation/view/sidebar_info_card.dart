@@ -52,11 +52,7 @@ class SidebarInfoCard extends ConsumerWidget {
               Text(title!, style: typography.infoCardTitle),
               const SizedBox(height: AppSpacing.sm),
             ],
-            Text(
-              bodyText,
-              style: typography.infoCardBody,
-              textAlign: TextAlign.justify,
-            ),
+            _SidebarInfoBody(text: bodyText, style: typography.infoCardBody),
             if (hasFootnote) ...[
               const SizedBox(height: AppSpacing.sm + AppSpacing.xs),
               Text(footnote!, style: typography.infoCardFootnote),
@@ -68,6 +64,97 @@ class SidebarInfoCard extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _SidebarInfoBody extends StatelessWidget {
+  const _SidebarInfoBody({required this.text, required this.style});
+
+  final String text;
+  final TextStyle style;
+
+  static final RegExp _bulletPattern = RegExp(r'^([•*])\s+(.*)$');
+
+  @override
+  Widget build(BuildContext context) {
+    final blocks = text.split('\n\n');
+    final children = <Widget>[];
+
+    for (var index = 0; index < blocks.length; index++) {
+      final block = blocks[index].trim();
+      if (block.isEmpty) {
+        continue;
+      }
+
+      if (children.isNotEmpty) {
+        children.add(const SizedBox(height: AppSpacing.sm));
+      }
+
+      children.add(_buildBlock(block));
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: children,
+    );
+  }
+
+  Widget _buildBlock(String block) {
+    final lines = block.split('\n');
+    final bulletMatches = lines
+        .map((line) => _bulletPattern.firstMatch(line.trimRight()))
+        .toList();
+    final allBulletLines =
+        bulletMatches.isNotEmpty &&
+        bulletMatches.every((match) => match != null);
+
+    if (!allBulletLines) {
+      return Text(block, style: style, textAlign: TextAlign.start);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var index = 0; index < bulletMatches.length; index++) ...[
+          if (index > 0) const SizedBox(height: AppSpacing.xs),
+          _SidebarBulletLine(
+            marker: bulletMatches[index]!.group(1)!,
+            text: bulletMatches[index]!.group(2)!,
+            style: style,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _SidebarBulletLine extends StatelessWidget {
+  const _SidebarBulletLine({
+    required this.marker,
+    required this.text,
+    required this.style,
+  });
+
+  final String marker;
+  final String text;
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(right: AppSpacing.xs),
+          child: Text(marker, style: style, textAlign: TextAlign.start),
+        ),
+        Expanded(
+          child: Text(text, style: style, textAlign: TextAlign.start),
+        ),
+      ],
     );
   }
 }

@@ -1,0 +1,9 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'settings_view_spec.freezed.dart';
+
+@freezed
+abstract class SettingsViewSpec with _$SettingsViewSpec {
+  const factory SettingsViewSpec.messageHistoryCoverageReport() =
+      _MessageHistoryCoverageReport;
+}

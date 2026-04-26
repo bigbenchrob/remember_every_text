@@ -8,6 +8,15 @@ part 'settings_cassette_spec.freezed.dart';
 /// dedicated feature while preserving the current visible behavior.
 @freezed
 abstract class SettingsCassetteSpec with _$SettingsCassetteSpec {
+  const factory SettingsCassetteSpec.messageHistoryCoverageOverview() =
+      _MessageHistoryCoverageOverview;
+
+  const factory SettingsCassetteSpec.messageHistoryCoverageHowToRead() =
+      _MessageHistoryCoverageHowToRead;
+
+  const factory SettingsCassetteSpec.messageHistoryCoverageOlderMessagesNote() =
+      _MessageHistoryCoverageOlderMessagesNote;
+
   const factory SettingsCassetteSpec.sendLogsPanel() = _SendLogsPanel;
 
   const factory SettingsCassetteSpec.resetMessageDataPanel() =

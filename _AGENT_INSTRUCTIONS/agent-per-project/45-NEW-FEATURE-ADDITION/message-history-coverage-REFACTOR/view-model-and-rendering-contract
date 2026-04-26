@@ -1,0 +1,301 @@
+DOCUMENT 3: View Model + Rendering Contract
+
+Purpose
+
+Define a strict boundary between:
+
+* Coverage computation (resolver)
+* Presentation shaping (view model)
+* Rendering (widgets)
+
+The goal is:
+
+Zero business logic in widgets.
+
+⸻
+
+Core View Model
+
+MessageCoveragePanelViewModel
+
+Fields:
+
+* status
+* statusLabel
+* headline
+* summaryText
+* chatDbTotal
+* visibleCount
+* recoveredCount
+* missingCount
+* earliestLabel
+* latestLabel
+* generatedAtLabel
+* segments (list of CoverageSegmentViewModel)
+* notes (list of strings)
+* actions (list of action descriptors)
+
+⸻
+
+Status Mapping
+
+Map CoverageStatus → UI semantics:
+
+complete
+
+statusLabel: Complete
+headline: Every message on this Mac has been accounted for.
+
+incomplete_import
+
+statusLabel: Needs Attention
+headline: Some messages could not be accounted for.
+
+incomplete_source_history
+
+statusLabel: Limited History
+headline: This Mac’s Messages history begins on {earliest date}.
+
+unknown
+
+statusLabel: Unknown
+headline: MessageLens could not complete the coverage check.
+
+⸻
+
+Segment Model
+
+CoverageSegmentViewModel
+
+Fields:
+
+* id (visible, recovered, missing)
+* label
+* count
+* fraction
+* semanticKind
+
+semanticKind values:
+
+* visible
+* recovered
+* missing
+
+⸻
+
+Fraction Calculation Rules
+
+Base denominator:
+
+chatDbTotal
+
+If chatDbTotal > 0:
+
+visibleFraction = min(visibleCount / chatDbTotal, 1.0)
+
+If visible + recovered ≤ chatDbTotal:
+
+recoveredFraction = recoveredCount / chatDbTotal
+
+If visible + recovered > chatDbTotal:
+
+recoveredFraction = (chatDbTotal - visibleCount) / chatDbTotal
+
+missingFraction = missingCount / chatDbTotal
+
+Ensure:
+
+visibleFraction + recoveredFraction + missingFraction ≤ 1.0
+
+This prevents overflow in the bar visualization.
+
+⸻
+
+Handling Accounting Overlap
+
+If:
+
+visibleCount + recoveredCount > chatDbTotal
+
+Then:
+
+* Add note:
+
+MessageLens detected a small overlap while reconciling visible and recovered messages. No source messages are missing.
+
+* Do not expose raw “accounted > total” in headline
+* Normalize segments as described above
+
+⸻
+
+Label Formatting
+
+Dates:
+
+* Convert to user-friendly format (e.g. Jan 1, 2014)
+* Handle null safely:
+    * show “Unknown” if missing
+
+Numbers:
+
+* Use locale-aware formatting
+* Avoid excessive precision
+
+⸻
+
+Notes Construction
+
+Notes should be derived in view model layer.
+
+Examples:
+
+For complete:
+
+No missing messages were detected.
+
+For incomplete_import:
+
+Some messages in chat.db were not imported into MessageLens.
+
+For incomplete_source_history:
+
+Older messages may exist on another Apple device or in iCloud.
+
+For overlap:
+
+MessageLens detected a small overlap during reconciliation.
+
+⸻
+
+Actions
+
+Represent actions as simple descriptors:
+
+CoverageAction
+
+Fields:
+
+* id
+* label
+* semanticKind
+
+Examples:
+
+exportReport
+exploreRecovered
+showTroubleshooting
+
+Do not attach callbacks in the view model.
+
+Widgets map these IDs to dispatcher actions.
+
+⸻
+
+Rendering Contract
+
+Widget builder receives:
+
+MessageCoveragePanelViewModel
+
+It must:
+
+* Render hero headline
+* Render accounting bar using segments
+* Render reconciliation counts
+* Render timeline coverage
+* Render notes
+* Render actions
+
+It must not:
+
+* Compute fractions
+* Interpret status
+* Access databases
+* Modify flow state directly
+
+⸻
+
+Visual Semantics
+
+Suggested mapping:
+
+visible → primary color (blue)
+recovered → secondary color (purple)
+missing → warning color (red or amber)
+
+Status badge:
+
+complete → success (green)
+incomplete_import → warning
+incomplete_source_history → neutral/info
+unknown → muted/disabled
+
+⸻
+
+Empty / Edge Cases
+
+chatDbTotal == 0:
+
+* headline: No messages were found in this Mac’s Messages database.
+* segments empty
+* actions still available
+
+earliest or latest null:
+
+* display “Unknown”
+* add note if needed
+
+missing > 0:
+
+* missing segment must be visible
+* headline must reflect incomplete status
+
+⸻
+
+Test Cases
+
+Verify view model outputs:
+
+1. Complete
+2. Complete with overlap
+3. Incomplete import
+4. Incomplete source history
+5. Unknown
+6. Zero messages
+7. Null dates
+
+Ensure:
+
+* Fractions are normalized
+* Notes are correct
+* Headline matches status
+* No invalid math reaches UI
+
+⸻
+
+Guiding Principle
+
+The widget should be “dumb.”
+
+If a developer removes all logic from the widget and only renders fields from the view model, the feature should still behave correctly.
+
+If logic creeps into the widget, the architecture has been violated.
+
+⸻
+
+Final Note
+
+This refactor is not just visual polish.
+
+It is establishing a pattern:
+
+Diagnostics → View Model → Center Panel
+
+This pattern will be reused for:
+
+* Archive merging
+* Attachment coverage
+* Data integrity checks
+* Multi-device reconciliation
+
+Design it once, correctly.

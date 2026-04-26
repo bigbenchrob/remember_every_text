@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 import '../../../domain/spec_classes/settings_cassette_spec.dart';
 import '../resolvers/attachment_archive_settings_resolver.dart';
+import '../resolvers/message_history_coverage_settings_resolver.dart';
 import '../resolvers/reset_message_data_settings_resolver.dart';
 import '../resolvers/send_logs_settings_resolver.dart';
 import '../resolvers/settings_info_resolver.dart';
@@ -19,6 +20,15 @@ class SettingsCassetteCoordinator extends _$SettingsCassetteCoordinator {
     required int cassetteIndex,
   }) async {
     return spec.when(
+      messageHistoryCoverageOverview: () => ref
+          .read(messageHistoryCoverageSettingsResolverProvider.notifier)
+          .resolveOverview(cassetteIndex: cassetteIndex),
+      messageHistoryCoverageHowToRead: () => ref
+          .read(messageHistoryCoverageSettingsResolverProvider.notifier)
+          .resolveHowToRead(cassetteIndex: cassetteIndex),
+      messageHistoryCoverageOlderMessagesNote: () => ref
+          .read(messageHistoryCoverageSettingsResolverProvider.notifier)
+          .resolveOlderMessagesNote(cassetteIndex: cassetteIndex),
       sendLogsPanel: () => ref
           .read(sendLogsSettingsResolverProvider.notifier)
           .resolve(cassetteIndex: cassetteIndex),

@@ -4,6 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../features/messages/feature_level_providers.dart'
     as messages_feature;
+import '../../../features/settings/domain/spec_classes/settings_view_spec.dart';
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../logging/application/app_logger.dart';
 import '../../sidebar/feature_level_providers.dart';
@@ -41,12 +42,12 @@ PanelStack effectiveCenterPanelStack(Ref ref, SidebarMode mode) {
     ),
   );
 
-  if (mode != SidebarMode.messages) {
+  if (mode != SidebarMode.messages && mode != SidebarMode.settings) {
     return centerStack;
   }
 
   final flowState = ref.watch(sidebarFlowProvider);
-  final projectedCenterSpec = flowState.projectedCenterSpec;
+  final projectedCenterSpec = flowState.projectedCenterSpecForMode(mode);
 
   return _resolveEffectiveCenterStack(
     ref: ref,
@@ -175,6 +176,7 @@ Widget? contextualSidebarWidget(Ref ref, SidebarMode mode) {
         ),
       );
     },
+    settings: (_) => null,
     import: (_) => null,
     environmentReadiness: (_) => null,
     onboarding: (_) => null,
@@ -307,6 +309,7 @@ bool _shouldUseStoredCenterStack({
 String _defaultPanelTitle(ViewSpec spec) {
   return spec.map(
     messages: (_) => 'Messages',
+    settings: (_) => 'Settings',
     import: (_) => 'Import',
     environmentReadiness: (_) => 'Environment Readiness',
     onboarding: (_) => 'Onboarding',
@@ -362,6 +365,12 @@ bool _isFlowManagedCenterSpec(ViewSpec spec) {
         globalTimeline: (_) => true,
         recoveredUnlinkedMessages: (_, __) => true,
         recoveredNoHandleFromMeMessages: (_) => true,
+        orElse: () => false,
+      );
+    },
+    settings: (settingsSpec) {
+      return settingsSpec.maybeWhen(
+        messageHistoryCoverageReport: () => true,
         orElse: () => false,
       );
     },
@@ -431,6 +440,14 @@ bool _isCenterSpecCompatibleWithSidebar({
           return flowState.topMenuChoice == TopChatMenuChoice.strayHandles;
         },
         forChatInDateRange: (_, __, ___) => true,
+      );
+    },
+    settings: (settingsSpec) {
+      return settingsSpec.when(
+        messageHistoryCoverageReport: () {
+          return flowState.persistentSettingsContext ==
+              SettingsMenuActionId.messageHistoryCoverage;
+        },
       );
     },
     import: (_) => true,

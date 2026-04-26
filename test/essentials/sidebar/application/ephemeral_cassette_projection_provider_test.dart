@@ -62,5 +62,23 @@ void main() {
         ]),
       );
     });
+
+    test(
+      'message history coverage cards are not valid ephemeral settings projection roots',
+      () {
+        final notifier = container.read(
+          ephemeralCassetteProjectionProvider(SidebarMode.settings).notifier,
+        );
+
+        expect(
+          () => notifier.replaceProjection(
+            const CassetteSpec.settings(
+              SettingsCassetteSpec.messageHistoryCoverageOverview(),
+            ),
+          ),
+          throwsStateError,
+        );
+      },
+    );
   });
 }

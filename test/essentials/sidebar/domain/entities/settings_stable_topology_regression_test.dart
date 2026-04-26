@@ -14,6 +14,11 @@ void main() {
           SidebarUtilityCassetteSpec.settingsMenu(),
         );
 
+        const messageHistoryCoverageContext = StableCassetteTopologyContext(
+          messageScope: StableCascadeMessageScope.regular,
+          persistentSettingsContext:
+              SettingsMenuActionId.messageHistoryCoverage,
+        );
         const textSizeContext = StableCassetteTopologyContext(
           messageScope: StableCascadeMessageScope.regular,
           persistentSettingsContext: SettingsMenuActionId.textSize,
@@ -26,6 +31,17 @@ void main() {
           messageScope: StableCascadeMessageScope.regular,
         );
 
+        expect(
+          resolveStableCascadeChild(
+            currentSpec,
+            context: messageHistoryCoverageContext,
+          ),
+          equals(
+            const CassetteSpec.settings(
+              SettingsCassetteSpec.messageHistoryCoverageOverview(),
+            ),
+          ),
+        );
         expect(
           resolveStableCascadeChild(currentSpec, context: textSizeContext),
           equals(
@@ -71,6 +87,55 @@ void main() {
         );
         expect(
           resolveStableCascadeChild(currentSpec, context: resetContext),
+          isNull,
+        );
+      },
+    );
+
+    test(
+      'message history coverage settings cards cascade in durable order',
+      () {
+        expect(
+          resolveStableCascadeChild(
+            const CassetteSpec.settings(
+              SettingsCassetteSpec.messageHistoryCoverageOverview(),
+            ),
+            context: const StableCassetteTopologyContext(
+              messageScope: StableCascadeMessageScope.regular,
+            ),
+          ),
+          equals(
+            const CassetteSpec.settings(
+              SettingsCassetteSpec.messageHistoryCoverageHowToRead(),
+            ),
+          ),
+        );
+
+        expect(
+          resolveStableCascadeChild(
+            const CassetteSpec.settings(
+              SettingsCassetteSpec.messageHistoryCoverageHowToRead(),
+            ),
+            context: const StableCassetteTopologyContext(
+              messageScope: StableCascadeMessageScope.regular,
+            ),
+          ),
+          equals(
+            const CassetteSpec.settings(
+              SettingsCassetteSpec.messageHistoryCoverageOlderMessagesNote(),
+            ),
+          ),
+        );
+
+        expect(
+          resolveStableCascadeChild(
+            const CassetteSpec.settings(
+              SettingsCassetteSpec.messageHistoryCoverageOlderMessagesNote(),
+            ),
+            context: const StableCassetteTopologyContext(
+              messageScope: StableCascadeMessageScope.regular,
+            ),
+          ),
           isNull,
         );
       },

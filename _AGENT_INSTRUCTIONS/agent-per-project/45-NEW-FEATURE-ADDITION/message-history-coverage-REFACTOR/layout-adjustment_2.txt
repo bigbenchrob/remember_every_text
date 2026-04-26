@@ -1,0 +1,197 @@
+PanelSectionLayoutStyle
+
+Parallel to SidebarCardLayoutStyle, but for center-panel report surfaces.
+
+Core idea:
+
+Sidebar controls cassette/card density.
+
+Center panel controls report-section composition.
+
+Suggested styles:
+
+PanelSectionLayoutStyle.fullWidth
+
+One panel owns the whole row.
+
+Use for:
+
+* hero/status panels
+* visual summaries
+* explanatory sections
+* conclusions/notes
+
+PanelSectionLayoutStyle.twoColumn
+
+Two panels share one row.
+
+Use for:
+
+* paired supporting evidence
+* summary + timeline
+* before/after
+* counts + interpretation
+
+PanelSectionLayoutStyle.twoColumnEqualHeight
+
+Same as twoColumn, but forces equal heights.
+
+Use for:
+
+* reconciliation + timeline
+* any pair where uneven height looks broken
+
+PanelSectionLayoutStyle.compactFullWidth
+
+Full-width, reduced padding/height.
+
+Use for:
+
+* small notes
+* warnings
+* generated-at metadata
+* secondary explanations
+
+The important rule:
+
+Panels should not decide their own width.
+A report section row decides layout, and panels fill the slots.
+
+Copyable handoff:
+
+Create a reusable center-panel layout abstraction parallel to SidebarCardLayoutStyle.
+
+Working name:
+
+PanelSectionLayoutStyle
+
+Purpose:
+
+Provide a shared vocabulary for center-panel report layouts so individual panels do not independently choose widths.
+
+This should prevent accidental half-width orphan panels and make report-style surfaces consistent across MessageLens.
+
+Core rule:
+
+Width is owned by the row, not the panel.
+
+A panel should render its content.
+A row should decide whether that content is full-width, paired, compact, or equal-height.
+
+Suggested enum:
+
+PanelSectionLayoutStyle.fullWidth
+
+Use when one panel should occupy the entire content row.
+
+PanelSectionLayoutStyle.compactFullWidth
+
+Use when one panel should occupy the entire row but with reduced vertical weight.
+
+PanelSectionLayoutStyle.twoColumn
+
+Use when two related panels should share a row.
+
+PanelSectionLayoutStyle.twoColumnEqualHeight
+
+Use when two related panels should share a row and visually align to the same height.
+
+Suggested model:
+
+PanelSection
+
+Fields:
+
+* layoutStyle
+* children
+
+Rules:
+
+* fullWidth requires exactly one child
+* compactFullWidth requires exactly one child
+* twoColumn requires exactly two children
+* twoColumnEqualHeight requires exactly two children
+* no row may contain a single half-width child
+* panels must not set their own global row width
+* panel children fill the space assigned by the row
+
+Apply to Message History Coverage report:
+
+Section 1:
+
+layoutStyle: fullWidth
+child: hero/status panel
+
+Section 2:
+
+layoutStyle: fullWidth
+child: message accounting bar panel
+
+Section 3:
+
+layoutStyle: twoColumnEqualHeight
+children:
+
+* reconciliation panel
+* timeline coverage panel
+
+Section 4:
+
+layoutStyle: fullWidth
+child: recovered messages panel
+
+Section 5:
+
+layoutStyle: compactFullWidth
+child: notes / next steps panel
+
+Architecture guidance:
+
+This abstraction belongs to the center-panel/report layout layer, not to the Message History Coverage feature specifically.
+
+Message History Coverage should supply a list of PanelSection view models.
+
+The generic panel layout renderer should consume those sections and enforce row structure.
+
+Individual report panels should not know whether they are full-width or half-width.
+
+Testing requirements:
+
+Add tests for the section model/layout validation:
+
+* fullWidth with one child is valid
+* fullWidth with two children is invalid
+* twoColumn with two children is valid
+* twoColumn with one child is invalid
+* twoColumnEqualHeight with two children is valid
+* no single orphan half-width panel can be produced
+
+Add a Message History Coverage view model test that verifies the report produces:
+
+* fullWidth hero
+* fullWidth accounting
+* twoColumnEqualHeight reconciliation/timeline
+* fullWidth recovered messages
+* compactFullWidth notes
+
+Future use cases:
+
+This pattern should be reusable for:
+
+* Historical archive merge report
+* Attachment coverage report
+* Database health report
+* Import/migration summary report
+* Multi-source timeline coverage report
+
+Design principle:
+
+SidebarCardLayoutStyle answers:
+
+“How dense or list-like is this sidebar cassette?”
+
+PanelSectionLayoutStyle answers:
+
+“How is this center-panel report row composed?”
+
+These are parallel concepts for different surfaces.

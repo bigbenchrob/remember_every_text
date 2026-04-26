@@ -24,6 +24,10 @@ import 'package:remember_this_text/features/messages/application/view_spec/coord
 import 'package:remember_this_text/features/messages/domain/spec_classes/messages_view_spec.dart';
 import 'package:remember_this_text/features/messages/domain/value_objects/message_timeline_scope.dart';
 import 'package:remember_this_text/features/messages/presentation/view_model/timeline/message_timeline_view_model_provider.dart';
+import 'package:remember_this_text/features/settings/application/view_spec/coordinators/view_spec_coordinator.dart'
+    as settings_view_spec;
+import 'package:remember_this_text/features/settings/domain/spec_classes/settings_view_spec.dart';
+import 'package:remember_this_text/features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
 import '../../../test_support/cassette_rack_test_harness.dart';
 
@@ -217,6 +221,42 @@ void main() {
         container.dispose();
       },
     );
+    test(
+      'derives flow-managed settings center without stored center stack',
+      () {
+        final container = ProviderContainer(
+          overrides: [
+            workingDbPopulatedProvider.overrideWith(
+              _AlwaysPopulatedWorkingDb.new,
+            ),
+          ],
+        );
+
+        container
+            .read(sidebarFlowProvider.notifier)
+            .setPersistentSettingsContext(
+              SettingsMenuActionId.messageHistoryCoverage,
+            );
+
+        final storedCenter = container.read(
+          panelsViewStateProvider(SidebarMode.settings),
+        )[WindowPanel.center];
+
+        expect(storedCenter?.isEmpty ?? true, isTrue);
+        expect(
+          container.read(
+            effectiveCenterPanelSpecProvider(SidebarMode.settings),
+          ),
+          equals(
+            const ViewSpec.settings(
+              SettingsViewSpec.messageHistoryCoverageReport(),
+            ),
+          ),
+        );
+
+        container.dispose();
+      },
+    );
 
     testWidgets(
       'center panel host renders derived flow-managed messages view',
@@ -247,6 +287,47 @@ void main() {
         await tester.pump();
 
         expect(find.text('global'), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        container.dispose();
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'center panel host renders derived flow-managed settings view',
+      (tester) async {
+        final container = ProviderContainer(
+          overrides: [
+            workingDbPopulatedProvider.overrideWith(
+              _AlwaysPopulatedWorkingDb.new,
+            ),
+            settings_view_spec.viewSpecCoordinatorProvider.overrideWith(
+              _FakeSettingsViewSpecCoordinator.new,
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const Directionality(
+              textDirection: TextDirection.ltr,
+              child: CenterPanelHost(mode: SidebarMode.settings),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        container
+            .read(sidebarFlowProvider.notifier)
+            .setPersistentSettingsContext(
+              SettingsMenuActionId.messageHistoryCoverage,
+            );
+        await tester.pump();
+
+        expect(find.text('settings:message-history-coverage'), findsOneWidget);
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
@@ -1120,6 +1201,20 @@ class _FakeMessagesViewSpecCoordinator
       handleLens: (handleId) => Text('lens:$handleId'),
       forChatInDateRange: (chatId, startDate, endDate) =>
           Text('chat-range:$chatId'),
+    );
+  }
+}
+
+class _FakeSettingsViewSpecCoordinator
+    extends settings_view_spec.ViewSpecCoordinator {
+  @override
+  void build() {}
+
+  @override
+  Widget buildForSpec(SettingsViewSpec spec) {
+    return spec.when(
+      messageHistoryCoverageReport: () =>
+          const Text('settings:message-history-coverage'),
     );
   }
 }

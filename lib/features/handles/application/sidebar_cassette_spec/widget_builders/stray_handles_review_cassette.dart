@@ -70,6 +70,7 @@ class StrayHandlesReviewCassette extends HookConsumerWidget {
             forHandle: (fh) => fh.handleId,
             orElse: () => null,
           ),
+          settings: (_) => null,
           import: (_) => null,
           onboarding: (_) => null,
           environmentReadiness: (_) => null,

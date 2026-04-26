@@ -24,5 +24,9 @@ class ActiveSidebarMode extends _$ActiveSidebarMode {
         .clear();
 
     state = mode;
+
+    if (mode != SidebarMode.settings) {
+      return;
+    }
   }
 }

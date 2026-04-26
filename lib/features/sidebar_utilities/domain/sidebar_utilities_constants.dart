@@ -42,10 +42,14 @@ enum TopChatMenuChoice {
 }
 
 enum SettingsMenuActionId {
+  messageHistoryCoverage(
+    id: 'message_history_coverage',
+    label: 'Message history coverage report',
+  ),
   sendLogs(id: 'send_logs', label: 'Send logs…'),
   resetMessageData(id: 'reset_message_data', label: 'Reset message data…'),
-  textSize(id: 'text_size', label: 'Text size…'),
-  imageSize(id: 'image_size', label: 'Image size…');
+  textSize(id: 'text_size', label: 'Text size'),
+  imageSize(id: 'image_size', label: 'Image size');
 
   const SettingsMenuActionId({required this.id, required this.label});
 
@@ -63,7 +67,9 @@ enum SettingsMenuActionId {
 extension SettingsMenuActionIdX on SettingsMenuActionId {
   bool get isPersistentContext {
     return switch (this) {
-      SettingsMenuActionId.textSize || SettingsMenuActionId.imageSize => true,
+      SettingsMenuActionId.messageHistoryCoverage ||
+      SettingsMenuActionId.textSize ||
+      SettingsMenuActionId.imageSize => true,
       SettingsMenuActionId.sendLogs ||
       SettingsMenuActionId.resetMessageData => false,
     };
