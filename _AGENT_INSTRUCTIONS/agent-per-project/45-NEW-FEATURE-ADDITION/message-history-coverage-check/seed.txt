@@ -1,0 +1,248 @@
+
+
+FEATURE: Message History Coverage Check
+
+Purpose
+
+Provide a deterministic, user-facing diagnostic that answers:
+
+“Is MessageLens showing everything that exists in this Mac’s local Messages database?”
+
+This feature exists to eliminate ambiguity when users believe messages are missing. It explicitly distinguishes between:
+
+* MessageLens import issues
+* Incomplete macOS chat.db history (e.g. iCloud sync gaps)
+* Legitimately unlinked/recovered messages
+* View/filter confusion
+
+This is a trust-building feature, not just a debugging tool.
+
+⸻
+
+Placement
+
+Settings → Support → Message History Coverage
+
+This is a Support/Diagnostics feature, not part of normal user flow.
+
+⸻
+
+User Entry Point
+
+A single cassette:
+
+Title: Message History Coverage
+
+Description:
+Check whether MessageLens has imported all messages available on this Mac.
+
+Primary Action:
+Run Coverage Check
+
+Secondary Actions (after run):
+Export Coverage Report
+Show Troubleshooting Steps
+
+⸻
+
+High-Level Behavior
+
+When the user runs the check, the system performs a comparison between:
+
+* Apple source database (chat.db)
+* MessageLens working database (working.db)
+
+It produces a Coverage Report summarizing:
+
+1. Total messages in chat.db
+2. Messages imported into visible timelines
+3. Messages imported into unlinked/recovered table
+4. Any discrepancy (missing messages)
+5. Date range coverage (earliest/latest message)
+
+⸻
+
+Core Output Model
+
+MessageCoverageReport
+
+* chatDbTotalCount: int
+* workingDbVisibleCount: int
+* workingDbRecoveredCount: int
+* workingDbTotalAccountedCount: int
+* missingCount: int  (chatDbTotalCount - workingDbTotalAccountedCount)
+* earliestMessageDate: DateTime?
+* latestMessageDate: DateTime?
+* status: CoverageStatus
+
+CoverageStatus values:
+
+* complete
+* incomplete_import
+* incomplete_source_history
+* unknown
+
+⸻
+
+Classification Rules (CRITICAL LOGIC)
+
+Case 1 — COMPLETE
+If chatDbTotalCount == workingDbTotalAccountedCount
+→ status = complete
+
+Case 2 — INCOMPLETE IMPORT
+If chatDbTotalCount > workingDbTotalAccountedCount
+→ status = incomplete_import
+
+Case 3 — INCOMPLETE SOURCE HISTORY
+If counts match BUT earliestMessageDate is “suspiciously recent”
+→ status = incomplete_source_history
+
+This indicates the Mac likely does not contain full historical message data.
+
+Case 4 — UNKNOWN
+Fallback if analysis cannot be completed safely.
+
+⸻
+
+Data Extraction Requirements
+
+From chat.db:
+
+* Total message count
+* Earliest message date
+* Latest message date
+
+From working.db:
+
+* Count of messages in primary timeline tables
+* Count of messages in recovered/unlinked table
+
+Important:
+
+* Do NOT rely on timestamps for ordering guarantees
+* Date extraction is informational only
+
+⸻
+
+UI Presentation (View Model Driven)
+
+Coordinator must return a Future
+
+Payload:
+
+CoverageReportPayload
+
+* report: MessageCoverageReport
+
+Rendering handled by feature-level widget builder.
+
+⸻
+
+User-Facing Copy
+
+SUCCESS (complete)
+
+MessageLens has accounted for all messages currently available on this Mac.
+No missing messages were detected.
+
+INCOMPLETE IMPORT
+
+Some messages in your Mac’s Messages database were not imported into MessageLens.
+This may indicate an interrupted or incomplete import.
+
+INCOMPLETE SOURCE HISTORY
+
+MessageLens has imported all messages available on this Mac.
+However, your Mac’s Messages database only contains messages starting from: {earliest date}
+
+Older messages may exist on another device or in iCloud.
+
+ALWAYS INCLUDE SUMMARY BLOCK
+
+Total messages on this Mac: X
+Visible in MessageLens: Y
+Recovered (unlinked): Z
+Total accounted for: Y + Z
+Missing: M
+
+Date range: {earliest} → {latest}
+
+⸻
+
+Troubleshooting Panel (Static Content)
+
+If you expected older messages:
+
+1. Check the same conversation on your iPhone or another Mac
+2. Search for a message you remember sending in the past
+3. On this Mac, open:
+    Messages → Settings → iMessage → Sync Now
+4. Ensure “Messages in iCloud” is enabled
+
+If another device shows older messages but this Mac does not,
+this Mac may only have a partial local message history.
+
+⸻
+
+Export Feature
+
+Export the report as JSON with fields:
+
+chatDbTotal
+visible
+recovered
+missing
+earliest
+latest
+status
+
+⸻
+
+Architectural Constraints (MANDATORY)
+
+* Coordinators must NOT return Widgets
+* Coordinators must NOT watch providers
+* All computation must be deterministic and side-effect free
+* Database access must be encapsulated in resolver layer
+* Feature returns data only, not presentation
+
+⸻
+
+Resolver Structure
+
+Create:
+
+features/support/application/message_coverage/
+
+Within it:
+
+* resolvers/message_coverage_resolver.dart
+* entities/message_coverage_report.dart
+* widget_builders/message_coverage_card_builder.dart
+
+Resolver responsibilities:
+
+* Query both databases
+* Compute report
+* Return pure domain entity
+
+⸻
+
+Future Extensions (NOT IN THIS SLICE)
+
+* Per-contact coverage analysis
+* Per-year breakdown
+* iCloud sync state detection
+* Attachment coverage validation
+
+⸻
+
+TL;DR
+
+Build a deterministic diagnostic that:
+
+* Compares chat.db vs working.db
+* Proves whether MessageLens is missing anything
+* Distinguishes import problems vs incomplete Mac history
+* Presents results in a calm, trust-building way

@@ -1,0 +1,154 @@
+Implement a lightweight static layout/partials build step for the tester portal.
+
+Goal:
+Move repeated page chrome, especially the shared header/nav, out of individual HTML pages and into reusable partial/template files. The build script should generate final static HTML pages with the shared layout already baked in, so the browser does not need runtime fetch() calls for headers/partials.
+
+Feature: Static Layout + Partials Build Step
+
+Context:
+The tester portal currently has multiple pages, such as the home/download page and changelog page. Header/nav elements are beginning to diverge between pages because they are manually duplicated. We want a simple, framework-free system that lets us define common page structure once and reuse it across all generated pages.
+
+Preferred approach:
+Add a small Node-based build step that reads:
+
+* a shared layout template
+* shared partials such as header and footer
+* per-page content files
+* optional per-page metadata
+
+Then outputs complete static HTML files into the public/build output directory.
+
+Suggested structure:
+
+tester-portal/
+src/
+layout.html
+partials/
+header.html
+footer.html
+pages/
+index.html
+changelog.html
+install.html
+page-data/
+index.json
+changelog.json
+install.json
+public/
+index.html
+changelog.html
+install.html
+scripts/
+build-site.js
+
+Core idea:
+
+layout.html should define the outer shell:
+
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{pageTitle}}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body data-page="{{pageId}}">
+  {{header}}
+
+  <main class="page-shell">
+    {{content}}
+  </main>
+
+  <script src="/app.js"></script>
+
+</body>
+</html>
+
+Each page file under src/pages/ should contain only the page-specific body content, not the duplicated document wrapper or header.
+
+Example:
+
+src/pages/changelog.html
+
+<section class="portal-card">
+  <h1>Changelog</h1>
+  <p>Review recent MessageLens tester builds and decide whether to download the latest version.</p>
+  <div id="changelog-root"></div>
+</section>
+
+
+The header partial should be shared:
+
+src/partials/header.html
+
+<header class="site-header">
+  <a class="brand" href="/index.html">MessageLens Tester Portal</a>
+
+  <nav class="site-nav" aria-label="Primary">
+    <a href="/index.html" data-nav-page="home">Download</a>
+    <a href="/changelog.html" data-nav-page="changelog">Changelog</a>
+    <a href="/install.html" data-nav-page="install">Install</a>
+  </nav>
+</header>
+
+
+The build script should:
+
+1. Read src/layout.html.
+2. Read src/partials/header.html and footer.html.
+3. Iterate over src/pages/*.html.
+4. For each page:
+    * infer pageId from filename, with index.html becoming home
+    * optionally read matching src/page-data/{pageId}.json if present
+    * inject pageTitle, pageId, header, footer, and content into layout.html
+    * mark the active nav item in the generated header
+    * write the finished HTML file to public/{filename}
+
+Active nav requirement:
+The generated output should add an active class and aria-current=“page” to the matching nav link.
+
+For example, when building changelog.html:
+
+Changelog
+
+Implementation preference:
+Keep this deliberately small and boring. Do not introduce React, Next, Vite, Astro, or a large templating framework unless the project already uses one. A simple token replacement script is enough.
+
+Acceptable token syntax:
+Use simple placeholders like:
+
+{{pageTitle}}
+{{pageId}}
+{{header}}
+{{content}}
+{{footer}}
+
+The build script should fail loudly if required placeholders are missing or if a page cannot be generated.
+
+Package script:
+Add or update package.json scripts:
+
+“scripts”: {
+“build”: “node scripts/build-site.js”
+}
+
+If there is already a release script, make it call this build step before copying/uploading/publishing the portal files.
+
+Design constraints:
+
+* The browser should receive complete static HTML.
+* No runtime fetch() should be required to load the header.
+* Shared navigation should have one source of truth.
+* Page-specific content should stay page-specific.
+* The system should remain easy to understand for a small tester portal.
+
+Done criteria:
+
+* Header/nav markup is no longer duplicated across pages.
+* Home, changelog, and install pages are generated from the shared layout.
+* Active tab highlighting works per page.
+* Existing styling still applies, or is adjusted minimally.
+* The release/build pipeline generates final static HTML before deployment.
+* Running npm run build produces the finished portal files in public/.

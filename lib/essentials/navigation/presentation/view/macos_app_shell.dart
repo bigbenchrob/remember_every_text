@@ -1,26 +1,18 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../providers.dart';
-import '../../../debug/application/developer_mode_provider.dart';
-import '../../../logging/application/navigation_logger.dart';
 import '../../../onboarding/application/onboarding_gate_provider.dart';
-import '../../../onboarding/domain/import_spec.dart';
 import '../../../onboarding/domain/onboarding_status.dart';
-import '../../../onboarding/domain/spec_classes/onboarding_view_spec.dart';
 import '../../../onboarding/presentation/onboarding_overlay.dart';
 import '../../../window_state/feature_level_providers.dart';
 import '../../application/panel_widget_providers.dart';
 import '../../application/sidebar_mode_provider.dart';
-import '../../domain/entities/view_spec.dart';
-import '../../domain/navigation_constants.dart';
 import '../../domain/sidebar_mode.dart';
-import '../../feature_level_providers.dart';
 import '../widgets/app_mode_toggle.dart';
 import '../widgets/onboarding_center_panel_sync_observer.dart';
 import 'workspace_layout.dart';
@@ -93,7 +85,6 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
       _ => false,
     };
     final activeMode = ref.watch(activeSidebarModeProvider);
-    const showDeveloperToolbarActions = !kReleaseMode;
 
     return Stack(
       children: [
@@ -121,86 +112,6 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
               centerTitle: true,
               leading: const AppModeToggle(),
               actions: [
-                ToolBarIconButton(
-                  label: 'Import',
-                  icon: const MacosIcon(CupertinoIcons.square_arrow_down),
-                  onPressed: () {
-                    ref
-                        .read(activeSidebarModeProvider.notifier)
-                        .setMode(SidebarMode.messages);
-
-                    const spec = ViewSpec.import(ImportSpec.forImport());
-
-                    // Log the navigation action
-                    ref
-                        .read(navigationLoggerProvider.notifier)
-                        .logToolbarClick(
-                          buttonLabel: 'Import',
-                          targetPanel: WindowPanel.center,
-                          viewSpec: spec,
-                        );
-
-                    // Perform the navigation
-                    ref
-                        .read(
-                          panelsViewStateProvider(
-                            SidebarMode.messages,
-                          ).notifier,
-                        )
-                        .show(panel: WindowPanel.center, spec: spec);
-                  },
-                  showLabel: false,
-                ),
-                ToolBarIconButton(
-                  label: 'Onboarding Dev Panel',
-                  icon: const MacosIcon(CupertinoIcons.rocket),
-                  onPressed: () {
-                    ref
-                        .read(activeSidebarModeProvider.notifier)
-                        .setMode(SidebarMode.messages);
-
-                    const spec = ViewSpec.onboarding(OnboardingSpec.devPanel());
-
-                    ref
-                        .read(navigationLoggerProvider.notifier)
-                        .logToolbarClick(
-                          buttonLabel: 'Onboarding Dev Panel',
-                          targetPanel: WindowPanel.center,
-                          viewSpec: spec,
-                        );
-
-                    ref
-                        .read(
-                          panelsViewStateProvider(
-                            SidebarMode.messages,
-                          ).notifier,
-                        )
-                        .show(panel: WindowPanel.center, spec: spec);
-                  },
-                  showLabel: false,
-                ),
-                if (showDeveloperToolbarActions)
-                  () {
-                    final developerMode = ref.watch(developerModeProvider);
-                    final isDeveloperMode =
-                        developerMode.valueOrNull ==
-                        DeveloperModeValue.developer;
-
-                    return ToolBarIconButton(
-                      label: isDeveloperMode
-                          ? 'Developer Mode: On (click to switch to User Mode)'
-                          : 'Developer Mode: Off (click to switch to Developer Mode)',
-                      icon: MacosIcon(
-                        isDeveloperMode
-                            ? CupertinoIcons.chevron_left_slash_chevron_right
-                            : CupertinoIcons.person,
-                      ),
-                      onPressed: () {
-                        ref.read(developerModeProvider.notifier).toggleMode();
-                      },
-                      showLabel: false,
-                    );
-                  }(),
                 () {
                   final themeMode = ref.watch(switchableDarkModeProvider);
                   final (IconData icon, String tooltip) = switch (themeMode) {

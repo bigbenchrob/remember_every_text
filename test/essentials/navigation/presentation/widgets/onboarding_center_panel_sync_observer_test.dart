@@ -1,14 +1,14 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:remember_this_text/essentials/logging/application/pipeline_incident_tracker_provider.dart';
+import 'package:remember_this_text/essentials/logging/domain/pipeline_incident_report.dart';
 import 'package:remember_this_text/essentials/navigation/application/panels_view_state_provider.dart';
 import 'package:remember_this_text/essentials/navigation/application/sidebar_mode_provider.dart';
 import 'package:remember_this_text/essentials/navigation/domain/entities/view_spec.dart';
 import 'package:remember_this_text/essentials/navigation/domain/navigation_constants.dart';
 import 'package:remember_this_text/essentials/navigation/domain/sidebar_mode.dart';
 import 'package:remember_this_text/essentials/navigation/presentation/widgets/onboarding_center_panel_sync_observer.dart';
-import 'package:remember_this_text/essentials/logging/application/pipeline_incident_tracker_provider.dart';
-import 'package:remember_this_text/essentials/logging/domain/pipeline_incident_report.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_gate_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/import_spec.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_status.dart';

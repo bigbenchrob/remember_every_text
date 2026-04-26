@@ -202,7 +202,7 @@ mkdir -p "$TESTER_PORTAL_DATA_DIR"
 
 APP_VERSION="$(extract_app_version)"
 BUILD_DATE_ISO="$(date -u +%F)"
-BUILD_DATE_DISPLAY="$(LC_ALL=C date -u +'%B %e, %Y' | sed 's/  / /g')"
+BUILD_DATE_DISPLAY="$(LC_ALL=C date '+%B %e, %Y at %l:%M %p %Z' | tr -s ' ')"
 DOWNLOAD_FILE="$(basename "$DMG_PATH")"
 
 cp "$DMG_PATH" "$TESTER_PORTAL_DOWNLOADS_DIR/$DOWNLOAD_FILE"
