@@ -10,6 +10,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - No unreleased changes yet.
 
+## [0.1.16] — 2026-04-27
+
+### Changed
+
+- Settings now uses clearer subsection styling in the top menu, making grouped actions and persistent settings easier to scan in one flat list.
+- The chosen-contact messages sidebar now reads as a calmer sequence of selection, context, explanation, controls, and visualization, with shared spacing and grouped-control chrome instead of feature-local layout tweaks.
+- Support and Send Logs email drafts now target `messagelens@gmail.com`, keeping tester feedback routed to the shared project inbox.
+
+### Fixed
+
+- Window size now stays stable when moving MessageLens between monitors, instead of snapping to a smaller preset-looking frame on one display and expanding again on the other.
+- Window placement restore now persists the intended size across sessions, preventing relaunches from restoring the old top-left position with an unexpectedly oversized window.
+
 ## [0.1.15] — 2026-04-26
 
 ### Added

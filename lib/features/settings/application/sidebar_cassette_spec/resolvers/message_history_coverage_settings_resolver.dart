@@ -15,7 +15,7 @@ import '../entities/message_history_coverage_report_logic.dart';
 part 'message_history_coverage_settings_resolver.g.dart';
 
 const _messageHistoryCoverageOverviewBody =
-    'MessageLens compares the messages stored in your Mac\'s Messages database (chat.db) with the messages it has imported and organized.\n\n'
+    "MessageLens compares the messages stored in your Mac's Messages database (chat.db) with the messages it has imported and organized.\n\n"
     'This report shows whether everything on this Mac has been accounted for.';
 
 const _messageHistoryCoverageHowToReadBody =

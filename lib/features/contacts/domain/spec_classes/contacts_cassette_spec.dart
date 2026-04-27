@@ -25,9 +25,9 @@ abstract class ContactsCassetteSpec with _$ContactsCassetteSpec {
   /// A compact "Change contact" control that appears after selection.
   ///
   /// This cassette displays the selected contact name and provides a
-  /// "Change" affordance to return to the picker. It sits above the
-  /// Hero Card and is visually perceived as a "collapsed" form of the
-  /// picker, though implemented as a separate cassette.
+  /// "Change" affordance to return to the picker. It sits directly beneath
+  /// the top menu selector and above the Hero Card so it reads as part of
+  /// the primary contact-selection cluster.
   ///
   /// ## Visual Role
   /// - Visually lightweight (compact height ~44px)

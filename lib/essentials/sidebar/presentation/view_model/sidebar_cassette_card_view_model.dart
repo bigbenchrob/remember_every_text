@@ -13,6 +13,20 @@ enum SidebarCassetteRole {
   action,
 }
 
+/// Shared semantic styling hints for sidebar composition.
+///
+/// Unlike [SidebarCassetteRole], which still drives behavioral composition
+/// decisions such as pinned app controls, this style channel exists purely so
+/// essentials can apply shared visual hierarchy rules across features.
+enum SidebarCassetteSemanticStyle {
+  automatic,
+  plain,
+  primaryContextGroup,
+  supportingContext,
+  groupedControls,
+  visualization,
+}
+
 /// Approved content placement modes within the sidebar content envelope.
 enum SidebarBodyPlacementMode { fullWidth, inset, insetWithTrailingGutter }
 
@@ -132,13 +146,20 @@ enum SidebarCassetteRenderKind {
 ///
 /// LAW: Meaning may cross this boundary as payload data. Execution may not.
 abstract base class SidebarCassettePayload {
-  const SidebarCassettePayload({required this.role, this.topSpacing = 0});
+  const SidebarCassettePayload({
+    required this.role,
+    this.topSpacing = 0,
+    this.semanticStyle = SidebarCassetteSemanticStyle.automatic,
+  });
 
   /// Semantic role used by essentials-owned sidebar composition.
   final SidebarCassetteRole role;
 
   /// Extra vertical space to insert above this cassette in the sidebar stack.
   final double topSpacing;
+
+  /// Shared semantic hint used by essentials-owned sidebar hierarchy.
+  final SidebarCassetteSemanticStyle semanticStyle;
 
   /// Explicit render contract consumed by the sidebar render router.
   SidebarCassetteRenderKind get renderKind;
@@ -155,6 +176,7 @@ abstract base class InertSidebarCassettePayload extends SidebarCassettePayload {
   const InertSidebarCassettePayload({
     required super.role,
     super.topSpacing = 0,
+    super.semanticStyle = SidebarCassetteSemanticStyle.automatic,
   });
 }
 
@@ -165,6 +187,7 @@ abstract base class PlacementGovernedSidebarCassettePayload
   const PlacementGovernedSidebarCassettePayload({
     required super.role,
     super.topSpacing = 0,
+    super.semanticStyle = SidebarCassetteSemanticStyle.automatic,
     this.title = '',
     this.subtitle,
     this.sectionTitle,
@@ -199,6 +222,7 @@ abstract base class FeatureInfoSidebarCassettePayload
     required this.bodyText,
     super.role = SidebarCassetteRole.contextSecondary,
     super.topSpacing = 0,
+    super.semanticStyle = SidebarCassetteSemanticStyle.automatic,
     this.title,
     this.footnote,
   });
@@ -219,6 +243,7 @@ final class StaticFeatureInfoSidebarCassettePayload
     required super.bodyText,
     super.role = SidebarCassetteRole.contextSecondary,
     super.topSpacing = 0,
+    super.semanticStyle = SidebarCassetteSemanticStyle.automatic,
     super.title,
     super.footnote,
   });
@@ -231,6 +256,7 @@ final class SharedBodyModelSidebarCassettePayload
     required this.bodyModel,
     super.role = SidebarCassetteRole.contextPrimary,
     super.topSpacing = 0,
+    super.semanticStyle = SidebarCassetteSemanticStyle.automatic,
     this.placementMode = SidebarBodyPlacementMode.inset,
     this.contentAlignment = SidebarBodyContentAlignment.fill,
     this.title = '',

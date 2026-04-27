@@ -445,7 +445,7 @@ class _WelcomeContent extends ConsumerWidget {
         if (presentation.canSendDiagnosticReport && report != null) ...[
           const SizedBox(height: 12),
           Text(
-            'MessageLens will try to open an email draft to bigbenchrob@gmail.com with the report already attached. If that is not possible, it will reveal the file in Finder so it can be attached manually.',
+            'MessageLens will try to open an email draft to messagelens@gmail.com with the report already attached. If that is not possible, it will reveal the file in Finder so it can be attached manually.',
             style: typography.caption.copyWith(
               color: colors.content.textTertiary,
             ),

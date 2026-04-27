@@ -2,7 +2,7 @@
 tier: project
 scope: sidebar-layout
 owner: @rob
-last_reviewed: 2026-04-26
+last_reviewed: 2026-04-27
 source_of_truth: doc
 links:
   - ./README.md
@@ -89,6 +89,86 @@ The practical rule is:
 
 This prevents layout drift and preserves a consistent sidebar cadence.
 
+## Shared spacing tiers
+
+The sidebar now uses a small, reusable set of shared spacing tiers owned by the
+essentials sectioning layer.
+
+Do not recreate these with feature-local `SizedBox` or padding overrides.
+
+### Tier 1: Internal control cadence (`12px`)
+
+Use this inside one grouped-controls run.
+
+Typical use:
+
+- scope toggle to handle filter
+- stacked app-control rows like top selector to change-contact
+
+Meaning:
+
+- same tool family
+- same visual block
+- one action region
+
+### Tier 2: Tight contextual handoff (`8px`)
+
+Use this when the next cassette is a direct continuation of the current branch
+context, but not prose that needs to stand apart.
+
+Typical use:
+
+- change-contact control into the selected-entity hero
+- internal visualization header/body and body/legend rhythm
+
+Meaning:
+
+- direct continuation
+- visually close, but not collapsed
+
+### Tier 3: Supporting section separation (`16px`)
+
+Use this when supporting prose should read as its own section under the focal
+context.
+
+Typical use:
+
+- selected-contact hero to explanatory text
+
+Meaning:
+
+- same branch
+- separate reading step
+- preserve calm and readability over tight grouping
+
+### Tier 4: Supporting-to-controls bridge (`20px`)
+
+Use this when explanation should flow into a control block without feeling like
+a stranded paragraph.
+
+Typical use:
+
+- explanatory text into grouped controls
+
+Meaning:
+
+- narrative bridge from explanation to action
+- still clearly a section boundary
+
+### Tier 5: Full section break (`24px`)
+
+Use this between distinct conceptual groups.
+
+Typical use:
+
+- controls into visualization
+- unrelated section changes in the stack
+
+Meaning:
+
+- new region
+- new task or interpretation mode
+
 ### 5. Info cards should stay lightweight
 
 Sidebar info cards work best when they explain one thing cleanly.
@@ -119,6 +199,36 @@ That applies to:
 - reset or change actions
 
 Users should not have to visually re-learn spacing and alignment for each cassette.
+
+## Reusable grouped-controls surface
+
+When multiple adjacent cassettes resolve to the grouped-controls semantic style,
+essentials should wrap them in one shared grouped-controls surface.
+
+This is the reusable pattern for calm control blocks in the sidebar.
+
+### Contract
+
+- use one shared tinted surface, not separate card chrome per control
+- no border
+- no shadow
+- rounded corners only
+- `4px` horizontal inset and `8px` vertical inset inside the surface
+- preserve each cassette's own internal spacing inside the grouped block
+- use this for tightly related controls, not explanatory prose or hero/context
+
+### Intended effect
+
+- the controls read as one actionable unit
+- the sidebar gains structure without looking card-heavy
+- features do not need custom wrappers to create calm control grouping
+
+### Anti-patterns
+
+- wrapping one control alone just to add tint
+- using the grouped-controls surface for prose/explanation cards
+- recreating the same visual treatment in feature widgets
+- tightening unrelated sections just to fake grouping
 
 ### 7. Navigation cards and info cards should not compete for emphasis
 

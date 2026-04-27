@@ -15,6 +15,7 @@ final class MessagesHeatmapCassettePayload
     super.isNaked = false,
     super.shouldExpand = false,
     super.role = SidebarCassetteRole.contextPrimary,
+    super.semanticStyle = SidebarCassetteSemanticStyle.visualization,
     super.topSpacing = 0,
   });
 

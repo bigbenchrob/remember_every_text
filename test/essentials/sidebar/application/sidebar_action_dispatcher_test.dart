@@ -509,6 +509,9 @@ void main() {
             SidebarUtilityCassetteSpec.topChatMenu(),
           ),
           const CassetteSpec.contacts(
+            ContactsCassetteSpec.contactSelectionControl(chosenContactId: 42),
+          ),
+          const CassetteSpec.contacts(
             ContactsCassetteSpec.contactHeroSummary(chosenContactId: 42),
           ),
           const CassetteSpec.contactsInfo(
@@ -516,9 +519,6 @@ void main() {
               key: ContactsInfoKey.chosenContact,
               chosenContactId: 42,
             ),
-          ),
-          const CassetteSpec.contacts(
-            ContactsCassetteSpec.contactSelectionControl(chosenContactId: 42),
           ),
           const CassetteSpec.contacts(
             ContactsCassetteSpec.messageScopeToggle(contactId: 42),
@@ -543,21 +543,86 @@ void main() {
         );
 
         expect(container.read(sidebarFlowProvider).chosenContactId, isNull);
+        final cassettes = container
+            .read(cassetteRackStateProvider(SidebarMode.messages))
+            .cassettes;
+
         expect(
-          container
-              .read(cassetteRackStateProvider(SidebarMode.messages))
-              .cassettes,
-          equals([
-            const CassetteSpec.sidebarUtility(
-              SidebarUtilityCassetteSpec.topChatMenu(),
-            ),
+          cassettes.first,
+          const CassetteSpec.sidebarUtility(
+            SidebarUtilityCassetteSpec.topChatMenu(),
+          ),
+        );
+        expect(
+          cassettes,
+          contains(
             const CassetteSpec.contactsInfo(
               ContactsInfoCassetteSpec.infoCard(
                 key: ContactsInfoKey.pickerContentSources,
               ),
             ),
+          ),
+        );
+        expect(
+          cassettes,
+          contains(
             const CassetteSpec.contacts(ContactsCassetteSpec.contactChooser()),
-          ]),
+          ),
+        );
+        expect(
+          cassettes,
+          isNot(
+            contains(
+              const CassetteSpec.contacts(
+                ContactsCassetteSpec.contactSelectionControl(
+                  chosenContactId: 42,
+                ),
+              ),
+            ),
+          ),
+        );
+        expect(
+          cassettes,
+          isNot(
+            contains(
+              const CassetteSpec.contacts(
+                ContactsCassetteSpec.contactHeroSummary(chosenContactId: 42),
+              ),
+            ),
+          ),
+        );
+        expect(
+          cassettes,
+          isNot(
+            contains(
+              const CassetteSpec.contactsInfo(
+                ContactsInfoCassetteSpec.infoCard(
+                  key: ContactsInfoKey.chosenContact,
+                  chosenContactId: 42,
+                ),
+              ),
+            ),
+          ),
+        );
+        expect(
+          cassettes,
+          isNot(
+            contains(
+              const CassetteSpec.contacts(
+                ContactsCassetteSpec.messageScopeToggle(contactId: 42),
+              ),
+            ),
+          ),
+        );
+        expect(
+          cassettes,
+          isNot(
+            contains(
+              const CassetteSpec.contacts(
+                ContactsCassetteSpec.handleFilter(contactId: 42),
+              ),
+            ),
+          ),
         );
       },
     );

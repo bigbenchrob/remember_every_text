@@ -243,7 +243,7 @@ String _reconciliationResultLabel(MessageHistoryCoverageReport report) {
     MessageHistoryCoverageStatus.incompleteImport =>
       'Result: some source messages are still missing',
     MessageHistoryCoverageStatus.incompleteSourceHistory =>
-      'Result: locally complete, but this Mac\'s source history is limited',
+      "Result: locally complete, but this Mac's source history is limited",
     MessageHistoryCoverageStatus.unknown =>
       'Result: could not complete the check',
   };

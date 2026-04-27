@@ -7,7 +7,10 @@ import '../../../features/messages/feature_level_providers.dart'
 import '../../../features/settings/domain/spec_classes/settings_view_spec.dart';
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../logging/application/app_logger.dart';
+import '../../sidebar/application/sidebar_cassette_sectioning.dart';
 import '../../sidebar/feature_level_providers.dart';
+import '../../sidebar/presentation/view/sidebar_grouped_control_section_surface.dart';
+import '../../sidebar/presentation/view/sidebar_primary_context_section_surface.dart';
 import '../../sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 import '../domain/entities/panel_stack.dart';
 import '../domain/entities/view_spec.dart';
@@ -564,6 +567,7 @@ Widget _buildLeftPanelSurface({
   return MouseRegion(
     key: ValueKey<String>('left-panel-$mode-${rack.cassettes.join('|')}'),
     child: _LeftSidebarSurface(
+      mode: mode,
       cassetteEntries: cassetteEntries,
       contextualWidget: contextualWidget,
     ),
@@ -606,10 +610,12 @@ class RightPanelHost extends ConsumerWidget {
 /// Sidebar surface that separates pinned controls from scrollable content.
 class _LeftSidebarSurface extends StatelessWidget {
   const _LeftSidebarSurface({
+    required this.mode,
     required this.cassetteEntries,
     required this.contextualWidget,
   });
 
+  final SidebarMode mode;
   final List<({ResolvedSidebarCassette resolvedCassette, Widget widget})>
   cassetteEntries;
   final Widget? contextualWidget;
@@ -619,7 +625,8 @@ class _LeftSidebarSurface extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final controls = <Widget>[];
-        final content = <({Widget widget, bool shouldExpand})>[];
+        final mainContentEntries =
+            <({ResolvedSidebarCassette resolvedCassette, Widget widget})>[];
         var encounteredMainContent = false;
 
         for (final entry in cassetteEntries) {
@@ -639,13 +646,15 @@ class _LeftSidebarSurface extends StatelessWidget {
             controls.add(constrained);
           } else {
             encounteredMainContent = true;
-
-            final shouldExpand = shouldExpandSidebarCassette(
-              entry.resolvedCassette,
-            );
-            content.add((widget: constrained, shouldExpand: shouldExpand));
+            mainContentEntries.add(entry);
           }
         }
+
+        final content = _buildSidebarContentEntries(
+          mode: mode,
+          cassetteEntries: mainContentEntries,
+          maxWidth: constraints.maxWidth,
+        );
 
         if (contextualWidget case final contextualWidgetValue?) {
           content.add((
@@ -684,6 +693,132 @@ class _LeftSidebarSurface extends StatelessWidget {
       },
     );
   }
+}
+
+List<({Widget widget, bool shouldExpand})> _buildSidebarContentEntries({
+  required SidebarMode mode,
+  required List<({ResolvedSidebarCassette resolvedCassette, Widget widget})>
+  cassetteEntries,
+  required double maxWidth,
+}) {
+  final content = <({Widget widget, bool shouldExpand})>[];
+  var index = 0;
+
+  while (index < cassetteEntries.length) {
+    final entry = cassetteEntries[index];
+    final groupedEntries = _collectGroupedSectionEntries(
+      entries: cassetteEntries,
+      startIndex: index,
+    );
+
+    if (groupedEntries.length > 1) {
+      final sectionSurfaceStyle = sidebarCassetteSectionSurfaceStyleForPayload(
+        groupedEntries.first.resolvedCassette.payload,
+      );
+      content.add((
+        widget: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxWidth),
+          child: _buildGroupedSectionWidget(
+            mode: mode,
+            entries: groupedEntries,
+            sectionSurfaceStyle: sectionSurfaceStyle,
+          ),
+        ),
+        shouldExpand: groupedEntries.any(
+          (groupedEntry) =>
+              shouldExpandSidebarCassette(groupedEntry.resolvedCassette),
+        ),
+      ));
+      index += groupedEntries.length;
+      continue;
+    }
+
+    content.add((
+      widget: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: entry.widget,
+      ),
+      shouldExpand: shouldExpandSidebarCassette(entry.resolvedCassette),
+    ));
+    index += 1;
+  }
+
+  return content;
+}
+
+List<({ResolvedSidebarCassette resolvedCassette, Widget widget})>
+_collectGroupedSectionEntries({
+  required List<({ResolvedSidebarCassette resolvedCassette, Widget widget})>
+  entries,
+  required int startIndex,
+}) {
+  final firstEntry = entries[startIndex];
+  final firstSurfaceStyle = sidebarCassetteSectionSurfaceStyleForPayload(
+    firstEntry.resolvedCassette.payload,
+  );
+  if (firstSurfaceStyle == SidebarCassetteSectionSurfaceStyle.none) {
+    return [firstEntry];
+  }
+
+  final groupedEntries =
+      <({ResolvedSidebarCassette resolvedCassette, Widget widget})>[firstEntry];
+  for (var index = startIndex + 1; index < entries.length; index++) {
+    final candidate = entries[index];
+    if (!sidebarCassettePayloadJoinsSectionSurface(
+      leadPayload: firstEntry.resolvedCassette.payload,
+      candidatePayload: candidate.resolvedCassette.payload,
+    )) {
+      break;
+    }
+    groupedEntries.add(candidate);
+  }
+
+  return groupedEntries;
+}
+
+Widget _buildGroupedSectionWidget({
+  required SidebarMode mode,
+  required SidebarCassetteSectionSurfaceStyle sectionSurfaceStyle,
+  required List<({ResolvedSidebarCassette resolvedCassette, Widget widget})>
+  entries,
+}) {
+  final firstEntry = entries.first;
+  final sectionChildren = <Widget>[
+    for (var index = 0; index < entries.length; index++) ...[
+      if (index > 0)
+        SizedBox(height: entries[index].resolvedCassette.topSpacing),
+      KeyedSubtree(
+        key: ValueKey<String>(
+          'cassette:${mode.name}:${entries[index].resolvedCassette.cassetteIndex}:${entries[index].resolvedCassette.spec}',
+        ),
+        child: buildSidebarCassettePayloadWidget(
+          mode: mode,
+          resolvedCassette: ResolvedSidebarCassette(
+            spec: entries[index].resolvedCassette.spec,
+            cassetteIndex: entries[index].resolvedCassette.cassetteIndex,
+            payload: entries[index].resolvedCassette.payload,
+          ),
+        ),
+      ),
+    ],
+  ];
+
+  final sectionSurface = switch (sectionSurfaceStyle) {
+    SidebarCassetteSectionSurfaceStyle.groupedControls =>
+      SidebarGroupedControlSectionSurface(children: sectionChildren),
+    SidebarCassetteSectionSurfaceStyle.primaryContextGroup =>
+      SidebarPrimaryContextSectionSurface(children: sectionChildren),
+    SidebarCassetteSectionSurfaceStyle.none => Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: sectionChildren,
+    ),
+  };
+
+  return Padding(
+    padding: EdgeInsets.only(top: firstEntry.resolvedCassette.topSpacing),
+    child: sectionSurface,
+  );
 }
 
 class _ContentFillColumn extends StatelessWidget {

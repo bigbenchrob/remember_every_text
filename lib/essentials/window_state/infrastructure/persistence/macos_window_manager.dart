@@ -6,9 +6,6 @@ import 'package:macos_window_utils/macos_window_utils.dart';
 import '../../domain/ports/window_manager_port.dart';
 
 class MacosWindowManager implements WindowManagerPort {
-  static const double _minWidth = 900.0;
-  static const double _minHeight = 720.0;
-
   @override
   Future<void> setWindowFrame({
     required double x,
@@ -24,8 +21,6 @@ class MacosWindowManager implements WindowManagerPort {
       await WindowManipulator.setWindowFrame(
         Rect.fromLTWH(x, y, width, height),
       );
-
-      await _setMinSize(const Size(_minWidth, _minHeight));
     } catch (e) {
       // Silently fail if window manipulation is not available
     }

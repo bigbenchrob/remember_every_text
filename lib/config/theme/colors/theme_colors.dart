@@ -160,6 +160,22 @@ class Surfaces {
   Color get surfaceRaised =>
       _r(const ColorPair(Color(0xFFFFFFFF), Color(0xFF323638)));
 
+  /// Minimal grouped-section tint for closely related sidebar controls.
+  ///
+  /// This is intentionally much quieter than a card surface: just enough tone
+  /// shift to suggest a shared control block without introducing a new chrome
+  /// hierarchy.
+  Color get groupedControlSection =>
+      _r(const ColorPair(Color(0x0A000000), Color(0x14FFFFFF)));
+
+  /// Calm grouped-section tint for a primary context cassette with its
+  /// supporting explanation.
+  ///
+  /// Quieter than grouped controls and much quieter than a card surface, but
+  /// still visible enough that the entity and its help text read as one region.
+  Color get primaryContextSection =>
+      _r(const ColorPair(Color(0x07000000), Color(0x10FFFFFF)));
+
   /// Fill for interactive controls (buttons, chips, inputs).
   Color get control =>
       _r(const ColorPair(Color(0xFFF2F3F5), Color(0xFF3A3E40)));
@@ -623,10 +639,12 @@ enum DropdownMenu {
     // Light: 16% accent blue on white. Dark: visible luminance lift.
     DropdownMenu.selectedBg: ColorPair(
       Color(0x290A84FF), // ~16% blue on white
-      Color(0xFF454A4C), // confident lift from surfaceRaised 0xFF323638
+      Color(
+        0x405287B8,
+      ), // 25% slightly brighter blue tint on dark control chrome
     ),
-    // Light: accent blue. Dark: high-emphasis white (luminance > hue).
-    DropdownMenu.selectedText: ColorPair(Color(0xFF007AFF), Color(0xFFFFFFFF)),
+    // Selected row label: accent blue in light, brighter accent blue in dark.
+    DropdownMenu.selectedText: ColorPair(Color(0xFF007AFF), Color(0xFF4DA6FF)),
     // Checkmark: accent in both modes, but brighter in dark.
     DropdownMenu.checkmark: ColorPair(Color(0xFF007AFF), Color(0xFF4DA6FF)),
     // Chevron icon: accent in light, secondary content in dark.

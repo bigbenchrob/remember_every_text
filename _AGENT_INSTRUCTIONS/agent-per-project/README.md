@@ -2,7 +2,7 @@
 tier: project
 scope: index
 owner: agent-per-project
-last_reviewed: 2026-04-26
+last_reviewed: 2026-04-27
 source_of_truth: doc
 links:
   - ../agent-instructions-shared/INDEX.md
@@ -15,6 +15,10 @@ tests: []
 This directory captures Remember Every Text–specific documentation that complements the shared rules in `agent-instructions-shared/`. Start here before modifying the app or its data pipelines.
 
 > ⚠️ Read `_AGENT_INSTRUCTIONS/agent-instructions-shared/00-global/agent-guardrails.md` before using this index. The guardrails define planning, approval, and diff-scope rules for all agents.
+
+## Agent Prompt Harness
+
+Use [`00-GLOBAL/AGENT-PROMPT-HARNESS.md`](00-GLOBAL/AGENT-PROMPT-HARNESS.md) before non-trivial Copilot/Codex runs. It defines standard prompt templates, architecture constraints, cost-control rules, and review rubrics for keeping MessageLens agent work deterministic and bounded.
 
 ## 🔥 Quick Facts
 

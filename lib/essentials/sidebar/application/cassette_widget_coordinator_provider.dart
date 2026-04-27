@@ -246,23 +246,19 @@ List<ResolvedSidebarCassette> _applySidebarSectionSpacing(
   List<ResolvedSidebarCassette> resolvedCassettes,
 ) {
   final spacedCassettes = <ResolvedSidebarCassette>[];
-  SidebarCassetteSection? previousSection;
+  SidebarCassettePayload? previousPayload;
 
   for (final resolvedCassette in resolvedCassettes) {
-    final currentSection = sidebarCassetteSectionForRole(
-      resolvedCassette.payload.role,
-    );
-    final sectionTopSpacing = sidebarCassetteSectionTopSpacing(
-      previousSection: previousSection,
-      currentSection: currentSection,
+    final sectionTopSpacing = sidebarCassetteTopSpacing(
+      previousPayload: previousPayload,
+      currentPayload: resolvedCassette.payload,
     );
 
     assert(() {
-      if (previousSection == currentSection && sectionTopSpacing != 0) {
+      if (previousPayload == null && sectionTopSpacing != 0) {
         throw StateError(
-          'sidebarCassetteSectionTopSpacing must return 0 for contiguous '
-          'same-section cassettes. Intra-section rhythm belongs to '
-          'payload.topSpacing or card chrome, not the sectioning layer.',
+          'sidebarCassetteTopSpacing must return 0 for the first '
+          'resolved cassette in the rack.',
         );
       }
 
@@ -277,7 +273,7 @@ List<ResolvedSidebarCassette> _applySidebarSectionSpacing(
         topSpacing: resolvedCassette.payload.topSpacing + sectionTopSpacing,
       ),
     );
-    previousSection = currentSection;
+    previousPayload = resolvedCassette.payload;
   }
 
   return spacedCassettes;

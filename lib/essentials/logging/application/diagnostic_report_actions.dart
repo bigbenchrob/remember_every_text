@@ -5,7 +5,7 @@ import '../infrastructure/log_export_service.dart';
 import '../infrastructure/log_file_writer.dart';
 import '../infrastructure/support_bundle_export_service.dart';
 
-const developerDiagnosticRecipientEmail = 'bigbenchrob@gmail.com';
+const developerDiagnosticRecipientEmail = 'messagelens@gmail.com';
 
 Future<DiagnosticReportPresentationResult> exportDiagnosticReport(
   LogFileWriter writer, {

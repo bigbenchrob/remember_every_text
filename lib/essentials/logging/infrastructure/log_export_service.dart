@@ -5,7 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'support_bundle_export_service.dart';
 
-const _defaultDiagnosticRecipientEmail = 'bigbenchrob@gmail.com';
+const _defaultDiagnosticRecipientEmail = 'messagelens@gmail.com';
 const _defaultAttachedEmailBodyLines = <String>[
   'MessageLens attached the support bundle to this draft.',
   '',
@@ -57,7 +57,8 @@ class LogExportService {
       final mailAttachmentArchive = await createSupportBundleMailArchive(
         bundle.bundleDirectory,
       );
-      final attachedToMailDraft = mailAttachmentArchive != null &&
+      final attachedToMailDraft =
+          mailAttachmentArchive != null &&
           await _tryComposeAppleMailDraft(
             attachmentFiles: [mailAttachmentArchive],
             recipientEmail: recipientEmail,

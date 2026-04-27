@@ -15,19 +15,19 @@ CassetteSpec? resolveContactsChild(
       return null;
     },
     contactSelectionControl: (chosenContactId) {
-      // Selection control sits below the contextual info card and above
-      // the message-scope toggle.
-      // Chain: heroSummary → infoCard(chosenContact)
-      //     → selectionControl → messageScopeToggle
-      //     → handleFilter → heatMap
+      // Selection control sits directly beneath the top-menu selector and
+      // above the resolved hero card.
+      // Chain: selectionControl → heroSummary → infoCard(chosenContact)
+      //     → messageScopeToggle → handleFilter → heatMap
       return CassetteSpec.contacts(
-        ContactsCassetteSpec.messageScopeToggle(contactId: chosenContactId),
+        ContactsCassetteSpec.contactHeroSummary(
+          chosenContactId: chosenContactId,
+        ),
       );
     },
     contactHeroSummary: (chosenContactId) {
       // Hero summary cascades to the contextual info card.
-      // Chain: heroSummary → infoCard(chosenContact)
-      //     → contactSelectionControl → messageScopeToggle
+      // Chain: selectionControl → heroSummary → infoCard(chosenContact)
       //     → handleFilter → heatMap
       return CassetteSpec.contactsInfo(
         ContactsInfoCassetteSpec.infoCard(

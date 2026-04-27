@@ -24,7 +24,7 @@ void main() {
 
       expect(viewModel.contactId, 42);
       expect(viewModel.cassetteIndex, 2);
-      expect(viewModel.role, SidebarCassetteRole.action);
+      expect(viewModel.role, SidebarCassetteRole.appControl);
       expect(viewModel.placementMode, SidebarBodyPlacementMode.fullWidth);
       expect(
         viewModel.contentAlignment,

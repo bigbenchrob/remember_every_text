@@ -138,7 +138,7 @@ void main() {
       );
       expect(
         model.reconciliationResultLabel,
-        'Result: locally complete, but this Mac\'s source history is limited',
+        "Result: locally complete, but this Mac's source history is limited",
       );
     });
 

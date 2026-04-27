@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -8,6 +9,8 @@ import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../../essentials/sidebar/application/sidebar_action_dispatcher.dart';
+import '../../../../../essentials/sidebar/application/sidebar_cassette_sectioning.dart';
+import '../../../../../essentials/sidebar/presentation/view/sidebar_menu_section_header.dart';
 import '../../../domain/settings_top_menu_row.dart';
 import '../payloads/settings_top_menu_cassette_payload.dart';
 
@@ -18,7 +21,7 @@ class SettingsTopMenuWidget extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isOpen = useState(false);
+    final isOpen = useState(payload.persistentContextActionId == null);
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
@@ -27,6 +30,14 @@ class SettingsTopMenuWidget extends HookConsumerWidget {
     final selectedLabel =
         payload.persistentContextActionId?.label ?? payload.promptLabel;
     final hasSelection = payload.persistentContextActionId != null;
+
+    useEffect(() {
+      if (!hasSelection) {
+        isOpen.value = true;
+      }
+
+      return null;
+    }, [hasSelection]);
 
     Future<void> handleActionSelected(SettingsTopMenuActionRow row) async {
       isOpen.value = false;
@@ -76,17 +87,17 @@ class SettingsTopMenuWidget extends HookConsumerWidget {
                   const SizedBox(width: 12),
                   DecoratedBox(
                     decoration: BoxDecoration(
-                      color: colors.accents.primary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(999),
+                      color: colors.dropdownMenu(DropdownMenu.chevronBg),
+                      borderRadius: BorderRadius.circular(4),
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.all(6),
-                      child: Text(
-                        isOpen.value ? '▴' : '▾',
-                        style: typography.caption.copyWith(
-                          color: colors.accents.primary,
-                          height: 1,
-                        ),
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(
+                        isOpen.value
+                            ? CupertinoIcons.chevron_up
+                            : CupertinoIcons.chevron_down,
+                        size: 12,
+                        color: colors.dropdownMenu(DropdownMenu.chevronIcon),
                       ),
                     ),
                   ),
@@ -107,27 +118,17 @@ class SettingsTopMenuWidget extends HookConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  for (final row in payload.rows)
-                    switch (row) {
-                      SettingsTopMenuGroupHeaderRow() => Padding(
-                        padding: const EdgeInsets.only(
-                          left: 12,
-                          right: 12,
-                          top: 8,
-                          bottom: 4,
+                  for (final entry in payload.rows.asMap().entries)
+                    switch (entry.value) {
+                      SettingsTopMenuGroupHeaderRow(:final label) =>
+                        SidebarMenuSectionHeader(
+                          label: label,
+                          isFirstInMenu: entry.key == 0,
                         ),
-                        child: Text(
-                          row.label,
-                          style: typography.caption.copyWith(
-                            color: colors.content.textTertiary,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                      ),
-                      SettingsTopMenuActionRow() =>
-                        _SettingsTopMenuActionRowWidget(
+                      SettingsTopMenuActionRow() => (() {
+                        final row = entry.value as SettingsTopMenuActionRow;
+
+                        return _SettingsTopMenuActionRowWidget(
                           row: row,
                           isSelected:
                               row.isPersistentContext &&
@@ -135,7 +136,8 @@ class SettingsTopMenuWidget extends HookConsumerWidget {
                           onSelected: () {
                             return handleActionSelected(row);
                           },
-                        ),
+                        );
+                      })(),
                     },
                 ],
               ),
@@ -165,7 +167,7 @@ class _SettingsTopMenuActionRowWidget extends HookConsumerWidget {
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
     final backgroundColor = isSelected
-        ? colors.accents.primary.withValues(alpha: 0.12)
+        ? colors.dropdownMenu(DropdownMenu.selectedBg)
         : isHovered.value
         ? colors.content.textPrimary.withValues(alpha: 0.05)
         : const Color(0x00000000);
@@ -186,7 +188,10 @@ class _SettingsTopMenuActionRowWidget extends HookConsumerWidget {
         child: DecoratedBox(
           decoration: BoxDecoration(color: backgroundColor),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(
+              horizontal: sidebarMenuItemHorizontalInset,
+              vertical: 10,
+            ),
             child: Row(
               children: [
                 Expanded(
@@ -194,7 +199,7 @@ class _SettingsTopMenuActionRowWidget extends HookConsumerWidget {
                     row.label,
                     style: typography.controlValue.copyWith(
                       color: isSelected
-                          ? colors.accents.primary
+                          ? colors.dropdownMenu(DropdownMenu.selectedText)
                           : colors.content.textPrimary,
                     ),
                   ),
@@ -203,7 +208,7 @@ class _SettingsTopMenuActionRowWidget extends HookConsumerWidget {
                   Text(
                     '✓',
                     style: typography.controlValue.copyWith(
-                      color: colors.accents.primary,
+                      color: colors.dropdownMenu(DropdownMenu.checkmark),
                     ),
                   ),
               ],

@@ -321,7 +321,7 @@ class SidebarFlow extends _$SidebarFlow {
     );
 
     final newSpec = CassetteSpec.contacts(
-      ContactsCassetteSpec.contactHeroSummary(chosenContactId: contactId),
+      ContactsCassetteSpec.contactSelectionControl(chosenContactId: contactId),
     );
 
     ref

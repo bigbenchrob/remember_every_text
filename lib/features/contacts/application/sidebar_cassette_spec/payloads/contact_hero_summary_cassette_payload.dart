@@ -16,6 +16,7 @@ final class ContactHeroSummaryCassettePayload
     super.isNaked = true,
     super.shouldExpand = false,
     super.role = SidebarCassetteRole.contextPrimary,
+    super.semanticStyle = SidebarCassetteSemanticStyle.primaryContextGroup,
     super.topSpacing = 0,
   });
 

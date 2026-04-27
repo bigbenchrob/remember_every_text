@@ -25,9 +25,13 @@ class WindowStateService {
   static const Duration _screenChangeReconcileDelay = Duration(
     milliseconds: 140,
   );
+  static const Duration _transientShrinkProtectionDuration = Duration(
+    seconds: 2,
+  );
 
   double? _baseWindowWidthBeforeEndSidebar;
   bool _isEndSidebarExpanded = false;
+  DateTime? _guardUnexpectedShrinkUntil;
 
   WindowStateService({
     required WindowStoragePort storage,
@@ -147,10 +151,12 @@ class WindowStateService {
       final previousState = existingState;
       final widthShrankUnexpectedly =
           includeSize &&
+          _shouldGuardUnexpectedShrink() &&
           currentState.width < previousState.width &&
           currentState.width < previousState.width * _shrinkRatioThreshold;
       final heightShrankUnexpectedly =
           includeSize &&
+          _shouldGuardUnexpectedShrink() &&
           currentState.height < previousState.height &&
           currentState.height < previousState.height * _shrinkRatioThreshold;
 
@@ -175,6 +181,10 @@ class WindowStateService {
   /// Reconcile window size after display transitions to avoid unintended shrinking
   Future<void> reconcileAfterScreenChange() async {
     try {
+      _guardUnexpectedShrinkUntil = DateTime.now().add(
+        _transientShrinkProtectionDuration,
+      );
+
       final savedState = _cachedState ?? await loadWindowState();
 
       // Give macOS a moment to finish its automatic adjustments before reading frame data.
@@ -401,5 +411,19 @@ class WindowStateService {
       height: normalizedHeight,
       sidebarWidth: normalizedSidebarWidth,
     );
+  }
+
+  bool _shouldGuardUnexpectedShrink() {
+    final guardUntil = _guardUnexpectedShrinkUntil;
+    if (guardUntil == null) {
+      return false;
+    }
+
+    if (DateTime.now().isAfter(guardUntil)) {
+      _guardUnexpectedShrinkUntil = null;
+      return false;
+    }
+
+    return true;
   }
 }

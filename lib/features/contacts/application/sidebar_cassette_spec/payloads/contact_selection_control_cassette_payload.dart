@@ -15,7 +15,7 @@ final class ContactSelectionControlCassettePayload
     super.layoutStyle = SidebarCardLayoutStyle.standard,
     super.isNaked = true,
     super.shouldExpand = false,
-    super.role = SidebarCassetteRole.action,
+    super.role = SidebarCassetteRole.appControl,
     super.topSpacing = 0,
   });
 

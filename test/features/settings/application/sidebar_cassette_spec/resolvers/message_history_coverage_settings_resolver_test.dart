@@ -19,7 +19,7 @@ void main() {
       expect(
         payload.bodyText,
         contains(
-          'MessageLens compares the messages stored in your Mac\'s Messages database (chat.db) with the messages it has imported and organized.',
+          "MessageLens compares the messages stored in your Mac's Messages database (chat.db) with the messages it has imported and organized.",
         ),
       );
       expect(payload.footnote, isNull);

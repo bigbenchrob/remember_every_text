@@ -7,6 +7,7 @@ import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
+import '../../../../../essentials/sidebar/application/sidebar_cassette_sectioning.dart';
 import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart';
 import '../../../domain/calendar_heatmap_timeline_data.dart';
@@ -179,6 +180,9 @@ class MessageHeatmapContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final typography = ref.watch(themeTypographyProvider);
+    final visualizationGap = sidebarCassetteContentGapForSemanticStyle(
+      SidebarCassetteSemanticStyle.visualization,
+    );
     final summaryText =
         '${NumberFormat.decimalPattern().format(data.totalMessages)} messages '
         '• ${_formatDateRange(data.firstMessageDate, data.lastMessageDate)}';
@@ -187,7 +191,7 @@ class MessageHeatmapContent extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(summaryText, style: typography.vizMeta),
-        const SizedBox(height: AppSpacing.cassetteContentGap),
+        SizedBox(height: visualizationGap),
         CalendarHeatmapTimelineWidget(
           data: data,
           monthSize: 12,
@@ -196,10 +200,7 @@ class MessageHeatmapContent extends ConsumerWidget {
           monthTooltipBuilder: monthTooltipBuilder,
           onMonthTap: onMonthTap,
         ),
-        if (legend != null) ...[
-          const SizedBox(height: AppSpacing.cassetteContentGap),
-          legend!,
-        ],
+        if (legend != null) ...[SizedBox(height: visualizationGap), legend!],
         Padding(
           padding: const EdgeInsets.only(top: AppSpacing.cassetteHintGap),
           child: Text(hintText, style: typography.caption, softWrap: true),

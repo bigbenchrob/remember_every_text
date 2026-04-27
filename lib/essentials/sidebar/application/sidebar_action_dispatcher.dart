@@ -119,7 +119,7 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
         ref
             .read(sidebarFlowProvider.notifier)
             .chooseAnotherContact(
-              infoCardIndex: _requireContactHeroSummaryIndex(context),
+              infoCardIndex: _requireChosenContactBranchStartIndex(context),
             );
       case ContactHandleSelected(:final contactId, :final handleId):
         ref
@@ -319,7 +319,9 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
     return cassetteIndex - 1;
   }
 
-  int _requireContactHeroSummaryIndex(SidebarActionDispatchContext context) {
+  int _requireChosenContactBranchStartIndex(
+    SidebarActionDispatchContext context,
+  ) {
     final cassetteIndex = _requireCassetteIndex(context);
     final rack = ref.read(cassetteRackStateProvider(context.sidebarMode));
     if (rack.cassettes.isEmpty) {
@@ -327,24 +329,25 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
     }
 
     final upperBound = math.min(cassetteIndex, rack.cassettes.length - 1);
-    for (var index = upperBound; index >= 0; index--) {
+    for (var index = 0; index <= upperBound; index++) {
       final cassette = rack.cassettes[index];
-      final isContactHeroSummary = cassette.maybeMap(
+      final isChosenBranchStart = cassette.maybeMap(
         contacts: (contactsCassette) {
           return contactsCassette.spec.maybeWhen(
+            contactSelectionControl: (_) => true,
             contactHeroSummary: (_) => true,
             orElse: () => false,
           );
         },
         orElse: () => false,
       );
-      if (isContactHeroSummary) {
+      if (isChosenBranchStart) {
         return index;
       }
     }
 
     throw StateError(
-      'Sidebar action requires a preceding contact hero summary cassette at '
+      'Sidebar action requires a preceding chosen-contact branch cassette at '
       'or before index $cassetteIndex.',
     );
   }

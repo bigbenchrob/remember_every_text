@@ -10,6 +10,7 @@ import 'package:remember_this_text/essentials/sidebar/application/cassette_rack_
 import 'package:remember_this_text/essentials/sidebar/application/cassette_widget_coordinator_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/application/ephemeral_cassette_projection_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/application/renderable_sidebar_cassette_specs_provider.dart';
+import 'package:remember_this_text/essentials/sidebar/application/sidebar_cassette_sectioning.dart';
 import 'package:remember_this_text/essentials/sidebar/domain/entities/cassette_spec.dart';
 import 'package:remember_this_text/essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/payloads/contact_chooser_cassette_payload.dart';
@@ -23,6 +24,7 @@ import 'package:remember_this_text/features/contacts/application/sidebar_cassett
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/resolver_tools/unified_picker_sections_provider.dart';
 import 'package:remember_this_text/features/contacts/domain/participant_origin.dart';
 import 'package:remember_this_text/features/contacts/domain/spec_classes/contacts_cassette_spec.dart';
+import 'package:remember_this_text/features/contacts/domain/spec_classes/contacts_info_cassette_spec.dart';
 import 'package:remember_this_text/features/contacts/infrastructure/repositories/contacts_list_repository.dart';
 import 'package:remember_this_text/features/handles/application/sidebar_cassette_spec/payloads/stray_emails_cassette_payload.dart';
 import 'package:remember_this_text/features/handles/application/sidebar_cassette_spec/payloads/stray_handles_mode_switcher_cassette_payload.dart';
@@ -42,6 +44,7 @@ import 'package:remember_this_text/features/sidebar_utilities/application/sideba
 import 'package:remember_this_text/features/sidebar_utilities/application/sidebar_cassette_spec/payloads/top_chat_menu_cassette_payload.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
+
 import '../../../test_support/cassette_rack_test_harness.dart';
 
 void main() {
@@ -156,7 +159,7 @@ void main() {
         expect(payload.role, SidebarCassetteRole.appControl);
         expect(payload.promptLabel, 'Choose setting or action');
         expect(payload.persistentContextActionId, isNull);
-        expect(payload.rows, hasLength(6));
+        expect(payload.rows, hasLength(7));
       },
     );
 
@@ -699,6 +702,88 @@ void main() {
       expect(payload.cassetteIndex, 0);
       expect(payload.isNaked, isTrue);
     });
+
+    test(
+      'audits chosen-contact sidebar roles, semantic styles, and spacing',
+      () async {
+        container
+            .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
+            .setRackForTesting([
+              const CassetteSpec.sidebarUtility(
+                SidebarUtilityCassetteSpec.topChatMenu(),
+              ),
+              const CassetteSpec.contacts(
+                ContactsCassetteSpec.contactSelectionControl(
+                  chosenContactId: 42,
+                ),
+              ),
+              const CassetteSpec.contacts(
+                ContactsCassetteSpec.contactHeroSummary(chosenContactId: 42),
+              ),
+              const CassetteSpec.contactsInfo(
+                ContactsInfoCassetteSpec.infoCard(
+                  key: ContactsInfoKey.chosenContact,
+                  chosenContactId: 42,
+                ),
+              ),
+              const CassetteSpec.contacts(
+                ContactsCassetteSpec.messageScopeToggle(contactId: 42),
+              ),
+              const CassetteSpec.contacts(
+                ContactsCassetteSpec.handleFilter(contactId: 42),
+              ),
+              const CassetteSpec.messages(
+                MessagesCassetteSpec.heatMap(contactId: 42),
+              ),
+            ]);
+
+        final resolved = await _resolveSidebarCassettes(
+          container,
+          SidebarMode.messages,
+        );
+
+        expect(resolved, hasLength(7));
+        expect(
+          resolved.map((cassette) => cassette.payload.role).toList(),
+          equals([
+            SidebarCassetteRole.appControl,
+            SidebarCassetteRole.appControl,
+            SidebarCassetteRole.contextPrimary,
+            SidebarCassetteRole.contextSecondary,
+            SidebarCassetteRole.filter,
+            SidebarCassetteRole.filter,
+            SidebarCassetteRole.contextPrimary,
+          ]),
+        );
+        expect(
+          resolved
+              .map(
+                (cassette) =>
+                    sidebarCassetteSemanticStyleForPayload(cassette.payload),
+              )
+              .toList(),
+          equals([
+            SidebarCassetteSemanticStyle.plain,
+            SidebarCassetteSemanticStyle.plain,
+            SidebarCassetteSemanticStyle.primaryContextGroup,
+            SidebarCassetteSemanticStyle.supportingContext,
+            SidebarCassetteSemanticStyle.groupedControls,
+            SidebarCassetteSemanticStyle.groupedControls,
+            SidebarCassetteSemanticStyle.visualization,
+          ]),
+        );
+        expect(resolved[0].topSpacing, 0);
+        expect(resolved[1].topSpacing, sidebarCassetteInternalSectionSpacing);
+        expect(resolved[2].topSpacing, sidebarCassetteMicroSpacing);
+        expect(resolved[3].topSpacing, sidebarCassetteSupportingSectionSpacing);
+        expect(
+          resolved[4].topSpacing,
+          sidebarCassetteSupportingToControlsSpacing,
+        );
+        expect(resolved[5].topSpacing, sidebarCassetteInternalSectionSpacing);
+        expect(resolved[6].topSpacing, sidebarCassetteInterSectionSpacing);
+      },
+    );
 
     test('resolves handle filter spec to inert payload', () async {
       container

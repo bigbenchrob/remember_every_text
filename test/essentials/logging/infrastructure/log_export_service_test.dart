@@ -43,7 +43,7 @@ void main() {
         '/Users/test/Library/Application Support/com.bigbenchsoftware.MessageLens/import_log',
         '/Users/test/Library/Application Support/com.bigbenchsoftware.MessageLens/migrate_log',
       ],
-      recipientEmail: 'bigbenchrob@gmail.com',
+      recipientEmail: 'messagelens@gmail.com',
       subject: 'MessageLens "Report"',
       bodyText: 'Please review the attached report.',
     );
@@ -76,7 +76,7 @@ void main() {
     expect(
       args,
       contains(
-        'make new to recipient at end of to recipients with properties {address:"bigbenchrob@gmail.com"}',
+        'make new to recipient at end of to recipients with properties {address:"messagelens@gmail.com"}',
       ),
     );
     expect(

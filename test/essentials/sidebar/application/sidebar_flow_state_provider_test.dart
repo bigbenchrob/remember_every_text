@@ -117,7 +117,7 @@ void main() {
     });
 
     testWidgets(
-      'contactChosen resets subordinate state and builds chosen-contact branch',
+      'contactChosen resets subordinate state and starts chosen-contact branch at selection control',
       (tester) async {
         await _mountMessagesPanelReconciliation(tester, container);
 
@@ -138,34 +138,51 @@ void main() {
         expect(flowState.selectedHandleId, isNull);
         expect(flowState.messageScope, SidebarFlowMessageScope.regular);
 
+        expect(rack.cassettes.first, _topChatMenuSpec());
+
+        final selectionControlIndex = _contactSpecIndex(
+          rack.cassettes,
+          const ContactsCassetteSpec.contactSelectionControl(
+            chosenContactId: 42,
+          ),
+        );
+        final heroIndex = _contactSpecIndex(
+          rack.cassettes,
+          const ContactsCassetteSpec.contactHeroSummary(chosenContactId: 42),
+        );
+        final chosenInfoIndex = _contactsInfoSpecIndex(
+          rack.cassettes,
+          const ContactsInfoCassetteSpec.infoCard(
+            key: ContactsInfoKey.chosenContact,
+            chosenContactId: 42,
+          ),
+        );
+
+        expect(selectionControlIndex, lessThan(heroIndex));
+        expect(heroIndex, lessThan(chosenInfoIndex));
         expect(
           rack.cassettes,
-          equals([
-            const CassetteSpec.sidebarUtility(
-              SidebarUtilityCassetteSpec.topChatMenu(),
-            ),
-            const CassetteSpec.contacts(
-              ContactsCassetteSpec.contactHeroSummary(chosenContactId: 42),
-            ),
-            const CassetteSpec.contactsInfo(
-              ContactsInfoCassetteSpec.infoCard(
-                key: ContactsInfoKey.chosenContact,
-                chosenContactId: 42,
-              ),
-            ),
-            const CassetteSpec.contacts(
-              ContactsCassetteSpec.contactSelectionControl(chosenContactId: 42),
-            ),
+          contains(
             const CassetteSpec.contacts(
               ContactsCassetteSpec.messageScopeToggle(contactId: 42),
             ),
+          ),
+        );
+        expect(
+          rack.cassettes,
+          contains(
             const CassetteSpec.contacts(
               ContactsCassetteSpec.handleFilter(contactId: 42),
             ),
+          ),
+        );
+        expect(
+          rack.cassettes,
+          contains(
             const CassetteSpec.messages(
               MessagesCassetteSpec.heatMap(contactId: 42),
             ),
-          ]),
+          ),
         );
         expect(
           centerSpec,
@@ -215,7 +232,7 @@ void main() {
     });
 
     testWidgets(
-      'chooseAnotherContact restores picker branch and clears panels',
+      'chooseAnotherContact replaces the whole chosen-contact branch and clears panels',
       (tester) async {
         await _mountMessagesPanelReconciliation(tester, container);
 
@@ -246,22 +263,160 @@ void main() {
         expect(flowState.selectedHandleId, isNull);
         expect(flowState.messageScope, SidebarFlowMessageScope.regular);
 
+        expect(rack.cassettes.first, _topChatMenuSpec());
         expect(
           rack.cassettes,
-          equals([
-            const CassetteSpec.sidebarUtility(
-              SidebarUtilityCassetteSpec.topChatMenu(),
-            ),
+          contains(
             const CassetteSpec.contactsInfo(
               ContactsInfoCassetteSpec.infoCard(
                 key: ContactsInfoKey.pickerContentSources,
               ),
             ),
+          ),
+        );
+        expect(
+          rack.cassettes,
+          contains(
             const CassetteSpec.contacts(ContactsCassetteSpec.contactChooser()),
-          ]),
+          ),
+        );
+        expect(
+          rack.cassettes,
+          isNot(
+            contains(
+              const CassetteSpec.contacts(
+                ContactsCassetteSpec.contactSelectionControl(
+                  chosenContactId: 42,
+                ),
+              ),
+            ),
+          ),
+        );
+        expect(
+          rack.cassettes,
+          isNot(
+            contains(
+              const CassetteSpec.contacts(
+                ContactsCassetteSpec.contactHeroSummary(chosenContactId: 42),
+              ),
+            ),
+          ),
+        );
+        expect(
+          rack.cassettes,
+          isNot(
+            contains(
+              const CassetteSpec.contactsInfo(
+                ContactsInfoCassetteSpec.infoCard(
+                  key: ContactsInfoKey.chosenContact,
+                  chosenContactId: 42,
+                ),
+              ),
+            ),
+          ),
+        );
+        expect(
+          rack.cassettes,
+          isNot(
+            contains(
+              const CassetteSpec.contacts(
+                ContactsCassetteSpec.messageScopeToggle(contactId: 42),
+              ),
+            ),
+          ),
+        );
+        expect(
+          rack.cassettes,
+          isNot(
+            contains(
+              const CassetteSpec.contacts(
+                ContactsCassetteSpec.handleFilter(contactId: 42),
+              ),
+            ),
+          ),
         );
         expect(panelState[WindowPanel.center]?.isEmpty, isTrue);
         expect(panelState[WindowPanel.right]?.isEmpty, isTrue);
+      },
+    );
+
+    testWidgets(
+      'contactChosen removes stale hero, info, and filter specs when replacing contact',
+      (tester) async {
+        await _mountMessagesPanelReconciliation(tester, container);
+
+        final flow = container.read(sidebarFlowProvider.notifier);
+
+        flow.contactChosen(contactId: 41, infoCardIndex: 1);
+        flow.handleSelected(contactId: 41, handleId: 7, cassetteIndex: 5);
+        flow.contactChosen(contactId: 42, infoCardIndex: 1);
+
+        await _flushMessagesPanelReconciliation(tester);
+
+        final rack = container.read(
+          cassetteRackStateProvider(SidebarMode.messages),
+        );
+
+        expect(
+          rack.cassettes,
+          contains(
+            const CassetteSpec.contacts(
+              ContactsCassetteSpec.contactSelectionControl(chosenContactId: 42),
+            ),
+          ),
+        );
+        expect(
+          rack.cassettes,
+          contains(
+            const CassetteSpec.contacts(
+              ContactsCassetteSpec.contactHeroSummary(chosenContactId: 42),
+            ),
+          ),
+        );
+        expect(
+          rack.cassettes,
+          contains(
+            const CassetteSpec.contactsInfo(
+              ContactsInfoCassetteSpec.infoCard(
+                key: ContactsInfoKey.chosenContact,
+                chosenContactId: 42,
+              ),
+            ),
+          ),
+        );
+        expect(
+          rack.cassettes,
+          isNot(
+            contains(
+              const CassetteSpec.contacts(
+                ContactsCassetteSpec.contactHeroSummary(chosenContactId: 41),
+              ),
+            ),
+          ),
+        );
+        expect(
+          rack.cassettes,
+          isNot(
+            contains(
+              const CassetteSpec.contactsInfo(
+                ContactsInfoCassetteSpec.infoCard(
+                  key: ContactsInfoKey.chosenContact,
+                  chosenContactId: 41,
+                ),
+              ),
+            ),
+          ),
+        );
+        expect(
+          rack.cassettes,
+          isNot(
+            contains(
+              const CassetteSpec.contacts(
+                ContactsCassetteSpec.handleFilter(contactId: 41),
+              ),
+            ),
+          ),
+        );
       },
     );
 
@@ -585,6 +740,27 @@ ViewSpec? _activeSpec(ProviderContainer container, WindowPanel panel) {
 
   final stacks = container.read(panelsViewStateProvider(SidebarMode.messages));
   return stacks[panel]?.activePage?.spec;
+}
+
+CassetteSpec _topChatMenuSpec() {
+  return const CassetteSpec.sidebarUtility(
+    SidebarUtilityCassetteSpec.topChatMenu(),
+  );
+}
+
+int _contactSpecIndex(List<CassetteSpec> cassettes, ContactsCassetteSpec spec) {
+  final index = cassettes.indexOf(CassetteSpec.contacts(spec));
+  expect(index, greaterThanOrEqualTo(0));
+  return index;
+}
+
+int _contactsInfoSpecIndex(
+  List<CassetteSpec> cassettes,
+  ContactsInfoCassetteSpec spec,
+) {
+  final index = cassettes.indexOf(CassetteSpec.contactsInfo(spec));
+  expect(index, greaterThanOrEqualTo(0));
+  return index;
 }
 
 class _AlwaysPopulatedWorkingDb extends WorkingDbPopulated {

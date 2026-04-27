@@ -38,6 +38,7 @@ class ContactsInfoCassetteCoordinator
 
         return StaticFeatureInfoSidebarCassettePayload(
           role: SidebarCassetteRole.contextSecondary,
+          semanticStyle: SidebarCassetteSemanticStyle.supportingContext,
           title: content.title,
           bodyText: content.body,
         );

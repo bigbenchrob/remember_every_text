@@ -99,9 +99,9 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
   @override
   Future<void> confirmResetAndPrepareReimport() async {
     final logger = _ref.read(appLoggerProvider.notifier);
-    final navigatorContext = appNavigatorKey.currentContext;
+    final proceedDialogContext = appNavigatorKey.currentContext;
 
-    if (navigatorContext == null) {
+    if (proceedDialogContext == null || !proceedDialogContext.mounted) {
       logger.error(
         'Reset requested without a navigator context; aborting destructive action',
         source: 'MessageDataResetService',
@@ -111,7 +111,7 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
 
     bool shouldProceed;
     try {
-      shouldProceed = await _showResetProceedDialog(navigatorContext);
+      shouldProceed = await _showResetProceedDialog(proceedDialogContext);
     } catch (error, stackTrace) {
       logger.error(
         'Failed to show reset confirmation dialog',
@@ -160,17 +160,25 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
       'Showing reset completion dialog before onboarding reimport flow',
       source: 'MessageDataResetService',
     );
-    try {
-      await _showResetCompletionDialog(navigatorContext);
-    } catch (error, stackTrace) {
-      logger.error(
-        'Failed to show reset completion dialog',
+    final completionDialogContext = appNavigatorKey.currentContext;
+    if (completionDialogContext == null || !completionDialogContext.mounted) {
+      logger.warn(
+        'Reset completion dialog skipped because navigator context is no longer mounted',
         source: 'MessageDataResetService',
-        context: {
-          'error': error.toString(),
-          'stack': stackTrace.toString().split('\n').take(10).join('\n'),
-        },
       );
+    } else {
+      try {
+        await _showResetCompletionDialog(completionDialogContext);
+      } catch (error, stackTrace) {
+        logger.error(
+          'Failed to show reset completion dialog',
+          source: 'MessageDataResetService',
+          context: {
+            'error': error.toString(),
+            'stack': stackTrace.toString().split('\n').take(10).join('\n'),
+          },
+        );
+      }
     }
 
     await Future<void>.delayed(_resetCompletionDialogExitDelay);
