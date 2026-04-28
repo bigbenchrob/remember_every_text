@@ -1,0 +1,237 @@
+COPILOT PRE–USAGE-BILLING TASK HARVEST
+
+Purpose
+
+Use remaining Copilot Pro+ (request-based) period to complete high-value, high-compute tasks before usage-based billing begins.
+
+Target tasks that are:
+
+* cross-cutting
+* multi-file
+* exploratory or uncertain
+* agent-friendly but expensive under token billing
+
+Avoid spending this time on small, deterministic work.
+
+⸻
+
+TIER 1 — HIGH PRIORITY (DO FIRST)
+
+Historical Archive Integration
+
+Status: IN PROGRESS
+
+* Add read-only archive scanner
+* Define provenance model
+* Normalize archive schema into working model
+* Implement safe deduplication strategy
+* Integrate into global timeline
+* Add preview step before import
+
+Notes
+
+* Use Copilot agent for schema analysis and multi-table reasoning
+* Avoid premature UI work
+
+⸻
+
+Cross-Cutting Architecture Cleanup
+
+Goal
+
+Enforce deterministic spec-driven architecture consistently across all features.
+
+Tasks
+
+* Remove remaining rack introspection helpers
+* Audit all coordinators for ref.watch usage
+* Ensure all flows derive from flow state only
+* Normalize resolver outputs (no UI leakage)
+* Eliminate legacy or parallel state pathways
+
+Notes
+
+* Ask Copilot to audit entire subsystems against architecture rules
+* High value due to multi-file traversal
+
+⸻
+
+Core System Test Coverage
+
+Goal
+
+Establish strong regression protection for architecture and data flow.
+
+Tasks
+
+* Add tests for topology derivation
+* Add tests for flow state transitions
+* Add tests for message timeline ordering
+* Add tests for DB import/migration logic
+* Add edge-case scenarios (empty chats, partial imports, etc.)
+
+Notes
+
+* Use Copilot to generate scaffolding and edge cases
+* Focus on invariants, not UI snapshots
+
+⸻
+
+Deep Bug / Invariant Investigation
+
+Goal
+
+Resolve at least one known or suspected “hard” issue.
+
+Candidates
+
+* Timeline inconsistencies
+* Incorrect message ordering edge cases
+* Flow state / topology mismatch
+* Attachment linking anomalies
+
+Tasks
+
+* Use Bug Investigation harness
+* Trace full pipeline:
+    flow state → topology → spec → resolver → UI
+* Identify first divergence point
+* Implement minimal fix
+
+Notes
+
+* Prioritize bugs that require cross-layer reasoning
+* Avoid surface-level fixes
+
+⸻
+
+TIER 2 — HIGH VALUE (IF TIME ALLOWS)
+
+Feature Completeness Sweep
+
+Goal
+
+Ensure existing features feel “finished” rather than “functional.”
+
+Tasks
+
+* Audit each major feature
+* Identify missing states or transitions
+* Add error states and empty states
+* Improve consistency across similar features
+
+Notes
+
+* Ask Copilot:
+    “What is missing for this feature to feel complete?”
+
+⸻
+
+Documentation and Spec Expansion
+
+Goal
+
+Strengthen _AGENT_INSTRUCTIONS as a long-term asset.
+
+Tasks
+
+* Expand architecture spine docs
+* Add invariants and “do not break” rules
+* Document feature topology flows
+* Normalize terminology across docs
+
+Notes
+
+* Use Copilot for drafting and normalization
+* Keep docs copyable and structured
+
+⸻
+
+Migration and Recovery Tooling
+
+Goal
+
+Add robustness for real-world user data issues.
+
+Tasks
+
+* Build DB validation checks
+* Add “rebuild working DB” flow
+* Implement diff between chat.db and working DB
+* Improve import/migration error reporting
+
+Notes
+
+* High complexity, good use of agent reasoning
+* Avoid UI-heavy work initially
+
+⸻
+
+TIER 3 — OPTIONAL (ONLY IF TIME REMAINS)
+
+UI Structural Refinement
+
+Focus only on structural improvements:
+
+* shared chrome grouping
+* cassette grouping semantics
+* layout consistency across features
+
+Avoid:
+
+* small spacing tweaks
+* purely visual polish
+
+⸻
+
+Instrumentation and Diagnostics
+
+Tasks
+
+* Add message coverage metrics
+* Track import completeness
+* Log edge-case failures
+* Improve diagnostic output
+
+⸻
+
+COPILOT USAGE STRATEGY (DURING THIS PERIOD)
+
+Use Copilot for:
+
+* multi-file reasoning
+* schema analysis
+* architecture audits
+* test generation
+* complex transformations
+
+Avoid using Copilot for:
+
+* small functions
+* trivial refactors
+* simple UI tweaks
+* anything easily done manually
+
+⸻
+
+COMPLETION GOAL
+
+By end of this period:
+
+* Core architecture is clean and deterministic
+* Archive integration is functional or well underway
+* Test coverage protects critical flows
+* Major unknowns and deep bugs are resolved
+* Documentation reflects true system design
+
+⸻
+
+PRINCIPLE
+
+Use Copilot now for:
+
+“expensive thinking across the system”
+
+Avoid using it for:
+
+“cheap, local, deterministic edits”

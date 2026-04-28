@@ -2,7 +2,7 @@
 tier: project
 scope: workflow
 owner: agent-per-project
-last_reviewed: 2025-11-06
+last_reviewed: 2026-04-28
 source_of_truth: doc
 links:
   - ../agent-instructions-shared/INDEX.md
@@ -26,6 +26,7 @@ This folder tracks feature work that is still in planning or active development.
 ## Feature Folder Template
 
 Each feature folder inside this directory should contain:
+
 ```
 {feature-name}/
 ├── PROPOSAL.md
@@ -53,7 +54,8 @@ Templates live under `_AGENT_INSTRUCTIONS/agent-instructions-shared/90-templates
 
 ## Current Feature Folders
 
-| Feature | Key Docs |
-| --- | --- |
+| Feature                          | Key Docs                                                                                                                                                                                                                                           |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `archive-canonical-attachments/` | [`PROPOSAL.md`](archive-canonical-attachments/PROPOSAL.md), [`CHECKLIST.md`](archive-canonical-attachments/CHECKLIST.md), [`DESIGN_NOTES.md`](archive-canonical-attachments/DESIGN_NOTES.md), [`TESTS.md`](archive-canonical-attachments/TESTS.md) |
-| `ephemeral-sidebar-projection/` | [`PROPOSAL.md`](ephemeral-sidebar-projection/PROPOSAL.md), [`CHECKLIST.md`](ephemeral-sidebar-projection/CHECKLIST.md), [`DESIGN_NOTES.md`](ephemeral-sidebar-projection/DESIGN_NOTES.md), [`TESTS.md`](ephemeral-sidebar-projection/TESTS.md) |
+| `ephemeral-sidebar-projection/`  | [`PROPOSAL.md`](ephemeral-sidebar-projection/PROPOSAL.md), [`CHECKLIST.md`](ephemeral-sidebar-projection/CHECKLIST.md), [`DESIGN_NOTES.md`](ephemeral-sidebar-projection/DESIGN_NOTES.md), [`TESTS.md`](ephemeral-sidebar-projection/TESTS.md)     |
+| `historical-archive-merge/`      | [`PROPOSAL.md`](historical-archive-merge/PROPOSAL.md), [`CHECKLIST.md`](historical-archive-merge/CHECKLIST.md), [`DESIGN_NOTES.md`](historical-archive-merge/DESIGN_NOTES.md), [`TESTS.md`](historical-archive-merge/TESTS.md)                     |

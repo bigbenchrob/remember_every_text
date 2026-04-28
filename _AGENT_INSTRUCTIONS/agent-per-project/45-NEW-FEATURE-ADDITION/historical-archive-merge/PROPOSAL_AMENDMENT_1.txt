@@ -1,0 +1,204 @@
+ARCHITECTURE REVIEW: Historical Archive Merge Plan
+
+Overall Assessment
+
+This is excellent and on-trajectory:
+
+* Correctly scoped to Phase 1 minimal slice
+* Strong invariants (GUID-only, add-only, idempotent)
+* Clean user flow
+* Proper separation of concerns
+* Test plan is solid and aligned
+
+Most importantly:
+
+→ It correctly identifies the core architectural tension:
+
+working DB is disposable, so archive data cannot live only there
+
+That’s the key insight.
+
+⸻
+
+CRITICAL ADJUSTMENT (MANDATORY BEFORE BUILD)
+
+Problem
+
+The proposal says:
+
+“introduce a durable archive-ingestion boundary upstream of the working projection”  
+
+This is correct — but currently underspecified, and this is where implementations usually drift into one of two bad outcomes:
+
+Failure Mode A — Writes directly into working DB
+
+→ Data disappears on rebuild
+→ Users lose imported history
+→ catastrophic trust failure
+
+Failure Mode B — Hacks archive into existing import DB
+
+→ contaminates canonical import pipeline
+→ breaks determinism and future migrations
+
+⸻
+
+Required Clarification
+
+You need to explicitly define where archive data lives durably.
+
+Minimal, correct answer for Phase 1:
+
+Create a new durable storage surface:
+
+archive_import_db (or extend import DB with strict partitioning)
+
+But DO NOT:
+
+* mix archive rows into the same logical stream as live chat.db ingestion
+* or pretend they came from the current Mac
+
+⸻
+
+RECOMMENDED PHASE 1 STORAGE MODEL
+
+Add a New Logical Source
+
+Think in your existing model:
+
+source databases → import → working
+
+You now have:
+
+* current_mac (live chat.db)
+* archive_2012 (external snapshot)
+
+So Phase 1 should introduce:
+
+archive_import_source
+
+⸻
+
+Minimal Implementation Options
+
+Option 1 (cleanest, still minimal)
+
+Create:
+
+db-archive-import (parallel to db-import)
+
+Then:
+
+archive_import → migration → working
+
+Pros:
+
+* clean separation
+* future-proof
+* aligns with multi-source future
+
+⸻
+
+Option 2 (acceptable shortcut)
+
+Extend existing import DB with:
+
+source_type column
+
+Values:
+
+* current_mac
+* archive
+
+AND enforce:
+
+* archive rows are immutable
+* never co-mingled logically with live polling
+
+⸻
+
+Non-Negotiable Rule
+
+Archive rows must be:
+
+* durable across rebuild
+* replayable through migration
+* distinguishable at source level
+
+⸻
+
+SECOND IMPORTANT REFINEMENT
+
+Preflight Should Be O(1)-ish, Not Full Scan
+
+Right now:
+
+“compute duplicate GUID count”  
+
+Be careful — naive implementation:
+
+* loads all GUIDs from archive
+* compares against working DB
+
+This can become slow for large archives.
+
+Better approach:
+
+* stream archive GUIDs
+* check existence via indexed lookup
+* maintain counters incrementally
+
+No full in-memory set required.
+
+⸻
+
+THIRD REFINEMENT (SMALL BUT IMPORTANT)
+
+Explicit Handling of Missing GUIDs
+
+You already flagged this risk:
+
+“rows without a usable GUID cannot be heuristically merged”  
+
+Good — now make it visible in user result.
+
+Add to ImportResult:
+
+* rows_without_guid_count
+
+And show:
+
+“X messages could not be imported because they do not have a usable identifier.”
+
+This prevents silent “data loss” perception.
+
+⸻
+
+FOURTH REFINEMENT
+
+Timeline Authority Must Remain Untouched
+
+You correctly state:
+
+timeline/search/heatmap should “just work”  
+
+But explicitly reinforce:
+
+* DO NOT change ordering logic
+* DO NOT special-case archive rows
+
+Archive rows must simply:
+
+→ participate in the same ordinal model
+
+⸻
+
+TEST PLAN REVIEW
+
+Your test plan is excellent.  
+
+One addition:
+
+Add:
+
+* Import archive that predates ALL current data → becomes new earliest timeline anchor
