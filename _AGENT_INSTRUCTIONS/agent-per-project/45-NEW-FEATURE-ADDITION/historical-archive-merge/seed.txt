@@ -1,0 +1,301 @@
+FEATURE: Historical Archive Merge into Global Timeline
+
+Purpose
+
+Allow users to import an external Messages archive (e.g. Messages_2012) and merge it into the main MessageLens working database so that:
+
+* The global timeline becomes continuous across all available history
+* No existing data is modified or deleted
+* All imported data is traceable and reversible in principle
+
+This is an additive, deterministic extension of the current import pipeline.
+
+⸻
+
+Core Principle (NON-NEGOTIABLE)
+
+This feature is:
+
+ADD-ONLY + PROVENANCE-TRACKED + GUID-BASED MERGE
+
+It must:
+
+* Never modify or delete existing working data
+* Never overwrite overlay data
+* Never depend on path-based or heuristic identity
+* Always preserve source provenance
+
+⸻
+
+User Experience Flow
+
+Settings → Support → Import Historical Archive
+
+1. User selects a folder containing:
+    * chat.db
+    * optional Attachments/
+2. System performs a PRE-FLIGHT ANALYSIS:
+    * total messages in archive
+    * earliest and latest dates
+    * estimated overlap with current dataset (GUID match count)
+3. Show summary:
+    “This archive contains messages from 2012–2013
+    X messages appear to already exist
+    Y messages will be newly added”
+4. User confirms:
+    [ Merge Into Timeline ]
+5. Import runs
+6. Result:
+    * Messages appear seamlessly in timeline
+    * Heatmap extends backward
+    * No disruption to existing UI
+
+⸻
+
+Data Model Changes
+
+Add to working DB message table:
+
+* source_provenance: string
+    values:
+    * current_mac
+    * archive_ (e.g. archive_2012)
+* import_batch_id: string (optional but strongly recommended)
+
+Do NOT change:
+
+* message_guid semantics
+* overlay DB schema
+
+⸻
+
+Identity & Deduplication (CRITICAL)
+
+Primary identity:
+
+message_guid
+
+Rules:
+
+1. If message_guid exists in working DB:
+    → SKIP (do not duplicate)
+2. If message_guid does NOT exist:
+    → INSERT as new message
+
+No fuzzy matching
+No timestamp matching
+No text similarity matching
+
+Strict GUID-only dedupe
+
+⸻
+
+Merge Semantics
+
+The working DB becomes a UNION of:
+
+* current Mac dataset
+* imported archive dataset(s)
+
+Timeline queries must:
+
+* operate across all sources
+* remain ordered by existing timeline authority rules (ordinal, not timestamp)
+
+No special casing in UI
+
+⸻
+
+Attachment Handling
+
+If Attachments/ folder is present:
+
+* import using existing attachment pipeline
+* link via attachment GUID where available
+
+If missing:
+
+* still import messages
+* mark attachments as unavailable
+
+Do NOT block import on missing attachments
+
+⸻
+
+Resolver Responsibilities
+
+Create:
+
+message_archive_merge_resolver
+
+Responsibilities:
+
+1. Open external chat.db in read-only mode
+2. Extract:
+    * message GUID
+    * date
+    * text / attributedBody
+    * handle references
+    * attachment references
+3. Normalize into internal schema
+4. Deduplicate via GUID lookup
+5. Insert new messages with:
+    * source_provenance = archive_
+    * import_batch_id
+6. Return MergeSummary:
+    * total_in_archive
+    * duplicates_skipped
+    * newly_imported
+    * earliest_date
+    * latest_date
+
+⸻
+
+Coordinator Contract
+
+Coordinator must:
+
+* trigger resolver
+* return immutable payload only
+* NOT perform DB work directly
+* NOT watch providers
+
+Return:
+
+ArchiveMergeResultPayload
+
+Containing:
+
+* MergeSummary
+* status
+
+⸻
+
+UI / Presentation
+
+Single cassette after import:
+
+Title: Historical Archive Imported
+
+Body:
+
+“X new messages were added to your timeline
+Y messages were already present and were skipped”
+
+“Timeline now spans: {earliest} → {latest}”
+
+Optional:
+
+Show “View Coverage Report” (reuse your new feature)
+
+⸻
+
+Safety Guarantees
+
+The system MUST guarantee:
+
+1. No existing message rows are modified
+2. No overlay rows are modified
+3. No data is deleted
+4. Import is idempotent:
+    Running the same archive twice results in:
+    * zero new inserts
+    * all duplicates skipped
+
+⸻
+
+Performance Considerations
+
+* Batch inserts (chunked)
+* Preload existing GUID set into memory or indexed lookup
+* Use indexed GUID column (REQUIRED)
+
+⸻
+
+Legacy Schema Handling
+
+Older chat.db may differ.
+
+Importer must:
+
+* tolerate missing columns
+* fall back to minimal extraction set
+* ignore unsupported fields
+
+Do NOT attempt full schema parity
+
+⸻
+
+Integration with Existing Features
+
+This feature enhances:
+
+1. Message History Coverage Check
+    → now reflects extended dataset
+2. Heatmap
+    → extends backward automatically
+3. Search
+    → spans across archive + current
+
+No changes required to:
+
+* cassette system
+* topology logic
+* overlay behavior
+
+⸻
+
+Edge Cases
+
+Case: archive overlaps partially with current DB
+→ handled via GUID dedupe
+
+Case: archive contains entirely distinct history
+→ all messages inserted
+
+Case: archive contains corrupted rows
+→ skip safely, log count
+
+Case: multiple archives imported
+→ all coexist via provenance tagging
+
+⸻
+
+Optional (but recommended)
+
+Add lightweight source filter:
+
+“Data Source: All / Current Mac / Archive 2012”
+
+This is NOT required for initial slice
+
+⸻
+
+Testing Requirements
+
+Must validate:
+
+1. Import of clean archive
+2. Import of overlapping archive
+3. Re-import idempotency
+4. Timeline continuity
+5. No regression in existing flows
+6. Overlay DB untouched
+
+⸻
+
+TL;DR
+
+You are extending MessageLens from:
+
+“viewer of one Messages database”
+
+to:
+
+“aggregator of multiple message histories”
+
+using:
+
+* GUID identity
+* additive merge
+* provenance tagging

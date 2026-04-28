@@ -1,0 +1,275 @@
+PHASE 1 MINIMAL SLICE: Historical Archive Merge
+
+Goal
+
+Implement the smallest safe version of “Import Historical Archive” that proves the merge model works without overbuilding UI or archive management.
+
+Phase 1 imports messages from an external chat.db into the existing working timeline using GUID-based deduplication and provenance tagging.
+
+⸻
+
+Scope
+
+This slice includes:
+
+- Select an external folder containing chat.db
+- Open the external chat.db read-only
+- Analyze archive contents before import
+- Import only messages that do not already exist by message GUID
+- Tag imported rows with source provenance
+- Return a summary to the user
+
+This slice does NOT include:
+
+- Attachment archive copying
+- Per-source filtering
+- Archive removal / rollback
+- Full archive manager UI
+- Fuzzy deduplication
+- Contact merge refinement beyond current importer requirements
+
+⸻
+
+User Flow
+
+Settings → Support → Import Historical Archive
+
+1. User selects folder
+2. App verifies folder contains chat.db
+3. App runs preflight analysis
+4. App shows:
+
+Archive label: Messages_2012
+Messages found: X
+Already present: Y
+New messages to import: Z
+Date range: earliest → latest
+
+5. User confirms Merge Into Timeline
+6. App imports new messages only
+7. App shows result:
+
+Imported Z new messages.
+Skipped Y messages already present.
+Your timeline now includes messages from earliest → latest.
+
+⸻
+
+Database Requirements
+
+Add nullable columns to the working message table if not already present:
+
+source_provenance: text
+
+import_batch_id: text
+
+Default existing rows should be treated as:
+
+source_provenance = current_mac
+
+Do not rewrite all existing rows in Phase 1 unless the migration system already makes that trivial and safe.
+
+⸻
+
+Identity Rule
+
+message_guid is the only dedupe key.
+
+If archive.message.guid already exists in working DB:
+
+skip
+
+If archive.message.guid does not exist:
+
+insert
+
+No timestamp matching.
+No text matching.
+No sender matching.
+No path matching.
+
+⸻
+
+Preflight Analysis
+
+Before importing, compute:
+
+archive_total_messages
+archive_earliest_date
+archive_latest_date
+archive_duplicate_guid_count
+archive_new_guid_count
+
+Return this as:
+
+HistoricalArchivePreflightSummary
+
+Fields:
+
+archive_label
+archive_path
+total_messages
+duplicate_messages
+new_messages
+earliest_date
+latest_date
+can_import
+warnings
+
+⸻
+
+Import Result
+
+After import, return:
+
+HistoricalArchiveImportResult
+
+Fields:
+
+archive_label
+import_batch_id
+total_messages_seen
+duplicates_skipped
+messages_imported
+rows_failed
+earliest_imported_date
+latest_imported_date
+warnings
+
+⸻
+
+Resolver
+
+Create resolver/service:
+
+HistoricalArchiveMergeResolver
+
+Responsibilities:
+
+- validate selected folder
+- find chat.db
+- open external chat.db read-only
+- run preflight
+- perform import
+- compute result summary
+- never touch overlay DB
+
+The resolver may call existing import services where safe, but it must preserve the add-only + GUID-dedupe rule.
+
+⸻
+
+Critical Safety Rules
+
+The implementation must prove the following:
+
+1. Existing working DB rows are never deleted.
+2. Existing working DB rows are never overwritten.
+3. Overlay DB is never opened for writing.
+4. Re-importing the same archive produces zero new messages.
+5. Failed rows are skipped/logged, not fatal to the whole import unless the database cannot be opened.
+
+⸻
+
+UI Requirements
+
+Keep UI minimal.
+
+Add a Support settings entry:
+
+Import Historical Archive
+
+Initial cassette:
+
+Title: Import Historical Archive
+Description: Add messages from an older Messages folder into your timeline without replacing your current data.
+Action: Choose Archive Folder
+
+Preflight cassette:
+
+Title: Archive Ready to Import
+Show summary fields.
+Primary action: Merge Into Timeline
+Secondary action: Cancel
+
+Result cassette:
+
+Title: Historical Archive Imported
+Show result fields.
+
+⸻
+
+User-Facing Warning Before Import
+
+Before confirmation, show:
+
+This import is additive. MessageLens will add messages from this archive that are not already present in your timeline.
+
+Your current MessageLens data will not be deleted or replaced.
+
+Messages that already exist will be skipped.
+
+⸻
+
+Initial Attachment Policy
+
+Phase 1 should not attempt full attachment import unless the existing pipeline already supports it cleanly.
+
+If archive attachments are detected, report:
+
+Attachments folder found. Attachment import is not part of this first version.
+
+If no attachments folder is detected, report:
+
+No Attachments folder was found. Messages can still be imported, but older attachments may not be available.
+
+⸻
+
+Logging
+
+Log:
+
+- archive path
+- archive label
+- total messages found
+- duplicate count
+- new count
+- import batch id
+- imported count
+- failed row count
+- earliest/latest dates
+
+Do not log message text.
+
+⸻
+
+Tests
+
+Add tests for:
+
+1. Preflight detects valid chat.db
+2. Preflight rejects missing chat.db
+3. Duplicate GUIDs are skipped
+4. New GUIDs are inserted
+5. Re-import is idempotent
+6. Existing rows are unchanged
+7. Existing overlay DB is untouched
+8. Minimal legacy schema does not crash preflight
+
+⸻
+
+Success Criteria
+
+Phase 1 is successful when:
+
+- A copied historical Messages folder can be selected
+- The app previews how many messages will be added
+- The user can confirm import
+- New messages appear in global timeline/search/heatmap
+- Re-running the same archive adds nothing
+- Current data remains untouched
+
+⸻
+
+Non-Negotiable Rule
+
+This is not a replacement import.
