@@ -48,7 +48,7 @@ created: 2026-04-28
 ## Phase 3 - Merge Execution
 
 - [ ] Generate an `import_batch_id` for each archive merge run
-- [ ] Count `rows_without_guid_count` explicitly and surface it in the import result
+- [ ] Count rows without usable GUIDs in both `rows_failed` and `rows_without_guid_count`, and surface both in the import result
 - [ ] Insert only unseen messages
 - [ ] Preserve existing rows unchanged
 - [ ] Tag newly inserted rows with provenance and batch metadata
@@ -59,6 +59,10 @@ created: 2026-04-28
 
 ## Phase 4 - Minimal UI Flow
 
+- [ ] Reuse the existing Settings top-menu transient support-action path instead of creating a new sidebar topology pattern
+- [ ] Add `Import Historical Archive` as a new transient Troubleshooting action in the existing settings top menu
+- [ ] Route the flow through `SidebarActionDispatcher` + `ephemeralCassetteProjectionProvider(SidebarMode.settings)`
+- [ ] Build the flow through `SettingsCassetteSpec` + `SettingsCassetteCoordinator`
 - [ ] Add `Import Historical Archive` to Settings -> Support
 - [ ] Add the initial cassette with description and `Choose Archive Folder`
 - [ ] Add the preflight cassette with summary fields and additive warning text

@@ -1,6 +1,6 @@
+import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../features/contacts/domain/spec_classes/contacts_cassette_spec.dart';
@@ -10,6 +10,9 @@ import '../../../features/handles/domain/spec_classes/handles_cassette_spec.dart
 import '../../../features/handles/infrastructure/repositories/stray_handles_provider.dart';
 import '../../../features/messages/domain/value_objects/message_timeline_scope.dart';
 import '../../../features/messages/presentation/view_model/timeline/message_timeline_view_model_provider.dart';
+import '../../../features/settings/application/historical_archive_merge/historical_archive_import_result.dart';
+import '../../../features/settings/application/historical_archive_merge/historical_archive_merge_service_provider.dart';
+import '../../../features/settings/application/historical_archive_merge/historical_archive_preflight_summary.dart';
 import '../../../features/settings/application/sidebar_cassette_spec/actions/message_history_coverage_report_actions.dart';
 import '../../../features/settings/application/sidebar_cassette_spec/resolvers/message_history_coverage_settings_resolver.dart';
 import '../../../features/settings/domain/spec_classes/settings_cassette_spec.dart';
@@ -17,6 +20,7 @@ import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.d
 import '../../../features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
 import '../../db/application/database_health_audit/database_health_audit_service.dart';
 import '../../db/feature_level_providers.dart';
+import '../../db_importers/application/import_execution_gate_provider.dart';
 import '../../logging/application/app_logger.dart';
 import '../../logging/application/diagnostic_report_actions.dart';
 import '../../navigation/domain/entities/view_spec.dart';
@@ -32,6 +36,8 @@ import '../domain/sidebar_action_intent.dart';
 
 part 'sidebar_action_dispatcher.g.dart';
 
+const _historicalArchiveExecutionOwner = 'historical-archive-merge';
+
 class SidebarActionDispatchContext {
   const SidebarActionDispatchContext({
     required this.sidebarMode,
@@ -42,7 +48,7 @@ class SidebarActionDispatchContext {
   final int? cassetteIndex;
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class SidebarActionDispatcher extends _$SidebarActionDispatcher {
   @override
   void build() {
@@ -94,6 +100,25 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
             .replaceProjection(
               const CassetteSpec.settings(SettingsCassetteSpec.sendLogsPanel()),
             );
+      case ShowImportHistoricalArchiveFlow():
+        ref
+            .read(sidebarFlowProvider.notifier)
+            .setPersistentSettingsContext(null);
+        _replaceCassetteAtContext(
+          context: context,
+          spec: const CassetteSpec.sidebarUtility(
+            SidebarUtilityCassetteSpec.settingsMenu(),
+          ),
+        );
+        ref
+            .read(
+              ephemeralCassetteProjectionProvider(context.sidebarMode).notifier,
+            )
+            .replaceProjection(
+              const CassetteSpec.settings(
+                SettingsCassetteSpec.importHistoricalArchivePanel(),
+              ),
+            );
       case ShowResetMessageDataFlow():
         ref
             .read(sidebarFlowProvider.notifier)
@@ -111,6 +136,77 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
             .replaceProjection(
               const CassetteSpec.settings(
                 SettingsCassetteSpec.resetMessageDataPanel(),
+              ),
+            );
+      case ChooseHistoricalArchiveFolderRequested():
+        final service = ref.read(historicalArchiveMergeServiceProvider);
+        final summary = await service.pickArchiveFolderAndRunPreflight();
+        if (summary == null) {
+          return;
+        }
+
+        ref
+            .read(
+              ephemeralCassetteProjectionProvider(context.sidebarMode).notifier,
+            )
+            .replaceProjection(
+              CassetteSpec.settings(
+                SettingsCassetteSpec.importHistoricalArchivePreflight(summary),
+              ),
+            );
+      case ImportHistoricalArchiveRequested(
+        :final archivePath,
+        :final archiveLabel,
+      ):
+        ref
+            .read(
+              ephemeralCassetteProjectionProvider(context.sidebarMode).notifier,
+            )
+            .replaceProjection(
+              CassetteSpec.settings(
+                SettingsCassetteSpec.importHistoricalArchiveInProgress(
+                  archiveLabel,
+                ),
+              ),
+            );
+        unawaited(
+          _runHistoricalArchiveImport(
+            context: context,
+            archivePath: archivePath,
+            archiveLabel: archiveLabel,
+          ),
+        );
+      case ClearHistoricalArchiveCacheRequested(:final archivePath):
+        final service = ref.read(historicalArchiveMergeServiceProvider);
+        await service.clearArchiveImportDatabase();
+        final refreshedSummary = await service.runPreflightForFolder(
+          archivePath,
+        );
+        final clearedSummary = HistoricalArchivePreflightSummary(
+          archiveLabel: refreshedSummary.archiveLabel,
+          archivePath: refreshedSummary.archivePath,
+          totalMessages: refreshedSummary.totalMessages,
+          duplicateMessages: refreshedSummary.duplicateMessages,
+          newMessages: refreshedSummary.newMessages,
+          earliestDate: refreshedSummary.earliestDate,
+          latestDate: refreshedSummary.latestDate,
+          canImport: refreshedSummary.canImport,
+          rowsWithoutGuidCount: refreshedSummary.rowsWithoutGuidCount,
+          warnings: [
+            'Archive cache cleared. The dedicated archive import database is now empty.',
+            ...refreshedSummary.warnings,
+          ],
+        );
+
+        ref
+            .read(
+              ephemeralCassetteProjectionProvider(context.sidebarMode).notifier,
+            )
+            .replaceProjection(
+              CassetteSpec.settings(
+                SettingsCassetteSpec.importHistoricalArchivePreflight(
+                  clearedSummary,
+                ),
               ),
             );
       case ContactChosen(:final contactId):
@@ -283,6 +379,106 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
     final overlayDb = await ref.read(overlayDatabaseProvider.future);
     await overlayDb.trackContactAccess(contactId);
     ref.invalidate(recentContactsProvider);
+  }
+
+  Future<void> _runHistoricalArchiveImport({
+    required SidebarActionDispatchContext context,
+    required String archivePath,
+    required String archiveLabel,
+  }) async {
+    final executionGate = ref.read(importExecutionGateProvider.notifier);
+    if (!executionGate.tryAcquire(_historicalArchiveExecutionOwner)) {
+      final gateState = ref.read(importExecutionGateProvider);
+      final activeOwner = gateState.owner ?? 'unknown';
+      final deniedResult = HistoricalArchiveImportResult(
+        archiveLabel: archiveLabel,
+        archivePath: archivePath,
+        stagedMessages: 0,
+        importedMessages: 0,
+        skippedDuplicates: 0,
+        failedRows: 1,
+        rowsWithoutGuidCount: 0,
+        batchId: null,
+        warnings: [
+          'Archive merge could not start because another import or migration is already running for $activeOwner.',
+        ],
+      );
+      ref
+          .read(
+            ephemeralCassetteProjectionProvider(context.sidebarMode).notifier,
+          )
+          .replaceProjection(
+            CassetteSpec.settings(
+              SettingsCassetteSpec.importHistoricalArchiveResult(deniedResult),
+            ),
+          );
+      return;
+    }
+
+    ref.read(dbMaintenanceLockProvider.notifier).begin();
+
+    try {
+      final service = ref.read(historicalArchiveMergeServiceProvider);
+      final result = await service.importArchiveForFutureMerge(
+        archivePath: archivePath,
+        archiveLabel: archiveLabel,
+      );
+
+      if (result.importedMessages > 0) {
+        ref.read(messageDataVersionProvider.notifier).bump();
+      }
+
+      ref
+          .read(
+            ephemeralCassetteProjectionProvider(context.sidebarMode).notifier,
+          )
+          .replaceProjection(
+            CassetteSpec.settings(
+              SettingsCassetteSpec.importHistoricalArchiveResult(result),
+            ),
+          );
+    } catch (error, stackTrace) {
+      ref
+          .read(appLoggerProvider.notifier)
+          .error(
+            'Historical archive import task failed before producing a result cassette.',
+            source: 'SidebarActionDispatcher',
+            context: {
+              'archivePath': archivePath,
+              'archiveLabel': archiveLabel,
+              'error': '$error',
+              'stackTrace': '$stackTrace',
+            },
+          );
+
+      final fallbackResult = HistoricalArchiveImportResult(
+        archiveLabel: archiveLabel,
+        archivePath: archivePath,
+        stagedMessages: 0,
+        importedMessages: 0,
+        skippedDuplicates: 0,
+        failedRows: 1,
+        rowsWithoutGuidCount: 0,
+        batchId: null,
+        warnings: const [
+          'Archive import ended unexpectedly before MessageLens could finish building the result view.',
+        ],
+      );
+      ref
+          .read(
+            ephemeralCassetteProjectionProvider(context.sidebarMode).notifier,
+          )
+          .replaceProjection(
+            CassetteSpec.settings(
+              SettingsCassetteSpec.importHistoricalArchiveResult(
+                fallbackResult,
+              ),
+            ),
+          );
+    } finally {
+      ref.read(dbMaintenanceLockProvider.notifier).end();
+      executionGate.release(_historicalArchiveExecutionOwner);
+    }
   }
 
   void _invalidateStrayHandleProviders() {

@@ -53,8 +53,8 @@ class ContactGroupedPickerWidget extends HookConsumerWidget {
   }
 
   Future<void> _handleContactSelection(WidgetRef ref, int contactId) async {
-    _prewarmContactInvestigation(ref, contactId);
-    ref
+    await _prewarmContactInvestigation(ref, contactId);
+    await ref
         .read(sidebarActionDispatcherProvider.notifier)
         .dispatch(
           intent: ContactChosen(contactId: contactId),
@@ -65,14 +65,14 @@ class ContactGroupedPickerWidget extends HookConsumerWidget {
         );
   }
 
-  void _prewarmContactInvestigation(WidgetRef ref, int contactId) {
-    unawaited(ref.read(contactProfileProvider(contactId: contactId).future));
-    unawaited(
+  Future<void> _prewarmContactInvestigation(WidgetRef ref, int contactId) {
+    return Future.wait<void>([
+      ref.read(contactProfileProvider(contactId: contactId).future),
       ref.read(
         messages_feature
             .prewarmContactMessagesProvider(contactId: contactId)
             .future,
       ),
-    );
+    ]);
   }
 }

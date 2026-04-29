@@ -1,0 +1,144 @@
+Problem 1: UI State Not Advancing
+
+The merge action is executing (staging is happening), but:
+
+* The UI is not transitioning to the result state
+* The cassette stack remains stuck in preflight
+
+Likely Causes
+
+* Merge action is not dispatching the correct persistent or ephemeral intent
+* Flow state is not being updated after merge completes
+* Coordinator is not being re-triggered after merge
+* An exception occurs before state update but after staging
+
+⸻
+
+Problem 2: Contact Picker Broken (HIGH PRIORITY)
+
+After merge attempt:
+
+* Contact selection no longer works
+
+This suggests:
+
+* Global flow state or provider state is now invalid
+* Possibly:
+    * a provider threw and is now in error state
+    * a state update failed mid-dispatch
+    * cassette stack or flow state became inconsistent
+
+⸻
+
+Critical Insight
+
+These two symptoms are likely connected:
+
+→ Merge action partially executes
+→ Fails before completing state transition
+→ Leaves app in inconsistent flow state
+→ Breaks picker interaction
+
+⸻
+
+Required Investigation
+
+1. Wrap Merge Flow in Explicit Success / Failure Boundary
+
+Ensure:
+
+* Merge action ALWAYS results in:
+    * success state transition OR
+    * failure state transition
+
+Never leave UI in preflight state after action.
+
+⸻
+
+2. Verify Intent Dispatch
+
+After merge completes, confirm:
+
+* A Sidebar intent is dispatched (ephemeral or persistent)
+* This intent replaces the current cassette stack
+* The result cassette is shown
+
+If no intent is dispatched → UI will remain stuck
+
+⸻
+
+3. Check for Exceptions During Merge
+
+Add logging around:
+
+* end of staging
+* start of projection
+* end of projection
+* before result payload creation
+* before dispatch
+
+If an exception occurs after staging but before dispatch:
+
+→ UI will not update
+→ providers may be left in inconsistent state
+
+⸻
+
+4. Check Provider Health After Merge
+
+After clicking Merge:
+
+* Are any providers in error state?
+* Is the contact picker provider still emitting valid data?
+
+Specifically:
+
+* contact list provider
+* flow state provider
+* cassette rack provider
+
+⸻
+
+5. Verify Flow State Integrity
+
+Ensure:
+
+* Flow state is not left partially updated
+* No invalid spec is injected into cassette stack
+* No “null” or invalid cassette spec is returned
+
+⸻
+
+Immediate Fix Direction
+
+The merge handler must:
+
+1. Run staging
+2. Attempt projection
+3. Build result payload
+4. Dispatch result intent (replace current cassette)
+
+Even if projection fails:
+
+→ A result cassette must still be shown
+→ App must remain usable
+
+⸻
+
+Success Criteria
+
+After fix:
+
+* Clicking Merge Into Timeline always transitions UI
+* Result cassette appears
+* Contact picker remains functional
+* Timeline navigation works
+* Archive rows appear in working.db (once projection is fixed)
+
+⸻
+
+Priority
+
+1. Fix UI state transition (blocks all validation)
+2. Restore picker functionality
+3. Continue projection debugging afterward

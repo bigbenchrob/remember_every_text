@@ -20,6 +20,18 @@ CassetteSpec? resolveSettingsChild(SettingsCassetteSpec spec) {
     messageHistoryCoverageOlderMessagesNote: () {
       return null;
     },
+    importHistoricalArchivePanel: () {
+      return null;
+    },
+    importHistoricalArchivePreflight: (_) {
+      return null;
+    },
+    importHistoricalArchiveInProgress: (_) {
+      return null;
+    },
+    importHistoricalArchiveResult: (_) {
+      return null;
+    },
     sendLogsPanel: () {
       return null;
     },

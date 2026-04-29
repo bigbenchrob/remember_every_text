@@ -1,0 +1,100 @@
+Likely Failure Modes to Investigate
+
+1. GUID Collision / Incorrect Deduplication
+
+The dedupe logic may be incorrectly determining that archive messages already exist.
+
+Possibilities:
+
+* GUID comparison is incorrect (e.g. normalized incorrectly, truncated, case mismatch, etc.)
+* Wrong dataset is being checked for existence (e.g. checking archive-import DB instead of working DB)
+* All archive rows are being treated as duplicates due to a bug in the existence query
+
+⸻
+
+2. Existence Check Is Pointing at Wrong Source
+
+The “does this GUID already exist?” check may be:
+
+* querying the wrong table
+* querying the wrong database (e.g. archive DB instead of working DB)
+* using an always-true condition
+
+⸻
+
+3. Archive Rows Are Being Staged But Not Projected
+
+The message:
+
+“Archive rows were stored in the dedicated archive import database.”
+
+suggests:
+
+* ingestion into db-archive-import is working
+* but projection into db-working may not be happening
+
+OR
+
+* projection is happening but being filtered out by dedupe logic
+
+⸻
+
+4. Preflight / Import Logic Is Double-Counting
+
+The system may be:
+
+* counting all archive rows as duplicates during preflight
+* then skipping them during import
+
+This would produce exactly the observed result.
+
+⸻
+
+Concrete Debug Steps
+
+Please instrument and verify:
+
+1. Pick a known archive message from 2012 (pre-2014)
+2. Check:
+    * Does its GUID exist in db-working before import?
+        → It should NOT
+3. During import:
+    * Is this GUID evaluated as “already exists”?
+    * If yes, what query is returning true?
+4. Log:
+    * GUID being checked
+    * result of existence query
+    * which database/table is being queried
+
+⸻
+
+Additional Verification
+
+Run a direct query:
+
+* Count messages in working DB where date < Jan 2014
+
+Expected:
+
+* Should be 0 before import
+* Should be > 0 after import
+
+If still 0 after import → projection is not happening
+
+⸻
+
+Summary
+
+The archive import pipeline appears to:
+
+* successfully read and store archive rows
+* but incorrectly classify all rows as duplicates
+
+Result:
+No messages are added to the timeline despite a known historical gap.
+
+⸻
+
+Priority
+
+High — this blocks the core value of the archive merge feature.

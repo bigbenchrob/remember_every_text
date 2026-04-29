@@ -161,6 +161,9 @@ void main() {
           workingDb.workingMessages,
         )..where((tbl) => tbl.id.equals(workingMessageId))).getSingle();
         expect(backfilledMessage.senderHandleId, canonicalHandleId);
+        expect(backfilledMessage.sourceProvenance, 'current_mac');
+        expect(backfilledMessage.importBatchId, batchId);
+        expect(backfilledMessage.batchId, batchId);
 
         final backfilledChat = await (workingDb.select(
           workingDb.workingChats,

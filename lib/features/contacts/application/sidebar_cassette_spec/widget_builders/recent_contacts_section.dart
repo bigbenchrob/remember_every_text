@@ -152,7 +152,7 @@ class _RecentContactRowState extends ConsumerState<_RecentContactRow> {
   bool _isHovered = false;
 
   Future<void> _handleTap() async {
-    _prewarmContactInvestigation(widget.participantId);
+    await _prewarmContactInvestigation(widget.participantId);
     await ref
         .read(sidebarActionDispatcherProvider.notifier)
         .dispatch(
@@ -164,15 +164,15 @@ class _RecentContactRowState extends ConsumerState<_RecentContactRow> {
         );
   }
 
-  void _prewarmContactInvestigation(int contactId) {
-    unawaited(ref.read(contactProfileProvider(contactId: contactId).future));
-    unawaited(
+  Future<void> _prewarmContactInvestigation(int contactId) {
+    return Future.wait<void>([
+      ref.read(contactProfileProvider(contactId: contactId).future),
       ref.read(
         messages_feature
             .prewarmContactMessagesProvider(contactId: contactId)
             .future,
       ),
-    );
+    ]);
   }
 
   @override

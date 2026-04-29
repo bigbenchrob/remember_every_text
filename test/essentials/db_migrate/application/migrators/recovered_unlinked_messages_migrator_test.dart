@@ -151,6 +151,9 @@ void main() {
         )..where((tbl) => tbl.id.equals(importMessageId))).getSingle();
         expect(backfilledMessage.senderHandleId, canonicalHandleId);
         expect(backfilledMessage.sentAtUtc, sentAtUtc);
+        expect(backfilledMessage.sourceProvenance, 'current_mac');
+        expect(backfilledMessage.importBatchId, batchId);
+        expect(backfilledMessage.batchId, batchId);
       },
     );
   });

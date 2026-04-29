@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers/working_db_populated_provider.dart';
+import 'package:remember_this_text/essentials/db_importers/application/import_execution_gate_provider.dart';
 import 'package:remember_this_text/essentials/navigation/application/panel_widget_providers.dart';
 import 'package:remember_this_text/essentials/navigation/domain/entities/view_spec.dart';
 import 'package:remember_this_text/essentials/navigation/domain/navigation_constants.dart';
@@ -20,6 +24,9 @@ import 'package:remember_this_text/features/contacts/domain/spec_classes/contact
 import 'package:remember_this_text/features/handles/application/state/stray_handle_mode_provider.dart';
 import 'package:remember_this_text/features/handles/domain/spec_classes/handles_cassette_spec.dart';
 import 'package:remember_this_text/features/messages/domain/spec_classes/messages_cassette_spec.dart';
+import 'package:remember_this_text/features/settings/application/historical_archive_merge/historical_archive_import_result.dart';
+import 'package:remember_this_text/features/settings/application/historical_archive_merge/historical_archive_merge_service_provider.dart';
+import 'package:remember_this_text/features/settings/application/historical_archive_merge/historical_archive_preflight_summary.dart';
 import 'package:remember_this_text/features/settings/domain/spec_classes/settings_cassette_spec.dart';
 import 'package:remember_this_text/features/settings/domain/spec_classes/settings_view_spec.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
@@ -31,15 +38,49 @@ void main() {
     late ProviderContainer container;
     late SidebarActionDispatcher dispatcher;
     late _FakeMessageDataResetService resetService;
+    late _FakeHistoricalArchiveMergeService archiveService;
+    late HistoricalArchivePreflightSummary preflightSummary;
+    late HistoricalArchiveImportResult importResult;
 
     setUp(() {
       resetService = _FakeMessageDataResetService();
+      preflightSummary = HistoricalArchivePreflightSummary(
+        archiveLabel: 'Messages_2012',
+        archivePath: '/tmp/Messages_2012',
+        totalMessages: 10,
+        duplicateMessages: 4,
+        newMessages: 6,
+        earliestDate: DateTime.utc(2012, 1, 1),
+        latestDate: DateTime.utc(2012, 12, 31),
+        canImport: true,
+        rowsWithoutGuidCount: 1,
+        warnings: const ['No Attachments folder was found.'],
+      );
+      importResult = const HistoricalArchiveImportResult(
+        archiveLabel: 'Messages_2012',
+        archivePath: '/tmp/Messages_2012',
+        stagedMessages: 6,
+        importedMessages: 6,
+        skippedDuplicates: 4,
+        failedRows: 1,
+        rowsWithoutGuidCount: 1,
+        batchId: 77,
+        warnings: ['No Attachments folder was found.'],
+      );
       container = ProviderContainer(
         overrides: [
           workingDbPopulatedProvider.overrideWith(
             _AlwaysPopulatedWorkingDb.new,
           ),
           messageDataResetServiceProvider.overrideWith((ref) => resetService),
+          historicalArchiveMergeServiceProvider.overrideWith((ref) {
+            archiveService = _FakeHistoricalArchiveMergeService(
+              ref,
+              preflightSummary,
+              importResult,
+            );
+            return archiveService;
+          }),
           ...cassetteRackTestHarnessOverrides(),
         ],
       );
@@ -242,6 +283,286 @@ void main() {
           container.read(sidebarFlowProvider).persistentSettingsContext,
           isNull,
         );
+      },
+    );
+
+    test(
+      'dispatches import historical archive transient selection into ephemeral projection and clears durable settings context',
+      () async {
+        final rackNotifier = container.read(
+          cassetteRackStateProvider(SidebarMode.settings).notifier,
+        );
+        container
+            .read(sidebarFlowProvider.notifier)
+            .setPersistentSettingsContext(SettingsMenuActionId.textSize);
+        rackNotifier.seedRackForTest([
+          const CassetteSpec.sidebarUtility(
+            SidebarUtilityCassetteSpec.settingsMenu(),
+          ),
+          const CassetteSpec.settings(
+            SettingsCassetteSpec.textSizePlaceholder(),
+          ),
+        ]);
+
+        await dispatcher.dispatch(
+          intent: const ShowImportHistoricalArchiveFlow(),
+          context: const SidebarActionDispatchContext(
+            sidebarMode: SidebarMode.settings,
+            cassetteIndex: 0,
+          ),
+        );
+
+        expect(
+          container
+              .read(cassetteRackStateProvider(SidebarMode.settings))
+              .cassettes,
+          equals([
+            const CassetteSpec.sidebarUtility(
+              SidebarUtilityCassetteSpec.settingsMenu(),
+            ),
+          ]),
+        );
+        expect(
+          container
+              .read(ephemeralCassetteProjectionProvider(SidebarMode.settings))
+              .cassettes,
+          equals([
+            const CassetteSpec.settings(
+              SettingsCassetteSpec.importHistoricalArchivePanel(),
+            ),
+          ]),
+        );
+        expect(
+          container.read(sidebarFlowProvider).persistentSettingsContext,
+          isNull,
+        );
+      },
+    );
+
+    test(
+      'dispatches archive folder selection into preflight projection',
+      () async {
+        container
+            .read(
+              ephemeralCassetteProjectionProvider(
+                SidebarMode.settings,
+              ).notifier,
+            )
+            .replaceProjection(
+              const CassetteSpec.settings(
+                SettingsCassetteSpec.importHistoricalArchivePanel(),
+              ),
+            );
+
+        await dispatcher.dispatch(
+          intent: const ChooseHistoricalArchiveFolderRequested(),
+          context: const SidebarActionDispatchContext(
+            sidebarMode: SidebarMode.settings,
+            cassetteIndex: 1,
+          ),
+        );
+
+        expect(
+          container
+              .read(ephemeralCassetteProjectionProvider(SidebarMode.settings))
+              .cassettes,
+          equals([
+            CassetteSpec.settings(
+              SettingsCassetteSpec.importHistoricalArchivePreflight(
+                preflightSummary,
+              ),
+            ),
+          ]),
+        );
+      },
+    );
+
+    test(
+      'dispatches archive import into progress projection immediately',
+      () async {
+        container
+            .read(
+              ephemeralCassetteProjectionProvider(
+                SidebarMode.settings,
+              ).notifier,
+            )
+            .replaceProjection(
+              CassetteSpec.settings(
+                SettingsCassetteSpec.importHistoricalArchivePreflight(
+                  preflightSummary,
+                ),
+              ),
+            );
+
+        await dispatcher.dispatch(
+          intent: ImportHistoricalArchiveRequested(
+            archivePath: preflightSummary.archivePath,
+            archiveLabel: preflightSummary.archiveLabel,
+          ),
+          context: const SidebarActionDispatchContext(
+            sidebarMode: SidebarMode.settings,
+            cassetteIndex: 1,
+          ),
+        );
+
+        final projectionSubscription = container.listen(
+          ephemeralCassetteProjectionProvider(SidebarMode.settings),
+          (_, _) {},
+          fireImmediately: true,
+        );
+        addTearDown(projectionSubscription.close);
+
+        expect(
+          container
+              .read(ephemeralCassetteProjectionProvider(SidebarMode.settings))
+              .cassettes,
+          equals([
+            CassetteSpec.settings(
+              SettingsCassetteSpec.importHistoricalArchiveInProgress(
+                preflightSummary.archiveLabel,
+              ),
+            ),
+          ]),
+        );
+        expect(container.read(dbMaintenanceLockProvider), isTrue);
+
+        archiveService.completeImport();
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        expect(
+          container
+              .read(ephemeralCassetteProjectionProvider(SidebarMode.settings))
+              .cassettes,
+          equals([
+            CassetteSpec.settings(
+              SettingsCassetteSpec.importHistoricalArchiveResult(importResult),
+            ),
+          ]),
+        );
+        expect(container.read(dbMaintenanceLockProvider), isFalse);
+      },
+    );
+
+    test(
+      'dispatches archive cache clear into refreshed preflight projection',
+      () async {
+        container
+            .read(
+              ephemeralCassetteProjectionProvider(
+                SidebarMode.settings,
+              ).notifier,
+            )
+            .replaceProjection(
+              CassetteSpec.settings(
+                SettingsCassetteSpec.importHistoricalArchivePreflight(
+                  preflightSummary,
+                ),
+              ),
+            );
+
+        await dispatcher.dispatch(
+          intent: ClearHistoricalArchiveCacheRequested(
+            archivePath: preflightSummary.archivePath,
+          ),
+          context: const SidebarActionDispatchContext(
+            sidebarMode: SidebarMode.settings,
+            cassetteIndex: 1,
+          ),
+        );
+
+        final projection = container.read(
+          ephemeralCassetteProjectionProvider(SidebarMode.settings),
+        );
+        expect(projection.cassettes, hasLength(1));
+
+        final settingsSpec = projection.cassettes.single.maybeMap(
+          settings: (value) => value.spec,
+          orElse: () => null,
+        );
+        final refreshedSummary = settingsSpec?.maybeWhen(
+          importHistoricalArchivePreflight: (summary) => summary,
+          orElse: () => null,
+        );
+
+        expect(refreshedSummary, isNotNull);
+        expect(
+          refreshedSummary!.warnings.first,
+          'Archive cache cleared. The dedicated archive import database is now empty.',
+        );
+        expect(refreshedSummary.archivePath, preflightSummary.archivePath);
+        expect(
+          (container.read(historicalArchiveMergeServiceProvider)
+                  as _FakeHistoricalArchiveMergeService)
+              .clearArchiveImportDatabaseCalls,
+          1,
+        );
+      },
+    );
+
+    test(
+      'archive import yields a failure result when execution gate is busy',
+      () async {
+        final projectionSubscription = container.listen(
+          ephemeralCassetteProjectionProvider(SidebarMode.settings),
+          (_, _) {},
+          fireImmediately: true,
+        );
+        addTearDown(projectionSubscription.close);
+
+        container
+            .read(
+              ephemeralCassetteProjectionProvider(
+                SidebarMode.settings,
+              ).notifier,
+            )
+            .replaceProjection(
+              CassetteSpec.settings(
+                SettingsCassetteSpec.importHistoricalArchivePreflight(
+                  preflightSummary,
+                ),
+              ),
+            );
+
+        final acquired = container
+            .read(importExecutionGateProvider.notifier)
+            .tryAcquire('chat-db-monitor');
+        expect(acquired, isTrue);
+        addTearDown(() {
+          container
+              .read(importExecutionGateProvider.notifier)
+              .release('chat-db-monitor');
+        });
+
+        await dispatcher.dispatch(
+          intent: ImportHistoricalArchiveRequested(
+            archivePath: preflightSummary.archivePath,
+            archiveLabel: preflightSummary.archiveLabel,
+          ),
+          context: const SidebarActionDispatchContext(
+            sidebarMode: SidebarMode.settings,
+            cassetteIndex: 1,
+          ),
+        );
+
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        final projection = container.read(
+          ephemeralCassetteProjectionProvider(SidebarMode.settings),
+        );
+        final result = projection.cassettes.single.maybeMap(
+          settings: (value) => value.spec.maybeWhen(
+            importHistoricalArchiveResult: (result) => result,
+            orElse: () => null,
+          ),
+          orElse: () => null,
+        );
+
+        expect(result, isNotNull);
+        expect(result!.importedMessages, 0);
+        expect(result.failedRows, 1);
+        expect(result.warnings.single, contains('chat-db-monitor'));
+        expect(archiveService.importCalls, 0);
+        expect(container.read(dbMaintenanceLockProvider), isFalse);
       },
     );
 
@@ -759,5 +1080,51 @@ final class _FakeMessageDataResetService implements MessageDataResetService {
   @override
   Future<void> confirmResetAndPrepareReimport() async {
     confirmResetAndPrepareReimportCalls += 1;
+  }
+}
+
+class _FakeHistoricalArchiveMergeService extends HistoricalArchiveMergeService {
+  _FakeHistoricalArchiveMergeService(super.ref, this.summary, this.importResult)
+    : importCompleter = Completer<HistoricalArchiveImportResult>();
+
+  final HistoricalArchivePreflightSummary summary;
+  final HistoricalArchiveImportResult importResult;
+  final Completer<HistoricalArchiveImportResult> importCompleter;
+  int clearArchiveImportDatabaseCalls = 0;
+  int importCalls = 0;
+
+  @override
+  Future<HistoricalArchivePreflightSummary> runPreflightForFolder(
+    String folderPath,
+  ) async {
+    return summary;
+  }
+
+  @override
+  Future<HistoricalArchivePreflightSummary?>
+  pickArchiveFolderAndRunPreflight() async {
+    return summary;
+  }
+
+  @override
+  Future<HistoricalArchiveImportResult> importArchiveForFutureMerge({
+    required String archivePath,
+    required String archiveLabel,
+  }) async {
+    importCalls += 1;
+    return importCompleter.future;
+  }
+
+  @override
+  Future<void> clearArchiveImportDatabase() async {
+    clearArchiveImportDatabaseCalls += 1;
+  }
+
+  void completeImport() {
+    if (importCompleter.isCompleted) {
+      return;
+    }
+
+    importCompleter.complete(importResult);
   }
 }

@@ -1,0 +1,32 @@
+Reconstruct archive participants and sender handles.
+
+Correct message bucketing is not enough. If the archive rows enter the global timeline without trustworthy participant/sender metadata, the feature will appear to work at the heatmap/search level but become confusing or wrong in actual conversation views. Phase 1 can stay minimal, but it still needs enough participant reconstruction to preserve conversational meaning.
+
+Use the archive chat.db relationships as the authority:
+
+* message.handle_id identifies sender where available
+* chat_message_join links messages to chats
+* chat_handle_join links chats to participants
+* handle.id / handle.service provide participant identifiers
+* preserve original archive values even if current Contacts cannot resolve them
+
+Do not attempt fuzzy contact merging in this slice.
+
+On provenance: yes, add explicit working-db fields now.
+
+Even if per-chat replay is working, provenance must survive into the working projection because later UI, diagnostics, filters, exports, and debugging will need to distinguish:
+
+* current_mac
+* archive_2012
+* future archive batches
+
+Recommended fields:
+
+* source_provenance
+* import_batch_id
+
+Keep them nullable/defaulted for existing rows if that is safest, but archive-projected rows should always carry both.
+
+Key rule:
+
+Archive provenance is not just import bookkeeping. It is part of the projected message identity context.

@@ -1,0 +1,322 @@
+ROOT CAUSE IDENTIFIED: IMPORT_DB_LOCKED During DETACH
+
+What We Now Know
+
+The archive merge pipeline is progressing further than before:
+
+* ✅ Archive rows are staged into historical_archive_import.db
+* ✅ Projection step begins
+* ❌ Migration fails with:
+
+MigrationException[IMPORT_DB_LOCKED]
+
+Specifically:
+
+failed to detach import database after verification
+SqliteException: database import_preflight is locked
+Causing statement: DETACH DATABASE import_preflight
+
+⸻
+
+Interpretation
+
+This is a SQLite connection / transaction lifecycle issue, not a data or projection logic bug.
+
+The failure occurs because:
+
+→ The code attempts to DETACH DATABASE import_preflight
+→ while the database is still in use (open statement, cursor, or transaction)
+
+⸻
+
+Why This Breaks Everything
+
+Because this happens inside migration:
+
+* The projection transaction is aborted
+* No rows are committed into working.db
+* The migration layer throws
+* UI transitions to failure state
+* App temporarily enters inconsistent provider state (explains picker issues earlier)
+
+⸻
+
+Most Likely Cause
+
+One of the following is still active when DETACH is called:
+
+1. An open cursor / iterator over import_preflight
+2. An unfinalized prepared statement
+3. An active transaction that hasn’t been committed/closed
+4. A nested query still referencing the attached DB
+
+SQLite requires:
+
+→ ALL statements referencing the attached DB must be finalized
+→ BEFORE DETACH is executed
+
+⸻
+
+Required Fix
+
+Before calling:
+
+DETACH DATABASE import_preflight
+
+Ensure:
+
+1. All queries against import_preflight are fully completed
+2. No open iterators / streams are active
+3. All prepared statements are finalized
+4. Any transaction involving the attached DB is committed or rolled back
+
+⸻
+
+Concrete Fix Strategy
+
+Option A (Simplest / Safest)
+
+Do not DETACH inside the same scope as active reads.
+
+Refactor:
+
+* Step 1: ATTACH import_preflight
+* Step 2: Read required data into in-memory structures OR insert into temp tables
+* Step 3: Close all statements
+* Step 4: DETACH import_preflight
+* Step 5: Continue migration using only local tables
+
+⸻
+
+Option B (Also Valid)
+
+Keep import_preflight attached for the entire migration transaction
+→ Only DETACH after migration fully completes
+
+This is often simpler and safer.
+
+⸻
+
+Immediate Debug Check
+
+Before DETACH, log:
+
+* Are there any active query streams?
+* Are we inside a transaction?
+* Are we iterating over a result set?
+
+If yes → that is the lock source
+
+⸻
+
+Important Constraint
+
+Do NOT “fix” this by:
+
+* retrying DETACH
+* swallowing the exception
+
+This is a correctness issue, not a transient failure.
+
+⸻
+
+Expected Outcome After Fix
+
+* Migration completes successfully
+* Archive rows are projected into working.db
+* Messages from 2012–2014 appear in timeline
+* “Messages added to timeline” > 0
+* No migration error screen
+
+⸻
+
+Bottom Line
+
+The system is now correctly:
+
+→ staging archive rows
+→ entering migration
+
+But fails because:
+
+→ SQLite will not allow DETACH while the DB is still in use
+
+Fix the attach/detach lifecycle, and the projection pipeline should complete.
+
+🔴 The Bug Pattern (Almost Certainly What’s Happening)
+
+In Dart (especially with sqflite, sqlite3, or FFI wrappers), this pattern is very common:
+
+❌ Problematic Pattern
+
+You ATTACH a database and then iterate lazily:
+
+ATTACH DATABASE '...' AS import_preflight;
+
+final rows = db.select('SELECT * FROM import_preflight.messages');
+
+for (final row in rows) {
+  // process row
+}
+
+DETACH DATABASE import_preflight;
+
+ooks fine… but:
+
+👉 rows is often lazy / cursor-backed
+👉 The query is still “open” while you iterate
+👉 SQLite still considers the DB “in use”
+
+So when you hit:
+
+DETACH DATABASE import_preflight
+
+💥 BOOM:
+
+SQLITE_LOCKED: database import_preflight is locked
+
+⸻
+
+🧠 Why This Happens
+
+SQLite rule:
+
+You cannot DETACH a database while any prepared statement is still using it.
+
+In Dart terms:
+
+* A query result = a prepared statement
+* Iteration = statement still active
+* Even if you’re “done logically”, SQLite isn’t done
+
+⸻
+
+✅ The Correct Fix Patterns
+
+✅ Pattern 1 (Best for your case): Eager Materialization
+
+Force the query to fully complete before DETACH.
+
+Fix:
+
+final rows = db.select('SELECT * FROM import_preflight.messages').toList();
+
+OR (depending on API):
+
+final rows = List.from(db.select(...));
+
+Now:
+
+* Query completes immediately
+* Statement is finalized
+* Safe to DETACH
+
+⸻
+
+✅ Pattern 2: Two-Phase Processing (Very Safe)
+
+ATTACH DATABASE ...
+
+// Phase 1: copy or materialize
+INSERT INTO temp_table
+SELECT * FROM import_preflight.messages;
+
+// Now nothing references import_preflight
+
+DETACH DATABASE import_preflight;
+
+// Phase 2: operate on temp_table
+
+This is rock-solid and aligns well with your architecture.
+
+⸻
+
+✅ Pattern 3: Delay DETACH Until End
+
+Simplest tactical fix:
+
+* Don’t DETACH during preflight
+* Keep it attached through migration
+* DETACH only after everything is complete
+
+⸻
+
+🔍 Where Your Code Likely Breaks
+
+Based on your error:
+
+failed to detach import database after verification
+
+The failure is happening in:
+
+validatePrereqs (preflight phase)
+
+So likely something like:
+
+ATTACH import_preflight
+run validation query
+iterate results
+DETACH import_preflight  <-- fails here
+
+🧪 Quick Confirmation Test
+
+Tell the agent to do this:
+
+Before DETACH, insert:
+
+print("About to detach import_preflight");
+
+Then temporarily remove DETACH:
+
+→ If everything else works, you’ve confirmed it’s lifecycle, not logic
+
+⸻
+
+🎯 Minimal Fix (What I Recommend First)
+
+Tell the agent:
+
+Ensure all queries against import_preflight are fully materialized (no lazy iteration) before DETACH. If uncertain, temporarily remove DETACH during preflight and move it to the end of migration.
+
+⸻
+
+⚠️ Subtle Gotcha
+
+Even this can fail:
+
+final rows = db.select(...);
+
+rows.forEach(...)
+
+Because:
+
+👉 rows may still be lazily backed
+
+You want something like:
+
+final rows = db.select(...).map((r) => r).toList();
+
+🧠 Why This Fits Your Symptoms Perfectly
+
+* Preflight works → query starts
+* DETACH fails → because query not finalized
+* Migration aborts → no projection
+* UI shows “migration failed”
+* Rows remain staged → because staging happened earlier
+
+Everything lines up.
+
+⸻
+
+🏁 Bottom Line
+
+You don’t have a data bug.
+
+You don’t have a merge bug.
+
+You have:
+
+A dangling SQLite statement preventing DETACH
+
+Fix that, and your entire pipeline should start completing.
+

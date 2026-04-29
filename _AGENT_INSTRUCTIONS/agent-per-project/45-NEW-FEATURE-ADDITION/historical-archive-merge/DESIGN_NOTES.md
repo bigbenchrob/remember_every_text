@@ -146,6 +146,11 @@ Rows that cannot participate in GUID-based merging should be surfaced as warning
 
 Rows without usable GUIDs should also be counted explicitly in the result contract so the user can tell the difference between duplicates and unmergeable rows.
 
+For Phase 1 accounting, those rows should increment both:
+
+- `rows_failed`, because they were not imported
+- `rows_without_guid_count`, because that is the reason they failed
+
 ## Legacy Schema Strategy
 
 Phase 1 should tolerate older `chat.db` layouts by using a minimal extraction set.
@@ -188,11 +193,26 @@ This keeps the slice focused on proving the additive merge model.
 
 The smallest likely cross-layer path is:
 
-1. feature/settings support action starts the flow
-2. resolver/service performs folder validation, preflight, and merge orchestration
-3. durable archive rows are staged upstream of `db-working`
-4. migration or a focused projection step writes merged rows into working messages with provenance metadata
-5. existing providers refresh and existing timeline/search/heatmap surfaces pick up the data without any archive-specific ordering logic
+1. `settings_root_resolver.dart` adds `Import Historical Archive` as a transient Troubleshooting action
+2. `SettingsTopMenuWidget` dispatches through the existing transient settings action path
+3. `SidebarActionDispatcher` replaces the current ephemeral settings projection with the archive-merge cassette flow
+4. `SettingsCassetteCoordinator` resolves the archive-merge `SettingsCassetteSpec` states into payloads for the initial, preflight, and result cassettes
+5. resolver/service performs folder validation, preflight, and merge orchestration behind those cassettes
+6. durable archive rows are staged upstream of `db-working`
+7. migration or a focused projection step writes merged rows into working messages with provenance metadata
+8. existing providers refresh and existing timeline/search/heatmap surfaces pick up the data without any archive-specific ordering logic
+
+## Why This Entry Point Is Correct
+
+This feature behaves like the existing Support diagnostic/action flows, not like a new persistent settings context.
+
+That makes the existing transient-action machinery the right fit:
+
+- it already supports one-off support actions launched from the Settings top menu
+- it already supports replacing the visible settings cassette stack ephemerally
+- it already separates menu entry, dispatcher routing, and resolver-owned cassette payloads
+
+Phase 1 should therefore reuse the same support-action path used by `Send logs…` and `Reset message data…`, rather than introducing a new sidebar topology or settings-specific navigation pattern.
 
 ## Timeline Authority
 

@@ -148,8 +148,34 @@ final class ShowSendLogsFlow extends SidebarEphemeralIntent {
   const ShowSendLogsFlow();
 }
 
+final class ShowImportHistoricalArchiveFlow extends SidebarEphemeralIntent {
+  const ShowImportHistoricalArchiveFlow();
+}
+
 final class ShowResetMessageDataFlow extends SidebarEphemeralIntent {
   const ShowResetMessageDataFlow();
+}
+
+final class ChooseHistoricalArchiveFolderRequested
+    extends SidebarEphemeralIntent {
+  const ChooseHistoricalArchiveFolderRequested();
+}
+
+final class ImportHistoricalArchiveRequested extends SidebarEphemeralIntent {
+  const ImportHistoricalArchiveRequested({
+    required this.archivePath,
+    required this.archiveLabel,
+  });
+
+  final String archivePath;
+  final String archiveLabel;
+}
+
+final class ClearHistoricalArchiveCacheRequested
+    extends SidebarEphemeralIntent {
+  const ClearHistoricalArchiveCacheRequested({required this.archivePath});
+
+  final String archivePath;
 }
 
 final class SendLogsRequested extends SidebarEphemeralIntent {

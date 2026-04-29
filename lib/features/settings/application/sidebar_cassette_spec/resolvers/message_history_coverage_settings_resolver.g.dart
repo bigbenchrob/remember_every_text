@@ -27,7 +27,7 @@ final messageHistoryCoverageReportProvider =
 typedef MessageHistoryCoverageReportRef =
     AutoDisposeFutureProviderRef<MessageHistoryCoverageReport>;
 String _$messageHistoryCoverageSettingsResolverHash() =>
-    r'1e0d232c0484e76562834e4599d17e767d89cc46';
+    r'22aedfaf8214d9850f236437254b086722250a24';
 
 /// See also [MessageHistoryCoverageSettingsResolver].
 @ProviderFor(MessageHistoryCoverageSettingsResolver)

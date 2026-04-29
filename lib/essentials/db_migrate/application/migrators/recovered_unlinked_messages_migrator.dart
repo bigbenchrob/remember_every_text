@@ -61,6 +61,8 @@ class RecoveredUnlinkedMessagesMigrator extends BaseTableMigrator {
           thread_originator_guid,
           balloon_bundle_id,
           payload_json,
+          source_provenance,
+          import_batch_id,
           batch_id
         )
         SELECT
@@ -127,6 +129,8 @@ class RecoveredUnlinkedMessagesMigrator extends BaseTableMigrator {
           m.thread_originator_guid,
           m.balloon_bundle_id,
           m.payload_json,
+          'current_mac',
+          m.batch_id,
           m.batch_id
         FROM $_attachAlias.recovered_unlinked_messages m
         LEFT JOIN $_attachAlias.handles h ON h.id = m.sender_handle_id
@@ -153,6 +157,32 @@ class RecoveredUnlinkedMessagesMigrator extends BaseTableMigrator {
               ON map.source_handle_id = import_messages.sender_handle_id
             WHERE import_messages.guid = recovered_unlinked_messages.guid
           )
+      ''');
+
+      await ctx.workingDb.customStatement('''
+        UPDATE recovered_unlinked_messages
+        SET source_provenance = COALESCE(source_provenance, 'current_mac'),
+            import_batch_id = COALESCE(
+              import_batch_id,
+              (
+                SELECT import_messages.batch_id
+                FROM $_attachAlias.recovered_unlinked_messages import_messages
+                WHERE import_messages.guid = recovered_unlinked_messages.guid
+                LIMIT 1
+              )
+            ),
+            batch_id = COALESCE(
+              batch_id,
+              (
+                SELECT import_messages.batch_id
+                FROM $_attachAlias.recovered_unlinked_messages import_messages
+                WHERE import_messages.guid = recovered_unlinked_messages.guid
+                LIMIT 1
+              )
+            )
+        WHERE source_provenance IS NULL
+           OR import_batch_id IS NULL
+           OR batch_id IS NULL
       ''');
 
       final backfilledRows = await ctx.workingDb

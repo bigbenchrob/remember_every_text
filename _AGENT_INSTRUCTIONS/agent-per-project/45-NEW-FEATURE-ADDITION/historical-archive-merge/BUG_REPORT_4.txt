@@ -1,0 +1,195 @@
+    ✅ Staging works
+* ❌ Projection does not persist into working.db
+* ❌ UI flow not completing
+* ❌ Contact picker breaks (state corruption / provider failure)
+
+Here’s a tight, surgical redirection note you can hand to the agent:
+
+⸻
+
+CRITICAL BUG: Merge Executes Partially, Leaves App in Broken State
+
+Confirmed Behavior
+
+After clicking Merge Into Timeline:
+
+1. Staging Works
+
+* historical_archive_import.db.messages is populated (~8,000 rows)
+
+2. Projection Fails
+
+* No archive messages appear in working.db
+* Restarting the app confirms:
+    → No messages before 2014 are visible
+
+3. UI Flow Fails
+
+* Sidebar remains stuck in:
+    “Archive Ready to Import”
+* No result cassette is shown
+
+4. App State Breaks
+
+* Contact picker becomes unresponsive
+* Only fixed by restarting the app
+
+⸻
+
+Interpretation
+
+This is not multiple bugs.
+
+This is a single failure in the merge execution path that:
+
+1. Successfully stages archive rows
+2. Then throws or aborts before completion
+3. Prevents:
+    * projection into working.db
+    * result dispatch
+4. Leaves providers / flow state in a broken or inconsistent state
+
+⸻
+
+Most Likely Root Cause
+
+An exception is occurring:
+
+AFTER staging
+BUT BEFORE:
+
+* projection completes
+* result payload is built
+* dispatcher updates UI state
+
+This explains all symptoms:
+
+Symptom
+
+Explanation
+
+Rows staged
+
+happens before failure
+
+No projection
+
+failure interrupts
+
+No UI update
+
+dispatcher never reached
+
+Picker broken
+
+provider tree left inconsistent
+
+Required Fix Strategy
+
+1. Make Merge Transactionally Safe
+
+Wrap the entire merge flow in:
+
+TRY
+→ stage
+→ project
+→ build result
+→ dispatch result intent
+
+CATCH
+→ build failure result
+→ dispatch failure intent
+→ DO NOT leave UI in preflight state
+
+FINALLY
+→ ensure no partial state leaks into providers
+
+⸻
+
+2. Add Hard Logging Checkpoints
+
+Inside merge service:
+
+Log:
+
+* “START MERGE”
+* “STAGING COMPLETE (count=X)”
+* “BEGIN PROJECTION”
+* “PROJECTED ROW COUNT (Y)”
+* “RESULT BUILT”
+* “DISPATCHING RESULT”
+* “MERGE COMPLETE”
+
+Right now, you are almost certainly missing logs after staging.
+
+⸻
+
+3. Protect Provider State
+
+No matter what happens:
+
+* The UI must always transition to a valid state
+* Never leave cassette stack in preflight after an action
+
+⸻
+
+4. Identify the Failing Line
+
+Given your earlier work, the most likely failure points are:
+
+* chat reconstruction (chat_message_join / chat_handle_join)
+* handle resolution (even after hardening)
+* uniqueness constraint violation during insert
+* transaction rollback after partial insert
+
+⸻
+
+5. Critical Rule
+
+Even if projection fails completely:
+
+* The app must remain usable
+* Contact picker must still work
+* UI must show a failure result
+
+⸻
+
+Immediate Debug Task
+
+Add one log line at the top of projection:
+
+“BEGIN PROJECTION”
+
+If you do NOT see it:
+
+→ failure is occurring between staging and projection
+
+If you DO see it but not:
+
+“PROJECTED ROW COUNT”
+
+→ failure is inside projection loop
+
+⸻
+
+Success Criteria
+
+After fix:
+
+* Merge always completes with a visible result (success or failure)
+* Contact picker remains functional
+* No provider is left in broken state
+* Projection failures are surfaced clearly
+* Archive rows eventually appear in working.db
+
+⸻
+
+Bottom Line
+
+This is a single mid-merge exception causing:
+
+* projection to abort
+* UI to not update
+* providers to break
+
+Fix the exception boundary and everything else will become diagnosable.

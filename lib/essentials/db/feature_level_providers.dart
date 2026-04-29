@@ -64,6 +64,27 @@ Future<SqfliteImportDatabase> sqfliteImportDatabase(
   return database;
 }
 
+/// Provides access to the dedicated historical archive import ledger.
+@Riverpod(keepAlive: true)
+Future<SqfliteImportDatabase> historicalArchiveImportDatabase(
+  HistoricalArchiveImportDatabaseRef ref,
+) async {
+  await _ensureDatabaseDirectoryExists();
+  final database = SqfliteImportDatabase(
+    databaseDirectory: databaseDirectoryPath,
+    databaseName: 'historical_archive_import.db',
+    debugSettings: ref.watch(importDebugSettingsProvider),
+  );
+
+  await database.database;
+
+  ref.onDispose(() async {
+    await database.close();
+  });
+
+  return database;
+}
+
 /// Provides access to the Drift projection database used by the UI.
 @Riverpod(keepAlive: true)
 Future<WorkingDatabase> driftWorkingDatabase(

@@ -1,5 +1,10 @@
 import 'package:intl/intl.dart';
 
+/// Central timestamp conversion utility for MessageLens.
+///
+/// All date math in the app should flow through this file so Apple, Unix, and
+/// Dart timestamp variants stay normalized in one place.
+
 // dumbass competition varying apple date formats:
 //  apple: nanoseconds since 2001-01-01
 //  appleSeconds: seconds since 2001=01-01 (e.g. Apple contacts db)
@@ -10,6 +15,9 @@ import 'package:intl/intl.dart';
 
 class DateConverter {
   DateConverter._();
+
+  static const int _appleEpochUnixSeconds = 978307200;
+  static const int _appleNanosecondsMagnitudeThreshold = 1000000000000;
 
   /// Turn a date string, e.g. '2019-01-31' to an int based on the Apple date specification
   static int dateString2Apple(String dateString) {
@@ -37,11 +45,15 @@ class DateConverter {
   /// Turn a unix TimeStamp to an int based on the Apple date specification
   /// (nanoseconds since 2001-01-01)
   static int unix2Apple(int unixTimeStamp) {
-    return (unixTimeStamp - 978307200) * 1000000000;
+    return (unixTimeStamp - _appleEpochUnixSeconds) * 1000000000;
   }
 
   static int apple2Unix(int appleTimeStamp) {
-    return ((appleTimeStamp / 1000000000) + 978307200).round();
+    return ((appleTimeStamp / 1000000000) + _appleEpochUnixSeconds).round();
+  }
+
+  static int appleSeconds2Unix(int appleSecondsTimeStamp) {
+    return appleSecondsTimeStamp + _appleEpochUnixSeconds;
   }
 
   static int unix2Dart(int unixTimeStamp) {
@@ -118,5 +130,28 @@ class DateConverter {
 
     final dartTimestamp = apple2Dart(intValue);
     return dartTimeStamp2DateTime(dartTimestamp);
+  }
+
+  /// Convert Apple timestamps that may be stored either as nanoseconds since
+  /// 2001-01-01 or as legacy second-resolution values since 2001-01-01.
+  static DateTime? appleAnyToDateTime(dynamic raw) {
+    final intValue = toIntSafe(raw);
+    if (intValue == null || intValue == 0) {
+      return null;
+    }
+
+    if (intValue.abs() < _appleNanosecondsMagnitudeThreshold) {
+      final unixTimeStamp = appleSeconds2Unix(intValue);
+      return DateTime.fromMillisecondsSinceEpoch(
+        unix2Dart(unixTimeStamp),
+        isUtc: true,
+      );
+    }
+
+    return appleToDateTime(intValue)?.toUtc();
+  }
+
+  static String? appleAnyToIsoString(dynamic raw) {
+    return appleAnyToDateTime(raw)?.toIso8601String();
   }
 }

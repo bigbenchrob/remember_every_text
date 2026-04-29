@@ -1,4 +1,7 @@
+import 'dart:ui' show PointerDeviceKind;
+
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/essentials/navigation/domain/sidebar_mode.dart';
@@ -330,6 +333,99 @@ void main() {
       );
       expect(find.text('Send log data…'), findsOneWidget);
       expect(find.text('Send Logs'), findsNothing);
+    });
+
+    testWidgets('settings action rows expose click cursor and hover feedback', (
+      tester,
+    ) async {
+      final widget = buildSidebarCassettePayloadWidget(
+        mode: SidebarMode.settings,
+        resolvedCassette: const ResolvedSidebarCassette(
+          spec: CassetteSpec.settings(
+            SettingsCassetteSpec.importHistoricalArchivePanel(),
+          ),
+          cassetteIndex: 1,
+          payload: SettingsInfoActionsCassettePayload(
+            cassetteIndex: 1,
+            title: 'Import Historical Archive',
+            bodyText: 'Import older messages.',
+            actions: [
+              SidebarActionDescriptor(
+                label: 'Clear Archive Cache',
+                intent: ClearHistoricalArchiveCacheRequested(
+                  archivePath: '/tmp/archive',
+                ),
+                tone: SidebarActionTone.destructive,
+              ),
+              SidebarActionDescriptor(
+                label: 'Merge Into Timeline',
+                intent: ImportHistoricalArchiveRequested(
+                  archivePath: '/tmp/archive',
+                  archiveLabel: 'Archive',
+                ),
+                tone: SidebarActionTone.primary,
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: Directionality(
+            textDirection: TextDirection.ltr,
+            child: widget,
+          ),
+        ),
+      );
+
+      final clearArchiveLabel = find.text('Clear Archive Cache');
+      final mouseRegion = tester.widget<MouseRegion>(
+        find
+            .ancestor(of: clearArchiveLabel, matching: find.byType(MouseRegion))
+            .first,
+      );
+      expect(mouseRegion.cursor, SystemMouseCursors.click);
+
+      final decoratedBoxBeforeHover = tester.widget<DecoratedBox>(
+        find
+            .ancestor(
+              of: clearArchiveLabel,
+              matching: find.byType(DecoratedBox),
+            )
+            .first,
+      );
+      final decorationBeforeHover =
+          decoratedBoxBeforeHover.decoration as BoxDecoration;
+      expect(decorationBeforeHover.color, const Color(0x00000000));
+
+      final gestureCenter = tester.getCenter(
+        find
+            .ancestor(
+              of: clearArchiveLabel,
+              matching: find.byType(GestureDetector),
+            )
+            .first,
+      );
+      final mouseGesture = await tester.createGesture(
+        kind: PointerDeviceKind.mouse,
+      );
+      addTearDown(mouseGesture.removePointer);
+      await mouseGesture.addPointer();
+      await mouseGesture.moveTo(gestureCenter);
+      await tester.pump();
+
+      final decoratedBoxAfterHover = tester.widget<DecoratedBox>(
+        find
+            .ancestor(
+              of: clearArchiveLabel,
+              matching: find.byType(DecoratedBox),
+            )
+            .first,
+      );
+      final decorationAfterHover =
+          decoratedBoxAfterHover.decoration as BoxDecoration;
+      expect(decorationAfterHover.color, isNot(const Color(0x00000000)));
     });
 
     testWidgets('builds a sidebar-local reset message data confirm cassette', (

@@ -38,6 +38,7 @@ CassetteSpec? resolveSidebarUtilityChild(
           return sidebarUtilitySettingsChildTextSizeInfo();
         case SettingsMenuActionId.imageSize:
           return sidebarUtilitySettingsChildImageSizeInfo();
+        case SettingsMenuActionId.importHistoricalArchive:
         case SettingsMenuActionId.sendLogs:
         case SettingsMenuActionId.resetMessageData:
         case null:

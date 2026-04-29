@@ -32,7 +32,7 @@ created: 2026-04-28
 - [ ] New GUID rows are inserted
 - [ ] Re-importing the same archive is idempotent and reports zero new rows
 - [ ] Existing working rows remain unchanged after merge
-- [ ] Rows without usable GUIDs increment `rows_without_guid_count` and are not heuristically merged
+- [ ] Rows without usable GUIDs increment both `rows_failed` and `rows_without_guid_count`, and are not heuristically merged
 - [ ] Row-level failures are counted without aborting the full merge when the archive DB itself is readable
 - [ ] Failure to open the archive DB stops the run cleanly
 

@@ -188,6 +188,7 @@ abstract class SidebarFlowState with _$SidebarFlowState {
       SettingsMenuActionId.messageHistoryCoverage => const ViewSpec.settings(
         SettingsViewSpec.messageHistoryCoverageReport(),
       ),
+      SettingsMenuActionId.importHistoricalArchive ||
       SettingsMenuActionId.textSize ||
       SettingsMenuActionId.imageSize ||
       SettingsMenuActionId.sendLogs ||

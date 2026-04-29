@@ -1,0 +1,115 @@
+BUG UPDATE: Projection Partially Inserts Working Messages, But Flow Hangs and Indexes/Contacts Are Broken
+
+New Confirmed Behavior
+
+After the latest detach fix:
+
+1. Clear Archive Cache works.
+2. Clicking Merge Into Timeline now updates the sidebar to:
+
+Merging Archive Into Timeline
+
+3. The UI remains stuck in that state for 2+ minutes.
+4. Rows appear to be inserted into working.db.messages.
+5. The contact picker becomes empty.
+6. After restarting the app, earlier archive messages still do not appear for the selected contact.
+
+Interpretation
+
+This is progress: the previous IMPORT_DB_LOCKED failure appears to be gone, and projection is now reaching working.db.messages.
+
+The new bug is likely after message-row insertion, during one of these later stages:
+
+* working chat / participant reconstruction
+* contact index rebuilding
+* timeline index rebuilding
+* transaction completion / commit
+* provider refresh after projection
+
+Critical Distinction
+
+Inserting rows into working.db.messages is not enough.
+
+For archive messages to be visible in contact timelines, the projection must also create or refresh the related app-facing structures, likely including:
+
+* chat associations
+* participant/handle mappings
+* contact-message index
+* global timeline index
+* any derived search/heatmap tables
+
+Right now, message rows may be landing, but the app-facing indexes or relationships are not usable.
+
+Highest Priority Problem
+
+The empty contact picker suggests the rebuild/projection path is leaving the working DB or providers in an incomplete state.
+
+This may mean:
+
+* index rebuild is running and not completing
+* a transaction is hanging
+* a provider query is blocked by a write transaction
+* contact index tables were cleared before rebuild and never repopulated
+* migration/projection partially updates working DB then stalls
+
+Required Investigation
+
+Please add checkpoints after each projection phase:
+
+1. staged rows selected
+2. working.messages inserted
+3. working chat rows created/reused
+4. message-chat links created
+5. participants/handles resolved
+6. contact indexes rebuilt
+7. global timeline indexes rebuilt
+8. transaction committed
+9. providers invalidated/refreshed
+10. result payload emitted
+
+The hang is likely between one of those checkpoints.
+
+Immediate Database Checks
+
+After the stuck merge state, inspect:
+
+* count in working.db.messages with source_provenance = archive_2012
+* count in working chat/message join table for those archive messages
+* count in contact/message index for those archive messages
+* whether contact picker source tables are empty
+* whether a transaction or write lock is still active
+
+Important Safety Rule
+
+Do not fix this by making the UI read directly from historical_archive_import.db.
+
+Archive rows must become visible only after successful projection into the normal working DB surfaces.
+
+Likely Root Cause
+
+The projection is now partially executing but not completing the full app-facing rebuild.
+
+Most likely:
+
+working.messages insert succeeds
+→ index/contact rebuild starts
+→ rebuild hangs or fails
+→ result state never emits
+→ picker remains empty because app-facing contact structures are empty or unavailable
+
+Success Criteria
+
+After fix:
+
+* Merge exits “Merging Archive Into Timeline”
+* Result cassette appears
+* Contact picker remains populated
+* working.db.messages contains archive rows
+* archive rows are linked/indexed into normal contact timelines
+* restart preserves visibility of pre-2014 messages
+
+Bottom Line
+
+We are past staging and past the earlier DETACH failure.
+
+The current failure is in the final projection/rebuild phase: archive rows are reaching working.db.messages, but they are not being fully linked/indexed into the app-facing timeline surfaces, and the merge flow never completes.

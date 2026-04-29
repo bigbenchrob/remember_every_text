@@ -41,6 +41,8 @@ final class SettingsTopMenuActionRow extends SettingsTopMenuRow {
       SettingsMenuActionId.messageHistoryCoverage => throw StateError(
         'Message History Coverage must use durable settings context transport.',
       ),
+      SettingsMenuActionId.importHistoricalArchive =>
+        const ShowImportHistoricalArchiveFlow(),
       SettingsMenuActionId.sendLogs => const ShowSendLogsFlow(),
       SettingsMenuActionId.resetMessageData => const ShowResetMessageDataFlow(),
       SettingsMenuActionId.textSize ||

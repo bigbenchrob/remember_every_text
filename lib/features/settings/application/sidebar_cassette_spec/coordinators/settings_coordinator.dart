@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 import '../../../domain/spec_classes/settings_cassette_spec.dart';
 import '../resolvers/attachment_archive_settings_resolver.dart';
+import '../resolvers/import_historical_archive_settings_resolver.dart';
 import '../resolvers/message_history_coverage_settings_resolver.dart';
 import '../resolvers/reset_message_data_settings_resolver.dart';
 import '../resolvers/send_logs_settings_resolver.dart';
@@ -29,6 +30,21 @@ class SettingsCassetteCoordinator extends _$SettingsCassetteCoordinator {
       messageHistoryCoverageOlderMessagesNote: () => ref
           .read(messageHistoryCoverageSettingsResolverProvider.notifier)
           .resolveOlderMessagesNote(cassetteIndex: cassetteIndex),
+      importHistoricalArchivePanel: () => ref
+          .read(importHistoricalArchiveSettingsResolverProvider.notifier)
+          .resolveInitial(cassetteIndex: cassetteIndex),
+      importHistoricalArchivePreflight: (summary) => ref
+          .read(importHistoricalArchiveSettingsResolverProvider.notifier)
+          .resolvePreflight(cassetteIndex: cassetteIndex, summary: summary),
+      importHistoricalArchiveInProgress: (archiveLabel) => ref
+          .read(importHistoricalArchiveSettingsResolverProvider.notifier)
+          .resolveInProgress(
+            cassetteIndex: cassetteIndex,
+            archiveLabel: archiveLabel,
+          ),
+      importHistoricalArchiveResult: (result) => ref
+          .read(importHistoricalArchiveSettingsResolverProvider.notifier)
+          .resolveImportResult(cassetteIndex: cassetteIndex, result: result),
       sendLogsPanel: () => ref
           .read(sendLogsSettingsResolverProvider.notifier)
           .resolve(cassetteIndex: cassetteIndex),

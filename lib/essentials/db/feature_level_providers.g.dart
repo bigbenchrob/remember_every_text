@@ -27,6 +27,28 @@ final sqfliteImportDatabaseProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef SqfliteImportDatabaseRef = FutureProviderRef<SqfliteImportDatabase>;
+String _$historicalArchiveImportDatabaseHash() =>
+    r'db0316de32853fab89629cfbaca6ce59e71dbf03';
+
+/// Provides access to the dedicated historical archive import ledger.
+///
+/// Copied from [historicalArchiveImportDatabase].
+@ProviderFor(historicalArchiveImportDatabase)
+final historicalArchiveImportDatabaseProvider =
+    FutureProvider<SqfliteImportDatabase>.internal(
+      historicalArchiveImportDatabase,
+      name: r'historicalArchiveImportDatabaseProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$historicalArchiveImportDatabaseHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef HistoricalArchiveImportDatabaseRef =
+    FutureProviderRef<SqfliteImportDatabase>;
 String _$driftWorkingDatabaseHash() =>
     r'3613c1038f790c70d828f01cc238b88b6f78c735';
 

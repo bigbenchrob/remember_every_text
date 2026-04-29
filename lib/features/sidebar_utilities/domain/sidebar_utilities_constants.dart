@@ -46,6 +46,10 @@ enum SettingsMenuActionId {
     id: 'message_history_coverage',
     label: 'Message history coverage report',
   ),
+  importHistoricalArchive(
+    id: 'import_historical_archive',
+    label: 'Import Historical Archive',
+  ),
   sendLogs(id: 'send_logs', label: 'Send logs…'),
   resetMessageData(id: 'reset_message_data', label: 'Reset message data…'),
   textSize(id: 'text_size', label: 'Text size'),
@@ -70,6 +74,7 @@ extension SettingsMenuActionIdX on SettingsMenuActionId {
       SettingsMenuActionId.messageHistoryCoverage ||
       SettingsMenuActionId.textSize ||
       SettingsMenuActionId.imageSize => true,
+      SettingsMenuActionId.importHistoricalArchive ||
       SettingsMenuActionId.sendLogs ||
       SettingsMenuActionId.resetMessageData => false,
     };

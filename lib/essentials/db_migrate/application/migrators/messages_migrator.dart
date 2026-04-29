@@ -138,6 +138,8 @@ class MessagesMigrator extends BaseTableMigrator {
           is_starred,
           is_deleted_local,
           updated_at_utc,
+          source_provenance,
+          import_batch_id,
           batch_id
         )
         SELECT
@@ -214,6 +216,8 @@ class MessagesMigrator extends BaseTableMigrator {
           0,
           0,
           NULL,
+          'current_mac',
+          m.batch_id,
           m.batch_id
         FROM $_attachAlias.messages m
         JOIN chats c ON c.id = m.chat_id
@@ -246,6 +250,32 @@ class MessagesMigrator extends BaseTableMigrator {
             JOIN handles_canonical_to_alias map ON map.source_handle_id = m.sender_handle_id
             WHERE m.guid = messages.guid
           );
+      ''');
+
+      await ctx.workingDb.customStatement('''
+        UPDATE messages
+        SET source_provenance = COALESCE(source_provenance, 'current_mac'),
+            import_batch_id = COALESCE(
+              import_batch_id,
+              (
+                SELECT m.batch_id
+                FROM $_attachAlias.messages m
+                WHERE m.guid = messages.guid
+                LIMIT 1
+              )
+            ),
+            batch_id = COALESCE(
+              batch_id,
+              (
+                SELECT m.batch_id
+                FROM $_attachAlias.messages m
+                WHERE m.guid = messages.guid
+                LIMIT 1
+              )
+            )
+        WHERE source_provenance IS NULL
+           OR import_batch_id IS NULL
+           OR batch_id IS NULL;
       ''');
 
       final backfilledRows = await ctx.workingDb

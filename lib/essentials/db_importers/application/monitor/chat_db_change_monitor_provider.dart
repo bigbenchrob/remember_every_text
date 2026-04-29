@@ -10,6 +10,8 @@ import '../../../db/feature_level_providers.dart';
 import '../../../db_migrate/domain/entities/db_migration_result.dart';
 import '../../../db_migrate/feature_level_providers.dart';
 import '../../../logging/application/app_logger.dart';
+import '../../../onboarding/application/onboarding_gate_provider.dart';
+import '../../../onboarding/domain/onboarding_status.dart';
 import '../../domain/entities/db_import_result.dart';
 import '../../feature_level_providers.dart';
 import '../import_execution_gate_provider.dart';
@@ -52,7 +54,9 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
   bool _attachmentSweepInFlight = false;
   bool _pendingProbe = false;
   bool _retryWhenGateReleases = false;
+  bool _pendingProjectionRepair = false;
   String? _chatDbPath;
+  bool _initializing = false;
 
   @override
   ChatDbChangeMonitorState build() {
@@ -60,14 +64,25 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
       return const ChatDbChangeMonitorState();
     }
 
+    final onboardingStatus = ref.watch(onboardingGateProvider);
+    final maintenanceLocked = ref.watch(dbMaintenanceLockProvider);
+
     ref.listen(importExecutionGateProvider, _handleExecutionGateChange);
 
-    unawaited(_initialize());
+    if (onboardingStatus != OnboardingStatus.notNeeded || maintenanceLocked) {
+      _stopMonitoring();
+      return const ChatDbChangeMonitorState();
+    }
+
+    if (!_initializing &&
+        _pollingTimer == null &&
+        _attachmentSweepTimer == null) {
+      _initializing = true;
+      unawaited(_initialize());
+    }
 
     ref.onDispose(() {
-      _debounceTimer?.cancel();
-      _pollingTimer?.cancel();
-      _attachmentSweepTimer?.cancel();
+      _stopMonitoring();
     });
 
     return const ChatDbChangeMonitorState();
@@ -75,6 +90,10 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
 
   Future<void> _initialize() async {
     try {
+      if (!_canRunMonitorWork()) {
+        return;
+      }
+
       final pathsHelper = await ref.read(pathsHelperProvider.future);
       final chatDbPath = pathsHelper.chatDBPath;
       _chatDbPath = chatDbPath;
@@ -89,6 +108,8 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
       _startAttachmentSweep();
     } catch (error, stackTrace) {
       _handleError('Failed to initialize chat.db monitor: $error', stackTrace);
+    } finally {
+      _initializing = false;
     }
   }
 
@@ -98,6 +119,10 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
   /// and new messages arrived. Without this, users would see stale data until
   /// the first polling interval (15 seconds).
   Future<void> _checkForNewMessagesOnStartup(String chatDbPath) async {
+    if (!_canRunMonitorWork()) {
+      return;
+    }
+
     try {
       final currentMaxRowId = _readMaxRowId(chatDbPath);
       final previousMaxRowId = state.lastMaxRowId;
@@ -117,6 +142,7 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
               'Startup check: no new messages (MAX ROWID: $currentMaxRowId)',
               source: 'ChatDbMonitor',
             );
+        await _repairProjectionIfNeeded(reason: 'startup');
       }
     } catch (error) {
       // Non-fatal - polling will catch up
@@ -127,6 +153,10 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
   }
 
   Future<void> _primeMaxRowId(String chatDbPath) async {
+    if (!_canRunMonitorWork()) {
+      return;
+    }
+
     try {
       // CRITICAL: Prime from import.db, not chat.db!
       // This ensures we detect messages that arrived before app launch
@@ -164,7 +194,7 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
   }
 
   Future<void> _runAttachmentSweep() async {
-    if (_importInFlight || _attachmentSweepInFlight) {
+    if (_importInFlight || _attachmentSweepInFlight || !_canRunMonitorWork()) {
       return;
     }
 
@@ -206,7 +236,73 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
     }
   }
 
+  Future<void> _repairProjectionIfNeeded({required String reason}) async {
+    if (_importInFlight || !_canRunMonitorWork()) {
+      return;
+    }
+
+    final migrationService = ref.read(handlesMigrationServiceProvider);
+    final repairRequired = await migrationService
+        .relationshipProjectionRepairRequired();
+    if (!repairRequired) {
+      return;
+    }
+
+    final gateState = ref.read(importExecutionGateProvider);
+    if (gateState.isLocked) {
+      _pendingProjectionRepair = true;
+      ref
+          .read(appLoggerProvider.notifier)
+          .debug(
+            'Projection repair is waiting for import execution gate release.',
+            source: 'ChatDbMonitor',
+            context: {'reason': reason, 'owner': gateState.owner},
+          );
+      return;
+    }
+
+    _importInFlight = true;
+    try {
+      ref
+          .read(appLoggerProvider.notifier)
+          .warn(
+            'Detected missing projected relationship tables despite joinable ledger data. Running repair migration.',
+            source: 'ChatDbMonitor',
+            context: {'reason': reason},
+          );
+
+      final migrationResult = await migrationService.run(incrementalMode: true);
+      if (!migrationResult.success) {
+        _handleError(
+          'Projection repair migration failed: ${migrationResult.error}',
+          null,
+        );
+        return;
+      }
+
+      ref
+          .read(appLoggerProvider.notifier)
+          .info(
+            'Projection repair migration completed successfully.',
+            source: 'ChatDbMonitor',
+            context: {'reason': reason},
+          );
+      ref.read(messageDataVersionProvider.notifier).bump();
+    } catch (error, stackTrace) {
+      _handleError('Projection repair failed: $error', stackTrace);
+    } finally {
+      _importInFlight = false;
+      if (_pendingProbe) {
+        unawaited(_processPendingChanges());
+      }
+    }
+  }
+
   void _scheduleProbe() {
+    if (!_canRunMonitorWork()) {
+      return;
+    }
+
     _pendingProbe = true;
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 350), () {
@@ -215,7 +311,7 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
   }
 
   Future<void> _processPendingChanges() async {
-    if (!_pendingProbe || _importInFlight) {
+    if (!_pendingProbe || _importInFlight || !_canRunMonitorWork()) {
       return;
     }
 
@@ -435,19 +531,55 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
     ImportExecutionGateState? previous,
     ImportExecutionGateState next,
   ) {
-    final gateJustReleased = previous?.owner != null && next.owner == null;
-    if (!gateJustReleased || !_retryWhenGateReleases) {
+    if (!_canRunMonitorWork()) {
       return;
     }
 
+    final gateJustReleased = previous?.owner != null && next.owner == null;
+    if (!gateJustReleased) {
+      return;
+    }
+
+    if (_pendingProjectionRepair) {
+      _pendingProjectionRepair = false;
+      ref
+          .read(appLoggerProvider.notifier)
+          .debug(
+            'Execution gate released. Retrying pending projection repair immediately',
+            source: 'ChatDbMonitor',
+          );
+      unawaited(_repairProjectionIfNeeded(reason: 'gate-release'));
+    }
+
+    if (_retryWhenGateReleases) {
+      _retryWhenGateReleases = false;
+      ref
+          .read(appLoggerProvider.notifier)
+          .debug(
+            'Execution gate released. Retrying pending incremental import immediately',
+            source: 'ChatDbMonitor',
+          );
+      _scheduleProbe();
+    }
+  }
+
+  bool _canRunMonitorWork() {
+    return ref.read(onboardingGateProvider) == OnboardingStatus.notNeeded &&
+        !ref.read(dbMaintenanceLockProvider);
+  }
+
+  void _stopMonitoring() {
+    _debounceTimer?.cancel();
+    _debounceTimer = null;
+    _pollingTimer?.cancel();
+    _pollingTimer = null;
+    _attachmentSweepTimer?.cancel();
+    _attachmentSweepTimer = null;
+    _pendingProbe = false;
     _retryWhenGateReleases = false;
-    ref
-        .read(appLoggerProvider.notifier)
-        .debug(
-          'Execution gate released. Retrying pending incremental import immediately',
-          source: 'ChatDbMonitor',
-        );
-    _scheduleProbe();
+    _pendingProjectionRepair = false;
+    _chatDbPath = null;
+    _initializing = false;
   }
 
   void _restoreStableCursor({

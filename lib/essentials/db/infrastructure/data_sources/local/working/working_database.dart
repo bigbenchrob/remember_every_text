@@ -34,7 +34,7 @@ class WorkingDatabase extends _$WorkingDatabase {
   WorkingDatabase(QueryExecutor executor) : super(executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -55,6 +55,12 @@ class WorkingDatabase extends _$WorkingDatabase {
 
       if (from < 3) {
         for (final statement in _v3WorkingAlterStatements) {
+          await customStatement(statement);
+        }
+      }
+
+      if (from < 4) {
+        for (final statement in _v4WorkingAlterStatements) {
           await customStatement(statement);
         }
       }
@@ -929,6 +935,10 @@ class WorkingMessages extends Table {
   BoolColumn get isDeletedLocal =>
       boolean().named('is_deleted_local').withDefault(const Constant(false))();
   TextColumn get updatedAtUtc => text().named('updated_at_utc').nullable()();
+  TextColumn get sourceProvenance =>
+      text().named('source_provenance').nullable()();
+  IntColumn get importBatchId =>
+      integer().named('import_batch_id').nullable()();
   IntColumn get batchId => integer().named('batch_id').nullable()();
 
   @override
@@ -999,6 +1009,10 @@ class RecoveredUnlinkedMessages extends Table {
   TextColumn get balloonBundleId =>
       text().named('balloon_bundle_id').nullable()();
   TextColumn get payloadJson => text().named('payload_json').nullable()();
+  TextColumn get sourceProvenance =>
+      text().named('source_provenance').nullable()();
+  IntColumn get importBatchId =>
+      integer().named('import_batch_id').nullable()();
   IntColumn get batchId => integer().named('batch_id').nullable()();
 
   @override
@@ -1025,6 +1039,13 @@ const List<String> _v3WorkingAlterStatements = <String>[
   'ALTER TABLE recovered_unlinked_messages ADD COLUMN has_attributed_body_source INTEGER NOT NULL DEFAULT 0 CHECK(has_attributed_body_source IN (0,1))',
   'ALTER TABLE recovered_unlinked_messages ADD COLUMN has_message_summary_info INTEGER NOT NULL DEFAULT 0 CHECK(has_message_summary_info IN (0,1))',
   'ALTER TABLE recovered_unlinked_messages ADD COLUMN has_payload_data_source INTEGER NOT NULL DEFAULT 0 CHECK(has_payload_data_source IN (0,1))',
+];
+
+const List<String> _v4WorkingAlterStatements = <String>[
+  'ALTER TABLE messages ADD COLUMN source_provenance TEXT',
+  'ALTER TABLE messages ADD COLUMN import_batch_id INTEGER',
+  'ALTER TABLE recovered_unlinked_messages ADD COLUMN source_provenance TEXT',
+  'ALTER TABLE recovered_unlinked_messages ADD COLUMN import_batch_id INTEGER',
 ];
 
 /// Ordinal index for stable message ordering in large chats.

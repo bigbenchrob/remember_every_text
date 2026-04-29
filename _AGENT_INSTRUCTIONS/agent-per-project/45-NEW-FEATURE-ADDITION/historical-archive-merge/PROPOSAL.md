@@ -128,6 +128,31 @@ Phase 1 should match the attached minimal slice exactly from the user's perspect
 3. Confirm `Merge Into Timeline`
 4. Receive an import result summary
 
+### Settings / Support Entry Point
+
+This flow should reuse the existing Settings top-menu transient support-action path.
+
+Recommended entry point:
+
+- add `Import Historical Archive` as a new `SettingsTopMenuActionRow.transientAction` in the existing Troubleshooting group owned by `settings_root_resolver.dart`
+- route selection through the existing `SidebarActionDispatcher` ephemeral-action path rather than creating a new sidebar topology pattern
+- project the flow through `ephemeralCassetteProjectionProvider(SidebarMode.settings)` into `SettingsCassetteSpec` screens resolved by the existing `SettingsCassetteCoordinator`
+
+In concrete terms, the flow should follow the same machinery already used by `Send logs…` and `Reset message data…`:
+
+- Settings top menu transient action row
+- `SidebarActionDispatcher` `Show...Flow()` handling
+- ephemeral cassette projection replacement
+- settings cassette resolver/coordinator payload construction
+
+This is the smallest existing Support action path that already supports:
+
+- initial info/action cassette
+- confirmation/preflight cassette
+- result cassette
+
+Phase 1 should reuse that path instead of inventing a new rack topology, sidebar branch pattern, or durable settings-context mode.
+
 ### Minimal Safe Technical Direction
 
 Even in the smallest slice, the implementation must respect the current data-pipeline contract:
@@ -166,6 +191,11 @@ Phase 1 should produce two user-facing contracts:
 
 - `rows_without_guid_count`
 
+Rows without usable `message_guid` should count in both places:
+
+- `rows_failed`, because they were not imported
+- `rows_without_guid_count`, because that is the specific failure reason
+
 And it should surface provenance in the working message projection with:
 
 - `source_provenance`
@@ -189,17 +219,20 @@ This keeps duplicate counting close to O(1)-ish lookup cost per row instead of a
 
 ### Areas Likely To Change
 
-| Area                                 | Planned Change                                                                                                       |
-| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| Settings support flow                | Add a minimal `Import Historical Archive` cassette sequence                                                          |
-| Historical archive application layer | Add a resolver/service for validation, preflight, and merge execution                                                |
-| Database schema                      | Add provenance/batch metadata to the working message projection and introduce `db-archive-import` for archive rows  |
-| Import/migration path                | Replay `db-archive-import` into working messages without changing overlay behavior or live polling semantics         |
-| Logging                              | Add merge-specific structured logging without message content                                                        |
-| Tests                                | Add resolver/data-flow tests plus minimal UI-flow coverage where practical                                           |
+| Area                                 | Planned Change                                                                                                     |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| Settings support flow                | Add a minimal `Import Historical Archive` cassette sequence                                                        |
+| Historical archive application layer | Add a resolver/service for validation, preflight, and merge execution                                              |
+| Database schema                      | Add provenance/batch metadata to the working message projection and introduce `db-archive-import` for archive rows |
+| Import/migration path                | Replay `db-archive-import` into working messages without changing overlay behavior or live polling semantics       |
+| Logging                              | Add merge-specific structured logging without message content                                                      |
+| Tests                                | Add resolver/data-flow tests plus minimal UI-flow coverage where practical                                         |
 
 ### Candidate Implementation Areas
 
+- `lib/features/sidebar_utilities/application/sidebar_cassette_spec/resolvers/settings_root_resolver.dart`
+- `lib/essentials/sidebar/application/sidebar_action_dispatcher.dart`
+- `lib/features/settings/application/sidebar_cassette_spec/coordinators/settings_coordinator.dart`
 - `lib/essentials/onboarding/` or `lib/features/settings/` support-flow wiring
 - `lib/essentials/db/` or a new feature-scoped archive-merge application area for the resolver
 - archive-import schema plus migration/projector files that own archive-row durability and projection
@@ -218,11 +251,6 @@ This keeps duplicate counting close to O(1)-ish lookup cost per row instead of a
 
 4. **Scope creep risk**
    It will be tempting to add archive management, attachment copying, or source filters immediately. Phase 1 must stay limited to the additive merge proof.
-
-## Open Questions To Resolve Before Implementation
-
-1. Should rows without usable `message_guid` be counted as failed rows, warnings, or both in the final result contract?
-2. Which existing support/settings cassette system entry point should own the three-step UI flow with the smallest diff?
 
 ## Recommendation
 

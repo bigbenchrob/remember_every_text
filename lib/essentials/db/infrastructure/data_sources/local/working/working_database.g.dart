@@ -4830,6 +4830,28 @@ class $WorkingMessagesTable extends WorkingMessages
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _sourceProvenanceMeta = const VerificationMeta(
+    'sourceProvenance',
+  );
+  @override
+  late final GeneratedColumn<String> sourceProvenance = GeneratedColumn<String>(
+    'source_provenance',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _importBatchIdMeta = const VerificationMeta(
+    'importBatchId',
+  );
+  @override
+  late final GeneratedColumn<int> importBatchId = GeneratedColumn<int>(
+    'import_batch_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _batchIdMeta = const VerificationMeta(
     'batchId',
   );
@@ -4875,6 +4897,8 @@ class $WorkingMessagesTable extends WorkingMessages
     isStarred,
     isDeletedLocal,
     updatedAtUtc,
+    sourceProvenance,
+    importBatchId,
     batchId,
   ];
   @override
@@ -5142,6 +5166,24 @@ class $WorkingMessagesTable extends WorkingMessages
         ),
       );
     }
+    if (data.containsKey('source_provenance')) {
+      context.handle(
+        _sourceProvenanceMeta,
+        sourceProvenance.isAcceptableOrUnknown(
+          data['source_provenance']!,
+          _sourceProvenanceMeta,
+        ),
+      );
+    }
+    if (data.containsKey('import_batch_id')) {
+      context.handle(
+        _importBatchIdMeta,
+        importBatchId.isAcceptableOrUnknown(
+          data['import_batch_id']!,
+          _importBatchIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('batch_id')) {
       context.handle(
         _batchIdMeta,
@@ -5289,6 +5331,14 @@ class $WorkingMessagesTable extends WorkingMessages
         DriftSqlType.string,
         data['${effectivePrefix}updated_at_utc'],
       ),
+      sourceProvenance: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_provenance'],
+      ),
+      importBatchId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}import_batch_id'],
+      ),
       batchId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}batch_id'],
@@ -5335,6 +5385,8 @@ class WorkingMessage extends DataClass implements Insertable<WorkingMessage> {
   final bool isStarred;
   final bool isDeletedLocal;
   final String? updatedAtUtc;
+  final String? sourceProvenance;
+  final int? importBatchId;
   final int? batchId;
   const WorkingMessage({
     required this.id,
@@ -5369,6 +5421,8 @@ class WorkingMessage extends DataClass implements Insertable<WorkingMessage> {
     required this.isStarred,
     required this.isDeletedLocal,
     this.updatedAtUtc,
+    this.sourceProvenance,
+    this.importBatchId,
     this.batchId,
   });
   @override
@@ -5443,6 +5497,12 @@ class WorkingMessage extends DataClass implements Insertable<WorkingMessage> {
     map['is_deleted_local'] = Variable<bool>(isDeletedLocal);
     if (!nullToAbsent || updatedAtUtc != null) {
       map['updated_at_utc'] = Variable<String>(updatedAtUtc);
+    }
+    if (!nullToAbsent || sourceProvenance != null) {
+      map['source_provenance'] = Variable<String>(sourceProvenance);
+    }
+    if (!nullToAbsent || importBatchId != null) {
+      map['import_batch_id'] = Variable<int>(importBatchId);
     }
     if (!nullToAbsent || batchId != null) {
       map['batch_id'] = Variable<int>(batchId);
@@ -5520,6 +5580,12 @@ class WorkingMessage extends DataClass implements Insertable<WorkingMessage> {
       updatedAtUtc: updatedAtUtc == null && nullToAbsent
           ? const Value.absent()
           : Value(updatedAtUtc),
+      sourceProvenance: sourceProvenance == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceProvenance),
+      importBatchId: importBatchId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(importBatchId),
       batchId: batchId == null && nullToAbsent
           ? const Value.absent()
           : Value(batchId),
@@ -5578,6 +5644,8 @@ class WorkingMessage extends DataClass implements Insertable<WorkingMessage> {
       isStarred: serializer.fromJson<bool>(json['isStarred']),
       isDeletedLocal: serializer.fromJson<bool>(json['isDeletedLocal']),
       updatedAtUtc: serializer.fromJson<String?>(json['updatedAtUtc']),
+      sourceProvenance: serializer.fromJson<String?>(json['sourceProvenance']),
+      importBatchId: serializer.fromJson<int?>(json['importBatchId']),
       batchId: serializer.fromJson<int?>(json['batchId']),
     );
   }
@@ -5623,6 +5691,8 @@ class WorkingMessage extends DataClass implements Insertable<WorkingMessage> {
       'isStarred': serializer.toJson<bool>(isStarred),
       'isDeletedLocal': serializer.toJson<bool>(isDeletedLocal),
       'updatedAtUtc': serializer.toJson<String?>(updatedAtUtc),
+      'sourceProvenance': serializer.toJson<String?>(sourceProvenance),
+      'importBatchId': serializer.toJson<int?>(importBatchId),
       'batchId': serializer.toJson<int?>(batchId),
     };
   }
@@ -5660,6 +5730,8 @@ class WorkingMessage extends DataClass implements Insertable<WorkingMessage> {
     bool? isStarred,
     bool? isDeletedLocal,
     Value<String?> updatedAtUtc = const Value.absent(),
+    Value<String?> sourceProvenance = const Value.absent(),
+    Value<int?> importBatchId = const Value.absent(),
     Value<int?> batchId = const Value.absent(),
   }) => WorkingMessage(
     id: id ?? this.id,
@@ -5709,6 +5781,12 @@ class WorkingMessage extends DataClass implements Insertable<WorkingMessage> {
     isStarred: isStarred ?? this.isStarred,
     isDeletedLocal: isDeletedLocal ?? this.isDeletedLocal,
     updatedAtUtc: updatedAtUtc.present ? updatedAtUtc.value : this.updatedAtUtc,
+    sourceProvenance: sourceProvenance.present
+        ? sourceProvenance.value
+        : this.sourceProvenance,
+    importBatchId: importBatchId.present
+        ? importBatchId.value
+        : this.importBatchId,
     batchId: batchId.present ? batchId.value : this.batchId,
   );
   WorkingMessage copyWithCompanion(WorkingMessagesCompanion data) {
@@ -5789,6 +5867,12 @@ class WorkingMessage extends DataClass implements Insertable<WorkingMessage> {
       updatedAtUtc: data.updatedAtUtc.present
           ? data.updatedAtUtc.value
           : this.updatedAtUtc,
+      sourceProvenance: data.sourceProvenance.present
+          ? data.sourceProvenance.value
+          : this.sourceProvenance,
+      importBatchId: data.importBatchId.present
+          ? data.importBatchId.value
+          : this.importBatchId,
       batchId: data.batchId.present ? data.batchId.value : this.batchId,
     );
   }
@@ -5828,6 +5912,8 @@ class WorkingMessage extends DataClass implements Insertable<WorkingMessage> {
           ..write('isStarred: $isStarred, ')
           ..write('isDeletedLocal: $isDeletedLocal, ')
           ..write('updatedAtUtc: $updatedAtUtc, ')
+          ..write('sourceProvenance: $sourceProvenance, ')
+          ..write('importBatchId: $importBatchId, ')
           ..write('batchId: $batchId')
           ..write(')'))
         .toString();
@@ -5867,6 +5953,8 @@ class WorkingMessage extends DataClass implements Insertable<WorkingMessage> {
     isStarred,
     isDeletedLocal,
     updatedAtUtc,
+    sourceProvenance,
+    importBatchId,
     batchId,
   ]);
   @override
@@ -5905,6 +5993,8 @@ class WorkingMessage extends DataClass implements Insertable<WorkingMessage> {
           other.isStarred == this.isStarred &&
           other.isDeletedLocal == this.isDeletedLocal &&
           other.updatedAtUtc == this.updatedAtUtc &&
+          other.sourceProvenance == this.sourceProvenance &&
+          other.importBatchId == this.importBatchId &&
           other.batchId == this.batchId);
 }
 
@@ -5941,6 +6031,8 @@ class WorkingMessagesCompanion extends UpdateCompanion<WorkingMessage> {
   final Value<bool> isStarred;
   final Value<bool> isDeletedLocal;
   final Value<String?> updatedAtUtc;
+  final Value<String?> sourceProvenance;
+  final Value<int?> importBatchId;
   final Value<int?> batchId;
   const WorkingMessagesCompanion({
     this.id = const Value.absent(),
@@ -5975,6 +6067,8 @@ class WorkingMessagesCompanion extends UpdateCompanion<WorkingMessage> {
     this.isStarred = const Value.absent(),
     this.isDeletedLocal = const Value.absent(),
     this.updatedAtUtc = const Value.absent(),
+    this.sourceProvenance = const Value.absent(),
+    this.importBatchId = const Value.absent(),
     this.batchId = const Value.absent(),
   });
   WorkingMessagesCompanion.insert({
@@ -6010,6 +6104,8 @@ class WorkingMessagesCompanion extends UpdateCompanion<WorkingMessage> {
     this.isStarred = const Value.absent(),
     this.isDeletedLocal = const Value.absent(),
     this.updatedAtUtc = const Value.absent(),
+    this.sourceProvenance = const Value.absent(),
+    this.importBatchId = const Value.absent(),
     this.batchId = const Value.absent(),
   }) : guid = Value(guid),
        chatId = Value(chatId);
@@ -6046,6 +6142,8 @@ class WorkingMessagesCompanion extends UpdateCompanion<WorkingMessage> {
     Expression<bool>? isStarred,
     Expression<bool>? isDeletedLocal,
     Expression<String>? updatedAtUtc,
+    Expression<String>? sourceProvenance,
+    Expression<int>? importBatchId,
     Expression<int>? batchId,
   }) {
     return RawValuesInsertable({
@@ -6088,6 +6186,8 @@ class WorkingMessagesCompanion extends UpdateCompanion<WorkingMessage> {
       if (isStarred != null) 'is_starred': isStarred,
       if (isDeletedLocal != null) 'is_deleted_local': isDeletedLocal,
       if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
+      if (sourceProvenance != null) 'source_provenance': sourceProvenance,
+      if (importBatchId != null) 'import_batch_id': importBatchId,
       if (batchId != null) 'batch_id': batchId,
     });
   }
@@ -6125,6 +6225,8 @@ class WorkingMessagesCompanion extends UpdateCompanion<WorkingMessage> {
     Value<bool>? isStarred,
     Value<bool>? isDeletedLocal,
     Value<String?>? updatedAtUtc,
+    Value<String?>? sourceProvenance,
+    Value<int?>? importBatchId,
     Value<int?>? batchId,
   }) {
     return WorkingMessagesCompanion(
@@ -6164,6 +6266,8 @@ class WorkingMessagesCompanion extends UpdateCompanion<WorkingMessage> {
       isStarred: isStarred ?? this.isStarred,
       isDeletedLocal: isDeletedLocal ?? this.isDeletedLocal,
       updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+      sourceProvenance: sourceProvenance ?? this.sourceProvenance,
+      importBatchId: importBatchId ?? this.importBatchId,
       batchId: batchId ?? this.batchId,
     );
   }
@@ -6281,6 +6385,12 @@ class WorkingMessagesCompanion extends UpdateCompanion<WorkingMessage> {
     if (updatedAtUtc.present) {
       map['updated_at_utc'] = Variable<String>(updatedAtUtc.value);
     }
+    if (sourceProvenance.present) {
+      map['source_provenance'] = Variable<String>(sourceProvenance.value);
+    }
+    if (importBatchId.present) {
+      map['import_batch_id'] = Variable<int>(importBatchId.value);
+    }
     if (batchId.present) {
       map['batch_id'] = Variable<int>(batchId.value);
     }
@@ -6322,6 +6432,8 @@ class WorkingMessagesCompanion extends UpdateCompanion<WorkingMessage> {
           ..write('isStarred: $isStarred, ')
           ..write('isDeletedLocal: $isDeletedLocal, ')
           ..write('updatedAtUtc: $updatedAtUtc, ')
+          ..write('sourceProvenance: $sourceProvenance, ')
+          ..write('importBatchId: $importBatchId, ')
           ..write('batchId: $batchId')
           ..write(')'))
         .toString();
@@ -6642,6 +6754,28 @@ class $RecoveredUnlinkedMessagesTable extends RecoveredUnlinkedMessages
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _sourceProvenanceMeta = const VerificationMeta(
+    'sourceProvenance',
+  );
+  @override
+  late final GeneratedColumn<String> sourceProvenance = GeneratedColumn<String>(
+    'source_provenance',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _importBatchIdMeta = const VerificationMeta(
+    'importBatchId',
+  );
+  @override
+  late final GeneratedColumn<int> importBatchId = GeneratedColumn<int>(
+    'import_batch_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _batchIdMeta = const VerificationMeta(
     'batchId',
   );
@@ -6680,6 +6814,8 @@ class $RecoveredUnlinkedMessagesTable extends RecoveredUnlinkedMessages
     threadOriginatorGuid,
     balloonBundleId,
     payloadJson,
+    sourceProvenance,
+    importBatchId,
     batchId,
   ];
   @override
@@ -6891,6 +7027,24 @@ class $RecoveredUnlinkedMessagesTable extends RecoveredUnlinkedMessages
         ),
       );
     }
+    if (data.containsKey('source_provenance')) {
+      context.handle(
+        _sourceProvenanceMeta,
+        sourceProvenance.isAcceptableOrUnknown(
+          data['source_provenance']!,
+          _sourceProvenanceMeta,
+        ),
+      );
+    }
+    if (data.containsKey('import_batch_id')) {
+      context.handle(
+        _importBatchIdMeta,
+        importBatchId.isAcceptableOrUnknown(
+          data['import_batch_id']!,
+          _importBatchIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('batch_id')) {
       context.handle(
         _batchIdMeta,
@@ -7013,6 +7167,14 @@ class $RecoveredUnlinkedMessagesTable extends RecoveredUnlinkedMessages
         DriftSqlType.string,
         data['${effectivePrefix}payload_json'],
       ),
+      sourceProvenance: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_provenance'],
+      ),
+      importBatchId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}import_batch_id'],
+      ),
       batchId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}batch_id'],
@@ -7053,6 +7215,8 @@ class RecoveredUnlinkedMessage extends DataClass
   final String? threadOriginatorGuid;
   final String? balloonBundleId;
   final String? payloadJson;
+  final String? sourceProvenance;
+  final int? importBatchId;
   final int? batchId;
   const RecoveredUnlinkedMessage({
     required this.id,
@@ -7080,6 +7244,8 @@ class RecoveredUnlinkedMessage extends DataClass
     this.threadOriginatorGuid,
     this.balloonBundleId,
     this.payloadJson,
+    this.sourceProvenance,
+    this.importBatchId,
     this.batchId,
   });
   @override
@@ -7141,6 +7307,12 @@ class RecoveredUnlinkedMessage extends DataClass
     }
     if (!nullToAbsent || payloadJson != null) {
       map['payload_json'] = Variable<String>(payloadJson);
+    }
+    if (!nullToAbsent || sourceProvenance != null) {
+      map['source_provenance'] = Variable<String>(sourceProvenance);
+    }
+    if (!nullToAbsent || importBatchId != null) {
+      map['import_batch_id'] = Variable<int>(importBatchId);
     }
     if (!nullToAbsent || batchId != null) {
       map['batch_id'] = Variable<int>(batchId);
@@ -7205,6 +7377,12 @@ class RecoveredUnlinkedMessage extends DataClass
       payloadJson: payloadJson == null && nullToAbsent
           ? const Value.absent()
           : Value(payloadJson),
+      sourceProvenance: sourceProvenance == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceProvenance),
+      importBatchId: importBatchId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(importBatchId),
       batchId: batchId == null && nullToAbsent
           ? const Value.absent()
           : Value(batchId),
@@ -7254,6 +7432,8 @@ class RecoveredUnlinkedMessage extends DataClass
       ),
       balloonBundleId: serializer.fromJson<String?>(json['balloonBundleId']),
       payloadJson: serializer.fromJson<String?>(json['payloadJson']),
+      sourceProvenance: serializer.fromJson<String?>(json['sourceProvenance']),
+      importBatchId: serializer.fromJson<int?>(json['importBatchId']),
       batchId: serializer.fromJson<int?>(json['batchId']),
     );
   }
@@ -7292,6 +7472,8 @@ class RecoveredUnlinkedMessage extends DataClass
       'threadOriginatorGuid': serializer.toJson<String?>(threadOriginatorGuid),
       'balloonBundleId': serializer.toJson<String?>(balloonBundleId),
       'payloadJson': serializer.toJson<String?>(payloadJson),
+      'sourceProvenance': serializer.toJson<String?>(sourceProvenance),
+      'importBatchId': serializer.toJson<int?>(importBatchId),
       'batchId': serializer.toJson<int?>(batchId),
     };
   }
@@ -7322,6 +7504,8 @@ class RecoveredUnlinkedMessage extends DataClass
     Value<String?> threadOriginatorGuid = const Value.absent(),
     Value<String?> balloonBundleId = const Value.absent(),
     Value<String?> payloadJson = const Value.absent(),
+    Value<String?> sourceProvenance = const Value.absent(),
+    Value<int?> importBatchId = const Value.absent(),
     Value<int?> batchId = const Value.absent(),
   }) => RecoveredUnlinkedMessage(
     id: id ?? this.id,
@@ -7364,6 +7548,12 @@ class RecoveredUnlinkedMessage extends DataClass
         ? balloonBundleId.value
         : this.balloonBundleId,
     payloadJson: payloadJson.present ? payloadJson.value : this.payloadJson,
+    sourceProvenance: sourceProvenance.present
+        ? sourceProvenance.value
+        : this.sourceProvenance,
+    importBatchId: importBatchId.present
+        ? importBatchId.value
+        : this.importBatchId,
     batchId: batchId.present ? batchId.value : this.batchId,
   );
   RecoveredUnlinkedMessage copyWithCompanion(
@@ -7429,6 +7619,12 @@ class RecoveredUnlinkedMessage extends DataClass
       payloadJson: data.payloadJson.present
           ? data.payloadJson.value
           : this.payloadJson,
+      sourceProvenance: data.sourceProvenance.present
+          ? data.sourceProvenance.value
+          : this.sourceProvenance,
+      importBatchId: data.importBatchId.present
+          ? data.importBatchId.value
+          : this.importBatchId,
       batchId: data.batchId.present ? data.batchId.value : this.batchId,
     );
   }
@@ -7461,6 +7657,8 @@ class RecoveredUnlinkedMessage extends DataClass
           ..write('threadOriginatorGuid: $threadOriginatorGuid, ')
           ..write('balloonBundleId: $balloonBundleId, ')
           ..write('payloadJson: $payloadJson, ')
+          ..write('sourceProvenance: $sourceProvenance, ')
+          ..write('importBatchId: $importBatchId, ')
           ..write('batchId: $batchId')
           ..write(')'))
         .toString();
@@ -7493,6 +7691,8 @@ class RecoveredUnlinkedMessage extends DataClass
     threadOriginatorGuid,
     balloonBundleId,
     payloadJson,
+    sourceProvenance,
+    importBatchId,
     batchId,
   ]);
   @override
@@ -7524,6 +7724,8 @@ class RecoveredUnlinkedMessage extends DataClass
           other.threadOriginatorGuid == this.threadOriginatorGuid &&
           other.balloonBundleId == this.balloonBundleId &&
           other.payloadJson == this.payloadJson &&
+          other.sourceProvenance == this.sourceProvenance &&
+          other.importBatchId == this.importBatchId &&
           other.batchId == this.batchId);
 }
 
@@ -7554,6 +7756,8 @@ class RecoveredUnlinkedMessagesCompanion
   final Value<String?> threadOriginatorGuid;
   final Value<String?> balloonBundleId;
   final Value<String?> payloadJson;
+  final Value<String?> sourceProvenance;
+  final Value<int?> importBatchId;
   final Value<int?> batchId;
   const RecoveredUnlinkedMessagesCompanion({
     this.id = const Value.absent(),
@@ -7581,6 +7785,8 @@ class RecoveredUnlinkedMessagesCompanion
     this.threadOriginatorGuid = const Value.absent(),
     this.balloonBundleId = const Value.absent(),
     this.payloadJson = const Value.absent(),
+    this.sourceProvenance = const Value.absent(),
+    this.importBatchId = const Value.absent(),
     this.batchId = const Value.absent(),
   });
   RecoveredUnlinkedMessagesCompanion.insert({
@@ -7609,6 +7815,8 @@ class RecoveredUnlinkedMessagesCompanion
     this.threadOriginatorGuid = const Value.absent(),
     this.balloonBundleId = const Value.absent(),
     this.payloadJson = const Value.absent(),
+    this.sourceProvenance = const Value.absent(),
+    this.importBatchId = const Value.absent(),
     this.batchId = const Value.absent(),
   }) : guid = Value(guid);
   static Insertable<RecoveredUnlinkedMessage> custom({
@@ -7637,6 +7845,8 @@ class RecoveredUnlinkedMessagesCompanion
     Expression<String>? threadOriginatorGuid,
     Expression<String>? balloonBundleId,
     Expression<String>? payloadJson,
+    Expression<String>? sourceProvenance,
+    Expression<int>? importBatchId,
     Expression<int>? batchId,
   }) {
     return RawValuesInsertable({
@@ -7671,6 +7881,8 @@ class RecoveredUnlinkedMessagesCompanion
         'thread_originator_guid': threadOriginatorGuid,
       if (balloonBundleId != null) 'balloon_bundle_id': balloonBundleId,
       if (payloadJson != null) 'payload_json': payloadJson,
+      if (sourceProvenance != null) 'source_provenance': sourceProvenance,
+      if (importBatchId != null) 'import_batch_id': importBatchId,
       if (batchId != null) 'batch_id': batchId,
     });
   }
@@ -7701,6 +7913,8 @@ class RecoveredUnlinkedMessagesCompanion
     Value<String?>? threadOriginatorGuid,
     Value<String?>? balloonBundleId,
     Value<String?>? payloadJson,
+    Value<String?>? sourceProvenance,
+    Value<int?>? importBatchId,
     Value<int?>? batchId,
   }) {
     return RecoveredUnlinkedMessagesCompanion(
@@ -7733,6 +7947,8 @@ class RecoveredUnlinkedMessagesCompanion
       threadOriginatorGuid: threadOriginatorGuid ?? this.threadOriginatorGuid,
       balloonBundleId: balloonBundleId ?? this.balloonBundleId,
       payloadJson: payloadJson ?? this.payloadJson,
+      sourceProvenance: sourceProvenance ?? this.sourceProvenance,
+      importBatchId: importBatchId ?? this.importBatchId,
       batchId: batchId ?? this.batchId,
     );
   }
@@ -7827,6 +8043,12 @@ class RecoveredUnlinkedMessagesCompanion
     if (payloadJson.present) {
       map['payload_json'] = Variable<String>(payloadJson.value);
     }
+    if (sourceProvenance.present) {
+      map['source_provenance'] = Variable<String>(sourceProvenance.value);
+    }
+    if (importBatchId.present) {
+      map['import_batch_id'] = Variable<int>(importBatchId.value);
+    }
     if (batchId.present) {
       map['batch_id'] = Variable<int>(batchId.value);
     }
@@ -7861,6 +8083,8 @@ class RecoveredUnlinkedMessagesCompanion
           ..write('threadOriginatorGuid: $threadOriginatorGuid, ')
           ..write('balloonBundleId: $balloonBundleId, ')
           ..write('payloadJson: $payloadJson, ')
+          ..write('sourceProvenance: $sourceProvenance, ')
+          ..write('importBatchId: $importBatchId, ')
           ..write('batchId: $batchId')
           ..write(')'))
         .toString();
@@ -17739,6 +17963,8 @@ typedef $$WorkingMessagesTableCreateCompanionBuilder =
       Value<bool> isStarred,
       Value<bool> isDeletedLocal,
       Value<String?> updatedAtUtc,
+      Value<String?> sourceProvenance,
+      Value<int?> importBatchId,
       Value<int?> batchId,
     });
 typedef $$WorkingMessagesTableUpdateCompanionBuilder =
@@ -17775,6 +18001,8 @@ typedef $$WorkingMessagesTableUpdateCompanionBuilder =
       Value<bool> isStarred,
       Value<bool> isDeletedLocal,
       Value<String?> updatedAtUtc,
+      Value<String?> sourceProvenance,
+      Value<int?> importBatchId,
       Value<int?> batchId,
     });
 
@@ -18091,6 +18319,16 @@ class $$WorkingMessagesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get sourceProvenance => $composableBuilder(
+    column: $table.sourceProvenance,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get importBatchId => $composableBuilder(
+    column: $table.importBatchId,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<int> get batchId => $composableBuilder(
     column: $table.batchId,
     builder: (column) => ColumnFilters(column),
@@ -18402,6 +18640,16 @@ class $$WorkingMessagesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get sourceProvenance => $composableBuilder(
+    column: $table.sourceProvenance,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get importBatchId => $composableBuilder(
+    column: $table.importBatchId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get batchId => $composableBuilder(
     column: $table.batchId,
     builder: (column) => ColumnOrderings(column),
@@ -18592,6 +18840,16 @@ class $$WorkingMessagesTableAnnotationComposer
 
   GeneratedColumn<String> get updatedAtUtc => $composableBuilder(
     column: $table.updatedAtUtc,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sourceProvenance => $composableBuilder(
+    column: $table.sourceProvenance,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get importBatchId => $composableBuilder(
+    column: $table.importBatchId,
     builder: (column) => column,
   );
 
@@ -18816,6 +19074,8 @@ class $$WorkingMessagesTableTableManager
                 Value<bool> isStarred = const Value.absent(),
                 Value<bool> isDeletedLocal = const Value.absent(),
                 Value<String?> updatedAtUtc = const Value.absent(),
+                Value<String?> sourceProvenance = const Value.absent(),
+                Value<int?> importBatchId = const Value.absent(),
                 Value<int?> batchId = const Value.absent(),
               }) => WorkingMessagesCompanion(
                 id: id,
@@ -18850,6 +19110,8 @@ class $$WorkingMessagesTableTableManager
                 isStarred: isStarred,
                 isDeletedLocal: isDeletedLocal,
                 updatedAtUtc: updatedAtUtc,
+                sourceProvenance: sourceProvenance,
+                importBatchId: importBatchId,
                 batchId: batchId,
               ),
           createCompanionCallback:
@@ -18886,6 +19148,8 @@ class $$WorkingMessagesTableTableManager
                 Value<bool> isStarred = const Value.absent(),
                 Value<bool> isDeletedLocal = const Value.absent(),
                 Value<String?> updatedAtUtc = const Value.absent(),
+                Value<String?> sourceProvenance = const Value.absent(),
+                Value<int?> importBatchId = const Value.absent(),
                 Value<int?> batchId = const Value.absent(),
               }) => WorkingMessagesCompanion.insert(
                 id: id,
@@ -18920,6 +19184,8 @@ class $$WorkingMessagesTableTableManager
                 isStarred: isStarred,
                 isDeletedLocal: isDeletedLocal,
                 updatedAtUtc: updatedAtUtc,
+                sourceProvenance: sourceProvenance,
+                importBatchId: importBatchId,
                 batchId: batchId,
               ),
           withReferenceMapper: (p0) => p0
@@ -19138,6 +19404,8 @@ typedef $$RecoveredUnlinkedMessagesTableCreateCompanionBuilder =
       Value<String?> threadOriginatorGuid,
       Value<String?> balloonBundleId,
       Value<String?> payloadJson,
+      Value<String?> sourceProvenance,
+      Value<int?> importBatchId,
       Value<int?> batchId,
     });
 typedef $$RecoveredUnlinkedMessagesTableUpdateCompanionBuilder =
@@ -19167,6 +19435,8 @@ typedef $$RecoveredUnlinkedMessagesTableUpdateCompanionBuilder =
       Value<String?> threadOriginatorGuid,
       Value<String?> balloonBundleId,
       Value<String?> payloadJson,
+      Value<String?> sourceProvenance,
+      Value<int?> importBatchId,
       Value<int?> batchId,
     });
 
@@ -19335,6 +19605,16 @@ class $$RecoveredUnlinkedMessagesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get sourceProvenance => $composableBuilder(
+    column: $table.sourceProvenance,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get importBatchId => $composableBuilder(
+    column: $table.importBatchId,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<int> get batchId => $composableBuilder(
     column: $table.batchId,
     builder: (column) => ColumnFilters(column),
@@ -19493,6 +19773,16 @@ class $$RecoveredUnlinkedMessagesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get sourceProvenance => $composableBuilder(
+    column: $table.sourceProvenance,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get importBatchId => $composableBuilder(
+    column: $table.importBatchId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get batchId => $composableBuilder(
     column: $table.batchId,
     builder: (column) => ColumnOrderings(column),
@@ -19635,6 +19925,16 @@ class $$RecoveredUnlinkedMessagesTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get sourceProvenance => $composableBuilder(
+    column: $table.sourceProvenance,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get importBatchId => $composableBuilder(
+    column: $table.importBatchId,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get batchId =>
       $composableBuilder(column: $table.batchId, builder: (column) => column);
 
@@ -19729,6 +20029,8 @@ class $$RecoveredUnlinkedMessagesTableTableManager
                 Value<String?> threadOriginatorGuid = const Value.absent(),
                 Value<String?> balloonBundleId = const Value.absent(),
                 Value<String?> payloadJson = const Value.absent(),
+                Value<String?> sourceProvenance = const Value.absent(),
+                Value<int?> importBatchId = const Value.absent(),
                 Value<int?> batchId = const Value.absent(),
               }) => RecoveredUnlinkedMessagesCompanion(
                 id: id,
@@ -19756,6 +20058,8 @@ class $$RecoveredUnlinkedMessagesTableTableManager
                 threadOriginatorGuid: threadOriginatorGuid,
                 balloonBundleId: balloonBundleId,
                 payloadJson: payloadJson,
+                sourceProvenance: sourceProvenance,
+                importBatchId: importBatchId,
                 batchId: batchId,
               ),
           createCompanionCallback:
@@ -19785,6 +20089,8 @@ class $$RecoveredUnlinkedMessagesTableTableManager
                 Value<String?> threadOriginatorGuid = const Value.absent(),
                 Value<String?> balloonBundleId = const Value.absent(),
                 Value<String?> payloadJson = const Value.absent(),
+                Value<String?> sourceProvenance = const Value.absent(),
+                Value<int?> importBatchId = const Value.absent(),
                 Value<int?> batchId = const Value.absent(),
               }) => RecoveredUnlinkedMessagesCompanion.insert(
                 id: id,
@@ -19812,6 +20118,8 @@ class $$RecoveredUnlinkedMessagesTableTableManager
                 threadOriginatorGuid: threadOriginatorGuid,
                 balloonBundleId: balloonBundleId,
                 payloadJson: payloadJson,
+                sourceProvenance: sourceProvenance,
+                importBatchId: importBatchId,
                 batchId: batchId,
               ),
           withReferenceMapper: (p0) => p0

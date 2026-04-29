@@ -114,6 +114,7 @@ class MigrationContextSqlite implements IMigrationContext {
 
     final escapedPath = importSqlite.path.replaceAll("'", "''");
     const preflightAlias = 'import_preflight';
+    const preflightProbeTable = 'temp.import_preflight_probe';
     var attached = false;
     MigrationException? pendingError;
     try {
@@ -121,10 +122,15 @@ class MigrationContextSqlite implements IMigrationContext {
         "ATTACH DATABASE '$escapedPath' AS $preflightAlias",
       );
       attached = true;
+      await workingDb.customStatement(
+        'DROP TABLE IF EXISTS $preflightProbeTable',
+      );
+      await workingDb.customStatement(
+        'CREATE TEMP TABLE import_preflight_probe AS '
+        'SELECT 1 AS ok FROM $preflightAlias.sqlite_master LIMIT 1',
+      );
       final verification = await workingDb
-          .customSelect(
-            'SELECT 1 AS ok FROM $preflightAlias.sqlite_master LIMIT 1',
-          )
+          .customSelect('SELECT ok FROM $preflightProbeTable LIMIT 1')
           .get();
       if (verification.isEmpty) {
         pendingError = MigrationException(
@@ -139,6 +145,18 @@ class MigrationContextSqlite implements IMigrationContext {
             '$stageLabel: failed to attach import database for verification ($error)',
       );
     } finally {
+      try {
+        await workingDb.customStatement(
+          'DROP TABLE IF EXISTS $preflightProbeTable',
+        );
+      } catch (error) {
+        throw MigrationException(
+          code: 'IMPORT_DB_LOCKED',
+          message:
+              '$stageLabel: failed to clear import verification probe ($error)',
+        );
+      }
+
       if (attached) {
         try {
           await workingDb.customStatement('DETACH DATABASE $preflightAlias');

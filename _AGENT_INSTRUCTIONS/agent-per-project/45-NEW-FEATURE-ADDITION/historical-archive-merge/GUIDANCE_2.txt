@@ -1,0 +1,133 @@
+WHERE THE MISSING CALL LIKELY BELONGS
+
+The missing step is probably not in the UI cassette and not in the timeline provider.
+
+It should live in the archive merge application/service layer, immediately after archive rows are staged into:
+
+historical_archive_import.db.messages
+
+Current apparent flow:
+
+Merge Into Timeline
+→ validate archive folder
+→ read archive chat.db
+→ insert rows into historical_archive_import.db.messages
+→ return result
+
+Required flow:
+
+Merge Into Timeline
+→ validate archive folder
+→ read archive chat.db
+→ insert rows into historical_archive_import.db.messages
+→ replay/project staged archive rows into working.db
+→ refresh timeline/search/heatmap providers
+→ return result
+
+⸻
+
+LIKELY FUNCTION BOUNDARY
+
+Look for the method that currently produces the final result screen, likely something equivalent to:
+
+mergeIntoTimeline(…)
+importHistoricalArchive(…)
+stageHistoricalArchive(…)
+runArchiveMerge(…)
+HistoricalArchiveMergeResolver.merge(…)
+
+That method should not return immediately after staging.
+
+It should call a second step, conceptually:
+
+projectHistoricalArchiveIntoWorkingDb(batchId)
+
+or:
+
+replayHistoricalArchiveBatchToWorkingDb(batchId)
+
+⸻
+
+IMPORTANT: DO NOT MOVE THIS INTO UI
+
+The cassette action should only dispatch the intent.
+
+The resolver/service owns:
+
+1. staging into historical_archive_import.db
+2. projection into working.db
+3. result accounting
+
+The UI should receive only the final immutable result payload.
+
+⸻
+
+RESULT ACCOUNTING SHOULD DISTINGUISH TWO COUNTS
+
+Current report says:
+
+Messages added to timeline: 0
+
+But the archive DB is receiving ~8,000 rows.
+
+So the result model needs to distinguish:
+
+* rows_staged_to_archive_db
+* rows_projected_to_working_db
+* rows_already_staged
+* rows_already_projected
+* rows_failed
+* rows_without_guid_count
+
+“Messages added to timeline” should mean:
+
+rows_projected_to_working_db
+
+not:
+
+rows staged into historical_archive_import.db
+
+⸻
+
+DEBUG CHECKPOINTS
+
+Add temporary logging around the merge method:
+
+1. Before staging:
+    archive rows read from source chat.db = ?
+2. After staging:
+    historical_archive_import.db.messages count for batch = ?
+3. Before projection:
+    staged rows selected for projection = ?
+4. After projection:
+    working.db rows inserted = ?
+5. Timeline verification:
+    working.db messages with source_provenance = archive_2012 = ?
+6. Date verification:
+    working.db messages before 2014-01-01 = ?
+
+⸻
+
+MOST LIKELY BUG
+
+The merge result is probably being returned after this succeeds:
+
+archive chat.db → historical_archive_import.db
+
+but before this ever runs:
+
+historical_archive_import.db → working.db
+
+So the fix is likely a missing service call, not a schema problem.
+
+⸻
+
+SUCCESS CONDITION
+
+After pressing Merge Into Timeline:
+
+* historical_archive_import.db.messages contains the staged archive rows
+* working.db contains projected archive rows
+* projected rows have source_provenance and import_batch_id
+* messages before January 2014 are visible in normal timeline/search
+* result screen reports Messages added to timeline > 0

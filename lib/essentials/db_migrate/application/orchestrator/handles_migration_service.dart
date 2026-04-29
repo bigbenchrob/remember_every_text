@@ -4,6 +4,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../../../db/feature_level_providers.dart';
+import '../../../db/infrastructure/data_sources/local/import/sqflite_import_database.dart';
+import '../../../db/infrastructure/data_sources/local/working/working_database.dart';
 import '../../../db_importers/application/debug_settings_provider.dart';
 import '../../../logging/application/migration_audit_writer.dart';
 import '../../../logging/application/pipeline_incident_tracker_provider.dart';
@@ -62,6 +64,40 @@ class HandlesMigrationService {
   /// Names of synthetic (non-orchestrated) post-migration steps.
   static const String _rebuildIndexesStep = 'rebuild_indexes';
   static const String _rebuildSearchStep = 'rebuild_search';
+
+  Future<bool> relationshipProjectionRepairRequired() async {
+    final importDatabase = await ref.read(sqfliteImportDatabaseProvider.future);
+    final workingDatabase = await ref.read(driftWorkingDatabaseProvider.future);
+
+    final projectedChatMemberships = await _chatToHandleMigrator.count(
+      workingDatabase,
+      'chat_to_handle',
+    );
+    final projectedParticipantLinks = await _handleToParticipantMigrator.count(
+      workingDatabase,
+      'handle_to_participant',
+    );
+
+    if (projectedChatMemberships > 0 && projectedParticipantLinks > 0) {
+      return false;
+    }
+
+    return _withAttachedImport(
+      workingDatabase: workingDatabase,
+      importDatabase: importDatabase,
+      run: () async {
+        final joinableChatMemberships = projectedChatMemberships == 0
+            ? await _countJoinableChatMemberships(workingDatabase)
+            : 0;
+        final joinableParticipantLinks = projectedParticipantLinks == 0
+            ? await _countJoinableParticipantLinks(workingDatabase)
+            : 0;
+
+        return (projectedChatMemberships == 0 && joinableChatMemberships > 0) ||
+            (projectedParticipantLinks == 0 && joinableParticipantLinks > 0);
+      },
+    );
+  }
 
   Future<DbMigrationResult> run({
     MigrationExecutionPlanCallback? onExecutionPlan,
@@ -344,5 +380,76 @@ class HandlesMigrationService {
       return value.toInt();
     }
     return int.tryParse(value.toString());
+  }
+
+  Future<T> _withAttachedImport<T>({
+    required WorkingDatabase workingDatabase,
+    required SqfliteImportDatabase importDatabase,
+    required Future<T> Function() run,
+  }) async {
+    final importSqlite = await importDatabase.database;
+    final escapedPath = importSqlite.path.replaceAll("'", "''");
+    await workingDatabase.customStatement(
+      "ATTACH DATABASE '$escapedPath' AS repair_import",
+    );
+    try {
+      return await run();
+    } finally {
+      await workingDatabase.customStatement('DETACH DATABASE repair_import');
+    }
+  }
+
+  Future<int> _countJoinableChatMemberships(
+    WorkingDatabase workingDatabase,
+  ) async {
+    final rows = await workingDatabase.customSelect('''
+      SELECT COUNT(*) AS c
+      FROM repair_import.chat_to_handle cth
+      JOIN handles_canonical_to_alias map
+        ON map.source_handle_id = cth.handle_id
+      JOIN handles_canonical h ON h.id = map.canonical_handle_id
+      JOIN chats c ON c.id = cth.chat_id
+    ''').get();
+    return _extractCount(rows, 'c');
+  }
+
+  Future<int> _countJoinableParticipantLinks(
+    WorkingDatabase workingDatabase,
+  ) async {
+    final rows = await workingDatabase.customSelect('''
+      SELECT COUNT(*) AS c
+      FROM repair_import.contact_to_chat_handle cth
+      JOIN repair_import.contacts c
+        ON c.Z_PK = cth.contact_Z_PK AND c.is_ignored = 0
+      JOIN repair_import.handles h
+        ON h.id = cth.chat_handle_id AND h.is_ignored = 0
+      JOIN handles_canonical_to_alias map
+        ON map.source_handle_id = cth.chat_handle_id
+      JOIN handles_canonical wh ON wh.id = map.canonical_handle_id
+      JOIN participants p ON p.id = c.Z_PK
+    ''').get();
+    return _extractCount(rows, 'c');
+  }
+
+  int _extractCount(List<dynamic> rows, String key) {
+    if (rows.isEmpty) {
+      return 0;
+    }
+    final first = rows.first;
+    final data = (first as dynamic).data as Map<String, Object?>;
+    final value = data[key];
+    if (value == null) {
+      return 0;
+    }
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    if (value is BigInt) {
+      return value.toInt();
+    }
+    return int.parse(value.toString());
   }
 }

@@ -1,5 +1,8 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import '../../application/historical_archive_merge/historical_archive_import_result.dart';
+import '../../application/historical_archive_merge/historical_archive_preflight_summary.dart';
+
 part 'settings_cassette_spec.freezed.dart';
 
 /// Spec family for settings-mode sidebar cassettes.
@@ -16,6 +19,21 @@ abstract class SettingsCassetteSpec with _$SettingsCassetteSpec {
 
   const factory SettingsCassetteSpec.messageHistoryCoverageOlderMessagesNote() =
       _MessageHistoryCoverageOlderMessagesNote;
+
+  const factory SettingsCassetteSpec.importHistoricalArchivePanel() =
+      _ImportHistoricalArchivePanel;
+
+  const factory SettingsCassetteSpec.importHistoricalArchivePreflight(
+    HistoricalArchivePreflightSummary summary,
+  ) = _ImportHistoricalArchivePreflight;
+
+  const factory SettingsCassetteSpec.importHistoricalArchiveInProgress(
+    String archiveLabel,
+  ) = _ImportHistoricalArchiveInProgress;
+
+  const factory SettingsCassetteSpec.importHistoricalArchiveResult(
+    HistoricalArchiveImportResult result,
+  ) = _ImportHistoricalArchiveResult;
 
   const factory SettingsCassetteSpec.sendLogsPanel() = _SendLogsPanel;
 

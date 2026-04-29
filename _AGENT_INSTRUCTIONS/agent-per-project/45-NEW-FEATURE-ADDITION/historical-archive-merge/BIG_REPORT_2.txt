@@ -1,0 +1,178 @@
+BUG: Archive Ingestion Works, Timeline Projection Is Not Occurring
+
+Observed Behavior (Confirmed)
+
+1. Clicking Clear archive:
+    * Empties historical_archive_import.db.messages
+2. Clicking Merge Into Timeline:
+    * Repopulates ~8,000 rows into:
+        historical_archive_import.db.messages
+3. Result screen reports:
+    * Messages added to timeline: 0
+    * Already present or already staged: 0
+    * Failed rows: 0
+    * Messages without usable identifier: 0
+    AND:
+    “Archive rows were stored in the dedicated archive import database.”
+    “Imported archive rows are now available in the Search all messages timeline.”
+4. However:
+    * Archive messages are not visible in the normal timeline
+    * This includes messages clearly predating current working data (e.g. 2012–2014)
+
+⸻
+
+Conclusion
+
+Archive ingestion is working correctly.
+
+Projection from historical_archive_import.db into working.db timeline structures is not occurring, or is not connected to the visible timeline providers.
+
+⸻
+
+Expected Architecture (Restated)
+
+external archive chat.db
+→ historical_archive_import.db (durable staging)
+→ projection/replay into working.db
+→ visible in timeline/search/heatmap
+
+Current implementation appears to stop at:
+
+external archive chat.db
+→ historical_archive_import.db
+
+⸻
+
+Key Problem
+
+The system treats:
+
+“already staged”
+
+as if it means:
+
+“already present in timeline”
+
+These are not the same.
+
+A row staged in historical_archive_import.db must still be projected into working.db to become visible.
+
+⸻
+
+Additional Signal (Important)
+
+The report includes:
+
+“MessageLens could not stage this archive into the dedicated archive database.”
+
+This contradicts observed behavior (rows are clearly being inserted).
+
+This suggests:
+
+* the staging step is partially succeeding
+* but error handling or result reporting is inconsistent
+
+⸻
+
+Required Investigation
+
+1. Projection Step
+
+Confirm whether there is a step that:
+
+SELECTs from historical_archive_import.db.messages
+→ INSERTs into working message/chat tables
+
+Questions:
+
+* Does this step exist?
+* Is it being invoked after staging?
+* Is it silently skipping all rows?
+
+⸻
+
+2. Gating Condition / Skip Logic
+
+Check whether projection is incorrectly gated by:
+
+* “already staged” condition
+* empty duplicate detection
+* incorrect existence check
+
+Specifically:
+
+Is projection being skipped because rows are considered “already processed”?
+
+⸻
+
+3. Working DB Writes
+
+Verify:
+
+* Are any rows inserted into working message tables during archive merge?
+* Run:
+
+Count(messages in working.db where date < Jan 2014)
+
+Expected after import:
+
+greater than 0
+
+If still 0 → projection is not happening at all
+
+⸻
+
+4. Timeline Provider Source
+
+Confirm timeline/search is sourcing from:
+
+* working.db message projection
+
+NOT from:
+
+* historical_archive_import.db directly
+
+If the UI claim “available in Search all messages timeline” is true, then:
+
+* either the provider is incorrectly wired
+* or that message is misleading
+
+⸻
+
+Required Fix Direction
+
+The merge pipeline must include:
+
+Stage
+→ Replay
+→ Project
+
+Where:
+
+* Stage = insert into historical_archive_import.db
+* Replay = iterate staged rows
+* Project = insert into working.db structures
+
+Currently only Stage is implemented.
+
+⸻
+
+Success Criteria
+
+After fix:
+
+* Messages from 2012–2014 appear in timeline
+* Heatmap extends backward
+* Search returns archive messages
+* “Messages added to timeline” reflects actual inserts into working.db
+
+⸻
+
+Summary
+
+This is not a deduplication issue.
+
+This is a missing projection step from archive DB into working DB.
+
+The ingestion half of the pipeline is complete.
+The projection half is either missing or incorrectly bypassed.

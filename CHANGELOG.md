@@ -10,6 +10,94 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - No unreleased changes yet.
 
+## [0.1.28] — 2026-04-28
+
+### Fixed
+
+- Historical archive projection now suspends the live `global_message_index`, `message_index`, and `contact_message_index` triggers before bulk archive inserts, matching the normal migration path and preventing archive merge from spending the write transaction rebuilding those index tables once per inserted message.
+- If archive projection throws after trigger suspension, MessageLens now restores the message-index triggers and rebuilds the affected index tables before surfacing the failure, so a failed archive merge is less likely to leave app-facing timeline indexes in a broken state.
+
+## [0.1.27] — 2026-04-28
+
+### Fixed
+
+- `ChatDbChangeMonitor` now stays idle while onboarding recovery or any DB maintenance lock is active, preventing startup auto-import from racing database reset flows and surfacing `DatabaseException(error database_closed)` under execution owner `chat-db-monitor`.
+- Auto-sync monitoring now resumes only after onboarding has resolved to the normal app state, so failed onboarding recovery no longer collides with background incremental import on restart.
+
+## [0.1.26] — 2026-04-28
+
+### Fixed
+
+- Historical archive projection now preloads existing working-message GUIDs and chat GUID mappings before entering the archive write transaction, removing thousands of per-row existence queries that previously left the merge stuck in the `projection-transaction-starting` phase while the contact picker stayed empty.
+- Archive checkpoint notes now distinguish the preloaded working GUID/chat counts from the later commit phase, making the next live archive run easier to diagnose if another phase still stalls.
+
+## [0.1.25] — 2026-04-28
+
+### Fixed
+
+- Manual historical archive projection now writes explicit per-phase checkpoints into `historical_archive_import.db.import_batches.notes`, so a stuck merge shows whether it halted during staged-row loading, transaction commit, or one of the app-facing index rebuild steps.
+- Successful manual archive projection now bumps the shared message-data version signal, so contact and timeline providers refresh when the archive merge finishes instead of waiting for a later unrelated rebuild.
+
+## [0.1.24] — 2026-04-28
+
+### Fixed
+
+- Manual historical archive merge now acquires the same import execution gate used by the auto-import pipeline, preventing archive projection from colliding with background import or migration work and failing with `database is locked` during working-db writes.
+- If another pipeline task already owns that gate, the archive sidebar now resolves to a failure result immediately instead of hanging in a partial merge state.
+- Migration preflight now materializes attached `import_preflight` verification into a temp table and clears that probe before `DETACH`, fixing the `IMPORT_DB_LOCKED` failure where `DETACH DATABASE import_preflight` ran while SQLite still considered the attached database in use.
+
+## [0.1.23] — 2026-04-28
+
+### Fixed
+
+- Historical archive merge now switches the Settings sidebar into an explicit in-progress cassette immediately instead of leaving the user staring at stale preflight copy while projection is still running.
+- Archive projection now holds the app's maintenance lock for the duration of the long-running merge step, so contact and timeline surfaces stop silently stalling on the same working-db connection and instead stay consistently unavailable until projection finishes.
+
+## [0.1.22] — 2026-04-28
+
+### Fixed
+
+- Historical archive merge is now single-flight, so repeated clicks on `Merge Into Timeline` reuse the active import instead of spawning overlapping unfinished archive batches against the same databases.
+- Import sidebar actions now enter a visible local working state while their async handler runs, making the first click visibly register and preventing repeat taps from fanning out duplicate archive work.
+
+## [0.1.21] — 2026-04-28
+
+### Fixed
+
+- Historical archive results now distinguish staged archive rows from rows actually projected into `working.db`, and MessageLens only claims archive messages are available in the app when projection into the live timeline succeeded.
+- Historical archive merge now logs explicit staging and projection counts plus projection failures, so live archive imports no longer collapse all post-staging failures into the misleading message that staging itself failed.
+
+## [0.1.20] — 2026-04-28
+
+### Fixed
+
+- Historical archive replay now tolerates duplicate live `handles_canonical` rows by choosing a deterministic existing handle match instead of assuming uniqueness and aborting the whole archive projection transaction.
+
+## [0.1.19] — 2026-04-28
+
+### Added
+
+- Historical archive preflight now offers a destructive `Clear Archive Cache` action above `Merge Into Timeline`, allowing testers to wipe the dedicated `historical_archive_import.db` ledger and restage the same archive cleanly without touching `working.db`.
+
+## [0.1.18] — 2026-04-28
+
+### Fixed
+
+- Historical archive merge now normalizes legacy second-resolution Apple timestamps from older `chat.db` files, so 2012-era archive rows no longer collapse to `2001-01-01` during staging and can be re-imported into the visible timeline with their correct dates.
+
+## [0.1.17] — 2026-04-28
+
+### Added
+
+- Historical archive imports now reconstruct archive sender handles and chat participants from `chat.db` relationships, so replayed archive messages keep their conversation context instead of appearing as bare text rows without trustworthy sender metadata.
+- Working message projections now carry explicit `source_provenance` and `import_batch_id` fields, allowing archive-replayed rows to remain distinguishable from `current_mac` projections for later diagnostics, filtering, and export work.
+
+### Fixed
+
+- Startup import monitoring now repairs missing projected relationship tables when joinable ledger data already exists, restoring contact-based pickers even when no new source messages have arrived to trigger a normal incremental migration.
+- Historical archive import no longer treats the dedicated archive staging database as a canonical duplicate source, so previously staged archive GUIDs can be re-imported into `working.db` after the live projection has been reset or lost.
+- Choosing a contact from the messages sidebar now waits for the contact heatmap and timeline prewarm path before switching the selected-contact branch, avoiding the cold-selection spinner that could replace the lower contact section immediately after a tap.
+
 ## [0.1.16] — 2026-04-27
 
 ### Changed

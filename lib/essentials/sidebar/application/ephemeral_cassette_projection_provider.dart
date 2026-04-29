@@ -43,6 +43,18 @@ CassetteSpec? _resolveEphemeralChild(CassetteSpec spec) {
   return spec.maybeWhen(
     settings: (settingsSpec) {
       return settingsSpec.maybeWhen(
+        importHistoricalArchivePanel: () {
+          return null;
+        },
+        importHistoricalArchivePreflight: (_) {
+          return null;
+        },
+        importHistoricalArchiveInProgress: (_) {
+          return null;
+        },
+        importHistoricalArchiveResult: (_) {
+          return null;
+        },
         sendLogsPanel: () {
           return null;
         },

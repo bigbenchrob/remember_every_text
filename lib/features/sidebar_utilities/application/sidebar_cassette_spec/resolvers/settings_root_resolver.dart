@@ -28,6 +28,10 @@ class SettingsRootResolver extends _$SettingsRootResolver {
           actionId: SettingsMenuActionId.messageHistoryCoverage,
         ),
         SettingsTopMenuActionRow.transientAction(
+          label: 'Import Historical Archive',
+          actionId: SettingsMenuActionId.importHistoricalArchive,
+        ),
+        SettingsTopMenuActionRow.transientAction(
           label: 'Send logs…',
           actionId: SettingsMenuActionId.sendLogs,
         ),
