@@ -66,6 +66,15 @@ You MUST read these files in order before any code changes:
 - **Solo Git workflow**: Housekeeping and small bug fixes may go directly to `main`; feature additions and release-worthy changes should use a feature branch plus pull request before merging
 - **Release-worthy merge gate**: For release-worthy changes, make sure the pull request is non-draft, checks have run, and both `pubspec.yaml` and `CHANGELOG.md` are updated before merge
 
+## Shared Instructions Submodule Workflow
+
+- `_AGENT_INSTRUCTIONS/agent-instructions-shared` is a Git submodule, not a normal folder.
+- Default rule: if a documentation or instruction change is specific to this repo, put it in `AGENTS.md`, `.github/copilot-instructions.md`, or `_AGENT_INSTRUCTIONS/agent-per-project/` instead of the shared submodule.
+- Only edit `_AGENT_INSTRUCTIONS/agent-instructions-shared` when the rule is intentionally cross-project and belongs in the shared instruction library.
+- If an agent edits the shared submodule, it must finish the full two-repo workflow before ending work: commit inside the submodule first, then stage `_AGENT_INSTRUCTIONS/agent-instructions-shared` in the parent repo and commit the updated submodule pointer on the current branch.
+- Agents must not leave the parent repo on a branch with a dirty submodule as the only remaining change.
+- Before checking out another branch or asking the user to merge, agents should verify `git status` is clean in the parent repo. If the only dirty path is `_AGENT_INSTRUCTIONS/agent-instructions-shared`, that workflow is incomplete and must be resolved first.
+
 ## Project Architecture
 - **`lib/essentials/`** - Core systems (navigation, import, databases, window state)
 - **`lib/features/`** - Business features following DDD (messages, chats, contacts, address_book_folders)

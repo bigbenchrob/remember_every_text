@@ -96,6 +96,15 @@ This README contains the canonical index to all project documentation including:
 - ✅ For release-worthy changes, agents should ensure checks are run and both `pubspec.yaml` and `CHANGELOG.md` are updated before merge
 - ❌ **Do not** require a PR for trivial housekeeping changes that are intentionally staying off the release track
 
+### Shared Instructions Submodule Workflow
+
+- ✅ Treat `_AGENT_INSTRUCTIONS/agent-instructions-shared` as a Git submodule, not a normal project folder
+- ✅ Default new repo-specific documentation or instruction rules to `AGENTS.md`, `.github/copilot-instructions.md`, or `_AGENT_INSTRUCTIONS/agent-per-project/`
+- ✅ Edit the shared submodule only when the rule is intentionally reusable across multiple repos
+- ✅ If the shared submodule is edited, complete both commits before ending work: commit inside `_AGENT_INSTRUCTIONS/agent-instructions-shared`, then stage that path in the parent repo and commit the submodule pointer on the current branch
+- ✅ Before switching branches or declaring work complete, verify the parent repo `git status` is clean
+- ❌ **Do not** leave `_AGENT_INSTRUCTIONS/agent-instructions-shared` as a dirty submodule in the parent repo at handoff time
+
 ### Riverpod Patterns
 
 - ✅ **Use documented patterns only** - Do NOT scan codebase for examples
