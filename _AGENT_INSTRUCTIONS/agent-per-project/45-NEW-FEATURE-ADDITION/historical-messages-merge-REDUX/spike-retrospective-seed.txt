@@ -1,0 +1,68 @@
+Stop coding on this branch.
+
+Treat the current branch as a spike/prototype only.
+
+Please create a SPIKE_RETROSPECTIVE.md for historical archive merge.
+
+Do not propose a new implementation yet.
+
+Document only what we learned from this branch:
+
+1. What worked
+
+* archive chat.db can be read
+* rows can be staged durably
+* archive + live messages can appear together in the heatmap/timeline
+* GUID dedupe is viable
+* participant/handle reconstruction is required
+* projection into working.db is required for visibility
+
+2. What failed or became brittle
+
+* archive import schema diverged too much from existing import/working schemas
+* dates were formatted too early as ISO strings instead of staying numeric
+* attach/detach lifecycle caused SQLite locking
+* projection and staging accounting were conflated
+* UI claimed success before projection was proven
+* contact picker/heatmap could become unresponsive after partial merge states
+* too many patches accumulated in service logic
+
+3. Non-negotiable lessons
+
+* historical archive is a second import source, not a recovery table
+* durable archive schema should mirror the canonical import ledger wherever possible
+* date conversion must remain centralized and numeric until presentation
+* archive rows must be replayable into working.db after reset/rebuild
+* staging success is not timeline success
+* result accounting must separately track staged, projected, skipped, failed
+* no UI/provider workaround should read directly from archive DB
+
+4. Unknowns to resolve in v2 planning
+
+* exact archive import schema
+* whether to reuse/import existing import DB schema or create parallel db-archive-import schema
+* migration/projector boundary
+* reset/rebuild behavior
+* index rebuild strategy
+* attach/detach lifecycle utility
+* provenance model
+
+5. Evidence from the spike
+
+* include the final observed successful case
+* include the gap analysis result
+* include known instability symptoms
+* include specific files/functions touched if helpful
+
+Output only the retrospective document. Do not create a new branch. Do not implement v2 yet.
+
+⸻
+
+Then bring me that retrospective. I’d use it to produce a full v2 plan with hard guardrails, especially around:
+
+* source/import/working database roles
+* canonical schema alignment
+* timestamp representation
+* attach/detach lifecycle
+* projection accounting
+* test-first checkpoints
