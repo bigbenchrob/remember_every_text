@@ -30,6 +30,10 @@ CassetteSpec? resolveSidebarUtilityChild(
     },
     settingsMenu: () {
       switch (context?.persistentSettingsContext) {
+        case SettingsMenuActionId.historicalArchives:
+          return const CassetteSpec.settings(
+            SettingsCassetteSpec.historicalArchivesOverview(),
+          );
         case SettingsMenuActionId.messageHistoryCoverage:
           return const CassetteSpec.settings(
             SettingsCassetteSpec.messageHistoryCoverageOverview(),

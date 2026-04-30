@@ -185,6 +185,9 @@ abstract class SidebarFlowState with _$SidebarFlowState {
     }());
 
     return switch (persistentSettingsContext) {
+      SettingsMenuActionId.historicalArchives => const ViewSpec.settings(
+        SettingsViewSpec.historicalArchivesWorkflow(),
+      ),
       SettingsMenuActionId.messageHistoryCoverage => const ViewSpec.settings(
         SettingsViewSpec.messageHistoryCoverageReport(),
       ),

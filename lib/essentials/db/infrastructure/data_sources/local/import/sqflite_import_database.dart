@@ -9,6 +9,58 @@ import 'package:sqflite/sqflite.dart';
 import '../../../../../db_importers/application/debug_settings_provider.dart';
 import '../../../../shared/handle_identifier_utils.dart';
 
+final class HistoricalArchiveSourceRecord {
+  const HistoricalArchiveSourceRecord({
+    required this.sourceChatDb,
+    required this.folderPath,
+    required this.sourceLabel,
+    required this.chatDbStatusLabel,
+    required this.attachmentsStatusLabel,
+    required this.preflightStatusLabel,
+    required this.preflightDetail,
+    required this.updatedAtUtc,
+    this.totalMessages,
+    this.totalChats,
+    this.totalHandles,
+    this.missingGuids,
+    this.earliestMessageUtc,
+    this.latestMessageUtc,
+    this.dryRunNewMessages,
+    this.dryRunDuplicateMessages,
+    this.matchedImportedBatchCount,
+    this.lastImportBatchId,
+    this.lastImportStartedAtUtc,
+    this.lastImportFinishedAtUtc,
+    this.lastImportSuccess,
+    this.lastImportError,
+    this.lastImportedMessageCount,
+  });
+
+  final String sourceChatDb;
+  final String folderPath;
+  final String sourceLabel;
+  final String chatDbStatusLabel;
+  final String attachmentsStatusLabel;
+  final String preflightStatusLabel;
+  final String preflightDetail;
+  final int? totalMessages;
+  final int? totalChats;
+  final int? totalHandles;
+  final int? missingGuids;
+  final String? earliestMessageUtc;
+  final String? latestMessageUtc;
+  final int? dryRunNewMessages;
+  final int? dryRunDuplicateMessages;
+  final int? matchedImportedBatchCount;
+  final int? lastImportBatchId;
+  final String? lastImportStartedAtUtc;
+  final String? lastImportFinishedAtUtc;
+  final bool? lastImportSuccess;
+  final String? lastImportError;
+  final int? lastImportedMessageCount;
+  final String updatedAtUtc;
+}
+
 class SqfliteImportDatabase {
   SqfliteImportDatabase({
     required String databaseDirectory,
@@ -18,7 +70,7 @@ class SqfliteImportDatabase {
        _databaseName = databaseName,
        _debugSettings = debugSettings;
 
-  static const int _schemaVersion = 4;
+  static const int _schemaVersion = 5;
 
   final String _databaseDirectory;
   final String _databaseName;
@@ -155,6 +207,17 @@ class SqfliteImportDatabase {
 
       await db.insert('schema_migrations', <String, Object?>{
         'version': 4,
+        'applied_at_utc': DateTime.now().toUtc().toIso8601String(),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+
+    if (oldVersion < 5) {
+      final batch = db.batch();
+      _v5SchemaStatements.forEach(batch.execute);
+      await batch.commit(noResult: true);
+
+      await db.insert('schema_migrations', <String, Object?>{
+        'version': 5,
         'applied_at_utc': DateTime.now().toUtc().toIso8601String(),
       }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
@@ -357,6 +420,122 @@ SELECT MAX(source_rowid) AS max_rowid FROM (
     _debugSettings.logDatabase(
       'SqfliteImportDatabase.updateImportBatch: successfully updated batch $id',
     );
+  }
+
+  Future<void> upsertHistoricalArchiveSource({
+    required String sourceChatDb,
+    required String folderPath,
+    required String sourceLabel,
+    required String chatDbStatusLabel,
+    required String attachmentsStatusLabel,
+    required String preflightStatusLabel,
+    required String preflightDetail,
+    required String updatedAtUtc,
+    int? totalMessages,
+    int? totalChats,
+    int? totalHandles,
+    int? missingGuids,
+    String? earliestMessageUtc,
+    String? latestMessageUtc,
+    int? dryRunNewMessages,
+    int? dryRunDuplicateMessages,
+    int? matchedImportedBatchCount,
+    int? lastImportBatchId,
+    String? lastImportStartedAtUtc,
+    String? lastImportFinishedAtUtc,
+    bool? lastImportSuccess,
+    String? lastImportError,
+    int? lastImportedMessageCount,
+  }) async {
+    final db = await database;
+    final data = _cleanMap(<String, Object?>{
+      'source_chat_db': sourceChatDb,
+      'folder_path': folderPath,
+      'source_label': sourceLabel,
+      'chat_db_status_label': chatDbStatusLabel,
+      'attachments_status_label': attachmentsStatusLabel,
+      'preflight_status_label': preflightStatusLabel,
+      'preflight_detail': preflightDetail,
+      'total_messages': totalMessages,
+      'total_chats': totalChats,
+      'total_handles': totalHandles,
+      'missing_guids': missingGuids,
+      'earliest_message_utc': earliestMessageUtc,
+      'latest_message_utc': latestMessageUtc,
+      'dry_run_new_messages': dryRunNewMessages,
+      'dry_run_duplicate_messages': dryRunDuplicateMessages,
+      'matched_imported_batch_count': matchedImportedBatchCount,
+      'last_import_batch_id': lastImportBatchId,
+      'last_import_started_at_utc': lastImportStartedAtUtc,
+      'last_import_finished_at_utc': lastImportFinishedAtUtc,
+      'last_import_success': _boolToNullableInt(value: lastImportSuccess),
+      'last_import_error': lastImportError,
+      'last_imported_message_count': lastImportedMessageCount,
+      'updated_at_utc': updatedAtUtc,
+    });
+
+    await db.insert(
+      'historical_archive_sources',
+      data,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<List<HistoricalArchiveSourceRecord>>
+  listHistoricalArchiveSources() async {
+    final db = await database;
+    final rows = await db.query(
+      'historical_archive_sources',
+      orderBy: 'updated_at_utc DESC, source_label COLLATE NOCASE ASC',
+    );
+
+    return <HistoricalArchiveSourceRecord>[
+      for (final row in rows)
+        HistoricalArchiveSourceRecord(
+          sourceChatDb: row['source_chat_db'] as String,
+          folderPath: row['folder_path'] as String,
+          sourceLabel: row['source_label'] as String,
+          chatDbStatusLabel: row['chat_db_status_label'] as String,
+          attachmentsStatusLabel: row['attachments_status_label'] as String,
+          preflightStatusLabel: row['preflight_status_label'] as String,
+          preflightDetail: row['preflight_detail'] as String,
+          totalMessages: _asNullableInt(row['total_messages']),
+          totalChats: _asNullableInt(row['total_chats']),
+          totalHandles: _asNullableInt(row['total_handles']),
+          missingGuids: _asNullableInt(row['missing_guids']),
+          earliestMessageUtc: row['earliest_message_utc'] as String?,
+          latestMessageUtc: row['latest_message_utc'] as String?,
+          dryRunNewMessages: _asNullableInt(row['dry_run_new_messages']),
+          dryRunDuplicateMessages: _asNullableInt(
+            row['dry_run_duplicate_messages'],
+          ),
+          matchedImportedBatchCount: _asNullableInt(
+            row['matched_imported_batch_count'],
+          ),
+          lastImportBatchId: _asNullableInt(row['last_import_batch_id']),
+          lastImportStartedAtUtc: row['last_import_started_at_utc'] as String?,
+          lastImportFinishedAtUtc:
+              row['last_import_finished_at_utc'] as String?,
+          lastImportSuccess: _asNullableBool(row['last_import_success']),
+          lastImportError: row['last_import_error'] as String?,
+          lastImportedMessageCount: _asNullableInt(
+            row['last_imported_message_count'],
+          ),
+          updatedAtUtc: row['updated_at_utc'] as String,
+        ),
+    ];
+  }
+
+  Future<List<String>> distinctImportBatchSourceChatDbs() async {
+    final db = await database;
+    final rows = await db.rawQuery(
+      'SELECT DISTINCT source_chat_db FROM import_batches '
+      'WHERE source_chat_db IS NOT NULL AND LENGTH(TRIM(source_chat_db)) > 0',
+    );
+    return <String>[
+      for (final row in rows)
+        if (row['source_chat_db'] case final String sourceChatDb) sourceChatDb,
+    ];
   }
 
   Future<int> insertSourceFile({
@@ -1256,6 +1435,114 @@ AND Z_PK NOT IN (
     return int.tryParse('$value') ?? 0;
   }
 
+  Future<List<int>> batchIdsForSourceChatDb({
+    required String sourceChatDb,
+  }) async {
+    final db = await database;
+    final rows = await db.query(
+      'import_batches',
+      columns: <String>['id'],
+      where: 'source_chat_db = ?',
+      whereArgs: <Object>[sourceChatDb],
+      orderBy: 'id DESC',
+    );
+
+    return <int>[
+      for (final row in rows)
+        if (row['id'] case final int batchId) batchId,
+    ];
+  }
+
+  Future<void> deleteBatchLedgerData({required int batchId}) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete(
+        'message_links',
+        where: 'message_id IN (SELECT id FROM messages WHERE batch_id = ?)',
+        whereArgs: <Object>[batchId],
+      );
+      await txn.delete(
+        'reactions',
+        where:
+            'carrier_message_id IN (SELECT id FROM messages WHERE batch_id = ?)',
+        whereArgs: <Object>[batchId],
+      );
+      await txn.delete(
+        'recovered_unlinked_message_attachments',
+        where:
+            'message_id IN (SELECT id FROM recovered_unlinked_messages WHERE batch_id = ?) '
+            'OR attachment_id IN (SELECT id FROM attachments WHERE batch_id = ?)',
+        whereArgs: <Object>[batchId, batchId],
+      );
+      await txn.delete(
+        'message_attachments',
+        where:
+            'message_id IN (SELECT id FROM messages WHERE batch_id = ?) '
+            'OR attachment_id IN (SELECT id FROM attachments WHERE batch_id = ?)',
+        whereArgs: <Object>[batchId, batchId],
+      );
+      await txn.delete(
+        'chat_to_message',
+        where:
+            'message_id IN (SELECT id FROM messages WHERE batch_id = ?) '
+            'OR chat_id IN (SELECT id FROM chats WHERE batch_id = ?)',
+        whereArgs: <Object>[batchId, batchId],
+      );
+      await txn.delete(
+        'chat_to_handle',
+        where:
+            'chat_id IN (SELECT id FROM chats WHERE batch_id = ?) '
+            'OR handle_id IN (SELECT id FROM handles WHERE batch_id = ?)',
+        whereArgs: <Object>[batchId, batchId],
+      );
+      await txn.delete(
+        'contact_to_chat_handle',
+        where: 'batch_id = ?',
+        whereArgs: <Object>[batchId],
+      );
+      await txn.delete(
+        'contact_phone_email',
+        where: 'ZOWNER IN (SELECT Z_PK FROM contacts WHERE batch_id = ?)',
+        whereArgs: <Object>[batchId],
+      );
+      await txn.delete(
+        'recovered_unlinked_messages',
+        where: 'batch_id = ?',
+        whereArgs: <Object>[batchId],
+      );
+      await txn.delete(
+        'messages',
+        where: 'batch_id = ?',
+        whereArgs: <Object>[batchId],
+      );
+      await txn.delete(
+        'attachments',
+        where: 'batch_id = ?',
+        whereArgs: <Object>[batchId],
+      );
+      await txn.delete(
+        'chats',
+        where: 'batch_id = ?',
+        whereArgs: <Object>[batchId],
+      );
+      await txn.delete(
+        'handles',
+        where: 'batch_id = ?',
+        whereArgs: <Object>[batchId],
+      );
+      await txn.delete(
+        'contacts',
+        where: 'batch_id = ?',
+        whereArgs: <Object>[batchId],
+      );
+      await txn.delete(
+        'import_batches',
+        where: 'id = ?',
+        whereArgs: <Object>[batchId],
+      );
+    });
+  }
+
   /// Deletes all *ledger data* rows (handles, chats, messages, contacts, etc.)
   /// but preserves import metadata (import_batches, source_files, import_logs)
   /// so the current batch's FK references remain valid.
@@ -1486,6 +1773,33 @@ AND Z_PK NOT IN (
   int? _boolToNullableInt({required bool? value}) =>
       value == null ? null : (value ? 1 : 0);
 
+  int? _asNullableInt(Object? value) {
+    if (value == null) {
+      return null;
+    }
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    return int.tryParse('$value');
+  }
+
+  bool? _asNullableBool(Object? value) {
+    final intValue = _asNullableInt(value);
+    if (intValue == null) {
+      return null;
+    }
+    if (intValue == 1) {
+      return true;
+    }
+    if (intValue == 0) {
+      return false;
+    }
+    return null;
+  }
+
   static const List<String> _schemaStatements = <String>[
     'CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, applied_at_utc TEXT NOT NULL)',
     'CREATE TABLE IF NOT EXISTS import_batches (id INTEGER PRIMARY KEY, started_at_utc TEXT NOT NULL, finished_at_utc TEXT, source_chat_db TEXT, source_addressbook TEXT, host_info_json TEXT, notes TEXT)',
@@ -1505,6 +1819,7 @@ AND Z_PK NOT IN (
     "CREATE TABLE IF NOT EXISTS reactions (id INTEGER PRIMARY KEY, carrier_message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE, target_message_guid TEXT NOT NULL, action TEXT NOT NULL CHECK(action IN ('add','remove')), kind TEXT NOT NULL CHECK(kind IN ('love','like','dislike','laugh','emphasize','question','unknown')), reactor_handle_id INTEGER REFERENCES handles(id) ON DELETE SET NULL, reacted_at_utc TEXT, parse_confidence REAL CHECK(parse_confidence >= 0.0 AND parse_confidence <= 1.0) DEFAULT 1.0)",
     'CREATE TABLE IF NOT EXISTS message_links (id INTEGER PRIMARY KEY, message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE, url TEXT NOT NULL, start INTEGER, end INTEGER)',
     'CREATE TABLE IF NOT EXISTS contact_to_chat_handle (id INTEGER PRIMARY KEY, contact_Z_PK INTEGER NOT NULL REFERENCES contacts(Z_PK) ON DELETE CASCADE, chat_handle_id INTEGER NOT NULL REFERENCES handles(id) ON DELETE CASCADE, batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(contact_Z_PK, chat_handle_id))',
+    'CREATE TABLE IF NOT EXISTS historical_archive_sources (source_chat_db TEXT PRIMARY KEY, folder_path TEXT NOT NULL, source_label TEXT NOT NULL, chat_db_status_label TEXT NOT NULL, attachments_status_label TEXT NOT NULL, preflight_status_label TEXT NOT NULL, preflight_detail TEXT NOT NULL, total_messages INTEGER, total_chats INTEGER, total_handles INTEGER, missing_guids INTEGER, earliest_message_utc TEXT, latest_message_utc TEXT, dry_run_new_messages INTEGER, dry_run_duplicate_messages INTEGER, matched_imported_batch_count INTEGER, last_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE SET NULL, last_import_started_at_utc TEXT, last_import_finished_at_utc TEXT, last_import_success INTEGER CHECK(last_import_success IN (0,1)), last_import_error TEXT, last_imported_message_count INTEGER, updated_at_utc TEXT NOT NULL)',
   ];
 
   static const List<String> _indexStatements = <String>[
@@ -1552,6 +1867,10 @@ AND Z_PK NOT IN (
     'ALTER TABLE recovered_unlinked_messages ADD COLUMN has_attributed_body_source INTEGER NOT NULL DEFAULT 0 CHECK(has_attributed_body_source IN (0,1))',
     'ALTER TABLE recovered_unlinked_messages ADD COLUMN has_message_summary_info INTEGER NOT NULL DEFAULT 0 CHECK(has_message_summary_info IN (0,1))',
     'ALTER TABLE recovered_unlinked_messages ADD COLUMN has_payload_data_source INTEGER NOT NULL DEFAULT 0 CHECK(has_payload_data_source IN (0,1))',
+  ];
+
+  static const List<String> _v5SchemaStatements = <String>[
+    'CREATE TABLE IF NOT EXISTS historical_archive_sources (source_chat_db TEXT PRIMARY KEY, folder_path TEXT NOT NULL, source_label TEXT NOT NULL, chat_db_status_label TEXT NOT NULL, attachments_status_label TEXT NOT NULL, preflight_status_label TEXT NOT NULL, preflight_detail TEXT NOT NULL, total_messages INTEGER, total_chats INTEGER, total_handles INTEGER, missing_guids INTEGER, earliest_message_utc TEXT, latest_message_utc TEXT, dry_run_new_messages INTEGER, dry_run_duplicate_messages INTEGER, matched_imported_batch_count INTEGER, last_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE SET NULL, last_import_started_at_utc TEXT, last_import_finished_at_utc TEXT, last_import_success INTEGER CHECK(last_import_success IN (0,1)), last_import_error TEXT, last_imported_message_count INTEGER, updated_at_utc TEXT NOT NULL)',
   ];
 
   static const String _handlesTableStatementWithoutUniqueness =

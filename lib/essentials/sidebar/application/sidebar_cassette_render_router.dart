@@ -109,6 +109,8 @@ Widget? _buildFeatureInfoSupplementalContent({
   return switch (payload) {
     settings_feature.SettingsInfoActionsCassettePayload() =>
       settings_feature.buildFeatureInfoSupplementalContent(payload: payload),
+    settings_feature.HistoricalArchivesSettingsCassettePayload() =>
+      settings_feature.buildFeatureInfoSupplementalContent(payload: payload),
     settings_feature.AttachmentArchiveSettingsCassettePayload() =>
       settings_feature.buildFeatureInfoSupplementalContent(payload: payload),
     StaticFeatureInfoSidebarCassettePayload() => null,

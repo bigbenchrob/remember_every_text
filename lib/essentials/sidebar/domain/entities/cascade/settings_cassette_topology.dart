@@ -7,6 +7,9 @@ part of '../cassette_spec.dart';
 
 CassetteSpec? resolveSettingsChild(SettingsCassetteSpec spec) {
   return spec.when(
+    historicalArchivesOverview: () {
+      return null;
+    },
     messageHistoryCoverageOverview: () {
       return const CassetteSpec.settings(
         SettingsCassetteSpec.messageHistoryCoverageHowToRead(),

@@ -8,6 +8,9 @@ part 'settings_cassette_spec.freezed.dart';
 /// dedicated feature while preserving the current visible behavior.
 @freezed
 abstract class SettingsCassetteSpec with _$SettingsCassetteSpec {
+  const factory SettingsCassetteSpec.historicalArchivesOverview() =
+      _HistoricalArchivesOverview;
+
   const factory SettingsCassetteSpec.messageHistoryCoverageOverview() =
       _MessageHistoryCoverageOverview;
 

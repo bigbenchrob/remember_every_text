@@ -373,6 +373,7 @@ bool _isFlowManagedCenterSpec(ViewSpec spec) {
     },
     settings: (settingsSpec) {
       return settingsSpec.maybeWhen(
+        historicalArchivesWorkflow: () => true,
         messageHistoryCoverageReport: () => true,
         orElse: () => false,
       );
@@ -447,6 +448,10 @@ bool _isCenterSpecCompatibleWithSidebar({
     },
     settings: (settingsSpec) {
       return settingsSpec.when(
+        historicalArchivesWorkflow: () {
+          return flowState.persistentSettingsContext ==
+              SettingsMenuActionId.historicalArchives;
+        },
         messageHistoryCoverageReport: () {
           return flowState.persistentSettingsContext ==
               SettingsMenuActionId.messageHistoryCoverage;

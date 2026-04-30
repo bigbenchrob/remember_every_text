@@ -52,6 +52,7 @@ class OrchestratedLedgerImportService {
 
   Future<DbImportResult> runImport({
     required String executionOwner,
+    String? sourceChatDbOverride,
     ExecutionPlanCallback? onExecutionPlan,
     TableImportProgressCallback? onTableProgress,
   }) async {
@@ -106,7 +107,23 @@ class OrchestratedLedgerImportService {
       }
     }
 
-    final messagesDbPath = pathsHelper.chatDBPath;
+    final messagesDbPath = sourceChatDbOverride ?? pathsHelper.chatDBPath;
+
+    if (sourceChatDbOverride != null) {
+      final requestedSourcePath = p.normalize(sourceChatDbOverride);
+      final existingSourcePaths = await ledgerDb
+          .distinctImportBatchSourceChatDbs();
+      final conflictingSourcePaths = existingSourcePaths
+          .where((sourcePath) => p.normalize(sourcePath) != requestedSourcePath)
+          .toList();
+      if (conflictingSourcePaths.isNotEmpty) {
+        const detail =
+            'Historical archive import is blocked because db-import already contains batches for a different source chat.db. The canonical importer still keys ledger rows to source ROWID, so mixed-source imports would collide until the multi-source identity refactor lands.';
+        debugSettings.logError('$_logContext: $detail');
+        return const DbImportResult(batchId: -1, success: false, error: detail);
+      }
+    }
+
     final addressBookEither = await ref.read(
       futureGetFolderAggregateProvider.future,
     );

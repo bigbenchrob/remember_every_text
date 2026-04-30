@@ -7,7 +7,7 @@ part of 'view_spec_coordinator.dart';
 // **************************************************************************
 
 String _$viewSpecCoordinatorHash() =>
-    r'9b4654948566a6736e600fff0eac3d9f62d474ee';
+    r'dfc4ef1763d69cad2e1055ceb3cc47fbf276565e';
 
 /// See also [ViewSpecCoordinator].
 @ProviderFor(ViewSpecCoordinator)

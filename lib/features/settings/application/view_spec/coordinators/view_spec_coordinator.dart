@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../domain/spec_classes/settings_view_spec.dart';
+import '../resolvers/historical_archives_panel_resolver.dart';
 import '../resolvers/message_history_coverage_report_panel_resolver.dart';
 
 part 'view_spec_coordinator.g.dart';
@@ -15,6 +16,8 @@ class ViewSpecCoordinator extends _$ViewSpecCoordinator {
 
   Widget buildForSpec(SettingsViewSpec spec) {
     return spec.when(
+      historicalArchivesWorkflow: () =>
+          HistoricalArchivesPanelResolver().resolve(),
       messageHistoryCoverageReport: () =>
           MessageHistoryCoverageReportPanelResolver().resolve(),
     );

@@ -7,7 +7,7 @@ part of 'renderable_sidebar_cassette_specs_provider.dart';
 // **************************************************************************
 
 String _$renderableSidebarCassetteSpecsHash() =>
-    r'218dfffa4c9895ac50a91b4b1d3818f6f656525f';
+    r'475bdecb8a5cb2f07e98461412176e766ad54564';
 
 /// Copied from Dart SDK
 class _SystemHash {

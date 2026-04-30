@@ -1447,6 +1447,8 @@ class _FakeSettingsViewSpecCoordinator
   @override
   Widget buildForSpec(SettingsViewSpec spec) {
     return spec.when(
+      historicalArchivesWorkflow: () =>
+          const Text('settings:historical-archives'),
       messageHistoryCoverageReport: () =>
           const Text('settings:message-history-coverage'),
     );

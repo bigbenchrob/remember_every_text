@@ -231,12 +231,24 @@ Future<SidebarCassettePayload> _buildPayloadForSpec(
       );
     },
     settings: (settingsSpec) async {
+      final historicalArchivesKnownSources = await settingsSpec.maybeMap(
+        historicalArchivesOverview: (_) async {
+          return ref.watch(
+            settings_feature
+                .historicalArchivesSidebarKnownSourcesProvider
+                .future,
+          );
+        },
+        orElse: () async => null,
+      );
+
       final coordinator = ref.read(
         settings_feature.settingsCassetteCoordinatorProvider.notifier,
       );
       return coordinator.buildViewModel(
         settingsSpec,
         cassetteIndex: cassetteIndex,
+        historicalArchivesKnownSources: historicalArchivesKnownSources,
       );
     },
   );

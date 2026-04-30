@@ -204,6 +204,33 @@ void main() {
       );
     });
 
+    test('historical archives projects a settings-mode center spec', () {
+      container
+          .read(sidebarFlowProvider.notifier)
+          .setPersistentSettingsContext(
+            SettingsMenuActionId.historicalArchives,
+          );
+
+      expect(
+        container.read(sidebarFlowProvider).projectedSettingsCenterSpec,
+        equals(
+          const ViewSpec.settings(
+            SettingsViewSpec.historicalArchivesWorkflow(),
+          ),
+        ),
+      );
+      expect(
+        container
+            .read(sidebarFlowProvider)
+            .projectedCenterSpecForMode(SidebarMode.settings),
+        equals(
+          const ViewSpec.settings(
+            SettingsViewSpec.historicalArchivesWorkflow(),
+          ),
+        ),
+      );
+    });
+
     test('message history coverage projects a settings-mode center spec', () {
       container
           .read(sidebarFlowProvider.notifier)

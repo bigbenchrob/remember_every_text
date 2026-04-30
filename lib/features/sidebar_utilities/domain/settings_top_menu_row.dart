@@ -38,8 +38,9 @@ final class SettingsTopMenuActionRow extends SettingsTopMenuRow {
     }
 
     return switch (actionId) {
+      SettingsMenuActionId.historicalArchives ||
       SettingsMenuActionId.messageHistoryCoverage => throw StateError(
-        'Message History Coverage must use durable settings context transport.',
+        '$actionId must use durable settings context transport.',
       ),
       SettingsMenuActionId.sendLogs => const ShowSendLogsFlow(),
       SettingsMenuActionId.resetMessageData => const ShowResetMessageDataFlow(),

@@ -22,6 +22,11 @@ class SettingsRootResolver extends _$SettingsRootResolver {
       promptLabel: 'Choose setting or action',
       persistentContextActionId: persistentContextActionId,
       rows: const [
+        SettingsTopMenuGroupHeaderRow(label: 'Support'),
+        SettingsTopMenuActionRow.persistentContext(
+          label: 'Historical Archives',
+          actionId: SettingsMenuActionId.historicalArchives,
+        ),
         SettingsTopMenuGroupHeaderRow(label: 'Troubleshooting'),
         SettingsTopMenuActionRow.persistentContext(
           label: 'Message history coverage report',

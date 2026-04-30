@@ -55,10 +55,11 @@ extension SettingsCassetteSpecPatterns on SettingsCassetteSpec {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _MessageHistoryCoverageOverview value)?  messageHistoryCoverageOverview,TResult Function( _MessageHistoryCoverageHowToRead value)?  messageHistoryCoverageHowToRead,TResult Function( _MessageHistoryCoverageOlderMessagesNote value)?  messageHistoryCoverageOlderMessagesNote,TResult Function( _SendLogsPanel value)?  sendLogsPanel,TResult Function( _ResetMessageDataPanel value)?  resetMessageDataPanel,TResult Function( _TextSizePlaceholder value)?  textSizePlaceholder,TResult Function( _ImageSizePlaceholder value)?  imageSizePlaceholder,TResult Function( _AttachmentArchive value)?  attachmentArchive,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _HistoricalArchivesOverview value)?  historicalArchivesOverview,TResult Function( _MessageHistoryCoverageOverview value)?  messageHistoryCoverageOverview,TResult Function( _MessageHistoryCoverageHowToRead value)?  messageHistoryCoverageHowToRead,TResult Function( _MessageHistoryCoverageOlderMessagesNote value)?  messageHistoryCoverageOlderMessagesNote,TResult Function( _SendLogsPanel value)?  sendLogsPanel,TResult Function( _ResetMessageDataPanel value)?  resetMessageDataPanel,TResult Function( _TextSizePlaceholder value)?  textSizePlaceholder,TResult Function( _ImageSizePlaceholder value)?  imageSizePlaceholder,TResult Function( _AttachmentArchive value)?  attachmentArchive,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _MessageHistoryCoverageOverview() when messageHistoryCoverageOverview != null:
+case _HistoricalArchivesOverview() when historicalArchivesOverview != null:
+return historicalArchivesOverview(_that);case _MessageHistoryCoverageOverview() when messageHistoryCoverageOverview != null:
 return messageHistoryCoverageOverview(_that);case _MessageHistoryCoverageHowToRead() when messageHistoryCoverageHowToRead != null:
 return messageHistoryCoverageHowToRead(_that);case _MessageHistoryCoverageOlderMessagesNote() when messageHistoryCoverageOlderMessagesNote != null:
 return messageHistoryCoverageOlderMessagesNote(_that);case _SendLogsPanel() when sendLogsPanel != null:
@@ -84,10 +85,11 @@ return attachmentArchive(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _MessageHistoryCoverageOverview value)  messageHistoryCoverageOverview,required TResult Function( _MessageHistoryCoverageHowToRead value)  messageHistoryCoverageHowToRead,required TResult Function( _MessageHistoryCoverageOlderMessagesNote value)  messageHistoryCoverageOlderMessagesNote,required TResult Function( _SendLogsPanel value)  sendLogsPanel,required TResult Function( _ResetMessageDataPanel value)  resetMessageDataPanel,required TResult Function( _TextSizePlaceholder value)  textSizePlaceholder,required TResult Function( _ImageSizePlaceholder value)  imageSizePlaceholder,required TResult Function( _AttachmentArchive value)  attachmentArchive,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _HistoricalArchivesOverview value)  historicalArchivesOverview,required TResult Function( _MessageHistoryCoverageOverview value)  messageHistoryCoverageOverview,required TResult Function( _MessageHistoryCoverageHowToRead value)  messageHistoryCoverageHowToRead,required TResult Function( _MessageHistoryCoverageOlderMessagesNote value)  messageHistoryCoverageOlderMessagesNote,required TResult Function( _SendLogsPanel value)  sendLogsPanel,required TResult Function( _ResetMessageDataPanel value)  resetMessageDataPanel,required TResult Function( _TextSizePlaceholder value)  textSizePlaceholder,required TResult Function( _ImageSizePlaceholder value)  imageSizePlaceholder,required TResult Function( _AttachmentArchive value)  attachmentArchive,}){
 final _that = this;
 switch (_that) {
-case _MessageHistoryCoverageOverview():
+case _HistoricalArchivesOverview():
+return historicalArchivesOverview(_that);case _MessageHistoryCoverageOverview():
 return messageHistoryCoverageOverview(_that);case _MessageHistoryCoverageHowToRead():
 return messageHistoryCoverageHowToRead(_that);case _MessageHistoryCoverageOlderMessagesNote():
 return messageHistoryCoverageOlderMessagesNote(_that);case _SendLogsPanel():
@@ -112,10 +114,11 @@ return attachmentArchive(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _MessageHistoryCoverageOverview value)?  messageHistoryCoverageOverview,TResult? Function( _MessageHistoryCoverageHowToRead value)?  messageHistoryCoverageHowToRead,TResult? Function( _MessageHistoryCoverageOlderMessagesNote value)?  messageHistoryCoverageOlderMessagesNote,TResult? Function( _SendLogsPanel value)?  sendLogsPanel,TResult? Function( _ResetMessageDataPanel value)?  resetMessageDataPanel,TResult? Function( _TextSizePlaceholder value)?  textSizePlaceholder,TResult? Function( _ImageSizePlaceholder value)?  imageSizePlaceholder,TResult? Function( _AttachmentArchive value)?  attachmentArchive,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _HistoricalArchivesOverview value)?  historicalArchivesOverview,TResult? Function( _MessageHistoryCoverageOverview value)?  messageHistoryCoverageOverview,TResult? Function( _MessageHistoryCoverageHowToRead value)?  messageHistoryCoverageHowToRead,TResult? Function( _MessageHistoryCoverageOlderMessagesNote value)?  messageHistoryCoverageOlderMessagesNote,TResult? Function( _SendLogsPanel value)?  sendLogsPanel,TResult? Function( _ResetMessageDataPanel value)?  resetMessageDataPanel,TResult? Function( _TextSizePlaceholder value)?  textSizePlaceholder,TResult? Function( _ImageSizePlaceholder value)?  imageSizePlaceholder,TResult? Function( _AttachmentArchive value)?  attachmentArchive,}){
 final _that = this;
 switch (_that) {
-case _MessageHistoryCoverageOverview() when messageHistoryCoverageOverview != null:
+case _HistoricalArchivesOverview() when historicalArchivesOverview != null:
+return historicalArchivesOverview(_that);case _MessageHistoryCoverageOverview() when messageHistoryCoverageOverview != null:
 return messageHistoryCoverageOverview(_that);case _MessageHistoryCoverageHowToRead() when messageHistoryCoverageHowToRead != null:
 return messageHistoryCoverageHowToRead(_that);case _MessageHistoryCoverageOlderMessagesNote() when messageHistoryCoverageOlderMessagesNote != null:
 return messageHistoryCoverageOlderMessagesNote(_that);case _SendLogsPanel() when sendLogsPanel != null:
@@ -140,9 +143,10 @@ return attachmentArchive(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  messageHistoryCoverageOverview,TResult Function()?  messageHistoryCoverageHowToRead,TResult Function()?  messageHistoryCoverageOlderMessagesNote,TResult Function()?  sendLogsPanel,TResult Function()?  resetMessageDataPanel,TResult Function()?  textSizePlaceholder,TResult Function()?  imageSizePlaceholder,TResult Function()?  attachmentArchive,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  historicalArchivesOverview,TResult Function()?  messageHistoryCoverageOverview,TResult Function()?  messageHistoryCoverageHowToRead,TResult Function()?  messageHistoryCoverageOlderMessagesNote,TResult Function()?  sendLogsPanel,TResult Function()?  resetMessageDataPanel,TResult Function()?  textSizePlaceholder,TResult Function()?  imageSizePlaceholder,TResult Function()?  attachmentArchive,required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _MessageHistoryCoverageOverview() when messageHistoryCoverageOverview != null:
+case _HistoricalArchivesOverview() when historicalArchivesOverview != null:
+return historicalArchivesOverview();case _MessageHistoryCoverageOverview() when messageHistoryCoverageOverview != null:
 return messageHistoryCoverageOverview();case _MessageHistoryCoverageHowToRead() when messageHistoryCoverageHowToRead != null:
 return messageHistoryCoverageHowToRead();case _MessageHistoryCoverageOlderMessagesNote() when messageHistoryCoverageOlderMessagesNote != null:
 return messageHistoryCoverageOlderMessagesNote();case _SendLogsPanel() when sendLogsPanel != null:
@@ -168,9 +172,10 @@ return attachmentArchive();case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  messageHistoryCoverageOverview,required TResult Function()  messageHistoryCoverageHowToRead,required TResult Function()  messageHistoryCoverageOlderMessagesNote,required TResult Function()  sendLogsPanel,required TResult Function()  resetMessageDataPanel,required TResult Function()  textSizePlaceholder,required TResult Function()  imageSizePlaceholder,required TResult Function()  attachmentArchive,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  historicalArchivesOverview,required TResult Function()  messageHistoryCoverageOverview,required TResult Function()  messageHistoryCoverageHowToRead,required TResult Function()  messageHistoryCoverageOlderMessagesNote,required TResult Function()  sendLogsPanel,required TResult Function()  resetMessageDataPanel,required TResult Function()  textSizePlaceholder,required TResult Function()  imageSizePlaceholder,required TResult Function()  attachmentArchive,}) {final _that = this;
 switch (_that) {
-case _MessageHistoryCoverageOverview():
+case _HistoricalArchivesOverview():
+return historicalArchivesOverview();case _MessageHistoryCoverageOverview():
 return messageHistoryCoverageOverview();case _MessageHistoryCoverageHowToRead():
 return messageHistoryCoverageHowToRead();case _MessageHistoryCoverageOlderMessagesNote():
 return messageHistoryCoverageOlderMessagesNote();case _SendLogsPanel():
@@ -195,9 +200,10 @@ return attachmentArchive();case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  messageHistoryCoverageOverview,TResult? Function()?  messageHistoryCoverageHowToRead,TResult? Function()?  messageHistoryCoverageOlderMessagesNote,TResult? Function()?  sendLogsPanel,TResult? Function()?  resetMessageDataPanel,TResult? Function()?  textSizePlaceholder,TResult? Function()?  imageSizePlaceholder,TResult? Function()?  attachmentArchive,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  historicalArchivesOverview,TResult? Function()?  messageHistoryCoverageOverview,TResult? Function()?  messageHistoryCoverageHowToRead,TResult? Function()?  messageHistoryCoverageOlderMessagesNote,TResult? Function()?  sendLogsPanel,TResult? Function()?  resetMessageDataPanel,TResult? Function()?  textSizePlaceholder,TResult? Function()?  imageSizePlaceholder,TResult? Function()?  attachmentArchive,}) {final _that = this;
 switch (_that) {
-case _MessageHistoryCoverageOverview() when messageHistoryCoverageOverview != null:
+case _HistoricalArchivesOverview() when historicalArchivesOverview != null:
+return historicalArchivesOverview();case _MessageHistoryCoverageOverview() when messageHistoryCoverageOverview != null:
 return messageHistoryCoverageOverview();case _MessageHistoryCoverageHowToRead() when messageHistoryCoverageHowToRead != null:
 return messageHistoryCoverageHowToRead();case _MessageHistoryCoverageOlderMessagesNote() when messageHistoryCoverageOlderMessagesNote != null:
 return messageHistoryCoverageOlderMessagesNote();case _SendLogsPanel() when sendLogsPanel != null:
@@ -212,6 +218,38 @@ return attachmentArchive();case _:
 }
 
 }
+
+/// @nodoc
+
+
+class _HistoricalArchivesOverview implements SettingsCassetteSpec {
+  const _HistoricalArchivesOverview();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HistoricalArchivesOverview);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'SettingsCassetteSpec.historicalArchivesOverview()';
+}
+
+
+}
+
+
+
 
 /// @nodoc
 

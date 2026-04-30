@@ -107,6 +107,9 @@ class NavigationLogEntry {
       settings: (settingsSpec) => {
         'type': 'settings',
         'spec': settingsSpec.when(
+          historicalArchivesWorkflow: () => {
+            'variant': 'historicalArchivesWorkflow',
+          },
           messageHistoryCoverageReport: () => {
             'variant': 'messageHistoryCoverageReport',
           },

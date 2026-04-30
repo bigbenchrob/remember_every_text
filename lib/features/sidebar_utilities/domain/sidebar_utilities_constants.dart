@@ -42,6 +42,7 @@ enum TopChatMenuChoice {
 }
 
 enum SettingsMenuActionId {
+  historicalArchives(id: 'historical_archives', label: 'Historical Archives'),
   messageHistoryCoverage(
     id: 'message_history_coverage',
     label: 'Message history coverage report',
@@ -67,6 +68,7 @@ enum SettingsMenuActionId {
 extension SettingsMenuActionIdX on SettingsMenuActionId {
   bool get isPersistentContext {
     return switch (this) {
+      SettingsMenuActionId.historicalArchives ||
       SettingsMenuActionId.messageHistoryCoverage ||
       SettingsMenuActionId.textSize ||
       SettingsMenuActionId.imageSize => true,

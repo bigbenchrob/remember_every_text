@@ -2,8 +2,10 @@ import 'package:flutter/widgets.dart';
 
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 import '../payloads/attachment_archive_settings_cassette_payload.dart';
+import '../payloads/historical_archives_settings_cassette_payload.dart';
 import '../payloads/settings_action_card_cassette_payload.dart';
 import '../payloads/settings_info_actions_cassette_payload.dart';
+import '../widget_builders/historical_archives_settings_supplemental_content.dart';
 import '../widget_builders/settings_action_card_widget.dart';
 import '../widget_builders/settings_action_list.dart';
 
@@ -28,6 +30,8 @@ Widget? buildFeatureInfoSupplementalContent({
       actions: payload.actions,
       cassetteIndex: payload.cassetteIndex,
     ),
+    HistoricalArchivesSettingsCassettePayload() =>
+      HistoricalArchivesSettingsSupplementalContent(payload: payload),
     AttachmentArchiveSettingsCassettePayload() => null,
     FeatureInfoSidebarCassettePayload() => throw UnsupportedError(
       'Unhandled settings info payload type: ${payload.runtimeType}',

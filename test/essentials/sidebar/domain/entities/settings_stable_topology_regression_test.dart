@@ -14,6 +14,10 @@ void main() {
           SidebarUtilityCassetteSpec.settingsMenu(),
         );
 
+        const historicalArchivesContext = StableCassetteTopologyContext(
+          messageScope: StableCascadeMessageScope.regular,
+          persistentSettingsContext: SettingsMenuActionId.historicalArchives,
+        );
         const messageHistoryCoverageContext = StableCassetteTopologyContext(
           messageScope: StableCascadeMessageScope.regular,
           persistentSettingsContext:
@@ -31,6 +35,17 @@ void main() {
           messageScope: StableCascadeMessageScope.regular,
         );
 
+        expect(
+          resolveStableCascadeChild(
+            currentSpec,
+            context: historicalArchivesContext,
+          ),
+          equals(
+            const CassetteSpec.settings(
+              SettingsCassetteSpec.historicalArchivesOverview(),
+            ),
+          ),
+        );
         expect(
           resolveStableCascadeChild(
             currentSpec,
@@ -91,6 +106,20 @@ void main() {
         );
       },
     );
+
+    test('historical archives settings card does not cascade further', () {
+      expect(
+        resolveStableCascadeChild(
+          const CassetteSpec.settings(
+            SettingsCassetteSpec.historicalArchivesOverview(),
+          ),
+          context: const StableCassetteTopologyContext(
+            messageScope: StableCascadeMessageScope.regular,
+          ),
+        ),
+        isNull,
+      );
+    });
 
     test(
       'message history coverage settings cards cascade in durable order',

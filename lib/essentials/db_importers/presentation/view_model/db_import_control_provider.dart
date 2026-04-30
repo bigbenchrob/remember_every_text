@@ -727,7 +727,7 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
     }
   }
 
-  Future<void> startImport() async {
+  Future<void> startImport({String? sourceChatDbOverride}) async {
     state = state.copyWith(
       isProcessing: true,
       statusMessage: 'Starting import...',
@@ -742,6 +742,7 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
       final service = ref.read(orchestratedLedgerImportServiceProvider);
       final result = await service.runImport(
         executionOwner: 'db-import-control',
+        sourceChatDbOverride: sourceChatDbOverride,
         onExecutionPlan: (steps) {
           // Build UI step list from the orchestrator's topological order.
           state = state.copyWith(

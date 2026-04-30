@@ -136,5 +136,155 @@ void main() {
 
       await upgradedDb.close();
     });
+
+    test('deletes only the selected source batch ledger rows', () async {
+      final ledgerDb = SqfliteImportDatabase(
+        databaseDirectory: tempDir.path,
+        databaseName: 'import_test.db',
+        debugSettings: const ImportDebugSettingsState(),
+      );
+
+      final archiveBatchId = await ledgerDb.insertImportBatch(
+        startedAtUtc: DateTime.now().toUtc().toIso8601String(),
+        sourceChatDb: '/Archives/2017/chat.db',
+      );
+      final currentBatchId = await ledgerDb.insertImportBatch(
+        startedAtUtc: DateTime.now().toUtc().toIso8601String(),
+        sourceChatDb: '/Users/test/Library/Messages/chat.db',
+      );
+
+      final db = await ledgerDb.database;
+      await db.insert('handles', <String, Object?>{
+        'id': 1,
+        'service': 'iMessage',
+        'raw_identifier': 'archive@example.com',
+        'compound_identifier': 'archive@example.com-iMessage',
+        'batch_id': archiveBatchId,
+      });
+      await db.insert('handles', <String, Object?>{
+        'id': 2,
+        'service': 'iMessage',
+        'raw_identifier': 'current@example.com',
+        'compound_identifier': 'current@example.com-iMessage',
+        'batch_id': currentBatchId,
+      });
+      await db.insert('chats', <String, Object?>{
+        'id': 11,
+        'guid': 'archive-chat',
+        'service': 'iMessage',
+        'batch_id': archiveBatchId,
+      });
+      await db.insert('chats', <String, Object?>{
+        'id': 12,
+        'guid': 'current-chat',
+        'service': 'iMessage',
+        'batch_id': currentBatchId,
+      });
+      await db.insert('messages', <String, Object?>{
+        'id': 21,
+        'guid': 'archive-guid',
+        'chat_id': 11,
+        'sender_handle_id': 1,
+        'is_from_me': 0,
+        'batch_id': archiveBatchId,
+      });
+      await db.insert('messages', <String, Object?>{
+        'id': 22,
+        'guid': 'current-guid',
+        'chat_id': 12,
+        'sender_handle_id': 2,
+        'is_from_me': 0,
+        'batch_id': currentBatchId,
+      });
+      await db.insert('chat_to_message', <String, Object?>{
+        'chat_id': 11,
+        'message_id': 21,
+      });
+      await db.insert('chat_to_message', <String, Object?>{
+        'chat_id': 12,
+        'message_id': 22,
+      });
+
+      expect(
+        await ledgerDb.batchIdsForSourceChatDb(
+          sourceChatDb: '/Archives/2017/chat.db',
+        ),
+        <int>[archiveBatchId],
+      );
+
+      await ledgerDb.deleteBatchLedgerData(batchId: archiveBatchId);
+
+      expect(
+        await ledgerDb.batchIdsForSourceChatDb(
+          sourceChatDb: '/Archives/2017/chat.db',
+        ),
+        isEmpty,
+      );
+      expect(await ledgerDb.countRows('messages'), 1);
+      expect(await ledgerDb.countRows('chats'), 1);
+      expect(await ledgerDb.countRows('handles'), 1);
+
+      final remainingMessages = await db.query('messages');
+      expect(remainingMessages.single['guid'], 'current-guid');
+
+      final remainingBatches = await db.query(
+        'import_batches',
+        orderBy: 'id ASC',
+      );
+      expect(remainingBatches, hasLength(1));
+      expect(remainingBatches.single['id'], currentBatchId);
+
+      await ledgerDb.close();
+    });
+
+    test(
+      'persists historical archive source metadata independently of workflow state',
+      () async {
+        final ledgerDb = SqfliteImportDatabase(
+          databaseDirectory: tempDir.path,
+          databaseName: 'import_test.db',
+          debugSettings: const ImportDebugSettingsState(),
+        );
+
+        final batchId = await ledgerDb.insertImportBatch(
+          startedAtUtc: DateTime.now().toUtc().toIso8601String(),
+          sourceChatDb: '/Archives/2017/chat.db',
+        );
+
+        await ledgerDb.upsertHistoricalArchiveSource(
+          sourceChatDb: '/Archives/2017/chat.db',
+          folderPath: '/Archives/2017',
+          sourceLabel: 'Archive-2017',
+          chatDbStatusLabel: 'Found and readable',
+          attachmentsStatusLabel: 'Found',
+          preflightStatusLabel: 'Preflight complete',
+          preflightDetail: 'Source checks succeeded.',
+          totalMessages: 42,
+          totalChats: 2,
+          totalHandles: 10,
+          missingGuids: 1,
+          earliestMessageUtc: '2017-01-03T00:00:00.000Z',
+          latestMessageUtc: '2017-01-05T00:00:00.000Z',
+          dryRunNewMessages: 10,
+          dryRunDuplicateMessages: 32,
+          lastImportBatchId: batchId,
+          lastImportFinishedAtUtc: '2026-04-29T18:30:00.000Z',
+          lastImportSuccess: true,
+          lastImportedMessageCount: 10,
+          updatedAtUtc: '2026-04-29T18:30:00.000Z',
+        );
+
+        final records = await ledgerDb.listHistoricalArchiveSources();
+
+        expect(records, hasLength(1));
+        expect(records.single.sourceLabel, 'Archive-2017');
+        expect(records.single.totalMessages, 42);
+        expect(records.single.earliestMessageUtc, '2017-01-03T00:00:00.000Z');
+        expect(records.single.lastImportSuccess, isTrue);
+        expect(records.single.lastImportedMessageCount, 10);
+
+        await ledgerDb.close();
+      },
+    );
   });
 }
