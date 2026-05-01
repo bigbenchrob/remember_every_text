@@ -161,6 +161,7 @@ void main() {
           workingDb.workingMessages,
         )..where((tbl) => tbl.id.equals(workingMessageId))).getSingle();
         expect(backfilledMessage.senderHandleId, canonicalHandleId);
+        expect(backfilledMessage.sentAtUtc, sentAtUtc);
 
         final backfilledChat = await (workingDb.select(
           workingDb.workingChats,

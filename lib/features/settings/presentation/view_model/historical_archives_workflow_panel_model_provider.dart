@@ -8,9 +8,11 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 import '../../../../essentials/db/feature_level_providers.dart';
-import '../../../../essentials/db/infrastructure/data_sources/local/working/working_database.dart';
+import '../../../../essentials/db/feature_level_providers/message_data_version_provider.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/import/sqflite_import_database.dart';
+import '../../../../essentials/db/infrastructure/data_sources/local/working/working_database.dart';
 import '../../../../essentials/db_importers/application/import_execution_gate_provider.dart';
+import '../../../../essentials/db_importers/feature_level_providers.dart';
 import '../../../../essentials/db_importers/presentation/view_model/db_import_control_provider.dart';
 
 part 'historical_archives_workflow_panel_model_provider.g.dart';
@@ -35,6 +37,8 @@ enum HistoricalArchivesPreflightStatus {
   waitingForFolder,
   running,
   completeReadyToImport,
+  preparationRecorded,
+  migrationCompleted,
   failed,
 }
 
@@ -595,119 +599,53 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       return;
     }
 
-    final startedAtUtc = DateTime.now().toUtc().toIso8601String();
-    state = state.copyWith(
-      preflight: const HistoricalArchivesPreflightViewModel(
-        status: HistoricalArchivesPreflightStatus.running,
-        statusLabel: 'Import running',
-        detail:
-            'Running canonical ledger import for the selected archive source, then rebuilding projected data.',
-      ),
-      activityLog: [
+    final executionGate = ref.read(importExecutionGateProvider.notifier);
+    if (!executionGate.tryAcquire(_historicalArchivesTestingOwner)) {
+      final currentOwner = ref.read(importExecutionGateProvider).owner;
+      _prependActivityLog(
         HistoricalArchivesLogEntryViewModel(
-          label: 'Beginning import…',
+          label: 'Execution gate busy',
           message:
-              'Starting canonical import for ${path.basename(selectedFolderPath)}.',
+              '${_describeExecutionOwnerLabel(currentOwner)} currently owns the execution gate. Archive import must wait.',
         ),
-        ...state.activityLog,
-      ],
-      phases: _runningArchiveImportPhases(),
-      resultSummaryLines: const [
-        'Archive import is running.',
-        'Canonical ledger import and migration must both finish before imported archive messages become visible in normal app surfaces.',
-      ],
-    );
-
-    final importControl = ref.read(dbImportControlViewModelProvider.notifier);
-    final importDb = await ref.read(sqfliteImportDatabaseProvider.future);
-
-    await importControl.startImport(sourceChatDbOverride: selectedChatDbPath);
-    final importResult = ref
-        .read(dbImportControlViewModelProvider)
-        .lastImportResult;
-
-    if (importResult == null || !importResult.success) {
-      final detail =
-          importResult?.error ??
-          'The canonical archive import did not report a success result.';
-      await importDb.upsertHistoricalArchiveSource(
-        sourceChatDb: selectedChatDbPath,
-        folderPath: selectedFolderPath,
-        sourceLabel: state.sourceLabel,
-        chatDbStatusLabel: state.chatDbStatusLabel,
-        attachmentsStatusLabel: state.attachmentsStatusLabel,
-        preflightStatusLabel: 'Import failed',
-        preflightDetail: detail,
-        totalMessages: _summaryLineInt(
-          state.preflightSummaryLines,
-          'Total messages:',
-        ),
-        totalChats: _summaryLineInt(
-          state.preflightSummaryLines,
-          'Total chats:',
-        ),
-        totalHandles: _summaryLineInt(
-          state.preflightSummaryLines,
-          'Total handles:',
-        ),
-        missingGuids: _summaryLineInt(
-          state.preflightSummaryLines,
-          'Rows with missing GUIDs:',
-        ),
-        dryRunNewMessages: _summaryLineInt(
-          state.dryRunSummaryLines,
-          'Estimated new messages:',
-        ),
-        dryRunDuplicateMessages: _summaryLineInt(
-          state.dryRunSummaryLines,
-          'Estimated duplicates:',
-        ),
-        matchedImportedBatchCount: state.matchedImportedArchiveBatchCount,
-        lastImportStartedAtUtc: startedAtUtc,
-        lastImportFinishedAtUtc: DateTime.now().toUtc().toIso8601String(),
-        lastImportSuccess: false,
-        lastImportError: detail,
-        updatedAtUtc: DateTime.now().toUtc().toIso8601String(),
-      );
-      state = state.copyWith(
-        preflight: HistoricalArchivesPreflightViewModel(
-          status: HistoricalArchivesPreflightStatus.failed,
-          statusLabel: 'Import failed',
-          detail: detail,
-        ),
-        activityLog: [
-          HistoricalArchivesLogEntryViewModel(
-            label: 'Import failed',
-            message: detail,
-          ),
-          ...state.activityLog,
-        ],
-        phases: _failedArchiveImportPhases(detail: detail),
-        resultSummaryLines: [
-          'Archive import failed before the canonical rebuild completed.',
-          detail,
-        ],
       );
       return;
     }
 
-    await importControl.startMigration(skipImportCheck: true);
-    final migrationResult = ref
-        .read(dbImportControlViewModelProvider)
-        .lastMigrationResult;
+    final startedAtUtc = DateTime.now().toUtc().toIso8601String();
+    try {
+      state = state.copyWith(
+        preflight: const HistoricalArchivesPreflightViewModel(
+          status: HistoricalArchivesPreflightStatus.running,
+          statusLabel: 'Import running',
+          detail:
+              'Running canonical ledger import for the selected archive source, then starting the normal canonical migration orchestrator.',
+        ),
+        activityLog: [
+          HistoricalArchivesLogEntryViewModel(
+            label: 'Beginning import…',
+            message:
+                'Starting canonical import for ${path.basename(selectedFolderPath)}.',
+          ),
+          ...state.activityLog,
+        ],
+        phases: _runningArchiveImportPhases(),
+        resultSummaryLines: const [
+          'Archive import is running.',
+          'Success in this slice requires both canonical ledger import and canonical migration to complete.',
+        ],
+      );
 
-    if (migrationResult?.success != true) {
-      final detail =
-          migrationResult?.error ??
-          'The canonical rebuild did not report success after archive import.';
-      await importDb.upsertHistoricalArchiveSource(
+      final importDb = await ref.read(sqfliteImportDatabaseProvider.future);
+      final sourceId = await importDb.prepareHistoricalArchiveSource(
         sourceChatDb: selectedChatDbPath,
         folderPath: selectedFolderPath,
         sourceLabel: state.sourceLabel,
         chatDbStatusLabel: state.chatDbStatusLabel,
         attachmentsStatusLabel: state.attachmentsStatusLabel,
-        preflightStatusLabel: 'Migration failed after import',
-        preflightDetail: detail,
+        preflightStatusLabel: 'Archive import running',
+        preflightDetail:
+            'Canonical ledger import started for this historical archive source.',
         totalMessages: _summaryLineInt(
           state.preflightSummaryLines,
           'Total messages:',
@@ -733,91 +671,275 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
           'Estimated duplicates:',
         ),
         matchedImportedBatchCount: state.matchedImportedArchiveBatchCount,
+        updatedAtUtc: startedAtUtc,
+      );
+
+      final importResult = await ref
+          .read(orchestratedLedgerImportServiceProvider)
+          .runImport(
+            executionOwner: _historicalArchivesTestingOwner,
+            sourceChatDbOverride: selectedChatDbPath,
+            chatSourceKind: 'historical_archive',
+            sourceLabelOverride: state.sourceLabel,
+            includeContactImport: false,
+            includeAttachmentImport: false,
+          );
+
+      final importFinishedAtUtc = DateTime.now().toUtc().toIso8601String();
+      final matchedImportedBatchCount =
+          await _readMatchedImportedArchiveBatchCount(
+            importDb: importDb,
+            sourceChatDbPath: selectedChatDbPath,
+          );
+
+      if (!importResult.success) {
+        final detail =
+            importResult.error ??
+            'Canonical archive ledger import did not report success.';
+        await importDb.upsertHistoricalArchiveSource(
+          sourceChatDb: selectedChatDbPath,
+          folderPath: selectedFolderPath,
+          sourceLabel: state.sourceLabel,
+          chatDbStatusLabel: state.chatDbStatusLabel,
+          attachmentsStatusLabel: state.attachmentsStatusLabel,
+          preflightStatusLabel: 'Archive ledger import failed',
+          preflightDetail: detail,
+          totalMessages: _summaryLineInt(
+            state.preflightSummaryLines,
+            'Total messages:',
+          ),
+          totalChats: _summaryLineInt(
+            state.preflightSummaryLines,
+            'Total chats:',
+          ),
+          totalHandles: _summaryLineInt(
+            state.preflightSummaryLines,
+            'Total handles:',
+          ),
+          missingGuids: _summaryLineInt(
+            state.preflightSummaryLines,
+            'Rows with missing GUIDs:',
+          ),
+          dryRunNewMessages: _summaryLineInt(
+            state.dryRunSummaryLines,
+            'Estimated new messages:',
+          ),
+          dryRunDuplicateMessages: _summaryLineInt(
+            state.dryRunSummaryLines,
+            'Estimated duplicates:',
+          ),
+          matchedImportedBatchCount: matchedImportedBatchCount,
+          ledgerSourceId: sourceId,
+          lastImportBatchId: importResult.batchId > 0
+              ? importResult.batchId
+              : null,
+          lastImportStartedAtUtc: startedAtUtc,
+          lastImportFinishedAtUtc: importFinishedAtUtc,
+          lastImportSuccess: false,
+          lastImportError: detail,
+          updatedAtUtc: importFinishedAtUtc,
+        );
+
+        state = state.copyWith(
+          preflight: HistoricalArchivesPreflightViewModel(
+            status: HistoricalArchivesPreflightStatus.failed,
+            statusLabel: 'Archive ledger import failed',
+            detail: detail,
+          ),
+          matchedImportedArchiveBatchCount: matchedImportedBatchCount,
+          activityLog: [
+            HistoricalArchivesLogEntryViewModel(
+              label: 'Archive import failed',
+              message: detail,
+            ),
+            ...state.activityLog,
+          ],
+          phases: _failedArchiveImportPhases(detail: detail),
+          resultSummaryLines: const [
+            'Canonical archive ledger import failed.',
+            'No migration ran, so imported archive rows are not visible in normal app surfaces.',
+          ],
+        );
+        return;
+      }
+
+      state = state.copyWith(
+        preflight: const HistoricalArchivesPreflightViewModel(
+          status: HistoricalArchivesPreflightStatus.running,
+          statusLabel: 'Migration running',
+          detail:
+              'Archive rows were written to db-import. Running the normal canonical migration orchestrator now.',
+        ),
+        activityLog: [
+          HistoricalArchivesLogEntryViewModel(
+            label: 'Ledger import complete',
+            message:
+                'Archive rows were written to db-import for ${path.basename(selectedFolderPath)}. Starting canonical migration.',
+          ),
+          ...state.activityLog,
+        ],
+        phases: _runningArchiveMigrationPhases(),
+        resultSummaryLines: const [
+          'Archive ledger import completed successfully.',
+          'Canonical migration is now running so archive rows can become visible through working.db and the normal app surfaces.',
+        ],
+      );
+
+      ref.read(dbMaintenanceLockProvider.notifier).begin();
+      try {
+        await ref
+            .read(dbImportControlViewModelProvider.notifier)
+            .startMigration(skipImportCheck: true);
+      } finally {
+        ref.read(dbMaintenanceLockProvider.notifier).end();
+      }
+
+      final migrationResult = ref
+          .read(dbImportControlViewModelProvider)
+          .lastMigrationResult;
+      final finishedAtUtc = DateTime.now().toUtc().toIso8601String();
+
+      if (migrationResult?.success != true) {
+        final detail =
+            migrationResult?.error ??
+            'Archive ledger import succeeded, but the canonical migration did not report success.';
+        await importDb.upsertHistoricalArchiveSource(
+          sourceChatDb: selectedChatDbPath,
+          folderPath: selectedFolderPath,
+          sourceLabel: state.sourceLabel,
+          chatDbStatusLabel: state.chatDbStatusLabel,
+          attachmentsStatusLabel: state.attachmentsStatusLabel,
+          preflightStatusLabel: 'Ledger import succeeded; migration failed',
+          preflightDetail: detail,
+          totalMessages: _summaryLineInt(
+            state.preflightSummaryLines,
+            'Total messages:',
+          ),
+          totalChats: _summaryLineInt(
+            state.preflightSummaryLines,
+            'Total chats:',
+          ),
+          totalHandles: _summaryLineInt(
+            state.preflightSummaryLines,
+            'Total handles:',
+          ),
+          missingGuids: _summaryLineInt(
+            state.preflightSummaryLines,
+            'Rows with missing GUIDs:',
+          ),
+          dryRunNewMessages: _summaryLineInt(
+            state.dryRunSummaryLines,
+            'Estimated new messages:',
+          ),
+          dryRunDuplicateMessages: _summaryLineInt(
+            state.dryRunSummaryLines,
+            'Estimated duplicates:',
+          ),
+          matchedImportedBatchCount: matchedImportedBatchCount,
+          ledgerSourceId: sourceId,
+          lastImportBatchId: importResult.batchId,
+          lastImportStartedAtUtc: startedAtUtc,
+          lastImportFinishedAtUtc: finishedAtUtc,
+          lastImportSuccess: false,
+          lastImportError: detail,
+          lastImportedMessageCount: importResult.messagesImported,
+          updatedAtUtc: finishedAtUtc,
+        );
+
+        state = state.copyWith(
+          preflight: HistoricalArchivesPreflightViewModel(
+            status: HistoricalArchivesPreflightStatus.failed,
+            statusLabel: 'Migration failed after archive import',
+            detail: detail,
+          ),
+          matchedImportedArchiveBatchCount: matchedImportedBatchCount,
+          activityLog: [
+            HistoricalArchivesLogEntryViewModel(
+              label: 'Migration failed after import',
+              message: detail,
+            ),
+            ...state.activityLog,
+          ],
+          phases: _failedArchiveMigrationPhases(detail: detail),
+          resultSummaryLines: const [
+            'Archive ledger import succeeded, but canonical migration failed.',
+            'Archive rows remain staged in db-import and are not visible in normal app surfaces until migration succeeds.',
+          ],
+        );
+        return;
+      }
+
+      ref.read(messageDataVersionProvider.notifier).bump();
+      const successDetail =
+          'Archive rows were written to db-import, migrated into working.db, and refreshed through the normal timeline, search, and heatmap surfaces.';
+
+      await importDb.upsertHistoricalArchiveSource(
+        sourceChatDb: selectedChatDbPath,
+        folderPath: selectedFolderPath,
+        sourceLabel: state.sourceLabel,
+        chatDbStatusLabel: state.chatDbStatusLabel,
+        attachmentsStatusLabel: state.attachmentsStatusLabel,
+        preflightStatusLabel: 'Import and migration complete',
+        preflightDetail: successDetail,
+        totalMessages: _summaryLineInt(
+          state.preflightSummaryLines,
+          'Total messages:',
+        ),
+        totalChats: _summaryLineInt(
+          state.preflightSummaryLines,
+          'Total chats:',
+        ),
+        totalHandles: _summaryLineInt(
+          state.preflightSummaryLines,
+          'Total handles:',
+        ),
+        missingGuids: _summaryLineInt(
+          state.preflightSummaryLines,
+          'Rows with missing GUIDs:',
+        ),
+        dryRunNewMessages: _summaryLineInt(
+          state.dryRunSummaryLines,
+          'Estimated new messages:',
+        ),
+        dryRunDuplicateMessages: _summaryLineInt(
+          state.dryRunSummaryLines,
+          'Estimated duplicates:',
+        ),
+        matchedImportedBatchCount: matchedImportedBatchCount,
+        ledgerSourceId: sourceId,
         lastImportBatchId: importResult.batchId,
         lastImportStartedAtUtc: startedAtUtc,
-        lastImportFinishedAtUtc: DateTime.now().toUtc().toIso8601String(),
-        lastImportSuccess: false,
-        lastImportError: detail,
+        lastImportFinishedAtUtc: finishedAtUtc,
+        lastImportSuccess: true,
+        lastImportError: null,
         lastImportedMessageCount: importResult.messagesImported,
-        updatedAtUtc: DateTime.now().toUtc().toIso8601String(),
+        updatedAtUtc: finishedAtUtc,
       );
+
       state = state.copyWith(
-        preflight: HistoricalArchivesPreflightViewModel(
-          status: HistoricalArchivesPreflightStatus.failed,
-          statusLabel: 'Migration failed after import',
-          detail: detail,
+        preflight: const HistoricalArchivesPreflightViewModel(
+          status: HistoricalArchivesPreflightStatus.migrationCompleted,
+          statusLabel: 'Archive Import Complete',
+          detail: successDetail,
         ),
+        matchedImportedArchiveBatchCount: matchedImportedBatchCount,
         activityLog: [
           HistoricalArchivesLogEntryViewModel(
-            label: 'Migration failed',
-            message: detail,
+            label: 'Archive import and migration complete',
+            message:
+                'Imported ${path.basename(selectedFolderPath)} into db-import, completed canonical migration, and refreshed app-visible data.',
           ),
           ...state.activityLog,
         ],
-        phases: _failedArchiveImportPhases(detail: detail),
-        resultSummaryLines: [
-          'Archive rows were written to db-import, but the canonical rebuild failed.',
-          detail,
+        phases: _completedArchiveImportPhases(),
+        resultSummaryLines: const [
+          'Archive source metadata, canonical ledger rows, and working.db projections are all up to date.',
+          'Archive rows are now visible through the normal timeline, search, and heatmap surfaces.',
         ],
       );
-      return;
+    } finally {
+      executionGate.release(_historicalArchivesTestingOwner);
     }
-
-    WorkingDatabase? workingDb;
-    try {
-      workingDb = await ref.read(driftWorkingDatabaseProvider.future);
-    } catch (_) {}
-
-    final refreshedResult = await preflightHistoricalArchivesFolder(
-      folderPath: selectedFolderPath,
-      workingDb: workingDb,
-      importDb: importDb,
-    );
-
-    await importDb.upsertHistoricalArchiveSource(
-      sourceChatDb: selectedChatDbPath,
-      folderPath: selectedFolderPath,
-      sourceLabel: refreshedResult.sourceLabel,
-      chatDbStatusLabel: refreshedResult.chatDbStatusLabel,
-      attachmentsStatusLabel: refreshedResult.attachmentsStatusLabel,
-      preflightStatusLabel: 'Imported successfully',
-      preflightDetail:
-          'Canonical archive import and migration completed successfully.',
-      totalMessages: refreshedResult.totalMessages,
-      totalChats: refreshedResult.totalChats,
-      totalHandles: refreshedResult.totalHandles,
-      missingGuids: refreshedResult.missingGuids,
-      earliestMessageUtc: refreshedResult.earliestMessageUtc,
-      latestMessageUtc: refreshedResult.latestMessageUtc,
-      dryRunNewMessages: refreshedResult.dryRunNewMessages,
-      dryRunDuplicateMessages: refreshedResult.dryRunDuplicateMessages,
-      matchedImportedBatchCount:
-          refreshedResult.matchedImportedArchiveBatchCount,
-      lastImportBatchId: importResult.batchId,
-      lastImportStartedAtUtc: startedAtUtc,
-      lastImportFinishedAtUtc: DateTime.now().toUtc().toIso8601String(),
-      lastImportSuccess: true,
-      lastImportedMessageCount: importResult.messagesImported,
-      updatedAtUtc: DateTime.now().toUtc().toIso8601String(),
-    );
-
-    state = _workflowStateFromPreflightResult(refreshedResult).copyWith(
-      activityLog: [
-        HistoricalArchivesLogEntryViewModel(
-          label: 'Import complete',
-          message:
-              'Imported ${importResult.messagesImported} messages from ${path.basename(selectedFolderPath)} and rebuilt the canonical timeline.',
-        ),
-        ..._workflowStateFromPreflightResult(refreshedResult).activityLog,
-      ],
-      phases: _completedArchiveImportPhases(
-        importedMessageCount: importResult.messagesImported,
-      ),
-      resultSummaryLines: [
-        'Imported ${importResult.messagesImported} messages from ${path.basename(selectedFolderPath)}.',
-        'Canonical ledger import, migration, and projected data refresh all completed successfully.',
-      ],
-    );
   }
 
   void _prependActivityLog(HistoricalArchivesLogEntryViewModel entry) {
@@ -835,7 +957,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       return;
     }
 
-    await importDb.upsertHistoricalArchiveSource(
+    await importDb.prepareHistoricalArchiveSource(
       sourceChatDb: result.archiveRemovalTargetChatDbPath,
       folderPath: result.selectedFolderPath,
       sourceLabel: result.sourceLabel,
@@ -1015,10 +1137,16 @@ List<HistoricalArchivesLogEntryViewModel> _buildActivityLog({
 String _availableStatusLabel(HistoricalArchivesWorkflowState workflowState) {
   return switch (workflowState.preflight.status) {
     HistoricalArchivesPreflightStatus.waitingForFolder => 'No archive selected',
-    HistoricalArchivesPreflightStatus.running => 'Reading Archive Source',
+    HistoricalArchivesPreflightStatus.running =>
+      workflowState.preflight.statusLabel,
     HistoricalArchivesPreflightStatus.completeReadyToImport =>
       'Archive Source Ready',
-    HistoricalArchivesPreflightStatus.failed => 'Archive Preflight Failed',
+    HistoricalArchivesPreflightStatus.preparationRecorded =>
+      'Archive Ledger Import Complete',
+    HistoricalArchivesPreflightStatus.migrationCompleted =>
+      'Archive Import Complete',
+    HistoricalArchivesPreflightStatus.failed =>
+      workflowState.preflight.statusLabel,
   };
 }
 
@@ -1030,8 +1158,11 @@ String _availableSummaryText(HistoricalArchivesWorkflowState workflowState) {
       'Historical Archives is reading the selected source folder now. The shell remains visible while source checks gather basic message, chat, handle, and GUID evidence.',
     HistoricalArchivesPreflightStatus.completeReadyToImport =>
       'Historical Archives has completed source preflight for the selected folder. The shell now shows real source metadata and message counts, while canonical archive import wiring remains a separate step.',
-    HistoricalArchivesPreflightStatus.failed =>
-      'Historical Archives could not validate the selected folder as a usable Messages source. Review the failure details, then choose a different folder or fix the source contents before trying again.',
+    HistoricalArchivesPreflightStatus.preparationRecorded =>
+      'Historical Archives has written archive rows into the canonical ledger for the selected folder. Full canonical migration is still deferred in this slice, so those rows are not visible in normal app surfaces yet.',
+    HistoricalArchivesPreflightStatus.migrationCompleted =>
+      'Historical Archives has completed canonical ledger import and canonical migration for the selected folder. Archive rows are now visible through the normal app surfaces.',
+    HistoricalArchivesPreflightStatus.failed => workflowState.preflight.detail,
   };
 }
 
@@ -1054,9 +1185,16 @@ String _availableImportButtonDetail(
     HistoricalArchivesPreflightStatus.running =>
       'Import stays disabled while Historical Archives is reading source structure and counts.',
     HistoricalArchivesPreflightStatus.completeReadyToImport =>
-      'Source checks are complete. Begin Import will run the canonical ledger import and then rebuild projected data. Mixed-source ledger states are still rejected until the rowid identity refactor lands.',
+      'Source checks are complete. Begin Import will write archive rows into db-import and then run the normal canonical migration orchestrator.',
+    HistoricalArchivesPreflightStatus.preparationRecorded =>
+      'Archive ledger import has already completed for this source. Full canonical migration remains deferred in this slice.',
+    HistoricalArchivesPreflightStatus.migrationCompleted =>
+      'Archive import and canonical migration have already completed for this source.',
     HistoricalArchivesPreflightStatus.failed =>
-      'Import stays disabled until the selected folder passes source preflight.',
+      workflowState.preflight.statusLabel ==
+              'Migration failed after archive import'
+          ? 'Archive import succeeded, but canonical migration failed. Fix the migration issue before retrying this archive source.'
+          : 'Import stays disabled until the selected folder passes source preflight.',
   };
 }
 
@@ -1856,6 +1994,137 @@ List<HistoricalArchivesWorkflowPhaseViewModel> _runningArchiveImportPhases() {
   ];
 }
 
+List<HistoricalArchivesWorkflowPhaseViewModel>
+_runningArchiveMigrationPhases() {
+  return const [
+    HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Reading archive source',
+      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
+      detail: 'Selected archive metadata was already validated in preflight.',
+    ),
+    HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Normalizing records into canonical ledger format',
+      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
+      detail:
+          'Archive source rows were normalized through the canonical import path.',
+    ),
+    HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Writing archive rows to db-import',
+      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
+      detail: 'Archive rows were written into the canonical ledger.',
+    ),
+    HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Running full canonical migration',
+      status: HistoricalArchivesWorkflowPhaseStatus.running,
+      detail:
+          'The normal canonical migration orchestrator is rebuilding working.db now.',
+    ),
+    HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Rebuilding indexes/search/heatmap support tables',
+      status: HistoricalArchivesWorkflowPhaseStatus.running,
+      detail: 'Migration is rebuilding the normal app indexes and projections.',
+    ),
+    HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Refreshing app-visible data',
+      status: HistoricalArchivesWorkflowPhaseStatus.waiting,
+      detail:
+          'Waiting for the migration orchestrator to complete successfully.',
+    ),
+    HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Complete',
+      status: HistoricalArchivesWorkflowPhaseStatus.waiting,
+      detail: 'Archive migration is still running.',
+    ),
+  ];
+}
+
+List<HistoricalArchivesWorkflowPhaseViewModel> _completedArchiveImportPhases() {
+  return const [
+    HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Reading archive source',
+      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
+      detail: 'Selected archive metadata was already validated in preflight.',
+    ),
+    HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Normalizing records into canonical ledger format',
+      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
+      detail:
+          'Archive source rows were normalized through the canonical import path.',
+    ),
+    HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Writing archive rows to db-import',
+      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
+      detail: 'Archive rows were written into the canonical ledger.',
+    ),
+    HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Running full canonical migration',
+      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
+      detail:
+          'The normal canonical migration orchestrator completed successfully.',
+    ),
+    HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Rebuilding indexes/search/heatmap support tables',
+      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
+      detail:
+          'The normal migration rebuild refreshed indexes and support tables.',
+    ),
+    HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Refreshing app-visible data',
+      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
+      detail: 'Message-dependent providers were refreshed after migration.',
+    ),
+    HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Complete',
+      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
+      detail: 'Archive import and canonical migration completed successfully.',
+    ),
+  ];
+}
+
+List<HistoricalArchivesWorkflowPhaseViewModel> _failedArchiveMigrationPhases({
+  required String detail,
+}) {
+  return [
+    const HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Reading archive source',
+      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
+      detail: 'Selected archive metadata was already validated in preflight.',
+    ),
+    const HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Normalizing records into canonical ledger format',
+      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
+      detail:
+          'Archive source rows were normalized through the canonical import path.',
+    ),
+    const HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Writing archive rows to db-import',
+      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
+      detail: 'Archive rows were written into the canonical ledger.',
+    ),
+    HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Running full canonical migration',
+      status: HistoricalArchivesWorkflowPhaseStatus.failed,
+      detail: detail,
+    ),
+    HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Rebuilding indexes/search/heatmap support tables',
+      status: HistoricalArchivesWorkflowPhaseStatus.failed,
+      detail: detail,
+    ),
+    const HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Refreshing app-visible data',
+      status: HistoricalArchivesWorkflowPhaseStatus.skipped,
+      detail:
+          'Skipped because canonical migration did not complete successfully.',
+    ),
+    const HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Complete',
+      status: HistoricalArchivesWorkflowPhaseStatus.waiting,
+      detail: 'Archive migration did not complete.',
+    ),
+  ];
+}
+
 List<HistoricalArchivesWorkflowPhaseViewModel> _failedArchiveImportPhases({
   required String detail,
 }) {
@@ -1870,73 +2139,30 @@ List<HistoricalArchivesWorkflowPhaseViewModel> _failedArchiveImportPhases({
       status: HistoricalArchivesWorkflowPhaseStatus.failed,
       detail: detail,
     ),
-    const HistoricalArchivesWorkflowPhaseViewModel(
+    HistoricalArchivesWorkflowPhaseViewModel(
       label: 'Writing archive rows to db-import',
-      status: HistoricalArchivesWorkflowPhaseStatus.skipped,
-      detail: 'Skipped because archive import did not complete successfully.',
+      status: HistoricalArchivesWorkflowPhaseStatus.failed,
+      detail: detail,
     ),
     const HistoricalArchivesWorkflowPhaseViewModel(
       label: 'Running full canonical migration',
       status: HistoricalArchivesWorkflowPhaseStatus.skipped,
-      detail: 'Skipped because archive import did not complete successfully.',
+      detail: 'Skipped because canonical archive ledger import failed.',
     ),
     const HistoricalArchivesWorkflowPhaseViewModel(
       label: 'Rebuilding indexes/search/heatmap support tables',
       status: HistoricalArchivesWorkflowPhaseStatus.skipped,
-      detail: 'Skipped because archive import did not complete successfully.',
+      detail: 'Skipped because canonical archive ledger import failed.',
     ),
     const HistoricalArchivesWorkflowPhaseViewModel(
       label: 'Refreshing app-visible data',
       status: HistoricalArchivesWorkflowPhaseStatus.skipped,
-      detail: 'Skipped because archive import did not complete successfully.',
+      detail: 'Skipped because canonical archive ledger import failed.',
     ),
     const HistoricalArchivesWorkflowPhaseViewModel(
       label: 'Complete',
       status: HistoricalArchivesWorkflowPhaseStatus.waiting,
       detail: 'Archive import did not complete.',
-    ),
-  ];
-}
-
-List<HistoricalArchivesWorkflowPhaseViewModel> _completedArchiveImportPhases({
-  required int importedMessageCount,
-}) {
-  return [
-    const HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Reading archive source',
-      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
-      detail: 'Selected archive metadata was validated successfully.',
-    ),
-    const HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Normalizing records into canonical ledger format',
-      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
-      detail: 'Canonical importers normalized archive rows successfully.',
-    ),
-    HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Writing archive rows to db-import',
-      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
-      detail:
-          'Canonical ledger import completed and wrote $importedMessageCount messages for this archive source.',
-    ),
-    const HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Running full canonical migration',
-      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
-      detail: 'Canonical migration completed successfully.',
-    ),
-    const HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Rebuilding indexes/search/heatmap support tables',
-      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
-      detail: 'Projection rebuild steps completed successfully.',
-    ),
-    const HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Refreshing app-visible data',
-      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
-      detail: 'App-visible data was refreshed successfully.',
-    ),
-    const HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Complete',
-      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
-      detail: 'Archive import completed successfully.',
     ),
   ];
 }

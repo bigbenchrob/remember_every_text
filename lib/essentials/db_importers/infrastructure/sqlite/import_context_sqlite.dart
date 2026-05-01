@@ -17,6 +17,7 @@ class ImportContextSqlite implements IImportContext {
     required this.messagesDbPath,
     required this.addressBookDb,
     required this.batchId,
+    this.chatSourceId,
     this.dryRun = false,
     this.log,
     this.extractor,
@@ -48,6 +49,9 @@ class ImportContextSqlite implements IImportContext {
 
   @override
   final int batchId;
+
+  @override
+  final int? chatSourceId;
 
   @override
   final bool dryRun;

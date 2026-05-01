@@ -19,6 +19,14 @@ class MessageRichTextImporter extends BaseTableImporter
 
   @override
   Future<void> copy(IImportContext ctx) async {
+    final linkedSourceRowIdToLedgerId = _decodeSourceRowIdToLedgerId(
+      ctx.readScratch<Object?>('messages.sourceRowIdToLedgerId'),
+    );
+    final recoveredSourceRowIdToLedgerId = _decodeSourceRowIdToLedgerId(
+      ctx.readScratch<Object?>(
+        'recoveredUnlinkedMessages.sourceRowIdToLedgerId',
+      ),
+    );
     final extractor = ctx.extractor;
     final linkedCandidates = _readCandidateIds(
       ctx,
@@ -90,15 +98,19 @@ class MessageRichTextImporter extends BaseTableImporter
     var recoveredApplied = 0;
     var processed = 0;
     var emptyOrMissingResults = 0;
-    for (final id in linkedCandidates) {
-      final text = extracted[id];
+    for (final sourceRowId in linkedCandidates) {
+      final text = extracted[sourceRowId];
       final normalized = text?.trim();
-      if (normalized == null || normalized.isEmpty) {
+      final messageId = linkedSourceRowIdToLedgerId[sourceRowId];
+      if (normalized == null || normalized.isEmpty || messageId == null) {
         emptyOrMissingResults += 1;
         processed += 1;
         continue;
       }
-      await ctx.importDb.updateMessageText(messageId: id, text: normalized);
+      await ctx.importDb.updateMessageText(
+        messageId: messageId,
+        text: normalized,
+      );
       linkedApplied += 1;
       processed += 1;
       if (processed % 200 == 0 || processed == candidates.length) {
@@ -106,16 +118,17 @@ class MessageRichTextImporter extends BaseTableImporter
       }
     }
 
-    for (final id in recoveredCandidates) {
-      final text = extracted[id];
+    for (final sourceRowId in recoveredCandidates) {
+      final text = extracted[sourceRowId];
       final normalized = text?.trim();
-      if (normalized == null || normalized.isEmpty) {
+      final messageId = recoveredSourceRowIdToLedgerId[sourceRowId];
+      if (normalized == null || normalized.isEmpty || messageId == null) {
         emptyOrMissingResults += 1;
         processed += 1;
         continue;
       }
       await ctx.importDb.updateRecoveredUnlinkedMessageText(
-        messageId: id,
+        messageId: messageId,
         text: normalized,
       );
       recoveredApplied += 1;
@@ -139,6 +152,28 @@ class MessageRichTextImporter extends BaseTableImporter
 
   @override
   Future<void> postValidate(IImportContext ctx) async {}
+}
+
+Map<int, int> _decodeSourceRowIdToLedgerId(Object? raw) {
+  if (raw is Map<int, int>) {
+    return Map<int, int>.from(raw);
+  }
+  if (raw is Map<String, Object?>) {
+    final result = <int, int>{};
+    raw.forEach((key, value) {
+      final sourceRowId = int.tryParse(key);
+      final ledgerId = value is int
+          ? value
+          : value is num
+          ? value.toInt()
+          : int.tryParse('$value');
+      if (sourceRowId != null && ledgerId != null) {
+        result[sourceRowId] = ledgerId;
+      }
+    });
+    return result;
+  }
+  return <int, int>{};
 }
 
 List<int> _readCandidateIds(IImportContext ctx, String key) {

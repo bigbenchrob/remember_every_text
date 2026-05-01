@@ -1,6 +1,10 @@
 import '../../domain/base_table_migrator.dart';
 import '../../infrastructure/sqlite/migration_context_sqlite.dart';
 
+String _unixSecondsToWorkingTimestamp(String columnName) {
+  return "CASE WHEN $columnName IS NULL THEN NULL ELSE strftime('%Y-%m-%dT%H:%M:%SZ', $columnName, 'unixepoch') END";
+}
+
 class RecoveredUnlinkedMessagesMigrator extends BaseTableMigrator {
   const RecoveredUnlinkedMessagesMigrator();
 
@@ -70,9 +74,9 @@ class RecoveredUnlinkedMessagesMigrator extends BaseTableMigrator {
           h.raw_identifier,
           COALESCE(m.service, 'Unknown'),
           m.is_from_me,
-          m.date_utc,
-          m.date_delivered_utc,
-          m.date_read_utc,
+          ${_unixSecondsToWorkingTimestamp('m.date_utc')},
+          ${_unixSecondsToWorkingTimestamp('m.date_delivered_utc')},
+          ${_unixSecondsToWorkingTimestamp('m.date_read_utc')},
           m.text,
           m.raw_item_type,
           m.raw_associated_message_type,

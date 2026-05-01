@@ -27,6 +27,13 @@ class AttachmentsImporter extends BaseTableImporter with RowProgressReporter {
 
   @override
   Future<void> copy(IImportContext ctx) async {
+    final chatSourceId = ctx.chatSourceId;
+    if (chatSourceId == null) {
+      throw Exception(
+        'AttachmentsImporter requires chatSourceId on the import context',
+      );
+    }
+
     final minRowId = ctx.previousMaxAttachmentRowId;
     final maxRowId = ctx.sourceMaxAttachmentRowIdAtBatchStart;
     final sql = StringBuffer()
@@ -63,17 +70,18 @@ class AttachmentsImporter extends BaseTableImporter with RowProgressReporter {
       ctx.info('AttachmentsImporter: no new attachments detected.');
       ctx.writeScratch('attachments.inserted', 0);
       ctx.writeScratch('attachments.insertedIds', <int>[]);
+      ctx.writeScratch('attachments.sourceRowIdToLedgerId', <int, int>{});
       return;
     }
 
     var processed = 0;
     var inserted = 0;
     final insertedIds = <int>{};
+    final sourceRowIdToLedgerId = <int, int>{};
 
     for (final row in rows) {
       final sourceRowId = row['source_rowid'] as int?;
       final result = await ctx.importDb.insertAttachment(
-        id: sourceRowId,
         sourceRowid: sourceRowId,
         guid: row['guid'] as String?,
         transferName: row['transfer_name'] as String?,
@@ -85,11 +93,15 @@ class AttachmentsImporter extends BaseTableImporter with RowProgressReporter {
         createdAtUtc: DateConverter.appleToIsoString(row['created_date']),
         localPath: row['filename'] as String?,
         batchId: ctx.batchId,
+        sourceId: chatSourceId,
+        firstImportBatchId: ctx.batchId,
+        lastImportBatchId: ctx.batchId,
       );
 
       if (result > 0 && sourceRowId != null) {
         inserted += 1;
-        insertedIds.add(sourceRowId);
+        insertedIds.add(result);
+        sourceRowIdToLedgerId[sourceRowId] = result;
       }
 
       processed += 1;
@@ -104,6 +116,10 @@ class AttachmentsImporter extends BaseTableImporter with RowProgressReporter {
 
     ctx.writeScratch('attachments.inserted', inserted);
     ctx.writeScratch('attachments.insertedIds', insertedIds.toList());
+    ctx.writeScratch(
+      'attachments.sourceRowIdToLedgerId',
+      sourceRowIdToLedgerId,
+    );
 
     if (rows.isNotEmpty) {
       final lastRowId = rows.last['source_rowid'];

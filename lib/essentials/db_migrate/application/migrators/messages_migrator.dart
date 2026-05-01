@@ -1,6 +1,10 @@
 import '../../domain/base_table_migrator.dart';
 import '../../infrastructure/sqlite/migration_context_sqlite.dart';
 
+String _unixSecondsToWorkingTimestamp(String columnName) {
+  return "CASE WHEN $columnName IS NULL THEN NULL ELSE strftime('%Y-%m-%dT%H:%M:%SZ', $columnName, 'unixepoch') END";
+}
+
 class MessagesMigrator extends BaseTableMigrator {
   const MessagesMigrator();
 
@@ -149,9 +153,9 @@ class MessagesMigrator extends BaseTableMigrator {
             ELSE map.canonical_handle_id
           END AS sender_handle_id,
           m.is_from_me,
-          m.date_utc,
-          m.date_delivered_utc,
-          m.date_read_utc,
+          ${_unixSecondsToWorkingTimestamp('m.date_utc')},
+          ${_unixSecondsToWorkingTimestamp('m.date_delivered_utc')},
+          ${_unixSecondsToWorkingTimestamp('m.date_read_utc')},
           'unknown' AS status,
           m.text,
           m.raw_item_type,

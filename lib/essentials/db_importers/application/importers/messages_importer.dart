@@ -30,6 +30,20 @@ class MessagesImporter extends BaseTableImporter with RowProgressReporter {
 
   @override
   Future<void> copy(IImportContext ctx) async {
+    final chatSourceId = ctx.chatSourceId;
+    if (chatSourceId == null) {
+      throw Exception(
+        'MessagesImporter requires chatSourceId on the import context',
+      );
+    }
+
+    final chatSourceRowIdToLedgerId = _decodeSourceRowIdToLedgerId(
+      ctx.readScratch<Object?>('chats.sourceRowIdToLedgerId'),
+    );
+    final handleSourceRowIdToLedgerId = _decodeSourceRowIdToLedgerId(
+      ctx.readScratch<Object?>('handles.sourceRowIdToLedgerId'),
+    );
+
     // Pre-load all chat_message_join mappings to avoid per-row queries.
     final joinBounds = _buildJoinBounds(
       maxMessageRowIdInclusive: ctx.sourceMaxMessageRowIdAtBatchStart,
@@ -48,6 +62,17 @@ class MessagesImporter extends BaseTableImporter with RowProgressReporter {
       if (msgId is int && chatId is int) {
         chatIdByMessage[msgId] = chatId;
       }
+    }
+
+    final missingChatSourceRowIds = chatIdByMessage.values
+        .where(
+          (sourceRowId) => !chatSourceRowIdToLedgerId.containsKey(sourceRowId),
+        )
+        .toSet();
+    if (missingChatSourceRowIds.isNotEmpty) {
+      chatSourceRowIdToLedgerId.addAll(
+        await ctx.importDb.chatIdsBySourceRowIds(missingChatSourceRowIds),
+      );
     }
 
     final minRowId = ctx.previousMaxMessageRowId;
@@ -75,34 +100,51 @@ class MessagesImporter extends BaseTableImporter with RowProgressReporter {
     final insertedIds = <int>[];
     final extractionCandidates = <int>{};
     final messageToChat = <int, int>{};
+    final messageSourceRowIdToLedgerId = <int, int>{};
     final recoveredInsertedIds = <int>[];
     final recoveredExtractionCandidates = <int>{};
+    final recoveredSourceRowIdToLedgerId = <int, int>{};
 
     final db = await ctx.importDb.database;
     final recoveredRows = await db.rawQuery(
-      'SELECT id FROM recovered_unlinked_messages',
+      'SELECT id, source_message_rowid FROM recovered_unlinked_messages '
+      'WHERE source_id = ?',
+      <Object?>[chatSourceId],
     );
     final recoveredMessageToChat = <int, int>{};
+    final recoveredSourceMessageRowIdToLedgerId = <int, int>{};
     for (final recoveredRow in recoveredRows) {
       final recoveredMessageId = recoveredRow['id'] as int?;
-      final chatId = recoveredMessageId == null
+      final recoveredSourceMessageRowId =
+          recoveredRow['source_message_rowid'] as int?;
+      if (recoveredMessageId != null && recoveredSourceMessageRowId != null) {
+        recoveredSourceMessageRowIdToLedgerId[recoveredSourceMessageRowId] =
+            recoveredMessageId;
+      }
+      final sourceChatRowId = recoveredSourceMessageRowId == null
           ? null
-          : chatIdByMessage[recoveredMessageId];
-      if (recoveredMessageId != null && chatId != null) {
-        recoveredMessageToChat[recoveredMessageId] = chatId;
+          : chatIdByMessage[recoveredSourceMessageRowId];
+      final chatId = sourceChatRowId == null
+          ? null
+          : chatSourceRowIdToLedgerId[sourceChatRowId];
+      if (recoveredSourceMessageRowId != null && chatId != null) {
+        recoveredMessageToChat[recoveredSourceMessageRowId] = chatId;
       }
     }
 
     final promotedIds = await ctx.importDb.promoteRecoveredMessagesToLinked(
-      messageIdToChatId: recoveredMessageToChat,
+      messageSourceRowIdToChatId: recoveredMessageToChat,
       batchId: ctx.batchId,
+      sourceId: chatSourceId,
     );
     if (promotedIds.isNotEmpty) {
       insertedIds.addAll(promotedIds);
-      for (final promotedId in promotedIds) {
-        final chatId = recoveredMessageToChat[promotedId];
-        if (chatId != null) {
-          messageToChat[promotedId] = chatId;
+      for (final entry in recoveredMessageToChat.entries) {
+        final promotedId = recoveredSourceMessageRowIdToLedgerId[entry.key];
+        if (promotedId != null) {
+          messageSourceRowIdToLedgerId[entry.key] = promotedId;
+          messageToChat[promotedId] = entry.value;
+          recoveredSourceRowIdToLedgerId.remove(entry.key);
         }
       }
       ctx.info(
@@ -115,33 +157,73 @@ class MessagesImporter extends BaseTableImporter with RowProgressReporter {
       ctx.info('MessagesImporter: no new messages detected.');
       ctx.writeScratch('messages.inserted', insertedIds.length);
       ctx.writeScratch('messages.insertedIds', insertedIds);
+      ctx.writeScratch(
+        'messages.sourceRowIdToLedgerId',
+        messageSourceRowIdToLedgerId,
+      );
       ctx.writeScratch('messages.extractionCandidates', <int>[]);
       ctx.writeScratch(
         'messages.messageToChat',
         messageToChat.map((key, value) => MapEntry(key.toString(), value)),
       );
+      ctx.writeScratch('messages.updated', 0);
+      ctx.writeScratch('messages.deduplicated', 0);
+      ctx.writeScratch('messages.missingGuids', 0);
       ctx.writeScratch('recoveredUnlinkedMessages.inserted', 0);
       ctx.writeScratch('recoveredUnlinkedMessages.insertedIds', <int>[]);
+      ctx.writeScratch(
+        'recoveredUnlinkedMessages.sourceRowIdToLedgerId',
+        recoveredSourceRowIdToLedgerId,
+      );
       ctx.writeScratch(
         'recoveredUnlinkedMessages.extractionCandidates',
         <int>[],
       );
+      ctx.writeScratch('recoveredUnlinkedMessages.updated', 0);
+      ctx.writeScratch('recoveredUnlinkedMessages.deduplicated', 0);
       return;
+    }
+
+    final missingHandleSourceRowIds = rows
+        .map((row) => row['handle_id'])
+        .whereType<int>()
+        .where(
+          (sourceRowId) =>
+              !handleSourceRowIdToLedgerId.containsKey(sourceRowId),
+        )
+        .toSet();
+    if (missingHandleSourceRowIds.isNotEmpty) {
+      handleSourceRowIdToLedgerId.addAll(
+        await ctx.importDb.handleIdsBySourceRowIds(
+          missingHandleSourceRowIds,
+          sourceId: chatSourceId,
+        ),
+      );
     }
 
     var processed = 0;
     var inserted = insertedIds.length;
+    var updated = 0;
+    var deduplicated = 0;
+    var missingGuids = 0;
     var recoveredInserted = 0;
+    var recoveredUpdated = 0;
+    var recoveredDeduplicated = 0;
 
     for (final row in rows) {
       final sourceRowId = row['ROWID'] as int?;
       final guid = row['guid'] as String?;
       if (sourceRowId == null || guid == null || guid.isEmpty) {
+        missingGuids += 1;
         processed += 1;
         continue;
       }
 
-      final chatId = chatIdByMessage[sourceRowId];
+      final sourceChatRowId = chatIdByMessage[sourceRowId];
+      final chatId = sourceChatRowId == null
+          ? null
+          : chatSourceRowIdToLedgerId[sourceChatRowId];
+      final senderHandleId = handleSourceRowIdToLedgerId[row['handle_id']];
 
       final text = row['text'] as String?;
       final attributed = row['attributedBody'] as Uint8List?;
@@ -157,11 +239,10 @@ class MessagesImporter extends BaseTableImporter with RowProgressReporter {
           recoveredExtractionCandidates.add(sourceRowId);
         }
 
-        final insertedId = await ctx.importDb.insertRecoveredUnlinkedMessage(
-          id: sourceRowId,
+        final result = await ctx.importDb.insertRecoveredUnlinkedMessage(
           sourceRowid: sourceRowId,
           guid: guid,
-          senderHandleId: row['handle_id'] as int?,
+          senderHandleId: senderHandleId,
           service: (row['service'] as String?)?.trim() ?? 'Unknown',
           isFromMe: (row['is_from_me'] as int? ?? 0) == 1,
           dateUtc: DateConverter.appleToIsoString(row['date']),
@@ -187,23 +268,33 @@ class MessagesImporter extends BaseTableImporter with RowProgressReporter {
           balloonBundleId: row['balloon_bundle_id'] as String?,
           payloadJson: _decodeOptionalBlob(row['payload_data']),
           batchId: ctx.batchId,
+          sourceId: chatSourceId,
+          firstImportBatchId: ctx.batchId,
+          lastImportBatchId: ctx.batchId,
         );
 
-        if (insertedId > 0) {
+        recoveredSourceRowIdToLedgerId[sourceRowId] = result.id;
+
+        if (result.inserted) {
           recoveredInserted += 1;
-          recoveredInsertedIds.add(sourceRowId);
+          recoveredInsertedIds.add(result.id);
+        }
+        if (result.updated) {
+          recoveredUpdated += 1;
+        }
+        if (result.deduplicated) {
+          recoveredDeduplicated += 1;
         }
       } else {
         if (needsExtraction) {
           extractionCandidates.add(sourceRowId);
         }
 
-        final insertedId = await ctx.importDb.insertMessage(
-          id: sourceRowId,
+        final result = await ctx.importDb.insertMessage(
           sourceRowid: sourceRowId,
           guid: guid,
           chatId: chatId,
-          senderHandleId: row['handle_id'] as int?,
+          senderHandleId: senderHandleId,
           service: (row['service'] as String?)?.trim() ?? 'Unknown',
           isFromMe: (row['is_from_me'] as int? ?? 0) == 1,
           dateUtc: DateConverter.appleToIsoString(row['date']),
@@ -229,12 +320,25 @@ class MessagesImporter extends BaseTableImporter with RowProgressReporter {
           balloonBundleId: row['balloon_bundle_id'] as String?,
           payloadJson: _decodeOptionalBlob(row['payload_data']),
           batchId: ctx.batchId,
+          sourceId: chatSourceId,
+          firstImportBatchId: ctx.batchId,
+          lastImportBatchId: ctx.batchId,
         );
 
-        if (insertedId > 0) {
+        messageSourceRowIdToLedgerId[sourceRowId] = result.id;
+        if (result.shouldLinkToChat) {
+          messageToChat[result.id] = chatId;
+        }
+
+        if (result.inserted) {
           inserted += 1;
-          insertedIds.add(sourceRowId);
-          messageToChat[sourceRowId] = chatId;
+          insertedIds.add(result.id);
+        }
+        if (result.updated) {
+          updated += 1;
+        }
+        if (result.deduplicated) {
+          deduplicated += 1;
         }
       }
 
@@ -249,7 +353,14 @@ class MessagesImporter extends BaseTableImporter with RowProgressReporter {
     }
 
     ctx.writeScratch('messages.inserted', inserted);
+    ctx.writeScratch('messages.updated', updated);
+    ctx.writeScratch('messages.deduplicated', deduplicated);
+    ctx.writeScratch('messages.missingGuids', missingGuids);
     ctx.writeScratch('messages.insertedIds', insertedIds);
+    ctx.writeScratch(
+      'messages.sourceRowIdToLedgerId',
+      messageSourceRowIdToLedgerId,
+    );
     ctx.writeScratch(
       'messages.extractionCandidates',
       extractionCandidates.toList(),
@@ -259,9 +370,18 @@ class MessagesImporter extends BaseTableImporter with RowProgressReporter {
       messageToChat.map((key, value) => MapEntry(key.toString(), value)),
     );
     ctx.writeScratch('recoveredUnlinkedMessages.inserted', recoveredInserted);
+    ctx.writeScratch('recoveredUnlinkedMessages.updated', recoveredUpdated);
+    ctx.writeScratch(
+      'recoveredUnlinkedMessages.deduplicated',
+      recoveredDeduplicated,
+    );
     ctx.writeScratch(
       'recoveredUnlinkedMessages.insertedIds',
       recoveredInsertedIds,
+    );
+    ctx.writeScratch(
+      'recoveredUnlinkedMessages.sourceRowIdToLedgerId',
+      recoveredSourceRowIdToLedgerId,
     );
     ctx.writeScratch(
       'recoveredUnlinkedMessages.extractionCandidates',
@@ -288,6 +408,28 @@ class MessagesImporter extends BaseTableImporter with RowProgressReporter {
       '$recoveredTotal recovered unlinked messages.',
     );
   }
+}
+
+Map<int, int> _decodeSourceRowIdToLedgerId(Object? raw) {
+  if (raw is Map<int, int>) {
+    return Map<int, int>.from(raw);
+  }
+  if (raw is Map<String, Object?>) {
+    final result = <int, int>{};
+    raw.forEach((key, value) {
+      final sourceRowId = int.tryParse(key);
+      final ledgerId = value is int
+          ? value
+          : value is num
+          ? value.toInt()
+          : int.tryParse('$value');
+      if (sourceRowId != null && ledgerId != null) {
+        result[sourceRowId] = ledgerId;
+      }
+    });
+    return result;
+  }
+  return <int, int>{};
 }
 
 ({String? whereClause, List<Object>? whereArgs}) _buildJoinBounds({

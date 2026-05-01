@@ -451,8 +451,22 @@ Future<ImportContextSqlite> _buildContext({
   int? sourceMaxMessageRowIdAtBatchStart,
   int? sourceMaxAttachmentRowIdAtBatchStart,
 }) async {
+  final startedAt = DateTime.now().toUtc();
+  final chatSourceId = await ledgerDb.upsertLedgerSource(
+    sourceKind: 'current_mac',
+    stableKey: messagesDb.path,
+    sourceLabel: 'Current Mac Messages',
+    chatDbPath: messagesDb.path,
+    seenAt: startedAt.millisecondsSinceEpoch ~/ 1000,
+    importedAt: startedAt.millisecondsSinceEpoch ~/ 1000,
+  );
   final batchId = await ledgerDb.insertImportBatch(
-    startedAtUtc: DateTime.now().toUtc().toIso8601String(),
+    startedAtUtc: startedAt.toIso8601String(),
+    chatSourceId: chatSourceId,
+    chatSourceKind: 'current_mac',
+    status: 'running',
+    startedAt: startedAt.millisecondsSinceEpoch ~/ 1000,
+    sourceLabelSnapshot: 'Current Mac Messages',
   );
 
   return ImportContextSqlite(
@@ -461,6 +475,7 @@ Future<ImportContextSqlite> _buildContext({
     messagesDbPath: messagesDb.path,
     addressBookDb: addressBookDb,
     batchId: batchId,
+    chatSourceId: chatSourceId,
     hasExistingLedgerData: hasExistingLedgerData,
     previousMaxMessageRowId: previousMaxMessageRowId,
     sourceMaxChatRowIdAtBatchStart: sourceMaxChatRowIdAtBatchStart,

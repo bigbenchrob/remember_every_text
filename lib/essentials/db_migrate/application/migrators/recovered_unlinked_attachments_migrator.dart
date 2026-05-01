@@ -1,6 +1,10 @@
 import '../../domain/base_table_migrator.dart';
 import '../../infrastructure/sqlite/migration_context_sqlite.dart';
 
+String _unixSecondsToWorkingTimestamp(String columnName) {
+  return "CASE WHEN $columnName IS NULL THEN NULL ELSE strftime('%Y-%m-%dT%H:%M:%SZ', $columnName, 'unixepoch') END";
+}
+
 class RecoveredUnlinkedAttachmentsMigrator extends BaseTableMigrator {
   const RecoveredUnlinkedAttachmentsMigrator();
 
@@ -65,7 +69,7 @@ class RecoveredUnlinkedAttachmentsMigrator extends BaseTableMigrator {
           a.transfer_name,
           a.total_bytes,
           COALESCE(a.is_sticker, 0) AS is_sticker,
-          a.created_at_utc,
+          ${_unixSecondsToWorkingTimestamp('a.created_at_utc')},
           CASE
             WHEN a.is_outgoing IS NULL THEN 0
             WHEN a.is_outgoing = 1 THEN 1

@@ -9,6 +9,9 @@ import 'message_extractor_port.dart';
 /// database handles. This abstraction allows the domain layer to remain
 /// independent of infrastructure details.
 abstract class IImportContext {
+  /// Stable source identifier for the chat-side import source that owns this batch.
+  int? get chatSourceId;
+
   /// Current import batch identifier.
   int get batchId;
 

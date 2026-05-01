@@ -781,8 +781,14 @@ Color _preflightTone(HistoricalArchivesPreflightStatus status) {
     HistoricalArchivesPreflightStatus.waitingForFolder => const Color(
       0xFF7A7D84,
     ),
+    HistoricalArchivesPreflightStatus.preparationRecorded => const Color(
+      0xFF7A7D84,
+    ),
     HistoricalArchivesPreflightStatus.running => const Color(0xFFB36A00),
     HistoricalArchivesPreflightStatus.completeReadyToImport => const Color(
+      0xFF1F8A52,
+    ),
+    HistoricalArchivesPreflightStatus.migrationCompleted => const Color(
       0xFF1F8A52,
     ),
     HistoricalArchivesPreflightStatus.failed => const Color(0xFFC03A2B),

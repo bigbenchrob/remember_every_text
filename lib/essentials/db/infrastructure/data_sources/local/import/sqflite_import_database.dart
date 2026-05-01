@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
+import '../../../../../../core/util/date_converter.dart';
 import '../../../../../db_importers/application/debug_settings_provider.dart';
 import '../../../../shared/handle_identifier_utils.dart';
 
@@ -19,6 +20,7 @@ final class HistoricalArchiveSourceRecord {
     required this.preflightStatusLabel,
     required this.preflightDetail,
     required this.updatedAtUtc,
+    this.ledgerSourceId,
     this.totalMessages,
     this.totalChats,
     this.totalHandles,
@@ -43,6 +45,7 @@ final class HistoricalArchiveSourceRecord {
   final String attachmentsStatusLabel;
   final String preflightStatusLabel;
   final String preflightDetail;
+  final int? ledgerSourceId;
   final int? totalMessages;
   final int? totalChats;
   final int? totalHandles;
@@ -61,6 +64,22 @@ final class HistoricalArchiveSourceRecord {
   final String updatedAtUtc;
 }
 
+final class CanonicalGuidUpsertResult {
+  const CanonicalGuidUpsertResult({
+    required this.id,
+    required this.inserted,
+    required this.updated,
+    required this.deduplicated,
+    this.shouldLinkToChat = true,
+  });
+
+  final int id;
+  final bool inserted;
+  final bool updated;
+  final bool deduplicated;
+  final bool shouldLinkToChat;
+}
+
 class SqfliteImportDatabase {
   SqfliteImportDatabase({
     required String databaseDirectory,
@@ -70,7 +89,7 @@ class SqfliteImportDatabase {
        _databaseName = databaseName,
        _debugSettings = debugSettings;
 
-  static const int _schemaVersion = 5;
+  static const int _schemaVersion = 7;
 
   final String _databaseDirectory;
   final String _databaseName;
@@ -221,6 +240,278 @@ class SqfliteImportDatabase {
         'applied_at_utc': DateTime.now().toUtc().toIso8601String(),
       }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
+
+    if (oldVersion < 6) {
+      final batch = db.batch();
+      _v6SchemaStatements.forEach(batch.execute);
+      _v6IndexStatements.forEach(batch.execute);
+      await batch.commit(noResult: true);
+
+      await db.insert('schema_migrations', <String, Object?>{
+        'version': 6,
+        'applied_at_utc': DateTime.now().toUtc().toIso8601String(),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+
+    if (oldVersion < 7) {
+      await _upgradeCanonicalLedgerTimestampsToUnixSeconds(db);
+
+      await db.insert('schema_migrations', <String, Object?>{
+        'version': 7,
+        'applied_at_utc': DateTime.now().toUtc().toIso8601String(),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+  }
+
+  Future<void> _upgradeCanonicalLedgerTimestampsToUnixSeconds(
+    Database db,
+  ) async {
+    await db.transaction((txn) async {
+      await txn.execute('PRAGMA foreign_keys = OFF');
+
+      await txn.execute(_chatsTableStatement);
+      await txn.execute(_messagesTableStatement);
+      await txn.execute(_recoveredUnlinkedMessagesTableStatement);
+      await txn.execute(_attachmentsTableStatement);
+
+      await txn.execute('''
+INSERT INTO chats_new (
+  id,
+  source_rowid,
+  guid,
+  service,
+  display_name,
+  is_group,
+  created_at_utc,
+  updated_at_utc,
+  is_ignored,
+  batch_id,
+  source_id,
+  first_import_batch_id,
+  last_import_batch_id,
+  source_chat_rowid
+)
+SELECT
+  id,
+  source_rowid,
+  guid,
+  service,
+  display_name,
+  is_group,
+  ${_unixEpochSecondsExpression('created_at_utc')},
+  ${_unixEpochSecondsExpression('updated_at_utc')},
+  is_ignored,
+  batch_id,
+  source_id,
+  first_import_batch_id,
+  last_import_batch_id,
+  source_chat_rowid
+FROM chats;
+''');
+
+      await txn.execute('''
+INSERT INTO messages_new (
+  id,
+  source_rowid,
+  guid,
+  chat_id,
+  sender_handle_id,
+  service,
+  is_from_me,
+  date_utc,
+  date_read_utc,
+  date_delivered_utc,
+  subject,
+  text,
+  attributed_body_blob,
+  raw_item_type,
+  raw_associated_message_type,
+  message_summary_info_blob,
+  payload_data_blob,
+  has_attributed_body_source,
+  has_message_summary_info,
+  has_payload_data_source,
+  item_type,
+  error_code,
+  is_system_message,
+  thread_originator_guid,
+  associated_message_guid,
+  balloon_bundle_id,
+  payload_json,
+  is_ignored,
+  batch_id,
+  source_id,
+  first_import_batch_id,
+  last_import_batch_id,
+  source_message_rowid
+)
+SELECT
+  id,
+  source_rowid,
+  guid,
+  chat_id,
+  sender_handle_id,
+  service,
+  is_from_me,
+  ${_unixEpochSecondsExpression('date_utc')},
+  ${_unixEpochSecondsExpression('date_read_utc')},
+  ${_unixEpochSecondsExpression('date_delivered_utc')},
+  subject,
+  text,
+  attributed_body_blob,
+  raw_item_type,
+  raw_associated_message_type,
+  message_summary_info_blob,
+  payload_data_blob,
+  has_attributed_body_source,
+  has_message_summary_info,
+  has_payload_data_source,
+  item_type,
+  error_code,
+  is_system_message,
+  thread_originator_guid,
+  associated_message_guid,
+  balloon_bundle_id,
+  payload_json,
+  is_ignored,
+  batch_id,
+  source_id,
+  first_import_batch_id,
+  last_import_batch_id,
+  source_message_rowid
+FROM messages;
+''');
+
+      await txn.execute('''
+INSERT INTO recovered_unlinked_messages_new (
+  id,
+  source_rowid,
+  guid,
+  sender_handle_id,
+  service,
+  is_from_me,
+  date_utc,
+  date_read_utc,
+  date_delivered_utc,
+  subject,
+  text,
+  attributed_body_blob,
+  raw_item_type,
+  raw_associated_message_type,
+  message_summary_info_blob,
+  payload_data_blob,
+  has_attributed_body_source,
+  has_message_summary_info,
+  has_payload_data_source,
+  item_type,
+  error_code,
+  is_system_message,
+  thread_originator_guid,
+  associated_message_guid,
+  balloon_bundle_id,
+  payload_json,
+  is_ignored,
+  batch_id,
+  source_id,
+  first_import_batch_id,
+  last_import_batch_id,
+  source_message_rowid
+)
+SELECT
+  id,
+  source_rowid,
+  guid,
+  sender_handle_id,
+  service,
+  is_from_me,
+  ${_unixEpochSecondsExpression('date_utc')},
+  ${_unixEpochSecondsExpression('date_read_utc')},
+  ${_unixEpochSecondsExpression('date_delivered_utc')},
+  subject,
+  text,
+  attributed_body_blob,
+  raw_item_type,
+  raw_associated_message_type,
+  message_summary_info_blob,
+  payload_data_blob,
+  has_attributed_body_source,
+  has_message_summary_info,
+  has_payload_data_source,
+  item_type,
+  error_code,
+  is_system_message,
+  thread_originator_guid,
+  associated_message_guid,
+  balloon_bundle_id,
+  payload_json,
+  is_ignored,
+  batch_id,
+  source_id,
+  first_import_batch_id,
+  last_import_batch_id,
+  source_message_rowid
+FROM recovered_unlinked_messages;
+''');
+
+      await txn.execute('''
+INSERT INTO attachments_new (
+  id,
+  source_rowid,
+  guid,
+  transfer_name,
+  uti,
+  mime_type,
+  total_bytes,
+  is_sticker,
+  is_outgoing,
+  created_at_utc,
+  local_path,
+  sha256_hex,
+  batch_id,
+  source_id,
+  first_import_batch_id,
+  last_import_batch_id,
+  source_attachment_rowid
+)
+SELECT
+  id,
+  source_rowid,
+  guid,
+  transfer_name,
+  uti,
+  mime_type,
+  total_bytes,
+  is_sticker,
+  is_outgoing,
+  ${_unixEpochSecondsExpression('created_at_utc')},
+  local_path,
+  sha256_hex,
+  batch_id,
+  source_id,
+  first_import_batch_id,
+  last_import_batch_id,
+  source_attachment_rowid
+FROM attachments;
+''');
+
+      await txn.execute('DROP TABLE messages');
+      await txn.execute('DROP TABLE recovered_unlinked_messages');
+      await txn.execute('DROP TABLE attachments');
+      await txn.execute('DROP TABLE chats');
+
+      await txn.execute('ALTER TABLE chats_new RENAME TO chats');
+      await txn.execute('ALTER TABLE messages_new RENAME TO messages');
+      await txn.execute(
+        'ALTER TABLE recovered_unlinked_messages_new RENAME TO recovered_unlinked_messages',
+      );
+      await txn.execute('ALTER TABLE attachments_new RENAME TO attachments');
+
+      for (final statement in _v7IndexStatements) {
+        await txn.execute(statement);
+      }
+
+      await txn.execute('PRAGMA foreign_keys = ON');
+    });
   }
 
   Future<void> _upgradeHandlesTableToPreserveSourceRows(Database db) async {
@@ -230,7 +521,7 @@ class SqfliteImportDatabase {
       await txn.execute('DROP INDEX IF EXISTS idx_handles_norm');
       await txn.execute('DROP INDEX IF EXISTS idx_handles_ignore');
       await txn.execute('ALTER TABLE handles RENAME TO handles_old');
-      await txn.execute(_handlesTableStatementWithoutUniqueness);
+      await txn.execute(_legacyHandlesTableStatementWithoutUniqueness);
       await txn.execute('''
 INSERT INTO handles (
   id,
@@ -308,9 +599,9 @@ FROM handles_old
     final db = await database;
     final result = await db.rawQuery('''
 SELECT MAX(source_rowid) AS max_rowid FROM (
-  SELECT source_rowid FROM messages
+  SELECT source_message_rowid AS source_rowid FROM messages
   UNION ALL
-  SELECT source_rowid FROM recovered_unlinked_messages
+  SELECT source_message_rowid AS source_rowid FROM recovered_unlinked_messages
 )
 ''');
     if (result.isEmpty || result.first['max_rowid'] == null) {
@@ -338,6 +629,13 @@ SELECT MAX(source_rowid) AS max_rowid FROM (
     String? sourceAddressbook,
     String? hostInfoJson,
     String? notes,
+    int? chatSourceId,
+    String? chatSourceKind,
+    String? status,
+    int? startedAt,
+    int? finishedAt,
+    String? sourceLabelSnapshot,
+    String? errorSummary,
   }) async {
     final db = await database;
 
@@ -355,6 +653,13 @@ SELECT MAX(source_rowid) AS max_rowid FROM (
       'source_addressbook': sourceAddressbook,
       'host_info_json': hostInfoJson,
       'notes': notes,
+      'chat_source_id': chatSourceId,
+      'chat_source_kind': chatSourceKind,
+      'status': status,
+      'started_at': startedAt,
+      'finished_at': finishedAt,
+      'source_label_snapshot': sourceLabelSnapshot,
+      'error_summary': errorSummary,
     });
 
     final batchId = await db.insert(
@@ -394,6 +699,14 @@ SELECT MAX(source_rowid) AS max_rowid FROM (
     required int id,
     String? finishedAtUtc,
     String? notes,
+    String? status,
+    int? finishedAt,
+    String? errorSummary,
+    int? rowsSeen,
+    int? rowsInserted,
+    int? rowsUpdated,
+    int? rowsDeduplicated,
+    int? rowsFailed,
   }) async {
     final db = await database;
 
@@ -404,6 +717,14 @@ SELECT MAX(source_rowid) AS max_rowid FROM (
     final data = _cleanMap(<String, Object?>{
       'finished_at_utc': finishedAtUtc,
       'notes': notes,
+      'status': status,
+      'finished_at': finishedAt,
+      'error_summary': errorSummary,
+      'rows_seen': rowsSeen,
+      'rows_inserted': rowsInserted,
+      'rows_updated': rowsUpdated,
+      'rows_deduplicated': rowsDeduplicated,
+      'rows_failed': rowsFailed,
     });
 
     final updateCount = await db.update(
@@ -431,6 +752,7 @@ SELECT MAX(source_rowid) AS max_rowid FROM (
     required String preflightStatusLabel,
     required String preflightDetail,
     required String updatedAtUtc,
+    int? ledgerSourceId,
     int? totalMessages,
     int? totalChats,
     int? totalHandles,
@@ -448,6 +770,16 @@ SELECT MAX(source_rowid) AS max_rowid FROM (
     int? lastImportedMessageCount,
   }) async {
     final db = await database;
+    final existingRows = await db.query(
+      'historical_archive_sources',
+      columns: const <String>['ledger_source_id'],
+      where: 'source_chat_db = ?',
+      whereArgs: <Object>[sourceChatDb],
+      limit: 1,
+    );
+    final existingLedgerSourceId = existingRows.isEmpty
+        ? null
+        : _asNullableInt(existingRows.single['ledger_source_id']);
     final data = _cleanMap(<String, Object?>{
       'source_chat_db': sourceChatDb,
       'folder_path': folderPath,
@@ -456,6 +788,7 @@ SELECT MAX(source_rowid) AS max_rowid FROM (
       'attachments_status_label': attachmentsStatusLabel,
       'preflight_status_label': preflightStatusLabel,
       'preflight_detail': preflightDetail,
+      'ledger_source_id': ledgerSourceId ?? existingLedgerSourceId,
       'total_messages': totalMessages,
       'total_chats': totalChats,
       'total_handles': totalHandles,
@@ -481,6 +814,101 @@ SELECT MAX(source_rowid) AS max_rowid FROM (
     );
   }
 
+  Future<int> prepareHistoricalArchiveSource({
+    required String sourceChatDb,
+    required String folderPath,
+    required String sourceLabel,
+    required String chatDbStatusLabel,
+    required String attachmentsStatusLabel,
+    required String preflightStatusLabel,
+    required String preflightDetail,
+    required String updatedAtUtc,
+    int? totalMessages,
+    int? totalChats,
+    int? totalHandles,
+    int? missingGuids,
+    String? earliestMessageUtc,
+    String? latestMessageUtc,
+    int? dryRunNewMessages,
+    int? dryRunDuplicateMessages,
+    int? matchedImportedBatchCount,
+    int? lastImportBatchId,
+    String? lastImportStartedAtUtc,
+    String? lastImportFinishedAtUtc,
+    bool? lastImportSuccess,
+    String? lastImportError,
+    int? lastImportedMessageCount,
+  }) async {
+    final seenAt =
+        DateTime.tryParse(updatedAtUtc)?.millisecondsSinceEpoch ??
+        DateTime.now().millisecondsSinceEpoch;
+    final ledgerSourceId = await upsertLedgerSource(
+      sourceKind: 'historical_archive',
+      stableKey: sourceChatDb,
+      sourceLabel: sourceLabel,
+      chatDbPath: sourceChatDb,
+      attachmentsPath: p.join(folderPath, 'Attachments'),
+      seenAt: seenAt,
+      notes:
+          'Historical archive provenance was prepared without running canonical import.',
+    );
+
+    await upsertHistoricalArchiveSource(
+      sourceChatDb: sourceChatDb,
+      folderPath: folderPath,
+      sourceLabel: sourceLabel,
+      chatDbStatusLabel: chatDbStatusLabel,
+      attachmentsStatusLabel: attachmentsStatusLabel,
+      preflightStatusLabel: preflightStatusLabel,
+      preflightDetail: preflightDetail,
+      updatedAtUtc: updatedAtUtc,
+      ledgerSourceId: ledgerSourceId,
+      totalMessages: totalMessages,
+      totalChats: totalChats,
+      totalHandles: totalHandles,
+      missingGuids: missingGuids,
+      earliestMessageUtc: earliestMessageUtc,
+      latestMessageUtc: latestMessageUtc,
+      dryRunNewMessages: dryRunNewMessages,
+      dryRunDuplicateMessages: dryRunDuplicateMessages,
+      matchedImportedBatchCount: matchedImportedBatchCount,
+      lastImportBatchId: lastImportBatchId,
+      lastImportStartedAtUtc: lastImportStartedAtUtc,
+      lastImportFinishedAtUtc: lastImportFinishedAtUtc,
+      lastImportSuccess: lastImportSuccess,
+      lastImportError: lastImportError,
+      lastImportedMessageCount: lastImportedMessageCount,
+    );
+
+    return ledgerSourceId;
+  }
+
+  Future<int> insertHistoricalArchivePreparationBatch({
+    required int ledgerSourceId,
+    required String sourceChatDb,
+    required String sourceLabel,
+    required String startedAtUtc,
+    required String finishedAtUtc,
+    required String detail,
+  }) {
+    final startedAt = DateTime.tryParse(startedAtUtc)?.millisecondsSinceEpoch;
+    final finishedAt = DateTime.tryParse(finishedAtUtc)?.millisecondsSinceEpoch;
+    return insertImportBatch(
+      startedAtUtc: startedAtUtc,
+      finishedAtUtc: finishedAtUtc,
+      sourceChatDb: sourceChatDb,
+      notes:
+          'Archive provenance prepared only; canonical archive import remains disabled in this slice.',
+      chatSourceId: ledgerSourceId,
+      chatSourceKind: 'historical_archive',
+      status: 'cancelled',
+      startedAt: startedAt,
+      finishedAt: finishedAt,
+      sourceLabelSnapshot: sourceLabel,
+      errorSummary: detail,
+    );
+  }
+
   Future<List<HistoricalArchiveSourceRecord>>
   listHistoricalArchiveSources() async {
     final db = await database;
@@ -492,13 +920,26 @@ SELECT MAX(source_rowid) AS max_rowid FROM (
     return <HistoricalArchiveSourceRecord>[
       for (final row in rows)
         HistoricalArchiveSourceRecord(
-          sourceChatDb: row['source_chat_db'] as String,
-          folderPath: row['folder_path'] as String,
-          sourceLabel: row['source_label'] as String,
-          chatDbStatusLabel: row['chat_db_status_label'] as String,
-          attachmentsStatusLabel: row['attachments_status_label'] as String,
-          preflightStatusLabel: row['preflight_status_label'] as String,
-          preflightDetail: row['preflight_detail'] as String,
+          sourceChatDb: _requiredString(row: row, columnName: 'source_chat_db'),
+          folderPath: _requiredString(row: row, columnName: 'folder_path'),
+          sourceLabel: _requiredString(row: row, columnName: 'source_label'),
+          chatDbStatusLabel: _requiredString(
+            row: row,
+            columnName: 'chat_db_status_label',
+          ),
+          attachmentsStatusLabel: _requiredString(
+            row: row,
+            columnName: 'attachments_status_label',
+          ),
+          preflightStatusLabel: _requiredString(
+            row: row,
+            columnName: 'preflight_status_label',
+          ),
+          preflightDetail: _requiredString(
+            row: row,
+            columnName: 'preflight_detail',
+          ),
+          ledgerSourceId: _asNullableInt(row['ledger_source_id']),
           totalMessages: _asNullableInt(row['total_messages']),
           totalChats: _asNullableInt(row['total_chats']),
           totalHandles: _asNullableInt(row['total_handles']),
@@ -521,7 +962,7 @@ SELECT MAX(source_rowid) AS max_rowid FROM (
           lastImportedMessageCount: _asNullableInt(
             row['last_imported_message_count'],
           ),
-          updatedAtUtc: row['updated_at_utc'] as String,
+          updatedAtUtc: _requiredString(row: row, columnName: 'updated_at_utc'),
         ),
     ];
   }
@@ -589,12 +1030,23 @@ SELECT MAX(source_rowid) AS max_rowid FROM (
   Future<int?> maxMessageSourceRowId() async {
     return _selectMaxIntAcrossTables(
       tables: const <String>['messages', 'recovered_unlinked_messages'],
-      column: 'source_rowid',
+      column: 'source_message_rowid',
+    );
+  }
+
+  Future<int?> maxMessageSourceRowIdForSource(int sourceId) async {
+    return _selectMaxIntAcrossTables(
+      tables: const <String>['messages', 'recovered_unlinked_messages'],
+      column: 'source_message_rowid',
+      sourceId: sourceId,
     );
   }
 
   Future<int?> maxAttachmentSourceRowId() async {
-    return _selectMaxInt(table: 'attachments', column: 'source_rowid');
+    return _selectMaxInt(
+      table: 'attachments',
+      column: 'source_attachment_rowid',
+    );
   }
 
   Future<int?> maxMessageAttachmentSourceRowId() async {
@@ -608,18 +1060,155 @@ SELECT MAX(source_rowid) AS max_rowid FROM (
   }
 
   Future<int?> maxHandleSourceRowId() async {
-    return _selectMaxInt(table: 'handles', column: 'source_rowid');
+    return _selectMaxInt(table: 'handles', column: 'source_handle_rowid');
+  }
+
+  Future<int?> maxHandleSourceRowIdForSource(int sourceId) async {
+    return _selectMaxInt(
+      table: 'handles',
+      column: 'source_handle_rowid',
+      sourceId: sourceId,
+    );
   }
 
   Future<int?> maxChatSourceRowId() async {
-    return _selectMaxInt(table: 'chats', column: 'source_rowid');
+    return _selectMaxInt(table: 'chats', column: 'source_chat_rowid');
   }
 
-  Future<void> assignExistingRecordsToBatch({required int batchId}) async {
+  Future<int?> maxChatSourceRowIdForSource(int sourceId) async {
+    return _selectMaxInt(
+      table: 'chats',
+      column: 'source_chat_rowid',
+      sourceId: sourceId,
+    );
+  }
+
+  Future<Map<int, int>> handleIdsBySourceRowIds(
+    Iterable<int> sourceRowIds, {
+    int? sourceId,
+  }) {
+    return _selectIdsBySourceRowIds(
+      table: 'handles',
+      sourceRowIdColumn: 'source_handle_rowid',
+      sourceRowIds: sourceRowIds,
+      sourceId: sourceId,
+    );
+  }
+
+  Future<Map<int, int>> chatIdsBySourceRowIds(
+    Iterable<int> sourceRowIds, {
+    int? sourceId,
+  }) {
+    return _selectIdsBySourceRowIds(
+      table: 'chats',
+      sourceRowIdColumn: 'source_chat_rowid',
+      sourceRowIds: sourceRowIds,
+      sourceId: sourceId,
+    );
+  }
+
+  Future<Map<int, int>> messageIdsBySourceRowIds(
+    Iterable<int> sourceRowIds, {
+    int? sourceId,
+  }) {
+    return _selectIdsBySourceRowIds(
+      table: 'messages',
+      sourceRowIdColumn: 'source_message_rowid',
+      sourceRowIds: sourceRowIds,
+      sourceId: sourceId,
+    );
+  }
+
+  Future<Map<int, int>> recoveredMessageIdsBySourceRowIds(
+    Iterable<int> sourceRowIds, {
+    int? sourceId,
+  }) {
+    return _selectIdsBySourceRowIds(
+      table: 'recovered_unlinked_messages',
+      sourceRowIdColumn: 'source_message_rowid',
+      sourceRowIds: sourceRowIds,
+      sourceId: sourceId,
+    );
+  }
+
+  Future<Map<int, int>> attachmentIdsBySourceRowIds(
+    Iterable<int> sourceRowIds, {
+    int? sourceId,
+  }) {
+    return _selectIdsBySourceRowIds(
+      table: 'attachments',
+      sourceRowIdColumn: 'source_attachment_rowid',
+      sourceRowIds: sourceRowIds,
+      sourceId: sourceId,
+    );
+  }
+
+  Future<int> upsertLedgerSource({
+    required String sourceKind,
+    required String stableKey,
+    required String sourceLabel,
+    String? chatDbPath,
+    String? attachmentsPath,
+    required int seenAt,
+    int? importedAt,
+    String? notes,
+  }) async {
+    final db = await database;
+    final existingRows = await db.query(
+      'ledger_sources',
+      columns: const <String>['id', 'first_seen_at'],
+      where: 'source_kind = ? AND stable_key = ?',
+      whereArgs: <Object>[sourceKind, stableKey],
+      limit: 1,
+    );
+
+    final existingRow = existingRows.isEmpty ? null : existingRows.single;
+    final existingId = existingRow?['id'] as int?;
+    final firstSeenAt = existingRow?['first_seen_at'] as int? ?? seenAt;
+
+    final data = _cleanMap(<String, Object?>{
+      'id': existingId,
+      'source_kind': sourceKind,
+      'stable_key': stableKey,
+      'source_label': sourceLabel,
+      'chat_db_path': chatDbPath,
+      'attachments_path': attachmentsPath,
+      'is_active': 1,
+      'first_seen_at': firstSeenAt,
+      'last_seen_at': seenAt,
+      'last_imported_at': importedAt,
+      'notes': notes,
+    });
+
+    if (existingId == null) {
+      return db.insert(
+        'ledger_sources',
+        data,
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+
+    await db.update(
+      'ledger_sources',
+      data,
+      where: 'id = ?',
+      whereArgs: <Object>[existingId],
+    );
+    return existingId;
+  }
+
+  Future<void> assignExistingRecordsToBatch({
+    required int batchId,
+    int? sourceId,
+    bool updateContacts = true,
+  }) async {
     final db = await database;
     await db.transaction((txn) async {
-      const tablesWithBatchColumn = <String>[
-        'contacts',
+      if (updateContacts) {
+        await txn.update('contacts', <String, Object?>{'batch_id': batchId});
+      }
+
+      const tablesWithProvenanceColumns = <String>[
         'handles',
         'chats',
         'messages',
@@ -627,8 +1216,28 @@ SELECT MAX(source_rowid) AS max_rowid FROM (
         'attachments',
       ];
 
-      for (final table in tablesWithBatchColumn) {
-        await txn.update(table, <String, Object?>{'batch_id': batchId});
+      for (final table in tablesWithProvenanceColumns) {
+        if (sourceId == null) {
+          await txn.rawUpdate(
+            'UPDATE $table '
+            'SET batch_id = ?, '
+            'source_id = COALESCE(source_id, ?), '
+            'first_import_batch_id = COALESCE(first_import_batch_id, ?), '
+            'last_import_batch_id = ?',
+            <Object?>[batchId, sourceId, batchId, batchId],
+          );
+          continue;
+        }
+
+        await txn.rawUpdate(
+          'UPDATE $table '
+          'SET batch_id = ?, '
+          'source_id = COALESCE(source_id, ?), '
+          'first_import_batch_id = COALESCE(first_import_batch_id, ?), '
+          'last_import_batch_id = ? '
+          'WHERE source_id = ? OR source_id IS NULL',
+          <Object?>[batchId, sourceId, batchId, batchId, sourceId],
+        );
       }
     });
   }
@@ -801,6 +1410,9 @@ AND Z_PK NOT IN (
     String? country,
     String? lastSeenUtc,
     required int batchId,
+    int? sourceId,
+    int? firstImportBatchId,
+    int? lastImportBatchId,
   }) async {
     final db = await database;
 
@@ -818,7 +1430,6 @@ AND Z_PK NOT IN (
 
     final data = _cleanMap(<String, Object?>{
       'id': id,
-      'source_rowid': sourceRowid,
       'service': safeService,
       'raw_identifier': rawIdentifier,
       'normalized_identifier': normalizedIdentifier,
@@ -826,6 +1437,10 @@ AND Z_PK NOT IN (
       'country': country,
       'last_seen_utc': lastSeenUtc,
       'batch_id': batchId,
+      'source_id': sourceId,
+      'first_import_batch_id': firstImportBatchId,
+      'last_import_batch_id': lastImportBatchId,
+      'source_handle_rowid': sourceRowid,
     });
 
     try {
@@ -851,7 +1466,7 @@ AND Z_PK NOT IN (
     }
   }
 
-  Future<int> insertChat({
+  Future<CanonicalGuidUpsertResult> insertChat({
     int? id,
     int? sourceRowid,
     required String guid,
@@ -861,23 +1476,81 @@ AND Z_PK NOT IN (
     String? createdAtUtc,
     String? updatedAtUtc,
     required int batchId,
+    int? sourceId,
+    int? firstImportBatchId,
+    int? lastImportBatchId,
   }) async {
     final db = await database;
     final data = _cleanMap(<String, Object?>{
       'id': id,
-      'source_rowid': sourceRowid,
       'guid': guid,
       'service': service,
       'display_name': displayName,
       'is_group': _boolToInt(value: isGroup),
-      'created_at_utc': createdAtUtc,
-      'updated_at_utc': updatedAtUtc,
+      'created_at_utc': _normalizeUtcIsoToUnixSeconds(createdAtUtc),
+      'updated_at_utc': _normalizeUtcIsoToUnixSeconds(updatedAtUtc),
       'batch_id': batchId,
+      'source_id': sourceId,
+      'first_import_batch_id': firstImportBatchId,
+      'last_import_batch_id': lastImportBatchId,
+      'source_chat_rowid': sourceRowid,
     });
-    return db.insert(
+
+    final existing = await _lookupGuidRow(table: 'chats', guid: guid);
+    if (existing == null) {
+      final insertedId = await db.insert('chats', data);
+      return CanonicalGuidUpsertResult(
+        id: insertedId,
+        inserted: true,
+        updated: false,
+        deduplicated: false,
+      );
+    }
+
+    final existingId = _asNullableInt(existing['id']);
+    if (existingId == null) {
+      throw Exception('Existing chat row for guid $guid is missing id');
+    }
+
+    final existingSourceId = _asNullableInt(existing['source_id']);
+    final existingFirstImportBatchId = _asNullableInt(
+      existing['first_import_batch_id'],
+    );
+
+    if (existingSourceId != null &&
+        sourceId != null &&
+        existingSourceId != sourceId) {
+      return CanonicalGuidUpsertResult(
+        id: existingId,
+        inserted: false,
+        updated: false,
+        deduplicated: true,
+      );
+    }
+
+    final updateData = _cleanMap(<String, Object?>{
+      'service': service,
+      'display_name': displayName,
+      'is_group': _boolToInt(value: isGroup),
+      'created_at_utc': _normalizeUtcIsoToUnixSeconds(createdAtUtc),
+      'updated_at_utc': _normalizeUtcIsoToUnixSeconds(updatedAtUtc),
+      'batch_id': batchId,
+      'source_id': existingSourceId ?? sourceId,
+      'first_import_batch_id': existingFirstImportBatchId ?? firstImportBatchId,
+      'last_import_batch_id': lastImportBatchId,
+      'source_chat_rowid': sourceRowid,
+    });
+    await db.update(
       'chats',
-      data,
-      conflictAlgorithm: ConflictAlgorithm.replace,
+      updateData,
+      where: 'id = ?',
+      whereArgs: <Object>[existingId],
+    );
+    return CanonicalGuidUpsertResult(
+      id: existingId,
+      inserted: false,
+      updated: true,
+      deduplicated: false,
     );
   }
 
@@ -903,7 +1576,7 @@ AND Z_PK NOT IN (
     );
   }
 
-  Future<int> insertMessage({
+  Future<CanonicalGuidUpsertResult> insertMessage({
     int? id,
     int? sourceRowid,
     required String guid,
@@ -932,6 +1605,9 @@ AND Z_PK NOT IN (
     String? balloonBundleId,
     String? payloadJson,
     required int batchId,
+    int? sourceId,
+    int? firstImportBatchId,
+    int? lastImportBatchId,
   }) async {
     final db = await database;
 
@@ -947,15 +1623,14 @@ AND Z_PK NOT IN (
 
     final data = _cleanMap(<String, Object?>{
       'id': id,
-      'source_rowid': sourceRowid,
       'guid': guid,
       'chat_id': chatId,
       'sender_handle_id': actualSenderHandleId,
       'service': service,
       'is_from_me': _boolToInt(value: isFromMe),
-      'date_utc': dateUtc,
-      'date_read_utc': dateReadUtc,
-      'date_delivered_utc': dateDeliveredUtc,
+      'date_utc': _normalizeUtcIsoToUnixSeconds(dateUtc),
+      'date_read_utc': _normalizeUtcIsoToUnixSeconds(dateReadUtc),
+      'date_delivered_utc': _normalizeUtcIsoToUnixSeconds(dateDeliveredUtc),
       'subject': subject,
       'text': text,
       'attributed_body_blob': attributedBodyBlob,
@@ -974,19 +1649,103 @@ AND Z_PK NOT IN (
       'balloon_bundle_id': balloonBundleId,
       'payload_json': payloadJson,
       'batch_id': batchId,
+      'source_id': sourceId,
+      'first_import_batch_id': firstImportBatchId,
+      'last_import_batch_id': lastImportBatchId,
+      'source_message_rowid': sourceRowid,
     });
 
-    final insertedId = await db.insert(
+    final existing = await _lookupGuidRow(
+      table: 'messages',
+      guid: guid,
+      includeChatId: true,
+    );
+    if (existing == null) {
+      final insertedId = await db.insert('messages', data);
+
+      _debugSettings.logDatabase(
+        'SqfliteImportDatabase.insertMessage: SUCCESS - inserted message $id (returned ID: $insertedId)',
+      );
+
+      return CanonicalGuidUpsertResult(
+        id: insertedId,
+        inserted: true,
+        updated: false,
+        deduplicated: false,
+      );
+    }
+
+    final existingId = _asNullableInt(existing['id']);
+    if (existingId == null) {
+      throw Exception('Existing message row for guid $guid is missing id');
+    }
+
+    final existingSourceId = _asNullableInt(existing['source_id']);
+    final existingFirstImportBatchId = _asNullableInt(
+      existing['first_import_batch_id'],
+    );
+    final existingChatId = _asNullableInt(existing['chat_id']);
+
+    if (existingSourceId != null &&
+        sourceId != null &&
+        existingSourceId != sourceId) {
+      return CanonicalGuidUpsertResult(
+        id: existingId,
+        inserted: false,
+        updated: false,
+        deduplicated: true,
+        shouldLinkToChat: existingChatId == chatId,
+      );
+    }
+
+    final updateData = _cleanMap(<String, Object?>{
+      'chat_id': chatId,
+      'sender_handle_id': actualSenderHandleId,
+      'service': service,
+      'is_from_me': _boolToInt(value: isFromMe),
+      'date_utc': _normalizeUtcIsoToUnixSeconds(dateUtc),
+      'date_read_utc': _normalizeUtcIsoToUnixSeconds(dateReadUtc),
+      'date_delivered_utc': _normalizeUtcIsoToUnixSeconds(dateDeliveredUtc),
+      'subject': subject,
+      'text': text,
+      'attributed_body_blob': attributedBodyBlob,
+      'raw_item_type': rawItemType,
+      'raw_associated_message_type': rawAssociatedMessageType,
+      'message_summary_info_blob': messageSummaryInfoBlob,
+      'payload_data_blob': payloadDataBlob,
+      'has_attributed_body_source': _boolToInt(value: hasAttributedBodySource),
+      'has_message_summary_info': _boolToInt(value: hasMessageSummaryInfo),
+      'has_payload_data_source': _boolToInt(value: hasPayloadDataSource),
+      'item_type': itemType,
+      'error_code': errorCode,
+      'is_system_message': _boolToInt(value: isSystemMessage),
+      'thread_originator_guid': threadOriginatorGuid,
+      'associated_message_guid': associatedMessageGuid,
+      'balloon_bundle_id': balloonBundleId,
+      'payload_json': payloadJson,
+      'batch_id': batchId,
+      'source_id': existingSourceId ?? sourceId,
+      'first_import_batch_id': existingFirstImportBatchId ?? firstImportBatchId,
+      'last_import_batch_id': lastImportBatchId,
+      'source_message_rowid': sourceRowid,
+    });
+    await db.update(
       'messages',
-      data,
-      conflictAlgorithm: ConflictAlgorithm.replace,
+      updateData,
+      where: 'id = ?',
+      whereArgs: <Object>[existingId],
     );
 
     _debugSettings.logDatabase(
-      'SqfliteImportDatabase.insertMessage: SUCCESS - inserted message $id (returned ID: $insertedId)',
+      'SqfliteImportDatabase.insertMessage: updated existing message row for guid $guid (id: $existingId)',
     );
 
-    return insertedId;
+    return CanonicalGuidUpsertResult(
+      id: existingId,
+      inserted: false,
+      updated: true,
+      deduplicated: false,
+    );
   }
 
   Future<int> insertChatMessageJoinSource({
@@ -1007,7 +1766,7 @@ AND Z_PK NOT IN (
     );
   }
 
-  Future<int> insertRecoveredUnlinkedMessage({
+  Future<CanonicalGuidUpsertResult> insertRecoveredUnlinkedMessage({
     int? id,
     int? sourceRowid,
     required String guid,
@@ -1035,20 +1794,22 @@ AND Z_PK NOT IN (
     String? balloonBundleId,
     String? payloadJson,
     required int batchId,
+    int? sourceId,
+    int? firstImportBatchId,
+    int? lastImportBatchId,
   }) async {
     final db = await database;
     final actualSenderHandleId = (senderHandleId == 0) ? null : senderHandleId;
 
     final data = _cleanMap(<String, Object?>{
       'id': id,
-      'source_rowid': sourceRowid,
       'guid': guid,
       'sender_handle_id': actualSenderHandleId,
       'service': service,
       'is_from_me': _boolToInt(value: isFromMe),
-      'date_utc': dateUtc,
-      'date_read_utc': dateReadUtc,
-      'date_delivered_utc': dateDeliveredUtc,
+      'date_utc': _normalizeUtcIsoToUnixSeconds(dateUtc),
+      'date_read_utc': _normalizeUtcIsoToUnixSeconds(dateReadUtc),
+      'date_delivered_utc': _normalizeUtcIsoToUnixSeconds(dateDeliveredUtc),
       'subject': subject,
       'text': text,
       'attributed_body_blob': attributedBodyBlob,
@@ -1067,25 +1828,104 @@ AND Z_PK NOT IN (
       'balloon_bundle_id': balloonBundleId,
       'payload_json': payloadJson,
       'batch_id': batchId,
+      'source_id': sourceId,
+      'first_import_batch_id': firstImportBatchId,
+      'last_import_batch_id': lastImportBatchId,
+      'source_message_rowid': sourceRowid,
     });
 
-    return db.insert(
+    final existing = await _lookupGuidRow(
+      table: 'recovered_unlinked_messages',
+      guid: guid,
+    );
+    if (existing == null) {
+      final insertedId = await db.insert('recovered_unlinked_messages', data);
+      return CanonicalGuidUpsertResult(
+        id: insertedId,
+        inserted: true,
+        updated: false,
+        deduplicated: false,
+      );
+    }
+
+    final existingId = _asNullableInt(existing['id']);
+    if (existingId == null) {
+      throw Exception(
+        'Existing recovered message row for guid $guid is missing id',
+      );
+    }
+
+    final existingSourceId = _asNullableInt(existing['source_id']);
+    final existingFirstImportBatchId = _asNullableInt(
+      existing['first_import_batch_id'],
+    );
+
+    if (existingSourceId != null &&
+        sourceId != null &&
+        existingSourceId != sourceId) {
+      return CanonicalGuidUpsertResult(
+        id: existingId,
+        inserted: false,
+        updated: false,
+        deduplicated: true,
+      );
+    }
+
+    final updateData = _cleanMap(<String, Object?>{
+      'sender_handle_id': actualSenderHandleId,
+      'service': service,
+      'is_from_me': _boolToInt(value: isFromMe),
+      'date_utc': _normalizeUtcIsoToUnixSeconds(dateUtc),
+      'date_read_utc': _normalizeUtcIsoToUnixSeconds(dateReadUtc),
+      'date_delivered_utc': _normalizeUtcIsoToUnixSeconds(dateDeliveredUtc),
+      'subject': subject,
+      'text': text,
+      'attributed_body_blob': attributedBodyBlob,
+      'raw_item_type': rawItemType,
+      'raw_associated_message_type': rawAssociatedMessageType,
+      'message_summary_info_blob': messageSummaryInfoBlob,
+      'payload_data_blob': payloadDataBlob,
+      'has_attributed_body_source': _boolToInt(value: hasAttributedBodySource),
+      'has_message_summary_info': _boolToInt(value: hasMessageSummaryInfo),
+      'has_payload_data_source': _boolToInt(value: hasPayloadDataSource),
+      'item_type': itemType,
+      'error_code': errorCode,
+      'is_system_message': _boolToInt(value: isSystemMessage),
+      'thread_originator_guid': threadOriginatorGuid,
+      'associated_message_guid': associatedMessageGuid,
+      'balloon_bundle_id': balloonBundleId,
+      'payload_json': payloadJson,
+      'batch_id': batchId,
+      'source_id': existingSourceId ?? sourceId,
+      'first_import_batch_id': existingFirstImportBatchId ?? firstImportBatchId,
+      'last_import_batch_id': lastImportBatchId,
+      'source_message_rowid': sourceRowid,
+    });
+    await db.update(
       'recovered_unlinked_messages',
-      data,
-      conflictAlgorithm: ConflictAlgorithm.replace,
+      updateData,
+      where: 'id = ?',
+      whereArgs: <Object>[existingId],
+    );
+    return CanonicalGuidUpsertResult(
+      id: existingId,
+      inserted: false,
+      updated: true,
+      deduplicated: false,
     );
   }
 
   Future<List<int>> promoteRecoveredMessagesToLinked({
-    required Map<int, int> messageIdToChatId,
+    required Map<int, int> messageSourceRowIdToChatId,
     required int batchId,
+    int? sourceId,
   }) async {
-    if (messageIdToChatId.isEmpty) {
+    if (messageSourceRowIdToChatId.isEmpty) {
       return const <int>[];
     }
 
     final db = await database;
-    final candidateIds = messageIdToChatId.keys.toList()..sort();
+    final candidateIds = messageSourceRowIdToChatId.keys.toList()..sort();
     final promotedIds = <int>[];
 
     await db.transaction((txn) async {
@@ -1096,24 +1936,26 @@ AND Z_PK NOT IN (
             : offset + chunkSize;
         final chunk = candidateIds.sublist(offset, end);
         final placeholders = List<String>.filled(chunk.length, '?').join(', ');
+        final args = <Object?>[if (sourceId != null) sourceId, ...chunk];
         final recoveredRows = await txn.rawQuery(
-          'SELECT id FROM recovered_unlinked_messages '
-          'WHERE id IN ($placeholders)',
-          chunk,
+          'SELECT id, source_message_rowid FROM recovered_unlinked_messages '
+          'WHERE ${sourceId == null ? 'source_message_rowid IN ($placeholders)' : 'source_id = ? AND source_message_rowid IN ($placeholders)'}',
+          args,
         );
 
         for (final row in recoveredRows) {
           final messageId = row['id'] as int?;
-          final chatId = messageId == null
+          final sourceMessageRowId = row['source_message_rowid'] as int?;
+          final chatId = sourceMessageRowId == null
               ? null
-              : messageIdToChatId[messageId];
+              : messageSourceRowIdToChatId[sourceMessageRowId];
           if (messageId == null || chatId == null) {
             continue;
           }
 
           await txn.rawInsert(
             'INSERT OR REPLACE INTO messages ( '
-            'id, source_rowid, guid, chat_id, sender_handle_id, service, '
+            'id, guid, chat_id, sender_handle_id, service, '
             'is_from_me, date_utc, date_read_utc, date_delivered_utc, '
             'subject, text, attributed_body_blob, raw_item_type, '
             'raw_associated_message_type, message_summary_info_blob, '
@@ -1121,19 +1963,22 @@ AND Z_PK NOT IN (
             'has_message_summary_info, has_payload_data_source, item_type, '
             'error_code, is_system_message, thread_originator_guid, '
             'associated_message_guid, balloon_bundle_id, payload_json, '
-            'batch_id'
+            'batch_id, source_id, first_import_batch_id, '
+            'last_import_batch_id, source_message_rowid'
             ' ) '
             'SELECT '
-            'id, source_rowid, guid, ?, sender_handle_id, service, '
+            'id, guid, ?, sender_handle_id, service, '
             'is_from_me, date_utc, date_read_utc, date_delivered_utc, '
             'subject, text, attributed_body_blob, raw_item_type, '
             'raw_associated_message_type, message_summary_info_blob, '
             'payload_data_blob, has_attributed_body_source, '
             'has_message_summary_info, has_payload_data_source, item_type, '
             'error_code, is_system_message, thread_originator_guid, '
-            'associated_message_guid, balloon_bundle_id, payload_json, ? '
+            'associated_message_guid, balloon_bundle_id, payload_json, ?, '
+            'source_id, COALESCE(first_import_batch_id, batch_id), ?, '
+            'source_message_rowid '
             'FROM recovered_unlinked_messages WHERE id = ?',
-            <Object>[chatId, batchId, messageId],
+            <Object>[chatId, batchId, batchId, messageId],
           );
 
           await txn.rawInsert(
@@ -1211,11 +2056,13 @@ AND Z_PK NOT IN (
     String? localPath,
     String? sha256Hex,
     required int batchId,
+    int? sourceId,
+    int? firstImportBatchId,
+    int? lastImportBatchId,
   }) async {
     final db = await database;
     final data = _cleanMap(<String, Object?>{
       'id': id,
-      'source_rowid': sourceRowid,
       'guid': guid,
       'transfer_name': transferName,
       'uti': uti,
@@ -1223,10 +2070,14 @@ AND Z_PK NOT IN (
       'total_bytes': totalBytes,
       'is_sticker': _boolToInt(value: isSticker),
       'is_outgoing': _boolToNullableInt(value: isOutgoing),
-      'created_at_utc': createdAtUtc,
+      'created_at_utc': _normalizeUtcIsoToUnixSeconds(createdAtUtc),
       'local_path': localPath,
       'sha256_hex': sha256Hex,
       'batch_id': batchId,
+      'source_id': sourceId,
+      'first_import_batch_id': firstImportBatchId,
+      'last_import_batch_id': lastImportBatchId,
+      'source_attachment_rowid': sourceRowid,
     });
     return db.insert(
       'attachments',
@@ -1442,8 +2293,8 @@ AND Z_PK NOT IN (
     final rows = await db.query(
       'import_batches',
       columns: <String>['id'],
-      where: 'source_chat_db = ?',
-      whereArgs: <Object>[sourceChatDb],
+      where: 'source_chat_db = ? AND (status IS NULL OR status != ?)',
+      whereArgs: <Object>[sourceChatDb, 'cancelled'],
       orderBy: 'id DESC',
     );
 
@@ -1706,10 +2557,13 @@ AND Z_PK NOT IN (
   Future<int?> _selectMaxInt({
     required String table,
     required String column,
+    int? sourceId,
   }) async {
     final db = await database;
+    final whereClause = sourceId == null ? '' : ' WHERE source_id = ?';
     final rows = await db.rawQuery(
-      'SELECT MAX($column) AS max_value FROM $table',
+      'SELECT MAX($column) AS max_value FROM $table$whereClause',
+      sourceId == null ? null : <Object?>[sourceId],
     );
     if (rows.isEmpty) {
       return null;
@@ -1730,17 +2584,20 @@ AND Z_PK NOT IN (
   Future<int?> _selectMaxIntAcrossTables({
     required List<String> tables,
     required String column,
+    int? sourceId,
   }) async {
     if (tables.isEmpty) {
       return null;
     }
 
     final db = await database;
+    final whereClause = sourceId == null ? '' : ' WHERE source_id = ?';
     final unionSql = tables
-        .map((table) => 'SELECT $column AS max_value FROM $table')
+        .map((table) => 'SELECT $column AS max_value FROM $table$whereClause')
         .join(' UNION ALL ');
     final rows = await db.rawQuery(
       'SELECT MAX(max_value) AS max_value FROM ($unionSql)',
+      sourceId == null ? null : <Object?>[for (final _ in tables) sourceId],
     );
     if (rows.isEmpty) {
       return null;
@@ -1756,6 +2613,50 @@ AND Z_PK NOT IN (
       return value.toInt();
     }
     return int.tryParse('$value');
+  }
+
+  Future<Map<int, int>> _selectIdsBySourceRowIds({
+    required String table,
+    required String sourceRowIdColumn,
+    required Iterable<int> sourceRowIds,
+    int? sourceId,
+  }) async {
+    final orderedSourceRowIds = sourceRowIds.toSet().toList()..sort();
+    if (orderedSourceRowIds.isEmpty) {
+      return <int, int>{};
+    }
+
+    final db = await database;
+    final result = <int, int>{};
+    const chunkSize = 400;
+    for (
+      var offset = 0;
+      offset < orderedSourceRowIds.length;
+      offset += chunkSize
+    ) {
+      final end = offset + chunkSize > orderedSourceRowIds.length
+          ? orderedSourceRowIds.length
+          : offset + chunkSize;
+      final chunk = orderedSourceRowIds.sublist(offset, end);
+      final placeholders = List<String>.filled(chunk.length, '?').join(', ');
+      final whereClause = sourceId == null
+          ? '$sourceRowIdColumn IN ($placeholders)'
+          : 'source_id = ? AND $sourceRowIdColumn IN ($placeholders)';
+      final rows = await db.rawQuery(
+        'SELECT id, $sourceRowIdColumn AS source_rowid FROM $table '
+        'WHERE $whereClause',
+        <Object?>[if (sourceId != null) sourceId, ...chunk],
+      );
+      for (final row in rows) {
+        final id = row['id'] as int?;
+        final sourceRowId = row['source_rowid'] as int?;
+        if (id != null && sourceRowId != null) {
+          result[sourceRowId] = id;
+        }
+      }
+    }
+
+    return result;
   }
 
   Map<String, Object?> _cleanMap(Map<String, Object?> data) {
@@ -1800,26 +2701,78 @@ AND Z_PK NOT IN (
     return null;
   }
 
+  String _requiredString({
+    required Map<String, Object?> row,
+    required String columnName,
+  }) {
+    final value = row[columnName];
+    if (value is String) {
+      return value;
+    }
+
+    throw StateError(
+      'Expected non-null String for column "$columnName", got $value',
+    );
+  }
+
+  int? _normalizeUtcIsoToUnixSeconds(String? value) {
+    return DateConverter.isoStringToUnixSeconds(value);
+  }
+
+  Future<Map<String, Object?>?> _lookupGuidRow({
+    required String table,
+    required String guid,
+    bool includeChatId = false,
+  }) async {
+    final db = await database;
+    final rows = await db.query(
+      table,
+      columns: <String>[
+        'id',
+        'source_id',
+        'first_import_batch_id',
+        if (includeChatId) 'chat_id',
+      ],
+      where: 'guid = ?',
+      whereArgs: <Object>[guid],
+      limit: 1,
+    );
+    if (rows.isEmpty) {
+      return null;
+    }
+    return rows.single;
+  }
+
+  static String _unixEpochSecondsExpression(String columnName) {
+    return 'CASE '
+        'WHEN $columnName IS NULL THEN NULL '
+        "WHEN typeof($columnName) IN ('integer','real') THEN CAST($columnName AS INTEGER) "
+        "WHEN TRIM(CAST($columnName AS TEXT)) = '' THEN NULL "
+        "ELSE CAST(strftime('%s', $columnName) AS INTEGER) "
+        'END';
+  }
+
   static const List<String> _schemaStatements = <String>[
     'CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, applied_at_utc TEXT NOT NULL)',
-    'CREATE TABLE IF NOT EXISTS import_batches (id INTEGER PRIMARY KEY, started_at_utc TEXT NOT NULL, finished_at_utc TEXT, source_chat_db TEXT, source_addressbook TEXT, host_info_json TEXT, notes TEXT)',
+    "CREATE TABLE IF NOT EXISTS ledger_sources (id INTEGER PRIMARY KEY, source_kind TEXT NOT NULL CHECK(source_kind IN ('current_mac','historical_archive')), stable_key TEXT NOT NULL, source_label TEXT NOT NULL, chat_db_path TEXT, attachments_path TEXT, is_active INTEGER NOT NULL DEFAULT 1 CHECK(is_active IN (0,1)), first_seen_at INTEGER, last_seen_at INTEGER, last_imported_at INTEGER, notes TEXT, UNIQUE(source_kind, stable_key))",
+    "CREATE TABLE IF NOT EXISTS import_batches (id INTEGER PRIMARY KEY, started_at_utc TEXT NOT NULL, finished_at_utc TEXT, source_chat_db TEXT, source_addressbook TEXT, host_info_json TEXT, notes TEXT, chat_source_id INTEGER REFERENCES ledger_sources(id) ON DELETE RESTRICT, chat_source_kind TEXT CHECK(chat_source_kind IN ('current_mac','historical_archive')), status TEXT NOT NULL DEFAULT 'running' CHECK(status IN ('running','succeeded','failed','cancelled')), started_at INTEGER, finished_at INTEGER, source_label_snapshot TEXT, error_summary TEXT, rows_seen INTEGER, rows_inserted INTEGER, rows_updated INTEGER, rows_deduplicated INTEGER, rows_failed INTEGER)",
     'CREATE TABLE IF NOT EXISTS source_files (id INTEGER PRIMARY KEY, batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE CASCADE, path TEXT NOT NULL, sha256_hex TEXT, size_bytes INTEGER, mtime_utc TEXT, UNIQUE(path, sha256_hex))',
     "CREATE TABLE IF NOT EXISTS import_logs (id INTEGER PRIMARY KEY, batch_id INTEGER REFERENCES import_batches(id) ON DELETE SET NULL, at_utc TEXT NOT NULL, level TEXT NOT NULL CHECK(level IN ('debug','info','warn','error')), message TEXT NOT NULL, context_json TEXT)",
     'CREATE TABLE IF NOT EXISTS contacts (id INTEGER PRIMARY KEY, Z_PK INTEGER NOT NULL UNIQUE, first_name TEXT, last_name TEXT, organization TEXT, display_name TEXT NOT NULL, short_name TEXT, created_at_utc TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT)',
     "CREATE TABLE IF NOT EXISTS contact_phone_email (id INTEGER PRIMARY KEY, ZOWNER INTEGER NOT NULL REFERENCES contacts(Z_PK) ON DELETE CASCADE, kind TEXT NOT NULL CHECK(kind IN ('email','phone')), value TEXT NOT NULL, label TEXT, UNIQUE(kind, value))",
     _handlesTableStatementWithoutUniqueness,
-    "CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT NOT NULL, service TEXT, display_name TEXT, is_group INTEGER NOT NULL DEFAULT 0 CHECK(is_group IN (0,1)), created_at_utc TEXT, updated_at_utc TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(guid))",
+    _chatsTableCreateStatement,
     "CREATE TABLE IF NOT EXISTS chat_to_handle (chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE, handle_id INTEGER NOT NULL REFERENCES handles(id) ON DELETE CASCADE, role TEXT CHECK(role IN ('member','owner','unknown')) DEFAULT 'member', added_at_utc TEXT, PRIMARY KEY (chat_id, handle_id))",
-    "CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT NOT NULL, chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE, sender_handle_id INTEGER REFERENCES handles(id) ON DELETE SET NULL, service TEXT, is_from_me INTEGER NOT NULL CHECK(is_from_me IN (0,1)), date_utc TEXT, date_read_utc TEXT, date_delivered_utc TEXT, subject TEXT, text TEXT, attributed_body_blob BLOB, raw_item_type INTEGER, raw_associated_message_type INTEGER, message_summary_info_blob BLOB, payload_data_blob BLOB, has_attributed_body_source INTEGER NOT NULL DEFAULT 0 CHECK(has_attributed_body_source IN (0,1)), has_message_summary_info INTEGER NOT NULL DEFAULT 0 CHECK(has_message_summary_info IN (0,1)), has_payload_data_source INTEGER NOT NULL DEFAULT 0 CHECK(has_payload_data_source IN (0,1)), item_type TEXT CHECK(item_type IN ('text','attachment-only','sticker','reaction-carrier','system','unknown','balloon')), error_code INTEGER, is_system_message INTEGER NOT NULL DEFAULT 0 CHECK(is_system_message IN (0,1)), thread_originator_guid TEXT, associated_message_guid TEXT, balloon_bundle_id TEXT, payload_json TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(guid))",
-    "CREATE TABLE IF NOT EXISTS recovered_unlinked_messages (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT NOT NULL, sender_handle_id INTEGER REFERENCES handles(id) ON DELETE SET NULL, service TEXT, is_from_me INTEGER NOT NULL CHECK(is_from_me IN (0,1)), date_utc TEXT, date_read_utc TEXT, date_delivered_utc TEXT, subject TEXT, text TEXT, attributed_body_blob BLOB, raw_item_type INTEGER, raw_associated_message_type INTEGER, message_summary_info_blob BLOB, payload_data_blob BLOB, has_attributed_body_source INTEGER NOT NULL DEFAULT 0 CHECK(has_attributed_body_source IN (0,1)), has_message_summary_info INTEGER NOT NULL DEFAULT 0 CHECK(has_message_summary_info IN (0,1)), has_payload_data_source INTEGER NOT NULL DEFAULT 0 CHECK(has_payload_data_source IN (0,1)), item_type TEXT CHECK(item_type IN ('text','attachment-only','sticker','reaction-carrier','system','unknown','balloon')), error_code INTEGER, is_system_message INTEGER NOT NULL DEFAULT 0 CHECK(is_system_message IN (0,1)), thread_originator_guid TEXT, associated_message_guid TEXT, balloon_bundle_id TEXT, payload_json TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(guid))",
+    _messagesTableCreateStatement,
+    _recoveredUnlinkedMessagesTableCreateStatement,
     'CREATE TABLE IF NOT EXISTS chat_to_message (chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE, message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE, source_rowid INTEGER, PRIMARY KEY (chat_id, message_id))',
-    'CREATE TABLE IF NOT EXISTS attachments (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT, transfer_name TEXT, uti TEXT, mime_type TEXT, total_bytes INTEGER, is_sticker INTEGER NOT NULL DEFAULT 0 CHECK(is_sticker IN (0,1)), is_outgoing INTEGER CHECK(is_outgoing IN (0,1)), created_at_utc TEXT, local_path TEXT, sha256_hex TEXT, batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT)',
+    _attachmentsTableCreateStatement,
     'CREATE TABLE IF NOT EXISTS message_attachments (message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE, attachment_id INTEGER NOT NULL REFERENCES attachments(id) ON DELETE CASCADE, source_rowid INTEGER, PRIMARY KEY (message_id, attachment_id))',
     'CREATE TABLE IF NOT EXISTS recovered_unlinked_message_attachments (message_id INTEGER NOT NULL REFERENCES recovered_unlinked_messages(id) ON DELETE CASCADE, attachment_id INTEGER NOT NULL REFERENCES attachments(id) ON DELETE CASCADE, source_rowid INTEGER, PRIMARY KEY (message_id, attachment_id))',
     "CREATE TABLE IF NOT EXISTS reactions (id INTEGER PRIMARY KEY, carrier_message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE, target_message_guid TEXT NOT NULL, action TEXT NOT NULL CHECK(action IN ('add','remove')), kind TEXT NOT NULL CHECK(kind IN ('love','like','dislike','laugh','emphasize','question','unknown')), reactor_handle_id INTEGER REFERENCES handles(id) ON DELETE SET NULL, reacted_at_utc TEXT, parse_confidence REAL CHECK(parse_confidence >= 0.0 AND parse_confidence <= 1.0) DEFAULT 1.0)",
     'CREATE TABLE IF NOT EXISTS message_links (id INTEGER PRIMARY KEY, message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE, url TEXT NOT NULL, start INTEGER, end INTEGER)',
     'CREATE TABLE IF NOT EXISTS contact_to_chat_handle (id INTEGER PRIMARY KEY, contact_Z_PK INTEGER NOT NULL REFERENCES contacts(Z_PK) ON DELETE CASCADE, chat_handle_id INTEGER NOT NULL REFERENCES handles(id) ON DELETE CASCADE, batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(contact_Z_PK, chat_handle_id))',
-    'CREATE TABLE IF NOT EXISTS historical_archive_sources (source_chat_db TEXT PRIMARY KEY, folder_path TEXT NOT NULL, source_label TEXT NOT NULL, chat_db_status_label TEXT NOT NULL, attachments_status_label TEXT NOT NULL, preflight_status_label TEXT NOT NULL, preflight_detail TEXT NOT NULL, total_messages INTEGER, total_chats INTEGER, total_handles INTEGER, missing_guids INTEGER, earliest_message_utc TEXT, latest_message_utc TEXT, dry_run_new_messages INTEGER, dry_run_duplicate_messages INTEGER, matched_imported_batch_count INTEGER, last_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE SET NULL, last_import_started_at_utc TEXT, last_import_finished_at_utc TEXT, last_import_success INTEGER CHECK(last_import_success IN (0,1)), last_import_error TEXT, last_imported_message_count INTEGER, updated_at_utc TEXT NOT NULL)',
+    'CREATE TABLE IF NOT EXISTS historical_archive_sources (source_chat_db TEXT PRIMARY KEY, folder_path TEXT NOT NULL, source_label TEXT NOT NULL, chat_db_status_label TEXT NOT NULL, attachments_status_label TEXT NOT NULL, preflight_status_label TEXT NOT NULL, preflight_detail TEXT NOT NULL, total_messages INTEGER, total_chats INTEGER, total_handles INTEGER, missing_guids INTEGER, earliest_message_utc TEXT, latest_message_utc TEXT, dry_run_new_messages INTEGER, dry_run_duplicate_messages INTEGER, matched_imported_batch_count INTEGER, last_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE SET NULL, last_import_started_at_utc TEXT, last_import_finished_at_utc TEXT, last_import_success INTEGER CHECK(last_import_success IN (0,1)), last_import_error TEXT, last_imported_message_count INTEGER, updated_at_utc TEXT NOT NULL, ledger_source_id INTEGER REFERENCES ledger_sources(id) ON DELETE SET NULL)',
   ];
 
   static const List<String> _indexStatements = <String>[
@@ -1845,6 +2798,13 @@ AND Z_PK NOT IN (
     'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_message_attachments_attachment ON recovered_unlinked_message_attachments(attachment_id)',
     'CREATE INDEX IF NOT EXISTS idx_reactions_carrier ON reactions(carrier_message_id)',
     'CREATE INDEX IF NOT EXISTS idx_chat_to_message_message ON chat_to_message(message_id)',
+    'CREATE INDEX IF NOT EXISTS idx_ledger_sources_kind ON ledger_sources(source_kind)',
+    'CREATE INDEX IF NOT EXISTS idx_import_batches_chat_source ON import_batches(chat_source_id)',
+    'CREATE INDEX IF NOT EXISTS idx_messages_source_row ON messages(source_id, source_message_rowid)',
+    'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_messages_source_row ON recovered_unlinked_messages(source_id, source_message_rowid)',
+    'CREATE INDEX IF NOT EXISTS idx_chats_source_row ON chats(source_id, source_chat_rowid)',
+    'CREATE INDEX IF NOT EXISTS idx_handles_source_row ON handles(source_id, source_handle_rowid)',
+    'CREATE INDEX IF NOT EXISTS idx_attachments_source_row ON attachments(source_id, source_attachment_rowid)',
   ];
 
   static const List<String> _v2SchemaStatements = <String>[
@@ -1873,7 +2833,47 @@ AND Z_PK NOT IN (
     'CREATE TABLE IF NOT EXISTS historical_archive_sources (source_chat_db TEXT PRIMARY KEY, folder_path TEXT NOT NULL, source_label TEXT NOT NULL, chat_db_status_label TEXT NOT NULL, attachments_status_label TEXT NOT NULL, preflight_status_label TEXT NOT NULL, preflight_detail TEXT NOT NULL, total_messages INTEGER, total_chats INTEGER, total_handles INTEGER, missing_guids INTEGER, earliest_message_utc TEXT, latest_message_utc TEXT, dry_run_new_messages INTEGER, dry_run_duplicate_messages INTEGER, matched_imported_batch_count INTEGER, last_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE SET NULL, last_import_started_at_utc TEXT, last_import_finished_at_utc TEXT, last_import_success INTEGER CHECK(last_import_success IN (0,1)), last_import_error TEXT, last_imported_message_count INTEGER, updated_at_utc TEXT NOT NULL)',
   ];
 
+  static const List<String> _v6SchemaStatements = <String>[
+    "CREATE TABLE IF NOT EXISTS ledger_sources (id INTEGER PRIMARY KEY, source_kind TEXT NOT NULL CHECK(source_kind IN ('current_mac','historical_archive')), stable_key TEXT NOT NULL, source_label TEXT NOT NULL, chat_db_path TEXT, attachments_path TEXT, is_active INTEGER NOT NULL DEFAULT 1 CHECK(is_active IN (0,1)), first_seen_at INTEGER, last_seen_at INTEGER, last_imported_at INTEGER, notes TEXT, UNIQUE(source_kind, stable_key))",
+    'ALTER TABLE import_batches ADD COLUMN chat_source_id INTEGER REFERENCES ledger_sources(id) ON DELETE RESTRICT',
+    "ALTER TABLE import_batches ADD COLUMN chat_source_kind TEXT CHECK(chat_source_kind IN ('current_mac','historical_archive'))",
+    "ALTER TABLE import_batches ADD COLUMN status TEXT NOT NULL DEFAULT 'running' CHECK(status IN ('running','succeeded','failed','cancelled'))",
+    'ALTER TABLE import_batches ADD COLUMN started_at INTEGER',
+    'ALTER TABLE import_batches ADD COLUMN finished_at INTEGER',
+    'ALTER TABLE import_batches ADD COLUMN source_label_snapshot TEXT',
+    'ALTER TABLE import_batches ADD COLUMN error_summary TEXT',
+    'ALTER TABLE import_batches ADD COLUMN rows_seen INTEGER',
+    'ALTER TABLE import_batches ADD COLUMN rows_inserted INTEGER',
+    'ALTER TABLE import_batches ADD COLUMN rows_updated INTEGER',
+    'ALTER TABLE import_batches ADD COLUMN rows_deduplicated INTEGER',
+    'ALTER TABLE import_batches ADD COLUMN rows_failed INTEGER',
+    'ALTER TABLE historical_archive_sources ADD COLUMN ledger_source_id INTEGER REFERENCES ledger_sources(id) ON DELETE SET NULL',
+    'ALTER TABLE handles ADD COLUMN source_id INTEGER REFERENCES ledger_sources(id) ON DELETE RESTRICT',
+    'ALTER TABLE handles ADD COLUMN first_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE RESTRICT',
+    'ALTER TABLE handles ADD COLUMN last_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE RESTRICT',
+    'ALTER TABLE handles ADD COLUMN source_handle_rowid INTEGER',
+    'ALTER TABLE chats ADD COLUMN source_id INTEGER REFERENCES ledger_sources(id) ON DELETE RESTRICT',
+    'ALTER TABLE chats ADD COLUMN first_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE RESTRICT',
+    'ALTER TABLE chats ADD COLUMN last_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE RESTRICT',
+    'ALTER TABLE chats ADD COLUMN source_chat_rowid INTEGER',
+    'ALTER TABLE messages ADD COLUMN source_id INTEGER REFERENCES ledger_sources(id) ON DELETE RESTRICT',
+    'ALTER TABLE messages ADD COLUMN first_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE RESTRICT',
+    'ALTER TABLE messages ADD COLUMN last_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE RESTRICT',
+    'ALTER TABLE messages ADD COLUMN source_message_rowid INTEGER',
+    'ALTER TABLE recovered_unlinked_messages ADD COLUMN source_id INTEGER REFERENCES ledger_sources(id) ON DELETE RESTRICT',
+    'ALTER TABLE recovered_unlinked_messages ADD COLUMN first_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE RESTRICT',
+    'ALTER TABLE recovered_unlinked_messages ADD COLUMN last_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE RESTRICT',
+    'ALTER TABLE recovered_unlinked_messages ADD COLUMN source_message_rowid INTEGER',
+    'ALTER TABLE attachments ADD COLUMN source_id INTEGER REFERENCES ledger_sources(id) ON DELETE RESTRICT',
+    'ALTER TABLE attachments ADD COLUMN first_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE RESTRICT',
+    'ALTER TABLE attachments ADD COLUMN last_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE RESTRICT',
+    'ALTER TABLE attachments ADD COLUMN source_attachment_rowid INTEGER',
+  ];
+
   static const String _handlesTableStatementWithoutUniqueness =
+      "CREATE TABLE IF NOT EXISTS handles (id INTEGER PRIMARY KEY, source_rowid INTEGER, service TEXT NOT NULL, raw_identifier TEXT NOT NULL, normalized_identifier TEXT, compound_identifier TEXT NOT NULL DEFAULT '', country TEXT, last_seen_utc TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, source_id INTEGER REFERENCES ledger_sources(id) ON DELETE RESTRICT, first_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE RESTRICT, last_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE RESTRICT, source_handle_rowid INTEGER)";
+
+  static const String _legacyHandlesTableStatementWithoutUniqueness =
       "CREATE TABLE IF NOT EXISTS handles (id INTEGER PRIMARY KEY, source_rowid INTEGER, service TEXT NOT NULL, raw_identifier TEXT NOT NULL, normalized_identifier TEXT, compound_identifier TEXT NOT NULL DEFAULT '', country TEXT, last_seen_utc TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT)";
 
   static const List<String> _v2IndexStatements = <String>[
@@ -1883,6 +2883,58 @@ AND Z_PK NOT IN (
     'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_messages_sender ON recovered_unlinked_messages(sender_handle_id)',
     'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_message_attachments_attachment ON recovered_unlinked_message_attachments(attachment_id)',
   ];
+
+  static const List<String> _v6IndexStatements = <String>[
+    'CREATE INDEX IF NOT EXISTS idx_ledger_sources_kind ON ledger_sources(source_kind)',
+    'CREATE INDEX IF NOT EXISTS idx_import_batches_chat_source ON import_batches(chat_source_id)',
+    'CREATE INDEX IF NOT EXISTS idx_messages_source_row ON messages(source_id, source_message_rowid)',
+    'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_messages_source_row ON recovered_unlinked_messages(source_id, source_message_rowid)',
+    'CREATE INDEX IF NOT EXISTS idx_chats_source_row ON chats(source_id, source_chat_rowid)',
+    'CREATE INDEX IF NOT EXISTS idx_handles_source_row ON handles(source_id, source_handle_rowid)',
+    'CREATE INDEX IF NOT EXISTS idx_attachments_source_row ON attachments(source_id, source_attachment_rowid)',
+  ];
+
+  static const List<String> _v7IndexStatements = <String>[
+    'CREATE INDEX IF NOT EXISTS idx_chats_ignore ON chats(is_ignored)',
+    'CREATE INDEX IF NOT EXISTS idx_messages_chat_date ON messages(chat_id, date_utc)',
+    'CREATE INDEX IF NOT EXISTS idx_messages_chat_active_date ON messages(chat_id, date_utc) WHERE is_ignored = 0',
+    'CREATE INDEX IF NOT EXISTS idx_messages_ignore ON messages(is_ignored)',
+    'CREATE INDEX IF NOT EXISTS idx_messages_assoc ON messages(associated_message_guid)',
+    'CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender_handle_id)',
+    'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_messages_date ON recovered_unlinked_messages(date_utc)',
+    'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_messages_ignore ON recovered_unlinked_messages(is_ignored)',
+    'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_messages_assoc ON recovered_unlinked_messages(associated_message_guid)',
+    'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_messages_sender ON recovered_unlinked_messages(sender_handle_id)',
+    'CREATE INDEX IF NOT EXISTS idx_attach_created ON attachments(created_at_utc)',
+    'CREATE INDEX IF NOT EXISTS idx_messages_source_row ON messages(source_id, source_message_rowid)',
+    'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_messages_source_row ON recovered_unlinked_messages(source_id, source_message_rowid)',
+    'CREATE INDEX IF NOT EXISTS idx_chats_source_row ON chats(source_id, source_chat_rowid)',
+    'CREATE INDEX IF NOT EXISTS idx_attachments_source_row ON attachments(source_id, source_attachment_rowid)',
+  ];
+
+  static const String _chatsTableCreateStatement =
+      'CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT NOT NULL, service TEXT, display_name TEXT, is_group INTEGER NOT NULL DEFAULT 0 CHECK(is_group IN (0,1)), created_at_utc INTEGER, updated_at_utc INTEGER, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, source_id INTEGER REFERENCES ledger_sources(id) ON DELETE RESTRICT, first_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE RESTRICT, last_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE RESTRICT, source_chat_rowid INTEGER, UNIQUE(guid))';
+
+  static const String _messagesTableCreateStatement =
+      "CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT NOT NULL, chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE, sender_handle_id INTEGER REFERENCES handles(id) ON DELETE SET NULL, service TEXT, is_from_me INTEGER NOT NULL CHECK(is_from_me IN (0,1)), date_utc INTEGER, date_read_utc INTEGER, date_delivered_utc INTEGER, subject TEXT, text TEXT, attributed_body_blob BLOB, raw_item_type INTEGER, raw_associated_message_type INTEGER, message_summary_info_blob BLOB, payload_data_blob BLOB, has_attributed_body_source INTEGER NOT NULL DEFAULT 0 CHECK(has_attributed_body_source IN (0,1)), has_message_summary_info INTEGER NOT NULL DEFAULT 0 CHECK(has_message_summary_info IN (0,1)), has_payload_data_source INTEGER NOT NULL DEFAULT 0 CHECK(has_payload_data_source IN (0,1)), item_type TEXT CHECK(item_type IN ('text','attachment-only','sticker','reaction-carrier','system','unknown','balloon')), error_code INTEGER, is_system_message INTEGER NOT NULL DEFAULT 0 CHECK(is_system_message IN (0,1)), thread_originator_guid TEXT, associated_message_guid TEXT, balloon_bundle_id TEXT, payload_json TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, source_id INTEGER REFERENCES ledger_sources(id) ON DELETE RESTRICT, first_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE RESTRICT, last_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE RESTRICT, source_message_rowid INTEGER, UNIQUE(guid))";
+
+  static const String _recoveredUnlinkedMessagesTableCreateStatement =
+      "CREATE TABLE IF NOT EXISTS recovered_unlinked_messages (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT NOT NULL, sender_handle_id INTEGER REFERENCES handles(id) ON DELETE SET NULL, service TEXT, is_from_me INTEGER NOT NULL CHECK(is_from_me IN (0,1)), date_utc INTEGER, date_read_utc INTEGER, date_delivered_utc INTEGER, subject TEXT, text TEXT, attributed_body_blob BLOB, raw_item_type INTEGER, raw_associated_message_type INTEGER, message_summary_info_blob BLOB, payload_data_blob BLOB, has_attributed_body_source INTEGER NOT NULL DEFAULT 0 CHECK(has_attributed_body_source IN (0,1)), has_message_summary_info INTEGER NOT NULL DEFAULT 0 CHECK(has_message_summary_info IN (0,1)), has_payload_data_source INTEGER NOT NULL DEFAULT 0 CHECK(has_payload_data_source IN (0,1)), item_type TEXT CHECK(item_type IN ('text','attachment-only','sticker','reaction-carrier','system','unknown','balloon')), error_code INTEGER, is_system_message INTEGER NOT NULL DEFAULT 0 CHECK(is_system_message IN (0,1)), thread_originator_guid TEXT, associated_message_guid TEXT, balloon_bundle_id TEXT, payload_json TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, source_id INTEGER REFERENCES ledger_sources(id) ON DELETE RESTRICT, first_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE RESTRICT, last_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE RESTRICT, source_message_rowid INTEGER, UNIQUE(guid))";
+
+  static const String _attachmentsTableCreateStatement =
+      'CREATE TABLE IF NOT EXISTS attachments (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT, transfer_name TEXT, uti TEXT, mime_type TEXT, total_bytes INTEGER, is_sticker INTEGER NOT NULL DEFAULT 0 CHECK(is_sticker IN (0,1)), is_outgoing INTEGER CHECK(is_outgoing IN (0,1)), created_at_utc INTEGER, local_path TEXT, sha256_hex TEXT, batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, source_id INTEGER REFERENCES ledger_sources(id) ON DELETE RESTRICT, first_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE RESTRICT, last_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE RESTRICT, source_attachment_rowid INTEGER)';
+
+  static const String _chatsTableStatement =
+      'CREATE TABLE chats_new (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT NOT NULL, service TEXT, display_name TEXT, is_group INTEGER NOT NULL DEFAULT 0 CHECK(is_group IN (0,1)), created_at_utc INTEGER, updated_at_utc INTEGER, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, source_id INTEGER REFERENCES ledger_sources(id) ON DELETE RESTRICT, first_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE RESTRICT, last_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE RESTRICT, source_chat_rowid INTEGER, UNIQUE(guid))';
+
+  static const String _messagesTableStatement =
+      "CREATE TABLE messages_new (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT NOT NULL, chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE, sender_handle_id INTEGER REFERENCES handles(id) ON DELETE SET NULL, service TEXT, is_from_me INTEGER NOT NULL CHECK(is_from_me IN (0,1)), date_utc INTEGER, date_read_utc INTEGER, date_delivered_utc INTEGER, subject TEXT, text TEXT, attributed_body_blob BLOB, raw_item_type INTEGER, raw_associated_message_type INTEGER, message_summary_info_blob BLOB, payload_data_blob BLOB, has_attributed_body_source INTEGER NOT NULL DEFAULT 0 CHECK(has_attributed_body_source IN (0,1)), has_message_summary_info INTEGER NOT NULL DEFAULT 0 CHECK(has_message_summary_info IN (0,1)), has_payload_data_source INTEGER NOT NULL DEFAULT 0 CHECK(has_payload_data_source IN (0,1)), item_type TEXT CHECK(item_type IN ('text','attachment-only','sticker','reaction-carrier','system','unknown','balloon')), error_code INTEGER, is_system_message INTEGER NOT NULL DEFAULT 0 CHECK(is_system_message IN (0,1)), thread_originator_guid TEXT, associated_message_guid TEXT, balloon_bundle_id TEXT, payload_json TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, source_id INTEGER REFERENCES ledger_sources(id) ON DELETE RESTRICT, first_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE RESTRICT, last_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE RESTRICT, source_message_rowid INTEGER, UNIQUE(guid))";
+
+  static const String _recoveredUnlinkedMessagesTableStatement =
+      "CREATE TABLE recovered_unlinked_messages_new (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT NOT NULL, sender_handle_id INTEGER REFERENCES handles(id) ON DELETE SET NULL, service TEXT, is_from_me INTEGER NOT NULL CHECK(is_from_me IN (0,1)), date_utc INTEGER, date_read_utc INTEGER, date_delivered_utc INTEGER, subject TEXT, text TEXT, attributed_body_blob BLOB, raw_item_type INTEGER, raw_associated_message_type INTEGER, message_summary_info_blob BLOB, payload_data_blob BLOB, has_attributed_body_source INTEGER NOT NULL DEFAULT 0 CHECK(has_attributed_body_source IN (0,1)), has_message_summary_info INTEGER NOT NULL DEFAULT 0 CHECK(has_message_summary_info IN (0,1)), has_payload_data_source INTEGER NOT NULL DEFAULT 0 CHECK(has_payload_data_source IN (0,1)), item_type TEXT CHECK(item_type IN ('text','attachment-only','sticker','reaction-carrier','system','unknown','balloon')), error_code INTEGER, is_system_message INTEGER NOT NULL DEFAULT 0 CHECK(is_system_message IN (0,1)), thread_originator_guid TEXT, associated_message_guid TEXT, balloon_bundle_id TEXT, payload_json TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, source_id INTEGER REFERENCES ledger_sources(id) ON DELETE RESTRICT, first_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE RESTRICT, last_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE RESTRICT, source_message_rowid INTEGER, UNIQUE(guid))";
+
+  static const String _attachmentsTableStatement =
+      'CREATE TABLE attachments_new (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT, transfer_name TEXT, uti TEXT, mime_type TEXT, total_bytes INTEGER, is_sticker INTEGER NOT NULL DEFAULT 0 CHECK(is_sticker IN (0,1)), is_outgoing INTEGER CHECK(is_outgoing IN (0,1)), created_at_utc INTEGER, local_path TEXT, sha256_hex TEXT, batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, source_id INTEGER REFERENCES ledger_sources(id) ON DELETE RESTRICT, first_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE RESTRICT, last_import_batch_id INTEGER REFERENCES import_batches(id) ON DELETE RESTRICT, source_attachment_rowid INTEGER)';
 
   static const String _expandedMessagesViewStatement =
       'CREATE VIEW IF NOT EXISTS v_messages_expanded AS SELECT m.id AS message_id, m.guid AS message_guid, m.chat_id, c.guid AS chat_guid, m.date_utc, m.is_from_me, m.text, m.item_type, m.associated_message_guid, h.id AS sender_handle_id, h.normalized_identifier AS sender_address FROM messages m JOIN chats c ON c.id = m.chat_id LEFT JOIN handles h ON h.id = m.sender_handle_id';

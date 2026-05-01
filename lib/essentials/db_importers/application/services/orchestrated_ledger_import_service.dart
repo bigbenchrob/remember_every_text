@@ -53,6 +53,10 @@ class OrchestratedLedgerImportService {
   Future<DbImportResult> runImport({
     required String executionOwner,
     String? sourceChatDbOverride,
+    String chatSourceKind = 'current_mac',
+    String? sourceLabelOverride,
+    bool includeContactImport = true,
+    bool includeAttachmentImport = true,
     ExecutionPlanCallback? onExecutionPlan,
     TableImportProgressCallback? onTableProgress,
   }) async {
@@ -70,22 +74,67 @@ class OrchestratedLedgerImportService {
     final debugSettings = ref.read(importDebugSettingsProvider);
     final ledgerDb = await ref.read(sqfliteImportDatabaseProvider.future);
     final pathsHelper = await ref.read(pathsHelperProvider.future);
+    final isHistoricalArchive = chatSourceKind == 'historical_archive';
+    final messagesDbPath = sourceChatDbOverride ?? pathsHelper.chatDBPath;
+    final normalizedMessagesDbPath = p.normalize(messagesDbPath);
+    final sourceLabel =
+        sourceLabelOverride ??
+        (isHistoricalArchive
+            ? p.basename(p.dirname(normalizedMessagesDbPath))
+            : 'Current Mac Messages');
+    final startedAtUtc = DateTime.now().toUtc().toIso8601String();
+    final startedAt =
+        DateTime.parse(startedAtUtc).millisecondsSinceEpoch ~/ 1000;
+    final currentSourceId = await ledgerDb.upsertLedgerSource(
+      sourceKind: chatSourceKind,
+      stableKey: normalizedMessagesDbPath,
+      sourceLabel: sourceLabel,
+      chatDbPath: normalizedMessagesDbPath,
+      attachmentsPath: p.join(
+        p.dirname(normalizedMessagesDbPath),
+        'Attachments',
+      ),
+      seenAt: startedAt,
+      importedAt: startedAt,
+      notes: isHistoricalArchive
+          ? 'Historical archive canonical ledger import.'
+          : null,
+    );
 
-    var previousMaxHandleRowId = await ledgerDb.maxHandleSourceRowId();
-    var previousMaxChatRowId = await ledgerDb.maxChatSourceRowId();
-    var previousMaxMessageRowId = await ledgerDb.maxMessageSourceRowId();
-    var previousMaxAttachmentRowId = await ledgerDb.maxAttachmentSourceRowId();
-    var previousMaxMessageAttachmentRowId = await ledgerDb
-        .maxMessageAttachmentSourceRowId();
+    final hasAnyLedgerData =
+        await ledgerDb.maxHandleSourceRowId() != null ||
+        await ledgerDb.maxChatSourceRowId() != null ||
+        await ledgerDb.maxMessageSourceRowId() != null ||
+        await ledgerDb.maxAttachmentSourceRowId() != null ||
+        await ledgerDb.maxMessageAttachmentSourceRowId() != null;
 
-    var hasExistingLedgerData =
+    var previousMaxHandleRowId = isHistoricalArchive
+        ? await ledgerDb.maxHandleSourceRowIdForSource(currentSourceId)
+        : await ledgerDb.maxHandleSourceRowId();
+    var previousMaxChatRowId = isHistoricalArchive
+        ? await ledgerDb.maxChatSourceRowIdForSource(currentSourceId)
+        : await ledgerDb.maxChatSourceRowId();
+    var previousMaxMessageRowId = isHistoricalArchive
+        ? await ledgerDb.maxMessageSourceRowIdForSource(currentSourceId)
+        : await ledgerDb.maxMessageSourceRowId();
+    var previousMaxAttachmentRowId = includeAttachmentImport
+        ? await ledgerDb.maxAttachmentSourceRowId()
+        : null;
+    var previousMaxMessageAttachmentRowId = includeAttachmentImport
+        ? await ledgerDb.maxMessageAttachmentSourceRowId()
+        : null;
+
+    var hasExistingSourceLedgerData =
         previousMaxHandleRowId != null ||
         previousMaxChatRowId != null ||
         previousMaxMessageRowId != null ||
         previousMaxAttachmentRowId != null ||
         previousMaxMessageAttachmentRowId != null;
+    var hasExistingLedgerData = hasAnyLedgerData;
 
-    if (hasExistingLedgerData && previousMaxMessageRowId != null) {
+    if (!isHistoricalArchive &&
+        hasExistingSourceLedgerData &&
+        previousMaxMessageRowId != null) {
       const messageCountFloor = 50;
       const rowIdGapThreshold = 500;
       final existingMessageCount = await ledgerDb.countRows('messages');
@@ -103,61 +152,50 @@ class OrchestratedLedgerImportService {
         previousMaxMessageRowId = null;
         previousMaxAttachmentRowId = null;
         previousMaxMessageAttachmentRowId = null;
+        hasExistingSourceLedgerData = false;
         hasExistingLedgerData = false;
       }
     }
 
-    final messagesDbPath = sourceChatDbOverride ?? pathsHelper.chatDBPath;
-
-    if (sourceChatDbOverride != null) {
-      final requestedSourcePath = p.normalize(sourceChatDbOverride);
-      final existingSourcePaths = await ledgerDb
-          .distinctImportBatchSourceChatDbs();
-      final conflictingSourcePaths = existingSourcePaths
-          .where((sourcePath) => p.normalize(sourcePath) != requestedSourcePath)
-          .toList();
-      if (conflictingSourcePaths.isNotEmpty) {
-        const detail =
-            'Historical archive import is blocked because db-import already contains batches for a different source chat.db. The canonical importer still keys ledger rows to source ROWID, so mixed-source imports would collide until the multi-source identity refactor lands.';
-        debugSettings.logError('$_logContext: $detail');
-        return const DbImportResult(batchId: -1, success: false, error: detail);
+    String? addressBookPath;
+    if (includeContactImport) {
+      final addressBookEither = await ref.read(
+        futureGetFolderAggregateProvider.future,
+      );
+      addressBookEither.fold(
+        (_) {},
+        (aggregate) => addressBookPath = aggregate.mostRecentFolderPath,
+      );
+      if (addressBookPath == null) {
+        const failureMessage =
+            'AddressBook path could not be resolved via getFolderAggregateEitherProvider';
+        debugSettings.logError('$_logContext: $failureMessage');
+        return const DbImportResult(
+          batchId: -1,
+          success: false,
+          error: 'AddressBook path resolution failed',
+        );
       }
     }
 
-    final addressBookEither = await ref.read(
-      futureGetFolderAggregateProvider.future,
-    );
-    String? addressBookPath;
-    addressBookEither.fold(
-      (_) {},
-      (aggregate) => addressBookPath = aggregate.mostRecentFolderPath,
-    );
-    if (addressBookPath == null) {
-      const failureMessage =
-          'AddressBook path could not be resolved via getFolderAggregateEitherProvider';
-      debugSettings.logError('$_logContext: $failureMessage');
-      return const DbImportResult(
-        batchId: -1,
-        success: false,
-        error: 'AddressBook path resolution failed',
-      );
-    }
-
     final messagesFile = File(messagesDbPath);
-    final addressBookFile = File(addressBookPath!);
+    final addressBookFile = addressBookPath == null
+        ? null
+        : File(addressBookPath!);
     if (!messagesFile.existsSync()) {
       final message = 'Messages database not found at $messagesDbPath';
       debugSettings.logError('$_logContext: $message');
       return DbImportResult(batchId: -1, success: false, error: message);
     }
-    if (!addressBookFile.existsSync()) {
+    if (includeContactImport &&
+        (addressBookFile == null || !addressBookFile.existsSync())) {
       final message =
-          'AddressBook database not found at ${addressBookFile.path}';
+          'AddressBook database not found at ${addressBookFile?.path}';
       debugSettings.logError('$_logContext: $message');
       return DbImportResult(batchId: -1, success: false, error: message);
     }
 
-    if (hasExistingLedgerData) {
+    if (!isHistoricalArchive && hasExistingSourceLedgerData) {
       final hasMissingMembershipParents = await hasMissingChatMembershipParents(
         ledgerDb: ledgerDb,
         messagesDbPath: messagesFile.path,
@@ -171,21 +209,29 @@ class OrchestratedLedgerImportService {
         previousMaxMessageRowId = null;
         previousMaxAttachmentRowId = null;
         previousMaxMessageAttachmentRowId = null;
+        hasExistingSourceLedgerData = false;
         hasExistingLedgerData = false;
       }
     }
 
-    final startedAtUtc = DateTime.now().toUtc().toIso8601String();
-
     final batchId = await ledgerDb.insertImportBatch(
       startedAtUtc: startedAtUtc,
-      sourceChatDb: messagesDbPath,
-      sourceAddressbook: addressBookFile.path,
+      sourceChatDb: normalizedMessagesDbPath,
+      sourceAddressbook: addressBookFile?.path,
       hostInfoJson: await _buildHostInfoJson(),
       notes: 'Orchestrated import ${DateTime.now().toIso8601String()}',
+      chatSourceId: currentSourceId,
+      chatSourceKind: chatSourceKind,
+      status: 'running',
+      startedAt: startedAt,
+      sourceLabelSnapshot: sourceLabel,
     );
-    if (hasExistingLedgerData) {
-      await ledgerDb.assignExistingRecordsToBatch(batchId: batchId);
+    if (hasExistingSourceLedgerData) {
+      await ledgerDb.assignExistingRecordsToBatch(
+        batchId: batchId,
+        sourceId: currentSourceId,
+        updateContacts: includeContactImport,
+      );
     }
 
     await _recordSourceFile(
@@ -193,20 +239,23 @@ class OrchestratedLedgerImportService {
       batchId: batchId,
       file: messagesFile,
     );
-    await _recordSourceFile(
-      ledgerDb: ledgerDb,
-      batchId: batchId,
-      file: addressBookFile,
-    );
+    if (addressBookFile != null) {
+      await _recordSourceFile(
+        ledgerDb: ledgerDb,
+        batchId: batchId,
+        file: addressBookFile,
+      );
+    }
 
     Database? messagesDb;
     Database? addressBookDb;
-
     final scratchpad = <String, Object?>{};
 
     try {
       messagesDb = await openDatabase(messagesFile.path, readOnly: true);
-      addressBookDb = await openDatabase(addressBookFile.path, readOnly: true);
+      addressBookDb = includeContactImport
+          ? await openDatabase(addressBookFile!.path, readOnly: true)
+          : await openDatabase(inMemoryDatabasePath);
 
       final sourceMaxHandleRowIdAtBatchStart = await _readMaxSourceRowId(
         messagesDb,
@@ -231,6 +280,7 @@ class OrchestratedLedgerImportService {
         messagesDbPath: messagesFile.path,
         addressBookDb: addressBookDb,
         batchId: batchId,
+        chatSourceId: currentSourceId,
         log: debugSettings.logProgress,
         extractor: _extractor,
         rustExtractionLimit: rustExtractionLimit,
@@ -254,35 +304,32 @@ class OrchestratedLedgerImportService {
         HandlesImporter(),
         ChatsImporter(),
         ChatToHandleImporter(),
-        ContactsImporter(),
-        ContactChannelsImporter(),
-        ContactToChatHandleImporter(),
+        if (includeContactImport) ContactsImporter(),
+        if (includeContactImport) ContactChannelsImporter(),
+        if (includeContactImport) ContactToChatHandleImporter(),
         MessagesImporter(),
         MessageRichTextImporter(),
         ChatToMessageImporter(),
-        AttachmentsImporter(),
-        MessageAttachmentsImporter(),
+        if (includeAttachmentImport) AttachmentsImporter(),
+        if (includeAttachmentImport) MessageAttachmentsImporter(),
       ];
 
       final orchestrator = ImportOrchestrator(importers);
-
-      // Communicate the execution plan to the UI before running.
       onExecutionPlan?.call(orchestrator.executionOrder());
-
       await orchestrator.run(context, onTableProgress: onTableProgress);
 
       debugSettings.logProgress(
         '$_logContext: Ledger import completed successfully',
       );
 
-      await ledgerDb.updateImportBatch(
-        id: batchId,
-        finishedAtUtc: DateTime.now().toUtc().toIso8601String(),
-        notes: 'Completed orchestrated import',
-      );
-
+      final finishedAtUtc = DateTime.now().toUtc().toIso8601String();
+      final finishedAt =
+          DateTime.parse(finishedAtUtc).millisecondsSinceEpoch ~/ 1000;
       final handlesImported = context.readScratch<int>('handles.inserted') ?? 0;
       final chatsImported = context.readScratch<int>('chats.inserted') ?? 0;
+      final chatsUpdated = context.readScratch<int>('chats.updated') ?? 0;
+      final chatsDeduplicated =
+          context.readScratch<int>('chats.deduplicated') ?? 0;
       final chatMembershipsImported =
           context.readScratch<int>('chatMemberships.inserted') ?? 0;
       final contactsImported =
@@ -293,6 +340,16 @@ class OrchestratedLedgerImportService {
           context.readScratch<int>('contactHandleLinks.inserted') ?? 0;
       final messagesImported =
           context.readScratch<int>('messages.inserted') ?? 0;
+      final messagesUpdated = context.readScratch<int>('messages.updated') ?? 0;
+      final messagesDeduplicated =
+          context.readScratch<int>('messages.deduplicated') ?? 0;
+      final messagesMissingGuids =
+          context.readScratch<int>('messages.missingGuids') ?? 0;
+      final recoveredMessagesUpdated =
+          context.readScratch<int>('recoveredUnlinkedMessages.updated') ?? 0;
+      final recoveredMessagesDeduplicated =
+          context.readScratch<int>('recoveredUnlinkedMessages.deduplicated') ??
+          0;
       final richTextApplied =
           context.readScratch<int>('messages.richTextApplied') ?? 0;
       final chatMessageLinks =
@@ -302,7 +359,36 @@ class OrchestratedLedgerImportService {
       final messageAttachmentLinks =
           context.readScratch<int>('messageAttachments.inserted') ?? 0;
 
-      // Write detailed audit log
+      final totalRowsInserted =
+          handlesImported +
+          chatsImported +
+          chatMembershipsImported +
+          contactsImported +
+          contactChannelsImported +
+          contactLinksImported +
+          messagesImported +
+          chatMessageLinks +
+          attachmentsImported +
+          messageAttachmentLinks;
+      final totalRowsUpdated =
+          chatsUpdated + messagesUpdated + recoveredMessagesUpdated;
+      final totalRowsDeduplicated =
+          chatsDeduplicated +
+          messagesDeduplicated +
+          recoveredMessagesDeduplicated;
+
+      await ledgerDb.updateImportBatch(
+        id: batchId,
+        finishedAtUtc: finishedAtUtc,
+        notes: 'Completed orchestrated import',
+        status: 'succeeded',
+        finishedAt: finishedAt,
+        rowsInserted: totalRowsInserted,
+        rowsUpdated: totalRowsUpdated,
+        rowsDeduplicated: totalRowsDeduplicated,
+        rowsFailed: messagesMissingGuids,
+      );
+
       try {
         await const ImportAuditWriter().writeReport(
           messagesDb: messagesDb,
@@ -375,7 +461,22 @@ class OrchestratedLedgerImportService {
       debugSettings.logError('$_logContext: import failed: $error');
       debugSettings.logProgress(stackTrace.toString());
 
-      // Write audit log even on failure — source DBs may already be closed
+      final failedAtUtc = DateTime.now().toUtc().toIso8601String();
+      final failedAt =
+          DateTime.parse(failedAtUtc).millisecondsSinceEpoch ~/ 1000;
+      try {
+        await ledgerDb.updateImportBatch(
+          id: batchId,
+          finishedAtUtc: failedAtUtc,
+          notes: 'Failed orchestrated import',
+          status: 'failed',
+          finishedAt: failedAt,
+          errorSummary: '$error',
+        );
+      } catch (_) {
+        // Batch-finalization is best-effort on failure.
+      }
+
       if (messagesDb != null && addressBookDb != null) {
         try {
           await const ImportAuditWriter().writeReport(

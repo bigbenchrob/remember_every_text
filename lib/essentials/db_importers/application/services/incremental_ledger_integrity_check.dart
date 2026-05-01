@@ -16,11 +16,11 @@ SELECT
   join_rows.handle_id AS handle_id
 FROM $attachAlias.chat_handle_join AS join_rows
 LEFT JOIN chats AS ledger_chats
-  ON ledger_chats.id = join_rows.chat_id
+  ON ledger_chats.source_chat_rowid = join_rows.chat_id
 LEFT JOIN handles AS ledger_handles
-  ON ledger_handles.id = join_rows.handle_id
-WHERE ledger_chats.id IS NULL
-   OR ledger_handles.id IS NULL
+  ON ledger_handles.source_handle_rowid = join_rows.handle_id
+WHERE ledger_chats.source_chat_rowid IS NULL
+   OR ledger_handles.source_handle_rowid IS NULL
 LIMIT 1
 ''');
 

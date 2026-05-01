@@ -39,6 +39,14 @@ LIMIT 5
 }
 
 Future<void> validateLedgerChatHandleJoinCoverage(IImportContext ctx) async {
+  final chatScope = _sourceScopedLedgerJoin(
+    alias: 'ledger_chats',
+    sourceId: ctx.chatSourceId,
+  );
+  final handleScope = _sourceScopedLedgerJoin(
+    alias: 'ledger_handles',
+    sourceId: ctx.chatSourceId,
+  );
   final diagnosticSql = _buildAttachedImportDiagnosticSql(
     messagesDbPath: ctx.messagesDbPath,
     alias: 'source_chat',
@@ -47,12 +55,12 @@ Future<void> validateLedgerChatHandleJoinCoverage(IImportContext ctx) async {
 SELECT join_rows.chat_id, join_rows.handle_id
 FROM source_chat.chat_handle_join AS join_rows
 LEFT JOIN chats AS ledger_chats
-  ON ledger_chats.id = join_rows.chat_id
+  ON ledger_chats.source_chat_rowid = join_rows.chat_id$chatScope
 LEFT JOIN handles AS ledger_handles
-  ON ledger_handles.id = join_rows.handle_id
+  ON ledger_handles.source_handle_rowid = join_rows.handle_id$handleScope
 WHERE ${_boundedJoinPredicate(leftColumn: 'join_rows.chat_id', leftMaxInclusive: ctx.sourceMaxChatRowIdAtBatchStart, rightColumn: 'join_rows.handle_id', rightMaxInclusive: ctx.sourceMaxHandleRowIdAtBatchStart)}
-  AND (ledger_chats.id IS NULL
-   OR ledger_handles.id IS NULL);
+  AND (ledger_chats.source_chat_rowid IS NULL
+   OR ledger_handles.source_handle_rowid IS NULL);
 ''',
   );
 
@@ -64,12 +72,12 @@ WHERE ${_boundedJoinPredicate(leftColumn: 'join_rows.chat_id', leftMaxInclusive:
 SELECT join_rows.chat_id AS left_id, join_rows.handle_id AS right_id
 FROM source_chat.chat_handle_join AS join_rows
 LEFT JOIN chats AS ledger_chats
-  ON ledger_chats.id = join_rows.chat_id
+  ON ledger_chats.source_chat_rowid = join_rows.chat_id$chatScope
 LEFT JOIN handles AS ledger_handles
-  ON ledger_handles.id = join_rows.handle_id
+  ON ledger_handles.source_handle_rowid = join_rows.handle_id$handleScope
 WHERE ${_boundedJoinPredicate(leftColumn: 'join_rows.chat_id', leftMaxInclusive: ctx.sourceMaxChatRowIdAtBatchStart, rightColumn: 'join_rows.handle_id', rightMaxInclusive: ctx.sourceMaxHandleRowIdAtBatchStart)}
-  AND (ledger_chats.id IS NULL
-   OR ledger_handles.id IS NULL)
+  AND (ledger_chats.source_chat_rowid IS NULL
+   OR ledger_handles.source_handle_rowid IS NULL)
 LIMIT 5
 ''',
     errorCode: 'chat-to-handle-ledger-parent-missing',
@@ -118,6 +126,14 @@ LIMIT 5
 }
 
 Future<void> validateLedgerChatMessageJoinCoverage(IImportContext ctx) async {
+  final chatScope = _sourceScopedLedgerJoin(
+    alias: 'ledger_chats',
+    sourceId: ctx.chatSourceId,
+  );
+  final messageScope = _sourceScopedLedgerJoin(
+    alias: 'ledger_messages',
+    sourceId: ctx.chatSourceId,
+  );
   final diagnosticSql = _buildAttachedImportDiagnosticSql(
     messagesDbPath: ctx.messagesDbPath,
     alias: 'source_chat',
@@ -126,12 +142,12 @@ Future<void> validateLedgerChatMessageJoinCoverage(IImportContext ctx) async {
 SELECT join_rows.chat_id, join_rows.message_id
 FROM source_chat.chat_message_join AS join_rows
 LEFT JOIN chats AS ledger_chats
-  ON ledger_chats.id = join_rows.chat_id
+  ON ledger_chats.source_chat_rowid = join_rows.chat_id$chatScope
 LEFT JOIN messages AS ledger_messages
-  ON ledger_messages.id = join_rows.message_id
+  ON ledger_messages.source_message_rowid = join_rows.message_id$messageScope
 WHERE ${_boundedJoinPredicate(leftColumn: 'join_rows.chat_id', leftMaxInclusive: ctx.sourceMaxChatRowIdAtBatchStart, rightColumn: 'join_rows.message_id', rightMaxInclusive: ctx.sourceMaxMessageRowIdAtBatchStart)}
-  AND (ledger_chats.id IS NULL
-   OR ledger_messages.id IS NULL);
+  AND (ledger_chats.source_chat_rowid IS NULL
+   OR ledger_messages.source_message_rowid IS NULL);
 ''',
   );
 
@@ -143,12 +159,12 @@ WHERE ${_boundedJoinPredicate(leftColumn: 'join_rows.chat_id', leftMaxInclusive:
 SELECT join_rows.chat_id AS left_id, join_rows.message_id AS right_id
 FROM source_chat.chat_message_join AS join_rows
 LEFT JOIN chats AS ledger_chats
-  ON ledger_chats.id = join_rows.chat_id
+  ON ledger_chats.source_chat_rowid = join_rows.chat_id$chatScope
 LEFT JOIN messages AS ledger_messages
-  ON ledger_messages.id = join_rows.message_id
+  ON ledger_messages.source_message_rowid = join_rows.message_id$messageScope
 WHERE ${_boundedJoinPredicate(leftColumn: 'join_rows.chat_id', leftMaxInclusive: ctx.sourceMaxChatRowIdAtBatchStart, rightColumn: 'join_rows.message_id', rightMaxInclusive: ctx.sourceMaxMessageRowIdAtBatchStart)}
-  AND (ledger_chats.id IS NULL
-   OR ledger_messages.id IS NULL)
+  AND (ledger_chats.source_chat_rowid IS NULL
+   OR ledger_messages.source_message_rowid IS NULL)
 LIMIT 5
 ''',
     errorCode: 'chat-to-message-ledger-parent-missing',
@@ -201,6 +217,18 @@ LIMIT 5
 Future<void> validateLedgerMessageAttachmentJoinCoverage(
   IImportContext ctx,
 ) async {
+  final messageScope = _sourceScopedLedgerJoin(
+    alias: 'ledger_messages',
+    sourceId: ctx.chatSourceId,
+  );
+  final recoveredScope = _sourceScopedLedgerJoin(
+    alias: 'ledger_recovered_messages',
+    sourceId: ctx.chatSourceId,
+  );
+  final attachmentScope = _sourceScopedLedgerJoin(
+    alias: 'ledger_attachments',
+    sourceId: ctx.chatSourceId,
+  );
   final diagnosticSql = _buildAttachedImportDiagnosticSql(
     messagesDbPath: ctx.messagesDbPath,
     alias: 'source_chat',
@@ -209,14 +237,14 @@ Future<void> validateLedgerMessageAttachmentJoinCoverage(
 SELECT join_rows.message_id, join_rows.attachment_id
 FROM source_chat.message_attachment_join AS join_rows
 LEFT JOIN messages AS ledger_messages
-  ON ledger_messages.id = join_rows.message_id
+  ON ledger_messages.source_message_rowid = join_rows.message_id$messageScope
 LEFT JOIN recovered_unlinked_messages AS ledger_recovered_messages
-  ON ledger_recovered_messages.id = join_rows.message_id
+  ON ledger_recovered_messages.source_message_rowid = join_rows.message_id$recoveredScope
 LEFT JOIN attachments AS ledger_attachments
-  ON ledger_attachments.id = join_rows.attachment_id
+  ON ledger_attachments.source_attachment_rowid = join_rows.attachment_id$attachmentScope
 WHERE ${_boundedJoinPredicate(leftColumn: 'join_rows.message_id', leftMaxInclusive: ctx.sourceMaxMessageRowIdAtBatchStart, rightColumn: 'join_rows.attachment_id', rightMaxInclusive: ctx.sourceMaxAttachmentRowIdAtBatchStart)}
-  AND ((ledger_messages.id IS NULL AND ledger_recovered_messages.id IS NULL)
-   OR ledger_attachments.id IS NULL);
+  AND ((ledger_messages.source_message_rowid IS NULL AND ledger_recovered_messages.source_message_rowid IS NULL)
+   OR ledger_attachments.source_attachment_rowid IS NULL);
 ''',
   );
 
@@ -228,14 +256,14 @@ WHERE ${_boundedJoinPredicate(leftColumn: 'join_rows.message_id', leftMaxInclusi
 SELECT join_rows.message_id AS left_id, join_rows.attachment_id AS right_id
 FROM source_chat.message_attachment_join AS join_rows
 LEFT JOIN messages AS ledger_messages
-  ON ledger_messages.id = join_rows.message_id
+  ON ledger_messages.source_message_rowid = join_rows.message_id$messageScope
 LEFT JOIN recovered_unlinked_messages AS ledger_recovered_messages
-  ON ledger_recovered_messages.id = join_rows.message_id
+  ON ledger_recovered_messages.source_message_rowid = join_rows.message_id$recoveredScope
 LEFT JOIN attachments AS ledger_attachments
-  ON ledger_attachments.id = join_rows.attachment_id
+  ON ledger_attachments.source_attachment_rowid = join_rows.attachment_id$attachmentScope
 WHERE ${_boundedJoinPredicate(leftColumn: 'join_rows.message_id', leftMaxInclusive: ctx.sourceMaxMessageRowIdAtBatchStart, rightColumn: 'join_rows.attachment_id', rightMaxInclusive: ctx.sourceMaxAttachmentRowIdAtBatchStart)}
-  AND ((ledger_messages.id IS NULL AND ledger_recovered_messages.id IS NULL)
-   OR ledger_attachments.id IS NULL)
+  AND ((ledger_messages.source_message_rowid IS NULL AND ledger_recovered_messages.source_message_rowid IS NULL)
+   OR ledger_attachments.source_attachment_rowid IS NULL)
 LIMIT 5
 ''',
     errorCode: 'message-attachments-ledger-parent-missing',
@@ -325,6 +353,16 @@ ATTACH DATABASE '$escapedPath' AS $alias;
 $body
 DETACH DATABASE $alias;
 ''';
+}
+
+String _sourceScopedLedgerJoin({
+  required String alias,
+  required int? sourceId,
+}) {
+  if (sourceId == null) {
+    return '';
+  }
+  return ' AND $alias.source_id = $sourceId';
 }
 
 String _boundedJoinPredicate({

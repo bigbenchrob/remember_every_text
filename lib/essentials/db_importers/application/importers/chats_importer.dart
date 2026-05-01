@@ -28,6 +28,13 @@ class ChatsImporter extends BaseTableImporter with RowProgressReporter {
 
   @override
   Future<void> copy(IImportContext ctx) async {
+    final chatSourceId = ctx.chatSourceId;
+    if (chatSourceId == null) {
+      throw Exception(
+        'ChatsImporter requires chatSourceId on the import context',
+      );
+    }
+
     final minRowId = ctx.previousMaxChatRowId;
     final maxRowId = ctx.sourceMaxChatRowIdAtBatchStart;
     String? whereClause;
@@ -53,11 +60,15 @@ class ChatsImporter extends BaseTableImporter with RowProgressReporter {
     if (rows.isEmpty) {
       ctx.info('ChatsImporter: no new chats detected.');
       ctx.writeScratch('chats.inserted', 0);
+      ctx.writeScratch('chats.sourceRowIdToLedgerId', <int, int>{});
       return;
     }
 
     var processed = 0;
     var inserted = 0;
+    var updatedCount = 0;
+    var deduplicated = 0;
+    final sourceRowIdToLedgerId = <int, int>{};
     for (final row in rows) {
       final sourceRowId = row['ROWID'] as int?;
       final guid = (row['guid'] as String?)?.trim();
@@ -72,23 +83,34 @@ class ChatsImporter extends BaseTableImporter with RowProgressReporter {
       final displayName = (row['display_name'] as String?)?.trim();
       final isGroup = (row['is_group'] as int? ?? 0) == 1;
       final created = DateConverter.toIntSafe(row['creation_date']);
-      final updated = DateConverter.toIntSafe(
+      final updatedTimestamp = DateConverter.toIntSafe(
         row['last_read_message_timestamp'],
       );
 
-      await ctx.importDb.insertChat(
-        id: sourceRowId,
+      final result = await ctx.importDb.insertChat(
         sourceRowid: sourceRowId,
         guid: guid,
         service: service,
         displayName: displayName,
         isGroup: isGroup,
         createdAtUtc: DateConverter.appleToIsoString(created),
-        updatedAtUtc: DateConverter.appleToIsoString(updated),
+        updatedAtUtc: DateConverter.appleToIsoString(updatedTimestamp),
         batchId: ctx.batchId,
+        sourceId: chatSourceId,
+        firstImportBatchId: ctx.batchId,
+        lastImportBatchId: ctx.batchId,
       );
 
-      inserted += 1;
+      sourceRowIdToLedgerId[sourceRowId] = result.id;
+      if (result.inserted) {
+        inserted += 1;
+      }
+      if (result.updated) {
+        updatedCount += 1;
+      }
+      if (result.deduplicated) {
+        deduplicated += 1;
+      }
       processed += 1;
       if (processed % 200 == 0 || processed == rows.length) {
         ctx.info(
@@ -99,6 +121,9 @@ class ChatsImporter extends BaseTableImporter with RowProgressReporter {
     }
 
     ctx.writeScratch('chats.inserted', inserted);
+    ctx.writeScratch('chats.updated', updatedCount);
+    ctx.writeScratch('chats.deduplicated', deduplicated);
+    ctx.writeScratch('chats.sourceRowIdToLedgerId', sourceRowIdToLedgerId);
     if (rows.isNotEmpty) {
       final lastRowId = rows.last['ROWID'];
       if (lastRowId is int) {

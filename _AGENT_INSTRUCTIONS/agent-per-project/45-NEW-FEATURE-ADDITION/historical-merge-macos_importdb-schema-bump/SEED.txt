@@ -1,0 +1,272 @@
+IMPLEMENTATION PLANNING REQUEST: Archive Ledger Provenance Schema
+
+Current Situation
+
+We are moving Historical Archive Merge v2 onto the canonical import pipeline.
+
+The v2 architecture has locked this rule:
+
+Historical archive rows must be written into the existing canonical import ledger, macos_import.db, not into a parallel archive database.
+
+Current macos_import.db already has the correct broad table families:
+
+* messages
+* chats
+* handles
+* chat_to_message
+* chat_to_handle
+* attachments
+* message_attachments
+* import_batches
+* historical_archive_sources
+
+However, the schema does not yet appear to contain enough provenance metadata to safely distinguish:
+
+* current Mac live import rows
+* historical archive rows
+* source archive identity
+* import batch identity
+* dedupe/audit status
+
+Because this affects import, migration, reset/rebuild, diagnostics, and future archive deletion, this must be planned before implementation.
+
+Branch Requirement
+
+Create a new branch before any code changes:
+
+Ftr.archive-ledger-provenance
+
+Do not continue this work on main.
+
+Do not delete or reset databases until schema and migration changes are implemented.
+
+Goal of This Planning Pass
+
+Produce a formal implementation plan only.
+
+Do not implement yet.
+
+The plan must answer:
+
+1. What exact schema changes are needed in macos_import.db?
+2. Which tables need provenance fields?
+3. Which tables do not need provenance fields because they inherit source identity through relationships?
+4. How will current Mac rows be represented?
+5. How will archive rows be represented?
+6. How will import batches connect to source identity?
+7. How will migration read this data without archive-specific branching?
+8. How will reset/rebuild replay archive rows?
+9. How will archive deletion work later?
+10. What tests must be added before real archive import wiring?
+
+Core Design Rules
+
+The implementation plan must obey these rules:
+
+1. macos_import.db is the single canonical import ledger.
+2. No new historical_archive_import.db may be created.
+3. Archive import rows must use canonical ledger tables.
+4. Archive metadata must be additive, not a separate semantic schema.
+5. Migration must read canonical ledger tables only.
+6. Migration must not read source archive folders or attached archive DBs.
+7. Dates in canonical ledger must be Unix epoch seconds stored as INTEGER.
+8. UI success must mean canonical migration + rebuild completed, not merely source scan or ledger insertion.
+9. Working DB remains disposable and rebuildable.
+10. User overlay DB remains untouched.
+
+Proposed Provenance Concepts
+
+The plan should evaluate and refine these concepts.
+
+Source Kind
+
+Possible values:
+
+* current_mac
+* historical_archive
+
+This identifies the broad origin of a ledger row.
+
+Source ID
+
+Stable ID referring to a source record.
+
+For live Mac import:
+
+* source kind: current_mac
+* source id: stable current Mac source record
+
+For archive import:
+
+* source kind: historical_archive
+* source id: record in historical_archive_sources
+
+Import Batch ID
+
+Every import run must have an import_batch_id.
+
+This applies to both:
+
+* live current Mac import batches
+* historical archive import batches
+
+Source Native IDs
+
+Where useful, preserve source-native identifiers such as:
+
+* source message ROWID
+* source chat ROWID
+* source handle ROWID
+* source attachment ROWID
+* source GUIDs
+
+But source-native ROWIDs must not become global identity. They are traceability fields only.
+
+Tables To Review
+
+The plan must inspect and report current schemas for:
+
+* import_batches
+* historical_archive_sources
+* source_files
+* messages
+* chats
+* handles
+* chat_to_message
+* chat_to_handle
+* attachments
+* message_attachments
+* recovered_unlinked_messages
+* recovered_unlinked_message_attachments
+
+For each table, state:
+
+* current role
+* whether provenance is needed
+* proposed new fields, if any
+* whether migration logic is affected
+* whether live import logic is affected
+* whether archive import logic is affected
+
+Likely Schema Direction
+
+Do not treat this as final until inspected, but likely direction is:
+
+import_batches
+
+Should include or reference:
+
+* batch id
+* source kind
+* source id
+* source label
+* started_at
+* completed_at
+* status
+* counts
+* error summary if failed
+
+historical_archive_sources
+
+Should include:
+
+* archive source id
+* source label
+* folder path or normalized source identity
+* chat_db_path
+* detected attachments path
+* first_seen_at
+* last_preflight_at
+* last_imported_at
+* earliest_message_date
+* latest_message_date
+* message_count
+* status
+
+messages
+
+Should include enough provenance to distinguish rows directly, likely:
+
+* source_kind
+* source_id
+* import_batch_id
+* source_message_rowid
+* message_guid
+* timestamp as INTEGER Unix epoch seconds
+
+But the plan should decide whether source provenance belongs directly on every row or is derived through batch/source relationships.
+
+joins
+
+For joins such as chat_to_message and chat_to_handle, source-native row traceability may matter, but avoid unnecessary duplication unless needed for replay/audit.
+
+Important Design Question
+
+The agent must explicitly decide:
+
+Should provenance be stored directly on major ledger rows, or should rows reference import_batch_id, and provenance is derived through import_batches?
+
+Preferred answer may be:
+
+* import_batch_id on major imported rows
+* import_batches links to source kind/source id
+* optionally denormalize source_kind only where it greatly simplifies diagnostics or deletion
+
+But this must be made explicit.
+
+Deletion / Testing Reset Requirement
+
+We need a future control:
+
+Remove Imported Archive Data for This Source
+
+This requires knowing which ledger rows came from a given archive source.
+
+Therefore the plan must specify how to delete archive-derived ledger rows safely by source or batch, without touching current Mac rows or overlays.
+
+This does not need full UI implementation in this slice, but the schema must support it.
+
+Migration Compatibility Requirement
+
+Existing migration must continue working for current Mac data.
+
+The plan must explain:
+
+* how existing live rows get default provenance
+* whether migration needs schema compatibility code
+* whether legacy database migration/backfill is required
+* whether a clean rebuild is required during development
+
+Testing Requirements
+
+Before implementation, the plan must include tests for:
+
+1. Existing current Mac import still produces valid canonical ledger rows.
+2. Current Mac rows receive source_kind = current_mac or equivalent provenance.
+3. Archive rows can be inserted into the same canonical ledger tables.
+4. Archive rows receive source identity and batch identity.
+5. GUID dedupe works at ledger insertion.
+6. Re-importing the same archive is idempotent.
+7. Migration reads ledger rows without caring whether source is current Mac or archive.
+8. Reset/rebuild of working.db replays both current Mac and archive rows from macos_import.db.
+9. Archive-source deletion can remove only archive rows for one source/batch.
+10. No migration code reads from historical_archive_import.db or source archive DBs.
+
+Deliverable
+
+Produce:
+
+IMPLEMENTATION_PLAN.md
+
+The plan must include:
+
+* schema inspection summary
+* proposed schema deltas
+* migration/backfill strategy
+* import logic changes
+* migration logic changes
+* test plan
+* rollback strategy
+* explicit non-goals
+
+Do not implement until this plan is reviewed.

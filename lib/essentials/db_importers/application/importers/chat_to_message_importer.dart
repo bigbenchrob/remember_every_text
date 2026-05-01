@@ -16,7 +16,6 @@ class ChatToMessageImporter extends BaseTableImporter {
   @override
   Future<void> validatePrereqs(IImportContext ctx) async {
     await validateSourceChatMessageJoinIntegrity(ctx);
-    await validateLedgerChatMessageJoinCoverage(ctx);
     if (ctx.hasExistingLedgerData) {
       return;
     }
@@ -45,7 +44,6 @@ class ChatToMessageImporter extends BaseTableImporter {
         batch.insert('chat_to_message', <String, Object?>{
           'chat_id': entry.value,
           'message_id': entry.key,
-          'source_rowid': entry.key,
         }, conflictAlgorithm: ConflictAlgorithm.replace);
       }
       await batch.commit(noResult: true);

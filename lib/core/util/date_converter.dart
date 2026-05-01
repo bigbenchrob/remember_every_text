@@ -108,6 +108,26 @@ class DateConverter {
     return dateTime.toUtc().toIso8601String();
   }
 
+  /// Convert an ISO 8601 timestamp string to Unix epoch seconds.
+  /// Returns null for null, blank, or invalid values.
+  static int? isoStringToUnixSeconds(String? raw) {
+    if (raw == null) {
+      return null;
+    }
+
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+
+    final dateTime = DateTime.tryParse(trimmed);
+    if (dateTime == null) {
+      return null;
+    }
+
+    return dart2Unix(dateTime.toUtc().millisecondsSinceEpoch);
+  }
+
   /// Convert Apple timestamp to DateTime object
   /// Handles both int and double values from SQLite databases
   static DateTime? appleToDateTime(dynamic raw) {

@@ -29,6 +29,13 @@ class HandlesImporter extends BaseTableImporter with RowProgressReporter {
 
   @override
   Future<void> copy(IImportContext ctx) async {
+    final chatSourceId = ctx.chatSourceId;
+    if (chatSourceId == null) {
+      throw Exception(
+        'HandlesImporter requires chatSourceId on the import context',
+      );
+    }
+
     final minRowId = ctx.previousMaxHandleRowId;
     final maxRowId = ctx.sourceMaxHandleRowIdAtBatchStart;
     String? whereClause;
@@ -54,10 +61,12 @@ class HandlesImporter extends BaseTableImporter with RowProgressReporter {
     if (rows.isEmpty) {
       ctx.info('HandlesImporter: no new handles detected.');
       ctx.writeScratch('handles.inserted', 0);
+      ctx.writeScratch('handles.sourceRowIdToLedgerId', <int, int>{});
       return;
     }
 
     var processed = 0;
+    final sourceRowIdToLedgerId = <int, int>{};
     for (final row in rows) {
       final sourceRowId = row['ROWID'] as int?;
       final rawIdentifier = stripMeaninglessHandlePrefix(row['id'] as String?);
@@ -74,8 +83,7 @@ class HandlesImporter extends BaseTableImporter with RowProgressReporter {
           DateConverter.toIntSafe(row['last_use']);
       final lastSeenUtc = DateConverter.appleToIsoString(lastSeen);
 
-      await ctx.importDb.insertHandle(
-        id: sourceRowId,
+      final ledgerHandleId = await ctx.importDb.insertHandle(
         sourceRowid: sourceRowId,
         service: service,
         rawIdentifier: rawIdentifier ?? 'unknown',
@@ -84,7 +92,14 @@ class HandlesImporter extends BaseTableImporter with RowProgressReporter {
         country: country,
         lastSeenUtc: lastSeenUtc,
         batchId: ctx.batchId,
+        sourceId: chatSourceId,
+        firstImportBatchId: ctx.batchId,
+        lastImportBatchId: ctx.batchId,
       );
+
+      if (sourceRowId != null) {
+        sourceRowIdToLedgerId[sourceRowId] = ledgerHandleId;
+      }
 
       processed += 1;
       if (processed % 200 == 0 || processed == rows.length) {
@@ -96,6 +111,7 @@ class HandlesImporter extends BaseTableImporter with RowProgressReporter {
     }
 
     ctx.writeScratch('handles.inserted', processed);
+    ctx.writeScratch('handles.sourceRowIdToLedgerId', sourceRowIdToLedgerId);
     if (rows.isNotEmpty) {
       final lastRowId = rows.last['ROWID'];
       if (lastRowId is int) {

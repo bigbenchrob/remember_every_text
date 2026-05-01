@@ -85,12 +85,13 @@ void main() {
           batchId: batchId,
         );
 
-        final importChatId = await importDb.insertChat(
+        final importChat = await importDb.insertChat(
           id: 7001,
           guid: 'import-chat-guid-1',
           service: handleService,
           batchId: batchId,
         );
+        final importChatId = importChat.id;
 
         await importDb.insertMessage(
           id: 8001,

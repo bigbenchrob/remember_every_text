@@ -18,7 +18,6 @@ class MessageAttachmentsImporter extends BaseTableImporter
   @override
   Future<void> validatePrereqs(IImportContext ctx) async {
     await validateSourceMessageAttachmentJoinIntegrity(ctx);
-    await validateLedgerMessageAttachmentJoinCoverage(ctx);
     if (ctx.hasExistingLedgerData) {
       return;
     }
@@ -32,16 +31,26 @@ class MessageAttachmentsImporter extends BaseTableImporter
 
   @override
   Future<void> copy(IImportContext ctx) async {
-    final messageIds = _readIntList(ctx, 'messages.insertedIds');
-    final recoveredMessageIds = _readIntList(
-      ctx,
-      'recoveredUnlinkedMessages.insertedIds',
+    final linkedMessageSourceRowIdToLedgerId = _decodeSourceRowIdToLedgerId(
+      ctx.readScratch<Object?>('messages.sourceRowIdToLedgerId'),
     );
-    final attachmentIds = _readIntList(ctx, 'attachments.insertedIds');
+    final recoveredMessageSourceRowIdToLedgerId = _decodeSourceRowIdToLedgerId(
+      ctx.readScratch<Object?>(
+        'recoveredUnlinkedMessages.sourceRowIdToLedgerId',
+      ),
+    );
+    final attachmentSourceRowIdToLedgerId = _decodeSourceRowIdToLedgerId(
+      ctx.readScratch<Object?>('attachments.sourceRowIdToLedgerId'),
+    );
+
+    final messageIds = linkedMessageSourceRowIdToLedgerId.keys.toSet();
+    final recoveredMessageIds = recoveredMessageSourceRowIdToLedgerId.keys
+        .toSet();
+    final attachmentIds = attachmentSourceRowIdToLedgerId.keys.toSet();
     final joinPairs = await _collectJoinPairs(
       ctx.messagesDb,
       messageIds: <int>{...messageIds, ...recoveredMessageIds},
-      attachmentIds: attachmentIds.toSet(),
+      attachmentIds: attachmentIds,
       minAttachmentSourceRowIdExclusive: ctx.previousMaxMessageAttachmentRowId,
       maxMessageSourceRowIdInclusive: ctx.sourceMaxMessageRowIdAtBatchStart,
       maxAttachmentSourceRowIdInclusive:
@@ -50,45 +59,92 @@ class MessageAttachmentsImporter extends BaseTableImporter
 
     if (joinPairs.isEmpty) {
       ctx.info('MessageAttachmentsImporter: no join pairs detected.');
+      ctx.writeScratch('recoveredUnlinkedMessageAttachments.inserted', 0);
       ctx.writeScratch('messageAttachments.inserted', 0);
       return;
     }
 
-    // Bulk-validate: collect IDs that actually exist in the import DB so we
-    // don't hit FK violations (messages/attachments may have been filtered).
-    final db = await ctx.importDb.database;
-    final existingMsgRows = await db.rawQuery('SELECT id FROM messages');
-    final existingMsgIds = existingMsgRows
-        .map((r) => r['id'])
-        .whereType<int>()
+    final unresolvedLinkedMessageSourceRowIds = joinPairs
+        .map((pair) => pair.messageId)
+        .where(
+          (sourceRowId) =>
+              !linkedMessageSourceRowIdToLedgerId.containsKey(sourceRowId),
+        )
         .toSet();
-    final existingRecoveredMsgRows = await db.rawQuery(
-      'SELECT id FROM recovered_unlinked_messages',
-    );
-    final existingRecoveredMsgIds = existingRecoveredMsgRows
-        .map((r) => r['id'])
-        .whereType<int>()
-        .toSet();
-    final existingAttRows = await db.rawQuery('SELECT id FROM attachments');
-    final existingAttIds = existingAttRows
-        .map((r) => r['id'])
-        .whereType<int>()
-        .toSet();
+    if (unresolvedLinkedMessageSourceRowIds.isNotEmpty) {
+      linkedMessageSourceRowIdToLedgerId.addAll(
+        await ctx.importDb.messageIdsBySourceRowIds(
+          unresolvedLinkedMessageSourceRowIds,
+          sourceId: ctx.chatSourceId,
+        ),
+      );
+    }
 
-    final linkedPairs = joinPairs
+    final unresolvedRecoveredMessageSourceRowIds = joinPairs
+        .map((pair) => pair.messageId)
         .where(
-          (p) =>
-              existingMsgIds.contains(p.messageId) &&
-              existingAttIds.contains(p.attachmentId),
+          (sourceRowId) =>
+              !linkedMessageSourceRowIdToLedgerId.containsKey(sourceRowId) &&
+              !recoveredMessageSourceRowIdToLedgerId.containsKey(sourceRowId),
         )
-        .toList(growable: false);
-    final recoveredPairs = joinPairs
+        .toSet();
+    if (unresolvedRecoveredMessageSourceRowIds.isNotEmpty) {
+      recoveredMessageSourceRowIdToLedgerId.addAll(
+        await ctx.importDb.recoveredMessageIdsBySourceRowIds(
+          unresolvedRecoveredMessageSourceRowIds,
+          sourceId: ctx.chatSourceId,
+        ),
+      );
+    }
+
+    final unresolvedAttachmentSourceRowIds = joinPairs
+        .map((pair) => pair.attachmentId)
         .where(
-          (p) =>
-              existingRecoveredMsgIds.contains(p.messageId) &&
-              existingAttIds.contains(p.attachmentId),
+          (sourceRowId) =>
+              !attachmentSourceRowIdToLedgerId.containsKey(sourceRowId),
         )
-        .toList(growable: false);
+        .toSet();
+    if (unresolvedAttachmentSourceRowIds.isNotEmpty) {
+      attachmentSourceRowIdToLedgerId.addAll(
+        await ctx.importDb.attachmentIdsBySourceRowIds(
+          unresolvedAttachmentSourceRowIds,
+          sourceId: ctx.chatSourceId,
+        ),
+      );
+    }
+
+    final linkedPairs =
+        <({int messageId, int attachmentId, int sourceRowid})>[];
+    final recoveredPairs =
+        <({int messageId, int attachmentId, int sourceRowid})>[];
+    for (final pair in joinPairs) {
+      final canonicalAttachmentId =
+          attachmentSourceRowIdToLedgerId[pair.attachmentId];
+      if (canonicalAttachmentId == null) {
+        continue;
+      }
+
+      final linkedMessageId =
+          linkedMessageSourceRowIdToLedgerId[pair.messageId];
+      if (linkedMessageId != null) {
+        linkedPairs.add((
+          messageId: linkedMessageId,
+          attachmentId: canonicalAttachmentId,
+          sourceRowid: pair.attachmentId,
+        ));
+        continue;
+      }
+
+      final recoveredMessageId =
+          recoveredMessageSourceRowIdToLedgerId[pair.messageId];
+      if (recoveredMessageId != null) {
+        recoveredPairs.add((
+          messageId: recoveredMessageId,
+          attachmentId: canonicalAttachmentId,
+          sourceRowid: pair.attachmentId,
+        ));
+      }
+    }
 
     final validPairCount = linkedPairs.length + recoveredPairs.length;
     final skipped = joinPairs.length - validPairCount;
@@ -128,7 +184,7 @@ class MessageAttachmentsImporter extends BaseTableImporter
 
   Future<void> _insertPairs(
     IImportContext ctx, {
-    required List<({int messageId, int attachmentId})> pairs,
+    required List<({int messageId, int attachmentId, int sourceRowid})> pairs,
     required String tableName,
     required String progressLabel,
   }) async {
@@ -148,7 +204,7 @@ class MessageAttachmentsImporter extends BaseTableImporter
         chunkRows.add(<String, Object?>{
           'message_id': pair.messageId,
           'attachment_id': pair.attachmentId,
-          'source_rowid': pair.attachmentId,
+          'source_rowid': pair.sourceRowid,
         });
       }
 
@@ -171,20 +227,11 @@ class MessageAttachmentsImporter extends BaseTableImporter
   @override
   Future<void> postValidate(IImportContext ctx) async {
     final total = await count(ctx.importDb, name);
-    final recoveredTotal = await count(
-      ctx.importDb,
-      'recovered_unlinked_message_attachments',
-    );
     ctx.info(
-      'MessageAttachmentsImporter: ledger now tracks $total linked '
-      'message/attachment links and $recoveredTotal recovered-unlinked '
-      'message/attachment links.',
+      'MessageAttachmentsImporter: ledger now tracks $total message/attachment links.',
     );
   }
 }
-
-({int messageId, int attachmentId}) _pair(int messageId, int attachmentId) =>
-    (messageId: messageId, attachmentId: attachmentId);
 
 Future<Set<({int messageId, int attachmentId})>> _collectJoinPairs(
   Database messagesDb, {
@@ -218,7 +265,7 @@ Future<Set<({int messageId, int attachmentId})>> _collectJoinPairs(
         final messageId = row['message_id'] as int?;
         final attachmentId = row['attachment_id'] as int?;
         if (messageId != null && attachmentId != null) {
-          pairs.add(_pair(messageId, attachmentId));
+          pairs.add((messageId: messageId, attachmentId: attachmentId));
         }
       }
       index = end;
@@ -251,7 +298,7 @@ Future<Set<({int messageId, int attachmentId})>> _collectJoinPairs(
       final messageId = row['message_id'] as int?;
       final attachmentId = row['attachment_id'] as int?;
       if (messageId != null && attachmentId != null) {
-        pairs.add(_pair(messageId, attachmentId));
+        pairs.add((messageId: messageId, attachmentId: attachmentId));
       }
     }
   }
@@ -259,22 +306,24 @@ Future<Set<({int messageId, int attachmentId})>> _collectJoinPairs(
   return pairs;
 }
 
-List<int> _readIntList(IImportContext ctx, String key) {
-  final raw = ctx.readScratch<Object?>(key);
-  if (raw is List<Object?>) {
-    return raw
-        .map(
-          (value) => value is int
-              ? value
-              : value is num
-              ? value.toInt()
-              : int.tryParse('$value'),
-        )
-        .whereType<int>()
-        .toList(growable: false);
+Map<int, int> _decodeSourceRowIdToLedgerId(Object? raw) {
+  if (raw is Map<int, int>) {
+    return Map<int, int>.from(raw);
   }
-  if (raw is List<int>) {
-    return List<int>.from(raw);
+  if (raw is Map<String, Object?>) {
+    final result = <int, int>{};
+    raw.forEach((key, value) {
+      final sourceRowId = int.tryParse(key);
+      final ledgerId = value is int
+          ? value
+          : value is num
+          ? value.toInt()
+          : int.tryParse('$value');
+      if (sourceRowId != null && ledgerId != null) {
+        result[sourceRowId] = ledgerId;
+      }
+    });
+    return result;
   }
-  return <int>[];
+  return <int, int>{};
 }

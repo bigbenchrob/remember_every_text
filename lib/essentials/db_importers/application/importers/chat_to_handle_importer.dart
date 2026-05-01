@@ -16,7 +16,6 @@ class ChatToHandleImporter extends BaseTableImporter {
   @override
   Future<void> validatePrereqs(IImportContext ctx) async {
     await validateSourceChatHandleJoinIntegrity(ctx);
-    await validateLedgerChatHandleJoinCoverage(ctx);
     if (ctx.hasExistingLedgerData) {
       return;
     }
@@ -30,6 +29,13 @@ class ChatToHandleImporter extends BaseTableImporter {
 
   @override
   Future<void> copy(IImportContext ctx) async {
+    final handleSourceRowIdToLedgerId = _decodeSourceRowIdToLedgerId(
+      ctx.readScratch<Object?>('handles.sourceRowIdToLedgerId'),
+    );
+    final chatSourceRowIdToLedgerId = _decodeSourceRowIdToLedgerId(
+      ctx.readScratch<Object?>('chats.sourceRowIdToLedgerId'),
+    );
+
     String? whereClause;
     final whereArgs = <Object>[];
     final maxChatRowId = ctx.sourceMaxChatRowIdAtBatchStart;
@@ -57,12 +63,51 @@ class ChatToHandleImporter extends BaseTableImporter {
       return;
     }
 
+    final missingChatSourceRowIds = rows
+        .map((row) => row['chat_id'])
+        .whereType<int>()
+        .where(
+          (sourceRowId) => !chatSourceRowIdToLedgerId.containsKey(sourceRowId),
+        )
+        .toSet();
+    if (missingChatSourceRowIds.isNotEmpty) {
+      chatSourceRowIdToLedgerId.addAll(
+        await ctx.importDb.chatIdsBySourceRowIds(
+          missingChatSourceRowIds,
+          sourceId: ctx.chatSourceId,
+        ),
+      );
+    }
+
+    final missingHandleSourceRowIds = rows
+        .map((row) => row['handle_id'])
+        .whereType<int>()
+        .where(
+          (sourceRowId) =>
+              !handleSourceRowIdToLedgerId.containsKey(sourceRowId),
+        )
+        .toSet();
+    if (missingHandleSourceRowIds.isNotEmpty) {
+      handleSourceRowIdToLedgerId.addAll(
+        await ctx.importDb.handleIdsBySourceRowIds(
+          missingHandleSourceRowIds,
+          sourceId: ctx.chatSourceId,
+        ),
+      );
+    }
+
     // Collect valid pairs, then batch-insert.
     // PK (chat_id, handle_id) with REPLACE handles duplicates.
     final pairs = <Map<String, Object?>>[];
     for (final row in rows) {
-      final chatId = row['chat_id'] as int?;
-      final handleId = row['handle_id'] as int?;
+      final sourceChatRowId = row['chat_id'] as int?;
+      final sourceHandleRowId = row['handle_id'] as int?;
+      final chatId = sourceChatRowId == null
+          ? null
+          : chatSourceRowIdToLedgerId[sourceChatRowId];
+      final handleId = sourceHandleRowId == null
+          ? null
+          : handleSourceRowIdToLedgerId[sourceHandleRowId];
       if (chatId != null && handleId != null) {
         pairs.add(<String, Object?>{'chat_id': chatId, 'handle_id': handleId});
       }
@@ -97,4 +142,26 @@ class ChatToHandleImporter extends BaseTableImporter {
       message: 'Chat-to-handle table should contain rows after import.',
     );
   }
+}
+
+Map<int, int> _decodeSourceRowIdToLedgerId(Object? raw) {
+  if (raw is Map<int, int>) {
+    return Map<int, int>.from(raw);
+  }
+  if (raw is Map<String, Object?>) {
+    final result = <int, int>{};
+    raw.forEach((key, value) {
+      final sourceRowId = int.tryParse(key);
+      final ledgerId = value is int
+          ? value
+          : value is num
+          ? value.toInt()
+          : int.tryParse('$value');
+      if (sourceRowId != null && ledgerId != null) {
+        result[sourceRowId] = ledgerId;
+      }
+    });
+    return result;
+  }
+  return <int, int>{};
 }

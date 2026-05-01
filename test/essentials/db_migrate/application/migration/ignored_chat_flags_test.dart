@@ -100,19 +100,21 @@ void main() {
       batchId: batchId,
     );
 
-    final ignoredChatId = await ledger.insertChat(
+    final ignoredChat = await ledger.insertChat(
       id: 1,
       guid: 'chat-ignored-handle',
       service: 'iMessage',
       batchId: batchId,
     );
+    final ignoredChatId = ignoredChat.id;
 
-    final explicitIgnoredChatId = await ledger.insertChat(
+    final explicitIgnoredChat = await ledger.insertChat(
       id: 2,
       guid: 'chat-explicit-ignore',
       service: 'iMessage',
       batchId: batchId,
     );
+    final explicitIgnoredChatId = explicitIgnoredChat.id;
     await ledger.flagChatAsIgnored(explicitIgnoredChatId);
 
     await ledger.insertChatParticipant(

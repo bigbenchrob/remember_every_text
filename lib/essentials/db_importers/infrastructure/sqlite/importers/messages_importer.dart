@@ -83,7 +83,7 @@ class MessagesImporter extends BaseTableImporter {
         extractionCandidates.add(sourceRowId);
       }
 
-      final insertedId = await ctx.importDb.insertMessage(
+      final result = await ctx.importDb.insertMessage(
         id: sourceRowId,
         sourceRowid: sourceRowId,
         guid: guid,
@@ -114,10 +114,12 @@ class MessagesImporter extends BaseTableImporter {
         batchId: ctx.batchId,
       );
 
-      if (insertedId > 0) {
+      if (result.inserted || result.updated) {
         inserted += 1;
-        insertedIds.add(sourceRowId);
-        messageToChat[sourceRowId] = chatId;
+        insertedIds.add(result.id);
+        if (result.shouldLinkToChat) {
+          messageToChat[result.id] = chatId;
+        }
       }
 
       processed += 1;

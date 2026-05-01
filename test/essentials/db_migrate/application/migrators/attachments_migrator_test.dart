@@ -85,6 +85,7 @@ void main() {
           id: firstAttachmentId,
           transferName: 'a.jpg',
           mimeType: 'image/jpeg',
+          createdAtUtc: sentAtUtc,
           localPath: '/tmp/a.jpg',
           batchId: batchId,
         );
@@ -92,6 +93,7 @@ void main() {
           id: secondAttachmentId,
           transferName: 'b.jpg',
           mimeType: 'image/jpeg',
+          createdAtUtc: sentAtUtc,
           localPath: '/tmp/b.jpg',
           batchId: batchId,
         );
@@ -148,11 +150,12 @@ void main() {
             local_path,
             mime_type,
             transfer_name,
+            created_at_utc,
             is_sticker,
             is_outgoing
           ) VALUES
-            ('$messageGuid', $firstAttachmentId, '/tmp/a.jpg', 'image/jpeg', 'a.jpg', 0, 0),
-            ('$messageGuid', $firstAttachmentId, '/tmp/a.jpg', 'image/jpeg', 'a.jpg', 0, 0)
+            ('$messageGuid', $firstAttachmentId, '/tmp/a.jpg', 'image/jpeg', 'a.jpg', '$sentAtUtc', 0, 0),
+            ('$messageGuid', $firstAttachmentId, '/tmp/a.jpg', 'image/jpeg', 'a.jpg', '$sentAtUtc', 0, 0)
         ''');
 
         final context = MigrationContextSqlite(
@@ -185,6 +188,22 @@ void main() {
         expect(rows[0].data['c'], 1);
         expect(rows[1].data['import_attachment_id'], secondAttachmentId);
         expect(rows[1].data['c'], 1);
+
+        final createdRows = await workingDb
+            .customSelect(
+              '''
+          SELECT import_attachment_id, created_at_utc
+          FROM attachments
+          WHERE message_guid = ?
+          ORDER BY import_attachment_id
+        ''',
+              variables: [const drift.Variable<String>(messageGuid)],
+            )
+            .get();
+
+        expect(createdRows, hasLength(2));
+        expect(createdRows[0].data['created_at_utc'], sentAtUtc);
+        expect(createdRows[1].data['created_at_utc'], sentAtUtc);
       },
     );
   });
