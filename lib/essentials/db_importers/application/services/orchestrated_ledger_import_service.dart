@@ -32,6 +32,7 @@ import '../importers/message_rich_text_importer.dart';
 import '../importers/messages_importer.dart';
 import '../importers/prepare_sources_importer.dart';
 import '../orchestrator/import_orchestrator.dart';
+import '../pipeline_cancellation.dart';
 import 'incremental_ledger_integrity_check.dart';
 
 typedef ExecutionPlanCallback = void Function(List<ImporterStep> steps);
@@ -460,6 +461,7 @@ class OrchestratedLedgerImportService {
     } catch (error, stackTrace) {
       debugSettings.logError('$_logContext: import failed: $error');
       debugSettings.logProgress(stackTrace.toString());
+      final isCancelled = error is DbPipelineCancelledException;
 
       final failedAtUtc = DateTime.now().toUtc().toIso8601String();
       final failedAt =
@@ -468,10 +470,12 @@ class OrchestratedLedgerImportService {
         await ledgerDb.updateImportBatch(
           id: batchId,
           finishedAtUtc: failedAtUtc,
-          notes: 'Failed orchestrated import',
-          status: 'failed',
+          notes: isCancelled
+              ? 'Canceled orchestrated import'
+              : 'Failed orchestrated import',
+          status: isCancelled ? 'cancelled' : 'failed',
           finishedAt: failedAt,
-          errorSummary: '$error',
+          errorSummary: isCancelled ? dbPipelineCancelledMessage : '$error',
         );
       } catch (_) {
         // Batch-finalization is best-effort on failure.
@@ -499,7 +503,7 @@ class OrchestratedLedgerImportService {
       final result = DbImportResult(
         batchId: batchId,
         success: false,
-        error: '$error',
+        error: isCancelled ? dbPipelineCancelledMessage : '$error',
       );
       await ref
           .read(pipelineIncidentTrackerProvider.notifier)

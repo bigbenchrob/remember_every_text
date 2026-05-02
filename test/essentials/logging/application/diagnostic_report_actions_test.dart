@@ -34,6 +34,9 @@ void main() {
         exists: true,
         readable: true,
         rowCount: 0,
+        projectionStatus: 'incomplete',
+        lastCompletedBatchId: 8,
+        completedAtUtc: '2026-05-02T14:57:54.395398Z',
       ),
       hasFullDiskAccess: true,
       lastImportResult: const DbImportResult(
@@ -58,7 +61,7 @@ void main() {
     expect(
       headerLines,
       contains(
-        'Working database: path=working.db; exists=true; readable=true; rows=0',
+        'Working database: path=working.db; exists=true; readable=true; rows=0; projectionStatus=incomplete; lastCompletedBatchId=8; completedAtUtc=2026-05-02T14:57:54.395398Z',
       ),
     );
   });

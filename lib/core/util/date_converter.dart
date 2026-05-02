@@ -11,6 +11,12 @@ import 'package:intl/intl.dart';
 class DateConverter {
   DateConverter._();
 
+  static int Function()? _nowUnixSecondsOverride;
+
+  static void overrideNowUnixSecondsForTesting(int Function()? provider) {
+    _nowUnixSecondsOverride = provider;
+  }
+
   /// Turn a date string, e.g. '2019-01-31' to an int based on the Apple date specification
   static int dateString2Apple(String dateString) {
     // e.g. '2019-01-31'
@@ -72,6 +78,41 @@ class DateConverter {
     return dateTime.millisecondsSinceEpoch;
   }
 
+  static int nowUnixSeconds() {
+    final override = _nowUnixSecondsOverride;
+    if (override != null) {
+      return override();
+    }
+
+    return dart2Unix(dartDateTime2timeStamp(DateTime.now().toUtc()));
+  }
+
+  static Duration durationBetweenUnixSeconds(
+    int startUnixSeconds,
+    int endUnixSeconds,
+  ) {
+    final clampedSeconds = endUnixSeconds >= startUnixSeconds
+        ? endUnixSeconds - startUnixSeconds
+        : 0;
+    return Duration(seconds: clampedSeconds);
+  }
+
+  static Duration durationSinceUnixSeconds(int startUnixSeconds) {
+    return durationBetweenUnixSeconds(startUnixSeconds, nowUnixSeconds());
+  }
+
+  static String formatDurationCompact(Duration duration) {
+    final totalSeconds = duration.inSeconds;
+    final minutes = totalSeconds ~/ 60;
+    final seconds = totalSeconds % 60;
+
+    if (minutes <= 0) {
+      return '${seconds}s';
+    }
+
+    return '${minutes}m ${seconds.toString().padLeft(2, '0')}s';
+  }
+
   static String formatDartDateTime(int dartTimeStamp, String? formatterString) {
     formatterString ??= 'yyyy-MM-dd HH:mm';
     final formatter = DateFormat(formatterString);
@@ -102,10 +143,45 @@ class DateConverter {
       return null;
     }
 
-    // Convert Apple nanoseconds to Dart milliseconds and create DateTime
-    final dartTimestamp = apple2Dart(intValue);
+    // Apple's chat.db has stored message dates in two formats over the years:
+    //   * older databases: seconds since 2001-01-01 (~1e8–1e9 magnitude)
+    //   * newer databases: nanoseconds since 2001-01-01 (~1e17 magnitude)
+    // Misclassifying seconds as nanoseconds collapses every value to roughly
+    // 2001-01-01 (the "Jan 2001" symptom). Detect the format by magnitude
+    // and convert through the existing nanosecond pathway.
+    final unixSeconds = _appleAnyToUnixSeconds(intValue);
+    if (unixSeconds == null) {
+      return null;
+    }
+
+    final dartTimestamp = unix2Dart(unixSeconds);
     final dateTime = dartTimeStamp2DateTime(dartTimestamp);
     return dateTime.toUtc().toIso8601String();
+  }
+
+  /// Convert an Apple-epoch raw value that may be either nanoseconds or
+  /// seconds since 2001-01-01 to Unix epoch seconds.
+  ///
+  /// Returns `null` for null, zero, or values that cannot be safely parsed.
+  /// Never silently coerces to epoch zero.
+  static int? appleAnyToUnixSeconds(dynamic raw) {
+    final intValue = toIntSafe(raw);
+    if (intValue == null || intValue == 0) {
+      return null;
+    }
+    return _appleAnyToUnixSeconds(intValue);
+  }
+
+  static int? _appleAnyToUnixSeconds(int intValue) {
+    // Threshold matches the historical preflight heuristic: any value with
+    // magnitude >= 1e12 must be in nanoseconds (one day past Apple epoch in
+    // nanoseconds is already ~8.6e13). Values below this threshold are
+    // treated as seconds since the Apple epoch.
+    const nanosecondMagnitudeThreshold = 1000000000000; // 1e12
+    if (intValue.abs() >= nanosecondMagnitudeThreshold) {
+      return apple2Unix(intValue);
+    }
+    return intValue + 978307200;
   }
 
   /// Convert an ISO 8601 timestamp string to Unix epoch seconds.
@@ -136,7 +212,45 @@ class DateConverter {
       return null;
     }
 
-    final dartTimestamp = apple2Dart(intValue);
-    return dartTimeStamp2DateTime(dartTimestamp);
+    final unixSeconds = _appleAnyToUnixSeconds(intValue);
+    if (unixSeconds == null) {
+      return null;
+    }
+    return dartTimeStamp2DateTime(unix2Dart(unixSeconds));
+  }
+
+  // ───────────────────────────────────────────────────────────────────────
+  // Canonical SQL expression builders
+  //
+  // These are the ONLY sanctioned SQL fragments for converting between the
+  // ledger's INTEGER unix-seconds storage and the working projection's
+  // ISO 8601 TEXT storage. Importers and migrators must use them instead
+  // of inlining `strftime(...)` calls so that conversion semantics stay
+  // aligned with the Dart-side helpers above.
+  // ───────────────────────────────────────────────────────────────────────
+
+  /// SQL fragment that converts a column holding ISO 8601 TEXT (or already
+  /// numeric) values into Unix epoch seconds (INTEGER). Returns NULL when
+  /// the column is NULL, blank, or otherwise unparseable; never coerces
+  /// invalid values to 0.
+  static String isoTextToUnixSecondsSqlExpression(String columnName) {
+    return 'CASE '
+        'WHEN $columnName IS NULL THEN NULL '
+        "WHEN typeof($columnName) IN ('integer','real') THEN CAST($columnName AS INTEGER) "
+        "WHEN TRIM(CAST($columnName AS TEXT)) = '' THEN NULL "
+        "ELSE CAST(strftime('%s', $columnName) AS INTEGER) "
+        'END';
+  }
+
+  /// SQL fragment that converts a column holding Unix epoch seconds
+  /// (INTEGER) into the ISO 8601 UTC TEXT format used by working.db.
+  /// Returns NULL when the column is NULL or zero; never silently emits
+  /// `'1970-01-01T00:00:00Z'` for zero / sentinel values.
+  static String unixSecondsToIsoTextSqlExpression(String columnName) {
+    return 'CASE '
+        'WHEN $columnName IS NULL THEN NULL '
+        'WHEN $columnName = 0 THEN NULL '
+        "ELSE strftime('%Y-%m-%dT%H:%M:%SZ', $columnName, 'unixepoch') "
+        'END';
   }
 }

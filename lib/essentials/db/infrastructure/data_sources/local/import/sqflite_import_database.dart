@@ -2744,12 +2744,7 @@ AND Z_PK NOT IN (
   }
 
   static String _unixEpochSecondsExpression(String columnName) {
-    return 'CASE '
-        'WHEN $columnName IS NULL THEN NULL '
-        "WHEN typeof($columnName) IN ('integer','real') THEN CAST($columnName AS INTEGER) "
-        "WHEN TRIM(CAST($columnName AS TEXT)) = '' THEN NULL "
-        "ELSE CAST(strftime('%s', $columnName) AS INTEGER) "
-        'END';
+    return DateConverter.isoTextToUnixSecondsSqlExpression(columnName);
   }
 
   static const List<String> _schemaStatements = <String>[
@@ -2938,6 +2933,43 @@ AND Z_PK NOT IN (
 
   static const String _expandedMessagesViewStatement =
       'CREATE VIEW IF NOT EXISTS v_messages_expanded AS SELECT m.id AS message_id, m.guid AS message_guid, m.chat_id, c.guid AS chat_guid, m.date_utc, m.is_from_me, m.text, m.item_type, m.associated_message_guid, h.id AS sender_handle_id, h.normalized_identifier AS sender_address FROM messages m JOIN chats c ON c.id = m.chat_id LEFT JOIN handles h ON h.id = m.sender_handle_id';
+
+  /// Marks any [import_batches] rows still in `status = 'running'` as
+  /// `failed` so they cannot remain "in progress" forever after a crash or
+  /// force-quit during an import.
+  ///
+  /// Intended to be invoked exactly once per app launch, immediately after
+  /// the ledger database is opened. Any batch found in the running state at
+  /// this point cannot have a live execution owner (the previous process is
+  /// gone), so it is treated as orphaned.
+  ///
+  /// Returns the number of batches reconciled.
+  Future<int> reconcileOrphanedRunningBatches() async {
+    final db = await database;
+    await _ensureSchemaExists(db);
+
+    final nowUtc = DateTime.now().toUtc();
+    final nowIso = nowUtc.toIso8601String();
+    final nowMillis = nowUtc.millisecondsSinceEpoch;
+
+    final updated = await db.rawUpdate(
+      "UPDATE import_batches SET status = 'failed', "
+      'finished_at_utc = COALESCE(finished_at_utc, ?), '
+      'finished_at = COALESCE(finished_at, ?), '
+      "error_summary = COALESCE(error_summary, 'orphaned_on_startup') "
+      "WHERE status = 'running'",
+      <Object?>[nowIso, nowMillis],
+    );
+
+    if (updated > 0) {
+      _debugSettings.logDatabase(
+        'SqfliteImportDatabase.reconcileOrphanedRunningBatches: '
+        'marked $updated orphaned running batch(es) as failed',
+      );
+    }
+
+    return updated;
+  }
 
   /// Safety method to ensure schema exists (in case database initialization failed during app startup)
   Future<void> _ensureSchemaExists(Database db) async {

@@ -6,6 +6,10 @@ import 'package:flutter/widgets.dart';
 import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../features/contacts/application/sidebar_cassette_spec/resolver_tools/contact_chooser_snapshot_provider.dart';
+import '../../../features/contacts/application/sidebar_cassette_spec/resolver_tools/filtered_picker_sections_provider.dart';
+import '../../../features/contacts/application/sidebar_cassette_spec/resolver_tools/grouped_contacts_provider.dart';
+import '../../../features/contacts/infrastructure/repositories/contacts_list_repository.dart';
 import '../../db/feature_level_providers.dart'
     show databaseDirectoryPath, sqfliteImportDatabaseProvider;
 import '../../db/feature_level_providers/message_data_version_provider.dart';
@@ -85,6 +89,7 @@ class OnboardingGate extends _$OnboardingGate {
     _lastLoggedEnvironmentState = report?.state;
     _lastLoggedBlockerKind = report?.blockerKind;
     _lastLoggedHasPopulatedAppDatabases = hasPopulatedAppDatabases;
+    final logger = ref.read(appLoggerProvider.notifier);
 
     final logContext = <String, dynamic>{
       'resolvedStatus': resolvedStatus.name,
@@ -93,7 +98,8 @@ class OnboardingGate extends _$OnboardingGate {
       'environmentBlocker': report?.blockerKind.name,
       'hasFullDiskAccess': report?.hasFullDiskAccess,
       'hasPopulatedAppDatabases': hasPopulatedAppDatabases,
-      'importDbExists': report?.importDatabase.exists,
+      'importDbExists': report?.importDatabaseExists,
+      'importDbReadable': report?.hasReadableImportDatabase,
       'importDbRowCount': report?.importDatabase.rowCount,
       'workingDbExists': report?.workingDatabase.exists,
       'workingDbRowCount': report?.workingDatabase.rowCount,
@@ -102,14 +108,20 @@ class OnboardingGate extends _$OnboardingGate {
       'resetAppDatabasesReason': report?.resetAppDatabasesReason,
     };
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref
-          .read(appLoggerProvider.notifier)
-          .info(
+    Future<void>.microtask(() {
+      runZonedGuarded(
+        () {
+          logger.info(
             'Resolved onboarding gate status',
             source: 'OnboardingGate',
             context: logContext,
           );
+        },
+        (_, __) {
+          // Best-effort logging only; tests and startup recovery should not
+          // fail because platform logging bindings are unavailable.
+        },
+      );
     });
   }
 
@@ -133,6 +145,10 @@ class OnboardingGate extends _$OnboardingGate {
   static OnboardingStatus _classifyStatusFromReport(
     OnboardingEnvironmentReport report,
   ) {
+    if (report.shouldResetAppDatabasesBeforeImport) {
+      return OnboardingStatus.recoveringFailedAttempt;
+    }
+
     return switch (report.state) {
       OnboardingEnvironmentState.permissionBlocked =>
         OnboardingStatus.awaitingFda,
@@ -258,6 +274,7 @@ class OnboardingGate extends _$OnboardingGate {
     // Signal all data-dependent providers (contacts, messages, etc.) to
     // rebuild with the freshly-populated working database.
     ref.read(messageDataVersionProvider.notifier).bump();
+    _invalidateContactPickerProviders();
 
     ref
         .read(appLoggerProvider.notifier)
@@ -354,8 +371,16 @@ class OnboardingGate extends _$OnboardingGate {
     }
 
     ref.read(messageDataVersionProvider.notifier).bump();
+    _invalidateContactPickerProviders();
 
     _setWorkflowOverride(OnboardingStatus.reimportComplete);
+  }
+
+  void _invalidateContactPickerProviders() {
+    ref.invalidate(contactsListRepositoryProvider);
+    ref.invalidate(groupedContactsProvider);
+    ref.invalidate(filteredPickerSectionsProvider);
+    ref.invalidate(contactChooserSnapshotProvider);
   }
 
   /// Dismiss the overlay and switch to the Messages sidebar.
@@ -394,37 +419,51 @@ class OnboardingGate extends _$OnboardingGate {
 
     _automaticRecoveryInFlight = true;
     _automaticRecoverySuppressed = true;
+    final logger = ref.read(appLoggerProvider.notifier);
+    final dbImportControl = ref.read(dbImportControlViewModelProvider.notifier);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _setWorkflowOverride(OnboardingStatus.recoveringFailedAttempt);
-      unawaited(_runAutomaticRecovery(report));
+      try {
+        _setWorkflowOverride(OnboardingStatus.recoveringFailedAttempt);
+        unawaited(
+          _runAutomaticRecovery(
+            report,
+            logger: logger,
+            dbImportControl: dbImportControl,
+          ),
+        );
+      } on StateError {
+        _automaticRecoveryInFlight = false;
+      }
     });
   }
 
-  Future<void> _runAutomaticRecovery(OnboardingEnvironmentReport report) async {
+  Future<void> _runAutomaticRecovery(
+    OnboardingEnvironmentReport report, {
+    required AppLogger logger,
+    required DbImportControlViewModel dbImportControl,
+  }) async {
     try {
-      ref
-          .read(appLoggerProvider.notifier)
-          .warn(
-            'Auto-resetting app databases before onboarding retry: ${report.resetAppDatabasesReason ?? 'no reason provided'}',
-            source: 'OnboardingGate',
-          );
-      await ref
-          .read(dbImportControlViewModelProvider.notifier)
-          .resetAllDatabases();
+      logger.warn(
+        'Auto-resetting app databases before onboarding retry: ${report.resetAppDatabasesReason ?? 'no reason provided'}',
+        source: 'OnboardingGate',
+      );
+      await dbImportControl.resetAllDatabases();
     } catch (error) {
       _automaticRecoverySuppressed = true;
-      ref
-          .read(appLoggerProvider.notifier)
-          .error(
-            'Automatic onboarding DB reset failed: $error',
-            source: 'OnboardingGate',
-          );
+      logger.error(
+        'Automatic onboarding DB reset failed: $error',
+        source: 'OnboardingGate',
+      );
     } finally {
       _automaticRecoveryInFlight = false;
-      _clearWorkflowOverride();
-      ref.invalidate(onboardingEnvironmentReportProvider);
-      ref.invalidateSelf();
-      state = OnboardingStatus.awaitingUserAction;
+      try {
+        _clearWorkflowOverride();
+        ref.invalidate(onboardingEnvironmentReportProvider);
+        ref.invalidateSelf();
+        state = OnboardingStatus.awaitingUserAction;
+      } on StateError {
+        return;
+      }
     }
   }
 

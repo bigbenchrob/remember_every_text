@@ -15,6 +15,80 @@ void main() {
       },
     );
 
+    test(
+      'hasPopulatedAppDatabases is false when working projection is incomplete',
+      () {
+        final report = _report(
+          workingDatabase: const OnboardingDatabaseProbe(
+            path: 'working.db',
+            exists: true,
+            readable: true,
+            rowCount: 100,
+            projectionStatus: 'incomplete',
+            lastCompletedBatchId: 8,
+          ),
+        );
+
+        expect(report.hasPopulatedAppDatabases, isFalse);
+      },
+    );
+
+    test(
+      'hasIncompleteWorkingProjectionWithMissingImportDatabase requires an existing incomplete working db',
+      () {
+        final report = _report(
+          importDatabase: const OnboardingDatabaseProbe(
+            path: 'macos_import.db',
+            exists: false,
+            readable: false,
+            rowCount: 0,
+          ),
+          workingDatabase: const OnboardingDatabaseProbe(
+            path: 'working.db',
+            exists: true,
+            readable: true,
+            rowCount: 10,
+            projectionStatus: 'incomplete',
+          ),
+        );
+
+        expect(report.hasExistingWorkingDatabase, isTrue);
+        expect(report.hasExistingIncompleteWorkingDatabase, isTrue);
+        expect(
+          report.hasIncompleteWorkingProjectionWithMissingImportDatabase,
+          isTrue,
+        );
+      },
+    );
+
+    test(
+      'hasIncompleteWorkingProjectionWithMissingImportDatabase stays false for fresh onboarding with no working db',
+      () {
+        final report = _report(
+          importDatabase: const OnboardingDatabaseProbe(
+            path: 'macos_import.db',
+            exists: false,
+            readable: false,
+            rowCount: 0,
+          ),
+          workingDatabase: const OnboardingDatabaseProbe(
+            path: 'working.db',
+            exists: false,
+            readable: false,
+            rowCount: 0,
+            projectionStatus: 'incomplete',
+          ),
+        );
+
+        expect(report.hasExistingWorkingDatabase, isFalse);
+        expect(report.hasExistingIncompleteWorkingDatabase, isFalse);
+        expect(
+          report.hasIncompleteWorkingProjectionWithMissingImportDatabase,
+          isFalse,
+        );
+      },
+    );
+
     test('import failure helpers expose persisted failure state', () {
       final report = _report(
         lastImportResult: const DbImportResult(
@@ -104,6 +178,8 @@ OnboardingEnvironmentReport _report({
   DbMigrationResult? lastMigrationResult,
   DateTime? lastImportFailureRecordedAt,
   DateTime? lastMigrationFailureRecordedAt,
+  OnboardingDatabaseProbe? importDatabase,
+  OnboardingDatabaseProbe? workingDatabase,
 }) {
   return OnboardingEnvironmentReport(
     state: OnboardingEnvironmentState.ready,
@@ -121,18 +197,22 @@ OnboardingEnvironmentReport _report({
       readable: true,
       rowCount: 50,
     ),
-    importDatabase: const OnboardingDatabaseProbe(
-      path: 'macos_import.db',
-      exists: true,
-      readable: true,
-      rowCount: 100,
-    ),
-    workingDatabase: const OnboardingDatabaseProbe(
-      path: 'working.db',
-      exists: true,
-      readable: true,
-      rowCount: 100,
-    ),
+    importDatabase:
+        importDatabase ??
+        const OnboardingDatabaseProbe(
+          path: 'macos_import.db',
+          exists: true,
+          readable: true,
+          rowCount: 100,
+        ),
+    workingDatabase:
+        workingDatabase ??
+        const OnboardingDatabaseProbe(
+          path: 'working.db',
+          exists: true,
+          readable: true,
+          rowCount: 100,
+        ),
     hasFullDiskAccess: true,
     lastImportResult: lastImportResult,
     lastMigrationResult: lastMigrationResult,

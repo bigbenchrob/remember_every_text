@@ -100,6 +100,60 @@ void main() {
       ]);
       expect(surface.detail.tone, EnvironmentReadinessTone.warning);
     });
+
+    test(
+      'shows rebuild-from-source recovery copy when the import ledger is missing',
+      () async {
+        container = ProviderContainer(
+          overrides: [
+            onboardingEnvironmentReportProvider.overrideWith(
+              (ref) async => _report(
+                state: OnboardingEnvironmentState.readyToImport,
+                blockerKind: OnboardingBlockerKind.importDatabaseMissing,
+                importDatabase: const OnboardingDatabaseProbe(
+                  path: 'macos_import.db',
+                  exists: false,
+                  readable: false,
+                  rowCount: 0,
+                ),
+                workingDatabase: const OnboardingDatabaseProbe(
+                  path: 'working.db',
+                  exists: true,
+                  readable: true,
+                  rowCount: 1,
+                  projectionStatus: 'incomplete',
+                ),
+              ),
+            ),
+          ],
+        );
+
+        await container.read(onboardingEnvironmentReportProvider.future);
+        final surface = container.read(environmentReadinessSurfaceProvider);
+
+        expect(
+          surface.detail.stepKey,
+          EnvironmentReadinessStepKey.importReadiness,
+        );
+        expect(surface.detail.title, 'Rebuild Message Data From Source');
+        expect(surface.detail.body, contains('working database is incomplete'));
+        expect(surface.detail.body, contains('macos_import.db'));
+        expect(surface.detail.body, contains('Migration cannot repair'));
+        expect(surface.detail.actions.map((action) => action.kind), [
+          EnvironmentReadinessActionKind.startImport,
+          EnvironmentReadinessActionKind.sendReport,
+          EnvironmentReadinessActionKind.recheck,
+        ]);
+        expect(surface.detail.actions.first.label, 'Rebuild Message Data');
+        expect(
+          surface.detail.instructions,
+          contains(
+            'Normal message views and the contact picker stay blocked until that rebuild finishes.',
+          ),
+        );
+        expect(surface.detail.tone, EnvironmentReadinessTone.warning);
+      },
+    );
   });
 }
 
@@ -107,6 +161,8 @@ OnboardingEnvironmentReport _report({
   required OnboardingEnvironmentState state,
   required OnboardingBlockerKind blockerKind,
   bool hasFullDiskAccess = true,
+  OnboardingDatabaseProbe? importDatabase,
+  OnboardingDatabaseProbe? workingDatabase,
 }) {
   return OnboardingEnvironmentReport(
     state: state,
@@ -124,18 +180,22 @@ OnboardingEnvironmentReport _report({
       readable: true,
       rowCount: 10,
     ),
-    importDatabase: const OnboardingDatabaseProbe(
-      path: 'macos_import.db',
-      exists: true,
-      readable: true,
-      rowCount: 100,
-    ),
-    workingDatabase: const OnboardingDatabaseProbe(
-      path: 'working.db',
-      exists: true,
-      readable: true,
-      rowCount: 100,
-    ),
+    importDatabase:
+        importDatabase ??
+        const OnboardingDatabaseProbe(
+          path: 'macos_import.db',
+          exists: true,
+          readable: true,
+          rowCount: 100,
+        ),
+    workingDatabase:
+        workingDatabase ??
+        const OnboardingDatabaseProbe(
+          path: 'working.db',
+          exists: true,
+          readable: true,
+          rowCount: 100,
+        ),
     hasFullDiskAccess: hasFullDiskAccess,
   );
 }

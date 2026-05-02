@@ -34,7 +34,7 @@ class WorkingDatabase extends _$WorkingDatabase {
   WorkingDatabase(QueryExecutor executor) : super(executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -57,6 +57,20 @@ class WorkingDatabase extends _$WorkingDatabase {
         for (final statement in _v3WorkingAlterStatements) {
           await customStatement(statement);
         }
+      }
+
+      if (from < 4) {
+        for (final statement in _v4WorkingAlterStatements) {
+          await customStatement(statement);
+        }
+        // Existing working.db cannot be assumed to represent a completed
+        // migration once new completion-marker columns are introduced. Mark
+        // it as incomplete so the next migration writes a clean 'complete'
+        // row, and a startup check can flag a stale projection.
+        await customStatement(
+          "UPDATE projection_state SET completion_status = 'incomplete' "
+          'WHERE id = 1',
+        );
       }
     },
   );
@@ -86,12 +100,63 @@ class WorkingDatabase extends _$WorkingDatabase {
   }
 
   Future<void> _seedProjectionState() async {
+    // The completion_status column has DEFAULT 'incomplete', so a freshly
+    // created working.db is treated as suspect until the migration
+    // orchestrator writes 'complete' at the end of a successful run.
     await customStatement('''
       INSERT OR IGNORE INTO projection_state (
         id, last_import_batch_id, last_projected_at_utc,
         last_projected_message_id, last_projected_attachment_id
       ) VALUES (1, NULL, NULL, NULL, NULL)
       ''');
+  }
+
+  /// Reads the single [projection_state] row and returns its current
+  /// [completion_status] together with the batch id and timestamp recorded
+  /// at the last successful migration completion.
+  ///
+  /// Returns `null` if no row exists (which itself is a suspect condition
+  /// that callers must surface).
+  Future<ProjectionCompletionStatus?> readProjectionCompletion() async {
+    final rows = await customSelect(
+      'SELECT completion_status, last_completed_batch_id, completed_at_utc, '
+      'note FROM projection_state WHERE id = 1 LIMIT 1',
+    ).get();
+    if (rows.isEmpty) {
+      return null;
+    }
+    final row = rows.first.data;
+    return ProjectionCompletionStatus(
+      status: row['completion_status'] as String? ?? 'incomplete',
+      lastCompletedBatchId: row['last_completed_batch_id'] as int?,
+      completedAtUtc: row['completed_at_utc'] as String?,
+      note: row['note'] as String?,
+    );
+  }
+
+  /// Writes [projection_state.completion_status] to `'incomplete'` to
+  /// mark that a migration has begun but has not yet completed. Intended
+  /// to be called by the migration orchestrator before any work begins.
+  Future<void> markProjectionMigrationStarted() async {
+    await customStatement(
+      "UPDATE projection_state SET completion_status = 'incomplete', "
+      'note = NULL WHERE id = 1',
+    );
+  }
+
+  /// Writes [projection_state] to record successful migration completion.
+  /// Intended to be called by the migration orchestrator at the very end
+  /// of a successful run.
+  Future<void> markProjectionMigrationCompleted({
+    required int? batchId,
+    required String completedAtUtc,
+  }) async {
+    await customStatement(
+      "UPDATE projection_state SET completion_status = 'complete', "
+      'last_completed_batch_id = ?, completed_at_utc = ?, note = NULL '
+      'WHERE id = 1',
+      <Object?>[batchId, completedAtUtc],
+    );
   }
 
   /// Rebuilds the message_index table from scratch.
@@ -632,8 +697,45 @@ class ProjectionState extends Table {
   IntColumn get lastProjectedAttachmentId =>
       integer().named('last_projected_attachment_id').nullable()();
 
+  /// Batch id whose migration most recently completed successfully.
+  IntColumn get lastCompletedBatchId =>
+      integer().named('last_completed_batch_id').nullable()();
+
+  /// ISO-8601 UTC timestamp recorded at the end of a successful migration.
+  TextColumn get completedAtUtc =>
+      text().named('completed_at_utc').nullable()();
+
+  /// Either `'complete'` or `'incomplete'`. New databases default to
+  /// `'incomplete'` until the migration orchestrator writes `'complete'`
+  /// at the end of a successful run.
+  TextColumn get completionStatus => text()
+      .named('completion_status')
+      .customConstraint(
+        "NOT NULL DEFAULT 'incomplete' CHECK(completion_status IN ('complete','incomplete'))",
+      )();
+
+  /// Optional free-form note (e.g., reason for an incomplete state).
+  TextColumn get note => text().named('note').nullable()();
+
   @override
   Set<Column> get primaryKey => {id}; // single source of truth for PK
+}
+
+/// Snapshot of [projection_state] used for startup suspect-state checks.
+class ProjectionCompletionStatus {
+  const ProjectionCompletionStatus({
+    required this.status,
+    required this.lastCompletedBatchId,
+    required this.completedAtUtc,
+    required this.note,
+  });
+
+  final String status;
+  final int? lastCompletedBatchId;
+  final String? completedAtUtc;
+  final String? note;
+
+  bool get isComplete => status == 'complete';
 }
 
 class AppSettings extends Table {
@@ -1025,6 +1127,13 @@ const List<String> _v3WorkingAlterStatements = <String>[
   'ALTER TABLE recovered_unlinked_messages ADD COLUMN has_attributed_body_source INTEGER NOT NULL DEFAULT 0 CHECK(has_attributed_body_source IN (0,1))',
   'ALTER TABLE recovered_unlinked_messages ADD COLUMN has_message_summary_info INTEGER NOT NULL DEFAULT 0 CHECK(has_message_summary_info IN (0,1))',
   'ALTER TABLE recovered_unlinked_messages ADD COLUMN has_payload_data_source INTEGER NOT NULL DEFAULT 0 CHECK(has_payload_data_source IN (0,1))',
+];
+
+const List<String> _v4WorkingAlterStatements = <String>[
+  'ALTER TABLE projection_state ADD COLUMN last_completed_batch_id INTEGER',
+  'ALTER TABLE projection_state ADD COLUMN completed_at_utc TEXT',
+  "ALTER TABLE projection_state ADD COLUMN completion_status TEXT NOT NULL DEFAULT 'incomplete' CHECK(completion_status IN ('complete','incomplete'))",
+  'ALTER TABLE projection_state ADD COLUMN note TEXT',
 ];
 
 /// Ordinal index for stable message ordering in large chats.

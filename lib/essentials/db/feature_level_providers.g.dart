@@ -7,7 +7,7 @@ part of 'feature_level_providers.dart';
 // **************************************************************************
 
 String _$sqfliteImportDatabaseHash() =>
-    r'55e2769da44f8cff1a868a496a7715a3080047d4';
+    r'8e2038b49e14aac1df5f4e0a6b2fb7793b8a8f4b';
 
 /// Provides access to the Sqflite-powered import ledger database.
 ///
@@ -28,7 +28,7 @@ final sqfliteImportDatabaseProvider =
 // ignore: unused_element
 typedef SqfliteImportDatabaseRef = FutureProviderRef<SqfliteImportDatabase>;
 String _$driftWorkingDatabaseHash() =>
-    r'3613c1038f790c70d828f01cc238b88b6f78c735';
+    r'af65334f60b9da88a0e231207d60a98e7c2fdd8d';
 
 /// Provides access to the Drift projection database used by the UI.
 ///

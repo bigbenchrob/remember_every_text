@@ -149,6 +149,87 @@ void main() {
       await upgradedDb.close();
     });
 
+    test(
+      'reconcileOrphanedRunningBatches marks running batches as failed and leaves others untouched',
+      () async {
+        final ledgerDb = SqfliteImportDatabase(
+          databaseDirectory: tempDir.path,
+          databaseName: 'import_test.db',
+          debugSettings: const ImportDebugSettingsState(),
+        );
+
+        // A batch that "the previous process" left running.
+        final orphanedBatchId = await ledgerDb.insertImportBatch(
+          startedAtUtc: DateTime.now()
+              .toUtc()
+              .subtract(const Duration(minutes: 5))
+              .toIso8601String(),
+          status: 'running',
+        );
+
+        // A batch that completed normally before the (simulated) crash.
+        final succeededBatchId = await ledgerDb.insertImportBatch(
+          startedAtUtc: DateTime.now()
+              .toUtc()
+              .subtract(const Duration(minutes: 10))
+              .toIso8601String(),
+          finishedAtUtc: DateTime.now()
+              .toUtc()
+              .subtract(const Duration(minutes: 9))
+              .toIso8601String(),
+          status: 'succeeded',
+        );
+
+        // A batch that was already known-failed before startup.
+        final preFailedBatchId = await ledgerDb.insertImportBatch(
+          startedAtUtc: DateTime.now()
+              .toUtc()
+              .subtract(const Duration(minutes: 20))
+              .toIso8601String(),
+          finishedAtUtc: DateTime.now()
+              .toUtc()
+              .subtract(const Duration(minutes: 19))
+              .toIso8601String(),
+          status: 'failed',
+          errorSummary: 'pre_existing_failure',
+        );
+
+        final reconciledCount = await ledgerDb
+            .reconcileOrphanedRunningBatches();
+
+        expect(reconciledCount, 1);
+
+        final db = await ledgerDb.database;
+        final rows = await db.query('import_batches', orderBy: 'id ASC');
+        final byId = <int, Map<String, Object?>>{
+          for (final row in rows) row['id']! as int: row,
+        };
+
+        expect(byId[orphanedBatchId]!['status'], 'failed');
+        expect(byId[orphanedBatchId]!['finished_at_utc'], isNotNull);
+        expect(byId[orphanedBatchId]!['finished_at'], isNotNull);
+        expect(byId[orphanedBatchId]!['error_summary'], 'orphaned_on_startup');
+
+        // Already-completed batch is left exactly as-is.
+        expect(byId[succeededBatchId]!['status'], 'succeeded');
+
+        // Pre-existing failure: status unchanged, original error_summary
+        // preserved (COALESCE must not overwrite it).
+        expect(byId[preFailedBatchId]!['status'], 'failed');
+        expect(
+          byId[preFailedBatchId]!['error_summary'],
+          'pre_existing_failure',
+        );
+
+        // A second pass with no running batches must be a no-op.
+        final secondPassCount = await ledgerDb
+            .reconcileOrphanedRunningBatches();
+        expect(secondPassCount, 0);
+
+        await ledgerDb.close();
+      },
+    );
+
     test('deletes only the selected source batch ledger rows', () async {
       final ledgerDb = SqfliteImportDatabase(
         databaseDirectory: tempDir.path,

@@ -12,6 +12,7 @@ import '../../../db_migrate/domain/states/table_migration_progress.dart';
 import '../../../db_migrate/feature_level_providers.dart';
 import '../../../logging/application/app_logger.dart';
 import '../../../onboarding/infrastructure/persistence/overlay_onboarding_failure_storage.dart';
+import '../../application/pipeline_cancellation.dart';
 import '../../application/services/import_status_checker.dart';
 import '../../domain/entities/db_import_result.dart';
 import '../../domain/states/table_import_progress.dart';
@@ -798,7 +799,10 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
     }
   }
 
-  Future<void> startMigration({bool skipImportCheck = false}) async {
+  Future<void> startMigration({
+    bool skipImportCheck = false,
+    bool Function()? shouldCancel,
+  }) async {
     // Check if there's unimported data in macOS chat.db
     if (!skipImportCheck) {
       try {
@@ -874,6 +878,9 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
           .read(handlesMigrationServiceProvider)
           .run(
             onExecutionPlan: (steps) {
+              if (shouldCancel?.call() ?? false) {
+                throw const DbPipelineCancelledException();
+              }
               state = state.copyWith(
                 stages: <UiStageProgress>[
                   for (final step in steps)
@@ -886,6 +893,9 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
               );
             },
             onTableProgress: (TableMigrationProgressEvent event) {
+              if (shouldCancel?.call() ?? false) {
+                throw const DbPipelineCancelledException();
+              }
               _handleTableMigrationProgress(event);
             },
             incrementalMode: useIncrementalMode,
@@ -920,7 +930,10 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
         );
       }
     } catch (error) {
-      final message = _mapDatabaseError('Migration failed', error);
+      final isCancelled = error is DbPipelineCancelledException;
+      final message = isCancelled
+          ? dbPipelineCancelledMessage
+          : _mapDatabaseError('Migration failed', error);
       final result = DbMigrationResult(
         batchId: -1,
         success: false,
@@ -932,10 +945,14 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
         progress: 0.0,
         lastMigrationResult: result,
       );
-      await _failureStorage.saveMigrationResult(
-        result,
-        recordedAt: DateTime.now().toUtc(),
-      );
+      if (isCancelled) {
+        await _failureStorage.clearMigrationResult();
+      } else {
+        await _failureStorage.saveMigrationResult(
+          result,
+          recordedAt: DateTime.now().toUtc(),
+        );
+      }
     }
   }
 

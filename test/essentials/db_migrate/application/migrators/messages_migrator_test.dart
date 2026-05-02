@@ -145,13 +145,14 @@ void main() {
               ),
             );
 
+        final logs = <String>[];
         final context = MigrationContextSqlite(
           importDb: importDb,
           workingDb: workingDb,
           incrementalMode: true,
-          log: (_) {},
+          log: logs.add,
         );
-        const migrator = MessagesMigrator();
+        final migrator = MessagesMigrator();
 
         await migrator.validatePrereqs(context);
         await migrator.copy(context);
@@ -167,6 +168,269 @@ void main() {
           workingDb.workingChats,
         )..where((tbl) => tbl.id.equals(importChatId))).getSingle();
         expect(backfilledChat.lastSenderHandleId, canonicalHandleId);
+      },
+    );
+
+    test(
+      'reports determinate chunk progress for working message projection',
+      () async {
+        const importChatId = 8;
+        const handleValue = 'progress@example.com';
+        const handleService = 'iMessage';
+        final batchId = await importDb.insertImportBatch(
+          startedAtUtc: DateTime.now().toUtc().toIso8601String(),
+        );
+
+        await importDb.insertChat(
+          id: importChatId,
+          guid: 'import-chat-guid-progress',
+          service: handleService,
+          batchId: batchId,
+        );
+
+        for (var index = 0; index < 1001; index++) {
+          await importDb.insertMessage(
+            id: index + 1,
+            guid: 'message-guid-progress-$index',
+            chatId: importChatId,
+            service: handleService,
+            isFromMe: true,
+            dateUtc: '2024-01-02T03:04:05Z',
+            text: 'Progress row $index',
+            hasAttributedBodySource: false,
+            hasMessageSummaryInfo: false,
+            hasPayloadDataSource: false,
+            itemType: 'text',
+            isSystemMessage: false,
+            batchId: batchId,
+          );
+        }
+
+        await workingDb
+            .into(workingDb.handlesCanonical)
+            .insert(
+              HandlesCanonicalCompanion.insert(
+                rawIdentifier: handleValue,
+                displayName: handleValue,
+                compoundIdentifier: buildCompoundIdentifier(
+                  normalizedIdentifier: handleValue,
+                  rawIdentifier: handleValue,
+                  service: handleService,
+                ),
+                service: const drift.Value(handleService),
+              ),
+            );
+
+        await workingDb.customStatement('''
+        INSERT INTO chats (id, guid, service)
+        VALUES ($importChatId, 'working-chat-guid-progress', '$handleService')
+      ''');
+
+        final logs = <String>[];
+        final context = MigrationContextSqlite(
+          importDb: importDb,
+          workingDb: workingDb,
+          incrementalMode: true,
+          log: logs.add,
+        );
+        final migrator = MessagesMigrator();
+        final progressEvents =
+            <(int processed, int total, String? currentItem)>[];
+        migrator.setProgressCallback(({
+          required int processed,
+          required int total,
+          String? currentItem,
+        }) {
+          progressEvents.add((processed, total, currentItem));
+        });
+
+        await migrator.validatePrereqs(context);
+        await migrator.copy(context);
+        await migrator.postValidate(context);
+
+        // The first emission must come from validatePrereqs and report a
+        // determinate "0 of N" so the modal renders a determinate bar
+        // immediately, not an indeterminate stripe.
+        expect(progressEvents, isNotEmpty);
+        expect(progressEvents.first.$1, 0);
+        expect(progressEvents.first.$2, 1001);
+        expect(progressEvents.first.$3, 'Validating message prerequisites…');
+
+        // The chunk loop must emit at least one mid-run determinate event.
+        expect(progressEvents.any((event) => event.$1 == 1000), isTrue);
+
+        // Backfill, chats-update, and postValidate must each keep the bar
+        // pinned at 100% with a descriptive currentItem so it never reverts
+        // to indeterminate after the chunk loop finishes.
+        expect(
+          progressEvents.any(
+            (event) =>
+                event.$1 == 1001 &&
+                event.$2 == 1001 &&
+                event.$3 == 'Backfilling sender handles…',
+          ),
+          isTrue,
+        );
+        expect(
+          progressEvents.any(
+            (event) =>
+                event.$1 == 1001 &&
+                event.$2 == 1001 &&
+                event.$3 == 'Updating per-chat metadata…',
+          ),
+          isTrue,
+        );
+        expect(
+          progressEvents.last.$1,
+          1001,
+          reason: 'final emission must remain at total',
+        );
+        expect(progressEvents.last.$2, 1001);
+        expect(progressEvents.last.$3, 'Validating projected message rows…');
+
+        expect(
+          logs.any(
+            (log) => log.contains(
+              '[messages] phase=backfill_sender_handles start_at_utc=',
+            ),
+          ),
+          isTrue,
+        );
+        expect(
+          logs.any(
+            (log) =>
+                log.contains(
+                  '[messages] phase=backfill_sender_handles end_at_utc=',
+                ) &&
+                log.contains('duration_ms='),
+          ),
+          isTrue,
+        );
+        expect(
+          logs.any(
+            (log) => log.contains(
+              '[messages] phase=update_chat_metadata start_at_utc=',
+            ),
+          ),
+          isTrue,
+        );
+        expect(
+          logs.any(
+            (log) =>
+                log.contains(
+                  '[messages] phase=update_chat_metadata end_at_utc=',
+                ) &&
+                log.contains('duration_ms='),
+          ),
+          isTrue,
+        );
+        expect(
+          logs.any(
+            (log) =>
+                log.contains('[messages] phase=post_validate start_at_utc='),
+          ),
+          isTrue,
+        );
+        expect(
+          logs.any(
+            (log) =>
+                log.contains('[messages] phase=post_validate end_at_utc=') &&
+                log.contains('duration_ms='),
+          ),
+          isTrue,
+        );
+        expect(
+          logs.any(
+            (log) =>
+                log.contains('[messages] latest_historical_archive_batch_id='),
+          ),
+          isTrue,
+        );
+        expect(
+          logs.any(
+            (log) => log.contains(
+              '[messages][chunk] offset=0 limit=1000 stage=before_select',
+            ),
+          ),
+          isTrue,
+        );
+        expect(
+          logs.any(
+            (log) =>
+                log.contains(
+                  '[messages][chunk] offset=0 limit=1000 stage=after_select',
+                ) &&
+                log.contains('selected_count=1000') &&
+                log.contains('first_id=1 last_id=1000') &&
+                log.contains('first_guid=message-guid-progress-0') &&
+                log.contains('last_guid=message-guid-progress-999'),
+          ),
+          isTrue,
+        );
+        expect(
+          logs.any(
+            (log) =>
+                log.contains(
+                  '[messages][chunk] offset=0 limit=1000 stage=before_insert',
+                ) &&
+                log.contains('first_id=1') &&
+                log.contains('last_id=1000'),
+          ),
+          isTrue,
+        );
+        expect(
+          logs.any(
+            (log) =>
+                log.contains(
+                  '[messages][chunk] offset=0 limit=1000 stage=after_insert',
+                ) &&
+                log.contains('insert_duration_ms='),
+          ),
+          isTrue,
+        );
+        expect(
+          logs.any(
+            (log) => log.contains(
+              '[messages][chunk] offset=0 limit=1000 stage=before_changes',
+            ),
+          ),
+          isTrue,
+        );
+        expect(
+          logs.any(
+            (log) =>
+                log.contains(
+                  '[messages][chunk] offset=0 limit=1000 stage=after_changes',
+                ) &&
+                log.contains('changes_count='),
+          ),
+          isTrue,
+        );
+        expect(
+          logs.any(
+            (log) =>
+                log.contains(
+                  '[messages][chunk] offset=0 limit=1000 stage=chunk_complete',
+                ) &&
+                log.contains('processed_rows=1000') &&
+                log.contains('total_rows=1001') &&
+                log.contains('chunk_elapsed_ms='),
+          ),
+          isTrue,
+        );
+        expect(
+          logs.any(
+            (log) =>
+                log.contains(
+                  '[messages][chunk] offset=1000 limit=1000 stage=after_select',
+                ) &&
+                log.contains('selected_count=1') &&
+                log.contains('first_id=1001 last_id=1001') &&
+                log.contains('first_guid=message-guid-progress-1000') &&
+                log.contains('last_guid=message-guid-progress-1000'),
+          ),
+          isTrue,
+        );
       },
     );
   });

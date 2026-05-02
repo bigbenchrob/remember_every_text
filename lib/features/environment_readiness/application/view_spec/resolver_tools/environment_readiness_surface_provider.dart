@@ -170,6 +170,36 @@ EnvironmentReadinessDetailViewModel _detailFor({
         tone: EnvironmentReadinessTone.warning,
       );
     case EnvironmentReadinessStepKey.importReadiness:
+      if (report?.blockerKind == OnboardingBlockerKind.importDatabaseMissing) {
+        return const EnvironmentReadinessDetailViewModel(
+          stepKey: EnvironmentReadinessStepKey.importReadiness,
+          title: 'Rebuild Message Data From Source',
+          body:
+              'The working database is incomplete, and MessageLens cannot read the import database (`macos_import.db`) that migration would need to repair it. Migration cannot repair this state. The app must rebuild your message data from the original local sources on this Mac.',
+          instructions: [
+            'Use Rebuild Message Data to restart the normal onboarding import and migration flow.',
+            'MessageLens will rebuild app data from your local Messages and Contacts sources instead of trying to repair the incomplete working database.',
+            'Normal message views and the contact picker stay blocked until that rebuild finishes.',
+            'If you want to share diagnostics before rebuilding, use Send Report To Developer.',
+          ],
+          actions: [
+            EnvironmentReadinessAction(
+              kind: EnvironmentReadinessActionKind.startImport,
+              label: 'Rebuild Message Data',
+            ),
+            EnvironmentReadinessAction(
+              kind: EnvironmentReadinessActionKind.sendReport,
+              label: 'Send Report To Developer',
+            ),
+            EnvironmentReadinessAction(
+              kind: EnvironmentReadinessActionKind.recheck,
+              label: 'Re-check',
+            ),
+          ],
+          tone: EnvironmentReadinessTone.warning,
+        );
+      }
+
       final isMigrationRetry =
           report?.state == OnboardingEnvironmentState.migrationFailed ||
           report?.blockerKind == OnboardingBlockerKind.migrationFailed;

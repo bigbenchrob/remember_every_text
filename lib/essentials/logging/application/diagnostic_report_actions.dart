@@ -163,5 +163,8 @@ String _describeProbe({
       'path=${probe.path}; '
       'exists=${probe.exists}; '
       'readable=${probe.readable}; '
-      'rows=${probe.rowCount ?? 'unknown'}';
+      'rows=${probe.rowCount ?? 'unknown'}; '
+      'projectionStatus=${probe.projectionStatus ?? 'unknown'}; '
+      'lastCompletedBatchId=${probe.lastCompletedBatchId ?? 'unknown'}; '
+      'completedAtUtc=${probe.completedAtUtc ?? 'unknown'}';
 }

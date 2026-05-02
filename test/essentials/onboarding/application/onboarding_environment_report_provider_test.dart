@@ -8,6 +8,7 @@ import 'package:remember_this_text/domain_driven_development/value_objects.dart'
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/import/sqflite_import_database.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/working/working_database.dart';
 import 'package:remember_this_text/essentials/db_importers/application/debug_settings_provider.dart';
 import 'package:remember_this_text/essentials/db_importers/domain/entities/db_import_result.dart';
 import 'package:remember_this_text/essentials/db_migrate/domain/entities/db_migration_result.dart';
@@ -75,6 +76,7 @@ void main() {
         container = ProviderContainer(
           overrides: [
             overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
+            _workingDbOverride(tempDir.path),
             onboardingFullDiskAccessProvider.overrideWith((ref) => true),
             onboardingMessagesDatabasePathProvider.overrideWith(
               (ref) => messagesDbPath,
@@ -115,6 +117,7 @@ void main() {
         container = ProviderContainer(
           overrides: [
             overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
+            _workingDbOverride(tempDir.path),
             onboardingFullDiskAccessProvider.overrideWith((ref) => true),
             onboardingMessagesDatabasePathProvider.overrideWith(
               (ref) => messagesDbPath,
@@ -157,6 +160,7 @@ void main() {
       container = ProviderContainer(
         overrides: [
           overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
+          _workingDbOverride(tempDir.path),
           onboardingFullDiskAccessProvider.overrideWith((ref) => true),
           onboardingMessagesDatabasePathProvider.overrideWith(
             (ref) => messagesDbPath,
@@ -186,6 +190,269 @@ void main() {
       );
       expect(report.usingPersistedImportFailure, isFalse);
     });
+
+    test(
+      'treats incomplete projection_state as migration failure even when working db still has rows',
+      () async {
+        final messagesDbPath = _createMessagesDatabase(
+          tempDir.path,
+          messageCount: 120,
+        );
+        final addressBookPath = _createReadableFile(
+          tempDir.path,
+          'AddressBook-v22.abcddb',
+        );
+        final importDb = SqfliteImportDatabase(
+          databaseDirectory: tempDir.path,
+          databaseName: 'macos_import.db',
+          debugSettings: const ImportDebugSettingsState(),
+        );
+        addTearDown(() async {
+          await importDb.close();
+        });
+        final batchId = await importDb.insertImportBatch(
+          startedAtUtc: DateTime.utc(2026, 05, 02).toIso8601String(),
+        );
+        await importDb.insertChat(
+          id: 1,
+          guid: 'chat-1',
+          service: 'iMessage',
+          batchId: batchId,
+        );
+        for (var index = 0; index < 120; index++) {
+          await importDb.insertMessage(
+            id: index + 1,
+            guid: 'message-$index',
+            chatId: 1,
+            service: 'iMessage',
+            isFromMe: false,
+            text: 'message-$index',
+            hasAttributedBodySource: false,
+            hasMessageSummaryInfo: false,
+            hasPayloadDataSource: false,
+            isSystemMessage: false,
+            batchId: batchId,
+          );
+        }
+        final workingDbPath = File('${tempDir.path}/working.db');
+        final seededWorkingDb = WorkingDatabase(NativeDatabase(workingDbPath));
+        await seededWorkingDb.customStatement(
+          "INSERT INTO chats (id, guid, service) VALUES (1, 'working-chat-1', 'iMessage')",
+        );
+        for (var index = 0; index < 100; index++) {
+          await seededWorkingDb.customStatement(
+            'INSERT INTO messages (id, guid, chat_id, is_from_me) VALUES (?, ?, 1, 0)',
+            <Object?>[index + 1, 'working-message-$index'],
+          );
+        }
+        await seededWorkingDb.customStatement(
+          "UPDATE projection_state SET completion_status = 'incomplete', "
+          'last_completed_batch_id = 8, '
+          "completed_at_utc = '2026-05-02T14:57:54.395398Z' "
+          'WHERE id = 1',
+        );
+
+        container = ProviderContainer(
+          overrides: [
+            overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
+            sqfliteImportDatabaseProvider.overrideWith((ref) async => importDb),
+            driftWorkingDatabaseProvider.overrideWith((ref) async {
+              ref.onDispose(() async {
+                await seededWorkingDb.close();
+              });
+              return seededWorkingDb;
+            }),
+            onboardingFullDiskAccessProvider.overrideWith((ref) => true),
+            onboardingMessagesDatabasePathProvider.overrideWith(
+              (ref) => messagesDbPath,
+            ),
+            onboardingDatabaseDirectoryPathProvider.overrideWith(
+              (ref) => tempDir.path,
+            ),
+            futureGetFolderAggregateProvider.overrideWith(
+              (ref) async => right(_addressBookAggregate(addressBookPath)),
+            ),
+          ],
+        );
+
+        final report = await container.read(
+          onboardingEnvironmentReportProvider.future,
+        );
+
+        expect(report.state, OnboardingEnvironmentState.migrationFailed);
+        expect(report.blockerKind, OnboardingBlockerKind.migrationFailed);
+        expect(report.workingDatabase.projectionStatus, 'incomplete');
+        expect(report.workingDatabase.lastCompletedBatchId, 8);
+        expect(report.shouldResetAppDatabasesBeforeImport, isTrue);
+        expect(report.resetAppDatabasesReason, contains('projection_state'));
+        expect(report.hasPopulatedAppDatabases, isFalse);
+      },
+    );
+
+    test(
+      'treats incomplete working projection plus missing import db as missing-ledger recovery',
+      () async {
+        final messagesDbPath = _createMessagesDatabase(
+          tempDir.path,
+          messageCount: 120,
+        );
+        final addressBookPath = _createReadableFile(
+          tempDir.path,
+          'AddressBook-v22.abcddb',
+        );
+        final workingDbPath = File('${tempDir.path}/working.db');
+        final seededWorkingDb = WorkingDatabase(NativeDatabase(workingDbPath));
+        await seededWorkingDb.customStatement(
+          "INSERT INTO chats (id, guid, service) VALUES (1, 'working-chat-1', 'iMessage')",
+        );
+        await seededWorkingDb.customStatement(
+          'INSERT INTO messages (id, guid, chat_id, is_from_me) VALUES (1, ?, 1, 0)',
+          <Object?>['working-message-1'],
+        );
+        await seededWorkingDb.customStatement(
+          "UPDATE projection_state SET completion_status = 'incomplete', "
+          'last_completed_batch_id = 8, '
+          "completed_at_utc = '2026-05-02T14:57:54.395398Z' "
+          'WHERE id = 1',
+        );
+
+        container = ProviderContainer(
+          overrides: [
+            overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
+            driftWorkingDatabaseProvider.overrideWith((ref) async {
+              ref.onDispose(() async {
+                await seededWorkingDb.close();
+              });
+              return seededWorkingDb;
+            }),
+            onboardingFullDiskAccessProvider.overrideWith((ref) => true),
+            onboardingMessagesDatabasePathProvider.overrideWith(
+              (ref) => messagesDbPath,
+            ),
+            onboardingDatabaseDirectoryPathProvider.overrideWith(
+              (ref) => tempDir.path,
+            ),
+            futureGetFolderAggregateProvider.overrideWith(
+              (ref) async => right(_addressBookAggregate(addressBookPath)),
+            ),
+          ],
+        );
+
+        final report = await container.read(
+          onboardingEnvironmentReportProvider.future,
+        );
+
+        expect(report.importDatabaseExists, isFalse);
+        expect(report.hasReadableImportDatabase, isFalse);
+        expect(
+          report.hasIncompleteWorkingProjectionWithMissingImportDatabase,
+          isTrue,
+        );
+        expect(report.state, OnboardingEnvironmentState.migrationFailed);
+        expect(report.blockerKind, OnboardingBlockerKind.importDatabaseMissing);
+        expect(report.shouldResetAppDatabasesBeforeImport, isTrue);
+        expect(report.resetAppDatabasesReason, contains('macos_import.db'));
+      },
+    );
+
+    test(
+      'uses recovery classification for an on-disk incomplete working db when the import ledger is missing',
+      () async {
+        final messagesDbPath = _createMessagesDatabase(
+          tempDir.path,
+          messageCount: 120,
+        );
+        final addressBookPath = _createReadableFile(
+          tempDir.path,
+          'AddressBook-v22.abcddb',
+        );
+        _createProjectionDatabase(
+          tempDir.path,
+          'working.db',
+          rowCount: 1,
+          projectionStatus: 'incomplete',
+          lastCompletedBatchId: 8,
+          completedAtUtc: '2026-05-02T14:57:54.395398Z',
+        );
+
+        container = ProviderContainer(
+          overrides: [
+            overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
+            onboardingFullDiskAccessProvider.overrideWith((ref) => true),
+            onboardingMessagesDatabasePathProvider.overrideWith(
+              (ref) => messagesDbPath,
+            ),
+            onboardingDatabaseDirectoryPathProvider.overrideWith(
+              (ref) => tempDir.path,
+            ),
+            futureGetFolderAggregateProvider.overrideWith(
+              (ref) async => right(_addressBookAggregate(addressBookPath)),
+            ),
+          ],
+        );
+
+        final report = await container.read(
+          onboardingEnvironmentReportProvider.future,
+        );
+
+        expect(report.workingDatabase.exists, isTrue);
+        expect(report.state, OnboardingEnvironmentState.migrationFailed);
+        expect(report.blockerKind, OnboardingBlockerKind.importDatabaseMissing);
+        expect(report.hasExistingIncompleteWorkingDatabase, isTrue);
+        expect(
+          report.hasIncompleteWorkingProjectionWithMissingImportDatabase,
+          isTrue,
+        );
+        expect(report.shouldResetAppDatabasesBeforeImport, isTrue);
+      },
+    );
+
+    test(
+      'treats a freshly seeded empty working db with missing import ledger as ready to import',
+      () async {
+        final messagesDbPath = _createMessagesDatabase(
+          tempDir.path,
+          messageCount: 120,
+        );
+        final addressBookPath = _createReadableFile(
+          tempDir.path,
+          'AddressBook-v22.abcddb',
+        );
+
+        container = ProviderContainer(
+          overrides: [
+            overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
+            _workingDbOverride(tempDir.path),
+            onboardingFullDiskAccessProvider.overrideWith((ref) => true),
+            onboardingMessagesDatabasePathProvider.overrideWith(
+              (ref) => messagesDbPath,
+            ),
+            onboardingDatabaseDirectoryPathProvider.overrideWith(
+              (ref) => tempDir.path,
+            ),
+            futureGetFolderAggregateProvider.overrideWith(
+              (ref) async => right(_addressBookAggregate(addressBookPath)),
+            ),
+          ],
+        );
+
+        await container.read(driftWorkingDatabaseProvider.future);
+        final report = await container.refresh(
+          onboardingEnvironmentReportProvider.future,
+        );
+
+        expect(report.workingDatabase.exists, isTrue);
+        expect(report.workingDatabase.projectionStatus, 'incomplete');
+        expect(report.workingDatabase.rowCount, 0);
+        expect(report.hasExistingIncompleteWorkingDatabase, isFalse);
+        expect(
+          report.hasIncompleteWorkingProjectionWithMissingImportDatabase,
+          isFalse,
+        );
+        expect(report.state, OnboardingEnvironmentState.readyToImport);
+        expect(report.shouldResetAppDatabasesBeforeImport, isFalse);
+      },
+    );
 
     test(
       'flags a populated import ledger plus tiny working database for automatic reset',
@@ -247,6 +514,7 @@ void main() {
           overrides: [
             overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
             sqfliteImportDatabaseProvider.overrideWith((ref) async => importDb),
+            _workingDbOverride(tempDir.path),
             onboardingFullDiskAccessProvider.overrideWith((ref) => true),
             onboardingMessagesDatabasePathProvider.overrideWith(
               (ref) => messagesDbPath,
@@ -270,6 +538,24 @@ void main() {
         expect(report.resetAppDatabasesReason, isNotNull);
       },
     );
+  });
+}
+
+Override _workingDbOverride(String directoryPath) {
+  return driftWorkingDatabaseProvider.overrideWith((ref) async {
+    final db = WorkingDatabase(
+      NativeDatabase.createInBackground(File('$directoryPath/working.db')),
+    );
+
+    await db.doWhenOpened((_) async {
+      await db.customStatement('PRAGMA foreign_keys = ON');
+    });
+
+    ref.onDispose(() async {
+      await db.close();
+    });
+
+    return db;
   });
 }
 
@@ -297,6 +583,9 @@ String _createProjectionDatabase(
   String directoryPath,
   String fileName, {
   int rowCount = 1,
+  String? projectionStatus,
+  int? lastCompletedBatchId,
+  String? completedAtUtc,
 }) {
   final filePath = '$directoryPath/$fileName';
   final db = sqlite3.open(filePath);
@@ -304,6 +593,23 @@ String _createProjectionDatabase(
     db.execute('CREATE TABLE messages (ROWID INTEGER PRIMARY KEY, value TEXT)');
     for (var index = 0; index < rowCount; index++) {
       db.execute('INSERT INTO messages (value) VALUES (?)', ['fixture-$index']);
+    }
+    if (projectionStatus != null) {
+      db.execute('''
+        CREATE TABLE projection_state (
+          id INTEGER PRIMARY KEY,
+          completion_status TEXT,
+          last_completed_batch_id INTEGER,
+          completed_at_utc TEXT,
+          note TEXT
+        )
+      ''');
+      db.execute(
+        'INSERT INTO projection_state '
+        '(id, completion_status, last_completed_batch_id, completed_at_utc, note) '
+        'VALUES (1, ?, ?, ?, NULL)',
+        [projectionStatus, lastCompletedBatchId, completedAtUtc],
+      );
     }
   } finally {
     db.dispose();

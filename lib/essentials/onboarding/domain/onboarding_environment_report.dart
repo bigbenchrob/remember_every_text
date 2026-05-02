@@ -41,6 +41,10 @@ class OnboardingDatabaseProbe {
     this.sizeBytes,
     this.lastModified,
     this.rowCount,
+    this.projectionStatus,
+    this.lastCompletedBatchId,
+    this.completedAtUtc,
+    this.projectionNote,
   });
 
   final String path;
@@ -49,8 +53,30 @@ class OnboardingDatabaseProbe {
   final int? sizeBytes;
   final DateTime? lastModified;
   final int? rowCount;
+  final String? projectionStatus;
+  final int? lastCompletedBatchId;
+  final String? completedAtUtc;
+  final String? projectionNote;
 
   bool get hasData => (rowCount ?? 0) > 0;
+
+  bool get existsAndReadable => exists && readable;
+
+  bool get isProjectionComplete => projectionStatus == 'complete';
+
+  bool get isProjectionIncomplete =>
+      projectionStatus != null && projectionStatus != 'complete';
+
+  bool get hasPriorProjectionEvidence {
+    return hasData ||
+        lastCompletedBatchId != null ||
+        completedAtUtc != null ||
+        ((projectionNote ?? '').trim().isNotEmpty);
+  }
+
+  bool get isRecoverableIncompleteProjection {
+    return isProjectionIncomplete && hasPriorProjectionEvidence;
+  }
 }
 
 class OnboardingEnvironmentReport {
@@ -94,8 +120,25 @@ class OnboardingEnvironmentReport {
   final bool shouldResetAppDatabasesBeforeImport;
   final String? resetAppDatabasesReason;
 
+  bool get importDatabaseExists => importDatabase.exists;
+
+  bool get hasReadableImportDatabase => importDatabase.existsAndReadable;
+
+  bool get hasExistingWorkingDatabase => workingDatabase.exists;
+
+  bool get hasExistingIncompleteWorkingDatabase {
+    return hasExistingWorkingDatabase &&
+        workingDatabase.isRecoverableIncompleteProjection;
+  }
+
+  bool get hasIncompleteWorkingProjectionWithMissingImportDatabase {
+    return hasExistingIncompleteWorkingDatabase && !hasReadableImportDatabase;
+  }
+
   bool get hasPopulatedAppDatabases {
-    return importDatabase.hasData && workingDatabase.hasData;
+    return importDatabase.hasData &&
+        workingDatabase.hasData &&
+        !workingDatabase.isProjectionIncomplete;
   }
 
   bool get hasImportFailure {

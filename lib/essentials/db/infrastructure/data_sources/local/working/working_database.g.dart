@@ -279,6 +279,50 @@ class $ProjectionStateTable extends ProjectionState
         type: DriftSqlType.int,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _lastCompletedBatchIdMeta =
+      const VerificationMeta('lastCompletedBatchId');
+  @override
+  late final GeneratedColumn<int> lastCompletedBatchId = GeneratedColumn<int>(
+    'last_completed_batch_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _completedAtUtcMeta = const VerificationMeta(
+    'completedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<String> completedAtUtc = GeneratedColumn<String>(
+    'completed_at_utc',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _completionStatusMeta = const VerificationMeta(
+    'completionStatus',
+  );
+  @override
+  late final GeneratedColumn<String> completionStatus = GeneratedColumn<String>(
+    'completion_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints:
+        'NOT NULL DEFAULT \'incomplete\' CHECK(completion_status IN (\'complete\',\'incomplete\'))',
+    defaultValue: const CustomExpression('\'incomplete\''),
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -286,6 +330,10 @@ class $ProjectionStateTable extends ProjectionState
     lastProjectedAtUtc,
     lastProjectedMessageId,
     lastProjectedAttachmentId,
+    lastCompletedBatchId,
+    completedAtUtc,
+    completionStatus,
+    note,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -338,6 +386,39 @@ class $ProjectionStateTable extends ProjectionState
         ),
       );
     }
+    if (data.containsKey('last_completed_batch_id')) {
+      context.handle(
+        _lastCompletedBatchIdMeta,
+        lastCompletedBatchId.isAcceptableOrUnknown(
+          data['last_completed_batch_id']!,
+          _lastCompletedBatchIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('completed_at_utc')) {
+      context.handle(
+        _completedAtUtcMeta,
+        completedAtUtc.isAcceptableOrUnknown(
+          data['completed_at_utc']!,
+          _completedAtUtcMeta,
+        ),
+      );
+    }
+    if (data.containsKey('completion_status')) {
+      context.handle(
+        _completionStatusMeta,
+        completionStatus.isAcceptableOrUnknown(
+          data['completion_status']!,
+          _completionStatusMeta,
+        ),
+      );
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
     return context;
   }
 
@@ -367,6 +448,22 @@ class $ProjectionStateTable extends ProjectionState
         DriftSqlType.int,
         data['${effectivePrefix}last_projected_attachment_id'],
       ),
+      lastCompletedBatchId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_completed_batch_id'],
+      ),
+      completedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}completed_at_utc'],
+      ),
+      completionStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}completion_status'],
+      )!,
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
     );
   }
 
@@ -383,12 +480,30 @@ class ProjectionStateData extends DataClass
   final String? lastProjectedAtUtc;
   final int? lastProjectedMessageId;
   final int? lastProjectedAttachmentId;
+
+  /// Batch id whose migration most recently completed successfully.
+  final int? lastCompletedBatchId;
+
+  /// ISO-8601 UTC timestamp recorded at the end of a successful migration.
+  final String? completedAtUtc;
+
+  /// Either `'complete'` or `'incomplete'`. New databases default to
+  /// `'incomplete'` until the migration orchestrator writes `'complete'`
+  /// at the end of a successful run.
+  final String completionStatus;
+
+  /// Optional free-form note (e.g., reason for an incomplete state).
+  final String? note;
   const ProjectionStateData({
     required this.id,
     this.lastImportBatchId,
     this.lastProjectedAtUtc,
     this.lastProjectedMessageId,
     this.lastProjectedAttachmentId,
+    this.lastCompletedBatchId,
+    this.completedAtUtc,
+    required this.completionStatus,
+    this.note,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -407,6 +522,16 @@ class ProjectionStateData extends DataClass
       map['last_projected_attachment_id'] = Variable<int>(
         lastProjectedAttachmentId,
       );
+    }
+    if (!nullToAbsent || lastCompletedBatchId != null) {
+      map['last_completed_batch_id'] = Variable<int>(lastCompletedBatchId);
+    }
+    if (!nullToAbsent || completedAtUtc != null) {
+      map['completed_at_utc'] = Variable<String>(completedAtUtc);
+    }
+    map['completion_status'] = Variable<String>(completionStatus);
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
     }
     return map;
   }
@@ -427,6 +552,14 @@ class ProjectionStateData extends DataClass
           lastProjectedAttachmentId == null && nullToAbsent
           ? const Value.absent()
           : Value(lastProjectedAttachmentId),
+      lastCompletedBatchId: lastCompletedBatchId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastCompletedBatchId),
+      completedAtUtc: completedAtUtc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completedAtUtc),
+      completionStatus: Value(completionStatus),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
     );
   }
 
@@ -447,6 +580,12 @@ class ProjectionStateData extends DataClass
       lastProjectedAttachmentId: serializer.fromJson<int?>(
         json['lastProjectedAttachmentId'],
       ),
+      lastCompletedBatchId: serializer.fromJson<int?>(
+        json['lastCompletedBatchId'],
+      ),
+      completedAtUtc: serializer.fromJson<String?>(json['completedAtUtc']),
+      completionStatus: serializer.fromJson<String>(json['completionStatus']),
+      note: serializer.fromJson<String?>(json['note']),
     );
   }
   @override
@@ -460,6 +599,10 @@ class ProjectionStateData extends DataClass
       'lastProjectedAttachmentId': serializer.toJson<int?>(
         lastProjectedAttachmentId,
       ),
+      'lastCompletedBatchId': serializer.toJson<int?>(lastCompletedBatchId),
+      'completedAtUtc': serializer.toJson<String?>(completedAtUtc),
+      'completionStatus': serializer.toJson<String>(completionStatus),
+      'note': serializer.toJson<String?>(note),
     };
   }
 
@@ -469,6 +612,10 @@ class ProjectionStateData extends DataClass
     Value<String?> lastProjectedAtUtc = const Value.absent(),
     Value<int?> lastProjectedMessageId = const Value.absent(),
     Value<int?> lastProjectedAttachmentId = const Value.absent(),
+    Value<int?> lastCompletedBatchId = const Value.absent(),
+    Value<String?> completedAtUtc = const Value.absent(),
+    String? completionStatus,
+    Value<String?> note = const Value.absent(),
   }) => ProjectionStateData(
     id: id ?? this.id,
     lastImportBatchId: lastImportBatchId.present
@@ -483,6 +630,14 @@ class ProjectionStateData extends DataClass
     lastProjectedAttachmentId: lastProjectedAttachmentId.present
         ? lastProjectedAttachmentId.value
         : this.lastProjectedAttachmentId,
+    lastCompletedBatchId: lastCompletedBatchId.present
+        ? lastCompletedBatchId.value
+        : this.lastCompletedBatchId,
+    completedAtUtc: completedAtUtc.present
+        ? completedAtUtc.value
+        : this.completedAtUtc,
+    completionStatus: completionStatus ?? this.completionStatus,
+    note: note.present ? note.value : this.note,
   );
   ProjectionStateData copyWithCompanion(ProjectionStateCompanion data) {
     return ProjectionStateData(
@@ -499,6 +654,16 @@ class ProjectionStateData extends DataClass
       lastProjectedAttachmentId: data.lastProjectedAttachmentId.present
           ? data.lastProjectedAttachmentId.value
           : this.lastProjectedAttachmentId,
+      lastCompletedBatchId: data.lastCompletedBatchId.present
+          ? data.lastCompletedBatchId.value
+          : this.lastCompletedBatchId,
+      completedAtUtc: data.completedAtUtc.present
+          ? data.completedAtUtc.value
+          : this.completedAtUtc,
+      completionStatus: data.completionStatus.present
+          ? data.completionStatus.value
+          : this.completionStatus,
+      note: data.note.present ? data.note.value : this.note,
     );
   }
 
@@ -509,7 +674,11 @@ class ProjectionStateData extends DataClass
           ..write('lastImportBatchId: $lastImportBatchId, ')
           ..write('lastProjectedAtUtc: $lastProjectedAtUtc, ')
           ..write('lastProjectedMessageId: $lastProjectedMessageId, ')
-          ..write('lastProjectedAttachmentId: $lastProjectedAttachmentId')
+          ..write('lastProjectedAttachmentId: $lastProjectedAttachmentId, ')
+          ..write('lastCompletedBatchId: $lastCompletedBatchId, ')
+          ..write('completedAtUtc: $completedAtUtc, ')
+          ..write('completionStatus: $completionStatus, ')
+          ..write('note: $note')
           ..write(')'))
         .toString();
   }
@@ -521,6 +690,10 @@ class ProjectionStateData extends DataClass
     lastProjectedAtUtc,
     lastProjectedMessageId,
     lastProjectedAttachmentId,
+    lastCompletedBatchId,
+    completedAtUtc,
+    completionStatus,
+    note,
   );
   @override
   bool operator ==(Object other) =>
@@ -530,7 +703,11 @@ class ProjectionStateData extends DataClass
           other.lastImportBatchId == this.lastImportBatchId &&
           other.lastProjectedAtUtc == this.lastProjectedAtUtc &&
           other.lastProjectedMessageId == this.lastProjectedMessageId &&
-          other.lastProjectedAttachmentId == this.lastProjectedAttachmentId);
+          other.lastProjectedAttachmentId == this.lastProjectedAttachmentId &&
+          other.lastCompletedBatchId == this.lastCompletedBatchId &&
+          other.completedAtUtc == this.completedAtUtc &&
+          other.completionStatus == this.completionStatus &&
+          other.note == this.note);
 }
 
 class ProjectionStateCompanion extends UpdateCompanion<ProjectionStateData> {
@@ -539,12 +716,20 @@ class ProjectionStateCompanion extends UpdateCompanion<ProjectionStateData> {
   final Value<String?> lastProjectedAtUtc;
   final Value<int?> lastProjectedMessageId;
   final Value<int?> lastProjectedAttachmentId;
+  final Value<int?> lastCompletedBatchId;
+  final Value<String?> completedAtUtc;
+  final Value<String> completionStatus;
+  final Value<String?> note;
   const ProjectionStateCompanion({
     this.id = const Value.absent(),
     this.lastImportBatchId = const Value.absent(),
     this.lastProjectedAtUtc = const Value.absent(),
     this.lastProjectedMessageId = const Value.absent(),
     this.lastProjectedAttachmentId = const Value.absent(),
+    this.lastCompletedBatchId = const Value.absent(),
+    this.completedAtUtc = const Value.absent(),
+    this.completionStatus = const Value.absent(),
+    this.note = const Value.absent(),
   });
   ProjectionStateCompanion.insert({
     this.id = const Value.absent(),
@@ -552,6 +737,10 @@ class ProjectionStateCompanion extends UpdateCompanion<ProjectionStateData> {
     this.lastProjectedAtUtc = const Value.absent(),
     this.lastProjectedMessageId = const Value.absent(),
     this.lastProjectedAttachmentId = const Value.absent(),
+    this.lastCompletedBatchId = const Value.absent(),
+    this.completedAtUtc = const Value.absent(),
+    this.completionStatus = const Value.absent(),
+    this.note = const Value.absent(),
   });
   static Insertable<ProjectionStateData> custom({
     Expression<int>? id,
@@ -559,6 +748,10 @@ class ProjectionStateCompanion extends UpdateCompanion<ProjectionStateData> {
     Expression<String>? lastProjectedAtUtc,
     Expression<int>? lastProjectedMessageId,
     Expression<int>? lastProjectedAttachmentId,
+    Expression<int>? lastCompletedBatchId,
+    Expression<String>? completedAtUtc,
+    Expression<String>? completionStatus,
+    Expression<String>? note,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -569,6 +762,11 @@ class ProjectionStateCompanion extends UpdateCompanion<ProjectionStateData> {
         'last_projected_message_id': lastProjectedMessageId,
       if (lastProjectedAttachmentId != null)
         'last_projected_attachment_id': lastProjectedAttachmentId,
+      if (lastCompletedBatchId != null)
+        'last_completed_batch_id': lastCompletedBatchId,
+      if (completedAtUtc != null) 'completed_at_utc': completedAtUtc,
+      if (completionStatus != null) 'completion_status': completionStatus,
+      if (note != null) 'note': note,
     });
   }
 
@@ -578,6 +776,10 @@ class ProjectionStateCompanion extends UpdateCompanion<ProjectionStateData> {
     Value<String?>? lastProjectedAtUtc,
     Value<int?>? lastProjectedMessageId,
     Value<int?>? lastProjectedAttachmentId,
+    Value<int?>? lastCompletedBatchId,
+    Value<String?>? completedAtUtc,
+    Value<String>? completionStatus,
+    Value<String?>? note,
   }) {
     return ProjectionStateCompanion(
       id: id ?? this.id,
@@ -587,6 +789,10 @@ class ProjectionStateCompanion extends UpdateCompanion<ProjectionStateData> {
           lastProjectedMessageId ?? this.lastProjectedMessageId,
       lastProjectedAttachmentId:
           lastProjectedAttachmentId ?? this.lastProjectedAttachmentId,
+      lastCompletedBatchId: lastCompletedBatchId ?? this.lastCompletedBatchId,
+      completedAtUtc: completedAtUtc ?? this.completedAtUtc,
+      completionStatus: completionStatus ?? this.completionStatus,
+      note: note ?? this.note,
     );
   }
 
@@ -612,6 +818,20 @@ class ProjectionStateCompanion extends UpdateCompanion<ProjectionStateData> {
         lastProjectedAttachmentId.value,
       );
     }
+    if (lastCompletedBatchId.present) {
+      map['last_completed_batch_id'] = Variable<int>(
+        lastCompletedBatchId.value,
+      );
+    }
+    if (completedAtUtc.present) {
+      map['completed_at_utc'] = Variable<String>(completedAtUtc.value);
+    }
+    if (completionStatus.present) {
+      map['completion_status'] = Variable<String>(completionStatus.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
     return map;
   }
 
@@ -622,7 +842,11 @@ class ProjectionStateCompanion extends UpdateCompanion<ProjectionStateData> {
           ..write('lastImportBatchId: $lastImportBatchId, ')
           ..write('lastProjectedAtUtc: $lastProjectedAtUtc, ')
           ..write('lastProjectedMessageId: $lastProjectedMessageId, ')
-          ..write('lastProjectedAttachmentId: $lastProjectedAttachmentId')
+          ..write('lastProjectedAttachmentId: $lastProjectedAttachmentId, ')
+          ..write('lastCompletedBatchId: $lastCompletedBatchId, ')
+          ..write('completedAtUtc: $completedAtUtc, ')
+          ..write('completionStatus: $completionStatus, ')
+          ..write('note: $note')
           ..write(')'))
         .toString();
   }
@@ -13463,6 +13687,10 @@ typedef $$ProjectionStateTableCreateCompanionBuilder =
       Value<String?> lastProjectedAtUtc,
       Value<int?> lastProjectedMessageId,
       Value<int?> lastProjectedAttachmentId,
+      Value<int?> lastCompletedBatchId,
+      Value<String?> completedAtUtc,
+      Value<String> completionStatus,
+      Value<String?> note,
     });
 typedef $$ProjectionStateTableUpdateCompanionBuilder =
     ProjectionStateCompanion Function({
@@ -13471,6 +13699,10 @@ typedef $$ProjectionStateTableUpdateCompanionBuilder =
       Value<String?> lastProjectedAtUtc,
       Value<int?> lastProjectedMessageId,
       Value<int?> lastProjectedAttachmentId,
+      Value<int?> lastCompletedBatchId,
+      Value<String?> completedAtUtc,
+      Value<String> completionStatus,
+      Value<String?> note,
     });
 
 class $$ProjectionStateTableFilterComposer
@@ -13504,6 +13736,26 @@ class $$ProjectionStateTableFilterComposer
 
   ColumnFilters<int> get lastProjectedAttachmentId => $composableBuilder(
     column: $table.lastProjectedAttachmentId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lastCompletedBatchId => $composableBuilder(
+    column: $table.lastCompletedBatchId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get completedAtUtc => $composableBuilder(
+    column: $table.completedAtUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get completionStatus => $composableBuilder(
+    column: $table.completionStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -13541,6 +13793,26 @@ class $$ProjectionStateTableOrderingComposer
     column: $table.lastProjectedAttachmentId,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get lastCompletedBatchId => $composableBuilder(
+    column: $table.lastCompletedBatchId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get completedAtUtc => $composableBuilder(
+    column: $table.completedAtUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get completionStatus => $composableBuilder(
+    column: $table.completionStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ProjectionStateTableAnnotationComposer
@@ -13574,6 +13846,24 @@ class $$ProjectionStateTableAnnotationComposer
     column: $table.lastProjectedAttachmentId,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get lastCompletedBatchId => $composableBuilder(
+    column: $table.lastCompletedBatchId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get completedAtUtc => $composableBuilder(
+    column: $table.completedAtUtc,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get completionStatus => $composableBuilder(
+    column: $table.completionStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
 }
 
 class $$ProjectionStateTableTableManager
@@ -13618,12 +13908,20 @@ class $$ProjectionStateTableTableManager
                 Value<String?> lastProjectedAtUtc = const Value.absent(),
                 Value<int?> lastProjectedMessageId = const Value.absent(),
                 Value<int?> lastProjectedAttachmentId = const Value.absent(),
+                Value<int?> lastCompletedBatchId = const Value.absent(),
+                Value<String?> completedAtUtc = const Value.absent(),
+                Value<String> completionStatus = const Value.absent(),
+                Value<String?> note = const Value.absent(),
               }) => ProjectionStateCompanion(
                 id: id,
                 lastImportBatchId: lastImportBatchId,
                 lastProjectedAtUtc: lastProjectedAtUtc,
                 lastProjectedMessageId: lastProjectedMessageId,
                 lastProjectedAttachmentId: lastProjectedAttachmentId,
+                lastCompletedBatchId: lastCompletedBatchId,
+                completedAtUtc: completedAtUtc,
+                completionStatus: completionStatus,
+                note: note,
               ),
           createCompanionCallback:
               ({
@@ -13632,12 +13930,20 @@ class $$ProjectionStateTableTableManager
                 Value<String?> lastProjectedAtUtc = const Value.absent(),
                 Value<int?> lastProjectedMessageId = const Value.absent(),
                 Value<int?> lastProjectedAttachmentId = const Value.absent(),
+                Value<int?> lastCompletedBatchId = const Value.absent(),
+                Value<String?> completedAtUtc = const Value.absent(),
+                Value<String> completionStatus = const Value.absent(),
+                Value<String?> note = const Value.absent(),
               }) => ProjectionStateCompanion.insert(
                 id: id,
                 lastImportBatchId: lastImportBatchId,
                 lastProjectedAtUtc: lastProjectedAtUtc,
                 lastProjectedMessageId: lastProjectedMessageId,
                 lastProjectedAttachmentId: lastProjectedAttachmentId,
+                lastCompletedBatchId: lastCompletedBatchId,
+                completedAtUtc: completedAtUtc,
+                completionStatus: completionStatus,
+                note: note,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

@@ -10,6 +10,7 @@ import '../../../features/address_book_folders/domain/entities/address_book_fold
 import '../../../features/address_book_folders/domain/failures/more_failures/failures.dart';
 import '../../../features/address_book_folders/feature_level_providers.dart';
 import '../../db/feature_level_providers.dart';
+import '../../db/infrastructure/data_sources/local/working/working_database.dart';
 import '../../db_importers/domain/entities/db_import_result.dart';
 import '../../db_importers/presentation/view_model/db_import_control_provider.dart';
 import '../../db_migrate/domain/entities/db_migration_result.dart';
@@ -219,9 +220,16 @@ class _OnboardingEnvironmentEvaluator {
 
     final importRowCount = await _readImportMessagesCount(importDbPath);
     final workingRowCount = await _readWorkingMessagesCount(workingDbPath);
+    final workingProjectionCompletion = await _readWorkingProjectionCompletion(
+      workingDbPath,
+    );
 
     final importProbe = _probeFile(importDbPath, rowCount: importRowCount);
-    final workingProbe = _probeFile(workingDbPath, rowCount: workingRowCount);
+    final workingProbe = _probeFileWithProjection(
+      workingDbPath,
+      rowCount: workingRowCount,
+      projectionCompletion: workingProjectionCompletion,
+    );
     final usingPersistedImportFailure =
         !devOverrides.simulateImportFailure &&
         !simulatedPipelineFailureActive &&
@@ -318,6 +326,11 @@ class _OnboardingEnvironmentEvaluator {
     required OnboardingDatabaseProbe importProbe,
     required OnboardingDatabaseProbe workingProbe,
   }) {
+    final hasExistingIncompleteWorkingDatabase =
+        workingProbe.exists && workingProbe.isRecoverableIncompleteProjection;
+    final hasMissingImportLedgerForIncompleteWorkingDatabase =
+        hasExistingIncompleteWorkingDatabase && !importProbe.existsAndReadable;
+
     if (!hasFullDiskAccess || !messagesProbe.readable) {
       return OnboardingEnvironmentState.permissionBlocked;
     }
@@ -340,6 +353,14 @@ class _OnboardingEnvironmentEvaluator {
     }
 
     if (resetAppDatabasesReason != null) {
+      return OnboardingEnvironmentState.migrationFailed;
+    }
+
+    if (hasMissingImportLedgerForIncompleteWorkingDatabase) {
+      return OnboardingEnvironmentState.migrationFailed;
+    }
+
+    if (hasExistingIncompleteWorkingDatabase && importProbe.hasData) {
       return OnboardingEnvironmentState.migrationFailed;
     }
 
@@ -386,6 +407,11 @@ class _OnboardingEnvironmentEvaluator {
     required OnboardingDatabaseProbe importProbe,
     required OnboardingDatabaseProbe workingProbe,
   }) {
+    final hasExistingIncompleteWorkingDatabase =
+        workingProbe.exists && workingProbe.isRecoverableIncompleteProjection;
+    final hasMissingImportLedgerForIncompleteWorkingDatabase =
+        hasExistingIncompleteWorkingDatabase && !importProbe.existsAndReadable;
+
     if (!hasFullDiskAccess || !messagesProbe.readable) {
       return OnboardingBlockerKind.fullDiskAccessMissing;
     }
@@ -413,6 +439,17 @@ class _OnboardingEnvironmentEvaluator {
     }
 
     if (resetAppDatabasesReason != null) {
+      if (hasMissingImportLedgerForIncompleteWorkingDatabase) {
+        return OnboardingBlockerKind.importDatabaseMissing;
+      }
+      return OnboardingBlockerKind.migrationFailed;
+    }
+
+    if (hasMissingImportLedgerForIncompleteWorkingDatabase) {
+      return OnboardingBlockerKind.importDatabaseMissing;
+    }
+
+    if (hasExistingIncompleteWorkingDatabase && importProbe.hasData) {
       return OnboardingBlockerKind.migrationFailed;
     }
 
@@ -507,12 +544,24 @@ class _OnboardingEnvironmentEvaluator {
   }
 
   OnboardingDatabaseProbe _probeFile(String filePath, {int? rowCount}) {
+    return _probeFileWithProjection(filePath, rowCount: rowCount);
+  }
+
+  OnboardingDatabaseProbe _probeFileWithProjection(
+    String filePath, {
+    int? rowCount,
+    ProjectionCompletionStatus? projectionCompletion,
+  }) {
     final file = File(filePath);
     if (!file.existsSync()) {
       return OnboardingDatabaseProbe(
         path: filePath,
         exists: false,
         readable: false,
+        projectionStatus: projectionCompletion?.status,
+        lastCompletedBatchId: projectionCompletion?.lastCompletedBatchId,
+        completedAtUtc: projectionCompletion?.completedAtUtc,
+        projectionNote: projectionCompletion?.note,
       );
     }
 
@@ -528,6 +577,10 @@ class _OnboardingEnvironmentEvaluator {
         sizeBytes: stat.size,
         lastModified: stat.modified,
         rowCount: rowCount,
+        projectionStatus: projectionCompletion?.status,
+        lastCompletedBatchId: projectionCompletion?.lastCompletedBatchId,
+        completedAtUtc: projectionCompletion?.completedAtUtc,
+        projectionNote: projectionCompletion?.note,
       );
     } catch (_) {
       return OnboardingDatabaseProbe(
@@ -535,6 +588,10 @@ class _OnboardingEnvironmentEvaluator {
         exists: true,
         readable: false,
         rowCount: rowCount,
+        projectionStatus: projectionCompletion?.status,
+        lastCompletedBatchId: projectionCompletion?.lastCompletedBatchId,
+        completedAtUtc: projectionCompletion?.completedAtUtc,
+        projectionNote: projectionCompletion?.note,
       );
     }
   }
@@ -584,6 +641,41 @@ class _OnboardingEnvironmentEvaluator {
           .customSelect('SELECT COUNT(*) as count FROM messages')
           .get();
       return _asInt(result.first.data['count']);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<ProjectionCompletionStatus?> _readWorkingProjectionCompletion(
+    String dbPath,
+  ) async {
+    final file = File(dbPath);
+    if (!file.existsSync() || file.lengthSync() == 0) {
+      return null;
+    }
+
+    try {
+      final db = sqlite3.open(dbPath, mode: OpenMode.readOnly);
+      try {
+        db.execute('PRAGMA query_only = ON;');
+        db.execute('PRAGMA busy_timeout = 3000;');
+        final rows = db.select(
+          'SELECT completion_status, last_completed_batch_id, completed_at_utc, '
+          'note FROM projection_state WHERE id = 1 LIMIT 1',
+        );
+        if (rows.isEmpty) {
+          return null;
+        }
+        final row = rows.first;
+        return ProjectionCompletionStatus(
+          status: row['completion_status'] as String? ?? 'incomplete',
+          lastCompletedBatchId: _asInt(row['last_completed_batch_id']),
+          completedAtUtc: row['completed_at_utc'] as String?,
+          note: row['note'] as String?,
+        );
+      } finally {
+        db.dispose();
+      }
     } catch (_) {
       return null;
     }
@@ -642,7 +734,19 @@ class _OnboardingEnvironmentEvaluator {
     required OnboardingDatabaseProbe importProbe,
     required OnboardingDatabaseProbe workingProbe,
   }) {
-    if (isProcessing || !importProbe.hasData) {
+    final hasExistingIncompleteWorkingDatabase =
+        workingProbe.exists && workingProbe.isRecoverableIncompleteProjection;
+
+    if (isProcessing) {
+      return null;
+    }
+
+    if (hasExistingIncompleteWorkingDatabase &&
+        !importProbe.existsAndReadable) {
+      return 'The working database is marked incomplete in projection_state, but macos_import.db is missing or unreadable, so the app must rebuild from source data instead of repairing from the import ledger.';
+    }
+
+    if (!importProbe.hasData) {
       return null;
     }
 
@@ -668,6 +772,10 @@ class _OnboardingEnvironmentEvaluator {
         !workingProbe.hasData ||
         workingCount <
             (importCount * _automaticRecoveryWorkingToImportRatio).round();
+
+    if (hasExistingIncompleteWorkingDatabase) {
+      return 'The working database is marked incomplete in projection_state, which means the last migration did not finish cleanly.';
+    }
 
     if (!importTracksSource || !workingClearlyIncomplete) {
       return null;
@@ -695,7 +803,13 @@ class _AddressBookProbeResult {
 }
 
 extension on OnboardingDatabaseProbe {
-  OnboardingDatabaseProbe copyWith({int? rowCount}) {
+  OnboardingDatabaseProbe copyWith({
+    int? rowCount,
+    String? projectionStatus,
+    int? lastCompletedBatchId,
+    String? completedAtUtc,
+    String? projectionNote,
+  }) {
     return OnboardingDatabaseProbe(
       path: path,
       exists: exists,
@@ -703,6 +817,10 @@ extension on OnboardingDatabaseProbe {
       sizeBytes: sizeBytes,
       lastModified: lastModified,
       rowCount: rowCount ?? this.rowCount,
+      projectionStatus: projectionStatus ?? this.projectionStatus,
+      lastCompletedBatchId: lastCompletedBatchId ?? this.lastCompletedBatchId,
+      completedAtUtc: completedAtUtc ?? this.completedAtUtc,
+      projectionNote: projectionNote ?? this.projectionNote,
     );
   }
 }

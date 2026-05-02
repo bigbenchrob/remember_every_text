@@ -7,13 +7,18 @@ import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sqlite3/sqlite3.dart';
 
+import '../../../../core/util/date_converter.dart';
 import '../../../../essentials/db/feature_level_providers.dart';
-import '../../../../essentials/db/feature_level_providers/message_data_version_provider.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/import/sqflite_import_database.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/working/working_database.dart';
 import '../../../../essentials/db_importers/application/import_execution_gate_provider.dart';
+import '../../../../essentials/db_importers/application/orchestrator/import_orchestrator.dart';
+import '../../../../essentials/db_importers/application/pipeline_cancellation.dart';
+import '../../../../essentials/db_importers/domain/states/table_import_progress.dart';
 import '../../../../essentials/db_importers/feature_level_providers.dart';
 import '../../../../essentials/db_importers/presentation/view_model/db_import_control_provider.dart';
+import '../../../../essentials/logging/application/app_logger.dart';
+import '../../../contacts/infrastructure/repositories/participant_merge_utils.dart';
 
 part 'historical_archives_workflow_panel_model_provider.g.dart';
 
@@ -77,11 +82,13 @@ final class HistoricalArchivesWorkflowPhaseViewModel {
     required this.label,
     required this.status,
     required this.detail,
+    this.progress,
   });
 
   final String label;
   final HistoricalArchivesWorkflowPhaseStatus status;
   final String detail;
+  final double? progress;
 }
 
 final class HistoricalArchivesWorkflowState {
@@ -224,6 +231,26 @@ final class HistoricalArchivesDryRunEstimate {
   }
 }
 
+final class HistoricalArchivesDuplicateProvenanceEstimate {
+  const HistoricalArchivesDuplicateProvenanceEstimate.available({
+    required this.currentMacDuplicateCount,
+    required this.historicalArchiveDuplicateCount,
+  }) : unavailableReason = null;
+
+  const HistoricalArchivesDuplicateProvenanceEstimate.unavailable({
+    required this.unavailableReason,
+  }) : currentMacDuplicateCount = 0,
+       historicalArchiveDuplicateCount = 0;
+
+  final int currentMacDuplicateCount;
+  final int historicalArchiveDuplicateCount;
+  final String? unavailableReason;
+
+  bool get isAvailable {
+    return unavailableReason == null;
+  }
+}
+
 final class HistoricalArchiveDateRange {
   const HistoricalArchiveDateRange({
     required this.earliestMessageUtc,
@@ -280,6 +307,68 @@ final class HistoricalArchivesWorkflowPanelViewModel {
   final List<HistoricalArchivesWorkflowPhaseViewModel> phases;
 }
 
+enum HistoricalArchivesImportDialogState { running, success, failure }
+
+final class HistoricalArchivesImportDialogViewModel {
+  const HistoricalArchivesImportDialogViewModel({
+    required this.state,
+    required this.title,
+    required this.detail,
+    required this.summaryLines,
+    required this.phases,
+    required this.dismissActionLabel,
+    required this.cleanupAvailable,
+    required this.cleanupDetail,
+    this.failureStageLabel,
+  });
+
+  final HistoricalArchivesImportDialogState state;
+  final String title;
+  final String detail;
+  final List<String> summaryLines;
+  final List<HistoricalArchivesWorkflowPhaseViewModel> phases;
+  final String? dismissActionLabel;
+  final bool cleanupAvailable;
+  final String cleanupDetail;
+  final String? failureStageLabel;
+
+  bool get isTerminal {
+    return state != HistoricalArchivesImportDialogState.running;
+  }
+}
+
+final class HistoricalArchivesPostMigrationHealthCheck {
+  const HistoricalArchivesPostMigrationHealthCheck({
+    required this.workingLinkedMessageCount,
+    required this.workingRecoveredMessageCount,
+    required this.contactPickerCandidateCount,
+    required this.globalTimelineUsableRowCount,
+    required this.contactMessageIndexCount,
+    required this.executionGateOwner,
+    required this.isMaintenanceLocked,
+    required this.messageDataVersionBumped,
+    required this.failedCheckLabel,
+  });
+
+  final int workingLinkedMessageCount;
+  final int workingRecoveredMessageCount;
+  final int contactPickerCandidateCount;
+  final int globalTimelineUsableRowCount;
+  final int contactMessageIndexCount;
+  final String? executionGateOwner;
+  final bool isMaintenanceLocked;
+  final bool messageDataVersionBumped;
+  final String? failedCheckLabel;
+
+  int get totalProjectedMessageCount {
+    return workingLinkedMessageCount + workingRecoveredMessageCount;
+  }
+
+  bool get isHealthy {
+    return failedCheckLabel == null;
+  }
+}
+
 HistoricalArchivesWorkflowState buildInitialHistoricalArchivesWorkflowState() {
   return const HistoricalArchivesWorkflowState(
     preflight: HistoricalArchivesPreflightViewModel(
@@ -303,6 +392,8 @@ HistoricalArchivesWorkflowState buildInitialHistoricalArchivesWorkflowState() {
       'Latest message: waiting for folder selection',
       'Likely duplicates already in ledger: waiting for folder selection',
       'Likely new rows: waiting for folder selection',
+      'Already in current Mac import: waiting for folder selection',
+      'Already in historical archive imports: waiting for folder selection',
     ],
     dryRunSummaryLines: [
       'Estimated new messages: waiting for preflight',
@@ -366,9 +457,35 @@ HistoricalArchivesWorkflowState buildInitialHistoricalArchivesWorkflowState() {
 
 @Riverpod(keepAlive: true)
 class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
+  bool _cancelRequested = false;
+
   @override
   HistoricalArchivesWorkflowState build() {
     return buildInitialHistoricalArchivesWorkflowState();
+  }
+
+  void requestCancelRunningImport() {
+    if (state.preflight.status != HistoricalArchivesPreflightStatus.running) {
+      return;
+    }
+
+    _cancelRequested = true;
+    state = state.copyWith(
+      preflight: const HistoricalArchivesPreflightViewModel(
+        status: HistoricalArchivesPreflightStatus.running,
+        statusLabel: 'Cancel requested',
+        detail:
+            'MessageLens is stopping the archive workflow at the next safe checkpoint.',
+      ),
+      activityLog: [
+        const HistoricalArchivesLogEntryViewModel(
+          label: 'Cancel requested',
+          message:
+              'Archive import cancellation was requested. MessageLens will stop at the next safe checkpoint.',
+        ),
+        ...state.activityLog,
+      ],
+    );
   }
 
   Future<void> chooseMessagesFolder() async {
@@ -575,6 +692,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
   }
 
   Future<void> beginImportForSelectedSource() async {
+    _cancelRequested = false;
     final selectedFolderPath = state.selectedFolderPath;
     if (selectedFolderPath == null) {
       _prependActivityLog(
@@ -613,6 +731,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     }
 
     final startedAtUtc = DateTime.now().toUtc().toIso8601String();
+    var executionGateReleased = false;
     try {
       state = state.copyWith(
         preflight: const HistoricalArchivesPreflightViewModel(
@@ -683,6 +802,21 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
             sourceLabelOverride: state.sourceLabel,
             includeContactImport: false,
             includeAttachmentImport: false,
+            onExecutionPlan: (steps) {
+              _throwIfCancelRequested();
+              state = state.copyWith(
+                phases: _archiveImportPhasesFromPlan(steps),
+              );
+            },
+            onTableProgress: (event) {
+              _throwIfCancelRequested();
+              state = state.copyWith(
+                phases: _updateArchiveImportPhasesForEvent(
+                  currentPhases: state.phases,
+                  event: event,
+                ),
+              );
+            },
           );
 
       final importFinishedAtUtc = DateTime.now().toUtc().toIso8601String();
@@ -691,6 +825,22 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
             importDb: importDb,
             sourceChatDbPath: selectedChatDbPath,
           );
+
+      if (_cancelRequested || _isCancellationResult(importResult.error)) {
+        await _finalizeCanceledArchiveImport(
+          importDb: importDb,
+          selectedChatDbPath: selectedChatDbPath,
+          selectedFolderPath: selectedFolderPath,
+          matchedImportedBatchCount: matchedImportedBatchCount,
+          sourceId: sourceId,
+          lastImportBatchId: importResult.batchId > 0
+              ? importResult.batchId
+              : null,
+          startedAtUtc: startedAtUtc,
+          finishedAtUtc: importFinishedAtUtc,
+        );
+        return;
+      }
 
       if (!importResult.success) {
         final detail =
@@ -789,7 +939,10 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       try {
         await ref
             .read(dbImportControlViewModelProvider.notifier)
-            .startMigration(skipImportCheck: true);
+            .startMigration(
+              skipImportCheck: true,
+              shouldCancel: () => _cancelRequested,
+            );
       } finally {
         ref.read(dbMaintenanceLockProvider.notifier).end();
       }
@@ -798,6 +951,20 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
           .read(dbImportControlViewModelProvider)
           .lastMigrationResult;
       final finishedAtUtc = DateTime.now().toUtc().toIso8601String();
+
+      if (_cancelRequested || _isCancellationResult(migrationResult?.error)) {
+        await _finalizeCanceledArchiveImport(
+          importDb: importDb,
+          selectedChatDbPath: selectedChatDbPath,
+          selectedFolderPath: selectedFolderPath,
+          matchedImportedBatchCount: matchedImportedBatchCount,
+          sourceId: sourceId,
+          lastImportBatchId: importResult.batchId,
+          startedAtUtc: startedAtUtc,
+          finishedAtUtc: finishedAtUtc,
+        );
+        return;
+      }
 
       if (migrationResult?.success != true) {
         final detail =
@@ -869,9 +1036,91 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         return;
       }
 
+      final previousMessageDataVersion = ref.read(messageDataVersionProvider);
+      executionGate.release(_historicalArchivesTestingOwner);
+      executionGateReleased = true;
+
       ref.read(messageDataVersionProvider.notifier).bump();
+
+      final healthCheck = await _runPostMigrationHealthCheck(
+        ref,
+        previousMessageDataVersion: previousMessageDataVersion,
+      );
+
+      if (!healthCheck.isHealthy) {
+        final failedCheckLabel =
+            healthCheck.failedCheckLabel ??
+            'Unknown post-migration health failure';
+        final detail =
+            'Archive rows were imported, but MessageLens could not confirm that normal app views refreshed correctly. Failed health check: $failedCheckLabel.';
+
+        await importDb.upsertHistoricalArchiveSource(
+          sourceChatDb: selectedChatDbPath,
+          folderPath: selectedFolderPath,
+          sourceLabel: state.sourceLabel,
+          chatDbStatusLabel: state.chatDbStatusLabel,
+          attachmentsStatusLabel: state.attachmentsStatusLabel,
+          preflightStatusLabel: 'Import completed but app data is not ready',
+          preflightDetail: detail,
+          totalMessages: _summaryLineInt(
+            state.preflightSummaryLines,
+            'Total messages:',
+          ),
+          totalChats: _summaryLineInt(
+            state.preflightSummaryLines,
+            'Total chats:',
+          ),
+          totalHandles: _summaryLineInt(
+            state.preflightSummaryLines,
+            'Total handles:',
+          ),
+          missingGuids: _summaryLineInt(
+            state.preflightSummaryLines,
+            'Rows with missing GUIDs:',
+          ),
+          dryRunNewMessages: _summaryLineInt(
+            state.dryRunSummaryLines,
+            'Estimated new messages:',
+          ),
+          dryRunDuplicateMessages: _summaryLineInt(
+            state.dryRunSummaryLines,
+            'Estimated duplicates:',
+          ),
+          matchedImportedBatchCount: matchedImportedBatchCount,
+          ledgerSourceId: sourceId,
+          lastImportBatchId: importResult.batchId,
+          lastImportStartedAtUtc: startedAtUtc,
+          lastImportFinishedAtUtc: finishedAtUtc,
+          lastImportSuccess: false,
+          lastImportError: detail,
+          lastImportedMessageCount: importResult.messagesImported,
+          updatedAtUtc: finishedAtUtc,
+        );
+
+        state = state.copyWith(
+          preflight: HistoricalArchivesPreflightViewModel(
+            status: HistoricalArchivesPreflightStatus.failed,
+            statusLabel: 'Import completed but app data is not ready',
+            detail: detail,
+          ),
+          matchedImportedArchiveBatchCount: matchedImportedBatchCount,
+          activityLog: [
+            HistoricalArchivesLogEntryViewModel(
+              label: 'Post-migration health check failed',
+              message: detail,
+            ),
+            ...state.activityLog,
+          ],
+          phases: _failedArchiveAppReadinessPhases(detail: detail),
+          resultSummaryLines: _postMigrationHealthFailureSummaryLines(
+            healthCheck,
+          ),
+        );
+        return;
+      }
+
       const successDetail =
-          'Archive rows were written to db-import, migrated into working.db, and refreshed through the normal timeline, search, and heatmap surfaces.';
+          'Archive rows were written to db-import, migrated into working.db, and verified through post-migration health checks before MessageLens marked the import complete.';
 
       await importDb.upsertHistoricalArchiveSource(
         sourceChatDb: selectedChatDbPath,
@@ -927,19 +1176,110 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
           HistoricalArchivesLogEntryViewModel(
             label: 'Archive import and migration complete',
             message:
-                'Imported ${path.basename(selectedFolderPath)} into db-import, completed canonical migration, and refreshed app-visible data.',
+                'Imported ${path.basename(selectedFolderPath)} into db-import, completed canonical migration, verified app-visible data, and refreshed normal surfaces.',
           ),
           ...state.activityLog,
         ],
         phases: _completedArchiveImportPhases(),
-        resultSummaryLines: const [
-          'Archive source metadata, canonical ledger rows, and working.db projections are all up to date.',
-          'Archive rows are now visible through the normal timeline, search, and heatmap surfaces.',
-        ],
+        resultSummaryLines: _postMigrationHealthSuccessSummaryLines(
+          healthCheck,
+        ),
       );
     } finally {
-      executionGate.release(_historicalArchivesTestingOwner);
+      _cancelRequested = false;
+      if (!executionGateReleased) {
+        executionGate.release(_historicalArchivesTestingOwner);
+      }
     }
+  }
+
+  void _throwIfCancelRequested() {
+    if (_cancelRequested) {
+      throw const DbPipelineCancelledException();
+    }
+  }
+
+  bool _isCancellationResult(String? error) {
+    if (error == null) {
+      return false;
+    }
+
+    return error.contains(dbPipelineCancelledMessage);
+  }
+
+  Future<void> _finalizeCanceledArchiveImport({
+    required SqfliteImportDatabase importDb,
+    required String selectedChatDbPath,
+    required String selectedFolderPath,
+    required int? matchedImportedBatchCount,
+    required int sourceId,
+    required int? lastImportBatchId,
+    required String startedAtUtc,
+    required String finishedAtUtc,
+  }) async {
+    const detail =
+        'Archive import was canceled by the user. MessageLens stopped the historical archive workflow before it could complete.';
+
+    await importDb.upsertHistoricalArchiveSource(
+      sourceChatDb: selectedChatDbPath,
+      folderPath: selectedFolderPath,
+      sourceLabel: state.sourceLabel,
+      chatDbStatusLabel: state.chatDbStatusLabel,
+      attachmentsStatusLabel: state.attachmentsStatusLabel,
+      preflightStatusLabel: 'Archive import canceled',
+      preflightDetail: detail,
+      totalMessages: _summaryLineInt(
+        state.preflightSummaryLines,
+        'Total messages:',
+      ),
+      totalChats: _summaryLineInt(state.preflightSummaryLines, 'Total chats:'),
+      totalHandles: _summaryLineInt(
+        state.preflightSummaryLines,
+        'Total handles:',
+      ),
+      missingGuids: _summaryLineInt(
+        state.preflightSummaryLines,
+        'Rows with missing GUIDs:',
+      ),
+      dryRunNewMessages: _summaryLineInt(
+        state.dryRunSummaryLines,
+        'Estimated new messages:',
+      ),
+      dryRunDuplicateMessages: _summaryLineInt(
+        state.dryRunSummaryLines,
+        'Estimated duplicates:',
+      ),
+      matchedImportedBatchCount: matchedImportedBatchCount,
+      ledgerSourceId: sourceId,
+      lastImportBatchId: lastImportBatchId,
+      lastImportStartedAtUtc: startedAtUtc,
+      lastImportFinishedAtUtc: finishedAtUtc,
+      lastImportSuccess: false,
+      lastImportError: dbPipelineCancelledMessage,
+      updatedAtUtc: finishedAtUtc,
+    );
+
+    state = state.copyWith(
+      preflight: const HistoricalArchivesPreflightViewModel(
+        status: HistoricalArchivesPreflightStatus.failed,
+        statusLabel: 'Archive import canceled',
+        detail: detail,
+      ),
+      matchedImportedArchiveBatchCount: matchedImportedBatchCount,
+      activityLog: [
+        const HistoricalArchivesLogEntryViewModel(
+          label: 'Archive import canceled',
+          message:
+              'The historical archive workflow was canceled by the user and the execution gate was released.',
+        ),
+        ...state.activityLog,
+      ],
+      phases: _cancelledArchivePhases(currentPhases: state.phases),
+      resultSummaryLines: const [
+        'Archive import was canceled by the user.',
+        'MessageLens stopped the historical archive workflow before completion.',
+      ],
+    );
   }
 
   void _prependActivityLog(HistoricalArchivesLogEntryViewModel entry) {
@@ -986,11 +1326,13 @@ HistoricalArchivesWorkflowPanelViewModel historicalArchivesWorkflowPanelModel(
   final executionGateState = ref.watch(importExecutionGateProvider);
   final isMaintenanceLocked = ref.watch(dbMaintenanceLockProvider);
   final workflowState = ref.watch(historicalArchivesWorkflowProvider);
+  final dbImportControlState = ref.watch(dbImportControlViewModelProvider);
 
   return buildHistoricalArchivesWorkflowPanelModel(
     executionGateState: executionGateState,
     isMaintenanceLocked: isMaintenanceLocked,
     workflowState: workflowState,
+    dbImportControlState: dbImportControlState,
   );
 }
 
@@ -999,6 +1341,7 @@ buildHistoricalArchivesWorkflowPanelModel({
   required ImportExecutionGateState executionGateState,
   required bool isMaintenanceLocked,
   required HistoricalArchivesWorkflowState workflowState,
+  DbImportControlState dbImportControlState = const DbImportControlState(),
 }) {
   final executionGate = _buildExecutionGateViewModel(
     executionGateState: executionGateState,
@@ -1070,8 +1413,367 @@ buildHistoricalArchivesWorkflowPanelModel({
       workflowState: workflowState,
     ),
     resultSummaryLines: workflowState.resultSummaryLines,
-    phases: workflowState.phases,
+    phases: _effectiveWorkflowPhases(
+      workflowState: workflowState,
+      dbImportControlState: dbImportControlState,
+    ),
   );
+}
+
+List<HistoricalArchivesWorkflowPhaseViewModel> _effectiveWorkflowPhases({
+  required HistoricalArchivesWorkflowState workflowState,
+  required DbImportControlState dbImportControlState,
+}) {
+  if (workflowState.preflight.status ==
+          HistoricalArchivesPreflightStatus.running &&
+      workflowState.preflight.statusLabel == 'Migration running' &&
+      dbImportControlState.stages.isNotEmpty) {
+    return _archiveMigrationPhasesFromUiStages(dbImportControlState.stages);
+  }
+
+  return workflowState.phases;
+}
+
+List<HistoricalArchivesWorkflowPhaseViewModel> _archiveImportPhasesFromPlan(
+  List<ImporterStep> steps,
+) {
+  if (steps.isEmpty) {
+    return _runningArchiveImportPhases();
+  }
+
+  return <HistoricalArchivesWorkflowPhaseViewModel>[
+    for (var index = 0; index < steps.length; index++)
+      HistoricalArchivesWorkflowPhaseViewModel(
+        label: _archiveImportStepLabel(steps[index].displayName),
+        status: index == 0
+            ? HistoricalArchivesWorkflowPhaseStatus.running
+            : HistoricalArchivesWorkflowPhaseStatus.waiting,
+        detail: _archiveImportStepDetail(
+          displayName: steps[index].displayName,
+          status: index == 0
+              ? HistoricalArchivesWorkflowPhaseStatus.running
+              : HistoricalArchivesWorkflowPhaseStatus.waiting,
+        ),
+      ),
+    const HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Run canonical migration',
+      status: HistoricalArchivesWorkflowPhaseStatus.waiting,
+      detail: 'Waiting for ledger import to complete before migration begins.',
+    ),
+    const HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Refresh app-visible data',
+      status: HistoricalArchivesWorkflowPhaseStatus.waiting,
+      detail: 'Waiting for canonical migration to complete successfully.',
+    ),
+    const HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Complete',
+      status: HistoricalArchivesWorkflowPhaseStatus.waiting,
+      detail: 'Archive import is still running.',
+    ),
+  ];
+}
+
+List<HistoricalArchivesWorkflowPhaseViewModel>
+_updateArchiveImportPhasesForEvent({
+  required List<HistoricalArchivesWorkflowPhaseViewModel> currentPhases,
+  required TableImportProgressEvent event,
+}) {
+  final targetLabel = _archiveImportStepLabel(event.displayName);
+  final targetIndex = currentPhases.indexWhere(
+    (phase) => phase.label == targetLabel,
+  );
+  if (targetIndex == -1) {
+    return currentPhases;
+  }
+
+  final status = switch (event.status) {
+    TableImportStatus.failed => HistoricalArchivesWorkflowPhaseStatus.failed,
+    TableImportStatus.succeeded
+        when event.phase == TableImportPhase.postValidate =>
+      HistoricalArchivesWorkflowPhaseStatus.succeeded,
+    _ => HistoricalArchivesWorkflowPhaseStatus.running,
+  };
+
+  final updated = <HistoricalArchivesWorkflowPhaseViewModel>[];
+  for (var index = 0; index < currentPhases.length; index++) {
+    final phase = currentPhases[index];
+
+    if (index < targetIndex) {
+      updated.add(
+        phase.status == HistoricalArchivesWorkflowPhaseStatus.failed
+            ? phase
+            : HistoricalArchivesWorkflowPhaseViewModel(
+                label: phase.label,
+                status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
+                detail: phase.detail,
+                progress: 1.0,
+              ),
+      );
+      continue;
+    }
+
+    if (index == targetIndex) {
+      updated.add(
+        HistoricalArchivesWorkflowPhaseViewModel(
+          label: phase.label,
+          status: status,
+          detail: _archiveImportEventDetail(event, status: status),
+          progress: status == HistoricalArchivesWorkflowPhaseStatus.running
+              ? event.progress
+              : status == HistoricalArchivesWorkflowPhaseStatus.waiting
+              ? 0.0
+              : 1.0,
+        ),
+      );
+      continue;
+    }
+
+    updated.add(
+      HistoricalArchivesWorkflowPhaseViewModel(
+        label: phase.label,
+        status: HistoricalArchivesWorkflowPhaseStatus.waiting,
+        detail: phase.detail,
+        progress: 0.0,
+      ),
+    );
+  }
+
+  return updated;
+}
+
+List<HistoricalArchivesWorkflowPhaseViewModel>
+_archiveMigrationPhasesFromUiStages(List<UiStageProgress> stages) {
+  final runningIndex = () {
+    final activeIndex = stages.indexWhere((stage) => stage.isActive);
+    if (activeIndex != -1) {
+      return activeIndex;
+    }
+    return stages.indexWhere((stage) => !stage.isComplete);
+  }();
+
+  return <HistoricalArchivesWorkflowPhaseViewModel>[
+    const HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Archive source validated',
+      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
+      detail: 'Selected archive metadata was validated successfully.',
+      progress: 1.0,
+    ),
+    const HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Write archive rows to db-import',
+      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
+      detail: 'Archive rows were written into the canonical ledger.',
+      progress: 1.0,
+    ),
+    for (var index = 0; index < stages.length; index++)
+      HistoricalArchivesWorkflowPhaseViewModel(
+        label: _migrationStepLabel(stages[index].displayName),
+        status: stages[index].isComplete
+            ? HistoricalArchivesWorkflowPhaseStatus.succeeded
+            : index == runningIndex
+            ? HistoricalArchivesWorkflowPhaseStatus.running
+            : HistoricalArchivesWorkflowPhaseStatus.waiting,
+        detail: _migrationStageDetail(
+          stage: stages[index],
+          status: stages[index].isComplete
+              ? HistoricalArchivesWorkflowPhaseStatus.succeeded
+              : index == runningIndex
+              ? HistoricalArchivesWorkflowPhaseStatus.running
+              : HistoricalArchivesWorkflowPhaseStatus.waiting,
+        ),
+        progress: stages[index].isComplete
+            ? 1.0
+            : index == runningIndex
+            ? stages[index].progress
+            : 0.0,
+      ),
+    const HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Refresh app-visible data',
+      status: HistoricalArchivesWorkflowPhaseStatus.waiting,
+      detail:
+          'Waiting for canonical migration to finish before refreshing providers.',
+      progress: 0.0,
+    ),
+    const HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Complete',
+      status: HistoricalArchivesWorkflowPhaseStatus.waiting,
+      detail: 'Waiting for refresh to finish.',
+      progress: 0.0,
+    ),
+  ];
+}
+
+String _archiveImportStepLabel(String displayName) {
+  return switch (displayName) {
+    'Prepare Sources' => 'Read archive source',
+    'Clear Ledger' => 'Clear archive target ledger state',
+    _ => 'Write ${displayName.toLowerCase()} to db-import',
+  };
+}
+
+String _archiveImportStepDetail({
+  required String displayName,
+  required HistoricalArchivesWorkflowPhaseStatus status,
+}) {
+  final noun = displayName.toLowerCase();
+  return switch (displayName) {
+    'Prepare Sources' =>
+      status == HistoricalArchivesWorkflowPhaseStatus.running
+          ? 'Reading archive metadata and preparing canonical source context.'
+          : 'Waiting to read archive metadata and prepare canonical source context.',
+    'Clear Ledger' =>
+      status == HistoricalArchivesWorkflowPhaseStatus.running
+          ? 'Clearing any stale ledger rows for this archive import run.'
+          : 'Waiting to clear ledger rows for this archive import run.',
+    _ =>
+      status == HistoricalArchivesWorkflowPhaseStatus.running
+          ? 'Importing $noun into the canonical ledger.'
+          : 'Waiting to import $noun into the canonical ledger.',
+  };
+}
+
+String _archiveImportEventDetail(
+  TableImportProgressEvent event, {
+  required HistoricalArchivesWorkflowPhaseStatus status,
+}) {
+  if (event.currentItem case final String currentItem?) {
+    return currentItem;
+  }
+  if (event.rowsProcessed != null && event.totalRows != null) {
+    final rowsProcessed = event.rowsProcessed!;
+    final totalRows = event.totalRows!;
+    return 'Processed $rowsProcessed of $totalRows rows for ${event.displayName.toLowerCase()}.';
+  }
+  if (event.message case final String message?) {
+    return message;
+  }
+
+  return _archiveImportStepDetail(
+    displayName: event.displayName,
+    status: status,
+  );
+}
+
+String _migrationStepLabel(String displayName) {
+  return switch (displayName) {
+    'Handles' => 'Build handles',
+    'Chats' => 'Build chats',
+    'Chat To Handle' => 'Build chat-handle joins',
+    'Participants' => 'Build participants',
+    'Handle To Participant' => 'Build handle-participant joins',
+    'Messages' => 'Build working messages',
+    'Recovered Unlinked Messages' => 'Build recovered messages',
+    'Attachments' => 'Build attachments',
+    'Recovered Unlinked Attachments' => 'Build recovered attachments',
+    'Reactions' => 'Build reactions',
+    'Reaction Counts' => 'Build reaction counts',
+    'Message Read Marks' => 'Build message read marks',
+    'Read State' => 'Build read state',
+    'Rebuild Indexes' => 'Rebuild indexes',
+    'Rebuild Search' => 'Rebuild search support',
+    _ => displayName,
+  };
+}
+
+String _migrationStageDetail({
+  required UiStageProgress stage,
+  required HistoricalArchivesWorkflowPhaseStatus status,
+}) {
+  if (stage.current != null && stage.total != null) {
+    final progressPercent = ((stage.progress ?? 0) * 100).round();
+    if (_migrationStepLabel(stage.displayName) == 'Build working messages') {
+      return 'Processed: ${stage.current} / ${stage.total} messages ($progressPercent%)';
+    }
+    return 'Processed ${stage.current} of ${stage.total} rows ($progressPercent%).';
+  }
+  return switch (_migrationStepLabel(stage.displayName)) {
+    'Build handles' => 'Creating canonical handles from imported ledger rows.',
+    'Build chats' => 'Creating working chat rows from canonical ledger data.',
+    'Build chat-handle joins' => 'Linking chats to their participant handles.',
+    'Build participants' =>
+      'Building participant records for contact-aware views.',
+    'Build handle-participant joins' =>
+      'Linking handles to participant records.',
+    'Build working messages' =>
+      'Rebuilding working.db message rows from canonical ledger data.',
+    'Build recovered messages' =>
+      'Rebuilding recovered-message rows for unlinked historical records.',
+    'Build attachments' => 'Rebuilding attachment projections.',
+    'Build recovered attachments' =>
+      'Rebuilding recovered attachment projections.',
+    'Build reactions' =>
+      'Rebuilding reaction records tied to projected messages.',
+    'Build reaction counts' => 'Recomputing reaction count summaries.',
+    'Build message read marks' => 'Rebuilding read mark projections.',
+    'Build read state' => 'Rebuilding conversation read state projections.',
+    'Rebuild indexes' => 'Rebuilding working.db indexes for timeline access.',
+    'Rebuild search support' =>
+      'Rebuilding search support data after migration.',
+    _ =>
+      status == HistoricalArchivesWorkflowPhaseStatus.running
+          ? 'This migration step is running.'
+          : 'Waiting for this migration step.',
+  };
+}
+
+HistoricalArchivesImportDialogViewModel
+buildHistoricalArchivesImportDialogViewModel({
+  required HistoricalArchivesWorkflowPanelViewModel panelModel,
+}) {
+  switch (panelModel.preflight.status) {
+    case HistoricalArchivesPreflightStatus.migrationCompleted:
+      return HistoricalArchivesImportDialogViewModel(
+        state: HistoricalArchivesImportDialogState.success,
+        title: 'Import Complete',
+        detail: panelModel.preflight.detail,
+        summaryLines: _successfulImportDialogSummaryLines(panelModel),
+        phases: panelModel.phases,
+        dismissActionLabel: 'Done',
+        cleanupAvailable: false,
+        cleanupDetail: '',
+      );
+    case HistoricalArchivesPreflightStatus.failed:
+      final failedStageLabel = _firstFailedPhaseLabel(panelModel.phases);
+      final isVisibilityFailure =
+          panelModel.preflight.statusLabel ==
+          'Migration failed after archive import';
+      final isReadinessFailure =
+          panelModel.preflight.statusLabel ==
+          'Import completed but app data is not ready';
+      return HistoricalArchivesImportDialogViewModel(
+        state: HistoricalArchivesImportDialogState.failure,
+        title: isReadinessFailure
+            ? 'Import Completed But App Data Is Not Ready'
+            : isVisibilityFailure
+            ? 'Import Could Not Be Made Visible'
+            : 'Archive Import Failed',
+        detail: panelModel.preflight.detail,
+        summaryLines: _failedImportDialogSummaryLines(
+          panelModel,
+          failedStageLabel: failedStageLabel,
+        ),
+        phases: panelModel.phases,
+        dismissActionLabel: 'Close',
+        cleanupAvailable: panelModel.removeImportedArchiveDataEnabled,
+        cleanupDetail: panelModel.removeImportedArchiveDataEnabled
+            ? panelModel.removeImportedArchiveDataDetail
+            : 'Cleanup actions are not available for this source yet.',
+        failureStageLabel: failedStageLabel,
+      );
+    case HistoricalArchivesPreflightStatus.waitingForFolder:
+    case HistoricalArchivesPreflightStatus.running:
+    case HistoricalArchivesPreflightStatus.completeReadyToImport:
+    case HistoricalArchivesPreflightStatus.preparationRecorded:
+      return HistoricalArchivesImportDialogViewModel(
+        state: HistoricalArchivesImportDialogState.running,
+        title: 'Importing Historical Messages',
+        detail: panelModel.preflight.detail,
+        summaryLines: _runningImportDialogSummaryLines(panelModel),
+        phases: panelModel.phases,
+        dismissActionLabel: null,
+        cleanupAvailable: false,
+        cleanupDetail: '',
+      );
+  }
 }
 
 HistoricalArchivesExecutionGateViewModel _buildExecutionGateViewModel({
@@ -1132,6 +1834,239 @@ List<HistoricalArchivesLogEntryViewModel> _buildActivityLog({
   }
 
   return workflowState.activityLog;
+}
+
+List<String> _runningImportDialogSummaryLines(
+  HistoricalArchivesWorkflowPanelViewModel panelModel,
+) {
+  return <String>[
+    'Source label: ${panelModel.sourceLabel}',
+    if (panelModel.selectedFolderPath case final String selectedFolderPath)
+      'Folder path: $selectedFolderPath',
+    ...panelModel.resultSummaryLines,
+  ];
+}
+
+List<String> _successfulImportDialogSummaryLines(
+  HistoricalArchivesWorkflowPanelViewModel panelModel,
+) {
+  final earliest = _firstLineWithPrefix(
+    panelModel.preflightSummaryLines,
+    'Earliest message:',
+  );
+  final latest = _firstLineWithPrefix(
+    panelModel.preflightSummaryLines,
+    'Latest message:',
+  );
+  final newMessages = _firstLineWithPrefix(
+    panelModel.dryRunSummaryLines,
+    'Estimated new messages:',
+  );
+  final currentMacDuplicates =
+      _firstLineWithPrefix(
+        panelModel.preflightSummaryLines,
+        'Already in current Mac import:',
+      ) ??
+      _firstLineWithPrefix(
+        panelModel.dryRunSummaryLines,
+        'Estimated duplicates:',
+      );
+  final historicalArchiveDuplicates = _firstLineWithPrefix(
+    panelModel.preflightSummaryLines,
+    'Already in historical archive imports:',
+  );
+  final missingIdentifiers = _firstLineWithPrefix(
+    panelModel.preflightSummaryLines,
+    'Rows with missing GUIDs:',
+  );
+
+  return <String>[
+    if (newMessages != null)
+      'New messages added: ${newMessages.substring('Estimated new messages:'.length).trim()}',
+    if (currentMacDuplicates != null)
+      'Already in current Mac data: ${currentMacDuplicates.substring(currentMacDuplicates.indexOf(':') + 1).trim()}',
+    if (historicalArchiveDuplicates != null)
+      'Already imported from archives: ${historicalArchiveDuplicates.substring('Already in historical archive imports:'.length).trim()}',
+    if (missingIdentifiers != null)
+      'Missing identifiers: ${missingIdentifiers.substring('Rows with missing GUIDs:'.length).trim()}',
+    if (earliest != null && latest != null)
+      'Date range: ${earliest.substring('Earliest message:'.length).trim()} -> ${latest.substring('Latest message:'.length).trim()}',
+    'Your timeline, search, and heatmap have been updated.',
+  ];
+}
+
+List<String> _failedImportDialogSummaryLines(
+  HistoricalArchivesWorkflowPanelViewModel panelModel, {
+  required String? failedStageLabel,
+}) {
+  return <String>[
+    'Source label: ${panelModel.sourceLabel}',
+    if (failedStageLabel != null) 'Failed stage: $failedStageLabel',
+    ...panelModel.resultSummaryLines,
+    if (panelModel.removeImportedArchiveDataEnabled)
+      'Cleanup is available from the setup screen for this source.'
+    else
+      'Cleanup is not available for this source yet.',
+  ];
+}
+
+Future<HistoricalArchivesPostMigrationHealthCheck> _runPostMigrationHealthCheck(
+  Ref ref, {
+  required int previousMessageDataVersion,
+}) async {
+  ref.invalidate(driftWorkingDatabaseProvider);
+  final workingDb = await ref.read(driftWorkingDatabaseProvider.future);
+
+  final workingLinkedMessageCount = await _workingTableRowCount(
+    workingDb,
+    tableName: 'messages',
+  );
+  final workingRecoveredMessageCount = await _workingTableRowCount(
+    workingDb,
+    tableName: 'recovered_unlinked_messages',
+  );
+  final contactPickerCandidateCount = await _contactPickerCandidateCount(
+    workingDb,
+  );
+  final globalTimelineUsableRowCount = await _globalTimelineUsableRowCount(
+    workingDb,
+  );
+  final contactMessageIndexCount = await _workingTableRowCount(
+    workingDb,
+    tableName: 'contact_message_index',
+  );
+  final executionGateOwner = ref.read(importExecutionGateProvider).owner;
+  final isMaintenanceLocked = ref.read(dbMaintenanceLockProvider);
+  final messageDataVersionBumped =
+      ref.read(messageDataVersionProvider) > previousMessageDataVersion;
+
+  String? failedCheckLabel;
+  if (workingLinkedMessageCount + workingRecoveredMessageCount <= 0) {
+    failedCheckLabel = 'working.db has no projected messages';
+  } else if (contactPickerCandidateCount <= 0) {
+    failedCheckLabel = 'contact picker has no selectable contacts';
+  } else if (globalTimelineUsableRowCount <= 0) {
+    failedCheckLabel = 'timeline metadata has no usable rows';
+  } else if (executionGateOwner != null) {
+    failedCheckLabel = 'execution gate is still owned by $executionGateOwner';
+  } else if (isMaintenanceLocked) {
+    failedCheckLabel = 'message-data maintenance lock is still active';
+  } else if (!messageDataVersionBumped) {
+    failedCheckLabel = 'message data version was not bumped after migration';
+  }
+
+  final result = HistoricalArchivesPostMigrationHealthCheck(
+    workingLinkedMessageCount: workingLinkedMessageCount,
+    workingRecoveredMessageCount: workingRecoveredMessageCount,
+    contactPickerCandidateCount: contactPickerCandidateCount,
+    globalTimelineUsableRowCount: globalTimelineUsableRowCount,
+    contactMessageIndexCount: contactMessageIndexCount,
+    executionGateOwner: executionGateOwner,
+    isMaintenanceLocked: isMaintenanceLocked,
+    messageDataVersionBumped: messageDataVersionBumped,
+    failedCheckLabel: failedCheckLabel,
+  );
+
+  final logger = ref.read(appLoggerProvider.notifier);
+  final logContext = <String, dynamic>{
+    'workingLinkedMessageCount': result.workingLinkedMessageCount,
+    'workingRecoveredMessageCount': result.workingRecoveredMessageCount,
+    'contactPickerCandidateCount': result.contactPickerCandidateCount,
+    'globalTimelineUsableRowCount': result.globalTimelineUsableRowCount,
+    'contactMessageIndexCount': result.contactMessageIndexCount,
+    'executionGateOwner': result.executionGateOwner,
+    'isMaintenanceLocked': result.isMaintenanceLocked,
+    'messageDataVersionBumped': result.messageDataVersionBumped,
+    'failedCheckLabel': result.failedCheckLabel,
+  };
+
+  if (result.isHealthy) {
+    logger.info(
+      'Historical archive post-migration health check passed',
+      source: 'HistoricalArchivesWorkflow',
+      context: logContext,
+    );
+  } else {
+    logger.warn(
+      'Historical archive post-migration health check failed',
+      source: 'HistoricalArchivesWorkflow',
+      context: logContext,
+    );
+  }
+
+  return result;
+}
+
+Future<int> _workingTableRowCount(
+  WorkingDatabase workingDb, {
+  required String tableName,
+}) async {
+  final row = await workingDb
+      .customSelect('SELECT COUNT(*) AS c FROM $tableName')
+      .getSingle();
+  return row.read<int>('c');
+}
+
+Future<int> _contactPickerCandidateCount(WorkingDatabase workingDb) async {
+  final rows = await workingDb
+      .customSelect(
+        'SELECT display_name FROM participants ORDER BY display_name ASC',
+        readsFrom: {workingDb.workingParticipants},
+      )
+      .get();
+
+  return rows.where((row) {
+    final displayName = row.read<String>('display_name');
+    return !isPlaceholderDisplayName(displayName);
+  }).length;
+}
+
+Future<int> _globalTimelineUsableRowCount(WorkingDatabase workingDb) async {
+  final row = await workingDb
+      .customSelect(
+        '''
+        SELECT COUNT(*) AS c
+        FROM global_message_index
+        WHERE sent_at_utc IS NOT NULL AND sent_at_utc != ''
+        ''',
+        readsFrom: {workingDb.globalMessageIndex},
+      )
+      .getSingle();
+  return row.read<int>('c');
+}
+
+List<String> _postMigrationHealthSuccessSummaryLines(
+  HistoricalArchivesPostMigrationHealthCheck healthCheck,
+) {
+  return <String>[
+    'Projected messages: ${healthCheck.totalProjectedMessageCount}',
+    'Selectable contacts: ${healthCheck.contactPickerCandidateCount}',
+    'Timeline rows: ${healthCheck.globalTimelineUsableRowCount}',
+    'Archive rows are now visible through the normal timeline, search, and heatmap surfaces.',
+  ];
+}
+
+List<String> _postMigrationHealthFailureSummaryLines(
+  HistoricalArchivesPostMigrationHealthCheck healthCheck,
+) {
+  return <String>[
+    'Failed health check: ${healthCheck.failedCheckLabel ?? 'Unknown health check failure'}',
+    'Projected messages: ${healthCheck.totalProjectedMessageCount}',
+    'Selectable contacts: ${healthCheck.contactPickerCandidateCount}',
+    'Timeline rows: ${healthCheck.globalTimelineUsableRowCount}',
+    'Recommended action: close this dialog and send a diagnostic report before trying another archive import.',
+  ];
+}
+
+String? _firstFailedPhaseLabel(
+  List<HistoricalArchivesWorkflowPhaseViewModel> phases,
+) {
+  for (final phase in phases) {
+    if (phase.status == HistoricalArchivesWorkflowPhaseStatus.failed) {
+      return phase.label;
+    }
+  }
+  return null;
 }
 
 String _availableStatusLabel(HistoricalArchivesWorkflowState workflowState) {
@@ -1224,6 +2159,14 @@ List<String> _archiveManagementSummaryLines(
 ) {
   final targetPath = workflowState.archiveRemovalTargetChatDbPath;
   final batchCount = workflowState.matchedImportedArchiveBatchCount;
+  final currentMacDuplicates = _summaryLineInt(
+    workflowState.preflightSummaryLines,
+    'Already in current Mac import:',
+  );
+  final historicalArchiveDuplicates = _summaryLineInt(
+    workflowState.preflightSummaryLines,
+    'Already in historical archive imports:',
+  );
 
   if (targetPath == null) {
     return const [
@@ -1239,7 +2182,14 @@ List<String> _archiveManagementSummaryLines(
     _ => 'Matched imported archive batches in db-import: $batchCount',
   };
 
-  return ['Removal target chat.db: $targetPath', batchSummary];
+  return [
+    'Removal target chat.db: $targetPath',
+    batchSummary,
+    if (currentMacDuplicates != null)
+      'Matching GUIDs already in current Mac import: $currentMacDuplicates',
+    if (historicalArchiveDuplicates != null)
+      'Matching GUIDs already in historical archive imports: $historicalArchiveDuplicates',
+  ];
 }
 
 bool _removeImportedArchiveDataEnabled({
@@ -1293,6 +2243,24 @@ String _removeImportedArchiveDataDetail({
     return 'MessageLens could not determine whether db-import contains archive batches for this source yet.';
   }
   if (batchCount == 0) {
+    final currentMacDuplicates = _summaryLineInt(
+      workflowState.preflightSummaryLines,
+      'Already in current Mac import:',
+    );
+    final historicalArchiveDuplicates = _summaryLineInt(
+      workflowState.preflightSummaryLines,
+      'Already in historical archive imports:',
+    );
+
+    if ((currentMacDuplicates ?? 0) > 0 &&
+        (historicalArchiveDuplicates ?? 0) == 0) {
+      return 'No imported archive batches are currently recorded for this selected source. The duplicate count is coming from messages already present in your current MessageLens data after the current Mac import.';
+    }
+
+    if ((historicalArchiveDuplicates ?? 0) > 0) {
+      return 'MessageLens can see matching GUIDs that also appear in historical archive imports, but no imported archive batches are recorded for this exact selected folder path.';
+    }
+
     return 'No imported archive batches are currently recorded for this selected source.';
   }
   final batchLabel = batchCount == 1
@@ -1372,6 +2340,11 @@ preflightHistoricalArchivesFolder({
         sourceDatabase: database,
         workingDb: workingDb,
       );
+      final duplicateProvenanceEstimate =
+          await _estimateDuplicateProvenanceAgainstImportDatabase(
+            sourceDatabase: database,
+            importDb: importDb,
+          );
 
       return HistoricalArchivesFolderPreflightResult(
         preflight: HistoricalArchivesPreflightViewModel(
@@ -1416,6 +2389,14 @@ preflightHistoricalArchivesFolder({
             'Likely new rows: ${dryRunEstimate.newGuidCount} GUID-backed source rows'
           else
             'Likely new rows: unavailable',
+          if (duplicateProvenanceEstimate.isAvailable)
+            'Already in current Mac import: ${duplicateProvenanceEstimate.currentMacDuplicateCount} GUID-backed source rows'
+          else
+            'Already in current Mac import: unavailable',
+          if (duplicateProvenanceEstimate.isAvailable)
+            'Already in historical archive imports: ${duplicateProvenanceEstimate.historicalArchiveDuplicateCount} GUID-backed source rows'
+          else
+            'Already in historical archive imports: unavailable',
         ],
         dryRunSummaryLines: [
           if (dryRunEstimate.isAvailable)
@@ -1563,6 +2544,8 @@ HistoricalArchivesFolderPreflightResult _failedPreflightResult({
       'Latest message: unavailable',
       'Likely duplicates already in ledger: unavailable',
       'Likely new rows: unavailable',
+      'Already in current Mac import: unavailable',
+      'Already in historical archive imports: unavailable',
     ],
     dryRunSummaryLines: const [
       'Estimated new messages: unavailable',
@@ -1656,32 +2639,11 @@ HistoricalArchiveDateRange _readArchiveDateRange(Database database) {
 }
 
 String? _archiveTimestampToUtcIsoString(Object? value) {
-  if (value == null) {
-    return null;
-  }
-
-  final rawValue = value is int
-      ? value
-      : value is num
-      ? value.toInt()
-      : int.tryParse('$value');
-  if (rawValue == null) {
-    return null;
-  }
-
-  const appleEpochDifferenceSeconds = 978307200;
-  final isNanoseconds = rawValue.abs() >= 1000000000000;
-  final utcDateTime = isNanoseconds
-      ? DateTime.fromMicrosecondsSinceEpoch(
-          (rawValue / 1000).round() +
-              appleEpochDifferenceSeconds * Duration.microsecondsPerSecond,
-          isUtc: true,
-        )
-      : DateTime.fromMillisecondsSinceEpoch(
-          (rawValue + appleEpochDifferenceSeconds) * 1000,
-          isUtc: true,
-        );
-  return utcDateTime.toUtc().toIso8601String();
+  // Delegate to the canonical utility so preflight, importers, and migrators
+  // all interpret Apple-epoch raw values identically. The helper handles
+  // null, zero, the seconds-vs-nanoseconds variants of chat.db, and never
+  // silently coerces invalid values to epoch zero.
+  return DateConverter.appleToIsoString(value);
 }
 
 String _dateSummaryLabel(String? utcIsoString) {
@@ -1782,6 +2744,90 @@ Future<HistoricalArchivesDryRunEstimate> _estimateDryRunAgainstWorkingDatabase({
           'working.db comparison failed while estimating duplicate GUIDs: $error',
     );
   }
+}
+
+Future<HistoricalArchivesDuplicateProvenanceEstimate>
+_estimateDuplicateProvenanceAgainstImportDatabase({
+  required Database sourceDatabase,
+  required SqfliteImportDatabase? importDb,
+}) async {
+  if (importDb == null) {
+    return const HistoricalArchivesDuplicateProvenanceEstimate.unavailable(
+      unavailableReason:
+          'import db comparison is unavailable because the canonical ledger database could not be opened.',
+    );
+  }
+
+  try {
+    const sourceChunkSize = 400;
+    var currentMacDuplicateCount = 0;
+    var historicalArchiveDuplicateCount = 0;
+
+    for (var offset = 0; ; offset += sourceChunkSize) {
+      final rows = sourceDatabase.select(
+        'SELECT DISTINCT guid FROM message '
+        'WHERE guid IS NOT NULL AND LENGTH(TRIM(guid)) > 0 ORDER BY guid LIMIT $sourceChunkSize OFFSET $offset',
+      );
+      if (rows.isEmpty) {
+        break;
+      }
+
+      final sourceGuids = <String>[
+        for (final row in rows)
+          if (_readTrimmedString(row['guid']) case final guid?) guid,
+      ];
+
+      if (sourceGuids.isEmpty) {
+        continue;
+      }
+
+      final counts = await _countMatchingImportGuidsBySourceKind(
+        importDb: importDb,
+        sourceGuids: sourceGuids,
+      );
+      currentMacDuplicateCount += counts['current_mac'] ?? 0;
+      historicalArchiveDuplicateCount += counts['historical_archive'] ?? 0;
+    }
+
+    return HistoricalArchivesDuplicateProvenanceEstimate.available(
+      currentMacDuplicateCount: currentMacDuplicateCount,
+      historicalArchiveDuplicateCount: historicalArchiveDuplicateCount,
+    );
+  } catch (error) {
+    return HistoricalArchivesDuplicateProvenanceEstimate.unavailable(
+      unavailableReason:
+          'import db comparison failed while estimating duplicate provenance: $error',
+    );
+  }
+}
+
+Future<Map<String, int>> _countMatchingImportGuidsBySourceKind({
+  required SqfliteImportDatabase importDb,
+  required List<String> sourceGuids,
+}) async {
+  if (sourceGuids.isEmpty) {
+    return const <String, int>{};
+  }
+
+  final placeholders = List.filled(sourceGuids.length, '?').join(', ');
+  final rows = await importDb.rawQuery(
+    'SELECT ib.chat_source_kind AS source_kind, '
+    'COUNT(DISTINCT m.guid) AS total_count '
+    'FROM messages m '
+    'JOIN import_batches ib ON ib.id = m.batch_id '
+    'WHERE m.guid IN ($placeholders) '
+    "AND (ib.status IS NULL OR ib.status != 'cancelled') "
+    'GROUP BY ib.chat_source_kind',
+    sourceGuids,
+  );
+
+  return <String, int>{
+    for (final row in rows)
+      if (row['source_kind'] case final String sourceKind)
+        sourceKind: row['total_count'] is int
+            ? row['total_count'] as int
+            : int.tryParse('${row['total_count']}') ?? 0,
+  };
 }
 
 Future<int> _countMatchingProjectedGuids({
@@ -1960,36 +3006,36 @@ List<HistoricalArchivesWorkflowPhaseViewModel> _runningArchiveImportPhases() {
       label: 'Reading archive source',
       status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
       detail: 'Selected archive metadata was already validated in preflight.',
+      progress: 1.0,
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Normalizing records into canonical ledger format',
+      label: 'Prepare archive import plan',
       status: HistoricalArchivesWorkflowPhaseStatus.running,
-      detail: 'Canonical importers are reading archive source tables now.',
+      detail: 'Preparing the canonical archive import execution plan.',
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Writing archive rows to db-import',
-      status: HistoricalArchivesWorkflowPhaseStatus.running,
-      detail: 'Archive rows are being written into the canonical ledger.',
+      label: 'Write archive rows to db-import',
+      status: HistoricalArchivesWorkflowPhaseStatus.waiting,
+      detail: 'Waiting for the archive import plan to start.',
+      progress: 0.0,
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Running full canonical migration',
+      label: 'Run canonical migration',
       status: HistoricalArchivesWorkflowPhaseStatus.waiting,
       detail: 'Migration starts after the ledger import succeeds.',
+      progress: 0.0,
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Rebuilding indexes/search/heatmap support tables',
+      label: 'Refresh app-visible data',
       status: HistoricalArchivesWorkflowPhaseStatus.waiting,
       detail: 'Waiting for canonical migration to complete.',
-    ),
-    HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Refreshing app-visible data',
-      status: HistoricalArchivesWorkflowPhaseStatus.waiting,
-      detail: 'Waiting for canonical migration to complete.',
+      progress: 0.0,
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
       label: 'Complete',
       status: HistoricalArchivesWorkflowPhaseStatus.waiting,
       detail: 'Archive import is still running.',
+      progress: 0.0,
     ),
   ];
 }
@@ -1998,42 +3044,34 @@ List<HistoricalArchivesWorkflowPhaseViewModel>
 _runningArchiveMigrationPhases() {
   return const [
     HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Reading archive source',
+      label: 'Archive source validated',
       status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
       detail: 'Selected archive metadata was already validated in preflight.',
+      progress: 1.0,
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Normalizing records into canonical ledger format',
-      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
-      detail:
-          'Archive source rows were normalized through the canonical import path.',
-    ),
-    HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Writing archive rows to db-import',
+      label: 'Write archive rows to db-import',
       status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
       detail: 'Archive rows were written into the canonical ledger.',
+      progress: 1.0,
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Running full canonical migration',
+      label: 'Prepare canonical migration',
       status: HistoricalArchivesWorkflowPhaseStatus.running,
-      detail:
-          'The normal canonical migration orchestrator is rebuilding working.db now.',
+      detail: 'Preparing the canonical migration execution plan.',
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Rebuilding indexes/search/heatmap support tables',
-      status: HistoricalArchivesWorkflowPhaseStatus.running,
-      detail: 'Migration is rebuilding the normal app indexes and projections.',
-    ),
-    HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Refreshing app-visible data',
+      label: 'Refresh app-visible data',
       status: HistoricalArchivesWorkflowPhaseStatus.waiting,
       detail:
-          'Waiting for the migration orchestrator to complete successfully.',
+          'Waiting for the canonical migration orchestrator to complete successfully.',
+      progress: 0.0,
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
       label: 'Complete',
       status: HistoricalArchivesWorkflowPhaseStatus.waiting,
       detail: 'Archive migration is still running.',
+      progress: 0.0,
     ),
   ];
 }
@@ -2077,6 +3115,51 @@ List<HistoricalArchivesWorkflowPhaseViewModel> _completedArchiveImportPhases() {
       label: 'Complete',
       status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
       detail: 'Archive import and canonical migration completed successfully.',
+    ),
+  ];
+}
+
+List<HistoricalArchivesWorkflowPhaseViewModel>
+_failedArchiveAppReadinessPhases({required String detail}) {
+  return [
+    const HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Reading archive source',
+      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
+      detail: 'Selected archive metadata was already validated in preflight.',
+    ),
+    const HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Normalizing records into canonical ledger format',
+      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
+      detail:
+          'Archive source rows were normalized through the canonical import path.',
+    ),
+    const HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Writing archive rows to db-import',
+      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
+      detail: 'Archive rows were written into the canonical ledger.',
+    ),
+    const HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Running full canonical migration',
+      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
+      detail:
+          'The normal canonical migration orchestrator completed successfully.',
+    ),
+    const HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Rebuilding indexes/search/heatmap support tables',
+      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
+      detail:
+          'The normal migration rebuild refreshed indexes and support tables.',
+    ),
+    HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Refreshing app-visible data',
+      status: HistoricalArchivesWorkflowPhaseStatus.failed,
+      detail: detail,
+    ),
+    const HistoricalArchivesWorkflowPhaseViewModel(
+      label: 'Complete',
+      status: HistoricalArchivesWorkflowPhaseStatus.waiting,
+      detail:
+          'Archive import cannot be marked complete until app data is ready.',
     ),
   ];
 }
@@ -2164,6 +3247,48 @@ List<HistoricalArchivesWorkflowPhaseViewModel> _failedArchiveImportPhases({
       status: HistoricalArchivesWorkflowPhaseStatus.waiting,
       detail: 'Archive import did not complete.',
     ),
+  ];
+}
+
+List<HistoricalArchivesWorkflowPhaseViewModel> _cancelledArchivePhases({
+  required List<HistoricalArchivesWorkflowPhaseViewModel> currentPhases,
+}) {
+  var cancellationMarked = false;
+
+  return <HistoricalArchivesWorkflowPhaseViewModel>[
+    for (final phase in currentPhases)
+      if (phase.status == HistoricalArchivesWorkflowPhaseStatus.succeeded)
+        HistoricalArchivesWorkflowPhaseViewModel(
+          label: phase.label,
+          status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
+          detail: phase.detail,
+          progress: 1.0,
+        )
+      else if (!cancellationMarked &&
+          phase.status == HistoricalArchivesWorkflowPhaseStatus.running)
+        (() {
+          cancellationMarked = true;
+          return HistoricalArchivesWorkflowPhaseViewModel(
+            label: phase.label,
+            status: HistoricalArchivesWorkflowPhaseStatus.failed,
+            detail: 'Canceled by user while this step was running.',
+            progress: phase.progress,
+          );
+        })()
+      else if (phase.label == 'Complete')
+        const HistoricalArchivesWorkflowPhaseViewModel(
+          label: 'Complete',
+          status: HistoricalArchivesWorkflowPhaseStatus.waiting,
+          detail: 'Archive import was canceled before completion.',
+          progress: 0.0,
+        )
+      else
+        HistoricalArchivesWorkflowPhaseViewModel(
+          label: phase.label,
+          status: HistoricalArchivesWorkflowPhaseStatus.skipped,
+          detail: 'Skipped after the user canceled the archive workflow.',
+          progress: 0.0,
+        ),
   ];
 }
 

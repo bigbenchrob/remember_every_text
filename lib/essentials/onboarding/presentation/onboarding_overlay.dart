@@ -1190,18 +1190,34 @@ class _RecoveryContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final controlState = ref.watch(dbImportControlViewModelProvider);
+    final isMissingImportLedger =
+        report?.blockerKind == OnboardingBlockerKind.importDatabaseMissing;
+    final title = isMissingImportLedger
+        ? 'Rebuilding From Source Is Required'
+        : 'Cleaning Up A Previous Setup Attempt';
+    final body = isMissingImportLedger
+        ? 'The working database is incomplete, and the import database '
+              '(macos_import.db) is missing or unreadable. Migration cannot '
+              'repair this state, so MessageLens is clearing the incomplete '
+              'app databases now. When cleanup finishes, rebuild message data '
+              'from the original local sources on this Mac.'
+        : 'MessageLens detected signs that an earlier import or migration left incomplete app databases. It is deleting the app databases now so setup can restart from a clean slate.';
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
-          Icons.cleaning_services_outlined,
+          isMissingImportLedger
+              ? Icons.sync_problem_rounded
+              : Icons.cleaning_services_outlined,
           size: 56,
-          color: colors.accents.primary,
+          color: isMissingImportLedger
+              ? _kWarningAmber
+              : colors.accents.primary,
         ),
         const SizedBox(height: 20),
         Text(
-          'Cleaning Up A Previous Setup Attempt',
+          title,
           style: typography.headline.copyWith(
             color: colors.content.textPrimary,
           ),
@@ -1209,7 +1225,7 @@ class _RecoveryContent extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         Text(
-          'MessageLens detected signs that an earlier import or migration left incomplete app databases. It is deleting the app databases now so setup can restart from a clean slate.',
+          body,
           style: typography.body.copyWith(color: colors.content.textSecondary),
           textAlign: TextAlign.center,
         ),
@@ -1248,6 +1264,35 @@ class _RecoveryContent extends ConsumerWidget {
               color: colors.content.textTertiary,
             ),
             textAlign: TextAlign.center,
+          ),
+        ],
+        if (report != null) ...[
+          const SizedBox(height: 20),
+          OutlinedButton(
+            onPressed: () async {
+              final writer = ref.read(appLoggerProvider.notifier).writer;
+              final databaseHealthAuditService = await ref.read(
+                databaseHealthAuditServiceProvider.future,
+              );
+              final result = await exportOnboardingFailureDiagnosticReport(
+                writer,
+                report: report!,
+                databaseHealthAuditService: databaseHealthAuditService,
+              );
+              if (!context.mounted) {
+                return;
+              }
+              _showDiagnosticReportSnackBar(context, result: result);
+            },
+            style: OutlinedButton.styleFrom(
+              foregroundColor: colors.content.textPrimary,
+              side: BorderSide(color: colors.lines.borderSubtle),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Send Report To Developer'),
           ),
         ],
       ],

@@ -10,6 +10,8 @@ import '../../../db/feature_level_providers.dart';
 import '../../../db_migrate/domain/entities/db_migration_result.dart';
 import '../../../db_migrate/feature_level_providers.dart';
 import '../../../logging/application/app_logger.dart';
+import '../../../onboarding/application/onboarding_gate_provider.dart';
+import '../../../onboarding/domain/onboarding_status.dart';
 import '../../domain/entities/db_import_result.dart';
 import '../../feature_level_providers.dart';
 import '../import_execution_gate_provider.dart';
@@ -53,33 +55,58 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
   bool _pendingProbe = false;
   bool _retryWhenGateReleases = false;
   String? _chatDbPath;
+  bool _initializeRequested = false;
+  bool _monitoringActive = false;
+  bool _hasBuilt = false;
 
   @override
   ChatDbChangeMonitorState build() {
+    final onboardingStatus = ref.watch(onboardingGateProvider);
+
     if (!Platform.isMacOS) {
       return const ChatDbChangeMonitorState();
     }
 
     ref.listen(importExecutionGateProvider, _handleExecutionGateChange);
 
-    unawaited(_initialize());
+    if (_shouldMonitorRun(onboardingStatus)) {
+      if (!_initializeRequested && !_monitoringActive) {
+        _initializeRequested = true;
+        unawaited(_initialize());
+      }
+    } else {
+      _stopMonitoring();
+    }
 
     ref.onDispose(() {
-      _debounceTimer?.cancel();
-      _pollingTimer?.cancel();
-      _attachmentSweepTimer?.cancel();
+      _stopMonitoring();
     });
 
-    return const ChatDbChangeMonitorState();
+    final result = _hasBuilt ? state : const ChatDbChangeMonitorState();
+    _hasBuilt = true;
+    return result;
   }
 
   Future<void> _initialize() async {
     try {
+      if (!_shouldMonitorRun(ref.read(onboardingGateProvider))) {
+        return;
+      }
+
       final pathsHelper = await ref.read(pathsHelperProvider.future);
       final chatDbPath = pathsHelper.chatDBPath;
+
+      if (!_shouldMonitorRun(ref.read(onboardingGateProvider))) {
+        return;
+      }
+
       _chatDbPath = chatDbPath;
 
       await _primeMaxRowId(chatDbPath);
+
+      if (!_shouldMonitorRun(ref.read(onboardingGateProvider))) {
+        return;
+      }
 
       // Immediate check on startup to catch messages that arrived while app was closed.
       // This ensures users don't see stale data for 15 seconds.
@@ -87,8 +114,11 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
 
       _startPolling(chatDbPath);
       _startAttachmentSweep();
+      _monitoringActive = true;
     } catch (error, stackTrace) {
       _handleError('Failed to initialize chat.db monitor: $error', stackTrace);
+    } finally {
+      _initializeRequested = false;
     }
   }
 
@@ -164,6 +194,10 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
   }
 
   Future<void> _runAttachmentSweep() async {
+    if (!_shouldMonitorRun(ref.read(onboardingGateProvider))) {
+      return;
+    }
+
     if (_importInFlight || _attachmentSweepInFlight) {
       return;
     }
@@ -215,6 +249,11 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
   }
 
   Future<void> _processPendingChanges() async {
+    if (!_shouldMonitorRun(ref.read(onboardingGateProvider))) {
+      _pendingProbe = false;
+      return;
+    }
+
     if (!_pendingProbe || _importInFlight) {
       return;
     }
@@ -435,6 +474,10 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
     ImportExecutionGateState? previous,
     ImportExecutionGateState next,
   ) {
+    if (!_shouldMonitorRun(ref.read(onboardingGateProvider))) {
+      return;
+    }
+
     final gateJustReleased = previous?.owner != null && next.owner == null;
     if (!gateJustReleased || !_retryWhenGateReleases) {
       return;
@@ -467,6 +510,26 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
     }
 
     return error.startsWith('Import is already running for ');
+  }
+
+  bool _shouldMonitorRun(OnboardingStatus status) {
+    return status == OnboardingStatus.notNeeded;
+  }
+
+  void _stopMonitoring() {
+    _debounceTimer?.cancel();
+    _debounceTimer = null;
+    _pollingTimer?.cancel();
+    _pollingTimer = null;
+    _attachmentSweepTimer?.cancel();
+    _attachmentSweepTimer = null;
+    _chatDbPath = null;
+    _pendingProbe = false;
+    _retryWhenGateReleases = false;
+    _importInFlight = false;
+    _attachmentSweepInFlight = false;
+    _monitoringActive = false;
+    _initializeRequested = false;
   }
 
   String _buildImportSummaryLog({

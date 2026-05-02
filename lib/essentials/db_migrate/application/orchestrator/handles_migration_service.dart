@@ -5,6 +5,7 @@ import 'package:sqflite/sqflite.dart';
 
 import '../../../db/feature_level_providers.dart';
 import '../../../db_importers/application/debug_settings_provider.dart';
+import '../../../db_importers/application/pipeline_cancellation.dart';
 import '../../../logging/application/migration_audit_writer.dart';
 import '../../../logging/application/pipeline_incident_tracker_provider.dart';
 import '../../../search/feature_level_providers.dart';
@@ -45,7 +46,7 @@ class HandlesMigrationService {
       ParticipantsMigrator();
   static const HandleToParticipantMigrator _handleToParticipantMigrator =
       HandleToParticipantMigrator();
-  static const MessagesMigrator _messagesMigrator = MessagesMigrator();
+  static final MessagesMigrator _messagesMigrator = MessagesMigrator();
   static const RecoveredUnlinkedMessagesMigrator
   _recoveredUnlinkedMessagesMigrator = RecoveredUnlinkedMessagesMigrator();
   static const AttachmentsMigrator _attachmentsMigrator = AttachmentsMigrator();
@@ -119,6 +120,18 @@ class HandlesMigrationService {
       ),
     ];
     onExecutionPlan?.call(allSteps);
+
+    // Mark working.db as having an in-flight (incomplete) migration. If the
+    // app crashes or is force-quit before the success path below writes
+    // 'complete', a later startup check can detect the suspect state.
+    try {
+      await workingDatabase.markProjectionMigrationStarted();
+    } catch (markError) {
+      debugSettings.logProgress(
+        '$_logContext: failed to mark projection_state as incomplete '
+        '(non-fatal): $markError',
+      );
+    }
 
     try {
       // Run diagnostics before migration to help troubleshoot issues
@@ -270,6 +283,22 @@ class HandlesMigrationService {
         attachmentsProjected: attachmentsCount,
         reactionsProjected: reactionsCount,
       );
+
+      // Migration completed successfully end-to-end. Stamp working.db
+      // with the completion marker so the next startup check sees a
+      // 'complete' projection_state row.
+      try {
+        await workingDatabase.markProjectionMigrationCompleted(
+          batchId: latestBatch,
+          completedAtUtc: DateTime.now().toUtc().toIso8601String(),
+        );
+      } catch (markError) {
+        debugSettings.logProgress(
+          '$_logContext: failed to mark projection_state as complete '
+          '(non-fatal): $markError',
+        );
+      }
+
       await ref
           .read(pipelineIncidentTrackerProvider.notifier)
           .recordMigrationResult(
@@ -280,6 +309,7 @@ class HandlesMigrationService {
     } catch (error, stackTrace) {
       debugSettings.logError('$_logContext: migration failed: $error');
       debugSettings.logProgress(stackTrace.toString());
+      final isCancelled = error is DbPipelineCancelledException;
 
       // Write audit log even on failure
       try {
@@ -299,12 +329,14 @@ class HandlesMigrationService {
         success: false,
         error: 'Identity + message migration failed: $error',
       );
-      await ref
-          .read(pipelineIncidentTrackerProvider.notifier)
-          .recordMigrationResult(
-            result: result,
-            incrementalMode: incrementalMode,
-          );
+      if (!isCancelled) {
+        await ref
+            .read(pipelineIncidentTrackerProvider.notifier)
+            .recordMigrationResult(
+              result: result,
+              incrementalMode: incrementalMode,
+            );
+      }
       return result;
     }
   }

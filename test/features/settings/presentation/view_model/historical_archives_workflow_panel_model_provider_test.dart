@@ -151,6 +151,79 @@ void main() {
     });
 
     test(
+      'maps live migration stages into sequential archive phases with exactly one running step',
+      () {
+        final workflowState = buildInitialHistoricalArchivesWorkflowState()
+            .copyWith(
+              preflight: const HistoricalArchivesPreflightViewModel(
+                status: HistoricalArchivesPreflightStatus.running,
+                statusLabel: 'Migration running',
+                detail:
+                    'Archive rows were written to db-import. Running the normal canonical migration orchestrator now.',
+              ),
+              selectedFolderPath: '/tmp/Archive-2017',
+              chatDbStatusLabel: 'Found and readable',
+              attachmentsStatusLabel: 'Found',
+              sourceLabel: 'Archive-2017',
+            );
+
+        final model = buildHistoricalArchivesWorkflowPanelModel(
+          executionGateState: const ImportExecutionGateState(),
+          isMaintenanceLocked: false,
+          workflowState: workflowState,
+          dbImportControlState: const DbImportControlState(
+            isProcessing: true,
+            stages: <UiStageProgress>[
+              UiStageProgress(
+                name: 'handles',
+                displayName: 'Handles',
+                sortIndex: 0,
+                isComplete: true,
+                progress: 1.0,
+              ),
+              UiStageProgress(
+                name: 'messages',
+                displayName: 'Messages',
+                sortIndex: 1,
+                isActive: true,
+                progress: 0.42,
+                current: 42,
+                total: 100,
+              ),
+              UiStageProgress(
+                name: 'rebuild_indexes',
+                displayName: 'Rebuild Indexes',
+                sortIndex: 2,
+              ),
+            ],
+          ),
+        );
+
+        final runningPhases = model.phases
+            .where(
+              (phase) =>
+                  phase.status == HistoricalArchivesWorkflowPhaseStatus.running,
+            )
+            .toList(growable: false);
+
+        expect(runningPhases, hasLength(1));
+        expect(runningPhases.single.label, 'Build working messages');
+        expect(runningPhases.single.progress, 0.42);
+        expect(
+          runningPhases.single.detail,
+          'Processed: 42 / 100 messages (42%)',
+        );
+        final rebuildIndexesPhase = model.phases.firstWhere(
+          (phase) => phase.label == 'Rebuild indexes',
+        );
+        expect(
+          rebuildIndexesPhase.status,
+          HistoricalArchivesWorkflowPhaseStatus.waiting,
+        );
+      },
+    );
+
+    test(
       'reports import-and-migration-complete state after archive ingestion',
       () {
         final workflowState = buildInitialHistoricalArchivesWorkflowState()
@@ -220,6 +293,189 @@ void main() {
       expect(model.summaryText, contains('Archive ledger import succeeded'));
       expect(model.importButtonEnabled, isFalse);
       expect(model.importButtonDetail, contains('canonical migration failed'));
+    });
+
+    test(
+      'clarifies when duplicates come from current Mac data and no archive batches remain to delete',
+      () {
+        final workflowState = buildInitialHistoricalArchivesWorkflowState().copyWith(
+          preflight: const HistoricalArchivesPreflightViewModel(
+            status: HistoricalArchivesPreflightStatus.completeReadyToImport,
+            statusLabel: 'Preflight complete',
+            detail: 'Source checks succeeded.',
+          ),
+          selectedFolderPath: '/tmp/Archive-2017',
+          chatDbStatusLabel: 'Found and readable',
+          attachmentsStatusLabel: 'Found',
+          sourceLabel: 'Archive-2017',
+          archiveRemovalTargetChatDbPath: '/tmp/Archive-2017/chat.db',
+          matchedImportedArchiveBatchCount: 0,
+          preflightSummaryLines: const [
+            'Total messages: 6513',
+            'Already in current Mac import: 6513 GUID-backed source rows',
+            'Already in historical archive imports: 0 GUID-backed source rows',
+          ],
+          dryRunSummaryLines: const [
+            'Estimated duplicates: 6513 GUID-backed source rows already projected',
+          ],
+        );
+
+        final model = buildHistoricalArchivesWorkflowPanelModel(
+          executionGateState: const ImportExecutionGateState(),
+          isMaintenanceLocked: false,
+          workflowState: workflowState,
+        );
+
+        expect(model.removeImportedArchiveDataEnabled, isFalse);
+        expect(
+          model.removeImportedArchiveDataDetail,
+          contains(
+            'duplicate count is coming from messages already present in your current MessageLens data',
+          ),
+        );
+        expect(
+          model.archiveManagementSummaryLines,
+          contains('Matching GUIDs already in current Mac import: 6513'),
+        );
+        expect(
+          model.archiveManagementSummaryLines,
+          contains('Matching GUIDs already in historical archive imports: 0'),
+        );
+      },
+    );
+  });
+
+  group('buildHistoricalArchivesImportDialogViewModel', () {
+    test('maps migration-completed state to terminal success dialog', () {
+      final panelModel = buildHistoricalArchivesWorkflowPanelModel(
+        executionGateState: const ImportExecutionGateState(),
+        isMaintenanceLocked: false,
+        workflowState: buildInitialHistoricalArchivesWorkflowState().copyWith(
+          preflight: const HistoricalArchivesPreflightViewModel(
+            status: HistoricalArchivesPreflightStatus.migrationCompleted,
+            statusLabel: 'Archive Import Complete',
+            detail:
+                'Archive rows were written to db-import, migrated into working.db, and refreshed through the normal timeline, search, and heatmap surfaces.',
+          ),
+          selectedFolderPath: '/tmp/Archive-2017',
+          sourceLabel: 'Archive-2017',
+          preflightSummaryLines: const [
+            'Rows with missing GUIDs: 0',
+            'Already in current Mac import: 6,513',
+            'Already in historical archive imports: 0',
+            'Earliest message: 2012-07-25',
+            'Latest message: 2017-06-11',
+          ],
+          dryRunSummaryLines: const ['Estimated new messages: 2,369'],
+        ),
+      );
+
+      final dialogModel = buildHistoricalArchivesImportDialogViewModel(
+        panelModel: panelModel,
+      );
+
+      expect(dialogModel.state, HistoricalArchivesImportDialogState.success);
+      expect(dialogModel.title, 'Import Complete');
+      expect(dialogModel.dismissActionLabel, 'Done');
+      expect(dialogModel.summaryLines, contains('New messages added: 2,369'));
+      expect(
+        dialogModel.summaryLines,
+        contains('Already in current Mac data: 6,513'),
+      );
+      expect(
+        dialogModel.summaryLines,
+        contains('Already imported from archives: 0'),
+      );
+      expect(dialogModel.summaryLines, contains('Missing identifiers: 0'));
+      expect(
+        dialogModel.summaryLines,
+        contains('Date range: 2012-07-25 -> 2017-06-11'),
+      );
+    });
+
+    test(
+      'maps migration-failed-after-import state to visibility failure dialog',
+      () {
+        final panelModel = buildHistoricalArchivesWorkflowPanelModel(
+          executionGateState: const ImportExecutionGateState(),
+          isMaintenanceLocked: false,
+          workflowState: buildInitialHistoricalArchivesWorkflowState().copyWith(
+            preflight: const HistoricalArchivesPreflightViewModel(
+              status: HistoricalArchivesPreflightStatus.failed,
+              statusLabel: 'Migration failed after archive import',
+              detail:
+                  'Archive ledger import succeeded, but the canonical migration did not report success.',
+            ),
+            sourceLabel: 'Archive-2017',
+            archiveRemovalTargetChatDbPath: '/tmp/Archive-2017/chat.db',
+            matchedImportedArchiveBatchCount: 1,
+            phases: const [
+              HistoricalArchivesWorkflowPhaseViewModel(
+                label: 'Running full canonical migration',
+                status: HistoricalArchivesWorkflowPhaseStatus.failed,
+                detail: 'Migration failed in test.',
+              ),
+            ],
+          ),
+        );
+
+        final dialogModel = buildHistoricalArchivesImportDialogViewModel(
+          panelModel: panelModel,
+        );
+
+        expect(dialogModel.state, HistoricalArchivesImportDialogState.failure);
+        expect(dialogModel.title, 'Import Could Not Be Made Visible');
+        expect(dialogModel.dismissActionLabel, 'Close');
+        expect(
+          dialogModel.failureStageLabel,
+          'Running full canonical migration',
+        );
+        expect(
+          dialogModel.summaryLines,
+          contains('Failed stage: Running full canonical migration'),
+        );
+        expect(dialogModel.cleanupAvailable, isTrue);
+      },
+    );
+
+    test('maps post-migration health failure to app-data-not-ready dialog', () {
+      final panelModel = buildHistoricalArchivesWorkflowPanelModel(
+        executionGateState: const ImportExecutionGateState(),
+        isMaintenanceLocked: false,
+        workflowState: buildInitialHistoricalArchivesWorkflowState().copyWith(
+          preflight: const HistoricalArchivesPreflightViewModel(
+            status: HistoricalArchivesPreflightStatus.failed,
+            statusLabel: 'Import completed but app data is not ready',
+            detail:
+                'Archive rows were imported, but MessageLens could not confirm that normal app views refreshed correctly. Failed health check: contact picker has no selectable contacts.',
+          ),
+          sourceLabel: 'Archive-2017',
+          resultSummaryLines: const [
+            'Failed health check: contact picker has no selectable contacts',
+          ],
+          phases: const [
+            HistoricalArchivesWorkflowPhaseViewModel(
+              label: 'Refreshing app-visible data',
+              status: HistoricalArchivesWorkflowPhaseStatus.failed,
+              detail: 'Health verification failed in test.',
+            ),
+          ],
+        ),
+      );
+
+      final dialogModel = buildHistoricalArchivesImportDialogViewModel(
+        panelModel: panelModel,
+      );
+
+      expect(dialogModel.state, HistoricalArchivesImportDialogState.failure);
+      expect(dialogModel.title, 'Import Completed But App Data Is Not Ready');
+      expect(dialogModel.failureStageLabel, 'Refreshing app-visible data');
+      expect(
+        dialogModel.summaryLines,
+        contains(
+          'Failed health check: contact picker has no selectable contacts',
+        ),
+      );
     });
   });
 
@@ -484,7 +740,54 @@ void main() {
           panelModel.importButtonDetail,
           contains('already completed for this source'),
         );
-        expect(await _workingMessageCount(workingDb), 0);
+        expect(await _workingMessageCount(workingDb), 1);
+        expect(
+          workflowState.resultSummaryLines,
+          contains('Selectable contacts: 1'),
+        );
+      },
+    );
+
+    test(
+      'begin import fails when post-migration health checks show empty app-visible data',
+      () async {
+        _FakeHistoricalArchiveDbImportControlViewModel.seedHealthyAppData =
+            false;
+
+        final notifier = container.read(
+          historicalArchivesWorkflowProvider.notifier,
+        );
+
+        await notifier.loadFolder(folderPath: tempDirectory.path);
+        await notifier.beginImportForSelectedSource();
+
+        final workflowState = container.read(
+          historicalArchivesWorkflowProvider,
+        );
+        final sourceRecord =
+            (await importDb.listHistoricalArchiveSources()).single;
+
+        expect(
+          workflowState.preflight.status,
+          HistoricalArchivesPreflightStatus.failed,
+        );
+        expect(
+          workflowState.preflight.statusLabel,
+          'Import completed but app data is not ready',
+        );
+        expect(
+          workflowState.preflight.detail,
+          contains('working.db has no projected messages'),
+        );
+        expect(
+          workflowState.resultSummaryLines,
+          contains('Failed health check: working.db has no projected messages'),
+        );
+        expect(sourceRecord.lastImportSuccess, isFalse);
+        expect(
+          sourceRecord.lastImportError,
+          contains('working.db has no projected messages'),
+        );
       },
     );
 
@@ -546,6 +849,33 @@ Future<int> _workingMessageCount(WorkingDatabase workingDb) async {
   return row.read<int>('c');
 }
 
+Future<void> _seedHealthyArchiveProjection(WorkingDatabase workingDb) async {
+  await workingDb.customStatement(
+    "INSERT INTO participants (id, original_name, display_name, short_name) VALUES (1, 'Archive Person', 'Archive Person', 'Archive Person')",
+  );
+  await workingDb.customStatement(
+    "INSERT INTO handles_canonical (id, raw_identifier, display_name, compound_identifier, service) VALUES (1, 'archive@example.com', 'Archive Person', 'archive@example.com::iMessage', 'iMessage')",
+  );
+  await workingDb.customStatement(
+    "INSERT INTO handle_to_participant (handle_id, participant_id, confidence, source) VALUES (1, 1, 1.0, 'addressbook')",
+  );
+  await workingDb.customStatement(
+    "INSERT INTO chats (id, guid, service, last_message_at_utc, last_message_preview) VALUES (1, 'chat-guid-1', 'iMessage', '2017-05-06T12:00:00.000Z', 'Archive message')",
+  );
+  await workingDb.customStatement(
+    "INSERT INTO chat_to_handle (chat_id, handle_id, role) VALUES (1, 1, 'member')",
+  );
+  await workingDb.customStatement(
+    "INSERT INTO messages (id, guid, chat_id, sender_handle_id, is_from_me, sent_at_utc, status, text) VALUES (1, 'archive-guid-1', 1, 1, 0, '2017-05-06T12:00:00.000Z', 'delivered', 'Archive message')",
+  );
+  await workingDb.customStatement(
+    "INSERT INTO global_message_index (ordinal, message_id, chat_id, sent_at_utc, month_key) VALUES (0, 1, 1, '2017-05-06T12:00:00.000Z', '2017-05')",
+  );
+  await workingDb.customStatement(
+    "INSERT INTO contact_message_index (contact_id, ordinal, message_id, sent_at_utc, month_key) VALUES (1, 0, 1, '2017-05-06T12:00:00.000Z', '2017-05')",
+  );
+}
+
 Future<Map<String, int>> _archiveEntityRowCounts(
   SqfliteImportDatabase importDb,
 ) async {
@@ -564,6 +894,7 @@ class _FakeHistoricalArchiveDbImportControlViewModel
     extends DbImportControlViewModel {
   static int startImportCallCount = 0;
   static int startMigrationCallCount = 0;
+  static bool seedHealthyAppData = true;
   static DbMigrationResult nextMigrationResult = const DbMigrationResult(
     batchId: 1,
     success: true,
@@ -572,6 +903,7 @@ class _FakeHistoricalArchiveDbImportControlViewModel
   static void resetCounters() {
     startImportCallCount = 0;
     startMigrationCallCount = 0;
+    seedHealthyAppData = true;
     nextMigrationResult = const DbMigrationResult(batchId: 1, success: true);
   }
 
@@ -586,8 +918,15 @@ class _FakeHistoricalArchiveDbImportControlViewModel
   }
 
   @override
-  Future<void> startMigration({bool skipImportCheck = false}) async {
+  Future<void> startMigration({
+    bool skipImportCheck = false,
+    bool Function()? shouldCancel,
+  }) async {
     startMigrationCallCount += 1;
+    if (nextMigrationResult.success && seedHealthyAppData) {
+      final workingDb = await ref.read(driftWorkingDatabaseProvider.future);
+      await _seedHealthyArchiveProjection(workingDb);
+    }
     state = state.copyWith(lastMigrationResult: nextMigrationResult);
   }
 }

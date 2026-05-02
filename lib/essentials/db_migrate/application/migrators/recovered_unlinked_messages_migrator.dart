@@ -1,8 +1,9 @@
+import '../../../../core/util/date_converter.dart';
 import '../../domain/base_table_migrator.dart';
 import '../../infrastructure/sqlite/migration_context_sqlite.dart';
 
 String _unixSecondsToWorkingTimestamp(String columnName) {
-  return "CASE WHEN $columnName IS NULL THEN NULL ELSE strftime('%Y-%m-%dT%H:%M:%SZ', $columnName, 'unixepoch') END";
+  return DateConverter.unixSecondsToIsoTextSqlExpression(columnName);
 }
 
 class RecoveredUnlinkedMessagesMigrator extends BaseTableMigrator {

@@ -12,9 +12,12 @@ import 'package:remember_this_text/essentials/db/infrastructure/data_sources/loc
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/working/working_database.dart';
 import 'package:remember_this_text/essentials/db_importers/application/debug_settings_provider.dart';
+import 'package:remember_this_text/essentials/db_importers/application/pipeline_cancellation.dart';
 import 'package:remember_this_text/essentials/db_importers/domain/ports/message_extractor_port.dart';
 import 'package:remember_this_text/essentials/db_importers/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/db_migrate/feature_level_providers.dart';
+import 'package:remember_this_text/essentials/logging/domain/pipeline_incident_report.dart';
+import 'package:remember_this_text/essentials/logging/infrastructure/pipeline_incident_storage.dart';
 import 'package:remember_this_text/essentials/search/feature_level_providers.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/entities/address_book_folder_aggregate.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/entities/address_book_folder_entity.dart';
@@ -23,7 +26,6 @@ import 'package:remember_this_text/features/address_book_folders/domain/value_ob
 import 'package:remember_this_text/features/address_book_folders/feature_level_providers.dart';
 import 'package:remember_this_text/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 const _expectedUnixTimestamp = 1704164645;
@@ -311,6 +313,86 @@ void main() {
         expect(searchResultIds.single, 1);
       },
     );
+
+    test(
+      'DbPipelineCancelledException during migration does not persist a blocking pipeline incident',
+      () async {
+        final importService = container.read(
+          orchestratedLedgerImportServiceProvider,
+        );
+        final importResult = await importService.runImport(
+          executionOwner: 'step2-current-cancelled-migration-test',
+          sourceChatDbOverride: chatDbPath,
+        );
+
+        expect(importResult.success, isTrue);
+
+        final migrationService = container.read(
+          handlesMigrationServiceProvider,
+        );
+        final migrationResult = await migrationService.run(
+          onTableProgress: (_) {
+            throw const DbPipelineCancelledException();
+          },
+        );
+
+        expect(migrationResult.success, isFalse);
+        expect(
+          migrationResult.error,
+          contains(
+            'Identity + message migration failed: $dbPipelineCancelledMessage',
+          ),
+        );
+
+        final persistedIncident = await _loadPersistedPipelineIncident(
+          overlayDb,
+        );
+        expect(
+          persistedIncident,
+          isNull,
+          reason:
+              'User cancellation must not be replayed on startup as a blocking migration incident.',
+        );
+      },
+    );
+
+    test(
+      'non-cancel migration exceptions still persist a blocking pipeline incident',
+      () async {
+        final importService = container.read(
+          orchestratedLedgerImportServiceProvider,
+        );
+        final importResult = await importService.runImport(
+          executionOwner: 'step2-current-failed-migration-test',
+          sourceChatDbOverride: chatDbPath,
+        );
+
+        expect(importResult.success, isTrue);
+
+        final migrationService = container.read(
+          handlesMigrationServiceProvider,
+        );
+        final migrationResult = await migrationService.run(
+          onTableProgress: (_) {
+            throw StateError('synthetic migration failure');
+          },
+        );
+
+        expect(migrationResult.success, isFalse);
+        expect(migrationResult.error, contains('synthetic migration failure'));
+
+        final persistedIncident = await _loadPersistedPipelineIncident(
+          overlayDb,
+        );
+        expect(persistedIncident, isNotNull);
+        expect(persistedIncident!.stage, PipelineIncidentStage.migration);
+        expect(
+          persistedIncident.entries.first.summary,
+          contains('synthetic migration failure'),
+        );
+        expect(persistedIncident.entries.first.detail, 'Mode: full');
+      },
+    );
   });
 }
 
@@ -501,4 +583,12 @@ Future<int> _workingCount(WorkingDatabase db, String tableName) async {
       .customSelect('SELECT COUNT(*) AS c FROM $tableName')
       .get();
   return (rows.single.data['c'] as int?) ?? 0;
+}
+
+Future<PipelineIncidentReport?> _loadPersistedPipelineIncident(
+  OverlayDatabase overlayDb,
+) {
+  return PipelineIncidentStorage(
+    overlayDb: Future<OverlayDatabase>.value(overlayDb),
+  ).loadLatestReport();
 }

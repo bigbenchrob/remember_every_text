@@ -66,37 +66,78 @@ class MigrationOrchestrator {
     ctx.log('Execution order: ${ordered.map((m) => m.name).join(" → ")}');
 
     for (final migrator in ordered) {
-      final stamp = DateTime.now().toIso8601String();
-      ctx.log('=== [$stamp] ${migrator.name} :: validatePrereqs ===');
-      await _runPhase(
-        ctx: ctx,
-        migrator: migrator,
-        phase: TableMigrationPhase.validatePrereqs,
-        action: () => migrator.validatePrereqs(ctx),
-        onTableProgress: onTableProgress,
-      );
+      // Install a single row-progress callback per migrator so determinate
+      // progress can be emitted from any phase (validatePrereqs, copy,
+      // postValidate). The callback reflects whichever phase is currently
+      // active via the `currentPhase` closure variable, which is updated
+      // immediately before each phase action runs.
+      TableMigrationPhase? currentPhase;
+      final displayName = _displayNameFor(migrator);
+      if (migrator is RowProgressReporter && onTableProgress != null) {
+        (migrator as RowProgressReporter).setProgressCallback(({
+          required int processed,
+          required int total,
+          String? currentItem,
+        }) {
+          final phase = currentPhase;
+          if (phase == null) {
+            return;
+          }
+          onTableProgress(
+            TableMigrationProgressEvent(
+              tableName: migrator.name,
+              displayName: displayName,
+              phase: phase,
+              status: TableMigrationStatus.inProgress,
+              rowsProcessed: processed,
+              totalRows: total,
+              currentItem: currentItem,
+            ),
+          );
+        });
+      }
 
-      if (!ctx.dryRun) {
-        ctx.log('=== ${migrator.name} :: copy ===');
+      try {
+        final stamp = DateTime.now().toIso8601String();
+        ctx.log('=== [$stamp] ${migrator.name} :: validatePrereqs ===');
+        currentPhase = TableMigrationPhase.validatePrereqs;
         await _runPhase(
           ctx: ctx,
           migrator: migrator,
-          phase: TableMigrationPhase.copy,
-          action: () => migrator.copy(ctx),
+          phase: TableMigrationPhase.validatePrereqs,
+          action: () => migrator.validatePrereqs(ctx),
           onTableProgress: onTableProgress,
         );
-      } else {
-        ctx.log('=== ${migrator.name} :: copy (skipped, dryRun) ===');
-      }
 
-      ctx.log('=== ${migrator.name} :: postValidate ===');
-      await _runPhase(
-        ctx: ctx,
-        migrator: migrator,
-        phase: TableMigrationPhase.postValidate,
-        action: () => migrator.postValidate(ctx),
-        onTableProgress: onTableProgress,
-      );
+        if (!ctx.dryRun) {
+          ctx.log('=== ${migrator.name} :: copy ===');
+          currentPhase = TableMigrationPhase.copy;
+          await _runPhase(
+            ctx: ctx,
+            migrator: migrator,
+            phase: TableMigrationPhase.copy,
+            action: () => migrator.copy(ctx),
+            onTableProgress: onTableProgress,
+          );
+        } else {
+          ctx.log('=== ${migrator.name} :: copy (skipped, dryRun) ===');
+        }
+
+        ctx.log('=== ${migrator.name} :: postValidate ===');
+        currentPhase = TableMigrationPhase.postValidate;
+        await _runPhase(
+          ctx: ctx,
+          migrator: migrator,
+          phase: TableMigrationPhase.postValidate,
+          action: () => migrator.postValidate(ctx),
+          onTableProgress: onTableProgress,
+        );
+      } finally {
+        currentPhase = null;
+        if (migrator is RowProgressReporter) {
+          (migrator as RowProgressReporter).clearProgressCallback();
+        }
+      }
     }
 
     ctx.log('Migration complete.');
@@ -157,29 +198,6 @@ class MigrationOrchestrator {
     // state before the (possibly long-running) phase action begins.
     await Future<void>.delayed(Duration.zero);
 
-    // Set up row-level progress callback for copy phase
-    if (phase == TableMigrationPhase.copy &&
-        migrator is RowProgressReporter &&
-        onTableProgress != null) {
-      (migrator as RowProgressReporter).setProgressCallback(({
-        required int processed,
-        required int total,
-        String? currentItem,
-      }) {
-        onTableProgress(
-          TableMigrationProgressEvent(
-            tableName: migrator.name,
-            displayName: displayName,
-            phase: phase,
-            status: TableMigrationStatus.inProgress,
-            rowsProcessed: processed,
-            totalRows: total,
-            currentItem: currentItem,
-          ),
-        );
-      });
-    }
-
     try {
       await ctx.ensureImportReady('$phaseLabel (preflight)');
       await action();
@@ -211,11 +229,6 @@ class MigrationOrchestrator {
         ),
       );
       rethrow;
-    } finally {
-      // Clear the row progress callback
-      if (migrator is RowProgressReporter) {
-        (migrator as RowProgressReporter).clearProgressCallback();
-      }
     }
   }
 }

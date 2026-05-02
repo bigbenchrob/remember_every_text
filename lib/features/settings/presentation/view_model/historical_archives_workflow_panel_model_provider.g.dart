@@ -7,7 +7,7 @@ part of 'historical_archives_workflow_panel_model_provider.dart';
 // **************************************************************************
 
 String _$historicalArchivesWorkflowPanelModelHash() =>
-    r'b0c3a5dce67a1b06362ec32b3fb4e82d3fec3dd1';
+    r'e1a2ee9ab4360c1a2dc54d1cc701844ee7773b53';
 
 /// See also [historicalArchivesWorkflowPanelModel].
 @ProviderFor(historicalArchivesWorkflowPanelModel)
@@ -27,7 +27,7 @@ final historicalArchivesWorkflowPanelModelProvider =
 typedef HistoricalArchivesWorkflowPanelModelRef =
     AutoDisposeProviderRef<HistoricalArchivesWorkflowPanelViewModel>;
 String _$historicalArchivesWorkflowHash() =>
-    r'5d3f55cf16e60f09c6386ccceea5deef0fc8f415';
+    r'7987cd8f30f06026ea775fe61848a3024d58b7b1';
 
 /// See also [HistoricalArchivesWorkflow].
 @ProviderFor(HistoricalArchivesWorkflow)

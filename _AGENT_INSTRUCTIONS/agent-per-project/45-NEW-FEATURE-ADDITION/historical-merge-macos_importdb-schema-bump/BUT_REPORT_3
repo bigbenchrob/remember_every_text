@@ -1,0 +1,91 @@
+COPYABLE HANDOFF TO AGENT
+
+Diagnose migration failure on startup without modifying behavior.
+
+⸻
+
+Goal
+
+Identify the exact cause of the migration failure shown on startup:
+
+“Identity + message migration failed: Canceled by user. Mode: incremental”
+
+Determine whether this is:
+
+- a real user cancellation
+- a false-positive cancellation
+- a side-effect of recent progress/reporting changes
+- or a stale/inconsistent state from a prior run
+
+⸻
+
+Scope
+
+- Investigate only:
+  - migration orchestrator
+  - messages_migrator
+  - execution gate / cancellation handling
+  - startup path that led to this error surface
+- Trace:
+  - how “Canceled by user” is produced
+  - what code path sets this message
+  - whether a cancellation token was actually triggered
+- Inspect:
+  - whether working.db was marked incomplete (from previous slice)
+  - whether migration was re-triggered on startup
+  - whether incremental mode was unexpectedly used
+
+⸻
+
+Required Output
+
+Provide a structured diagnosis:
+
+1. Root cause hypothesis
+
+- Where exactly the “Canceled by user” originates
+- Whether it reflects a real cancel event
+
+2. State analysis
+
+- Was there a partially completed migration?
+- Did the new projection_state logic influence this?
+- Was execution gate involved?
+
+3. Reproduction path
+
+- What sequence likely led to this screen
+
+4. Confidence level
+
+- high / medium / low
+
+⸻
+
+Non-goals (strict)
+
+- Do NOT modify any code
+- Do NOT implement fixes
+- Do NOT change migration behavior
+- Do NOT change UI
+
+⸻
+
+Acceptance Criteria
+
+- Clear explanation of why this error is shown
+- Clear determination: real cancel vs false signal
+- No code changes made
+
+⸻
+
+Notes
+
+This is a diagnostic slice only.
+
+We are validating:
+
+- whether recent slices (projection_state, progress changes) introduced a regression
+- whether cancellation handling is incorrectly triggered
+
+Do not fix yet — only explain.

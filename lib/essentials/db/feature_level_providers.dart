@@ -57,6 +57,13 @@ Future<SqfliteImportDatabase> sqfliteImportDatabase(
   // Ensure the database file is created immediately so dependent services can query schema metadata.
   await database.database;
 
+  // Reconcile orphaned import batches left in `status = 'running'` by a
+  // previous process that crashed or was force-quit mid-import. After this
+  // point no live execution owner exists for them, so they are marked as
+  // failed. Runs once per provider lifetime (and the provider is keepAlive,
+  // so once per app launch in normal flow).
+  await database.reconcileOrphanedRunningBatches();
+
   ref.onDispose(() async {
     await database.close();
   });
@@ -79,6 +86,45 @@ Future<WorkingDatabase> driftWorkingDatabase(
   await database.doWhenOpened((_) async {
     await database.customStatement('PRAGMA foreign_keys = ON');
   });
+
+  // Read-only suspect-state check: if projection_state is missing, has no
+  // row, or its completion_status != 'complete', working.db cannot be
+  // assumed to represent a fully completed migration. For this slice we
+  // only log; we do not auto-rebuild.
+  try {
+    final completion = await database.readProjectionCompletion();
+    final logger = ref.read(appLoggerProvider.notifier);
+    if (completion == null) {
+      logger.warn(
+        'working.db projection_state is missing — treating as suspect',
+        source: 'WorkingDbProvider',
+      );
+    } else if (!completion.isComplete) {
+      logger.warn(
+        "working.db projection_state.completion_status='${completion.status}' "
+        '— treating as suspect (lastCompletedBatchId='
+        '${completion.lastCompletedBatchId}, completedAtUtc='
+        '${completion.completedAtUtc})',
+        source: 'WorkingDbProvider',
+      );
+    } else {
+      logger.debug(
+        'working.db projection_state OK (lastCompletedBatchId='
+        '${completion.lastCompletedBatchId}, completedAtUtc='
+        '${completion.completedAtUtc})',
+        source: 'WorkingDbProvider',
+      );
+    }
+  } catch (error, stackTrace) {
+    ref
+        .read(appLoggerProvider.notifier)
+        .warn(
+          'working.db projection_state probe failed — treating as suspect: '
+          '$error',
+          source: 'WorkingDbProvider',
+          context: <String, dynamic>{'stackTrace': stackTrace.toString()},
+        );
+  }
 
   ref.onDispose(() async {
     ref
