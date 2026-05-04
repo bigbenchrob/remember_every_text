@@ -1,3 +1,11 @@
+## Data Pipeline Invariants
+
+See:
+
+CANONICAL-ARCHITECTURE/60-DATA-PIPELINE-INVARIANTS/10-PIPELINE-INVARIANTS-CORE.md
+
+These define non-negotiable rules governing data ingestion, projection, and UI access.
+
 TL;DR
 
 These rules are non-negotiable. Specs are declarative. Durable state is separate from ephemeral projection. Coordinators do not leak widgets. Topology is reconstructed through approved local spec rules, not procedural branch assembly. Rendering is downstream.
@@ -74,16 +82,16 @@ Reconciliation is a required defensive backstop until projection paths are fully
 
 These are architectural violations:
 
-* feature coordinator returns a sidebar card widget
-* app-level coordinator embeds business logic
-* resolver receives a whole spec and reinterprets routing already done by the coordinator
-* feature imports another feature's resolver or widget builder
-* sidebar rack is scanned to determine selected contact when flow state owns that value
-* a panel remains open after the active sidebar flow makes it semantically invalid
-* ephemeral confirmation flow is written into durable flow state
-* topology builds a list of cassette specs instead of returning one next child
-* widget builder performs IO or decides navigation
-* surface state stores built widget subtrees as if they were semantic state
+- feature coordinator returns a sidebar card widget
+- app-level coordinator embeds business logic
+- resolver receives a whole spec and reinterprets routing already done by the coordinator
+- feature imports another feature's resolver or widget builder
+- sidebar rack is scanned to determine selected contact when flow state owns that value
+- a panel remains open after the active sidebar flow makes it semantically invalid
+- ephemeral confirmation flow is written into durable flow state
+- topology builds a list of cassette specs instead of returning one next child
+- widget builder performs IO or decides navigation
+- surface state stores built widget subtrees as if they were semantic state
 
 ## Common failure modes
 
@@ -213,35 +221,35 @@ scopeToggle + durable scope -> next handleFilter or recovered info
 
 Before implementing any spec-system change:
 
-* read [00-overview.md](00-overview.md)
-* read the relevant canonical surface doc
-* read this document
-* identify whether the change touches durable state, specs, coordinators, resolvers, payloads, or rendering
+- read [00-overview.md](00-overview.md)
+- read the relevant canonical surface doc
+- read this document
+- identify whether the change touches durable state, specs, coordinators, resolvers, payloads, or rendering
 
 During implementation:
 
-* keep edits in the owning layer
-* use barrel-only feature imports
-* preserve two-level sealed specs
-* keep widget construction downstream
-* preserve stable vs ephemeral separation
-* use approved state provider APIs for surface changes
+- keep edits in the owning layer
+- use barrel-only feature imports
+- preserve two-level sealed specs
+- keep widget construction downstream
+- preserve stable vs ephemeral separation
+- use approved state provider APIs for surface changes
 
 During review:
 
-* reject widget leakage across coordinator boundaries
-* reject direct feature-to-feature imports
-* reject procedural rack reconstruction
-* reject hidden durable state in widgets
-* reject ephemeral state written into durable flow
-* require reconciliation for dependent surfaces that can become stale
+- reject widget leakage across coordinator boundaries
+- reject direct feature-to-feature imports
+- reject procedural rack reconstruction
+- reject hidden durable state in widgets
+- reject ephemeral state written into durable flow
+- require reconciliation for dependent surfaces that can become stale
 
 ## Reference material
 
 For detailed subsystem rules, use:
 
-* [REFERENCE/50-CROSS-SURFACE-SPEC-SYSTEMS-OVERVIEW/INVIOLATE_RULES.md](../REFERENCE/50-CROSS-SURFACE-SPEC-SYSTEMS-OVERVIEW/INVIOLATE_RULES.md)
-* [REFERENCE/54-SIDEBAR-CASSETTE-SPEC-SYSTEM/INVIOLATE_RULES.md](../REFERENCE/54-SIDEBAR-CASSETTE-SPEC-SYSTEM/INVIOLATE_RULES.md)
-* [REFERENCE/55-EPHEMERAL-SPEC-HANDLING/INVIOLATE_RULES.md](../REFERENCE/55-EPHEMERAL-SPEC-HANDLING/INVIOLATE_RULES.md)
-* [REFERENCE/55-EPHEMERAL-SPEC-HANDLING/INVIOLATE_TOPOLOGY_CONTRACT.md](../REFERENCE/55-EPHEMERAL-SPEC-HANDLING/INVIOLATE_TOPOLOGY_CONTRACT.md)
-* [REFERENCE/56-VIEW-SPEC-PANEL-CONTENT-SYSTEM/INVIOLATE_RULES.md](../REFERENCE/56-VIEW-SPEC-PANEL-CONTENT-SYSTEM/INVIOLATE_RULES.md)
+- [REFERENCE/50-CROSS-SURFACE-SPEC-SYSTEMS-OVERVIEW/INVIOLATE_RULES.md](../REFERENCE/50-CROSS-SURFACE-SPEC-SYSTEMS-OVERVIEW/INVIOLATE_RULES.md)
+- [REFERENCE/54-SIDEBAR-CASSETTE-SPEC-SYSTEM/INVIOLATE_RULES.md](../REFERENCE/54-SIDEBAR-CASSETTE-SPEC-SYSTEM/INVIOLATE_RULES.md)
+- [REFERENCE/55-EPHEMERAL-SPEC-HANDLING/INVIOLATE_RULES.md](../REFERENCE/55-EPHEMERAL-SPEC-HANDLING/INVIOLATE_RULES.md)
+- [REFERENCE/55-EPHEMERAL-SPEC-HANDLING/INVIOLATE_TOPOLOGY_CONTRACT.md](../REFERENCE/55-EPHEMERAL-SPEC-HANDLING/INVIOLATE_TOPOLOGY_CONTRACT.md)
+- [REFERENCE/56-VIEW-SPEC-PANEL-CONTENT-SYSTEM/INVIOLATE_RULES.md](../REFERENCE/56-VIEW-SPEC-PANEL-CONTENT-SYSTEM/INVIOLATE_RULES.md)
