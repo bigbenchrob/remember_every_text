@@ -187,5 +187,168 @@ void main() {
         expect(rows[1].data['c'], 1);
       },
     );
+
+    test(
+      'incremental migration removes stale projected attachment rows and keeps valid siblings',
+      () async {
+        const importChatId = 18;
+        const importMessageId = 301;
+        const messageGuid = 'message-guid-attachments-stale-1';
+        const sentAtUtc = '2024-02-03T04:05:06Z';
+        const validAttachmentId = 401;
+        const staleAttachmentId = 402;
+
+        final batchId = await importDb.insertImportBatch(
+          startedAtUtc: DateTime.now().toUtc().toIso8601String(),
+        );
+
+        await importDb.insertChat(
+          id: importChatId,
+          guid: 'import-chat-guid-attachments-stale-1',
+          service: 'iMessage',
+          batchId: batchId,
+        );
+
+        await importDb.insertMessage(
+          id: importMessageId,
+          guid: messageGuid,
+          chatId: importChatId,
+          service: 'iMessage',
+          isFromMe: true,
+          dateUtc: sentAtUtc,
+          text: 'Attachment stale-row regression test',
+          hasAttributedBodySource: false,
+          hasMessageSummaryInfo: false,
+          hasPayloadDataSource: false,
+          itemType: 'text',
+          isSystemMessage: false,
+          batchId: batchId,
+        );
+
+        await importDb.insertAttachment(
+          id: validAttachmentId,
+          transferName: 'valid.png',
+          mimeType: 'image/png',
+          localPath: '/tmp/valid.png',
+          batchId: batchId,
+        );
+        await importDb.insertMessageAttachment(
+          messageId: importMessageId,
+          attachmentId: validAttachmentId,
+        );
+
+        await workingDb.customStatement('''
+          INSERT INTO chats (id, guid, service)
+          VALUES ($importChatId, 'working-chat-guid-attachments-stale-1', 'iMessage')
+        ''');
+
+        await workingDb.customStatement('''
+          INSERT INTO messages (
+            id,
+            guid,
+            chat_id,
+            is_from_me,
+            sent_at_utc,
+            text,
+            status,
+            has_attachments,
+            is_system_message,
+            is_sparse_artifact,
+            has_attributed_body_source,
+            has_message_summary_info,
+            has_payload_data_source
+          ) VALUES (
+            $importMessageId,
+            '$messageGuid',
+            $importChatId,
+            1,
+            '$sentAtUtc',
+            'Attachment stale-row regression test',
+            'unknown',
+            1,
+            0,
+            0,
+            0,
+            0,
+            0
+          )
+        ''');
+
+        await workingDb.customStatement('''
+          INSERT INTO attachments (
+            message_guid,
+            import_attachment_id,
+            local_path,
+            mime_type,
+            transfer_name,
+            is_sticker,
+            is_outgoing
+          ) VALUES
+            ('$messageGuid', $validAttachmentId, '/tmp/valid.png', 'image/png', 'valid.png', 0, 0),
+            ('$messageGuid', $staleAttachmentId, '/tmp/stale.png', 'image/png', 'stale.png', 0, 0)
+        ''');
+
+        final context = MigrationContextSqlite(
+          importDb: importDb,
+          workingDb: workingDb,
+          incrementalMode: true,
+          log: (_) {},
+        );
+        const migrator = AttachmentsMigrator();
+
+        await migrator.validatePrereqs(context);
+        await migrator.copy(context);
+        await migrator.postValidate(context);
+
+        final rows = await workingDb
+            .customSelect(
+              '''
+          SELECT import_attachment_id, COUNT(*) AS c
+          FROM attachments
+          WHERE message_guid = ?
+          GROUP BY import_attachment_id
+          ORDER BY import_attachment_id
+        ''',
+              variables: [const drift.Variable<String>(messageGuid)],
+            )
+            .get();
+
+        expect(rows, hasLength(1));
+        expect(rows.single.data['import_attachment_id'], validAttachmentId);
+        expect(rows.single.data['c'], 1);
+
+        final staleCount = await workingDb
+            .customSelect(
+              '''
+          SELECT COUNT(*) AS c
+          FROM attachments
+          WHERE message_guid = ? AND import_attachment_id = ?
+        ''',
+              variables: [
+                const drift.Variable<String>(messageGuid),
+                const drift.Variable<int>(staleAttachmentId),
+              ],
+            )
+            .getSingle();
+        expect(staleCount.data['c'], 0);
+
+        final duplicatePairs = await workingDb.customSelect('''
+          SELECT COUNT(*) AS c
+          FROM (
+            SELECT message_guid, import_attachment_id, COUNT(*) AS pair_count
+            FROM attachments
+            WHERE import_attachment_id IS NOT NULL
+            GROUP BY message_guid, import_attachment_id
+            HAVING COUNT(*) > 1
+          )
+        ''').getSingle();
+        expect(duplicatePairs.data['c'], 0);
+
+        final totalCount = await workingDb
+            .customSelect('SELECT COUNT(*) AS c FROM attachments')
+            .getSingle();
+        expect(totalCount.data['c'], 1);
+      },
+    );
   });
 }

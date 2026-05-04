@@ -117,6 +117,15 @@ class AttachmentsMigrator extends BaseTableMigrator {
 
   @override
   Future<void> postValidate(IMigrationContext ctx) async {
+    if (ctx.incrementalMode) {
+      final removedStaleRows = await _removeStaleProjectedAttachments(ctx);
+      if (removedStaleRows > 0) {
+        ctx.log(
+          '[attachments] removed $removedStaleRows stale projected attachment row(s) before validation',
+        );
+      }
+    }
+
     final expected = await _countProjectableAttachments(ctx);
     final projected = await count(ctx.workingDb, 'attachments');
     ctx.log('[attachments] expected=$expected projected=$projected');
@@ -206,6 +215,31 @@ class AttachmentsMigrator extends BaseTableMigrator {
         .customSelect('SELECT changes() AS c')
         .get();
     return _extractCount(rows, 'c');
+  }
+
+  Future<int> _removeStaleProjectedAttachments(IMigrationContext ctx) async {
+    return _withAttachedImport(ctx, () async {
+      await ctx.workingDb.customStatement('''
+        DELETE FROM attachments
+        WHERE import_attachment_id IS NOT NULL
+          AND LENGTH(TRIM(message_guid)) > 0
+          AND NOT EXISTS (
+            SELECT 1
+            FROM $_attachAlias.message_attachments ma
+            JOIN $_attachAlias.attachments a ON a.id = ma.attachment_id
+            JOIN messages wm ON wm.id = ma.message_id
+            WHERE wm.guid IS NOT NULL
+              AND LENGTH(TRIM(wm.guid)) > 0
+              AND wm.guid = attachments.message_guid
+              AND a.id = attachments.import_attachment_id
+          )
+      ''');
+
+      final rows = await ctx.workingDb
+          .customSelect('SELECT changes() AS c')
+          .get();
+      return _extractCount(rows, 'c');
+    });
   }
 
   Future<T> _withAttachedImport<T>(
