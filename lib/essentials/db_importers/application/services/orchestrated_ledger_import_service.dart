@@ -53,6 +53,7 @@ class OrchestratedLedgerImportService {
   Future<DbImportResult> runImport({
     required String executionOwner,
     String? sourceChatDbOverride,
+    bool forceFullReimport = false,
     ExecutionPlanCallback? onExecutionPlan,
     TableImportProgressCallback? onTableProgress,
   }) async {
@@ -105,6 +106,18 @@ class OrchestratedLedgerImportService {
         previousMaxMessageAttachmentRowId = null;
         hasExistingLedgerData = false;
       }
+    }
+
+    if (hasExistingLedgerData && forceFullReimport) {
+      debugSettings.logProgress(
+        '$_logContext: Startup consistency probe detected a stale ledger despite equal MAX(ROWID); forcing full reimport.',
+      );
+      previousMaxHandleRowId = null;
+      previousMaxChatRowId = null;
+      previousMaxMessageRowId = null;
+      previousMaxAttachmentRowId = null;
+      previousMaxMessageAttachmentRowId = null;
+      hasExistingLedgerData = false;
     }
 
     final messagesDbPath = sourceChatDbOverride ?? pathsHelper.chatDBPath;

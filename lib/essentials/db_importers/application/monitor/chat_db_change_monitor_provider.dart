@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sqlite3/sqlite3.dart';
 
@@ -15,6 +16,56 @@ import '../../feature_level_providers.dart';
 import '../import_execution_gate_provider.dart';
 
 part 'chat_db_change_monitor_provider.g.dart';
+
+enum StartupProbeTrigger { rowIdAdvanced, ledgerCountLagging }
+
+class StartupProbeDecision {
+  const StartupProbeDecision({
+    required this.shouldSchedule,
+    required this.reason,
+    this.trigger,
+  });
+
+  final bool shouldSchedule;
+  final String reason;
+  final StartupProbeTrigger? trigger;
+}
+
+@visibleForTesting
+StartupProbeDecision resolveStartupProbeDecision({
+  required int liveMaxRowId,
+  required int? importedMaxSourceRowId,
+  required int liveImportableMessageCount,
+  required int importedMessageCount,
+}) {
+  if (importedMaxSourceRowId == null) {
+    return const StartupProbeDecision(
+      shouldSchedule: false,
+      reason: 'no imported cursor available',
+    );
+  }
+
+  if (liveMaxRowId > importedMaxSourceRowId) {
+    return const StartupProbeDecision(
+      shouldSchedule: true,
+      trigger: StartupProbeTrigger.rowIdAdvanced,
+      reason: 'live MAX(ROWID) is ahead of imported MAX(source_rowid)',
+    );
+  }
+
+  if (liveImportableMessageCount > importedMessageCount) {
+    return const StartupProbeDecision(
+      shouldSchedule: true,
+      trigger: StartupProbeTrigger.ledgerCountLagging,
+      reason: 'live importable message count exceeds imported message count',
+    );
+  }
+
+  return const StartupProbeDecision(
+    shouldSchedule: false,
+    reason: 'ledger cursor and importable message count are current',
+  );
+}
 
 class ChatDbChangeMonitorState {
   const ChatDbChangeMonitorState({
@@ -53,6 +104,7 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
   bool _pendingProbe = false;
   bool _retryWhenGateReleases = false;
   String? _chatDbPath;
+  StartupProbeTrigger? _pendingProbeTrigger;
 
   @override
   ChatDbChangeMonitorState build() {
@@ -99,22 +151,40 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
   /// the first polling interval (15 seconds).
   Future<void> _checkForNewMessagesOnStartup(String chatDbPath) async {
     try {
+      final importDb = await ref.read(sqfliteImportDatabaseProvider.future);
       final currentMaxRowId = _readMaxRowId(chatDbPath);
-      final previousMaxRowId = state.lastMaxRowId;
+      final importedMaxRowId = await importDb.getMaxImportedMessageRowId();
+      final liveImportableMessageCount = _readImportableMessageCount(
+        chatDbPath,
+      );
+      final importedMessageCount = await importDb.getImportedMessageCount();
+      final decision = resolveStartupProbeDecision(
+        liveMaxRowId: currentMaxRowId,
+        importedMaxSourceRowId: importedMaxRowId,
+        liveImportableMessageCount: liveImportableMessageCount,
+        importedMessageCount: importedMessageCount,
+      );
+      final summary =
+          'Startup consistency probe: '
+          'live MAX(ROWID)=$currentMaxRowId, '
+          'imported MAX(source_rowid)=${importedMaxRowId ?? 'null'}, '
+          'live importable count=$liveImportableMessageCount, '
+          'imported message count=$importedMessageCount. '
+          'Reason: ${decision.reason}.';
 
-      if (previousMaxRowId != null && currentMaxRowId > previousMaxRowId) {
+      if (decision.shouldSchedule && decision.trigger != null) {
         ref
             .read(appLoggerProvider.notifier)
             .info(
-              'Startup check: new messages detected (MAX ROWID: $previousMaxRowId → $currentMaxRowId)',
+              '$summary Scheduling incremental import/migration.',
               source: 'ChatDbMonitor',
             );
-        _scheduleProbe();
+        _scheduleProbe(trigger: decision.trigger!);
       } else {
         ref
             .read(appLoggerProvider.notifier)
-            .debug(
-              'Startup check: no new messages (MAX ROWID: $currentMaxRowId)',
+            .info(
+              '$summary No incremental work scheduled.',
               source: 'ChatDbMonitor',
             );
       }
@@ -149,7 +219,7 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
         final previousMaxRowId = state.lastMaxRowId;
 
         if (previousMaxRowId != null && currentMaxRowId > previousMaxRowId) {
-          _scheduleProbe();
+          _scheduleProbe(trigger: StartupProbeTrigger.rowIdAdvanced);
         }
       } catch (error) {
         // Silently continue on polling errors
@@ -206,8 +276,15 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
     }
   }
 
-  void _scheduleProbe() {
+  void _scheduleProbe({required StartupProbeTrigger trigger}) {
     _pendingProbe = true;
+    _pendingProbeTrigger = switch ((_pendingProbeTrigger, trigger)) {
+      (StartupProbeTrigger.ledgerCountLagging, _) =>
+        StartupProbeTrigger.ledgerCountLagging,
+      (_, StartupProbeTrigger.ledgerCountLagging) =>
+        StartupProbeTrigger.ledgerCountLagging,
+      _ => trigger,
+    };
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 350), () {
       unawaited(_processPendingChanges());
@@ -232,11 +309,18 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
     try {
       while (_pendingProbe) {
         _pendingProbe = false;
+        final pendingTrigger =
+            _pendingProbeTrigger ?? StartupProbeTrigger.rowIdAdvanced;
+        _pendingProbeTrigger = null;
 
         final currentMaxRowId = _readMaxRowId(chatDbPath);
         final previousMaxRowId = state.lastMaxRowId;
+        final shouldBypassRowIdGate =
+            pendingTrigger == StartupProbeTrigger.ledgerCountLagging;
 
-        if (previousMaxRowId != null && currentMaxRowId <= previousMaxRowId) {
+        if (!shouldBypassRowIdGate &&
+            previousMaxRowId != null &&
+            currentMaxRowId <= previousMaxRowId) {
           continue;
         }
 
@@ -253,7 +337,9 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
         ref
             .read(appLoggerProvider.notifier)
             .info(
-              'New messages detected: $newMessageCount message(s), MAX(ROWID): $previousMaxRowId → $currentMaxRowId',
+              shouldBypassRowIdGate
+                  ? 'Ledger inconsistency detected: live/imported counts diverged while MAX(ROWID) remained $currentMaxRowId. Running recovery import.'
+                  : 'New messages detected: $newMessageCount message(s), MAX(ROWID): $previousMaxRowId → $currentMaxRowId',
               source: 'ChatDbMonitor',
             );
 
@@ -268,6 +354,8 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
         final importService = ref.read(orchestratedLedgerImportServiceProvider);
         final importResult = await importService.runImport(
           executionOwner: 'chat-db-monitor',
+          forceFullReimport:
+              pendingTrigger == StartupProbeTrigger.ledgerCountLagging,
         );
 
         if (_isImportExecutionDenied(importResult)) {
@@ -420,6 +508,43 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
     }
   }
 
+  int _readImportableMessageCount(String chatDbPath) {
+    try {
+      final db = sqlite3.open(chatDbPath, mode: OpenMode.readOnly);
+      try {
+        db.execute('PRAGMA query_only = ON;');
+        db.execute('PRAGMA busy_timeout = 3000;');
+        final result = db.select('''
+SELECT COUNT(*) AS importable_message_count
+FROM message
+WHERE guid IS NOT NULL AND LENGTH(TRIM(guid)) > 0;
+''');
+        if (result.isEmpty || result.first.values.isEmpty) {
+          throw const FormatException(
+            'importable message count query returned no rows',
+          );
+        }
+        final value = result.first.values.first;
+        if (value == null) {
+          return 0;
+        }
+        if (value is int) {
+          return value;
+        }
+        if (value is num) {
+          return value.toInt();
+        }
+        return int.parse('$value');
+      } finally {
+        db.dispose();
+      }
+    } on SqliteException catch (error) {
+      throw Exception(
+        'SQLite error while counting importable messages (${error.extendedResultCode}): $error',
+      );
+    }
+  }
+
   void _handleError(String message, StackTrace? stackTrace) {
     state = state.copyWith(lastError: message);
     ref
@@ -447,7 +572,7 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
           'Execution gate released. Retrying pending incremental import immediately',
           source: 'ChatDbMonitor',
         );
-    _scheduleProbe();
+    _scheduleProbe(trigger: StartupProbeTrigger.rowIdAdvanced);
   }
 
   void _restoreStableCursor({

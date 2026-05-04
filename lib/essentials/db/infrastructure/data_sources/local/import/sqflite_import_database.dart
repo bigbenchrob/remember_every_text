@@ -319,6 +319,30 @@ SELECT MAX(source_rowid) AS max_rowid FROM (
     return result.first['max_rowid'] as int?;
   }
 
+  /// Returns the total number of importable source messages currently tracked
+  /// by the ledger across linked and recovered-unlinked tables.
+  Future<int> getImportedMessageCount() async {
+    final db = await database;
+    final result = await db.rawQuery('''
+SELECT (
+  SELECT COUNT(*) FROM messages
+) + (
+  SELECT COUNT(*) FROM recovered_unlinked_messages
+) AS message_count
+''');
+    if (result.isEmpty || result.first['message_count'] == null) {
+      return 0;
+    }
+    final value = result.first['message_count'];
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    return int.tryParse('$value') ?? 0;
+  }
+
   Future<int?> insertSchemaMigration({
     required int version,
     required String appliedAtUtc,
