@@ -61,3 +61,13 @@ Use [`00-GLOBAL/AGENT-PROMPT-HARNESS.md`](00-GLOBAL/AGENT-PROMPT-HARNESS.md) bef
 5. **Reference cross-surface patterns.** When designing new essentials systems (onboarding, tooltips, help, etc.), read `50-CROSS-SURFACE-SPEC-SYSTEMS-OVERVIEW/` and `52-FEATURE-HANDLING-OF-X-SURFACE-SPECS/` to apply the proven routing and responsibility pattern. This keeps systems independent and prevents feature code from polluting global space.
 
 Maintaining this index keeps new contributors oriented and ensures automation can scaffold future projects from a consistent layout.
+
+## Environment Safety
+
+For MessageLens data-mutating work, use:
+
+- `50-ENVIRONMENT-SAFETY/10-snapshot-protocol.md`
+- `50-ENVIRONMENT-SAFETY/20-recovery-protocol.md`
+- `50-ENVIRONMENT-SAFETY/30-experimental-workflow.md`
+
+Agents must follow these protocols before modifying import, migration, database, archive, reset, or Application Support data behavior.
