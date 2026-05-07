@@ -73,13 +73,7 @@ Future<List<ContactSummary>> contactsListRepository(Ref ref) async {
     overlayDb,
   );
 
-  final participantsQuery = workingDb.select(workingDb.workingParticipants)
-    ..where(
-      (tbl) => drift.existsQuery(
-        workingDb.select(workingDb.handleToParticipant)
-          ..where((h2p) => h2p.participantId.equalsExp(tbl.id)),
-      ),
-    );
+  final participantsQuery = workingDb.select(workingDb.workingParticipants);
 
   participantsQuery.orderBy([
     (tbl) => drift.OrderingTerm(expression: tbl.displayName),
@@ -116,10 +110,6 @@ Future<List<ContactSummary>> contactsListRepository(Ref ref) async {
 
     if (overlayHandleIds != null && overlayHandleIds.isNotEmpty) {
       handleIds.addAll(overlayHandleIds);
-    }
-
-    if (handleIds.isEmpty) {
-      continue;
     }
 
     final metrics = await _calculateMetrics(

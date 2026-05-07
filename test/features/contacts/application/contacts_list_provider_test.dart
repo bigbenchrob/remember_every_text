@@ -146,5 +146,35 @@ void main() {
       expect(virtualEntry.handleCount, equals(1));
       expect(virtualEntry.isVirtual, isTrue);
     });
+
+    test(
+      'includes unlinked working participants in enhanced picker data',
+      () async {
+        final participantId = await workingDb
+            .into(workingDb.workingParticipants)
+            .insert(
+              WorkingParticipantsCompanion.insert(
+                originalName: 'Unlinked Person',
+                displayName: 'Unlinked Person',
+                shortName: 'Unlinked',
+              ),
+            );
+
+        final results = await container.read(
+          contactsListRepositoryProvider.future,
+        );
+
+        expect(results, hasLength(1));
+
+        final entry = results.single;
+        expect(entry.participantId, participantId);
+        expect(entry.displayName, 'Unlinked Person');
+        expect(entry.origin, ParticipantOrigin.working);
+        expect(entry.handleCount, 0);
+        expect(entry.totalChats, 0);
+        expect(entry.totalMessages, 0);
+        expect(entry.lastMessageDate, isNull);
+      },
+    );
   });
 }
