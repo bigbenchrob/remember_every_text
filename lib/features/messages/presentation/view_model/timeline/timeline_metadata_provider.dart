@@ -101,6 +101,15 @@ Future<TimelineMetadata> timelineMetadata(
     return _buildRecoveredMetadata(filteredMessages);
   }
 
+  final readiness = await ref.watch(workingProjectionReadinessProvider.future);
+  if (!readiness.isReady) {
+    return const TimelineMetadata(
+      totalMessages: 0,
+      firstMessageDate: null,
+      lastMessageDate: null,
+    );
+  }
+
   final db = await ref.watch(driftWorkingDatabaseProvider.future);
 
   return switch (scope) {

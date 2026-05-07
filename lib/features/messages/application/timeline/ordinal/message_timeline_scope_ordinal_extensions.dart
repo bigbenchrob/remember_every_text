@@ -40,6 +40,15 @@ extension MessageTimelineScopeOrdinalResolution on MessageTimelineScope {
       return RecoveredListOrdinalStrategy(filteredMessages);
     }
 
+    final readiness = await ref.watch(
+      workingProjectionReadinessProvider.future,
+    );
+    if (!readiness.isReady) {
+      return RecoveredListOrdinalStrategy(
+        const <RecoveredUnlinkedMessageItem>[],
+      );
+    }
+
     final db = await ref.watch(driftWorkingDatabaseProvider.future);
     return toOrdinalStrategy(db);
   }

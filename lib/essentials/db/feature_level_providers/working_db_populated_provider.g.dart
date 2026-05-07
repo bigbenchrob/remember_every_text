@@ -7,9 +7,9 @@ part of 'working_db_populated_provider.dart';
 // **************************************************************************
 
 String _$workingDbPopulatedHash() =>
-    r'd608ddc7d49bf53d4bb81a99c242f3b2997c7bd7';
+    r'7dcecf4f85ee4a36a891b28af40de1245b38c919';
 
-/// Whether `working.db` contains data (file exists and is non-empty).
+/// Whether `working.db` contains a completed projection.
 ///
 /// Watches [messageDataVersionProvider] so it re-evaluates after migration
 /// bumps that signal. Used to gate sidebar cascades and the top menu prompt

@@ -26,6 +26,11 @@ Future<ContactProfileSummary?> contactProfile(
   ContactProfileRef ref, {
   required int contactId,
 }) async {
+  final readiness = await ref.watch(workingProjectionReadinessProvider.future);
+  if (!readiness.isReady) {
+    return null;
+  }
+
   final workingDb = await ref.watch(driftWorkingDatabaseProvider.future);
   final overlayDb = await ref.watch(overlayDatabaseProvider.future);
 

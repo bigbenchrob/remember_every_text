@@ -18,6 +18,11 @@ Future<MessageListItem?> messageByOrdinal(
   required int chatId,
   required int ordinal,
 }) async {
+  final readiness = await ref.watch(workingProjectionReadinessProvider.future);
+  if (!readiness.isReady) {
+    return null;
+  }
+
   final db = await ref.watch(driftWorkingDatabaseProvider.future);
   final overlayDb = await ref.watch(overlayDatabaseProvider.future);
   final nameOverrides = await displayNameOverridesMap(overlayDb);

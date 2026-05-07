@@ -38,6 +38,10 @@ Future<List<ParticipantForPicker>> participantsForPicker(
   required String searchQuery,
 }) async {
   final normalizedQuery = searchQuery.trim().toLowerCase();
+  final readiness = await ref.watch(workingProjectionReadinessProvider.future);
+  if (!readiness.isReady) {
+    return const <ParticipantForPicker>[];
+  }
 
   final workingDb = await ref.watch(driftWorkingDatabaseProvider.future);
   final overlayDb = await ref.watch(overlayDatabaseProvider.future);

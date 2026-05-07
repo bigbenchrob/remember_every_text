@@ -33,7 +33,7 @@ class ContactGroupedPickerWidget extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     useEffect(() {
-      unawaited(ref.read(driftWorkingDatabaseProvider.future));
+      unawaited(ref.read(workingProjectionReadinessProvider.future));
       unawaited(ref.read(overlayDatabaseProvider.future));
       return null;
     }, const []);

@@ -39,6 +39,11 @@ Future<SearchResultContextState> searchResultContext(
   required int beforeCount,
   required int afterCount,
 }) async {
+  final readiness = await ref.watch(workingProjectionReadinessProvider.future);
+  if (!readiness.isReady) {
+    return const SearchResultContextState.missing();
+  }
+
   final db = await ref.watch(driftWorkingDatabaseProvider.future);
   final overlayDb = await ref.watch(overlayDatabaseProvider.future);
   final nameOverrides = await displayNameOverridesMap(overlayDb);

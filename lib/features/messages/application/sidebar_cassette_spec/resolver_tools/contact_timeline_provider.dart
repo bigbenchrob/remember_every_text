@@ -26,6 +26,10 @@ Future<CalendarHeatmapTimelineData?> contactTimeline(
       scope: MessageTimelineScope.contact(contactId: contactId),
     ),
   );
+  final readiness = await ref.watch(workingProjectionReadinessProvider.future);
+  if (!readiness.isReady) {
+    return null;
+  }
 
   final db = await ref.watch(driftWorkingDatabaseProvider.future);
 

@@ -56,6 +56,10 @@ Future<List<int>> pendingContactTimelineMessageIds(
     messageTimelineOrdinalProvider(scope: scope).future,
   );
   final displayedCount = displayedOrdinalState.totalCount;
+  final readiness = await ref.watch(workingProjectionReadinessProvider.future);
+  if (!readiness.isReady) {
+    return const <int>[];
+  }
 
   final db = await ref.watch(driftWorkingDatabaseProvider.future);
   final strategy = scope.toOrdinalStrategy(db);

@@ -7,7 +7,7 @@ part of 'global_message_timeline_provider.dart';
 // **************************************************************************
 
 String _$globalTimelineBoundsHash() =>
-    r'b0a3864dd08c557de0c601d8f0192c6444cac6e8';
+    r'951cf79ae52ac37a5c4c2549c7d4b6d535b91b45';
 
 /// See also [globalTimelineBounds].
 @ProviderFor(globalTimelineBounds)
@@ -27,7 +27,7 @@ final globalTimelineBoundsProvider =
 typedef GlobalTimelineBoundsRef =
     AutoDisposeFutureProviderRef<GlobalTimelineBounds>;
 String _$globalTimelineOrdinalForDateHash() =>
-    r'75d5b4ffc576f996e39a20f6f1aa1f25f165d230';
+    r'53e7ae425378c646ab7bdf1c2e2eb16b95c62b6e';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -174,7 +174,7 @@ class _GlobalTimelineOrdinalForDateProviderElement
 }
 
 String _$globalMessageTimelineHash() =>
-    r'9a04026c1999b829a0a952623f730ffed863f155';
+    r'7bc83d7f2a2823febd6f6ba1c3f37d0b6b7a0eec';
 
 abstract class _$GlobalMessageTimeline
     extends BuildlessAutoDisposeAsyncNotifier<GlobalMessageTimelinePage> {

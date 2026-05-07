@@ -29,6 +29,11 @@ Future<List<MessageWithChatContext>> messagesForHandle(
   Ref ref, {
   required int handleId,
 }) async {
+  final readiness = await ref.watch(workingProjectionReadinessProvider.future);
+  if (!readiness.isReady) {
+    return const <MessageWithChatContext>[];
+  }
+
   final db = await ref.watch(driftWorkingDatabaseProvider.future);
 
   // Query messages where this handle is either:

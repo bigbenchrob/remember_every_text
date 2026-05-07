@@ -33,6 +33,11 @@ Future<List<LinkedHandle>> handlesForContact(
   Ref ref, {
   required int contactId,
 }) async {
+  final readiness = await ref.watch(workingProjectionReadinessProvider.future);
+  if (!readiness.isReady) {
+    return const <LinkedHandle>[];
+  }
+
   final workingDb = await ref.watch(driftWorkingDatabaseProvider.future);
   final overlayDb = await ref.watch(overlayDatabaseProvider.future);
 

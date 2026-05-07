@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
+import 'package:remember_this_text/essentials/db/feature_level_providers/working_projection_readiness_provider.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/working/working_database.dart';
 import 'package:remember_this_text/features/contacts/domain/participant_origin.dart';
@@ -31,6 +32,12 @@ void main() {
         overrides: [
           overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
           driftWorkingDatabaseProvider.overrideWith((ref) async => workingDb),
+          workingProjectionReadinessProvider.overrideWith(
+            (ref) async => const WorkingProjectionReadiness(
+              isReady: true,
+              reason: 'test projection ready',
+            ),
+          ),
         ],
       );
     });

@@ -73,6 +73,12 @@ Stream<List<RecoveredUnlinkedMessageItem>> recoveredUnlinkedMessages(
   Ref ref, {
   int? contactId,
 }) async* {
+  final readiness = await ref.watch(workingProjectionReadinessProvider.future);
+  if (!readiness.isReady) {
+    yield const <RecoveredUnlinkedMessageItem>[];
+    return;
+  }
+
   final db = await ref.watch(driftWorkingDatabaseProvider.future);
   final overlayDb = await ref.watch(overlayDatabaseProvider.future);
   final displayNameOverrides = await displayNameOverridesMap(overlayDb);

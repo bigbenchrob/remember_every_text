@@ -46,6 +46,12 @@ Stream<List<MessageListItem>> messagesForHandle(
   MessagesForHandleRef ref, {
   required int handleId,
 }) async* {
+  final readiness = await ref.watch(workingProjectionReadinessProvider.future);
+  if (!readiness.isReady) {
+    yield const <MessageListItem>[];
+    return;
+  }
+
   final db = await ref.watch(driftWorkingDatabaseProvider.future);
   final overlayDb = await ref.watch(overlayDatabaseProvider.future);
   final nameOverrides = await displayNameOverridesMap(overlayDb);

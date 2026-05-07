@@ -54,4 +54,67 @@ void main() {
       );
     });
   });
+
+  group('shouldAllowAutomaticIncrementalWork', () {
+    test(
+      'blocks automatic import and migration when projection is not ready',
+      () {
+        expect(
+          shouldAllowAutomaticIncrementalWork(workingProjectionReady: false),
+          isFalse,
+        );
+      },
+    );
+
+    test(
+      'preserves automatic import and migration when projection is ready',
+      () {
+        expect(
+          shouldAllowAutomaticIncrementalWork(workingProjectionReady: true),
+          isTrue,
+        );
+      },
+    );
+  });
+
+  group('gateStartupProbeDecisionForProjectionReadiness', () {
+    test(
+      'suppresses startup import and migration when projection is not ready',
+      () {
+        const wouldSchedule = StartupProbeDecision(
+          shouldSchedule: true,
+          trigger: StartupProbeTrigger.rowIdAdvanced,
+          reason: 'live MAX(ROWID) is ahead of imported MAX(source_rowid)',
+        );
+
+        final gated = gateStartupProbeDecisionForProjectionReadiness(
+          decision: wouldSchedule,
+          workingProjectionReady: false,
+        );
+
+        expect(gated.shouldSchedule, isFalse);
+        expect(gated.trigger, isNull);
+        expect(
+          gated.reason,
+          'working projection is not ready; skipping automatic incremental import/migration',
+        );
+      },
+    );
+
+    test('preserves startup import and migration when projection is ready', () {
+      const wouldSchedule = StartupProbeDecision(
+        shouldSchedule: true,
+        trigger: StartupProbeTrigger.rowIdAdvanced,
+        reason: 'live MAX(ROWID) is ahead of imported MAX(source_rowid)',
+      );
+
+      final gated = gateStartupProbeDecisionForProjectionReadiness(
+        decision: wouldSchedule,
+        workingProjectionReady: true,
+      );
+
+      expect(gated.shouldSchedule, isTrue);
+      expect(gated.trigger, StartupProbeTrigger.rowIdAdvanced);
+    });
+  });
 }

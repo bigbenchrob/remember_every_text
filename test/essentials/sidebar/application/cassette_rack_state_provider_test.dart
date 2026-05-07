@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:remember_this_text/essentials/db/feature_level_providers/working_db_populated_provider.dart';
+import 'package:remember_this_text/essentials/db/feature_level_providers/working_projection_readiness_provider.dart';
 import 'package:remember_this_text/essentials/navigation/domain/sidebar_mode.dart';
 import 'package:remember_this_text/essentials/sidebar/application/cassette_rack_state_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/application/sidebar_action_dispatcher.dart';
@@ -67,6 +68,34 @@ void main() {
         expect(
           container.read(sidebarFlowProvider).persistentSettingsContext,
           SettingsMenuActionId.textSize,
+        );
+      },
+    );
+
+    test(
+      'does not activate contacts cascade when projection is incomplete',
+      () {
+        final guardedContainer = ProviderContainer(
+          overrides: [
+            workingProjectionReadinessProvider.overrideWith(
+              (ref) async => const WorkingProjectionReadiness(
+                isReady: false,
+                reason: 'test incomplete projection',
+              ),
+            ),
+          ],
+        );
+        addTearDown(guardedContainer.dispose);
+
+        expect(
+          guardedContainer
+              .read(cassetteRackStateProvider(SidebarMode.messages))
+              .cassettes,
+          equals([
+            const CassetteSpec.sidebarUtility(
+              SidebarUtilityCassetteSpec.topChatMenu(),
+            ),
+          ]),
         );
       },
     );

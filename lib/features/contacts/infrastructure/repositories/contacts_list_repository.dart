@@ -57,6 +57,10 @@ Future<List<ContactSummary>> contactsListRepository(Ref ref) async {
 
   // Rebuild when migration or import populates new data.
   ref.watch(messageDataVersionProvider);
+  final readiness = await ref.watch(workingProjectionReadinessProvider.future);
+  if (!readiness.isReady) {
+    return const <ContactSummary>[];
+  }
 
   final workingDb = await ref.watch(driftWorkingDatabaseProvider.future);
   final overlayDb = await ref.watch(overlayDatabaseProvider.future);

@@ -10,6 +10,7 @@ import '../../../features/address_book_folders/domain/entities/address_book_fold
 import '../../../features/address_book_folders/domain/failures/more_failures/failures.dart';
 import '../../../features/address_book_folders/feature_level_providers.dart';
 import '../../db/feature_level_providers.dart';
+import '../../db/feature_level_providers/working_projection_readiness_provider.dart';
 import '../../db_importers/domain/entities/db_import_result.dart';
 import '../../db_importers/presentation/view_model/db_import_control_provider.dart';
 import '../../db_migrate/domain/entities/db_migration_result.dart';
@@ -219,6 +220,8 @@ class _OnboardingEnvironmentEvaluator {
 
     final importRowCount = await _readImportMessagesCount(importDbPath);
     final workingRowCount = await _readWorkingMessagesCount(workingDbPath);
+    final workingProjectionReadiness = const WorkingProjectionReadinessChecker()
+        .checkPath(workingDbPath);
 
     final importProbe = _probeFile(importDbPath, rowCount: importRowCount);
     final workingProbe = _probeFile(workingDbPath, rowCount: workingRowCount);
@@ -255,6 +258,7 @@ class _OnboardingEnvironmentEvaluator {
       usingPersistedImportFailure: usingPersistedImportFailure,
       usingPersistedMigrationFailure: usingPersistedMigrationFailure,
       resetAppDatabasesReason: resetAppDatabasesReason,
+      workingProjectionReady: workingProjectionReadiness.isReady,
       importProbe: importProbe,
       workingProbe: workingProbe,
     );
@@ -272,6 +276,7 @@ class _OnboardingEnvironmentEvaluator {
       usingPersistedImportFailure: usingPersistedImportFailure,
       usingPersistedMigrationFailure: usingPersistedMigrationFailure,
       resetAppDatabasesReason: resetAppDatabasesReason,
+      workingProjectionReady: workingProjectionReadiness.isReady,
       importProbe: importProbe,
       workingProbe: workingProbe,
     );
@@ -315,6 +320,7 @@ class _OnboardingEnvironmentEvaluator {
     required bool usingPersistedImportFailure,
     required bool usingPersistedMigrationFailure,
     required String? resetAppDatabasesReason,
+    required bool workingProjectionReady,
     required OnboardingDatabaseProbe importProbe,
     required OnboardingDatabaseProbe workingProbe,
   }) {
@@ -343,8 +349,12 @@ class _OnboardingEnvironmentEvaluator {
       return OnboardingEnvironmentState.migrationFailed;
     }
 
-    if (importProbe.hasData && workingProbe.hasData) {
+    if (importProbe.hasData && workingProjectionReady) {
       return OnboardingEnvironmentState.ready;
+    }
+
+    if (importProbe.hasData && workingProbe.exists && !workingProjectionReady) {
+      return OnboardingEnvironmentState.migrationFailed;
     }
 
     if (_shouldSurfaceMigrationFailure(
@@ -383,6 +393,7 @@ class _OnboardingEnvironmentEvaluator {
     required bool usingPersistedImportFailure,
     required bool usingPersistedMigrationFailure,
     required String? resetAppDatabasesReason,
+    required bool workingProjectionReady,
     required OnboardingDatabaseProbe importProbe,
     required OnboardingDatabaseProbe workingProbe,
   }) {
@@ -413,6 +424,14 @@ class _OnboardingEnvironmentEvaluator {
     }
 
     if (resetAppDatabasesReason != null) {
+      return OnboardingBlockerKind.migrationFailed;
+    }
+
+    if (state == OnboardingEnvironmentState.ready) {
+      return OnboardingBlockerKind.none;
+    }
+
+    if (importProbe.hasData && workingProbe.exists && !workingProjectionReady) {
       return OnboardingBlockerKind.migrationFailed;
     }
 

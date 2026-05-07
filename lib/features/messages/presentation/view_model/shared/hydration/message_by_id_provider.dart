@@ -21,6 +21,13 @@ Future<MessageListItem> messageById(
   return ContactTimelineScrollProbe.traceAsync(
     'provider.shared_message_by_id',
     () async {
+      final readiness = await ref.watch(
+        workingProjectionReadinessProvider.future,
+      );
+      if (!readiness.isReady) {
+        throw StateError('Working projection is not ready');
+      }
+
       final db = await ref.watch(driftWorkingDatabaseProvider.future);
       final overlayDb = await ref.watch(overlayDatabaseProvider.future);
 

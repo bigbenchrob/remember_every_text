@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 
+import '../../db/feature_level_providers/working_projection_readiness_provider.dart';
+
 /// Pure check: do `macos_import.db` and `working.db` both exist with data?
 ///
 /// Returns `true` when both files are present and non-empty (file size > 0).
@@ -15,9 +17,9 @@ class DatabaseExistenceChecker {
   /// Returns `true` if both import and working databases exist and are non-empty.
   bool hasPopulatedDatabases(String databaseDirectory) {
     final importFile = File(path.join(databaseDirectory, 'macos_import.db'));
-    final workingFile = File(path.join(databaseDirectory, 'working.db'));
+    final workingPath = path.join(databaseDirectory, 'working.db');
 
-    if (!importFile.existsSync() || !workingFile.existsSync()) {
+    if (!importFile.existsSync()) {
       return false;
     }
 
@@ -25,6 +27,9 @@ class DatabaseExistenceChecker {
     // For a robust check we'd query row counts, but file size > 4096
     // (one page) is a reasonable heuristic for "has tables with data".
     // The gate provider does the definitive row-count check if the files exist.
-    return importFile.lengthSync() > 0 && workingFile.lengthSync() > 0;
+    final workingReady = const WorkingProjectionReadinessChecker()
+        .checkPath(workingPath)
+        .isReady;
+    return importFile.lengthSync() > 0 && workingReady;
   }
 }

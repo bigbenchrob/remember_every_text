@@ -32,6 +32,29 @@ class StartupProbeDecision {
 }
 
 @visibleForTesting
+bool shouldAllowAutomaticIncrementalWork({
+  required bool workingProjectionReady,
+}) {
+  return workingProjectionReady;
+}
+
+@visibleForTesting
+StartupProbeDecision gateStartupProbeDecisionForProjectionReadiness({
+  required StartupProbeDecision decision,
+  required bool workingProjectionReady,
+}) {
+  if (!decision.shouldSchedule || workingProjectionReady) {
+    return decision;
+  }
+
+  return const StartupProbeDecision(
+    shouldSchedule: false,
+    reason:
+        'working projection is not ready; skipping automatic incremental import/migration',
+  );
+}
+
+@visibleForTesting
 StartupProbeDecision resolveStartupProbeDecision({
   required int liveMaxRowId,
   required int? importedMaxSourceRowId,
@@ -106,14 +129,17 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
   String? _chatDbPath;
   StartupProbeTrigger? _pendingProbeTrigger;
 
-  @override
+  @override //#FLOW:chatdb:build
   ChatDbChangeMonitorState build() {
     if (!Platform.isMacOS) {
       return const ChatDbChangeMonitorState();
     }
 
+    //#FLOW:chatdb:gate-listener
     ref.listen(importExecutionGateProvider, _handleExecutionGateChange);
-
+    // #FLOW:chatdb:init
+    // Resolves chat.db path and starts monitor setup.
+    //#FLOW:chatdb:init-call
     unawaited(_initialize());
 
     ref.onDispose(() {
@@ -173,6 +199,16 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
           'Reason: ${decision.reason}.';
 
       if (decision.shouldSchedule && decision.trigger != null) {
+        final gatedDecision = gateStartupProbeDecisionForProjectionReadiness(
+          decision: decision,
+          workingProjectionReady:
+              await _isWorkingProjectionReadyForAutomaticWork(),
+        );
+        if (!gatedDecision.shouldSchedule) {
+          _logWorkingProjectionNotReadySkip();
+          return;
+        }
+
         ref
             .read(appLoggerProvider.notifier)
             .info(
@@ -194,6 +230,22 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
           .read(appLoggerProvider.notifier)
           .warn('Startup check failed: $error', source: 'ChatDbMonitor');
     }
+  }
+
+  Future<bool> _isWorkingProjectionReadyForAutomaticWork() async {
+    final readiness = await ref.read(workingProjectionReadinessProvider.future);
+    return shouldAllowAutomaticIncrementalWork(
+      workingProjectionReady: readiness.isReady,
+    );
+  }
+
+  void _logWorkingProjectionNotReadySkip() {
+    ref
+        .read(appLoggerProvider.notifier)
+        .info(
+          'working projection is not ready; skipping automatic incremental import/migration.',
+          source: 'ChatDbMonitor',
+        );
   }
 
   Future<void> _primeMaxRowId(String chatDbPath) async {
@@ -312,6 +364,15 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
         final pendingTrigger =
             _pendingProbeTrigger ?? StartupProbeTrigger.rowIdAdvanced;
         _pendingProbeTrigger = null;
+
+        if (!await _isWorkingProjectionReadyForAutomaticWork()) {
+          _logWorkingProjectionNotReadySkip();
+          _restoreStableCursor(
+            previousMaxRowId: attemptPreviousMaxRowId,
+            detectedAt: attemptDetectedAt,
+          );
+          continue;
+        }
 
         final currentMaxRowId = _readMaxRowId(chatDbPath);
         final previousMaxRowId = state.lastMaxRowId;

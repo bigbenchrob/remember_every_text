@@ -13,6 +13,10 @@ Future<CalendarHeatmapTimelineData?> globalMessagesHeatmap(
 ) async {
   // Watch message data version so we rebuild when new messages are imported.
   ref.watch(messageDataVersionProvider);
+  final readiness = await ref.watch(workingProjectionReadinessProvider.future);
+  if (!readiness.isReady) {
+    return null;
+  }
 
   final db = await ref.watch(driftWorkingDatabaseProvider.future);
 

@@ -29,6 +29,13 @@ Future<MessageListItem?> messageByTimelineOrdinal(
   return ContactTimelineScrollProbe.traceAsync(
     'provider.message_by_ordinal',
     () async {
+      final readiness = await ref.watch(
+        workingProjectionReadinessProvider.future,
+      );
+      if (!readiness.isReady) {
+        return null;
+      }
+
       final strategy = await scope.resolveOrdinalStrategy(ref);
 
       ContactTimelineScrollProbe.count('ordinal_lookup.message_by_ordinal');

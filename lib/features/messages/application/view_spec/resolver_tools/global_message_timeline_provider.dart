@@ -64,6 +64,13 @@ class GlobalMessageTimeline extends _$GlobalMessageTimeline {
       throw ArgumentError.value(effectiveLimit, 'pageSize', 'Must be positive');
     }
 
+    final readiness = await ref.watch(
+      workingProjectionReadinessProvider.future,
+    );
+    if (!readiness.isReady) {
+      return const GlobalMessageTimelinePage.empty();
+    }
+
     final db = await ref.watch(driftWorkingDatabaseProvider.future);
     final dataSource = GlobalMessageIndexDataSource(db);
 
@@ -148,6 +155,11 @@ class GlobalTimelineBounds {
 Future<GlobalTimelineBounds> globalTimelineBounds(
   GlobalTimelineBoundsRef ref,
 ) async {
+  final readiness = await ref.watch(workingProjectionReadinessProvider.future);
+  if (!readiness.isReady) {
+    return const GlobalTimelineBounds();
+  }
+
   final db = await ref.watch(driftWorkingDatabaseProvider.future);
   final sentAtMin = db.globalMessageIndex.sentAtUtc.min();
   final sentAtMax = db.globalMessageIndex.sentAtUtc.max();
@@ -175,6 +187,11 @@ Future<int?> globalTimelineOrdinalForDate(
   GlobalTimelineOrdinalForDateRef ref,
   DateTime date,
 ) async {
+  final readiness = await ref.watch(workingProjectionReadinessProvider.future);
+  if (!readiness.isReady) {
+    return null;
+  }
+
   final db = await ref.watch(driftWorkingDatabaseProvider.future);
   final dataSource = GlobalMessageIndexDataSource(db);
   return dataSource.firstOrdinalOnOrAfter(date);

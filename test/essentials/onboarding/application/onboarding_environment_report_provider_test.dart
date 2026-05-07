@@ -188,6 +188,148 @@ void main() {
     });
 
     test(
+      'working database with messages but null projection state is not ready',
+      () async {
+        final messagesDbPath = _createMessagesDatabase(
+          tempDir.path,
+          messageCount: 120,
+        );
+        final addressBookPath = _createReadableFile(
+          tempDir.path,
+          'AddressBook-v22.abcddb',
+        );
+        final importDb = SqfliteImportDatabase(
+          databaseDirectory: tempDir.path,
+          databaseName: 'macos_import.db',
+          debugSettings: const ImportDebugSettingsState(),
+        );
+        addTearDown(importDb.close);
+        final batchId = await importDb.insertImportBatch(
+          startedAtUtc: DateTime.utc(2026, 03, 24).toIso8601String(),
+        );
+        await importDb.insertChat(
+          id: 1,
+          guid: 'chat-1',
+          service: 'iMessage',
+          batchId: batchId,
+        );
+        await importDb.insertMessage(
+          id: 1,
+          guid: 'message-1',
+          chatId: 1,
+          service: 'iMessage',
+          isFromMe: false,
+          text: 'message-1',
+          hasAttributedBodySource: false,
+          hasMessageSummaryInfo: false,
+          hasPayloadDataSource: false,
+          isSystemMessage: false,
+          batchId: batchId,
+        );
+        _createProjectionDatabase(
+          tempDir.path,
+          'working.db',
+          projectionComplete: false,
+        );
+
+        container = ProviderContainer(
+          overrides: [
+            overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
+            sqfliteImportDatabaseProvider.overrideWith((ref) async => importDb),
+            onboardingFullDiskAccessProvider.overrideWith((ref) => true),
+            onboardingMessagesDatabasePathProvider.overrideWith(
+              (ref) => messagesDbPath,
+            ),
+            onboardingDatabaseDirectoryPathProvider.overrideWith(
+              (ref) => tempDir.path,
+            ),
+            futureGetFolderAggregateProvider.overrideWith(
+              (ref) async => right(_addressBookAggregate(addressBookPath)),
+            ),
+          ],
+        );
+
+        final report = await container.read(
+          onboardingEnvironmentReportProvider.future,
+        );
+
+        expect(report.state, OnboardingEnvironmentState.migrationFailed);
+        expect(report.blockerKind, OnboardingBlockerKind.migrationFailed);
+      },
+    );
+
+    test(
+      'complete projection state allows normal startup classification',
+      () async {
+        final messagesDbPath = _createMessagesDatabase(
+          tempDir.path,
+          messageCount: 120,
+        );
+        final addressBookPath = _createReadableFile(
+          tempDir.path,
+          'AddressBook-v22.abcddb',
+        );
+        final importDb = SqfliteImportDatabase(
+          databaseDirectory: tempDir.path,
+          databaseName: 'macos_import.db',
+          debugSettings: const ImportDebugSettingsState(),
+        );
+        addTearDown(importDb.close);
+        final batchId = await importDb.insertImportBatch(
+          startedAtUtc: DateTime.utc(2026, 03, 24).toIso8601String(),
+        );
+        await importDb.insertChat(
+          id: 1,
+          guid: 'chat-1',
+          service: 'iMessage',
+          batchId: batchId,
+        );
+        await importDb.insertMessage(
+          id: 1,
+          guid: 'message-1',
+          chatId: 1,
+          service: 'iMessage',
+          isFromMe: false,
+          text: 'message-1',
+          hasAttributedBodySource: false,
+          hasMessageSummaryInfo: false,
+          hasPayloadDataSource: false,
+          isSystemMessage: false,
+          batchId: batchId,
+        );
+        _createProjectionDatabase(
+          tempDir.path,
+          'working.db',
+          projectionComplete: true,
+        );
+
+        container = ProviderContainer(
+          overrides: [
+            overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
+            sqfliteImportDatabaseProvider.overrideWith((ref) async => importDb),
+            onboardingFullDiskAccessProvider.overrideWith((ref) => true),
+            onboardingMessagesDatabasePathProvider.overrideWith(
+              (ref) => messagesDbPath,
+            ),
+            onboardingDatabaseDirectoryPathProvider.overrideWith(
+              (ref) => tempDir.path,
+            ),
+            futureGetFolderAggregateProvider.overrideWith(
+              (ref) async => right(_addressBookAggregate(addressBookPath)),
+            ),
+          ],
+        );
+
+        final report = await container.read(
+          onboardingEnvironmentReportProvider.future,
+        );
+
+        expect(report.state, OnboardingEnvironmentState.ready);
+        expect(report.blockerKind, OnboardingBlockerKind.none);
+      },
+    );
+
+    test(
       'flags a populated import ledger plus tiny working database for automatic reset',
       () async {
         final messagesDbPath = _createMessagesDatabase(
@@ -297,11 +439,35 @@ String _createProjectionDatabase(
   String directoryPath,
   String fileName, {
   int rowCount = 1,
+  bool projectionComplete = false,
 }) {
   final filePath = '$directoryPath/$fileName';
   final db = sqlite3.open(filePath);
   try {
     db.execute('CREATE TABLE messages (ROWID INTEGER PRIMARY KEY, value TEXT)');
+    db.execute('''
+      CREATE TABLE projection_state (
+        id INTEGER PRIMARY KEY CHECK(id=1),
+        last_import_batch_id INTEGER,
+        last_projected_at_utc TEXT,
+        last_projected_message_id INTEGER,
+        last_projected_attachment_id INTEGER
+      )
+    ''');
+    db.execute(
+      '''
+      INSERT INTO projection_state (
+        id,
+        last_import_batch_id,
+        last_projected_at_utc,
+        last_projected_message_id,
+        last_projected_attachment_id
+      ) VALUES (1, ?, ?, ?, ?)
+      ''',
+      projectionComplete
+          ? <Object?>[1, DateTime.utc(2026, 03, 24).toIso8601String(), 1, null]
+          : const <Object?>[null, null, null, null],
+    );
     for (var index = 0; index < rowCount; index++) {
       db.execute('INSERT INTO messages (value) VALUES (?)', ['fixture-$index']);
     }
