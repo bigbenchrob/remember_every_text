@@ -1,17 +1,9 @@
 class LiveChatDbMessageSnapshot {
   const LiveChatDbMessageSnapshot({
     required this.maxRowId,
-    required this.importableMessageCount,
+    required this.totalMessageCount,
   });
 
   final int maxRowId;
-  final int importableMessageCount;
-
-  @override
-  String toString() {
-    return 'LiveChatDbMessageSnapshot('
-        'maxRowId: $maxRowId, '
-        'importableMessageCount: $importableMessageCount'
-        ')';
-  }
+  final int totalMessageCount;
 }
