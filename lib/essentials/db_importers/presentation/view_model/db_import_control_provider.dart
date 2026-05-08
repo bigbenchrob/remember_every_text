@@ -840,102 +840,112 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
 
     // Check if working DB has existing data BEFORE closing the connection
     final useIncrementalMode = await _hasExistingMessages();
-
-    state = state.copyWith(
-      isProcessing: true,
-      statusMessage: 'Starting migration...',
-      progress: 0.0,
-      stages: const <UiStageProgress>[],
-      tableProgress: const <UiTableMigrationProgress>[],
-      showingDebugPanel: false,
-      clearMigrationResult: true,
-    );
-
-    // CRITICAL: Close ALL database connections BEFORE migration
-    // to avoid "database is locked" errors during ATTACH
-    try {
-      final workingDb = await ref.read(driftWorkingDatabaseProvider.future);
-      await workingDb.close();
-    } catch (_) {
-      // Database might not exist yet or already closed - that's fine
+    final requiresExclusiveWorkingDb = !useIncrementalMode;
+    if (requiresExclusiveWorkingDb) {
+      ref.read(dbMaintenanceLockProvider.notifier).begin();
     }
-    ref.invalidate(driftWorkingDatabaseProvider);
 
     try {
-      final importDb = await ref.read(sqfliteImportDatabaseProvider.future);
-      await importDb.close();
-    } catch (_) {
-      // Import database might not exist yet or already closed - that's fine
-    }
-    ref.invalidate(sqfliteImportDatabaseProvider);
-
-    try {
-      final result = await ref
-          .read(handlesMigrationServiceProvider)
-          .run(
-            onExecutionPlan: (steps) {
-              state = state.copyWith(
-                stages: <UiStageProgress>[
-                  for (final step in steps)
-                    UiStageProgress(
-                      name: step.name,
-                      displayName: step.displayName,
-                      sortIndex: step.index,
-                    ),
-                ],
-              );
-            },
-            onTableProgress: (TableMigrationProgressEvent event) {
-              _handleTableMigrationProgress(event);
-            },
-            incrementalMode: useIncrementalMode,
-          );
-
       state = state.copyWith(
-        isProcessing: false,
-        statusMessage: result.success
-            ? 'Migration completed successfully'
-            : 'Migration failed: ${result.error ?? 'Unknown error'}',
-        progress: result.success ? 1.0 : state.progress,
-        lastMigrationResult: result,
+        isProcessing: true,
+        statusMessage: 'Starting migration...',
+        progress: 0.0,
+        stages: const <UiStageProgress>[],
+        tableProgress: const <UiTableMigrationProgress>[],
+        showingDebugPanel: false,
+        clearMigrationResult: true,
       );
 
-      if (result.success) {
-        await _failureStorage.clearMigrationResult();
-      } else {
+      // CRITICAL: Close ALL database connections BEFORE migration
+      // to avoid "database is locked" errors during ATTACH
+      try {
+        final workingDb = await ref.read(driftWorkingDatabaseProvider.future);
+        await workingDb.close();
+      } catch (_) {
+        // Database might not exist yet or already closed - that's fine
+      }
+      ref.invalidate(driftWorkingDatabaseProvider);
+
+      try {
+        final importDb = await ref.read(sqfliteImportDatabaseProvider.future);
+        await importDb.close();
+      } catch (_) {
+        // Import database might not exist yet or already closed - that's fine
+      }
+      ref.invalidate(sqfliteImportDatabaseProvider);
+
+      try {
+        final result = await ref
+            .read(handlesMigrationServiceProvider)
+            .run(
+              onExecutionPlan: (steps) {
+                state = state.copyWith(
+                  stages: <UiStageProgress>[
+                    for (final step in steps)
+                      UiStageProgress(
+                        name: step.name,
+                        displayName: step.displayName,
+                        sortIndex: step.index,
+                      ),
+                  ],
+                );
+              },
+              onTableProgress: (TableMigrationProgressEvent event) {
+                _handleTableMigrationProgress(event);
+              },
+              incrementalMode: useIncrementalMode,
+            );
+
+        state = state.copyWith(
+          isProcessing: false,
+          statusMessage: result.success
+              ? 'Migration completed successfully'
+              : 'Migration failed: ${result.error ?? 'Unknown error'}',
+          progress: result.success ? 1.0 : state.progress,
+          lastMigrationResult: result,
+        );
+
+        if (result.success) {
+          await _failureStorage.clearMigrationResult();
+        } else {
+          await _failureStorage.saveMigrationResult(
+            result,
+            recordedAt: DateTime.now().toUtc(),
+          );
+        }
+
+        if (result.success) {
+          ref.invalidate(recentChatsProvider);
+
+          // Fire-and-forget: archive locally available image attachments.
+          unawaited(
+            ref
+                .read(attachmentArchiveServiceProvider.notifier)
+                .archiveAllAvailable(),
+          );
+        }
+      } catch (error) {
+        final message = _mapDatabaseError('Migration failed', error);
+        final result = DbMigrationResult(
+          batchId: -1,
+          success: false,
+          error: message,
+        );
+        state = state.copyWith(
+          isProcessing: false,
+          statusMessage: message,
+          progress: 0.0,
+          lastMigrationResult: result,
+        );
         await _failureStorage.saveMigrationResult(
           result,
           recordedAt: DateTime.now().toUtc(),
         );
       }
-
-      if (result.success) {
-        ref.invalidate(recentChatsProvider);
-
-        // Fire-and-forget: archive locally available image attachments.
-        unawaited(
-          ref
-              .read(attachmentArchiveServiceProvider.notifier)
-              .archiveAllAvailable(),
-        );
+    } finally {
+      if (requiresExclusiveWorkingDb) {
+        ref.read(dbMaintenanceLockProvider.notifier).end();
       }
-    } catch (error) {
-      final message = _mapDatabaseError('Migration failed', error);
-      final result = DbMigrationResult(
-        batchId: -1,
-        success: false,
-        error: message,
-      );
-      state = state.copyWith(
-        isProcessing: false,
-        statusMessage: message,
-        progress: 0.0,
-        lastMigrationResult: result,
-      );
-      await _failureStorage.saveMigrationResult(
-        result,
-        recordedAt: DateTime.now().toUtc(),
-      );
     }
   }
 

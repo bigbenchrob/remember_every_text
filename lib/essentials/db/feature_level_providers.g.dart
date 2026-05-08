@@ -28,7 +28,7 @@ final sqfliteImportDatabaseProvider =
 // ignore: unused_element
 typedef SqfliteImportDatabaseRef = FutureProviderRef<SqfliteImportDatabase>;
 String _$driftWorkingDatabaseHash() =>
-    r'3613c1038f790c70d828f01cc238b88b6f78c735';
+    r'98e0237149c96ab333301823d092ce800548ce88';
 
 /// Provides access to the Drift projection database used by the UI.
 ///

@@ -330,6 +330,84 @@ void main() {
     );
 
     test(
+      'does not open working database while maintenance lock is active',
+      () async {
+        final messagesDbPath = _createMessagesDatabase(
+          tempDir.path,
+          messageCount: 120,
+        );
+        final addressBookPath = _createReadableFile(
+          tempDir.path,
+          'AddressBook-v22.abcddb',
+        );
+        final importDb = SqfliteImportDatabase(
+          databaseDirectory: tempDir.path,
+          databaseName: 'macos_import.db',
+          debugSettings: const ImportDebugSettingsState(),
+        );
+        addTearDown(importDb.close);
+        final batchId = await importDb.insertImportBatch(
+          startedAtUtc: DateTime.utc(2026, 03, 24).toIso8601String(),
+        );
+        await importDb.insertChat(
+          id: 1,
+          guid: 'chat-1',
+          service: 'iMessage',
+          batchId: batchId,
+        );
+        await importDb.insertMessage(
+          id: 1,
+          guid: 'message-1',
+          chatId: 1,
+          service: 'iMessage',
+          isFromMe: false,
+          text: 'message-1',
+          hasAttributedBodySource: false,
+          hasMessageSummaryInfo: false,
+          hasPayloadDataSource: false,
+          isSystemMessage: false,
+          batchId: batchId,
+        );
+        _createProjectionDatabase(
+          tempDir.path,
+          'working.db',
+          projectionComplete: true,
+        );
+
+        container = ProviderContainer(
+          overrides: [
+            overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
+            sqfliteImportDatabaseProvider.overrideWith((ref) async => importDb),
+            driftWorkingDatabaseProvider.overrideWith((ref) async {
+              throw StateError('working.db should not be opened');
+            }),
+            onboardingFullDiskAccessProvider.overrideWith((ref) => true),
+            onboardingMessagesDatabasePathProvider.overrideWith(
+              (ref) => messagesDbPath,
+            ),
+            onboardingDatabaseDirectoryPathProvider.overrideWith(
+              (ref) => tempDir.path,
+            ),
+            futureGetFolderAggregateProvider.overrideWith(
+              (ref) async => right(_addressBookAggregate(addressBookPath)),
+            ),
+          ],
+        );
+        container.read(dbMaintenanceLockProvider.notifier).begin();
+        addTearDown(
+          () => container.read(dbMaintenanceLockProvider.notifier).end(),
+        );
+
+        final report = await container.read(
+          onboardingEnvironmentReportProvider.future,
+        );
+
+        expect(report.workingDatabase.exists, isTrue);
+        expect(report.workingDatabase.rowCount, isNull);
+      },
+    );
+
+    test(
       'flags a populated import ledger plus tiny working database for automatic reset',
       () async {
         final messagesDbPath = _createMessagesDatabase(

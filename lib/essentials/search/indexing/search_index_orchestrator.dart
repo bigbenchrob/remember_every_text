@@ -25,6 +25,10 @@ class SearchIndexOrchestrator {
 
   Future<void> rebuildAll() async {
     final context = await _contextBuilder();
+    await rebuildAllWithContext(context);
+  }
+
+  Future<void> rebuildAllWithContext(SearchIndexContext context) async {
     final failures = <String, Object>{};
 
     for (final indexer in _indexers) {

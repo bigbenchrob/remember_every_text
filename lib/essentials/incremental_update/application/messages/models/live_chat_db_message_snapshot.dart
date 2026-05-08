@@ -6,4 +6,12 @@ class LiveChatDbMessageSnapshot {
 
   final int maxRowId;
   final int totalMessageCount;
+
+  @override
+  String toString() {
+    return 'LiveChatDbMessageSnapshot('
+        'maxRowId: $maxRowId, '
+        'totalMessageCount: $totalMessageCount'
+        ')';
+  }
 }

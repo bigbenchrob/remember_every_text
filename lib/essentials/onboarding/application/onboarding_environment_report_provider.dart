@@ -204,6 +204,7 @@ class _OnboardingEnvironmentEvaluator {
     final databaseDirPath = ref.watch(onboardingDatabaseDirectoryPathProvider);
     final importDbPath = p.join(databaseDirPath, 'macos_import.db');
     final workingDbPath = p.join(databaseDirPath, 'working.db');
+    final isMaintenanceLocked = ref.watch(dbMaintenanceLockProvider);
 
     final sourceMessageCount = devOverrides.simulateSparseSourceHistory
         ? 0
@@ -219,9 +220,15 @@ class _OnboardingEnvironmentEvaluator {
     );
 
     final importRowCount = await _readImportMessagesCount(importDbPath);
-    final workingRowCount = await _readWorkingMessagesCount(workingDbPath);
-    final workingProjectionReadiness = const WorkingProjectionReadinessChecker()
-        .checkPath(workingDbPath);
+    final workingRowCount = isMaintenanceLocked
+        ? null
+        : await _readWorkingMessagesCount(workingDbPath);
+    final workingProjectionReadiness = isMaintenanceLocked
+        ? const WorkingProjectionReadiness(
+            isReady: false,
+            reason: 'database maintenance is active',
+          )
+        : const WorkingProjectionReadinessChecker().checkPath(workingDbPath);
 
     final importProbe = _probeFile(importDbPath, rowCount: importRowCount);
     final workingProbe = _probeFile(workingDbPath, rowCount: workingRowCount);

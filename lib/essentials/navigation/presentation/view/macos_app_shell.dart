@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../providers.dart';
+import '../../../incremental_update/application/messages/readers/live_chat_db_message_snapshot_reader_provider.dart';
 import '../../../onboarding/application/onboarding_gate_provider.dart';
 import '../../../onboarding/domain/onboarding_status.dart';
 import '../../../onboarding/presentation/onboarding_overlay.dart';
@@ -42,6 +44,19 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
   void dispose() {
     _windowFrameDebounce?.cancel();
     super.dispose();
+  }
+
+  Future<void> _runLiveChatDbMessageSnapshotReader() async {
+    try {
+      final reader = await ref.read(
+        liveChatDbMessageSnapshotReaderProvider.future,
+      );
+      final snapshot = await reader.read();
+      debugPrint('Shadow live chat.db snapshot: $snapshot');
+    } catch (error, stackTrace) {
+      debugPrint('Shadow live chat.db snapshot failed: $error');
+      debugPrint(stackTrace.toString());
+    }
   }
 
   @override
@@ -112,6 +127,13 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
               centerTitle: true,
               leading: const AppModeToggle(),
               actions: [
+                if (kDebugMode)
+                  ToolBarIconButton(
+                    label: 'Run live chat.db snapshot reader',
+                    icon: const MacosIcon(CupertinoIcons.waveform_path_ecg),
+                    onPressed: _runLiveChatDbMessageSnapshotReader,
+                    showLabel: false,
+                  ),
                 () {
                   final themeMode = ref.watch(switchableDarkModeProvider);
                   final (IconData icon, String tooltip) = switch (themeMode) {

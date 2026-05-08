@@ -1,13 +1,19 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:drift/native.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:path/path.dart' as path;
 import 'package:sqflite/sqflite.dart';
 
 import '../../../db/feature_level_providers.dart';
+import '../../../db/infrastructure/data_sources/local/working/working_database.dart';
 import '../../../db_importers/application/debug_settings_provider.dart';
+import '../../../logging/application/app_logger.dart';
 import '../../../logging/application/migration_audit_writer.dart';
 import '../../../logging/application/pipeline_incident_tracker_provider.dart';
 import '../../../search/feature_level_providers.dart';
+import '../../../search/indexing/search_indexer.dart';
 import '../../domain/base_table_migrator.dart';
 import '../../domain/entities/db_migration_result.dart';
 import '../../domain/states/table_migration_progress.dart';
@@ -21,6 +27,7 @@ import '../migrators/handles_migrator.dart';
 import '../migrators/message_read_marks_migrator.dart';
 import '../migrators/messages_migrator.dart';
 import '../migrators/participants_migrator.dart';
+import '../migrators/projection_state_migrator.dart';
 import '../migrators/reaction_counts_migrator.dart';
 import '../migrators/reactions_migrator.dart';
 import '../migrators/read_state_migrator.dart';
@@ -58,6 +65,8 @@ class HandlesMigrationService {
   static const MessageReadMarksMigrator _messageReadMarksMigrator =
       MessageReadMarksMigrator();
   static const ReadStateMigrator _readStateMigrator = ReadStateMigrator();
+  static const ProjectionStateMigrator _projectionStateMigrator =
+      ProjectionStateMigrator();
 
   /// Names of synthetic (non-orchestrated) post-migration steps.
   static const String _rebuildIndexesStep = 'rebuild_indexes';
@@ -72,9 +81,10 @@ class HandlesMigrationService {
     final importDatabase = await ref.watch(
       sqfliteImportDatabaseProvider.future,
     );
-    final workingDatabase = await ref.watch(
-      driftWorkingDatabaseProvider.future,
-    );
+    final ownsWorkingDatabase = ref.read(dbMaintenanceLockProvider);
+    final workingDatabase = ownsWorkingDatabase
+        ? await _openMigrationWorkingDatabase()
+        : await ref.watch(driftWorkingDatabaseProvider.future);
 
     final context = MigrationContextSqlite(
       importDb: importDatabase,
@@ -97,6 +107,7 @@ class HandlesMigrationService {
       _reactionCountsMigrator,
       _messageReadMarksMigrator,
       _readStateMigrator,
+      _projectionStateMigrator,
     ];
 
     final orchestrator = MigrationOrchestrator(migrators);
@@ -191,7 +202,18 @@ class HandlesMigrationService {
       await Future<void>.delayed(Duration.zero);
 
       final searchIndexOrchestrator = ref.read(searchIndexOrchestratorProvider);
-      await searchIndexOrchestrator.rebuildAll();
+      final logger = ref.read(appLoggerProvider.notifier);
+      await searchIndexOrchestrator.rebuildAllWithContext(
+        SearchIndexContext(
+          db: workingDatabase,
+          infoLogger: (message, {context = const {}}) {
+            logger.info(message, source: 'SearchIndex', context: context);
+          },
+          errorLogger: (message, {context = const {}}) {
+            logger.error(message, source: 'SearchIndex', context: context);
+          },
+        ),
+      );
 
       _emitSyntheticEvent(
         onTableProgress,
@@ -306,7 +328,22 @@ class HandlesMigrationService {
             incrementalMode: incrementalMode,
           );
       return result;
+    } finally {
+      if (ownsWorkingDatabase) {
+        await workingDatabase.close();
+      }
     }
+  }
+
+  Future<WorkingDatabase> _openMigrationWorkingDatabase() async {
+    final dbPath = path.join(databaseDirectoryPath, 'working.db');
+    final database = WorkingDatabase(
+      NativeDatabase.createInBackground(File(dbPath)),
+    );
+    await database.doWhenOpened((_) async {
+      await database.customStatement('PRAGMA foreign_keys = ON');
+    });
+    return database;
   }
 
   void _emitSyntheticEvent(

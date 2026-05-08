@@ -12,6 +12,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../db_importers/application/debug_settings_provider.dart';
 import '../logging/application/app_logger.dart';
 
+import 'feature_level_providers/db_maintenance_lock_provider.dart';
 import 'infrastructure/data_sources/local/import/sqflite_import_database.dart';
 import 'infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'infrastructure/data_sources/local/working/working_database.dart';
@@ -70,24 +71,27 @@ Future<SqfliteImportDatabase> sqfliteImportDatabase(
 Future<WorkingDatabase> driftWorkingDatabase(
   DriftWorkingDatabaseRef ref,
 ) async {
+  if (ref.watch(dbMaintenanceLockProvider)) {
+    throw StateError('working.db is unavailable during database maintenance');
+  }
+
   await _ensureDatabaseDirectoryExists();
   final dbPath = path.join(databaseDirectoryPath, 'working.db');
 
   final database = WorkingDatabase(
     NativeDatabase.createInBackground(File(dbPath)),
   );
+  final logger = ref.read(appLoggerProvider.notifier);
 
   await database.doWhenOpened((_) async {
     await database.customStatement('PRAGMA foreign_keys = ON');
   });
 
   ref.onDispose(() async {
-    ref
-        .read(appLoggerProvider.notifier)
-        .debug(
-          'Disposing WorkingDatabase for $dbPath',
-          source: 'WorkingDbProvider',
-        );
+    logger.debug(
+      'Disposing WorkingDatabase for $dbPath',
+      source: 'WorkingDbProvider',
+    );
     await database.close();
   });
 

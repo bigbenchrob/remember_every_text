@@ -7,7 +7,11 @@ import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../db/feature_level_providers.dart'
-    show databaseDirectoryPath, sqfliteImportDatabaseProvider;
+    show
+        databaseDirectoryPath,
+        dbMaintenanceLockProvider,
+        driftWorkingDatabaseProvider,
+        sqfliteImportDatabaseProvider;
 import '../../db/feature_level_providers/message_data_version_provider.dart';
 import '../../db_importers/presentation/view_model/db_import_control_provider.dart';
 import '../../logging/application/app_logger.dart';
@@ -102,14 +106,13 @@ class OnboardingGate extends _$OnboardingGate {
       'resetAppDatabasesReason': report?.resetAppDatabasesReason,
     };
 
+    final logger = ref.read(appLoggerProvider.notifier);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref
-          .read(appLoggerProvider.notifier)
-          .info(
-            'Resolved onboarding gate status',
-            source: 'OnboardingGate',
-            context: logContext,
-          );
+      logger.info(
+        'Resolved onboarding gate status',
+        source: 'OnboardingGate',
+        context: logContext,
+      );
     });
   }
 
@@ -448,10 +451,10 @@ class OnboardingGate extends _$OnboardingGate {
     ref
         .read(appLoggerProvider.notifier)
         .info(
-          'Preparing for fresh onboarding start by deleting import ledger only',
+          'Preparing for fresh onboarding start by deleting derived databases',
           source: 'OnboardingGate',
         );
-    await _deleteImportDatabaseFiles();
+    await _deleteDerivedDatabaseFiles();
   }
 
   void _finishFirstRunWithFailure() {
@@ -501,5 +504,58 @@ class OnboardingGate extends _$OnboardingGate {
           },
         );
     ref.invalidate(sqfliteImportDatabaseProvider);
+  }
+
+  Future<void> _deleteDerivedDatabaseFiles() async {
+    final deletedFiles = <String>[];
+
+    try {
+      final ledgerDb = await ref.read(sqfliteImportDatabaseProvider.future);
+      await ledgerDb.close();
+    } catch (_) {
+      // No connection open — safe to proceed.
+    }
+    ref.invalidate(sqfliteImportDatabaseProvider);
+
+    final workingDbPath = path.join(databaseDirectoryPath, 'working.db');
+    if (File(workingDbPath).existsSync()) {
+      try {
+        final workingDb = await ref.read(driftWorkingDatabaseProvider.future);
+        await workingDb.close();
+      } catch (_) {
+        // No connection open — safe to proceed.
+      }
+    }
+    ref.invalidate(driftWorkingDatabaseProvider);
+
+    ref.read(dbMaintenanceLockProvider.notifier).begin();
+    try {
+      for (final baseName in <String>['macos_import.db', 'working.db']) {
+        final basePath = path.join(databaseDirectoryPath, baseName);
+        for (final suffix in ['', '-wal', '-shm']) {
+          final file = File('$basePath$suffix');
+          if (file.existsSync()) {
+            await file.delete();
+            deletedFiles.add(file.path);
+          }
+        }
+      }
+
+      ref.invalidate(sqfliteImportDatabaseProvider);
+      ref.invalidate(driftWorkingDatabaseProvider);
+    } finally {
+      ref.read(dbMaintenanceLockProvider.notifier).end();
+    }
+
+    ref
+        .read(appLoggerProvider.notifier)
+        .info(
+          'Deleted derived database files for fresh onboarding start',
+          source: 'OnboardingGate',
+          context: {
+            'deletedCount': deletedFiles.length,
+            'deletedFiles': deletedFiles,
+          },
+        );
   }
 }
