@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 
-import '../application/messages/models/live_chat_db_message_snapshot.dart';
+import '../domain/models/live_chat_db_message_snapshot.dart';
 
 class ChatDbMessageRepository {
   const ChatDbMessageRepository({required String chatDbPath})

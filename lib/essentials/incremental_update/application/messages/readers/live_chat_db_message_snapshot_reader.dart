@@ -1,6 +1,6 @@
+import '../../../domain/models/live_chat_db_message_snapshot.dart';
 import '../../../domain/responsibiliity_role_interfaces.dart';
 import '../../../infrastructure/chat_db_message_repository.dart';
-import '../models/live_chat_db_message_snapshot.dart';
 
 class LiveChatDbMessageSnapshotReader
     implements Reader<LiveChatDbMessageSnapshot> {
