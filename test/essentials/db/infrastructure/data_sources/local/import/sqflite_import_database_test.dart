@@ -30,6 +30,83 @@ void main() {
     });
 
     test(
+      'fresh database creates nullable message source provenance columns',
+      () async {
+        final ledgerDb = SqfliteImportDatabase(
+          databaseDirectory: tempDir.path,
+          databaseName: 'import_test.db',
+          debugSettings: const ImportDebugSettingsState(),
+        );
+
+        final db = await ledgerDb.database;
+        final rows = await db.rawQuery('PRAGMA table_info(messages)');
+        final columns = <String, Map<String, Object?>>{
+          for (final row in rows) row['name']! as String: row,
+        };
+
+        expect(columns['source_rowid']?['type'], 'INTEGER');
+        expect(columns['source_id']?['type'], 'TEXT');
+        expect(columns['source_id']?['notnull'], 0);
+        expect(columns['source_kind']?['type'], 'TEXT');
+        expect(columns['source_kind']?['notnull'], 0);
+
+        await ledgerDb.close();
+      },
+    );
+
+    test(
+      'upgrades a v5 database with nullable message source provenance columns',
+      () async {
+        final dbPath = '${tempDir.path}/import_test.db';
+        final legacyDb = await openDatabase(dbPath);
+        await legacyDb.execute(
+          'CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, applied_at_utc TEXT NOT NULL)',
+        );
+        await legacyDb.execute(
+          'CREATE TABLE import_batches (id INTEGER PRIMARY KEY, started_at_utc TEXT NOT NULL)',
+        );
+        await legacyDb.execute(
+          'CREATE TABLE chats (id INTEGER PRIMARY KEY, guid TEXT NOT NULL, batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT)',
+        );
+        await legacyDb.execute(
+          'CREATE TABLE messages (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT NOT NULL, chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE, is_from_me INTEGER NOT NULL CHECK(is_from_me IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(guid))',
+        );
+        await legacyDb.execute(
+          "INSERT INTO schema_migrations (version, applied_at_utc) VALUES (5, '2026-05-09T00:00:00.000Z')",
+        );
+        await legacyDb.execute('PRAGMA user_version = 5');
+        await legacyDb.close();
+
+        final upgradedDb = SqfliteImportDatabase(
+          databaseDirectory: tempDir.path,
+          databaseName: 'import_test.db',
+          debugSettings: const ImportDebugSettingsState(),
+        );
+
+        final db = await upgradedDb.database;
+        final rows = await db.rawQuery('PRAGMA table_info(messages)');
+        final columns = <String, Map<String, Object?>>{
+          for (final row in rows) row['name']! as String: row,
+        };
+
+        expect(columns['source_rowid']?['type'], 'INTEGER');
+        expect(columns['source_id']?['type'], 'TEXT');
+        expect(columns['source_id']?['notnull'], 0);
+        expect(columns['source_kind']?['type'], 'TEXT');
+        expect(columns['source_kind']?['notnull'], 0);
+
+        final migrationRows = await db.query(
+          'schema_migrations',
+          where: 'version = ?',
+          whereArgs: <Object>[6],
+        );
+        expect(migrationRows, hasLength(1));
+
+        await upgradedDb.close();
+      },
+    );
+
+    test(
       'fresh database preserves multiple source rows with same imported raw identifier',
       () async {
         final ledgerDb = SqfliteImportDatabase(
@@ -86,6 +163,9 @@ void main() {
       );
       await legacyDb.execute(
         "CREATE TABLE handles (id INTEGER PRIMARY KEY, source_rowid INTEGER, service TEXT NOT NULL, raw_identifier TEXT NOT NULL, normalized_identifier TEXT, compound_identifier TEXT NOT NULL DEFAULT '', country TEXT, last_seen_utc TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(service, raw_identifier))",
+      );
+      await legacyDb.execute(
+        'CREATE TABLE messages (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT NOT NULL, chat_id INTEGER NOT NULL, is_from_me INTEGER NOT NULL CHECK(is_from_me IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(guid))',
       );
       await legacyDb.execute(
         'CREATE INDEX idx_handles_compound ON handles(compound_identifier)',
