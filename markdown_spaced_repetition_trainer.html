@@ -1,0 +1,1378 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Markdown Architecture Trainer</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f6f3ee;
+      --panel: #ffffff;
+      --panel-soft: #f0ebe3;
+      --ink: #24211d;
+      --muted: #6c6258;
+      --line: #d8d0c5;
+      --accent: #176f6b;
+      --accent-ink: #ffffff;
+      --warn: #a95f00;
+      --bad: #9f2d2d;
+      --good: #1d7048;
+      --code-bg: #1f2933;
+      --code-ink: #e9edf2;
+      --shadow: 0 20px 55px rgba(45, 39, 31, 0.13);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #171a1c;
+        --panel: #22282b;
+        --panel-soft: #2c3337;
+        --ink: #f2efe9;
+        --muted: #b6aea4;
+        --line: #3d464b;
+        --accent: #42b6aa;
+        --accent-ink: #10201f;
+        --warn: #e4a947;
+        --bad: #f07a7a;
+        --good: #65c993;
+        --code-bg: #0f1419;
+        --code-ink: #edf2f7;
+        --shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    button,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--ink);
+      padding: 10px 14px;
+      cursor: pointer;
+      min-height: 42px;
+    }
+
+    button:hover {
+      border-color: var(--accent);
+    }
+
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--accent-ink);
+      font-weight: 700;
+    }
+
+    button.ghost {
+      background: transparent;
+    }
+
+    button.danger {
+      color: var(--bad);
+    }
+
+    .app {
+      width: min(1160px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 24px 0 36px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 26px;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    .brand p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .top-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 330px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .stage,
+    .side-panel,
+    .modal-panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .stage {
+      min-height: 620px;
+      padding: 24px;
+    }
+
+    .lesson-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 10px;
+      color: var(--muted);
+      background: var(--panel-soft);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .pill.due {
+      color: var(--accent);
+      border-color: color-mix(in srgb, var(--accent), var(--line) 45%);
+    }
+
+    .lesson-title {
+      margin: 0 0 8px;
+      font-size: 34px;
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .prompt {
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.55;
+      margin: 0 0 22px;
+      max-width: 72ch;
+    }
+
+    .example-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 16px;
+      margin: 18px 0;
+    }
+
+    .example-box {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--panel-soft);
+    }
+
+    .example-box h3 {
+      margin: 0;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    pre {
+      margin: 0;
+      padding: 14px;
+      overflow: auto;
+      background: var(--code-bg);
+      color: var(--code-ink);
+      font-size: 14px;
+      line-height: 1.55;
+      min-height: 132px;
+    }
+
+    .rendered {
+      padding: 14px;
+      min-height: 132px;
+      line-height: 1.5;
+    }
+
+    .rendered h1,
+    .rendered h2,
+    .rendered h3 {
+      margin: 0.3em 0;
+      line-height: 1.15;
+    }
+
+    .rendered blockquote {
+      margin: 0;
+      padding-left: 12px;
+      border-left: 4px solid var(--accent);
+      color: var(--muted);
+    }
+
+    .rendered code {
+      background: var(--panel-soft);
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      padding: 1px 5px;
+    }
+
+    .task-box {
+      margin-top: 20px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-soft);
+    }
+
+    .task-box h2 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    .task-box p {
+      margin: 0 0 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 128px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: var(--panel);
+      color: var(--ink);
+      line-height: 1.45;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 14px;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 12px;
+    }
+
+    .feedback {
+      display: none;
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      overflow: hidden;
+    }
+
+    .feedback.visible {
+      display: block;
+    }
+
+    .feedback-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .score {
+      font-weight: 800;
+    }
+
+    .score.good {
+      color: var(--good);
+    }
+
+    .score.warn {
+      color: var(--warn);
+    }
+
+    .score.bad {
+      color: var(--bad);
+    }
+
+    .feedback-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+
+    .feedback-body div {
+      min-width: 0;
+    }
+
+    .answer-label {
+      margin: 0;
+      padding: 10px 12px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 750;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel-soft);
+    }
+
+    .expected {
+      border-left: 1px solid var(--line);
+    }
+
+    .review-buttons {
+      display: none;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .review-buttons.visible {
+      display: flex;
+    }
+
+    .side-panel {
+      padding: 16px;
+      position: sticky;
+      top: 18px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: var(--panel-soft);
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .stat span {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .meter {
+      width: 100%;
+      height: 12px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: var(--panel-soft);
+      border: 1px solid var(--line);
+      margin: 10px 0 16px;
+    }
+
+    .meter-fill {
+      height: 100%;
+      width: 0;
+      background: var(--accent);
+      transition: width 180ms ease;
+    }
+
+    .queue h2,
+    .settings h2 {
+      font-size: 16px;
+      margin: 18px 0 8px;
+    }
+
+    .queue-list {
+      display: grid;
+      gap: 8px;
+      max-height: 330px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .queue-item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: var(--panel-soft);
+    }
+
+    .queue-item strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 3px;
+    }
+
+    .queue-item span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .settings-row {
+      display: grid;
+      gap: 6px;
+      margin: 10px 0;
+    }
+
+    .settings-row label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    select {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px;
+      color: var(--ink);
+      background: var(--panel);
+    }
+
+    .empty-state {
+      display: none;
+      place-items: center;
+      text-align: center;
+      min-height: 520px;
+      padding: 24px;
+    }
+
+    .empty-state.visible {
+      display: grid;
+    }
+
+    .empty-state h2 {
+      margin: 0 0 8px;
+      font-size: 28px;
+    }
+
+    .empty-state p {
+      margin: 0 auto 18px;
+      max-width: 58ch;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      padding: 24px;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: 10;
+      overflow: auto;
+    }
+
+    .modal.visible {
+      display: grid;
+      place-items: start center;
+    }
+
+    .modal-panel {
+      width: min(820px, 100%);
+      padding: 22px;
+      margin: 30px 0;
+    }
+
+    .modal-panel h2 {
+      margin: 0 0 10px;
+    }
+
+    .modal-panel p,
+    .modal-panel li {
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .modal-panel ul {
+      padding-left: 22px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    @media (max-width: 880px) {
+      .topbar,
+      .grid,
+      .example-layout,
+      .feedback-body {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        display: grid;
+      }
+
+      .top-actions {
+        justify-content: stretch;
+      }
+
+      .top-actions button,
+      .controls button,
+      .review-buttons button {
+        flex: 1 1 auto;
+      }
+
+      .side-panel {
+        position: static;
+      }
+
+      .expected {
+        border-left: 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .stage {
+        padding: 18px;
+        min-height: auto;
+      }
+
+      .lesson-title {
+        font-size: 28px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <h1>Markdown Architecture Trainer</h1>
+        <p>Ten-minute spaced practice for writing readable software architecture docs.</p>
+      </div>
+      <div class="top-actions">
+        <button id="helpButton" type="button">Guide</button>
+        <button id="exportButton" type="button">Export</button>
+        <button id="resetButton" class="danger" type="button">Reset</button>
+      </div>
+    </header>
+
+    <section class="grid">
+      <article class="stage">
+        <div id="lessonView">
+          <div class="lesson-meta">
+            <span class="pill due" id="modePill">Review</span>
+            <span class="pill" id="topicPill">Structure</span>
+            <span class="pill" id="schedulePill">Due now</span>
+          </div>
+          <h2 class="lesson-title" id="lessonTitle"></h2>
+          <p class="prompt" id="lessonPrompt"></p>
+
+          <div class="example-layout">
+            <section class="example-box">
+              <h3>Markdown</h3>
+              <pre><code id="markdownExample"></code></pre>
+            </section>
+            <section class="example-box">
+              <h3>Rendered intent</h3>
+              <div class="rendered" id="renderedExample"></div>
+            </section>
+          </div>
+
+          <section class="task-box">
+            <h2 id="taskTitle"></h2>
+            <p id="taskPrompt"></p>
+            <textarea id="answerInput" spellcheck="false" autocomplete="off"></textarea>
+            <div class="controls">
+              <button id="checkButton" class="primary" type="button">Check answer</button>
+              <button id="hintButton" type="button">Hint</button>
+              <button id="skipButton" class="ghost" type="button">Skip</button>
+            </div>
+            <div id="feedback" class="feedback">
+              <div class="feedback-head">
+                <div>
+                  <strong id="feedbackTitle"></strong>
+                  <div id="feedbackNote"></div>
+                </div>
+                <span id="score" class="score"></span>
+              </div>
+              <div class="feedback-body">
+                <div>
+                  <p class="answer-label">Your answer</p>
+                  <pre><code id="yourAnswer"></code></pre>
+                </div>
+                <div class="expected">
+                  <p class="answer-label">Expected pattern</p>
+                  <pre><code id="expectedAnswer"></code></pre>
+                </div>
+              </div>
+            </div>
+            <div id="reviewButtons" class="review-buttons">
+              <button id="againButton" type="button">Again</button>
+              <button id="hardButton" type="button">Hard</button>
+              <button id="goodButton" class="primary" type="button">Good</button>
+              <button id="easyButton" type="button">Easy</button>
+            </div>
+          </section>
+        </div>
+
+        <div id="emptyState" class="empty-state">
+          <div>
+            <h2>Today is clear.</h2>
+            <p>You finished the current review queue. Use this moment to stop, or add one new lesson if you still have time in the ten-minute window.</p>
+            <button id="learnMoreButton" class="primary" type="button">Learn one new lesson</button>
+          </div>
+        </div>
+      </article>
+
+      <aside class="side-panel">
+        <div class="stats">
+          <div class="stat">
+            <strong id="dueCount">0</strong>
+            <span>Due</span>
+          </div>
+          <div class="stat">
+            <strong id="learnedCount">0</strong>
+            <span>Learned</span>
+          </div>
+          <div class="stat">
+            <strong id="streakCount">0</strong>
+            <span>Streak</span>
+          </div>
+          <div class="stat">
+            <strong id="minuteCount">10</strong>
+            <span>Minutes</span>
+          </div>
+        </div>
+
+        <div>
+          <strong>Session progress</strong>
+          <div class="meter" aria-label="Session progress">
+            <div id="meterFill" class="meter-fill"></div>
+          </div>
+        </div>
+
+        <section class="settings">
+          <h2>Daily session</h2>
+          <div class="settings-row">
+            <label for="sessionLength">Target length</label>
+            <select id="sessionLength">
+              <option value="5">5 minutes</option>
+              <option value="10">10 minutes</option>
+              <option value="15">15 minutes</option>
+            </select>
+          </div>
+          <div class="settings-row">
+            <label for="newLimit">New lessons per day</label>
+            <select id="newLimit">
+              <option value="1">1 lesson</option>
+              <option value="2">2 lessons</option>
+              <option value="3">3 lessons</option>
+            </select>
+          </div>
+        </section>
+
+        <section class="queue">
+          <h2>Upcoming</h2>
+          <div id="queueList" class="queue-list"></div>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <section id="helpModal" class="modal" aria-modal="true" role="dialog">
+    <div class="modal-panel">
+      <h2>How the trainer schedules reviews</h2>
+      <p>Each card starts as a new lesson. After you answer, choose how it felt. The scheduler uses short intervals for weak answers and longer intervals for confident ones.</p>
+      <ul>
+        <li><strong>Again:</strong> repeat soon, usually tomorrow.</li>
+        <li><strong>Hard:</strong> keep the interval short.</li>
+        <li><strong>Good:</strong> move from one day to about one week, then longer.</li>
+        <li><strong>Easy:</strong> extend faster when the pattern is automatic.</li>
+      </ul>
+      <p>The deck is biased toward architecture docs: headings, ADRs, diagrams, tables, links, code fences, callouts, and review checklists.</p>
+      <div class="modal-actions">
+        <button id="closeHelpButton" class="primary" type="button">Close</button>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    "use strict";
+
+    const STORAGE_KEY = "markdownArchitectureTrainer.v1";
+    const DAY_MS = 24 * 60 * 60 * 1000;
+
+    const lessons = [
+      {
+        id: "headings",
+        title: "Headings",
+        topic: "Structure",
+        prompt: "Use headings to expose the document shape before the reader dives into detail. Architecture docs should be skimmable from the outline alone.",
+        example: "# Messaging Import Architecture\n\n## Context\n\n## Data Flow\n\n### Import Stage\n\n### Migration Stage",
+        rendered: "<h1>Messaging Import Architecture</h1><h2>Context</h2><h2>Data Flow</h2><h3>Import Stage</h3><h3>Migration Stage</h3>",
+        taskTitle: "Write a heading outline",
+        taskPrompt: "Create a title plus two second-level sections for an architecture note about cache invalidation.",
+        expected: "# Cache Invalidation Architecture\n\n## Context\n\n## Decision",
+        hints: ["Start with one # for the document title.", "Use ## for the major sections."],
+        checks: ["# ", "## "]
+      },
+      {
+        id: "paragraphs",
+        title: "Paragraphs and Line Breaks",
+        topic: "Narrative",
+        prompt: "Markdown paragraphs are separated by blank lines. Keep architecture prose in short paragraphs so rationale and consequences do not blur together.",
+        example: "The import pipeline reads source records without applying user preferences.\n\nUser intent is stored separately so migrations remain repeatable.",
+        rendered: "<p>The import pipeline reads source records without applying user preferences.</p><p>User intent is stored separately so migrations remain repeatable.</p>",
+        taskTitle: "Separate two ideas",
+        taskPrompt: "Write two Markdown paragraphs: one about a constraint, one about its consequence.",
+        expected: "The cache key must include tenant identity.\n\nOtherwise one tenant can receive another tenant's data.",
+        hints: ["A blank line creates a new paragraph.", "Do not rely on a single newline for paragraph separation."],
+        checks: ["\n\n"]
+      },
+      {
+        id: "bullets",
+        title: "Bulleted Lists",
+        topic: "Lists",
+        prompt: "Bullets are good for unordered facts, invariants, and review criteria. Keep each bullet parallel so reviewers can scan quickly.",
+        example: "Hard invariants:\n\n- Imports preserve source records.\n- Overlay data stores user intent.\n- Read models merge both sources.",
+        rendered: "<p>Hard invariants:</p><ul><li>Imports preserve source records.</li><li>Overlay data stores user intent.</li><li>Read models merge both sources.</li></ul>",
+        taskTitle: "List three invariants",
+        taskPrompt: "Write a short bulleted list of invariants for a background job system.",
+        expected: "- Jobs are idempotent.\n- Retries preserve the original payload.\n- Failed jobs remain visible.",
+        hints: ["Use - followed by a space.", "Each invariant should be its own line."],
+        checks: ["- "]
+      },
+      {
+        id: "numbered",
+        title: "Numbered Steps",
+        topic: "Lists",
+        prompt: "Use numbered lists when order matters: migration steps, rollout plans, incident response, or reproduction instructions.",
+        example: "Rollout:\n\n1. Add read-path support.\n2. Backfill new records.\n3. Enable writes.\n4. Remove the old path.",
+        rendered: "<p>Rollout:</p><ol><li>Add read-path support.</li><li>Backfill new records.</li><li>Enable writes.</li><li>Remove the old path.</li></ol>",
+        taskTitle: "Write a rollout order",
+        taskPrompt: "Create a three-step numbered rollout for adding a new table.",
+        expected: "1. Deploy the schema.\n2. Backfill existing rows.\n3. Switch the read path.",
+        hints: ["Use 1. then a space.", "Markdown can renumber, but explicit numbers are clearer in docs."],
+        checks: ["1. ", "2. ", "3. "]
+      },
+      {
+        id: "inline-code",
+        title: "Inline Code",
+        topic: "Code",
+        prompt: "Use inline code for identifiers, filenames, commands, providers, table names, and literal values. It prevents prose from swallowing important tokens.",
+        example: "Read access goes through `driftWorkingDatabaseProvider`, not direct database constructors.",
+        rendered: "<p>Read access goes through <code>driftWorkingDatabaseProvider</code>, not direct database constructors.</p>",
+        taskTitle: "Mark identifiers",
+        taskPrompt: "Write one sentence that mentions a config key and a function using inline code.",
+        expected: "Set `cache.ttlSeconds` before calling `refreshReadModel()`.",
+        hints: ["Wrap exact identifiers in backticks.", "Inline code uses one backtick on each side."],
+        checks: ["`"]
+      },
+      {
+        id: "code-fence",
+        title: "Fenced Code Blocks",
+        topic: "Code",
+        prompt: "Fenced code blocks preserve formatting and can carry a language tag. Architecture docs use them for examples, commands, snippets, schemas, and config.",
+        example: "```sql\nCREATE INDEX idx_events_tenant_created\nON events (tenant_id, created_at);\n```",
+        rendered: "<pre><code>CREATE INDEX idx_events_tenant_created\nON events (tenant_id, created_at);</code></pre>",
+        taskTitle: "Fence a command",
+        taskPrompt: "Write a fenced bash block for running tests.",
+        expected: "```bash\nflutter test --plain-name cache\n```",
+        hints: ["Use three backticks before and after the command.", "Put bash after the opening fence."],
+        checks: ["```", "bash"]
+      },
+      {
+        id: "blockquote",
+        title: "Blockquotes for Callouts",
+        topic: "Callouts",
+        prompt: "Blockquotes are useful for warnings, decision notes, and reviewer-facing constraints. Prefix each line with >.",
+        example: "> Important: migrations must not read overlay data.\n> User intent is merged at read time.",
+        rendered: "<blockquote><p>Important: migrations must not read overlay data.<br>User intent is merged at read time.</p></blockquote>",
+        taskTitle: "Write a warning callout",
+        taskPrompt: "Create a blockquote warning that a cleanup job must not delete unknown records.",
+        expected: "> Warning: cleanup must not delete unknown records.\n> Unknown records are diagnostic signals.",
+        hints: ["Start each quoted line with >.", "Callouts work best when short and direct."],
+        checks: [">"]
+      },
+      {
+        id: "links",
+        title: "Links",
+        topic: "References",
+        prompt: "Links connect architecture docs to source files, ADRs, tickets, and external specs. Use descriptive text, not raw URLs, when the destination matters.",
+        example: "See [ADR-004: Event Replay](docs/adr/004-event-replay.md) for the original decision.",
+        rendered: "<p>See <a href=\"#\">ADR-004: Event Replay</a> for the original decision.</p>",
+        taskTitle: "Link to a decision record",
+        taskPrompt: "Write a sentence linking to docs/adr/007-cache-boundaries.md.",
+        expected: "See [ADR-007: Cache Boundaries](docs/adr/007-cache-boundaries.md) before changing invalidation rules.",
+        hints: ["Use [label](target).", "Make the label describe the decision, not the file path only."],
+        checks: ["[", "](", ")"]
+      },
+      {
+        id: "images",
+        title: "Images and Diagrams",
+        topic: "References",
+        prompt: "Markdown image syntax embeds diagrams or screenshots. Use alt text that explains the image's purpose for readers who cannot see it.",
+        example: "![Import pipeline from source database to read model](assets/import-pipeline.png)",
+        rendered: "<p><strong>Image:</strong> Import pipeline from source database to read model</p>",
+        taskTitle: "Embed a diagram",
+        taskPrompt: "Write Markdown for an image named docs/diagrams/cache-flow.png with useful alt text.",
+        expected: "![Cache invalidation flow from write event to refreshed read model](docs/diagrams/cache-flow.png)",
+        hints: ["Image syntax starts with ! before the link.", "Alt text goes inside the square brackets."],
+        checks: ["![", "](", ")"]
+      },
+      {
+        id: "tables",
+        title: "Tables",
+        topic: "Comparison",
+        prompt: "Tables are useful for compact comparisons: options, responsibilities, states, and tradeoffs. Keep cell text short.",
+        example: "| Layer | Responsibility |\n| --- | --- |\n| Importer | Preserve source records |\n| Overlay | Store user intent |",
+        rendered: "<table><thead><tr><th>Layer</th><th>Responsibility</th></tr></thead><tbody><tr><td>Importer</td><td>Preserve source records</td></tr><tr><td>Overlay</td><td>Store user intent</td></tr></tbody></table>",
+        taskTitle: "Create a responsibility table",
+        taskPrompt: "Write a two-column table comparing API and Worker responsibilities.",
+        expected: "| Component | Responsibility |\n| --- | --- |\n| API | Validate requests |\n| Worker | Process jobs |",
+        hints: ["The second row uses --- separators.", "Use pipes between columns."],
+        checks: ["|", "---"]
+      },
+      {
+        id: "emphasis",
+        title: "Emphasis",
+        topic: "Narrative",
+        prompt: "Use bold sparingly for hard rules and italic text for nuance. Architecture docs lose force when everything is emphasized.",
+        example: "**Do not dual-write user intent.** Use the overlay database as the source of truth for labels.",
+        rendered: "<p><strong>Do not dual-write user intent.</strong> Use the overlay database as the source of truth for labels.</p>",
+        taskTitle: "Emphasize one hard rule",
+        taskPrompt: "Write one sentence where the rule is bold and the explanation is plain text.",
+        expected: "**Do not hide anomalous records.** Render them visibly and investigate the source.",
+        hints: ["Use two asterisks on each side for bold.", "Only bold the rule, not the whole paragraph."],
+        checks: ["**"]
+      },
+      {
+        id: "task-list",
+        title: "Task Lists",
+        topic: "Review",
+        prompt: "Task lists are useful for PR descriptions, migration checklists, and verification plans. They make completion state explicit.",
+        example: "- [x] Add read-path support\n- [ ] Backfill historical records\n- [ ] Run analyzer and tests",
+        rendered: "<ul><li>[x] Add read-path support</li><li>[ ] Backfill historical records</li><li>[ ] Run analyzer and tests</li></ul>",
+        taskTitle: "Write a verification checklist",
+        taskPrompt: "Create a three-item task list for reviewing an architecture change.",
+        expected: "- [ ] Read the ADR\n- [ ] Verify migration safety\n- [ ] Run regression tests",
+        hints: ["Use - [ ] for incomplete tasks.", "Use - [x] only for completed tasks."],
+        checks: ["- [ ]"]
+      },
+      {
+        id: "horizontal-rule",
+        title: "Horizontal Rules",
+        topic: "Structure",
+        prompt: "A horizontal rule can separate a document body from appendices, logs, or archived notes. Do not use it as a substitute for headings.",
+        example: "## Decision\n\nUse append-only events.\n\n---\n\n## Appendix\n\nRejected alternatives.",
+        rendered: "<h2>Decision</h2><p>Use append-only events.</p><hr><h2>Appendix</h2><p>Rejected alternatives.</p>",
+        taskTitle: "Separate appendix content",
+        taskPrompt: "Write a short decision section, a horizontal rule, and an appendix heading.",
+        expected: "## Decision\n\nUse signed webhook events.\n\n---\n\n## Appendix",
+        hints: ["A line with three hyphens creates a rule.", "Keep blank lines around the rule for readability."],
+        checks: ["---"]
+      },
+      {
+        id: "adr",
+        title: "Architecture Decision Record Skeleton",
+        topic: "Architecture",
+        prompt: "An ADR is a compact decision document. Markdown headings give it durable structure: status, context, decision, consequences.",
+        example: "# ADR-012: Store User Intent Separately\n\n## Status\nAccepted\n\n## Context\n\n## Decision\n\n## Consequences",
+        rendered: "<h1>ADR-012: Store User Intent Separately</h1><h2>Status</h2><p>Accepted</p><h2>Context</h2><h2>Decision</h2><h2>Consequences</h2>",
+        taskTitle: "Draft an ADR skeleton",
+        taskPrompt: "Create an ADR skeleton for choosing an event queue.",
+        expected: "# ADR-008: Choose Event Queue\n\n## Status\nProposed\n\n## Context\n\n## Decision\n\n## Consequences",
+        hints: ["Start with the ADR number and title.", "Use consistent second-level headings."],
+        checks: ["# ADR", "## Status", "## Context", "## Decision", "## Consequences"]
+      },
+      {
+        id: "mermaid",
+        title: "Mermaid Diagram Fence",
+        topic: "Architecture",
+        prompt: "Many Markdown tools render Mermaid diagrams from fenced code blocks. Even when not rendered, the text captures the architecture flow.",
+        example: "```mermaid\nflowchart LR\n  Source --> Importer\n  Importer --> ReadModel\n```",
+        rendered: "<pre><code>flowchart LR\n  Source --> Importer\n  Importer --> ReadModel</code></pre>",
+        taskTitle: "Write a flow diagram",
+        taskPrompt: "Create a Mermaid fence showing API to Queue to Worker.",
+        expected: "```mermaid\nflowchart LR\n  API --> Queue\n  Queue --> Worker\n```",
+        hints: ["Use ```mermaid as the opening fence.", "A simple flowchart can use A --> B arrows."],
+        checks: ["```mermaid", "flowchart", "-->"]
+      }
+    ];
+
+    const state = loadState();
+    let current = null;
+    let hintIndex = 0;
+    let sessionStartedAt = Date.now();
+    let answeredThisSession = 0;
+
+    const els = {
+      modePill: document.getElementById("modePill"),
+      topicPill: document.getElementById("topicPill"),
+      schedulePill: document.getElementById("schedulePill"),
+      lessonTitle: document.getElementById("lessonTitle"),
+      lessonPrompt: document.getElementById("lessonPrompt"),
+      markdownExample: document.getElementById("markdownExample"),
+      renderedExample: document.getElementById("renderedExample"),
+      taskTitle: document.getElementById("taskTitle"),
+      taskPrompt: document.getElementById("taskPrompt"),
+      answerInput: document.getElementById("answerInput"),
+      checkButton: document.getElementById("checkButton"),
+      hintButton: document.getElementById("hintButton"),
+      skipButton: document.getElementById("skipButton"),
+      feedback: document.getElementById("feedback"),
+      feedbackTitle: document.getElementById("feedbackTitle"),
+      feedbackNote: document.getElementById("feedbackNote"),
+      score: document.getElementById("score"),
+      yourAnswer: document.getElementById("yourAnswer"),
+      expectedAnswer: document.getElementById("expectedAnswer"),
+      reviewButtons: document.getElementById("reviewButtons"),
+      againButton: document.getElementById("againButton"),
+      hardButton: document.getElementById("hardButton"),
+      goodButton: document.getElementById("goodButton"),
+      easyButton: document.getElementById("easyButton"),
+      dueCount: document.getElementById("dueCount"),
+      learnedCount: document.getElementById("learnedCount"),
+      streakCount: document.getElementById("streakCount"),
+      minuteCount: document.getElementById("minuteCount"),
+      meterFill: document.getElementById("meterFill"),
+      queueList: document.getElementById("queueList"),
+      sessionLength: document.getElementById("sessionLength"),
+      newLimit: document.getElementById("newLimit"),
+      lessonView: document.getElementById("lessonView"),
+      emptyState: document.getElementById("emptyState"),
+      learnMoreButton: document.getElementById("learnMoreButton"),
+      helpModal: document.getElementById("helpModal"),
+      helpButton: document.getElementById("helpButton"),
+      closeHelpButton: document.getElementById("closeHelpButton"),
+      exportButton: document.getElementById("exportButton"),
+      resetButton: document.getElementById("resetButton")
+    };
+
+    function defaultState() {
+      const cards = {};
+      for (const lesson of lessons) {
+        cards[lesson.id] = {
+          id: lesson.id,
+          learned: false,
+          due: 0,
+          interval: 0,
+          ease: 2.5,
+          repetitions: 0,
+          lapses: 0,
+          lastReviewed: 0
+        };
+      }
+
+      return {
+        createdAt: Date.now(),
+        lastSessionDate: "",
+        streak: 0,
+        reviewedToday: 0,
+        newToday: 0,
+        settings: {
+          sessionLength: 10,
+          newLimit: 1
+        },
+        cards
+      };
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const loaded = raw ? JSON.parse(raw) : defaultState();
+        const fresh = defaultState();
+        loaded.cards = loaded.cards || {};
+        for (const lesson of lessons) {
+          loaded.cards[lesson.id] = Object.assign(fresh.cards[lesson.id], loaded.cards[lesson.id] || {});
+        }
+        loaded.settings = Object.assign(fresh.settings, loaded.settings || {});
+        return loaded;
+      } catch (error) {
+        console.warn("Could not load trainer state", error);
+        return defaultState();
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function todayKey() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function prepareDay() {
+      const today = todayKey();
+      if (state.lastSessionDate !== today) {
+        const yesterday = new Date(Date.now() - DAY_MS).toISOString().slice(0, 10);
+        state.streak = state.lastSessionDate === yesterday ? state.streak + 1 : 1;
+        state.lastSessionDate = today;
+        state.reviewedToday = 0;
+        state.newToday = 0;
+        saveState();
+      }
+    }
+
+    function cardFor(lesson) {
+      return state.cards[lesson.id];
+    }
+
+    function dueCards() {
+      const now = Date.now();
+      return lessons
+        .filter((lesson) => {
+          const card = cardFor(lesson);
+          return card.learned && card.due <= now;
+        })
+        .sort((a, b) => cardFor(a).due - cardFor(b).due);
+    }
+
+    function newCards() {
+      return lessons.filter((lesson) => !cardFor(lesson).learned);
+    }
+
+    function chooseNextCard(forceNew) {
+      const due = dueCards();
+      if (!forceNew && due.length > 0) {
+        return { lesson: due[0], mode: "Review" };
+      }
+
+      if (state.newToday < state.settings.newLimit || forceNew) {
+        const nextNew = newCards()[0];
+        if (nextNew) {
+          return { lesson: nextNew, mode: "New" };
+        }
+      }
+
+      return null;
+    }
+
+    function renderCurrent(forceNew) {
+      prepareDay();
+      current = chooseNextCard(forceNew);
+      hintIndex = 0;
+
+      if (!current) {
+        els.lessonView.style.display = "none";
+        els.emptyState.classList.add("visible");
+        renderStats();
+        return;
+      }
+
+      els.lessonView.style.display = "";
+      els.emptyState.classList.remove("visible");
+
+      const lesson = current.lesson;
+      const card = cardFor(lesson);
+      els.modePill.textContent = current.mode;
+      els.topicPill.textContent = lesson.topic;
+      els.schedulePill.textContent = card.learned ? dueLabel(card.due) : "First exposure";
+      els.lessonTitle.textContent = lesson.title;
+      els.lessonPrompt.textContent = lesson.prompt;
+      els.markdownExample.textContent = lesson.example;
+      els.renderedExample.innerHTML = lesson.rendered;
+      els.taskTitle.textContent = lesson.taskTitle;
+      els.taskPrompt.textContent = lesson.taskPrompt;
+      els.answerInput.value = "";
+      els.answerInput.placeholder = "Type the Markdown pattern from memory...";
+      els.feedback.classList.remove("visible");
+      els.reviewButtons.classList.remove("visible");
+      els.checkButton.disabled = false;
+      els.answerInput.focus();
+      renderStats();
+    }
+
+    function dueLabel(timestamp) {
+      const delta = timestamp - Date.now();
+      if (delta <= 0) {
+        return "Due now";
+      }
+      const days = Math.ceil(delta / DAY_MS);
+      if (days === 1) {
+        return "Due tomorrow";
+      }
+      return "Due in " + days + " days";
+    }
+
+    function normalizeAnswer(value) {
+      return value.trim().replace(/\r\n/g, "\n").replace(/[ \t]+$/gm, "");
+    }
+
+    function scoreAnswer(answer, lesson) {
+      const normalized = normalizeAnswer(answer).toLowerCase();
+      const expected = normalizeAnswer(lesson.expected).toLowerCase();
+      if (!normalized) {
+        return { points: 0, missing: ["an answer"] };
+      }
+
+      let points = 0;
+      const missing = [];
+      for (const check of lesson.checks) {
+        if (normalized.includes(check.toLowerCase())) {
+          points += 1;
+        } else {
+          missing.push(check);
+        }
+      }
+
+      const expectedLines = expected.split("\n").filter(Boolean);
+      const answerLines = normalized.split("\n").filter(Boolean);
+      const structureBonus = Math.min(expectedLines.length, answerLines.length) / Math.max(expectedLines.length, 1);
+      const ratio = (points / Math.max(lesson.checks.length, 1)) * 0.78 + structureBonus * 0.22;
+
+      return {
+        points: Math.round(ratio * 100),
+        missing
+      };
+    }
+
+    function checkAnswer() {
+      if (!current) {
+        return;
+      }
+
+      const lesson = current.lesson;
+      const answer = els.answerInput.value;
+      const result = scoreAnswer(answer, lesson);
+      els.feedback.classList.add("visible");
+      els.reviewButtons.classList.add("visible");
+      els.yourAnswer.textContent = normalizeAnswer(answer) || "(blank)";
+      els.expectedAnswer.textContent = lesson.expected;
+      els.score.textContent = result.points + "%";
+      els.score.className = "score " + (result.points >= 80 ? "good" : result.points >= 50 ? "warn" : "bad");
+
+      if (result.points >= 80) {
+        els.feedbackTitle.textContent = "Pattern recognized";
+        els.feedbackNote.textContent = "Grade how easily you recalled it so the scheduler can choose the next interval.";
+      } else if (result.missing.length > 0) {
+        els.feedbackTitle.textContent = "Review the missing syntax";
+        els.feedbackNote.textContent = "Missing pattern: " + result.missing.join(", ");
+      } else {
+        els.feedbackTitle.textContent = "Compare against the expected structure";
+        els.feedbackNote.textContent = "Use the closest self-grade after checking the pattern.";
+      }
+
+      els.checkButton.disabled = true;
+    }
+
+    function revealHint() {
+      if (!current) {
+        return;
+      }
+
+      const hints = current.lesson.hints;
+      const hint = hints[Math.min(hintIndex, hints.length - 1)];
+      els.answerInput.placeholder = hint;
+      hintIndex += 1;
+    }
+
+    function reviewCard(grade) {
+      if (!current) {
+        return;
+      }
+
+      const card = cardFor(current.lesson);
+      const wasNew = !card.learned;
+      const now = Date.now();
+      const intervals = {
+        again: 1,
+        hard: Math.max(2, Math.round(card.interval * 1.2) || 2),
+        good: card.repetitions === 0 ? 1 : card.repetitions === 1 ? 7 : Math.round(card.interval * card.ease),
+        easy: card.repetitions === 0 ? 3 : card.repetitions === 1 ? 10 : Math.round(card.interval * (card.ease + 0.35))
+      };
+
+      if (grade === "again") {
+        card.ease = Math.max(1.3, card.ease - 0.25);
+        card.repetitions = 0;
+        card.lapses += card.learned ? 1 : 0;
+      } else {
+        card.repetitions += 1;
+        if (grade === "hard") {
+          card.ease = Math.max(1.3, card.ease - 0.1);
+        }
+        if (grade === "easy") {
+          card.ease = Math.min(3.2, card.ease + 0.15);
+        }
+      }
+
+      card.learned = true;
+      card.interval = intervals[grade];
+      card.due = now + card.interval * DAY_MS;
+      card.lastReviewed = now;
+
+      state.reviewedToday += 1;
+      answeredThisSession += 1;
+      if (wasNew) {
+        state.newToday += 1;
+      }
+
+      saveState();
+      renderCurrent(false);
+    }
+
+    function skipCard() {
+      if (!current) {
+        return;
+      }
+
+      const card = cardFor(current.lesson);
+      if (card.learned) {
+        card.due = Date.now() + DAY_MS;
+        saveState();
+      }
+      renderCurrent(false);
+    }
+
+    function renderStats() {
+      const learned = lessons.filter((lesson) => cardFor(lesson).learned).length;
+      els.dueCount.textContent = dueCards().length;
+      els.learnedCount.textContent = learned;
+      els.streakCount.textContent = state.streak;
+      els.minuteCount.textContent = state.settings.sessionLength;
+      els.sessionLength.value = String(state.settings.sessionLength);
+      els.newLimit.value = String(state.settings.newLimit);
+
+      const targetAnswers = Math.max(3, state.settings.sessionLength);
+      const progress = Math.min(100, Math.round((answeredThisSession / targetAnswers) * 100));
+      els.meterFill.style.width = progress + "%";
+
+      const upcoming = lessons
+        .filter((lesson) => cardFor(lesson).learned)
+        .sort((a, b) => cardFor(a).due - cardFor(b).due)
+        .slice(0, 8);
+
+      els.queueList.innerHTML = "";
+      if (upcoming.length === 0) {
+        const item = document.createElement("div");
+        item.className = "queue-item";
+        item.innerHTML = "<strong>No reviews scheduled yet</strong><span>Complete a lesson to seed the queue.</span>";
+        els.queueList.appendChild(item);
+      } else {
+        for (const lesson of upcoming) {
+          const card = cardFor(lesson);
+          const item = document.createElement("div");
+          item.className = "queue-item";
+          item.innerHTML = "<strong></strong><span></span>";
+          item.querySelector("strong").textContent = lesson.title;
+          item.querySelector("span").textContent = dueLabel(card.due) + " · interval " + card.interval + "d";
+          els.queueList.appendChild(item);
+        }
+      }
+    }
+
+    function exportProgress() {
+      const report = {
+        exportedAt: new Date().toISOString(),
+        learned: lessons
+          .filter((lesson) => cardFor(lesson).learned)
+          .map((lesson) => ({
+            title: lesson.title,
+            intervalDays: cardFor(lesson).interval,
+            due: new Date(cardFor(lesson).due).toISOString(),
+            repetitions: cardFor(lesson).repetitions,
+            lapses: cardFor(lesson).lapses
+          })),
+        settings: state.settings,
+        streak: state.streak
+      };
+
+      const text = JSON.stringify(report, null, 2);
+      navigator.clipboard.writeText(text).then(() => {
+        els.exportButton.textContent = "Copied";
+        setTimeout(() => {
+          els.exportButton.textContent = "Export";
+        }, 1200);
+      }).catch(() => {
+        window.prompt("Copy progress JSON:", text);
+      });
+    }
+
+    function resetProgress() {
+      const confirmed = window.confirm("Reset all Markdown trainer progress on this browser?");
+      if (!confirmed) {
+        return;
+      }
+      localStorage.removeItem(STORAGE_KEY);
+      Object.assign(state, defaultState());
+      sessionStartedAt = Date.now();
+      answeredThisSession = 0;
+      renderCurrent(false);
+    }
+
+    els.checkButton.addEventListener("click", checkAnswer);
+    els.hintButton.addEventListener("click", revealHint);
+    els.skipButton.addEventListener("click", skipCard);
+    els.againButton.addEventListener("click", () => reviewCard("again"));
+    els.hardButton.addEventListener("click", () => reviewCard("hard"));
+    els.goodButton.addEventListener("click", () => reviewCard("good"));
+    els.easyButton.addEventListener("click", () => reviewCard("easy"));
+    els.learnMoreButton.addEventListener("click", () => renderCurrent(true));
+    els.helpButton.addEventListener("click", () => els.helpModal.classList.add("visible"));
+    els.closeHelpButton.addEventListener("click", () => els.helpModal.classList.remove("visible"));
+    els.helpModal.addEventListener("click", (event) => {
+      if (event.target === els.helpModal) {
+        els.helpModal.classList.remove("visible");
+      }
+    });
+    els.exportButton.addEventListener("click", exportProgress);
+    els.resetButton.addEventListener("click", resetProgress);
+    els.sessionLength.addEventListener("change", () => {
+      state.settings.sessionLength = Number(els.sessionLength.value);
+      saveState();
+      renderStats();
+    });
+    els.newLimit.addEventListener("change", () => {
+      state.settings.newLimit = Number(els.newLimit.value);
+      saveState();
+      renderStats();
+    });
+    els.answerInput.addEventListener("keydown", (event) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+        checkAnswer();
+      }
+    });
+
+    setInterval(() => {
+      const elapsedMinutes = Math.floor((Date.now() - sessionStartedAt) / 60000);
+      if (elapsedMinutes >= state.settings.sessionLength) {
+        document.title = "Time to stop · Markdown Architecture Trainer";
+      }
+    }, 30000);
+
+    prepareDay();
+    renderCurrent(false);
+  </script>
+</body>
+</html>
