@@ -516,13 +516,19 @@ SELECT (
     return <HistoricalArchiveSourceRecord>[
       for (final row in rows)
         HistoricalArchiveSourceRecord(
-          sourceChatDb: row['source_chat_db'] as String,
-          folderPath: row['folder_path'] as String,
-          sourceLabel: row['source_label'] as String,
-          chatDbStatusLabel: row['chat_db_status_label'] as String,
-          attachmentsStatusLabel: row['attachments_status_label'] as String,
-          preflightStatusLabel: row['preflight_status_label'] as String,
-          preflightDetail: row['preflight_detail'] as String,
+          sourceChatDb: _readRequiredString(row, 'source_chat_db'),
+          folderPath: _readRequiredString(row, 'folder_path'),
+          sourceLabel: _readRequiredString(row, 'source_label'),
+          chatDbStatusLabel: _readRequiredString(row, 'chat_db_status_label'),
+          attachmentsStatusLabel: _readRequiredString(
+            row,
+            'attachments_status_label',
+          ),
+          preflightStatusLabel: _readRequiredString(
+            row,
+            'preflight_status_label',
+          ),
+          preflightDetail: _readRequiredString(row, 'preflight_detail'),
           totalMessages: _asNullableInt(row['total_messages']),
           totalChats: _asNullableInt(row['total_chats']),
           totalHandles: _asNullableInt(row['total_handles']),
@@ -545,7 +551,7 @@ SELECT (
           lastImportedMessageCount: _asNullableInt(
             row['last_imported_message_count'],
           ),
-          updatedAtUtc: row['updated_at_utc'] as String,
+          updatedAtUtc: _readRequiredString(row, 'updated_at_utc'),
         ),
     ];
   }
@@ -1808,6 +1814,18 @@ AND Z_PK NOT IN (
       return value.toInt();
     }
     return int.tryParse('$value');
+  }
+
+  String _readRequiredString(Map<String, Object?> row, String key) {
+    final value = _readNullableString(row, key);
+    if (value == null) {
+      throw StateError('Missing required string column $key');
+    }
+    return value;
+  }
+
+  String? _readNullableString(Map<String, Object?> row, String key) {
+    return row[key] as String?;
   }
 
   bool? _asNullableBool(Object? value) {
