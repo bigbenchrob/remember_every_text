@@ -5,9 +5,11 @@ import 'message_snapshot_delta_refresh_orchestrator.dart';
 
 part 'message_snapshot_delta_refresh_orchestrator_provider.g.dart';
 
-@riverpod
+@Riverpod(keepAlive: true)
 MessageSnapshotDeltaRefreshOrchestrator messageSnapshotDeltaRefreshOrchestrator(
   Ref ref,
 ) {
-  return MessageSnapshotDeltaRefreshOrchestrator(ref);
+  final orchestrator = MessageSnapshotDeltaRefreshOrchestrator(ref);
+  ref.onDispose(orchestrator.dispose);
+  return orchestrator;
 }

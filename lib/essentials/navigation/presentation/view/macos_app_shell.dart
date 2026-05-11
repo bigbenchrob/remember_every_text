@@ -8,8 +8,6 @@ import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../providers.dart';
 import '../../../incremental_update/application/messages/orchestrators/message_snapshot_delta_refresh_orchestrator_provider.dart';
-import '../../../incremental_update/application/messages/readers/import_ledger_message_snapshot_reader_provider.dart';
-import '../../../incremental_update/application/messages/readers/live_chat_db_message_snapshot_reader_provider.dart';
 import '../../../onboarding/application/onboarding_gate_provider.dart';
 import '../../../onboarding/domain/onboarding_status.dart';
 import '../../../onboarding/presentation/onboarding_overlay.dart';
@@ -61,6 +59,14 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
       debugPrint('Shadow message snapshot delta refresh failed: $error');
       debugPrint(stackTrace.toString());
     }
+  }
+
+  void _startMessageSnapshotDeltaPolling() {
+    ref.read(messageSnapshotDeltaRefreshOrchestratorProvider).startPolling();
+  }
+
+  void _stopMessageSnapshotDeltaPolling() {
+    ref.read(messageSnapshotDeltaRefreshOrchestratorProvider).stopPolling();
   }
 
   @override
@@ -136,6 +142,20 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
                     label: 'Run message snapshot readers',
                     icon: const MacosIcon(CupertinoIcons.waveform_path_ecg),
                     onPressed: _runMessageSnapshotDeltaRefresh,
+                    showLabel: false,
+                  ),
+                if (kDebugMode)
+                  ToolBarIconButton(
+                    label: 'Start message snapshot polling',
+                    icon: const MacosIcon(CupertinoIcons.play_fill),
+                    onPressed: _startMessageSnapshotDeltaPolling,
+                    showLabel: false,
+                  ),
+                if (kDebugMode)
+                  ToolBarIconButton(
+                    label: 'Stop message snapshot polling',
+                    icon: const MacosIcon(CupertinoIcons.stop_fill),
+                    onPressed: _stopMessageSnapshotDeltaPolling,
                     showLabel: false,
                   ),
                 () {
