@@ -7,6 +7,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../providers.dart';
+import '../../../incremental_update/application/messages/orchestrators/message_snapshot_delta_refresh_orchestrator_provider.dart';
 import '../../../incremental_update/application/messages/readers/import_ledger_message_snapshot_reader_provider.dart';
 import '../../../incremental_update/application/messages/readers/live_chat_db_message_snapshot_reader_provider.dart';
 import '../../../onboarding/application/onboarding_gate_provider.dart';
@@ -47,32 +48,17 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
     super.dispose();
   }
 
-  Future<void> _runMessageSnapshotReaders() async {
+  Future<void> _runMessageSnapshotDeltaRefresh() async {
     try {
-      final importLedgerReader = await ref.read(
-        importLedgerMessageSnapshotReaderProvider.future,
+      final orchestrator = ref.read(
+        messageSnapshotDeltaRefreshOrchestratorProvider,
       );
-      final importLedgerSnapshot = await importLedgerReader.read();
 
-      final liveChatReader = await ref.read(
-        liveChatDbMessageSnapshotReaderProvider.future,
-      );
-      final liveChatSnapshot = await liveChatReader.read();
+      final delta = await orchestrator.refreshOnce();
 
-      final rowIdDelta =
-          liveChatSnapshot.maxRowId - importLedgerSnapshot.maxRowId;
-      final countDelta =
-          liveChatSnapshot.totalMessageCount -
-          importLedgerSnapshot.totalMessageCount;
-
-      debugPrint('Shadow import ledger snapshot: $importLedgerSnapshot');
-      debugPrint('Shadow live chat.db snapshot: $liveChatSnapshot');
-      debugPrint(
-        'Shadow message snapshot delta: '
-        'rowIdDelta=$rowIdDelta, countDelta=$countDelta',
-      );
+      debugPrint('Shadow message snapshot delta: $delta');
     } catch (error, stackTrace) {
-      debugPrint('Shadow message snapshot readers failed: $error');
+      debugPrint('Shadow message snapshot delta refresh failed: $error');
       debugPrint(stackTrace.toString());
     }
   }
@@ -149,7 +135,7 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
                   ToolBarIconButton(
                     label: 'Run message snapshot readers',
                     icon: const MacosIcon(CupertinoIcons.waveform_path_ecg),
-                    onPressed: _runMessageSnapshotReaders,
+                    onPressed: _runMessageSnapshotDeltaRefresh,
                     showLabel: false,
                   ),
                 () {

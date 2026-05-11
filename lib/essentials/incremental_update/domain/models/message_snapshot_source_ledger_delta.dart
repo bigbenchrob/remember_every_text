@@ -13,5 +13,5 @@ abstract class MessageSnapshotSourceLedgerDelta
   const MessageSnapshotSourceLedgerDelta._();
   bool get isLiveSourceRowAhead => rowIdDelta > 0;
   bool get isLedgerSourceRowAhead => rowIdDelta < 0;
-  bool get rowIdsMatch => rowIdDelta == 0;
+  bool get sourceAndLedgerCursorsMatch => rowIdDelta == 0;
 }
