@@ -7,6 +7,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../providers.dart';
+import '../../../incremental_update/application/messages/readers/import_ledger_message_snapshot_reader_provider.dart';
 import '../../../incremental_update/application/messages/readers/live_chat_db_message_snapshot_reader_provider.dart';
 import '../../../onboarding/application/onboarding_gate_provider.dart';
 import '../../../onboarding/domain/onboarding_status.dart';
@@ -46,15 +47,32 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
     super.dispose();
   }
 
-  Future<void> _runLiveChatDbMessageSnapshotReader() async {
+  Future<void> _runMessageSnapshotReaders() async {
     try {
-      final reader = await ref.read(
+      final importLedgerReader = await ref.read(
+        importLedgerMessageSnapshotReaderProvider.future,
+      );
+      final importLedgerSnapshot = await importLedgerReader.read();
+
+      final liveChatReader = await ref.read(
         liveChatDbMessageSnapshotReaderProvider.future,
       );
-      final snapshot = await reader.read();
-      debugPrint('Shadow live chat.db snapshot: $snapshot');
+      final liveChatSnapshot = await liveChatReader.read();
+
+      final rowIdDelta =
+          liveChatSnapshot.maxRowId - importLedgerSnapshot.maxRowId;
+      final countDelta =
+          liveChatSnapshot.totalMessageCount -
+          importLedgerSnapshot.totalMessageCount;
+
+      debugPrint('Shadow import ledger snapshot: $importLedgerSnapshot');
+      debugPrint('Shadow live chat.db snapshot: $liveChatSnapshot');
+      debugPrint(
+        'Shadow message snapshot delta: '
+        'rowIdDelta=$rowIdDelta, countDelta=$countDelta',
+      );
     } catch (error, stackTrace) {
-      debugPrint('Shadow live chat.db snapshot failed: $error');
+      debugPrint('Shadow message snapshot readers failed: $error');
       debugPrint(stackTrace.toString());
     }
   }
@@ -129,9 +147,9 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
               actions: [
                 if (kDebugMode)
                   ToolBarIconButton(
-                    label: 'Run live chat.db snapshot reader',
+                    label: 'Run message snapshot readers',
                     icon: const MacosIcon(CupertinoIcons.waveform_path_ecg),
-                    onPressed: _runLiveChatDbMessageSnapshotReader,
+                    onPressed: _runMessageSnapshotReaders,
                     showLabel: false,
                   ),
                 () {

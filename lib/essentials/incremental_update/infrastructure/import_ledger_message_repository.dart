@@ -1,42 +1,31 @@
-import 'package:sqflite/sqflite.dart';
-
+import '../../db/infrastructure/data_sources/local/import/sqflite_import_database.dart';
 import '../domain/models/import_ledger_message_snapshot.dart';
 
-class ImportLedgeressageRepository {
-  const ImportLedgeressageRepository({required String ledgerPath})
-    : _ledgerPath = ledgerPath;
+class ImportLedgerMessageRepository {
+  const ImportLedgerMessageRepository({required SqfliteImportDatabase ledgerDb})
+    : _ledgerDb = ledgerDb;
 
-  final String _ledgerPath;
+  final SqfliteImportDatabase _ledgerDb;
 
   Future<ImportLedgerMessageSnapshot> readMessageSnapshot() async {
-    final db = await openDatabase(
-      _ledgerPath,
-      readOnly: true,
-      singleInstance: false,
+    final maxRowId = await _readMaxMessageRowId();
+    final totalMessageCount = await _readTotalMessageCount();
+
+    return ImportLedgerMessageSnapshot(
+      maxRowId: maxRowId,
+      totalMessageCount: totalMessageCount,
     );
-
-    try {
-      final maxRowId = await _readMaxMessageRowId(db);
-      final totalMessageCount = await _readTotalMessageCount(db);
-
-      return ImportLedgerMessageSnapshot(
-        maxRowId: maxRowId,
-        totalMessageCount: totalMessageCount,
-      );
-    } finally {
-      await db.close();
-    }
   }
 
-  Future<int> _readMaxMessageRowId(Database db) async {
-    final rows = await db.rawQuery(
-      'SELECT MAX(ROWID) AS max_rowid FROM messages;',
+  Future<int> _readMaxMessageRowId() async {
+    final rows = await _ledgerDb.rawQuery(
+      'SELECT MAX(source_rowid) AS max_rowid FROM messages;',
     );
     return _readInt(rows, 'max_rowid', nullValue: 0);
   }
 
-  Future<int> _readTotalMessageCount(Database db) async {
-    final rows = await db.rawQuery(
+  Future<int> _readTotalMessageCount() async {
+    final rows = await _ledgerDb.rawQuery(
       'SELECT COUNT(*) AS total_message_count FROM messages;',
     );
     return _readInt(rows, 'total_message_count');
