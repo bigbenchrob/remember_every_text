@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../../../domain/sealed_unions/sync_state.dart';
-import '../integrators/sync_assessment_integrator_provider.dart';
+import '../../../domain/sealed_unions/import_decision.dart';
+import '../integrators/import_decision_provider.dart';
+import '../readers/import_ledger_message_snapshot_provider.dart';
+import '../readers/live_chat_db_message_snapshot_provider.dart';
 
 class SyncStatePollingOrchestrator {
   SyncStatePollingOrchestrator(this._ref);
@@ -14,11 +16,12 @@ class SyncStatePollingOrchestrator {
 
   //“A refresh cycle has started but has not yet completed.”
   bool _refreshInFlight = false;
-  MessageSyncState? _lastObservedState;
+  ImportDecision? _lastObservedDecision;
 
-  Future<MessageSyncState> refreshOnce() async {
-    _ref.invalidate(messageSyncStateProvider);
-    return _ref.read(messageSyncStateProvider.future);
+  Future<ImportDecision> refreshOnce() async {
+    _ref.invalidate(liveChatDbMessageSnapshotProvider);
+    _ref.invalidate(importLedgerMessageSnapshotProvider);
+    return _ref.read(importDecisionProvider.future);
   }
 
   void startPolling({Duration interval = const Duration(seconds: 15)}) {
@@ -44,15 +47,15 @@ class SyncStatePollingOrchestrator {
       _refreshInFlight = true;
       unawaited(
         refreshOnce()
-            .then((delta) {
-              if (delta != _lastObservedState) {
+            .then((decision) {
+              if (decision != _lastObservedDecision) {
                 debugPrint(
-                  'Shadow message sync-state transition: \n'
-                  'Previous: ${_extractSemanticSyncStateMeaning(_lastObservedState)}, '
-                  'Current: ${_extractSemanticSyncStateMeaning(delta)}',
+                  'Shadow import decision transition: \n'
+                  'Previous: ${_extractSemanticImportDecisionMeaning(_lastObservedDecision)}, '
+                  'Current: ${_extractSemanticImportDecisionMeaning(decision)}',
                 );
               }
-              _lastObservedState = delta;
+              _lastObservedDecision = decision;
             })
             //Whether success or failure, release the orchestration lock.
             .whenComplete(() {
@@ -78,11 +81,11 @@ class SyncStatePollingOrchestrator {
   }
 }
 
-String _extractSemanticSyncStateMeaning(MessageSyncState? state) {
-  return switch (state) {
-    null => 'No previous sync state observed.',
-    MessageSyncCursorsMatch() => 'none',
-    MessageSyncSourceAheadOfLedger() => 'sourceAheadOfLedger',
-    MessageSyncLedgerAheadOfSource() => 'ledgerAheadOfSource',
+String _extractSemanticImportDecisionMeaning(ImportDecision? decision) {
+  return switch (decision) {
+    null => 'No previous import decision observed.',
+    ImportDecisionDoNothing() => 'doNothing',
+    ImportDecisionConsiderIncrementalImport() => 'considerIncrementalImport',
+    ImportDecisionBlockAndReportLedgerAhead() => 'blockAndReportLedgerAhead',
   };
 }

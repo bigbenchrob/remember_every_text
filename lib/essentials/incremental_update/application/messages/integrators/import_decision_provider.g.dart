@@ -1,30 +1,28 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'snapshot_delta_integrator_provider.dart';
+part of 'import_decision_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$snapshotDeltaIntegratorHash() =>
-    r'7abe787af6fd4f5ae5501ed9cf07a681fbf9f493';
+String _$importDecisionHash() => r'c3676fa0de8a3a1f25eba6cd608186c3d22256b3';
 
-/// See also [snapshotDeltaIntegrator].
-@ProviderFor(snapshotDeltaIntegrator)
-final snapshotDeltaIntegratorProvider =
-    AutoDisposeFutureProvider<MessageSnapshotDelta>.internal(
-      snapshotDeltaIntegrator,
-      name: r'snapshotDeltaIntegratorProvider',
+/// See also [importDecision].
+@ProviderFor(importDecision)
+final importDecisionProvider =
+    AutoDisposeFutureProvider<ImportDecision>.internal(
+      importDecision,
+      name: r'importDecisionProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
           ? null
-          : _$snapshotDeltaIntegratorHash,
+          : _$importDecisionHash,
       dependencies: null,
       allTransitiveDependencies: null,
     );
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef SnapshotDeltaIntegratorRef =
-    AutoDisposeFutureProviderRef<MessageSnapshotDelta>;
+typedef ImportDecisionRef = AutoDisposeFutureProviderRef<ImportDecision>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

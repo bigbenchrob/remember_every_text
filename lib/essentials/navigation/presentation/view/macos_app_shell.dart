@@ -7,7 +7,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../providers.dart';
-import '../../../incremental_update/application/messages/orchestrators/delta_refresh_orchestrator_provider.dart';
+import '../../../incremental_update/application/messages/integrators/import_decision_provider.dart';
+import '../../../incremental_update/application/messages/orchestrators/sync_state_polling_orchestrator_provider.dart';
+import '../../../incremental_update/domain/sealed_unions/import_decision.dart';
 import '../../../onboarding/application/onboarding_gate_provider.dart';
 import '../../../onboarding/domain/onboarding_status.dart';
 import '../../../onboarding/presentation/onboarding_overlay.dart';
@@ -35,28 +37,41 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
   DateTime _lastFrameSave = DateTime.fromMillisecondsSinceEpoch(0);
   bool _pendingTrailingFrameSave = false;
 
+  late final ProviderSubscription<AsyncValue<ImportDecision>>
+  _importDecisionSubscription;
+  ImportDecision? _lastImportDecision;
+
   @override
   void initState() {
     super.initState();
+
+    _importDecisionSubscription = ref.listenManual<AsyncValue<ImportDecision>>(
+      importDecisionProvider,
+      (previous, next) {
+        next.when(
+          data: (decision) {
+            if (decision == _lastImportDecision) {
+              return;
+            }
+
+            _lastImportDecision = decision;
+            debugPrint('Shadow import decision changed: $decision');
+          },
+          loading: () {},
+          error: (error, stackTrace) {
+            debugPrint('Shadow import decision failed: $error');
+            debugPrint(stackTrace.toString());
+          },
+        );
+      },
+    );
   }
 
   @override
   void dispose() {
+    _importDecisionSubscription.close();
     _windowFrameDebounce?.cancel();
     super.dispose();
-  }
-
-  Future<void> _runMessageSnapshotDeltaRefresh() async {
-    try {
-      final orchestrator = ref.read(deltaRefreshOrchestratorProvider);
-
-      final delta = await orchestrator.refreshOnce();
-
-      debugPrint('Shadow message snapshot delta: $delta');
-    } catch (error, stackTrace) {
-      debugPrint('Shadow message snapshot delta refresh failed: $error');
-      debugPrint(stackTrace.toString());
-    }
   }
 
   void _startMessageSnapshotDeltaPolling() {
@@ -135,13 +150,6 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
               centerTitle: true,
               leading: const AppModeToggle(),
               actions: [
-                if (kDebugMode)
-                  ToolBarIconButton(
-                    label: 'Run message snapshot readers',
-                    icon: const MacosIcon(CupertinoIcons.waveform_path_ecg),
-                    onPressed: _runMessageSnapshotDeltaRefresh,
-                    showLabel: false,
-                  ),
                 if (kDebugMode)
                   ToolBarIconButton(
                     label: 'Start message snapshot polling',
