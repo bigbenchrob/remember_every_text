@@ -3,7 +3,7 @@
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
-part of 'message_snapshot_source_ledger_delta.dart';
+part of 'snapshot_delta.dart';
 
 // **************************************************************************
 // FreezedGenerator
@@ -12,20 +12,20 @@ part of 'message_snapshot_source_ledger_delta.dart';
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
-mixin _$MessageSnapshotSourceLedgerDelta {
+mixin _$MessageSnapshotDelta {
 
  int get rowIdDelta; int get messageCountDelta;
-/// Create a copy of MessageSnapshotSourceLedgerDelta
+/// Create a copy of MessageSnapshotDelta
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$MessageSnapshotSourceLedgerDeltaCopyWith<MessageSnapshotSourceLedgerDelta> get copyWith => _$MessageSnapshotSourceLedgerDeltaCopyWithImpl<MessageSnapshotSourceLedgerDelta>(this as MessageSnapshotSourceLedgerDelta, _$identity);
+$MessageSnapshotDeltaCopyWith<MessageSnapshotDelta> get copyWith => _$MessageSnapshotDeltaCopyWithImpl<MessageSnapshotDelta>(this as MessageSnapshotDelta, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MessageSnapshotSourceLedgerDelta&&(identical(other.rowIdDelta, rowIdDelta) || other.rowIdDelta == rowIdDelta)&&(identical(other.messageCountDelta, messageCountDelta) || other.messageCountDelta == messageCountDelta));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MessageSnapshotDelta&&(identical(other.rowIdDelta, rowIdDelta) || other.rowIdDelta == rowIdDelta)&&(identical(other.messageCountDelta, messageCountDelta) || other.messageCountDelta == messageCountDelta));
 }
 
 
@@ -34,15 +34,15 @@ int get hashCode => Object.hash(runtimeType,rowIdDelta,messageCountDelta);
 
 @override
 String toString() {
-  return 'MessageSnapshotSourceLedgerDelta(rowIdDelta: $rowIdDelta, messageCountDelta: $messageCountDelta)';
+  return 'MessageSnapshotDelta(rowIdDelta: $rowIdDelta, messageCountDelta: $messageCountDelta)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $MessageSnapshotSourceLedgerDeltaCopyWith<$Res>  {
-  factory $MessageSnapshotSourceLedgerDeltaCopyWith(MessageSnapshotSourceLedgerDelta value, $Res Function(MessageSnapshotSourceLedgerDelta) _then) = _$MessageSnapshotSourceLedgerDeltaCopyWithImpl;
+abstract mixin class $MessageSnapshotDeltaCopyWith<$Res>  {
+  factory $MessageSnapshotDeltaCopyWith(MessageSnapshotDelta value, $Res Function(MessageSnapshotDelta) _then) = _$MessageSnapshotDeltaCopyWithImpl;
 @useResult
 $Res call({
  int rowIdDelta, int messageCountDelta
@@ -53,14 +53,14 @@ $Res call({
 
 }
 /// @nodoc
-class _$MessageSnapshotSourceLedgerDeltaCopyWithImpl<$Res>
-    implements $MessageSnapshotSourceLedgerDeltaCopyWith<$Res> {
-  _$MessageSnapshotSourceLedgerDeltaCopyWithImpl(this._self, this._then);
+class _$MessageSnapshotDeltaCopyWithImpl<$Res>
+    implements $MessageSnapshotDeltaCopyWith<$Res> {
+  _$MessageSnapshotDeltaCopyWithImpl(this._self, this._then);
 
-  final MessageSnapshotSourceLedgerDelta _self;
-  final $Res Function(MessageSnapshotSourceLedgerDelta) _then;
+  final MessageSnapshotDelta _self;
+  final $Res Function(MessageSnapshotDelta) _then;
 
-/// Create a copy of MessageSnapshotSourceLedgerDelta
+/// Create a copy of MessageSnapshotDelta
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? rowIdDelta = null,Object? messageCountDelta = null,}) {
   return _then(_self.copyWith(
@@ -73,8 +73,8 @@ as int,
 }
 
 
-/// Adds pattern-matching-related methods to [MessageSnapshotSourceLedgerDelta].
-extension MessageSnapshotSourceLedgerDeltaPatterns on MessageSnapshotSourceLedgerDelta {
+/// Adds pattern-matching-related methods to [MessageSnapshotDelta].
+extension MessageSnapshotDeltaPatterns on MessageSnapshotDelta {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -87,10 +87,10 @@ extension MessageSnapshotSourceLedgerDeltaPatterns on MessageSnapshotSourceLedge
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _MessageSnapshotSourceLedgerDelta value)?  $default,{required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _MessageSnapshotDelta value)?  $default,{required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _MessageSnapshotSourceLedgerDelta() when $default != null:
+case _MessageSnapshotDelta() when $default != null:
 return $default(_that);case _:
   return orElse();
 
@@ -109,10 +109,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _MessageSnapshotSourceLedgerDelta value)  $default,){
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _MessageSnapshotDelta value)  $default,){
 final _that = this;
 switch (_that) {
-case _MessageSnapshotSourceLedgerDelta():
+case _MessageSnapshotDelta():
 return $default(_that);case _:
   throw StateError('Unexpected subclass');
 
@@ -130,10 +130,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _MessageSnapshotSourceLedgerDelta value)?  $default,){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _MessageSnapshotDelta value)?  $default,){
 final _that = this;
 switch (_that) {
-case _MessageSnapshotSourceLedgerDelta() when $default != null:
+case _MessageSnapshotDelta() when $default != null:
 return $default(_that);case _:
   return null;
 
@@ -153,7 +153,7 @@ return $default(_that);case _:
 
 @optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int rowIdDelta,  int messageCountDelta)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _MessageSnapshotSourceLedgerDelta() when $default != null:
+case _MessageSnapshotDelta() when $default != null:
 return $default(_that.rowIdDelta,_that.messageCountDelta);case _:
   return orElse();
 
@@ -174,7 +174,7 @@ return $default(_that.rowIdDelta,_that.messageCountDelta);case _:
 
 @optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int rowIdDelta,  int messageCountDelta)  $default,) {final _that = this;
 switch (_that) {
-case _MessageSnapshotSourceLedgerDelta():
+case _MessageSnapshotDelta():
 return $default(_that.rowIdDelta,_that.messageCountDelta);case _:
   throw StateError('Unexpected subclass');
 
@@ -194,7 +194,7 @@ return $default(_that.rowIdDelta,_that.messageCountDelta);case _:
 
 @optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int rowIdDelta,  int messageCountDelta)?  $default,) {final _that = this;
 switch (_that) {
-case _MessageSnapshotSourceLedgerDelta() when $default != null:
+case _MessageSnapshotDelta() when $default != null:
 return $default(_that.rowIdDelta,_that.messageCountDelta);case _:
   return null;
 
@@ -206,24 +206,24 @@ return $default(_that.rowIdDelta,_that.messageCountDelta);case _:
 /// @nodoc
 
 
-class _MessageSnapshotSourceLedgerDelta extends MessageSnapshotSourceLedgerDelta {
-  const _MessageSnapshotSourceLedgerDelta({required this.rowIdDelta, required this.messageCountDelta}): super._();
+class _MessageSnapshotDelta extends MessageSnapshotDelta {
+  const _MessageSnapshotDelta({required this.rowIdDelta, required this.messageCountDelta}): super._();
   
 
 @override final  int rowIdDelta;
 @override final  int messageCountDelta;
 
-/// Create a copy of MessageSnapshotSourceLedgerDelta
+/// Create a copy of MessageSnapshotDelta
 /// with the given fields replaced by the non-null parameter values.
 @override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-_$MessageSnapshotSourceLedgerDeltaCopyWith<_MessageSnapshotSourceLedgerDelta> get copyWith => __$MessageSnapshotSourceLedgerDeltaCopyWithImpl<_MessageSnapshotSourceLedgerDelta>(this, _$identity);
+_$MessageSnapshotDeltaCopyWith<_MessageSnapshotDelta> get copyWith => __$MessageSnapshotDeltaCopyWithImpl<_MessageSnapshotDelta>(this, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MessageSnapshotSourceLedgerDelta&&(identical(other.rowIdDelta, rowIdDelta) || other.rowIdDelta == rowIdDelta)&&(identical(other.messageCountDelta, messageCountDelta) || other.messageCountDelta == messageCountDelta));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MessageSnapshotDelta&&(identical(other.rowIdDelta, rowIdDelta) || other.rowIdDelta == rowIdDelta)&&(identical(other.messageCountDelta, messageCountDelta) || other.messageCountDelta == messageCountDelta));
 }
 
 
@@ -232,15 +232,15 @@ int get hashCode => Object.hash(runtimeType,rowIdDelta,messageCountDelta);
 
 @override
 String toString() {
-  return 'MessageSnapshotSourceLedgerDelta(rowIdDelta: $rowIdDelta, messageCountDelta: $messageCountDelta)';
+  return 'MessageSnapshotDelta(rowIdDelta: $rowIdDelta, messageCountDelta: $messageCountDelta)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$MessageSnapshotSourceLedgerDeltaCopyWith<$Res> implements $MessageSnapshotSourceLedgerDeltaCopyWith<$Res> {
-  factory _$MessageSnapshotSourceLedgerDeltaCopyWith(_MessageSnapshotSourceLedgerDelta value, $Res Function(_MessageSnapshotSourceLedgerDelta) _then) = __$MessageSnapshotSourceLedgerDeltaCopyWithImpl;
+abstract mixin class _$MessageSnapshotDeltaCopyWith<$Res> implements $MessageSnapshotDeltaCopyWith<$Res> {
+  factory _$MessageSnapshotDeltaCopyWith(_MessageSnapshotDelta value, $Res Function(_MessageSnapshotDelta) _then) = __$MessageSnapshotDeltaCopyWithImpl;
 @override @useResult
 $Res call({
  int rowIdDelta, int messageCountDelta
@@ -251,17 +251,17 @@ $Res call({
 
 }
 /// @nodoc
-class __$MessageSnapshotSourceLedgerDeltaCopyWithImpl<$Res>
-    implements _$MessageSnapshotSourceLedgerDeltaCopyWith<$Res> {
-  __$MessageSnapshotSourceLedgerDeltaCopyWithImpl(this._self, this._then);
+class __$MessageSnapshotDeltaCopyWithImpl<$Res>
+    implements _$MessageSnapshotDeltaCopyWith<$Res> {
+  __$MessageSnapshotDeltaCopyWithImpl(this._self, this._then);
 
-  final _MessageSnapshotSourceLedgerDelta _self;
-  final $Res Function(_MessageSnapshotSourceLedgerDelta) _then;
+  final _MessageSnapshotDelta _self;
+  final $Res Function(_MessageSnapshotDelta) _then;
 
-/// Create a copy of MessageSnapshotSourceLedgerDelta
+/// Create a copy of MessageSnapshotDelta
 /// with the given fields replaced by the non-null parameter values.
 @override @pragma('vm:prefer-inline') $Res call({Object? rowIdDelta = null,Object? messageCountDelta = null,}) {
-  return _then(_MessageSnapshotSourceLedgerDelta(
+  return _then(_MessageSnapshotDelta(
 rowIdDelta: null == rowIdDelta ? _self.rowIdDelta : rowIdDelta // ignore: cast_nullable_to_non_nullable
 as int,messageCountDelta: null == messageCountDelta ? _self.messageCountDelta : messageCountDelta // ignore: cast_nullable_to_non_nullable
 as int,

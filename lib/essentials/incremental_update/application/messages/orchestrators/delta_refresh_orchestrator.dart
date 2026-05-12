@@ -3,22 +3,22 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../../../domain/models/message_snapshot_source_ledger_delta.dart';
-import '../integrators/message_snapshot_source_ledger_delta_provider.dart';
+import '../../../domain/models/snapshot_delta.dart';
+import '../integrators/snapshot_delta_integrator_provider.dart';
 
-class MessageSnapshotDeltaRefreshOrchestrator {
-  MessageSnapshotDeltaRefreshOrchestrator(this._ref);
+class DeltaRefreshOrchestrator {
+  DeltaRefreshOrchestrator(this._ref);
 
   final Ref _ref;
   Timer? _pollingTimer;
 
   //“A refresh cycle has started but has not yet completed.”
   bool _refreshInFlight = false;
-  MessageSnapshotSourceLedgerDelta? _lastObservedDelta;
+  MessageSnapshotDelta? _lastObservedDelta;
 
-  Future<MessageSnapshotSourceLedgerDelta> refreshOnce() async {
-    _ref.invalidate(messageSnapshotSourceLedgerDeltaProvider);
-    return _ref.read(messageSnapshotSourceLedgerDeltaProvider.future);
+  Future<MessageSnapshotDelta> refreshOnce() async {
+    _ref.invalidate(snapshotDeltaIntegratorProvider);
+    return _ref.read(snapshotDeltaIntegratorProvider.future);
   }
 
   void startPolling({Duration interval = const Duration(seconds: 15)}) {

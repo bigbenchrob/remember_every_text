@@ -7,7 +7,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../providers.dart';
-import '../../../incremental_update/application/messages/orchestrators/message_snapshot_delta_refresh_orchestrator_provider.dart';
+import '../../../incremental_update/application/messages/orchestrators/delta_refresh_orchestrator_provider.dart';
 import '../../../onboarding/application/onboarding_gate_provider.dart';
 import '../../../onboarding/domain/onboarding_status.dart';
 import '../../../onboarding/presentation/onboarding_overlay.dart';
@@ -48,9 +48,7 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
 
   Future<void> _runMessageSnapshotDeltaRefresh() async {
     try {
-      final orchestrator = ref.read(
-        messageSnapshotDeltaRefreshOrchestratorProvider,
-      );
+      final orchestrator = ref.read(deltaRefreshOrchestratorProvider);
 
       final delta = await orchestrator.refreshOnce();
 
@@ -62,11 +60,11 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
   }
 
   void _startMessageSnapshotDeltaPolling() {
-    ref.read(messageSnapshotDeltaRefreshOrchestratorProvider).startPolling();
+    ref.read(deltaRefreshOrchestratorProvider).startPolling();
   }
 
   void _stopMessageSnapshotDeltaPolling() {
-    ref.read(messageSnapshotDeltaRefreshOrchestratorProvider).stopPolling();
+    ref.read(deltaRefreshOrchestratorProvider).stopPolling();
   }
 
   @override

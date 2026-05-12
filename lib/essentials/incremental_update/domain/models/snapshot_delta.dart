@@ -1,16 +1,15 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-part 'message_snapshot_source_ledger_delta.freezed.dart';
+part 'snapshot_delta.freezed.dart';
 
 @freezed
-abstract class MessageSnapshotSourceLedgerDelta
-    with _$MessageSnapshotSourceLedgerDelta {
-  const factory MessageSnapshotSourceLedgerDelta({
+abstract class MessageSnapshotDelta with _$MessageSnapshotDelta {
+  const factory MessageSnapshotDelta({
     required int rowIdDelta,
     required int messageCountDelta,
-  }) = _MessageSnapshotSourceLedgerDelta;
+  }) = _MessageSnapshotDelta;
 
-  const MessageSnapshotSourceLedgerDelta._();
+  const MessageSnapshotDelta._();
   bool get isLiveSourceRowAhead => rowIdDelta > 0;
   bool get isLedgerSourceRowAhead => rowIdDelta < 0;
   bool get sourceAndLedgerCursorsMatch => rowIdDelta == 0;
