@@ -2,7 +2,9 @@
 
 ## Purpose
 
-This document defines the initial pilot implementation target for the Readers → Integrators → Orchestrators architectural responsibility model.
+This document defines the shadow incremental-update pilot for the Readers → Integrators → Orchestrators architectural responsibility model.
+
+The message sync pilot under `lib/essentials/incremental_update/` is now a working, validated implementation of the model. It remains shadow/dev-only and non-authoritative, but it has proven the responsibility split and the correct invalidation boundary for polling.
 
 Initial pilot target:
 
@@ -84,33 +86,63 @@ The pilot explores whether these responsibilities can be decomposed more clearly
 
 ---
 
-# Initial Experimental Structure
+# Validated Shadow Incremental-Update Pipeline
 
-Preferred experimental structure:
+The implemented shadow message pipeline now follows this flow:
 
 ```text
-incremental_updates/
+poll tick
+→ invalidate reader snapshot providers
+→ readers re-query source/ledger databases
+→ delta integrator recomputes numeric drift
+→ sync-state integrator derives semantic meaning
+→ import-decision integrator derives policy meaning
+→ polling orchestrator observes transitions
+```
+
+Concrete implemented examples:
+
+```text
+liveChatDbMessageSnapshotProvider
+importLedgerMessageSnapshotProvider
+→ snapshotDeltaIntegratorProvider
+→ messageSyncStateProvider
+→ importDecisionProvider
+→ SyncStatePollingOrchestrator
+```
+
+The reader snapshot providers are the external observation boundary:
+
+- `liveChatDbMessageSnapshotProvider` observes live `chat.db`
+- `importLedgerMessageSnapshotProvider` observes `macos_import.db`
+
+The derived providers do not observe external reality directly. They compose values and derive meaning.
+
+---
+
+# Validated Implementation Structure
+
+Current implemented structure:
+
+```text
+incremental_update/
   messages/
     readers/
     integrators/
     orchestrators/
 ```
 
-Initial pilot should remain isolated from production orchestration ownership.
+The pilot remains isolated from production orchestration ownership.
 
 ---
 
-# Initial Reader Candidates
+# Reader Snapshot Providers
 
-Examples:
+Validated reader snapshot providers:
 
 ```text
-live_chat_db_rowid_reader
-imported_message_rowid_reader
-live_importable_message_count_reader
-imported_message_count_reader
-projection_completion_reader
-execution_gate_state_reader
+liveChatDbMessageSnapshotProvider
+importLedgerMessageSnapshotProvider
 ```
 
 Reader goal:
@@ -118,6 +150,12 @@ Reader goal:
 ```text
 factual observation only
 ```
+
+Readers and reader snapshot providers:
+
+- observe external reality
+- execute factual database reads
+- produce immutable snapshots
 
 Readers should avoid:
 
@@ -128,15 +166,14 @@ Readers should avoid:
 
 ---
 
-# Initial Integrator Candidates
+# Integrators
 
-Examples:
+Validated integrator providers:
 
 ```text
-startup_reconciliation_integrator
-ledger_drift_integrator
-incremental_update_required_integrator
-projection_consistency_integrator
+snapshotDeltaIntegratorProvider
+messageSyncStateProvider
+importDecisionProvider
 ```
 
 Integrator goal:
@@ -145,15 +182,31 @@ Integrator goal:
 semantic interpretation
 ```
 
-Integrators should answer questions like:
+The implemented integrator sequence separates facts, semantic meaning, and policy meaning:
 
 ```text
-Is the ledger behind?
-Does startup reconciliation appear necessary?
-Does imported state appear inconsistent with live state?
+live/import snapshots
+→ MessageSnapshotDelta
+→ MessageSyncState
+→ ImportDecision
 ```
 
-Integrators should avoid:
+Integrator roles:
+
+- `snapshotDeltaIntegratorProvider` computes numeric drift from factual snapshots
+- `messageSyncStateProvider` converts numeric drift into semantic sync state
+- `importDecisionProvider` converts semantic sync state into policy meaning
+
+Integrators should remain synchronous and pure whenever practical. Providers may coordinate async reads, but the semantic transform itself should be deterministic:
+
+```text
+facts in
+→ meaning out
+```
+
+Decision integrators are still integrators. Their input is semantic meaning and their output is policy meaning. They should not perform side effects.
+
+Integrators and decision integrators should avoid:
 
 - lifecycle ownership
 - retries/debounce
@@ -162,14 +215,12 @@ Integrators should avoid:
 
 ---
 
-# Initial Orchestrator Candidates
+# Orchestrator
 
-Examples:
+Validated orchestrator:
 
 ```text
-polling_orchestrator
-startup_probe_orchestrator
-incremental_update_scheduler
+SyncStatePollingOrchestrator
 ```
 
 Orchestrator goal:
@@ -181,17 +232,185 @@ execution coordination
 Orchestrators should own:
 
 - polling cadence
-- startup coordination
-- retry/debounce
-- execution ownership coordination
-- scheduling behavior
+- polling lifecycle
+- refresh triggering
+- overlap prevention
+- transition observation
 
-Orchestrators should preferably consult:
+The validated shadow orchestrator does not own semantic interpretation. It invalidates the factual observation boundary, reads the final policy provider, and logs transitions.
 
-- Readers for facts
-- Integrators for meaning
+Orchestrators should prefer:
+
+- readers for factual observation
+- integrators for meaning
+- providers for reactive composition and dependency propagation
 
 rather than embedding all logic internally.
+
+---
+
+# Invalidation Boundary Principles
+
+The main architectural discovery from the working pilot is:
+
+```text
+Invalidate at the external observation boundary,
+not at semantic/derived providers.
+```
+
+Polling means:
+
+```text
+observe external reality again
+```
+
+It does not mean:
+
+```text
+refresh conclusions
+```
+
+For the validated message pilot, the polling orchestrator invalidates only:
+
+```text
+liveChatDbMessageSnapshotProvider
+importLedgerMessageSnapshotProvider
+```
+
+It does not manually invalidate:
+
+```text
+snapshotDeltaIntegratorProvider
+messageSyncStateProvider
+importDecisionProvider
+```
+
+Those providers should recompute naturally because they depend on the reader snapshot providers.
+
+If invalidating factual observation providers does not propagate upward, the provider graph is structured incorrectly. The correct fix is to repair the dependency graph, not to force-refresh semantic conclusions.
+
+---
+
+# Reactive vs Imperative Flow
+
+The pilot clarified an important distinction:
+
+```text
+reactive provider graph
+vs
+imperative polling invalidation
+```
+
+Providers watching other providers creates a reactive dependency graph. It does not mean that invalidating an upper derived provider forces lower providers to re-query external reality.
+
+The imperative polling action should be narrow:
+
+```text
+poll tick
+→ invalidate factual observation providers
+→ read final semantic/policy provider
+```
+
+The reactive graph then handles:
+
+```text
+reader snapshots changed
+→ delta recomputed
+→ sync state recomputed
+→ import decision recomputed
+```
+
+This preserves responsibility separation:
+
+- polling owns time
+- readers own external observation
+- providers own dependency propagation
+- integrators own meaning
+
+---
+
+# Semantic State Derivation
+
+The validated message pilot uses distinct layers of meaning:
+
+```text
+MessageSnapshotDelta
+→ MessageSyncState
+→ ImportDecision
+```
+
+`MessageSnapshotDelta` is factual numeric drift:
+
+- row id delta
+- message count delta
+
+`MessageSyncState` is semantic sync meaning:
+
+- cursors match
+- source ahead of ledger
+- ledger ahead of source
+
+`ImportDecision` is policy meaning:
+
+- do nothing
+- consider incremental import
+- block/report ledger-ahead condition
+
+These should remain separate. A numeric fact should not directly schedule work. A semantic state should not perform side effects. A policy decision should not mutate production systems by itself.
+
+---
+
+# Why Sealed Unions Matter
+
+Semantic states and policy decisions should use sealed unions when the set of meanings is intentionally finite.
+
+The pilot validates this for:
+
+```text
+MessageSyncState
+ImportDecision
+```
+
+Sealed unions make transitions explicit and force exhaustive handling. This matters because missing a state in incremental update logic can lead to silent import skips, unsafe execution, or confusing logs.
+
+Prefer sealed unions for semantic meaning such as:
+
+- source and ledger cursors match
+- source is ahead of ledger
+- ledger is ahead of source
+- import should do nothing
+- import should be considered
+- import should be blocked and reported
+
+Avoid encoding these as loose strings or unstructured booleans once they become orchestration-relevant.
+
+---
+
+# Why Readers Must Own External Observation
+
+Readers are the right invalidation boundary because they are the only layer that observes external reality.
+
+In the validated pilot, external reality is:
+
+- live Messages `chat.db`
+- `macos_import.db`
+
+The reader snapshot providers re-query those databases and produce factual snapshots. Everything above that layer should be a deterministic consequence of those facts.
+
+This rule prevents semantic providers from becoming accidental lifecycle owners. It also makes logs easier to reason about:
+
+```text
+external facts changed
+→ semantic meaning changed
+→ policy meaning changed
+```
+
+instead of:
+
+```text
+some conclusion was refreshed
+→ maybe facts changed
+```
 
 ---
 

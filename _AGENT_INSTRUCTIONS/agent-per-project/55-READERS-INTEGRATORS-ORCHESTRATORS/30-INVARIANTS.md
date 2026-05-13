@@ -85,6 +85,34 @@ Readers should primarily observe rather than coordinate.
 
 ---
 
+## Readers Are the Invalidation Boundary for External Observation
+
+When polling exists to re-observe external reality, invalidation should target Readers or reader snapshot providers.
+
+Examples of external observation:
+
+- live `chat.db`
+- `macos_import.db`
+- filesystem state
+- projection readiness state
+
+Derived semantic providers should recompute through dependency propagation. Orchestrators should not compensate for an incorrect provider graph by invalidating semantic conclusions directly.
+
+The validated message shadow pipeline follows:
+
+```text
+poll tick
+→ invalidate reader snapshot providers
+→ derived providers recompute naturally
+```
+
+This preserves the distinction between:
+
+- observing facts again
+- recomputing meaning from facts
+
+---
+
 # Integrator Invariants
 
 ## Integrators Interpret Facts
@@ -99,6 +127,24 @@ Examples:
 - "attachment archive drift detected"
 
 Integrators should not directly coordinate execution lifecycle.
+
+---
+
+## Integrators Keep Meaning Separate from Policy and Execution
+
+Integrators should make each level of meaning explicit.
+
+The validated message shadow pipeline separates:
+
+```text
+MessageSnapshotDelta
+→ MessageSyncState
+→ ImportDecision
+```
+
+Numeric drift, semantic sync state, and policy decision are related but distinct. Keeping them separate prevents facts from directly becoming execution and prevents policy decisions from acquiring side effects.
+
+Decision integrators may convert semantic meaning into policy meaning, but they should remain side-effect free.
 
 ---
 
