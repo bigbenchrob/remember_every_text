@@ -10,6 +10,7 @@ import '../integrators/sync_assessment_integrator_provider.dart';
 import '../readers/import_ledger_message_snapshot_provider.dart';
 import '../readers/live_chat_db_message_snapshot_provider.dart';
 import 'shadow_import_execution_orchestrator_provider.dart';
+import 'shadow_migration_refresh_orchestrator_provider.dart';
 
 class SyncStatePollingOrchestrator {
   SyncStatePollingOrchestrator(this._ref);
@@ -29,6 +30,7 @@ class SyncStatePollingOrchestrator {
       shadowImportExecutionOrchestratorProvider.future,
     );
     await executionOrchestrator.runForDecision(decision);
+    await _ref.read(shadowMigrationRefreshOrchestratorProvider).refreshOnce();
     return decision;
   }
 

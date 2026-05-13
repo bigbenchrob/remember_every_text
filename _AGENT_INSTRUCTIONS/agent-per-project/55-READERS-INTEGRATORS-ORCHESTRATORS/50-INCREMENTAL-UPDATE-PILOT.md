@@ -132,6 +132,92 @@ The derived providers do not observe external reality directly. They compose val
 
 ---
 
+# Emerging Architecture Spine
+
+The shadow pilot is revealing a reusable orchestration grammar. The same shape now appears across both shadow import and shadow migration:
+
+```text
+facts
+→ semantic state
+→ policy decision
+→ execution orchestration
+→ executor
+→ updated facts
+```
+
+This is the architecture spine.
+
+The important property is not the specific database or table. The important property is that each step has a distinct responsibility and the next step depends on the previous step's output.
+
+Generic responsibility mapping:
+
+```text
+Reader snapshots
+→ semantic-state Integrator
+→ policy-decision Integrator
+→ execution Orchestrator
+→ narrow Executor
+→ reader snapshots on the next observation cycle
+```
+
+For shadow import:
+
+```text
+live chat.db + macos_import_shadow.db facts
+→ MessageSyncState
+→ ImportDecision
+→ ShadowImportExecutionOrchestrator
+→ ShadowMessageImportExecutor
+→ updated macos_import_shadow.db facts
+```
+
+For shadow migration:
+
+```text
+macos_import_shadow.db + working_shadow.db facts
+→ MessageMigrationState
+→ MigrationDecision
+→ ShadowMigrationExecutionOrchestrator
+→ ShadowMessageMigrationExecutor
+→ updated working_shadow.db facts
+```
+
+The naming symmetry is intentional and valuable:
+
+```text
+ImportDecisionIntegrator
+ShadowImportExecutionOrchestrator
+ShadowMessageImportExecutor
+
+MigrationDecisionIntegrator
+ShadowMigrationExecutionOrchestrator
+ShadowMessageMigrationExecutor
+```
+
+This symmetry shows the system becoming compositional rather than bespoke. New execution boundaries should prefer this grammar unless there is a concrete reason to diverge.
+
+The spine also clarifies safety:
+
+- raw facts do not mutate state
+- semantic states do not mutate state
+- policy decisions do not mutate state directly
+- execution orchestration decides whether an executor may run
+- executors perform narrow, explicitly scoped mutation
+- updated facts are observed by readers on the next refresh
+
+This preserves causal traceability:
+
+```text
+what was observed?
+→ what did it mean?
+→ what policy did that imply?
+→ was execution allowed?
+→ what changed?
+→ did the facts resolve?
+```
+
+---
+
 # Closed-Loop Shadow Import Milestone
 
 The pilot has now validated the first real execution boundary while staying shadow-only:
@@ -191,6 +277,86 @@ ImportDecision.considerIncrementalImport
 ```
 
 This milestone validates that execution can remain downstream of policy meaning without collapsing readers, integrators, and orchestration back into one responsibility-compressed object.
+
+---
+
+# Focused Test Coverage
+
+The closed-loop pilot now has narrow architectural tests covering semantic derivation, policy derivation, and execution eligibility.
+
+Current focused test files:
+
+```text
+test/essentials/incremental_update/application/messages/integrators/
+  message_sync_assessment_integrator_test.dart
+  import_decision_integrator_test.dart
+
+test/essentials/incremental_update/application/messages/orchestrators/
+  shadow_import_execution_orchestrator_test.dart
+```
+
+Validated semantic derivation:
+
+```text
+MessageSnapshotDelta(rowIdDelta: 0)
+→ MessageSyncState.sourceAndLedgerCursorsMatch()
+
+MessageSnapshotDelta(rowIdDelta: positive)
+→ MessageSyncState.sourceAheadOfLedger()
+
+MessageSnapshotDelta(rowIdDelta: negative)
+→ MessageSyncState.ledgerAheadOfSource()
+```
+
+Validated policy derivation:
+
+```text
+MessageSyncState.sourceAndLedgerCursorsMatch()
+→ ImportDecision.doNothing()
+
+MessageSyncState.sourceAheadOfLedger()
+→ ImportDecision.considerIncrementalImport()
+
+MessageSyncState.ledgerAheadOfSource()
+→ ImportDecision.blockAndReportLedgerAhead()
+```
+
+Validated execution safety:
+
+```text
+ImportDecision.doNothing()
+→ no executor invocation
+
+ImportDecision.blockAndReportLedgerAhead()
+→ no executor invocation
+
+ImportDecision.considerIncrementalImport()
+→ executor invoked exactly once
+```
+
+The explicit ledger-ahead safety scenario is:
+
+```text
+live max rowid = 100
+ledger max source_rowid = 105
+rowIdDelta = -5
+→ MessageSyncState.ledgerAheadOfSource()
+→ ImportDecision.blockAndReportLedgerAhead()
+→ execution blocked
+```
+
+The execution tests use a callback-backed fake executor through a test-only constructor on `ShadowImportExecutionOrchestrator`. They do not open production databases, shadow databases, or call legacy import/migration systems.
+
+These tests protect the causal safety rule:
+
+```text
+facts
+→ semantic meaning
+→ policy meaning
+→ execution eligibility
+```
+
+Execution must not occur directly from raw numeric facts, and ledger-ahead conditions must block shadow execution.
 
 ---
 

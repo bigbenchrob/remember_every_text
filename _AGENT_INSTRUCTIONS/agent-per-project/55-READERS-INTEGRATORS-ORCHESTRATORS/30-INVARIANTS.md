@@ -305,6 +305,67 @@ before promotion into production.
 
 ---
 
+## Shadow Execution Must Remain Downstream of Policy Meaning
+
+Raw facts must not directly trigger mutation.
+
+Execution may occur only after:
+
+```text
+facts
+→ semantic meaning
+→ policy meaning
+```
+
+For the message pilot:
+
+```text
+MessageSnapshotDelta
+→ MessageSyncState
+→ ImportDecision
+→ ShadowImportExecutionOrchestrator
+```
+
+This preserves the rule that factual drift is evidence, not an execution command.
+
+---
+
+## Shadow Execution Must Not Mutate Production Databases
+
+Shadow execution may write only to explicitly named shadow/dev databases:
+
+- `macos_import_shadow.db`
+- `working_shadow.db`, once used
+
+Shadow execution must not write to:
+
+- `macos_import.db`
+- `working.db`
+- `user_overlays.db`
+
+Shadow execution remains experimental and non-authoritative until explicitly promoted.
+
+---
+
+## Blocked Policy States Must Prevent Execution
+
+For the message pilot:
+
+```text
+ImportDecision.doNothing
+→ no execution
+
+ImportDecision.blockAndReportLedgerAhead
+→ no execution
+
+ImportDecision.considerIncrementalImport
+→ execution may be considered
+```
+
+A ledger-ahead condition is a safety block, not an import trigger.
+
+---
+
 # Execution Ownership Invariants
 
 ## Mutation-Producing Work Requires Explicit Ownership

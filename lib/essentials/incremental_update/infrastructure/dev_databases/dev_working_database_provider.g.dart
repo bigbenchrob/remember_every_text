@@ -7,7 +7,7 @@ part of 'dev_working_database_provider.dart';
 // **************************************************************************
 
 String _$devWorkingDatabaseHash() =>
-    r'8e623548529741f247251635f9d5edb667919471';
+    r'c25f5b2d15969c33a3f5f3ec7a408932e8e29651';
 
 /// See also [devWorkingDatabase].
 @ProviderFor(devWorkingDatabase)

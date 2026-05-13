@@ -20,7 +20,7 @@ Future<WorkingDatabase> devWorkingDatabase(DevWorkingDatabaseRef ref) async {
   }
 
   final dbPath = path.join(databaseDirectoryPath, devWorkingDatabaseFileName);
-  final database = WorkingDatabase(
+  final database = _ShadowWorkingDatabase(
     NativeDatabase.createInBackground(File(dbPath)),
   );
   final logger = ref.read(appLoggerProvider.notifier);
@@ -38,4 +38,8 @@ Future<WorkingDatabase> devWorkingDatabase(DevWorkingDatabaseRef ref) async {
   });
 
   return database;
+}
+
+class _ShadowWorkingDatabase extends WorkingDatabase {
+  _ShadowWorkingDatabase(super.executor);
 }
