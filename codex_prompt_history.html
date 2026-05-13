@@ -1,0 +1,704 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Codex Prompt History</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f5f1ea;
+      --panel: #fffdf8;
+      --panel-soft: #ebe5db;
+      --ink: #24211d;
+      --muted: #70665d;
+      --line: #d5ccbf;
+      --accent: #226f63;
+      --accent-ink: #ffffff;
+      --danger: #9d342f;
+      --ok: #1d6b45;
+      --code-bg: #182026;
+      --code-ink: #edf2f4;
+      --shadow: 0 18px 52px rgba(46, 38, 27, 0.13);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #171a1c;
+        --panel: #22272a;
+        --panel-soft: #2c3336;
+        --ink: #f2eee7;
+        --muted: #b9b0a6;
+        --line: #3e474c;
+        --accent: #4cb6a2;
+        --accent-ink: #0d1d1a;
+        --danger: #f07d75;
+        --ok: #73c999;
+        --code-bg: #0f1418;
+        --code-ink: #edf2f4;
+        --shadow: 0 22px 68px rgba(0, 0, 0, 0.34);
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--ink);
+      background: var(--panel);
+      cursor: pointer;
+    }
+
+    button:hover {
+      border-color: var(--accent);
+    }
+
+    button.primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: var(--accent-ink);
+      font-weight: 750;
+    }
+
+    button.danger {
+      color: var(--danger);
+    }
+
+    button:disabled {
+      opacity: 0.56;
+      cursor: not-allowed;
+    }
+
+    .app {
+      width: min(1180px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 24px 0 36px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 30px;
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 6px 0 0;
+      color: var(--muted);
+      line-height: 1.45;
+      max-width: 74ch;
+    }
+
+    .top-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .composer {
+      padding: 20px;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 220px;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--ink);
+      padding: 11px 12px;
+    }
+
+    textarea {
+      min-height: 310px;
+      resize: vertical;
+      line-height: 1.5;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 14px;
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status {
+      min-height: 22px;
+      margin-top: 12px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .status.ok {
+      color: var(--ok);
+      font-weight: 700;
+    }
+
+    .status.error {
+      color: var(--danger);
+      font-weight: 700;
+    }
+
+    .preview {
+      margin-top: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--panel-soft);
+    }
+
+    .preview h2,
+    .side h2 {
+      margin: 0;
+      padding: 11px 13px;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    pre {
+      margin: 0;
+      min-height: 190px;
+      max-height: 390px;
+      overflow: auto;
+      padding: 14px;
+      background: var(--code-bg);
+      color: var(--code-ink);
+      line-height: 1.5;
+      font-size: 13px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .side {
+      position: sticky;
+      top: 18px;
+      overflow: hidden;
+    }
+
+    .side-body {
+      padding: 14px;
+    }
+
+    .target {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 14px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-soft);
+    }
+
+    .target strong {
+      overflow-wrap: anywhere;
+    }
+
+    .target span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .history-list {
+      display: grid;
+      gap: 8px;
+      max-height: 430px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .history-item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: var(--panel-soft);
+    }
+
+    .history-item strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 14px;
+      overflow-wrap: anywhere;
+    }
+
+    .history-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .note {
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 920px) {
+      .topbar,
+      .grid,
+      .field-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .top-actions {
+        justify-content: stretch;
+      }
+
+      .top-actions button,
+      .row button {
+        flex: 1 1 auto;
+      }
+
+      .side {
+        position: static;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div>
+        <h1>Codex Prompt History</h1>
+        <p class="subtitle">Paste each prompt as you issue it, then save a timestamped Markdown record into <strong>_CODEX_PROMPT_HISTORY</strong>.</p>
+      </div>
+      <div class="top-actions">
+        <button id="chooseFolderButton" class="primary" type="button">Choose Folder</button>
+        <button id="downloadButton" type="button">Download .md</button>
+        <button id="clearButton" class="danger" type="button">Clear</button>
+      </div>
+    </header>
+
+    <section class="grid">
+      <article class="panel composer">
+        <div class="field-grid">
+          <div>
+            <label for="titleInput">Short title</label>
+            <input id="titleInput" type="text" placeholder="Prompt history page">
+          </div>
+          <div>
+            <label for="tagInput">Tags</label>
+            <input id="tagInput" type="text" placeholder="docs, tooling">
+          </div>
+        </div>
+
+        <label for="promptInput">Prompt</label>
+        <textarea id="promptInput" placeholder="Paste the Codex prompt here..."></textarea>
+
+        <div class="row" style="margin-top: 12px;">
+          <button id="addButton" class="primary" type="button">Add</button>
+          <button id="copyButton" type="button">Copy Markdown</button>
+          <button id="exampleButton" type="button">Use Current Prompt</button>
+        </div>
+
+        <div id="status" class="status">Choose the history folder once, then Add will write timestamped Markdown files there in supporting browsers.</div>
+
+        <section class="preview">
+          <h2>Markdown preview</h2>
+          <pre id="previewOutput"></pre>
+        </section>
+      </article>
+
+      <aside class="panel side">
+        <h2>Save target</h2>
+        <div class="side-body">
+          <div class="target">
+            <strong id="targetLabel">No folder selected</strong>
+            <span id="supportLabel"></span>
+          </div>
+          <button id="refreshHistoryButton" type="button">Refresh History</button>
+          <p class="note">For direct folder writes, open this page in Chrome or Edge and choose the repo's <strong>_CODEX_PROMPT_HISTORY</strong> folder. Safari and Firefox may use the download fallback.</p>
+        </div>
+
+        <h2>Recent local entries</h2>
+        <div class="side-body">
+          <div id="historyList" class="history-list"></div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    "use strict";
+
+    const STORAGE_KEY = "codexPromptHistory.v1";
+    const CURRENT_PROMPT = `In the manner of the previous task, please build an HTML page that will allow me to paste in codex prompts as I issue them and save them as .md files in this folder: _CODEX_PROMPT_HISTORY
+
+I would be ideal if you could add each prompt yourself as I give it to you, but at a minimum that HTML page would have a text input box that I could manually paste each prompt into and a button to "Add".
+
+The purpose of this is so that I can create a chronicle of all the prompts that are used henceforth to complete the MessageLens app.
+
+Files should be timestamped`;
+
+    let directoryHandle = null;
+    let state = loadState();
+
+    const els = {
+      chooseFolderButton: document.getElementById("chooseFolderButton"),
+      downloadButton: document.getElementById("downloadButton"),
+      clearButton: document.getElementById("clearButton"),
+      titleInput: document.getElementById("titleInput"),
+      tagInput: document.getElementById("tagInput"),
+      promptInput: document.getElementById("promptInput"),
+      addButton: document.getElementById("addButton"),
+      copyButton: document.getElementById("copyButton"),
+      exampleButton: document.getElementById("exampleButton"),
+      status: document.getElementById("status"),
+      previewOutput: document.getElementById("previewOutput"),
+      targetLabel: document.getElementById("targetLabel"),
+      supportLabel: document.getElementById("supportLabel"),
+      refreshHistoryButton: document.getElementById("refreshHistoryButton"),
+      historyList: document.getElementById("historyList")
+    };
+
+    function loadState() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || { entries: [] };
+      } catch (error) {
+        console.warn("Could not load prompt history state", error);
+        return { entries: [] };
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function pad(value) {
+      return String(value).padStart(2, "0");
+    }
+
+    function timestamp(date) {
+      const offset = -date.getTimezoneOffset();
+      const sign = offset >= 0 ? "+" : "-";
+      const abs = Math.abs(offset);
+      return [
+        date.getFullYear(),
+        "-",
+        pad(date.getMonth() + 1),
+        "-",
+        pad(date.getDate()),
+        "T",
+        pad(date.getHours()),
+        "-",
+        pad(date.getMinutes()),
+        "-",
+        pad(date.getSeconds()),
+        sign,
+        pad(Math.floor(abs / 60)),
+        pad(abs % 60)
+      ].join("");
+    }
+
+    function isoTimestamp(date) {
+      const offset = -date.getTimezoneOffset();
+      const sign = offset >= 0 ? "+" : "-";
+      const abs = Math.abs(offset);
+      return [
+        date.getFullYear(),
+        "-",
+        pad(date.getMonth() + 1),
+        "-",
+        pad(date.getDate()),
+        "T",
+        pad(date.getHours()),
+        ":",
+        pad(date.getMinutes()),
+        ":",
+        pad(date.getSeconds()),
+        sign,
+        pad(Math.floor(abs / 60)),
+        ":",
+        pad(abs % 60)
+      ].join("");
+    }
+
+    function slugify(value) {
+      const slug = value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 70);
+      return slug || "codex-prompt";
+    }
+
+    function firstLine(value) {
+      return value.trim().split(/\r?\n/).find(Boolean) || "Codex prompt";
+    }
+
+    function buildEntry(date) {
+      const prompt = els.promptInput.value.trim();
+      const title = (els.titleInput.value.trim() || firstLine(prompt)).slice(0, 120);
+      const tags = els.tagInput.value
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean);
+      const stamp = timestamp(date);
+      const filename = stamp + "-" + slugify(title) + ".md";
+      const body = [
+        "---",
+        "created_at: " + isoTimestamp(date),
+        "title: " + JSON.stringify(title),
+        "tags: [" + tags.map((tag) => JSON.stringify(tag)).join(", ") + "]",
+        "source: codex_prompt_history.html",
+        "---",
+        "",
+        "# " + title,
+        "",
+        "## Prompt",
+        "",
+        "```text",
+        prompt,
+        "```",
+        ""
+      ].join("\n");
+
+      return { filename, title, tags, createdAt: isoTimestamp(date), body };
+    }
+
+    function updatePreview() {
+      if (!els.promptInput.value.trim()) {
+        els.previewOutput.textContent = "Paste a prompt to preview the Markdown file that will be written.";
+        return;
+      }
+      els.previewOutput.textContent = buildEntry(new Date()).body;
+    }
+
+    function setStatus(message, kind) {
+      els.status.textContent = message;
+      els.status.className = "status" + (kind ? " " + kind : "");
+    }
+
+    function downloadEntry(entry) {
+      const blob = new Blob([entry.body], { type: "text/markdown;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = entry.filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    async function chooseFolder() {
+      if (!("showDirectoryPicker" in window)) {
+        setStatus("This browser does not support direct folder writes. Use Download .md instead.", "error");
+        return;
+      }
+
+      try {
+        directoryHandle = await window.showDirectoryPicker({ mode: "readwrite" });
+        els.targetLabel.textContent = directoryHandle.name;
+        setStatus("Folder selected. Add will write timestamped Markdown files there.", "ok");
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          setStatus("Could not select folder: " + error.message, "error");
+        }
+      }
+    }
+
+    async function writeEntry(entry) {
+      if (!directoryHandle) {
+        downloadEntry(entry);
+        setStatus("No folder selected, so the Markdown file was downloaded instead: " + entry.filename, "ok");
+        return "downloaded";
+      }
+
+      const permission = await directoryHandle.requestPermission({ mode: "readwrite" });
+      if (permission !== "granted") {
+        downloadEntry(entry);
+        setStatus("Folder permission was not granted, so the Markdown file was downloaded instead.", "error");
+        return "downloaded";
+      }
+
+      const fileHandle = await directoryHandle.getFileHandle(entry.filename, { create: true });
+      const writable = await fileHandle.createWritable();
+      await writable.write(entry.body);
+      await writable.close();
+      setStatus("Saved " + entry.filename + " to " + directoryHandle.name + ".", "ok");
+      return "written";
+    }
+
+    async function addPrompt() {
+      if (!els.promptInput.value.trim()) {
+        setStatus("Paste a prompt before adding it.", "error");
+        els.promptInput.focus();
+        return;
+      }
+
+      const entry = buildEntry(new Date());
+      try {
+        const mode = await writeEntry(entry);
+        state.entries.unshift({
+          filename: entry.filename,
+          title: entry.title,
+          createdAt: entry.createdAt,
+          mode
+        });
+        state.entries = state.entries.slice(0, 100);
+        saveState();
+        renderHistory();
+        els.promptInput.value = "";
+        els.titleInput.value = "";
+        els.tagInput.value = "";
+        updatePreview();
+      } catch (error) {
+        setStatus("Could not save prompt: " + error.message, "error");
+      }
+    }
+
+    function copyMarkdown() {
+      if (!els.promptInput.value.trim()) {
+        setStatus("Paste a prompt before copying Markdown.", "error");
+        return;
+      }
+      const entry = buildEntry(new Date());
+      navigator.clipboard.writeText(entry.body).then(() => {
+        setStatus("Markdown copied for " + entry.filename + ".", "ok");
+      }).catch(() => {
+        window.prompt("Copy Markdown:", entry.body);
+      });
+    }
+
+    function clearForm() {
+      els.titleInput.value = "";
+      els.tagInput.value = "";
+      els.promptInput.value = "";
+      updatePreview();
+      setStatus("Form cleared.");
+    }
+
+    function fillCurrentPrompt() {
+      els.titleInput.value = "Build Codex prompt history page";
+      els.tagInput.value = "tooling, prompt-history";
+      els.promptInput.value = CURRENT_PROMPT;
+      updatePreview();
+      setStatus("Current prompt loaded. Choose Add to save it.");
+    }
+
+    function renderHistory() {
+      els.historyList.innerHTML = "";
+      if (state.entries.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "history-item";
+        empty.innerHTML = "<strong>No local entries yet</strong><span>Saved filenames will appear here after you add prompts.</span>";
+        els.historyList.appendChild(empty);
+        return;
+      }
+
+      for (const entry of state.entries) {
+        const item = document.createElement("div");
+        item.className = "history-item";
+        item.innerHTML = "<strong></strong><span></span><span></span>";
+        item.querySelector("strong").textContent = entry.title;
+        item.querySelectorAll("span")[0].textContent = entry.filename;
+        item.querySelectorAll("span")[1].textContent = entry.createdAt + " · " + entry.mode;
+        els.historyList.appendChild(item);
+      }
+    }
+
+    function updateSupportLabel() {
+      if ("showDirectoryPicker" in window) {
+        els.supportLabel.textContent = "Direct folder writing is available in this browser.";
+      } else {
+        els.supportLabel.textContent = "Direct folder writing is unavailable; downloads will be used.";
+        els.chooseFolderButton.disabled = true;
+      }
+    }
+
+    els.chooseFolderButton.addEventListener("click", chooseFolder);
+    els.downloadButton.addEventListener("click", () => {
+      if (!els.promptInput.value.trim()) {
+        setStatus("Paste a prompt before downloading.", "error");
+        return;
+      }
+      const entry = buildEntry(new Date());
+      downloadEntry(entry);
+      setStatus("Downloaded " + entry.filename + ".", "ok");
+    });
+    els.clearButton.addEventListener("click", clearForm);
+    els.addButton.addEventListener("click", addPrompt);
+    els.copyButton.addEventListener("click", copyMarkdown);
+    els.exampleButton.addEventListener("click", fillCurrentPrompt);
+    els.refreshHistoryButton.addEventListener("click", renderHistory);
+    els.titleInput.addEventListener("input", updatePreview);
+    els.tagInput.addEventListener("input", updatePreview);
+    els.promptInput.addEventListener("input", updatePreview);
+
+    updateSupportLabel();
+    updatePreview();
+    renderHistory();
+  </script>
+</body>
+</html>

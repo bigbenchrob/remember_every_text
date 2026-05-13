@@ -4,12 +4,18 @@
 
 This document defines the shadow incremental-update pilot for the Readers → Integrators → Orchestrators architectural responsibility model.
 
-The message sync pilot under `lib/essentials/incremental_update/` is now a working, validated implementation of the model. It remains shadow/dev-only and non-authoritative, but it has proven the responsibility split and the correct invalidation boundary for polling.
+The message sync pilot under `lib/essentials/incremental_update/` is now a working, validated implementation of the model. It remains shadow/dev-only and non-authoritative, but it has proven the responsibility split, the correct invalidation boundary for polling, and the first closed-loop execution boundary.
 
 Initial pilot target:
 
 ```text
 Incremental update detection
+```
+
+Current validated milestone:
+
+```text
+shadow message import execution loop
 ```
 
 This pilot exists to evaluate whether responsibility decomposition can improve:
@@ -52,12 +58,15 @@ Preferred initial target:
 message incremental detection only
 ```
 
+The current pilot has advanced one narrow step beyond detection: it can execute a minimal shadow-only message import into `macos_import_shadow.db` when `ImportDecision.considerIncrementalImport` is observed.
+
 NOT:
 
 - full import replacement
 - full migration replacement
 - full attachment archival replacement
 - projection ownership replacement
+- production import execution
 
 The purpose is architectural evaluation, not immediate production replacement.
 
@@ -98,6 +107,7 @@ poll tick
 → sync-state integrator derives semantic meaning
 → import-decision integrator derives policy meaning
 → polling orchestrator observes transitions
+→ shadow execution orchestrator performs shadow-only import when requested
 ```
 
 Concrete implemented examples:
@@ -109,14 +119,78 @@ importLedgerMessageSnapshotProvider
 → messageSyncStateProvider
 → importDecisionProvider
 → SyncStatePollingOrchestrator
+→ ShadowImportExecutionOrchestrator
+→ ShadowMessageImportExecutor
 ```
 
 The reader snapshot providers are the external observation boundary:
 
 - `liveChatDbMessageSnapshotProvider` observes live `chat.db`
-- `importLedgerMessageSnapshotProvider` observes `macos_import.db`
+- `importLedgerMessageSnapshotProvider` observes shadow `macos_import_shadow.db`
 
 The derived providers do not observe external reality directly. They compose values and derive meaning.
+
+---
+
+# Closed-Loop Shadow Import Milestone
+
+The pilot has now validated the first real execution boundary while staying shadow-only:
+
+```text
+observe drift
+→ derive MessageSnapshotDelta
+→ derive MessageSyncState
+→ derive ImportDecision
+→ execute minimal shadow import
+→ observe updated shadow ledger
+→ resolve to ImportDecision.doNothing
+```
+
+This is not a production importer replacement. The execution path exists to prove the architecture at the boundary where policy meaning becomes action.
+
+Validated execution components:
+
+```text
+ShadowImportExecutionOrchestrator
+ShadowMessageImportExecutor
+```
+
+The executor performs the smallest useful write path:
+
+```text
+live chat.db.message rows
+→ macos_import_shadow.db.messages
+```
+
+The executor imports only enough fields to keep the shadow ledger useful for incremental continuation and message counting:
+
+- `id`
+- `source_rowid`
+- `source_id`
+- `source_kind`
+- `guid`
+- `chat_id`
+- `service`
+- `is_from_me`
+- `text`
+- source-presence booleans required by the schema
+- `is_system_message`
+- `batch_id`
+
+Because the existing import ledger schema has foreign keys, the shadow executor may create shadow-only support rows in `import_batches` and a placeholder `chats` row inside `macos_import_shadow.db`. These support rows are schema compatibility scaffolding, not a reimplementation of legacy chat import behavior.
+
+The closed-loop proof is:
+
+```text
+ImportDecision.considerIncrementalImport
+→ shadow message import executes
+→ macos_import_shadow.db.messages catches up to live chat.db.message
+→ reader invalidation observes the new ledger state
+→ MessageSyncState resolves
+→ ImportDecision.doNothing
+```
+
+This milestone validates that execution can remain downstream of policy meaning without collapsing readers, integrators, and orchestration back into one responsibility-compressed object.
 
 ---
 
@@ -127,6 +201,7 @@ Current implemented structure:
 ```text
 incremental_update/
   messages/
+    executors/
     readers/
     integrators/
     orchestrators/
@@ -221,6 +296,7 @@ Validated orchestrator:
 
 ```text
 SyncStatePollingOrchestrator
+ShadowImportExecutionOrchestrator
 ```
 
 Orchestrator goal:
@@ -236,8 +312,9 @@ Orchestrators should own:
 - refresh triggering
 - overlap prevention
 - transition observation
+- execution triggering when downstream policy meaning calls for it
 
-The validated shadow orchestrator does not own semantic interpretation. It invalidates the factual observation boundary, reads the final policy provider, and logs transitions.
+The validated polling orchestrator does not own semantic interpretation. It invalidates the factual observation boundary, reads the final policy provider, triggers the shadow execution orchestrator, and logs transitions.
 
 Orchestrators should prefer:
 
@@ -246,6 +323,50 @@ Orchestrators should prefer:
 - providers for reactive composition and dependency propagation
 
 rather than embedding all logic internally.
+
+---
+
+# Executor
+
+Validated executor:
+
+```text
+ShadowMessageImportExecutor
+```
+
+Executor goal:
+
+```text
+narrow shadow-only mutation
+```
+
+The executor is deliberately not a Reader and not an Integrator:
+
+- it performs writes
+- it does not derive semantic meaning
+- it does not decide whether import should occur
+- it does not own polling lifecycle
+
+The current executor is intentionally limited to:
+
+```text
+live chat.db.message
+→ macos_import_shadow.db.messages
+```
+
+It must not call or reuse:
+
+- legacy `MessagesImporter`
+- legacy import orchestration
+- migration orchestration
+- attachment orchestration
+- search indexing
+- projection logic
+- production `macos_import.db`
+- production `working.db`
+- overlay database
+
+This keeps the pilot execution boundary understandable and prevents the shadow architecture from inheriting the responsibility compression it is meant to evaluate.
 
 ---
 
@@ -393,7 +514,7 @@ Readers are the right invalidation boundary because they are the only layer that
 In the validated pilot, external reality is:
 
 - live Messages `chat.db`
-- `macos_import.db`
+- shadow `macos_import_shadow.db`
 
 The reader snapshot providers re-query those databases and produce factual snapshots. Everything above that layer should be a deterministic consequence of those facts.
 

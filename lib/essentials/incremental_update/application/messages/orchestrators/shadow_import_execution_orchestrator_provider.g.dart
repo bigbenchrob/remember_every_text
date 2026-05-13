@@ -1,30 +1,30 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'import_ledger_message_repository_provider.dart';
+part of 'shadow_import_execution_orchestrator_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$importLedgerMessageRepositoryHash() =>
-    r'9e108a0156b9f0beb356aa9a512eae3ef35c7323';
+String _$shadowImportExecutionOrchestratorHash() =>
+    r'a331f745204055770f29fad561512e6998f8d73b';
 
-/// See also [importLedgerMessageRepository].
-@ProviderFor(importLedgerMessageRepository)
-final importLedgerMessageRepositoryProvider =
-    AutoDisposeFutureProvider<ImportLedgerMessageRepository>.internal(
-      importLedgerMessageRepository,
-      name: r'importLedgerMessageRepositoryProvider',
+/// See also [shadowImportExecutionOrchestrator].
+@ProviderFor(shadowImportExecutionOrchestrator)
+final shadowImportExecutionOrchestratorProvider =
+    AutoDisposeFutureProvider<ShadowImportExecutionOrchestrator>.internal(
+      shadowImportExecutionOrchestrator,
+      name: r'shadowImportExecutionOrchestratorProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
           ? null
-          : _$importLedgerMessageRepositoryHash,
+          : _$shadowImportExecutionOrchestratorHash,
       dependencies: null,
       allTransitiveDependencies: null,
     );
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef ImportLedgerMessageRepositoryRef =
-    AutoDisposeFutureProviderRef<ImportLedgerMessageRepository>;
+typedef ShadowImportExecutionOrchestratorRef =
+    AutoDisposeFutureProviderRef<ShadowImportExecutionOrchestrator>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

@@ -1,8 +1,8 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../db/feature_level_providers.dart';
 import './import_ledger_message_repository.dart';
+import 'dev_databases/dev_import_database_provider.dart';
 
 part 'import_ledger_message_repository_provider.g.dart';
 
@@ -10,6 +10,6 @@ part 'import_ledger_message_repository_provider.g.dart';
 Future<ImportLedgerMessageRepository> importLedgerMessageRepository(
   Ref ref,
 ) async {
-  final ledgerDb = await ref.watch(sqfliteImportDatabaseProvider.future);
+  final ledgerDb = await ref.watch(devImportDatabaseProvider.future);
   return ImportLedgerMessageRepository(ledgerDb: ledgerDb);
 }

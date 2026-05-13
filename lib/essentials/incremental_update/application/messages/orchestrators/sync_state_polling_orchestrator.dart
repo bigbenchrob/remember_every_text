@@ -5,8 +5,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../domain/sealed_unions/import_decision.dart';
 import '../integrators/import_decision_provider.dart';
+import '../integrators/snapshot_delta_integrator_provider.dart';
+import '../integrators/sync_assessment_integrator_provider.dart';
 import '../readers/import_ledger_message_snapshot_provider.dart';
 import '../readers/live_chat_db_message_snapshot_provider.dart';
+import 'shadow_import_execution_orchestrator_provider.dart';
 
 class SyncStatePollingOrchestrator {
   SyncStatePollingOrchestrator(this._ref);
@@ -21,7 +24,12 @@ class SyncStatePollingOrchestrator {
   Future<ImportDecision> refreshOnce() async {
     _ref.invalidate(liveChatDbMessageSnapshotProvider);
     _ref.invalidate(importLedgerMessageSnapshotProvider);
-    return _ref.read(importDecisionProvider.future);
+    final decision = await _ref.read(importDecisionProvider.future);
+    final executionOrchestrator = await _ref.read(
+      shadowImportExecutionOrchestratorProvider.future,
+    );
+    await executionOrchestrator.runForDecision(decision);
+    return decision;
   }
 
   void startPolling({Duration interval = const Duration(seconds: 15)}) {
@@ -47,12 +55,22 @@ class SyncStatePollingOrchestrator {
       _refreshInFlight = true;
       unawaited(
         refreshOnce()
-            .then((decision) {
+            .then((decision) async {
               if (decision != _lastObservedDecision) {
+                final syncState = await _ref.read(
+                  messageSyncStateProvider.future,
+                );
+                final delta = await _ref.read(
+                  snapshotDeltaIntegratorProvider.future,
+                );
                 debugPrint(
                   'Shadow import decision transition: \n'
                   'Previous: ${_extractSemanticImportDecisionMeaning(_lastObservedDecision)}, '
-                  'Current: ${_extractSemanticImportDecisionMeaning(decision)}',
+                  'Current: ${_extractSemanticImportDecisionMeaning(decision)}\n'
+                  'decision=$decision, '
+                  'syncState=$syncState, '
+                  'rowIdDelta=${delta.rowIdDelta}, '
+                  'messageCountDelta=${delta.messageCountDelta}',
                 );
               }
               _lastObservedDecision = decision;
