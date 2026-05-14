@@ -9,6 +9,7 @@ import '../integrators/snapshot_delta_integrator_provider.dart';
 import '../integrators/sync_assessment_integrator_provider.dart';
 import '../readers/import_ledger_message_snapshot_provider.dart';
 import '../readers/live_chat_db_message_snapshot_provider.dart';
+import 'comparative_validation_orchestrator_provider.dart';
 import 'shadow_import_execution_orchestrator_provider.dart';
 import 'shadow_migration_refresh_orchestrator_provider.dart';
 
@@ -31,6 +32,7 @@ class SyncStatePollingOrchestrator {
     );
     await executionOrchestrator.runForDecision(decision);
     await _ref.read(shadowMigrationRefreshOrchestratorProvider).refreshOnce();
+    await _ref.read(comparativeValidationOrchestratorProvider).refreshOnce();
     return decision;
   }
 
