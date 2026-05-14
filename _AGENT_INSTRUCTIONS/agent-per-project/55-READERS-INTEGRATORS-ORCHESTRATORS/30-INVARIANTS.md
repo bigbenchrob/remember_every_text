@@ -305,6 +305,43 @@ before promotion into production.
 
 ---
 
+## Comparative Validation Must Preserve Explicit Outcome Meaning
+
+Comparative validation is observational, not authoritative.
+
+It should capture enough state to explain what each system concluded and when that conclusion changed:
+
+- shadow import decision
+- shadow migration decision
+- comparison import outcome
+- comparison migration outcome
+- last transition time
+
+Comparison outcomes should remain explicit semantic meanings:
+
+```text
+MATCH
+PHASE SKEW
+MISMATCH
+NOT COMPARABLE
+```
+
+`PHASE SKEW` is not a failure. It identifies a valid but temporally offset asynchronous execution window.
+
+`MISMATCH` should be reserved for durable disagreement that has no recognized transient phase-skew explanation.
+
+This protects the distinction between:
+
+```text
+temporary asynchronous execution phase
+vs
+durable architectural disagreement
+```
+
+The comparison layer must not mutate production state, trigger production execution, or become a scheduling authority.
+
+---
+
 ## Shadow Execution Must Remain Downstream of Policy Meaning
 
 Raw facts must not directly trigger mutation.

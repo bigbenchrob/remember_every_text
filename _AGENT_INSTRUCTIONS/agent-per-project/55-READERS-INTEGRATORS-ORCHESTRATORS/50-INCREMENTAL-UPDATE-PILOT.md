@@ -216,6 +216,16 @@ what was observed?
 → did the facts resolve?
 ```
 
+The validated runtime comparison state should capture the spine at decision and comparison boundaries:
+
+- shadow import decision
+- shadow migration decision
+- comparison import outcome
+- comparison migration outcome
+- last transition time
+
+These fields are the minimal useful observability surface for the pilot. They show what the shadow pipeline concluded, how those conclusions compare with production behavior, and when the most recent semantic transition occurred.
+
 ---
 
 # Closed-Loop Shadow Import Milestone
@@ -759,6 +769,33 @@ The pilot should initially avoid:
 # Comparative Validation
 
 The pilot should preferably compare itself against existing production behavior.
+
+The first comparative validation layer has validated four explicit outcome meanings:
+
+```text
+MATCH
+PHASE SKEW
+MISMATCH
+NOT COMPARABLE
+```
+
+`MATCH` means legacy production behavior and shadow behavior reached equivalent conclusions.
+
+`PHASE SKEW` means both systems appear valid but are being observed at different moments in asynchronous import/projection execution.
+
+`MISMATCH` means the comparison has no recognized transient explanation and should be treated as possible durable semantic disagreement.
+
+`NOT COMPARABLE` means one side lacks enough stable facts for a meaningful comparison.
+
+The comparison layer should preserve, log, or expose:
+
+- shadow import decision
+- shadow migration decision
+- comparison import outcome
+- comparison migration outcome
+- last transition time
+
+This keeps comparative validation epistemic rather than authoritative: it explains whether the systems agree, are temporarily phase-skewed, truly disagree, or cannot yet be compared.
 
 Examples:
 
