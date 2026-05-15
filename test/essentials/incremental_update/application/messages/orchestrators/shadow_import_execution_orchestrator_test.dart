@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:remember_this_text/essentials/incremental_update/application/messages/executors/shadow_message_import_executor.dart';
+import 'package:remember_this_text/essentials/incremental_update/application/messages/executors/shadow_message_importer.dart';
 import 'package:remember_this_text/essentials/incremental_update/application/messages/integrators/import_decision_integrator.dart';
 import 'package:remember_this_text/essentials/incremental_update/application/messages/integrators/sync_assessment_integrator.dart';
 import 'package:remember_this_text/essentials/incremental_update/application/messages/orchestrators/shadow_import_execution_orchestrator.dart';
@@ -10,7 +10,7 @@ import 'package:remember_this_text/essentials/incremental_update/domain/sealed_u
 void main() {
   group('ShadowImportExecutionOrchestrator', () {
     test('does not invoke executor for do-nothing decision', () async {
-      final fakeExecutor = _FakeShadowMessageImportExecutor();
+      final fakeExecutor = _FakeShadowMessageImporter();
       final orchestrator = ShadowImportExecutionOrchestrator.withImportCallback(
         importNewMessages: fakeExecutor.importNewMessages,
       );
@@ -26,7 +26,7 @@ void main() {
     test(
       'does not invoke executor for ledger-ahead blocked decision',
       () async {
-        final fakeExecutor = _FakeShadowMessageImportExecutor();
+        final fakeExecutor = _FakeShadowMessageImporter();
         final orchestrator =
             ShadowImportExecutionOrchestrator.withImportCallback(
               importNewMessages: fakeExecutor.importNewMessages,
@@ -44,7 +44,7 @@ void main() {
     test(
       'invokes executor exactly once for incremental import decision',
       () async {
-        final fakeExecutor = _FakeShadowMessageImportExecutor();
+        final fakeExecutor = _FakeShadowMessageImporter();
         final orchestrator =
             ShadowImportExecutionOrchestrator.withImportCallback(
               importNewMessages: fakeExecutor.importNewMessages,
@@ -72,7 +72,7 @@ void main() {
       );
       final decision = ImportDecisionIntegrator().integrate(syncState);
 
-      final fakeExecutor = _FakeShadowMessageImportExecutor();
+      final fakeExecutor = _FakeShadowMessageImporter();
       final orchestrator = ShadowImportExecutionOrchestrator.withImportCallback(
         importNewMessages: fakeExecutor.importNewMessages,
       );
@@ -88,7 +88,7 @@ void main() {
   });
 }
 
-class _FakeShadowMessageImportExecutor {
+class _FakeShadowMessageImporter {
   int invocationCount = 0;
 
   Future<ShadowMessageImportResult> importNewMessages() async {

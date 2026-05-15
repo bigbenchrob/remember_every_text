@@ -1,7 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../executors/shadow_message_import_executor_provider.dart';
+import '../executors/shadow_message_importer_provider.dart';
 import 'shadow_import_execution_orchestrator.dart';
 
 part 'shadow_import_execution_orchestrator_provider.g.dart';
@@ -10,7 +10,7 @@ part 'shadow_import_execution_orchestrator_provider.g.dart';
 Future<ShadowImportExecutionOrchestrator> shadowImportExecutionOrchestrator(
   Ref ref,
 ) async {
-  final executor = await ref.watch(shadowMessageImportExecutorProvider.future);
+  final importer = await ref.watch(shadowMessageImporterProvider.future);
 
-  return ShadowImportExecutionOrchestrator(executor: executor);
+  return ShadowImportExecutionOrchestrator(importer: importer);
 }

@@ -4,8 +4,8 @@ import 'package:sqflite/sqflite.dart';
 import '../../../../db/infrastructure/data_sources/local/import/sqflite_import_database.dart';
 import '../../../infrastructure/import_ledger_message_repository.dart';
 
-class ShadowMessageImportExecutor {
-  const ShadowMessageImportExecutor({
+class ShadowMessageImporter {
+  const ShadowMessageImporter({
     required String chatDbPath,
     required SqfliteImportDatabase shadowImportDb,
     required ImportLedgerMessageRepository importLedgerRepository,

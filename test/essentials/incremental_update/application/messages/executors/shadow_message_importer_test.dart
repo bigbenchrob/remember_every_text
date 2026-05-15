@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/import/sqflite_import_database.dart';
 import 'package:remember_this_text/essentials/db_importers/application/debug_settings_provider.dart';
-import 'package:remember_this_text/essentials/incremental_update/application/messages/executors/shadow_message_import_executor.dart';
+import 'package:remember_this_text/essentials/incremental_update/application/messages/executors/shadow_message_importer.dart';
 import 'package:remember_this_text/essentials/incremental_update/infrastructure/import_ledger_message_repository.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -19,7 +19,7 @@ void main() {
 
   setUp(() async {
     tempDir = await Directory.systemTemp.createTemp(
-      'shadow_message_import_executor_test_',
+      'shadow_message_importer_test_',
     );
     shadowImportDb = SqfliteImportDatabase(
       databaseDirectory: tempDir.path,
@@ -60,7 +60,7 @@ void main() {
     });
     await sourceDb.close();
 
-    final executor = ShadowMessageImportExecutor(
+    final importer = ShadowMessageImporter(
       chatDbPath: chatDbPath,
       shadowImportDb: shadowImportDb,
       importLedgerRepository: ImportLedgerMessageRepository(
@@ -68,7 +68,7 @@ void main() {
       ),
     );
 
-    final result = await executor.importNewMessages();
+    final result = await importer.importNewMessages();
 
     expect(result.insertedMessageCount, 1);
 

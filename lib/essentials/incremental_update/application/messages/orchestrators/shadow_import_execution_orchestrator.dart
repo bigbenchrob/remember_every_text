@@ -1,12 +1,11 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../domain/sealed_unions/import_decision.dart';
-import '../executors/shadow_message_import_executor.dart';
+import '../executors/shadow_message_importer.dart';
 
 class ShadowImportExecutionOrchestrator {
-  ShadowImportExecutionOrchestrator({
-    required ShadowMessageImportExecutor executor,
-  }) : _importNewMessages = executor.importNewMessages;
+  ShadowImportExecutionOrchestrator({required ShadowMessageImporter importer})
+    : _importNewMessages = importer.importNewMessages;
 
   @visibleForTesting
   ShadowImportExecutionOrchestrator.withImportCallback({
