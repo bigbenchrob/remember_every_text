@@ -49,6 +49,10 @@ void main() {
         expect(columns['source_id']?['notnull'], 0);
         expect(columns['source_kind']?['type'], 'TEXT');
         expect(columns['source_kind']?['notnull'], 0);
+        expect(columns['source_chat_rowid']?['type'], 'INTEGER');
+        expect(columns['source_chat_rowid']?['notnull'], 0);
+        expect(columns['source_sender_handle_rowid']?['type'], 'INTEGER');
+        expect(columns['source_sender_handle_rowid']?['notnull'], 0);
 
         await ledgerDb.close();
       },
@@ -94,11 +98,66 @@ void main() {
         expect(columns['source_id']?['notnull'], 0);
         expect(columns['source_kind']?['type'], 'TEXT');
         expect(columns['source_kind']?['notnull'], 0);
+        expect(columns['source_chat_rowid']?['type'], 'INTEGER');
+        expect(columns['source_chat_rowid']?['notnull'], 0);
+        expect(columns['source_sender_handle_rowid']?['type'], 'INTEGER');
+        expect(columns['source_sender_handle_rowid']?['notnull'], 0);
+
+        final migrationRows = await db.query(
+          'schema_migrations',
+          where: 'version IN (?, ?)',
+          whereArgs: <Object>[6, 7],
+        );
+        expect(migrationRows, hasLength(2));
+
+        await upgradedDb.close();
+      },
+    );
+
+    test(
+      'upgrades a v6 database with nullable message source relationship columns',
+      () async {
+        final dbPath = '${tempDir.path}/import_test.db';
+        final legacyDb = await openDatabase(dbPath);
+        await legacyDb.execute(
+          'CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, applied_at_utc TEXT NOT NULL)',
+        );
+        await legacyDb.execute(
+          'CREATE TABLE import_batches (id INTEGER PRIMARY KEY, started_at_utc TEXT NOT NULL)',
+        );
+        await legacyDb.execute(
+          'CREATE TABLE chats (id INTEGER PRIMARY KEY, guid TEXT NOT NULL, batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT)',
+        );
+        await legacyDb.execute(
+          'CREATE TABLE messages (id INTEGER PRIMARY KEY, source_rowid INTEGER, source_id TEXT, source_kind TEXT, guid TEXT NOT NULL, chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE, is_from_me INTEGER NOT NULL CHECK(is_from_me IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(guid))',
+        );
+        await legacyDb.execute(
+          "INSERT INTO schema_migrations (version, applied_at_utc) VALUES (6, '2026-05-09T00:00:00.000Z')",
+        );
+        await legacyDb.execute('PRAGMA user_version = 6');
+        await legacyDb.close();
+
+        final upgradedDb = SqfliteImportDatabase(
+          databaseDirectory: tempDir.path,
+          databaseName: 'import_test.db',
+          debugSettings: const ImportDebugSettingsState(),
+        );
+
+        final db = await upgradedDb.database;
+        final rows = await db.rawQuery('PRAGMA table_info(messages)');
+        final columns = <String, Map<String, Object?>>{
+          for (final row in rows) row['name']! as String: row,
+        };
+
+        expect(columns['source_chat_rowid']?['type'], 'INTEGER');
+        expect(columns['source_chat_rowid']?['notnull'], 0);
+        expect(columns['source_sender_handle_rowid']?['type'], 'INTEGER');
+        expect(columns['source_sender_handle_rowid']?['notnull'], 0);
 
         final migrationRows = await db.query(
           'schema_migrations',
           where: 'version = ?',
-          whereArgs: <Object>[6],
+          whereArgs: <Object>[7],
         );
         expect(migrationRows, hasLength(1));
 

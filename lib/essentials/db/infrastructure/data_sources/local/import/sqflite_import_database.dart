@@ -70,7 +70,7 @@ class SqfliteImportDatabase {
        _databaseName = databaseName,
        _debugSettings = debugSettings;
 
-  static const int _schemaVersion = 6;
+  static const int _schemaVersion = 7;
 
   final String _databaseDirectory;
   final String _databaseName;
@@ -229,6 +229,17 @@ class SqfliteImportDatabase {
 
       await db.insert('schema_migrations', <String, Object?>{
         'version': 6,
+        'applied_at_utc': DateTime.now().toUtc().toIso8601String(),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+
+    if (oldVersion < 7) {
+      final batch = db.batch();
+      _v7SchemaStatements.forEach(batch.execute);
+      await batch.commit(noResult: true);
+
+      await db.insert('schema_migrations', <String, Object?>{
+        'version': 7,
         'applied_at_utc': DateTime.now().toUtc().toIso8601String(),
       }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
@@ -1863,7 +1874,7 @@ AND Z_PK NOT IN (
     _handlesTableStatementWithoutUniqueness,
     "CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT NOT NULL, service TEXT, display_name TEXT, is_group INTEGER NOT NULL DEFAULT 0 CHECK(is_group IN (0,1)), created_at_utc TEXT, updated_at_utc TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(guid))",
     "CREATE TABLE IF NOT EXISTS chat_to_handle (chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE, handle_id INTEGER NOT NULL REFERENCES handles(id) ON DELETE CASCADE, role TEXT CHECK(role IN ('member','owner','unknown')) DEFAULT 'member', added_at_utc TEXT, PRIMARY KEY (chat_id, handle_id))",
-    "CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY, source_rowid INTEGER, source_id TEXT, source_kind TEXT, guid TEXT NOT NULL, chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE, sender_handle_id INTEGER REFERENCES handles(id) ON DELETE SET NULL, service TEXT, is_from_me INTEGER NOT NULL CHECK(is_from_me IN (0,1)), date_utc TEXT, date_read_utc TEXT, date_delivered_utc TEXT, subject TEXT, text TEXT, attributed_body_blob BLOB, raw_item_type INTEGER, raw_associated_message_type INTEGER, message_summary_info_blob BLOB, payload_data_blob BLOB, has_attributed_body_source INTEGER NOT NULL DEFAULT 0 CHECK(has_attributed_body_source IN (0,1)), has_message_summary_info INTEGER NOT NULL DEFAULT 0 CHECK(has_message_summary_info IN (0,1)), has_payload_data_source INTEGER NOT NULL DEFAULT 0 CHECK(has_payload_data_source IN (0,1)), item_type TEXT CHECK(item_type IN ('text','attachment-only','sticker','reaction-carrier','system','unknown','balloon')), error_code INTEGER, is_system_message INTEGER NOT NULL DEFAULT 0 CHECK(is_system_message IN (0,1)), thread_originator_guid TEXT, associated_message_guid TEXT, balloon_bundle_id TEXT, payload_json TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(guid))",
+    "CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY, source_rowid INTEGER, source_id TEXT, source_kind TEXT, source_chat_rowid INTEGER, source_sender_handle_rowid INTEGER, guid TEXT NOT NULL, chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE, sender_handle_id INTEGER REFERENCES handles(id) ON DELETE SET NULL, service TEXT, is_from_me INTEGER NOT NULL CHECK(is_from_me IN (0,1)), date_utc TEXT, date_read_utc TEXT, date_delivered_utc TEXT, subject TEXT, text TEXT, attributed_body_blob BLOB, raw_item_type INTEGER, raw_associated_message_type INTEGER, message_summary_info_blob BLOB, payload_data_blob BLOB, has_attributed_body_source INTEGER NOT NULL DEFAULT 0 CHECK(has_attributed_body_source IN (0,1)), has_message_summary_info INTEGER NOT NULL DEFAULT 0 CHECK(has_message_summary_info IN (0,1)), has_payload_data_source INTEGER NOT NULL DEFAULT 0 CHECK(has_payload_data_source IN (0,1)), item_type TEXT CHECK(item_type IN ('text','attachment-only','sticker','reaction-carrier','system','unknown','balloon')), error_code INTEGER, is_system_message INTEGER NOT NULL DEFAULT 0 CHECK(is_system_message IN (0,1)), thread_originator_guid TEXT, associated_message_guid TEXT, balloon_bundle_id TEXT, payload_json TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(guid))",
     "CREATE TABLE IF NOT EXISTS recovered_unlinked_messages (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT NOT NULL, sender_handle_id INTEGER REFERENCES handles(id) ON DELETE SET NULL, service TEXT, is_from_me INTEGER NOT NULL CHECK(is_from_me IN (0,1)), date_utc TEXT, date_read_utc TEXT, date_delivered_utc TEXT, subject TEXT, text TEXT, attributed_body_blob BLOB, raw_item_type INTEGER, raw_associated_message_type INTEGER, message_summary_info_blob BLOB, payload_data_blob BLOB, has_attributed_body_source INTEGER NOT NULL DEFAULT 0 CHECK(has_attributed_body_source IN (0,1)), has_message_summary_info INTEGER NOT NULL DEFAULT 0 CHECK(has_message_summary_info IN (0,1)), has_payload_data_source INTEGER NOT NULL DEFAULT 0 CHECK(has_payload_data_source IN (0,1)), item_type TEXT CHECK(item_type IN ('text','attachment-only','sticker','reaction-carrier','system','unknown','balloon')), error_code INTEGER, is_system_message INTEGER NOT NULL DEFAULT 0 CHECK(is_system_message IN (0,1)), thread_originator_guid TEXT, associated_message_guid TEXT, balloon_bundle_id TEXT, payload_json TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(guid))",
     'CREATE TABLE IF NOT EXISTS chat_to_message (chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE, message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE, source_rowid INTEGER, PRIMARY KEY (chat_id, message_id))',
     'CREATE TABLE IF NOT EXISTS attachments (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT, transfer_name TEXT, uti TEXT, mime_type TEXT, total_bytes INTEGER, is_sticker INTEGER NOT NULL DEFAULT 0 CHECK(is_sticker IN (0,1)), is_outgoing INTEGER CHECK(is_outgoing IN (0,1)), created_at_utc TEXT, local_path TEXT, sha256_hex TEXT, batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT)',
@@ -1929,6 +1940,11 @@ AND Z_PK NOT IN (
   static const List<String> _v6SchemaStatements = <String>[
     'ALTER TABLE messages ADD COLUMN source_id TEXT',
     'ALTER TABLE messages ADD COLUMN source_kind TEXT',
+  ];
+
+  static const List<String> _v7SchemaStatements = <String>[
+    'ALTER TABLE messages ADD COLUMN source_chat_rowid INTEGER',
+    'ALTER TABLE messages ADD COLUMN source_sender_handle_rowid INTEGER',
   ];
 
   static const String _handlesTableStatementWithoutUniqueness =
