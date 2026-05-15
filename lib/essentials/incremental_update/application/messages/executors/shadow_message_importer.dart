@@ -2,8 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../../../../db/infrastructure/data_sources/local/import/sqflite_import_database.dart';
-import '../../../domain/models/importer_descriptor.dart';
 import '../../../infrastructure/import_ledger_message_repository.dart';
+import '../../importers/importer_descriptor.dart';
 
 class ShadowMessageImporter {
   const ShadowMessageImporter({
@@ -21,19 +21,14 @@ class ShadowMessageImporter {
   static const String _sourceId = 'live-chat-db';
   static const String _sourceKind = 'live_chat_db';
   static const ImporterDescriptor descriptor = ImporterDescriptor(
-    importerName: 'ShadowMessageImporter',
+    importerName: 'shadow_message_importer',
     sourceTables: <String>['message'],
-    targetTables: <String>['import_batches', 'chats', 'messages'],
-    prerequisites: <String>[
-      'live chat.db message table readable',
-      'macos_import_shadow.db schema initialized',
-    ],
-    continuationStrategy:
-        'Continue from max(messages.source_rowid) in macos_import_shadow.db.',
+    targetTables: <String>['messages'],
+    prerequisites: <String>[],
+    continuationStrategy: 'MAX(messages.source_rowid)',
     idempotenceStrategy:
-        'Insert messages with source-local ids and ConflictAlgorithm.ignore.',
-    validationStrategy:
-        'Snapshot readers verify shadow ledger convergence against live chat.db.',
+        'INSERT OR IGNORE / conflict ignore on already-imported rows',
+    validationStrategy: 'cursor/count convergence validation',
   );
 
   final String _chatDbPath;

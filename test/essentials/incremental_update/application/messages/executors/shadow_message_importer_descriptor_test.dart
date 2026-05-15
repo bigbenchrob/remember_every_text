@@ -6,28 +6,24 @@ void main() {
     test('documents importer identity and table ownership', () {
       const descriptor = ShadowMessageImporter.descriptor;
 
-      expect(descriptor.importerName, 'ShadowMessageImporter');
+      expect(descriptor.importerName, 'shadow_message_importer');
       expect(descriptor.sourceTables, <String>['message']);
-      expect(descriptor.targetTables, <String>[
-        'import_batches',
-        'chats',
-        'messages',
-      ]);
+      expect(descriptor.targetTables, <String>['messages']);
     });
 
     test('documents continuation, idempotence, and validation strategies', () {
       const descriptor = ShadowMessageImporter.descriptor;
 
+      expect(descriptor.prerequisites, isEmpty);
+      expect(descriptor.continuationStrategy, 'MAX(messages.source_rowid)');
       expect(
-        descriptor.prerequisites,
-        containsAll(<String>[
-          'live chat.db message table readable',
-          'macos_import_shadow.db schema initialized',
-        ]),
+        descriptor.idempotenceStrategy,
+        'INSERT OR IGNORE / conflict ignore on already-imported rows',
       );
-      expect(descriptor.continuationStrategy, contains('source_rowid'));
-      expect(descriptor.idempotenceStrategy, contains('ConflictAlgorithm'));
-      expect(descriptor.validationStrategy, contains('convergence'));
+      expect(
+        descriptor.validationStrategy,
+        'cursor/count convergence validation',
+      );
     });
   });
 }
