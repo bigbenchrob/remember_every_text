@@ -1,0 +1,615 @@
+# 48-SHADOW-IMPORTER-GRAPH-AND-EXECUTION-STRATEGY
+
+## Purpose
+
+This document defines the preferred execution model for shadow import pipelines as they expand beyond the initial messages-only pilot.
+
+The goal is to evolve from:
+
+single-purpose shadow executors
+
+toward:
+
+structured importer graphs with explicit dependency ordering, validation, resumability, and convergence semantics.
+
+This document complements:
+
+45-SHADOW-PIPELINE-EXPANSION-STRATEGY
+
+which defines how the shadow pipeline expands safely.
+
+This document focuses specifically on:
+
+- importer structure
+- importer execution
+- importer dependencies
+- orchestration strategy
+- validation strategy
+- convergence behavior
+
+---
+
+# Architectural Direction
+
+The initial shadow pilot used narrow SQL-focused executors:
+
+ShadowMessageImportExecutor
+ShadowMessageMigrationExecutor
+
+This was appropriate for proving the architecture spine:
+
+facts
+→ semantic meaning
+→ policy meaning
+→ execution orchestration
+→ mutation
+→ updated facts
+
+However, as additional tables are added:
+
+- handles
+- chats
+- joins
+- attachments
+- reactions
+- projection/index structures
+
+simple SQL executors become insufficiently expressive.
+
+The architecture should evolve toward:
+
+Importer
+as the primary table/concern mutation abstraction.
+
+---
+
+# Responsibility Split
+
+Preferred responsibility separation:
+
+Readers
+→ factual observation
+
+Integrators
+→ semantic meaning
+
+Decision Integrators
+→ policy meaning
+
+Orchestrators
+→ execution coordination
+
+Importers
+→ table/concern-specific import mechanics
+
+Migration Importers
+→ projection/canonicalization mechanics
+
+Validation
+→ causal correctness checks
+
+---
+
+# Importer Principle
+
+An importer should own:
+
+- one table or tightly related concern slice
+- deterministic continuation logic
+- idempotent write behavior
+- source-scoped relationship preservation
+- validation of imported facts
+- narrow mutation responsibility
+
+An importer should NOT own:
+
+- polling cadence
+- retry scheduling
+- execution ownership
+- semantic policy decisions
+- unrelated concern mutation
+- broad orchestration lifecycle
+
+---
+
+# Importer vs Orchestrator
+
+Important distinction:
+
+Orchestrator decides:
+
+Should import run?
+
+Importer decides:
+
+How is this table/concern imported safely?
+
+Examples:
+
+ShadowImportExecutionOrchestrator
+→ may invoke ShadowMessageImporter
+
+ShadowMigrationExecutionOrchestrator
+→ may invoke ShadowMessageProjectionImporter
+
+The orchestrator owns execution coordination.
+
+The importer owns mutation mechanics.
+
+---
+
+# Preferred Structure
+
+Suggested direction:
+
+lib/essentials/incremental_update/
+  application/
+    importers/
+      handles/
+      chats/
+      messages/
+      attachments/
+      joins/
+
+Example:
+
+application/importers/messages/
+  shadow_message_importer.dart
+  shadow_message_importer_provider.dart
+
+Future:
+
+application/importers/handles/
+application/importers/chats/
+application/importers/chat_handle_joins/
+application/importers/attachments/
+
+---
+
+# Importer Metadata
+
+Each importer should eventually expose structured metadata.
+
+Conceptual model:
+
+ImporterDescriptor:
+  importer_name
+  source_tables
+  target_tables
+  prerequisites
+  continuation_strategy
+  idempotence_strategy
+  validation_strategy
+
+This allows import orchestration to become declarative rather than manually hardcoded.
+
+---
+
+# Explicit Prerequisites
+
+Importers should explicitly declare prerequisites.
+
+Examples:
+
+HandleImporter
+  prerequisites: none
+
+ChatImporter
+  prerequisites: none
+
+ChatHandleJoinImporter
+  prerequisites:
+    - HandleImporter
+    - ChatImporter
+
+MessageImporter
+  prerequisites:
+    - HandleImporter
+    - ChatImporter
+
+AttachmentImporter
+  prerequisites:
+    - MessageImporter
+
+This prevents:
+
+hidden ordering assumptions
+
+inside importer logic.
+
+---
+
+# Topological Ordering
+
+Importer execution order should eventually be derived through topological sorting.
+
+Preferred future shape:
+
+ImporterGraphBuilder
+→ dependency graph
+→ topologically sorted execution plan
+
+rather than:
+
+manual ordered importer invocation
+
+inside orchestrators.
+
+The orchestrator should eventually ask:
+
+What import stages may execute safely?
+
+rather than hardcoding table order itself.
+
+---
+
+# Incremental Adoption
+
+Do NOT implement the full importer graph system immediately.
+
+Preferred progression:
+
+1. Refactor current shadow executors into importers
+2. Add importer metadata/descriptors
+3. Add explicit prerequisite declarations
+4. Add validation structure
+5. Add ordered importer execution
+6. Add graph-driven planning
+7. Add richer convergence semantics
+
+The architecture should grow incrementally.
+
+---
+
+# Importer Resumability
+
+Every importer should preferably be:
+
+resumable
+
+Meaning:
+
+stop
+restart
+continue safely
+
+without requiring global reset.
+
+Examples:
+
+messages after max(source_rowid)
+
+attachments after max(attachment_rowid)
+
+projection rows after last projected message id
+
+Importers should answer:
+
+What additional work is required?
+
+NOT:
+
+Can we rebuild everything again?
+
+---
+
+# Idempotence Requirement
+
+Importers should be idempotent whenever practical.
+
+Repeated execution with unchanged source facts should produce:
+
+no mutation
+
+Examples:
+
+already imported row
+→ skipped safely
+
+already projected row
+→ skipped safely
+
+Idempotence enables:
+
+- polling safety
+- restart safety
+- partial convergence
+- interruption recovery
+- overlap protection
+- safe orchestration evolution
+
+---
+
+# Source-Scoped Identity
+
+Importers must preserve source-scoped identities.
+
+Importers should preserve:
+
+source_id
+source_table
+source_rowid
+
+Relationships copied from source databases should remain source-scoped.
+
+Examples:
+
+message.source_chat_rowid
+message.source_sender_handle_rowid
+
+rather than prematurely assuming canonical global identity.
+
+Importers preserve source truth.
+
+Projection/migration resolves canonical app truth.
+
+---
+
+# Importer Validation
+
+Importers should eventually support both:
+
+preflight validation
+post-copy validation
+
+---
+
+# Preflight Validation
+
+Preflight validation answers:
+
+Is execution safe and meaningful?
+
+Examples:
+
+required prerequisite importers complete?
+
+required source rows exist?
+
+continuation cursor valid?
+
+source ahead of target?
+
+schema assumptions satisfied?
+
+Examples of semantic failures:
+
+missing handles required for messages
+
+missing chats required for joins
+
+projection ahead of ledger
+
+invalid continuation cursor
+
+Preflight validation should preferably produce semantic meaning rather than raw booleans.
+
+---
+
+# Post-Copy Validation
+
+Post-copy validation answers:
+
+Did the imported result match expectations?
+
+Examples:
+
+expected row count imported?
+
+continuation cursor advanced?
+
+relationships preserved?
+
+projection counts consistent?
+
+dedupe rules respected?
+
+convergence moving toward steady state?
+
+Post-copy validation is especially important once:
+
+- joins
+- attachments
+- canonicalization
+- dedupe behavior
+
+become more complex.
+
+---
+
+# Validation Philosophy
+
+Validation should remain:
+
+causal
+semantic
+observable
+
+NOT merely:
+
+silent SQL success
+
+The goal is explainability:
+
+What was expected?
+What occurred?
+Why was execution considered successful?
+
+---
+
+# Migration Importers
+
+Projection/migration logic should eventually follow the same importer structure.
+
+Examples:
+
+ShadowMessageProjectionImporter
+ShadowHandleProjectionImporter
+ShadowAttachmentProjectionImporter
+
+Migration importers should own:
+
+canonicalization
+projection mapping
+working-db relationships
+projection dedupe logic
+
+They should NOT own:
+
+polling lifecycle
+execution policy
+source observation
+
+---
+
+# Convergence Semantics
+
+Importers participate in convergence behavior.
+
+Examples:
+
+sourceAheadOfLedger
+
+ledgerAheadOfProjection
+
+projectionCaughtUp
+
+steady-state equivalence
+
+An importer should move the system toward:
+
+convergence
+
+Meaning:
+
+facts observed
+→ required mutation executed
+→ facts updated
+→ semantic drift reduced
+→ steady state restored
+
+---
+
+# Importer Events
+
+Importers should emit meaningful execution events.
+
+Examples:
+
+message import executed:
+  inserted=12
+  skipped=3
+  deduped=2
+
+handle import blocked:
+  missing prerequisite chats
+
+attachment import skipped:
+  no new source rows
+
+These events support:
+
+- endurance logs
+- dev panels
+- causal diagnostics
+- behavioral comparison
+
+---
+
+# Comparative Validation
+
+Importers should eventually participate in comparative validation.
+
+Questions:
+
+Did shadow importer observe equivalent facts?
+
+Did shadow importer produce equivalent semantic meaning?
+
+Did shadow importer converge similarly?
+
+Did shadow importer preserve relationships correctly?
+
+Comparison semantics should continue using:
+
+MATCH
+PHASE SKEW
+MISMATCH
+NOT COMPARABLE
+
+where practical.
+
+---
+
+# Production Migration Strategy
+
+The goal is NOT:
+
+copy legacy production importers wholesale into shadow
+
+The goal is:
+
+grow production-shaped shadow importers incrementally
+
+while avoiding:
+
+responsibility compression
+legacy orchestration coupling
+hidden dependencies
+broad mutation ownership
+
+The architecture should evolve toward:
+
+internally consistent importer structure
+
+that can eventually migrate toward production ownership incrementally.
+
+---
+
+# Important Clarification
+
+Importer graphs should remain:
+
+understandable
+
+not maximally abstract.
+
+The goal is NOT:
+
+generic import framework complexity
+
+The goal is:
+
+clear causal orchestration
+explicit dependencies
+safe incremental evolution
+human comprehensibility
+
+Some concerns may eventually share orchestration cadence while still preserving distinct:
+
+- importers
+- semantic states
+- validation boundaries
+- execution responsibilities
+
+---
+
+# Final Principle
+
+The import pipeline should evolve toward:
+
+explicit importer graphs
+with observable causal execution
+
+rather than:
+
+large responsibility-compressed mutation systems.
+
+The architecture should help humans answer:
+
+What importer ran?
+Why did it run?
+What prerequisites existed?
+What mutation occurred?
+What validation passed?
+Did the system converge afterward?

@@ -1,0 +1,444 @@
+# 45-SHADOW-PIPELINE-EXPANSION-STRATEGY
+
+## Purpose
+
+This document defines the preferred strategy for expanding shadow import and shadow migration pipelines incrementally, table-by-table, while preserving:
+
+- observability
+- reversibility
+- deterministic reasoning
+- causal traceability
+- production isolation
+- incremental confidence
+
+The goal is to avoid:
+
+large-scale shadow rewrites
+implicit table coupling
+hidden dependency ordering
+disposable scratch-pipeline behavior
+
+and instead prefer:
+
+persistent shadow ledgers
+explicit dependency progression
+incremental expansion
+independently resumable execution
+
+---
+
+# Core Philosophy
+
+Shadow pipeline expansion should be:
+
+incremental
+persistent
+idempotent
+explicit
+reversible
+
+The preferred approach is NOT:
+
+reset shadow DB
+rerun everything
+hope ordering works
+
+The preferred approach is:
+
+persist shadow state
+observe drift
+repair incrementally
+validate causally
+expand one concern at a time
+
+---
+
+# Persistent Shadow Ledger Principle
+
+macos_import_shadow.db should be treated as:
+
+a persistent shadow ledger
+
+NOT:
+
+temporary scratch output
+
+The shadow ledger exists to model:
+
+- incremental continuation
+- durable reconciliation
+- causal observation
+- steady-state convergence
+
+The shadow system should normally be capable of:
+
+stop
+restart
+resume
+continue incremental catch-up
+
+without requiring database reset.
+
+---
+
+# Shadow Reset Clarification
+
+Resetting shadow databases may still be useful for:
+
+- isolated experimentation
+- schema redesign
+- destructive migration testing
+- deterministic reproduction
+- catastrophic shadow corruption recovery
+
+However:
+
+reset-and-rerun
+
+should remain:
+
+a development recovery/debugging tool
+
+NOT:
+
+the normal architectural workflow
+
+---
+
+# Expansion Strategy
+
+Preferred progression:
+
+1. Add shadow factual readers
+2. Add shadow semantic integrators
+3. Add shadow policy integrators
+4. Add shadow execution orchestration
+5. Add narrow executor
+6. Add comparative validation
+7. Add endurance/logging visibility
+8. Validate convergence behavior
+9. Expand to next table/concern
+
+Each concern slice should become:
+
+stable
+observable
+resumable
+
+before expanding further.
+
+---
+
+# Table-by-Table Expansion
+
+Preferred expansion should occur concern-by-concern.
+
+Examples:
+
+handles
+→ chats
+→ messages
+→ message-chat joins
+→ attachments
+→ reactions
+→ projection/index structures
+
+NOT:
+
+entire schema simultaneously
+
+The goal is:
+
+understandable causal expansion
+
+rather than:
+
+rapid feature parity
+
+---
+
+# Explicit Dependency Principle
+
+Table dependencies should be:
+
+explicit
+observable
+validated
+
+NOT:
+
+hidden inside importer assumptions
+
+Example:
+
+Messages may depend on:
+
+- handles
+- chats
+
+That dependency should be represented explicitly as semantic meaning such as:
+
+required handle rows missing
+required chats missing
+message import blocked pending prerequisites
+
+rather than silently assuming another importer already ran.
+
+---
+
+# Importer Independence
+
+Each shadow importer should preferably be:
+
+independently resumable
+independently testable
+independently observable
+
+Preferred characteristics:
+
+- deterministic continuation cursor
+- idempotent insertion/upsert behavior
+- narrow responsibility
+- explicit prerequisite awareness
+- causal logging
+- semantic validation
+
+Importers should avoid:
+
+- hidden orchestration ownership
+- implicit execution ordering
+- broad schema assumptions
+- unrelated concern mutation
+
+---
+
+# Idempotence Requirement
+
+Shadow import execution should preferably be idempotent.
+
+Repeated execution with unchanged source facts should produce:
+
+no mutation
+
+Examples:
+
+already imported row
+→ skipped safely
+
+already projected row
+→ skipped safely
+
+Idempotence allows:
+
+- polling safety
+- restart safety
+- partial convergence
+- interruption recovery
+- controlled orchestration evolution
+
+without requiring global reset.
+
+---
+
+# Incremental Continuation Principle
+
+The preferred model is:
+
+incremental continuation
+
+rather than:
+
+full replay
+
+Shadow execution should normally answer:
+
+What additional work is required?
+
+NOT:
+
+Can we rebuild everything again?
+
+Examples:
+
+messages after max(source_rowid)
+
+attachments after max(attachment_rowid)
+
+projection rows after last projected message id
+
+---
+
+# Semantic Dependency States
+
+Dependencies should preferably become semantic states.
+
+Examples:
+
+HandleImportState.handlesMissingForMessages()
+
+ChatImportState.chatsMissingForMessages()
+
+AttachmentArchiveState.pendingSourceMessages()
+
+This preserves the architecture spine:
+
+facts
+→ semantic meaning
+→ policy meaning
+→ execution
+
+rather than embedding dependency logic directly inside executors.
+
+---
+
+# Projection Expansion
+
+Projection expansion should follow the same discipline as import expansion.
+
+Preferred progression:
+
+minimal projection
+→ richer projection
+→ relationship projection
+→ derived/index structures
+
+NOT:
+
+complete production projection duplication immediately
+
+The current pilot validates:
+
+messages-only projection
+
+Future expansion may include:
+
+- handles
+- chats
+- attachment relationships
+- reactions
+- search/index structures
+- semantic projections
+
+Each should remain:
+
+incrementally observable
+
+before additional complexity is added.
+
+---
+
+# Comparative Validation During Expansion
+
+Each newly added concern should preferably support:
+
+MATCH
+PHASE SKEW
+MISMATCH
+NOT COMPARABLE
+
+before production adoption is considered.
+
+Questions:
+
+Did shadow observe the same facts?
+Did shadow derive the same semantic meaning?
+Did shadow schedule equivalent work?
+Did shadow converge similarly?
+
+Differences should be:
+
+- logged
+- explained
+- reviewed
+
+before promotion.
+
+---
+
+# Expansion Safety
+
+Shadow expansion must not:
+
+- mutate production databases
+- assume production execution ownership
+- silently bypass prerequisite failures
+- silently repair inconsistent state
+- collapse orchestration boundaries
+- reintroduce responsibility compression
+
+The architecture should preserve:
+
+clear causal traceability
+
+throughout expansion.
+
+---
+
+# Human Comprehensibility
+
+Expansion strategy should optimize for:
+
+- understandable execution narratives
+- causal visibility
+- explicit dependencies
+- safe modification
+- incremental onboarding
+- architectural explainability
+
+Success is not defined solely by:
+
+feature parity
+
+Success also includes:
+
+Can humans understand why the pipeline behaves the way it does?
+
+---
+
+# Promotion Implications
+
+A shadow concern slice should preferably become:
+
+stable
+observable
+resumable
+causally explainable
+behaviorally validated
+
+before it is considered for:
+
+partial production ownership
+
+Preferred adoption remains:
+
+observe
+→ compare
+→ validate
+→ partially participate
+→ incrementally assume ownership
+
+NOT:
+
+replace wholesale
+
+---
+
+# Final Clarification
+
+This strategy does NOT imply that every table requires a completely independent orchestration system.
+
+Concern separation should remain guided primarily by:
+
+- causal coherence
+- orchestration coherence
+- human comprehensibility
+- operational clarity
+
+Some concerns may ultimately share orchestration cadence while still preserving distinct:
+
+- readers
+- semantic states
+- policy meaning
+- execution boundaries
+
+The purpose of this strategy is disciplined architectural evolution, not maximal fragmentation.
