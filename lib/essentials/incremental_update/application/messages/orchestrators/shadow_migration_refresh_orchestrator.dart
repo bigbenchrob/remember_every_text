@@ -14,6 +14,10 @@ class ShadowMigrationRefreshOrchestrator {
 
   final Ref _ref;
   MigrationDecision? _lastObservedDecision;
+  DateTime? _lastMigrationDecisionTransitionTime;
+
+  DateTime? get lastMigrationDecisionTransitionTime =>
+      _lastMigrationDecisionTransitionTime;
 
   Future<MigrationDecision> refreshOnce() async {
     _ref.invalidate(shadowImportProjectionSnapshotProvider);
@@ -21,6 +25,7 @@ class ShadowMigrationRefreshOrchestrator {
 
     final decision = await _ref.read(migrationDecisionProvider.future);
     if (decision != _lastObservedDecision) {
+      _lastMigrationDecisionTransitionTime = DateTime.now();
       final state = await _ref.read(messageMigrationStateProvider.future);
       final delta = await _ref.read(messageMigrationDeltaProvider.future);
       debugPrint(
@@ -38,7 +43,12 @@ class ShadowMigrationRefreshOrchestrator {
     final executionOrchestrator = await _ref.read(
       shadowMigrationExecutionOrchestratorProvider.future,
     );
-    await executionOrchestrator.runForDecision(decision);
+    final result = await executionOrchestrator.runForDecision(decision);
+    if (result != null) {
+      _ref.invalidate(shadowImportProjectionSnapshotProvider);
+      _ref.invalidate(shadowWorkingProjectionSnapshotProvider);
+      return _ref.read(migrationDecisionProvider.future);
+    }
 
     return decision;
   }

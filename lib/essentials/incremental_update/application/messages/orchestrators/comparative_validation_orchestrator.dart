@@ -15,9 +15,13 @@ import '../readers/legacy_incremental_update_snapshot_provider.dart';
 /// execution. Production still owns production import/migration; shadow still
 /// owns only shadow import/migration.
 class ComparativeValidationOrchestrator {
-  const ComparativeValidationOrchestrator(this._ref);
+  ComparativeValidationOrchestrator(this._ref);
 
   final Ref _ref;
+  DateTime? get lastComparisonTransitionTime => _lastComparisonTransitionTime;
+  ComparisonOutcome? _lastImportComparison;
+  ComparisonOutcome? _lastMigrationComparison;
+  DateTime? _lastComparisonTransitionTime;
 
   Future<void> refreshOnce() async {
     // Production state is external reality for this comparison. Invalidate the
@@ -28,6 +32,12 @@ class ComparativeValidationOrchestrator {
     // legacy production facts + shadow semantic/policy state → comparison
     // outcome. The orchestrator only triggers and reports that result.
     final report = await _ref.read(incrementalUpdateComparisonProvider.future);
+    if (report.importComparison != _lastImportComparison ||
+        report.migrationComparison != _lastMigrationComparison) {
+      _lastComparisonTransitionTime = DateTime.now();
+    }
+    _lastImportComparison = report.importComparison;
+    _lastMigrationComparison = report.migrationComparison;
 
     // Keep import and migration comparisons separate so a mismatch in one phase
     // does not hide an agreement, phase skew, or unknown state in the other.

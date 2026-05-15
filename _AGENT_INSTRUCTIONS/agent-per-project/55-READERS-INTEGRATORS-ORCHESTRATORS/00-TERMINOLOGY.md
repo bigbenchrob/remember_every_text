@@ -184,6 +184,87 @@ Semantic state is generally produced by Integrators.
 
 ---
 
+## Policy Decision
+
+A Policy Decision is meaning derived from Semantic State that describes whether execution may be considered, should do nothing, or must be blocked.
+
+Examples:
+
+- `ImportDecision.considerIncrementalImport`
+- `ImportDecision.blockAndReportLedgerAhead`
+- `MigrationDecision.considerShadowMigration`
+
+Policy Decisions should not mutate state directly. They are inputs to Orchestrators, not Executors.
+
+---
+
+## Narrow Executor
+
+A Narrow Executor performs an explicitly scoped mutation after an Orchestrator decides execution is allowed.
+
+Examples:
+
+- `ShadowMessageImportExecutor`
+- `ShadowMessageMigrationExecutor`
+
+Executors should not own polling, derive semantic meaning, or decide whether work should occur.
+
+---
+
+## Comparative Validation
+
+Comparative Validation compares production facts or conclusions with shadow facts or conclusions without becoming authoritative.
+
+Validated comparison outcomes include:
+
+```text
+MATCH
+PHASE SKEW
+MISMATCH
+NOT COMPARABLE
+```
+
+`PHASE SKEW` means systems appear valid but are being observed at different moments in asynchronous execution. It is not automatically a failure.
+
+---
+
+## Behavioral Equivalence
+
+Behavioral Equivalence means a shadow architecture reaches the same durable conclusions and steady state as production under equivalent real-world conditions.
+
+Behavioral equivalence does not require identical timing. Temporary phase skew can be acceptable if both systems converge to the same durable meaning.
+
+---
+
+## Operational Divergence
+
+Operational Divergence is an observed difference in runtime behavior between production and shadow systems.
+
+Examples:
+
+- one system reaches projection current earlier
+- one system requires more polling ticks to converge
+- one system batches work differently
+- one system reports a different durable conclusion
+
+Operational divergence should be classified before promotion as intentional, acceptable, accidental, or unresolved.
+
+---
+
+## Convergence Latency
+
+Convergence Latency is the observed duration or tick count between first detected drift and return to steady state.
+
+Examples:
+
+- first observed shadow import lag → shadow import caught up
+- shadow ledger caught up → shadow projection caught up
+- first observed production pending state → production comparison returns to match
+
+Convergence latency is observational. It should not by itself trigger retries, cadence changes, or production execution.
+
+---
+
 ## Execution Ownership
 
 Execution Ownership refers to the right to perform a mutation-producing orchestration task.

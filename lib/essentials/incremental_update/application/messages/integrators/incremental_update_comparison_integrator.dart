@@ -1,5 +1,6 @@
 import '../../../domain/models/legacy_incremental_update_snapshot.dart';
 import '../../../domain/models/message_migration_delta.dart';
+import '../../../domain/models/snapshot_delta.dart';
 import '../../../domain/sealed_unions/comparison_outcome.dart';
 import '../../../domain/sealed_unions/import_decision.dart';
 import '../../../domain/sealed_unions/migration_decision.dart';
@@ -20,6 +21,7 @@ class IncrementalUpdateComparisonIntegrator {
   IncrementalUpdateComparisonReport integrate({
     required LegacyIncrementalUpdateSnapshot legacy,
     required ImportDecision shadowImportDecision,
+    required MessageSnapshotDelta shadowImportDelta,
     required MigrationDecision shadowMigrationDecision,
     required MessageMigrationDelta shadowMigrationDelta,
   }) {
@@ -27,6 +29,7 @@ class IncrementalUpdateComparisonIntegrator {
       importComparison: _compareImport(
         legacy: legacy,
         shadow: shadowImportDecision,
+        shadowDelta: shadowImportDelta,
       ),
       migrationComparison: _compareMigration(
         legacy: legacy,
@@ -39,6 +42,7 @@ class IncrementalUpdateComparisonIntegrator {
   ComparisonOutcome _compareImport({
     required LegacyIncrementalUpdateSnapshot legacy,
     required ImportDecision shadow,
+    required MessageSnapshotDelta shadowDelta,
   }) {
     final legacyMeaning = legacy.importProbeDecision.shouldSchedule
         ? 'incremental import required'
@@ -65,6 +69,20 @@ class IncrementalUpdateComparisonIntegrator {
       );
     }
 
+    final phaseSkewReason = _detectImportPhaseSkew(
+      legacy: legacy,
+      legacyMeaning: legacyMeaning,
+      shadowMeaning: shadowMeaning,
+      shadowDelta: shadowDelta,
+    );
+    if (phaseSkewReason != null) {
+      return ComparisonOutcome.phaseSkew(
+        legacy: legacyMeaning,
+        shadow: shadowMeaning,
+        reason: phaseSkewReason,
+      );
+    }
+
     return ComparisonOutcome.mismatch(
       legacy: legacyMeaning,
       shadow: shadowMeaning,
@@ -75,6 +93,39 @@ class IncrementalUpdateComparisonIntegrator {
           'liveImportableMessageCount=${legacy.liveImportableMessageCount}; '
           'importedMessageCount=${legacy.importedMessageCount}',
     );
+  }
+
+  String? _detectImportPhaseSkew({
+    required LegacyIncrementalUpdateSnapshot legacy,
+    required String legacyMeaning,
+    required String shadowMeaning,
+    required MessageSnapshotDelta shadowDelta,
+  }) {
+    final importedMaxSourceRowId = legacy.importedMaxSourceRowId;
+    if (importedMaxSourceRowId == null) {
+      return null;
+    }
+
+    final productionLedgerLag = legacy.liveMaxRowId - importedMaxSourceRowId;
+    final shadowLedgerLag = shadowDelta.rowIdDelta;
+
+    if (shadowLedgerLag > 0 &&
+        legacyMeaning == 'incremental import not required' &&
+        shadowMeaning == 'incremental import required' &&
+        productionLedgerLag <= 0) {
+      return 'shadow ledger lagging live source by '
+          '$shadowLedgerLag message(s); production ledger already caught up';
+    }
+
+    if (productionLedgerLag > 0 &&
+        legacyMeaning == 'incremental import required' &&
+        shadowMeaning == 'incremental import not required' &&
+        shadowLedgerLag <= 0) {
+      return 'production ledger lagging live source by '
+          '$productionLedgerLag message(s); shadow ledger already caught up';
+    }
+
+    return null;
   }
 
   ComparisonOutcome _compareMigration({

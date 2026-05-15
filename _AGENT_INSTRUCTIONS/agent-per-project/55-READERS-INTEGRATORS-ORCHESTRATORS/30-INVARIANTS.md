@@ -26,6 +26,18 @@ facts
 → execution
 ```
 
+The validated incremental-update pilot refines this into an explicit architecture spine:
+
+```text
+facts
+→ semantic state
+→ policy decision
+→ execution orchestration
+→ narrow executor
+→ updated facts
+→ comparative validation
+```
+
 Equivalent responsibility layers:
 
 ```text
@@ -342,6 +354,28 @@ The comparison layer must not mutate production state, trigger production execut
 
 ---
 
+## Behavioral Assessment Must Remain Observational
+
+Behavioral-equivalence assessment may record:
+
+- convergence duration
+- ticks to convergence
+- production pending duration
+- recurring phase-skew patterns
+- durable mismatch patterns
+
+These metrics are diagnostic evidence only. They must not:
+
+- change production scheduling
+- change shadow polling cadence
+- trigger retries or debounce behavior
+- promote shadow execution into production ownership
+- mutate production databases
+
+Behavioral assessment should explain operational divergence before any promotion decision.
+
+---
+
 ## Shadow Execution Must Remain Downstream of Policy Meaning
 
 Raw facts must not directly trigger mutation.
@@ -363,6 +397,15 @@ MessageSnapshotDelta
 → ShadowImportExecutionOrchestrator
 ```
 
+For the shadow migration pilot:
+
+```text
+message migration delta
+→ MessageMigrationState
+→ MigrationDecision
+→ ShadowMigrationExecutionOrchestrator
+```
+
 This preserves the rule that factual drift is evidence, not an execution command.
 
 ---
@@ -372,13 +415,15 @@ This preserves the rule that factual drift is evidence, not an execution command
 Shadow execution may write only to explicitly named shadow/dev databases:
 
 - `macos_import_shadow.db`
-- `working_shadow.db`, once used
+- `working_shadow.db`
 
 Shadow execution must not write to:
 
 - `macos_import.db`
 - `working.db`
 - `user_overlays.db`
+
+Production databases may be read for comparative validation, but comparison must remain read-only and must not schedule or trigger production execution.
 
 Shadow execution remains experimental and non-authoritative until explicitly promoted.
 
@@ -400,6 +445,37 @@ ImportDecision.considerIncrementalImport
 ```
 
 A ledger-ahead condition is a safety block, not an import trigger.
+
+For the shadow migration pilot:
+
+```text
+MigrationDecision.doNothing
+→ no execution
+
+MigrationDecision.blockAndReportProjectionAhead
+→ no execution
+
+MigrationDecision.considerShadowMigration
+→ execution may be considered
+```
+
+A projection-ahead condition is a safety block, not a migration trigger.
+
+---
+
+## Dev Visibility Must Remain Observational
+
+Developer-facing status panels and comparative logs may expose:
+
+- polling status
+- last refresh / transition time
+- shadow import decision
+- shadow migration decision
+- comparison import outcome
+- comparison migration outcome
+- reason text
+
+They must display already-derived facts and meanings. They must not become a separate source of semantic interpretation, production mutation, or scheduling authority.
 
 ---
 

@@ -2,18 +2,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/incremental_update/application/messages/integrators/incremental_update_comparison_integrator.dart';
 import 'package:remember_this_text/essentials/incremental_update/domain/models/legacy_incremental_update_snapshot.dart';
 import 'package:remember_this_text/essentials/incremental_update/domain/models/message_migration_delta.dart';
+import 'package:remember_this_text/essentials/incremental_update/domain/models/snapshot_delta.dart';
 import 'package:remember_this_text/essentials/incremental_update/domain/sealed_unions/comparison_outcome.dart';
 import 'package:remember_this_text/essentials/incremental_update/domain/sealed_unions/import_decision.dart';
 import 'package:remember_this_text/essentials/incremental_update/domain/sealed_unions/migration_decision.dart';
 
 void main() {
   const integrator = IncrementalUpdateComparisonIntegrator();
+  const noImportDelta = MessageSnapshotDelta(
+    rowIdDelta: 0,
+    messageCountDelta: 0,
+  );
 
   group('IncrementalUpdateComparisonIntegrator', () {
     test('classifies import-not-required agreement as match', () {
       final report = integrator.integrate(
         legacy: _legacySnapshot(),
         shadowImportDecision: const ImportDecision.doNothing(),
+        shadowImportDelta: noImportDelta,
         shadowMigrationDecision: const MigrationDecision.doNothing(),
         shadowMigrationDelta: const MessageMigrationDelta(
           messageIdDelta: 0,
@@ -41,6 +47,10 @@ void main() {
           importedMaxSourceRowId: 100,
         ),
         shadowImportDecision: const ImportDecision.considerIncrementalImport(),
+        shadowImportDelta: const MessageSnapshotDelta(
+          rowIdDelta: 1,
+          messageCountDelta: 1,
+        ),
         shadowMigrationDecision: const MigrationDecision.doNothing(),
         shadowMigrationDelta: const MessageMigrationDelta(
           messageIdDelta: 0,
@@ -64,6 +74,7 @@ void main() {
           productionWorkingMaxMessageId: 100,
         ),
         shadowImportDecision: const ImportDecision.doNothing(),
+        shadowImportDelta: noImportDelta,
         shadowMigrationDecision: const MigrationDecision.doNothing(),
         shadowMigrationDelta: const MessageMigrationDelta(
           messageIdDelta: 0,
@@ -89,6 +100,7 @@ void main() {
             productionWorkingMaxMessageId: 100,
           ),
           shadowImportDecision: const ImportDecision.doNothing(),
+          shadowImportDelta: noImportDelta,
           shadowMigrationDecision:
               const MigrationDecision.considerShadowMigration(),
           shadowMigrationDelta: const MessageMigrationDelta(
@@ -124,6 +136,7 @@ void main() {
             productionWorkingMessageCount: 100,
           ),
           shadowImportDecision: const ImportDecision.doNothing(),
+          shadowImportDelta: noImportDelta,
           shadowMigrationDecision: const MigrationDecision.doNothing(),
           shadowMigrationDelta: const MessageMigrationDelta(
             messageIdDelta: 0,
@@ -151,6 +164,7 @@ void main() {
           legacy: _legacySnapshot(),
           shadowImportDecision:
               const ImportDecision.considerIncrementalImport(),
+          shadowImportDelta: noImportDelta,
           shadowMigrationDecision: const MigrationDecision.doNothing(),
           shadowMigrationDelta: const MessageMigrationDelta(
             messageIdDelta: 0,
@@ -168,6 +182,76 @@ void main() {
     );
 
     test(
+      'classifies shadow import lag while production ledger is current as phase skew',
+      () {
+        final report = integrator.integrate(
+          legacy: _legacySnapshot(
+            liveMaxRowId: 135989,
+            importedMaxSourceRowId: 135989,
+            importProbeDecision: const LegacyImportProbeDecision(
+              shouldSchedule: false,
+              reason: 'ledger cursor and importable message count are current',
+            ),
+          ),
+          shadowImportDecision:
+              const ImportDecision.considerIncrementalImport(),
+          shadowImportDelta: const MessageSnapshotDelta(
+            rowIdDelta: 2,
+            messageCountDelta: 2,
+          ),
+          shadowMigrationDecision: const MigrationDecision.doNothing(),
+          shadowMigrationDelta: const MessageMigrationDelta(
+            messageIdDelta: 0,
+            messageCountDelta: 0,
+          ),
+        );
+
+        final outcome = report.importComparison as ComparisonOutcomePhaseSkew;
+
+        expect(outcome.legacy, 'incremental import not required');
+        expect(outcome.shadow, 'incremental import required');
+        expect(
+          outcome.reason,
+          contains('shadow ledger lagging live source by 2'),
+        );
+        expect(outcome.reason, contains('production ledger already caught up'));
+      },
+    );
+
+    test(
+      'classifies production import lag while shadow ledger is current as phase skew',
+      () {
+        final report = integrator.integrate(
+          legacy: _legacySnapshot(
+            importProbeDecision: const LegacyImportProbeDecision(
+              shouldSchedule: true,
+              reason: 'live MAX(ROWID) is ahead of imported MAX(source_rowid)',
+            ),
+            liveMaxRowId: 102,
+            importedMaxSourceRowId: 100,
+          ),
+          shadowImportDecision: const ImportDecision.doNothing(),
+          shadowImportDelta: noImportDelta,
+          shadowMigrationDecision: const MigrationDecision.doNothing(),
+          shadowMigrationDelta: const MessageMigrationDelta(
+            messageIdDelta: 0,
+            messageCountDelta: 0,
+          ),
+        );
+
+        final outcome = report.importComparison as ComparisonOutcomePhaseSkew;
+
+        expect(outcome.legacy, 'incremental import required');
+        expect(outcome.shadow, 'incremental import not required');
+        expect(
+          outcome.reason,
+          contains('production ledger lagging live source by 2'),
+        );
+        expect(outcome.reason, contains('shadow ledger already caught up'));
+      },
+    );
+
+    test(
       'classifies projection disagreement without explainable lag as mismatch',
       () {
         final report = integrator.integrate(
@@ -176,6 +260,7 @@ void main() {
             productionWorkingMaxMessageId: 100,
           ),
           shadowImportDecision: const ImportDecision.doNothing(),
+          shadowImportDelta: noImportDelta,
           shadowMigrationDecision:
               const MigrationDecision.considerShadowMigration(),
           shadowMigrationDelta: const MessageMigrationDelta(
@@ -203,6 +288,7 @@ void main() {
           ),
         ),
         shadowImportDecision: const ImportDecision.doNothing(),
+        shadowImportDelta: noImportDelta,
         shadowMigrationDecision: const MigrationDecision.doNothing(),
         shadowMigrationDelta: const MessageMigrationDelta(
           messageIdDelta: 0,

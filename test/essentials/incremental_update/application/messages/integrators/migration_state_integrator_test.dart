@@ -23,9 +23,25 @@ void main() {
       expect(state, const MessageMigrationState.ledgerAheadOfProjection());
     });
 
+    test('maps positive message count delta to ledger-ahead state', () {
+      final state = integrator.integrate(
+        const MessageMigrationDelta(messageIdDelta: 0, messageCountDelta: 5),
+      );
+
+      expect(state, const MessageMigrationState.ledgerAheadOfProjection());
+    });
+
     test('maps negative message id delta to projection-ahead state', () {
       final state = integrator.integrate(
         const MessageMigrationDelta(messageIdDelta: -5, messageCountDelta: -5),
+      );
+
+      expect(state, const MessageMigrationState.projectionAheadOfLedger());
+    });
+
+    test('maps negative message count delta to projection-ahead state', () {
+      final state = integrator.integrate(
+        const MessageMigrationDelta(messageIdDelta: 0, messageCountDelta: -5),
       );
 
       expect(state, const MessageMigrationState.projectionAheadOfLedger());

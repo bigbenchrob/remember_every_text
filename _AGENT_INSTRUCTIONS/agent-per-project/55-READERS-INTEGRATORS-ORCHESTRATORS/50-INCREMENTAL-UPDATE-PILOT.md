@@ -4,7 +4,7 @@
 
 This document defines the shadow incremental-update pilot for the Readers → Integrators → Orchestrators architectural responsibility model.
 
-The message sync pilot under `lib/essentials/incremental_update/` is now a working, validated implementation of the model. It remains shadow/dev-only and non-authoritative, but it has proven the responsibility split, the correct invalidation boundary for polling, and the first closed-loop execution boundary.
+The message sync pilot under `lib/essentials/incremental_update/` is now a working, validated implementation of the model. It remains shadow/dev-only and non-authoritative, but it has proven the responsibility split, the correct invalidation boundary for polling, closed-loop shadow import, closed-loop shadow migration, comparative validation, and developer-facing observability.
 
 Initial pilot target:
 
@@ -15,7 +15,7 @@ Incremental update detection
 Current validated milestone:
 
 ```text
-shadow message import execution loop
+closed-loop shadow import + migration + comparative validation
 ```
 
 This pilot exists to evaluate whether responsibility decomposition can improve:
@@ -58,7 +58,7 @@ Preferred initial target:
 message incremental detection only
 ```
 
-The current pilot has advanced one narrow step beyond detection: it can execute a minimal shadow-only message import into `macos_import_shadow.db` when `ImportDecision.considerIncrementalImport` is observed.
+The current pilot has advanced beyond detection while remaining shadow-only: it can execute a minimal message import into `macos_import_shadow.db`, execute a minimal message migration into `working_shadow.db`, compare shadow conclusions against production behavior, and expose current state in a dev-only status panel.
 
 NOT:
 
@@ -102,12 +102,17 @@ The implemented shadow message pipeline now follows this flow:
 ```text
 poll tick
 → invalidate reader snapshot providers
-→ readers re-query source/ledger databases
-→ delta integrator recomputes numeric drift
-→ sync-state integrator derives semantic meaning
+→ readers re-query source/ledger/projection databases
+→ import delta integrator recomputes numeric drift
+→ import sync-state integrator derives semantic meaning
 → import-decision integrator derives policy meaning
 → polling orchestrator observes transitions
 → shadow execution orchestrator performs shadow-only import when requested
+→ migration delta integrator recomputes projection drift
+→ migration-state integrator derives semantic meaning
+→ migration-decision integrator derives policy meaning
+→ shadow migration orchestrator performs shadow-only migration when requested
+→ comparative validation compares production facts with shadow conclusions
 ```
 
 Concrete implemented examples:
@@ -121,28 +126,46 @@ importLedgerMessageSnapshotProvider
 → SyncStatePollingOrchestrator
 → ShadowImportExecutionOrchestrator
 → ShadowMessageImportExecutor
+
+shadowImportProjectionSnapshotProvider
+shadowWorkingProjectionSnapshotProvider
+→ messageMigrationDeltaProvider
+→ messageMigrationStateProvider
+→ migrationDecisionProvider
+→ ShadowMigrationRefreshOrchestrator
+→ ShadowMigrationExecutionOrchestrator
+→ ShadowMessageMigrationExecutor
+
+legacyIncrementalUpdateSnapshotProvider
+incrementalUpdateComparisonProvider
+→ ComparativeValidationOrchestrator
 ```
 
 The reader snapshot providers are the external observation boundary:
 
 - `liveChatDbMessageSnapshotProvider` observes live `chat.db`
 - `importLedgerMessageSnapshotProvider` observes shadow `macos_import_shadow.db`
+- shadow migration readers observe shadow `macos_import_shadow.db` and `working_shadow.db`
+- comparative validation observes production facts read-only and compares them with shadow conclusions
 
 The derived providers do not observe external reality directly. They compose values and derive meaning.
 
 ---
 
-# Emerging Architecture Spine
+# Validated Architecture Spine
 
-The shadow pilot is revealing a reusable orchestration grammar. The same shape now appears across both shadow import and shadow migration:
+The shadow pilot has validated a reusable orchestration grammar in running app behavior, focused tests, console logs, comparative validation, and the dev-only status panel. This is no longer only aspirational architecture.
+
+The same shape now appears across shadow import, shadow migration, and comparison:
 
 ```text
 facts
 → semantic state
 → policy decision
 → execution orchestration
-→ executor
+→ narrow executor
 → updated facts
+→ comparative validation
 ```
 
 This is the architecture spine.
@@ -158,6 +181,7 @@ Reader snapshots
 → execution Orchestrator
 → narrow Executor
 → reader snapshots on the next observation cycle
+→ comparison Integrator / comparison Orchestrator for diagnostic visibility
 ```
 
 For shadow import:
@@ -182,6 +206,15 @@ macos_import_shadow.db + working_shadow.db facts
 → updated working_shadow.db facts
 ```
 
+For comparative validation:
+
+```text
+production facts + shadow facts
+→ comparison semantics
+→ MATCH / PHASE SKEW / MISMATCH / NOT COMPARABLE
+→ human-readable diagnostic visibility
+```
+
 The naming symmetry is intentional and valuable:
 
 ```text
@@ -204,6 +237,7 @@ The spine also clarifies safety:
 - execution orchestration decides whether an executor may run
 - executors perform narrow, explicitly scoped mutation
 - updated facts are observed by readers on the next refresh
+- comparative validation remains observational and does not become a control plane
 
 This preserves causal traceability:
 
@@ -225,6 +259,32 @@ The validated runtime comparison state should capture the spine at decision and 
 - last transition time
 
 These fields are the minimal useful observability surface for the pilot. They show what the shadow pipeline concluded, how those conclusions compare with production behavior, and when the most recent semantic transition occurred.
+
+---
+
+# Closed-Loop Import + Migration Milestone
+
+The pilot now validates a full observable, testable, comparable shadow cycle:
+
+```text
+live chat.db changes
+→ shadow import decision changes
+→ shadow import executes into macos_import_shadow.db
+→ shadow migration decision changes
+→ shadow migration executes into working_shadow.db
+→ comparative validation classifies production-vs-shadow agreement
+→ system returns to steady state
+```
+
+One polling loop now drives the validated shadow sequence:
+
+```text
+shadow import catch-up
+→ shadow migration catch-up
+→ comparative validation
+```
+
+This does not make the pilot production-authoritative. It proves that mutation-producing work can remain downstream of explicit semantic and policy meaning across multiple execution boundaries.
 
 ---
 
@@ -290,9 +350,61 @@ This milestone validates that execution can remain downstream of policy meaning 
 
 ---
 
+# Closed-Loop Shadow Migration Milestone
+
+The pilot has also validated a second shadow-only execution boundary:
+
+```text
+observe shadow ledger/projection drift
+→ derive message migration delta
+→ derive MessageMigrationState
+→ derive MigrationDecision
+→ execute minimal shadow migration
+→ observe updated working_shadow.db projection facts
+→ resolve to MigrationDecision.doNothing
+```
+
+Validated execution components:
+
+```text
+ShadowMigrationExecutionOrchestrator
+ShadowMessageMigrationExecutor
+```
+
+The executor performs the smallest useful projection write path:
+
+```text
+macos_import_shadow.db.messages
+→ working_shadow.db.messages
+```
+
+This validates that migration can follow the same architecture spine as import without invoking legacy migration orchestration or production projection ownership.
+
+---
+
+# Dev-Only Status Panel
+
+The pilot now has a dev-only status panel. The panel is an observability surface, not a control plane.
+
+It displays already-derived facts and meanings:
+
+- polling status
+- last refresh / transition time
+- shadow import decision
+- message sync state
+- import row-id and message-count deltas
+- shadow migration decision
+- message migration state
+- migration message-id and message-count deltas
+- comparative validation outcomes and reason text
+
+The panel must not compute business meaning itself. It should watch the existing provider graph and display the current state of the pilot. Start, stop, and refresh controls may invoke existing development orchestration actions, but the panel must not introduce a separate polling loop, production mutation path, or hidden execution policy.
+
+---
+
 # Focused Test Coverage
 
-The closed-loop pilot now has narrow architectural tests covering semantic derivation, policy derivation, and execution eligibility.
+The closed-loop pilot now has narrow architectural tests covering semantic derivation, policy derivation, execution eligibility, and comparative validation semantics.
 
 Current focused test files:
 
@@ -300,9 +412,13 @@ Current focused test files:
 test/essentials/incremental_update/application/messages/integrators/
   message_sync_assessment_integrator_test.dart
   import_decision_integrator_test.dart
+  migration_state_integrator_test.dart
+  migration_decision_integrator_test.dart
+  incremental_update_comparison_integrator_test.dart
 
 test/essentials/incremental_update/application/messages/orchestrators/
   shadow_import_execution_orchestrator_test.dart
+  shadow_migration_execution_orchestrator_test.dart
 ```
 
 Validated semantic derivation:
@@ -357,6 +473,35 @@ rowIdDelta = -5
 
 The execution tests use a callback-backed fake executor through a test-only constructor on `ShadowImportExecutionOrchestrator`. They do not open production databases, shadow databases, or call legacy import/migration systems.
 
+Validated migration safety:
+
+```text
+MigrationDecision.doNothing()
+→ no executor invocation
+
+MigrationDecision.blockAndReportProjectionAhead()
+→ no executor invocation
+
+MigrationDecision.considerShadowMigration()
+→ executor invocation may occur
+```
+
+Validated comparison semantics:
+
+```text
+equivalent legacy/shadow conclusions
+→ MATCH
+
+temporally offset but causally explainable pipeline phases
+→ PHASE SKEW
+
+durable semantic disagreement without a recognized transient explanation
+→ MISMATCH
+
+missing or invalid facts
+→ NOT COMPARABLE
+```
+
 These tests protect the causal safety rule:
 
 ```text
@@ -367,6 +512,7 @@ facts
 ```
 
 Execution must not occur directly from raw numeric facts, and ledger-ahead conditions must block shadow execution.
+Projection-ahead conditions must likewise block shadow migration execution.
 
 ---
 
@@ -394,6 +540,9 @@ Validated reader snapshot providers:
 ```text
 liveChatDbMessageSnapshotProvider
 importLedgerMessageSnapshotProvider
+shadowImportProjectionSnapshotProvider
+shadowWorkingProjectionSnapshotProvider
+legacyIncrementalUpdateSnapshotProvider
 ```
 
 Reader goal:
@@ -425,6 +574,10 @@ Validated integrator providers:
 snapshotDeltaIntegratorProvider
 messageSyncStateProvider
 importDecisionProvider
+messageMigrationDeltaProvider
+messageMigrationStateProvider
+migrationDecisionProvider
+incrementalUpdateComparisonProvider
 ```
 
 Integrator goal:
@@ -440,6 +593,14 @@ live/import snapshots
 → MessageSnapshotDelta
 → MessageSyncState
 → ImportDecision
+
+shadow ledger/projection snapshots
+→ message migration delta
+→ MessageMigrationState
+→ MigrationDecision
+
+production/shadow facts
+→ comparison semantics
 ```
 
 Integrator roles:
@@ -447,6 +608,9 @@ Integrator roles:
 - `snapshotDeltaIntegratorProvider` computes numeric drift from factual snapshots
 - `messageSyncStateProvider` converts numeric drift into semantic sync state
 - `importDecisionProvider` converts semantic sync state into policy meaning
+- `messageMigrationStateProvider` converts projection drift into semantic migration state
+- `migrationDecisionProvider` converts semantic migration state into policy meaning
+- `incrementalUpdateComparisonProvider` compares production and shadow conclusions
 
 Integrators should remain synchronous and pure whenever practical. Providers may coordinate async reads, but the semantic transform itself should be deterministic:
 
@@ -473,6 +637,9 @@ Validated orchestrator:
 ```text
 SyncStatePollingOrchestrator
 ShadowImportExecutionOrchestrator
+ShadowMigrationRefreshOrchestrator
+ShadowMigrationExecutionOrchestrator
+ComparativeValidationOrchestrator
 ```
 
 Orchestrator goal:
@@ -490,7 +657,7 @@ Orchestrators should own:
 - transition observation
 - execution triggering when downstream policy meaning calls for it
 
-The validated polling orchestrator does not own semantic interpretation. It invalidates the factual observation boundary, reads the final policy provider, triggers the shadow execution orchestrator, and logs transitions.
+The validated polling orchestrator does not own semantic interpretation. It invalidates the factual observation boundary, reads the final policy provider, triggers shadow execution orchestration, runs migration refresh/comparison coordination, and logs transitions.
 
 Orchestrators should prefer:
 
@@ -508,6 +675,7 @@ Validated executor:
 
 ```text
 ShadowMessageImportExecutor
+ShadowMessageMigrationExecutor
 ```
 
 Executor goal:
@@ -523,11 +691,18 @@ The executor is deliberately not a Reader and not an Integrator:
 - it does not decide whether import should occur
 - it does not own polling lifecycle
 
-The current executor is intentionally limited to:
+The current import executor is intentionally limited to:
 
 ```text
 live chat.db.message
 → macos_import_shadow.db.messages
+```
+
+The current migration executor is intentionally limited to:
+
+```text
+macos_import_shadow.db.messages
+→ working_shadow.db.messages
 ```
 
 It must not call or reuse:
@@ -574,12 +749,22 @@ liveChatDbMessageSnapshotProvider
 importLedgerMessageSnapshotProvider
 ```
 
+For the validated migration step, refresh invalidation targets the shadow projection observation boundary:
+
+```text
+shadowImportProjectionSnapshotProvider
+shadowWorkingProjectionSnapshotProvider
+```
+
 It does not manually invalidate:
 
 ```text
 snapshotDeltaIntegratorProvider
 messageSyncStateProvider
 importDecisionProvider
+messageMigrationStateProvider
+migrationDecisionProvider
+incrementalUpdateComparisonProvider
 ```
 
 Those providers should recompute naturally because they depend on the reader snapshot providers.
@@ -666,6 +851,9 @@ The pilot validates this for:
 ```text
 MessageSyncState
 ImportDecision
+MessageMigrationState
+MigrationDecision
+ComparisonOutcome
 ```
 
 Sealed unions make transitions explicit and force exhaustive handling. This matters because missing a state in incremental update logic can lead to silent import skips, unsafe execution, or confusing logs.
@@ -691,6 +879,8 @@ In the validated pilot, external reality is:
 
 - live Messages `chat.db`
 - shadow `macos_import_shadow.db`
+- shadow `working_shadow.db`
+- production import/projection facts used read-only for comparison
 
 The reader snapshot providers re-query those databases and produce factual snapshots. Everything above that layer should be a deterministic consequence of those facts.
 
@@ -756,6 +946,7 @@ Preferred initial behavior:
 - observe production state
 - produce comparable semantic outputs
 - log decisions
+- perform explicitly scoped shadow-only execution when policy meaning allows it
 - avoid authoritative execution ownership
 
 The pilot should initially avoid:
@@ -766,9 +957,9 @@ The pilot should initially avoid:
 
 ---
 
-# Comparative Validation
+# Comparative Validation Semantics
 
-The pilot should preferably compare itself against existing production behavior.
+The pilot now compares itself against existing production behavior. This is epistemic validation, not execution ownership.
 
 The first comparative validation layer has validated four explicit outcome meanings:
 
@@ -787,6 +978,8 @@ NOT COMPARABLE
 
 `NOT COMPARABLE` means one side lacks enough stable facts for a meaningful comparison.
 
+`PHASE SKEW` is especially important: it is not a failure. It identifies valid but temporally offset pipeline phases, such as production import advancing before production projection, or shadow projection catching up before production projection is sampled.
+
 The comparison layer should preserve, log, or expose:
 
 - shadow import decision
@@ -796,6 +989,59 @@ The comparison layer should preserve, log, or expose:
 - last transition time
 
 This keeps comparative validation epistemic rather than authoritative: it explains whether the systems agree, are temporarily phase-skewed, truly disagree, or cannot yet be compared.
+
+---
+
+# Behavioral-Equivalence Assessment
+
+The pilot has moved from proving that the shadow pipeline works to studying how it behaves relative to production.
+
+Behavioral-equivalence assessment asks:
+
+- does shadow reach the same durable conclusion as production?
+- does shadow converge earlier or later?
+- are differences caused by cadence, batching, invalidation boundaries, execution timing, or legacy constraints?
+- is a divergence intentional, acceptable, accidental, or unresolved?
+
+Important terms:
+
+- behavioral equivalence: same durable conclusions and steady state
+- acceptable transient skew: temporary `PHASE SKEW` that resolves naturally
+- operational divergence: observed runtime difference between production and shadow
+- cadence divergence: difference caused by polling or scheduling cadence
+- scheduling divergence: difference caused by when work is triggered
+- convergence latency: duration or tick count from observed drift to steady state
+- steady-state equivalence: final `MATCH / MATCH` after both systems settle
+
+The endurance log records lightweight observational metrics:
+
+- shadow import convergence duration
+- shadow import ticks to convergence
+- shadow migration convergence duration
+- shadow migration ticks to convergence
+- total shadow convergence duration
+- total shadow ticks to convergence
+- whether production convergence still appears pending
+- observed production pending duration
+
+These are assessment signals only. They must not change production scheduling, shadow cadence, retry behavior, or execution ownership.
+
+Recurring `PHASE SKEW` patterns are now meaningful architectural evidence. For example:
+
+```text
+legacy=migration required
+shadow=projection current
+```
+
+This can indicate that shadow projection has already caught up while production migration is still pending. That is not automatically a failure; it is an operational divergence to study before any promotion decision.
+
+Open assessment questions:
+
+- Does shadow consistently converge earlier than production?
+- Are faster shadow transitions caused by simpler orchestration, different batching, or missing production responsibilities?
+- Are any `MISMATCH` outcomes durable after multiple ticks?
+- Do all `PHASE SKEW` outcomes resolve to `MATCH / MATCH`?
+- Which observed differences are acceptable for a future production path?
 
 Examples:
 
@@ -935,7 +1181,12 @@ Experimental architecture should only become production-authoritative after:
 - comparative validation
 - orchestration observability
 - safe rollback capability
+- explicit execution ownership and gating
+- staged adoption plan
+- continued comparison against production behavior during rollout
 - sufficient confidence
+
+The validated architecture spine is now a candidate template for future orchestration systems, but the pilot is not feature-complete and has not replaced legacy production behavior. Promotion requires proof that the decomposed system reaches equivalent conclusions and can be adopted reversibly.
 
 Promotion should preferably occur incrementally rather than through wholesale replacement.
 

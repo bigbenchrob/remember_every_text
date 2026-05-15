@@ -11,7 +11,9 @@ abstract class MessageMigrationDelta with _$MessageMigrationDelta {
 
   const MessageMigrationDelta._();
 
-  bool get isLedgerAheadOfProjection => messageIdDelta > 0;
-  bool get isProjectionAheadOfLedger => messageIdDelta < 0;
-  bool get projectionCaughtUp => messageIdDelta == 0;
+  bool get isLedgerAheadOfProjection =>
+      messageIdDelta > 0 || messageCountDelta > 0;
+  bool get isProjectionAheadOfLedger =>
+      messageIdDelta < 0 || messageCountDelta < 0;
+  bool get projectionCaughtUp => messageIdDelta == 0 && messageCountDelta == 0;
 }

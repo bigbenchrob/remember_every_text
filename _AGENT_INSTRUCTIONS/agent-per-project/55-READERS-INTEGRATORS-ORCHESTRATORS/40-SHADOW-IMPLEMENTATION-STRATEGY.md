@@ -52,7 +52,8 @@ A Shadow Implementation is an experimental implementation that:
 - observes the same inputs as production systems
 - produces comparable outputs
 - does not initially own authoritative execution
-- does not initially mutate production flows
+- does not mutate production flows
+- may mutate explicitly named shadow/dev databases after policy meaning allows it
 - exists primarily for comparison and validation
 
 Shadow implementations are intended to answer:
@@ -158,6 +159,8 @@ observe and log
 rather than mutate
 ```
 
+After semantic and policy boundaries are validated, a shadow Orchestrator may coordinate explicitly scoped shadow-only mutation through a narrow Executor. This still must not make the shadow system production-authoritative.
+
 Goal:
 
 ```text
@@ -188,6 +191,17 @@ Differences should be:
 - explained
 
 before production promotion occurs.
+
+Validated comparison outcomes should distinguish:
+
+```text
+MATCH
+PHASE SKEW
+MISMATCH
+NOT COMPARABLE
+```
+
+`PHASE SKEW` identifies valid but temporally offset asynchronous pipeline phases. It should not be treated as durable disagreement.
 
 ---
 

@@ -10,6 +10,7 @@ import '../../../../providers.dart';
 import '../../../incremental_update/application/messages/integrators/import_decision_provider.dart';
 import '../../../incremental_update/application/messages/orchestrators/sync_state_polling_orchestrator_provider.dart';
 import '../../../incremental_update/domain/sealed_unions/import_decision.dart';
+import '../../../incremental_update/presentation/shadow_incremental_update_status_sheet.dart';
 import '../../../onboarding/application/onboarding_gate_provider.dart';
 import '../../../onboarding/domain/onboarding_status.dart';
 import '../../../onboarding/presentation/onboarding_overlay.dart';
@@ -80,6 +81,20 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
 
   void _stopMessageSnapshotDeltaPolling() {
     ref.read(deltaRefreshOrchestratorProvider).stopPolling();
+  }
+
+  void _refreshMessageSnapshotDeltaOnce() {
+    unawaited(ref.read(deltaRefreshOrchestratorProvider).refreshOnce());
+  }
+
+  void _showShadowIncrementalUpdateStatus() {
+    unawaited(
+      showMacosSheet<void>(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) => const ShadowIncrementalUpdateStatusSheet(),
+      ),
+    );
   }
 
   @override
@@ -162,6 +177,20 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
                     label: 'Stop message snapshot polling',
                     icon: const MacosIcon(CupertinoIcons.stop_fill),
                     onPressed: _stopMessageSnapshotDeltaPolling,
+                    showLabel: false,
+                  ),
+                if (kDebugMode)
+                  ToolBarIconButton(
+                    label: 'Refresh shadow incremental update once',
+                    icon: const MacosIcon(CupertinoIcons.arrow_clockwise),
+                    onPressed: _refreshMessageSnapshotDeltaOnce,
+                    showLabel: false,
+                  ),
+                if (kDebugMode)
+                  ToolBarIconButton(
+                    label: 'Shadow incremental update status',
+                    icon: const MacosIcon(CupertinoIcons.waveform_path_ecg),
+                    onPressed: _showShadowIncrementalUpdateStatus,
                     showLabel: false,
                   ),
                 () {
