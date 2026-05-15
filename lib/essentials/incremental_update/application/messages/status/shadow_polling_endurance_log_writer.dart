@@ -39,6 +39,10 @@ class ShadowPollingEnduranceSnapshot {
 }
 
 class ShadowPollingEnduranceLogWriter {
+  ShadowPollingEnduranceLogWriter({Directory? logsDirectory})
+    : _logsDirectory = logsDirectory;
+
+  final Directory? _logsDirectory;
   File? _activeLogFile;
   int _sampleNumber = 0;
   _BehavioralConvergenceTracker _convergenceTracker =
@@ -47,7 +51,8 @@ class ShadowPollingEnduranceLogWriter {
   String? get activeLogPath => _activeLogFile?.path;
 
   void startSession() {
-    final logsDirectory = Directory(path.join(_projectRootPath(), '_LOGS'));
+    final logsDirectory =
+        _logsDirectory ?? Directory(path.join(_projectRootPath(), '_LOGS'));
     logsDirectory.createSync(recursive: true);
 
     final startedAt = DateTime.now();

@@ -363,6 +363,9 @@ Behavioral-equivalence assessment may record:
 - production pending duration
 - recurring phase-skew patterns
 - durable mismatch patterns
+- per-tick causal events
+
+End-of-tick summaries can hide fast convergence. If a polling tick observes drift, executes shadow work, and resolves before the final status snapshot is written, the summary may correctly show steady state while omitting the work that occurred. Endurance logs should therefore preserve per-tick causal history separately from the final summary.
 
 These metrics are diagnostic evidence only. They must not:
 

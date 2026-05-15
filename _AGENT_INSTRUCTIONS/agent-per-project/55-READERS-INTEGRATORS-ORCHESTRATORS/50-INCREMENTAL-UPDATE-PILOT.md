@@ -1024,6 +1024,23 @@ The endurance log records lightweight observational metrics:
 - whether production convergence still appears pending
 - observed production pending duration
 
+The endurance log also records per-tick causal events before the end-of-tick summary. This matters because fast shadow convergence can erase evidence from a final snapshot. A tick may observe source drift, execute shadow import, execute shadow migration, and settle back to `doNothing / projectionCaughtUp` before the summary is written.
+
+Per-tick events preserve that intra-tick history:
+
+```text
+tick started
+→ reader refresh started
+→ import delta observed
+→ import decision observed
+→ shadow import executed or skipped
+→ migration delta observed
+→ migration decision observed
+→ shadow migration executed or skipped
+→ comparison observed
+→ end-of-tick summary
+```
+
 These are assessment signals only. They must not change production scheduling, shadow cadence, retry behavior, or execution ownership.
 
 Recurring `PHASE SKEW` patterns are now meaningful architectural evidence. For example:
