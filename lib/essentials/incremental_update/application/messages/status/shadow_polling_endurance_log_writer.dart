@@ -68,6 +68,7 @@ class ShadowPollingEnduranceLogWriter {
 
   Future<void> appendStatus(
     ShadowPollingEnduranceSnapshot status, {
+    List<String> tickEvents = const <String>[],
     String? note,
     Object? refreshError,
     StackTrace? refreshStackTrace,
@@ -87,6 +88,7 @@ class ShadowPollingEnduranceLogWriter {
         sampleNumber: _sampleNumber,
         status: status,
         assessment: assessment,
+        tickEvents: tickEvents,
         note: note,
         refreshError: refreshError,
         refreshStackTrace: refreshStackTrace,
@@ -331,6 +333,7 @@ String _formatStatusBlock({
   required int sampleNumber,
   required ShadowPollingEnduranceSnapshot status,
   required _BehavioralAssessmentSample assessment,
+  required List<String> tickEvents,
   String? note,
   Object? refreshError,
   StackTrace? refreshStackTrace,
@@ -340,6 +343,9 @@ String _formatStatusBlock({
       ? ''
       : '- refresh_error: ${_singleLine(refreshError.toString())}\n'
             '- refresh_stack_trace: ${_singleLine(refreshStackTrace.toString())}\n';
+  final tickEventsBlock = tickEvents.isEmpty
+      ? '## Tick Events\n\n- no tick events recorded\n\n'
+      : '## Tick Events\n\n${tickEvents.map((event) => '- $event').join('\n')}\n\n';
 
   return '\n## Polling sample $sampleNumber\n\n'
       '- captured_at: ${DateTime.now().toIso8601String()}\n'
@@ -348,6 +354,7 @@ String _formatStatusBlock({
       '- polling_status: ${status.pollingActive ? 'active' : 'inactive'}\n'
       '- last_refresh: ${_formatDateTime(status.lastRefreshTime)}\n'
       '- last_transition: ${_formatDateTime(status.lastTransitionTime)}\n\n'
+      '$tickEventsBlock'
       '### Behavioral assessment\n\n'
       '- shadow_convergence_completed: ${assessment.shadowConvergenceCompleted}\n'
       '- shadow_import_convergence_duration: ${_formatDuration(assessment.shadowImportConvergenceDuration)}\n'

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../../domain/sealed_unions/comparison_outcome.dart';
 import '../../../domain/sealed_unions/import_decision.dart';
 import '../integrators/import_decision_integrator.dart';
 import '../integrators/import_decision_provider.dart';
@@ -40,20 +41,57 @@ class SyncStatePollingOrchestrator {
       _lastImportDecisionTransitionTime;
 
   Future<ImportDecision> refreshOnce() async {
+    return _refreshOnceWithTickEvents();
+  }
+
+  Future<ImportDecision> _refreshOnceWithTickEvents({
+    List<String>? tickEvents,
+  }) async {
     try {
       _ref.invalidate(liveChatDbMessageSnapshotProvider);
       _ref.invalidate(importLedgerMessageSnapshotProvider);
+      tickEvents?.add('reader refresh started');
+      tickEvents?.add('import observation boundary invalidated');
+      final importDelta = await _ref.read(
+        snapshotDeltaIntegratorProvider.future,
+      );
+      tickEvents?.add(
+        'import delta observed: '
+        'rowIdDelta=${importDelta.rowIdDelta}, '
+        'messageCountDelta=${importDelta.messageCountDelta}',
+      );
       final decision = await _ref.read(importDecisionProvider.future);
+      tickEvents?.add(
+        'import decision observed: ${_formatImportDecision(decision)}',
+      );
       final executionOrchestrator = await _ref.read(
         shadowImportExecutionOrchestratorProvider.future,
       );
       final result = await executionOrchestrator.runForDecision(decision);
       if (result != null) {
+        tickEvents?.add(
+          'shadow import executed: '
+          'insertedMessageCount=${result.insertedMessageCount}, '
+          'lastImportedSourceRowId=${result.lastImportedSourceRowId}',
+        );
         _ref.invalidate(liveChatDbMessageSnapshotProvider);
         _ref.invalidate(importLedgerMessageSnapshotProvider);
+      } else {
+        tickEvents?.add(
+          'shadow import skipped: ${_importSkipReason(decision)}',
+        );
       }
-      await _ref.read(shadowMigrationRefreshOrchestratorProvider).refreshOnce();
-      await _ref.read(comparativeValidationOrchestratorProvider).refreshOnce();
+      await _ref
+          .read(shadowMigrationRefreshOrchestratorProvider)
+          .refreshOnce(tickEvents: tickEvents);
+      final comparisonReport = await _ref
+          .read(comparativeValidationOrchestratorProvider)
+          .refreshOnce();
+      tickEvents?.add(
+        'comparison observed: '
+        'import=${_formatComparisonOutcome(comparisonReport.importComparison)}, '
+        'migration=${_formatComparisonOutcome(comparisonReport.migrationComparison)}',
+      );
       return result == null
           ? decision
           : _ref.read(importDecisionProvider.future);
@@ -118,9 +156,10 @@ class SyncStatePollingOrchestrator {
     _refreshInFlight = true;
     Object? refreshError;
     StackTrace? refreshStackTrace;
+    final tickEvents = <String>['tick started'];
 
     try {
-      final decision = await refreshOnce();
+      final decision = await _refreshOnceWithTickEvents(tickEvents: tickEvents);
       await _logImportDecisionTransition(decision);
       _lastObservedDecision = decision;
     } catch (error, stackTrace) {
@@ -131,6 +170,7 @@ class SyncStatePollingOrchestrator {
     } finally {
       await _appendEnduranceLogSnapshot(
         note: refreshError == null ? 'poll tick completed' : 'poll tick failed',
+        tickEvents: tickEvents,
         refreshError: refreshError,
         refreshStackTrace: refreshStackTrace,
       );
@@ -159,6 +199,7 @@ class SyncStatePollingOrchestrator {
 
   Future<void> _appendEnduranceLogSnapshot({
     String? note,
+    List<String> tickEvents = const <String>[],
     Object? refreshError,
     StackTrace? refreshStackTrace,
   }) async {
@@ -166,6 +207,7 @@ class SyncStatePollingOrchestrator {
       final status = await _buildEnduranceLogSnapshot();
       await _enduranceLogWriter.appendStatus(
         status,
+        tickEvents: tickEvents,
         note: note,
         refreshError: refreshError,
         refreshStackTrace: refreshStackTrace,
@@ -254,5 +296,41 @@ String _extractSemanticImportDecisionMeaning(ImportDecision? decision) {
     ImportDecisionDoNothing() => 'doNothing',
     ImportDecisionConsiderIncrementalImport() => 'considerIncrementalImport',
     ImportDecisionBlockAndReportLedgerAhead() => 'blockAndReportLedgerAhead',
+  };
+}
+
+String _formatImportDecision(ImportDecision decision) {
+  return switch (decision) {
+    ImportDecisionDoNothing() => 'ImportDecision.doNothing',
+    ImportDecisionConsiderIncrementalImport() =>
+      'ImportDecision.considerIncrementalImport',
+    ImportDecisionBlockAndReportLedgerAhead() =>
+      'ImportDecision.blockAndReportLedgerAhead',
+  };
+}
+
+String _importSkipReason(ImportDecision decision) {
+  return switch (decision) {
+    ImportDecisionDoNothing() => 'decision doNothing',
+    ImportDecisionBlockAndReportLedgerAhead() =>
+      'decision blockAndReportLedgerAhead',
+    ImportDecisionConsiderIncrementalImport() => 'execution returned no result',
+  };
+}
+
+String _formatComparisonOutcome(ComparisonOutcome outcome) {
+  return switch (outcome) {
+    ComparisonOutcomeMatch(:final legacy, :final shadow) =>
+      'MATCH legacy=$legacy shadow=$shadow',
+    ComparisonOutcomePhaseSkew(:final legacy, :final shadow, :final reason) =>
+      'PHASE SKEW legacy=$legacy shadow=$shadow reason=$reason',
+    ComparisonOutcomeMismatch(:final legacy, :final shadow, :final reason) =>
+      'MISMATCH legacy=$legacy shadow=$shadow reason=$reason',
+    ComparisonOutcomeNotComparable(
+      :final legacy,
+      :final shadow,
+      :final reason,
+    ) =>
+      'NOT COMPARABLE legacy=$legacy shadow=$shadow reason=$reason',
   };
 }

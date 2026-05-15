@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../domain/sealed_unions/comparison_outcome.dart';
+import '../integrators/incremental_update_comparison_integrator.dart';
 import '../integrators/incremental_update_comparison_provider.dart';
 import '../readers/legacy_incremental_update_snapshot_provider.dart';
 
@@ -23,7 +24,7 @@ class ComparativeValidationOrchestrator {
   ComparisonOutcome? _lastMigrationComparison;
   DateTime? _lastComparisonTransitionTime;
 
-  Future<void> refreshOnce() async {
+  Future<IncrementalUpdateComparisonReport> refreshOnce() async {
     // Production state is external reality for this comparison. Invalidate the
     // reader snapshot so each comparison samples current production facts.
     _ref.invalidate(legacyIncrementalUpdateSnapshotProvider);
@@ -47,6 +48,8 @@ class ComparativeValidationOrchestrator {
     debugPrint(
       _formatComparison('migration projection', report.migrationComparison),
     );
+
+    return report;
   }
 
   String _formatComparison(String scope, ComparisonOutcome outcome) {
