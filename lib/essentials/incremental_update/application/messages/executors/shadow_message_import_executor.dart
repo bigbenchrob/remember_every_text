@@ -51,6 +51,8 @@ class ShadowMessageImportExecutor {
           '''
           SELECT
             ROWID AS source_rowid,
+            chat_id AS source_chat_rowid,
+            handle_id AS source_sender_handle_rowid,
             guid,
             service,
             is_from_me,
@@ -79,6 +81,14 @@ class ShadowMessageImportExecutor {
             'source_rowid': sourceRowId,
             'source_id': _sourceId,
             'source_kind': _sourceKind,
+            'source_chat_rowid': _readNullableInt(
+              sourceRow,
+              'source_chat_rowid',
+            ),
+            'source_sender_handle_rowid': _readNullableInt(
+              sourceRow,
+              'source_sender_handle_rowid',
+            ),
             'guid':
                 _readNullableString(sourceRow, 'guid') ??
                 'shadow-message-source-rowid-$sourceRowId',
@@ -142,6 +152,21 @@ class ShadowMessageImportExecutor {
 
   int _readRequiredInt(Map<String, Object?> row, String column) {
     final value = row[column];
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+
+    throw FormatException('Expected integer value for $column, got $value.');
+  }
+
+  int? _readNullableInt(Map<String, Object?> row, String column) {
+    final value = row[column];
+    if (value == null) {
+      return null;
+    }
     if (value is int) {
       return value;
     }
