@@ -5,6 +5,12 @@ import '../../../../db/infrastructure/data_sources/local/import/sqflite_import_d
 import '../../../infrastructure/import_ledger_message_repository.dart';
 import '../../importers/importer_descriptor.dart';
 
+/// Copies only new source message rows into the injected import ledger database.
+///
+/// This class is intentionally production-shaped: it knows how to continue an
+/// idempotent message import, but it does not decide when to run or which
+/// database is authoritative. The shadow/dev behavior comes from the provider
+/// and orchestrator that inject `macos_import_shadow.db`.
 class MessageImporter {
   const MessageImporter({
     required String chatDbPath,
@@ -20,6 +26,9 @@ class MessageImporter {
       '__shadow_incremental_update_placeholder_chat__';
   static const String _sourceId = 'live-chat-db';
   static const String _sourceKind = 'live_chat_db';
+
+  /// Human-readable importer metadata for future dependency/topology work.
+  /// This is descriptive only; no graph execution reads it yet.
   static const ImporterDescriptor descriptor = ImporterDescriptor(
     importerName: 'message_importer',
     sourceTables: <String>['message'],
@@ -37,6 +46,9 @@ class MessageImporter {
 
   Future<MessageImportResult> importNewMessages() async {
     final ledgerSnapshot = await _importLedgerRepository.readMessageSnapshot();
+
+    // The continuation cursor is source-local. In the live-chat slice it means
+    // chat.db.message.ROWID, preserved in the ledger as messages.source_rowid.
     final startedAfterSourceRowId = ledgerSnapshot.maxRowId;
     final startedAtUtc = DateTime.now().toUtc().toIso8601String();
     final batchId = await _shadowImportDb.insertImportBatch(
@@ -50,6 +62,8 @@ class MessageImporter {
     var insertedMessageCount = 0;
     var lastImportedSourceRowId = startedAfterSourceRowId;
 
+    // Keep the source connection short-lived and read-only. The destination
+    // ledger connection is the injected SqfliteImportDatabase instance.
     final sourceDb = await openDatabase(
       _chatDbPath,
       readOnly: true,
@@ -87,6 +101,9 @@ class MessageImporter {
           final sourceRowId = _readRequiredInt(sourceRow, 'source_rowid');
           lastImportedSourceRowId = sourceRowId;
 
+          // This first importer slice preserves message identity and
+          // source-scoped relationship rowids, but it deliberately does not
+          // resolve canonical chats/handles yet.
           destinationBatch.insert('messages', <String, Object?>{
             'id': sourceRowId,
             'source_rowid': sourceRowId,
@@ -150,6 +167,8 @@ class MessageImporter {
   }
 
   Future<void> _ensureShadowPlaceholderChat({required int batchId}) async {
+    // Until the chat importer exists, message rows need a valid ledger chat FK.
+    // The real source chat rowid is still preserved on each message.
     final db = await _shadowImportDb.database;
     await db.insert('chats', <String, Object?>{
       'id': _shadowPlaceholderChatId,

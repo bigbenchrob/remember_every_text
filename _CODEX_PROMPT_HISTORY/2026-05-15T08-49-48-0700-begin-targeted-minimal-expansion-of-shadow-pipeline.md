@@ -277,3 +277,24 @@ preserve behavior
 Commit 4:
 Add ImporterDescriptor metadata
 descriptor tests
+
+---
+
+Implemented and committed in the requested order:
+
+9965f8c7 Add source scoped message relationship columns
+Added nullable source_chat_rowid and source_sender_handle_rowid to macos_import.db schema creation and v7 upgrade tests.
+
+9911a3f7 Preserve source scoped message relationships
+Populated those fields in the shadow message import path and added a focused preservation test.
+
+2ee78e0d Rename shadow message importer
+Renamed ShadowMessageImportExecutor to ShadowMessageImporter, including provider, generated file, imports, and tests. Behavior preserved.
+
+c960e41f Add shadow importer descriptor
+Added lightweight ImporterDescriptor metadata and descriptor tests.
+
+Verification run:
+
+dart analyze on changed files for each slice
+focused flutter test targets for schema, importer preservation, orchestrator behavior, and descriptor metadata
