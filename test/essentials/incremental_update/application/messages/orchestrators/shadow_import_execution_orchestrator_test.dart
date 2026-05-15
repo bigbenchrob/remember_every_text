@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:remember_this_text/essentials/incremental_update/application/messages/executors/shadow_message_importer.dart';
+import 'package:remember_this_text/essentials/incremental_update/application/messages/executors/message_importer.dart';
 import 'package:remember_this_text/essentials/incremental_update/application/messages/integrators/import_decision_integrator.dart';
 import 'package:remember_this_text/essentials/incremental_update/application/messages/integrators/sync_assessment_integrator.dart';
 import 'package:remember_this_text/essentials/incremental_update/application/messages/orchestrators/shadow_import_execution_orchestrator.dart';
@@ -9,10 +9,10 @@ import 'package:remember_this_text/essentials/incremental_update/domain/sealed_u
 
 void main() {
   group('ShadowImportExecutionOrchestrator', () {
-    test('does not invoke executor for do-nothing decision', () async {
-      final fakeExecutor = _FakeShadowMessageImporter();
+    test('does not invoke importer for do-nothing decision', () async {
+      final fakeImporter = _FakeMessageImporter();
       final orchestrator = ShadowImportExecutionOrchestrator.withImportCallback(
-        importNewMessages: fakeExecutor.importNewMessages,
+        importNewMessages: fakeImporter.importNewMessages,
       );
 
       final result = await orchestrator.runForDecision(
@@ -20,16 +20,16 @@ void main() {
       );
 
       expect(result, isNull);
-      expect(fakeExecutor.invocationCount, 0);
+      expect(fakeImporter.invocationCount, 0);
     });
 
     test(
-      'does not invoke executor for ledger-ahead blocked decision',
+      'does not invoke importer for ledger-ahead blocked decision',
       () async {
-        final fakeExecutor = _FakeShadowMessageImporter();
+        final fakeImporter = _FakeMessageImporter();
         final orchestrator =
             ShadowImportExecutionOrchestrator.withImportCallback(
-              importNewMessages: fakeExecutor.importNewMessages,
+              importNewMessages: fakeImporter.importNewMessages,
             );
 
         final result = await orchestrator.runForDecision(
@@ -37,17 +37,17 @@ void main() {
         );
 
         expect(result, isNull);
-        expect(fakeExecutor.invocationCount, 0);
+        expect(fakeImporter.invocationCount, 0);
       },
     );
 
     test(
-      'invokes executor exactly once for incremental import decision',
+      'invokes importer exactly once for incremental import decision',
       () async {
-        final fakeExecutor = _FakeShadowMessageImporter();
+        final fakeImporter = _FakeMessageImporter();
         final orchestrator =
             ShadowImportExecutionOrchestrator.withImportCallback(
-              importNewMessages: fakeExecutor.importNewMessages,
+              importNewMessages: fakeImporter.importNewMessages,
             );
 
         final result = await orchestrator.runForDecision(
@@ -55,7 +55,7 @@ void main() {
         );
 
         expect(result, isNotNull);
-        expect(fakeExecutor.invocationCount, 1);
+        expect(fakeImporter.invocationCount, 1);
       },
     );
 
@@ -72,9 +72,9 @@ void main() {
       );
       final decision = ImportDecisionIntegrator().integrate(syncState);
 
-      final fakeExecutor = _FakeShadowMessageImporter();
+      final fakeImporter = _FakeMessageImporter();
       final orchestrator = ShadowImportExecutionOrchestrator.withImportCallback(
-        importNewMessages: fakeExecutor.importNewMessages,
+        importNewMessages: fakeImporter.importNewMessages,
       );
 
       final result = await orchestrator.runForDecision(decision);
@@ -83,17 +83,17 @@ void main() {
       expect(syncState, const MessageSyncState.ledgerAheadOfSource());
       expect(decision, const ImportDecision.blockAndReportLedgerAhead());
       expect(result, isNull);
-      expect(fakeExecutor.invocationCount, 0);
+      expect(fakeImporter.invocationCount, 0);
     });
   });
 }
 
-class _FakeShadowMessageImporter {
+class _FakeMessageImporter {
   int invocationCount = 0;
 
-  Future<ShadowMessageImportResult> importNewMessages() async {
+  Future<MessageImportResult> importNewMessages() async {
     invocationCount += 1;
-    return const ShadowMessageImportResult(
+    return const MessageImportResult(
       startedAfterSourceRowId: 100,
       lastImportedSourceRowId: 105,
       insertedMessageCount: 5,

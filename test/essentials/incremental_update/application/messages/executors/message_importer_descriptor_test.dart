@@ -1,18 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:remember_this_text/essentials/incremental_update/application/messages/executors/shadow_message_importer.dart';
+import 'package:remember_this_text/essentials/incremental_update/application/messages/executors/message_importer.dart';
 
 void main() {
-  group('ShadowMessageImporter descriptor', () {
+  group('MessageImporter descriptor', () {
     test('documents importer identity and table ownership', () {
-      const descriptor = ShadowMessageImporter.descriptor;
+      const descriptor = MessageImporter.descriptor;
 
-      expect(descriptor.importerName, 'shadow_message_importer');
+      expect(descriptor.importerName, 'message_importer');
       expect(descriptor.sourceTables, <String>['message']);
       expect(descriptor.targetTables, <String>['messages']);
     });
 
     test('documents continuation, idempotence, and validation strategies', () {
-      const descriptor = ShadowMessageImporter.descriptor;
+      const descriptor = MessageImporter.descriptor;
 
       expect(descriptor.prerequisites, isEmpty);
       expect(descriptor.continuationStrategy, 'MAX(messages.source_rowid)');

@@ -5,8 +5,8 @@ import '../../../../db/infrastructure/data_sources/local/import/sqflite_import_d
 import '../../../infrastructure/import_ledger_message_repository.dart';
 import '../../importers/importer_descriptor.dart';
 
-class ShadowMessageImporter {
-  const ShadowMessageImporter({
+class MessageImporter {
+  const MessageImporter({
     required String chatDbPath,
     required SqfliteImportDatabase shadowImportDb,
     required ImportLedgerMessageRepository importLedgerRepository,
@@ -21,7 +21,7 @@ class ShadowMessageImporter {
   static const String _sourceId = 'live-chat-db';
   static const String _sourceKind = 'live_chat_db';
   static const ImporterDescriptor descriptor = ImporterDescriptor(
-    importerName: 'shadow_message_importer',
+    importerName: 'message_importer',
     sourceTables: <String>['message'],
     targetTables: <String>['messages'],
     prerequisites: <String>[],
@@ -35,7 +35,7 @@ class ShadowMessageImporter {
   final SqfliteImportDatabase _shadowImportDb;
   final ImportLedgerMessageRepository _importLedgerRepository;
 
-  Future<ShadowMessageImportResult> importNewMessages() async {
+  Future<MessageImportResult> importNewMessages() async {
     final ledgerSnapshot = await _importLedgerRepository.readMessageSnapshot();
     final startedAfterSourceRowId = ledgerSnapshot.maxRowId;
     final startedAtUtc = DateTime.now().toUtc().toIso8601String();
@@ -131,7 +131,7 @@ class ShadowMessageImporter {
           'insertedMessageCount=$insertedMessageCount',
     );
 
-    final result = ShadowMessageImportResult(
+    final result = MessageImportResult(
       startedAfterSourceRowId: startedAfterSourceRowId,
       lastImportedSourceRowId: lastImportedSourceRowId,
       insertedMessageCount: insertedMessageCount,
@@ -222,8 +222,8 @@ class ShadowMessageImporter {
 }
 
 @immutable
-class ShadowMessageImportResult {
-  const ShadowMessageImportResult({
+class MessageImportResult {
+  const MessageImportResult({
     required this.startedAfterSourceRowId,
     required this.lastImportedSourceRowId,
     required this.insertedMessageCount,
