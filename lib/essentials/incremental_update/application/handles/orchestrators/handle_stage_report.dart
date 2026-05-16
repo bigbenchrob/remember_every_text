@@ -33,3 +33,23 @@ final class HandleStageReport {
   final HandleSyncState? postExecutionState;
   final List<String> diagnosticEvents;
 }
+
+String formatHandleImportDecision(HandleImportDecision decision) {
+  return switch (decision) {
+    HandleImportDecisionDoNothing() => 'HandleImportDecision.doNothing',
+    HandleImportDecisionConsiderIncrementalImport() =>
+      'HandleImportDecision.considerIncrementalImport',
+    HandleImportDecisionBlockAndReportLedgerAhead() =>
+      'HandleImportDecision.blockAndReportLedgerAhead',
+  };
+}
+
+String handleImportSkipReason(HandleImportDecision decision) {
+  return switch (decision) {
+    HandleImportDecisionDoNothing() => 'decision doNothing',
+    HandleImportDecisionBlockAndReportLedgerAhead() =>
+      'decision blockAndReportLedgerAhead',
+    HandleImportDecisionConsiderIncrementalImport() =>
+      'execution returned no result',
+  };
+}
