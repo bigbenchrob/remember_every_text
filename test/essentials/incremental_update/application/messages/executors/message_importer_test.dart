@@ -33,14 +33,13 @@ void main() {
     }
   });
 
-  test('preserves source-scoped message relationship row ids', () async {
+  test('preserves sender provenance without inferring chat topology', () async {
     final chatDbPath = '${tempDir.path}/chat.db';
     final sourceDb = await openDatabase(chatDbPath);
     await sourceDb.execute('''
       CREATE TABLE message (
         ROWID INTEGER PRIMARY KEY,
         guid TEXT,
-        chat_id INTEGER,
         handle_id INTEGER,
         service TEXT,
         is_from_me INTEGER,
@@ -50,7 +49,6 @@ void main() {
     await sourceDb.insert('message', <String, Object?>{
       'ROWID': 101,
       'guid': 'message-101',
-      'chat_id': 17,
       'handle_id': 42,
       'service': 'iMessage',
       'is_from_me': 0,
@@ -88,7 +86,7 @@ void main() {
     expect(rows.single['source_rowid'], 101);
     expect(rows.single['source_id'], 'live-chat-db');
     expect(rows.single['source_kind'], 'live_chat_db');
-    expect(rows.single['source_chat_rowid'], 17);
+    expect(rows.single['source_chat_rowid'], isNull);
     expect(rows.single['source_sender_handle_rowid'], 42);
   });
 }

@@ -2,12 +2,21 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 
+import '../../../domain/models/chat_snapshot_delta.dart';
+import '../../../domain/models/handle_snapshot_delta.dart';
+import '../../../domain/models/message_import_blocker.dart';
+import '../../../domain/models/message_import_prerequisite_assessment.dart';
 import '../../../domain/models/message_migration_delta.dart';
 import '../../../domain/models/snapshot_delta.dart';
+import '../../../domain/sealed_unions/chat_import_decision.dart';
+import '../../../domain/sealed_unions/chat_sync_state.dart';
 import '../../../domain/sealed_unions/comparison_outcome.dart';
+import '../../../domain/sealed_unions/handle_import_decision.dart';
+import '../../../domain/sealed_unions/handle_sync_state.dart';
 import '../../../domain/sealed_unions/import_decision.dart';
 import '../../../domain/sealed_unions/message_migration_state.dart';
 import '../../../domain/sealed_unions/migration_decision.dart';
+import '../../../domain/sealed_unions/prerequisite_aware_message_import_decision.dart';
 import '../../../domain/sealed_unions/sync_state.dart';
 
 class ShadowPollingEnduranceSnapshot {
@@ -15,7 +24,15 @@ class ShadowPollingEnduranceSnapshot {
     required this.pollingActive,
     required this.lastRefreshTime,
     required this.lastTransitionTime,
+    required this.chatImportDecision,
+    required this.chatSyncState,
+    required this.chatSnapshotDelta,
+    required this.handleImportDecision,
+    required this.handleSyncState,
+    required this.handleSnapshotDelta,
     required this.importDecision,
+    required this.prerequisiteAwareMessageImportDecision,
+    required this.messageImportPrerequisiteAssessment,
     required this.messageSyncState,
     required this.snapshotDelta,
     required this.migrationDecision,
@@ -28,7 +45,16 @@ class ShadowPollingEnduranceSnapshot {
   final bool pollingActive;
   final DateTime? lastRefreshTime;
   final DateTime? lastTransitionTime;
+  final ChatImportDecision chatImportDecision;
+  final ChatSyncState chatSyncState;
+  final ChatSnapshotDelta chatSnapshotDelta;
+  final HandleImportDecision handleImportDecision;
+  final HandleSyncState handleSyncState;
+  final HandleSnapshotDelta handleSnapshotDelta;
   final ImportDecision importDecision;
+  final PrerequisiteAwareMessageImportDecision
+  prerequisiteAwareMessageImportDecision;
+  final MessageImportPrerequisiteAssessment messageImportPrerequisiteAssessment;
   final MessageSyncState messageSyncState;
   final MessageSnapshotDelta snapshotDelta;
   final MigrationDecision migrationDecision;
@@ -371,8 +397,21 @@ String _formatStatusBlock({
       '- production_convergence_pending: ${assessment.productionConvergencePending}\n'
       '- production_pending_duration: ${_formatDuration(assessment.productionPendingDuration)}\n'
       '- last_production_convergence_duration: ${_formatDuration(assessment.lastProductionConvergenceDuration)}\n\n'
+      '### Shadow chats\n\n'
+      '- ChatImportDecision: ${_formatChatImportDecision(status.chatImportDecision)}\n'
+      '- ChatSyncState: ${_formatChatSyncState(status.chatSyncState)}\n'
+      '- rowIdDelta: ${status.chatSnapshotDelta.rowIdDelta}\n'
+      '- chatCountDelta: ${status.chatSnapshotDelta.chatCountDelta}\n\n'
+      '### Shadow handles\n\n'
+      '- HandleImportDecision: ${_formatHandleImportDecision(status.handleImportDecision)}\n'
+      '- HandleSyncState: ${_formatHandleSyncState(status.handleSyncState)}\n'
+      '- rowIdDelta: ${status.handleSnapshotDelta.rowIdDelta}\n'
+      '- handleCountDelta: ${status.handleSnapshotDelta.handleCountDelta}\n\n'
       '### Shadow import\n\n'
       '- ImportDecision: ${_formatImportDecision(status.importDecision)}\n'
+      '- Prerequisite-aware message import decision: ${_formatPrerequisiteAwareDecision(status.prerequisiteAwareMessageImportDecision)}\n'
+      '- Message import prerequisite assessment: ${_formatPrerequisiteAssessment(status.messageImportPrerequisiteAssessment)}\n'
+      '- Message import prerequisite blockers: ${_formatBlockers(status.messageImportPrerequisiteAssessment.blockers)}\n'
       '- MessageSyncState: ${_formatMessageSyncState(status.messageSyncState)}\n'
       '- rowIdDelta: ${status.snapshotDelta.rowIdDelta}\n'
       '- messageCountDelta: ${status.snapshotDelta.messageCountDelta}\n\n'
@@ -434,11 +473,85 @@ String _formatImportDecision(ImportDecision decision) {
   };
 }
 
+String _formatChatImportDecision(ChatImportDecision decision) {
+  return switch (decision) {
+    ChatImportDecisionDoNothing() => 'ChatImportDecision.doNothing',
+    ChatImportDecisionConsiderIncrementalImport() =>
+      'ChatImportDecision.considerIncrementalImport',
+    ChatImportDecisionBlockAndReportLedgerAhead() =>
+      'ChatImportDecision.blockAndReportLedgerAhead',
+  };
+}
+
+String _formatChatSyncState(ChatSyncState state) {
+  return switch (state) {
+    ChatSyncCursorsMatch() => 'ChatSyncState.sourceAndLedgerCursorsMatch',
+    ChatSyncSourceAheadOfLedger() => 'ChatSyncState.sourceAheadOfLedger',
+    ChatSyncLedgerAheadOfSource() => 'ChatSyncState.ledgerAheadOfSource',
+  };
+}
+
+String _formatHandleImportDecision(HandleImportDecision decision) {
+  return switch (decision) {
+    HandleImportDecisionDoNothing() => 'HandleImportDecision.doNothing',
+    HandleImportDecisionConsiderIncrementalImport() =>
+      'HandleImportDecision.considerIncrementalImport',
+    HandleImportDecisionBlockAndReportLedgerAhead() =>
+      'HandleImportDecision.blockAndReportLedgerAhead',
+  };
+}
+
+String _formatHandleSyncState(HandleSyncState state) {
+  return switch (state) {
+    HandleSyncCursorsMatch() => 'HandleSyncState.sourceAndLedgerCursorsMatch',
+    HandleSyncSourceAheadOfLedger() => 'HandleSyncState.sourceAheadOfLedger',
+    HandleSyncLedgerAheadOfSource() => 'HandleSyncState.ledgerAheadOfSource',
+  };
+}
+
 String _formatMessageSyncState(MessageSyncState state) {
   return switch (state) {
     MessageSyncCursorsMatch() => 'MessageSyncState.sourceAndLedgerCursorsMatch',
     MessageSyncSourceAheadOfLedger() => 'MessageSyncState.sourceAheadOfLedger',
     MessageSyncLedgerAheadOfSource() => 'MessageSyncState.ledgerAheadOfSource',
+  };
+}
+
+String _formatPrerequisiteAwareDecision(
+  PrerequisiteAwareMessageImportDecision decision,
+) {
+  return switch (decision) {
+    PrerequisiteAwareMessageImportDecisionDoNothing() =>
+      'PrerequisiteAwareMessageImportDecision.doNothing',
+    PrerequisiteAwareMessageImportDecisionConsiderIncrementalImport() =>
+      'PrerequisiteAwareMessageImportDecision.considerIncrementalImport',
+    PrerequisiteAwareMessageImportDecisionBlockedPendingPrerequisites(
+      :final blockers,
+    ) =>
+      'PrerequisiteAwareMessageImportDecision.blockedPendingPrerequisites(${_formatBlockers(blockers)})',
+    PrerequisiteAwareMessageImportDecisionBlockAndReportLedgerAhead() =>
+      'PrerequisiteAwareMessageImportDecision.blockAndReportLedgerAhead',
+  };
+}
+
+String _formatPrerequisiteAssessment(
+  MessageImportPrerequisiteAssessment assessment,
+) {
+  return assessment.isSatisfied ? 'satisfied' : 'blocked';
+}
+
+String _formatBlockers(List<MessageImportBlocker> blockers) {
+  if (blockers.isEmpty) {
+    return '[]';
+  }
+
+  return '[${blockers.map(_formatBlocker).join(', ')}]';
+}
+
+String _formatBlocker(MessageImportBlocker blocker) {
+  return switch (blocker) {
+    MessageImportBlocker.handlesNotReady => 'handlesNotReady',
+    MessageImportBlocker.chatsNotReady => 'chatsNotReady',
   };
 }
 

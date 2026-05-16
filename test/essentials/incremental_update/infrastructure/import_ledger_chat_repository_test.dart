@@ -65,4 +65,31 @@ void main() {
     expect(snapshot.maxRowId, 20);
     expect(snapshot.totalChatCount, 2);
   });
+
+  test(
+    'excludes non-source placeholder chats from source snapshot count',
+    () async {
+      final batchId = await ledgerDb.insertImportBatch(
+        startedAtUtc: DateTime.now().toUtc().toIso8601String(),
+      );
+      await ledgerDb.insertChat(
+        id: -1,
+        guid: '__shadow_incremental_update_placeholder_chat__',
+        displayName: 'Shadow incremental update placeholder chat',
+        batchId: batchId,
+      );
+      await ledgerDb.insertChat(
+        id: 12,
+        sourceRowid: 12,
+        guid: 'source-chat',
+        batchId: batchId,
+      );
+
+      final repository = ImportLedgerChatRepository(ledgerDb: ledgerDb);
+      final snapshot = await repository.readChatSnapshot();
+
+      expect(snapshot.maxRowId, 12);
+      expect(snapshot.totalChatCount, 1);
+    },
+  );
 }

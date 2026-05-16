@@ -1,30 +1,28 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'shadow_incremental_update_status_provider.dart';
+part of 'handle_importer_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$shadowIncrementalUpdateStatusHash() =>
-    r'a3ea7a4df6964de5e762902e61cf423aaaadda6f';
+String _$handleImporterHash() => r'7507d210441dd21efa0b95a00e1df7a21f761f73';
 
-/// See also [shadowIncrementalUpdateStatus].
-@ProviderFor(shadowIncrementalUpdateStatus)
-final shadowIncrementalUpdateStatusProvider =
-    AutoDisposeFutureProvider<ShadowIncrementalUpdateStatus>.internal(
-      shadowIncrementalUpdateStatus,
-      name: r'shadowIncrementalUpdateStatusProvider',
+/// See also [handleImporter].
+@ProviderFor(handleImporter)
+final handleImporterProvider =
+    AutoDisposeFutureProvider<HandleImporter>.internal(
+      handleImporter,
+      name: r'handleImporterProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
           ? null
-          : _$shadowIncrementalUpdateStatusHash,
+          : _$handleImporterHash,
       dependencies: null,
       allTransitiveDependencies: null,
     );
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef ShadowIncrementalUpdateStatusRef =
-    AutoDisposeFutureProviderRef<ShadowIncrementalUpdateStatus>;
+typedef HandleImporterRef = AutoDisposeFutureProviderRef<HandleImporter>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

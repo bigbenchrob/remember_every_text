@@ -2,11 +2,13 @@
 tier: project
 scope: macos-source-databases
 owner: agent-per-project
-last_reviewed: 2026-04-21
+last_reviewed: 2026-05-15
 source_of_truth: doc
 links:
   - ./00-overview.md
+  - ./10-CHAT-DB.md
   - ./10-chat-db-orphan-messages.md
+  - ./20-ADDRESSBOOK-DB.md
   - ./20-external-tools-and-rust-crates.md
   - ./apple-typedstream-format-reference.md
 tests: []
@@ -21,6 +23,8 @@ This folder is source-schema and source-behavior reference material. Source data
 Use these docs when you need to reason about:
 
 - what the source `chat.db` schema actually stores
+- which source tables own relationships between messages, chats, handles, and attachments
+- which AddressBook tables/fields are relevant to contact import and handle matching
 - which records are well-formed versus partially linked
 - how source rows map into normal versus recovered import and working tables
 - how `attributedBody` / typedstream content fits into message recovery
@@ -29,12 +33,18 @@ Use these docs when you need to reason about:
 ## Canonical Docs
 
 - `00-overview.md` — Scope and operating model for source-database analysis
+- `10-CHAT-DB.md` — App-relevant semantic source contract for Messages `chat.db`
 - `10-chat-db-orphan-messages.md` — Findings from direct inspection of source `chat.db` orphan message rows
+- `20-ADDRESSBOOK-DB.md` — App-relevant semantic source contract for AddressBook contacts
 - `20-external-tools-and-rust-crates.md` — External references for `chat.db` parsing and export
 - `apple-typedstream-format-reference.md` — Reverse-engineering notes for Apple's typedstream format used in `attributedBody`
 
 ## Practical Rule
 
 When import or migration behavior looks suspicious, inspect the source database model first. Do not assume Apple’s own tables form a perfectly thread-linked graph.
+
+Do not infer source fields from MessageLens ledger or working tables. For
+example, source `chat.db.message` rows do not own `chat_id`; chat membership is
+owned by `chat_message_join`.
 
 Do not infer runtime architecture or durable semantics directly from Apple table shape. Source `chat.db` rows are interpreted through the import ledger, working projection, overlay archive, and deterministic recovery contracts documented in the adjacent subsystem folders.

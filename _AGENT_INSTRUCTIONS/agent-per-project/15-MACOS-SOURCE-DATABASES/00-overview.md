@@ -2,11 +2,13 @@
 tier: project
 scope: macos-source-databases
 owner: agent-per-project
-last_reviewed: 2026-04-21
+last_reviewed: 2026-05-15
 source_of_truth: doc
 links:
   - ./README.md
+  - ./10-CHAT-DB.md
   - ./10-chat-db-orphan-messages.md
+  - ./20-ADDRESSBOOK-DB.md
   - ./20-external-tools-and-rust-crates.md
   - ./apple-typedstream-format-reference.md
   - ../10-DATABASES/04-db-chat.md
@@ -25,6 +27,10 @@ The most important source database is:
 
 - `~/Library/Messages/chat.db`
 
+The contact metadata source is:
+
+- `~/Library/Application Support/AddressBook/Sources/<UUID>/AddressBook-v22.abcddb`
+
 This database contains:
 
 - chats and chat membership (`chat`, `chat_handle_join`)
@@ -38,6 +44,21 @@ This database contains:
 ## Key Insight
 
 `chat.db` is not equivalent to “messages currently visible in the Messages app conversation list”.
+
+It is also not equivalent to a simple `message -> chat -> handles`
+ownership model. Relationship ownership in `chat.db` must be verified against
+the source tables that actually own the relationships:
+
+- `message` does **not** directly own `chat_id`.
+- message-to-chat membership is represented by `chat_message_join`.
+- chat-to-handle membership is represented by `chat_handle_join`.
+- message-to-attachment membership is represented by `message_attachment_join`.
+
+Importers and readers must not infer source columns from the app’s ledger or
+working schemas. The Apple databases are external source contracts, not
+MessageLens-owned schemas. When importer code needs a source field or
+relationship, consult the source-contract docs in this folder and verify the
+relationship owner explicitly.
 
 Direct inspection in this repository showed that `chat.db` contains a substantial orphan message population:
 
@@ -57,6 +78,17 @@ That means source truth in `chat.db` must be treated as:
 ## Design Implication
 
 When MessageLens flags, quarantines, or displays a source record outside the normal timeline, that must be an explicit product decision, not an accidental consequence of assuming Apple’s schema is perfectly normalized.
+
+Source-local row identifiers are local to a source database and table. They are
+not globally meaningful across live and archived sources. Multi-source support
+must preserve provenance with at least:
+
+- `source_id`
+- `source_table`
+- `source_rowid`
+
+Canonical app identity is resolved later by import/migration semantics. It
+must not be inferred from raw Apple ROWIDs alone.
 
 ## Current App Mapping
 
@@ -87,6 +119,8 @@ MessageLens never writes back to Apple’s Messages attachment directories.
 
 ## Related Topics
 
+- For the app-relevant `chat.db` semantic contract, see `10-CHAT-DB.md`.
+- For the app-relevant AddressBook semantic contract, see `20-ADDRESSBOOK-DB.md`.
 - For orphan-source-message findings, see `10-chat-db-orphan-messages.md`.
 - For `attributedBody` decoding, see `apple-typedstream-format-reference.md`.
 - For external ecosystem tools that parse `chat.db`, see `20-external-tools-and-rust-crates.md`.

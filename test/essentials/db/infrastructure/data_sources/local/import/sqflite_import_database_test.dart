@@ -59,6 +59,56 @@ void main() {
     );
 
     test(
+      'fresh database creates nullable handle source provenance columns',
+      () async {
+        final ledgerDb = SqfliteImportDatabase(
+          databaseDirectory: tempDir.path,
+          databaseName: 'import_test.db',
+          debugSettings: const ImportDebugSettingsState(),
+        );
+
+        final db = await ledgerDb.database;
+        final rows = await db.rawQuery('PRAGMA table_info(handles)');
+        final columns = <String, Map<String, Object?>>{
+          for (final row in rows) row['name']! as String: row,
+        };
+
+        expect(columns['source_rowid']?['type'], 'INTEGER');
+        expect(columns['source_id']?['type'], 'TEXT');
+        expect(columns['source_id']?['notnull'], 0);
+        expect(columns['source_kind']?['type'], 'TEXT');
+        expect(columns['source_kind']?['notnull'], 0);
+
+        await ledgerDb.close();
+      },
+    );
+
+    test(
+      'fresh database creates nullable chat source provenance columns',
+      () async {
+        final ledgerDb = SqfliteImportDatabase(
+          databaseDirectory: tempDir.path,
+          databaseName: 'import_test.db',
+          debugSettings: const ImportDebugSettingsState(),
+        );
+
+        final db = await ledgerDb.database;
+        final rows = await db.rawQuery('PRAGMA table_info(chats)');
+        final columns = <String, Map<String, Object?>>{
+          for (final row in rows) row['name']! as String: row,
+        };
+
+        expect(columns['source_rowid']?['type'], 'INTEGER');
+        expect(columns['source_id']?['type'], 'TEXT');
+        expect(columns['source_id']?['notnull'], 0);
+        expect(columns['source_kind']?['type'], 'TEXT');
+        expect(columns['source_kind']?['notnull'], 0);
+
+        await ledgerDb.close();
+      },
+    );
+
+    test(
       'upgrades a v5 database with nullable message source provenance columns',
       () async {
         final dbPath = '${tempDir.path}/import_test.db';
@@ -105,10 +155,10 @@ void main() {
 
         final migrationRows = await db.query(
           'schema_migrations',
-          where: 'version IN (?, ?)',
-          whereArgs: <Object>[6, 7],
+          where: 'version IN (?, ?, ?, ?)',
+          whereArgs: <Object>[6, 7, 8, 9],
         );
-        expect(migrationRows, hasLength(2));
+        expect(migrationRows, hasLength(4));
 
         await upgradedDb.close();
       },
@@ -156,14 +206,104 @@ void main() {
 
         final migrationRows = await db.query(
           'schema_migrations',
-          where: 'version = ?',
-          whereArgs: <Object>[7],
+          where: 'version IN (?, ?, ?)',
+          whereArgs: <Object>[7, 8, 9],
         );
-        expect(migrationRows, hasLength(1));
+        expect(migrationRows, hasLength(3));
 
         await upgradedDb.close();
       },
     );
+
+    test('upgrades a v7 database with nullable handle provenance columns', () async {
+      final dbPath = '${tempDir.path}/import_test.db';
+      final legacyDb = await openDatabase(dbPath);
+      await legacyDb.execute(
+        'CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, applied_at_utc TEXT NOT NULL)',
+      );
+      await legacyDb.execute(
+        'CREATE TABLE import_batches (id INTEGER PRIMARY KEY, started_at_utc TEXT NOT NULL)',
+      );
+      await legacyDb.execute(
+        "CREATE TABLE handles (id INTEGER PRIMARY KEY, source_rowid INTEGER, service TEXT NOT NULL, raw_identifier TEXT NOT NULL, normalized_identifier TEXT, compound_identifier TEXT NOT NULL DEFAULT '', country TEXT, last_seen_utc TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT)",
+      );
+      await legacyDb.execute(
+        "INSERT INTO schema_migrations (version, applied_at_utc) VALUES (7, '2026-05-09T00:00:00.000Z')",
+      );
+      await legacyDb.execute('PRAGMA user_version = 7');
+      await legacyDb.close();
+
+      final upgradedDb = SqfliteImportDatabase(
+        databaseDirectory: tempDir.path,
+        databaseName: 'import_test.db',
+        debugSettings: const ImportDebugSettingsState(),
+      );
+
+      final db = await upgradedDb.database;
+      final rows = await db.rawQuery('PRAGMA table_info(handles)');
+      final columns = <String, Map<String, Object?>>{
+        for (final row in rows) row['name']! as String: row,
+      };
+
+      expect(columns['source_id']?['type'], 'TEXT');
+      expect(columns['source_id']?['notnull'], 0);
+      expect(columns['source_kind']?['type'], 'TEXT');
+      expect(columns['source_kind']?['notnull'], 0);
+
+      final migrationRows = await db.query(
+        'schema_migrations',
+        where: 'version = ?',
+        whereArgs: <Object>[8],
+      );
+      expect(migrationRows, hasLength(1));
+
+      await upgradedDb.close();
+    });
+
+    test('upgrades a v8 database with nullable chat provenance columns', () async {
+      final dbPath = '${tempDir.path}/import_test.db';
+      final legacyDb = await openDatabase(dbPath);
+      await legacyDb.execute(
+        'CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, applied_at_utc TEXT NOT NULL)',
+      );
+      await legacyDb.execute(
+        'CREATE TABLE import_batches (id INTEGER PRIMARY KEY, started_at_utc TEXT NOT NULL)',
+      );
+      await legacyDb.execute(
+        'CREATE TABLE chats (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT NOT NULL, service TEXT, display_name TEXT, is_group INTEGER NOT NULL DEFAULT 0 CHECK(is_group IN (0,1)), created_at_utc TEXT, updated_at_utc TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(guid))',
+      );
+      await legacyDb.execute(
+        "INSERT INTO schema_migrations (version, applied_at_utc) VALUES (8, '2026-05-09T00:00:00.000Z')",
+      );
+      await legacyDb.execute('PRAGMA user_version = 8');
+      await legacyDb.close();
+
+      final upgradedDb = SqfliteImportDatabase(
+        databaseDirectory: tempDir.path,
+        databaseName: 'import_test.db',
+        debugSettings: const ImportDebugSettingsState(),
+      );
+
+      final db = await upgradedDb.database;
+      final rows = await db.rawQuery('PRAGMA table_info(chats)');
+      final columns = <String, Map<String, Object?>>{
+        for (final row in rows) row['name']! as String: row,
+      };
+
+      expect(columns['source_id']?['type'], 'TEXT');
+      expect(columns['source_id']?['notnull'], 0);
+      expect(columns['source_kind']?['type'], 'TEXT');
+      expect(columns['source_kind']?['notnull'], 0);
+
+      final migrationRows = await db.query(
+        'schema_migrations',
+        where: 'version = ?',
+        whereArgs: <Object>[9],
+      );
+      expect(migrationRows, hasLength(1));
+
+      await upgradedDb.close();
+    });
 
     test(
       'fresh database preserves multiple source rows with same imported raw identifier',

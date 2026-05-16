@@ -7,10 +7,16 @@ import 'package:macos_ui/macos_ui.dart';
 
 import '../application/messages/orchestrators/sync_state_polling_orchestrator_provider.dart';
 import '../application/messages/status/shadow_incremental_update_status_provider.dart';
+import '../domain/models/message_import_blocker.dart';
+import '../domain/sealed_unions/chat_import_decision.dart';
+import '../domain/sealed_unions/chat_sync_state.dart';
 import '../domain/sealed_unions/comparison_outcome.dart';
+import '../domain/sealed_unions/handle_import_decision.dart';
+import '../domain/sealed_unions/handle_sync_state.dart';
 import '../domain/sealed_unions/import_decision.dart';
 import '../domain/sealed_unions/message_migration_state.dart';
 import '../domain/sealed_unions/migration_decision.dart';
+import '../domain/sealed_unions/prerequisite_aware_message_import_decision.dart';
 import '../domain/sealed_unions/sync_state.dart';
 
 class ShadowIncrementalUpdateStatusSheet extends ConsumerWidget {
@@ -89,11 +95,68 @@ class _StatusContent extends StatelessWidget {
           ],
         ),
         _StatusSection(
+          title: 'Shadow chats',
+          rows: [
+            _StatusRow(
+              'ChatImportDecision',
+              _formatChatImportDecision(status.chatImportDecision),
+            ),
+            _StatusRow(
+              'ChatSyncState',
+              _formatChatSyncState(status.chatSyncState),
+            ),
+            _StatusRow('rowIdDelta', '${status.chatSnapshotDelta.rowIdDelta}'),
+            _StatusRow(
+              'chatCountDelta',
+              '${status.chatSnapshotDelta.chatCountDelta}',
+            ),
+          ],
+        ),
+        _StatusSection(
+          title: 'Shadow handles',
+          rows: [
+            _StatusRow(
+              'HandleImportDecision',
+              _formatHandleImportDecision(status.handleImportDecision),
+            ),
+            _StatusRow(
+              'HandleSyncState',
+              _formatHandleSyncState(status.handleSyncState),
+            ),
+            _StatusRow(
+              'rowIdDelta',
+              '${status.handleSnapshotDelta.rowIdDelta}',
+            ),
+            _StatusRow(
+              'handleCountDelta',
+              '${status.handleSnapshotDelta.handleCountDelta}',
+            ),
+          ],
+        ),
+        _StatusSection(
           title: 'Shadow import',
           rows: [
             _StatusRow(
               'ImportDecision',
               _formatImportDecision(status.importDecision),
+            ),
+            _StatusRow(
+              'Prerequisite-aware decision',
+              _formatPrerequisiteAwareDecision(
+                status.prerequisiteAwareMessageImportDecision,
+              ),
+            ),
+            _StatusRow(
+              'Prerequisite assessment',
+              status.messageImportPrerequisiteAssessment.isSatisfied
+                  ? 'satisfied'
+                  : 'blocked',
+            ),
+            _StatusRow(
+              'Prerequisite blockers',
+              _formatBlockers(
+                status.messageImportPrerequisiteAssessment.blockers,
+              ),
             ),
             _StatusRow(
               'MessageSyncState',
@@ -273,6 +336,74 @@ String _formatImportDecision(ImportDecision decision) {
       'ImportDecision.considerIncrementalImport',
     ImportDecisionBlockAndReportLedgerAhead() =>
       'ImportDecision.blockAndReportLedgerAhead',
+  };
+}
+
+String _formatChatImportDecision(ChatImportDecision decision) {
+  return switch (decision) {
+    ChatImportDecisionDoNothing() => 'ChatImportDecision.doNothing',
+    ChatImportDecisionConsiderIncrementalImport() =>
+      'ChatImportDecision.considerIncrementalImport',
+    ChatImportDecisionBlockAndReportLedgerAhead() =>
+      'ChatImportDecision.blockAndReportLedgerAhead',
+  };
+}
+
+String _formatChatSyncState(ChatSyncState state) {
+  return switch (state) {
+    ChatSyncCursorsMatch() => 'ChatSyncState.sourceAndLedgerCursorsMatch',
+    ChatSyncSourceAheadOfLedger() => 'ChatSyncState.sourceAheadOfLedger',
+    ChatSyncLedgerAheadOfSource() => 'ChatSyncState.ledgerAheadOfSource',
+  };
+}
+
+String _formatHandleImportDecision(HandleImportDecision decision) {
+  return switch (decision) {
+    HandleImportDecisionDoNothing() => 'HandleImportDecision.doNothing',
+    HandleImportDecisionConsiderIncrementalImport() =>
+      'HandleImportDecision.considerIncrementalImport',
+    HandleImportDecisionBlockAndReportLedgerAhead() =>
+      'HandleImportDecision.blockAndReportLedgerAhead',
+  };
+}
+
+String _formatHandleSyncState(HandleSyncState state) {
+  return switch (state) {
+    HandleSyncCursorsMatch() => 'HandleSyncState.sourceAndLedgerCursorsMatch',
+    HandleSyncSourceAheadOfLedger() => 'HandleSyncState.sourceAheadOfLedger',
+    HandleSyncLedgerAheadOfSource() => 'HandleSyncState.ledgerAheadOfSource',
+  };
+}
+
+String _formatPrerequisiteAwareDecision(
+  PrerequisiteAwareMessageImportDecision decision,
+) {
+  return switch (decision) {
+    PrerequisiteAwareMessageImportDecisionDoNothing() =>
+      'PrerequisiteAwareMessageImportDecision.doNothing',
+    PrerequisiteAwareMessageImportDecisionConsiderIncrementalImport() =>
+      'PrerequisiteAwareMessageImportDecision.considerIncrementalImport',
+    PrerequisiteAwareMessageImportDecisionBlockedPendingPrerequisites(
+      :final blockers,
+    ) =>
+      'PrerequisiteAwareMessageImportDecision.blockedPendingPrerequisites(${_formatBlockers(blockers)})',
+    PrerequisiteAwareMessageImportDecisionBlockAndReportLedgerAhead() =>
+      'PrerequisiteAwareMessageImportDecision.blockAndReportLedgerAhead',
+  };
+}
+
+String _formatBlockers(List<MessageImportBlocker> blockers) {
+  if (blockers.isEmpty) {
+    return '[]';
+  }
+
+  return '[${blockers.map(_formatBlocker).join(', ')}]';
+}
+
+String _formatBlocker(MessageImportBlocker blocker) {
+  return switch (blocker) {
+    MessageImportBlocker.handlesNotReady => 'handlesNotReady',
+    MessageImportBlocker.chatsNotReady => 'chatsNotReady',
   };
 }
 

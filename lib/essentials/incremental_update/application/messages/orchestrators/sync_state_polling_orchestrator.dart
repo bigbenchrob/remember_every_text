@@ -3,14 +3,31 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../../domain/sealed_unions/chat_import_decision.dart';
 import '../../../domain/sealed_unions/comparison_outcome.dart';
+import '../../../domain/sealed_unions/handle_import_decision.dart';
 import '../../../domain/sealed_unions/import_decision.dart';
+import '../../../domain/sealed_unions/prerequisite_aware_message_import_decision.dart';
+import '../../chats/integrators/chat_import_decision_provider.dart';
+import '../../chats/integrators/chat_snapshot_delta_integrator_provider.dart';
+import '../../chats/integrators/chat_sync_state_provider.dart';
+import '../../chats/orchestrators/chat_import_execution_orchestrator_provider.dart';
+import '../../chats/readers/import_ledger_chat_snapshot_provider.dart';
+import '../../chats/readers/live_chat_db_chat_snapshot_provider.dart';
+import '../../handles/integrators/handle_import_decision_provider.dart';
+import '../../handles/integrators/handle_snapshot_delta_integrator_provider.dart';
+import '../../handles/integrators/handle_sync_state_provider.dart';
+import '../../handles/orchestrators/handle_import_execution_orchestrator_provider.dart';
+import '../../handles/readers/import_ledger_handle_snapshot_provider.dart';
+import '../../handles/readers/live_chat_db_handle_snapshot_provider.dart';
 import '../integrators/import_decision_integrator.dart';
 import '../integrators/import_decision_provider.dart';
 import '../integrators/incremental_update_comparison_provider.dart';
+import '../integrators/message_import_prerequisite_assessment_provider.dart';
 import '../integrators/migration_decision_integrator.dart';
 import '../integrators/migration_delta_integrator_provider.dart';
 import '../integrators/migration_state_integrator.dart';
+import '../integrators/prerequisite_aware_message_import_decision_provider.dart';
 import '../integrators/snapshot_delta_integrator_provider.dart';
 import '../integrators/sync_assessment_integrator.dart';
 import '../integrators/sync_assessment_integrator_provider.dart';
@@ -48,6 +65,9 @@ class SyncStatePollingOrchestrator {
     List<String>? tickEvents,
   }) async {
     try {
+      await _refreshChats(tickEvents: tickEvents);
+      await _refreshHandles(tickEvents: tickEvents);
+
       _ref.invalidate(liveChatDbMessageSnapshotProvider);
       _ref.invalidate(importLedgerMessageSnapshotProvider);
       tickEvents?.add('reader refresh started');
@@ -63,6 +83,21 @@ class SyncStatePollingOrchestrator {
       final decision = await _ref.read(importDecisionProvider.future);
       tickEvents?.add(
         'import decision observed: ${_formatImportDecision(decision)}',
+      );
+      final prerequisiteAssessment = await _ref.read(
+        messageImportPrerequisiteAssessmentProvider.future,
+      );
+      tickEvents?.add(
+        'prerequisite assessment observed: '
+        '${prerequisiteAssessment.isSatisfied ? 'satisfied' : 'blocked'} '
+        'blockers=${_formatPrerequisiteBlockers(prerequisiteAssessment.blockers)}',
+      );
+      final prerequisiteAwareDecision = await _ref.read(
+        prerequisiteAwareMessageImportDecisionProvider.future,
+      );
+      tickEvents?.add(
+        'prerequisite-aware message import decision observed: '
+        '${_formatPrerequisiteAwareDecision(prerequisiteAwareDecision)}',
       );
       final executionOrchestrator = await _ref.read(
         shadowImportExecutionOrchestratorProvider.future,
@@ -97,6 +132,79 @@ class SyncStatePollingOrchestrator {
           : _ref.read(importDecisionProvider.future);
     } finally {
       _lastRefreshTime = DateTime.now();
+    }
+  }
+
+  Future<void> _refreshChats({List<String>? tickEvents}) async {
+    _ref.invalidate(liveChatDbChatSnapshotProvider);
+    _ref.invalidate(importLedgerChatSnapshotProvider);
+    tickEvents?.add('chat observation boundary invalidated');
+    final chatDelta = await _ref.read(
+      chatSnapshotDeltaIntegratorProvider.future,
+    );
+    tickEvents?.add(
+      'chat delta observed: '
+      'rowIdDelta=${chatDelta.rowIdDelta}, '
+      'chatCountDelta=${chatDelta.chatCountDelta}',
+    );
+    final chatDecision = await _ref.read(chatImportDecisionProvider.future);
+    tickEvents?.add(
+      'chat import decision observed: '
+      '${_formatChatImportDecision(chatDecision)}',
+    );
+    final executionOrchestrator = await _ref.read(
+      chatImportExecutionOrchestratorProvider.future,
+    );
+    final result = await executionOrchestrator.runForDecision(chatDecision);
+    if (result != null) {
+      tickEvents?.add(
+        'shadow chat import executed: '
+        'insertedChatCount=${result.insertedChatCount}, '
+        'lastImportedSourceRowId=${result.lastImportedSourceRowId}',
+      );
+      _ref.invalidate(liveChatDbChatSnapshotProvider);
+      _ref.invalidate(importLedgerChatSnapshotProvider);
+    } else {
+      tickEvents?.add(
+        'shadow chat import skipped: ${_chatImportSkipReason(chatDecision)}',
+      );
+    }
+  }
+
+  Future<void> _refreshHandles({List<String>? tickEvents}) async {
+    _ref.invalidate(liveChatDbHandleSnapshotProvider);
+    _ref.invalidate(importLedgerHandleSnapshotProvider);
+    tickEvents?.add('handle observation boundary invalidated');
+    final handleDelta = await _ref.read(
+      handleSnapshotDeltaIntegratorProvider.future,
+    );
+    tickEvents?.add(
+      'handle delta observed: '
+      'rowIdDelta=${handleDelta.rowIdDelta}, '
+      'handleCountDelta=${handleDelta.handleCountDelta}',
+    );
+    final handleDecision = await _ref.read(handleImportDecisionProvider.future);
+    tickEvents?.add(
+      'handle import decision observed: '
+      '${_formatHandleImportDecision(handleDecision)}',
+    );
+    final executionOrchestrator = await _ref.read(
+      handleImportExecutionOrchestratorProvider.future,
+    );
+    final result = await executionOrchestrator.runForDecision(handleDecision);
+    if (result != null) {
+      tickEvents?.add(
+        'shadow handle import executed: '
+        'insertedHandleCount=${result.insertedHandleCount}, '
+        'lastImportedSourceRowId=${result.lastImportedSourceRowId}',
+      );
+      _ref.invalidate(liveChatDbHandleSnapshotProvider);
+      _ref.invalidate(importLedgerHandleSnapshotProvider);
+    } else {
+      tickEvents?.add(
+        'shadow handle import skipped: '
+        '${_handleImportSkipReason(handleDecision)}',
+      );
     }
   }
 
@@ -229,6 +337,26 @@ class SyncStatePollingOrchestrator {
       snapshotDelta,
     );
     final importDecision = ImportDecisionIntegrator().integrate(syncState);
+    final handleDelta = await _ref.read(
+      handleSnapshotDeltaIntegratorProvider.future,
+    );
+    final handleSyncState = await _ref.read(handleSyncStateProvider.future);
+    final handleImportDecision = await _ref.read(
+      handleImportDecisionProvider.future,
+    );
+    final chatDelta = await _ref.read(
+      chatSnapshotDeltaIntegratorProvider.future,
+    );
+    final chatSyncState = await _ref.read(chatSyncStateProvider.future);
+    final chatImportDecision = await _ref.read(
+      chatImportDecisionProvider.future,
+    );
+    final prerequisiteAssessment = await _ref.read(
+      messageImportPrerequisiteAssessmentProvider.future,
+    );
+    final prerequisiteAwareDecision = await _ref.read(
+      prerequisiteAwareMessageImportDecisionProvider.future,
+    );
     final migrationDelta = await _ref.read(
       messageMigrationDeltaProvider.future,
     );
@@ -256,7 +384,15 @@ class SyncStatePollingOrchestrator {
         migrationOrchestrator.lastMigrationDecisionTransitionTime,
         comparisonOrchestrator.lastComparisonTransitionTime,
       ]),
+      chatImportDecision: chatImportDecision,
+      chatSyncState: chatSyncState,
+      chatSnapshotDelta: chatDelta,
+      handleImportDecision: handleImportDecision,
+      handleSyncState: handleSyncState,
+      handleSnapshotDelta: handleDelta,
       importDecision: importDecision,
+      prerequisiteAwareMessageImportDecision: prerequisiteAwareDecision,
+      messageImportPrerequisiteAssessment: prerequisiteAssessment,
       messageSyncState: syncState,
       snapshotDelta: snapshotDelta,
       migrationDecision: migrationDecision,
@@ -316,6 +452,71 @@ String _importSkipReason(ImportDecision decision) {
       'decision blockAndReportLedgerAhead',
     ImportDecisionConsiderIncrementalImport() => 'execution returned no result',
   };
+}
+
+String _formatChatImportDecision(ChatImportDecision decision) {
+  return switch (decision) {
+    ChatImportDecisionDoNothing() => 'ChatImportDecision.doNothing',
+    ChatImportDecisionConsiderIncrementalImport() =>
+      'ChatImportDecision.considerIncrementalImport',
+    ChatImportDecisionBlockAndReportLedgerAhead() =>
+      'ChatImportDecision.blockAndReportLedgerAhead',
+  };
+}
+
+String _chatImportSkipReason(ChatImportDecision decision) {
+  return switch (decision) {
+    ChatImportDecisionDoNothing() => 'decision doNothing',
+    ChatImportDecisionBlockAndReportLedgerAhead() =>
+      'decision blockAndReportLedgerAhead',
+    ChatImportDecisionConsiderIncrementalImport() =>
+      'execution returned no result',
+  };
+}
+
+String _formatHandleImportDecision(HandleImportDecision decision) {
+  return switch (decision) {
+    HandleImportDecisionDoNothing() => 'HandleImportDecision.doNothing',
+    HandleImportDecisionConsiderIncrementalImport() =>
+      'HandleImportDecision.considerIncrementalImport',
+    HandleImportDecisionBlockAndReportLedgerAhead() =>
+      'HandleImportDecision.blockAndReportLedgerAhead',
+  };
+}
+
+String _handleImportSkipReason(HandleImportDecision decision) {
+  return switch (decision) {
+    HandleImportDecisionDoNothing() => 'decision doNothing',
+    HandleImportDecisionBlockAndReportLedgerAhead() =>
+      'decision blockAndReportLedgerAhead',
+    HandleImportDecisionConsiderIncrementalImport() =>
+      'execution returned no result',
+  };
+}
+
+String _formatPrerequisiteAwareDecision(
+  PrerequisiteAwareMessageImportDecision decision,
+) {
+  return switch (decision) {
+    PrerequisiteAwareMessageImportDecisionDoNothing() =>
+      'PrerequisiteAwareMessageImportDecision.doNothing',
+    PrerequisiteAwareMessageImportDecisionConsiderIncrementalImport() =>
+      'PrerequisiteAwareMessageImportDecision.considerIncrementalImport',
+    PrerequisiteAwareMessageImportDecisionBlockedPendingPrerequisites(
+      :final blockers,
+    ) =>
+      'PrerequisiteAwareMessageImportDecision.blockedPendingPrerequisites(${_formatPrerequisiteBlockers(blockers)})',
+    PrerequisiteAwareMessageImportDecisionBlockAndReportLedgerAhead() =>
+      'PrerequisiteAwareMessageImportDecision.blockAndReportLedgerAhead',
+  };
+}
+
+String _formatPrerequisiteBlockers(List<Object> blockers) {
+  if (blockers.isEmpty) {
+    return '[]';
+  }
+
+  return '[${blockers.map((blocker) => '$blocker'.split('.').last).join(', ')}]';
 }
 
 String _formatComparisonOutcome(ComparisonOutcome outcome) {

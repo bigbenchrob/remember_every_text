@@ -432,6 +432,31 @@ Shadow execution remains experimental and non-authoritative until explicitly pro
 
 ---
 
+## Non-Source Structural Shim Rows Must Not Count as Source-Ledger Convergence
+
+Shadow/dev databases may contain structural shim rows needed to satisfy existing schema constraints while a narrow pilot slice remains intentionally incomplete.
+
+Example:
+
+- a shadow-only placeholder `chats` row used as a temporary foreign-key anchor for message rows before `chat_message_join` topology import exists
+
+These rows are implementation scaffolding, not observed source facts.
+
+Therefore, source-ledger convergence calculations must exclude non-source structural shim rows. Counts, cursors, and drift calculations comparing a source table to a ledger table should count only rows that represent imported source records for that source concern.
+
+Practical rule:
+
+```text
+source-backed rows participate in source-ledger convergence
+non-source structural shim rows do not
+```
+
+For source-backed ledger rows, provenance such as `source_rowid`, `source_id`, and `source_kind` should distinguish imported source facts from structural scaffolding.
+
+This preserves diagnostic honesty: a schema-compatibility shim must not make a source importer appear ahead, behind, or mismatched.
+
+---
+
 ## Blocked Policy States Must Prevent Execution
 
 For the message pilot:

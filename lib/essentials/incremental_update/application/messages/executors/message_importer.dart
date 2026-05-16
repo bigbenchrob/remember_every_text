@@ -76,7 +76,6 @@ class MessageImporter {
           '''
           SELECT
             ROWID AS source_rowid,
-            chat_id AS source_chat_rowid,
             handle_id AS source_sender_handle_rowid,
             guid,
             service,
@@ -101,18 +100,15 @@ class MessageImporter {
           final sourceRowId = _readRequiredInt(sourceRow, 'source_rowid');
           lastImportedSourceRowId = sourceRowId;
 
-          // This first importer slice preserves message identity and
-          // source-scoped relationship rowids, but it deliberately does not
-          // resolve canonical chats/handles yet.
+          // This first importer slice preserves message identity and sender
+          // handle provenance. Chat topology belongs to chat_message_join and
+          // will be imported by an explicit future relationship importer.
           destinationBatch.insert('messages', <String, Object?>{
             'id': sourceRowId,
             'source_rowid': sourceRowId,
             'source_id': _sourceId,
             'source_kind': _sourceKind,
-            'source_chat_rowid': _readNullableInt(
-              sourceRow,
-              'source_chat_rowid',
-            ),
+            'source_chat_rowid': null,
             'source_sender_handle_rowid': _readNullableInt(
               sourceRow,
               'source_sender_handle_rowid',
@@ -168,7 +164,8 @@ class MessageImporter {
 
   Future<void> _ensureShadowPlaceholderChat({required int batchId}) async {
     // Until the chat importer exists, message rows need a valid ledger chat FK.
-    // The real source chat rowid is still preserved on each message.
+    // Source chat topology is intentionally absent until chat_message_join is
+    // imported by its own topology-preserving slice.
     final db = await _shadowImportDb.database;
     await db.insert('chats', <String, Object?>{
       'id': _shadowPlaceholderChatId,

@@ -22,9 +22,11 @@ class ImportLedgerChatRepository {
   }
 
   Future<int> _readTotalChatCount() async {
-    final rows = await _ledgerDb.rawQuery(
-      'SELECT COUNT(*) AS total_chat_count FROM chats;',
-    );
+    final rows = await _ledgerDb.rawQuery('''
+      SELECT COUNT(*) AS total_chat_count
+      FROM chats
+      WHERE source_rowid IS NOT NULL;
+      ''');
     return _readInt(rows, 'total_chat_count');
   }
 
