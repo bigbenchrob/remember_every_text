@@ -4,10 +4,10 @@ import '../../../domain/sealed_unions/handle_import_decision.dart';
 import '../integrators/handle_import_decision_provider.dart';
 import '../integrators/handle_snapshot_delta_integrator_provider.dart';
 import '../integrators/handle_sync_state_provider.dart';
+import '../models/handle_stage_report.dart';
 import '../readers/import_ledger_handle_snapshot_provider.dart';
 import '../readers/live_chat_db_handle_snapshot_provider.dart';
 import 'handle_import_execution_orchestrator_provider.dart';
-import 'handle_stage_report.dart';
 
 class HandleStageController {
   const HandleStageController(this._ref);
