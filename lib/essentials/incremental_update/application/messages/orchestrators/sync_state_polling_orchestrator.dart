@@ -5,7 +5,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../domain/sealed_unions/chat_import_decision.dart';
 import '../../../domain/sealed_unions/comparison_outcome.dart';
-import '../../../domain/sealed_unions/handle_import_decision.dart';
 import '../../../domain/sealed_unions/import_decision.dart';
 import '../../../domain/sealed_unions/prerequisite_aware_message_import_decision.dart';
 import '../../chats/integrators/chat_import_decision_provider.dart';
@@ -17,9 +16,7 @@ import '../../chats/readers/live_chat_db_chat_snapshot_provider.dart';
 import '../../handles/integrators/handle_import_decision_provider.dart';
 import '../../handles/integrators/handle_snapshot_delta_integrator_provider.dart';
 import '../../handles/integrators/handle_sync_state_provider.dart';
-import '../../handles/orchestrators/handle_import_execution_orchestrator_provider.dart';
-import '../../handles/readers/import_ledger_handle_snapshot_provider.dart';
-import '../../handles/readers/live_chat_db_handle_snapshot_provider.dart';
+import '../../handles/orchestrators/handle_stage_controller_provider.dart';
 import '../integrators/import_decision_integrator.dart';
 import '../integrators/import_decision_provider.dart';
 import '../integrators/incremental_update_comparison_provider.dart';
@@ -172,40 +169,10 @@ class SyncStatePollingOrchestrator {
   }
 
   Future<void> _refreshHandles({List<String>? tickEvents}) async {
-    _ref.invalidate(liveChatDbHandleSnapshotProvider);
-    _ref.invalidate(importLedgerHandleSnapshotProvider);
-    tickEvents?.add('handle observation boundary invalidated');
-    final handleDelta = await _ref.read(
-      handleSnapshotDeltaIntegratorProvider.future,
-    );
-    tickEvents?.add(
-      'handle delta observed: '
-      'rowIdDelta=${handleDelta.rowIdDelta}, '
-      'handleCountDelta=${handleDelta.handleCountDelta}',
-    );
-    final handleDecision = await _ref.read(handleImportDecisionProvider.future);
-    tickEvents?.add(
-      'handle import decision observed: '
-      '${_formatHandleImportDecision(handleDecision)}',
-    );
-    final executionOrchestrator = await _ref.read(
-      handleImportExecutionOrchestratorProvider.future,
-    );
-    final result = await executionOrchestrator.runForDecision(handleDecision);
-    if (result != null) {
-      tickEvents?.add(
-        'shadow handle import executed: '
-        'insertedHandleCount=${result.insertedHandleCount}, '
-        'lastImportedSourceRowId=${result.lastImportedSourceRowId}',
-      );
-      _ref.invalidate(liveChatDbHandleSnapshotProvider);
-      _ref.invalidate(importLedgerHandleSnapshotProvider);
-    } else {
-      tickEvents?.add(
-        'shadow handle import skipped: '
-        '${_handleImportSkipReason(handleDecision)}',
-      );
-    }
+    final report = await _ref
+        .read(handleStageControllerProvider)
+        .refreshAndMaybeExecute();
+    tickEvents?.addAll(report.diagnosticEvents);
   }
 
   void startPolling({Duration interval = const Duration(seconds: 15)}) {
@@ -470,26 +437,6 @@ String _chatImportSkipReason(ChatImportDecision decision) {
     ChatImportDecisionBlockAndReportLedgerAhead() =>
       'decision blockAndReportLedgerAhead',
     ChatImportDecisionConsiderIncrementalImport() =>
-      'execution returned no result',
-  };
-}
-
-String _formatHandleImportDecision(HandleImportDecision decision) {
-  return switch (decision) {
-    HandleImportDecisionDoNothing() => 'HandleImportDecision.doNothing',
-    HandleImportDecisionConsiderIncrementalImport() =>
-      'HandleImportDecision.considerIncrementalImport',
-    HandleImportDecisionBlockAndReportLedgerAhead() =>
-      'HandleImportDecision.blockAndReportLedgerAhead',
-  };
-}
-
-String _handleImportSkipReason(HandleImportDecision decision) {
-  return switch (decision) {
-    HandleImportDecisionDoNothing() => 'decision doNothing',
-    HandleImportDecisionBlockAndReportLedgerAhead() =>
-      'decision blockAndReportLedgerAhead',
-    HandleImportDecisionConsiderIncrementalImport() =>
       'execution returned no result',
   };
 }
