@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../../../domain/sealed_unions/comparison_outcome.dart';
 import '../../../domain/sealed_unions/import_decision.dart';
 import '../../chats/integrators/chat_import_decision_provider.dart';
 import '../../chats/integrators/chat_snapshot_delta_integrator_provider.dart';
@@ -25,9 +24,9 @@ import '../integrators/snapshot_delta_integrator_provider.dart';
 import '../integrators/sync_assessment_integrator.dart';
 import '../integrators/sync_assessment_integrator_provider.dart';
 import '../status/shadow_polling_endurance_log_writer.dart';
-import 'comparative_validation_orchestrator_provider.dart';
+import 'comparative_validation_stage_controller_provider.dart';
 import 'message_import_stage_controller_provider.dart';
-import 'shadow_migration_refresh_orchestrator_provider.dart';
+import 'message_migration_stage_controller_provider.dart';
 
 class SyncStatePollingOrchestrator {
   SyncStatePollingOrchestrator(this._ref);
@@ -64,17 +63,14 @@ class SyncStatePollingOrchestrator {
           .refreshAndMaybeExecute();
       tickEvents?.addAll(importStageReport.diagnosticEvents);
 
-      await _ref
-          .read(shadowMigrationRefreshOrchestratorProvider)
-          .refreshOnce(tickEvents: tickEvents);
-      final comparisonReport = await _ref
-          .read(comparativeValidationOrchestratorProvider)
-          .refreshOnce();
-      tickEvents?.add(
-        'comparison observed: '
-        'import=${_formatComparisonOutcome(comparisonReport.importComparison)}, '
-        'migration=${_formatComparisonOutcome(comparisonReport.migrationComparison)}',
-      );
+      final migrationStageReport = await _ref
+          .read(messageMigrationStageControllerProvider)
+          .refreshAndMaybeExecute();
+      tickEvents?.addAll(migrationStageReport.diagnosticEvents);
+      final comparisonStageReport = await _ref
+          .read(comparativeValidationStageControllerProvider)
+          .refreshAndReport();
+      tickEvents?.addAll(comparisonStageReport.diagnosticEvents);
       return importStageReport.importResult == null
           ? importStageReport.decision
           : _ref.read(importDecisionProvider.future);
@@ -258,11 +254,11 @@ class SyncStatePollingOrchestrator {
     final comparisonReport = await _ref.read(
       incrementalUpdateComparisonProvider.future,
     );
-    final migrationOrchestrator = _ref.read(
-      shadowMigrationRefreshOrchestratorProvider,
+    final migrationStageController = _ref.read(
+      messageMigrationStageControllerProvider,
     );
-    final comparisonOrchestrator = _ref.read(
-      comparativeValidationOrchestratorProvider,
+    final comparisonStageController = _ref.read(
+      comparativeValidationStageControllerProvider,
     );
 
     return ShadowPollingEnduranceSnapshot(
@@ -270,8 +266,8 @@ class SyncStatePollingOrchestrator {
       lastRefreshTime: lastRefreshTime,
       lastTransitionTime: _latestDateTime([
         lastImportDecisionTransitionTime,
-        migrationOrchestrator.lastMigrationDecisionTransitionTime,
-        comparisonOrchestrator.lastComparisonTransitionTime,
+        migrationStageController.lastMigrationDecisionTransitionTime,
+        comparisonStageController.lastComparisonTransitionTime,
       ]),
       chatImportDecision: chatImportDecision,
       chatSyncState: chatSyncState,
@@ -321,22 +317,5 @@ String _extractSemanticImportDecisionMeaning(ImportDecision? decision) {
     ImportDecisionDoNothing() => 'doNothing',
     ImportDecisionConsiderIncrementalImport() => 'considerIncrementalImport',
     ImportDecisionBlockAndReportLedgerAhead() => 'blockAndReportLedgerAhead',
-  };
-}
-
-String _formatComparisonOutcome(ComparisonOutcome outcome) {
-  return switch (outcome) {
-    ComparisonOutcomeMatch(:final legacy, :final shadow) =>
-      'MATCH legacy=$legacy shadow=$shadow',
-    ComparisonOutcomePhaseSkew(:final legacy, :final shadow, :final reason) =>
-      'PHASE SKEW legacy=$legacy shadow=$shadow reason=$reason',
-    ComparisonOutcomeMismatch(:final legacy, :final shadow, :final reason) =>
-      'MISMATCH legacy=$legacy shadow=$shadow reason=$reason',
-    ComparisonOutcomeNotComparable(
-      :final legacy,
-      :final shadow,
-      :final reason,
-    ) =>
-      'NOT COMPARABLE legacy=$legacy shadow=$shadow reason=$reason',
   };
 }

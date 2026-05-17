@@ -31,8 +31,8 @@ import '../integrators/migration_state_integrator.dart';
 import '../integrators/prerequisite_aware_message_import_decision_provider.dart';
 import '../integrators/snapshot_delta_integrator_provider.dart';
 import '../integrators/sync_assessment_integrator.dart';
-import '../orchestrators/comparative_validation_orchestrator_provider.dart';
-import '../orchestrators/shadow_migration_refresh_orchestrator_provider.dart';
+import '../orchestrators/comparative_validation_stage_controller_provider.dart';
+import '../orchestrators/message_migration_stage_controller_provider.dart';
 import '../orchestrators/sync_state_polling_orchestrator_provider.dart';
 
 part 'shadow_incremental_update_status_provider.g.dart';
@@ -87,11 +87,11 @@ Future<ShadowIncrementalUpdateStatus> shadowIncrementalUpdateStatus(
   Ref ref,
 ) async {
   final pollingOrchestrator = ref.watch(deltaRefreshOrchestratorProvider);
-  final migrationOrchestrator = ref.watch(
-    shadowMigrationRefreshOrchestratorProvider,
+  final migrationStageController = ref.watch(
+    messageMigrationStageControllerProvider,
   );
-  final comparisonOrchestrator = ref.watch(
-    comparativeValidationOrchestratorProvider,
+  final comparisonStageController = ref.watch(
+    comparativeValidationStageControllerProvider,
   );
 
   final snapshotDelta = await ref.watch(snapshotDeltaIntegratorProvider.future);
@@ -129,8 +129,8 @@ Future<ShadowIncrementalUpdateStatus> shadowIncrementalUpdateStatus(
     lastRefreshTime: pollingOrchestrator.lastRefreshTime,
     lastTransitionTime: _latestDateTime([
       pollingOrchestrator.lastImportDecisionTransitionTime,
-      migrationOrchestrator.lastMigrationDecisionTransitionTime,
-      comparisonOrchestrator.lastComparisonTransitionTime,
+      migrationStageController.lastMigrationDecisionTransitionTime,
+      comparisonStageController.lastComparisonTransitionTime,
     ]),
     chatImportDecision: chatDecision,
     chatSyncState: chatState,
