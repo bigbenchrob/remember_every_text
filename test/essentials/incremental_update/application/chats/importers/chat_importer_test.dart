@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/import/sqflite_import_database.dart';
 import 'package:remember_this_text/essentials/db_importers/application/debug_settings_provider.dart';
 import 'package:remember_this_text/essentials/incremental_update/application/chats/importers/chat_importer.dart';
+import 'package:remember_this_text/essentials/incremental_update/domain/models/source_identity.dart';
 import 'package:remember_this_text/essentials/incremental_update/infrastructure/import_ledger_chat_repository.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -174,4 +175,85 @@ void main() {
     expect(second.insertedChatCount, 0);
     expect(countRows.single['count'], 1);
   });
+
+  test(
+    'continues from live source cursor, not another source cursor',
+    () async {
+      final chatDbPath = '${tempDir.path}/chat.db';
+      final sourceDb = await openDatabase(chatDbPath);
+      await sourceDb.execute('''
+      CREATE TABLE chat (
+        ROWID INTEGER PRIMARY KEY,
+        guid TEXT,
+        service_name TEXT
+      )
+    ''');
+      await sourceDb.insert('chat', <String, Object?>{
+        'ROWID': 11,
+        'guid': 'iMessage;-;chat-11',
+        'service_name': 'iMessage',
+      });
+      await sourceDb.close();
+
+      final batchId = await shadowImportDb.insertImportBatch(
+        startedAtUtc: DateTime.now().toUtc().toIso8601String(),
+      );
+      await _insertLedgerChat(
+        shadowImportDb,
+        id: 10,
+        sourceRowid: 10,
+        guid: 'iMessage;-;chat-10',
+        batchId: batchId,
+        sourceId: liveChatDbSourceIdentity.sourceId,
+        sourceKind: liveChatDbSourceIdentity.sourceKind,
+      );
+      await _insertLedgerChat(
+        shadowImportDb,
+        id: 999999,
+        sourceRowid: 999999,
+        guid: 'archive-chat-999999',
+        batchId: batchId,
+        sourceId: 'archive-test',
+        sourceKind: 'archived_messages_folder',
+      );
+
+      final importer = ChatImporter(
+        chatDbPath: chatDbPath,
+        shadowImportDb: shadowImportDb,
+        importLedgerRepository: ImportLedgerChatRepository(
+          ledgerDb: shadowImportDb,
+        ),
+      );
+
+      final result = await importer.importNewChats();
+
+      expect(result.startedAfterSourceRowId, 10);
+      expect(result.lastImportedSourceRowId, 11);
+      expect(result.insertedChatCount, 1);
+    },
+  );
+}
+
+Future<void> _insertLedgerChat(
+  SqfliteImportDatabase ledgerDb, {
+  required int id,
+  required int sourceRowid,
+  required String guid,
+  required int batchId,
+  required String sourceId,
+  required String sourceKind,
+}) async {
+  await ledgerDb.insertChat(
+    id: id,
+    sourceRowid: sourceRowid,
+    guid: guid,
+    batchId: batchId,
+  );
+  final db = await ledgerDb.database;
+  await db.update(
+    'chats',
+    <String, Object?>{'source_id': sourceId, 'source_kind': sourceKind},
+    where: 'id = ?',
+    whereArgs: <Object?>[id],
+  );
 }

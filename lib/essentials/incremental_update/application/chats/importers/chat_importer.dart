@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../../../../db/infrastructure/data_sources/local/import/sqflite_import_database.dart';
+import '../../../domain/models/source_identity.dart';
 import '../../../infrastructure/import_ledger_chat_repository.dart';
 import '../../importers/importer_descriptor.dart';
 
@@ -15,15 +16,13 @@ class ChatImporter {
        _importLedgerRepository = importLedgerRepository;
 
   static const int _sourceReadBatchSize = 1000;
-  static const String _sourceId = 'live-chat-db';
-  static const String _sourceKind = 'live_chat_db';
 
   static const ImporterDescriptor descriptor = ImporterDescriptor(
     importerName: 'chat_importer',
     sourceTables: <String>['chat'],
     targetTables: <String>['chats'],
     prerequisites: <String>[],
-    continuationStrategy: 'MAX(chats.source_rowid)',
+    continuationStrategy: 'MAX(chats.source_rowid) scoped by source_id',
     idempotenceStrategy: 'INSERT OR IGNORE / conflict ignore',
     validationStrategy: 'cursor/count convergence validation',
   );
@@ -88,8 +87,8 @@ class ChatImporter {
           destinationBatch.insert('chats', <String, Object?>{
             'id': sourceRowId,
             'source_rowid': sourceRowId,
-            'source_id': _sourceId,
-            'source_kind': _sourceKind,
+            'source_id': liveChatDbSourceIdentity.sourceId,
+            'source_kind': liveChatDbSourceIdentity.sourceKind,
             'guid': guid,
             'service': service?.trim(),
             'display_name': displayName?.trim(),

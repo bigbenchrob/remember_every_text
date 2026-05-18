@@ -1,11 +1,16 @@
 import '../../db/infrastructure/data_sources/local/import/sqflite_import_database.dart';
 import '../domain/models/chat_snapshot.dart';
+import '../domain/models/source_identity.dart';
 
 class ImportLedgerChatRepository {
-  const ImportLedgerChatRepository({required SqfliteImportDatabase ledgerDb})
-    : _ledgerDb = ledgerDb;
+  const ImportLedgerChatRepository({
+    required SqfliteImportDatabase ledgerDb,
+    SourceIdentity source = liveChatDbSourceIdentity,
+  }) : _ledgerDb = ledgerDb,
+       _source = source;
 
   final SqfliteImportDatabase _ledgerDb;
+  final SourceIdentity _source;
 
   Future<ChatSnapshot> readChatSnapshot() async {
     final maxRowId = await _readMaxChatRowId();
@@ -16,17 +21,26 @@ class ImportLedgerChatRepository {
 
   Future<int> _readMaxChatRowId() async {
     final rows = await _ledgerDb.rawQuery(
-      'SELECT MAX(source_rowid) AS max_rowid FROM chats;',
+      '''
+      SELECT MAX(source_rowid) AS max_rowid
+      FROM chats
+      WHERE source_id = ?;
+      ''',
+      <Object?>[_source.sourceId],
     );
     return _readInt(rows, 'max_rowid', nullValue: 0);
   }
 
   Future<int> _readTotalChatCount() async {
-    final rows = await _ledgerDb.rawQuery('''
+    final rows = await _ledgerDb.rawQuery(
+      '''
       SELECT COUNT(*) AS total_chat_count
       FROM chats
-      WHERE source_rowid IS NOT NULL;
-      ''');
+      WHERE source_id = ?
+      AND source_rowid IS NOT NULL;
+      ''',
+      <Object?>[_source.sourceId],
+    );
     return _readInt(rows, 'total_chat_count');
   }
 

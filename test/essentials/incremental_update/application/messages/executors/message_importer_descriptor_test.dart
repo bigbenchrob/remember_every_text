@@ -15,7 +15,10 @@ void main() {
       const descriptor = MessageImporter.descriptor;
 
       expect(descriptor.prerequisites, isEmpty);
-      expect(descriptor.continuationStrategy, 'MAX(messages.source_rowid)');
+      expect(
+        descriptor.continuationStrategy,
+        'MAX(messages.source_rowid) scoped by source_id',
+      );
       expect(
         descriptor.idempotenceStrategy,
         'INSERT OR IGNORE / conflict ignore on already-imported rows',

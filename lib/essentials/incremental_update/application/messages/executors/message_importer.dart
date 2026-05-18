@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../../../../db/infrastructure/data_sources/local/import/sqflite_import_database.dart';
+import '../../../domain/models/source_identity.dart';
 import '../../../infrastructure/import_ledger_message_repository.dart';
 import '../../importers/importer_descriptor.dart';
 
@@ -24,8 +25,6 @@ class MessageImporter {
   static const int _shadowPlaceholderChatId = -1;
   static const String _shadowPlaceholderChatGuid =
       '__shadow_incremental_update_placeholder_chat__';
-  static const String _sourceId = 'live-chat-db';
-  static const String _sourceKind = 'live_chat_db';
 
   /// Human-readable importer metadata for future dependency/topology work.
   /// This is descriptive only; no graph execution reads it yet.
@@ -34,7 +33,7 @@ class MessageImporter {
     sourceTables: <String>['message'],
     targetTables: <String>['messages'],
     prerequisites: <String>[],
-    continuationStrategy: 'MAX(messages.source_rowid)',
+    continuationStrategy: 'MAX(messages.source_rowid) scoped by source_id',
     idempotenceStrategy:
         'INSERT OR IGNORE / conflict ignore on already-imported rows',
     validationStrategy: 'cursor/count convergence validation',
@@ -106,8 +105,8 @@ class MessageImporter {
           destinationBatch.insert('messages', <String, Object?>{
             'id': sourceRowId,
             'source_rowid': sourceRowId,
-            'source_id': _sourceId,
-            'source_kind': _sourceKind,
+            'source_id': liveChatDbSourceIdentity.sourceId,
+            'source_kind': liveChatDbSourceIdentity.sourceKind,
             'source_chat_rowid': null,
             'source_sender_handle_rowid': _readNullableInt(
               sourceRow,
