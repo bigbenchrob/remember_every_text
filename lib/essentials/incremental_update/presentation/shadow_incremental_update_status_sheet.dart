@@ -162,10 +162,19 @@ class _StatusContent extends StatelessWidget {
               'MessageSyncState',
               _formatMessageSyncState(status.messageSyncState),
             ),
-            _StatusRow('rowIdDelta', '${status.snapshotDelta.rowIdDelta}'),
             _StatusRow(
-              'messageCountDelta',
-              '${status.snapshotDelta.messageCountDelta}',
+              'Message cursor state',
+              _formatMessageCursorState(status.messageSyncState),
+            ),
+            _StatusRow(
+              'Cursor rowIdDelta',
+              '${status.snapshotDelta.rowIdDelta}',
+            ),
+            _StatusRow(
+              'Count divergence',
+              _formatMessageCountDivergence(
+                status.snapshotDelta.messageCountDelta,
+              ),
             ),
           ],
         ),
@@ -413,6 +422,25 @@ String _formatMessageSyncState(MessageSyncState state) {
     MessageSyncSourceAheadOfLedger() => 'MessageSyncState.sourceAheadOfLedger',
     MessageSyncLedgerAheadOfSource() => 'MessageSyncState.ledgerAheadOfSource',
   };
+}
+
+String _formatMessageCursorState(MessageSyncState state) {
+  return switch (state) {
+    MessageSyncCursorsMatch() => 'current',
+    MessageSyncSourceAheadOfLedger() => 'source ahead of ledger',
+    MessageSyncLedgerAheadOfSource() => 'ledger ahead of source',
+  };
+}
+
+String _formatMessageCountDivergence(int messageCountDelta) {
+  if (messageCountDelta == 0) {
+    return 'none (source and ledger counts match)';
+  }
+  if (messageCountDelta > 0) {
+    return 'source ahead by $messageCountDelta row(s) (diagnostic only)';
+  }
+
+  return 'ledger ahead by ${messageCountDelta.abs()} row(s) (diagnostic only)';
 }
 
 String _formatMigrationDecision(MigrationDecision decision) {

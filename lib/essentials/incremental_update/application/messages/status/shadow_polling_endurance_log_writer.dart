@@ -18,6 +18,7 @@ import '../../../domain/sealed_unions/message_migration_state.dart';
 import '../../../domain/sealed_unions/migration_decision.dart';
 import '../../../domain/sealed_unions/prerequisite_aware_message_import_decision.dart';
 import '../../../domain/sealed_unions/sync_state.dart';
+import '../../pipeline/models/pipeline_run_report.dart';
 
 class ShadowPollingEnduranceSnapshot {
   const ShadowPollingEnduranceSnapshot({
@@ -100,6 +101,7 @@ class ShadowPollingEnduranceLogWriter {
   Future<void> appendStatus(
     ShadowPollingEnduranceSnapshot status, {
     List<String> tickEvents = const <String>[],
+    PipelineRunReport? pipelineRunReport,
     String? note,
     Object? refreshError,
     StackTrace? refreshStackTrace,
@@ -113,6 +115,7 @@ class ShadowPollingEnduranceLogWriter {
     final assessment = _convergenceTracker.observe(
       sampleNumber: _sampleNumber,
       status: status,
+      pipelineRunReport: pipelineRunReport,
     );
     await logFile.writeAsString(
       _formatStatusBlock(
@@ -209,6 +212,7 @@ class _BehavioralConvergenceTracker {
   _BehavioralAssessmentSample observe({
     required int sampleNumber,
     required ShadowPollingEnduranceSnapshot status,
+    PipelineRunReport? pipelineRunReport,
   }) {
     final now = DateTime.now();
     final shadowImportPending = _shadowImportPending(status);
@@ -254,6 +258,16 @@ class _BehavioralConvergenceTracker {
       );
       _lastShadowMigrationTicksToConvergence =
           sampleNumber - _shadowMigrationStartSample!;
+      _shadowMigrationStartedAt = null;
+      _shadowMigrationStartSample = null;
+    }
+
+    final sameTickMigrationDuration = _sameTickMigrationConvergenceDuration(
+      pipelineRunReport,
+    );
+    if (sameTickMigrationDuration != null) {
+      _lastShadowMigrationConvergenceDuration = sameTickMigrationDuration;
+      _lastShadowMigrationTicksToConvergence = 0;
       _shadowMigrationStartedAt = null;
       _shadowMigrationStartSample = null;
     }
@@ -338,6 +352,25 @@ class _BehavioralConvergenceTracker {
       ComparisonOutcomeNotComparable() => false,
     };
   }
+
+  Duration? _sameTickMigrationConvergenceDuration(
+    PipelineRunReport? pipelineRunReport,
+  ) {
+    final report = pipelineRunReport?.messageMigrationStageReport;
+    if (report == null) {
+      return null;
+    }
+
+    final migrationExecuted = report.migrationResult != null;
+    final postExecutionState = report.postExecutionState;
+    final resolvedAfterExecution =
+        postExecutionState is MessageMigrationProjectionCaughtUp;
+    if (!migrationExecuted || !resolvedAfterExecution) {
+      return null;
+    }
+
+    return report.finishedAt.difference(report.startedAt);
+  }
 }
 
 String _projectRootPath() {
@@ -413,8 +446,10 @@ String _formatStatusBlock({
       '- Message import prerequisite assessment: ${_formatPrerequisiteAssessment(status.messageImportPrerequisiteAssessment)}\n'
       '- Message import prerequisite blockers: ${_formatBlockers(status.messageImportPrerequisiteAssessment.blockers)}\n'
       '- MessageSyncState: ${_formatMessageSyncState(status.messageSyncState)}\n'
-      '- rowIdDelta: ${status.snapshotDelta.rowIdDelta}\n'
-      '- messageCountDelta: ${status.snapshotDelta.messageCountDelta}\n\n'
+      '- Message cursor state: ${_formatMessageCursorState(status.messageSyncState)}\n'
+      '- cursor_rowIdDelta: ${status.snapshotDelta.rowIdDelta}\n'
+      '- diagnostic_messageCountDelta: ${status.snapshotDelta.messageCountDelta}\n'
+      '- count divergence: ${_formatMessageCountDivergence(status.snapshotDelta.messageCountDelta)}\n\n'
       '### Shadow migration\n\n'
       '- MigrationDecision: ${_formatMigrationDecision(status.migrationDecision)}\n'
       '- MessageMigrationState: ${_formatMigrationState(status.messageMigrationState)}\n'
@@ -515,6 +550,25 @@ String _formatMessageSyncState(MessageSyncState state) {
     MessageSyncSourceAheadOfLedger() => 'MessageSyncState.sourceAheadOfLedger',
     MessageSyncLedgerAheadOfSource() => 'MessageSyncState.ledgerAheadOfSource',
   };
+}
+
+String _formatMessageCursorState(MessageSyncState state) {
+  return switch (state) {
+    MessageSyncCursorsMatch() => 'current',
+    MessageSyncSourceAheadOfLedger() => 'source ahead of ledger',
+    MessageSyncLedgerAheadOfSource() => 'ledger ahead of source',
+  };
+}
+
+String _formatMessageCountDivergence(int messageCountDelta) {
+  if (messageCountDelta == 0) {
+    return 'none (source and ledger counts match)';
+  }
+  if (messageCountDelta > 0) {
+    return 'source ahead by $messageCountDelta row(s); diagnostic only';
+  }
+
+  return 'ledger ahead by ${messageCountDelta.abs()} row(s); diagnostic only';
 }
 
 String _formatPrerequisiteAwareDecision(

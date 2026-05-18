@@ -457,6 +457,45 @@ This preserves diagnostic honesty: a schema-compatibility shim must not make a s
 
 ---
 
+## Cursor Convergence and Count Divergence Are Different Meanings
+
+For incremental import continuation, cursor convergence is authoritative:
+
+```text
+source MAX(rowid) == ledger MAX(source_rowid)
+→ no newer source-local rows are waiting to import
+```
+
+Count divergence is diagnostic reconciliation evidence, not an execution gate.
+
+For the message pilot, `MessageSyncState` is intentionally cursor-driven. A state such as:
+
+```text
+MessageSyncState.sourceAndLedgerCursorsMatch
+messageCountDelta = -4
+```
+
+means the source-local cursor has caught up while the live source count and persistent ledger count differ by four rows. That difference should remain visible, but it must not by itself schedule import, block import, or imply importer failure.
+
+Possible causes include:
+
+- persistent import ledger behavior
+- live-source deletions or pruning below the max rowid
+- duplicate/conflict handling
+- source and ledger snapshot queries counting different semantic populations
+- future reconciliation concerns that are broader than incremental continuation
+
+Practical rule:
+
+```text
+cursor drift controls continuation policy
+count drift remains diagnostic until a separate reconciliation policy is defined
+```
+
+Do not hide count divergence. Surface it as diagnostic reconciliation information.
+
+---
+
 ## Blocked Policy States Must Prevent Execution
 
 For the message pilot:

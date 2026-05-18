@@ -15,6 +15,14 @@ void main() {
       expect(state, const MessageSyncState.sourceAndLedgerCursorsMatch());
     });
 
+    test('keeps cursors-match state when only count diverges', () {
+      final state = integrator.integrate(
+        const MessageSnapshotDelta(rowIdDelta: 0, messageCountDelta: -4),
+      );
+
+      expect(state, const MessageSyncState.sourceAndLedgerCursorsMatch());
+    });
+
     test('maps positive row id delta to source-ahead state', () {
       final state = integrator.integrate(
         const MessageSnapshotDelta(rowIdDelta: 5, messageCountDelta: 5),

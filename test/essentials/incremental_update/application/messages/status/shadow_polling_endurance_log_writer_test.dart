@@ -1,7 +1,14 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:remember_this_text/essentials/incremental_update/application/chats/models/chat_stage_report.dart';
+import 'package:remember_this_text/essentials/incremental_update/application/handles/models/handle_stage_report.dart';
+import 'package:remember_this_text/essentials/incremental_update/application/messages/executors/shadow_message_migration_executor.dart';
+import 'package:remember_this_text/essentials/incremental_update/application/messages/models/comparative_validation_stage_report.dart';
+import 'package:remember_this_text/essentials/incremental_update/application/messages/models/message_import_stage_report.dart';
+import 'package:remember_this_text/essentials/incremental_update/application/messages/models/message_migration_stage_report.dart';
 import 'package:remember_this_text/essentials/incremental_update/application/messages/status/shadow_polling_endurance_log_writer.dart';
+import 'package:remember_this_text/essentials/incremental_update/application/pipeline/models/pipeline_run_report.dart';
 import 'package:remember_this_text/essentials/incremental_update/domain/models/chat_snapshot_delta.dart';
 import 'package:remember_this_text/essentials/incremental_update/domain/models/handle_snapshot_delta.dart';
 import 'package:remember_this_text/essentials/incremental_update/domain/models/message_import_blocker.dart';
@@ -232,6 +239,61 @@ void main() {
         ),
       );
     });
+
+    test('labels message count divergence as diagnostic only', () async {
+      final writer = ShadowPollingEnduranceLogWriter(
+        logsDirectory: tempDirectory,
+      );
+      writer.startSession();
+
+      await writer.appendStatus(
+        _snapshot(
+          snapshotDelta: const MessageSnapshotDelta(
+            rowIdDelta: 0,
+            messageCountDelta: -4,
+          ),
+        ),
+      );
+
+      final content = await _readActiveLog(writer);
+
+      expect(content, contains('- Message cursor state: current'));
+      expect(content, contains('- cursor_rowIdDelta: 0'));
+      expect(content, contains('- diagnostic_messageCountDelta: -4'));
+      expect(
+        content,
+        contains(
+          '- count divergence: ledger ahead by 4 row(s); diagnostic only',
+        ),
+      );
+    });
+
+    test(
+      'detects same-tick migration convergence from pipeline report',
+      () async {
+        final writer = ShadowPollingEnduranceLogWriter(
+          logsDirectory: tempDirectory,
+        );
+        writer.startSession();
+
+        await writer.appendStatus(
+          _snapshot(),
+          tickEvents: const <String>[
+            'migration delta observed: messageIdDelta=2, messageCountDelta=2',
+            'shadow migration executed: insertedMessageCount=2',
+          ],
+          pipelineRunReport: _pipelineRunReportWithSameTickMigration(),
+        );
+
+        final content = await _readActiveLog(writer);
+
+        expect(
+          content,
+          contains('- shadow_migration_convergence_duration: 2000ms'),
+        );
+        expect(content, contains('- shadow_migration_ticks_to_convergence: 0'));
+      },
+    );
   });
 }
 
@@ -251,6 +313,7 @@ ShadowPollingEnduranceSnapshot _snapshot({
   PrerequisiteAwareMessageImportDecision?
   prerequisiteAwareMessageImportDecision,
   MessageImportPrerequisiteAssessment? messageImportPrerequisiteAssessment,
+  MessageSnapshotDelta? snapshotDelta,
 }) {
   return ShadowPollingEnduranceSnapshot(
     pollingActive: true,
@@ -280,10 +343,9 @@ ShadowPollingEnduranceSnapshot _snapshot({
           blockers: <MessageImportBlocker>[],
         ),
     messageSyncState: const MessageSyncState.sourceAndLedgerCursorsMatch(),
-    snapshotDelta: const MessageSnapshotDelta(
-      rowIdDelta: 0,
-      messageCountDelta: 0,
-    ),
+    snapshotDelta:
+        snapshotDelta ??
+        const MessageSnapshotDelta(rowIdDelta: 0, messageCountDelta: 0),
     migrationDecision: const MigrationDecision.doNothing(),
     messageMigrationState: const MessageMigrationState.projectionCaughtUp(),
     migrationDelta: const MessageMigrationDelta(
@@ -298,5 +360,90 @@ ShadowPollingEnduranceSnapshot _snapshot({
       legacy: 'projection current',
       shadow: 'projection current',
     ),
+  );
+}
+
+PipelineRunReport _pipelineRunReportWithSameTickMigration() {
+  final startedAt = DateTime(2026, 5, 17, 10);
+  final finishedAt = startedAt.add(const Duration(seconds: 2));
+  final handleReport = HandleStageReport(
+    startedAt: startedAt,
+    finishedAt: startedAt,
+    preExecutionDelta: const HandleSnapshotDelta(
+      rowIdDelta: 0,
+      handleCountDelta: 0,
+    ),
+    preExecutionState: const HandleSyncState.sourceAndLedgerCursorsMatch(),
+    decision: const HandleImportDecision.doNothing(),
+    executionOutcome: HandleStageExecutionOutcome.skipped,
+  );
+  final chatReport = ChatStageReport(
+    startedAt: startedAt,
+    finishedAt: startedAt,
+    preExecutionDelta: const ChatSnapshotDelta(
+      rowIdDelta: 0,
+      chatCountDelta: 0,
+    ),
+    preExecutionState: const ChatSyncState.sourceAndLedgerCursorsMatch(),
+    decision: const ChatImportDecision.doNothing(),
+    executionOutcome: ChatStageExecutionOutcome.skipped,
+  );
+  final importReport = MessageImportStageReport(
+    startedAt: startedAt,
+    finishedAt: startedAt,
+    preExecutionDelta: const MessageSnapshotDelta(
+      rowIdDelta: 0,
+      messageCountDelta: 0,
+    ),
+    preExecutionState: const MessageSyncState.sourceAndLedgerCursorsMatch(),
+    decision: const ImportDecision.doNothing(),
+    prerequisiteAssessment: const MessageImportPrerequisiteAssessment(
+      blockers: <MessageImportBlocker>[],
+    ),
+    prerequisiteAwareDecision:
+        const PrerequisiteAwareMessageImportDecision.doNothing(),
+    executionOutcome: MessageImportStageExecutionOutcome.skipped,
+  );
+  final migrationReport = MessageMigrationStageReport(
+    startedAt: startedAt,
+    finishedAt: finishedAt,
+    preExecutionDelta: const MessageMigrationDelta(
+      messageIdDelta: 2,
+      messageCountDelta: 2,
+    ),
+    preExecutionState: const MessageMigrationState.ledgerAheadOfProjection(),
+    decision: const MigrationDecision.considerShadowMigration(),
+    executionOutcome: MessageMigrationStageExecutionOutcome.executed,
+    migrationResult: const ShadowMessageMigrationResult(
+      insertedMessageCount: 2,
+    ),
+    postExecutionDelta: const MessageMigrationDelta(
+      messageIdDelta: 0,
+      messageCountDelta: 0,
+    ),
+    postExecutionState: const MessageMigrationState.projectionCaughtUp(),
+  );
+  final comparisonReport = ComparativeValidationStageReport(
+    startedAt: finishedAt,
+    finishedAt: finishedAt,
+    importComparison: const ComparisonOutcome.match(
+      legacy: 'incremental import not required',
+      shadow: 'incremental import not required',
+    ),
+    migrationComparison: const ComparisonOutcome.match(
+      legacy: 'projection current',
+      shadow: 'projection current',
+    ),
+  );
+
+  return PipelineRunReport(
+    startedAt: startedAt,
+    finishedAt: finishedAt,
+    handleStageReport: handleReport,
+    chatStageReport: chatReport,
+    messageImportStageReport: importReport,
+    messageMigrationStageReport: migrationReport,
+    comparativeValidationStageReport: comparisonReport,
+    importDecisionAfterRun: const ImportDecision.doNothing(),
   );
 }

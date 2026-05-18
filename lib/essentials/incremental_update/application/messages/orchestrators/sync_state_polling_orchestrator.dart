@@ -7,13 +7,12 @@ import '../../../domain/sealed_unions/import_decision.dart';
 import '../../chats/integrators/chat_import_decision_provider.dart';
 import '../../chats/integrators/chat_snapshot_delta_integrator_provider.dart';
 import '../../chats/integrators/chat_sync_state_provider.dart';
-import '../../chats/orchestrators/chat_stage_controller_provider.dart';
 import '../../handles/integrators/handle_import_decision_provider.dart';
 import '../../handles/integrators/handle_snapshot_delta_integrator_provider.dart';
 import '../../handles/integrators/handle_sync_state_provider.dart';
-import '../../handles/orchestrators/handle_stage_controller_provider.dart';
+import '../../pipeline/models/pipeline_run_report.dart';
+import '../../pipeline/orchestrators/pipeline_orchestrator_provider.dart';
 import '../integrators/import_decision_integrator.dart';
-import '../integrators/import_decision_provider.dart';
 import '../integrators/incremental_update_comparison_provider.dart';
 import '../integrators/message_import_prerequisite_assessment_provider.dart';
 import '../integrators/migration_decision_integrator.dart';
@@ -25,7 +24,6 @@ import '../integrators/sync_assessment_integrator.dart';
 import '../integrators/sync_assessment_integrator_provider.dart';
 import '../status/shadow_polling_endurance_log_writer.dart';
 import 'comparative_validation_stage_controller_provider.dart';
-import 'message_import_stage_controller_provider.dart';
 import 'message_migration_stage_controller_provider.dart';
 
 class SyncStatePollingOrchestrator {
@@ -48,49 +46,22 @@ class SyncStatePollingOrchestrator {
       _lastImportDecisionTransitionTime;
 
   Future<ImportDecision> refreshOnce() async {
-    return _refreshOnceWithTickEvents();
+    final report = await _refreshOnceWithTickEvents();
+    return report.importDecisionAfterRun;
   }
 
-  Future<ImportDecision> _refreshOnceWithTickEvents({
+  Future<PipelineRunReport> _refreshOnceWithTickEvents({
     List<String>? tickEvents,
   }) async {
     try {
-      await _refreshChats(tickEvents: tickEvents);
-      await _refreshHandles(tickEvents: tickEvents);
-
-      final importStageReport = await _ref
-          .read(messageImportStageControllerProvider)
-          .refreshAndMaybeExecute();
-      tickEvents?.addAll(importStageReport.diagnosticEvents);
-
-      final migrationStageReport = await _ref
-          .read(messageMigrationStageControllerProvider)
-          .refreshAndMaybeExecute();
-      tickEvents?.addAll(migrationStageReport.diagnosticEvents);
-      final comparisonStageReport = await _ref
-          .read(comparativeValidationStageControllerProvider)
-          .refreshAndReport();
-      tickEvents?.addAll(comparisonStageReport.diagnosticEvents);
-      return importStageReport.importResult == null
-          ? importStageReport.decision
-          : _ref.read(importDecisionProvider.future);
+      final pipelineReport = await _ref
+          .read(pipelineOrchestratorProvider)
+          .runOnce();
+      tickEvents?.addAll(pipelineReport.diagnosticEvents);
+      return pipelineReport;
     } finally {
       _lastRefreshTime = DateTime.now();
     }
-  }
-
-  Future<void> _refreshChats({List<String>? tickEvents}) async {
-    final report = await _ref
-        .read(chatStageControllerProvider)
-        .refreshAndMaybeExecute();
-    tickEvents?.addAll(report.diagnosticEvents);
-  }
-
-  Future<void> _refreshHandles({List<String>? tickEvents}) async {
-    final report = await _ref
-        .read(handleStageControllerProvider)
-        .refreshAndMaybeExecute();
-    tickEvents?.addAll(report.diagnosticEvents);
   }
 
   void startPolling({Duration interval = const Duration(seconds: 15)}) {
@@ -149,10 +120,14 @@ class SyncStatePollingOrchestrator {
     _refreshInFlight = true;
     Object? refreshError;
     StackTrace? refreshStackTrace;
+    PipelineRunReport? pipelineRunReport;
     final tickEvents = <String>['tick started'];
 
     try {
-      final decision = await _refreshOnceWithTickEvents(tickEvents: tickEvents);
+      pipelineRunReport = await _refreshOnceWithTickEvents(
+        tickEvents: tickEvents,
+      );
+      final decision = pipelineRunReport.importDecisionAfterRun;
       await _logImportDecisionTransition(decision);
       _lastObservedDecision = decision;
     } catch (error, stackTrace) {
@@ -164,6 +139,7 @@ class SyncStatePollingOrchestrator {
       await _appendEnduranceLogSnapshot(
         note: refreshError == null ? 'poll tick completed' : 'poll tick failed',
         tickEvents: tickEvents,
+        pipelineRunReport: pipelineRunReport,
         refreshError: refreshError,
         refreshStackTrace: refreshStackTrace,
       );
@@ -193,6 +169,7 @@ class SyncStatePollingOrchestrator {
   Future<void> _appendEnduranceLogSnapshot({
     String? note,
     List<String> tickEvents = const <String>[],
+    PipelineRunReport? pipelineRunReport,
     Object? refreshError,
     StackTrace? refreshStackTrace,
   }) async {
@@ -201,6 +178,7 @@ class SyncStatePollingOrchestrator {
       await _enduranceLogWriter.appendStatus(
         status,
         tickEvents: tickEvents,
+        pipelineRunReport: pipelineRunReport,
         note: note,
         refreshError: refreshError,
         refreshStackTrace: refreshStackTrace,

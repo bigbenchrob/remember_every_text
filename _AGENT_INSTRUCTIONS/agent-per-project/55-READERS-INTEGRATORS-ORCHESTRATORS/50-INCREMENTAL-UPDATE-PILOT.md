@@ -826,11 +826,24 @@ MessageSnapshotDelta
 - row id delta
 - message count delta
 
-`MessageSyncState` is semantic sync meaning:
+`MessageSyncState` is cursor-based semantic sync meaning:
 
 - cursors match
 - source ahead of ledger
 - ledger ahead of source
+
+For message import continuation, the cursor is the source-local `ROWID` frontier. If the live source `MAX(ROWID)` and ledger `MAX(source_rowid)` match, the incremental importer has no newer source-local message rows to import.
+
+`messageCountDelta` is still important, but it is diagnostic reconciliation evidence rather than import continuation policy. A count divergence with matching cursors may reflect persistent ledger behavior, live source deletion/pruning below the cursor, duplicate/conflict handling, or source/ledger snapshot queries counting different semantic populations.
+
+Therefore this combination is valid:
+
+```text
+MessageSyncState.sourceAndLedgerCursorsMatch
+messageCountDelta != 0
+```
+
+It should be surfaced in status/logs as count divergence, but it should not by itself schedule import, block import, or imply importer failure.
 
 `ImportDecision` is policy meaning:
 
