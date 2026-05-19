@@ -70,7 +70,7 @@ class SqfliteImportDatabase {
        _databaseName = databaseName,
        _debugSettings = debugSettings;
 
-  static const int _schemaVersion = 9;
+  static const int _schemaVersion = 10;
 
   final String _databaseDirectory;
   final String _databaseName;
@@ -280,6 +280,20 @@ class SqfliteImportDatabase {
 
       await db.insert('schema_migrations', <String, Object?>{
         'version': 9,
+        'applied_at_utc': DateTime.now().toUtc().toIso8601String(),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+
+    if (oldVersion < 10) {
+      final batch = db.batch();
+      batch.execute(_chatMessageJoinsTableStatement);
+      batch.execute(_chatMessageJoinsSourceIndexStatement);
+      batch.execute(_chatMessageJoinsMessageIndexStatement);
+      batch.execute(_chatMessageJoinsChatIndexStatement);
+      await batch.commit(noResult: true);
+
+      await db.insert('schema_migrations', <String, Object?>{
+        'version': 10,
         'applied_at_utc': DateTime.now().toUtc().toIso8601String(),
       }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
@@ -1936,6 +1950,7 @@ AND Z_PK NOT IN (
     "CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY, source_rowid INTEGER, source_id TEXT, source_kind TEXT, source_chat_rowid INTEGER, source_sender_handle_rowid INTEGER, guid TEXT NOT NULL, chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE, sender_handle_id INTEGER REFERENCES handles(id) ON DELETE SET NULL, service TEXT, is_from_me INTEGER NOT NULL CHECK(is_from_me IN (0,1)), date_utc TEXT, date_read_utc TEXT, date_delivered_utc TEXT, subject TEXT, text TEXT, attributed_body_blob BLOB, raw_item_type INTEGER, raw_associated_message_type INTEGER, message_summary_info_blob BLOB, payload_data_blob BLOB, has_attributed_body_source INTEGER NOT NULL DEFAULT 0 CHECK(has_attributed_body_source IN (0,1)), has_message_summary_info INTEGER NOT NULL DEFAULT 0 CHECK(has_message_summary_info IN (0,1)), has_payload_data_source INTEGER NOT NULL DEFAULT 0 CHECK(has_payload_data_source IN (0,1)), item_type TEXT CHECK(item_type IN ('text','attachment-only','sticker','reaction-carrier','system','unknown','balloon')), error_code INTEGER, is_system_message INTEGER NOT NULL DEFAULT 0 CHECK(is_system_message IN (0,1)), thread_originator_guid TEXT, associated_message_guid TEXT, balloon_bundle_id TEXT, payload_json TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(guid))",
     "CREATE TABLE IF NOT EXISTS recovered_unlinked_messages (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT NOT NULL, sender_handle_id INTEGER REFERENCES handles(id) ON DELETE SET NULL, service TEXT, is_from_me INTEGER NOT NULL CHECK(is_from_me IN (0,1)), date_utc TEXT, date_read_utc TEXT, date_delivered_utc TEXT, subject TEXT, text TEXT, attributed_body_blob BLOB, raw_item_type INTEGER, raw_associated_message_type INTEGER, message_summary_info_blob BLOB, payload_data_blob BLOB, has_attributed_body_source INTEGER NOT NULL DEFAULT 0 CHECK(has_attributed_body_source IN (0,1)), has_message_summary_info INTEGER NOT NULL DEFAULT 0 CHECK(has_message_summary_info IN (0,1)), has_payload_data_source INTEGER NOT NULL DEFAULT 0 CHECK(has_payload_data_source IN (0,1)), item_type TEXT CHECK(item_type IN ('text','attachment-only','sticker','reaction-carrier','system','unknown','balloon')), error_code INTEGER, is_system_message INTEGER NOT NULL DEFAULT 0 CHECK(is_system_message IN (0,1)), thread_originator_guid TEXT, associated_message_guid TEXT, balloon_bundle_id TEXT, payload_json TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(guid))",
     'CREATE TABLE IF NOT EXISTS chat_to_message (chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE, message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE, source_rowid INTEGER, PRIMARY KEY (chat_id, message_id))',
+    _chatMessageJoinsTableStatement,
     'CREATE TABLE IF NOT EXISTS attachments (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT, transfer_name TEXT, uti TEXT, mime_type TEXT, total_bytes INTEGER, is_sticker INTEGER NOT NULL DEFAULT 0 CHECK(is_sticker IN (0,1)), is_outgoing INTEGER CHECK(is_outgoing IN (0,1)), created_at_utc TEXT, local_path TEXT, sha256_hex TEXT, batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT)',
     'CREATE TABLE IF NOT EXISTS message_attachments (message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE, attachment_id INTEGER NOT NULL REFERENCES attachments(id) ON DELETE CASCADE, source_rowid INTEGER, PRIMARY KEY (message_id, attachment_id))',
     'CREATE TABLE IF NOT EXISTS recovered_unlinked_message_attachments (message_id INTEGER NOT NULL REFERENCES recovered_unlinked_messages(id) ON DELETE CASCADE, attachment_id INTEGER NOT NULL REFERENCES attachments(id) ON DELETE CASCADE, source_rowid INTEGER, PRIMARY KEY (message_id, attachment_id))',
@@ -1968,6 +1983,9 @@ AND Z_PK NOT IN (
     'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_message_attachments_attachment ON recovered_unlinked_message_attachments(attachment_id)',
     'CREATE INDEX IF NOT EXISTS idx_reactions_carrier ON reactions(carrier_message_id)',
     'CREATE INDEX IF NOT EXISTS idx_chat_to_message_message ON chat_to_message(message_id)',
+    _chatMessageJoinsSourceIndexStatement,
+    _chatMessageJoinsMessageIndexStatement,
+    _chatMessageJoinsChatIndexStatement,
   ];
 
   static const List<String> _v2SchemaStatements = <String>[
@@ -2008,6 +2026,18 @@ AND Z_PK NOT IN (
 
   static const String _handlesTableStatementWithoutUniqueness =
       "CREATE TABLE IF NOT EXISTS handles (id INTEGER PRIMARY KEY, source_rowid INTEGER, source_id TEXT, source_kind TEXT, service TEXT NOT NULL, raw_identifier TEXT NOT NULL, normalized_identifier TEXT, compound_identifier TEXT NOT NULL DEFAULT '', country TEXT, last_seen_utc TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT)";
+
+  static const String _chatMessageJoinsTableStatement =
+      'CREATE TABLE IF NOT EXISTS chat_message_joins (id INTEGER PRIMARY KEY, source_rowid INTEGER NOT NULL, source_id TEXT NOT NULL, source_kind TEXT NOT NULL, source_chat_rowid INTEGER NOT NULL, source_message_rowid INTEGER NOT NULL, batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(source_id, source_rowid), UNIQUE(source_id, source_chat_rowid, source_message_rowid))';
+
+  static const String _chatMessageJoinsSourceIndexStatement =
+      'CREATE INDEX IF NOT EXISTS idx_chat_message_joins_source ON chat_message_joins(source_id, source_rowid)';
+
+  static const String _chatMessageJoinsMessageIndexStatement =
+      'CREATE INDEX IF NOT EXISTS idx_chat_message_joins_message ON chat_message_joins(source_id, source_message_rowid)';
+
+  static const String _chatMessageJoinsChatIndexStatement =
+      'CREATE INDEX IF NOT EXISTS idx_chat_message_joins_chat ON chat_message_joins(source_id, source_chat_rowid)';
 
   static const List<String> _v2IndexStatements = <String>[
     'CREATE INDEX IF NOT EXISTS idx_recovered_unlinked_messages_date ON recovered_unlinked_messages(date_utc)',

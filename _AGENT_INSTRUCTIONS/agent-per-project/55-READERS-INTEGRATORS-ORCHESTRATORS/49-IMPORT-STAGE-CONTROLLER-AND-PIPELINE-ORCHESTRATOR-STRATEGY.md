@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document describes the emerging execution architecture for the shadow incremental-update import pipeline before it is implemented as a runtime structure.
+This document describes the validated execution architecture for the shadow incremental-update import pipeline.
 
 The current pilot has validated:
 
@@ -13,8 +13,10 @@ The current pilot has validated:
 - prerequisite convergence before message import
 - observable tick-event and endurance-log traces
 - concern-local execution slices
+- concern-local `StageController` reports
+- manual ordered execution through `PipelineOrchestrator`
 
-The architecture is now revealing a higher-level shape:
+The architecture now has a higher-level runtime shape:
 
 ```text
 PipelineOrchestrator
@@ -24,7 +26,7 @@ PipelineOrchestrator
 → pipeline run trace
 ```
 
-This document formalizes that direction without adding implementation requirements yet.
+This document formalizes the validated pattern and the boundaries that should remain true as future importer coverage expands.
 
 ---
 
@@ -210,7 +212,9 @@ Examples:
 
 - `HandleStageController`
 - `ChatStageController`
-- `MessageStageController`
+- `MessageImportStageController`
+- `MessageMigrationStageController`
+- `ComparativeValidationStageController`
 
 Each stage controller owns orchestration for exactly one concern.
 
@@ -242,18 +246,32 @@ HandleStageController
 
 It should not decide whether messages are importable except by producing handle readiness facts that other semantic layers may consume.
 
+The stage-controller pattern has now been validated in the shadow pilot. The current concern-local stages:
+
+- invalidate only their factual observation providers
+- read derived semantic and policy providers
+- invoke a narrow importer or execution orchestrator only when policy allows
+- re-observe after mutation when needed
+- return an application-layer stage report
+- expose stable diagnostic events for tick traces and endurance logs
+
+This is the preferred pattern for adding the next concern-local import slices. A new concern should first prove its own factual readers, integrators, policy decision, importer, stage report, and stage controller before being folded into broader pipeline planning.
+
 ---
 
 # Pipeline Orchestrator
 
 The `PipelineOrchestrator` owns whole-pipeline sequencing.
 
-It may coordinate:
+In the validated shadow pilot it coordinates:
 
 - ordered stage execution
 - stage sequencing
 - pipeline-level tracing
 - pipeline-level reporting
+
+In later phases it may coordinate:
+
 - eventual dependency planning
 - eventual graph execution
 - eventual retry/recovery policy
@@ -272,19 +290,23 @@ It should not embed:
 
 Those remain inside readers, integrators, stage controllers, and importers.
 
+The `PipelineOrchestrator` pattern is now validated for manual ordered stage execution. The polling orchestrator owns timer lifecycle and delegates the tick body to the pipeline. The pipeline owns the ordered stage loop and returns a `PipelineRunReport` containing stage reports and aggregated diagnostic events.
+
 ---
 
 # Manual Ordering First
 
 The immediate intended implementation shape is a manually ordered stage list.
 
-Example:
+Current validated order:
 
 ```dart
 final stages = [
   handleStageController,
   chatStageController,
-  messageStageController,
+  messageImportStageController,
+  messageMigrationStageController,
+  comparativeValidationStageController,
 ];
 ```
 
@@ -297,7 +319,7 @@ for (final stage in orderedStages) {
 }
 ```
 
-This intentionally avoids:
+This currently avoids:
 
 - generic graph execution
 - topological sorting
@@ -312,7 +334,7 @@ chats
 → messages
 ```
 
-The point of this phase is to validate the orchestration interface and reporting model before building graph machinery.
+The point of this phase was to validate the orchestration interface and reporting model before building graph machinery. That validation has succeeded for the current shadow import, migration, and comparison loop.
 
 ---
 
@@ -482,33 +504,50 @@ The report should preserve causal visibility without becoming a new source of bu
 
 # Open Questions
 
-These should remain open until the first implementation slice proves or disproves the design:
+The first implementation slices have answered several earlier questions:
 
-- Should each stage report include both pre-execution and post-execution state?
-- Should stage controllers return typed concern-specific reports or a shared report envelope with concern-specific payloads?
+- stage reports should include pre-execution and post-execution state when mutation can occur
+- concern-specific reports are useful because each stage has different semantic payloads
+- pipeline traces are useful in endurance logs and dev observability before any production promotion
+- the existing polling orchestrator should own timing while `PipelineOrchestrator` owns the tick body
+
+Remaining open questions:
+
 - Should pipeline traces be persisted, logged only, or exposed through the dev status panel first?
-- Should stage controllers be invoked by the existing polling orchestrator initially, or should a new pipeline orchestrator own the polling tick body?
 - How much convergence validation belongs inside a stage controller versus inside a separate validator?
+- When, if ever, should importer descriptors become runtime planning inputs?
+- What promotion criteria must be satisfied before any stage can receive production authority?
 
-None of these questions require graph execution yet.
+None of these remaining questions require graph execution yet.
 
 ---
 
-# Recommended First Implementation Slice
+# Validated Implementation Sequence
 
-The smallest safe first implementation slice should be:
+The staged implementation sequence validated the pattern without behavior changes:
 
-1. Introduce a concern-local `HandleStageController`.
-2. Move existing handle refresh / decision / execution sequencing into it without behavior change.
-3. Return an explicit handle stage report.
-4. Keep the current polling orchestrator as the caller.
-5. Add focused tests proving:
-   - reader invalidation remains at the observation boundary
-   - `doNothing` skips execution
-   - blocked states skip execution
-   - `considerIncrementalImport` invokes the importer
-   - report fields preserve the causal path
+1. Introduce concern-local stage reports.
+2. Extract `HandleStageController`.
+3. Extract `ChatStageController`.
+4. Extract `MessageImportStageController`.
+5. Extract `MessageMigrationStageController`.
+6. Extract `ComparativeValidationStageController`.
+7. Introduce `PipelineOrchestrator` as the owner of the manual ordered stage loop.
 
-After that is stable, repeat for `ChatStageController`, then `MessageStageController`.
+The result is:
 
-Only after all three concern-local stage controllers produce consistent reports should a `PipelineOrchestrator` replace the hand-written sequencing currently embedded in the polling orchestrator.
+```text
+SyncStatePollingOrchestrator
+→ owns timer lifecycle and polling start/stop
+→ calls PipelineOrchestrator.runOnce()
+
+PipelineOrchestrator
+→ owns ordered stage execution
+→ returns PipelineRunReport
+
+StageControllers
+→ own concern-local observation / meaning / policy / execution
+→ return concern-specific StageReports
+```
+
+This is now the preferred substrate for future shadow importer expansion.

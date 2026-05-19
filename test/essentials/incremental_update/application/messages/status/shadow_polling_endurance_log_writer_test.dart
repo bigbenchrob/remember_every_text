@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:remember_this_text/essentials/incremental_update/application/chat_message_joins/models/chat_message_join_stage_report.dart';
 import 'package:remember_this_text/essentials/incremental_update/application/chats/models/chat_stage_report.dart';
 import 'package:remember_this_text/essentials/incremental_update/application/handles/models/handle_stage_report.dart';
 import 'package:remember_this_text/essentials/incremental_update/application/messages/executors/shadow_message_migration_executor.dart';
@@ -9,6 +10,8 @@ import 'package:remember_this_text/essentials/incremental_update/application/mes
 import 'package:remember_this_text/essentials/incremental_update/application/messages/models/message_migration_stage_report.dart';
 import 'package:remember_this_text/essentials/incremental_update/application/messages/status/shadow_polling_endurance_log_writer.dart';
 import 'package:remember_this_text/essentials/incremental_update/application/pipeline/models/pipeline_run_report.dart';
+import 'package:remember_this_text/essentials/incremental_update/domain/models/chat_message_join_snapshot.dart';
+import 'package:remember_this_text/essentials/incremental_update/domain/models/chat_message_join_snapshot_delta.dart';
 import 'package:remember_this_text/essentials/incremental_update/domain/models/chat_snapshot_delta.dart';
 import 'package:remember_this_text/essentials/incremental_update/domain/models/handle_snapshot_delta.dart';
 import 'package:remember_this_text/essentials/incremental_update/domain/models/message_import_blocker.dart';
@@ -16,6 +19,8 @@ import 'package:remember_this_text/essentials/incremental_update/domain/models/m
 import 'package:remember_this_text/essentials/incremental_update/domain/models/message_migration_delta.dart';
 import 'package:remember_this_text/essentials/incremental_update/domain/models/snapshot_delta.dart';
 import 'package:remember_this_text/essentials/incremental_update/domain/sealed_unions/chat_import_decision.dart';
+import 'package:remember_this_text/essentials/incremental_update/domain/sealed_unions/chat_message_join_import_decision.dart';
+import 'package:remember_this_text/essentials/incremental_update/domain/sealed_unions/chat_message_join_sync_state.dart';
 import 'package:remember_this_text/essentials/incremental_update/domain/sealed_unions/chat_sync_state.dart';
 import 'package:remember_this_text/essentials/incremental_update/domain/sealed_unions/comparison_outcome.dart';
 import 'package:remember_this_text/essentials/incremental_update/domain/sealed_unions/handle_import_decision.dart';
@@ -404,6 +409,30 @@ PipelineRunReport _pipelineRunReportWithSameTickMigration() {
         const PrerequisiteAwareMessageImportDecision.doNothing(),
     executionOutcome: MessageImportStageExecutionOutcome.skipped,
   );
+  const topologySnapshot = ChatMessageJoinSnapshot(
+    maxRowId: 0,
+    totalJoinCount: 0,
+    maxMessageRowId: 0,
+    maxChatRowId: 0,
+    sourceScopedObservationAvailable: true,
+  );
+  final topologyReport = ChatMessageJoinStageReport(
+    startedAt: startedAt,
+    finishedAt: startedAt,
+    preExecutionSourceSnapshot: topologySnapshot,
+    preExecutionLedgerSnapshot: topologySnapshot,
+    preExecutionDelta: const ChatMessageJoinSnapshotDelta(
+      rowIdDelta: 0,
+      joinCountDelta: 0,
+      messageRowIdDelta: 0,
+      chatRowIdDelta: 0,
+      ledgerSourceScopedObservationAvailable: true,
+    ),
+    preExecutionSyncState:
+        const ChatMessageJoinSyncState.sourceAndLedgerTopologyMatch(),
+    preExecutionDecision: const ChatMessageJoinImportDecision.doNothing(),
+    executionOutcome: ChatMessageJoinStageExecutionOutcome.skipped,
+  );
   final migrationReport = MessageMigrationStageReport(
     startedAt: startedAt,
     finishedAt: finishedAt,
@@ -442,6 +471,7 @@ PipelineRunReport _pipelineRunReportWithSameTickMigration() {
     handleStageReport: handleReport,
     chatStageReport: chatReport,
     messageImportStageReport: importReport,
+    chatMessageJoinStageReport: topologyReport,
     messageMigrationStageReport: migrationReport,
     comparativeValidationStageReport: comparisonReport,
     importDecisionAfterRun: const ImportDecision.doNothing(),

@@ -16,6 +16,7 @@ Current validated milestone:
 
 ```text
 closed-loop shadow import + migration + comparative validation
+through PipelineOrchestrator and ordered StageControllers
 ```
 
 This pilot exists to evaluate whether responsibility decomposition can improve:
@@ -101,17 +102,13 @@ The implemented shadow message pipeline now follows this flow:
 
 ```text
 poll tick
-→ invalidate reader snapshot providers
+→ SyncStatePollingOrchestrator owns timer lifecycle
+→ PipelineOrchestrator runs ordered StageControllers
+→ stage controllers invalidate factual reader providers
 → readers re-query source/ledger/projection databases
-→ import delta integrator recomputes numeric drift
-→ import sync-state integrator derives semantic meaning
-→ import-decision integrator derives policy meaning
-→ polling orchestrator observes transitions
-→ shadow execution orchestrator performs shadow-only import when requested
-→ migration delta integrator recomputes projection drift
-→ migration-state integrator derives semantic meaning
-→ migration-decision integrator derives policy meaning
-→ shadow migration orchestrator performs shadow-only migration when requested
+→ integrators derive deltas, semantic states, policy decisions, and comparisons
+→ stage controllers execute narrow import/migration work when policy allows
+→ PipelineRunReport aggregates stage reports and tick events
 → comparative validation compares production facts with shadow conclusions
 ```
 
@@ -123,22 +120,30 @@ importLedgerMessageSnapshotProvider
 → snapshotDeltaIntegratorProvider
 → messageSyncStateProvider
 → importDecisionProvider
-→ SyncStatePollingOrchestrator
+→ MessageImportStageController
 → ShadowImportExecutionOrchestrator
-→ ShadowMessageImportExecutor
+→ MessageImporter
 
 shadowImportProjectionSnapshotProvider
 shadowWorkingProjectionSnapshotProvider
 → messageMigrationDeltaProvider
 → messageMigrationStateProvider
 → migrationDecisionProvider
-→ ShadowMigrationRefreshOrchestrator
+→ MessageMigrationStageController
 → ShadowMigrationExecutionOrchestrator
 → ShadowMessageMigrationExecutor
 
 legacyIncrementalUpdateSnapshotProvider
 incrementalUpdateComparisonProvider
+→ ComparativeValidationStageController
 → ComparativeValidationOrchestrator
+
+PipelineOrchestrator
+→ HandleStageController
+→ ChatStageController
+→ MessageImportStageController
+→ MessageMigrationStageController
+→ ComparativeValidationStageController
 ```
 
 The reader snapshot providers are the external observation boundary:
@@ -149,6 +154,16 @@ The reader snapshot providers are the external observation boundary:
 - comparative validation observes production facts read-only and compares them with shadow conclusions
 
 The derived providers do not observe external reality directly. They compose values and derive meaning.
+
+The `StageController` and `PipelineOrchestrator` patterns are now validated:
+
+- `StageController` owns one concern-local refresh / meaning / policy / execution cycle
+- `StageReport` records what that concern observed, decided, executed, and re-observed
+- `PipelineOrchestrator` owns the manual ordered stage loop
+- `PipelineRunReport` aggregates concern-local reports and diagnostic events
+- `SyncStatePollingOrchestrator` owns polling lifecycle rather than concern sequencing
+
+No graph execution, topological sorting, or descriptor-driven runtime planning has been introduced.
 
 ---
 
@@ -844,6 +859,24 @@ messageCountDelta != 0
 ```
 
 It should be surfaced in status/logs as count divergence, but it should not by itself schedule import, block import, or imply importer failure.
+
+Continuation cursor reads are now source-scoped. The current pilot still observes only the live source:
+
+```text
+source_id = live-chat-db
+source_kind = live_chat_db
+```
+
+but repositories and importers must already be multi-source-safe:
+
+```text
+MAX(source_rowid)
+WHERE source_id = live-chat-db
+```
+
+or the equivalent source-scoped API.
+
+This is required because future archived Messages-folder imports will introduce additional `chat.db` sources with independent local `ROWID` sequences. A higher `source_rowid` from an archive source must never advance the live source continuation cursor.
 
 `ImportDecision` is policy meaning:
 

@@ -1,29 +1,30 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'pipeline_orchestrator_provider.dart';
+part of 'chat_db_chat_message_join_repository_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$pipelineOrchestratorHash() =>
-    r'0daf0dcb18876f0e21ec7e1e3ad74417cd6b6462';
+String _$chatDbChatMessageJoinRepositoryHash() =>
+    r'd426da3be37538dc25a37a118be4d60601ba5649';
 
-/// See also [pipelineOrchestrator].
-@ProviderFor(pipelineOrchestrator)
-final pipelineOrchestratorProvider =
-    AutoDisposeProvider<PipelineOrchestrator>.internal(
-      pipelineOrchestrator,
-      name: r'pipelineOrchestratorProvider',
+/// See also [chatDbChatMessageJoinRepository].
+@ProviderFor(chatDbChatMessageJoinRepository)
+final chatDbChatMessageJoinRepositoryProvider =
+    AutoDisposeFutureProvider<ChatDbChatMessageJoinRepository>.internal(
+      chatDbChatMessageJoinRepository,
+      name: r'chatDbChatMessageJoinRepositoryProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
           ? null
-          : _$pipelineOrchestratorHash,
+          : _$chatDbChatMessageJoinRepositoryHash,
       dependencies: null,
       allTransitiveDependencies: null,
     );
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef PipelineOrchestratorRef = AutoDisposeProviderRef<PipelineOrchestrator>;
+typedef ChatDbChatMessageJoinRepositoryRef =
+    AutoDisposeFutureProviderRef<ChatDbChatMessageJoinRepository>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

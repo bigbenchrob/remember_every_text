@@ -1,6 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../chat_message_joins/orchestrators/chat_message_join_stage_controller_provider.dart';
 import '../../chats/orchestrators/chat_stage_controller_provider.dart';
 import '../../handles/orchestrators/handle_stage_controller_provider.dart';
 import '../../messages/integrators/import_decision_provider.dart';
@@ -20,6 +21,9 @@ PipelineOrchestrator pipelineOrchestrator(Ref ref) {
         ref.read(chatStageControllerProvider).refreshAndMaybeExecute(),
     runMessageImportStage: () =>
         ref.read(messageImportStageControllerProvider).refreshAndMaybeExecute(),
+    runChatMessageJoinStage: () => ref
+        .read(chatMessageJoinStageControllerProvider)
+        .refreshAndMaybeExecute(),
     runMessageMigrationStage: () => ref
         .read(messageMigrationStageControllerProvider)
         .refreshAndMaybeExecute(),

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:remember_this_text/essentials/incremental_update/application/chat_message_joins/models/chat_message_join_stage_report.dart';
 import 'package:remember_this_text/essentials/incremental_update/application/chats/models/chat_stage_report.dart';
 import 'package:remember_this_text/essentials/incremental_update/application/handles/models/handle_stage_report.dart';
 import 'package:remember_this_text/essentials/incremental_update/application/messages/executors/message_importer.dart';
@@ -6,12 +7,16 @@ import 'package:remember_this_text/essentials/incremental_update/application/mes
 import 'package:remember_this_text/essentials/incremental_update/application/messages/models/message_import_stage_report.dart';
 import 'package:remember_this_text/essentials/incremental_update/application/messages/models/message_migration_stage_report.dart';
 import 'package:remember_this_text/essentials/incremental_update/application/pipeline/orchestrators/pipeline_orchestrator.dart';
+import 'package:remember_this_text/essentials/incremental_update/domain/models/chat_message_join_snapshot.dart';
+import 'package:remember_this_text/essentials/incremental_update/domain/models/chat_message_join_snapshot_delta.dart';
 import 'package:remember_this_text/essentials/incremental_update/domain/models/chat_snapshot_delta.dart';
 import 'package:remember_this_text/essentials/incremental_update/domain/models/handle_snapshot_delta.dart';
 import 'package:remember_this_text/essentials/incremental_update/domain/models/message_import_prerequisite_assessment.dart';
 import 'package:remember_this_text/essentials/incremental_update/domain/models/message_migration_delta.dart';
 import 'package:remember_this_text/essentials/incremental_update/domain/models/snapshot_delta.dart';
 import 'package:remember_this_text/essentials/incremental_update/domain/sealed_unions/chat_import_decision.dart';
+import 'package:remember_this_text/essentials/incremental_update/domain/sealed_unions/chat_message_join_import_decision.dart';
+import 'package:remember_this_text/essentials/incremental_update/domain/sealed_unions/chat_message_join_sync_state.dart';
 import 'package:remember_this_text/essentials/incremental_update/domain/sealed_unions/chat_sync_state.dart';
 import 'package:remember_this_text/essentials/incremental_update/domain/sealed_unions/comparison_outcome.dart';
 import 'package:remember_this_text/essentials/incremental_update/domain/sealed_unions/handle_import_decision.dart';
@@ -39,6 +44,10 @@ void main() {
           calls.add('message import');
           return _messageImportReport('message import event');
         },
+        runChatMessageJoinStage: () async {
+          calls.add('topology');
+          return _topologyReport('topology event');
+        },
         runMessageMigrationStage: () async {
           calls.add('message migration');
           return _messageMigrationReport('message migration event');
@@ -59,6 +68,7 @@ void main() {
         'handle',
         'chat',
         'message import',
+        'topology',
         'message migration',
         'comparative validation',
       ]);
@@ -66,6 +76,7 @@ void main() {
         report.handleStageReport,
         report.chatStageReport,
         report.messageImportStageReport,
+        report.chatMessageJoinStageReport,
         report.messageMigrationStageReport,
         report.comparativeValidationStageReport,
       ]);
@@ -78,6 +89,7 @@ void main() {
         runChatStage: () async => _chatReport('chat event'),
         runMessageImportStage: () async =>
             _messageImportReport('message import event'),
+        runChatMessageJoinStage: () async => _topologyReport('topology event'),
         runMessageMigrationStage: () async =>
             _messageMigrationReport('message migration event'),
         runComparativeValidationStage: () async =>
@@ -92,6 +104,7 @@ void main() {
         'handle event',
         'chat event',
         'message import event',
+        'topology event',
         'message migration event',
         'comparison event',
       ]);
@@ -113,6 +126,8 @@ void main() {
               batchId: 1,
             ),
           ),
+          runChatMessageJoinStage: () async =>
+              _topologyReport('topology event'),
           runMessageMigrationStage: () async =>
               _messageMigrationReport('message migration event'),
           runComparativeValidationStage: () async =>
@@ -160,6 +175,35 @@ ChatStageReport _chatReport(String event) {
     preExecutionState: const ChatSyncState.sourceAndLedgerCursorsMatch(),
     decision: const ChatImportDecision.doNothing(),
     executionOutcome: ChatStageExecutionOutcome.skipped,
+    diagnosticEvents: <String>[event],
+  );
+}
+
+ChatMessageJoinStageReport _topologyReport(String event) {
+  final now = DateTime(2026);
+  const snapshot = ChatMessageJoinSnapshot(
+    maxRowId: 0,
+    totalJoinCount: 0,
+    maxMessageRowId: 0,
+    maxChatRowId: 0,
+    sourceScopedObservationAvailable: true,
+  );
+  return ChatMessageJoinStageReport(
+    startedAt: now,
+    finishedAt: now,
+    preExecutionSourceSnapshot: snapshot,
+    preExecutionLedgerSnapshot: snapshot,
+    preExecutionDelta: const ChatMessageJoinSnapshotDelta(
+      rowIdDelta: 0,
+      joinCountDelta: 0,
+      messageRowIdDelta: 0,
+      chatRowIdDelta: 0,
+      ledgerSourceScopedObservationAvailable: true,
+    ),
+    preExecutionSyncState:
+        const ChatMessageJoinSyncState.sourceAndLedgerTopologyMatch(),
+    preExecutionDecision: const ChatMessageJoinImportDecision.doNothing(),
+    executionOutcome: ChatMessageJoinStageExecutionOutcome.skipped,
     diagnosticEvents: <String>[event],
   );
 }

@@ -462,7 +462,7 @@ This preserves diagnostic honesty: a schema-compatibility shim must not make a s
 For incremental import continuation, cursor convergence is authoritative:
 
 ```text
-source MAX(rowid) == ledger MAX(source_rowid)
+source-scoped source MAX(rowid) == ledger MAX(source_rowid)
 → no newer source-local rows are waiting to import
 ```
 
@@ -493,6 +493,60 @@ count drift remains diagnostic until a separate reconciliation policy is defined
 ```
 
 Do not hide count divergence. Surface it as diagnostic reconciliation information.
+
+---
+
+## Import Cursors Must Be Source-Scoped
+
+Apple source `ROWID` values are source-local. There is no global `MAX(ROWID)` across multiple `chat.db` files or archived Messages-folder sources.
+
+Continuation cursors must therefore be scoped by source identity and table concern:
+
+```text
+source_id
+source_table or table context
+source_rowid
+```
+
+For current shadow import tables, the table context may be implicit in the repository or importer:
+
+```text
+messages → source_id + source_rowid
+handles  → source_id + source_rowid
+chats    → source_id + source_rowid
+```
+
+The current live source identity is:
+
+```text
+source_id = live-chat-db
+source_kind = live_chat_db
+```
+
+Practical rule:
+
+```text
+Never compute an import continuation cursor with an unscoped
+MAX(source_rowid) across all sources.
+```
+
+If the ledger contains:
+
+```text
+live-chat-db source_rowid = 148528
+archive-test source_rowid = 999999
+```
+
+then the live importer must continue from `148528`, not `999999`.
+
+This preserves the distinction between source-local provenance and canonical application identity:
+
+```text
+source_id + source_rowid = source-local provenance cursor
+guid or later projection identity = canonical/dedupe meaning
+```
+
+Do not add a source registry or source-table schema churn merely to satisfy this invariant. The important rule is that cursor reads and source-ledger counts must be scoped to the source instance they are evaluating.
 
 ---
 

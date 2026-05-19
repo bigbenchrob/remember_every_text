@@ -1,4 +1,5 @@
 import '../../../domain/sealed_unions/import_decision.dart';
+import '../../chat_message_joins/models/chat_message_join_stage_report.dart';
 import '../../chats/models/chat_stage_report.dart';
 import '../../handles/models/handle_stage_report.dart';
 import '../../messages/models/comparative_validation_stage_report.dart';
@@ -11,6 +12,8 @@ class PipelineOrchestrator {
     required Future<HandleStageReport> Function() runHandleStage,
     required Future<ChatStageReport> Function() runChatStage,
     required Future<MessageImportStageReport> Function() runMessageImportStage,
+    required Future<ChatMessageJoinStageReport> Function()
+    runChatMessageJoinStage,
     required Future<MessageMigrationStageReport> Function()
     runMessageMigrationStage,
     required Future<ComparativeValidationStageReport> Function()
@@ -19,6 +22,7 @@ class PipelineOrchestrator {
   }) : _runHandleStage = runHandleStage,
        _runChatStage = runChatStage,
        _runMessageImportStage = runMessageImportStage,
+       _runChatMessageJoinStage = runChatMessageJoinStage,
        _runMessageMigrationStage = runMessageMigrationStage,
        _runComparativeValidationStage = runComparativeValidationStage,
        _readCurrentImportDecision = readCurrentImportDecision;
@@ -26,6 +30,7 @@ class PipelineOrchestrator {
   final Future<HandleStageReport> Function() _runHandleStage;
   final Future<ChatStageReport> Function() _runChatStage;
   final Future<MessageImportStageReport> Function() _runMessageImportStage;
+  final Future<ChatMessageJoinStageReport> Function() _runChatMessageJoinStage;
   final Future<MessageMigrationStageReport> Function()
   _runMessageMigrationStage;
   final Future<ComparativeValidationStageReport> Function()
@@ -40,6 +45,7 @@ class PipelineOrchestrator {
     final handleStageReport = await _runHandleStage();
     final chatStageReport = await _runChatStage();
     final messageImportStageReport = await _runMessageImportStage();
+    final chatMessageJoinStageReport = await _runChatMessageJoinStage();
     final messageMigrationStageReport = await _runMessageMigrationStage();
     final comparativeValidationStageReport =
         await _runComparativeValidationStage();
@@ -54,6 +60,7 @@ class PipelineOrchestrator {
       handleStageReport: handleStageReport,
       chatStageReport: chatStageReport,
       messageImportStageReport: messageImportStageReport,
+      chatMessageJoinStageReport: chatMessageJoinStageReport,
       messageMigrationStageReport: messageMigrationStageReport,
       comparativeValidationStageReport: comparativeValidationStageReport,
       importDecisionAfterRun: importDecisionAfterRun,

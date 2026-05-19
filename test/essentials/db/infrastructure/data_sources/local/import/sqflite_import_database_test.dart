@@ -109,6 +109,39 @@ void main() {
     );
 
     test(
+      'fresh database creates source-scoped chat message join ledger table',
+      () async {
+        final ledgerDb = SqfliteImportDatabase(
+          databaseDirectory: tempDir.path,
+          databaseName: 'import_test.db',
+          debugSettings: const ImportDebugSettingsState(),
+        );
+
+        final db = await ledgerDb.database;
+        final rows = await db.rawQuery('PRAGMA table_info(chat_message_joins)');
+        final columns = <String, Map<String, Object?>>{
+          for (final row in rows) row['name']! as String: row,
+        };
+
+        expect(columns['id']?['type'], 'INTEGER');
+        expect(columns['source_rowid']?['type'], 'INTEGER');
+        expect(columns['source_rowid']?['notnull'], 1);
+        expect(columns['source_id']?['type'], 'TEXT');
+        expect(columns['source_id']?['notnull'], 1);
+        expect(columns['source_kind']?['type'], 'TEXT');
+        expect(columns['source_kind']?['notnull'], 1);
+        expect(columns['source_chat_rowid']?['type'], 'INTEGER');
+        expect(columns['source_chat_rowid']?['notnull'], 1);
+        expect(columns['source_message_rowid']?['type'], 'INTEGER');
+        expect(columns['source_message_rowid']?['notnull'], 1);
+        expect(columns['batch_id']?['type'], 'INTEGER');
+        expect(columns['batch_id']?['notnull'], 1);
+
+        await ledgerDb.close();
+      },
+    );
+
+    test(
       'upgrades a v5 database with nullable message source provenance columns',
       () async {
         final dbPath = '${tempDir.path}/import_test.db';
@@ -155,10 +188,10 @@ void main() {
 
         final migrationRows = await db.query(
           'schema_migrations',
-          where: 'version IN (?, ?, ?, ?)',
-          whereArgs: <Object>[6, 7, 8, 9],
+          where: 'version IN (?, ?, ?, ?, ?)',
+          whereArgs: <Object>[6, 7, 8, 9, 10],
         );
-        expect(migrationRows, hasLength(4));
+        expect(migrationRows, hasLength(5));
 
         await upgradedDb.close();
       },
@@ -206,10 +239,10 @@ void main() {
 
         final migrationRows = await db.query(
           'schema_migrations',
-          where: 'version IN (?, ?, ?)',
-          whereArgs: <Object>[7, 8, 9],
+          where: 'version IN (?, ?, ?, ?)',
+          whereArgs: <Object>[7, 8, 9, 10],
         );
-        expect(migrationRows, hasLength(3));
+        expect(migrationRows, hasLength(4));
 
         await upgradedDb.close();
       },
@@ -252,10 +285,10 @@ void main() {
 
       final migrationRows = await db.query(
         'schema_migrations',
-        where: 'version = ?',
-        whereArgs: <Object>[8],
+        where: 'version IN (?, ?, ?)',
+        whereArgs: <Object>[8, 9, 10],
       );
-      expect(migrationRows, hasLength(1));
+      expect(migrationRows, hasLength(3));
 
       await upgradedDb.close();
     });
@@ -297,8 +330,50 @@ void main() {
 
       final migrationRows = await db.query(
         'schema_migrations',
+        where: 'version IN (?, ?)',
+        whereArgs: <Object>[9, 10],
+      );
+      expect(migrationRows, hasLength(2));
+
+      await upgradedDb.close();
+    });
+
+    test('upgrades a v9 database with chat message join ledger table', () async {
+      final dbPath = '${tempDir.path}/import_test.db';
+      final legacyDb = await openDatabase(dbPath);
+      await legacyDb.execute(
+        'CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, applied_at_utc TEXT NOT NULL)',
+      );
+      await legacyDb.execute(
+        'CREATE TABLE import_batches (id INTEGER PRIMARY KEY, started_at_utc TEXT NOT NULL)',
+      );
+      await legacyDb.execute(
+        "INSERT INTO schema_migrations (version, applied_at_utc) VALUES (9, '2026-05-09T00:00:00.000Z')",
+      );
+      await legacyDb.execute('PRAGMA user_version = 9');
+      await legacyDb.close();
+
+      final upgradedDb = SqfliteImportDatabase(
+        databaseDirectory: tempDir.path,
+        databaseName: 'import_test.db',
+        debugSettings: const ImportDebugSettingsState(),
+      );
+
+      final db = await upgradedDb.database;
+      final rows = await db.rawQuery('PRAGMA table_info(chat_message_joins)');
+      final columns = <String, Map<String, Object?>>{
+        for (final row in rows) row['name']! as String: row,
+      };
+
+      expect(columns['source_rowid']?['type'], 'INTEGER');
+      expect(columns['source_id']?['type'], 'TEXT');
+      expect(columns['source_chat_rowid']?['type'], 'INTEGER');
+      expect(columns['source_message_rowid']?['type'], 'INTEGER');
+
+      final migrationRows = await db.query(
+        'schema_migrations',
         where: 'version = ?',
-        whereArgs: <Object>[9],
+        whereArgs: <Object>[10],
       );
       expect(migrationRows, hasLength(1));
 
