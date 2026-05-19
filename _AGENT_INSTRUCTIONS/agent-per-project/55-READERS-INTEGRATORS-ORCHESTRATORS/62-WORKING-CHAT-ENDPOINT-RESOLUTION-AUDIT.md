@@ -1,24 +1,22 @@
-# 62-WORKING-CHAT-ENDPOINT-RESOLUTION-AUDIT
+# 62 - Working Chat Endpoint Resolution Audit
 
 ## Purpose
 
-This document audits the current `ledger chat → working chat` endpoint resolution problem exposed by the read-only topology projection preview.
+This document records the current working-chat endpoint audit after adopting `SourceScopedRowKey` as canonical working-row identity for source-derived projected rows.
 
-The preview reported:
+The earlier `ledger chat → working chat` GUID-resolution framing is superseded.
+
+Current rule:
 
 ```text
-missingWorkingChat: 250
+working.chats.id = chat_source_scoped_row_key
 ```
 
-for a bounded sample of live-source topology rows.
-
-That result is expected. It means source topology, ledger messages, and ledger chats are present, but the shadow working projection does not yet contain source-derived working chats that can serve as canonical topology endpoints.
-
-This document is diagnostic/design only. It does not define implemented mutation behavior.
+for source-derived projected chat rows.
 
 ---
 
-# Current Observed State
+## Current Observed State
 
 Read-only local audit of the current shadow databases showed:
 
@@ -51,12 +49,14 @@ Interpretation:
 - source chats have been imported into the shadow ledger
 - source topology has been imported into the shadow ledger
 - working messages have been migrated
-- working chats have not been source-derived in the shadow path
+- source-derived working chats have not yet been projected
 - every shadow working message currently points to the placeholder chat
+
+The preview result is expected.
 
 ---
 
-# Working Chat Schema
+## Working Chat Schema
 
 `working_shadow.db.chats` uses the existing `WorkingChats` schema:
 
@@ -84,70 +84,39 @@ Current uniqueness:
 UNIQUE(guid)
 ```
 
-There are no source provenance columns on working chats:
+The source-scoped identity direction means `id` should become the source-derived endpoint identity for projected source chats:
 
-- no `source_id`
-- no `source_rowid`
-- no `source_kind`
-- no source-chat mapping sidecar table
+```text
+id = chat_source_scoped_row_key
+```
 
-Therefore a working chat row is app/canonical state, not direct source truth.
+`guid` remains source metadata and possible semantic grouping input. It is not the base endpoint identity.
 
 ---
 
-# How Working Chats Are Currently Created
+## Placeholder Chat Meaning
 
-## Shadow Path
+The placeholder chat enters the shadow working projection in `ShadowMessageMigrationExecutor`.
 
-The current shadow message migration path creates exactly one placeholder working chat:
+It exists only to satisfy the current `messages.chat_id → chats.id` foreign key while message migration remains intentionally narrow.
 
-```text
-id = -1
-guid = __shadow_incremental_update_placeholder_chat__
-service = Unknown
-```
+It is not:
 
-Then it inserts all shadow working messages with:
+- source truth
+- source topology evidence
+- a source-derived chat
+- a valid resolved endpoint for source topology
 
-```text
-chat_id = -1
-```
+Future removal or bypass should happen only after:
 
-This is intentional scaffolding from the messages-only migration slice. It allowed message projection to converge before topology projection existed.
-
-The shadow path does not yet run a chat projection/migration stage.
-
-## Production Legacy Path
-
-The legacy `ChatsMigrator` copies ledger chats into working chats using:
-
-```text
-working.chats.id = import.chats.id
-working.chats.guid = import.chats.guid
-working.chats.service = import.chats.service
-```
-
-That is production behavior, but it is not yet the shadow topology projection design. It relies on source-like IDs and a single import ledger shape in ways that must be reconsidered for multi-source archive support.
+- source-derived working chats exist
+- source-derived working messages use source-scoped ids
+- topology endpoint preview resolves
+- relationship projection no longer relies on placeholder chat identity
 
 ---
 
-# Current Working Chat Identity Meaning
-
-In the current shadow pipeline, working chats are:
-
-- placeholder-driven
-- not source-derived
-- not canonicalized from source chat identity
-- not participant-derived
-- not suitable as resolved topology endpoints
-
-The only working chat identifier currently available for resolution is `guid`, but the only existing shadow working chat GUID is the placeholder GUID. It does not correspond to source chat GUIDs.
-
-Therefore the preview correctly reports `missingWorkingChat`.
-
----
-
-# Ledger Chat Identifiers
+## Ledger Chat Facts
 
 The shadow ledger `chats` table currently preserves source-backed rows with:
 
@@ -159,62 +128,40 @@ source_kind
 guid
 service
 display_name
+created_at_utc
+updated_at_utc
 batch_id
 ```
 
-Observed live-source examples:
+Useful source-derived endpoint coordinate:
 
 ```text
-source_rowid = 4
-guid = any;-;+15147700101
-service = iMessage
-display_name = +15147700101
-
-source_rowid = 5
-guid = any;+;chat965845160131627119
-service = iMessage
-display_name = chat965845160131627119
+source_id + source_rowid
 ```
 
-Useful source-derived identifiers:
+Projected working endpoint:
 
-- `source_id + source_rowid`
-- `guid`
-- `service`
+```text
+chat_source_scoped_row_key = pack(source_id, source_rowid)
+```
 
-Optional display metadata:
-
-- `display_name`
-
-Source-derived timing metadata:
-
-- `created_at_utc`
-- `updated_at_utc`
-
-`display_name` is not stable identity. It is frequently empty, and when populated it may duplicate or derive from source chat identifiers. Source timing metadata should be preserved when it maps to verified source fields, but it is also not stable chat identity. These fields must not be used for endpoint resolution, topology projection, canonicalization, or dedupe.
-
-Missing for stronger canonicalization:
-
-- participant topology from `chat_handle_join`
-- source archive identity/fingerprint beyond current live source
-- conflict/reconciliation metadata
+Metadata such as `guid`, `service`, `display_name`, `created_at_utc`, and `updated_at_utc` may be preserved and used for diagnostics, display, or semantic grouping. It must not replace the endpoint identity.
 
 ---
 
-# SourceScopedRowKey Revision
+## SourceScopedRowKey Revision
 
-This audit originally evaluated `ledger chat → working chat` endpoint resolution through GUID matching and possible mapping tables.
-
-That approach has been superseded by the `SourceScopedRowKey` strategy.
-
-The current invariant is:
+This audit originally evaluated endpoint resolution through:
 
 ```text
-SourceScopedRowKey is the canonical working-row identity
-for source-derived projected rows.
+ledger chat guid → working chat guid
 ```
 
-Therefore the projected working chat endpoint for a source chat row should be:
+and possible source-to-working mapping tables.
+
+That approach is superseded for ordinary source-derived endpoints.
+
+The projected working chat endpoint for a source chat row should be:
 
 ```text
 working.chats.id = chat_source_scoped_row_key
@@ -234,11 +181,9 @@ source_id + source_chat_rowid → mapping table → working_chat_id
 
 as the ordinary endpoint identity path.
 
-GUID, service, display metadata, participant topology, and timing fields may still inform diagnostics or higher-level semantic grouping, but they are not the base working-row identity for source-derived rows.
-
 ---
 
-# Join Endpoint Projection Implication
+## Join Endpoint Projection Implication
 
 Once source-derived working chats and messages use `SourceScopedRowKey` ids, source-local topology can project mechanically.
 
@@ -263,21 +208,11 @@ This restores the single-source simplicity:
 source relationships are already correct
 ```
 
-while making the endpoints multi-source-safe.
-
-This avoids:
-
-- canonical endpoint remapping layers
-- relationship lookup tables for ordinary source-derived endpoints
-- ambiguous projection joins
-- source-collision bugs
-- merge-collapse identity instability
-
-Semantic deduplication, grouping, or merge views can still exist above this layer, but they must not replace occurrence-preserving working row ids.
+while making endpoints multi-source-safe.
 
 ---
 
-# Recommended Smallest Next Implementation Slice
+## Recommended Next Slice
 
 Recommended next code slice:
 
@@ -302,44 +237,9 @@ If mutation is chosen after that:
 3. Project `chat_message_join` only after both endpoints exist.
 4. Do not introduce semantic merge or canonical remapping behavior.
 
-That sequencing preserves the architecture:
-
-```text
-ledger chat facts
-→ source-scoped working chat row identity
-→ topology endpoint readiness
-→ relationship projection later
-```
-
 ---
 
-# Placeholder Chat Analysis
-
-The placeholder chat enters the shadow working projection in `ShadowMessageMigrationExecutor`.
-
-It exists only to satisfy the current `messages.chat_id → chats.id` foreign key while message migration remains intentionally narrow.
-
-It does not block future working chat resolution, because it can coexist with source-derived working chats:
-
-```text
-chats.id = -1
-guid = __shadow_incremental_update_placeholder_chat__
-
-chats.id = source-derived/provisional/canonical ids
-guid = source chat guid
-```
-
-However, it does block topology projection from appearing complete if the resolver expects source chat GUIDs to exist in working chats. The placeholder is not a match for any source chat GUID and must not be treated as one.
-
-Future removal or bypass should happen only after:
-
-- source-derived working chats exist
-- topology endpoint preview resolves
-- message rows can be reassigned or relationships can be represented without relying on placeholder chat identity
-
----
-
-# Multi-Source Implications
+## Multi-Source Implications
 
 Live and archive sources may contain:
 
@@ -350,37 +250,23 @@ Live and archive sources may contain:
 
 Therefore:
 
-- source row IDs cannot be working chat IDs
-- source GUID matching should be provisional
-- source-to-working mapping should eventually preserve source provenance
-- conflicts should be observable rather than hidden inside projection mutation
-
-Possible future production-shaped mapping:
-
-```text
-source_id + source_chat_rowid
-→ source_chat_guid
-→ working_chat_id
-→ mapping provenance row
-```
-
-This allows multiple source chats to support one working chat without erasing the source facts.
+- raw source row IDs cannot be working chat IDs
+- GUID matching should not be endpoint identity
+- semantic grouping should be observable above the base working row layer
+- conflicts should not be hidden inside projection mutation
 
 ---
 
-# Risks
+## Risks
 
-- Copying legacy chat migration behavior directly into shadow projection may reintroduce single-source assumptions.
+- Copying legacy chat migration behavior directly may reintroduce single-source raw-id assumptions.
 - Mapping by chat GUID alone may fail for archive/live divergence.
-- Mapping by source row ID is not archive-safe.
-- Updating message `chat_id` before endpoint preview is stable can hide unresolved topology defects.
+- Updating message `chat_id` before source-scoped endpoints are stable can hide unresolved topology defects.
 - Removing the placeholder too early can destabilize message projection.
 
 ---
 
-# Candidate Invariants
-
-Recommended invariants to promote once the next preview slice is validated:
+## Invariants
 
 ```text
 Working chat endpoint projection must use SourceScopedRowKey, not raw source ROWID.
