@@ -94,6 +94,8 @@ App-relevant fields include:
 | `guid` | Source chat guid when present. |
 | `service_name` / service fields | Service context when present in observed source schemas. |
 | display-name fields | Group/thread display hints when present. |
+| `creation_date` | Source chat creation timing when present. Legacy import maps this to `chats.created_at_utc`. |
+| `last_read_message_timestamp` | Source chat recency/read timing when present. Legacy import maps this to `chats.updated_at_utc`. |
 
 Do not infer chat participants from `chat` alone. Participants are represented by `chat_handle_join`.
 

@@ -11,6 +11,7 @@ The current pilot has validated:
 - `MessageImporter`
 - prerequisite-aware message policy semantics
 - prerequisite convergence before message import
+- source topology preservation before migration/projection
 - observable tick-event and endurance-log traces
 - concern-local execution slices
 - concern-local `StageController` reports
@@ -305,10 +306,13 @@ final stages = [
   handleStageController,
   chatStageController,
   messageImportStageController,
+  chatMessageJoinStageController,
   messageMigrationStageController,
   comparativeValidationStageController,
 ];
 ```
+
+The topology stage preserves source `chat_message_join` facts after chats and messages have been imported and before migration/projection runs. This keeps source relationship topology in the shadow ledger before any projection layer decides how, or whether, to canonicalize those relationships.
 
 Conceptual execution:
 
@@ -332,9 +336,15 @@ Manual ordering is sufficient for the next validation step because the currently
 handles
 chats
 → messages
+messages + chats
+→ chat_message_join topology
+topology
+→ migration/projection
 ```
 
-The point of this phase was to validate the orchestration interface and reporting model before building graph machinery. That validation has succeeded for the current shadow import, migration, and comparison loop.
+The point of this phase was to validate the orchestration interface and reporting model before building graph machinery. That validation has succeeded for the current shadow import, topology preservation, migration, and comparison loop.
+
+Canonical relationship projection remains intentionally deferred. The topology stage copies source relationship facts into the shadow import ledger; it does not resolve canonical chats, project relationships into `working_shadow.db`, update search/UI relationship semantics, or replace later projection ownership.
 
 ---
 
@@ -533,6 +543,7 @@ The staged implementation sequence validated the pattern without behavior change
 5. Extract `MessageMigrationStageController`.
 6. Extract `ComparativeValidationStageController`.
 7. Introduce `PipelineOrchestrator` as the owner of the manual ordered stage loop.
+8. Integrate `ChatMessageJoinStageController` into the ordered loop between message import and message migration.
 
 The result is:
 
@@ -548,6 +559,17 @@ PipelineOrchestrator
 StageControllers
 → own concern-local observation / meaning / policy / execution
 → return concern-specific StageReports
+```
+
+The current pipeline order is:
+
+```text
+HandleStageController
+→ ChatStageController
+→ MessageImportStageController
+→ ChatMessageJoinStageController
+→ MessageMigrationStageController
+→ ComparativeValidationStageController
 ```
 
 This is now the preferred substrate for future shadow importer expansion.

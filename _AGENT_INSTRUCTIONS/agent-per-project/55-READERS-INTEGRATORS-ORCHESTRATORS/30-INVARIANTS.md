@@ -457,6 +457,97 @@ This preserves diagnostic honesty: a schema-compatibility shim must not make a s
 
 ---
 
+## Source Topology Must Be Preserved Before Projection
+
+Apple source databases own relationship topology separately from individual entity rows.
+
+For Messages `chat.db`, message-to-chat membership belongs to:
+
+```text
+chat_message_join
+```
+
+not to `message.chat_id`.
+
+The shadow incremental-update pipeline now preserves this source topology as its own concern before migration/projection runs:
+
+```text
+HandleStageController
+→ ChatStageController
+→ MessageImportStageController
+→ ChatMessageJoinStageController
+→ MessageMigrationStageController
+→ ComparativeValidationStageController
+```
+
+This ordering is intentional.
+
+Source topology preservation means:
+
+- observe source relationship rows
+- preserve source-scoped relationship provenance in `macos_import_shadow.db`
+- keep topology import resumable and idempotent
+- run migration/projection only after source topology has had a chance to catch up
+- project source-local relationship endpoints into `SourceScopedRowKey` working identities when topology projection is introduced
+
+Source topology preservation does not mean:
+
+- canonical chat resolution
+- merge-collapsed relationship projection into `working_shadow.db`
+- search/UI relationship semantics
+- production projection ownership
+
+Working relationship projection remains deferred until a projection concern explicitly owns it. When it is introduced, source-derived relationship endpoints should be occurrence-preserving and source-scoped, not remapped through merge-collapsed canonical endpoint layers.
+
+---
+
+## Display Metadata Must Not Become Canonical Identity
+
+Display-facing source fields are optional metadata, not identity.
+
+For source chats, fields such as `display_name` may be:
+
+- empty
+- user-facing hints
+- derived from other source identifiers
+- duplicative of source chat GUID or identifier values
+- unstable across sources or time
+
+Therefore display metadata must not be used for:
+
+- endpoint resolution
+- topology projection
+- canonicalization
+- dedupe
+- import continuation
+
+Importers should not synthesize display metadata from identity-like source
+fields such as `chat_identifier`. Preserve a display field only when the source
+row directly provides that display field.
+
+Source-derived timing facts are different. Fields such as `created_at_utc` and
+`updated_at_utc` should be preserved when they map to verified Apple source
+fields, but they still must not become endpoint identity, topology resolution,
+dedupe, or import-continuation inputs.
+
+For the current topology projection preview, the provisional chat endpoint bridge is:
+
+```text
+ledger.chats.guid
+→ working.chats.guid
+```
+
+not:
+
+```text
+ledger.chats.display_name
+→ working identity
+```
+
+Apple chat GUIDs should be treated as opaque source identifiers. They may be useful provisional endpoint keys, but they are not proof of final cross-source canonical chat identity.
+
+---
+
 ## Cursor Convergence and Count Divergence Are Different Meanings
 
 For incremental import continuation, cursor convergence is authoritative:

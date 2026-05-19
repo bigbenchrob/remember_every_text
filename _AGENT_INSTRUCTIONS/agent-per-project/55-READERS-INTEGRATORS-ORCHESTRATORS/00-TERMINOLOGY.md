@@ -327,6 +327,43 @@ shadow readers
 
 ---
 
+## SourceScopedRowKey
+
+A `SourceScopedRowKey` is a deterministic, collision-free integer identity derived from:
+
+```text
+(source_id, source_rowid)
+```
+
+within documented numeric bounds.
+
+It is the canonical app row identity for source-derived projected rows.
+
+This identity is occurrence-preserving, not merge-collapsing. Semantic grouping, deduplication, or merge views must live above this identity layer.
+
+Use this term when discussing multi-source-safe provenance, source topology endpoints, source occurrence tables, projection repair, and archive-source support. See [`64-SOURCE-SCOPED-ROW-KEY-STRATEGY.md`](64-SOURCE-SCOPED-ROW-KEY-STRATEGY.md).
+
+---
+
+## Join Endpoint Projection
+
+Join Endpoint Projection means transforming source-local relationship endpoints into their corresponding `SourceScopedRowKey` values before writing working topology.
+
+Example:
+
+```text
+source_id = 2
+source_chat_rowid = 7
+source_message_rowid = 42
+
+→ chat_id = pack(2, 7)
+→ message_id = pack(2, 42)
+```
+
+This preserves Apple source relationship topology while making it multi-source-safe.
+
+---
+
 # Architectural Smells
 
 ## Responsibility Compression

@@ -4,7 +4,7 @@
 
 This document defines the shadow incremental-update pilot for the Readers → Integrators → Orchestrators architectural responsibility model.
 
-The message sync pilot under `lib/essentials/incremental_update/` is now a working, validated implementation of the model. It remains shadow/dev-only and non-authoritative, but it has proven the responsibility split, the correct invalidation boundary for polling, closed-loop shadow import, closed-loop shadow migration, comparative validation, and developer-facing observability.
+The message sync pilot under `lib/essentials/incremental_update/` is now a working, validated implementation of the model. It remains shadow/dev-only and non-authoritative, but it has proven the responsibility split, the correct invalidation boundary for polling, closed-loop shadow import, source topology preservation, closed-loop shadow migration, comparative validation, and developer-facing observability.
 
 Initial pilot target:
 
@@ -15,7 +15,7 @@ Incremental update detection
 Current validated milestone:
 
 ```text
-closed-loop shadow import + migration + comparative validation
+closed-loop shadow import + topology preservation + migration + comparative validation
 through PipelineOrchestrator and ordered StageControllers
 ```
 
@@ -107,7 +107,7 @@ poll tick
 → stage controllers invalidate factual reader providers
 → readers re-query source/ledger/projection databases
 → integrators derive deltas, semantic states, policy decisions, and comparisons
-→ stage controllers execute narrow import/migration work when policy allows
+→ stage controllers execute narrow import/topology/migration work when policy allows
 → PipelineRunReport aggregates stage reports and tick events
 → comparative validation compares production facts with shadow conclusions
 ```
@@ -123,6 +123,15 @@ importLedgerMessageSnapshotProvider
 → MessageImportStageController
 → ShadowImportExecutionOrchestrator
 → MessageImporter
+
+liveChatDbChatMessageJoinSnapshotProvider
+importLedgerChatMessageJoinSnapshotProvider
+→ chatMessageJoinSnapshotDeltaIntegratorProvider
+→ chatMessageJoinSyncStateProvider
+→ chatMessageJoinImportDecisionProvider
+→ ChatMessageJoinStageController
+→ ChatMessageJoinImportExecutionOrchestrator
+→ ChatMessageJoinImporter
 
 shadowImportProjectionSnapshotProvider
 shadowWorkingProjectionSnapshotProvider
@@ -142,6 +151,7 @@ PipelineOrchestrator
 → HandleStageController
 → ChatStageController
 → MessageImportStageController
+→ ChatMessageJoinStageController
 → MessageMigrationStageController
 → ComparativeValidationStageController
 ```
@@ -150,6 +160,7 @@ The reader snapshot providers are the external observation boundary:
 
 - `liveChatDbMessageSnapshotProvider` observes live `chat.db`
 - `importLedgerMessageSnapshotProvider` observes shadow `macos_import_shadow.db`
+- topology reader providers observe live `chat.db.chat_message_join` and shadow `macos_import_shadow.db.chat_message_joins`
 - shadow migration readers observe shadow `macos_import_shadow.db` and `working_shadow.db`
 - comparative validation observes production facts read-only and compares them with shadow conclusions
 
@@ -162,6 +173,16 @@ The `StageController` and `PipelineOrchestrator` patterns are now validated:
 - `PipelineOrchestrator` owns the manual ordered stage loop
 - `PipelineRunReport` aggregates concern-local reports and diagnostic events
 - `SyncStatePollingOrchestrator` owns polling lifecycle rather than concern sequencing
+
+The topology stage is now part of `PipelineOrchestrator`. Its placement is intentional:
+
+```text
+messages imported
+→ source chat/message topology preserved in macos_import_shadow.db
+→ migration/projection runs afterward
+```
+
+This preserves source relationship facts before projection without making the topology stage responsible for canonical relationship meaning.
 
 No graph execution, topological sorting, or descriptor-driven runtime planning has been introduced.
 

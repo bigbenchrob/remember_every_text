@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../../../../../core/util/date_converter.dart';
 import '../../../../db/infrastructure/data_sources/local/import/sqflite_import_database.dart';
 import '../../../domain/models/source_identity.dart';
 import '../../../infrastructure/import_ledger_chat_repository.dart';
@@ -80,9 +81,13 @@ class ChatImporter {
           final service =
               _readNullableString(sourceRow, 'service_name') ??
               _readNullableString(sourceRow, 'service');
-          final displayName =
-              _readNullableString(sourceRow, 'display_name') ??
-              _readNullableString(sourceRow, 'chat_identifier');
+          final displayName = _readNullableString(sourceRow, 'display_name');
+          final createdAtUtc = DateConverter.appleToIsoString(
+            sourceRow['creation_date'],
+          );
+          final updatedAtUtc = DateConverter.appleToIsoString(
+            sourceRow['last_read_message_timestamp'],
+          );
 
           destinationBatch.insert('chats', <String, Object?>{
             'id': sourceRowId,
@@ -93,6 +98,8 @@ class ChatImporter {
             'service': service?.trim(),
             'display_name': displayName?.trim(),
             'is_group': 0,
+            'created_at_utc': createdAtUtc,
+            'updated_at_utc': updatedAtUtc,
             'batch_id': batchId,
           }, conflictAlgorithm: ConflictAlgorithm.ignore);
           insertedChatCount += 1;

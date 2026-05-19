@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:remember_this_text/core/util/date_converter.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/import/sqflite_import_database.dart';
 import 'package:remember_this_text/essentials/db_importers/application/debug_settings_provider.dart';
 import 'package:remember_this_text/essentials/incremental_update/application/chats/importers/chat_importer.dart';
@@ -45,7 +46,9 @@ void main() {
         guid TEXT,
         chat_identifier TEXT,
         service_name TEXT,
-        display_name TEXT
+        display_name TEXT,
+        creation_date INTEGER,
+        last_read_message_timestamp INTEGER
       )
     ''');
       await sourceDb.insert('chat', <String, Object?>{
@@ -54,6 +57,8 @@ void main() {
         'chat_identifier': '+15550000001',
         'service_name': 'iMessage',
         'display_name': 'Test Chat',
+        'creation_date': 762307200000000000,
+        'last_read_message_timestamp': 762307260000000000,
       });
       await sourceDb.close();
 
@@ -80,6 +85,8 @@ void main() {
           'guid',
           'service',
           'display_name',
+          'created_at_utc',
+          'updated_at_utc',
         ],
         where: 'source_rowid = ?',
         whereArgs: <Object?>[12],
@@ -92,53 +99,66 @@ void main() {
       expect(rows.single['guid'], 'iMessage;-;+15550000001');
       expect(rows.single['service'], 'iMessage');
       expect(rows.single['display_name'], 'Test Chat');
+      expect(
+        rows.single['created_at_utc'],
+        DateConverter.appleToIsoString(762307200000000000),
+      );
+      expect(
+        rows.single['updated_at_utc'],
+        DateConverter.appleToIsoString(762307260000000000),
+      );
     },
   );
 
-  test(
-    'uses chat identifier as display hint when display name is absent',
-    () async {
-      final chatDbPath = '${tempDir.path}/chat.db';
-      final sourceDb = await openDatabase(chatDbPath);
-      await sourceDb.execute('''
+  test('does not synthesize display name from chat identifier', () async {
+    final chatDbPath = '${tempDir.path}/chat.db';
+    final sourceDb = await openDatabase(chatDbPath);
+    await sourceDb.execute('''
       CREATE TABLE chat (
         ROWID INTEGER PRIMARY KEY,
         guid TEXT,
         chat_identifier TEXT
       )
     ''');
-      await sourceDb.insert('chat', <String, Object?>{
-        'ROWID': 4,
-        'guid': 'SMS;-;+15550000002',
-        'chat_identifier': '+15550000002',
-      });
-      await sourceDb.close();
+    await sourceDb.insert('chat', <String, Object?>{
+      'ROWID': 4,
+      'guid': 'SMS;-;+15550000002',
+      'chat_identifier': '+15550000002',
+    });
+    await sourceDb.close();
 
-      final importer = ChatImporter(
-        chatDbPath: chatDbPath,
-        shadowImportDb: shadowImportDb,
-        importLedgerRepository: ImportLedgerChatRepository(
-          ledgerDb: shadowImportDb,
-        ),
-      );
+    final importer = ChatImporter(
+      chatDbPath: chatDbPath,
+      shadowImportDb: shadowImportDb,
+      importLedgerRepository: ImportLedgerChatRepository(
+        ledgerDb: shadowImportDb,
+      ),
+    );
 
-      final result = await importer.importNewChats();
+    final result = await importer.importNewChats();
 
-      expect(result.insertedChatCount, 1);
+    expect(result.insertedChatCount, 1);
 
-      final db = await shadowImportDb.database;
-      final rows = await db.query(
-        'chats',
-        columns: <String>['guid', 'service', 'display_name'],
-        where: 'source_rowid = ?',
-        whereArgs: <Object?>[4],
-      );
+    final db = await shadowImportDb.database;
+    final rows = await db.query(
+      'chats',
+      columns: <String>[
+        'guid',
+        'service',
+        'display_name',
+        'created_at_utc',
+        'updated_at_utc',
+      ],
+      where: 'source_rowid = ?',
+      whereArgs: <Object?>[4],
+    );
 
-      expect(rows.single['guid'], 'SMS;-;+15550000002');
-      expect(rows.single['service'], isNull);
-      expect(rows.single['display_name'], '+15550000002');
-    },
-  );
+    expect(rows.single['guid'], 'SMS;-;+15550000002');
+    expect(rows.single['service'], isNull);
+    expect(rows.single['display_name'], isNull);
+    expect(rows.single['created_at_utc'], isNull);
+    expect(rows.single['updated_at_utc'], isNull);
+  });
 
   test('is idempotent across repeated imports', () async {
     final chatDbPath = '${tempDir.path}/chat.db';
