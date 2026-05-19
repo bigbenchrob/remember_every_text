@@ -8,6 +8,7 @@ import 'package:macos_ui/macos_ui.dart';
 import '../application/messages/message_importer_provider.dart';
 import '../application/messages/message_projector_provider.dart';
 import '../application/messages/status/incremental_update_status_provider.dart';
+import '../application/messages/status/source_scoped_proof_log_writer.dart';
 
 class IncrementalUpdateStatusSheet extends ConsumerWidget {
   const IncrementalUpdateStatusSheet({super.key});
@@ -139,11 +140,28 @@ class _StatusControls extends StatelessWidget {
   }
 
   Future<void> _importAndProjectOnce(WidgetRef ref) async {
-    final importer = await ref.read(messageImporterProvider.future);
-    await importer.importNewMessages();
-    final projector = await ref.read(messageProjectorProvider.future);
-    await projector.projectMessages();
-    ref.invalidate(incrementalUpdateStatusProvider);
+    final before = await ref.read(incrementalUpdateStatusProvider.future);
+    try {
+      final importer = await ref.read(messageImporterProvider.future);
+      final importResult = await importer.importNewMessages();
+      final projector = await ref.read(messageProjectorProvider.future);
+      final projectionResult = await projector.projectMessages();
+      ref.invalidate(incrementalUpdateStatusProvider);
+      final after = await ref.read(incrementalUpdateStatusProvider.future);
+      await const SourceScopedProofLogWriter().writeRun(
+        before: before,
+        after: after,
+        importResult: importResult,
+        projectionResult: projectionResult,
+      );
+    } catch (error, stackTrace) {
+      await const SourceScopedProofLogWriter().writeRun(
+        before: before,
+        error: error,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
   }
 }
 
