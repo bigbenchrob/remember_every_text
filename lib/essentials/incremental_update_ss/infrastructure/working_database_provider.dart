@@ -45,9 +45,23 @@ class WorkingDatabase {
 
     final db = await openDatabase(
       path.join(databaseDirectory, databaseName),
-      version: 1,
+      version: 4,
       onCreate: (db, version) async {
         await _createSchema(db);
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await _createChatSchema(db);
+          await _createChatToMessageSchema(db);
+        }
+        if (oldVersion < 3) {
+          await db.execute('DROP TABLE IF EXISTS chats');
+          await _createChatSchema(db);
+        }
+        if (oldVersion < 4) {
+          await _createHandleSchema(db);
+          await _createChatToHandleSchema(db);
+        }
       },
     );
 
@@ -68,6 +82,55 @@ class WorkingDatabase {
         date_utc TEXT,
         text TEXT,
         associated_message_ss_id INTEGER
+      )
+    ''');
+    await _createHandleSchema(db);
+    await _createChatSchema(db);
+    await _createChatToMessageSchema(db);
+    await _createChatToHandleSchema(db);
+  }
+
+  static Future<void> _createHandleSchema(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS handles (
+        ss_id INTEGER PRIMARY KEY,
+        id TEXT NOT NULL,
+        service TEXT
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_working_handles_id ON handles(id)',
+    );
+  }
+
+  static Future<void> _createChatSchema(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS chats (
+        ss_id INTEGER PRIMARY KEY,
+        guid TEXT,
+        service TEXT,
+        is_group INTEGER NOT NULL CHECK (is_group IN (0, 1)),
+        last_read_message_at_utc TEXT
+      )
+    ''');
+  }
+
+  static Future<void> _createChatToMessageSchema(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS chat_to_message (
+        chat_ss_id INTEGER NOT NULL,
+        message_ss_id INTEGER NOT NULL,
+        PRIMARY KEY (chat_ss_id, message_ss_id)
+      )
+    ''');
+  }
+
+  static Future<void> _createChatToHandleSchema(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS chat_to_handle (
+        chat_ss_id INTEGER NOT NULL,
+        handle_ss_id INTEGER NOT NULL,
+        UNIQUE(chat_ss_id, handle_ss_id)
       )
     ''');
   }

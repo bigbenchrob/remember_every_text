@@ -42,7 +42,15 @@ void main() {
 
     expect(
       tableNames,
-      containsAll(<String>{'source_registry', 'import_batches', 'messages'}),
+      containsAll(<String>{
+        'source_registry',
+        'import_batches',
+        'messages',
+        'handles',
+        'chats',
+        'chat_to_message',
+        'chat_to_handle',
+      }),
     );
 
     final messageColumns = await importDatabase.database.rawQuery(
@@ -153,6 +161,133 @@ void main() {
 
     expect(guidIndex['unique'], 0);
   });
+
+  test('creates chats and chat_to_message topology schema', () async {
+    final handleColumns = await importDatabase.database.rawQuery(
+      'PRAGMA table_info(handles)',
+    );
+    final chatColumns = await importDatabase.database.rawQuery(
+      'PRAGMA table_info(chats)',
+    );
+    final edgeColumns = await importDatabase.database.rawQuery(
+      'PRAGMA table_info(chat_to_message)',
+    );
+    final participantColumns = await importDatabase.database.rawQuery(
+      'PRAGMA table_info(chat_to_handle)',
+    );
+
+    expect(handleColumns.map((row) => row['name']).toSet(), <String>{
+      'ss_id',
+      'source_id',
+      'source_rowid',
+      'id',
+      'service',
+      'batch_id',
+    });
+    expect(chatColumns.map((row) => row['name']).toSet(), <String>{
+      'ss_id',
+      'source_id',
+      'source_rowid',
+      'guid',
+      'service',
+      'group_id',
+      'original_group_id',
+      'last_read_message_at_utc',
+      'batch_id',
+    });
+    expect(edgeColumns.map((row) => row['name']).toSet(), <String>{
+      'ss_id',
+      'source_id',
+      'source_rowid',
+      'source_chat_rowid',
+      'source_message_rowid',
+      'chat_ss_id',
+      'message_ss_id',
+    });
+    expect(participantColumns.map((row) => row['name']).toSet(), <String>{
+      'source_id',
+      'source_chat_rowid',
+      'source_handle_rowid',
+      'chat_ss_id',
+      'handle_ss_id',
+      'batch_id',
+    });
+  });
+
+  test('creates non-unique chat guid index', () async {
+    final indexes = await importDatabase.database.rawQuery(
+      'PRAGMA index_list(chats)',
+    );
+    final guidIndex = indexes.singleWhere(
+      (row) => row['name'] == 'idx_chats_guid',
+    );
+
+    expect(guidIndex['unique'], 0);
+  });
+
+  test('allows duplicate chat GUIDs across different source ids', () async {
+    final liveBatchId = await importDatabase.insertImportBatch(
+      sourceId: liveChatDbSourceId,
+      startedAtUtc: DateTime.now().toUtc().toIso8601String(),
+    );
+    await _insertSource(importDatabase, sourceId: 2);
+    final archiveBatchId = await importDatabase.insertImportBatch(
+      sourceId: 2,
+      startedAtUtc: DateTime.now().toUtc().toIso8601String(),
+    );
+
+    await _insertChat(
+      importDatabase,
+      sourceId: liveChatDbSourceId,
+      sourceRowId: 7,
+      guid: 'same-chat-guid',
+      batchId: liveBatchId,
+    );
+    await _insertChat(
+      importDatabase,
+      sourceId: 2,
+      sourceRowId: 7,
+      guid: 'same-chat-guid',
+      batchId: archiveBatchId,
+    );
+
+    final rows = await importDatabase.database.query(
+      'chats',
+      where: 'guid = ?',
+      whereArgs: <Object?>['same-chat-guid'],
+    );
+
+    expect(rows, hasLength(2));
+  });
+
+  test(
+    'forbids duplicate chat source row identity within one source',
+    () async {
+      final batchId = await importDatabase.insertImportBatch(
+        sourceId: liveChatDbSourceId,
+        startedAtUtc: DateTime.now().toUtc().toIso8601String(),
+      );
+
+      await _insertChat(
+        importDatabase,
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 7,
+        guid: 'first-chat-guid',
+        batchId: batchId,
+      );
+
+      expect(
+        () => _insertChat(
+          importDatabase,
+          sourceId: liveChatDbSourceId,
+          sourceRowId: 7,
+          guid: 'second-chat-guid',
+          batchId: batchId,
+        ),
+        throwsA(isA<DatabaseException>()),
+      );
+    },
+  );
 }
 
 Future<void> _insertSource(
@@ -183,6 +318,25 @@ Future<void> _insertMessage(
     'source_rowid': sourceRowId,
     'guid': guid,
     'is_from_me': 0,
+    'batch_id': batchId,
+  });
+}
+
+Future<void> _insertChat(
+  ImportDatabase importDatabase, {
+  required int sourceId,
+  required int sourceRowId,
+  required String guid,
+  required int batchId,
+}) async {
+  await importDatabase.database.insert('chats', <String, Object?>{
+    'ss_id': SourceScopedRowKey.pack(
+      sourceId: sourceId,
+      sourceRowId: sourceRowId,
+    ),
+    'source_id': sourceId,
+    'source_rowid': sourceRowId,
+    'guid': guid,
     'batch_id': batchId,
   });
 }
