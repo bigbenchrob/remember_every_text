@@ -1,187 +1,207 @@
-# SOURCE-SCOPED-IDENTITY-AND-RELATIONSHIP-STRATEGY
+# Source-Scoped Identity and Relationship Strategy
+
+## Purpose
+
+This document explains how source-scoped identity and source-local relationships should be preserved and projected.
+
+It is now subordinate to:
+
+- [`64-SOURCE-SCOPED-ROW-KEY-STRATEGY.md`](64-SOURCE-SCOPED-ROW-KEY-STRATEGY.md)
+
+The current rule is:
+
+```text
+SourceScopedRowKey is the canonical working-row identity
+for source-derived projected rows.
+```
+
+---
 
 ## Core Rule
 
-Never treat a source-local integer id as globally meaningful.
+Never treat a source-local integer id as globally meaningful by itself.
 
-A source row identity is only valid when scoped by source identity.
+Apple source databases own independent local `ROWID` spaces:
 
-Correct identity shape:
+```text
+live-chat-db / message / 135921
+archive-2014 / message / 135921
+```
 
+Those rows may share a `source_rowid`, but they are different source occurrences unless their `source_id` also matches.
+
+The safe source coordinate is:
+
+```text
 source_id
 source_table
 source_rowid
+```
 
-Examples:
+The working-row identity derived from that coordinate is:
 
-live-chat-db / message / 135921
-archive-2014 / message / 135921
+```text
+SourceScopedRowKey = pack(source_id, source_rowid)
+```
 
-These may have the same source_rowid but must be treated as different source rows.
-
----
-
-# Why This Matters
-
-Multiple source folders may contain overlapping row ids.
-
-Examples:
-
-chat.db from live Mac:
-
-handle.ROWID = 42
-chat.ROWID = 17
-
-archived Messages folder:
-
-handle.ROWID = 42
-chat.ROWID = 17
-
-These are not necessarily the same handle or chat.
-
-Therefore this is unsafe as a global relationship:
-
-message.chat_id = 17
-
-Unless that relationship is interpreted as:
-
-in source X, this message refers to chat row 17
+within the documented bounds of the packing strategy.
 
 ---
 
-# Import Ledger Principle
+## Ledger Truth and Working Truth
 
-The import ledger should be source-faithful and provenance-rich.
+The import ledger preserves source truth:
 
-It should preserve what the source database said without prematurely deciding canonical app identity.
-
-The ledger answers:
-
+```text
 What did source X contain?
-How were source rows related inside source X?
+How did source X relate its rows?
 Where did this fact come from?
+```
 
-The ledger should not prematurely answer:
+The working database projects app truth for source-derived rows using occurrence-preserving identity:
 
-Is this the same canonical app chat as some other source’s chat?
-Is this the same canonical app handle as some other source’s handle?
-Should these conversations merge?
+```text
+working.messages.id = message_source_scoped_row_key
+working.chats.id = chat_source_scoped_row_key
+working.handles.id = handle_source_scoped_row_key
+working.attachments.id = attachment_source_scoped_row_key
+```
 
-Those are projection/canonicalization questions.
+This means the working row is canonical for that source occurrence.
 
----
-
-# Working Database Principle
-
-The working database should contain canonical app-facing identities.
-
-The working database answers:
-
-What canonical conversation/contact/message should the UI see?
-How should equivalent source rows be merged?
-What identity should app features use?
-
-This means:
-
-import ledger:
-source-scoped truth
-
-working database:
-canonicalized app truth
+It does not mean the row is a semantic merge key.
 
 ---
 
-# Source Identity
+## Canonical Row Identity vs Semantic Grouping
+
+Do not confuse canonical row identity with semantic deduplication identity.
+
+Canonical row identity:
+
+```text
+Which source occurrence does this projected working row represent?
+```
+
+Semantic grouping:
+
+```text
+Which projected working rows should be displayed, deduplicated,
+or interpreted together?
+```
+
+Future grouping concepts may include:
+
+```text
+logical_message_group_id
+duplicate_cluster_id
+semantic_merge_view
+conversation_group_id
+```
+
+Those concepts must live above `SourceScopedRowKey`. They must not rewrite or collapse base working-row identity.
+
+---
+
+## Source Identity
 
 Every imported source should have a stable source identity.
 
-Suggested conceptual model:
+Conceptual model:
 
-SourceIdentity:
-source_id
-source_kind
-source_label
-source_fingerprint
-source_path_when_imported
-first_seen_at
-last_seen_at
+```text
+SourceIdentity
+  source_id
+  source_kind
+  source_label
+  source_fingerprint
+  source_path_when_imported
+  first_seen_at
+  last_seen_at
+```
 
 Examples:
 
+```text
 source_id: live-chat-db
 source_kind: live_chat_db
 
 source_id: archive-2012-2017-main
 source_kind: archived_messages_folder
+```
 
-source_id should be stable and unique within MessageLens.
+`source_id` identifies the source instance.
 
-source_kind describes the type of source, not the individual instance.
-
----
-
-# Source Row Key
-
-Any source-local row should be identified as:
-
-SourceRowKey:
-source_id
-source_table
-source_rowid
-
-Examples:
-
-live-chat-db / messages / 135921
-live-chat-db / chats / 17
-live-chat-db / handles / 42
-
-archive-2014 / messages / 135921
-archive-2014 / chats / 17
-archive-2014 / handles / 42
-
-This prevents accidental cross-source collisions.
+`source_kind` identifies the source type.
 
 ---
 
-# Source-Scoped Relationships
+## Source-Scoped Relationships
 
-Relationships copied from source databases should preserve source scope.
+Relationships copied from source databases must preserve source scope.
 
-For example, source chat.db may say:
+For example, Apple `chat.db` may say:
 
-message.chat_id = 17
-message.handle_id = 42
+```text
+chat_message_join.chat_id = 17
+chat_message_join.message_id = 135921
+```
 
-The ledger should interpret this as:
+The ledger should preserve:
 
-message.source_id = live-chat-db
-message.source_chat_rowid = 17
-message.source_sender_handle_rowid = 42
-
-NOT as globally meaningful:
-
-message.chat_id = 17
-message.sender_handle_id = 42
-
-Similarly, source join tables should preserve source-scoped pairs.
-
-Example source chat_handle_join:
-
-chat_id = 17
-handle_id = 42
-
-Ledger representation should mean:
-
+```text
 source_id = live-chat-db
 source_chat_rowid = 17
-source_handle_rowid = 42
+source_message_rowid = 135921
+```
+
+It must not treat `17` or `135921` as globally meaningful ids.
 
 ---
 
-# Suggested Ledger Shapes
+## Join Endpoint Projection
+
+Working topology projection transforms source-local relationship endpoints into `SourceScopedRowKey` endpoints.
+
+Source topology:
+
+```text
+source_id = 2
+source_chat_rowid = 7
+source_message_rowid = 42
+```
+
+Working topology:
+
+```text
+chat_id = pack(2, 7)
+message_id = pack(2, 42)
+```
+
+This restores the single-source simplicity:
+
+```text
+source relationships are already correct
+```
+
+while making the endpoints multi-source-safe.
+
+This applies to:
+
+- `chat_message_join`
+- `chat_handle_join`
+- `message_attachment_join`
+- message reply relationships
+- message reaction relationships
+- future source topology tables
+
+---
+
+## Suggested Ledger Shapes
 
 ## ledger_handles
 
+```text
 id
 source_id
 source_rowid
@@ -191,57 +211,73 @@ service
 source_kind
 first_import_batch_id
 last_import_batch_id
+```
 
-Unique identity:
+Ledger source identity:
 
+```text
 source_id + source_rowid
+```
 
-Possible semantic identity candidate:
+Working projected id:
 
+```text
+handle_source_scoped_row_key
+```
+
+Possible semantic grouping input:
+
+```text
 normalized_handle_value + service
-
-But semantic identity should not replace source identity in the ledger.
-
----
+```
 
 ## ledger_chats
 
+```text
 id
 source_id
 source_rowid
 source_chat_identifier
 display_name
 service
+created_at_utc
+updated_at_utc
 source_kind
 first_import_batch_id
 last_import_batch_id
+```
 
-Unique identity:
+Ledger source identity:
 
+```text
 source_id + source_rowid
+```
 
-Potential canonicalization inputs:
+Working projected id:
 
-source_chat_identifier
-participant set
-message membership
-date range
+```text
+chat_source_scoped_row_key
+```
+
+Possible semantic grouping inputs:
+
+- source chat identifier
+- participant set
+- message membership
+- date range
+- service
 
 Non-identity metadata:
 
-display_name
-created_at_utc
-updated_at_utc
+- `display_name`
+- `created_at_utc`
+- `updated_at_utc`
 
-Display metadata may be useful for diagnostics or display once directly
-sourced and owned by an explicit concern. Source-derived timing facts should be
-preserved when they map to verified source columns. None of these fields should
-become implicit identity, topology, dedupe, or continuation inputs.
-
----
+These fields may support diagnostics or display, but must not become endpoint identity, topology identity, dedupe identity, or continuation cursors.
 
 ## ledger_messages
 
+```text
 id
 source_id
 source_rowid
@@ -255,212 +291,151 @@ text
 source_kind
 first_import_batch_id
 last_import_batch_id
+```
 
-Unique identity:
+Ledger source identity:
 
+```text
 source_id + source_rowid
+```
 
-Possible cross-source dedupe key:
+Working projected id:
 
+```text
+message_source_scoped_row_key
+```
+
+Possible semantic grouping input:
+
+```text
 guid
+```
 
-But source_id + source_rowid remains the provenance identity.
+Message `guid` may identify duplicate source occurrences, but it must not replace occurrence-preserving working row identity.
 
----
+## ledger_chat_message_joins
+
+```text
+id
+source_id
+source_rowid
+source_chat_rowid
+source_message_rowid
+source_kind
+first_import_batch_id
+last_import_batch_id
+```
+
+Working projected endpoints:
+
+```text
+chat_id = chat_source_scoped_row_key
+message_id = message_source_scoped_row_key
+```
 
 ## ledger_chat_handle_joins
 
+```text
 id
 source_id
+source_rowid
 source_chat_rowid
 source_handle_rowid
 source_kind
 first_import_batch_id
 last_import_batch_id
+```
 
-Unique relationship identity:
+Working projected endpoints:
 
-source_id + source_chat_rowid + source_handle_rowid
+```text
+chat_id = chat_source_scoped_row_key
+handle_id = handle_source_scoped_row_key
+```
 
-This means:
+## ledger_message_attachment_joins
 
-in source X, chat row A is joined to handle row B
-
-not:
-
-canonical chat A is joined to canonical handle B
-
----
-
-# Migration Resolution
-
-Migration should resolve source-scoped ledger relationships into canonical working identities.
-
-Example:
-
-ledger_messages.source_id = live-chat-db
-ledger_messages.source_chat_rowid = 17
-
-Migration resolves:
-
-(source_id, chats, 17)
-→ ledger_chats.id
-→ working_chats.id
-
-Similarly:
-
-(source_id, handles, 42)
-→ ledger_handles.id
-→ working_handles.id
-
-The projection step decides:
-
-Should this source handle become a new working handle?
-Should it merge with an existing working handle?
-Should this source chat become a new working chat?
-Should it merge with another source chat?
-
-That decision belongs in migration/projection logic, not raw import.
-
----
-
-# Attachments
-
-Attachments are often easier because message GUIDs can provide a strong relationship key.
-
-Example:
-
-attachment joins to message by message_guid
-
-However, source provenance should still be preserved.
-
-Suggested attachment relationship identity:
-
+```text
+id
 source_id
-attachment_source_rowid
-message_guid
-or
-source_id
-message_source_rowid
-attachment_source_rowid
+source_rowid
+source_message_rowid
+source_attachment_rowid
+source_kind
+first_import_batch_id
+last_import_batch_id
+```
 
-Message GUIDs are useful for cross-source matching, but source identity is still important for:
+Working projected endpoints:
 
-auditability
-duplicate detection
-conflict analysis
-archived-source provenance
-recovery diagnostics
-
----
-
-# Dedupe vs Provenance
-
-Do not confuse dedupe identity with provenance identity.
-
-Provenance identity:
-
-Where did this row come from?
-
-source_id + source_table + source_rowid
-
-Dedupe identity:
-
-Does this row represent the same real-world item as another row?
-
-Examples:
-
-message guid
-normalized handle value
-chat participant set
-attachment checksum
-attachment path/guid
-
-Both are needed.
-
-The ledger should preserve provenance even when a row is later deduplicated into a canonical working identity.
+```text
+message_id = message_source_scoped_row_key
+attachment_id = attachment_source_scoped_row_key
+```
 
 ---
 
-# Importer Responsibility
+## Importer Responsibility
 
 Importers should preserve source facts.
 
 Importers should:
 
-read source rows
-write source-scoped ledger rows
-preserve source-local relationships
-record source provenance
-avoid premature canonicalization
+- read source rows
+- write source-scoped ledger rows
+- preserve source-local relationships
+- record source provenance
+- avoid semantic merge decisions
 
 Importers should not:
 
-merge chats across sources
-merge handles across sources
-decide canonical contact identity
-decide final conversation identity
-rewrite source relationships as global app relationships
+- merge chats across sources
+- merge handles across sources
+- decide final contact identity
+- decide final conversation grouping
+- rewrite source relationships as global raw ids
 
 ---
 
-# Migration Responsibility
+## Projection Responsibility
 
-Migration/projection should canonicalize.
+Projection should create source-derived working rows using `SourceScopedRowKey`.
 
-Migration should:
+Projection should:
 
-resolve source-scoped relationships
-dedupe where appropriate
-map ledger rows to working rows
-create canonical app identities
-preserve enough provenance for audit/debugging
+- compute source-scoped working row ids
+- project source-local relationship endpoints mechanically
+- preserve occurrence identity
+- keep merge/dedupe/grouping above the base row layer
 
-Migration may decide:
+Projection should not:
 
-two source handles represent the same working handle
-two source chats represent the same working chat
-two source messages with the same GUID are duplicates
-one attachment is already known from another source
+- collapse multiple source occurrences into one base working row
+- introduce canonical endpoint remapping layers for ordinary source-derived endpoints
+- use `guid`, display metadata, or participant-derived grouping as the base working row id
 
 ---
 
-# Practical Expansion Order
-
-Before adding more shadow tables, define source-scoped identities.
+## Practical Expansion Order
 
 Recommended order:
 
-1. Source registry / source identity model
-2. Source row key conventions
-3. Handles import using source_id + source_rowid
-4. Chats import using source_id + source_rowid
-5. Chat-handle joins using source_id + source_chat_rowid + source_handle_rowid
-6. Messages upgraded to source_chat_rowid and source_sender_handle_rowid
-7. Migration resolver maps source-scoped relationships to canonical working IDs
-8. Attachments use message GUIDs plus source provenance
+1. Source registry / source identity model.
+2. `SourceScopedRowKey` packing bounds and helpers.
+3. Handles projected with source-scoped working ids.
+4. Chats projected with source-scoped working ids.
+5. Messages projected with source-scoped working ids.
+6. Chat-message joins projected by packing both source endpoints.
+7. Chat-handle joins projected by packing both source endpoints.
+8. Message-attachment joins projected by packing both source endpoints.
+9. Semantic dedupe/grouping views above the base occurrence-preserving layer.
 
 ---
 
-# Important Design Question
+## Final Principle
 
-Do not assume the legacy pipeline’s current handling is automatically ideal.
+The import ledger preserves source truth.
 
-The legacy pipeline may be correct enough for one live chat.db source, but multi-source archival import changes the identity problem.
+The working database projects source-derived app rows using source-scoped canonical row identity.
 
-The key question is:
-
-Does this relationship mean something globally,
-or only inside the source database that produced it?
-
-If the answer is “only inside the source database,” the relationship must be source-scoped.
-
----
-
-# Final Principle
-
-The import ledger should preserve source truth.
-
-The working database should express app truth.
-
-Source-scoped identity is the bridge that lets those two truths coexist safely.
+Semantic merge behavior belongs above that identity layer.

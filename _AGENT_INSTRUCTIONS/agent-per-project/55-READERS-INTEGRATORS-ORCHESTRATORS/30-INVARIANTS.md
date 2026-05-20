@@ -530,21 +530,27 @@ Source-derived timing facts are different. Fields such as `created_at_utc` and
 fields, but they still must not become endpoint identity, topology resolution,
 dedupe, or import-continuation inputs.
 
-For the current topology projection preview, the provisional chat endpoint bridge is:
+For source-derived working chat projection, the endpoint identity is:
 
 ```text
-ledger.chats.guid
-→ working.chats.guid
+chat_source_scoped_row_key = pack(source_id, source_chat_rowid)
 ```
 
 not:
+
+```text
+ledger.chats.guid
+→ working identity
+```
+
+and not:
 
 ```text
 ledger.chats.display_name
 → working identity
 ```
 
-Apple chat GUIDs should be treated as opaque source identifiers. They may be useful provisional endpoint keys, but they are not proof of final cross-source canonical chat identity.
+Apple chat GUIDs should be treated as opaque source identifiers. They may be useful semantic grouping evidence, but they are not base source-derived working row identity.
 
 ---
 
@@ -630,11 +636,12 @@ archive-test source_rowid = 999999
 
 then the live importer must continue from `148528`, not `999999`.
 
-This preserves the distinction between source-local provenance and canonical application identity:
+This preserves the distinction between source-local cursor evaluation and source-scoped working row identity:
 
 ```text
-source_id + source_rowid = source-local provenance cursor
-guid or later projection identity = canonical/dedupe meaning
+source_id + source_rowid = source-local continuation coordinate
+SourceScopedRowKey = source-derived working row identity
+guid or later grouping id = semantic dedupe/grouping evidence
 ```
 
 Do not add a source registry or source-table schema churn merely to satisfy this invariant. The important rule is that cursor reads and source-ledger counts must be scoped to the source instance they are evaluating.

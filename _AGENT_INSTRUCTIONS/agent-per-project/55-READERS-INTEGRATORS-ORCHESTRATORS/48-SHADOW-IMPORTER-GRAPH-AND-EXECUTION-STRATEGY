@@ -337,11 +337,12 @@ Examples:
 message.source_chat_rowid
 message.source_sender_handle_rowid
 
-rather than prematurely assuming canonical global identity.
+rather than treating raw source-local ids as global ids.
 
 Importers preserve source truth.
 
-Projection/migration resolves canonical app truth.
+Projection/migration turns source coordinates into `SourceScopedRowKey` working
+row ids. Semantic dedupe or grouping remains above that base identity layer.
 
 ---
 

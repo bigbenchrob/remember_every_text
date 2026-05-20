@@ -184,6 +184,8 @@ messages imported
 
 This preserves source relationship facts before projection without making the topology stage responsible for canonical relationship meaning.
 
+Current projection direction: future topology projection should transform source-local relationship endpoints into `SourceScopedRowKey` working identities. It should not route ordinary source-derived endpoints through GUID matching or merge-collapsed canonical remapping.
+
 No graph execution, topological sorting, or descriptor-driven runtime planning has been introduced.
 
 ---

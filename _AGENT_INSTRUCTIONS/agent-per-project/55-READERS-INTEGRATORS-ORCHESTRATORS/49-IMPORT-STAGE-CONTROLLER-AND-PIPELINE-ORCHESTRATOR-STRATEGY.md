@@ -312,7 +312,7 @@ final stages = [
 ];
 ```
 
-The topology stage preserves source `chat_message_join` facts after chats and messages have been imported and before migration/projection runs. This keeps source relationship topology in the shadow ledger before any projection layer decides how, or whether, to canonicalize those relationships.
+The topology stage preserves source `chat_message_join` facts after chats and messages have been imported and before migration/projection runs. This keeps source relationship topology in the shadow ledger before a projection layer transforms source-local endpoints into `SourceScopedRowKey` working identities.
 
 Conceptual execution:
 
@@ -344,7 +344,7 @@ topology
 
 The point of this phase was to validate the orchestration interface and reporting model before building graph machinery. That validation has succeeded for the current shadow import, topology preservation, migration, and comparison loop.
 
-Canonical relationship projection remains intentionally deferred. The topology stage copies source relationship facts into the shadow import ledger; it does not resolve canonical chats, project relationships into `working_shadow.db`, update search/UI relationship semantics, or replace later projection ownership.
+Working relationship projection remains intentionally deferred. The topology stage copies source relationship facts into the shadow import ledger; it does not project `SourceScopedRowKey` relationship endpoints into `working_shadow.db`, update search/UI relationship semantics, or replace later projection ownership.
 
 ---
 

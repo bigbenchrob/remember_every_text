@@ -10,7 +10,7 @@ import '../../../../providers.dart';
 import '../../../incremental_update/application/messages/integrators/import_decision_provider.dart';
 import '../../../incremental_update/application/messages/orchestrators/sync_state_polling_orchestrator_provider.dart';
 import '../../../incremental_update/domain/sealed_unions/import_decision.dart';
-import '../../../incremental_update/presentation/shadow_incremental_update_status_sheet.dart';
+import '../../../incremental_update_ss/presentation/incremental_update_status_sheet.dart';
 import '../../../onboarding/application/onboarding_gate_provider.dart';
 import '../../../onboarding/domain/onboarding_status.dart';
 import '../../../onboarding/presentation/onboarding_overlay.dart';
@@ -87,12 +87,12 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
     unawaited(ref.read(deltaRefreshOrchestratorProvider).refreshOnce());
   }
 
-  void _showShadowIncrementalUpdateStatus() {
+  void _showIncrementalUpdateStatus() {
     unawaited(
       showMacosSheet<void>(
         context: context,
         barrierDismissible: true,
-        builder: (context) => const ShadowIncrementalUpdateStatusSheet(),
+        builder: (context) => const IncrementalUpdateStatusSheet(),
       ),
     );
   }
@@ -188,9 +188,9 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
                   ),
                 if (kDebugMode)
                   ToolBarIconButton(
-                    label: 'Shadow incremental update status',
+                    label: 'Source-scoped incremental update status',
                     icon: const MacosIcon(CupertinoIcons.waveform_path_ecg),
-                    onPressed: _showShadowIncrementalUpdateStatus,
+                    onPressed: _showIncrementalUpdateStatus,
                     showLabel: false,
                   ),
                 () {
