@@ -1,9 +1,9 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
+import '../../../../conversation_graph/application/messages/message_projector.dart';
+import '../../../../source_scoped_import/application/messages/message_importer.dart';
 
-import '../message_importer.dart';
-import '../message_projector.dart';
 import 'incremental_update_status_provider.dart';
 
 class SourceScopedProofLogWriter {

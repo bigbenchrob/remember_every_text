@@ -3,9 +3,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../../../../../providers.dart';
-import '../../../domain/known_sources.dart';
-import '../../../infrastructure/import_database_provider.dart';
-import '../../../infrastructure/working_database_provider.dart';
+import '../../../../conversation_graph/infrastructure/working_database_provider.dart';
+import '../../../../source_scoped_import/domain/known_sources.dart';
+import '../../../../source_scoped_import/infrastructure/import_database_provider.dart';
 
 part 'incremental_update_status_provider.g.dart';
 
@@ -19,6 +19,8 @@ class IncrementalUpdateStatus {
     required this.sourceMaxRowId,
     required this.ledgerMessageCount,
     required this.ledgerMaxSourceRowId,
+    required this.ledgerMessagesNeedingEnrichment,
+    required this.ledgerMessagesStillWithoutText,
     required this.workingMessageCount,
     required this.associatedMessageEdgeCount,
     required this.sourceChatCount,
@@ -43,6 +45,8 @@ class IncrementalUpdateStatus {
   final int sourceMaxRowId;
   final int ledgerMessageCount;
   final int ledgerMaxSourceRowId;
+  final int ledgerMessagesNeedingEnrichment;
+  final int ledgerMessagesStillWithoutText;
   final int workingMessageCount;
   final int associatedMessageEdgeCount;
   final int sourceChatCount;
@@ -104,6 +108,8 @@ Future<IncrementalUpdateStatus> incrementalUpdateStatus(Ref ref) async {
     sourceMaxRowId: sourceSnapshot.maxRowId,
     ledgerMessageCount: ledgerSnapshot.count,
     ledgerMaxSourceRowId: ledgerSnapshot.maxRowId,
+    ledgerMessagesNeedingEnrichment: ledgerSnapshot.needingEnrichmentCount,
+    ledgerMessagesStillWithoutText: ledgerSnapshot.withoutTextCount,
     workingMessageCount: workingSnapshot.count,
     associatedMessageEdgeCount: workingSnapshot.associatedMessageEdgeCount,
     sourceChatCount: sourceChatCount,
@@ -140,6 +146,8 @@ Future<_MessageSnapshot> _readSourceMessageSnapshot(String chatDbPath) async {
     return _MessageSnapshot(
       count: _readInt(row['message_count']),
       maxRowId: _readInt(row['max_rowid']),
+      needingEnrichmentCount: 0,
+      withoutTextCount: 0,
     );
   } finally {
     await db.close();
@@ -183,9 +191,17 @@ Future<_MessageSnapshot> _readLedgerMessageSnapshot(
   int sourceId,
 ) async {
   final rows = await importDatabase.database.rawQuery(
-    'SELECT COUNT(*) AS message_count, '
-    'COALESCE(MAX(source_rowid), 0) AS max_rowid '
-    'FROM messages WHERE source_id = ?',
+    '''
+    SELECT
+      COUNT(*) AS message_count,
+      COALESCE(MAX(source_rowid), 0) AS max_rowid,
+      SUM(CASE WHEN text IS NULL AND attributed_body_blob IS NOT NULL
+        THEN 1 ELSE 0 END) AS needing_enrichment_count,
+      SUM(CASE WHEN text IS NULL OR text = '' THEN 1 ELSE 0 END)
+        AS without_text_count
+    FROM messages
+    WHERE source_id = ?
+    ''',
     <Object?>[sourceId],
   );
   final row = rows.single;
@@ -193,6 +209,8 @@ Future<_MessageSnapshot> _readLedgerMessageSnapshot(
   return _MessageSnapshot(
     count: _readInt(row['message_count']),
     maxRowId: _readInt(row['max_rowid']),
+    needingEnrichmentCount: _readInt(row['needing_enrichment_count']),
+    withoutTextCount: _readInt(row['without_text_count']),
   );
 }
 
@@ -292,10 +310,17 @@ int _readInt(Object? value) {
 }
 
 class _MessageSnapshot {
-  const _MessageSnapshot({required this.count, required this.maxRowId});
+  const _MessageSnapshot({
+    required this.count,
+    required this.maxRowId,
+    required this.needingEnrichmentCount,
+    required this.withoutTextCount,
+  });
 
   final int count;
   final int maxRowId;
+  final int needingEnrichmentCount;
+  final int withoutTextCount;
 }
 
 class _WorkingMessageSnapshot {
