@@ -355,6 +355,7 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
 
 TopChatMenuChoice _mapTopMenuChoice(SidebarTopMenuChoice choice) {
   return switch (choice) {
+    SidebarTopMenuChoice.conversations => TopChatMenuChoice.conversations,
     SidebarTopMenuChoice.contacts => TopChatMenuChoice.contacts,
     SidebarTopMenuChoice.strayHandles => TopChatMenuChoice.strayHandles,
     SidebarTopMenuChoice.searchAllMessages =>

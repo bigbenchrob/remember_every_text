@@ -12,6 +12,9 @@ CassetteSpec? resolveSidebarUtilityChild(
   return spec.when(
     topChatMenu: (selectedChoice) {
       switch (selectedChoice) {
+        case TopChatMenuChoice.conversations:
+          return null;
+
         case TopChatMenuChoice.contacts:
           return sidebarUtilityChildContactsInfoCard();
 

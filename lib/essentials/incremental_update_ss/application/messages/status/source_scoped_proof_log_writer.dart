@@ -1,9 +1,8 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
-import '../../../../conversation_graph/application/messages/message_projector.dart';
-import '../../../../source_scoped_import/application/messages/message_importer.dart';
 
+import '../../../../conversation_graph/application/orchestrators/conversation_graph_build_orchestrator.dart';
 import 'incremental_update_status_provider.dart';
 
 class SourceScopedProofLogWriter {
@@ -15,8 +14,7 @@ class SourceScopedProofLogWriter {
   Future<File> writeRun({
     required IncrementalUpdateStatus before,
     IncrementalUpdateStatus? after,
-    MessageImportResult? importResult,
-    MessageProjectionResult? projectionResult,
+    ConversationGraphBuildReport? buildReport,
     Object? error,
     StackTrace? stackTrace,
   }) async {
@@ -37,8 +35,7 @@ class SourceScopedProofLogWriter {
         capturedAt: capturedAt,
         before: before,
         after: after,
-        importResult: importResult,
-        projectionResult: projectionResult,
+        buildReport: buildReport,
         error: error,
         stackTrace: stackTrace,
       ),
@@ -53,8 +50,7 @@ String _formatRun({
   required DateTime capturedAt,
   required IncrementalUpdateStatus before,
   required IncrementalUpdateStatus? after,
-  required MessageImportResult? importResult,
-  required MessageProjectionResult? projectionResult,
+  required ConversationGraphBuildReport? buildReport,
   required Object? error,
   required StackTrace? stackTrace,
 }) {
@@ -68,13 +64,22 @@ String _formatRun({
       '- captured_at: ${capturedAt.toIso8601String()}\n'
       '- action: Import + Project SS Graph\n'
       '- source: dev status panel\n\n'
+      '## Build report\n\n'
+      '- started_at: ${buildReport?.startedAt.toIso8601String() ?? 'not captured'}\n'
+      '- finished_at: ${buildReport?.finishedAt.toIso8601String() ?? 'not captured'}\n'
+      '- completed_stages: ${buildReport?.completedStageNames.join(', ') ?? 'not captured'}\n\n'
       '## Import result\n\n'
-      '- started_after_source_rowid: ${_formatInt(importResult?.startedAfterSourceRowId)}\n'
-      '- inserted_messages: ${_formatInt(importResult?.insertedMessageCount)}\n'
-      '- last_imported_source_rowid: ${_formatInt(importResult?.lastImportedSourceRowId)}\n\n'
+      '- started_after_source_rowid: ${_formatInt(buildReport?.messageImportResult.startedAfterSourceRowId)}\n'
+      '- inserted_messages: ${_formatInt(buildReport?.messageImportResult.insertedMessageCount)}\n'
+      '- last_imported_source_rowid: ${_formatInt(buildReport?.messageImportResult.lastImportedSourceRowId)}\n\n'
+      '## Rich-text enrichment result\n\n'
+      '- candidates: ${_formatInt(buildReport?.richTextEnrichmentResult.candidateMessageCount)}\n'
+      '- enriched_messages: ${_formatInt(buildReport?.richTextEnrichmentResult.enrichedMessageCount)}\n'
+      '- missing_extractions: ${_formatInt(buildReport?.richTextEnrichmentResult.missingExtractionCount)}\n'
+      '- extractor_available: ${buildReport?.richTextEnrichmentResult.extractorAvailable ?? 'not captured'}\n\n'
       '## Projection result\n\n'
-      '- examined_messages: ${_formatInt(projectionResult?.examinedMessageCount)}\n'
-      '- inserted_messages: ${_formatInt(projectionResult?.insertedMessageCount)}\n\n'
+      '- examined_messages: ${_formatInt(buildReport?.messageProjectionResult.examinedMessageCount)}\n'
+      '- inserted_messages: ${_formatInt(buildReport?.messageProjectionResult.insertedMessageCount)}\n\n'
       '## Before\n\n'
       '${_formatStatus(before)}\n'
       '## After\n\n'

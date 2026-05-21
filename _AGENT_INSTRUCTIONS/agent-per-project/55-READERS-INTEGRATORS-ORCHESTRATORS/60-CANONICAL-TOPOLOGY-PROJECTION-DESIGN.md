@@ -204,7 +204,7 @@ read-only SourceScopedRowKey endpoint projection preview
 The preview should compute:
 
 ```text
-source chat row → chat_source_scoped_row_key
+source chat row → chat_source_scoped_row_keyv
 source message row → message_source_scoped_row_key
 source relationship row → projected endpoint pair
 ```

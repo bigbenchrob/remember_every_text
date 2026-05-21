@@ -48,7 +48,12 @@ class NavigationLogEntry {
       messages: (messagesSpec) => {
         'type': 'messages',
         'spec': messagesSpec.when(
+          conversationBrowser: () => {'variant': 'conversationBrowser'},
           forChat: (chatId) => {'variant': 'forChat', 'chatId': chatId},
+          forConversation: (conversationId) => {
+            'variant': 'forConversation',
+            'conversationId': conversationId,
+          },
           forContact: (contactId, scrollToDate, filterHandleId) => {
             'variant': 'forContact',
             'contactId': contactId,

@@ -1,6 +1,7 @@
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 
 enum SidebarTopMenuChoice {
+  conversations,
   contacts,
   strayHandles,
   searchAllMessages,

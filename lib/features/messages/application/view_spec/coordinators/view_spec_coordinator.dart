@@ -1,7 +1,9 @@
 import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../chats/presentation/view/conversation_browser_view.dart';
 import '../../../domain/spec_classes/messages_view_spec.dart';
+import '../../../presentation/view/conversation_messages_preview_view.dart';
 import '../resolvers/global_timeline_resolver.dart';
 import '../resolvers/handle_lens_resolver.dart';
 import '../resolvers/messages_for_contact_resolver.dart';
@@ -26,6 +28,7 @@ class ViewSpecCoordinator extends _$ViewSpecCoordinator {
   /// Build a center-panel widget for the given [MessagesSpec].
   Widget buildForSpec(MessagesSpec spec) {
     return spec.when(
+      conversationBrowser: () => const ConversationBrowserView(),
       forChat: (chatId) => const Center(
         child: Padding(
           padding: EdgeInsets.all(24),
@@ -35,6 +38,8 @@ class ViewSpecCoordinator extends _$ViewSpecCoordinator {
           ),
         ),
       ),
+      forConversation: (conversationId) =>
+          ConversationMessagesPreviewView(conversationId: conversationId),
       forContact: (contactId, scrollToDate, filterHandleId) =>
           MessagesForContactResolver().resolve(
             contactId: contactId,

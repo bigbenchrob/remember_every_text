@@ -637,6 +637,102 @@ void main() {
         container.dispose();
       },
     );
+
+    test('conversation browser follows top menu flow changes', () {
+      final container = ProviderContainer(
+        overrides: [
+          workingDbPopulatedProvider.overrideWith(
+            _AlwaysPopulatedWorkingDb.new,
+          ),
+        ],
+      );
+
+      container
+          .read(sidebarFlowProvider.notifier)
+          .topMenuChanged(
+            choice: TopChatMenuChoice.conversations,
+            cassetteIndex: 0,
+          );
+
+      expect(
+        container.read(effectiveCenterPanelSpecProvider(SidebarMode.messages)),
+        equals(const ViewSpec.messages(MessagesSpec.conversationBrowser())),
+      );
+
+      container
+          .read(sidebarFlowProvider.notifier)
+          .topMenuChanged(choice: TopChatMenuChoice.contacts, cassetteIndex: 0);
+
+      expect(
+        container.read(effectiveCenterPanelSpecProvider(SidebarMode.messages)),
+        isNull,
+      );
+
+      container.dispose();
+    });
+
+    test(
+      'conversation top menu returns from selected graph timeline to browser',
+      () {
+        final container = ProviderContainer(
+          overrides: [
+            workingDbPopulatedProvider.overrideWith(
+              _AlwaysPopulatedWorkingDb.new,
+            ),
+          ],
+        );
+
+        container
+            .read(sidebarFlowProvider.notifier)
+            .topMenuChanged(
+              choice: TopChatMenuChoice.conversations,
+              cassetteIndex: 0,
+            );
+        container
+            .read(panelsViewStateProvider(SidebarMode.messages).notifier)
+            .show(
+              panel: WindowPanel.center,
+              spec: const ViewSpec.messages(
+                MessagesSpec.forConversation(conversationId: 8796093022216),
+              ),
+            );
+
+        expect(
+          container.read(
+            effectiveCenterPanelSpecProvider(SidebarMode.messages),
+          ),
+          equals(
+            const ViewSpec.messages(
+              MessagesSpec.forConversation(conversationId: 8796093022216),
+            ),
+          ),
+        );
+
+        container
+            .read(sidebarFlowProvider.notifier)
+            .topMenuChanged(
+              choice: TopChatMenuChoice.conversations,
+              cassetteIndex: 0,
+            );
+
+        expect(
+          container.read(
+            effectiveCenterPanelSpecProvider(SidebarMode.messages),
+          ),
+          equals(const ViewSpec.messages(MessagesSpec.conversationBrowser())),
+        );
+        expect(
+          container
+              .read(
+                panelsViewStateProvider(SidebarMode.messages),
+              )[WindowPanel.center]
+              ?.activePage,
+          isNull,
+        );
+
+        container.dispose();
+      },
+    );
   });
 
   group('effectiveRightPanelSpec', () {
@@ -1419,7 +1515,9 @@ class _FakeMessagesViewSpecCoordinator
   @override
   Widget buildForSpec(MessagesSpec spec) {
     return spec.when(
+      conversationBrowser: () => const Text('conversation-browser'),
       forChat: (chatId) => Text('chat:$chatId'),
+      forConversation: (conversationId) => Text('conversation:$conversationId'),
       forContact: (contactId, scrollToDate, filterHandleId) =>
           Text('contact:$contactId'),
       globalTimeline: (scrollToDate) => const Text('global'),

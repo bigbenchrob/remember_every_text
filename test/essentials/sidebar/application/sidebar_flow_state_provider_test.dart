@@ -204,6 +204,20 @@ void main() {
       );
     });
 
+    test('conversations top menu projects conversation browser', () {
+      container
+          .read(sidebarFlowProvider.notifier)
+          .topMenuChanged(
+            choice: TopChatMenuChoice.conversations,
+            cassetteIndex: 0,
+          );
+
+      expect(
+        container.read(sidebarFlowProvider).projectedCenterSpec,
+        equals(const ViewSpec.messages(MessagesSpec.conversationBrowser())),
+      );
+    });
+
     test('historical archives projects a settings-mode center spec', () {
       container
           .read(sidebarFlowProvider.notifier)

@@ -5,20 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 
-import '../../conversation_graph/application/chat_handle_joins/chat_to_handle_projector_provider.dart';
-import '../../conversation_graph/application/chat_message_joins/chat_to_message_projector_provider.dart';
+import '../../../features/chats/application/chat_read_model_source_provider.dart';
+import '../../../features/chats/presentation/view_model/chats_view_model_provider.dart';
+import '../../../features/chats/presentation/view_model/recent_chats_provider.dart';
 import '../../conversation_graph/application/chat_summaries/chat_summary.dart';
 import '../../conversation_graph/application/chat_summaries/chat_summary_provider.dart';
-import '../../conversation_graph/application/chats/chat_projector_provider.dart';
-import '../../conversation_graph/application/handles/handle_projector_provider.dart';
-import '../../conversation_graph/application/messages/message_projector_provider.dart';
-import '../../source_scoped_import/application/chat_handle_joins/chat_handle_join_importer_provider.dart';
-import '../../source_scoped_import/application/chat_message_joins/chat_message_join_importer_provider.dart';
-import '../../source_scoped_import/application/chats/chat_importer_provider.dart';
-import '../../source_scoped_import/application/handles/handle_importer_provider.dart';
-import '../../source_scoped_import/application/messages/message_importer_provider.dart';
-import '../../source_scoped_import/application/messages/message_rich_text_enricher_provider.dart';
+import '../../conversation_graph/application/conversation_graph_build_service_provider.dart';
 import '../application/messages/status/incremental_update_status_provider.dart';
+import '../application/messages/status/recent_chats_comparison_provider.dart';
 import '../application/messages/status/source_scoped_proof_log_writer.dart';
 
 enum _StatusSheetTab { status, groupProfiles, messages }
@@ -41,6 +35,9 @@ class _IncrementalUpdateStatusSheetState
   @override
   Widget build(BuildContext context) {
     final statusAsync = ref.watch(incrementalUpdateStatusProvider);
+    final recentChatsComparisonAsync = ref.watch(
+      recentChatsComparisonProvider(),
+    );
     final summariesAsync = ref.watch(chatSummariesProvider);
     final summaryCountsAsync = ref.watch(chatSummarySanityCountsProvider);
     final selectedMessagesAsync = _selectedChatSsId == null
@@ -58,6 +55,7 @@ class _IncrementalUpdateStatusSheetState
             ),
           )
         : ref.watch(chatMessageTextStatsProvider(_selectedChatSsId!));
+    final chatReadModelSource = ref.watch(chatReadModelSourceProvider);
 
     return MacosSheet(
       child: SizedBox(
@@ -128,6 +126,7 @@ class _IncrementalUpdateStatusSheetState
                     selectedMessagesAsync: selectedMessagesAsync,
                     selectedTextMessagesAsync: selectedTextMessagesAsync,
                     selectedTextStatsAsync: selectedTextStatsAsync,
+                    recentChatsComparisonAsync: recentChatsComparisonAsync,
                     summaryFilter: _summaryFilter,
                     summarySort: _summarySort,
                     selectedChatSsId: _selectedChatSsId,
@@ -148,11 +147,21 @@ class _IncrementalUpdateStatusSheetState
                         _selectedTab = _StatusSheetTab.messages;
                       });
                     },
+                    onChatOpened: (chatSsId) {
+                      unawaited(
+                        ref
+                            .read(chatsViewModelProvider.notifier)
+                            .selectChat(chatSsId),
+                      );
+                    },
                   ),
                 ),
               ),
               const SizedBox(height: 16),
-              _StatusControls(ref: ref),
+              _StatusControls(
+                ref: ref,
+                chatReadModelSource: chatReadModelSource,
+              ),
             ],
           ),
         ),
@@ -170,12 +179,14 @@ class _StatusTabView extends StatelessWidget {
     required this.selectedMessagesAsync,
     required this.selectedTextMessagesAsync,
     required this.selectedTextStatsAsync,
+    required this.recentChatsComparisonAsync,
     required this.summaryFilter,
     required this.summarySort,
     required this.selectedChatSsId,
     required this.onSummaryFilterChanged,
     required this.onSummarySortChanged,
     required this.onChatSelected,
+    required this.onChatOpened,
   });
 
   final _StatusSheetTab selectedTab;
@@ -185,18 +196,23 @@ class _StatusTabView extends StatelessWidget {
   final AsyncValue<List<RecentChatMessage>> selectedMessagesAsync;
   final AsyncValue<List<RecentChatMessage>> selectedTextMessagesAsync;
   final AsyncValue<ChatMessageTextStats> selectedTextStatsAsync;
+  final AsyncValue<RecentChatsComparison> recentChatsComparisonAsync;
   final ChatSummaryFilter summaryFilter;
   final ChatSummarySort summarySort;
   final int? selectedChatSsId;
   final ValueChanged<ChatSummaryFilter> onSummaryFilterChanged;
   final ValueChanged<ChatSummarySort> onSummarySortChanged;
   final ValueChanged<int> onChatSelected;
+  final ValueChanged<int> onChatOpened;
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       child: switch (selectedTab) {
-        _StatusSheetTab.status => _StatusContent(status: status),
+        _StatusSheetTab.status => _StatusContent(
+          status: status,
+          recentChatsComparisonAsync: recentChatsComparisonAsync,
+        ),
         _StatusSheetTab.groupProfiles => _ChatSummarySection(
           summariesAsync: summariesAsync,
           summaryCountsAsync: summaryCountsAsync,
@@ -206,6 +222,7 @@ class _StatusTabView extends StatelessWidget {
           onSummaryFilterChanged: onSummaryFilterChanged,
           onSummarySortChanged: onSummarySortChanged,
           onChatSelected: onChatSelected,
+          onChatOpened: onChatOpened,
         ),
         _StatusSheetTab.messages => _MessagesSection(
           summariesAsync: summariesAsync,
@@ -220,9 +237,13 @@ class _StatusTabView extends StatelessWidget {
 }
 
 class _StatusContent extends StatelessWidget {
-  const _StatusContent({required this.status});
+  const _StatusContent({
+    required this.status,
+    required this.recentChatsComparisonAsync,
+  });
 
   final IncrementalUpdateStatus status;
+  final AsyncValue<RecentChatsComparison> recentChatsComparisonAsync;
 
   @override
   Widget build(BuildContext context) {
@@ -302,8 +323,58 @@ class _StatusContent extends StatelessWidget {
             ),
           ],
         ),
+        _RecentChatsComparisonSection(
+          comparisonAsync: recentChatsComparisonAsync,
+        ),
       ],
     );
+  }
+}
+
+class _RecentChatsComparisonSection extends StatelessWidget {
+  const _RecentChatsComparisonSection({required this.comparisonAsync});
+
+  final AsyncValue<RecentChatsComparison> comparisonAsync;
+
+  @override
+  Widget build(BuildContext context) {
+    return comparisonAsync.when(
+      data: (comparison) => _StatusSection(
+        title: 'Recent chats comparison',
+        rows: [
+          _StatusRow('legacy count', '${comparison.legacyCount}'),
+          _StatusRow('graph count', '${comparison.graphCount}'),
+          const _StatusRow('legacy top rows', 'working.db recentChatsProvider'),
+          for (final row in comparison.legacyRows)
+            _StatusRow(_rowLabel(row), _rowValue(row), labelWidth: 210),
+          const _StatusRow(
+            'graph top rows',
+            'working_ss.db conversation graph',
+          ),
+          for (final row in comparison.graphRows)
+            _StatusRow(_rowLabel(row), _rowValue(row), labelWidth: 210),
+        ],
+      ),
+      loading: () => const _StatusSection(
+        title: 'Recent chats comparison',
+        rows: [_StatusRow('comparison', 'loading')],
+      ),
+      error: (error, stackTrace) => _StatusSection(
+        title: 'Recent chats comparison',
+        rows: [_StatusRow('comparison error', error.toString())],
+      ),
+    );
+  }
+
+  String _rowLabel(RecentChatsComparisonRow row) {
+    return '${row.chatId}';
+  }
+
+  String _rowValue(RecentChatsComparisonRow row) {
+    final groupText = row.isGroup ? 'group' : 'single';
+    final dateText = row.lastMessageDate?.toIso8601String() ?? 'no date';
+    return '$groupText | participants=${row.participantCount} | '
+        'messages=${row.messageCount} | $dateText | ${row.title}';
   }
 }
 
@@ -317,6 +388,7 @@ class _ChatSummarySection extends StatelessWidget {
     required this.onSummaryFilterChanged,
     required this.onSummarySortChanged,
     required this.onChatSelected,
+    required this.onChatOpened,
   });
 
   final AsyncValue<List<ChatSummary>> summariesAsync;
@@ -327,6 +399,7 @@ class _ChatSummarySection extends StatelessWidget {
   final ValueChanged<ChatSummaryFilter> onSummaryFilterChanged;
   final ValueChanged<ChatSummarySort> onSummarySortChanged;
   final ValueChanged<int> onChatSelected;
+  final ValueChanged<int> onChatOpened;
 
   @override
   Widget build(BuildContext context) {
@@ -390,6 +463,7 @@ class _ChatSummarySection extends StatelessWidget {
                         summary: summary,
                         isSelected: summary.chatSsId == selectedChatSsId,
                         onSelected: () => onChatSelected(summary.chatSsId),
+                        onOpened: () => onChatOpened(summary.chatSsId),
                       ),
                   ],
                 ),
@@ -582,43 +656,60 @@ class _ChatSummaryRow extends StatelessWidget {
     required this.summary,
     required this.isSelected,
     required this.onSelected,
+    required this.onOpened,
   });
 
   final ChatSummary summary;
   final bool isSelected;
   final VoidCallback onSelected;
+  final VoidCallback onOpened;
 
   @override
   Widget build(BuildContext context) {
     final participantText = summary.participantHandles.isEmpty
         ? 'chat ${summary.chatSsId}'
         : summary.participantHandles.join('  |  ');
-    return GestureDetector(
-      onTap: onSelected,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? CupertinoColors.activeBlue.withValues(alpha: 0.12)
+            : CupertinoColors.transparent,
+        border: Border.all(
           color: isSelected
-              ? CupertinoColors.activeBlue.withValues(alpha: 0.12)
-              : CupertinoColors.transparent,
-          border: Border.all(
-            color: isSelected
-                ? CupertinoColors.activeBlue.withValues(alpha: 0.45)
-                : CupertinoColors.separator.withValues(alpha: 0.35),
+              ? CupertinoColors.activeBlue.withValues(alpha: 0.45)
+              : CupertinoColors.separator.withValues(alpha: 0.35),
+        ),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onSelected,
+              child: _StatusRow(
+                participantText,
+                '${summary.messageCount} messages | '
+                '${summary.participantCount} participants | '
+                '${summary.isGroup ? 'group' : 'single'} | '
+                '${summary.lastMessageAtUtc ?? 'no date'} | '
+                '${summary.lastMessageText ?? 'no text'}',
+                labelWidth: 300,
+                verticalPadding: 0,
+              ),
+            ),
           ),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: _StatusRow(
-          participantText,
-          '${summary.messageCount} messages | '
-          '${summary.participantCount} participants | '
-          '${summary.isGroup ? 'group' : 'single'} | '
-          '${summary.lastMessageAtUtc ?? 'no date'} | '
-          '${summary.lastMessageText ?? 'no text'}',
-          labelWidth: 300,
-          verticalPadding: 0,
-        ),
+          const SizedBox(width: 8),
+          PushButton(
+            controlSize: ControlSize.small,
+            secondary: true,
+            onPressed: onOpened,
+            child: const Text('Open'),
+          ),
+        ],
       ),
     );
   }
@@ -700,9 +791,10 @@ class _RecentMessageRow extends StatelessWidget {
 }
 
 class _StatusControls extends StatefulWidget {
-  const _StatusControls({required this.ref});
+  const _StatusControls({required this.ref, required this.chatReadModelSource});
 
   final WidgetRef ref;
+  final ChatReadModelSourceMode chatReadModelSource;
 
   @override
   State<_StatusControls> createState() => _StatusControlsState();
@@ -715,70 +807,107 @@ class _StatusControlsState extends State<_StatusControls> {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        PushButton(
-          controlSize: ControlSize.regular,
-          secondary: true,
-          onPressed: () {
-            widget.ref.invalidate(incrementalUpdateStatusProvider);
-          },
-          child: const Text('Refresh'),
-        ),
-        const SizedBox(width: 8),
-        MouseRegion(
-          onEnter: (_) {
-            setState(() {
-              _isHoveringImport = true;
-            });
-          },
-          onExit: (_) {
-            setState(() {
-              _isHoveringImport = false;
-            });
-          },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 120),
-            padding: const EdgeInsets.all(2),
-            decoration: BoxDecoration(
-              color: _isHoveringImport || _isImporting
-                  ? CupertinoColors.activeBlue.withValues(alpha: 0.14)
-                  : CupertinoColors.transparent,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: _isHoveringImport || _isImporting
-                    ? CupertinoColors.activeBlue.withValues(alpha: 0.55)
-                    : CupertinoColors.transparent,
-              ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Recent chats',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
             ),
-            child: PushButton(
-              controlSize: ControlSize.regular,
-              onPressed: () {
-                if (_isImporting) {
+            const SizedBox(width: 8),
+            CupertinoSlidingSegmentedControl<ChatReadModelSourceMode>(
+              groupValue: widget.chatReadModelSource,
+              children: const {
+                ChatReadModelSourceMode.legacy: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 10),
+                  child: Text('Legacy'),
+                ),
+                ChatReadModelSourceMode.conversationGraph: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 10),
+                  child: Text('Graph'),
+                ),
+              },
+              onValueChanged: (value) {
+                if (value == null) {
                   return;
                 }
-                unawaited(_runImport());
+                widget.ref
+                    .read(chatReadModelSourceProvider.notifier)
+                    .setMode(value);
+                widget.ref.invalidate(recentChatsProvider);
               },
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_isImporting) ...[
-                    const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CupertinoActivityIndicator(radius: 7),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  Text(
-                    _isImporting
-                        ? 'Importing + Projecting...'
-                        : 'Import + Project SS Graph',
+            ),
+          ],
+        ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            PushButton(
+              controlSize: ControlSize.regular,
+              secondary: true,
+              onPressed: () {
+                widget.ref.invalidate(incrementalUpdateStatusProvider);
+              },
+              child: const Text('Refresh'),
+            ),
+            const SizedBox(width: 8),
+            MouseRegion(
+              onEnter: (_) {
+                setState(() {
+                  _isHoveringImport = true;
+                });
+              },
+              onExit: (_) {
+                setState(() {
+                  _isHoveringImport = false;
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 120),
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: _isHoveringImport || _isImporting
+                      ? CupertinoColors.activeBlue.withValues(alpha: 0.14)
+                      : CupertinoColors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: _isHoveringImport || _isImporting
+                        ? CupertinoColors.activeBlue.withValues(alpha: 0.55)
+                        : CupertinoColors.transparent,
                   ),
-                ],
+                ),
+                child: PushButton(
+                  controlSize: ControlSize.regular,
+                  onPressed: () {
+                    if (_isImporting) {
+                      return;
+                    }
+                    unawaited(_runImport());
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_isImporting) ...[
+                        const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CupertinoActivityIndicator(radius: 7),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      Text(
+                        _isImporting
+                            ? 'Importing + Projecting...'
+                            : 'Import + Project SS Graph',
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ],
     );
@@ -802,36 +931,10 @@ class _StatusControlsState extends State<_StatusControls> {
   Future<void> _importAndProjectOnce(WidgetRef ref) async {
     final before = await ref.read(incrementalUpdateStatusProvider.future);
     try {
-      final chatImporter = await ref.read(chatImporterProvider.future);
-      await chatImporter.importChats();
-      final handleImporter = await ref.read(handleImporterProvider.future);
-      await handleImporter.importNewHandles();
-      final importer = await ref.read(messageImporterProvider.future);
-      final importResult = await importer.importNewMessages();
-      final enricher = await ref.read(messageRichTextEnricherProvider.future);
-      await enricher.enrichMissingText();
-      final joinImporter = await ref.read(
-        chatMessageJoinImporterProvider.future,
+      final service = await ref.read(
+        conversationGraphBuildServiceProvider.future,
       );
-      await joinImporter.importJoins();
-      final chatHandleJoinImporter = await ref.read(
-        chatHandleJoinImporterProvider.future,
-      );
-      await chatHandleJoinImporter.importJoins();
-      final handleProjector = await ref.read(handleProjectorProvider.future);
-      await handleProjector.projectHandles();
-      final chatToHandleProjector = await ref.read(
-        chatToHandleProjectorProvider.future,
-      );
-      await chatToHandleProjector.projectEdges();
-      final chatProjector = await ref.read(chatProjectorProvider.future);
-      await chatProjector.projectChats();
-      final projector = await ref.read(messageProjectorProvider.future);
-      final projectionResult = await projector.projectMessages();
-      final edgeProjector = await ref.read(
-        chatToMessageProjectorProvider.future,
-      );
-      await edgeProjector.projectEdges();
+      final buildReport = await service.runOnce();
       ref.invalidate(incrementalUpdateStatusProvider);
       ref.invalidate(chatSummariesProvider);
       ref.invalidate(chatSummarySanityCountsProvider);
@@ -839,8 +942,7 @@ class _StatusControlsState extends State<_StatusControls> {
       await const SourceScopedProofLogWriter().writeRun(
         before: before,
         after: after,
-        importResult: importResult,
-        projectionResult: projectionResult,
+        buildReport: buildReport,
       );
     } catch (error, stackTrace) {
       await const SourceScopedProofLogWriter().writeRun(

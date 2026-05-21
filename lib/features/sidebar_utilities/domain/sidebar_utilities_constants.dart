@@ -3,6 +3,9 @@
 /// (2) interpreting the user's choice, and (3) serializing the choice in the feature
 /// cassette spec.
 enum TopChatMenuChoice {
+  /// Canonical conversation graph browser.
+  conversations(id: 'conversations', label: 'Conversations'),
+
   /// Contacts list
   contacts(id: 'contacts', label: 'Messages from contacts'),
 

@@ -2,10 +2,14 @@ import 'package:drift/drift.dart' as drift;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../essentials/conversation_graph/application/conversations/conversation.dart';
+import '../../../../essentials/conversation_graph/application/conversations/conversation_reader_provider.dart';
 import '../../../../essentials/db/feature_level_providers.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/working/working_database.dart';
 import '../../../contacts/infrastructure/repositories/participant_merge_utils.dart';
 import '../../application/calendar_heatmap_timeline_calculator.dart';
+import '../../application/chat_read_model_source_provider.dart';
+import '../../application/conversation_browser/contact_handle_label_provider.dart';
 import '../../domain/calendar_heatmap_timeline_data.dart';
 import '../../domain/chat_timeline_data.dart';
 
@@ -25,6 +29,7 @@ class RecentChatSummary {
     required this.recency,
     required this.timelineData,
     required this.calendarHeatmapTimelineData,
+    this.lastMessagePreview,
   });
 
   final int chatId;
@@ -38,10 +43,34 @@ class RecentChatSummary {
   final ChatRecency? recency;
   final ChatTimelineData? timelineData;
   final CalendarHeatmapTimelineData? calendarHeatmapTimelineData;
+  final String? lastMessagePreview;
 }
 
 @riverpod
 Future<List<RecentChatSummary>> recentChats(Ref ref, {int? limit}) async {
+  final readModelSource = ref.watch(chatReadModelSourceProvider);
+  if (readModelSource == ChatReadModelSourceMode.conversationGraph) {
+    return readGraphRecentChats(ref, limit: limit);
+  }
+
+  return readLegacyRecentChats(ref, limit: limit);
+}
+
+Future<List<RecentChatSummary>> readGraphRecentChats(
+  Ref ref, {
+  int? limit,
+}) async {
+  final overviews = await ref.watch(
+    conversationOverviewsProvider(limit: limit ?? 100).future,
+  );
+  final contactLabels = await ref.watch(contactHandleLabelsProvider.future);
+  return _mapGraphOverviews(overviews, contactLabels);
+}
+
+Future<List<RecentChatSummary>> readLegacyRecentChats(
+  Ref ref, {
+  int? limit,
+}) async {
   final db = await ref.watch(driftWorkingDatabaseProvider.future);
   final overlayDb = await ref.watch(overlayDatabaseProvider.future);
   final nameOverrides = await displayNameOverridesMap(overlayDb);
@@ -224,4 +253,105 @@ Future<List<RecentChatSummary>> recentChats(Ref ref, {int? limit}) async {
   }
 
   return results;
+}
+
+List<RecentChatSummary> _mapGraphOverviews(
+  List<ConversationOverview> overviews,
+  Map<String, ContactHandleLabel> contactLabels,
+) {
+  return [
+    for (final overview in overviews)
+      _mapGraphOverview(overview, contactLabels),
+  ];
+}
+
+RecentChatSummary _mapGraphOverview(
+  ConversationOverview overview,
+  Map<String, ContactHandleLabel> contactLabels,
+) {
+  final lastMessageDate = _parseGraphUtc(overview.lastMessageAtUtc);
+  final participantLabels = _resolveGraphParticipantLabels(
+    overview.participantHandles,
+    contactLabels,
+  );
+  return RecentChatSummary(
+    chatId: overview.conversationId,
+    title: _deriveGraphTitle(
+      isGroup: overview.isGroup,
+      participants: participantLabels,
+    ),
+    messageCount: overview.messageCount,
+    firstMessageDate: null,
+    lastMessageDate: lastMessageDate,
+    isGroup: overview.isGroup,
+    participants: participantLabels.isEmpty
+        ? const ['Unknown Contact']
+        : participantLabels,
+    handles: overview.participantHandles,
+    recency: lastMessageDate == null
+        ? null
+        : ChatRecency.fromDateTime(lastMessageDate),
+    timelineData: null,
+    calendarHeatmapTimelineData: null,
+    lastMessagePreview: overview.lastMessageText,
+  );
+}
+
+List<String> _resolveGraphParticipantLabels(
+  List<String> handles,
+  Map<String, ContactHandleLabel> contactLabels,
+) {
+  final labels = <String>[];
+  final seenLabels = <String>{};
+
+  for (final handle in handles) {
+    final trimmedHandle = handle.trim();
+    if (trimmedHandle.isEmpty) {
+      continue;
+    }
+    final label =
+        _findContactLabel(trimmedHandle, contactLabels)?.displayName ??
+        trimmedHandle;
+    if (seenLabels.add(label.toLowerCase())) {
+      labels.add(label);
+    }
+  }
+
+  return labels;
+}
+
+ContactHandleLabel? _findContactLabel(
+  String handle,
+  Map<String, ContactHandleLabel> contactLabels,
+) {
+  for (final key in contactHandleLabelKeysForTesting(handle)) {
+    final label = contactLabels[key];
+    if (label != null) {
+      return label;
+    }
+  }
+  return null;
+}
+
+String _deriveGraphTitle({
+  required bool isGroup,
+  required List<String> participants,
+}) {
+  if (participants.isEmpty) {
+    return 'Unnamed Conversation';
+  }
+  if (!isGroup || participants.length == 1) {
+    return participants.first;
+  }
+  if (participants.length == 2) {
+    return '${participants[0]} and ${participants[1]}';
+  }
+  return '${participants[0]}, ${participants[1]} + ${participants.length - 2} more';
+}
+
+DateTime? _parseGraphUtc(String? value) {
+  if (value == null || value.isEmpty) {
+    return null;
+  }
+  return DateTime.tryParse(value)?.toLocal();
 }

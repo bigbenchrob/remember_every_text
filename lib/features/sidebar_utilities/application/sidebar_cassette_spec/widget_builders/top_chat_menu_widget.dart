@@ -172,6 +172,7 @@ bool _isSecondaryTopMenuChoice(TopChatMenuChoice choice) {
 
 SidebarTopMenuChoice _mapTopMenuChoice(TopChatMenuChoice choice) {
   return switch (choice) {
+    TopChatMenuChoice.conversations => SidebarTopMenuChoice.conversations,
     TopChatMenuChoice.contacts => SidebarTopMenuChoice.contacts,
     TopChatMenuChoice.strayHandles => SidebarTopMenuChoice.strayHandles,
     TopChatMenuChoice.searchAllMessages =>

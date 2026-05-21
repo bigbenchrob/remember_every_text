@@ -6,7 +6,12 @@ part 'messages_view_spec.freezed.dart';
 
 @freezed
 abstract class MessagesSpec with _$MessagesSpec {
+  const factory MessagesSpec.conversationBrowser() = _ConversationBrowser;
+
   const factory MessagesSpec.forChat({required int chatId}) = _MessagesForChat;
+
+  const factory MessagesSpec.forConversation({required int conversationId}) =
+      _MessagesForConversation;
 
   const factory MessagesSpec.forContact({
     required int contactId,

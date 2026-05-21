@@ -30,6 +30,20 @@ void debugAssertValidSidebarFlowState(SidebarFlowState state) {
   }
 
   switch (state.topMenuChoice) {
+    case TopChatMenuChoice.conversations:
+      if (state.chosenContactId != null || state.selectedHandleId != null) {
+        throw StateError(
+          'Conversations branch cannot retain contact-specific selection '
+          'state.',
+        );
+      }
+
+      if (state.messageScope != SidebarFlowMessageScope.regular) {
+        throw StateError(
+          'Conversations branch must remain in regular message scope.',
+        );
+      }
+
     case TopChatMenuChoice.contacts:
       if (state.selectedHandleId != null && state.chosenContactId == null) {
         throw StateError(
@@ -136,6 +150,8 @@ abstract class SidebarFlowState with _$SidebarFlowState {
     }());
 
     switch (topMenuChoice) {
+      case TopChatMenuChoice.conversations:
+        return const ViewSpec.messages(MessagesSpec.conversationBrowser());
       case TopChatMenuChoice.contacts:
         final contactId = chosenContactId;
         if (contactId == null) {
@@ -269,6 +285,7 @@ class SidebarFlow extends _$SidebarFlow {
     return spec.maybeWhen(
       messages: (messagesSpec) {
         return messagesSpec.maybeWhen(
+          conversationBrowser: () => true,
           forContact: (_, __, ___) => true,
           globalTimeline: (_) => true,
           recoveredUnlinkedMessages: (_, __) => true,
@@ -285,6 +302,9 @@ class SidebarFlow extends _$SidebarFlow {
     required int cassetteIndex,
   }) {
     _setStateAndClearRightIfNeeded(switch (choice) {
+      TopChatMenuChoice.conversations => const SidebarFlowState(
+        topMenuChoice: TopChatMenuChoice.conversations,
+      ),
       TopChatMenuChoice.contacts => const SidebarFlowState(
         topMenuChoice: TopChatMenuChoice.contacts,
       ),
@@ -304,6 +324,10 @@ class SidebarFlow extends _$SidebarFlow {
         ),
     });
 
+    if (choice == TopChatMenuChoice.conversations) {
+      _clearStoredMessagesCenterForConversationBrowser();
+    }
+
     final newSpec = CassetteSpec.sidebarUtility(
       SidebarUtilityCassetteSpec.topChatMenu(selectedChoice: choice),
     );
@@ -311,6 +335,29 @@ class SidebarFlow extends _$SidebarFlow {
     ref
         .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
         .replaceAtIndexAndCascade(cassetteIndex, newSpec);
+  }
+
+  void _clearStoredMessagesCenterForConversationBrowser() {
+    final panelsState = ref.read(panelsViewStateProvider(SidebarMode.messages));
+    final centerSpec = panelsState[WindowPanel.center]?.activePage?.spec;
+    final shouldClear =
+        centerSpec?.maybeWhen(
+          messages: (messagesSpec) {
+            return !messagesSpec.maybeWhen(
+              conversationBrowser: () => true,
+              orElse: () => false,
+            );
+          },
+          orElse: () => false,
+        ) ??
+        false;
+    if (!shouldClear) {
+      return;
+    }
+
+    ref
+        .read(panelsViewStateProvider(SidebarMode.messages).notifier)
+        .clear(panel: WindowPanel.center);
   }
 
   void contactChosen({required int contactId, required int infoCardIndex}) {
