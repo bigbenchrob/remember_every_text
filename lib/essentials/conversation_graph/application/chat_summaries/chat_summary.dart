@@ -32,12 +32,76 @@ class RecentChatMessage {
     required this.dateUtc,
     required this.isFromMe,
     required this.text,
+    required this.attachmentCount,
   });
 
   final int messageSsId;
   final String? dateUtc;
   final bool isFromMe;
   final String? text;
+  final int attachmentCount;
+}
+
+class MessageAttachment {
+  const MessageAttachment({
+    required this.attachmentSsId,
+    required this.guid,
+    required this.filename,
+    required this.transferName,
+    required this.uti,
+    required this.mimeType,
+    required this.totalBytes,
+    required this.createdAtUtc,
+    required this.localFileExists,
+    required this.archiveRelativePath,
+    required this.archiveAbsolutePath,
+    required this.archiveFileExists,
+  });
+
+  final int attachmentSsId;
+  final String? guid;
+  final String? filename;
+  final String? transferName;
+  final String? uti;
+  final String? mimeType;
+  final int? totalBytes;
+  final String? createdAtUtc;
+  final bool localFileExists;
+  final String? archiveRelativePath;
+  final String? archiveAbsolutePath;
+  final bool archiveFileExists;
+
+  bool get hasSourcePathHint => filename != null && filename!.isNotEmpty;
+  bool get hasArchiveRecord =>
+      archiveRelativePath != null && archiveRelativePath!.isNotEmpty;
+}
+
+class ChatAttachmentStats {
+  const ChatAttachmentStats({
+    required this.messageWithAttachmentCount,
+    required this.attachmentCount,
+    required this.imageAttachmentCount,
+    required this.videoAttachmentCount,
+    required this.documentAttachmentCount,
+    required this.sourcePathHintCount,
+    required this.localFileAvailableCount,
+    required this.localFileMissingCount,
+    required this.archiveRecordCount,
+    required this.archiveFileAvailableCount,
+    required this.archiveFileMissingCount,
+  });
+
+  final int messageWithAttachmentCount;
+  final int attachmentCount;
+  final int imageAttachmentCount;
+  final int videoAttachmentCount;
+  final int documentAttachmentCount;
+  final int sourcePathHintCount;
+  final int localFileAvailableCount;
+  final int localFileMissingCount;
+  final int archiveRecordCount;
+  final int archiveFileAvailableCount;
+  final int archiveFileMissingCount;
 }
 
 class ChatMessageTextStats {

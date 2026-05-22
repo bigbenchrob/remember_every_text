@@ -47,5 +47,11 @@ Use these documents in this order when working on the shadow incremental-update 
 7. [`60-CANONICAL-TOPOLOGY-PROJECTION-DESIGN.md`](60-CANONICAL-TOPOLOGY-PROJECTION-DESIGN.md) - design options for projecting preserved source topology into working app truth.
 8. [`62-WORKING-CHAT-ENDPOINT-RESOLUTION-AUDIT.md`](62-WORKING-CHAT-ENDPOINT-RESOLUTION-AUDIT.md) - current audit of ledger-chat to working-chat endpoint resolution.
 9. [`64-SOURCE-SCOPED-ROW-KEY-STRATEGY.md`](64-SOURCE-SCOPED-ROW-KEY-STRATEGY.md) - source-scoped row identity strategy for multi-source-safe provenance and topology resolution.
+10. [`67-SS-LEGACY-PARITY-AUDIT.md`](67-SS-LEGACY-PARITY-AUDIT.md) - audit checklist for preserving hard-won legacy message, chat, contact, and handle semantics while migrating to the SS graph.
+11. [`68-SS-MESSAGE-SEMANTIC-PRESERVATION-MODEL.md`](68-SS-MESSAGE-SEMANTIC-PRESERVATION-MODEL.md) - guardrail and minimal model for preserving message semantics without recreating the legacy message schema.
 
 Read [`64-SOURCE-SCOPED-ROW-KEY-STRATEGY.md`](64-SOURCE-SCOPED-ROW-KEY-STRATEGY.md) before adding archive-source support, topology projection, source occurrence tables, provenance sidecars, or any schema that stores source-derived relationship endpoints.
+
+Read [`67-SS-LEGACY-PARITY-AUDIT.md`](67-SS-LEGACY-PARITY-AUDIT.md) before replacing legacy import/migration behavior with SS graph behavior.
+
+Read [`68-SS-MESSAGE-SEMANTIC-PRESERVATION-MODEL.md`](68-SS-MESSAGE-SEMANTIC-PRESERVATION-MODEL.md) before adding message fields or semantic classifications to the SS graph.

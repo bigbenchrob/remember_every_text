@@ -35,15 +35,27 @@ void main() {
     );
     final columnNames = messageColumns.map((row) => row['name']).toSet();
 
-    expect(columnNames, <String>{
-      'ss_id',
-      'guid',
-      'sender_handle_ss_id',
-      'is_from_me',
-      'date_utc',
-      'text',
-      'associated_message_ss_id',
-    });
+    expect(
+      columnNames,
+      containsAll(<String>{
+        'ss_id',
+        'guid',
+        'sender_handle_ss_id',
+        'sender_canonical_handle_ss_id',
+        'is_from_me',
+        'date_utc',
+        'text',
+        'associated_message_ss_id',
+        'semantic_kind',
+        'item_kind',
+        'is_system_message',
+        'is_sparse_artifact',
+        'has_attributed_body_source',
+        'has_message_summary_info',
+        'has_payload_data_source',
+        'error_code',
+      }),
+    );
     expect(columnNames, isNot(contains('source_id')));
     expect(columnNames, isNot(contains('source_rowid')));
     expect(columnNames, isNot(contains('attributed_body_blob')));
@@ -56,6 +68,12 @@ void main() {
     final handleColumns = await workingDatabase.database.rawQuery(
       'PRAGMA table_info(handles)',
     );
+    final canonicalHandleColumns = await workingDatabase.database.rawQuery(
+      'PRAGMA table_info(canonical_handles)',
+    );
+    final handleAliasColumns = await workingDatabase.database.rawQuery(
+      'PRAGMA table_info(handle_aliases)',
+    );
     final chatColumns = await workingDatabase.database.rawQuery(
       'PRAGMA table_info(chats)',
     );
@@ -65,11 +83,37 @@ void main() {
     final participantColumns = await workingDatabase.database.rawQuery(
       'PRAGMA table_info(chat_to_handle)',
     );
+    final contactColumns = await workingDatabase.database.rawQuery(
+      'PRAGMA table_info(contacts)',
+    );
+    final contactEdgeColumns = await workingDatabase.database.rawQuery(
+      'PRAGMA table_info(contact_to_handle)',
+    );
+    final attachmentColumns = await workingDatabase.database.rawQuery(
+      'PRAGMA table_info(attachments)',
+    );
+    final attachmentEdgeColumns = await workingDatabase.database.rawQuery(
+      'PRAGMA table_info(message_to_attachment)',
+    );
 
     expect(handleColumns.map((row) => row['name']).toSet(), <String>{
       'ss_id',
       'id',
       'service',
+    });
+    expect(canonicalHandleColumns.map((row) => row['name']).toSet(), <String>{
+      'canonical_handle_ss_id',
+      'display_handle',
+      'normalized_identifier',
+      'service',
+      'alias_count',
+    });
+    expect(handleAliasColumns.map((row) => row['name']).toSet(), <String>{
+      'handle_ss_id',
+      'canonical_handle_ss_id',
+      'raw_identifier',
+      'normalized_identifier',
+      'alias_kind',
     });
     expect(chatColumns.map((row) => row['name']).toSet(), <String>{
       'ss_id',
@@ -97,6 +141,49 @@ void main() {
     expect(participantColumns.map((row) => row['name']).toSet(), <String>{
       'chat_ss_id',
       'handle_ss_id',
+    });
+    expect(contactColumns.map((row) => row['name']).toSet(), <String>{
+      'contact_id',
+      'display_name',
+      'short_name',
+      'given_name',
+      'family_name',
+      'organization',
+    });
+    expect(
+      contactColumns.map((row) => row['name']).toSet(),
+      isNot(contains('source_id')),
+    );
+    expect(
+      contactColumns.map((row) => row['name']).toSet(),
+      isNot(contains('source_rowid')),
+    );
+    expect(contactEdgeColumns.map((row) => row['name']).toSet(), <String>{
+      'contact_id',
+      'handle_ss_id',
+      'handle_value',
+    });
+    expect(attachmentColumns.map((row) => row['name']).toSet(), <String>{
+      'ss_id',
+      'guid',
+      'filename',
+      'transfer_name',
+      'uti',
+      'mime_type',
+      'total_bytes',
+      'created_at_utc',
+    });
+    expect(
+      attachmentColumns.map((row) => row['name']).toSet(),
+      isNot(contains('source_id')),
+    );
+    expect(
+      attachmentColumns.map((row) => row['name']).toSet(),
+      isNot(contains('source_rowid')),
+    );
+    expect(attachmentEdgeColumns.map((row) => row['name']).toSet(), <String>{
+      'message_ss_id',
+      'attachment_ss_id',
     });
   });
 }

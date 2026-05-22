@@ -1,10 +1,22 @@
+import 'dart:io';
+
+import 'package:drift/drift.dart';
+
+import '../../../db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import '../../../source_scoped_import/domain/source_scoped_row_key.dart';
 import '../../infrastructure/working_database_provider.dart';
 import 'chat_summary.dart';
 
 class ChatSummaryReader {
-  const ChatSummaryReader({required this.workingDatabase});
+  const ChatSummaryReader({
+    required this.workingDatabase,
+    this.overlayDatabase,
+    this.attachmentArchiveDirectory,
+  });
 
   final WorkingDatabase workingDatabase;
+  final OverlayDatabase? overlayDatabase;
+  final String? attachmentArchiveDirectory;
 
   Future<List<ChatSummary>> readSummaries({
     ChatSummaryFilter filter = ChatSummaryFilter.all,
@@ -14,7 +26,8 @@ class ChatSummaryReader {
     final rows = await workingDatabase.database.rawQuery('''
       SELECT
         c.ss_id AS chat_ss_id,
-        COUNT(DISTINCT cth.handle_ss_id) AS participant_count,
+        COUNT(DISTINCT COALESCE(ha.canonical_handle_ss_id, cth.handle_ss_id))
+          AS participant_count,
         COUNT(DISTINCT ctm.message_ss_id) AS message_count,
         MAX(m.date_utc) AS last_message_at_utc,
         (
@@ -28,6 +41,7 @@ class ChatSummaryReader {
         ) AS last_message_text
       FROM chats c
       LEFT JOIN chat_to_handle cth ON cth.chat_ss_id = c.ss_id
+      LEFT JOIN handle_aliases ha ON ha.handle_ss_id = cth.handle_ss_id
       LEFT JOIN chat_to_message ctm ON ctm.chat_ss_id = c.ss_id
       LEFT JOIN messages m ON m.ss_id = ctm.message_ss_id
       GROUP BY c.ss_id
@@ -112,7 +126,12 @@ class ChatSummaryReader {
         m.ss_id AS message_ss_id,
         m.date_utc,
         m.is_from_me,
-        m.text
+        m.text,
+        (
+          SELECT COUNT(*)
+          FROM message_to_attachment mta
+          WHERE mta.message_ss_id = m.ss_id
+        ) AS attachment_count
       FROM chat_to_message ctm
       JOIN messages m ON m.ss_id = ctm.message_ss_id
       WHERE ctm.chat_ss_id = ?
@@ -129,6 +148,7 @@ class ChatSummaryReader {
           dateUtc: row['date_utc'] as String?,
           isFromMe: _readInt(row['is_from_me']) == 1,
           text: row['text'] as String?,
+          attachmentCount: _readInt(row['attachment_count']),
         ),
     ];
   }
@@ -143,7 +163,12 @@ class ChatSummaryReader {
         m.ss_id AS message_ss_id,
         m.date_utc,
         m.is_from_me,
-        m.text
+        m.text,
+        (
+          SELECT COUNT(*)
+          FROM message_to_attachment mta
+          WHERE mta.message_ss_id = m.ss_id
+        ) AS attachment_count
       FROM chat_to_message ctm
       JOIN messages m ON m.ss_id = ctm.message_ss_id
       WHERE ctm.chat_ss_id = ?
@@ -162,6 +187,7 @@ class ChatSummaryReader {
           dateUtc: row['date_utc'] as String?,
           isFromMe: _readInt(row['is_from_me']) == 1,
           text: row['text'] as String?,
+          attachmentCount: _readInt(row['attachment_count']),
         ),
     ];
   }
@@ -191,14 +217,198 @@ class ChatSummaryReader {
     );
   }
 
+  Future<ChatAttachmentStats> readAttachmentStats({
+    required int chatSsId,
+  }) async {
+    final rows = await workingDatabase.database.rawQuery(
+      '''
+      SELECT
+        a.ss_id AS attachment_ss_id,
+        m.guid AS message_guid,
+        mta.message_ss_id,
+        a.filename,
+        a.mime_type,
+        a.uti
+      FROM chat_to_message ctm
+      JOIN message_to_attachment mta ON mta.message_ss_id = ctm.message_ss_id
+      JOIN messages m ON m.ss_id = mta.message_ss_id
+      JOIN attachments a ON a.ss_id = mta.attachment_ss_id
+      WHERE ctm.chat_ss_id = ?
+      ''',
+      <Object?>[chatSsId],
+    );
+
+    final messageIds = <int>{};
+    var imageAttachmentCount = 0;
+    var videoAttachmentCount = 0;
+    var documentAttachmentCount = 0;
+    var sourcePathHintCount = 0;
+    var localFileAvailableCount = 0;
+    var localFileMissingCount = 0;
+    var archiveRecordCount = 0;
+    var archiveFileAvailableCount = 0;
+    var archiveFileMissingCount = 0;
+
+    for (final row in rows) {
+      messageIds.add(_readInt(row['message_ss_id']));
+      final typeText = '${row['mime_type'] ?? ''} ${row['uti'] ?? ''}'
+          .toLowerCase();
+      if (typeText.contains('image') || typeText.startsWith('image/')) {
+        imageAttachmentCount += 1;
+      }
+      if (typeText.contains('video') || typeText.contains('movie')) {
+        videoAttachmentCount += 1;
+      }
+      if (typeText.contains('application/') ||
+          typeText.contains('pdf') ||
+          typeText.contains('text')) {
+        documentAttachmentCount += 1;
+      }
+
+      final filename = row['filename'];
+      if (filename is String && filename.isNotEmpty) {
+        sourcePathHintCount += 1;
+        if (_localFileExists(filename)) {
+          localFileAvailableCount += 1;
+        } else {
+          localFileMissingCount += 1;
+        }
+      }
+
+      final archiveAvailability = await _readArchiveAvailability(
+        messageGuid: row['message_guid'] as String?,
+        attachmentSsId: _readInt(row['attachment_ss_id']),
+      );
+      if (archiveAvailability.hasArchiveRecord) {
+        archiveRecordCount += 1;
+        if (archiveAvailability.archiveFileExists) {
+          archiveFileAvailableCount += 1;
+        } else {
+          archiveFileMissingCount += 1;
+        }
+      }
+    }
+
+    return ChatAttachmentStats(
+      messageWithAttachmentCount: messageIds.length,
+      attachmentCount: rows.length,
+      imageAttachmentCount: imageAttachmentCount,
+      videoAttachmentCount: videoAttachmentCount,
+      documentAttachmentCount: documentAttachmentCount,
+      sourcePathHintCount: sourcePathHintCount,
+      localFileAvailableCount: localFileAvailableCount,
+      localFileMissingCount: localFileMissingCount,
+      archiveRecordCount: archiveRecordCount,
+      archiveFileAvailableCount: archiveFileAvailableCount,
+      archiveFileMissingCount: archiveFileMissingCount,
+    );
+  }
+
+  Future<List<MessageAttachment>> readMessageAttachments({
+    required int messageSsId,
+  }) async {
+    final rows = await workingDatabase.database.rawQuery(
+      '''
+      SELECT
+        a.ss_id AS attachment_ss_id,
+        m.guid AS message_guid,
+        a.guid,
+        a.filename,
+        a.transfer_name,
+        a.uti,
+        a.mime_type,
+        a.total_bytes,
+        a.created_at_utc
+      FROM message_to_attachment mta
+      JOIN messages m ON m.ss_id = mta.message_ss_id
+      JOIN attachments a ON a.ss_id = mta.attachment_ss_id
+      WHERE mta.message_ss_id = ?
+      ORDER BY a.ss_id ASC
+      ''',
+      <Object?>[messageSsId],
+    );
+
+    return [for (final row in rows) await _attachmentFromRow(row)];
+  }
+
+  Future<MessageAttachment> _attachmentFromRow(Map<String, Object?> row) async {
+    final attachmentSsId = _readInt(row['attachment_ss_id']);
+    final archiveAvailability = await _readArchiveAvailability(
+      messageGuid: row['message_guid'] as String?,
+      attachmentSsId: attachmentSsId,
+    );
+    return MessageAttachment(
+      attachmentSsId: attachmentSsId,
+      guid: row['guid'] as String?,
+      filename: row['filename'] as String?,
+      transferName: row['transfer_name'] as String?,
+      uti: row['uti'] as String?,
+      mimeType: row['mime_type'] as String?,
+      totalBytes: _readNullableInt(row['total_bytes']),
+      createdAtUtc: row['created_at_utc'] as String?,
+      localFileExists: _localFileExists(row['filename'] as String?),
+      archiveRelativePath: archiveAvailability.archiveRelativePath,
+      archiveAbsolutePath: archiveAvailability.archiveAbsolutePath,
+      archiveFileExists: archiveAvailability.archiveFileExists,
+    );
+  }
+
+  Future<_ArchiveAvailability> _readArchiveAvailability({
+    required String? messageGuid,
+    required int attachmentSsId,
+  }) async {
+    final overlayDb = overlayDatabase;
+    final archiveDirectory = attachmentArchiveDirectory;
+    if (overlayDb == null ||
+        archiveDirectory == null ||
+        archiveDirectory.isEmpty ||
+        messageGuid == null ||
+        messageGuid.isEmpty) {
+      return const _ArchiveAvailability.none();
+    }
+
+    final importAttachmentId = SourceScopedRowKey.unpackSourceRowId(
+      attachmentSsId,
+    );
+    final rows = await overlayDb
+        .customSelect(
+          'SELECT archive_relative_path '
+          'FROM archived_attachments '
+          'WHERE message_guid = ? AND import_attachment_id = ? '
+          'LIMIT 1',
+          variables: [
+            Variable<String>(messageGuid),
+            Variable<int>(importAttachmentId),
+          ],
+        )
+        .get();
+    if (rows.isEmpty) {
+      return const _ArchiveAvailability.none();
+    }
+
+    final relativePath = rows.single.read<String>('archive_relative_path');
+    final archiveAbsolutePath = '$archiveDirectory/$relativePath';
+    final archiveFile = File(archiveAbsolutePath);
+    return _ArchiveAvailability(
+      archiveRelativePath: relativePath,
+      archiveAbsolutePath: archiveAbsolutePath,
+      archiveFileExists: archiveFile.existsSync(),
+    );
+  }
+
   Future<List<String>> _readParticipantHandles(int chatSsId) async {
     final rows = await workingDatabase.database.rawQuery(
       '''
-      SELECT DISTINCT h.id AS handle_id
+      SELECT DISTINCT
+        COALESCE(ch.display_handle, h.id) AS handle_id,
+        COALESCE(ha.canonical_handle_ss_id, h.ss_id) AS sort_id
       FROM chat_to_handle cth
       JOIN handles h ON h.ss_id = cth.handle_ss_id
+      LEFT JOIN handle_aliases ha ON ha.handle_ss_id = cth.handle_ss_id
+      LEFT JOIN canonical_handles ch
+        ON ch.canonical_handle_ss_id = ha.canonical_handle_ss_id
       WHERE cth.chat_ss_id = ?
-      ORDER BY h.id ASC
+      ORDER BY sort_id ASC, handle_id ASC
       ''',
       <Object?>[chatSsId],
     );
@@ -217,6 +427,32 @@ class ChatSummaryReader {
       return value.round();
     }
     return 0;
+  }
+
+  static int? _readNullableInt(Object? value) {
+    if (value == null) {
+      return null;
+    }
+    return _readInt(value);
+  }
+
+  static bool _localFileExists(String? pathHint) {
+    if (pathHint == null || pathHint.isEmpty) {
+      return false;
+    }
+    final path = _expandHome(pathHint);
+    return File(path).existsSync();
+  }
+
+  static String _expandHome(String path) {
+    if (!path.startsWith('~/')) {
+      return path;
+    }
+    final home = Platform.environment['HOME'];
+    if (home == null || home.isEmpty) {
+      return path;
+    }
+    return '$home/${path.substring(2)}';
   }
 
   static List<ChatSummary> _applyFilter(
@@ -259,4 +495,24 @@ class ChatSummaryReader {
     final rightValue = right ?? '';
     return rightValue.compareTo(leftValue);
   }
+}
+
+class _ArchiveAvailability {
+  const _ArchiveAvailability({
+    required this.archiveRelativePath,
+    required this.archiveAbsolutePath,
+    required this.archiveFileExists,
+  });
+
+  const _ArchiveAvailability.none()
+    : archiveRelativePath = null,
+      archiveAbsolutePath = null,
+      archiveFileExists = false;
+
+  final String? archiveRelativePath;
+  final String? archiveAbsolutePath;
+  final bool archiveFileExists;
+
+  bool get hasArchiveRecord =>
+      archiveRelativePath != null && archiveRelativePath!.isNotEmpty;
 }

@@ -7,7 +7,7 @@ part of 'incremental_update_status_provider.dart';
 // **************************************************************************
 
 String _$incrementalUpdateStatusHash() =>
-    r'66e28e52aecc408174de53e3e004ca854f3e1c68';
+    r'99f53dac14250c3661ecbacd07188cb03df79d16';
 
 /// See also [incrementalUpdateStatus].
 @ProviderFor(incrementalUpdateStatus)

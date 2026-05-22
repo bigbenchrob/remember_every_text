@@ -444,5 +444,256 @@ class _ChatMessageTextStatsProviderElement
   int get chatSsId => (origin as ChatMessageTextStatsProvider).chatSsId;
 }
 
+String _$chatAttachmentStatsHash() =>
+    r'db0d5b1a2df73d999f17a2ed87288951cb157445';
+
+/// See also [chatAttachmentStats].
+@ProviderFor(chatAttachmentStats)
+const chatAttachmentStatsProvider = ChatAttachmentStatsFamily();
+
+/// See also [chatAttachmentStats].
+class ChatAttachmentStatsFamily
+    extends Family<AsyncValue<ChatAttachmentStats>> {
+  /// See also [chatAttachmentStats].
+  const ChatAttachmentStatsFamily();
+
+  /// See also [chatAttachmentStats].
+  ChatAttachmentStatsProvider call(int chatSsId) {
+    return ChatAttachmentStatsProvider(chatSsId);
+  }
+
+  @override
+  ChatAttachmentStatsProvider getProviderOverride(
+    covariant ChatAttachmentStatsProvider provider,
+  ) {
+    return call(provider.chatSsId);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'chatAttachmentStatsProvider';
+}
+
+/// See also [chatAttachmentStats].
+class ChatAttachmentStatsProvider
+    extends AutoDisposeFutureProvider<ChatAttachmentStats> {
+  /// See also [chatAttachmentStats].
+  ChatAttachmentStatsProvider(int chatSsId)
+    : this._internal(
+        (ref) => chatAttachmentStats(ref as ChatAttachmentStatsRef, chatSsId),
+        from: chatAttachmentStatsProvider,
+        name: r'chatAttachmentStatsProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$chatAttachmentStatsHash,
+        dependencies: ChatAttachmentStatsFamily._dependencies,
+        allTransitiveDependencies:
+            ChatAttachmentStatsFamily._allTransitiveDependencies,
+        chatSsId: chatSsId,
+      );
+
+  ChatAttachmentStatsProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.chatSsId,
+  }) : super.internal();
+
+  final int chatSsId;
+
+  @override
+  Override overrideWith(
+    FutureOr<ChatAttachmentStats> Function(ChatAttachmentStatsRef provider)
+    create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: ChatAttachmentStatsProvider._internal(
+        (ref) => create(ref as ChatAttachmentStatsRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        chatSsId: chatSsId,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<ChatAttachmentStats> createElement() {
+    return _ChatAttachmentStatsProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ChatAttachmentStatsProvider && other.chatSsId == chatSsId;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, chatSsId.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin ChatAttachmentStatsRef
+    on AutoDisposeFutureProviderRef<ChatAttachmentStats> {
+  /// The parameter `chatSsId` of this provider.
+  int get chatSsId;
+}
+
+class _ChatAttachmentStatsProviderElement
+    extends AutoDisposeFutureProviderElement<ChatAttachmentStats>
+    with ChatAttachmentStatsRef {
+  _ChatAttachmentStatsProviderElement(super.provider);
+
+  @override
+  int get chatSsId => (origin as ChatAttachmentStatsProvider).chatSsId;
+}
+
+String _$messageAttachmentsHash() =>
+    r'60ea6c1abd087d4ee19ab97818f76cc12e80bd19';
+
+/// See also [messageAttachments].
+@ProviderFor(messageAttachments)
+const messageAttachmentsProvider = MessageAttachmentsFamily();
+
+/// See also [messageAttachments].
+class MessageAttachmentsFamily
+    extends Family<AsyncValue<List<MessageAttachment>>> {
+  /// See also [messageAttachments].
+  const MessageAttachmentsFamily();
+
+  /// See also [messageAttachments].
+  MessageAttachmentsProvider call(int messageSsId) {
+    return MessageAttachmentsProvider(messageSsId);
+  }
+
+  @override
+  MessageAttachmentsProvider getProviderOverride(
+    covariant MessageAttachmentsProvider provider,
+  ) {
+    return call(provider.messageSsId);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'messageAttachmentsProvider';
+}
+
+/// See also [messageAttachments].
+class MessageAttachmentsProvider
+    extends AutoDisposeFutureProvider<List<MessageAttachment>> {
+  /// See also [messageAttachments].
+  MessageAttachmentsProvider(int messageSsId)
+    : this._internal(
+        (ref) => messageAttachments(ref as MessageAttachmentsRef, messageSsId),
+        from: messageAttachmentsProvider,
+        name: r'messageAttachmentsProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$messageAttachmentsHash,
+        dependencies: MessageAttachmentsFamily._dependencies,
+        allTransitiveDependencies:
+            MessageAttachmentsFamily._allTransitiveDependencies,
+        messageSsId: messageSsId,
+      );
+
+  MessageAttachmentsProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.messageSsId,
+  }) : super.internal();
+
+  final int messageSsId;
+
+  @override
+  Override overrideWith(
+    FutureOr<List<MessageAttachment>> Function(MessageAttachmentsRef provider)
+    create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: MessageAttachmentsProvider._internal(
+        (ref) => create(ref as MessageAttachmentsRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        messageSsId: messageSsId,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<List<MessageAttachment>> createElement() {
+    return _MessageAttachmentsProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is MessageAttachmentsProvider &&
+        other.messageSsId == messageSsId;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, messageSsId.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin MessageAttachmentsRef
+    on AutoDisposeFutureProviderRef<List<MessageAttachment>> {
+  /// The parameter `messageSsId` of this provider.
+  int get messageSsId;
+}
+
+class _MessageAttachmentsProviderElement
+    extends AutoDisposeFutureProviderElement<List<MessageAttachment>>
+    with MessageAttachmentsRef {
+  _MessageAttachmentsProviderElement(super.provider);
+
+  @override
+  int get messageSsId => (origin as MessageAttachmentsProvider).messageSsId;
+}
+
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

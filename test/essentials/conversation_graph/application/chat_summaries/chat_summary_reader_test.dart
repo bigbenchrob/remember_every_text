@@ -1,16 +1,21 @@
 import 'dart:io';
 
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as path;
 import 'package:remember_this_text/essentials/conversation_graph/application/chat_summaries/chat_summary.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/chat_summaries/chat_summary_reader.dart';
 import 'package:remember_this_text/essentials/conversation_graph/infrastructure/working_database_provider.dart';
+import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {
   late Directory tempDir;
+  late Directory archiveDir;
   late WorkingDatabase workingDatabase;
+  late OverlayDatabase overlayDatabase;
 
   setUpAll(() {
     sqfliteFfiInit();
@@ -19,13 +24,17 @@ void main() {
 
   setUp(() async {
     tempDir = await Directory.systemTemp.createTemp('ss_chat_summary_test_');
+    archiveDir = Directory(path.join(tempDir.path, 'attachment_archive'));
+    await archiveDir.create(recursive: true);
     workingDatabase = await WorkingDatabase.open(
       databaseDirectory: tempDir.path,
       databaseName: 'working_ss_test.db',
     );
+    overlayDatabase = OverlayDatabase(NativeDatabase.memory());
   });
 
   tearDown(() async {
+    await overlayDatabase.close();
     await workingDatabase.close();
     if (tempDir.existsSync()) {
       await tempDir.delete(recursive: true);
@@ -380,6 +389,131 @@ void main() {
       expect(textStats.noTextMessageCount, 1);
     },
   );
+
+  test('reads attachment stats and message attachment metadata', () async {
+    final chatSsId = _ss(7);
+    final firstMessageSsId = _ss(201);
+    final secondMessageSsId = _ss(202);
+    final imageAttachmentSsId = _ss(301);
+    final documentAttachmentSsId = _ss(302);
+    final existingImageFile = File('${tempDir.path}/photo.jpg');
+    await existingImageFile.writeAsString('image bytes');
+    final missingDocumentPath = '${tempDir.path}/brief.pdf';
+    const archivedRelativePath = 'ab/archived-photo.jpg';
+    final archivedFile = File(path.join(archiveDir.path, archivedRelativePath));
+    await archivedFile.parent.create(recursive: true);
+    await archivedFile.writeAsString('archived image bytes');
+
+    await _insertChat(workingDatabase, ssId: chatSsId);
+    await _insertMessage(
+      workingDatabase,
+      ssId: firstMessageSsId,
+      guid: 'message-guid-1',
+      dateUtc: '2026-05-19T10:00:00.000Z',
+      text: 'photo',
+    );
+    await _insertMessage(
+      workingDatabase,
+      ssId: secondMessageSsId,
+      dateUtc: '2026-05-20T10:00:00.000Z',
+      text: 'document',
+    );
+    await _insertChatMessage(
+      workingDatabase,
+      chatSsId: chatSsId,
+      messageSsId: firstMessageSsId,
+    );
+    await _insertChatMessage(
+      workingDatabase,
+      chatSsId: chatSsId,
+      messageSsId: secondMessageSsId,
+    );
+    await _insertAttachment(
+      workingDatabase,
+      ssId: imageAttachmentSsId,
+      transferName: 'photo.jpg',
+      filename: existingImageFile.path,
+      mimeType: 'image/jpeg',
+      totalBytes: 1200,
+    );
+    await _insertAttachment(
+      workingDatabase,
+      ssId: documentAttachmentSsId,
+      transferName: 'brief.pdf',
+      filename: missingDocumentPath,
+      mimeType: 'application/pdf',
+      totalBytes: 2400,
+    );
+    await _insertMessageAttachment(
+      workingDatabase,
+      messageSsId: firstMessageSsId,
+      attachmentSsId: imageAttachmentSsId,
+    );
+    await _insertMessageAttachment(
+      workingDatabase,
+      messageSsId: secondMessageSsId,
+      attachmentSsId: documentAttachmentSsId,
+    );
+    await overlayDatabase.customStatement(
+      '''
+      INSERT INTO archived_attachments (
+        message_guid,
+        import_attachment_id,
+        archive_relative_path,
+        archived_at_utc,
+        file_size_bytes,
+        content_hash,
+        provenance
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      ''',
+      <Object?>[
+        'message-guid-1',
+        SourceScopedRowKey.unpackSourceRowId(imageAttachmentSsId),
+        archivedRelativePath,
+        '2026-05-21T10:00:00.000Z',
+        20,
+        'hash',
+        'archived',
+      ],
+    );
+
+    final reader = ChatSummaryReader(
+      workingDatabase: workingDatabase,
+      overlayDatabase: overlayDatabase,
+      attachmentArchiveDirectory: archiveDir.path,
+    );
+    final stats = await reader.readAttachmentStats(chatSsId: chatSsId);
+    final attachments = await reader.readMessageAttachments(
+      messageSsId: firstMessageSsId,
+    );
+    final recentMessages = await reader.readRecentMessages(chatSsId: chatSsId);
+
+    expect(stats.messageWithAttachmentCount, 2);
+    expect(stats.attachmentCount, 2);
+    expect(stats.imageAttachmentCount, 1);
+    expect(stats.documentAttachmentCount, 1);
+    expect(stats.sourcePathHintCount, 2);
+    expect(stats.localFileAvailableCount, 1);
+    expect(stats.localFileMissingCount, 1);
+    expect(stats.archiveRecordCount, 1);
+    expect(stats.archiveFileAvailableCount, 1);
+    expect(stats.archiveFileMissingCount, 0);
+    expect(attachments.single.attachmentSsId, imageAttachmentSsId);
+    expect(attachments.single.transferName, 'photo.jpg');
+    expect(attachments.single.filename, existingImageFile.path);
+    expect(attachments.single.hasSourcePathHint, isTrue);
+    expect(attachments.single.localFileExists, isTrue);
+    expect(attachments.single.archiveRelativePath, archivedRelativePath);
+    expect(attachments.single.archiveAbsolutePath, archivedFile.path);
+    expect(attachments.single.hasArchiveRecord, isTrue);
+    expect(attachments.single.archiveFileExists, isTrue);
+    expect(
+      recentMessages
+          .singleWhere((message) => message.messageSsId == firstMessageSsId)
+          .attachmentCount,
+      1,
+    );
+  });
 }
 
 int _ss(int sourceRowId) {
@@ -413,11 +547,12 @@ Future<void> _insertMessage(
   required int ssId,
   required String dateUtc,
   required String? text,
+  String? guid,
   bool isFromMe = false,
 }) async {
   await workingDatabase.database.insert('messages', <String, Object?>{
     'ss_id': ssId,
-    'guid': 'message-$ssId',
+    'guid': guid ?? 'message-$ssId',
     'is_from_me': isFromMe ? 1 : 0,
     'date_utc': dateUtc,
     'text': text,
@@ -444,4 +579,37 @@ Future<void> _insertChatMessage(
     'chat_ss_id': chatSsId,
     'message_ss_id': messageSsId,
   }, conflictAlgorithm: ConflictAlgorithm.ignore);
+}
+
+Future<void> _insertAttachment(
+  WorkingDatabase workingDatabase, {
+  required int ssId,
+  required String transferName,
+  required String filename,
+  required String mimeType,
+  required int totalBytes,
+}) async {
+  await workingDatabase.database.insert('attachments', <String, Object?>{
+    'ss_id': ssId,
+    'guid': 'attachment-$ssId',
+    'transfer_name': transferName,
+    'filename': filename,
+    'mime_type': mimeType,
+    'total_bytes': totalBytes,
+  });
+}
+
+Future<void> _insertMessageAttachment(
+  WorkingDatabase workingDatabase, {
+  required int messageSsId,
+  required int attachmentSsId,
+}) async {
+  await workingDatabase.database.insert(
+    'message_to_attachment',
+    <String, Object?>{
+      'message_ss_id': messageSsId,
+      'attachment_ss_id': attachmentSsId,
+    },
+    conflictAlgorithm: ConflictAlgorithm.ignore,
+  );
 }

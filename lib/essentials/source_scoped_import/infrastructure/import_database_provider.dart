@@ -46,7 +46,7 @@ class ImportDatabase {
 
     final db = await openDatabase(
       path.join(databaseDirectory, databaseName),
-      version: 5,
+      version: 8,
       onCreate: (db, version) async {
         await _createSchema(db);
       },
@@ -66,6 +66,17 @@ class ImportDatabase {
         if (oldVersion < 5) {
           await _createHandleSchema(db);
           await _createChatToHandleSchema(db);
+        }
+        if (oldVersion < 6) {
+          await _createContactSchema(db);
+          await _createContactChannelSchema(db);
+        }
+        if (oldVersion < 7) {
+          await _addMessageSemanticSourceColumns(db);
+        }
+        if (oldVersion < 8) {
+          await _createAttachmentSchema(db);
+          await _createMessageToAttachmentSchema(db);
         }
       },
       onOpen: (db) async {
@@ -109,6 +120,15 @@ class ImportDatabase {
     return rows.single['max_source_rowid'] as int?;
   }
 
+  Future<int?> maxAttachmentSourceRowIdForSource(int sourceId) async {
+    final rows = await database.rawQuery(
+      'SELECT MAX(source_rowid) AS max_source_rowid '
+      'FROM attachments WHERE source_id = ?',
+      <Object?>[sourceId],
+    );
+    return rows.single['max_source_rowid'] as int?;
+  }
+
   static Future<void> _createSchema(Database db) async {
     await db.execute('''
       CREATE TABLE source_registry (
@@ -145,6 +165,14 @@ class ImportDatabase {
         text TEXT,
         attributed_body_blob BLOB,
         associated_message_guid TEXT,
+        raw_item_type INTEGER,
+        raw_associated_message_type INTEGER,
+        thread_originator_guid TEXT,
+        error_code INTEGER,
+        is_system_message INTEGER NOT NULL DEFAULT 0 CHECK (is_system_message IN (0, 1)),
+        has_attributed_body_source INTEGER NOT NULL DEFAULT 0 CHECK (has_attributed_body_source IN (0, 1)),
+        has_message_summary_info INTEGER NOT NULL DEFAULT 0 CHECK (has_message_summary_info IN (0, 1)),
+        has_payload_data_source INTEGER NOT NULL DEFAULT 0 CHECK (has_payload_data_source IN (0, 1)),
         batch_id INTEGER NOT NULL,
         UNIQUE(source_id, source_rowid),
         FOREIGN KEY (source_id) REFERENCES source_registry(source_id),
@@ -161,6 +189,59 @@ class ImportDatabase {
     await _createChatSchema(db);
     await _createChatToMessageSchema(db);
     await _createChatToHandleSchema(db);
+    await _createContactSchema(db);
+    await _createContactChannelSchema(db);
+    await _createAttachmentSchema(db);
+    await _createMessageToAttachmentSchema(db);
+  }
+
+  static Future<void> _addMessageSemanticSourceColumns(Database db) async {
+    await _addColumnIfMissing(db, 'messages', 'raw_item_type INTEGER');
+    await _addColumnIfMissing(
+      db,
+      'messages',
+      'raw_associated_message_type INTEGER',
+    );
+    await _addColumnIfMissing(db, 'messages', 'thread_originator_guid TEXT');
+    await _addColumnIfMissing(db, 'messages', 'error_code INTEGER');
+    await _addColumnIfMissing(
+      db,
+      'messages',
+      'is_system_message INTEGER NOT NULL DEFAULT 0 '
+          'CHECK (is_system_message IN (0, 1))',
+    );
+    await _addColumnIfMissing(
+      db,
+      'messages',
+      'has_attributed_body_source INTEGER NOT NULL DEFAULT 0 '
+          'CHECK (has_attributed_body_source IN (0, 1))',
+    );
+    await _addColumnIfMissing(
+      db,
+      'messages',
+      'has_message_summary_info INTEGER NOT NULL DEFAULT 0 '
+          'CHECK (has_message_summary_info IN (0, 1))',
+    );
+    await _addColumnIfMissing(
+      db,
+      'messages',
+      'has_payload_data_source INTEGER NOT NULL DEFAULT 0 '
+          'CHECK (has_payload_data_source IN (0, 1))',
+    );
+  }
+
+  static Future<void> _addColumnIfMissing(
+    Database db,
+    String table,
+    String columnDefinition,
+  ) async {
+    final columnName = columnDefinition.split(' ').first;
+    final columns = await db.rawQuery('PRAGMA table_info($table)');
+    final columnNames = columns.map((row) => row['name']).toSet();
+    if (columnNames.contains(columnName)) {
+      return;
+    }
+    await db.execute('ALTER TABLE $table ADD COLUMN $columnDefinition');
   }
 
   static Future<void> _createHandleSchema(Database db) async {
@@ -259,12 +340,131 @@ class ImportDatabase {
     );
   }
 
+  static Future<void> _createContactSchema(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS contacts (
+        ss_id INTEGER PRIMARY KEY,
+        source_id INTEGER NOT NULL,
+        source_rowid INTEGER NOT NULL,
+        display_name TEXT NOT NULL,
+        short_name TEXT,
+        first_name TEXT,
+        last_name TEXT,
+        organization TEXT,
+        created_at_utc TEXT,
+        batch_id INTEGER NOT NULL,
+        UNIQUE(source_id, source_rowid),
+        FOREIGN KEY (source_id) REFERENCES source_registry(source_id),
+        FOREIGN KEY (batch_id) REFERENCES import_batches(batch_id)
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_contacts_source_cursor '
+      'ON contacts(source_id, source_rowid)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_contacts_display_name '
+      'ON contacts(display_name)',
+    );
+  }
+
+  static Future<void> _createContactChannelSchema(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS contact_channels (
+        source_id INTEGER NOT NULL,
+        source_contact_rowid INTEGER NOT NULL,
+        contact_ss_id INTEGER NOT NULL,
+        kind TEXT NOT NULL CHECK(kind IN ('email', 'phone')),
+        value TEXT NOT NULL,
+        label TEXT,
+        batch_id INTEGER NOT NULL,
+        UNIQUE(source_id, source_contact_rowid, kind, value),
+        FOREIGN KEY (source_id) REFERENCES source_registry(source_id),
+        FOREIGN KEY (batch_id) REFERENCES import_batches(batch_id)
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_contact_channels_contact '
+      'ON contact_channels(contact_ss_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_contact_channels_value '
+      'ON contact_channels(value)',
+    );
+  }
+
+  static Future<void> _createAttachmentSchema(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS attachments (
+        ss_id INTEGER PRIMARY KEY,
+        source_id INTEGER NOT NULL,
+        source_rowid INTEGER NOT NULL,
+        guid TEXT,
+        filename TEXT,
+        transfer_name TEXT,
+        uti TEXT,
+        mime_type TEXT,
+        total_bytes INTEGER,
+        created_at_utc TEXT,
+        batch_id INTEGER NOT NULL,
+        UNIQUE(source_id, source_rowid),
+        FOREIGN KEY (source_id) REFERENCES source_registry(source_id),
+        FOREIGN KEY (batch_id) REFERENCES import_batches(batch_id)
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_attachments_source_cursor '
+      'ON attachments(source_id, source_rowid)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_attachments_guid ON attachments(guid)',
+    );
+  }
+
+  static Future<void> _createMessageToAttachmentSchema(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS message_to_attachment (
+        message_source_id INTEGER NOT NULL,
+        attachment_source_id INTEGER NOT NULL,
+        source_message_rowid INTEGER NOT NULL,
+        source_attachment_rowid INTEGER NOT NULL,
+        message_ss_id INTEGER NOT NULL,
+        attachment_ss_id INTEGER NOT NULL,
+        batch_id INTEGER NOT NULL,
+        UNIQUE(
+          message_source_id,
+          source_message_rowid,
+          attachment_source_id,
+          source_attachment_rowid
+        ),
+        FOREIGN KEY (message_source_id) REFERENCES source_registry(source_id),
+        FOREIGN KEY (attachment_source_id) REFERENCES source_registry(source_id),
+        FOREIGN KEY (batch_id) REFERENCES import_batches(batch_id)
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_message_to_attachment_message '
+      'ON message_to_attachment(message_ss_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_message_to_attachment_attachment '
+      'ON message_to_attachment(attachment_ss_id)',
+    );
+  }
+
   static Future<void> _ensureLiveSource(Database db) async {
     await db.insert('source_registry', <String, Object?>{
       'source_id': liveChatDbSourceId,
       'source_key': liveChatDbSourceKey,
       'source_kind': liveChatDbSourceKind,
       'source_label': 'Live chat.db',
+      'created_at_utc': DateTime.now().toUtc().toIso8601String(),
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
+    await db.insert('source_registry', <String, Object?>{
+      'source_id': liveAddressBookSourceId,
+      'source_key': liveAddressBookSourceKey,
+      'source_kind': liveAddressBookSourceKind,
+      'source_label': 'Live AddressBook',
       'created_at_utc': DateTime.now().toUtc().toIso8601String(),
     }, conflictAlgorithm: ConflictAlgorithm.ignore);
   }

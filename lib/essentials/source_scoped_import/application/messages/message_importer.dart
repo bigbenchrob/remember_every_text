@@ -67,6 +67,9 @@ class MessageImporter {
         for (final row in rows) {
           final sourceRowId = _requiredInt(row, 'source_rowid');
           lastImportedSourceRowId = sourceRowId;
+          final attributedBody = _nullableBlob(row, 'attributedBody');
+          final messageSummaryInfo = _nullableBlob(row, 'message_summary_info');
+          final payloadData = _nullableBlob(row, 'payload_data');
 
           final insertedId = await txn.insert('messages', <String, Object?>{
             'ss_id': SourceScopedRowKey.pack(
@@ -84,11 +87,25 @@ class MessageImporter {
               row['date_delivered'],
             ),
             'text': _nullableString(row, 'text'),
-            'attributed_body_blob': _nullableBlob(row, 'attributedBody'),
+            'attributed_body_blob': attributedBody,
             'associated_message_guid': _nullableString(
               row,
               'associated_message_guid',
             ),
+            'raw_item_type': _nullableInt(row, 'item_type'),
+            'raw_associated_message_type': _nullableInt(
+              row,
+              'associated_message_type',
+            ),
+            'thread_originator_guid': _nullableString(
+              row,
+              'thread_originator_guid',
+            ),
+            'error_code': _nullableInt(row, 'error'),
+            'is_system_message': _boolIntOrZero(row, 'is_system_message'),
+            'has_attributed_body_source': attributedBody == null ? 0 : 1,
+            'has_message_summary_info': messageSummaryInfo == null ? 0 : 1,
+            'has_payload_data_source': payloadData == null ? 0 : 1,
             'batch_id': batchId,
           }, conflictAlgorithm: ConflictAlgorithm.ignore);
 
@@ -118,6 +135,14 @@ class MessageImporter {
 
   static int _boolInt(Map<String, Object?> row, String field) {
     final value = _requiredInt(row, field);
+    return value == 0 ? 0 : 1;
+  }
+
+  static int _boolIntOrZero(Map<String, Object?> row, String field) {
+    final value = _nullableInt(row, field);
+    if (value == null) {
+      return 0;
+    }
     return value == 0 ? 0 : 1;
   }
 

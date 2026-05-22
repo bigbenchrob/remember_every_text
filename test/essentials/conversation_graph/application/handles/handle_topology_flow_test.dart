@@ -81,10 +81,74 @@ void main() {
     expect(workingRows.single.keys, isNot(contains('source_id')));
     expect(workingRows.single.keys, isNot(contains('source_rowid')));
     expect(workingRows.single.keys, isNot(contains('batch_id')));
+
+    final aliases = await workingDatabase.database.query('handle_aliases');
+    final canonicalHandles = await workingDatabase.database.query(
+      'canonical_handles',
+    );
+    expect(aliases.single['handle_ss_id'], expectedSsId);
+    expect(aliases.single['canonical_handle_ss_id'], expectedSsId);
+    expect(canonicalHandles.single['canonical_handle_ss_id'], expectedSsId);
   });
 
+  test(
+    'projects normalized handle aliases above source handle identity',
+    () async {
+      await _insertSourceHandle(
+        chatDbPath,
+        rowId: 12,
+        id: '+16049995969',
+        service: 'iMessage',
+      );
+      await _insertSourceHandle(
+        chatDbPath,
+        rowId: 13,
+        id: '6049995969',
+        service: 'SMS',
+      );
+
+      await HandleImporter(
+        chatDbPath: chatDbPath,
+        importDatabase: importDatabase,
+      ).importNewHandles();
+      await HandleProjector(
+        importDatabase: importDatabase,
+        workingDatabase: workingDatabase,
+      ).projectHandles();
+
+      final firstSsId = SourceScopedRowKey.pack(
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 12,
+      );
+      final secondSsId = SourceScopedRowKey.pack(
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 13,
+      );
+      final handles = await workingDatabase.database.query('handles');
+      final canonicalHandles = await workingDatabase.database.query(
+        'canonical_handles',
+      );
+      final aliases = await workingDatabase.database.query(
+        'handle_aliases',
+        orderBy: 'handle_ss_id ASC',
+      );
+
+      expect(handles, hasLength(2));
+      expect(canonicalHandles, hasLength(1));
+      expect(canonicalHandles.single['canonical_handle_ss_id'], firstSsId);
+      expect(canonicalHandles.single['alias_count'], 2);
+      expect(aliases.map((row) => row['handle_ss_id']), [
+        firstSsId,
+        secondSsId,
+      ]);
+      expect(aliases.map((row) => row['canonical_handle_ss_id']).toSet(), {
+        firstSsId,
+      });
+    },
+  );
+
   test('handle import is idempotent and source-scoped', () async {
-    await _insertLedgerHandle(importDatabase, sourceId: 2, sourceRowId: 999999);
+    await _insertLedgerHandle(importDatabase, sourceId: 3, sourceRowId: 999999);
     await _insertSourceHandle(
       chatDbPath,
       rowId: 5,

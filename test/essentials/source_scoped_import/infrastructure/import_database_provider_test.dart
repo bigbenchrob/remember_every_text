@@ -50,6 +50,10 @@ void main() {
         'chats',
         'chat_to_message',
         'chat_to_handle',
+        'contacts',
+        'contact_channels',
+        'attachments',
+        'message_to_attachment',
       }),
     );
 
@@ -73,6 +77,14 @@ void main() {
         'text',
         'attributed_body_blob',
         'associated_message_guid',
+        'raw_item_type',
+        'raw_associated_message_type',
+        'thread_originator_guid',
+        'error_code',
+        'is_system_message',
+        'has_attributed_body_source',
+        'has_message_summary_info',
+        'has_payload_data_source',
         'batch_id',
       }),
     );
@@ -90,14 +102,26 @@ void main() {
     expect(rows.single['source_kind'], liveChatDbSourceKind);
   });
 
+  test('registers live AddressBook source identity', () async {
+    final rows = await importDatabase.database.query(
+      'source_registry',
+      where: 'source_id = ?',
+      whereArgs: <Object?>[liveAddressBookSourceId],
+    );
+
+    expect(rows, hasLength(1));
+    expect(rows.single['source_key'], liveAddressBookSourceKey);
+    expect(rows.single['source_kind'], liveAddressBookSourceKind);
+  });
+
   test('allows duplicate GUIDs across different source ids', () async {
     final liveBatchId = await importDatabase.insertImportBatch(
       sourceId: liveChatDbSourceId,
       startedAtUtc: DateTime.now().toUtc().toIso8601String(),
     );
-    await _insertSource(importDatabase, sourceId: 2);
+    await _insertSource(importDatabase, sourceId: 3);
     final archiveBatchId = await importDatabase.insertImportBatch(
-      sourceId: 2,
+      sourceId: 3,
       startedAtUtc: DateTime.now().toUtc().toIso8601String(),
     );
 
@@ -110,7 +134,7 @@ void main() {
     );
     await _insertMessage(
       importDatabase,
-      sourceId: 2,
+      sourceId: 3,
       sourceRowId: 10,
       guid: 'same-guid',
       batchId: archiveBatchId,
@@ -175,6 +199,12 @@ void main() {
     final participantColumns = await importDatabase.database.rawQuery(
       'PRAGMA table_info(chat_to_handle)',
     );
+    final attachmentColumns = await importDatabase.database.rawQuery(
+      'PRAGMA table_info(attachments)',
+    );
+    final attachmentEdgeColumns = await importDatabase.database.rawQuery(
+      'PRAGMA table_info(message_to_attachment)',
+    );
 
     expect(handleColumns.map((row) => row['name']).toSet(), <String>{
       'ss_id',
@@ -212,6 +242,57 @@ void main() {
       'handle_ss_id',
       'batch_id',
     });
+
+    final contactColumns = await importDatabase.database.rawQuery(
+      'PRAGMA table_info(contacts)',
+    );
+    final channelColumns = await importDatabase.database.rawQuery(
+      'PRAGMA table_info(contact_channels)',
+    );
+
+    expect(contactColumns.map((row) => row['name']).toSet(), <String>{
+      'ss_id',
+      'source_id',
+      'source_rowid',
+      'display_name',
+      'short_name',
+      'first_name',
+      'last_name',
+      'organization',
+      'created_at_utc',
+      'batch_id',
+    });
+    expect(channelColumns.map((row) => row['name']).toSet(), <String>{
+      'source_id',
+      'source_contact_rowid',
+      'contact_ss_id',
+      'kind',
+      'value',
+      'label',
+      'batch_id',
+    });
+    expect(attachmentColumns.map((row) => row['name']).toSet(), <String>{
+      'ss_id',
+      'source_id',
+      'source_rowid',
+      'guid',
+      'filename',
+      'transfer_name',
+      'uti',
+      'mime_type',
+      'total_bytes',
+      'created_at_utc',
+      'batch_id',
+    });
+    expect(attachmentEdgeColumns.map((row) => row['name']).toSet(), <String>{
+      'message_source_id',
+      'attachment_source_id',
+      'source_message_rowid',
+      'source_attachment_rowid',
+      'message_ss_id',
+      'attachment_ss_id',
+      'batch_id',
+    });
   });
 
   test('creates non-unique chat guid index', () async {
@@ -230,9 +311,9 @@ void main() {
       sourceId: liveChatDbSourceId,
       startedAtUtc: DateTime.now().toUtc().toIso8601String(),
     );
-    await _insertSource(importDatabase, sourceId: 2);
+    await _insertSource(importDatabase, sourceId: 3);
     final archiveBatchId = await importDatabase.insertImportBatch(
-      sourceId: 2,
+      sourceId: 3,
       startedAtUtc: DateTime.now().toUtc().toIso8601String(),
     );
 
@@ -245,7 +326,7 @@ void main() {
     );
     await _insertChat(
       importDatabase,
-      sourceId: 2,
+      sourceId: 3,
       sourceRowId: 7,
       guid: 'same-chat-guid',
       batchId: archiveBatchId,
@@ -286,6 +367,44 @@ void main() {
         ),
         throwsA(isA<DatabaseException>()),
       );
+    },
+  );
+
+  test(
+    'allows duplicate attachment GUIDs across different source ids',
+    () async {
+      final liveBatchId = await importDatabase.insertImportBatch(
+        sourceId: liveChatDbSourceId,
+        startedAtUtc: DateTime.now().toUtc().toIso8601String(),
+      );
+      await _insertSource(importDatabase, sourceId: 3);
+      final archiveBatchId = await importDatabase.insertImportBatch(
+        sourceId: 3,
+        startedAtUtc: DateTime.now().toUtc().toIso8601String(),
+      );
+
+      await _insertAttachment(
+        importDatabase,
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 8,
+        guid: 'same-attachment-guid',
+        batchId: liveBatchId,
+      );
+      await _insertAttachment(
+        importDatabase,
+        sourceId: 3,
+        sourceRowId: 8,
+        guid: 'same-attachment-guid',
+        batchId: archiveBatchId,
+      );
+
+      final rows = await importDatabase.database.query(
+        'attachments',
+        where: 'guid = ?',
+        whereArgs: <Object?>['same-attachment-guid'],
+      );
+
+      expect(rows, hasLength(2));
     },
   );
 }
@@ -330,6 +449,25 @@ Future<void> _insertChat(
   required int batchId,
 }) async {
   await importDatabase.database.insert('chats', <String, Object?>{
+    'ss_id': SourceScopedRowKey.pack(
+      sourceId: sourceId,
+      sourceRowId: sourceRowId,
+    ),
+    'source_id': sourceId,
+    'source_rowid': sourceRowId,
+    'guid': guid,
+    'batch_id': batchId,
+  });
+}
+
+Future<void> _insertAttachment(
+  ImportDatabase importDatabase, {
+  required int sourceId,
+  required int sourceRowId,
+  required String guid,
+  required int batchId,
+}) async {
+  await importDatabase.database.insert('attachments', <String, Object?>{
     'ss_id': SourceScopedRowKey.pack(
       sourceId: sourceId,
       sourceRowId: sourceRowId,

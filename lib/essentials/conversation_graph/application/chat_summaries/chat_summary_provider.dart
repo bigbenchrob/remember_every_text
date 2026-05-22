@@ -1,6 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../db/feature_level_providers.dart';
 import '../../infrastructure/working_database_provider.dart';
 import 'chat_summary.dart';
 import 'chat_summary_reader.dart';
@@ -49,4 +50,31 @@ Future<ChatMessageTextStats> chatMessageTextStats(Ref ref, int chatSsId) async {
   return ChatSummaryReader(
     workingDatabase: workingDatabase,
   ).readMessageTextStats(chatSsId: chatSsId);
+}
+
+@riverpod
+Future<ChatAttachmentStats> chatAttachmentStats(Ref ref, int chatSsId) async {
+  final workingDatabase = await ref.watch(workingDatabaseProvider.future);
+  final overlayDatabase = await ref.watch(overlayDatabaseProvider.future);
+  final archiveDirectory = ref.watch(attachmentArchiveDirectoryProvider);
+  return ChatSummaryReader(
+    workingDatabase: workingDatabase,
+    overlayDatabase: overlayDatabase,
+    attachmentArchiveDirectory: archiveDirectory,
+  ).readAttachmentStats(chatSsId: chatSsId);
+}
+
+@riverpod
+Future<List<MessageAttachment>> messageAttachments(
+  Ref ref,
+  int messageSsId,
+) async {
+  final workingDatabase = await ref.watch(workingDatabaseProvider.future);
+  final overlayDatabase = await ref.watch(overlayDatabaseProvider.future);
+  final archiveDirectory = ref.watch(attachmentArchiveDirectoryProvider);
+  return ChatSummaryReader(
+    workingDatabase: workingDatabase,
+    overlayDatabase: overlayDatabase,
+    attachmentArchiveDirectory: archiveDirectory,
+  ).readMessageAttachments(messageSsId: messageSsId);
 }

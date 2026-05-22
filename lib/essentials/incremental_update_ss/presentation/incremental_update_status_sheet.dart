@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../../config/theme/colors/theme_colors_annotated.dart';
 import '../../../features/chats/application/chat_read_model_source_provider.dart';
 import '../../../features/chats/presentation/view_model/chats_view_model_provider.dart';
 import '../../../features/chats/presentation/view_model/recent_chats_provider.dart';
@@ -31,6 +34,7 @@ class _IncrementalUpdateStatusSheetState
   ChatSummaryFilter _summaryFilter = ChatSummaryFilter.all;
   ChatSummarySort _summarySort = ChatSummarySort.mostRecentMessage;
   int? _selectedChatSsId;
+  int? _selectedMessageSsId;
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +59,26 @@ class _IncrementalUpdateStatusSheetState
             ),
           )
         : ref.watch(chatMessageTextStatsProvider(_selectedChatSsId!));
+    final selectedAttachmentStatsAsync = _selectedChatSsId == null
+        ? const AsyncValue<ChatAttachmentStats>.data(
+            ChatAttachmentStats(
+              messageWithAttachmentCount: 0,
+              attachmentCount: 0,
+              imageAttachmentCount: 0,
+              videoAttachmentCount: 0,
+              documentAttachmentCount: 0,
+              sourcePathHintCount: 0,
+              localFileAvailableCount: 0,
+              localFileMissingCount: 0,
+              archiveRecordCount: 0,
+              archiveFileAvailableCount: 0,
+              archiveFileMissingCount: 0,
+            ),
+          )
+        : ref.watch(chatAttachmentStatsProvider(_selectedChatSsId!));
+    final selectedMessageAttachmentsAsync = _selectedMessageSsId == null
+        ? const AsyncValue<List<MessageAttachment>>.data([])
+        : ref.watch(messageAttachmentsProvider(_selectedMessageSsId!));
     final chatReadModelSource = ref.watch(chatReadModelSourceProvider);
 
     return MacosSheet(
@@ -126,14 +150,19 @@ class _IncrementalUpdateStatusSheetState
                     selectedMessagesAsync: selectedMessagesAsync,
                     selectedTextMessagesAsync: selectedTextMessagesAsync,
                     selectedTextStatsAsync: selectedTextStatsAsync,
+                    selectedAttachmentStatsAsync: selectedAttachmentStatsAsync,
+                    selectedMessageAttachmentsAsync:
+                        selectedMessageAttachmentsAsync,
                     recentChatsComparisonAsync: recentChatsComparisonAsync,
                     summaryFilter: _summaryFilter,
                     summarySort: _summarySort,
                     selectedChatSsId: _selectedChatSsId,
+                    selectedMessageSsId: _selectedMessageSsId,
                     onSummaryFilterChanged: (value) {
                       setState(() {
                         _summaryFilter = value;
                         _selectedChatSsId = null;
+                        _selectedMessageSsId = null;
                       });
                     },
                     onSummarySortChanged: (value) {
@@ -144,7 +173,13 @@ class _IncrementalUpdateStatusSheetState
                     onChatSelected: (chatSsId) {
                       setState(() {
                         _selectedChatSsId = chatSsId;
+                        _selectedMessageSsId = null;
                         _selectedTab = _StatusSheetTab.messages;
+                      });
+                    },
+                    onMessageSelected: (messageSsId) {
+                      setState(() {
+                        _selectedMessageSsId = messageSsId;
                       });
                     },
                     onChatOpened: (chatSsId) {
@@ -179,13 +214,17 @@ class _StatusTabView extends StatelessWidget {
     required this.selectedMessagesAsync,
     required this.selectedTextMessagesAsync,
     required this.selectedTextStatsAsync,
+    required this.selectedAttachmentStatsAsync,
+    required this.selectedMessageAttachmentsAsync,
     required this.recentChatsComparisonAsync,
     required this.summaryFilter,
     required this.summarySort,
     required this.selectedChatSsId,
+    required this.selectedMessageSsId,
     required this.onSummaryFilterChanged,
     required this.onSummarySortChanged,
     required this.onChatSelected,
+    required this.onMessageSelected,
     required this.onChatOpened,
   });
 
@@ -196,13 +235,17 @@ class _StatusTabView extends StatelessWidget {
   final AsyncValue<List<RecentChatMessage>> selectedMessagesAsync;
   final AsyncValue<List<RecentChatMessage>> selectedTextMessagesAsync;
   final AsyncValue<ChatMessageTextStats> selectedTextStatsAsync;
+  final AsyncValue<ChatAttachmentStats> selectedAttachmentStatsAsync;
+  final AsyncValue<List<MessageAttachment>> selectedMessageAttachmentsAsync;
   final AsyncValue<RecentChatsComparison> recentChatsComparisonAsync;
   final ChatSummaryFilter summaryFilter;
   final ChatSummarySort summarySort;
   final int? selectedChatSsId;
+  final int? selectedMessageSsId;
   final ValueChanged<ChatSummaryFilter> onSummaryFilterChanged;
   final ValueChanged<ChatSummarySort> onSummarySortChanged;
   final ValueChanged<int> onChatSelected;
+  final ValueChanged<int> onMessageSelected;
   final ValueChanged<int> onChatOpened;
 
   @override
@@ -230,13 +273,17 @@ class _StatusTabView extends StatelessWidget {
           selectedMessagesAsync: selectedMessagesAsync,
           selectedTextMessagesAsync: selectedTextMessagesAsync,
           selectedTextStatsAsync: selectedTextStatsAsync,
+          selectedAttachmentStatsAsync: selectedAttachmentStatsAsync,
+          selectedMessageAttachmentsAsync: selectedMessageAttachmentsAsync,
+          selectedMessageSsId: selectedMessageSsId,
+          onMessageSelected: onMessageSelected,
         ),
       },
     );
   }
 }
 
-class _StatusContent extends StatelessWidget {
+class _StatusContent extends ConsumerWidget {
   const _StatusContent({
     required this.status,
     required this.recentChatsComparisonAsync,
@@ -246,86 +293,385 @@ class _StatusContent extends StatelessWidget {
   final AsyncValue<RecentChatsComparison> recentChatsComparisonAsync;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        _ProofScopeCard(status: status, colors: colors),
+        const SizedBox(height: 12),
+        _PipelineDashboard(status: status, colors: colors),
+        const SizedBox(height: 12),
         _StatusSection(
-          title: 'Proof scope',
+          title: 'Diagnostics',
           rows: [
-            const _StatusRow('Mode', 'manual one-shot import'),
-            _StatusRow('Source', 'live-chat-db (${status.sourceId})'),
-            _StatusRow('Import DB', status.importDatabaseName),
-            _StatusRow('Working DB', status.workingDatabaseName),
-            _StatusRow('chat.db path', status.chatDbPath),
-          ],
-        ),
-        _StatusSection(
-          title: 'Messages',
-          rows: [
-            _StatusRow('Cursor state', status.cursorState),
-            _StatusRow('Source max ROWID', '${status.sourceMaxRowId}'),
-            _StatusRow(
-              'Last imported source_rowid',
-              '${status.ledgerMaxSourceRowId}',
-            ),
+            _StatusRow('Message cursor', status.cursorState),
             _StatusRow('rowIdDelta', '${status.rowIdDelta}'),
-            _StatusRow('source messages', '${status.sourceMessageCount}'),
-            _StatusRow('import_ss messages', '${status.ledgerMessageCount}'),
-            _StatusRow(
-              'import_ss needs text enrichment',
-              '${status.ledgerMessagesNeedingEnrichment}',
-            ),
-            _StatusRow(
-              'import_ss still without text',
-              '${status.ledgerMessagesStillWithoutText}',
-            ),
-            _StatusRow('working_ss messages', '${status.workingMessageCount}'),
-            _StatusRow(
-              'associated-message edges',
-              '${status.associatedMessageEdgeCount}',
-            ),
             _StatusRow('messageCountDelta', '${status.messageCountDelta}'),
-          ],
-        ),
-        _StatusSection(
-          title: 'Chats + topology',
-          rows: [
-            _StatusRow('source chats', '${status.sourceChatCount}'),
-            _StatusRow('import_ss chats', '${status.importChatCount}'),
-            _StatusRow('working_ss chats', '${status.workingChatCount}'),
-            _StatusRow('source handles', '${status.sourceHandleCount}'),
-            _StatusRow('import_ss handles', '${status.importHandleCount}'),
-            _StatusRow('working_ss handles', '${status.workingHandleCount}'),
             _StatusRow(
-              'import_ss chat_to_message',
-              '${status.importTopologyEdgeCount}',
-            ),
-            _StatusRow(
-              'working_ss chat_to_message',
-              '${status.workingTopologyEdgeCount}',
-            ),
-            _StatusRow(
-              'duplicate working edges',
+              'duplicate chat/message edges',
               '${status.duplicateWorkingTopologyEdgeCount}',
             ),
             _StatusRow(
-              'import_ss chat_to_handle',
-              '${status.importChatToHandleEdgeCount}',
-            ),
-            _StatusRow(
-              'working_ss chat_to_handle',
-              '${status.workingChatToHandleEdgeCount}',
-            ),
-            _StatusRow(
-              'duplicate working chat_to_handle',
+              'duplicate chat/handle edges',
               '${status.duplicateWorkingChatToHandleEdgeCount}',
+            ),
+            _StatusRow(
+              'duplicate message/attachment edges',
+              '${status.duplicateWorkingMessageToAttachmentEdgeCount}',
             ),
           ],
         ),
+        const SizedBox(height: 12),
         _RecentChatsComparisonSection(
           comparisonAsync: recentChatsComparisonAsync,
         ),
+      ],
+    );
+  }
+}
+
+class _ProofScopeCard extends StatelessWidget {
+  const _ProofScopeCard({required this.status, required this.colors});
+
+  final IncrementalUpdateStatus status;
+  final ThemeColors colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.graySix.withValues(alpha: 0.38),
+        border: Border.all(color: colors.grayFive.withValues(alpha: 0.55)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Expanded(
+              child: _ScopeValue(
+                label: 'Mode',
+                value: 'manual import + project',
+                colors: colors,
+              ),
+            ),
+            Expanded(
+              child: _ScopeValue(
+                label: 'Source',
+                value: 'live-chat-db (${status.sourceId})',
+                colors: colors,
+              ),
+            ),
+            Expanded(
+              child: _ScopeValue(
+                label: 'Import DB',
+                value: status.importDatabaseName,
+                colors: colors,
+              ),
+            ),
+            Expanded(
+              child: _ScopeValue(
+                label: 'Working DB',
+                value: status.workingDatabaseName,
+                colors: colors,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ScopeValue extends StatelessWidget {
+  const _ScopeValue({
+    required this.label,
+    required this.value,
+    required this.colors,
+  });
+
+  final String label;
+  final String value;
+  final ThemeColors colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: colors.grayFour,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: colors.grayOne, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PipelineDashboard extends StatelessWidget {
+  const _PipelineDashboard({required this.status, required this.colors});
+
+  final IncrementalUpdateStatus status;
+  final ThemeColors colors;
+
+  @override
+  Widget build(BuildContext context) {
+    final sourceToImport = <_PipelineMetric>[
+      _PipelineMetric(
+        label: 'Messages',
+        current: status.ledgerMessageCount,
+        total: status.sourceMessageCount,
+        detail: 'last row ${status.ledgerMaxSourceRowId}',
+      ),
+      _PipelineMetric(
+        label: 'Chats',
+        current: status.importChatCount,
+        total: status.sourceChatCount,
+      ),
+      _PipelineMetric(
+        label: 'Handles',
+        current: status.importHandleCount,
+        total: status.sourceHandleCount,
+      ),
+      _PipelineMetric(
+        label: 'Attachments',
+        current: status.importAttachmentCount,
+        total: status.sourceAttachmentCount,
+        detail: 'source paths are hints',
+      ),
+    ];
+    final importToWorking = <_PipelineMetric>[
+      _PipelineMetric(
+        label: 'Messages',
+        current: status.workingMessageCount,
+        total: status.ledgerMessageCount,
+      ),
+      _PipelineMetric(
+        label: 'Chats',
+        current: status.workingChatCount,
+        total: status.importChatCount,
+      ),
+      _PipelineMetric(
+        label: 'Handles',
+        current: status.workingHandleCount,
+        total: status.importHandleCount,
+      ),
+      _PipelineMetric(
+        label: 'Attachments',
+        current: status.workingAttachmentCount,
+        total: status.importAttachmentCount,
+      ),
+    ];
+    final topology = <_PipelineMetric>[
+      _PipelineMetric(
+        label: 'Chat -> message',
+        current: status.workingTopologyEdgeCount,
+        total: status.importTopologyEdgeCount,
+      ),
+      _PipelineMetric(
+        label: 'Chat -> handle',
+        current: status.workingChatToHandleEdgeCount,
+        total: status.importChatToHandleEdgeCount,
+      ),
+      _PipelineMetric(
+        label: 'Message -> attachment',
+        current: status.workingMessageToAttachmentEdgeCount,
+        total: status.importMessageToAttachmentEdgeCount,
+      ),
+      _PipelineMetric(
+        label: 'Text enrichment',
+        current:
+            status.ledgerMessageCount - status.ledgerMessagesNeedingEnrichment,
+        total: status.ledgerMessageCount,
+        detail: '${status.ledgerMessagesStillWithoutText} still no text',
+      ),
+    ];
+
+    return Column(
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _PipelineStageCard(
+                title: 'Source -> import_ss',
+                subtitle: 'source facts + provenance',
+                metrics: sourceToImport,
+                colors: colors,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _PipelineStageCard(
+                title: 'import_ss -> working_ss',
+                subtitle: 'canonical graph rows',
+                metrics: importToWorking,
+                colors: colors,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        _PipelineStageCard(
+          title: 'Graph topology + enrichment',
+          subtitle: 'canonical ss_id edges and usable message text',
+          metrics: topology,
+          colors: colors,
+        ),
+      ],
+    );
+  }
+}
+
+class _PipelineMetric {
+  const _PipelineMetric({
+    required this.label,
+    required this.current,
+    required this.total,
+    this.detail,
+  });
+
+  final String label;
+  final int current;
+  final int total;
+  final String? detail;
+
+  double get progress {
+    if (total <= 0) {
+      return current > 0 ? 1 : 0;
+    }
+    final value = current / total;
+    if (value < 0) {
+      return 0;
+    }
+    if (value > 1) {
+      return 1;
+    }
+    return value;
+  }
+
+  String get countText => '$current / $total';
+}
+
+class _PipelineStageCard extends StatelessWidget {
+  const _PipelineStageCard({
+    required this.title,
+    required this.subtitle,
+    required this.metrics,
+    required this.colors,
+  });
+
+  final String title;
+  final String subtitle;
+  final List<_PipelineMetric> metrics;
+  final ThemeColors colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.graySix.withValues(alpha: 0.24),
+        border: Border.all(color: colors.grayFive.withValues(alpha: 0.45)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                color: colors.grayOne,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              subtitle,
+              style: TextStyle(color: colors.grayFour, fontSize: 11),
+            ),
+            const SizedBox(height: 12),
+            for (final metric in metrics) ...[
+              _MetricProgressRow(metric: metric, colors: colors),
+              if (metric != metrics.last) const SizedBox(height: 10),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MetricProgressRow extends StatelessWidget {
+  const _MetricProgressRow({required this.metric, required this.colors});
+
+  final _PipelineMetric metric;
+  final ThemeColors colors;
+
+  @override
+  Widget build(BuildContext context) {
+    final isComplete = metric.total > 0 && metric.current >= metric.total;
+    final accent = isComplete
+        ? colors.brandHighlight(BrandHighlight.primary)
+        : colors.brandHighlight(BrandHighlight.secondary);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                metric.label,
+                style: TextStyle(
+                  color: colors.grayTwo,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Text(
+              metric.countText,
+              style: TextStyle(
+                color: colors.grayThree,
+                fontSize: 11,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 5),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(999),
+          child: LinearProgressIndicator(
+            value: metric.progress,
+            minHeight: 7,
+            color: accent,
+            backgroundColor: colors.grayFive.withValues(alpha: 0.28),
+          ),
+        ),
+        if (metric.detail case final String detail) ...[
+          const SizedBox(height: 4),
+          Text(detail, style: TextStyle(color: colors.grayFour, fontSize: 10)),
+        ],
       ],
     );
   }
@@ -513,6 +859,10 @@ class _MessagesSection extends StatelessWidget {
     required this.selectedMessagesAsync,
     required this.selectedTextMessagesAsync,
     required this.selectedTextStatsAsync,
+    required this.selectedAttachmentStatsAsync,
+    required this.selectedMessageAttachmentsAsync,
+    required this.selectedMessageSsId,
+    required this.onMessageSelected,
   });
 
   final AsyncValue<List<ChatSummary>> summariesAsync;
@@ -520,6 +870,10 @@ class _MessagesSection extends StatelessWidget {
   final AsyncValue<List<RecentChatMessage>> selectedMessagesAsync;
   final AsyncValue<List<RecentChatMessage>> selectedTextMessagesAsync;
   final AsyncValue<ChatMessageTextStats> selectedTextStatsAsync;
+  final AsyncValue<ChatAttachmentStats> selectedAttachmentStatsAsync;
+  final AsyncValue<List<MessageAttachment>> selectedMessageAttachmentsAsync;
+  final int? selectedMessageSsId;
+  final ValueChanged<int> onMessageSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -554,14 +908,23 @@ class _MessagesSection extends StatelessWidget {
             _SelectedChatMetadataSection(
               summary: summary,
               textStatsAsync: selectedTextStatsAsync,
+              attachmentStatsAsync: selectedAttachmentStatsAsync,
             ),
             _SelectedChatSection(
               title: 'Latest rows',
               messagesAsync: selectedMessagesAsync,
+              selectedMessageSsId: selectedMessageSsId,
+              onMessageSelected: onMessageSelected,
+            ),
+            _SelectedMessageAttachmentSection(
+              selectedMessageSsId: selectedMessageSsId,
+              attachmentsAsync: selectedMessageAttachmentsAsync,
             ),
             _SelectedChatSection(
               title: 'Latest text-bearing messages',
               messagesAsync: selectedTextMessagesAsync,
+              selectedMessageSsId: selectedMessageSsId,
+              onMessageSelected: onMessageSelected,
             ),
           ],
         );
@@ -719,10 +1082,12 @@ class _SelectedChatMetadataSection extends StatelessWidget {
   const _SelectedChatMetadataSection({
     required this.summary,
     required this.textStatsAsync,
+    required this.attachmentStatsAsync,
   });
 
   final ChatSummary summary;
   final AsyncValue<ChatMessageTextStats> textStatsAsync;
+  final AsyncValue<ChatAttachmentStats> attachmentStatsAsync;
 
   @override
   Widget build(BuildContext context) {
@@ -740,6 +1105,37 @@ class _SelectedChatMetadataSection extends StatelessWidget {
           ],
           orElse: () => [const _StatusRow('text profile', 'loading')],
         ),
+        ...attachmentStatsAsync.maybeWhen(
+          data: (stats) => [
+            _StatusRow(
+              'messages with attachments',
+              '${stats.messageWithAttachmentCount}',
+            ),
+            _StatusRow('attachments', '${stats.attachmentCount}'),
+            _StatusRow('source path hints', '${stats.sourcePathHintCount}'),
+            _StatusRow(
+              'local files available',
+              '${stats.localFileAvailableCount}',
+            ),
+            _StatusRow('local files missing', '${stats.localFileMissingCount}'),
+            _StatusRow('archive records', '${stats.archiveRecordCount}'),
+            _StatusRow(
+              'archive files available',
+              '${stats.archiveFileAvailableCount}',
+            ),
+            _StatusRow(
+              'archive files missing',
+              '${stats.archiveFileMissingCount}',
+            ),
+            _StatusRow(
+              'attachment mix',
+              'images=${stats.imageAttachmentCount} | '
+                  'videos=${stats.videoAttachmentCount} | '
+                  'documents=${stats.documentAttachmentCount}',
+            ),
+          ],
+          orElse: () => [const _StatusRow('attachment profile', 'loading')],
+        ),
       ],
     );
   }
@@ -749,10 +1145,14 @@ class _SelectedChatSection extends StatelessWidget {
   const _SelectedChatSection({
     required this.title,
     required this.messagesAsync,
+    required this.selectedMessageSsId,
+    required this.onMessageSelected,
   });
 
   final String title;
   final AsyncValue<List<RecentChatMessage>> messagesAsync;
+  final int? selectedMessageSsId;
+  final ValueChanged<int> onMessageSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -762,7 +1162,12 @@ class _SelectedChatSection extends StatelessWidget {
         ...messagesAsync.maybeWhen(
           data: (messages) => [
             if (messages.isEmpty) const _StatusRow('messages', 'none'),
-            for (final message in messages) _RecentMessageRow(message: message),
+            for (final message in messages)
+              _RecentMessageRow(
+                message: message,
+                isSelected: message.messageSsId == selectedMessageSsId,
+                onSelected: () => onMessageSelected(message.messageSsId),
+              ),
           ],
           orElse: () => [const _StatusRow('recent messages', 'loading')],
         ),
@@ -772,21 +1177,253 @@ class _SelectedChatSection extends StatelessWidget {
 }
 
 class _RecentMessageRow extends StatelessWidget {
-  const _RecentMessageRow({required this.message});
+  const _RecentMessageRow({
+    required this.message,
+    required this.isSelected,
+    required this.onSelected,
+  });
 
   final RecentChatMessage message;
+  final bool isSelected;
+  final VoidCallback onSelected;
 
   @override
   Widget build(BuildContext context) {
     final text = message.text;
-    return _StatusRow(
-      '${message.messageSsId}',
-      '${message.dateUtc ?? 'no date'} | '
-          '${message.isFromMe ? 'from me' : 'received'} | '
-          '${text == null || text.isEmpty ? 'no text' : text}',
-      labelWidth: 150,
-      verticalPadding: 6,
+    final attachmentText = message.attachmentCount == 0
+        ? ''
+        : ' | attachments=${message.attachmentCount}';
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onSelected,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 2),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? CupertinoColors.activeBlue.withValues(alpha: 0.11)
+              : CupertinoColors.transparent,
+          borderRadius: BorderRadius.circular(5),
+        ),
+        child: _StatusRow(
+          '${message.messageSsId}',
+          '${message.dateUtc ?? 'no date'} | '
+              '${message.isFromMe ? 'from me' : 'received'} | '
+              '${text == null || text.isEmpty ? 'no text' : text}'
+              '$attachmentText',
+          labelWidth: 150,
+          verticalPadding: 6,
+        ),
+      ),
     );
+  }
+}
+
+class _SelectedMessageAttachmentSection extends StatelessWidget {
+  const _SelectedMessageAttachmentSection({
+    required this.selectedMessageSsId,
+    required this.attachmentsAsync,
+  });
+
+  final int? selectedMessageSsId;
+  final AsyncValue<List<MessageAttachment>> attachmentsAsync;
+
+  @override
+  Widget build(BuildContext context) {
+    final messageSsId = selectedMessageSsId;
+    if (messageSsId == null) {
+      return const _StatusSection(
+        title: 'Selected message attachments',
+        rows: [_StatusRow('selection', 'click a message row to inspect')],
+      );
+    }
+
+    return _StatusSection(
+      title: 'Selected message attachments',
+      rows: [
+        _StatusRow('message_ss_id', '$messageSsId'),
+        ...attachmentsAsync.maybeWhen(
+          data: (attachments) => [
+            if (attachments.isEmpty)
+              const _StatusRow('attachments', 'none linked'),
+            for (final attachment in attachments)
+              _AttachmentMetadataRow(attachment: attachment),
+          ],
+          orElse: () => [const _StatusRow('attachments', 'loading')],
+        ),
+      ],
+    );
+  }
+}
+
+class _AttachmentMetadataRow extends ConsumerWidget {
+  const _AttachmentMetadataRow({required this.attachment});
+
+  final MessageAttachment attachment;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final name =
+        attachment.transferName ??
+        attachment.filename?.split('/').last ??
+        attachment.guid ??
+        'attachment ${attachment.attachmentSsId}';
+    final type = attachment.mimeType ?? attachment.uti ?? 'unknown type';
+    final size = attachment.totalBytes == null
+        ? 'unknown size'
+        : '${attachment.totalBytes} bytes';
+    final pathHint = attachment.filename ?? 'no source path hint';
+    final availability = attachment.hasSourcePathHint
+        ? attachment.localFileExists
+              ? 'file exists locally'
+              : 'missing locally'
+        : 'no source path hint';
+    final archiveAvailability = attachment.hasArchiveRecord
+        ? attachment.archiveFileExists
+              ? 'file exists in archive'
+              : 'archive record, file missing'
+        : 'no archive record';
+    final archivedFilePath = attachment.archiveAbsolutePath;
+    final canOpenArchivedFile =
+        attachment.archiveFileExists &&
+        archivedFilePath != null &&
+        archivedFilePath.isNotEmpty;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: colors.graySix.withValues(alpha: 0.34),
+        border: Border.all(color: colors.grayFive.withValues(alpha: 0.55)),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SelectableText(
+            name,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 3),
+          SelectableText(
+            'ss_id=${attachment.attachmentSsId} | $type | $size',
+            style: TextStyle(color: colors.grayThree, fontSize: 12),
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: PushButton(
+              controlSize: ControlSize.small,
+              secondary: true,
+              onPressed: canOpenArchivedFile
+                  ? () => _openArchivedFile(archivedFilePath)
+                  : null,
+              child: Text(
+                canOpenArchivedFile
+                    ? 'Open archived file'
+                    : _disabledArchiveActionLabel(attachment),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          _AttachmentDetailRow(
+            label: 'source path',
+            value: pathHint,
+            monospace: attachment.hasSourcePathHint,
+          ),
+          _AttachmentDetailRow(label: 'source file', value: availability),
+          _AttachmentDetailRow(
+            label: 'archive file',
+            value: archiveAvailability,
+          ),
+          if (attachment.archiveRelativePath case final archivePath?)
+            _AttachmentDetailRow(
+              label: 'archive path',
+              value: archivePath,
+              monospace: true,
+            ),
+        ],
+      ),
+    );
+  }
+
+  static Future<void> _openArchivedFile(String archivedFilePath) async {
+    final uri = Uri.file(archivedFilePath);
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  static String _disabledArchiveActionLabel(MessageAttachment attachment) {
+    if (!attachment.hasArchiveRecord) {
+      return 'No archive record';
+    }
+    return 'Archive file missing';
+  }
+}
+
+class _AttachmentDetailRow extends ConsumerWidget {
+  const _AttachmentDetailRow({
+    required this.label,
+    required this.value,
+    this.monospace = false,
+  });
+
+  final String label;
+  final String value;
+  final bool monospace;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final displayValue = monospace ? _middleTruncate(value, 96) : value;
+    final textStyle = TextStyle(
+      color: colors.grayTwo,
+      fontSize: 12,
+      fontFamily: monospace ? 'Menlo' : null,
+      height: 1.2,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 112,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: colors.grayThree,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Tooltip(
+              message: value,
+              waitDuration: const Duration(milliseconds: 450),
+              child: SelectableText(
+                displayValue,
+                maxLines: 2,
+                style: textStyle,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _middleTruncate(String value, int maxLength) {
+    if (value.length <= maxLength) {
+      return value;
+    }
+    final keep = maxLength - 3;
+    final head = (keep * 0.58).floor();
+    final tail = keep - head;
+    return '${value.substring(0, head)}...${value.substring(value.length - tail)}';
   }
 }
 
@@ -803,6 +1440,13 @@ class _StatusControls extends StatefulWidget {
 class _StatusControlsState extends State<_StatusControls> {
   var _isHoveringImport = false;
   var _isImporting = false;
+  Timer? _statusRefreshTimer;
+
+  @override
+  void dispose() {
+    _statusRefreshTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -917,9 +1561,19 @@ class _StatusControlsState extends State<_StatusControls> {
     setState(() {
       _isImporting = true;
     });
+    widget.ref.invalidate(incrementalUpdateStatusProvider);
+    _statusRefreshTimer?.cancel();
+    _statusRefreshTimer = Timer.periodic(const Duration(milliseconds: 750), (
+      _,
+    ) {
+      widget.ref.invalidate(incrementalUpdateStatusProvider);
+    });
     try {
       await _importAndProjectOnce(widget.ref);
     } finally {
+      _statusRefreshTimer?.cancel();
+      _statusRefreshTimer = null;
+      widget.ref.invalidate(incrementalUpdateStatusProvider);
       if (mounted) {
         setState(() {
           _isImporting = false;

@@ -11,7 +11,8 @@ class ConversationReader {
       '''
       SELECT
         c.ss_id AS conversation_id,
-        COUNT(DISTINCT cth.handle_ss_id) AS participant_count,
+        COUNT(DISTINCT COALESCE(ha.canonical_handle_ss_id, cth.handle_ss_id))
+          AS participant_count,
         COUNT(DISTINCT ctm.message_ss_id) AS message_count,
         MAX(m.date_utc) AS last_message_at_utc,
         (
@@ -26,6 +27,7 @@ class ConversationReader {
         ) AS last_message_text
       FROM chats c
       LEFT JOIN chat_to_handle cth ON cth.chat_ss_id = c.ss_id
+      LEFT JOIN handle_aliases ha ON ha.handle_ss_id = cth.handle_ss_id
       LEFT JOIN chat_to_message ctm ON ctm.chat_ss_id = c.ss_id
       LEFT JOIN messages m ON m.ss_id = ctm.message_ss_id
       GROUP BY c.ss_id
@@ -157,11 +159,16 @@ class ConversationReader {
   Future<List<String>> _readParticipantHandles(int conversationId) async {
     final rows = await workingDatabase.database.rawQuery(
       '''
-      SELECT DISTINCT h.id AS handle_id
+      SELECT DISTINCT
+        COALESCE(ch.display_handle, h.id) AS handle_id,
+        COALESCE(ha.canonical_handle_ss_id, h.ss_id) AS sort_id
       FROM chat_to_handle cth
       JOIN handles h ON h.ss_id = cth.handle_ss_id
+      LEFT JOIN handle_aliases ha ON ha.handle_ss_id = cth.handle_ss_id
+      LEFT JOIN canonical_handles ch
+        ON ch.canonical_handle_ss_id = ha.canonical_handle_ss_id
       WHERE cth.chat_ss_id = ?
-      ORDER BY h.id ASC
+      ORDER BY sort_id ASC, handle_id ASC
       ''',
       <Object?>[conversationId],
     );

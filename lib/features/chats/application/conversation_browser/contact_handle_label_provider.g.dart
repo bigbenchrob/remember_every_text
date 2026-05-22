@@ -7,7 +7,7 @@ part of 'contact_handle_label_provider.dart';
 // **************************************************************************
 
 String _$contactHandleLabelsHash() =>
-    r'9d3a2a311bf5ce9d0d974302df4f29618e5f5b13';
+    r'69377f3d5ca5eb62aae87c48035aed7f71705ec1';
 
 /// See also [contactHandleLabels].
 @ProviderFor(contactHandleLabels)

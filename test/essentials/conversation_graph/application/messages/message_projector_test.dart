@@ -122,7 +122,7 @@ void main() {
   test(
     'duplicate guid values do not block projection when ss_id differs',
     () async {
-      await _insertSource(importDatabase, sourceId: 2);
+      await _insertSource(importDatabase, sourceId: 3);
       await _insertImportMessage(
         importDatabase,
         sourceId: liveChatDbSourceId,
@@ -131,7 +131,7 @@ void main() {
       );
       await _insertImportMessage(
         importDatabase,
-        sourceId: 2,
+        sourceId: 3,
         sourceRowId: 102,
         guid: 'same-guid',
       );
@@ -187,13 +187,13 @@ void main() {
   );
 
   test('associated message lookup remains source scoped', () async {
-    await _insertSource(importDatabase, sourceId: 2);
+    await _insertSource(importDatabase, sourceId: 3);
     final liveTargetSsId = SourceScopedRowKey.pack(
       sourceId: liveChatDbSourceId,
       sourceRowId: 300,
     );
     final archiveTargetSsId = SourceScopedRowKey.pack(
-      sourceId: 2,
+      sourceId: 3,
       sourceRowId: 300,
     );
     await _insertImportMessage(
@@ -204,13 +204,13 @@ void main() {
     );
     await _insertImportMessage(
       importDatabase,
-      sourceId: 2,
+      sourceId: 3,
       sourceRowId: 300,
       guid: 'shared-target-guid',
     );
     await _insertImportMessage(
       importDatabase,
-      sourceId: 2,
+      sourceId: 3,
       sourceRowId: 301,
       guid: 'archive-reaction-guid',
       associatedMessageGuid: 'shared-target-guid',
@@ -254,6 +254,124 @@ void main() {
       expect(rows.single['associated_message_ss_id'], isNull);
     },
   );
+
+  test('projects lightweight message semantic fields', () async {
+    await _insertImportMessage(
+      importDatabase,
+      sourceId: liveChatDbSourceId,
+      sourceRowId: 500,
+      guid: 'rich-text-message',
+      text: 'hello',
+      hasAttributedBodySource: 1,
+      hasMessageSummaryInfo: 1,
+      hasPayloadDataSource: 1,
+      errorCode: 12,
+    );
+
+    await MessageProjector(
+      importDatabase: importDatabase,
+      workingDatabase: workingDatabase,
+    ).projectMessages();
+    final rows = await workingDatabase.database.query(
+      'messages',
+      where: 'guid = ?',
+      whereArgs: <Object?>['rich-text-message'],
+    );
+
+    expect(rows.single['semantic_kind'], 'payload');
+    expect(rows.single['item_kind'], 'payload');
+    expect(rows.single['is_system_message'], 0);
+    expect(rows.single['is_sparse_artifact'], 0);
+    expect(rows.single['has_attributed_body_source'], 1);
+    expect(rows.single['has_message_summary_info'], 1);
+    expect(rows.single['has_payload_data_source'], 1);
+    expect(rows.single['error_code'], 12);
+  });
+
+  test(
+    'classifies associated, system, text, and sparse message shapes',
+    () async {
+      await _insertImportMessage(
+        importDatabase,
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 600,
+        guid: 'associated-message',
+        associatedMessageType: 2000,
+      );
+      await _insertImportMessage(
+        importDatabase,
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 601,
+        guid: 'system-message',
+        isSystemMessage: 1,
+      );
+      await _insertImportMessage(
+        importDatabase,
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 602,
+        guid: 'plain-text-message',
+        text: 'plain',
+      );
+      await _insertImportMessage(
+        importDatabase,
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 603,
+        guid: 'sparse-message',
+      );
+
+      await MessageProjector(
+        importDatabase: importDatabase,
+        workingDatabase: workingDatabase,
+      ).projectMessages();
+      final rows = await workingDatabase.database.query('messages');
+      final byGuid = <Object?, Map<String, Object?>>{
+        for (final row in rows) row['guid']: row,
+      };
+
+      expect(byGuid['associated-message']?['semantic_kind'], 'associated');
+      expect(byGuid['system-message']?['semantic_kind'], 'system');
+      expect(byGuid['plain-text-message']?['semantic_kind'], 'text');
+      expect(byGuid['sparse-message']?['semantic_kind'], 'sparse_artifact');
+      expect(byGuid['sparse-message']?['is_sparse_artifact'], 1);
+    },
+  );
+
+  test('projects sender canonical handle endpoint when alias exists', () async {
+    final senderHandleSsId = SourceScopedRowKey.pack(
+      sourceId: liveChatDbSourceId,
+      sourceRowId: 50,
+    );
+    final canonicalHandleSsId = SourceScopedRowKey.pack(
+      sourceId: liveChatDbSourceId,
+      sourceRowId: 49,
+    );
+    await workingDatabase.database.insert('handle_aliases', <String, Object?>{
+      'handle_ss_id': senderHandleSsId,
+      'canonical_handle_ss_id': canonicalHandleSsId,
+      'raw_identifier': '+16049995969',
+      'normalized_identifier': '6049995969',
+      'alias_kind': 'phone',
+    });
+    await _insertImportMessage(
+      importDatabase,
+      sourceId: liveChatDbSourceId,
+      sourceRowId: 700,
+      guid: 'sender-alias-message',
+    );
+
+    await MessageProjector(
+      importDatabase: importDatabase,
+      workingDatabase: workingDatabase,
+    ).projectMessages();
+    final rows = await workingDatabase.database.query(
+      'messages',
+      where: 'guid = ?',
+      whereArgs: <Object?>['sender-alias-message'],
+    );
+
+    expect(rows.single['sender_handle_ss_id'], senderHandleSsId);
+    expect(rows.single['sender_canonical_handle_ss_id'], canonicalHandleSsId);
+  });
 }
 
 Future<void> _insertSource(
@@ -275,6 +393,12 @@ Future<void> _insertImportMessage(
   required String guid,
   String? text,
   String? associatedMessageGuid,
+  int? associatedMessageType,
+  int? isSystemMessage,
+  int? hasAttributedBodySource,
+  int? hasMessageSummaryInfo,
+  int? hasPayloadDataSource,
+  int? errorCode,
 }) async {
   final batchId = await importDatabase.insertImportBatch(
     sourceId: sourceId,
@@ -297,6 +421,12 @@ Future<void> _insertImportMessage(
     'date_utc': '2026-05-19T00:00:00.000Z',
     'text': text,
     'associated_message_guid': associatedMessageGuid,
+    'raw_associated_message_type': associatedMessageType,
+    'is_system_message': isSystemMessage ?? 0,
+    'has_attributed_body_source': hasAttributedBodySource ?? 0,
+    'has_message_summary_info': hasMessageSummaryInfo ?? 0,
+    'has_payload_data_source': hasPayloadDataSource ?? 0,
+    'error_code': errorCode,
     'batch_id': batchId,
   });
 }

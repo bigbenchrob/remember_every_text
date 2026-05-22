@@ -35,6 +35,12 @@ class IncrementalUpdateStatus {
     required this.importChatToHandleEdgeCount,
     required this.workingChatToHandleEdgeCount,
     required this.duplicateWorkingChatToHandleEdgeCount,
+    required this.sourceAttachmentCount,
+    required this.importAttachmentCount,
+    required this.workingAttachmentCount,
+    required this.importMessageToAttachmentEdgeCount,
+    required this.workingMessageToAttachmentEdgeCount,
+    required this.duplicateWorkingMessageToAttachmentEdgeCount,
   });
 
   final String chatDbPath;
@@ -61,6 +67,12 @@ class IncrementalUpdateStatus {
   final int importChatToHandleEdgeCount;
   final int workingChatToHandleEdgeCount;
   final int duplicateWorkingChatToHandleEdgeCount;
+  final int sourceAttachmentCount;
+  final int importAttachmentCount;
+  final int workingAttachmentCount;
+  final int importMessageToAttachmentEdgeCount;
+  final int workingMessageToAttachmentEdgeCount;
+  final int duplicateWorkingMessageToAttachmentEdgeCount;
 
   int get rowIdDelta => sourceMaxRowId - ledgerMaxSourceRowId;
   int get messageCountDelta => sourceMessageCount - ledgerMessageCount;
@@ -87,6 +99,9 @@ Future<IncrementalUpdateStatus> incrementalUpdateStatus(Ref ref) async {
   );
   final sourceChatCount = await _readSourceChatCount(pathsHelper.chatDBPath);
   final sourceHandleCount = await _readSourceHandleCount(
+    pathsHelper.chatDBPath,
+  );
+  final sourceAttachmentCount = await _readSourceAttachmentCount(
     pathsHelper.chatDBPath,
   );
   final ledgerSnapshot = await _readLedgerMessageSnapshot(
@@ -126,6 +141,15 @@ Future<IncrementalUpdateStatus> incrementalUpdateStatus(Ref ref) async {
     workingChatToHandleEdgeCount: graphSnapshot.workingChatToHandleEdgeCount,
     duplicateWorkingChatToHandleEdgeCount:
         graphSnapshot.duplicateWorkingChatToHandleEdgeCount,
+    sourceAttachmentCount: sourceAttachmentCount,
+    importAttachmentCount: graphSnapshot.importAttachmentCount,
+    workingAttachmentCount: graphSnapshot.workingAttachmentCount,
+    importMessageToAttachmentEdgeCount:
+        graphSnapshot.importMessageToAttachmentEdgeCount,
+    workingMessageToAttachmentEdgeCount:
+        graphSnapshot.workingMessageToAttachmentEdgeCount,
+    duplicateWorkingMessageToAttachmentEdgeCount:
+        graphSnapshot.duplicateWorkingMessageToAttachmentEdgeCount,
   );
 }
 
@@ -181,6 +205,23 @@ Future<int> _readSourceHandleCount(String chatDbPath) async {
       'SELECT COUNT(*) AS handle_count FROM handle',
     );
     return _readInt(rows.single['handle_count']);
+  } finally {
+    await db.close();
+  }
+}
+
+Future<int> _readSourceAttachmentCount(String chatDbPath) async {
+  final db = await openDatabase(
+    chatDbPath,
+    readOnly: true,
+    singleInstance: false,
+  );
+
+  try {
+    final rows = await db.rawQuery(
+      'SELECT COUNT(*) AS attachment_count FROM attachment',
+    );
+    return _readInt(rows.single['attachment_count']);
   } finally {
     await db.close();
   }
@@ -276,6 +317,27 @@ Future<_GraphSnapshot> _readGraphSnapshot(
       HAVING COUNT(*) > 1
     )
   ''');
+  final importAttachmentRows = await importDatabase.database.rawQuery(
+    'SELECT COUNT(*) AS attachment_count FROM attachments',
+  );
+  final workingAttachmentRows = await workingDatabase.database.rawQuery(
+    'SELECT COUNT(*) AS attachment_count FROM attachments',
+  );
+  final importMessageToAttachmentRows = await importDatabase.database.rawQuery(
+    'SELECT COUNT(*) AS edge_count FROM message_to_attachment',
+  );
+  final workingMessageToAttachmentRows = await workingDatabase.database
+      .rawQuery('SELECT COUNT(*) AS edge_count FROM message_to_attachment');
+  final duplicateMessageToAttachmentRows = await workingDatabase.database
+      .rawQuery('''
+    SELECT COUNT(*) AS duplicate_edge_count
+    FROM (
+      SELECT message_ss_id, attachment_ss_id
+      FROM message_to_attachment
+      GROUP BY message_ss_id, attachment_ss_id
+      HAVING COUNT(*) > 1
+    )
+  ''');
 
   return _GraphSnapshot(
     importChatCount: _readInt(importChatRows.single['chat_count']),
@@ -295,6 +357,21 @@ Future<_GraphSnapshot> _readGraphSnapshot(
     ),
     duplicateWorkingChatToHandleEdgeCount: _readInt(
       duplicateChatToHandleRows.single['duplicate_edge_count'],
+    ),
+    importAttachmentCount: _readInt(
+      importAttachmentRows.single['attachment_count'],
+    ),
+    workingAttachmentCount: _readInt(
+      workingAttachmentRows.single['attachment_count'],
+    ),
+    importMessageToAttachmentEdgeCount: _readInt(
+      importMessageToAttachmentRows.single['edge_count'],
+    ),
+    workingMessageToAttachmentEdgeCount: _readInt(
+      workingMessageToAttachmentRows.single['edge_count'],
+    ),
+    duplicateWorkingMessageToAttachmentEdgeCount: _readInt(
+      duplicateMessageToAttachmentRows.single['duplicate_edge_count'],
     ),
   );
 }
@@ -345,6 +422,11 @@ class _GraphSnapshot {
     required this.importChatToHandleEdgeCount,
     required this.workingChatToHandleEdgeCount,
     required this.duplicateWorkingChatToHandleEdgeCount,
+    required this.importAttachmentCount,
+    required this.workingAttachmentCount,
+    required this.importMessageToAttachmentEdgeCount,
+    required this.workingMessageToAttachmentEdgeCount,
+    required this.duplicateWorkingMessageToAttachmentEdgeCount,
   });
 
   final int importChatCount;
@@ -357,4 +439,9 @@ class _GraphSnapshot {
   final int importChatToHandleEdgeCount;
   final int workingChatToHandleEdgeCount;
   final int duplicateWorkingChatToHandleEdgeCount;
+  final int importAttachmentCount;
+  final int workingAttachmentCount;
+  final int importMessageToAttachmentEdgeCount;
+  final int workingMessageToAttachmentEdgeCount;
+  final int duplicateWorkingMessageToAttachmentEdgeCount;
 }

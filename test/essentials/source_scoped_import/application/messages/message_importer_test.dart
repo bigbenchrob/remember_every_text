@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/core/util/date_converter.dart';
@@ -47,6 +48,14 @@ void main() {
       date: appleDate,
       text: 'hello',
       associatedMessageGuid: 'associated-1',
+      itemType: 1,
+      associatedMessageType: 2000,
+      threadOriginatorGuid: 'thread-originator-1',
+      error: 404,
+      isSystemMessage: 1,
+      attributedBody: Uint8List.fromList(<int>[1, 2, 3]),
+      messageSummaryInfo: Uint8List.fromList(<int>[4, 5, 6]),
+      payloadData: Uint8List.fromList(<int>[7, 8, 9]),
     );
 
     final importer = MessageImporter(
@@ -78,6 +87,14 @@ void main() {
     expect(rows.single['date_utc'], DateConverter.appleToIsoString(appleDate));
     expect(rows.single['text'], 'hello');
     expect(rows.single['associated_message_guid'], 'associated-1');
+    expect(rows.single['raw_item_type'], 1);
+    expect(rows.single['raw_associated_message_type'], 2000);
+    expect(rows.single['thread_originator_guid'], 'thread-originator-1');
+    expect(rows.single['error_code'], 404);
+    expect(rows.single['is_system_message'], 1);
+    expect(rows.single['has_attributed_body_source'], 1);
+    expect(rows.single['has_message_summary_info'], 1);
+    expect(rows.single['has_payload_data_source'], 1);
   });
 
   test('is idempotent on repeated imports', () async {
@@ -112,7 +129,7 @@ void main() {
     );
     await _insertLedgerMessage(
       importDatabase,
-      sourceId: 2,
+      sourceId: 3,
       sourceRowId: 999999,
       guid: 'archive-message-999999',
       batchId: batchId,
@@ -174,7 +191,14 @@ Future<void> _createSourceMessageTable(String chatDbPath) async {
       date_delivered INTEGER,
       text TEXT,
       attributedBody BLOB,
-      associated_message_guid TEXT
+      associated_message_guid TEXT,
+      item_type INTEGER,
+      associated_message_type INTEGER,
+      thread_originator_guid TEXT,
+      error INTEGER,
+      is_system_message INTEGER,
+      message_summary_info BLOB,
+      payload_data BLOB
     )
   ''');
   await db.close();
@@ -189,6 +213,14 @@ Future<void> _insertSourceMessage(
   int? date,
   String? text,
   String? associatedMessageGuid,
+  int? itemType,
+  int? associatedMessageType,
+  String? threadOriginatorGuid,
+  int? error,
+  int? isSystemMessage,
+  Uint8List? attributedBody,
+  Uint8List? messageSummaryInfo,
+  Uint8List? payloadData,
 }) async {
   final db = await openDatabase(chatDbPath);
   await db.insert('message', <String, Object?>{
@@ -198,7 +230,15 @@ Future<void> _insertSourceMessage(
     'is_from_me': isFromMe,
     'date': date,
     'text': text,
+    'attributedBody': attributedBody,
     'associated_message_guid': associatedMessageGuid,
+    'item_type': itemType,
+    'associated_message_type': associatedMessageType,
+    'thread_originator_guid': threadOriginatorGuid,
+    'error': error,
+    'is_system_message': isSystemMessage,
+    'message_summary_info': messageSummaryInfo,
+    'payload_data': payloadData,
   });
   await db.close();
 }
