@@ -400,7 +400,13 @@ bool _isCenterSpecCompatibleWithSidebar({
           return flowState.topMenuChoice == TopChatMenuChoice.conversations;
         },
         forChat: (_) => true,
-        forConversation: (_) => true,
+        forConversation: (_, _, _) {
+          return flowState.topMenuChoice == TopChatMenuChoice.conversations ||
+              (flowState.topMenuChoice == TopChatMenuChoice.contacts &&
+                  flowState.messageScope == SidebarFlowMessageScope.regular &&
+                  flowState.contactProjection ==
+                      SidebarFlowContactProjection.conversations);
+        },
         forContact: (contactId, _, __) {
           return flowState.topMenuChoice == TopChatMenuChoice.contacts &&
               flowState.messageScope == SidebarFlowMessageScope.regular &&

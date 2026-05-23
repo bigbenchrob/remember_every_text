@@ -269,6 +269,7 @@ Future<List<RecentChatSummary>> _buildChatSummaries({
         chatId: chat.id,
         title: deriveTitle(chat, participantNames),
         messageCount: messageCount,
+        attachmentCount: 0,
         firstMessageDate: firstMsgDate,
         lastMessageDate: lastMessageDate,
         isGroup: chat.isGroup,

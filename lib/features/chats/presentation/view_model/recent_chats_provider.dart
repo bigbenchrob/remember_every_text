@@ -21,6 +21,7 @@ class RecentChatSummary {
     required this.chatId,
     required this.title,
     required this.messageCount,
+    required this.attachmentCount,
     required this.firstMessageDate,
     required this.lastMessageDate,
     required this.isGroup,
@@ -35,6 +36,7 @@ class RecentChatSummary {
   final int chatId;
   final String title;
   final int messageCount;
+  final int attachmentCount;
   final DateTime? firstMessageDate;
   final DateTime? lastMessageDate;
   final bool isGroup;
@@ -234,12 +236,26 @@ Future<List<RecentChatSummary>> readLegacyRecentChats(
       firstMsgDate,
       lastMessageDate,
     );
+    final attachmentCountRows = await db
+        .customSelect(
+          '''
+      SELECT COUNT(DISTINCT a.id) AS attachment_count
+      FROM messages m
+      JOIN attachments a ON a.message_guid = m.guid
+      WHERE m.chat_id = ?
+      ''',
+          variables: [drift.Variable<int>(chat.id)],
+        )
+        .get();
+    final attachmentCount =
+        attachmentCountRows.single.data['attachment_count'] as int? ?? 0;
 
     results.add(
       RecentChatSummary(
         chatId: chat.id,
         title: deriveTitle(chat, participantNames),
         messageCount: messageCount,
+        attachmentCount: attachmentCount,
         firstMessageDate: firstMsgDate,
         lastMessageDate: lastMessageDate,
         isGroup: chat.isGroup,
@@ -270,6 +286,7 @@ RecentChatSummary _mapGraphOverview(
   Map<String, ContactHandleLabel> contactLabels,
 ) {
   final lastMessageDate = _parseGraphUtc(overview.lastMessageAtUtc);
+  final firstMessageDate = _parseGraphUtc(overview.firstMessageAtUtc);
   final participantLabels = _resolveGraphParticipantLabels(
     overview.participantHandles,
     contactLabels,
@@ -281,7 +298,8 @@ RecentChatSummary _mapGraphOverview(
       participants: participantLabels,
     ),
     messageCount: overview.messageCount,
-    firstMessageDate: null,
+    attachmentCount: overview.attachmentCount,
+    firstMessageDate: firstMessageDate,
     lastMessageDate: lastMessageDate,
     isGroup: overview.isGroup,
     participants: participantLabels.isEmpty

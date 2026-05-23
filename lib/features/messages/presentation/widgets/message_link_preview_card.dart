@@ -69,6 +69,7 @@ class _LinkPreviewContent extends StatelessWidget {
         maxWidth: maxWidth,
         child: MetadataLine(
           sender: sender,
+          senderHandleLabel: message.senderHandleLabel,
           sentAt: message.sentAt ?? DateTime.now(),
           messageId: message.id,
           layout: messageLayout,

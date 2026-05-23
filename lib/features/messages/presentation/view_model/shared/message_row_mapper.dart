@@ -45,6 +45,7 @@ class MessageRowMapper {
 
     for (final row in rows) {
       final message = row.readTable(_db.workingMessages);
+      final senderHandle = row.readTableOrNull(_db.handlesCanonical);
       final participant = row.readTableOrNull(_db.workingParticipants);
       final metadata =
           metadataByGuid[message.guid] ??
@@ -76,6 +77,7 @@ class MessageRowMapper {
             isFromMe: message.isFromMe,
             participant: participant,
           ),
+          senderHandleLabel: senderHandle?.rawIdentifier,
           text: message.textContent ?? '',
           sentAt: _parseUtc(message.sentAtUtc),
           hasAttachments: message.hasAttachments,

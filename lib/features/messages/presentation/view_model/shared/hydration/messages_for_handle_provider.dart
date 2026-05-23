@@ -20,6 +20,7 @@ class MessageListItem {
     required this.guid,
     required this.isFromMe,
     required this.senderName,
+    this.senderHandleLabel,
     required this.text,
     required this.sentAt,
     required this.hasAttachments,
@@ -33,6 +34,7 @@ class MessageListItem {
   final String guid;
   final bool isFromMe;
   final String senderName;
+  final String? senderHandleLabel;
   final String text;
   final DateTime? sentAt;
   final bool hasAttachments;
@@ -120,6 +122,7 @@ Stream<List<MessageListItem>> messagesForHandle(
 
     for (final row in rows) {
       final message = row.readTable(db.workingMessages);
+      final senderHandle = row.readTableOrNull(db.handlesCanonical);
       final participant = row.readTableOrNull(db.workingParticipants);
       final metadata =
           metadataByGuid[message.guid] ??
@@ -146,6 +149,7 @@ Stream<List<MessageListItem>> messagesForHandle(
             participant: participant,
             isFromMe: message.isFromMe,
           ),
+          senderHandleLabel: senderHandle?.rawIdentifier,
           text: message.textContent ?? '[No text content]',
           sentAt: parseUtc(message.sentAtUtc),
           hasAttachments: message.hasAttachments,

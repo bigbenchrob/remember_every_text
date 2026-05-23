@@ -1,21 +1,40 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/attachments/attachment_projection_repository.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/attachments/attachment_projector.dart';
-import 'package:remember_this_text/essentials/conversation_graph/infrastructure/working_database_provider.dart';
+import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/attachment_projection_repository.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import '../../conversation_graph_test_database.dart';
+
 void main() {
   late Directory tempDir;
   late ImportDatabase importDatabase;
-  late WorkingDatabase workingDatabase;
+  late ConversationGraphDatabase workingDatabase;
 
   setUpAll(() {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
+  });
+
+  test('delegates attachment projection to repository', () async {
+    final repository = _FakeAttachmentProjectionRepository(
+      result: const AttachmentProjectionResult(
+        examinedAttachmentCount: 6,
+        insertedAttachmentCount: 3,
+      ),
+    );
+    final result = await AttachmentProjector(
+      repository: repository,
+    ).projectAttachments();
+
+    expect(repository.callCount, 1);
+    expect(result.examinedAttachmentCount, 6);
+    expect(result.insertedAttachmentCount, 3);
   });
 
   setUp(() async {
@@ -26,10 +45,7 @@ void main() {
       databaseDirectory: tempDir.path,
       databaseName: 'macos_import_ss_test.db',
     );
-    workingDatabase = await WorkingDatabase.open(
-      databaseDirectory: tempDir.path,
-      databaseName: 'working_ss_test.db',
-    );
+    workingDatabase = await openConversationGraphTestDatabase();
   });
 
   tearDown(() async {
@@ -53,8 +69,10 @@ void main() {
     );
 
     final result = await AttachmentProjector(
-      importDatabase: importDatabase,
-      workingDatabase: workingDatabase,
+      repository: SqliteAttachmentProjectionRepository(
+        importDatabase: importDatabase,
+        workingDatabase: workingDatabase,
+      ),
     ).projectAttachments();
     final rows = await workingDatabase.database.query('attachments');
 
@@ -74,8 +92,10 @@ void main() {
       filename: '/source/photo.jpg',
     );
     final projector = AttachmentProjector(
-      importDatabase: importDatabase,
-      workingDatabase: workingDatabase,
+      repository: SqliteAttachmentProjectionRepository(
+        importDatabase: importDatabase,
+        workingDatabase: workingDatabase,
+      ),
     );
 
     final firstResult = await projector.projectAttachments();
@@ -92,6 +112,20 @@ void main() {
     expect(secondResult.insertedAttachmentCount, 0);
     expect(rows.single['filename'], '/source/updated.jpg');
   });
+}
+
+class _FakeAttachmentProjectionRepository
+    implements AttachmentProjectionRepository {
+  _FakeAttachmentProjectionRepository({required this.result});
+
+  final AttachmentProjectionResult result;
+  int callCount = 0;
+
+  @override
+  Future<AttachmentProjectionResult> projectAttachments() async {
+    callCount += 1;
+    return result;
+  }
 }
 
 Future<void> _insertImportAttachment(

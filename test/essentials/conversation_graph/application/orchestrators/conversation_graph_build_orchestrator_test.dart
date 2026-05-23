@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:remember_this_text/essentials/conversation_graph/application/contacts/contact_projector.dart';
-import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_projector.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/contacts/contact_projection_repository.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_projection_repository.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/orchestrators/conversation_graph_build_orchestrator.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_rich_text_enricher.dart';

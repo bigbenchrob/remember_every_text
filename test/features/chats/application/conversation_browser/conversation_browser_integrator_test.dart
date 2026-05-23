@@ -7,7 +7,12 @@ void main() {
     final model = const ConversationBrowserIntegrator().build(
       conversations: [
         _summary(id: 1, participants: ['+1'], messageCount: 10),
-        _summary(id: 2, participants: ['+1', '+2'], messageCount: 20),
+        _summary(
+          id: 2,
+          participants: ['+1', '+2'],
+          messageCount: 20,
+          attachmentCount: 3,
+        ),
         _summary(id: 3, participants: ['+1', '+2', '+3'], messageCount: 5),
       ],
       filter: ConversationBrowserFilter.groups,
@@ -20,12 +25,32 @@ void main() {
     expect(model.singleConversationCount, 1);
     expect(model.zeroParticipantConversationCount, 0);
     expect(model.zeroMessageConversationCount, 0);
+    expect(model.attachmentConversationCount, 1);
     expect(model.largestParticipantCount, 3);
     expect(model.largestMessageCount, 20);
     expect(model.conversations.map((conversation) => conversation.chatId), [
       2,
       3,
     ]);
+  });
+
+  test('filters conversations with attachments', () {
+    final model = const ConversationBrowserIntegrator().build(
+      conversations: [
+        _summary(id: 1, participants: ['+1'], messageCount: 10),
+        _summary(
+          id: 2,
+          participants: ['+1', '+2'],
+          messageCount: 20,
+          attachmentCount: 2,
+        ),
+      ],
+      filter: ConversationBrowserFilter.withAttachments,
+      sort: ConversationBrowserSort.mostRecent,
+    );
+
+    expect(model.visibleConversationCount, 1);
+    expect(model.conversations.single.chatId, 2);
   });
 
   test('sorts by message and participant counts', () {
@@ -170,12 +195,14 @@ RecentChatSummary _summary({
   required int id,
   required List<String> participants,
   required int messageCount,
+  int attachmentCount = 0,
   String? preview,
 }) {
   return RecentChatSummary(
     chatId: id,
     title: participants.join(' and '),
     messageCount: messageCount,
+    attachmentCount: attachmentCount,
     firstMessageDate: null,
     lastMessageDate: DateTime.utc(2026, 5, 20).subtract(Duration(days: id)),
     isGroup: participants.length > 1,

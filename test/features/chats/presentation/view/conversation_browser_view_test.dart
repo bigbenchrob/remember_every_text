@@ -20,7 +20,12 @@ void main() {
           recentChatsProvider(limit: 500).overrideWith((ref) async {
             return [
               _summary(id: 1, participants: ['+1'], messageCount: 10),
-              _summary(id: 2, participants: ['+1', '+2'], messageCount: 20),
+              _summary(
+                id: 2,
+                participants: ['+1', '+2'],
+                messageCount: 20,
+                attachmentCount: 4,
+              ),
             ];
           }),
         ],
@@ -37,6 +42,7 @@ void main() {
       find.text('zero participants: 0 | zero messages: 0'),
       findsOneWidget,
     );
+    expect(find.text('with attachments: 1'), findsOneWidget);
     expect(find.text('+1'), findsWidgets);
     expect(find.text('+1 | +2', findRichText: true), findsOneWidget);
 
@@ -46,6 +52,14 @@ void main() {
     expect(find.text('filter: Groups'), findsOneWidget);
     expect(find.text('visible conversations: 1'), findsOneWidget);
     expect(find.text('+1 | +2', findRichText: true), findsOneWidget);
+    expect(find.text('attachments: 4'), findsOneWidget);
+
+    await tester.tap(find.text('With attachments'));
+    await tester.pump();
+
+    expect(find.text('filter: With attachments'), findsOneWidget);
+    expect(find.text('visible conversations: 1'), findsOneWidget);
+    expect(find.text('attachments: 4'), findsOneWidget);
   });
 
   testWidgets('filters visible conversations by participants', (tester) async {
@@ -130,6 +144,18 @@ void main() {
                 conversationId: 1,
                 matchCount: 3,
                 sampleText: 'The settlement term appears here.',
+                snippets: [
+                  ConversationMessageTextSnippet(
+                    messageId: 101,
+                    dateUtc: '2026-05-20T10:00:00.000Z',
+                    text: 'The settlement term appears here.',
+                  ),
+                  ConversationMessageTextSnippet(
+                    messageId: 102,
+                    dateUtc: '2026-05-19T10:00:00.000Z',
+                    text: 'A second settlement message appears here.',
+                  ),
+                ],
               ),
             };
           }),
@@ -155,9 +181,17 @@ void main() {
     expect(find.text('message text matches: 1'), findsOneWidget);
     expect(find.text('matching messages: 3'), findsOneWidget);
     expect(
-      find.text('match: The settlement term appears here.', findRichText: true),
+      find.text('The settlement term appears here.', findRichText: true),
       findsOneWidget,
     );
+    expect(
+      find.text(
+        'A second settlement message appears here.',
+        findRichText: true,
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('message 101'), findsOneWidget);
     expect(find.text('rusung@example.com', findRichText: true), findsOneWidget);
   });
 }
@@ -173,12 +207,14 @@ RecentChatSummary _summary({
   required int id,
   required List<String> participants,
   required int messageCount,
+  int attachmentCount = 0,
   String? preview,
 }) {
   return RecentChatSummary(
     chatId: id,
     title: participants.join(' and '),
     messageCount: messageCount,
+    attachmentCount: attachmentCount,
     firstMessageDate: null,
     lastMessageDate: DateTime.utc(2026, 5, 20).subtract(Duration(days: id)),
     isGroup: participants.length > 1,

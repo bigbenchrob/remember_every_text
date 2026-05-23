@@ -3,7 +3,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/chat_handle_joins/chat_to_handle_projector.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/handles/handle_projector.dart';
-import 'package:remember_this_text/essentials/conversation_graph/infrastructure/working_database_provider.dart';
+import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/chat_to_handle_projection_repository.dart';
+import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/handle_projection_repository.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/chat_handle_joins/chat_handle_join_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/handles/handle_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
@@ -12,11 +13,13 @@ import 'package:remember_this_text/essentials/source_scoped_import/infrastructur
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import '../../conversation_graph_test_database.dart';
+
 void main() {
   late Directory tempDir;
   late String chatDbPath;
   late ImportDatabase importDatabase;
-  late WorkingDatabase workingDatabase;
+  late ConversationGraphDatabase workingDatabase;
 
   setUpAll(() {
     sqfliteFfiInit();
@@ -30,10 +33,7 @@ void main() {
       databaseDirectory: tempDir.path,
       databaseName: 'macos_import_ss_test.db',
     );
-    workingDatabase = await WorkingDatabase.open(
-      databaseDirectory: tempDir.path,
-      databaseName: 'working_ss_test.db',
-    );
+    workingDatabase = await openConversationGraphTestDatabase();
     await _createSourceTables(chatDbPath);
   });
 
@@ -58,8 +58,10 @@ void main() {
       importDatabase: importDatabase,
     ).importNewHandles();
     final projectionResult = await HandleProjector(
-      importDatabase: importDatabase,
-      workingDatabase: workingDatabase,
+      repository: SqliteHandleProjectionRepository(
+        importDatabase: importDatabase,
+        workingDatabase: workingDatabase,
+      ),
     ).projectHandles();
 
     final expectedSsId = SourceScopedRowKey.pack(
@@ -112,8 +114,10 @@ void main() {
         importDatabase: importDatabase,
       ).importNewHandles();
       await HandleProjector(
-        importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        repository: SqliteHandleProjectionRepository(
+          importDatabase: importDatabase,
+          workingDatabase: workingDatabase,
+        ),
       ).projectHandles();
 
       final firstSsId = SourceScopedRowKey.pack(
@@ -177,8 +181,10 @@ void main() {
       importDatabase: importDatabase,
     ).importJoins();
     final projector = ChatToHandleProjector(
-      importDatabase: importDatabase,
-      workingDatabase: workingDatabase,
+      repository: SqliteChatToHandleProjectionRepository(
+        importDatabase: importDatabase,
+        workingDatabase: workingDatabase,
+      ),
     );
     final firstProjection = await projector.projectEdges();
     final secondProjection = await projector.projectEdges();

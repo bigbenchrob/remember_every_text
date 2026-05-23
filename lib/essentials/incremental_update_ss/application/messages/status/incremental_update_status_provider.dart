@@ -3,7 +3,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../../../../../providers.dart';
-import '../../../../conversation_graph/infrastructure/working_database_provider.dart';
+import '../../../../db/feature_level_providers.dart';
+import '../../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../source_scoped_import/domain/known_sources.dart';
 import '../../../../source_scoped_import/infrastructure/import_database_provider.dart';
 
@@ -92,7 +93,9 @@ class IncrementalUpdateStatus {
 Future<IncrementalUpdateStatus> incrementalUpdateStatus(Ref ref) async {
   final pathsHelper = await ref.watch(pathsHelperProvider.future);
   final importDatabase = await ref.watch(importDatabaseProvider.future);
-  final workingDatabase = await ref.watch(workingDatabaseProvider.future);
+  final workingDatabase = await ref.watch(
+    driftConversationGraphDatabaseProvider.future,
+  );
 
   final sourceSnapshot = await _readSourceMessageSnapshot(
     pathsHelper.chatDBPath,
@@ -117,7 +120,7 @@ Future<IncrementalUpdateStatus> incrementalUpdateStatus(Ref ref) async {
   return IncrementalUpdateStatus(
     chatDbPath: pathsHelper.chatDBPath,
     importDatabaseName: importDatabaseFileName,
-    workingDatabaseName: workingDatabaseFileName,
+    workingDatabaseName: conversationGraphDatabaseFileName,
     sourceId: liveChatDbSourceId,
     sourceMessageCount: sourceSnapshot.count,
     sourceMaxRowId: sourceSnapshot.maxRowId,
@@ -256,9 +259,9 @@ Future<_MessageSnapshot> _readLedgerMessageSnapshot(
 }
 
 Future<_WorkingMessageSnapshot> _readWorkingMessageSnapshot(
-  WorkingDatabase workingDatabase,
+  ConversationGraphDatabase workingDatabase,
 ) async {
-  final rows = await workingDatabase.database.rawQuery(
+  final rows = await workingDatabase.selectRows(
     'SELECT COUNT(*) AS message_count, '
     'COUNT(associated_message_ss_id) AS associated_message_edge_count '
     'FROM messages',
@@ -273,27 +276,27 @@ Future<_WorkingMessageSnapshot> _readWorkingMessageSnapshot(
 
 Future<_GraphSnapshot> _readGraphSnapshot(
   ImportDatabase importDatabase,
-  WorkingDatabase workingDatabase,
+  ConversationGraphDatabase workingDatabase,
 ) async {
   final importChatRows = await importDatabase.database.rawQuery(
     'SELECT COUNT(*) AS chat_count FROM chats',
   );
-  final workingChatRows = await workingDatabase.database.rawQuery(
+  final workingChatRows = await workingDatabase.selectRows(
     'SELECT COUNT(*) AS chat_count FROM chats',
   );
   final importHandleRows = await importDatabase.database.rawQuery(
     'SELECT COUNT(*) AS handle_count FROM handles',
   );
-  final workingHandleRows = await workingDatabase.database.rawQuery(
+  final workingHandleRows = await workingDatabase.selectRows(
     'SELECT COUNT(*) AS handle_count FROM handles',
   );
   final importEdgeRows = await importDatabase.database.rawQuery(
     'SELECT COUNT(*) AS edge_count FROM chat_to_message',
   );
-  final workingEdgeRows = await workingDatabase.database.rawQuery(
+  final workingEdgeRows = await workingDatabase.selectRows(
     'SELECT COUNT(*) AS edge_count FROM chat_to_message',
   );
-  final duplicateEdgeRows = await workingDatabase.database.rawQuery('''
+  final duplicateEdgeRows = await workingDatabase.selectRows('''
     SELECT COUNT(*) AS duplicate_edge_count
     FROM (
       SELECT chat_ss_id, message_ss_id
@@ -305,10 +308,10 @@ Future<_GraphSnapshot> _readGraphSnapshot(
   final importChatToHandleRows = await importDatabase.database.rawQuery(
     'SELECT COUNT(*) AS edge_count FROM chat_to_handle',
   );
-  final workingChatToHandleRows = await workingDatabase.database.rawQuery(
+  final workingChatToHandleRows = await workingDatabase.selectRows(
     'SELECT COUNT(*) AS edge_count FROM chat_to_handle',
   );
-  final duplicateChatToHandleRows = await workingDatabase.database.rawQuery('''
+  final duplicateChatToHandleRows = await workingDatabase.selectRows('''
     SELECT COUNT(*) AS duplicate_edge_count
     FROM (
       SELECT chat_ss_id, handle_ss_id
@@ -320,16 +323,16 @@ Future<_GraphSnapshot> _readGraphSnapshot(
   final importAttachmentRows = await importDatabase.database.rawQuery(
     'SELECT COUNT(*) AS attachment_count FROM attachments',
   );
-  final workingAttachmentRows = await workingDatabase.database.rawQuery(
+  final workingAttachmentRows = await workingDatabase.selectRows(
     'SELECT COUNT(*) AS attachment_count FROM attachments',
   );
   final importMessageToAttachmentRows = await importDatabase.database.rawQuery(
     'SELECT COUNT(*) AS edge_count FROM message_to_attachment',
   );
-  final workingMessageToAttachmentRows = await workingDatabase.database
-      .rawQuery('SELECT COUNT(*) AS edge_count FROM message_to_attachment');
-  final duplicateMessageToAttachmentRows = await workingDatabase.database
-      .rawQuery('''
+  final workingMessageToAttachmentRows = await workingDatabase.selectRows(
+    'SELECT COUNT(*) AS edge_count FROM message_to_attachment',
+  );
+  final duplicateMessageToAttachmentRows = await workingDatabase.selectRows('''
     SELECT COUNT(*) AS duplicate_edge_count
     FROM (
       SELECT message_ss_id, attachment_ss_id

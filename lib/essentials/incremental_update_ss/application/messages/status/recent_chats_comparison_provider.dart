@@ -3,7 +3,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../features/chats/presentation/view_model/recent_chats_provider.dart';
-import '../../../../conversation_graph/infrastructure/working_database_provider.dart';
 import '../../../../db/feature_level_providers.dart';
 
 part 'recent_chats_comparison_provider.g.dart';
@@ -68,8 +67,10 @@ Future<int> _readLegacyChatCount(Ref ref) async {
 }
 
 Future<int> _readGraphChatCount(Ref ref) async {
-  final workingDatabase = await ref.watch(workingDatabaseProvider.future);
-  final rows = await workingDatabase.database.rawQuery(
+  final workingDatabase = await ref.watch(
+    driftConversationGraphDatabaseProvider.future,
+  );
+  final rows = await workingDatabase.selectRows(
     'SELECT COUNT(*) AS chat_count FROM chats',
   );
   final value = rows.single['chat_count'];

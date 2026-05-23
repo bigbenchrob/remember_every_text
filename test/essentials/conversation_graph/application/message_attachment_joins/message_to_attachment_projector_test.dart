@@ -1,21 +1,40 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/message_attachment_joins/message_to_attachment_projection_repository.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/message_attachment_joins/message_to_attachment_projector.dart';
-import 'package:remember_this_text/essentials/conversation_graph/infrastructure/working_database_provider.dart';
+import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/message_to_attachment_projection_repository.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import '../../conversation_graph_test_database.dart';
+
 void main() {
   late Directory tempDir;
   late ImportDatabase importDatabase;
-  late WorkingDatabase workingDatabase;
+  late ConversationGraphDatabase workingDatabase;
 
   setUpAll(() {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
+  });
+
+  test('delegates edge projection to repository', () async {
+    final repository = _FakeMessageToAttachmentProjectionRepository(
+      result: const MessageToAttachmentProjectionResult(
+        examinedEdgeCount: 5,
+        insertedEdgeCount: 2,
+      ),
+    );
+    final result = await MessageToAttachmentProjector(
+      repository: repository,
+    ).projectEdges();
+
+    expect(repository.callCount, 1);
+    expect(result.examinedEdgeCount, 5);
+    expect(result.insertedEdgeCount, 2);
   });
 
   setUp(() async {
@@ -26,10 +45,7 @@ void main() {
       databaseDirectory: tempDir.path,
       databaseName: 'macos_import_ss_test.db',
     );
-    workingDatabase = await WorkingDatabase.open(
-      databaseDirectory: tempDir.path,
-      databaseName: 'working_ss_test.db',
-    );
+    workingDatabase = await openConversationGraphTestDatabase();
   });
 
   tearDown(() async {
@@ -56,8 +72,10 @@ void main() {
     );
 
     final result = await MessageToAttachmentProjector(
-      importDatabase: importDatabase,
-      workingDatabase: workingDatabase,
+      repository: SqliteMessageToAttachmentProjectionRepository(
+        importDatabase: importDatabase,
+        workingDatabase: workingDatabase,
+      ),
     ).projectEdges();
     final rows = await workingDatabase.database.query('message_to_attachment');
 
@@ -75,8 +93,10 @@ void main() {
     );
 
     final projector = MessageToAttachmentProjector(
-      importDatabase: importDatabase,
-      workingDatabase: workingDatabase,
+      repository: SqliteMessageToAttachmentProjectionRepository(
+        importDatabase: importDatabase,
+        workingDatabase: workingDatabase,
+      ),
     );
     final firstResult = await projector.projectEdges();
     final secondResult = await projector.projectEdges();
@@ -86,6 +106,20 @@ void main() {
     expect(secondResult.insertedEdgeCount, 0);
     expect(rows, hasLength(1));
   });
+}
+
+class _FakeMessageToAttachmentProjectionRepository
+    implements MessageToAttachmentProjectionRepository {
+  _FakeMessageToAttachmentProjectionRepository({required this.result});
+
+  final MessageToAttachmentProjectionResult result;
+  int callCount = 0;
+
+  @override
+  Future<MessageToAttachmentProjectionResult> projectEdges() async {
+    callCount += 1;
+    return result;
+  }
 }
 
 Future<void> _insertImportEdge(

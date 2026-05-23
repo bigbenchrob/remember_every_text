@@ -4,9 +4,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/core/util/date_converter.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/chat_handle_joins/chat_to_handle_projector.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/chat_message_joins/chat_to_message_projector.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/chats/chat_projection_repository.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/chats/chat_projector.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/handles/handle_projector.dart';
-import 'package:remember_this_text/essentials/conversation_graph/infrastructure/working_database_provider.dart';
+import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/chat_projection_repository.dart';
+import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/chat_to_handle_projection_repository.dart';
+import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/chat_to_message_projection_repository.dart';
+import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/handle_projection_repository.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/chat_handle_joins/chat_handle_join_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/chat_message_joins/chat_message_join_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/chats/chat_importer.dart';
@@ -17,15 +21,31 @@ import 'package:remember_this_text/essentials/source_scoped_import/infrastructur
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import '../../conversation_graph_test_database.dart';
+
 void main() {
   late Directory tempDir;
   late String chatDbPath;
   late ImportDatabase importDatabase;
-  late WorkingDatabase workingDatabase;
+  late ConversationGraphDatabase workingDatabase;
 
   setUpAll(() {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
+  });
+
+  test('chat projector delegates projection to repository', () async {
+    final repository = _FakeChatProjectionRepository(
+      result: const ChatProjectionResult(
+        examinedChatCount: 8,
+        insertedChatCount: 4,
+      ),
+    );
+    final result = await ChatProjector(repository: repository).projectChats();
+
+    expect(repository.callCount, 1);
+    expect(result.examinedChatCount, 8);
+    expect(result.insertedChatCount, 4);
   });
 
   setUp(() async {
@@ -35,10 +55,7 @@ void main() {
       databaseDirectory: tempDir.path,
       databaseName: 'macos_import_ss_test.db',
     );
-    workingDatabase = await WorkingDatabase.open(
-      databaseDirectory: tempDir.path,
-      databaseName: 'working_ss_test.db',
-    );
+    workingDatabase = await openConversationGraphTestDatabase();
     await _createSourceTables(chatDbPath);
   });
 
@@ -89,16 +106,22 @@ void main() {
       importDatabase: importDatabase,
     ).importJoins();
     await HandleProjector(
-      importDatabase: importDatabase,
-      workingDatabase: workingDatabase,
+      repository: SqliteHandleProjectionRepository(
+        importDatabase: importDatabase,
+        workingDatabase: workingDatabase,
+      ),
     ).projectHandles();
     await ChatToHandleProjector(
-      importDatabase: importDatabase,
-      workingDatabase: workingDatabase,
+      repository: SqliteChatToHandleProjectionRepository(
+        importDatabase: importDatabase,
+        workingDatabase: workingDatabase,
+      ),
     ).projectEdges();
     final projectionResult = await ChatProjector(
-      importDatabase: importDatabase,
-      workingDatabase: workingDatabase,
+      repository: SqliteChatProjectionRepository(
+        importDatabase: importDatabase,
+        workingDatabase: workingDatabase,
+      ),
     ).projectChats();
 
     final expectedSsId = SourceScopedRowKey.pack(
@@ -174,17 +197,23 @@ void main() {
       importDatabase: importDatabase,
     ).importJoins();
     await HandleProjector(
-      importDatabase: importDatabase,
-      workingDatabase: workingDatabase,
+      repository: SqliteHandleProjectionRepository(
+        importDatabase: importDatabase,
+        workingDatabase: workingDatabase,
+      ),
     ).projectHandles();
     await ChatToHandleProjector(
-      importDatabase: importDatabase,
-      workingDatabase: workingDatabase,
+      repository: SqliteChatToHandleProjectionRepository(
+        importDatabase: importDatabase,
+        workingDatabase: workingDatabase,
+      ),
     ).projectEdges();
 
     final projector = ChatProjector(
-      importDatabase: importDatabase,
-      workingDatabase: workingDatabase,
+      repository: SqliteChatProjectionRepository(
+        importDatabase: importDatabase,
+        workingDatabase: workingDatabase,
+      ),
     );
     final first = await projector.projectChats();
     final second = await projector.projectChats();
@@ -241,8 +270,10 @@ void main() {
     });
 
     final projector = ChatToMessageProjector(
-      importDatabase: importDatabase,
-      workingDatabase: workingDatabase,
+      repository: SqliteChatToMessageProjectionRepository(
+        importDatabase: importDatabase,
+        workingDatabase: workingDatabase,
+      ),
     );
     final first = await projector.projectEdges();
     final second = await projector.projectEdges();
@@ -273,9 +304,22 @@ void main() {
         'chat_ss_id': chatSsId,
         'message_ss_id': messageSsId,
       }),
-      throwsA(isA<DatabaseException>()),
+      throwsA(isA<Exception>()),
     );
   });
+}
+
+class _FakeChatProjectionRepository implements ChatProjectionRepository {
+  _FakeChatProjectionRepository({required this.result});
+
+  final ChatProjectionResult result;
+  int callCount = 0;
+
+  @override
+  Future<ChatProjectionResult> projectChats() async {
+    callCount += 1;
+    return result;
+  }
 }
 
 Future<void> _createSourceTables(String chatDbPath) async {

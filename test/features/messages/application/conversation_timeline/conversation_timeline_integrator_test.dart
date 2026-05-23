@@ -13,6 +13,7 @@ void main() {
           isFromMe: true,
           text: 'newest',
           associatedMessageId: 1,
+          attachmentCount: 0,
         ),
         ConversationMessage(
           messageId: 2,
@@ -20,6 +21,7 @@ void main() {
           isFromMe: false,
           text: null,
           associatedMessageId: null,
+          attachmentCount: 0,
         ),
         ConversationMessage(
           messageId: 1,
@@ -27,6 +29,7 @@ void main() {
           isFromMe: false,
           text: 'oldest',
           associatedMessageId: null,
+          attachmentCount: 0,
         ),
       ],
       filter: ConversationTimelineFilter.all,
@@ -56,6 +59,7 @@ void main() {
         isFromMe: false,
         text: null,
         associatedMessageId: null,
+        attachmentCount: 0,
       ),
       ConversationMessage(
         messageId: 2,
@@ -63,6 +67,7 @@ void main() {
         isFromMe: true,
         text: 'hello',
         associatedMessageId: 1,
+        attachmentCount: 0,
       ),
     ];
 
@@ -90,5 +95,61 @@ void main() {
     expect(noTextTimeline.groups.single.messages.single.messageId, 1);
     expect(associatedTimeline.visibleMessageCount, 1);
     expect(associatedTimeline.groups.single.messages.single.messageId, 2);
+  });
+
+  test('derives loaded search matches without hiding context by default', () {
+    const messages = [
+      ConversationMessage(
+        messageId: 3,
+        dateUtc: '2026-05-20T10:00:00.000Z',
+        isFromMe: false,
+        text: 'Settlement came up again.',
+        associatedMessageId: null,
+        attachmentCount: 0,
+      ),
+      ConversationMessage(
+        messageId: 2,
+        dateUtc: '2026-05-19T10:00:00.000Z',
+        isFromMe: false,
+        text: 'Unrelated context.',
+        associatedMessageId: null,
+        attachmentCount: 0,
+      ),
+      ConversationMessage(
+        messageId: 1,
+        dateUtc: '2026-05-18T10:00:00.000Z',
+        isFromMe: true,
+        text: 'Initial settlement text.',
+        associatedMessageId: null,
+        attachmentCount: 0,
+      ),
+    ];
+
+    final timeline = const ConversationTimelineIntegrator().build(
+      overview: null,
+      messages: messages,
+      filter: ConversationTimelineFilter.all,
+      order: ConversationTimelineOrder.oldestFirst,
+      searchQuery: 'settlement',
+    );
+    final matchOnlyTimeline = const ConversationTimelineIntegrator().build(
+      overview: null,
+      messages: messages,
+      filter: ConversationTimelineFilter.all,
+      order: ConversationTimelineOrder.oldestFirst,
+      searchQuery: 'settlement',
+      searchMatchesOnly: true,
+    );
+
+    expect(timeline.loadedSearchMatchCount, 2);
+    expect(timeline.matchingMessageIds, [1, 3]);
+    expect(timeline.visibleMessageCount, 3);
+    expect(matchOnlyTimeline.visibleMessageCount, 2);
+    expect(
+      matchOnlyTimeline.groups
+          .expand((group) => group.messages)
+          .map((message) => message.messageId),
+      [1, 3],
+    );
   });
 }

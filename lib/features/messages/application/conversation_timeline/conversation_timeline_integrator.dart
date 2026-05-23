@@ -21,6 +21,8 @@ class ConversationTimelineModel {
     required this.fromMeMessageCount,
     required this.receivedMessageCount,
     required this.associatedMessageCount,
+    required this.loadedSearchMatchCount,
+    required this.matchingMessageIds,
     required this.groups,
   });
 
@@ -32,6 +34,8 @@ class ConversationTimelineModel {
   final int fromMeMessageCount;
   final int receivedMessageCount;
   final int associatedMessageCount;
+  final int loadedSearchMatchCount;
+  final List<int> matchingMessageIds;
   final List<ConversationTimelineDayGroup> groups;
 }
 
@@ -53,12 +57,23 @@ class ConversationTimelineIntegrator {
     required List<ConversationMessage> messages,
     required ConversationTimelineFilter filter,
     required ConversationTimelineOrder order,
+    String searchQuery = '',
+    bool searchMatchesOnly = false,
   }) {
     final orderedMessages = order == ConversationTimelineOrder.oldestFirst
         ? messages.reversed.toList(growable: false)
         : messages;
+    final searchTerms = _parseSearchTerms(searchQuery);
+    final matchingMessageIds = [
+      for (final message in orderedMessages)
+        if (_matchesSearchTerms(message, searchTerms)) message.messageId,
+    ];
     final visibleMessages = orderedMessages
         .where((message) => _matchesFilter(message, filter))
+        .where(
+          (message) =>
+              !searchMatchesOnly || _matchesSearchTerms(message, searchTerms),
+        )
         .toList(growable: false);
 
     return ConversationTimelineModel(
@@ -78,6 +93,8 @@ class ConversationTimelineIntegrator {
       associatedMessageCount: messages
           .where((message) => message.associatedMessageId != null)
           .length,
+      loadedSearchMatchCount: matchingMessageIds.length,
+      matchingMessageIds: List.unmodifiable(matchingMessageIds),
       groups: _groupByDay(visibleMessages),
     );
   }
@@ -130,6 +147,32 @@ class ConversationTimelineIntegrator {
 
     return List.unmodifiable(groups);
   }
+}
+
+List<String> _parseSearchTerms(String query) {
+  final seenTerms = <String>{};
+  final terms = query
+      .split(RegExp(r'[\s,]+'))
+      .map((term) => term.trim().toLowerCase())
+      .where((term) => term.isNotEmpty)
+      .where(seenTerms.add)
+      .toList(growable: false);
+  terms.sort((left, right) => right.length.compareTo(left.length));
+  return terms;
+}
+
+bool _matchesSearchTerms(
+  ConversationMessage message,
+  List<String> searchTerms,
+) {
+  if (searchTerms.isEmpty) {
+    return false;
+  }
+  final text = message.text?.toLowerCase();
+  if (text == null || text.isEmpty) {
+    return false;
+  }
+  return searchTerms.any(text.contains);
 }
 
 String conversationTimelineFilterLabel(ConversationTimelineFilter filter) {

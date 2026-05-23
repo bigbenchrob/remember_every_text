@@ -7,6 +7,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../providers.dart';
+import '../../../debug/application/developer_mode_provider.dart';
 import '../../../incremental_update/application/messages/integrators/import_decision_provider.dart';
 import '../../../incremental_update/application/messages/orchestrators/sync_state_polling_orchestrator_provider.dart';
 import '../../../incremental_update/domain/sealed_unions/import_decision.dart';
@@ -193,6 +194,29 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
                     onPressed: _showIncrementalUpdateStatus,
                     showLabel: false,
                   ),
+                if (kDebugMode)
+                  () {
+                    final developerMode = ref.watch(developerModeProvider);
+                    final isDeveloperMode =
+                        developerMode.valueOrNull ==
+                        DeveloperModeValue.developer;
+                    return ToolBarIconButton(
+                      label: isDeveloperMode
+                          ? 'Developer mode enabled'
+                          : 'Developer mode disabled',
+                      icon: MacosIcon(
+                        isDeveloperMode
+                            ? CupertinoIcons.hammer_fill
+                            : CupertinoIcons.hammer,
+                      ),
+                      onPressed: () {
+                        unawaited(
+                          ref.read(developerModeProvider.notifier).toggleMode(),
+                        );
+                      },
+                      showLabel: false,
+                    );
+                  }(),
                 () {
                   final themeMode = ref.watch(switchableDarkModeProvider);
                   final (IconData icon, String tooltip) = switch (themeMode) {

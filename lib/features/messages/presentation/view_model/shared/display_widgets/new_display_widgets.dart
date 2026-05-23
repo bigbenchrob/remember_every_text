@@ -249,12 +249,14 @@ class MetadataLine extends ConsumerWidget {
     required this.sender,
     required this.sentAt,
     required this.messageId,
+    this.senderHandleLabel,
     this.layout = MessageLayout.bubble,
   });
 
   final String sender;
   final DateTime sentAt;
   final int messageId;
+  final String? senderHandleLabel;
   final MessageLayout layout;
 
   @override
@@ -264,9 +266,13 @@ class MetadataLine extends ConsumerWidget {
     final developerMode = ref.watch(developerModeProvider).valueOrNull;
     final isDeveloperMode = developerMode == DeveloperModeValue.developer;
     final formattedDateTime = _formatDateTime(sentAt);
+    final handleLabel = senderHandleLabel?.trim();
+    final handleText = handleLabel == null || handleLabel.isEmpty
+        ? ''
+        : ' * handle: $handleLabel';
     final metadataText = isDeveloperMode
-        ? '$sender * $formattedDateTime * ID: $messageId'
-        : '$sender * $formattedDateTime';
+        ? '$sender * $formattedDateTime$handleText * ID: $messageId'
+        : '$sender * $formattedDateTime$handleText';
 
     return Text(
       metadataText,
@@ -316,6 +322,7 @@ class TextMessageTile extends ConsumerWidget {
     required this.sender,
     required this.sentAt,
     required this.messageId,
+    this.senderHandleLabel,
     this.highlight,
     this.layout = MessageLayout.bubble,
     this.grouping = MessageGroupingStyle.standalone,
@@ -327,6 +334,7 @@ class TextMessageTile extends ConsumerWidget {
   final String sender;
   final DateTime sentAt;
   final int messageId;
+  final String? senderHandleLabel;
   final String? highlight;
   final MessageLayout layout;
   final MessageGroupingStyle grouping;
@@ -338,6 +346,7 @@ class TextMessageTile extends ConsumerWidget {
     final colors = ref.read(themeColorsProvider.notifier);
     final developerMode = ref.watch(developerModeProvider).valueOrNull;
     final isDeveloperMode = developerMode == DeveloperModeValue.developer;
+    final handleLabel = senderHandleLabel?.trim();
     final bg = switch (layout) {
       MessageLayout.bubble =>
         isMe
@@ -446,6 +455,16 @@ class TextMessageTile extends ConsumerWidget {
                                   fontWeight: FontWeight.w400,
                                 ),
                               ),
+                              if (handleLabel != null && handleLabel.isNotEmpty)
+                                TextSpan(
+                                  text: ' — handle: $handleLabel',
+                                  style: TextStyle(
+                                    color: colors.content.textSecondary,
+                                    fontSize: 12,
+                                    height: 1.2,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
                               if (isDeveloperMode)
                                 TextSpan(
                                   text:
@@ -804,6 +823,7 @@ class ImageMessageTile extends ConsumerWidget {
     required this.sender,
     required this.sentAt,
     required this.messageId,
+    this.senderHandleLabel,
     this.captionText,
     this.layout = MessageLayout.bubble,
     this.grouping = MessageGroupingStyle.standalone,
@@ -814,6 +834,7 @@ class ImageMessageTile extends ConsumerWidget {
   final String sender;
   final DateTime sentAt;
   final int messageId;
+  final String? senderHandleLabel;
   final String? captionText;
   final MessageLayout layout;
   final MessageGroupingStyle grouping;
@@ -845,6 +866,7 @@ class ImageMessageTile extends ConsumerWidget {
           sender: sender,
           sentAt: sentAt,
           messageId: messageId,
+          senderHandleLabel: senderHandleLabel,
           layout: layout,
         ),
       ),
@@ -936,6 +958,7 @@ class VideoMessageTile extends ConsumerStatefulWidget {
     required this.sender,
     required this.sentAt,
     required this.messageId,
+    this.senderHandleLabel,
     this.captionText,
     this.layout = MessageLayout.bubble,
     this.grouping = MessageGroupingStyle.standalone,
@@ -946,6 +969,7 @@ class VideoMessageTile extends ConsumerStatefulWidget {
   final String sender;
   final DateTime sentAt;
   final int messageId;
+  final String? senderHandleLabel;
   final String? captionText;
   final MessageLayout layout;
   final MessageGroupingStyle grouping;
@@ -1229,6 +1253,7 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
           sender: widget.sender,
           sentAt: widget.sentAt,
           messageId: widget.messageId,
+          senderHandleLabel: widget.senderHandleLabel,
           layout: widget.layout,
         ),
       ),
@@ -1696,6 +1721,7 @@ class LinkPreviewTile extends ConsumerWidget {
     required this.sender,
     required this.sentAt,
     required this.messageId,
+    this.senderHandleLabel,
     this.previewImage,
     this.previewImageWidget,
     this.previewText,
@@ -1711,6 +1737,7 @@ class LinkPreviewTile extends ConsumerWidget {
   final String sender;
   final DateTime sentAt;
   final int messageId;
+  final String? senderHandleLabel;
   final File? previewImage;
   final Widget? previewImageWidget;
   final String? previewText;
@@ -1783,6 +1810,7 @@ class LinkPreviewTile extends ConsumerWidget {
         sender: sender,
         sentAt: sentAt,
         messageId: messageId,
+        senderHandleLabel: senderHandleLabel,
         layout: layout,
       ),
       child: Material(

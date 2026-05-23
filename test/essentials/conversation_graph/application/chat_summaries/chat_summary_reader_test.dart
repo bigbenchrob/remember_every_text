@@ -5,16 +5,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
 import 'package:remember_this_text/essentials/conversation_graph/application/chat_summaries/chat_summary.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/chat_summaries/chat_summary_reader.dart';
-import 'package:remember_this_text/essentials/conversation_graph/infrastructure/working_database_provider.dart';
+import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/chat_summary_repository.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import '../../conversation_graph_test_database.dart';
+
 void main() {
   late Directory tempDir;
   late Directory archiveDir;
-  late WorkingDatabase workingDatabase;
+  late ConversationGraphDatabase workingDatabase;
   late OverlayDatabase overlayDatabase;
 
   setUpAll(() {
@@ -26,10 +28,7 @@ void main() {
     tempDir = await Directory.systemTemp.createTemp('ss_chat_summary_test_');
     archiveDir = Directory(path.join(tempDir.path, 'attachment_archive'));
     await archiveDir.create(recursive: true);
-    workingDatabase = await WorkingDatabase.open(
-      databaseDirectory: tempDir.path,
-      databaseName: 'working_ss_test.db',
-    );
+    workingDatabase = await openConversationGraphTestDatabase();
     overlayDatabase = OverlayDatabase(NativeDatabase.memory());
   });
 
@@ -93,7 +92,7 @@ void main() {
     );
 
     final summaries = await ChatSummaryReader(
-      workingDatabase: workingDatabase,
+      repository: SqliteChatSummaryRepository(workingDatabase: workingDatabase),
     ).readSummaries();
 
     expect(summaries, hasLength(1));
@@ -139,7 +138,7 @@ void main() {
     );
 
     final summaries = await ChatSummaryReader(
-      workingDatabase: workingDatabase,
+      repository: SqliteChatSummaryRepository(workingDatabase: workingDatabase),
     ).readSummaries();
 
     expect(summaries.single.lastMessageAtUtc, '2026-05-20T10:00:00.000Z');
@@ -164,7 +163,7 @@ void main() {
     );
 
     final summaries = await ChatSummaryReader(
-      workingDatabase: workingDatabase,
+      repository: SqliteChatSummaryRepository(workingDatabase: workingDatabase),
     ).readSummaries();
 
     expect(summaries.single.messageCount, 1);
@@ -210,7 +209,9 @@ void main() {
       handleSsId: firstHandleSsId,
     );
 
-    final reader = ChatSummaryReader(workingDatabase: workingDatabase);
+    final reader = ChatSummaryReader(
+      repository: SqliteChatSummaryRepository(workingDatabase: workingDatabase),
+    );
     final summaries = await reader.readSummaries();
     final sanityCounts = await reader.readSanityCounts();
 
@@ -286,7 +287,9 @@ void main() {
       messageSsId: singleMessageSsId,
     );
 
-    final reader = ChatSummaryReader(workingDatabase: workingDatabase);
+    final reader = ChatSummaryReader(
+      repository: SqliteChatSummaryRepository(workingDatabase: workingDatabase),
+    );
     final groups = await reader.readSummaries(
       filter: ChatSummaryFilter.groupOnly,
     );
@@ -333,7 +336,7 @@ void main() {
     );
 
     final messages = await ChatSummaryReader(
-      workingDatabase: workingDatabase,
+      repository: SqliteChatSummaryRepository(workingDatabase: workingDatabase),
     ).readRecentMessages(chatSsId: chatSsId);
 
     expect(messages.map((message) => message.messageSsId), [
@@ -374,7 +377,11 @@ void main() {
         messageSsId: noTextMessageSsId,
       );
 
-      final reader = ChatSummaryReader(workingDatabase: workingDatabase);
+      final reader = ChatSummaryReader(
+        repository: SqliteChatSummaryRepository(
+          workingDatabase: workingDatabase,
+        ),
+      );
       final latestRows = await reader.readRecentMessages(chatSsId: chatSsId);
       final textRows = await reader.readRecentTextMessages(chatSsId: chatSsId);
       final textStats = await reader.readMessageTextStats(chatSsId: chatSsId);
@@ -478,9 +485,11 @@ void main() {
     );
 
     final reader = ChatSummaryReader(
-      workingDatabase: workingDatabase,
-      overlayDatabase: overlayDatabase,
-      attachmentArchiveDirectory: archiveDir.path,
+      repository: SqliteChatSummaryRepository(
+        workingDatabase: workingDatabase,
+        overlayDatabase: overlayDatabase,
+        attachmentArchiveDirectory: archiveDir.path,
+      ),
     );
     final stats = await reader.readAttachmentStats(chatSsId: chatSsId);
     final attachments = await reader.readMessageAttachments(
@@ -521,7 +530,7 @@ int _ss(int sourceRowId) {
 }
 
 Future<void> _insertChat(
-  WorkingDatabase workingDatabase, {
+  ConversationGraphDatabase workingDatabase, {
   required int ssId,
 }) async {
   await workingDatabase.database.insert('chats', <String, Object?>{
@@ -532,7 +541,7 @@ Future<void> _insertChat(
 }
 
 Future<void> _insertHandle(
-  WorkingDatabase workingDatabase, {
+  ConversationGraphDatabase workingDatabase, {
   required int ssId,
   required String id,
 }) async {
@@ -543,7 +552,7 @@ Future<void> _insertHandle(
 }
 
 Future<void> _insertMessage(
-  WorkingDatabase workingDatabase, {
+  ConversationGraphDatabase workingDatabase, {
   required int ssId,
   required String dateUtc,
   required String? text,
@@ -560,7 +569,7 @@ Future<void> _insertMessage(
 }
 
 Future<void> _insertChatHandle(
-  WorkingDatabase workingDatabase, {
+  ConversationGraphDatabase workingDatabase, {
   required int chatSsId,
   required int handleSsId,
 }) async {
@@ -571,7 +580,7 @@ Future<void> _insertChatHandle(
 }
 
 Future<void> _insertChatMessage(
-  WorkingDatabase workingDatabase, {
+  ConversationGraphDatabase workingDatabase, {
   required int chatSsId,
   required int messageSsId,
 }) async {
@@ -582,7 +591,7 @@ Future<void> _insertChatMessage(
 }
 
 Future<void> _insertAttachment(
-  WorkingDatabase workingDatabase, {
+  ConversationGraphDatabase workingDatabase, {
   required int ssId,
   required String transferName,
   required String filename,
@@ -600,7 +609,7 @@ Future<void> _insertAttachment(
 }
 
 Future<void> _insertMessageAttachment(
-  WorkingDatabase workingDatabase, {
+  ConversationGraphDatabase workingDatabase, {
   required int messageSsId,
   required int attachmentSsId,
 }) async {

@@ -124,6 +124,7 @@ Future<MessageListItem?> _loadRecoveredMessageById({
     guid: recoveredMessage.guid,
     isFromMe: recoveredMessage.isFromMe,
     senderName: _recoveredSenderName(recoveredMessage),
+    senderHandleLabel: recoveredMessage.senderLabel,
     text: recoveredMessage.text,
     sentAt: recoveredMessage.sentAt,
     hasAttachments: recoveredMessage.hasAttachments,

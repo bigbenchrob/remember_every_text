@@ -2,7 +2,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../essentials/conversation_graph/application/contacts/contact_projector.dart';
-import '../../../../essentials/conversation_graph/infrastructure/working_database_provider.dart';
 import '../../../../essentials/db/feature_level_providers.dart';
 import '../../../contacts/infrastructure/repositories/participant_merge_utils.dart';
 
@@ -17,12 +16,14 @@ class ContactHandleLabel {
 
 @riverpod
 Future<Map<String, ContactHandleLabel>> contactHandleLabels(Ref ref) async {
-  final graphDb = await ref.watch(workingDatabaseProvider.future);
+  final graphDb = await ref.watch(
+    driftConversationGraphDatabaseProvider.future,
+  );
   final overlayDb = await ref.watch(overlayDatabaseProvider.future);
   final nameOverrides = await displayNameOverridesMap(overlayDb);
   final labels = <String, ContactHandleLabel>{};
 
-  final graphContactRows = await graphDb.database.rawQuery('''
+  final graphContactRows = await graphDb.selectRows('''
     SELECT
       c.contact_id AS participant_id,
       c.display_name AS participant_display_name,

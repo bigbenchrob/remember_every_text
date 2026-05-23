@@ -5,6 +5,8 @@ class ConversationOverview {
     required this.participantCount,
     required this.isGroup,
     required this.messageCount,
+    required this.attachmentCount,
+    required this.firstMessageAtUtc,
     required this.lastMessageAtUtc,
     required this.lastMessageText,
   });
@@ -14,6 +16,8 @@ class ConversationOverview {
   final int participantCount;
   final bool isGroup;
   final int messageCount;
+  final int attachmentCount;
+  final String? firstMessageAtUtc;
   final String? lastMessageAtUtc;
   final String? lastMessageText;
 }
@@ -25,6 +29,18 @@ class ConversationMessage {
     required this.isFromMe,
     required this.text,
     required this.associatedMessageId,
+    required this.attachmentCount,
+    this.senderHandleId,
+    this.senderCanonicalHandleId,
+    this.senderDisplayHandle,
+    this.semanticKind,
+    this.itemKind,
+    this.isSystemMessage = false,
+    this.isSparseArtifact = false,
+    this.hasAttributedBodySource = false,
+    this.hasMessageSummaryInfo = false,
+    this.hasPayloadDataSource = false,
+    this.errorCode,
   });
 
   final int messageId;
@@ -32,6 +48,18 @@ class ConversationMessage {
   final bool isFromMe;
   final String? text;
   final int? associatedMessageId;
+  final int attachmentCount;
+  final int? senderHandleId;
+  final int? senderCanonicalHandleId;
+  final String? senderDisplayHandle;
+  final String? semanticKind;
+  final String? itemKind;
+  final bool isSystemMessage;
+  final bool isSparseArtifact;
+  final bool hasAttributedBodySource;
+  final bool hasMessageSummaryInfo;
+  final bool hasPayloadDataSource;
+  final int? errorCode;
 }
 
 class ConversationMessageTextMatch {
@@ -39,9 +67,23 @@ class ConversationMessageTextMatch {
     required this.conversationId,
     required this.matchCount,
     required this.sampleText,
+    this.snippets = const <ConversationMessageTextSnippet>[],
   });
 
   final int conversationId;
   final int matchCount;
   final String? sampleText;
+  final List<ConversationMessageTextSnippet> snippets;
+}
+
+class ConversationMessageTextSnippet {
+  const ConversationMessageTextSnippet({
+    required this.messageId,
+    required this.dateUtc,
+    required this.text,
+  });
+
+  final int messageId;
+  final String? dateUtc;
+  final String text;
 }

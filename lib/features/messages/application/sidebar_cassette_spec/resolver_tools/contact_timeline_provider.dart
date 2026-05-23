@@ -2,7 +2,10 @@ import 'package:drift/drift.dart' as drift;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../../essentials/conversation_graph/application/contacts/contact_graph.dart';
+import '../../../../../essentials/conversation_graph/application/contacts/contact_graph_provider.dart';
 import '../../../../../essentials/db/feature_level_providers.dart';
+import '../../../../chats/application/chat_read_model_source_provider.dart';
 import '../../../domain/calendar_heatmap_timeline_data.dart';
 import '../../../domain/value_objects/message_timeline_scope.dart';
 import '../../timeline/contact_timeline_display_version_provider.dart';
@@ -26,6 +29,26 @@ Future<CalendarHeatmapTimelineData?> contactTimeline(
       scope: MessageTimelineScope.contact(contactId: contactId),
     ),
   );
+
+  if (ref.watch(chatReadModelSourceProvider) ==
+      ChatReadModelSourceMode.conversationGraph) {
+    try {
+      final snapshot = await ref.watch(
+        contactPageGraphSnapshotProvider(contactId: contactId).future,
+      );
+      final graphTimeline = _buildGraphContactTimeline(
+        contactId: contactId,
+        activity: snapshot.messageActivity,
+      );
+      if (graphTimeline != null) {
+        return graphTimeline;
+      }
+    } on Object {
+      // Graph contact identity is still being adopted by legacy contact pages.
+      // Fall through to the legacy heatmap rather than rendering a blank card.
+    }
+  }
+
   final readiness = await ref.watch(workingProjectionReadinessProvider.future);
   if (!readiness.isReady) {
     return null;
@@ -72,5 +95,71 @@ Future<CalendarHeatmapTimelineData?> contactTimeline(
     contactId,
     firstDate,
     lastDate,
+  );
+}
+
+CalendarHeatmapTimelineData? _buildGraphContactTimeline({
+  required int contactId,
+  ContactMessageActivity? activity,
+}) {
+  if (activity == null || activity.monthCounts.isEmpty) {
+    return null;
+  }
+  final firstDate = DateTime.tryParse(activity.firstMessageAtUtc);
+  final lastDate = DateTime.tryParse(activity.lastMessageAtUtc);
+  if (firstDate == null || lastDate == null) {
+    return null;
+  }
+
+  final counts = <String, int>{
+    for (final monthCount in activity.monthCounts)
+      '${monthCount.year}-${monthCount.month.toString().padLeft(2, '0')}':
+          monthCount.messageCount,
+  };
+  final firstYear = firstDate.year;
+  final lastYear = lastDate.year;
+  final contactStartMonth = DateTime(firstDate.year, firstDate.month);
+  final yearRows = <YearRow>[];
+  var totalMessages = 0;
+  var maxMonthCount = 0;
+
+  for (var year = firstYear; year <= lastYear; year++) {
+    final months = <MonthData>[];
+    var yearHasMessages = false;
+    for (var month = 1; month <= 12; month++) {
+      final monthDate = DateTime(year, month);
+      final isBeforeStart = monthDate.isBefore(contactStartMonth);
+      final key = '$year-${month.toString().padLeft(2, '0')}';
+      final count = isBeforeStart ? 0 : counts[key] ?? 0;
+      if (count > 0) {
+        yearHasMessages = true;
+        totalMessages += count;
+        if (count > maxMonthCount) {
+          maxMonthCount = count;
+        }
+      }
+      months.add(
+        MonthData(
+          year: year,
+          month: month,
+          messageCount: count,
+          intensity: isBeforeStart
+              ? MonthIntensity.notYetStarted
+              : MonthIntensity.fromMessageCount(count),
+          chatId: contactId,
+        ),
+      );
+    }
+    yearRows.add(
+      YearRow(year: year, months: months, hasMessages: yearHasMessages),
+    );
+  }
+
+  return CalendarHeatmapTimelineData(
+    yearRows: yearRows,
+    firstMessageDate: firstDate,
+    lastMessageDate: lastDate,
+    totalMessages: totalMessages,
+    maxMonthCount: maxMonthCount,
   );
 }

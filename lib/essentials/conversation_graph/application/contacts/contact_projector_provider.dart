@@ -1,8 +1,9 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../db/feature_level_providers.dart';
 import '../../../source_scoped_import/infrastructure/import_database_provider.dart';
-import '../../infrastructure/working_database_provider.dart';
+import '../../infrastructure/repositories/contact_projection_repository.dart';
 import 'contact_projector.dart';
 
 part 'contact_projector_provider.g.dart';
@@ -10,10 +11,14 @@ part 'contact_projector_provider.g.dart';
 @riverpod
 Future<ContactProjector> contactProjector(Ref ref) async {
   final importDatabase = await ref.watch(importDatabaseProvider.future);
-  final workingDatabase = await ref.watch(workingDatabaseProvider.future);
+  final workingDatabase = await ref.watch(
+    driftConversationGraphDatabaseProvider.future,
+  );
 
   return ContactProjector(
-    importDatabase: importDatabase,
-    workingDatabase: workingDatabase,
+    repository: SqliteContactProjectionRepository(
+      importDatabase: importDatabase,
+      workingDatabase: workingDatabase,
+    ),
   );
 }

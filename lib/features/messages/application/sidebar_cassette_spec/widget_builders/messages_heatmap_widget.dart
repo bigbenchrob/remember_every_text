@@ -6,14 +6,17 @@ import 'package:macos_ui/macos_ui.dart';
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
+import '../../../../../essentials/conversation_graph/application/contacts/contact_graph_provider.dart';
 import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../../essentials/sidebar/application/sidebar_cassette_sectioning.dart';
 import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart';
+import '../../../../sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../domain/calendar_heatmap_timeline_data.dart';
 import '../../../domain/value_objects/message_timeline_scope.dart';
 import '../../../presentation/view_model/timeline/ordinal/current_visible_month_provider.dart';
 import '../../../presentation/widgets/calendar_heatmap_timeline_widget.dart';
+import '../../../presentation/widgets/contact_graph_conversation_section.dart';
 import '../resolver_tools/contact_timeline_provider.dart';
 import '../resolver_tools/global_messages_heatmap_provider.dart';
 
@@ -36,27 +39,21 @@ class MessagesHeatmapWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final timelineAsync = contactId == null
-        ? ref.watch(globalMessagesHeatmapProvider)
-        : ref.watch(contactTimelineProvider(contactId: contactId!));
+    if (contactId != null) {
+      return _ContactEvidenceContent(contactId: contactId!);
+    }
+
+    final timelineAsync = ref.watch(globalMessagesHeatmapProvider);
 
     return timelineAsync.when(
       data: (timeline) {
-        if (contactId == null) {
-          return _GlobalHeatmapContent(data: timeline);
-        }
-
-        return _ContactHeatmapContent(contactId: contactId!, data: timeline);
+        return _GlobalHeatmapContent(data: timeline);
       },
       loading: () => const _HeatmapLoadingCard(),
       error: (error, _) => _HeatmapErrorCard(
         message: 'Unable to load heatmap data. $error',
         onRetry: () {
-          if (contactId == null) {
-            ref.invalidate(globalMessagesHeatmapProvider);
-          } else {
-            ref.invalidate(contactTimelineProvider(contactId: contactId!));
-          }
+          ref.invalidate(globalMessagesHeatmapProvider);
         },
       ),
     );
@@ -110,27 +107,123 @@ class _GlobalHeatmapContent extends ConsumerWidget {
   }
 }
 
-class _ContactHeatmapContent extends ConsumerWidget {
-  const _ContactHeatmapContent({required this.contactId, required this.data});
+enum _ContactEvidenceMode { allMessages, conversations }
+
+class _ContactEvidenceContent extends ConsumerWidget {
+  const _ContactEvidenceContent({required this.contactId});
 
   final int contactId;
-  final CalendarHeatmapTimelineData? data;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (data == null) {
-      return const _EmptyHeatmapCard(
-        message: 'Select a contact or choose one with messages to plot.',
-        icon: CupertinoIcons.person_crop_circle_badge_exclam,
-      );
-    }
+    final flowState = ref.watch(sidebarFlowProvider);
+    final mode =
+        flowState.topMenuChoice == TopChatMenuChoice.contacts &&
+            _isSameContactContext(flowState.chosenContactId, contactId) &&
+            flowState.contactProjection ==
+                SidebarFlowContactProjection.conversations
+        ? _ContactEvidenceMode.conversations
+        : _ContactEvidenceMode.allMessages;
 
-    final timeline = data!;
+    final body = switch (mode) {
+      _ContactEvidenceMode.allMessages => _ContactAllMessagesEvidence(
+        contactId: contactId,
+      ),
+      _ContactEvidenceMode.conversations => ContactGraphConversationSection(
+        contactId: contactId,
+        padding: EdgeInsets.zero,
+        maxHeight: 360,
+      ),
+    };
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _ContactEvidenceModeToggle(
+          mode: mode,
+          onChanged: (mode) {
+            if (mode == _ContactEvidenceMode.allMessages) {
+              ref
+                  .read(sidebarFlowProvider.notifier)
+                  .showContactTimelineAt(contactId: contactId);
+            } else {
+              ref
+                  .read(sidebarFlowProvider.notifier)
+                  .showContactConversationNavigator(contactId: contactId);
+            }
+          },
+        ),
+        const SizedBox(height: AppSpacing.md),
+        body,
+      ],
+    );
+  }
+}
+
+bool _isSameContactContext(int? selectedContactId, int cassetteContactId) {
+  if (selectedContactId == null) {
+    return false;
+  }
+  return selectedContactId == cassetteContactId ||
+      graphContactIdForContactPage(selectedContactId) == cassetteContactId ||
+      graphContactIdForContactPage(cassetteContactId) == selectedContactId ||
+      graphContactIdForContactPage(selectedContactId) ==
+          graphContactIdForContactPage(cassetteContactId);
+}
+
+class _ContactAllMessagesEvidence extends ConsumerWidget {
+  const _ContactAllMessagesEvidence({required this.contactId});
+
+  final int contactId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final timelineAsync = ref.watch(
+      contactTimelineProvider(contactId: contactId),
+    );
+
+    return timelineAsync.when(
+      data: (timeline) {
+        if (timeline == null) {
+          return const _EmptyHeatmapCard(
+            message: 'Select a contact or choose one with messages to plot.',
+            icon: CupertinoIcons.person_crop_circle_badge_exclam,
+          );
+        }
+
+        return _ContactAllMessagesHeatmap(
+          contactId: contactId,
+          timeline: timeline,
+        );
+      },
+      loading: () => const _HeatmapLoadingCard(),
+      error: (error, _) => _HeatmapErrorCard(
+        message: 'Unable to load heatmap data. $error',
+        onRetry: () {
+          ref.invalidate(contactTimelineProvider(contactId: contactId));
+        },
+      ),
+    );
+  }
+}
+
+class _ContactAllMessagesHeatmap extends ConsumerWidget {
+  const _ContactAllMessagesHeatmap({
+    required this.contactId,
+    required this.timeline,
+  });
+
+  final int contactId;
+  final CalendarHeatmapTimelineData timeline;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final selectedMonthAsync = ref.watch(
       currentVisibleMonthForScopeProvider(
         scope: MessageTimelineScope.contact(contactId: contactId),
       ),
     );
+
     return MessageHeatmapContent(
       data: timeline,
       selectedMonthKey: selectedMonthAsync.valueOrNull,
@@ -154,6 +247,45 @@ class _ContactHeatmapContent extends ConsumerWidget {
                 sidebarMode: SidebarMode.messages,
               ),
             );
+      },
+    );
+  }
+}
+
+class _ContactEvidenceModeToggle extends ConsumerWidget {
+  const _ContactEvidenceModeToggle({
+    required this.mode,
+    required this.onChanged,
+  });
+
+  final _ContactEvidenceMode mode;
+  final ValueChanged<_ContactEvidenceMode> onChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final typography = ref.watch(themeTypographyProvider);
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+
+    return CupertinoSlidingSegmentedControl<_ContactEvidenceMode>(
+      groupValue: mode,
+      thumbColor: colors.surfaces.selected,
+      backgroundColor: colors.surfaces.control,
+      children: {
+        _ContactEvidenceMode.allMessages: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+          child: Text('All messages', style: typography.caption),
+        ),
+        _ContactEvidenceMode.conversations: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+          child: Text('By conversation', style: typography.caption),
+        ),
+      },
+      onValueChanged: (value) {
+        if (value == null) {
+          return;
+        }
+        onChanged(value);
       },
     );
   }

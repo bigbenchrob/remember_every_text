@@ -18,6 +18,8 @@ part 'sidebar_flow_state_provider.g.dart';
 
 enum SidebarFlowMessageScope { regular, recoveredDeleted }
 
+enum SidebarFlowContactProjection { allMessages, conversations }
+
 @visibleForTesting
 void debugAssertValidSidebarFlowState(SidebarFlowState state) {
   final persistentSettingsContext = state.persistentSettingsContext;
@@ -44,6 +46,12 @@ void debugAssertValidSidebarFlowState(SidebarFlowState state) {
         );
       }
 
+      if (state.contactProjection != SidebarFlowContactProjection.allMessages) {
+        throw StateError(
+          'Conversations branch cannot retain contact projection state.',
+        );
+      }
+
     case TopChatMenuChoice.contacts:
       if (state.selectedHandleId != null && state.chosenContactId == null) {
         throw StateError(
@@ -67,6 +75,13 @@ void debugAssertValidSidebarFlowState(SidebarFlowState state) {
         );
       }
 
+      if (state.messageScope == SidebarFlowMessageScope.recoveredDeleted &&
+          state.contactProjection != SidebarFlowContactProjection.allMessages) {
+        throw StateError(
+          'Recovered contact scope cannot use conversation projection mode.',
+        );
+      }
+
     case TopChatMenuChoice.strayHandles:
       if (state.chosenContactId != null || state.selectedHandleId != null) {
         throw StateError(
@@ -78,6 +93,12 @@ void debugAssertValidSidebarFlowState(SidebarFlowState state) {
       if (state.messageScope != SidebarFlowMessageScope.regular) {
         throw StateError(
           'Stray handles branch must remain in regular message scope.',
+        );
+      }
+
+      if (state.contactProjection != SidebarFlowContactProjection.allMessages) {
+        throw StateError(
+          'Stray handles branch cannot retain contact projection state.',
         );
       }
 
@@ -95,6 +116,12 @@ void debugAssertValidSidebarFlowState(SidebarFlowState state) {
         );
       }
 
+      if (state.contactProjection != SidebarFlowContactProjection.allMessages) {
+        throw StateError(
+          'Global timeline branch cannot retain contact projection state.',
+        );
+      }
+
     case TopChatMenuChoice.recoveredUnlinkedMessages:
       if (state.chosenContactId != null || state.selectedHandleId != null) {
         throw StateError(
@@ -106,6 +133,12 @@ void debugAssertValidSidebarFlowState(SidebarFlowState state) {
       if (state.messageScope != SidebarFlowMessageScope.recoveredDeleted) {
         throw StateError(
           'Global recovered branch must remain in recoveredDeleted scope.',
+        );
+      }
+
+      if (state.contactProjection != SidebarFlowContactProjection.allMessages) {
+        throw StateError(
+          'Global recovered branch cannot retain contact projection state.',
         );
       }
 
@@ -122,6 +155,12 @@ void debugAssertValidSidebarFlowState(SidebarFlowState state) {
           'Recovered no-handle branch must remain in regular message scope.',
         );
       }
+
+      if (state.contactProjection != SidebarFlowContactProjection.allMessages) {
+        throw StateError(
+          'Recovered no-handle branch cannot retain contact projection state.',
+        );
+      }
   }
 }
 
@@ -135,6 +174,8 @@ abstract class SidebarFlowState with _$SidebarFlowState {
     DateTime? scrollToDate,
     @Default(SidebarFlowMessageScope.regular)
     SidebarFlowMessageScope messageScope,
+    @Default(SidebarFlowContactProjection.allMessages)
+    SidebarFlowContactProjection contactProjection,
   }) = _SidebarFlowState;
 
   const SidebarFlowState._();
@@ -160,6 +201,10 @@ abstract class SidebarFlowState with _$SidebarFlowState {
 
         switch (messageScope) {
           case SidebarFlowMessageScope.regular:
+            if (contactProjection ==
+                SidebarFlowContactProjection.conversations) {
+              return null;
+            }
             return ViewSpec.messages(
               MessagesSpec.forContact(
                 contactId: contactId,
@@ -367,6 +412,7 @@ class SidebarFlow extends _$SidebarFlow {
         chosenContactId: contactId,
         selectedHandleId: null,
         messageScope: SidebarFlowMessageScope.regular,
+        contactProjection: SidebarFlowContactProjection.allMessages,
       ),
     );
 
@@ -398,6 +444,7 @@ class SidebarFlow extends _$SidebarFlow {
         chosenContactId: null,
         selectedHandleId: null,
         messageScope: SidebarFlowMessageScope.regular,
+        contactProjection: SidebarFlowContactProjection.allMessages,
       ),
     );
 
@@ -436,6 +483,7 @@ class SidebarFlow extends _$SidebarFlow {
         chosenContactId: contactId,
         selectedHandleId: handleId,
         messageScope: SidebarFlowMessageScope.regular,
+        contactProjection: SidebarFlowContactProjection.allMessages,
       ),
     );
 
@@ -463,6 +511,7 @@ class SidebarFlow extends _$SidebarFlow {
           chosenContactId: contactId,
           scrollToDate: null,
           messageScope: SidebarFlowMessageScope.regular,
+          contactProjection: SidebarFlowContactProjection.allMessages,
         ),
       );
       ref
@@ -483,6 +532,7 @@ class SidebarFlow extends _$SidebarFlow {
         selectedHandleId: null,
         scrollToDate: null,
         messageScope: SidebarFlowMessageScope.recoveredDeleted,
+        contactProjection: SidebarFlowContactProjection.allMessages,
       ),
     );
 
@@ -504,6 +554,7 @@ class SidebarFlow extends _$SidebarFlow {
         selectedHandleId: null,
         scrollToDate: null,
         messageScope: SidebarFlowMessageScope.recoveredDeleted,
+        contactProjection: SidebarFlowContactProjection.allMessages,
       ),
     );
   }
@@ -516,6 +567,20 @@ class SidebarFlow extends _$SidebarFlow {
         selectedHandleId: null,
         scrollToDate: scrollToDate,
         messageScope: SidebarFlowMessageScope.regular,
+        contactProjection: SidebarFlowContactProjection.allMessages,
+      ),
+    );
+  }
+
+  void showContactConversationNavigator({required int contactId}) {
+    _setStateAndClearRightIfNeeded(
+      state.copyWith(
+        topMenuChoice: TopChatMenuChoice.contacts,
+        chosenContactId: contactId,
+        selectedHandleId: null,
+        scrollToDate: null,
+        messageScope: SidebarFlowMessageScope.regular,
+        contactProjection: SidebarFlowContactProjection.conversations,
       ),
     );
   }
@@ -528,6 +593,7 @@ class SidebarFlow extends _$SidebarFlow {
         selectedHandleId: null,
         scrollToDate: null,
         messageScope: SidebarFlowMessageScope.regular,
+        contactProjection: SidebarFlowContactProjection.allMessages,
       ),
     );
   }
@@ -540,6 +606,7 @@ class SidebarFlow extends _$SidebarFlow {
         selectedHandleId: null,
         scrollToDate: scrollToDate,
         messageScope: SidebarFlowMessageScope.regular,
+        contactProjection: SidebarFlowContactProjection.allMessages,
       ),
     );
   }
@@ -552,7 +619,14 @@ class SidebarFlow extends _$SidebarFlow {
         selectedHandleId: null,
         scrollToDate: scrollToDate,
         messageScope: SidebarFlowMessageScope.regular,
+        contactProjection: SidebarFlowContactProjection.allMessages,
       ),
+    );
+  }
+
+  void showConversationContext() {
+    _setStateAndClearRightIfNeeded(
+      const SidebarFlowState(topMenuChoice: TopChatMenuChoice.conversations),
     );
   }
 
@@ -569,6 +643,7 @@ class SidebarFlow extends _$SidebarFlow {
         selectedHandleId: null,
         scrollToDate: startDate,
         messageScope: SidebarFlowMessageScope.recoveredDeleted,
+        contactProjection: SidebarFlowContactProjection.allMessages,
       ),
     );
   }

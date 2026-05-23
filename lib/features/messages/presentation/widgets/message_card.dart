@@ -67,6 +67,7 @@ class MessageCard extends ConsumerWidget {
         attachment: attachment,
         captionText: messageText,
         sender: message.senderName,
+        senderHandleLabel: message.senderHandleLabel,
         sentAt: message.sentAt ?? DateTime.now(),
         messageId: message.id,
         layout: layout == MessageCardLayout.analysis
@@ -84,6 +85,7 @@ class MessageCard extends ConsumerWidget {
         attachment: attachment,
         captionText: messageText,
         sender: message.senderName,
+        senderHandleLabel: message.senderHandleLabel,
         sentAt: message.sentAt ?? DateTime.now(),
         messageId: message.id,
         layout: layout == MessageCardLayout.analysis
@@ -98,6 +100,7 @@ class MessageCard extends ConsumerWidget {
       isMe: message.isFromMe,
       text: message.text,
       sender: message.senderName,
+      senderHandleLabel: message.senderHandleLabel,
       sentAt: message.sentAt ?? DateTime.now(),
       messageId: message.id,
       layout: layout == MessageCardLayout.analysis

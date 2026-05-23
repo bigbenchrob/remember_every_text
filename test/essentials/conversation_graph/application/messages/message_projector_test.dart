@@ -2,17 +2,19 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_projector.dart';
-import 'package:remember_this_text/essentials/conversation_graph/infrastructure/working_database_provider.dart';
+import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/message_projection_repository.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import '../../conversation_graph_test_database.dart';
+
 void main() {
   late Directory tempDir;
   late ImportDatabase importDatabase;
-  late WorkingDatabase workingDatabase;
+  late ConversationGraphDatabase workingDatabase;
 
   setUpAll(() {
     sqfliteFfiInit();
@@ -25,10 +27,7 @@ void main() {
       databaseDirectory: tempDir.path,
       databaseName: 'macos_import_ss_test.db',
     );
-    workingDatabase = await WorkingDatabase.open(
-      databaseDirectory: tempDir.path,
-      databaseName: 'working_ss_test.db',
-    );
+    workingDatabase = await openConversationGraphTestDatabase();
   });
 
   tearDown(() async {
@@ -53,8 +52,10 @@ void main() {
     );
 
     final result = await MessageProjector(
-      importDatabase: importDatabase,
-      workingDatabase: workingDatabase,
+      repository: SqliteMessageProjectionRepository(
+        importDatabase: importDatabase,
+        workingDatabase: workingDatabase,
+      ),
     ).projectMessages();
 
     final rows = await workingDatabase.database.query('messages');
@@ -76,8 +77,10 @@ void main() {
     );
 
     final projector = MessageProjector(
-      importDatabase: importDatabase,
-      workingDatabase: workingDatabase,
+      repository: SqliteMessageProjectionRepository(
+        importDatabase: importDatabase,
+        workingDatabase: workingDatabase,
+      ),
     );
     final firstResult = await projector.projectMessages();
     final secondResult = await projector.projectMessages();
@@ -101,8 +104,10 @@ void main() {
       );
 
       final projector = MessageProjector(
-        importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        repository: SqliteMessageProjectionRepository(
+          importDatabase: importDatabase,
+          workingDatabase: workingDatabase,
+        ),
       );
       await projector.projectMessages();
       await importDatabase.database.update(
@@ -137,8 +142,10 @@ void main() {
       );
 
       final result = await MessageProjector(
-        importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        repository: SqliteMessageProjectionRepository(
+          importDatabase: importDatabase,
+          workingDatabase: workingDatabase,
+        ),
       ).projectMessages();
       final rows = await workingDatabase.database.query(
         'messages',
@@ -173,8 +180,10 @@ void main() {
       );
 
       await MessageProjector(
-        importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        repository: SqliteMessageProjectionRepository(
+          importDatabase: importDatabase,
+          workingDatabase: workingDatabase,
+        ),
       ).projectMessages();
       final rows = await workingDatabase.database.query(
         'messages',
@@ -217,8 +226,10 @@ void main() {
     );
 
     await MessageProjector(
-      importDatabase: importDatabase,
-      workingDatabase: workingDatabase,
+      repository: SqliteMessageProjectionRepository(
+        importDatabase: importDatabase,
+        workingDatabase: workingDatabase,
+      ),
     ).projectMessages();
     final rows = await workingDatabase.database.query(
       'messages',
@@ -242,8 +253,10 @@ void main() {
       );
 
       await MessageProjector(
-        importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        repository: SqliteMessageProjectionRepository(
+          importDatabase: importDatabase,
+          workingDatabase: workingDatabase,
+        ),
       ).projectMessages();
       final rows = await workingDatabase.database.query(
         'messages',
@@ -269,8 +282,10 @@ void main() {
     );
 
     await MessageProjector(
-      importDatabase: importDatabase,
-      workingDatabase: workingDatabase,
+      repository: SqliteMessageProjectionRepository(
+        importDatabase: importDatabase,
+        workingDatabase: workingDatabase,
+      ),
     ).projectMessages();
     final rows = await workingDatabase.database.query(
       'messages',
@@ -320,8 +335,10 @@ void main() {
       );
 
       await MessageProjector(
-        importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        repository: SqliteMessageProjectionRepository(
+          importDatabase: importDatabase,
+          workingDatabase: workingDatabase,
+        ),
       ).projectMessages();
       final rows = await workingDatabase.database.query('messages');
       final byGuid = <Object?, Map<String, Object?>>{
@@ -360,8 +377,10 @@ void main() {
     );
 
     await MessageProjector(
-      importDatabase: importDatabase,
-      workingDatabase: workingDatabase,
+      repository: SqliteMessageProjectionRepository(
+        importDatabase: importDatabase,
+        workingDatabase: workingDatabase,
+      ),
     ).projectMessages();
     final rows = await workingDatabase.database.query(
       'messages',

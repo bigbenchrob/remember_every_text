@@ -47,6 +47,28 @@ final driftWorkingDatabaseProvider = FutureProvider<WorkingDatabase>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef DriftWorkingDatabaseRef = FutureProviderRef<WorkingDatabase>;
+String _$driftConversationGraphDatabaseHash() =>
+    r'a24e4d5cdb2234f7185c5de114b7ad80607c414a';
+
+/// Provides access to the source-scoped conversation graph projection database.
+///
+/// Copied from [driftConversationGraphDatabase].
+@ProviderFor(driftConversationGraphDatabase)
+final driftConversationGraphDatabaseProvider =
+    FutureProvider<ConversationGraphDatabase>.internal(
+      driftConversationGraphDatabase,
+      name: r'driftConversationGraphDatabaseProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$driftConversationGraphDatabaseHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef DriftConversationGraphDatabaseRef =
+    FutureProviderRef<ConversationGraphDatabase>;
 String _$overlayDatabaseHash() => r'af7bedb84580f233fac919c553fd2df670e3e30c';
 
 /// Provides access to the overlay database for user preferences and customizations.

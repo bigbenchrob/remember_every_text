@@ -1,7 +1,7 @@
 import '../../../source_scoped_import/application/messages/message_importer.dart';
 import '../../../source_scoped_import/application/messages/message_rich_text_enricher.dart';
-import '../contacts/contact_projector.dart';
-import '../messages/message_projector.dart';
+import '../contacts/contact_projection_repository.dart';
+import '../messages/message_projection_repository.dart';
 
 typedef GraphBuildStep = Future<void> Function();
 typedef MessageImportStep = Future<MessageImportResult> Function();

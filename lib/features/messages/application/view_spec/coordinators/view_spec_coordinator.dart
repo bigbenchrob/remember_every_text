@@ -38,8 +38,12 @@ class ViewSpecCoordinator extends _$ViewSpecCoordinator {
           ),
         ),
       ),
-      forConversation: (conversationId) =>
-          ConversationMessagesPreviewView(conversationId: conversationId),
+      forConversation: (conversationId, anchorMessageId, searchQuery) =>
+          ConversationMessagesPreviewView(
+            conversationId: conversationId,
+            anchorMessageId: anchorMessageId,
+            searchQuery: searchQuery,
+          ),
       forContact: (contactId, scrollToDate, filterHandleId) =>
           MessagesForContactResolver().resolve(
             contactId: contactId,

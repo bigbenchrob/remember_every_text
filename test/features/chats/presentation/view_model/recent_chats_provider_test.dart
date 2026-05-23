@@ -42,6 +42,8 @@ void main() {
               participantCount: 2,
               isGroup: true,
               messageCount: 7,
+              attachmentCount: 0,
+              firstMessageAtUtc: '2026-05-18T10:00:00.000Z',
               lastMessageAtUtc: '2026-05-20T10:00:00.000Z',
               lastMessageText: 'hello',
             ),
@@ -62,6 +64,7 @@ void main() {
     expect(summaries.single.chatId, 42);
     expect(summaries.single.title, '+15551 and +15552');
     expect(summaries.single.messageCount, 7);
+    expect(summaries.single.attachmentCount, 0);
     expect(summaries.single.isGroup, isTrue);
     expect(summaries.single.participants, ['+15551', '+15552']);
     expect(summaries.single.handles, ['+15551', '+15552']);
@@ -87,6 +90,8 @@ void main() {
                 participantCount: 2,
                 isGroup: true,
                 messageCount: 7,
+                attachmentCount: 0,
+                firstMessageAtUtc: '2026-05-18T10:00:00.000Z',
                 lastMessageAtUtc: '2026-05-20T10:00:00.000Z',
                 lastMessageText: 'hello',
               ),
@@ -135,6 +140,8 @@ void main() {
                 participantCount: 1,
                 isGroup: false,
                 messageCount: 7,
+                attachmentCount: 0,
+                firstMessageAtUtc: '2026-05-18T10:00:00.000Z',
                 lastMessageAtUtc: '2026-05-20T10:00:00.000Z',
                 lastMessageText: 'hello',
               ),

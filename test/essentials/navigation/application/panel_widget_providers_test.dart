@@ -1517,7 +1517,8 @@ class _FakeMessagesViewSpecCoordinator
     return spec.when(
       conversationBrowser: () => const Text('conversation-browser'),
       forChat: (chatId) => Text('chat:$chatId'),
-      forConversation: (conversationId) => Text('conversation:$conversationId'),
+      forConversation: (conversationId, anchorMessageId, searchQuery) =>
+          Text('conversation:$conversationId'),
       forContact: (contactId, scrollToDate, filterHandleId) =>
           Text('contact:$contactId'),
       globalTimeline: (scrollToDate) => const Text('global'),

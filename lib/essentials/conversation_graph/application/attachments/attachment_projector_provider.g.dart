@@ -7,7 +7,7 @@ part of 'attachment_projector_provider.dart';
 // **************************************************************************
 
 String _$attachmentProjectorHash() =>
-    r'9b3f29a777208c538e784e8996123f21b345307b';
+    r'c64f56096ef63ad8794c0352387593710a32c426';
 
 /// See also [attachmentProjector].
 @ProviderFor(attachmentProjector)

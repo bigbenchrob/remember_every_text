@@ -7,7 +7,7 @@ part of 'conversation_reader_provider.dart';
 // **************************************************************************
 
 String _$conversationReaderHash() =>
-    r'0216d5ce0364325277f8d382b46f2fc5603372a4';
+    r'ed33d6e953462af2242bfe0e3dcd107ebe6de8a5';
 
 /// See also [conversationReader].
 @ProviderFor(conversationReader)
@@ -479,7 +479,7 @@ class _ConversationIdsMatchingMessageTextProviderElement
 }
 
 String _$conversationMessageTextMatchesHash() =>
-    r'db162d5b59ac859c1262f4df5fd557dec2b9e2d5';
+    r'54d768d531f264819a27ce4f8b2cfcb33050dfaf';
 
 /// See also [conversationMessageTextMatches].
 @ProviderFor(conversationMessageTextMatches)
@@ -496,15 +496,24 @@ class ConversationMessageTextMatchesFamily
   ConversationMessageTextMatchesProvider call({
     required String query,
     int limit = 500,
+    int snippetsPerConversation = 3,
   }) {
-    return ConversationMessageTextMatchesProvider(query: query, limit: limit);
+    return ConversationMessageTextMatchesProvider(
+      query: query,
+      limit: limit,
+      snippetsPerConversation: snippetsPerConversation,
+    );
   }
 
   @override
   ConversationMessageTextMatchesProvider getProviderOverride(
     covariant ConversationMessageTextMatchesProvider provider,
   ) {
-    return call(query: provider.query, limit: provider.limit);
+    return call(
+      query: provider.query,
+      limit: provider.limit,
+      snippetsPerConversation: provider.snippetsPerConversation,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -529,11 +538,13 @@ class ConversationMessageTextMatchesProvider
   ConversationMessageTextMatchesProvider({
     required String query,
     int limit = 500,
+    int snippetsPerConversation = 3,
   }) : this._internal(
          (ref) => conversationMessageTextMatches(
            ref as ConversationMessageTextMatchesRef,
            query: query,
            limit: limit,
+           snippetsPerConversation: snippetsPerConversation,
          ),
          from: conversationMessageTextMatchesProvider,
          name: r'conversationMessageTextMatchesProvider',
@@ -545,6 +556,7 @@ class ConversationMessageTextMatchesProvider
              ConversationMessageTextMatchesFamily._allTransitiveDependencies,
          query: query,
          limit: limit,
+         snippetsPerConversation: snippetsPerConversation,
        );
 
   ConversationMessageTextMatchesProvider._internal(
@@ -556,10 +568,12 @@ class ConversationMessageTextMatchesProvider
     required super.from,
     required this.query,
     required this.limit,
+    required this.snippetsPerConversation,
   }) : super.internal();
 
   final String query;
   final int limit;
+  final int snippetsPerConversation;
 
   @override
   Override overrideWith(
@@ -579,6 +593,7 @@ class ConversationMessageTextMatchesProvider
         debugGetCreateSourceHash: null,
         query: query,
         limit: limit,
+        snippetsPerConversation: snippetsPerConversation,
       ),
     );
   }
@@ -593,7 +608,8 @@ class ConversationMessageTextMatchesProvider
   bool operator ==(Object other) {
     return other is ConversationMessageTextMatchesProvider &&
         other.query == query &&
-        other.limit == limit;
+        other.limit == limit &&
+        other.snippetsPerConversation == snippetsPerConversation;
   }
 
   @override
@@ -601,6 +617,7 @@ class ConversationMessageTextMatchesProvider
     var hash = _SystemHash.combine(0, runtimeType.hashCode);
     hash = _SystemHash.combine(hash, query.hashCode);
     hash = _SystemHash.combine(hash, limit.hashCode);
+    hash = _SystemHash.combine(hash, snippetsPerConversation.hashCode);
 
     return _SystemHash.finish(hash);
   }
@@ -615,6 +632,9 @@ mixin ConversationMessageTextMatchesRef
 
   /// The parameter `limit` of this provider.
   int get limit;
+
+  /// The parameter `snippetsPerConversation` of this provider.
+  int get snippetsPerConversation;
 }
 
 class _ConversationMessageTextMatchesProviderElement
@@ -627,6 +647,10 @@ class _ConversationMessageTextMatchesProviderElement
   String get query => (origin as ConversationMessageTextMatchesProvider).query;
   @override
   int get limit => (origin as ConversationMessageTextMatchesProvider).limit;
+  @override
+  int get snippetsPerConversation =>
+      (origin as ConversationMessageTextMatchesProvider)
+          .snippetsPerConversation;
 }
 
 // ignore_for_file: type=lint

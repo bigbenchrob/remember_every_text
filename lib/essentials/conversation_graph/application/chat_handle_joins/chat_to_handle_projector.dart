@@ -1,51 +1,10 @@
-import 'package:sqflite/sqflite.dart';
-
-import '../../../source_scoped_import/infrastructure/import_database_provider.dart';
-import '../../infrastructure/working_database_provider.dart';
-
-class ChatToHandleProjectionResult {
-  const ChatToHandleProjectionResult({
-    required this.examinedEdgeCount,
-    required this.insertedEdgeCount,
-  });
-
-  final int examinedEdgeCount;
-  final int insertedEdgeCount;
-}
+import 'chat_to_handle_projection_repository.dart';
 
 class ChatToHandleProjector {
-  const ChatToHandleProjector({
-    required this.importDatabase,
-    required this.workingDatabase,
-  });
+  const ChatToHandleProjector({required this.repository});
 
-  final ImportDatabase importDatabase;
-  final WorkingDatabase workingDatabase;
+  final ChatToHandleProjectionRepository repository;
 
-  Future<ChatToHandleProjectionResult> projectEdges() async {
-    final rows = await importDatabase.database.query(
-      'chat_to_handle',
-      columns: <String>['chat_ss_id', 'handle_ss_id'],
-      orderBy: 'chat_ss_id ASC, handle_ss_id ASC',
-    );
-
-    var insertedEdgeCount = 0;
-    await workingDatabase.database.transaction((txn) async {
-      for (final row in rows) {
-        final insertedId = await txn.insert(
-          'chat_to_handle',
-          row,
-          conflictAlgorithm: ConflictAlgorithm.ignore,
-        );
-        if (insertedId != 0) {
-          insertedEdgeCount += 1;
-        }
-      }
-    });
-
-    return ChatToHandleProjectionResult(
-      examinedEdgeCount: rows.length,
-      insertedEdgeCount: insertedEdgeCount,
-    );
-  }
+  Future<ChatToHandleProjectionResult> projectEdges() =>
+      repository.projectEdges();
 }

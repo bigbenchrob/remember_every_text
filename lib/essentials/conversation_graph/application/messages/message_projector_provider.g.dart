@@ -6,7 +6,7 @@ part of 'message_projector_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$messageProjectorHash() => r'f3e602f628d1f90f8c58d480aee455c1ad8b2a32';
+String _$messageProjectorHash() => r'f29c0529110ad7d5cf188d5e3b89b9a63e8eec04';
 
 /// See also [messageProjector].
 @ProviderFor(messageProjector)

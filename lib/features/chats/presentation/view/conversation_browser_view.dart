@@ -134,6 +134,16 @@ class _ConversationBrowserViewState
                   .read(chatsViewModelProvider.notifier)
                   .selectChat(conversationId);
             },
+            onConversationSnippetSelected:
+                (conversationId, snippetMessageId) async {
+                  await ref
+                      .read(chatsViewModelProvider.notifier)
+                      .selectChat(
+                        conversationId,
+                        anchorMessageId: snippetMessageId,
+                        searchQuery: trimmedMessageTextQuery,
+                      );
+                },
           );
         },
         loading: () => const Center(child: Text('Loading conversations...')),
@@ -164,6 +174,7 @@ class _ConversationBrowserContent extends StatelessWidget {
     required this.onFilterChanged,
     required this.onSortChanged,
     required this.onConversationSelected,
+    required this.onConversationSnippetSelected,
   });
 
   final ConversationBrowserModel model;
@@ -184,6 +195,8 @@ class _ConversationBrowserContent extends StatelessWidget {
   final ValueChanged<ConversationBrowserFilter> onFilterChanged;
   final ValueChanged<ConversationBrowserSort> onSortChanged;
   final ValueChanged<int> onConversationSelected;
+  final void Function(int conversationId, int snippetMessageId)
+  onConversationSnippetSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -224,6 +237,11 @@ class _ConversationBrowserContent extends StatelessWidget {
                       isMessageTextSearchActive: isMessageTextSearchActive,
                       onPressed: () =>
                           onConversationSelected(conversation.chatId),
+                      onSnippetPressed: (snippetMessageId) =>
+                          onConversationSnippetSelected(
+                            conversation.chatId,
+                            snippetMessageId,
+                          ),
                     );
                   },
                 ),
@@ -303,6 +321,7 @@ class _ConversationBrowserHeader extends ConsumerWidget {
               'zero participants: ${model.zeroParticipantConversationCount} | '
               'zero messages: ${model.zeroMessageConversationCount}',
             ),
+            Text('with attachments: ${model.attachmentConversationCount}'),
             Text('filter: ${conversationBrowserFilterLabel(filter)}'),
             Text('sort: ${conversationBrowserSortLabel(sort)}'),
             Text(
@@ -429,6 +448,7 @@ class _ConversationRow extends ConsumerWidget {
     required this.messageTextMatch,
     required this.isMessageTextSearchActive,
     required this.onPressed,
+    required this.onSnippetPressed,
   });
 
   final RecentChatSummary conversation;
@@ -437,6 +457,7 @@ class _ConversationRow extends ConsumerWidget {
   final ConversationMessageTextMatch? messageTextMatch;
   final bool isMessageTextSearchActive;
   final VoidCallback onPressed;
+  final ValueChanged<int> onSnippetPressed;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -483,6 +504,8 @@ class _ConversationRow extends ConsumerWidget {
                   '${conversation.isGroup ? 'group' : 'single'}',
                 ),
                 Text('message count: ${conversation.messageCount}'),
+                if (conversation.attachmentCount > 0)
+                  Text('attachments: ${conversation.attachmentCount}'),
                 if (_hasDistinctHandles(
                   participants: conversation.participants,
                   handles: conversation.handles,
@@ -497,12 +520,61 @@ class _ConversationRow extends ConsumerWidget {
                 if (textMatch != null) ...[
                   const SizedBox(height: 6),
                   Text('matching messages: ${textMatch.matchCount}'),
-                  if (_hasText(textMatch.sampleText))
-                    SearchHighlightedText(
-                      text: 'match: ${textMatch.sampleText!}',
+                  for (final snippet in textMatch.snippets)
+                    _ConversationTextMatchSnippet(
+                      snippet: snippet,
                       query: messageTextHighlightQuery,
+                      onPressed: () => onSnippetPressed(snippet.messageId),
                     ),
                 ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ConversationTextMatchSnippet extends ConsumerWidget {
+  const _ConversationTextMatchSnippet({
+    required this.snippet,
+    required this.query,
+    required this.onPressed,
+  });
+
+  final ConversationMessageTextSnippet snippet;
+  final String query;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final dateLabel = snippet.dateUtc ?? 'no date';
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 5),
+      child: GestureDetector(
+        onTap: onPressed,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: colors.surfaces.control,
+            border: Border.all(color: colors.lines.borderSubtle),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('message ${snippet.messageId} • $dateLabel'),
+                SearchHighlightedText(
+                  text: snippet.text,
+                  query: query,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
           ),

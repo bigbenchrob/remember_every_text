@@ -1,6 +1,6 @@
 import '../../presentation/view_model/recent_chats_provider.dart';
 
-enum ConversationBrowserFilter { all, groups, singles }
+enum ConversationBrowserFilter { all, groups, singles, withAttachments }
 
 enum ConversationBrowserSort {
   mostRecent,
@@ -16,6 +16,7 @@ class ConversationBrowserModel {
     required this.singleConversationCount,
     required this.zeroParticipantConversationCount,
     required this.zeroMessageConversationCount,
+    required this.attachmentConversationCount,
     required this.largestParticipantCount,
     required this.largestMessageCount,
     required this.conversations,
@@ -27,6 +28,7 @@ class ConversationBrowserModel {
   final int singleConversationCount;
   final int zeroParticipantConversationCount;
   final int zeroMessageConversationCount;
+  final int attachmentConversationCount;
   final int largestParticipantCount;
   final int largestMessageCount;
   final List<RecentChatSummary> conversations;
@@ -72,6 +74,9 @@ class ConversationBrowserIntegrator {
       zeroMessageConversationCount: conversations
           .where((conversation) => conversation.messageCount == 0)
           .length,
+      attachmentConversationCount: conversations
+          .where((conversation) => conversation.attachmentCount > 0)
+          .length,
       largestParticipantCount: conversations.fold<int>(
         0,
         (largest, conversation) => conversation.participants.length > largest
@@ -96,6 +101,8 @@ class ConversationBrowserIntegrator {
       ConversationBrowserFilter.all => true,
       ConversationBrowserFilter.groups => conversation.isGroup,
       ConversationBrowserFilter.singles => !conversation.isGroup,
+      ConversationBrowserFilter.withAttachments =>
+        conversation.attachmentCount > 0,
     };
   }
 
@@ -176,6 +183,7 @@ String conversationBrowserFilterLabel(ConversationBrowserFilter filter) {
     ConversationBrowserFilter.all => 'All conversations',
     ConversationBrowserFilter.groups => 'Groups',
     ConversationBrowserFilter.singles => 'Singles',
+    ConversationBrowserFilter.withAttachments => 'With attachments',
   };
 }
 

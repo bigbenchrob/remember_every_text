@@ -1,25 +1,22 @@
 import 'dart:io';
 
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:remember_this_text/essentials/conversation_graph/infrastructure/working_database_provider.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+
+import '../conversation_graph_test_database.dart';
 
 void main() {
   late Directory tempDir;
-  late WorkingDatabase workingDatabase;
+  late ConversationGraphDatabase workingDatabase;
 
   setUpAll(() {
     sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
   });
 
   setUp(() async {
     tempDir = await Directory.systemTemp.createTemp('working_ss_db_test_');
-    workingDatabase = await WorkingDatabase.open(
-      databaseDirectory: tempDir.path,
-      databaseName: 'working_ss_test.db',
-    );
+    workingDatabase = await openConversationGraphTestDatabase();
   });
 
   tearDown(() async {
@@ -186,4 +183,36 @@ void main() {
       'attachment_ss_id',
     });
   });
+
+  test(
+    'opens existing pre-Drift graph database with upgrade strategy',
+    () async {
+      final dbPath = '${tempDir.path}/working_ss.db';
+      final legacyDatabase = await databaseFactoryFfi.openDatabase(dbPath);
+      await legacyDatabase.execute('''
+      CREATE TABLE messages (
+        ss_id INTEGER PRIMARY KEY,
+        guid TEXT
+      )
+    ''');
+      await legacyDatabase.execute('PRAGMA user_version = 0');
+      await legacyDatabase.close();
+
+      final driftDatabase = ConversationGraphDatabase(
+        NativeDatabase(File(dbPath)),
+      );
+      addTearDown(driftDatabase.close);
+
+      final tables = await driftDatabase.selectRows('''
+      SELECT name
+      FROM sqlite_master
+      WHERE type = 'table'
+      ORDER BY name
+      ''');
+
+      expect(tables.map((row) => row['name']), contains('messages'));
+      expect(tables.map((row) => row['name']), contains('chat_to_handle'));
+      expect(tables.map((row) => row['name']), contains('contact_to_handle'));
+    },
+  );
 }

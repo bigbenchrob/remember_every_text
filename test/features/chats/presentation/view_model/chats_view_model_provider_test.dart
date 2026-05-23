@@ -22,6 +22,27 @@ void main() {
     );
   });
 
+  test('selectChat can carry graph search anchor context', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    await container
+        .read(chatsViewModelProvider.notifier)
+        .selectChat(42, anchorMessageId: 99, searchQuery: 'settlement');
+
+    final activeSpec = _activeCenterSpec(container);
+    expect(
+      activeSpec,
+      const ViewSpec.messages(
+        MessagesSpec.forConversation(
+          conversationId: 42,
+          anchorMessageId: 99,
+          searchQuery: 'settlement',
+        ),
+      ),
+    );
+  });
+
   test('selectChat preserves legacy chat routing when switched', () async {
     final container = ProviderContainer();
     addTearDown(container.dispose);
