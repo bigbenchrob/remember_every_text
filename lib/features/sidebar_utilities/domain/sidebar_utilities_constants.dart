@@ -39,10 +39,12 @@ enum TopChatMenuChoice {
   static TopChatMenuChoice fromId(String id) {
     return TopChatMenuChoice.values.firstWhere(
       (c) => c.id == id,
-      orElse: () => TopChatMenuChoice.conversations,
+      orElse: () => defaultTopChatMenuChoice,
     );
   }
 }
+
+const defaultTopChatMenuChoice = TopChatMenuChoice.conversations;
 
 enum SettingsMenuActionId {
   historicalArchives(id: 'historical_archives', label: 'Historical Archives'),

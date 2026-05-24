@@ -302,7 +302,7 @@ bool _shouldUseStoredCenterStack({
     return false;
   }
 
-  return !_shouldResetCenterPanel(
+  return !_shouldHideStoredCenterPanel(
     ref: ref,
     flowState: flowState,
     centerSpec: centerSpec,
@@ -320,7 +320,7 @@ String _defaultPanelTitle(ViewSpec spec) {
   );
 }
 
-bool _shouldResetCenterPanel({
+bool _shouldHideStoredCenterPanel({
   required Ref ref,
   required SidebarFlowState flowState,
   required ViewSpec? centerSpec,

@@ -7,9 +7,7 @@ import '../../../features/settings/domain/spec_classes/settings_view_spec.dart';
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../features/sidebar_utilities/feature_level_providers.dart';
 import '../../logging/application/app_logger.dart';
-import '../../navigation/application/panels_view_state_provider.dart';
 import '../../navigation/domain/entities/view_spec.dart';
-import '../../navigation/domain/navigation_constants.dart';
 import '../../navigation/domain/sidebar_mode.dart';
 import '../feature_level_providers.dart';
 
@@ -167,7 +165,7 @@ void debugAssertValidSidebarFlowState(SidebarFlowState state) {
 @freezed
 abstract class SidebarFlowState with _$SidebarFlowState {
   const factory SidebarFlowState({
-    @Default(TopChatMenuChoice.conversations) TopChatMenuChoice topMenuChoice,
+    @Default(defaultTopChatMenuChoice) TopChatMenuChoice topMenuChoice,
     int? chosenContactId,
     int? selectedHandleId,
     SettingsMenuActionId? persistentSettingsContext,
@@ -280,73 +278,20 @@ class SidebarFlow extends _$SidebarFlow {
     return initialState;
   }
 
-  void _setStateAndClearRightIfNeeded(SidebarFlowState nextState) {
+  void _setState(SidebarFlowState nextState) {
     assert(() {
       debugAssertValidSidebarFlowState(nextState);
       return true;
     }());
 
-    final previousProjectedCenterSpec = state.projectedCenterSpec;
     state = nextState;
-
-    final nextProjectedCenterSpec = state.projectedCenterSpec;
-
-    if (previousProjectedCenterSpec == nextProjectedCenterSpec) {
-      return;
-    }
-
-    final panelsState = ref.read(panelsViewStateProvider(SidebarMode.messages));
-    final centerSpec = panelsState[WindowPanel.center]?.activePage?.spec;
-    final panelsNotifier = ref.read(
-      panelsViewStateProvider(SidebarMode.messages).notifier,
-    );
-
-    if (_shouldClearStoredFlowManagedCenterSpec(
-      centerSpec: centerSpec,
-      projectedCenterSpec: nextProjectedCenterSpec,
-    )) {
-      panelsNotifier.clear(panel: WindowPanel.center);
-    }
-
-    panelsNotifier.clear(panel: WindowPanel.right);
-  }
-
-  bool _shouldClearStoredFlowManagedCenterSpec({
-    required ViewSpec? centerSpec,
-    required ViewSpec? projectedCenterSpec,
-  }) {
-    if (centerSpec == null) {
-      return false;
-    }
-
-    if (!_isFlowManagedCenterSpec(centerSpec)) {
-      return false;
-    }
-
-    return centerSpec != projectedCenterSpec;
-  }
-
-  bool _isFlowManagedCenterSpec(ViewSpec spec) {
-    return spec.maybeWhen(
-      messages: (messagesSpec) {
-        return messagesSpec.maybeWhen(
-          conversationBrowser: () => true,
-          forContact: (_, __, ___) => true,
-          globalTimeline: (_) => true,
-          recoveredUnlinkedMessages: (_, __) => true,
-          recoveredNoHandleFromMeMessages: (_) => true,
-          orElse: () => false,
-        );
-      },
-      orElse: () => false,
-    );
   }
 
   void topMenuChanged({
     required TopChatMenuChoice choice,
     required int cassetteIndex,
   }) {
-    _setStateAndClearRightIfNeeded(switch (choice) {
+    _setState(switch (choice) {
       TopChatMenuChoice.conversations => const SidebarFlowState(
         topMenuChoice: TopChatMenuChoice.conversations,
       ),
@@ -379,7 +324,7 @@ class SidebarFlow extends _$SidebarFlow {
   }
 
   void contactChosen({required int contactId, required int infoCardIndex}) {
-    _setStateAndClearRightIfNeeded(
+    _setState(
       state.copyWith(
         topMenuChoice: TopChatMenuChoice.contacts,
         chosenContactId: contactId,
@@ -412,7 +357,7 @@ class SidebarFlow extends _$SidebarFlow {
           },
         );
 
-    _setStateAndClearRightIfNeeded(
+    _setState(
       state.copyWith(
         chosenContactId: null,
         selectedHandleId: null,
@@ -450,7 +395,7 @@ class SidebarFlow extends _$SidebarFlow {
     required int? handleId,
     required int cassetteIndex,
   }) {
-    _setStateAndClearRightIfNeeded(
+    _setState(
       state.copyWith(
         topMenuChoice: TopChatMenuChoice.contacts,
         chosenContactId: contactId,
@@ -478,7 +423,7 @@ class SidebarFlow extends _$SidebarFlow {
     required int cassetteIndex,
   }) {
     if (messageScope == SidebarFlowMessageScope.regular) {
-      _setStateAndClearRightIfNeeded(
+      _setState(
         state.copyWith(
           topMenuChoice: TopChatMenuChoice.contacts,
           chosenContactId: contactId,
@@ -498,7 +443,7 @@ class SidebarFlow extends _$SidebarFlow {
       return;
     }
 
-    _setStateAndClearRightIfNeeded(
+    _setState(
       state.copyWith(
         topMenuChoice: TopChatMenuChoice.contacts,
         chosenContactId: contactId,
@@ -520,7 +465,7 @@ class SidebarFlow extends _$SidebarFlow {
   }
 
   void showGlobalRecoveredDeleted() {
-    _setStateAndClearRightIfNeeded(
+    _setState(
       state.copyWith(
         topMenuChoice: TopChatMenuChoice.recoveredUnlinkedMessages,
         chosenContactId: null,
@@ -533,7 +478,7 @@ class SidebarFlow extends _$SidebarFlow {
   }
 
   void showRecoveredNoHandleFromMe({DateTime? scrollToDate}) {
-    _setStateAndClearRightIfNeeded(
+    _setState(
       state.copyWith(
         topMenuChoice: TopChatMenuChoice.recoveredNoHandleFromMeMessages,
         chosenContactId: null,
@@ -546,7 +491,7 @@ class SidebarFlow extends _$SidebarFlow {
   }
 
   void showContactConversationNavigator({required int contactId}) {
-    _setStateAndClearRightIfNeeded(
+    _setState(
       state.copyWith(
         topMenuChoice: TopChatMenuChoice.contacts,
         chosenContactId: contactId,
@@ -559,7 +504,7 @@ class SidebarFlow extends _$SidebarFlow {
   }
 
   void showGlobalTimeline() {
-    _setStateAndClearRightIfNeeded(
+    _setState(
       state.copyWith(
         topMenuChoice: TopChatMenuChoice.searchAllMessages,
         chosenContactId: null,
@@ -572,7 +517,7 @@ class SidebarFlow extends _$SidebarFlow {
   }
 
   void showGlobalTimelineAt(DateTime? scrollToDate) {
-    _setStateAndClearRightIfNeeded(
+    _setState(
       state.copyWith(
         topMenuChoice: TopChatMenuChoice.searchAllMessages,
         chosenContactId: null,
@@ -585,7 +530,7 @@ class SidebarFlow extends _$SidebarFlow {
   }
 
   void showContactTimelineAt({required int contactId, DateTime? scrollToDate}) {
-    _setStateAndClearRightIfNeeded(
+    _setState(
       state.copyWith(
         topMenuChoice: TopChatMenuChoice.contacts,
         chosenContactId: contactId,
@@ -598,7 +543,7 @@ class SidebarFlow extends _$SidebarFlow {
   }
 
   void showConversationContext() {
-    _setStateAndClearRightIfNeeded(
+    _setState(
       const SidebarFlowState(topMenuChoice: TopChatMenuChoice.conversations),
     );
   }
@@ -607,7 +552,7 @@ class SidebarFlow extends _$SidebarFlow {
     required int? contactId,
     required DateTime startDate,
   }) {
-    _setStateAndClearRightIfNeeded(
+    _setState(
       state.copyWith(
         topMenuChoice: contactId == null
             ? TopChatMenuChoice.recoveredUnlinkedMessages
@@ -622,8 +567,6 @@ class SidebarFlow extends _$SidebarFlow {
   }
 
   void setPersistentSettingsContext(SettingsMenuActionId? actionId) {
-    _setStateAndClearRightIfNeeded(
-      state.copyWith(persistentSettingsContext: actionId),
-    );
+    _setState(state.copyWith(persistentSettingsContext: actionId));
   }
 }

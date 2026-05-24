@@ -120,6 +120,25 @@ void main() {
       container.dispose();
     });
 
+    test('default state projects the conversation browser', () {
+      final flowState = container.read(sidebarFlowProvider);
+      final rack = container.read(
+        cassetteRackStateProvider(SidebarMode.messages),
+      );
+
+      expect(flowState.topMenuChoice, defaultTopChatMenuChoice);
+      expect(
+        flowState.projectedCenterSpec,
+        const ViewSpec.messages(MessagesSpec.conversationBrowser()),
+      );
+      expect(
+        rack.cassettes.first,
+        const CassetteSpec.sidebarUtility(
+          SidebarUtilityCassetteSpec.topChatMenu(),
+        ),
+      );
+    });
+
     testWidgets(
       'contactChosen resets subordinate state and starts chosen-contact branch at selection control',
       (tester) async {
@@ -278,7 +297,7 @@ void main() {
     });
 
     testWidgets(
-      'chooseAnotherContact replaces the whole chosen-contact branch and clears panels',
+      'chooseAnotherContact replaces the whole chosen-contact branch and hides incompatible panels by derivation',
       (tester) async {
         await _mountMessagesPanelReconciliation(tester, container);
 
@@ -302,7 +321,7 @@ void main() {
         final rack = container.read(
           cassetteRackStateProvider(SidebarMode.messages),
         );
-        final panelState = container.read(
+        final storedPanelState = container.read(
           panelsViewStateProvider(SidebarMode.messages),
         );
 
@@ -382,8 +401,10 @@ void main() {
             ),
           ),
         );
-        expect(panelState[WindowPanel.center]?.isEmpty, isTrue);
-        expect(panelState[WindowPanel.right]?.isEmpty, isTrue);
+        expect(_activeSpec(container, WindowPanel.center), isNull);
+        expect(_activeSpec(container, WindowPanel.right), isNull);
+        expect(storedPanelState[WindowPanel.center]?.isEmpty ?? true, isTrue);
+        expect(storedPanelState[WindowPanel.right]?.isEmpty, isFalse);
       },
     );
 
@@ -469,7 +490,7 @@ void main() {
     );
 
     testWidgets(
-      'chooseAnotherContact clears incompatible stored flow-managed center panel',
+      'chooseAnotherContact hides incompatible stored flow-managed center panel by derivation',
       (tester) async {
         await _mountMessagesPanelReconciliation(tester, container);
 
@@ -489,12 +510,12 @@ void main() {
 
         await _flushMessagesPanelReconciliation(tester);
 
-        final panelState = container.read(
+        final storedPanelState = container.read(
           panelsViewStateProvider(SidebarMode.messages),
         );
 
         expect(_activeSpec(container, WindowPanel.center), isNull);
-        expect(panelState[WindowPanel.center]?.isEmpty, isTrue);
+        expect(storedPanelState[WindowPanel.center]?.isEmpty, isFalse);
       },
     );
 
@@ -622,7 +643,7 @@ void main() {
     );
 
     testWidgets(
-      'projected center change clears stored right panel immediately',
+      'projected center change leaves stored right panel but hides it by derivation',
       (tester) async {
         await _mountMessagesPanelReconciliation(tester, container);
 
@@ -640,8 +661,6 @@ void main() {
           ),
         );
 
-        expect(_activeSpec(container, WindowPanel.right), isNotNull);
-
         flow.showContactTimelineAt(contactId: 42);
 
         await _flushMessagesPanelReconciliation(tester);
@@ -653,7 +672,7 @@ void main() {
                 panelsViewStateProvider(SidebarMode.messages),
               )[WindowPanel.right]
               ?.isEmpty,
-          isTrue,
+          isFalse,
         );
       },
     );
@@ -792,6 +811,12 @@ ViewSpec? _activeSpec(ProviderContainer container, WindowPanel panel) {
   }
 
   final stacks = container.read(panelsViewStateProvider(SidebarMode.messages));
+  if (panel == WindowPanel.right) {
+    return container.read(
+      effectiveRightPanelSpecProvider(SidebarMode.messages),
+    );
+  }
+
   return stacks[panel]?.activePage?.spec;
 }
 

@@ -428,6 +428,32 @@ void main() {
 
   group('effectiveCenterPanelSpec', () {
     test(
+      'initial messages mode derives the conversation browser from sidebar flow',
+      () {
+        final container = ProviderContainer(
+          overrides: [
+            workingDbPopulatedProvider.overrideWith(
+              _AlwaysPopulatedWorkingDb.new,
+            ),
+          ],
+        );
+
+        expect(
+          container.read(sidebarFlowProvider).topMenuChoice,
+          defaultTopChatMenuChoice,
+        );
+        expect(
+          container.read(
+            effectiveCenterPanelSpecProvider(SidebarMode.messages),
+          ),
+          equals(const ViewSpec.messages(MessagesSpec.conversationBrowser())),
+        );
+
+        container.dispose();
+      },
+    );
+
+    test(
       'derives flow-managed messages center without stored center stack',
       () {
         final container = ProviderContainer(
@@ -781,7 +807,7 @@ void main() {
     });
 
     test(
-      'flow-managed center change clears incompatible stored right panel',
+      'flow-managed center change hides incompatible stored right panel by derivation',
       () {
         const globalScope = MessageTimelineScope.global();
         final container = ProviderContainer(
@@ -819,7 +845,7 @@ void main() {
                 panelsViewStateProvider(SidebarMode.messages),
               )[WindowPanel.right]
               ?.isEmpty,
-          isTrue,
+          isFalse,
         );
 
         container.dispose();

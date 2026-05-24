@@ -14,7 +14,7 @@ part 'sidebar_utility_cassette_spec.g.dart';
 abstract class SidebarUtilityCassetteSpec with _$SidebarUtilityCassetteSpec {
   /// Top-level menu for messages/chat mode.
   const factory SidebarUtilityCassetteSpec.topChatMenu({
-    @Default(TopChatMenuChoice.conversations) TopChatMenuChoice selectedChoice,
+    @Default(defaultTopChatMenuChoice) TopChatMenuChoice selectedChoice,
   }) = _SidebarUtilityCassetteSpecTopChatMenu;
 
   /// Top-level menu for settings mode.

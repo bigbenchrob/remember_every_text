@@ -207,7 +207,7 @@ return settingsMenu();case _:
 @JsonSerializable()
 
 class _SidebarUtilityCassetteSpecTopChatMenu implements SidebarUtilityCassetteSpec {
-  const _SidebarUtilityCassetteSpecTopChatMenu({this.selectedChoice = TopChatMenuChoice.conversations, final  String? $type}): $type = $type ?? 'topChatMenu';
+  const _SidebarUtilityCassetteSpecTopChatMenu({this.selectedChoice = defaultTopChatMenuChoice, final  String? $type}): $type = $type ?? 'topChatMenu';
   factory _SidebarUtilityCassetteSpecTopChatMenu.fromJson(Map<String, dynamic> json) => _$SidebarUtilityCassetteSpecTopChatMenuFromJson(json);
 
 @JsonKey() final  TopChatMenuChoice selectedChoice;
