@@ -1,0 +1,1136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MessageLens Conversation Shape Sandbox</title>
+  <style>
+    :root {
+      --bg: #111416;
+      --panel: #1a1f22;
+      --panel-2: #20262a;
+      --panel-3: #262d31;
+      --line: #384146;
+      --line-strong: #56636a;
+      --text: #eef1ec;
+      --muted: #a7b0ad;
+      --soft: #75817f;
+      --me: #eef1ec;
+      --accent: #d8b96a;
+      --warn: #c47f68;
+      --blue: #83a9c8;
+      --green: #9ab58b;
+      --rose: #bd8a99;
+      --violet: #a89ac9;
+      --font: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    :root[data-theme="light"] {
+      --bg: #f3f0ea;
+      --panel: #ffffff;
+      --panel-2: #ece8df;
+      --panel-3: #e2ddd2;
+      --line: #ccc4b7;
+      --line-strong: #8f887d;
+      --text: #202326;
+      --muted: #626a68;
+      --soft: #7d8582;
+      --me: #202326;
+      --accent: #8c6f24;
+      --warn: #a45e47;
+      --blue: #4f7894;
+      --green: #657f58;
+      --rose: #905e6c;
+      --violet: #76689a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      letter-spacing: 0;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: minmax(390px, 33vw) minmax(520px, 1fr);
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      display: grid;
+      grid-template-rows: auto auto auto;
+      align-content: start;
+      border-right: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel) 70%, var(--bg));
+      min-width: 0;
+      overflow: auto;
+    }
+
+    .sidebar-head {
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel) 78%, var(--bg));
+    }
+
+    h1 {
+      margin: 0 0 7px;
+      font-size: 18px;
+      line-height: 1.2;
+      font-weight: 680;
+    }
+
+    .subhead {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      max-width: 52ch;
+    }
+
+    .conversation-list {
+      padding: 10px 10px 12px;
+      filter: grayscale(var(--gray)) blur(var(--blur));
+    }
+
+    .conversation-row {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 9px;
+      text-align: left;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text);
+      border-radius: 8px;
+      padding: 11px 10px 10px;
+      margin: 0 0 8px;
+      cursor: pointer;
+    }
+
+    .conversation-row:hover {
+      background: var(--panel-2);
+      border-color: var(--line);
+    }
+
+    .conversation-row.selected {
+      background: var(--panel-2);
+      border-color: color-mix(in srgb, var(--accent) calc(var(--accentStrength) * 75%), #596167);
+      box-shadow: inset 3px 0 0 color-mix(in srgb, var(--accent) calc(var(--accentStrength) * 100%), transparent);
+    }
+
+    .row-top {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    .row-title {
+      font-size: 13px;
+      font-weight: 660;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .row-meta {
+      font-size: 10px;
+      color: var(--soft);
+      white-space: nowrap;
+    }
+
+    .row-notes {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 5px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .note-pill {
+      min-width: 0;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel-2) 82%, var(--bg));
+      color: var(--muted);
+      border-radius: 5px;
+      padding: 3px 5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .signature {
+      position: relative;
+      height: calc(52px * var(--signatureScale));
+      min-height: 34px;
+      border: 1px solid color-mix(in srgb, var(--line) calc(80% + var(--accentStrength) * 20%), transparent);
+      border-radius: 7px;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,.025), rgba(255,255,255,.01)),
+        repeating-linear-gradient(90deg, transparent 0 13%, color-mix(in srgb, var(--line) 38%, transparent) 13.1% 13.4%);
+      overflow: hidden;
+    }
+
+    .signature svg,
+    .signature canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .silence-band {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      background: color-mix(in srgb, var(--bg) 45%, transparent);
+      border-left: 1px solid color-mix(in srgb, var(--line) 35%, transparent);
+      border-right: 1px solid color-mix(in srgb, var(--line) 35%, transparent);
+      pointer-events: none;
+    }
+
+    .controls {
+      border-top: 1px solid var(--line);
+      padding: 14px 14px 16px;
+      background: color-mix(in srgb, var(--panel) 76%, var(--bg));
+    }
+
+    .controls-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 11px;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 670;
+    }
+
+    .reset-button {
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 12px;
+    }
+
+    .control {
+      min-width: 0;
+    }
+
+    .control.wide {
+      grid-column: 1 / -1;
+    }
+
+    .control label,
+    .toggle-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.2;
+      margin-bottom: 5px;
+    }
+
+    .value {
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    input[type="checkbox"] {
+      accent-color: var(--accent);
+    }
+
+    select,
+    input[type="number"] {
+      width: 100%;
+      min-height: 28px;
+      color: var(--text);
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 4px 7px;
+    }
+
+    .stage {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-width: 0;
+      background: var(--bg);
+    }
+
+    .message-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: center;
+      padding: 18px 22px 15px;
+      border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel) 76%, var(--bg));
+    }
+
+    .message-title {
+      min-width: 0;
+    }
+
+    .message-title h2 {
+      margin: 0 0 5px;
+      font-size: 19px;
+      line-height: 1.2;
+      font-weight: 700;
+    }
+
+    .message-title p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .legend {
+      display: flex;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 7px;
+      max-width: 420px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .legend-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--dot);
+      opacity: calc(.35 + var(--sat) * .55);
+    }
+
+    .message-viewport {
+      overflow: auto;
+      padding: 20px 24px 34px;
+      filter: grayscale(var(--gray)) blur(var(--blur));
+    }
+
+    .message-day {
+      margin: 18px 0 10px;
+      color: var(--soft);
+      font-size: 10px;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .message {
+      display: grid;
+      grid-template-columns: 28px minmax(120px, 680px);
+      gap: 8px;
+      align-items: end;
+      width: fit-content;
+      max-width: min(82%, 760px);
+      margin-top: var(--messageGap);
+      margin-left: calc(var(--indentLevel) * var(--indentStep));
+    }
+
+    .message.me {
+      grid-template-columns: minmax(120px, 680px) 28px;
+      margin-left: auto;
+      margin-right: 0;
+    }
+
+    .badge {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: #121517;
+      background: color-mix(in srgb, var(--participant) calc(35% + var(--sat) * 50%), #d9ded8);
+      font-size: 10px;
+      font-weight: 760;
+      opacity: var(--badgeOpacity);
+    }
+
+    .message.me .badge {
+      background: #d8ddd8;
+      color: #111416;
+    }
+
+    .bubble {
+      border: 1px solid color-mix(in srgb, var(--participant) calc(var(--accentStrength) * 55%), #3f494e);
+      border-left-width: calc(1px + var(--accentStrength) * 3px);
+      background: color-mix(in srgb, var(--participant) calc(var(--sat) * 8%), var(--panel-2));
+      border-radius: 8px;
+      padding: 8px 10px;
+      box-shadow: 0 1px 0 rgba(255, 255, 255, .025);
+    }
+
+    .message.me .bubble {
+      border-color: color-mix(in srgb, var(--me) 28%, var(--line));
+      background: color-mix(in srgb, var(--me) 8%, var(--panel));
+      color: var(--text);
+    }
+
+    .bubble-top {
+      display: flex;
+      gap: 8px;
+      justify-content: space-between;
+      margin-bottom: 4px;
+      color: color-mix(in srgb, var(--participant) calc(45% + var(--sat) * 40%), var(--muted));
+      font-size: 10px;
+      font-weight: 690;
+    }
+
+    .message.me .bubble-top {
+      color: var(--muted);
+    }
+
+    .body {
+      font-size: 12px;
+      line-height: 1.36;
+      color: inherit;
+    }
+
+    .attachment {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 10px;
+      border: 1px solid #465156;
+      border-radius: 5px;
+      padding: 3px 6px;
+      background: rgba(255, 255, 255, .035);
+    }
+
+    .message.me .attachment {
+      color: var(--muted);
+      border-color: var(--line);
+      background: var(--panel-2);
+    }
+
+    @media (max-width: 980px) {
+      .app {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(540px, 62vh) minmax(500px, 1fr);
+        overflow: auto;
+      }
+
+      .sidebar {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .stage {
+        min-height: 560px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app" id="app">
+    <aside class="sidebar">
+      <header class="sidebar-head">
+        <h1>Conversation Shape Sandbox</h1>
+        <p class="subhead">Sidebar explores recognisable conversation signatures. Center panel stays a resolved message stream.</p>
+      </header>
+      <section class="conversation-list" id="conversationList" aria-label="Conversation signatures"></section>
+      <section class="controls" aria-label="Visual tuning controls">
+        <div class="controls-title">
+          <span>Visual tuning</span>
+          <button class="reset-button" id="resetControls" type="button">Reset</button>
+        </div>
+        <div class="control-grid" id="controls"></div>
+      </section>
+    </aside>
+    <section class="stage">
+      <header class="message-head">
+        <div class="message-title">
+          <h2 id="selectedTitle"></h2>
+          <p id="selectedDescription"></p>
+        </div>
+        <div class="legend" id="legend"></div>
+      </header>
+      <section class="message-viewport" id="messageViewport" aria-label="Selected conversation stream"></section>
+    </section>
+  </main>
+
+  <script>
+    const MS_DAY = 24 * 60 * 60 * 1000;
+    const startDate = Date.UTC(2024, 0, 1, 10, 0, 0);
+    const endDate = Date.UTC(2026, 4, 20, 22, 0, 0);
+    const totalDays = Math.round((endDate - startDate) / MS_DAY);
+
+    const defaultSettings = {
+      seed: 42617,
+      theme: "dark",
+      saturation: 44,
+      participantColor: true,
+      avatarBadge: true,
+      indentStep: 10,
+      maxIndent: 3,
+      accentStrength: 55,
+      spacing: 8,
+      signatureCompression: 100,
+      traceSmoothing: 42,
+      blur: 0,
+      grayscale: false,
+      visualMode: "hybrid"
+    };
+
+    const state = {
+      settings: { ...defaultSettings },
+      selectedId: "friend",
+      conversations: []
+    };
+
+    const controls = [
+      { key: "theme", label: "Theme", type: "select", options: [
+        ["dark", "Dark"], ["light", "Light"]
+      ], wide: true },
+      { key: "visualMode", label: "Selected visual mode", type: "select", options: [
+        ["trace", "Trace"], ["heatmap", "Heatmap"], ["rails", "Rails"], ["hybrid", "Hybrid"]
+      ], wide: true },
+      { key: "seed", label: "Seed", type: "number", min: 1, max: 999999, step: 1 },
+      { key: "saturation", label: "Palette saturation", type: "range", min: 0, max: 100, step: 1, suffix: "%" },
+      { key: "participantColor", label: "Participant color mode", type: "checkbox" },
+      { key: "avatarBadge", label: "Avatar badge", type: "checkbox" },
+      { key: "indentStep", label: "Indentation step", type: "range", min: 0, max: 22, step: 1, suffix: "px" },
+      { key: "maxIndent", label: "Max indentation levels", type: "range", min: 0, max: 6, step: 1 },
+      { key: "accentStrength", label: "Border/accent strength", type: "range", min: 0, max: 100, step: 1, suffix: "%" },
+      { key: "spacing", label: "Message density/spacing", type: "range", min: 2, max: 18, step: 1, suffix: "px" },
+      { key: "signatureCompression", label: "Signature compression", type: "range", min: 55, max: 150, step: 1, suffix: "%" },
+      { key: "traceSmoothing", label: "Trace smoothing", type: "range", min: 0, max: 100, step: 1, suffix: "%" },
+      { key: "blur", label: "Blur amount", type: "range", min: 0, max: 4, step: .25, suffix: "px" },
+      { key: "grayscale", label: "Grayscale mode", type: "checkbox" }
+    ];
+
+    const palettes = [
+      "#9ab58b", "#83a9c8", "#bd8a99", "#d8b96a", "#a89ac9", "#c47f68"
+    ];
+
+    function mulberry32(seed) {
+      let value = seed >>> 0;
+      return function rand() {
+        value += 0x6D2B79F5;
+        let t = value;
+        t = Math.imul(t ^ t >>> 15, t | 1);
+        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    }
+
+    function hashString(text) {
+      let hash = 2166136261;
+      for (let i = 0; i < text.length; i += 1) {
+        hash ^= text.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+      }
+      return hash >>> 0;
+    }
+
+    function rngFor(id) {
+      return mulberry32((Number(state.settings.seed) || defaultSettings.seed) ^ hashString(id));
+    }
+
+    function pick(rand, items) {
+      return items[Math.floor(rand() * items.length)];
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function dateFromDay(day, hour = 12, minute = 0) {
+      return new Date(startDate + day * MS_DAY + hour * 60 * 60 * 1000 + minute * 60 * 1000);
+    }
+
+    function initials(name) {
+      return name.split(/\s+/).map(part => part[0]).join("").slice(0, 2).toUpperCase();
+    }
+
+    function makeConversation(config, generator) {
+      const rand = rngFor(config.id);
+      const participants = [
+        { id: "me", name: "Me", isMe: true, color: "#eef1ec" },
+        ...config.participants.map((participant, index) => ({
+          ...participant,
+          isMe: false,
+          color: palettes[index % palettes.length]
+        }))
+      ];
+      const records = generator(rand, participants).sort((a, b) => a.timestamp - b.timestamp);
+      return { ...config, participants, messages: records };
+    }
+
+    function makeMessage(conversationId, date, sender, rand, options = {}) {
+      const bucket = options.bucket || pick(rand, ["short", "short", "medium", "medium", "long"]);
+      const textByBucket = {
+        short: ["Yep", "On it", "Thanks", "Can do", "Leaving now", "Done", "Sounds good"],
+        medium: ["That works for me.", "I can move it to tomorrow.", "Let me check and get back to you.", "This seems like the right plan."],
+        long: ["I looked at the details and think we should keep the timing but change the pickup spot so nobody has to double back."]
+      };
+      return {
+        conversationId,
+        timestamp: date.toISOString(),
+        senderId: sender.id,
+        isMe: sender.isMe,
+        messageLengthBucket: bucket,
+        hasAttachment: options.attachment || false,
+        eventId: options.eventId || null,
+        burstId: options.burstId || null,
+        previewText: options.text || pick(rand, textByBucket[bucket])
+      };
+    }
+
+    function addBurst(messages, conversationId, rand, participants, day, count, options = {}) {
+      const weights = options.weights || participants.map(participant => participant.isMe ? .8 : 1);
+      const total = weights.reduce((sum, item) => sum + item, 0);
+      for (let i = 0; i < count; i += 1) {
+        let cursor = rand() * total;
+        let sender = participants[0];
+        for (let p = 0; p < participants.length; p += 1) {
+          cursor -= weights[p];
+          if (cursor <= 0) {
+            sender = participants[p];
+            break;
+          }
+        }
+        const hour = options.hourBase ?? 18;
+        const date = dateFromDay(day, hour + Math.floor(i / 8), Math.floor(rand() * 55));
+        const attachment = rand() < (options.attachmentRate || 0);
+        const bucket = pick(rand, options.buckets || ["short", "short", "medium"]);
+        messages.push(makeMessage(conversationId, date, sender, rand, {
+          bucket,
+          attachment,
+          eventId: options.eventId,
+          burstId: options.burstId || `burst-${Math.round(day)}`
+        }));
+      }
+    }
+
+    function generateConversations() {
+      const configs = [
+        {
+          id: "pharmacy",
+          title: "Oak Street Pharmacy",
+          archetype: "Sparse transactional",
+          description: "One sender, long-running, low frequency, short regular notices.",
+          participants: [{ id: "pharmacy_bot", name: "Pharmacy" }],
+          generator(rand, participants) {
+            const messages = [];
+            for (let day = 12; day < totalDays; day += 24 + Math.round(rand() * 12)) {
+              const sender = rand() < .88 ? participants[1] : participants[0];
+              messages.push(makeMessage("pharmacy", dateFromDay(day, 9 + Math.floor(rand() * 6), Math.floor(rand() * 50)), sender, rand, {
+                bucket: "short",
+                text: pick(rand, ["Rx ready for pickup.", "Refill reminder.", "Pickup by Friday.", "Your order is delayed."])
+              }));
+            }
+            return messages;
+          }
+        },
+        {
+          id: "friend",
+          title: "Maya",
+          archetype: "Active long-running friendship",
+          description: "Organic irregular rhythm with dense eras, quiet eras, and medium/high volume.",
+          participants: [{ id: "maya", name: "Maya" }],
+          generator(rand, participants) {
+            const messages = [];
+            const eras = [
+              [5, 80, .35], [110, 215, .82], [235, 390, .25], [410, 610, .68], [650, totalDays - 12, .45]
+            ];
+            eras.forEach((era, eraIndex) => {
+              for (let day = era[0]; day < era[1]; day += 1) {
+                if (rand() < era[2]) {
+                  addBurst(messages, "friend", rand, participants, day, 1 + Math.floor(rand() * (era[2] > .6 ? 8 : 4)), {
+                    weights: [.95, 1.05],
+                    buckets: ["short", "medium", "medium", "long"],
+                    attachmentRate: .04,
+                    burstId: `era-${eraIndex}-${Math.floor(day / 7)}`
+                  });
+                }
+              }
+            });
+            return messages;
+          }
+        },
+        {
+          id: "sports",
+          title: "Sunday Team Chat",
+          archetype: "Event-centered sports group",
+          description: "Six-person group with game-day bursts, two dominant voices, and quiet gaps.",
+          participants: [
+            { id: "alex", name: "Alex" }, { id: "bri", name: "Bri" }, { id: "cam", name: "Cam" },
+            { id: "dev", name: "Dev" }, { id: "eli", name: "Eli" }
+          ],
+          generator(rand, participants) {
+            const messages = [];
+            for (let day = 20; day < totalDays; day += 14 + Math.floor(rand() * 8)) {
+              addBurst(messages, "sports", rand, participants, day - 1, 4 + Math.floor(rand() * 5), {
+                weights: [.8, 2.4, 2.1, .55, .5, .45],
+                eventId: `game-${day}`,
+                attachmentRate: .02
+              });
+              addBurst(messages, "sports", rand, participants, day, 22 + Math.floor(rand() * 35), {
+                weights: [.9, 3.2, 2.8, .65, .55, .55],
+                eventId: `game-${day}`,
+                hourBase: 17,
+                attachmentRate: .04
+              });
+              addBurst(messages, "sports", rand, participants, day + 1, 6 + Math.floor(rand() * 9), {
+                weights: [.7, 2.1, 1.9, .6, .55, .5],
+                eventId: `game-${day}`
+              });
+            }
+            return messages;
+          }
+        },
+        {
+          id: "reality",
+          title: "Villa Watch Party",
+          archetype: "Weekly reality-show cadence",
+          description: "Five-person group with moderate weekly bursts during a season.",
+          participants: [
+            { id: "nina", name: "Nina" }, { id: "omar", name: "Omar" }, { id: "pri", name: "Priya" }, { id: "sam", name: "Sam" }
+          ],
+          generator(rand, participants) {
+            const messages = [];
+            const seasons = [[35, 126], [410, 501], [700, 835]];
+            seasons.forEach((season, seasonIndex) => {
+              for (let day = season[0]; day < season[1]; day += 7) {
+                addBurst(messages, "reality", rand, participants, day, 8 + Math.floor(rand() * 15), {
+                  weights: [.9, 1.2, .95, 1.1, .85],
+                  eventId: `episode-${seasonIndex}-${day}`,
+                  hourBase: 20,
+                  attachmentRate: .06
+                });
+              }
+            });
+            return messages;
+          }
+        },
+        {
+          id: "family",
+          title: "Family Logistics",
+          archetype: "Irregular coordination",
+          description: "Short practical bursts with intermittent gaps.",
+          participants: [
+            { id: "mom", name: "Mom" }, { id: "dad", name: "Dad" }, { id: "lee", name: "Lee" }
+          ],
+          generator(rand, participants) {
+            const messages = [];
+            for (let day = 15; day < totalDays; day += 9 + Math.floor(rand() * 23)) {
+              addBurst(messages, "family", rand, participants, day, 3 + Math.floor(rand() * 10), {
+                weights: [1.05, 1.2, .95, .9],
+                buckets: ["short", "short", "medium"],
+                attachmentRate: .05
+              });
+            }
+            return messages;
+          }
+        },
+        {
+          id: "revived",
+          title: "Old Apartment Crew",
+          archetype: "Dormant then revived",
+          description: "Old activity, a long silence, then a sudden recent burst.",
+          participants: [
+            { id: "jules", name: "Jules" }, { id: "kai", name: "Kai" }
+          ],
+          generator(rand, participants) {
+            const messages = [];
+            for (let day = 5; day < 140; day += 4 + Math.floor(rand() * 8)) {
+              addBurst(messages, "revived", rand, participants, day, 2 + Math.floor(rand() * 6), {
+                weights: [.8, 1.2, 1]
+              });
+            }
+            for (let day = totalDays - 34; day < totalDays - 4; day += 1 + Math.floor(rand() * 3)) {
+              addBurst(messages, "revived", rand, participants, day, 5 + Math.floor(rand() * 14), {
+                weights: [.95, 1.4, 1.2],
+                attachmentRate: .08
+              });
+            }
+            return messages;
+          }
+        },
+        {
+          id: "planning",
+          title: "Trip Planning",
+          archetype: "Attachment-heavy planning",
+          description: "Several participants, moderate bursts, high attachment density.",
+          participants: [
+            { id: "ana", name: "Ana" }, { id: "bo", name: "Bo" }, { id: "cor", name: "Corey" }, { id: "dia", name: "Dia" }
+          ],
+          generator(rand, participants) {
+            const messages = [];
+            for (let day = 70; day < totalDays; day += 38 + Math.floor(rand() * 48)) {
+              addBurst(messages, "planning", rand, participants, day, 10 + Math.floor(rand() * 18), {
+                weights: [1, 1.2, .9, 1.05, .85],
+                buckets: ["short", "medium", "medium", "long"],
+                attachmentRate: .38
+              });
+              addBurst(messages, "planning", rand, participants, day + 3, 4 + Math.floor(rand() * 10), {
+                weights: [1, 1.1, .95, 1, .85],
+                attachmentRate: .3
+              });
+            }
+            return messages;
+          }
+        }
+      ];
+      state.conversations = configs.map(config => makeConversation(config, config.generator));
+    }
+
+    function metrics(conversation) {
+      const count = conversation.messages.length;
+      const attachments = conversation.messages.filter(message => message.hasAttachment).length;
+      const senders = new Map();
+      conversation.messages.forEach(message => {
+        senders.set(message.senderId, (senders.get(message.senderId) || 0) + 1);
+      });
+      const maxSender = Math.max(...senders.values());
+      return {
+        count,
+        attachments,
+        attachmentRate: count ? attachments / count : 0,
+        dominance: count ? maxSender / count : 0,
+        spanDays: count ? Math.round((new Date(conversation.messages[count - 1].timestamp) - new Date(conversation.messages[0].timestamp)) / MS_DAY) : 0
+      };
+    }
+
+    function binsFor(conversation, binCount = 86) {
+      const bins = Array.from({ length: binCount }, () => ({
+        count: 0,
+        attachment: 0,
+        senders: new Map(),
+        events: new Set()
+      }));
+      conversation.messages.forEach(message => {
+        const time = new Date(message.timestamp).getTime();
+        const position = clamp((time - startDate) / (endDate - startDate), 0, .999);
+        const index = Math.floor(position * binCount);
+        bins[index].count += 1;
+        if (message.hasAttachment) {
+          bins[index].attachment += 1;
+        }
+        bins[index].senders.set(message.senderId, (bins[index].senders.get(message.senderId) || 0) + 1);
+        if (message.eventId) {
+          bins[index].events.add(message.eventId);
+        }
+      });
+      return bins;
+    }
+
+    function smoothCounts(counts) {
+      const radius = Math.round(Number(state.settings.traceSmoothing) / 22);
+      if (radius <= 0) {
+        return counts;
+      }
+      return counts.map((_, index) => {
+        let sum = 0;
+        let weight = 0;
+        for (let offset = -radius; offset <= radius; offset += 1) {
+          const source = index + offset;
+          if (source >= 0 && source < counts.length) {
+            const currentWeight = radius + 1 - Math.abs(offset);
+            sum += counts[source] * currentWeight;
+            weight += currentWeight;
+          }
+        }
+        return sum / weight;
+      });
+    }
+
+    function signatureSvg(conversation) {
+      const mode = state.settings.visualMode;
+      const width = 340;
+      const height = 70;
+      const bins = binsFor(conversation, Math.round(72 * (Number(state.settings.signatureCompression) / 100)));
+      const counts = smoothCounts(bins.map(bin => bin.count));
+      const max = Math.max(1, ...counts);
+      const participants = conversation.participants;
+      const xStep = width / Math.max(1, bins.length - 1);
+      const showTrace = mode === "trace" || mode === "hybrid";
+      const showHeatmap = mode === "heatmap" || mode === "hybrid";
+      const showRails = mode === "rails" || mode === "hybrid";
+      const parts = [`<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${conversation.archetype} signature">`];
+
+      if (showHeatmap) {
+        bins.forEach((bin, index) => {
+          const intensity = clamp(bin.count / max, 0, 1);
+          const color = bin.attachment > 0 ? "var(--warn)" : "var(--accent)";
+          parts.push(`<rect x="${index * width / bins.length}" y="0" width="${Math.ceil(width / bins.length) + 1}" height="${height}" fill="${color}" opacity="${(intensity * .28).toFixed(3)}"></rect>`);
+        });
+      }
+
+      if (showRails) {
+        participants.forEach((participant, pIndex) => {
+          const railY = 10 + pIndex * (height - 20) / Math.max(1, participants.length - 1);
+          parts.push(`<line x1="0" y1="${railY}" x2="${width}" y2="${railY}" stroke="${participant.isMe ? "#eef1ec" : participant.color}" stroke-opacity="${participant.isMe ? .18 : .22}" stroke-width="1"></line>`);
+          bins.forEach((bin, index) => {
+            const senderCount = bin.senders.get(participant.id) || 0;
+            if (senderCount > 0) {
+              const radius = clamp(1.3 + senderCount / max * 7, 1.3, 6.8);
+              parts.push(`<circle cx="${index * width / bins.length + width / bins.length / 2}" cy="${railY}" r="${radius.toFixed(2)}" fill="${participant.isMe ? "#eef1ec" : participant.color}" opacity="${participant.isMe ? .45 : .58}"></circle>`);
+            }
+          });
+        });
+      }
+
+      if (showTrace) {
+        const pointsTop = counts.map((count, index) => {
+          const x = index * xStep;
+          const y = height / 2 - (count / max) * (height * .38);
+          return `${x.toFixed(2)},${y.toFixed(2)}`;
+        });
+        const pointsBottom = counts.slice().reverse().map((count, reverseIndex) => {
+          const index = counts.length - 1 - reverseIndex;
+          const x = index * xStep;
+          const y = height / 2 + (count / max) * (height * .38);
+          return `${x.toFixed(2)},${y.toFixed(2)}`;
+        });
+        parts.push(`<polygon points="${pointsTop.concat(pointsBottom).join(" ")}" fill="var(--accent)" opacity=".24"></polygon>`);
+        parts.push(`<polyline points="${pointsTop.join(" ")}" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" opacity=".85"></polyline>`);
+        parts.push(`<polyline points="${pointsBottom.join(" ")}" fill="none" stroke="var(--accent)" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round" opacity=".34"></polyline>`);
+      }
+
+      bins.forEach((bin, index) => {
+        if (bin.events.size > 0) {
+          const x = index * width / bins.length + width / bins.length / 2;
+          parts.push(`<line x1="${x}" y1="3" x2="${x}" y2="${height - 3}" stroke="var(--blue)" stroke-opacity=".28" stroke-width="1"></line>`);
+        }
+        if (bin.attachment > 0) {
+          const x = index * width / bins.length + width / bins.length / 2;
+          parts.push(`<rect x="${x - 1}" y="${height - 8}" width="2" height="5" fill="var(--warn)" opacity=".75"></rect>`);
+        }
+      });
+
+      parts.push("</svg>");
+      return { svg: parts.join(""), bins };
+    }
+
+    function renderConversations() {
+      const list = document.getElementById("conversationList");
+      list.innerHTML = "";
+      state.conversations.forEach(conversation => {
+        const row = document.createElement("button");
+        row.type = "button";
+        row.className = `conversation-row${conversation.id === state.selectedId ? " selected" : ""}`;
+        row.addEventListener("click", () => {
+          state.selectedId = conversation.id;
+          render();
+        });
+        const data = metrics(conversation);
+        const signature = signatureSvg(conversation);
+        row.innerHTML = `
+          <div class="row-top">
+            <div class="row-title">${conversation.title}</div>
+            <div class="row-meta">${data.count} msgs</div>
+          </div>
+          <div class="signature">${silenceBands(signature.bins)}${signature.svg}</div>
+          <div class="row-notes">
+            <span class="note-pill">${conversation.archetype}</span>
+            <span class="note-pill">${Math.round(data.attachmentRate * 100)}% attachments</span>
+            <span class="note-pill">${Math.round(data.dominance * 100)}% top sender</span>
+          </div>
+        `;
+        list.appendChild(row);
+      });
+    }
+
+    function silenceBands(bins) {
+      let html = "";
+      let start = null;
+      bins.forEach((bin, index) => {
+        if (bin.count === 0 && start === null) {
+          start = index;
+        }
+        const isEnd = bin.count > 0 || index === bins.length - 1;
+        if (start !== null && isEnd) {
+          const end = bin.count > 0 ? index : index + 1;
+          const width = end - start;
+          if (width >= Math.max(5, bins.length * .08)) {
+            html += `<span class="silence-band" style="left:${start / bins.length * 100}%; width:${width / bins.length * 100}%"></span>`;
+          }
+          start = null;
+        }
+      });
+      return html;
+    }
+
+    function senderFor(conversation, senderId) {
+      return conversation.participants.find(participant => participant.id === senderId) || conversation.participants[0];
+    }
+
+    function renderMessages() {
+      const conversation = state.conversations.find(item => item.id === state.selectedId) || state.conversations[0];
+      const viewport = document.getElementById("messageViewport");
+      document.getElementById("selectedTitle").textContent = conversation.title;
+      document.getElementById("selectedDescription").textContent = conversation.description;
+      renderLegend(conversation);
+
+      const recentMessages = conversation.messages.slice(-140);
+      let lastDay = "";
+      viewport.innerHTML = "";
+      recentMessages.forEach(message => {
+        const date = new Date(message.timestamp);
+        const dayKey = date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+        if (dayKey !== lastDay) {
+          const divider = document.createElement("div");
+          divider.className = "message-day";
+          divider.textContent = dayKey;
+          viewport.appendChild(divider);
+          lastDay = dayKey;
+        }
+        const participant = senderFor(conversation, message.senderId);
+        const participantIndex = conversation.participants.findIndex(item => item.id === participant.id);
+        const indentLevel = message.isMe ? 0 : Math.min(Number(state.settings.maxIndent), Math.max(0, participantIndex - 1));
+        const item = document.createElement("article");
+        item.className = `message${message.isMe ? " me" : ""}`;
+        item.style.setProperty("--participant", state.settings.participantColor && !message.isMe ? participant.color : "#9da7a5");
+        item.style.setProperty("--indentLevel", String(indentLevel));
+        const badge = `<div class="badge">${initials(participant.name)}</div>`;
+        const bubble = `
+          <div class="bubble">
+            <div class="bubble-top">
+              <span>${participant.name}</span>
+              <span>${date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
+            </div>
+            <div class="body">${message.previewText}</div>
+            ${message.hasAttachment ? `<div class="attachment">attachment</div>` : ""}
+          </div>
+        `;
+        item.innerHTML = message.isMe ? `${bubble}${badge}` : `${badge}${bubble}`;
+        viewport.appendChild(item);
+      });
+    }
+
+    function renderLegend(conversation) {
+      const legend = document.getElementById("legend");
+      legend.innerHTML = "";
+      conversation.participants.forEach(participant => {
+        const item = document.createElement("div");
+        item.className = "legend-item";
+        item.innerHTML = `<span class="legend-dot" style="--dot:${participant.color}"></span><span>${participant.name}</span>`;
+        legend.appendChild(item);
+      });
+    }
+
+    function renderControls() {
+      const container = document.getElementById("controls");
+      container.innerHTML = "";
+      controls.forEach(control => {
+        const wrap = document.createElement("div");
+        wrap.className = `control${control.wide ? " wide" : ""}`;
+        const value = state.settings[control.key];
+        const id = `control-${control.key}`;
+        if (control.type === "checkbox") {
+          wrap.innerHTML = `
+            <label class="toggle-label" for="${id}">
+              <span>${control.label}</span>
+              <input id="${id}" type="checkbox" ${value ? "checked" : ""}>
+            </label>
+          `;
+        } else if (control.type === "select") {
+          wrap.innerHTML = `
+            <label for="${id}"><span>${control.label}</span></label>
+            <select id="${id}">
+              ${control.options.map(option => `<option value="${option[0]}" ${option[0] === value ? "selected" : ""}>${option[1]}</option>`).join("")}
+            </select>
+          `;
+        } else {
+          wrap.innerHTML = `
+            <label for="${id}">
+              <span>${control.label}</span>
+              <span class="value" id="${id}-value">${value}${control.suffix || ""}</span>
+            </label>
+            <input id="${id}" type="${control.type}" min="${control.min}" max="${control.max}" step="${control.step}" value="${value}">
+          `;
+        }
+        container.appendChild(wrap);
+        const input = document.getElementById(id);
+        input.addEventListener("input", event => {
+          if (control.type === "checkbox") {
+            state.settings[control.key] = event.target.checked;
+          } else if (control.type === "number" || control.type === "range") {
+            state.settings[control.key] = Number(event.target.value);
+            const valueLabel = document.getElementById(`${id}-value`);
+            if (valueLabel) {
+              valueLabel.textContent = `${event.target.value}${control.suffix || ""}`;
+            }
+          } else {
+            state.settings[control.key] = event.target.value;
+          }
+          if (control.key === "seed") {
+            generateConversations();
+          }
+          render();
+        });
+      });
+    }
+
+    function applySettings() {
+      const root = document.documentElement;
+      root.dataset.theme = state.settings.theme;
+      root.style.setProperty("--sat", String(Number(state.settings.saturation) / 100));
+      root.style.setProperty("--accentStrength", String(Number(state.settings.accentStrength) / 100));
+      root.style.setProperty("--messageGap", `${state.settings.spacing}px`);
+      root.style.setProperty("--indentStep", `${state.settings.indentStep}px`);
+      root.style.setProperty("--signatureScale", String(Number(state.settings.signatureCompression) / 100));
+      root.style.setProperty("--blur", `${state.settings.blur}px`);
+      root.style.setProperty("--gray", state.settings.grayscale ? "1" : "0");
+      root.style.setProperty("--badgeOpacity", state.settings.avatarBadge ? "1" : "0");
+    }
+
+    function render() {
+      applySettings();
+      renderConversations();
+      renderMessages();
+    }
+
+    document.getElementById("resetControls").addEventListener("click", () => {
+      state.settings = { ...defaultSettings };
+      generateConversations();
+      renderControls();
+      render();
+    });
+
+    generateConversations();
+    renderControls();
+    render();
+  </script>
+</body>
+</html>
