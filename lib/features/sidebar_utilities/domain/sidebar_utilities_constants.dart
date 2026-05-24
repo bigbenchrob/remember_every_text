@@ -39,7 +39,7 @@ enum TopChatMenuChoice {
   static TopChatMenuChoice fromId(String id) {
     return TopChatMenuChoice.values.firstWhere(
       (c) => c.id == id,
-      orElse: () => TopChatMenuChoice.contacts,
+      orElse: () => TopChatMenuChoice.conversations,
     );
   }
 }

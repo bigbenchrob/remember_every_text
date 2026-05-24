@@ -22,7 +22,7 @@ import 'package:remember_this_text/features/sidebar_utilities/domain/spec_classe
 
 void main() {
   group('debugAssertValidSidebarFlowState', () {
-    test('allows canonical chooser state', () {
+    test('allows canonical conversation-browser state', () {
       expect(
         () => debugAssertValidSidebarFlowState(const SidebarFlowState()),
         returnsNormally,
@@ -32,7 +32,10 @@ void main() {
     test('rejects selected handle without chosen contact', () {
       expect(
         () => debugAssertValidSidebarFlowState(
-          const SidebarFlowState(selectedHandleId: 7),
+          const SidebarFlowState(
+            topMenuChoice: TopChatMenuChoice.contacts,
+            selectedHandleId: 7,
+          ),
         ),
         throwsA(
           isA<StateError>().having(
@@ -48,6 +51,7 @@ void main() {
       expect(
         () => debugAssertValidSidebarFlowState(
           const SidebarFlowState(
+            topMenuChoice: TopChatMenuChoice.contacts,
             messageScope: SidebarFlowMessageScope.recoveredDeleted,
           ),
         ),
@@ -120,6 +124,7 @@ void main() {
       'contactChosen resets subordinate state and starts chosen-contact branch at selection control',
       (tester) async {
         await _mountMessagesPanelReconciliation(tester, container);
+        _switchToContacts(container);
 
         container
             .read(sidebarFlowProvider.notifier)
@@ -282,6 +287,7 @@ void main() {
           panelsViewStateProvider(SidebarMode.messages).notifier,
         );
 
+        _switchToContacts(container);
         flow.contactChosen(contactId: 42, infoCardIndex: 1);
         panels.show(
           panel: WindowPanel.right,
@@ -388,6 +394,7 @@ void main() {
 
         final flow = container.read(sidebarFlowProvider.notifier);
 
+        _switchToContacts(container);
         flow.contactChosen(contactId: 41, infoCardIndex: 1);
         flow.handleSelected(contactId: 41, handleId: 7, cassetteIndex: 5);
         flow.contactChosen(contactId: 42, infoCardIndex: 1);
@@ -471,6 +478,7 @@ void main() {
           panelsViewStateProvider(SidebarMode.messages).notifier,
         );
 
+        _switchToContacts(container);
         flow.contactChosen(contactId: 42, infoCardIndex: 1);
         panels.show(
           panel: WindowPanel.center,
@@ -497,6 +505,7 @@ void main() {
 
       final flow = container.read(sidebarFlowProvider.notifier);
 
+      _switchToContacts(container);
       flow.contactChosen(contactId: 42, infoCardIndex: 1);
       flow.handleSelected(contactId: 42, handleId: 7, cassetteIndex: 5);
 
@@ -539,6 +548,7 @@ void main() {
 
         final flow = container.read(sidebarFlowProvider.notifier);
 
+        _switchToContacts(container);
         flow.contactChosen(contactId: 42, infoCardIndex: 1);
         flow.setContactMessageScope(
           contactId: 42,
@@ -591,6 +601,7 @@ void main() {
         final flow = container.read(sidebarFlowProvider.notifier);
         final anchorDate = DateTime(2024, 05, 01);
 
+        _switchToContacts(container);
         flow.contactChosen(contactId: 42, infoCardIndex: 1);
         flow.handleSelected(contactId: 42, handleId: 7, cassetteIndex: 5);
         flow.showContactTimelineAt(contactId: 42, scrollToDate: anchorDate);
@@ -620,6 +631,7 @@ void main() {
           panelsViewStateProvider(SidebarMode.messages).notifier,
         );
 
+        _switchToContacts(container);
         flow.showGlobalTimeline();
         panels.show(
           panel: WindowPanel.right,
@@ -783,9 +795,17 @@ ViewSpec? _activeSpec(ProviderContainer container, WindowPanel panel) {
   return stacks[panel]?.activePage?.spec;
 }
 
+void _switchToContacts(ProviderContainer container) {
+  container
+      .read(sidebarFlowProvider.notifier)
+      .topMenuChanged(choice: TopChatMenuChoice.contacts, cassetteIndex: 0);
+}
+
 CassetteSpec _topChatMenuSpec() {
   return const CassetteSpec.sidebarUtility(
-    SidebarUtilityCassetteSpec.topChatMenu(),
+    SidebarUtilityCassetteSpec.topChatMenu(
+      selectedChoice: TopChatMenuChoice.contacts,
+    ),
   );
 }
 

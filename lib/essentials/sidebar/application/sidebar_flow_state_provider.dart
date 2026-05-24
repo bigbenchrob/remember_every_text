@@ -167,7 +167,7 @@ void debugAssertValidSidebarFlowState(SidebarFlowState state) {
 @freezed
 abstract class SidebarFlowState with _$SidebarFlowState {
   const factory SidebarFlowState({
-    @Default(TopChatMenuChoice.contacts) TopChatMenuChoice topMenuChoice,
+    @Default(TopChatMenuChoice.conversations) TopChatMenuChoice topMenuChoice,
     int? chosenContactId,
     int? selectedHandleId,
     SettingsMenuActionId? persistentSettingsContext,
@@ -369,10 +369,6 @@ class SidebarFlow extends _$SidebarFlow {
         ),
     });
 
-    if (choice == TopChatMenuChoice.conversations) {
-      _clearStoredMessagesCenterForConversationBrowser();
-    }
-
     final newSpec = CassetteSpec.sidebarUtility(
       SidebarUtilityCassetteSpec.topChatMenu(selectedChoice: choice),
     );
@@ -380,29 +376,6 @@ class SidebarFlow extends _$SidebarFlow {
     ref
         .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
         .replaceAtIndexAndCascade(cassetteIndex, newSpec);
-  }
-
-  void _clearStoredMessagesCenterForConversationBrowser() {
-    final panelsState = ref.read(panelsViewStateProvider(SidebarMode.messages));
-    final centerSpec = panelsState[WindowPanel.center]?.activePage?.spec;
-    final shouldClear =
-        centerSpec?.maybeWhen(
-          messages: (messagesSpec) {
-            return !messagesSpec.maybeWhen(
-              conversationBrowser: () => true,
-              orElse: () => false,
-            );
-          },
-          orElse: () => false,
-        ) ??
-        false;
-    if (!shouldClear) {
-      return;
-    }
-
-    ref
-        .read(panelsViewStateProvider(SidebarMode.messages).notifier)
-        .clear(panel: WindowPanel.center);
   }
 
   void contactChosen({required int contactId, required int infoCardIndex}) {

@@ -2,7 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart' show ControlSize;
 
-import '../colors/theme_colors.dart';
+import '../../colors/theme_colors.dart';
 
 class AppPrimaryButton extends ConsumerStatefulWidget {
   const AppPrimaryButton({

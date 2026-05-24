@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
+import '../../../../config/theme/widgets/theme_widgets.dart';
 import '../../../../essentials/conversation_graph/application/chat_summaries/chat_summary.dart';
 import '../../../../essentials/conversation_graph/application/chat_summaries/chat_summary_provider.dart';
 import '../../../../essentials/conversation_graph/application/conversations/conversation.dart';
@@ -437,7 +438,7 @@ class _TimelineHeaderState extends ConsumerState<_TimelineHeader> {
                     ],
                   ),
                 ),
-                _HeaderActionButton(
+                AppHeaderActionButton(
                   icon: CupertinoIcons.doc_on_doc,
                   label: _copiedEvidenceSummary
                       ? 'Copied evidence summary'
@@ -716,145 +717,36 @@ class _SearchReviewStrip extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(themeColorsProvider);
-    final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
     final matchPositionLabel = matchPosition == null
         ? 'No selected match'
         : 'Match ${matchPosition! + 1} of $matchCount';
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.surfaces.surface,
-        border: Border.all(color: colors.lines.borderSubtle),
-        borderRadius: BorderRadius.circular(7),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        child: Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            Text(
-              '${_formatCount(matchCount)} matches for "$query"',
-              style: typography.callout,
-            ),
-            Text(matchPositionLabel, style: typography.caption),
-            _HeaderActionButton(
-              icon: CupertinoIcons.chevron_up,
-              label: 'Previous',
-              isEnabled: hasMatches,
-              onPressed: onPrevious,
-            ),
-            _HeaderActionButton(
-              icon: CupertinoIcons.chevron_down,
-              label: 'Next',
-              isEnabled: hasMatches,
-              onPressed: onNext,
-            ),
-            _ChoiceButton(
-              label: 'Matching only',
-              isSelected: isMatchingOnly,
-              onPressed: onMatchingOnlyChanged,
-            ),
-          ],
+    return AppHeaderActionStrip(
+      children: [
+        Text(
+          '${_formatCount(matchCount)} matches for "$query"',
+          style: typography.callout,
         ),
-      ),
-    );
-  }
-}
-
-class _HeaderActionButton extends ConsumerStatefulWidget {
-  const _HeaderActionButton({
-    required this.icon,
-    required this.label,
-    required this.isEnabled,
-    required this.onPressed,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool isEnabled;
-  final VoidCallback onPressed;
-
-  @override
-  ConsumerState<_HeaderActionButton> createState() =>
-      _HeaderActionButtonState();
-}
-
-class _HeaderActionButtonState extends ConsumerState<_HeaderActionButton> {
-  var _isHovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    ref.watch(themeColorsProvider);
-    final colors = ref.read(themeColorsProvider.notifier);
-    final typography = ref.watch(themeTypographyProvider);
-    final isInteractive = widget.isEnabled;
-    final backgroundColor = !isInteractive
-        ? colors.surfaces.control
-        : _isHovered
-        ? colors.surfaces.selected
-        : colors.surfaces.surface;
-    final borderColor = !isInteractive
-        ? colors.lines.borderSubtle
-        : _isHovered
-        ? colors.accents.primary
-        : colors.lines.borderSubtle;
-    final contentColor = !isInteractive
-        ? colors.content.textSecondary
-        : colors.content.textPrimary;
-
-    return MouseRegion(
-      cursor: isInteractive
-          ? SystemMouseCursors.click
-          : SystemMouseCursors.basic,
-      onEnter: (_) {
-        if (!isInteractive) {
-          return;
-        }
-        setState(() {
-          _isHovered = true;
-        });
-      },
-      onExit: (_) {
-        if (!_isHovered) {
-          return;
-        }
-        setState(() {
-          _isHovered = false;
-        });
-      },
-      child: GestureDetector(
-        onTap: isInteractive ? widget.onPressed : null,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          curve: Curves.easeOutCubic,
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            border: Border.all(color: borderColor),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(widget.icon, size: 13, color: contentColor),
-                const SizedBox(width: 4),
-                Text(
-                  widget.label,
-                  style: typography.caption.copyWith(
-                    color: contentColor,
-                    fontWeight: _isHovered ? FontWeight.w700 : FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
+        Text(matchPositionLabel, style: typography.caption),
+        AppHeaderActionButton(
+          icon: CupertinoIcons.chevron_up,
+          label: 'Previous',
+          isEnabled: hasMatches,
+          onPressed: onPrevious,
         ),
-      ),
+        AppHeaderActionButton(
+          icon: CupertinoIcons.chevron_down,
+          label: 'Next',
+          isEnabled: hasMatches,
+          onPressed: onNext,
+        ),
+        _ChoiceButton(
+          label: 'Matching only',
+          isSelected: isMatchingOnly,
+          onPressed: onMatchingOnlyChanged,
+        ),
+      ],
     );
   }
 }

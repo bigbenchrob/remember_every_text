@@ -5,8 +5,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../colors/theme_colors.dart';
-import '../theme_typography.dart';
+import '../../colors/theme_colors.dart';
+import '../../theme_typography.dart';
 
 typedef AppDropdownItemBuilder<T> =
     Widget Function(BuildContext context, T value, {required bool isSelected});

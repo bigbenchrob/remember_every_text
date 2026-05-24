@@ -8,17 +8,20 @@ import 'package:macos_ui/macos_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../config/theme/colors/theme_colors_annotated.dart';
+import '../../../config/theme/theme_typography.dart';
 import '../../../features/chats/application/chat_read_model_source_provider.dart';
 import '../../../features/chats/presentation/view_model/chats_view_model_provider.dart';
 import '../../../features/chats/presentation/view_model/recent_chats_provider.dart';
 import '../../conversation_graph/application/chat_summaries/chat_summary.dart';
 import '../../conversation_graph/application/chat_summaries/chat_summary_provider.dart';
 import '../../conversation_graph/application/conversation_graph_build_service_provider.dart';
+import '../../conversation_graph/application/health/graph_health_provider.dart';
+import '../../conversation_graph/application/health/graph_health_report.dart';
 import '../application/messages/status/incremental_update_status_provider.dart';
 import '../application/messages/status/recent_chats_comparison_provider.dart';
 import '../application/messages/status/source_scoped_proof_log_writer.dart';
 
-enum _StatusSheetTab { status, groupProfiles, messages }
+enum _StatusSheetTab { status, graphHealth, groupProfiles, messages }
 
 class IncrementalUpdateStatusSheet extends ConsumerStatefulWidget {
   const IncrementalUpdateStatusSheet({super.key});
@@ -42,6 +45,7 @@ class _IncrementalUpdateStatusSheetState
     final recentChatsComparisonAsync = ref.watch(
       recentChatsComparisonProvider(),
     );
+    final graphHealthAsync = ref.watch(graphHealthReportProvider);
     final summariesAsync = ref.watch(chatSummariesProvider);
     final summaryCountsAsync = ref.watch(chatSummarySanityCountsProvider);
     final selectedMessagesAsync = _selectedChatSsId == null
@@ -117,6 +121,10 @@ class _IncrementalUpdateStatusSheetState
                     padding: EdgeInsets.symmetric(horizontal: 12),
                     child: Text('Status'),
                   ),
+                  _StatusSheetTab.graphHealth: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    child: Text('Graph health'),
+                  ),
                   _StatusSheetTab.groupProfiles: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 12),
                     child: Text('Group profiles'),
@@ -153,6 +161,7 @@ class _IncrementalUpdateStatusSheetState
                     selectedAttachmentStatsAsync: selectedAttachmentStatsAsync,
                     selectedMessageAttachmentsAsync:
                         selectedMessageAttachmentsAsync,
+                    graphHealthAsync: graphHealthAsync,
                     recentChatsComparisonAsync: recentChatsComparisonAsync,
                     summaryFilter: _summaryFilter,
                     summarySort: _summarySort,
@@ -216,6 +225,7 @@ class _StatusTabView extends StatelessWidget {
     required this.selectedTextStatsAsync,
     required this.selectedAttachmentStatsAsync,
     required this.selectedMessageAttachmentsAsync,
+    required this.graphHealthAsync,
     required this.recentChatsComparisonAsync,
     required this.summaryFilter,
     required this.summarySort,
@@ -237,6 +247,7 @@ class _StatusTabView extends StatelessWidget {
   final AsyncValue<ChatMessageTextStats> selectedTextStatsAsync;
   final AsyncValue<ChatAttachmentStats> selectedAttachmentStatsAsync;
   final AsyncValue<List<MessageAttachment>> selectedMessageAttachmentsAsync;
+  final AsyncValue<GraphHealthReport> graphHealthAsync;
   final AsyncValue<RecentChatsComparison> recentChatsComparisonAsync;
   final ChatSummaryFilter summaryFilter;
   final ChatSummarySort summarySort;
@@ -255,6 +266,9 @@ class _StatusTabView extends StatelessWidget {
         _StatusSheetTab.status => _StatusContent(
           status: status,
           recentChatsComparisonAsync: recentChatsComparisonAsync,
+        ),
+        _StatusSheetTab.graphHealth => _GraphHealthSection(
+          graphHealthAsync: graphHealthAsync,
         ),
         _StatusSheetTab.groupProfiles => _ChatSummarySection(
           summariesAsync: summariesAsync,
@@ -330,6 +344,525 @@ class _StatusContent extends ConsumerWidget {
         ),
       ],
     );
+  }
+}
+
+class _GraphHealthSection extends StatelessWidget {
+  const _GraphHealthSection({required this.graphHealthAsync});
+
+  final AsyncValue<GraphHealthReport> graphHealthAsync;
+
+  @override
+  Widget build(BuildContext context) {
+    return graphHealthAsync.when(
+      loading: () => const _StatusSection(
+        title: 'Graph health',
+        rows: [_StatusRow('report', 'loading')],
+      ),
+      error: (error, stackTrace) => _StatusSection(
+        title: 'Graph health',
+        rows: [_StatusRow('report error', error.toString())],
+      ),
+      data: (report) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _StatusSection(
+            title: 'Graph health summary',
+            rows: [
+              _StatusRow(
+                'source rows without topology',
+                '${report.sourceRowsWithoutTopologyCount}',
+                labelWidth: 230,
+              ),
+              _StatusRow(
+                'semantic coverage gaps',
+                '${report.semanticCoverageIssueCount}',
+                labelWidth: 230,
+              ),
+              _StatusRow(
+                'missing endpoint issues',
+                '${report.missingEndpointIssueCount}',
+                labelWidth: 230,
+              ),
+              const _StatusRow(
+                'interpretation',
+                'endpoint issues indicate graph corruption; source rows '
+                    'without topology usually reflect deleted/stale source rows',
+                labelWidth: 230,
+              ),
+            ],
+          ),
+          _StatusSection(
+            title: 'Working graph rows',
+            rows: [
+              _StatusRow('messages', '${report.messageCount}'),
+              _StatusRow('chats', '${report.chatCount}'),
+              _StatusRow('handles', '${report.handleCount}'),
+              _StatusRow('canonical handles', '${report.canonicalHandleCount}'),
+              _StatusRow('handle aliases', '${report.handleAliasCount}'),
+              _StatusRow('contacts', '${report.contactCount}'),
+              _StatusRow('attachments', '${report.attachmentCount}'),
+            ],
+          ),
+          _StatusSection(
+            title: 'Attachment archive readiness',
+            rows: [
+              _StatusRow('archive records', '${report.archiveRecordCount}'),
+              _StatusRow(
+                'attachments with archive record',
+                '${report.attachmentsWithArchiveRecordCount}',
+                labelWidth: 250,
+              ),
+              _StatusRow(
+                'attachments missing archive record',
+                '${report.attachmentsMissingArchiveRecordCount}',
+                labelWidth: 250,
+              ),
+              _StatusRow(
+                'archive files available',
+                '${report.archiveFilesAvailableCount}',
+                labelWidth: 250,
+              ),
+              _StatusRow(
+                'archive files missing',
+                '${report.archiveFilesMissingCount}',
+                labelWidth: 250,
+              ),
+              _StatusRow(
+                'archive records without working attachment',
+                '${report.archiveRecordsWithoutWorkingAttachmentCount}',
+                labelWidth: 250,
+              ),
+            ],
+          ),
+          _StatusSection(
+            title: 'Attachment recovery source audit',
+            rows: [
+              _StatusRow(
+                'historical MessageLens archive',
+                report.historicalArchiveAvailable ? 'available' : 'not found',
+                labelWidth: 260,
+              ),
+              _StatusRow(
+                'historical archive records',
+                '${report.historicalArchiveRecordCount}',
+                labelWidth: 260,
+              ),
+              _StatusRow(
+                'historical archive files available',
+                '${report.historicalArchiveFilesAvailableCount}',
+                labelWidth: 260,
+              ),
+              _StatusRow(
+                'historical archive files missing',
+                '${report.historicalArchiveFilesMissingCount}',
+                labelWidth: 260,
+              ),
+              _StatusRow(
+                'recoverable from historical archive',
+                '${report.attachmentsRecoverableFromHistoricalArchiveCount}',
+                labelWidth: 260,
+              ),
+              _StatusRow(
+                'recovered Messages source',
+                report.recoveredMessagesSourceAvailable
+                    ? 'available'
+                    : 'not found',
+                labelWidth: 260,
+              ),
+              _StatusRow(
+                'recovered Messages attachment links',
+                '${report.recoveredMessagesAttachmentKeyCount}',
+                labelWidth: 260,
+              ),
+              _StatusRow(
+                'recoverable from recovered Messages',
+                '${report.attachmentsRecoverableFromRecoveredMessagesCount}',
+                labelWidth: 260,
+              ),
+              _StatusRow(
+                'recoverable from both sources',
+                '${report.attachmentsRecoverableFromBothRecoverySourcesCount}',
+                labelWidth: 260,
+              ),
+              _StatusRow(
+                'not found in known recovery sources',
+                '${report.attachmentsStillMissingFromKnownRecoverySourcesCount}',
+                labelWidth: 260,
+              ),
+            ],
+          ),
+          _StatusSection(
+            title: 'Archive rehydrate dry run',
+            rows: [
+              _StatusRow(
+                'already available in current archive',
+                '${report.dryRunAlreadyAvailableInCurrentArchiveCount}',
+                labelWidth: 270,
+              ),
+              _StatusRow(
+                'would copy from historical archive',
+                '${report.dryRunWouldCopyFromHistoricalArchiveCount}',
+                labelWidth: 270,
+              ),
+              _StatusRow(
+                'would copy from recovered Messages',
+                '${report.dryRunWouldCopyFromRecoveredMessagesCount}',
+                labelWidth: 270,
+              ),
+              _StatusRow(
+                'would archive from current source path',
+                '${report.dryRunWouldArchiveFromCurrentSourcePathCount}',
+                labelWidth: 270,
+              ),
+              _StatusRow(
+                'still missing after all sources',
+                '${report.dryRunStillMissingEverywhereCount}',
+                labelWidth: 270,
+              ),
+              _StatusRow(
+                'still-missing plugin payload candidates',
+                '${report.dryRunStillMissingPluginPayloadCandidateCount}',
+                labelWidth: 270,
+              ),
+            ],
+          ),
+          if (report.missingAttachmentSamples.isNotEmpty)
+            _MissingAttachmentSampleSection(
+              samples: report.missingAttachmentSamples,
+            ),
+          _StatusSection(
+            title: 'Working graph edges',
+            rows: [
+              _StatusRow('chat -> message', '${report.chatToMessageEdgeCount}'),
+              _StatusRow('chat -> handle', '${report.chatToHandleEdgeCount}'),
+              _StatusRow(
+                'message -> attachment',
+                '${report.messageToAttachmentEdgeCount}',
+              ),
+              _StatusRow(
+                'contact -> handle',
+                '${report.contactToHandleEdgeCount}',
+              ),
+            ],
+          ),
+          _StatusSection(
+            title: 'Source-retained rows without current topology',
+            rows: [
+              _StatusRow(
+                'messages without conversation edge',
+                '${report.orphanMessageCount}',
+                labelWidth: 250,
+              ),
+              _StatusRow(
+                'chats without message edge',
+                '${report.chatsWithZeroMessagesCount}',
+                labelWidth: 250,
+              ),
+              _StatusRow(
+                'attachments without message edge',
+                '${report.attachmentsWithoutMessageEdgeCount}',
+                labelWidth: 250,
+              ),
+            ],
+          ),
+          _StatusSection(
+            title: 'Semantic coverage',
+            rows: [
+              _StatusRow(
+                'chats with zero handles',
+                '${report.chatsWithZeroHandlesCount}',
+              ),
+              _StatusRow(
+                'messages missing sender canonical handle',
+                '${report.messagesMissingSenderCanonicalHandleCount}',
+                labelWidth: 260,
+              ),
+              _StatusRow(
+                'handles without canonical alias',
+                '${report.handlesWithoutCanonicalAliasCount}',
+                labelWidth: 260,
+              ),
+              _StatusRow(
+                'contacts without handles',
+                '${report.contactsWithoutHandlesCount}',
+              ),
+            ],
+          ),
+          _StatusSection(
+            title: 'Endpoint integrity',
+            rows: [
+              _StatusRow(
+                'chat/message edges missing chat',
+                '${report.chatToMessageEdgesMissingChatCount}',
+                labelWidth: 250,
+              ),
+              _StatusRow(
+                'chat/message edges missing message',
+                '${report.chatToMessageEdgesMissingMessageCount}',
+                labelWidth: 250,
+              ),
+              _StatusRow(
+                'chat/handle edges missing chat',
+                '${report.chatToHandleEdgesMissingChatCount}',
+                labelWidth: 250,
+              ),
+              _StatusRow(
+                'chat/handle edges missing handle',
+                '${report.chatToHandleEdgesMissingHandleCount}',
+                labelWidth: 250,
+              ),
+              _StatusRow(
+                'message/attachment edges missing message',
+                '${report.messageToAttachmentEdgesMissingMessageCount}',
+                labelWidth: 250,
+              ),
+              _StatusRow(
+                'message/attachment edges missing attachment',
+                '${report.messageToAttachmentEdgesMissingAttachmentCount}',
+                labelWidth: 250,
+              ),
+              _StatusRow(
+                'contact/handle edges missing contact',
+                '${report.contactToHandleEdgesMissingContactCount}',
+                labelWidth: 250,
+              ),
+              _StatusRow(
+                'contact/handle edges missing handle',
+                '${report.contactToHandleEdgesMissingHandleCount}',
+                labelWidth: 250,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MissingAttachmentSampleSection extends StatelessWidget {
+  const _MissingAttachmentSampleSection({required this.samples});
+
+  final List<MissingAttachmentRecoverySample> samples;
+
+  @override
+  Widget build(BuildContext context) {
+    return _StatusSection(
+      title: 'Missing attachment sample',
+      rows: [
+        const _StatusRow(
+          'sample meaning',
+          'These are the first 20 attachments not found in the current archive, '
+              'historical archive, or recovered Messages folder.',
+          labelWidth: 150,
+        ),
+        for (final sample in samples)
+          _MissingAttachmentSampleCard(sample: sample),
+      ],
+    );
+  }
+}
+
+class _MissingAttachmentSampleCard extends ConsumerWidget {
+  const _MissingAttachmentSampleCard({required this.sample});
+
+  final MissingAttachmentRecoverySample sample;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final typography = ref.watch(themeTypographyProvider);
+
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: colors.graySix.withValues(alpha: 0.30),
+        border: Border.all(color: colors.grayFive.withValues(alpha: 0.55)),
+        borderRadius: BorderRadius.circular(7),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'attachment ${sample.attachmentSsId}',
+            style: typography.body.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              _AuditBadge(
+                label: sample.currentSourcePathExists
+                    ? 'current file exists'
+                    : 'current file missing',
+                isPositive: sample.currentSourcePathExists,
+              ),
+              _AuditBadge(
+                label: sample.historicalArchiveKeyExists
+                    ? 'archive key found'
+                    : 'archive key missing',
+                isPositive: sample.historicalArchiveKeyExists,
+              ),
+              _AuditBadge(
+                label: sample.recoveredMessagesKeyExists
+                    ? 'recovered key found'
+                    : 'recovered key missing',
+                isPositive: sample.recoveredMessagesKeyExists,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _AttachmentSampleDetail(
+            label: 'likely meaning',
+            value: _missingAttachmentLikelyMeaning(sample),
+          ),
+          _AttachmentSampleDetail(
+            label: 'source rowid',
+            value: '${sample.importAttachmentId}',
+          ),
+          _AttachmentSampleDetail(
+            label: 'type',
+            value: sample.mimeType ?? sample.uti ?? 'unknown type',
+          ),
+          _AttachmentSampleDetail(
+            label: 'message guid',
+            value: sample.messageGuid,
+            monospace: true,
+          ),
+          _AttachmentSampleDetail(
+            label: 'source path',
+            value: sample.filename ?? 'no filename',
+            monospace: true,
+          ),
+          _AttachmentSampleDetail(
+            label: 'recovered path tried',
+            value: sample.attemptedRecoveredPath ?? 'no recovered path',
+            monospace: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _missingAttachmentLikelyMeaning(
+    MissingAttachmentRecoverySample sample,
+  ) {
+    if (sample.currentSourcePathExists) {
+      return 'The source file exists now, so this may be recoverable from the '
+          'live Messages attachment path even though it is not archived yet.';
+    }
+    if (sample.historicalArchiveKeyExists) {
+      return 'An archive record exists but the archive file was not available; '
+          'this points to an archive file integrity problem.';
+    }
+    if (sample.recoveredMessagesKeyExists) {
+      return 'The recovered Messages database has the relationship, but the '
+          'file path check failed; this suggests path normalization needs work.';
+    }
+    return 'No matching archive or recovered Messages key was found. This may '
+        'be a true source gap, or the matching key differs across sources.';
+  }
+}
+
+class _AuditBadge extends ConsumerWidget {
+  const _AuditBadge({required this.label, required this.isPositive});
+
+  final String label;
+  final bool isPositive;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final typography = ref.watch(themeTypographyProvider);
+    final color = isPositive
+        ? colors.brandHighlight(BrandHighlight.primary)
+        : colors.grayFour;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        border: Border.all(color: color.withValues(alpha: 0.45)),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        child: Text(
+          label,
+          style: typography.caption.copyWith(
+            color: color,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AttachmentSampleDetail extends ConsumerWidget {
+  const _AttachmentSampleDetail({
+    required this.label,
+    required this.value,
+    this.monospace = false,
+  });
+
+  final String label;
+  final String value;
+  final bool monospace;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final displayValue = monospace ? _middleTruncate(value, 110) : value;
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 132,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: colors.grayThree,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Tooltip(
+              message: value,
+              waitDuration: const Duration(milliseconds: 450),
+              child: SelectableText(
+                displayValue,
+                maxLines: monospace ? 2 : 4,
+                style: TextStyle(
+                  color: colors.grayTwo,
+                  fontSize: 12,
+                  fontFamily: monospace ? 'Menlo' : null,
+                  height: 1.2,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _middleTruncate(String value, int maxLength) {
+    if (value.length <= maxLength) {
+      return value;
+    }
+    final keep = maxLength - 3;
+    final head = (keep * 0.58).floor();
+    final tail = keep - head;
+    return '${value.substring(0, head)}...${value.substring(value.length - tail)}';
   }
 }
 
@@ -1493,6 +2026,7 @@ class _StatusControlsState extends State<_StatusControls> {
               secondary: true,
               onPressed: () {
                 widget.ref.invalidate(incrementalUpdateStatusProvider);
+                widget.ref.invalidate(graphHealthReportProvider);
               },
               child: const Text('Refresh'),
             ),
@@ -1562,6 +2096,7 @@ class _StatusControlsState extends State<_StatusControls> {
       _isImporting = true;
     });
     widget.ref.invalidate(incrementalUpdateStatusProvider);
+    widget.ref.invalidate(graphHealthReportProvider);
     _statusRefreshTimer?.cancel();
     _statusRefreshTimer = Timer.periodic(const Duration(milliseconds: 750), (
       _,
@@ -1590,6 +2125,7 @@ class _StatusControlsState extends State<_StatusControls> {
       );
       final buildReport = await service.runOnce();
       ref.invalidate(incrementalUpdateStatusProvider);
+      ref.invalidate(graphHealthReportProvider);
       ref.invalidate(chatSummariesProvider);
       ref.invalidate(chatSummarySanityCountsProvider);
       final after = await ref.read(incrementalUpdateStatusProvider.future);

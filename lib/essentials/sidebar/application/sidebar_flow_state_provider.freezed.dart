@@ -218,7 +218,7 @@ return $default(_that.topMenuChoice,_that.chosenContactId,_that.selectedHandleId
 
 
 class _SidebarFlowState extends SidebarFlowState with DiagnosticableTreeMixin {
-  const _SidebarFlowState({this.topMenuChoice = TopChatMenuChoice.contacts, this.chosenContactId, this.selectedHandleId, this.persistentSettingsContext, this.scrollToDate, this.messageScope = SidebarFlowMessageScope.regular, this.contactProjection = SidebarFlowContactProjection.allMessages}): super._();
+  const _SidebarFlowState({this.topMenuChoice = TopChatMenuChoice.conversations, this.chosenContactId, this.selectedHandleId, this.persistentSettingsContext, this.scrollToDate, this.messageScope = SidebarFlowMessageScope.regular, this.contactProjection = SidebarFlowContactProjection.allMessages}): super._();
   
 
 @override@JsonKey() final  TopChatMenuChoice topMenuChoice;

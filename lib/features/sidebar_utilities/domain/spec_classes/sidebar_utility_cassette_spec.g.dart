@@ -14,7 +14,7 @@ _$SidebarUtilityCassetteSpecTopChatMenuFromJson(Map<String, dynamic> json) =>
             _$TopChatMenuChoiceEnumMap,
             json['selectedChoice'],
           ) ??
-          TopChatMenuChoice.contacts,
+          TopChatMenuChoice.conversations,
       $type: json['runtimeType'] as String?,
     );
 

@@ -1,26 +1,28 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'sidebar_flow_state_provider.dart';
+part of 'graph_health_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$sidebarFlowHash() => r'a4f2e9a0503305b261f16439142ae1d30918c805';
+String _$graphHealthReportHash() => r'c9ca9b6150a4ac2280d3db815d71778d3519b85e';
 
-/// See also [SidebarFlow].
-@ProviderFor(SidebarFlow)
-final sidebarFlowProvider =
-    AutoDisposeNotifierProvider<SidebarFlow, SidebarFlowState>.internal(
-      SidebarFlow.new,
-      name: r'sidebarFlowProvider',
+/// See also [graphHealthReport].
+@ProviderFor(graphHealthReport)
+final graphHealthReportProvider =
+    AutoDisposeFutureProvider<GraphHealthReport>.internal(
+      graphHealthReport,
+      name: r'graphHealthReportProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
           ? null
-          : _$sidebarFlowHash,
+          : _$graphHealthReportHash,
       dependencies: null,
       allTransitiveDependencies: null,
     );
 
-typedef _$SidebarFlow = AutoDisposeNotifier<SidebarFlowState>;
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef GraphHealthReportRef = AutoDisposeFutureProviderRef<GraphHealthReport>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

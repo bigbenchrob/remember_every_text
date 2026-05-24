@@ -672,7 +672,7 @@ void main() {
     });
 
     test(
-      'conversation top menu returns from selected graph timeline to browser',
+      'conversation top menu preserves compatible selected graph timeline',
       () {
         final container = ProviderContainer(
           overrides: [
@@ -719,15 +719,24 @@ void main() {
           container.read(
             effectiveCenterPanelSpecProvider(SidebarMode.messages),
           ),
-          equals(const ViewSpec.messages(MessagesSpec.conversationBrowser())),
+          equals(
+            const ViewSpec.messages(
+              MessagesSpec.forConversation(conversationId: 8796093022216),
+            ),
+          ),
         );
         expect(
           container
               .read(
                 panelsViewStateProvider(SidebarMode.messages),
               )[WindowPanel.center]
-              ?.activePage,
-          isNull,
+              ?.activePage
+              ?.spec,
+          equals(
+            const ViewSpec.messages(
+              MessagesSpec.forConversation(conversationId: 8796093022216),
+            ),
+          ),
         );
 
         container.dispose();
