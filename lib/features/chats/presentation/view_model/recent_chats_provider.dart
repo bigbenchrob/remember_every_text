@@ -318,38 +318,7 @@ RecentChatSummary _mapGraphOverview(
 List<String> _resolveGraphParticipantLabels(
   List<String> handles,
   Map<String, ContactHandleLabel> contactLabels,
-) {
-  final labels = <String>[];
-  final seenLabels = <String>{};
-
-  for (final handle in handles) {
-    final trimmedHandle = handle.trim();
-    if (trimmedHandle.isEmpty) {
-      continue;
-    }
-    final label =
-        _findContactLabel(trimmedHandle, contactLabels)?.displayName ??
-        trimmedHandle;
-    if (seenLabels.add(label.toLowerCase())) {
-      labels.add(label);
-    }
-  }
-
-  return labels;
-}
-
-ContactHandleLabel? _findContactLabel(
-  String handle,
-  Map<String, ContactHandleLabel> contactLabels,
-) {
-  for (final key in contactHandleLabelKeysForTesting(handle)) {
-    final label = contactLabels[key];
-    if (label != null) {
-      return label;
-    }
-  }
-  return null;
-}
+) => resolveContactHandleDisplayNames(handles, contactLabels);
 
 String _deriveGraphTitle({
   required bool isGroup,

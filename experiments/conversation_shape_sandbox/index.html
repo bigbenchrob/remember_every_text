@@ -521,7 +521,7 @@
         ["dark", "Dark"], ["light", "Light"]
       ], wide: true },
       { key: "visualMode", label: "Selected visual mode", type: "select", options: [
-        ["trace", "Trace"], ["heatmap", "Heatmap"], ["rails", "Rails"], ["hybrid", "Hybrid"]
+        ["trace", "Trace"], ["heatmap", "Heatmap"], ["rails", "Rails"], ["hybrid", "Hybrid"], ["pixel", "Pixel"]
       ], wide: true },
       { key: "seed", label: "Seed", type: "number", min: 1, max: 999999, step: 1 },
       { key: "saturation", label: "Palette saturation", type: "range", min: 0, max: 100, step: 1, suffix: "%" },
@@ -878,6 +878,9 @@
       const mode = state.settings.visualMode;
       const width = 340;
       const height = 70;
+      if (mode === "pixel") {
+        return pixelSignatureSvg(conversation, width, height);
+      }
       const bins = binsFor(conversation, Math.round(72 * (Number(state.settings.signatureCompression) / 100)));
       const counts = smoothCounts(bins.map(bin => bin.count));
       const max = Math.max(1, ...counts);
@@ -940,6 +943,110 @@
 
       parts.push("</svg>");
       return { svg: parts.join(""), bins };
+    }
+
+    function monthKey(date) {
+      return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+    }
+
+    function allMonthKeys() {
+      const keys = [];
+      const cursor = new Date(startDate);
+      cursor.setUTCDate(1);
+      while (cursor.getTime() <= endDate) {
+        keys.push(monthKey(cursor));
+        cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+      }
+      return keys;
+    }
+
+    function pixelColorForCount(count) {
+      if (count <= 0) {
+        return "#eef0ed";
+      }
+      if (count <= 1) {
+        return "#d9dcda";
+      }
+      if (count <= 3) {
+        return "#c3c8c6";
+      }
+      if (count <= 6) {
+        return "#8d9492";
+      }
+      if (count <= 12) {
+        return "#f4dd55";
+      }
+      if (count <= 22) {
+        return "#e7bd3f";
+      }
+      if (count <= 35) {
+        return "#c98f2e";
+      }
+      if (count <= 55) {
+        return "#bfe0b9";
+      }
+      if (count <= 85) {
+        return "#74bf72";
+      }
+      if (count <= 130) {
+        return "#43a54f";
+      }
+      return "#1f7f34";
+    }
+
+    function pixelSignatureSvg(conversation, width, height) {
+      const keys = allMonthKeys();
+      const monthCounts = new Map(keys.map(key => [key, 0]));
+      const monthAttachments = new Map(keys.map(key => [key, 0]));
+      conversation.messages.forEach(message => {
+        const date = new Date(message.timestamp);
+        const key = monthKey(date);
+        monthCounts.set(key, (monthCounts.get(key) || 0) + 1);
+        if (message.hasAttachment) {
+          monthAttachments.set(key, (monthAttachments.get(key) || 0) + 1);
+        }
+      });
+
+      const counts = keys.map(key => monthCounts.get(key) || 0);
+      const max = Math.max(1, ...counts);
+      const gap = 1;
+      const xStart = 7;
+      const usableWidth = width - xStart * 2;
+      const cell = Math.max(10, Math.floor((usableWidth - gap * (keys.length - 1)) / keys.length));
+      const totalWidth = keys.length * cell + (keys.length - 1) * gap;
+      const yStart = Math.max(7, (height - cell) / 2 - 2);
+      const parts = [`<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${conversation.archetype} pixel signature">`];
+      let peakCellX = xStart;
+
+      parts.push(`<rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>`);
+      keys.forEach((key, index) => {
+        const count = monthCounts.get(key) || 0;
+        const normalized = count === 0 ? 0 : Math.log(count + 1) / Math.log(max + 1);
+        const color = pixelColorForCount(count);
+        const attachmentCount = monthAttachments.get(key) || 0;
+        const cellX = xStart + index * (cell + gap);
+        const cellY = yStart;
+        if (count === Math.max(...counts)) {
+          peakCellX = cellX + cell / 2;
+        }
+        const opacity = count === 0 ? .34 : (.55 + normalized * .45);
+        parts.push(`<rect x="${cellX}" y="${cellY}" width="${cell}" height="${cell}" rx="1.5" fill="${color}" opacity="${opacity.toFixed(3)}"></rect>`);
+        if (attachmentCount > 0) {
+          parts.push(`<rect x="${cellX + cell - 3}" y="${cellY + cell - 3}" width="3" height="3" fill="var(--warn)" opacity=".82"></rect>`);
+        }
+        if (key.endsWith("-01")) {
+          parts.push(`<line x1="${cellX - 1}" y1="${cellY - 5}" x2="${cellX - 1}" y2="${cellY + cell + 5}" stroke="var(--line-strong)" stroke-opacity=".22" stroke-width="1"></line>`);
+        }
+      });
+
+      const summaryY = height - 9;
+      const quiet = counts.filter(count => count === 0).length;
+      const active = counts.filter(count => count > 0).length;
+      parts.push(`<line x1="${xStart}" y1="${summaryY}" x2="${xStart + totalWidth}" y2="${summaryY}" stroke="var(--line)" stroke-opacity=".55" stroke-width="1"></line>`);
+      parts.push(`<circle cx="${peakCellX.toFixed(2)}" cy="${summaryY}" r="2.4" fill="var(--accent)" opacity=".82"></circle>`);
+      parts.push(`<text x="${width - 7}" y="12" text-anchor="end" fill="var(--soft)" font-size="8">${active}/${active + quiet} mo</text>`);
+      parts.push("</svg>");
+      return { svg: parts.join(""), bins: binsFor(conversation, 72) };
     }
 
     function renderConversations() {

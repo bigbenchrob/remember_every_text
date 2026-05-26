@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SidebarFlowState implements DiagnosticableTreeMixin {
 
- TopChatMenuChoice get topMenuChoice; int? get chosenContactId; int? get selectedHandleId; SettingsMenuActionId? get persistentSettingsContext; DateTime? get scrollToDate; SidebarFlowMessageScope get messageScope; SidebarFlowContactProjection get contactProjection;
+ TopChatMenuChoice get topMenuChoice; int? get chosenContactId; int? get selectedHandleId; int? get selectedConversationId; int? get selectedConversationAnchorMessageId; String? get selectedConversationSearchQuery; SettingsMenuActionId? get persistentSettingsContext; DateTime? get scrollToDate; SidebarFlowMessageScope get messageScope; SidebarFlowContactProjection get contactProjection;
 /// Create a copy of SidebarFlowState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -26,21 +26,21 @@ $SidebarFlowStateCopyWith<SidebarFlowState> get copyWith => _$SidebarFlowStateCo
 void debugFillProperties(DiagnosticPropertiesBuilder properties) {
   properties
     ..add(DiagnosticsProperty('type', 'SidebarFlowState'))
-    ..add(DiagnosticsProperty('topMenuChoice', topMenuChoice))..add(DiagnosticsProperty('chosenContactId', chosenContactId))..add(DiagnosticsProperty('selectedHandleId', selectedHandleId))..add(DiagnosticsProperty('persistentSettingsContext', persistentSettingsContext))..add(DiagnosticsProperty('scrollToDate', scrollToDate))..add(DiagnosticsProperty('messageScope', messageScope))..add(DiagnosticsProperty('contactProjection', contactProjection));
+    ..add(DiagnosticsProperty('topMenuChoice', topMenuChoice))..add(DiagnosticsProperty('chosenContactId', chosenContactId))..add(DiagnosticsProperty('selectedHandleId', selectedHandleId))..add(DiagnosticsProperty('selectedConversationId', selectedConversationId))..add(DiagnosticsProperty('selectedConversationAnchorMessageId', selectedConversationAnchorMessageId))..add(DiagnosticsProperty('selectedConversationSearchQuery', selectedConversationSearchQuery))..add(DiagnosticsProperty('persistentSettingsContext', persistentSettingsContext))..add(DiagnosticsProperty('scrollToDate', scrollToDate))..add(DiagnosticsProperty('messageScope', messageScope))..add(DiagnosticsProperty('contactProjection', contactProjection));
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SidebarFlowState&&(identical(other.topMenuChoice, topMenuChoice) || other.topMenuChoice == topMenuChoice)&&(identical(other.chosenContactId, chosenContactId) || other.chosenContactId == chosenContactId)&&(identical(other.selectedHandleId, selectedHandleId) || other.selectedHandleId == selectedHandleId)&&(identical(other.persistentSettingsContext, persistentSettingsContext) || other.persistentSettingsContext == persistentSettingsContext)&&(identical(other.scrollToDate, scrollToDate) || other.scrollToDate == scrollToDate)&&(identical(other.messageScope, messageScope) || other.messageScope == messageScope)&&(identical(other.contactProjection, contactProjection) || other.contactProjection == contactProjection));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SidebarFlowState&&(identical(other.topMenuChoice, topMenuChoice) || other.topMenuChoice == topMenuChoice)&&(identical(other.chosenContactId, chosenContactId) || other.chosenContactId == chosenContactId)&&(identical(other.selectedHandleId, selectedHandleId) || other.selectedHandleId == selectedHandleId)&&(identical(other.selectedConversationId, selectedConversationId) || other.selectedConversationId == selectedConversationId)&&(identical(other.selectedConversationAnchorMessageId, selectedConversationAnchorMessageId) || other.selectedConversationAnchorMessageId == selectedConversationAnchorMessageId)&&(identical(other.selectedConversationSearchQuery, selectedConversationSearchQuery) || other.selectedConversationSearchQuery == selectedConversationSearchQuery)&&(identical(other.persistentSettingsContext, persistentSettingsContext) || other.persistentSettingsContext == persistentSettingsContext)&&(identical(other.scrollToDate, scrollToDate) || other.scrollToDate == scrollToDate)&&(identical(other.messageScope, messageScope) || other.messageScope == messageScope)&&(identical(other.contactProjection, contactProjection) || other.contactProjection == contactProjection));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,topMenuChoice,chosenContactId,selectedHandleId,persistentSettingsContext,scrollToDate,messageScope,contactProjection);
+int get hashCode => Object.hash(runtimeType,topMenuChoice,chosenContactId,selectedHandleId,selectedConversationId,selectedConversationAnchorMessageId,selectedConversationSearchQuery,persistentSettingsContext,scrollToDate,messageScope,contactProjection);
 
 @override
 String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
-  return 'SidebarFlowState(topMenuChoice: $topMenuChoice, chosenContactId: $chosenContactId, selectedHandleId: $selectedHandleId, persistentSettingsContext: $persistentSettingsContext, scrollToDate: $scrollToDate, messageScope: $messageScope, contactProjection: $contactProjection)';
+  return 'SidebarFlowState(topMenuChoice: $topMenuChoice, chosenContactId: $chosenContactId, selectedHandleId: $selectedHandleId, selectedConversationId: $selectedConversationId, selectedConversationAnchorMessageId: $selectedConversationAnchorMessageId, selectedConversationSearchQuery: $selectedConversationSearchQuery, persistentSettingsContext: $persistentSettingsContext, scrollToDate: $scrollToDate, messageScope: $messageScope, contactProjection: $contactProjection)';
 }
 
 
@@ -51,7 +51,7 @@ abstract mixin class $SidebarFlowStateCopyWith<$Res>  {
   factory $SidebarFlowStateCopyWith(SidebarFlowState value, $Res Function(SidebarFlowState) _then) = _$SidebarFlowStateCopyWithImpl;
 @useResult
 $Res call({
- TopChatMenuChoice topMenuChoice, int? chosenContactId, int? selectedHandleId, SettingsMenuActionId? persistentSettingsContext, DateTime? scrollToDate, SidebarFlowMessageScope messageScope, SidebarFlowContactProjection contactProjection
+ TopChatMenuChoice topMenuChoice, int? chosenContactId, int? selectedHandleId, int? selectedConversationId, int? selectedConversationAnchorMessageId, String? selectedConversationSearchQuery, SettingsMenuActionId? persistentSettingsContext, DateTime? scrollToDate, SidebarFlowMessageScope messageScope, SidebarFlowContactProjection contactProjection
 });
 
 
@@ -68,12 +68,15 @@ class _$SidebarFlowStateCopyWithImpl<$Res>
 
 /// Create a copy of SidebarFlowState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? topMenuChoice = null,Object? chosenContactId = freezed,Object? selectedHandleId = freezed,Object? persistentSettingsContext = freezed,Object? scrollToDate = freezed,Object? messageScope = null,Object? contactProjection = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? topMenuChoice = null,Object? chosenContactId = freezed,Object? selectedHandleId = freezed,Object? selectedConversationId = freezed,Object? selectedConversationAnchorMessageId = freezed,Object? selectedConversationSearchQuery = freezed,Object? persistentSettingsContext = freezed,Object? scrollToDate = freezed,Object? messageScope = null,Object? contactProjection = null,}) {
   return _then(_self.copyWith(
 topMenuChoice: null == topMenuChoice ? _self.topMenuChoice : topMenuChoice // ignore: cast_nullable_to_non_nullable
 as TopChatMenuChoice,chosenContactId: freezed == chosenContactId ? _self.chosenContactId : chosenContactId // ignore: cast_nullable_to_non_nullable
 as int?,selectedHandleId: freezed == selectedHandleId ? _self.selectedHandleId : selectedHandleId // ignore: cast_nullable_to_non_nullable
-as int?,persistentSettingsContext: freezed == persistentSettingsContext ? _self.persistentSettingsContext : persistentSettingsContext // ignore: cast_nullable_to_non_nullable
+as int?,selectedConversationId: freezed == selectedConversationId ? _self.selectedConversationId : selectedConversationId // ignore: cast_nullable_to_non_nullable
+as int?,selectedConversationAnchorMessageId: freezed == selectedConversationAnchorMessageId ? _self.selectedConversationAnchorMessageId : selectedConversationAnchorMessageId // ignore: cast_nullable_to_non_nullable
+as int?,selectedConversationSearchQuery: freezed == selectedConversationSearchQuery ? _self.selectedConversationSearchQuery : selectedConversationSearchQuery // ignore: cast_nullable_to_non_nullable
+as String?,persistentSettingsContext: freezed == persistentSettingsContext ? _self.persistentSettingsContext : persistentSettingsContext // ignore: cast_nullable_to_non_nullable
 as SettingsMenuActionId?,scrollToDate: freezed == scrollToDate ? _self.scrollToDate : scrollToDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,messageScope: null == messageScope ? _self.messageScope : messageScope // ignore: cast_nullable_to_non_nullable
 as SidebarFlowMessageScope,contactProjection: null == contactProjection ? _self.contactProjection : contactProjection // ignore: cast_nullable_to_non_nullable
@@ -162,10 +165,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( TopChatMenuChoice topMenuChoice,  int? chosenContactId,  int? selectedHandleId,  SettingsMenuActionId? persistentSettingsContext,  DateTime? scrollToDate,  SidebarFlowMessageScope messageScope,  SidebarFlowContactProjection contactProjection)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( TopChatMenuChoice topMenuChoice,  int? chosenContactId,  int? selectedHandleId,  int? selectedConversationId,  int? selectedConversationAnchorMessageId,  String? selectedConversationSearchQuery,  SettingsMenuActionId? persistentSettingsContext,  DateTime? scrollToDate,  SidebarFlowMessageScope messageScope,  SidebarFlowContactProjection contactProjection)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SidebarFlowState() when $default != null:
-return $default(_that.topMenuChoice,_that.chosenContactId,_that.selectedHandleId,_that.persistentSettingsContext,_that.scrollToDate,_that.messageScope,_that.contactProjection);case _:
+return $default(_that.topMenuChoice,_that.chosenContactId,_that.selectedHandleId,_that.selectedConversationId,_that.selectedConversationAnchorMessageId,_that.selectedConversationSearchQuery,_that.persistentSettingsContext,_that.scrollToDate,_that.messageScope,_that.contactProjection);case _:
   return orElse();
 
 }
@@ -183,10 +186,10 @@ return $default(_that.topMenuChoice,_that.chosenContactId,_that.selectedHandleId
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( TopChatMenuChoice topMenuChoice,  int? chosenContactId,  int? selectedHandleId,  SettingsMenuActionId? persistentSettingsContext,  DateTime? scrollToDate,  SidebarFlowMessageScope messageScope,  SidebarFlowContactProjection contactProjection)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( TopChatMenuChoice topMenuChoice,  int? chosenContactId,  int? selectedHandleId,  int? selectedConversationId,  int? selectedConversationAnchorMessageId,  String? selectedConversationSearchQuery,  SettingsMenuActionId? persistentSettingsContext,  DateTime? scrollToDate,  SidebarFlowMessageScope messageScope,  SidebarFlowContactProjection contactProjection)  $default,) {final _that = this;
 switch (_that) {
 case _SidebarFlowState():
-return $default(_that.topMenuChoice,_that.chosenContactId,_that.selectedHandleId,_that.persistentSettingsContext,_that.scrollToDate,_that.messageScope,_that.contactProjection);case _:
+return $default(_that.topMenuChoice,_that.chosenContactId,_that.selectedHandleId,_that.selectedConversationId,_that.selectedConversationAnchorMessageId,_that.selectedConversationSearchQuery,_that.persistentSettingsContext,_that.scrollToDate,_that.messageScope,_that.contactProjection);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -203,10 +206,10 @@ return $default(_that.topMenuChoice,_that.chosenContactId,_that.selectedHandleId
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( TopChatMenuChoice topMenuChoice,  int? chosenContactId,  int? selectedHandleId,  SettingsMenuActionId? persistentSettingsContext,  DateTime? scrollToDate,  SidebarFlowMessageScope messageScope,  SidebarFlowContactProjection contactProjection)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( TopChatMenuChoice topMenuChoice,  int? chosenContactId,  int? selectedHandleId,  int? selectedConversationId,  int? selectedConversationAnchorMessageId,  String? selectedConversationSearchQuery,  SettingsMenuActionId? persistentSettingsContext,  DateTime? scrollToDate,  SidebarFlowMessageScope messageScope,  SidebarFlowContactProjection contactProjection)?  $default,) {final _that = this;
 switch (_that) {
 case _SidebarFlowState() when $default != null:
-return $default(_that.topMenuChoice,_that.chosenContactId,_that.selectedHandleId,_that.persistentSettingsContext,_that.scrollToDate,_that.messageScope,_that.contactProjection);case _:
+return $default(_that.topMenuChoice,_that.chosenContactId,_that.selectedHandleId,_that.selectedConversationId,_that.selectedConversationAnchorMessageId,_that.selectedConversationSearchQuery,_that.persistentSettingsContext,_that.scrollToDate,_that.messageScope,_that.contactProjection);case _:
   return null;
 
 }
@@ -218,12 +221,15 @@ return $default(_that.topMenuChoice,_that.chosenContactId,_that.selectedHandleId
 
 
 class _SidebarFlowState extends SidebarFlowState with DiagnosticableTreeMixin {
-  const _SidebarFlowState({this.topMenuChoice = defaultTopChatMenuChoice, this.chosenContactId, this.selectedHandleId, this.persistentSettingsContext, this.scrollToDate, this.messageScope = SidebarFlowMessageScope.regular, this.contactProjection = SidebarFlowContactProjection.allMessages}): super._();
+  const _SidebarFlowState({this.topMenuChoice = defaultTopChatMenuChoice, this.chosenContactId, this.selectedHandleId, this.selectedConversationId, this.selectedConversationAnchorMessageId, this.selectedConversationSearchQuery, this.persistentSettingsContext, this.scrollToDate, this.messageScope = SidebarFlowMessageScope.regular, this.contactProjection = SidebarFlowContactProjection.allMessages}): super._();
   
 
 @override@JsonKey() final  TopChatMenuChoice topMenuChoice;
 @override final  int? chosenContactId;
 @override final  int? selectedHandleId;
+@override final  int? selectedConversationId;
+@override final  int? selectedConversationAnchorMessageId;
+@override final  String? selectedConversationSearchQuery;
 @override final  SettingsMenuActionId? persistentSettingsContext;
 @override final  DateTime? scrollToDate;
 @override@JsonKey() final  SidebarFlowMessageScope messageScope;
@@ -240,21 +246,21 @@ _$SidebarFlowStateCopyWith<_SidebarFlowState> get copyWith => __$SidebarFlowStat
 void debugFillProperties(DiagnosticPropertiesBuilder properties) {
   properties
     ..add(DiagnosticsProperty('type', 'SidebarFlowState'))
-    ..add(DiagnosticsProperty('topMenuChoice', topMenuChoice))..add(DiagnosticsProperty('chosenContactId', chosenContactId))..add(DiagnosticsProperty('selectedHandleId', selectedHandleId))..add(DiagnosticsProperty('persistentSettingsContext', persistentSettingsContext))..add(DiagnosticsProperty('scrollToDate', scrollToDate))..add(DiagnosticsProperty('messageScope', messageScope))..add(DiagnosticsProperty('contactProjection', contactProjection));
+    ..add(DiagnosticsProperty('topMenuChoice', topMenuChoice))..add(DiagnosticsProperty('chosenContactId', chosenContactId))..add(DiagnosticsProperty('selectedHandleId', selectedHandleId))..add(DiagnosticsProperty('selectedConversationId', selectedConversationId))..add(DiagnosticsProperty('selectedConversationAnchorMessageId', selectedConversationAnchorMessageId))..add(DiagnosticsProperty('selectedConversationSearchQuery', selectedConversationSearchQuery))..add(DiagnosticsProperty('persistentSettingsContext', persistentSettingsContext))..add(DiagnosticsProperty('scrollToDate', scrollToDate))..add(DiagnosticsProperty('messageScope', messageScope))..add(DiagnosticsProperty('contactProjection', contactProjection));
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SidebarFlowState&&(identical(other.topMenuChoice, topMenuChoice) || other.topMenuChoice == topMenuChoice)&&(identical(other.chosenContactId, chosenContactId) || other.chosenContactId == chosenContactId)&&(identical(other.selectedHandleId, selectedHandleId) || other.selectedHandleId == selectedHandleId)&&(identical(other.persistentSettingsContext, persistentSettingsContext) || other.persistentSettingsContext == persistentSettingsContext)&&(identical(other.scrollToDate, scrollToDate) || other.scrollToDate == scrollToDate)&&(identical(other.messageScope, messageScope) || other.messageScope == messageScope)&&(identical(other.contactProjection, contactProjection) || other.contactProjection == contactProjection));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SidebarFlowState&&(identical(other.topMenuChoice, topMenuChoice) || other.topMenuChoice == topMenuChoice)&&(identical(other.chosenContactId, chosenContactId) || other.chosenContactId == chosenContactId)&&(identical(other.selectedHandleId, selectedHandleId) || other.selectedHandleId == selectedHandleId)&&(identical(other.selectedConversationId, selectedConversationId) || other.selectedConversationId == selectedConversationId)&&(identical(other.selectedConversationAnchorMessageId, selectedConversationAnchorMessageId) || other.selectedConversationAnchorMessageId == selectedConversationAnchorMessageId)&&(identical(other.selectedConversationSearchQuery, selectedConversationSearchQuery) || other.selectedConversationSearchQuery == selectedConversationSearchQuery)&&(identical(other.persistentSettingsContext, persistentSettingsContext) || other.persistentSettingsContext == persistentSettingsContext)&&(identical(other.scrollToDate, scrollToDate) || other.scrollToDate == scrollToDate)&&(identical(other.messageScope, messageScope) || other.messageScope == messageScope)&&(identical(other.contactProjection, contactProjection) || other.contactProjection == contactProjection));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,topMenuChoice,chosenContactId,selectedHandleId,persistentSettingsContext,scrollToDate,messageScope,contactProjection);
+int get hashCode => Object.hash(runtimeType,topMenuChoice,chosenContactId,selectedHandleId,selectedConversationId,selectedConversationAnchorMessageId,selectedConversationSearchQuery,persistentSettingsContext,scrollToDate,messageScope,contactProjection);
 
 @override
 String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
-  return 'SidebarFlowState(topMenuChoice: $topMenuChoice, chosenContactId: $chosenContactId, selectedHandleId: $selectedHandleId, persistentSettingsContext: $persistentSettingsContext, scrollToDate: $scrollToDate, messageScope: $messageScope, contactProjection: $contactProjection)';
+  return 'SidebarFlowState(topMenuChoice: $topMenuChoice, chosenContactId: $chosenContactId, selectedHandleId: $selectedHandleId, selectedConversationId: $selectedConversationId, selectedConversationAnchorMessageId: $selectedConversationAnchorMessageId, selectedConversationSearchQuery: $selectedConversationSearchQuery, persistentSettingsContext: $persistentSettingsContext, scrollToDate: $scrollToDate, messageScope: $messageScope, contactProjection: $contactProjection)';
 }
 
 
@@ -265,7 +271,7 @@ abstract mixin class _$SidebarFlowStateCopyWith<$Res> implements $SidebarFlowSta
   factory _$SidebarFlowStateCopyWith(_SidebarFlowState value, $Res Function(_SidebarFlowState) _then) = __$SidebarFlowStateCopyWithImpl;
 @override @useResult
 $Res call({
- TopChatMenuChoice topMenuChoice, int? chosenContactId, int? selectedHandleId, SettingsMenuActionId? persistentSettingsContext, DateTime? scrollToDate, SidebarFlowMessageScope messageScope, SidebarFlowContactProjection contactProjection
+ TopChatMenuChoice topMenuChoice, int? chosenContactId, int? selectedHandleId, int? selectedConversationId, int? selectedConversationAnchorMessageId, String? selectedConversationSearchQuery, SettingsMenuActionId? persistentSettingsContext, DateTime? scrollToDate, SidebarFlowMessageScope messageScope, SidebarFlowContactProjection contactProjection
 });
 
 
@@ -282,12 +288,15 @@ class __$SidebarFlowStateCopyWithImpl<$Res>
 
 /// Create a copy of SidebarFlowState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? topMenuChoice = null,Object? chosenContactId = freezed,Object? selectedHandleId = freezed,Object? persistentSettingsContext = freezed,Object? scrollToDate = freezed,Object? messageScope = null,Object? contactProjection = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? topMenuChoice = null,Object? chosenContactId = freezed,Object? selectedHandleId = freezed,Object? selectedConversationId = freezed,Object? selectedConversationAnchorMessageId = freezed,Object? selectedConversationSearchQuery = freezed,Object? persistentSettingsContext = freezed,Object? scrollToDate = freezed,Object? messageScope = null,Object? contactProjection = null,}) {
   return _then(_SidebarFlowState(
 topMenuChoice: null == topMenuChoice ? _self.topMenuChoice : topMenuChoice // ignore: cast_nullable_to_non_nullable
 as TopChatMenuChoice,chosenContactId: freezed == chosenContactId ? _self.chosenContactId : chosenContactId // ignore: cast_nullable_to_non_nullable
 as int?,selectedHandleId: freezed == selectedHandleId ? _self.selectedHandleId : selectedHandleId // ignore: cast_nullable_to_non_nullable
-as int?,persistentSettingsContext: freezed == persistentSettingsContext ? _self.persistentSettingsContext : persistentSettingsContext // ignore: cast_nullable_to_non_nullable
+as int?,selectedConversationId: freezed == selectedConversationId ? _self.selectedConversationId : selectedConversationId // ignore: cast_nullable_to_non_nullable
+as int?,selectedConversationAnchorMessageId: freezed == selectedConversationAnchorMessageId ? _self.selectedConversationAnchorMessageId : selectedConversationAnchorMessageId // ignore: cast_nullable_to_non_nullable
+as int?,selectedConversationSearchQuery: freezed == selectedConversationSearchQuery ? _self.selectedConversationSearchQuery : selectedConversationSearchQuery // ignore: cast_nullable_to_non_nullable
+as String?,persistentSettingsContext: freezed == persistentSettingsContext ? _self.persistentSettingsContext : persistentSettingsContext // ignore: cast_nullable_to_non_nullable
 as SettingsMenuActionId?,scrollToDate: freezed == scrollToDate ? _self.scrollToDate : scrollToDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,messageScope: null == messageScope ? _self.messageScope : messageScope // ignore: cast_nullable_to_non_nullable
 as SidebarFlowMessageScope,contactProjection: null == contactProjection ? _self.contactProjection : contactProjection // ignore: cast_nullable_to_non_nullable

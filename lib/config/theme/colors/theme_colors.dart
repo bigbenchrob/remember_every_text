@@ -489,18 +489,17 @@ class InteractiveHints {
   /// Recommended vertical padding for hover hitbox.
   double get paddingVertical => 5.0;
 
-  // -- Favorite star (hero card) ----------------------------------------
+  // -- Favorite stars ----------------------------------------------------
 
-  /// Filled-star color when favorited and at rest (muted, non-competing).
-  ///
-  /// Uses the warm amber from the system star glyph at reduced saturation
-  /// so it reads as "active but secondary" next to the display name.
-  Color get starFavoritedResting =>
-      const Color(0xFFFFC107).withValues(alpha: 0.55);
+  /// Filled-star color for user favourite markers across contacts and
+  /// conversations.
+  Color get favoriteStar => _t.accents.primary;
+
+  /// Filled-star color when favorited and at rest.
+  Color get starFavoritedResting => favoriteStar;
 
   /// Filled-star color when favorited and hovered (crisp feedback).
-  Color get starFavoritedHover =>
-      const Color(0xFFFFC107).withValues(alpha: 0.90);
+  Color get starFavoritedHover => favoriteStar;
 }
 
 enum GrayTone {

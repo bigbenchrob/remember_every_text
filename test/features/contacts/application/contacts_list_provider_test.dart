@@ -155,7 +155,7 @@ void main() {
     });
 
     test(
-      'includes unlinked working participants in enhanced picker data',
+      'omits working participants that have not participated in chats',
       () async {
         final participantId = await workingDb
             .into(workingDb.workingParticipants)
@@ -171,16 +171,55 @@ void main() {
           contactsListRepositoryProvider.future,
         );
 
-        expect(results, hasLength(1));
+        expect(results, isEmpty);
+        expect(participantId, isPositive);
+      },
+    );
 
-        final entry = results.single;
-        expect(entry.participantId, participantId);
-        expect(entry.displayName, 'Unlinked Person');
-        expect(entry.origin, ParticipantOrigin.working);
-        expect(entry.handleCount, 0);
-        expect(entry.totalChats, 0);
-        expect(entry.totalMessages, 0);
-        expect(entry.lastMessageDate, isNull);
+    test(
+      'omits participants with address book handles but no chat participation',
+      () async {
+        final handleId = await workingDb
+            .into(workingDb.handlesCanonical)
+            .insert(
+              HandlesCanonicalCompanion.insert(
+                rawIdentifier: '+15550003',
+                displayName: '+15550003',
+                compoundIdentifier: buildCompoundIdentifier(
+                  normalizedIdentifier: '+15550003',
+                  rawIdentifier: '+15550003',
+                  service: 'SMS',
+                ),
+                service: const drift.Value('SMS'),
+              ),
+            );
+
+        final participantId = await workingDb
+            .into(workingDb.workingParticipants)
+            .insert(
+              WorkingParticipantsCompanion.insert(
+                originalName: 'Handle No Chat',
+                displayName: 'Handle No Chat',
+                shortName: 'Handle',
+              ),
+            );
+
+        await workingDb
+            .into(workingDb.handleToParticipant)
+            .insert(
+              HandleToParticipantCompanion.insert(
+                handleId: handleId,
+                participantId: participantId,
+                confidence: const drift.Value(1.0),
+                source: const drift.Value('addressbook'),
+              ),
+            );
+
+        final results = await container.read(
+          contactsListRepositoryProvider.future,
+        );
+
+        expect(results, isEmpty);
       },
     );
   });

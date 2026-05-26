@@ -65,7 +65,7 @@ class _ContactHighlightRowState extends State<ContactHighlightRow> {
                   Icon(
                     CupertinoIcons.star_fill,
                     size: 10,
-                    color: colors.interactiveHints.starFavoritedResting,
+                    color: colors.interactiveHints.favoriteStar,
                   ),
                   const SizedBox(width: 4),
                 ] else

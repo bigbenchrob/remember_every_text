@@ -154,7 +154,7 @@ class _ContactEvidenceContent extends ConsumerWidget {
           },
         ),
         const SizedBox(height: AppSpacing.md),
-        body,
+        SizedBox(width: double.infinity, child: body),
       ],
     );
   }
@@ -319,28 +319,63 @@ class MessageHeatmapContent extends ConsumerWidget {
         '${NumberFormat.decimalPattern().format(data.totalMessages)} messages '
         '• ${_formatDateRange(data.firstMessageDate, data.lastMessageDate)}';
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(summaryText, style: typography.vizMeta),
-        SizedBox(height: visualizationGap),
-        CalendarHeatmapTimelineWidget(
-          data: data,
-          monthSize: 12,
-          monthSpacing: 2,
-          selectedMonthKey: selectedMonthKey,
-          monthTooltipBuilder: monthTooltipBuilder,
-          onMonthTap: onMonthTap,
-        ),
-        if (legend != null) ...[SizedBox(height: visualizationGap), legend!],
-        Padding(
-          padding: const EdgeInsets.only(top: AppSpacing.cassetteHintGap),
-          child: Text(hintText, style: typography.caption, softWrap: true),
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final railWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth.clamp(
+                0.0,
+                _messageHeatmapVisualizationRailWidth,
+              )
+            : _messageHeatmapVisualizationRailWidth;
+
+        return Align(
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            width: railWidth,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(summaryText, style: typography.vizMeta),
+                SizedBox(height: visualizationGap),
+                SizedBox(
+                  width: double.infinity,
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: CalendarHeatmapTimelineWidget(
+                      data: data,
+                      monthSize: 12,
+                      monthSpacing: 2,
+                      selectedMonthKey: selectedMonthKey,
+                      monthTooltipBuilder: monthTooltipBuilder,
+                      onMonthTap: onMonthTap,
+                    ),
+                  ),
+                ),
+                if (legend != null) ...[
+                  SizedBox(height: visualizationGap),
+                  legend!,
+                ],
+                Padding(
+                  padding: const EdgeInsets.only(
+                    top: AppSpacing.cassetteHintGap,
+                  ),
+                  child: Text(
+                    hintText,
+                    style: typography.caption,
+                    softWrap: true,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
+
+const double _messageHeatmapVisualizationRailWidth = 252;
 
 class MessageHeatmapLegend extends ConsumerWidget {
   const MessageHeatmapLegend({super.key});

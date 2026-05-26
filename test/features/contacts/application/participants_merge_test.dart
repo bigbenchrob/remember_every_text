@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
+import 'package:remember_this_text/essentials/db/feature_level_providers/working_projection_readiness_provider.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/working/working_database.dart';
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/resolver_tools/participants_for_picker_provider.dart';
@@ -31,6 +32,12 @@ void main() {
         overrides: [
           overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
           driftWorkingDatabaseProvider.overrideWith((ref) async => workingDb),
+          workingProjectionReadinessProvider.overrideWith(
+            (ref) async => const WorkingProjectionReadiness(
+              isReady: true,
+              reason: 'test projection ready',
+            ),
+          ),
         ],
       );
     });
@@ -80,6 +87,20 @@ void main() {
               ),
             );
 
+        final chatId = await workingDb
+            .into(workingDb.workingChats)
+            .insert(WorkingChatsCompanion.insert(guid: 'chat-1'));
+
+        await workingDb
+            .into(workingDb.chatToHandle)
+            .insert(
+              ChatToHandleCompanion.insert(
+                chatId: chatId,
+                handleId: workingHandleId,
+                role: const drift.Value('member'),
+              ),
+            );
+
         final virtualContact = await overlayDb.createVirtualParticipant(
           displayName: 'Virtual Friend',
         );
@@ -104,6 +125,16 @@ void main() {
           virtualContact.id,
         );
 
+        await workingDb
+            .into(workingDb.chatToHandle)
+            .insert(
+              ChatToHandleCompanion.insert(
+                chatId: chatId,
+                handleId: virtualHandleId,
+                role: const drift.Value('member'),
+              ),
+            );
+
         final results = await container.read(
           participantsForPickerProvider(searchQuery: '').future,
         );
@@ -118,28 +149,83 @@ void main() {
       },
     );
 
-    test('filters virtual participants by search query', () async {
+    test(
+      'filters participating virtual participants by search query',
+      () async {
+        await workingDb
+            .into(workingDb.workingParticipants)
+            .insert(
+              WorkingParticipantsCompanion.insert(
+                originalName: 'Alice Wonderland',
+                displayName: 'Alice Wonderland',
+                shortName: 'Alice',
+              ),
+            );
+
+        final virtualContact = await overlayDb.createVirtualParticipant(
+          displayName: 'Overlay Only',
+        );
+
+        final virtualHandleId = await workingDb
+            .into(workingDb.handlesCanonical)
+            .insert(
+              HandlesCanonicalCompanion.insert(
+                rawIdentifier: '+17785550000',
+                displayName: '+17785550000',
+                compoundIdentifier: buildCompoundIdentifier(
+                  normalizedIdentifier: '+17785550000',
+                  rawIdentifier: '+17785550000',
+                  service: 'SMS',
+                ),
+                service: const drift.Value('SMS'),
+              ),
+            );
+
+        final chatId = await workingDb
+            .into(workingDb.workingChats)
+            .insert(WorkingChatsCompanion.insert(guid: 'chat-2'));
+
+        await workingDb
+            .into(workingDb.chatToHandle)
+            .insert(
+              ChatToHandleCompanion.insert(
+                chatId: chatId,
+                handleId: virtualHandleId,
+                role: const drift.Value('member'),
+              ),
+            );
+
+        await overlayDb.setHandleVirtualParticipantOverride(
+          virtualHandleId,
+          virtualContact.id,
+        );
+
+        final results = await container.read(
+          participantsForPickerProvider(searchQuery: 'overlay').future,
+        );
+
+        expect(results, hasLength(1));
+        expect(results.first.id, virtualContact.id);
+        expect(results.first.origin, ParticipantOrigin.overlayVirtual);
+      },
+    );
+
+    test('omits address book participants with no chat handles', () async {
       await workingDb
           .into(workingDb.workingParticipants)
           .insert(
             WorkingParticipantsCompanion.insert(
-              originalName: 'Alice Wonderland',
-              displayName: 'Alice Wonderland',
-              shortName: 'Alice',
+              originalName: 'Address Book Only',
+              displayName: 'Address Book Only',
+              shortName: 'Address',
             ),
           );
 
-      final virtualContact = await overlayDb.createVirtualParticipant(
-        displayName: 'Overlay Only',
-      );
-
       final results = await container.read(
-        participantsForPickerProvider(searchQuery: 'overlay').future,
+        participantsForPickerProvider(searchQuery: '').future,
       );
 
-      expect(results, hasLength(1));
-      expect(results.first.id, virtualContact.id);
-      expect(results.first.origin, ParticipantOrigin.overlayVirtual);
+      expect(results, isEmpty);
     });
   });
 }

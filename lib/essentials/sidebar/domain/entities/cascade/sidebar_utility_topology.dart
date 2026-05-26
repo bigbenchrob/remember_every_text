@@ -13,7 +13,9 @@ CassetteSpec? resolveSidebarUtilityChild(
     topChatMenu: (selectedChoice) {
       switch (selectedChoice) {
         case TopChatMenuChoice.conversations:
-          return null;
+          return const CassetteSpec.messages(
+            MessagesCassetteSpec.conversationSignatures(),
+          );
 
         case TopChatMenuChoice.contacts:
           return sidebarUtilityChildContactsInfoCard();

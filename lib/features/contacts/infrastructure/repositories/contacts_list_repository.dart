@@ -120,6 +120,9 @@ Future<List<ContactSummary>> contactsListRepository(Ref ref) async {
       workingDb,
       handleIds.toList(growable: false),
     );
+    if (metrics.totalChats == 0) {
+      continue;
+    }
 
     final override = participantOverrides[participant.id];
 
@@ -196,6 +199,9 @@ Future<List<ContactSummary>> contactsListRepository(Ref ref) async {
       workingDb,
       handleIds.toList(growable: false),
     );
+    if (metrics.totalChats == 0) {
+      continue;
+    }
 
     final override = participantOverrides[pid];
 
@@ -251,6 +257,9 @@ Future<List<ContactSummary>> contactsListRepository(Ref ref) async {
       workingDb,
       handleIds.toList(growable: false),
     );
+    if (metrics.totalChats == 0) {
+      continue;
+    }
 
     virtualSummaries.add(
       ContactSummary(

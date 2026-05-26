@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -6,6 +8,7 @@ import '../../../features/messages/domain/spec_classes/messages_view_spec.dart';
 import '../../../features/settings/domain/spec_classes/settings_view_spec.dart';
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../features/sidebar_utilities/feature_level_providers.dart';
+import '../../db/feature_level_providers.dart';
 import '../../logging/application/app_logger.dart';
 import '../../navigation/domain/entities/view_spec.dart';
 import '../../navigation/domain/sidebar_mode.dart';
@@ -18,6 +21,51 @@ enum SidebarFlowMessageScope { regular, recoveredDeleted }
 
 enum SidebarFlowContactProjection { allMessages, conversations }
 
+extension SidebarFlowContactProjectionStorage on SidebarFlowContactProjection {
+  String get storageValue {
+    return switch (this) {
+      SidebarFlowContactProjection.allMessages => 'all_messages',
+      SidebarFlowContactProjection.conversations => 'conversations',
+    };
+  }
+
+  static SidebarFlowContactProjection fromStorage(String? rawValue) {
+    return switch (rawValue) {
+      'conversations' => SidebarFlowContactProjection.conversations,
+      _ => SidebarFlowContactProjection.allMessages,
+    };
+  }
+}
+
+class SidebarContactContextPreference {
+  const SidebarContactContextPreference({
+    required this.contactId,
+    required this.projection,
+  });
+
+  final int? contactId;
+  final SidebarFlowContactProjection projection;
+
+  String get storageValue {
+    return '${contactId ?? 'none'}|${projection.storageValue}';
+  }
+
+  static SidebarContactContextPreference fromStorage(String? rawValue) {
+    final parts = rawValue?.split('|') ?? const <String>[];
+    final rawContactId = parts.isEmpty ? null : parts[0];
+    return SidebarContactContextPreference(
+      contactId: rawContactId == null || rawContactId == 'none'
+          ? null
+          : int.tryParse(rawContactId),
+      projection: SidebarFlowContactProjectionStorage.fromStorage(
+        parts.length < 2 ? null : parts[1],
+      ),
+    );
+  }
+}
+
+const String sidebarContactContextOverlaySettingKey = 'sidebar_contact_context';
+
 @visibleForTesting
 void debugAssertValidSidebarFlowState(SidebarFlowState state) {
   final persistentSettingsContext = state.persistentSettingsContext;
@@ -27,6 +75,12 @@ void debugAssertValidSidebarFlowState(SidebarFlowState state) {
       'SidebarFlowState.persistentSettingsContext cannot hold transient '
       'settings actions.',
     );
+  }
+
+  if (state.selectedConversationId == null &&
+      (state.selectedConversationAnchorMessageId != null ||
+          state.selectedConversationSearchQuery != null)) {
+    throw StateError('Conversation anchors require a selected conversation.');
   }
 
   switch (state.topMenuChoice) {
@@ -51,6 +105,12 @@ void debugAssertValidSidebarFlowState(SidebarFlowState state) {
       }
 
     case TopChatMenuChoice.contacts:
+      if (state.selectedConversationId != null) {
+        throw StateError(
+          'Contacts branch cannot retain global conversation selection state.',
+        );
+      }
+
       if (state.selectedHandleId != null && state.chosenContactId == null) {
         throw StateError(
           'SidebarFlowState.selectedHandleId requires a chosen contact on '
@@ -81,7 +141,9 @@ void debugAssertValidSidebarFlowState(SidebarFlowState state) {
       }
 
     case TopChatMenuChoice.strayHandles:
-      if (state.chosenContactId != null || state.selectedHandleId != null) {
+      if (state.chosenContactId != null ||
+          state.selectedHandleId != null ||
+          state.selectedConversationId != null) {
         throw StateError(
           'Stray handles branch cannot retain contact-specific selection '
           'state.',
@@ -101,7 +163,9 @@ void debugAssertValidSidebarFlowState(SidebarFlowState state) {
       }
 
     case TopChatMenuChoice.searchAllMessages:
-      if (state.chosenContactId != null || state.selectedHandleId != null) {
+      if (state.chosenContactId != null ||
+          state.selectedHandleId != null ||
+          state.selectedConversationId != null) {
         throw StateError(
           'Global timeline branch cannot retain contact-specific selection '
           'state.',
@@ -121,7 +185,9 @@ void debugAssertValidSidebarFlowState(SidebarFlowState state) {
       }
 
     case TopChatMenuChoice.recoveredUnlinkedMessages:
-      if (state.chosenContactId != null || state.selectedHandleId != null) {
+      if (state.chosenContactId != null ||
+          state.selectedHandleId != null ||
+          state.selectedConversationId != null) {
         throw StateError(
           'Global recovered branch cannot retain contact-specific selection '
           'state.',
@@ -141,7 +207,9 @@ void debugAssertValidSidebarFlowState(SidebarFlowState state) {
       }
 
     case TopChatMenuChoice.recoveredNoHandleFromMeMessages:
-      if (state.chosenContactId != null || state.selectedHandleId != null) {
+      if (state.chosenContactId != null ||
+          state.selectedHandleId != null ||
+          state.selectedConversationId != null) {
         throw StateError(
           'Recovered no-handle branch cannot retain contact-specific '
           'selection state.',
@@ -168,6 +236,9 @@ abstract class SidebarFlowState with _$SidebarFlowState {
     @Default(defaultTopChatMenuChoice) TopChatMenuChoice topMenuChoice,
     int? chosenContactId,
     int? selectedHandleId,
+    int? selectedConversationId,
+    int? selectedConversationAnchorMessageId,
+    String? selectedConversationSearchQuery,
     SettingsMenuActionId? persistentSettingsContext,
     DateTime? scrollToDate,
     @Default(SidebarFlowMessageScope.regular)
@@ -190,7 +261,17 @@ abstract class SidebarFlowState with _$SidebarFlowState {
 
     switch (topMenuChoice) {
       case TopChatMenuChoice.conversations:
-        return const ViewSpec.messages(MessagesSpec.conversationBrowser());
+        final conversationId = selectedConversationId;
+        if (conversationId == null) {
+          return null;
+        }
+        return ViewSpec.messages(
+          MessagesSpec.forConversation(
+            conversationId: conversationId,
+            anchorMessageId: selectedConversationAnchorMessageId,
+            searchQuery: selectedConversationSearchQuery,
+          ),
+        );
       case TopChatMenuChoice.contacts:
         final contactId = chosenContactId;
         if (contactId == null) {
@@ -268,6 +349,8 @@ abstract class SidebarFlowState with _$SidebarFlowState {
 
 @riverpod
 class SidebarFlow extends _$SidebarFlow {
+  Future<void> _contactContextPersistChain = Future<void>.value();
+
   @override
   SidebarFlowState build() {
     const initialState = SidebarFlowState();
@@ -323,14 +406,70 @@ class SidebarFlow extends _$SidebarFlow {
         .replaceAtIndexAndCascade(cassetteIndex, newSpec);
   }
 
-  void contactChosen({required int contactId, required int infoCardIndex}) {
+  Future<void> topMenuChangedRestoringContactContext({
+    required TopChatMenuChoice choice,
+    required int cassetteIndex,
+  }) async {
+    if (choice != TopChatMenuChoice.contacts) {
+      topMenuChanged(choice: choice, cassetteIndex: cassetteIndex);
+      return;
+    }
+
+    final persistedContext = await _readContactContextPreference();
+    final contactId = persistedContext.contactId;
+    if (contactId == null) {
+      topMenuChanged(choice: choice, cassetteIndex: cassetteIndex);
+      return;
+    }
+
+    _setState(
+      SidebarFlowState(
+        topMenuChoice: TopChatMenuChoice.contacts,
+        chosenContactId: contactId,
+        contactProjection: persistedContext.projection,
+      ),
+    );
+
+    final topMenuSpec = CassetteSpec.sidebarUtility(
+      SidebarUtilityCassetteSpec.topChatMenu(selectedChoice: choice),
+    );
+    ref
+        .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
+        .replaceAtIndexAndCascade(cassetteIndex, topMenuSpec);
+    ref
+        .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
+        .replaceAtIndexAndCascade(
+          cassetteIndex + 1,
+          CassetteSpec.contacts(
+            ContactsCassetteSpec.contactSelectionControl(
+              chosenContactId: contactId,
+            ),
+          ),
+        );
+  }
+
+  void contactChosen({
+    required int contactId,
+    required int infoCardIndex,
+    SidebarFlowContactProjection contactProjection =
+        SidebarFlowContactProjection.allMessages,
+  }) {
     _setState(
       state.copyWith(
         topMenuChoice: TopChatMenuChoice.contacts,
         chosenContactId: contactId,
         selectedHandleId: null,
+        selectedConversationId: null,
+        selectedConversationAnchorMessageId: null,
+        selectedConversationSearchQuery: null,
         messageScope: SidebarFlowMessageScope.regular,
-        contactProjection: SidebarFlowContactProjection.allMessages,
+        contactProjection: contactProjection,
+      ),
+    );
+    _scheduleContactContextPreferencePersist(
+      SidebarContactContextPreference(
+        contactId: contactId,
+        projection: contactProjection,
       ),
     );
 
@@ -361,8 +500,17 @@ class SidebarFlow extends _$SidebarFlow {
       state.copyWith(
         chosenContactId: null,
         selectedHandleId: null,
+        selectedConversationId: null,
+        selectedConversationAnchorMessageId: null,
+        selectedConversationSearchQuery: null,
         messageScope: SidebarFlowMessageScope.regular,
         contactProjection: SidebarFlowContactProjection.allMessages,
+      ),
+    );
+    _scheduleContactContextPreferencePersist(
+      const SidebarContactContextPreference(
+        contactId: null,
+        projection: SidebarFlowContactProjection.allMessages,
       ),
     );
 
@@ -400,8 +548,17 @@ class SidebarFlow extends _$SidebarFlow {
         topMenuChoice: TopChatMenuChoice.contacts,
         chosenContactId: contactId,
         selectedHandleId: handleId,
+        selectedConversationId: null,
+        selectedConversationAnchorMessageId: null,
+        selectedConversationSearchQuery: null,
         messageScope: SidebarFlowMessageScope.regular,
         contactProjection: SidebarFlowContactProjection.allMessages,
+      ),
+    );
+    _scheduleContactContextPreferencePersist(
+      SidebarContactContextPreference(
+        contactId: contactId,
+        projection: SidebarFlowContactProjection.allMessages,
       ),
     );
 
@@ -427,9 +584,18 @@ class SidebarFlow extends _$SidebarFlow {
         state.copyWith(
           topMenuChoice: TopChatMenuChoice.contacts,
           chosenContactId: contactId,
+          selectedConversationId: null,
+          selectedConversationAnchorMessageId: null,
+          selectedConversationSearchQuery: null,
           scrollToDate: null,
           messageScope: SidebarFlowMessageScope.regular,
           contactProjection: SidebarFlowContactProjection.allMessages,
+        ),
+      );
+      _scheduleContactContextPreferencePersist(
+        SidebarContactContextPreference(
+          contactId: contactId,
+          projection: SidebarFlowContactProjection.allMessages,
         ),
       );
       ref
@@ -448,9 +614,18 @@ class SidebarFlow extends _$SidebarFlow {
         topMenuChoice: TopChatMenuChoice.contacts,
         chosenContactId: contactId,
         selectedHandleId: null,
+        selectedConversationId: null,
+        selectedConversationAnchorMessageId: null,
+        selectedConversationSearchQuery: null,
         scrollToDate: null,
         messageScope: SidebarFlowMessageScope.recoveredDeleted,
         contactProjection: SidebarFlowContactProjection.allMessages,
+      ),
+    );
+    _scheduleContactContextPreferencePersist(
+      SidebarContactContextPreference(
+        contactId: contactId,
+        projection: SidebarFlowContactProjection.allMessages,
       ),
     );
 
@@ -470,6 +645,9 @@ class SidebarFlow extends _$SidebarFlow {
         topMenuChoice: TopChatMenuChoice.recoveredUnlinkedMessages,
         chosenContactId: null,
         selectedHandleId: null,
+        selectedConversationId: null,
+        selectedConversationAnchorMessageId: null,
+        selectedConversationSearchQuery: null,
         scrollToDate: null,
         messageScope: SidebarFlowMessageScope.recoveredDeleted,
         contactProjection: SidebarFlowContactProjection.allMessages,
@@ -483,6 +661,9 @@ class SidebarFlow extends _$SidebarFlow {
         topMenuChoice: TopChatMenuChoice.recoveredNoHandleFromMeMessages,
         chosenContactId: null,
         selectedHandleId: null,
+        selectedConversationId: null,
+        selectedConversationAnchorMessageId: null,
+        selectedConversationSearchQuery: null,
         scrollToDate: scrollToDate,
         messageScope: SidebarFlowMessageScope.regular,
         contactProjection: SidebarFlowContactProjection.allMessages,
@@ -496,9 +677,18 @@ class SidebarFlow extends _$SidebarFlow {
         topMenuChoice: TopChatMenuChoice.contacts,
         chosenContactId: contactId,
         selectedHandleId: null,
+        selectedConversationId: null,
+        selectedConversationAnchorMessageId: null,
+        selectedConversationSearchQuery: null,
         scrollToDate: null,
         messageScope: SidebarFlowMessageScope.regular,
         contactProjection: SidebarFlowContactProjection.conversations,
+      ),
+    );
+    _scheduleContactContextPreferencePersist(
+      SidebarContactContextPreference(
+        contactId: contactId,
+        projection: SidebarFlowContactProjection.conversations,
       ),
     );
   }
@@ -509,6 +699,9 @@ class SidebarFlow extends _$SidebarFlow {
         topMenuChoice: TopChatMenuChoice.searchAllMessages,
         chosenContactId: null,
         selectedHandleId: null,
+        selectedConversationId: null,
+        selectedConversationAnchorMessageId: null,
+        selectedConversationSearchQuery: null,
         scrollToDate: null,
         messageScope: SidebarFlowMessageScope.regular,
         contactProjection: SidebarFlowContactProjection.allMessages,
@@ -522,6 +715,9 @@ class SidebarFlow extends _$SidebarFlow {
         topMenuChoice: TopChatMenuChoice.searchAllMessages,
         chosenContactId: null,
         selectedHandleId: null,
+        selectedConversationId: null,
+        selectedConversationAnchorMessageId: null,
+        selectedConversationSearchQuery: null,
         scrollToDate: scrollToDate,
         messageScope: SidebarFlowMessageScope.regular,
         contactProjection: SidebarFlowContactProjection.allMessages,
@@ -535,9 +731,33 @@ class SidebarFlow extends _$SidebarFlow {
         topMenuChoice: TopChatMenuChoice.contacts,
         chosenContactId: contactId,
         selectedHandleId: null,
+        selectedConversationId: null,
+        selectedConversationAnchorMessageId: null,
+        selectedConversationSearchQuery: null,
         scrollToDate: scrollToDate,
         messageScope: SidebarFlowMessageScope.regular,
         contactProjection: SidebarFlowContactProjection.allMessages,
+      ),
+    );
+    _scheduleContactContextPreferencePersist(
+      SidebarContactContextPreference(
+        contactId: contactId,
+        projection: SidebarFlowContactProjection.allMessages,
+      ),
+    );
+  }
+
+  void selectConversation({
+    required int conversationId,
+    int? anchorMessageId,
+    String? searchQuery,
+  }) {
+    _setState(
+      SidebarFlowState(
+        topMenuChoice: TopChatMenuChoice.conversations,
+        selectedConversationId: conversationId,
+        selectedConversationAnchorMessageId: anchorMessageId,
+        selectedConversationSearchQuery: searchQuery,
       ),
     );
   }
@@ -559,6 +779,9 @@ class SidebarFlow extends _$SidebarFlow {
             : TopChatMenuChoice.contacts,
         chosenContactId: contactId,
         selectedHandleId: null,
+        selectedConversationId: null,
+        selectedConversationAnchorMessageId: null,
+        selectedConversationSearchQuery: null,
         scrollToDate: startDate,
         messageScope: SidebarFlowMessageScope.recoveredDeleted,
         contactProjection: SidebarFlowContactProjection.allMessages,
@@ -568,5 +791,32 @@ class SidebarFlow extends _$SidebarFlow {
 
   void setPersistentSettingsContext(SettingsMenuActionId? actionId) {
     _setState(state.copyWith(persistentSettingsContext: actionId));
+  }
+
+  Future<SidebarContactContextPreference>
+  _readContactContextPreference() async {
+    final overlayDb = await ref.read(overlayDatabaseProvider.future);
+    final rawValue = await overlayDb.readOverlaySetting(
+      sidebarContactContextOverlaySettingKey,
+    );
+    return SidebarContactContextPreference.fromStorage(rawValue);
+  }
+
+  void _scheduleContactContextPreferencePersist(
+    SidebarContactContextPreference preference,
+  ) {
+    final overlayDbFuture = ref.read(overlayDatabaseProvider.future);
+    _contactContextPersistChain = _contactContextPersistChain
+        .catchError((Object _, StackTrace _) {})
+        .then((_) async {
+          final overlayDb = await overlayDbFuture;
+          await overlayDb.writeOverlaySetting(
+            settingKey: sidebarContactContextOverlaySettingKey,
+            settingValue: preference.storageValue,
+          );
+        });
+    unawaited(
+      _contactContextPersistChain.catchError((Object _, StackTrace _) {}),
+    );
   }
 }

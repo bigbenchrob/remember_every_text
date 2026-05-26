@@ -9,6 +9,33 @@ class SqliteConversationRepository implements ConversationRepository {
 
   @override
   Future<List<ConversationOverview>> readOverviews({int limit = 100}) async {
+    return _readOverviews(limit: limit);
+  }
+
+  @override
+  Future<List<ConversationOverview>> readOverviewsByIds({
+    required List<int> conversationIds,
+  }) async {
+    if (conversationIds.isEmpty) {
+      return const <ConversationOverview>[];
+    }
+
+    final placeholders = List<String>.filled(
+      conversationIds.length,
+      '?',
+    ).join(', ');
+    return _readOverviews(
+      whereClause: 'WHERE c.ss_id IN ($placeholders)',
+      whereArgs: conversationIds,
+    );
+  }
+
+  Future<List<ConversationOverview>> _readOverviews({
+    int? limit,
+    String whereClause = '',
+    List<Object?> whereArgs = const <Object?>[],
+  }) async {
+    final limitClause = limit == null ? '' : 'LIMIT ?';
     final rows = await workingDatabase.selectRows(
       '''
       SELECT
@@ -35,11 +62,12 @@ class SqliteConversationRepository implements ConversationRepository {
       LEFT JOIN chat_to_message ctm ON ctm.chat_ss_id = c.ss_id
       LEFT JOIN messages m ON m.ss_id = ctm.message_ss_id
       LEFT JOIN message_to_attachment mta ON mta.message_ss_id = m.ss_id
+      $whereClause
       GROUP BY c.ss_id
       ORDER BY COALESCE(last_message_at_utc, '') DESC, c.ss_id ASC
-      LIMIT ?
+      $limitClause
       ''',
-      <Object?>[limit],
+      <Object?>[...whereArgs, if (limit != null) limit],
     );
 
     final overviews = <ConversationOverview>[];
@@ -133,6 +161,108 @@ class SqliteConversationRepository implements ConversationRepository {
           errorCode: _readNullableInt(row['error_code']),
         ),
     ];
+  }
+
+  @override
+  Future<Map<int, ConversationActivityTrace>> readActivityTraces({
+    required List<int> conversationIds,
+  }) async {
+    if (conversationIds.isEmpty) {
+      return <int, ConversationActivityTrace>{};
+    }
+
+    final valuePlaceholders = List<String>.filled(
+      conversationIds.length,
+      '(?)',
+    ).join(', ');
+
+    final rows = await workingDatabase.selectRows(
+      '''
+      WITH RECURSIVE target(conversation_id) AS (
+        VALUES $valuePlaceholders
+      ),
+      bounds AS (
+        SELECT
+          t.conversation_id,
+          MIN(m.date_utc) AS first_date,
+          MAX(m.date_utc) AS last_date
+        FROM target t
+        LEFT JOIN chat_to_message ctm ON ctm.chat_ss_id = t.conversation_id
+        LEFT JOIN messages m ON m.ss_id = ctm.message_ss_id
+        WHERE m.date_utc IS NOT NULL
+          AND m.date_utc != ''
+        GROUP BY t.conversation_id
+      ),
+      recursive_months(conversation_id, month_start, last_month_start) AS (
+        SELECT
+          conversation_id,
+          date(first_date, 'start of month') AS month_start,
+          date(last_date, 'start of month') AS last_month_start
+        FROM bounds
+        WHERE first_date IS NOT NULL
+          AND last_date IS NOT NULL
+
+        UNION ALL
+
+        SELECT
+          conversation_id,
+          date(month_start, '+1 month') AS month_start,
+          last_month_start
+        FROM recursive_months
+        WHERE month_start < last_month_start
+      ),
+      monthly_counts AS (
+        SELECT
+          ctm.chat_ss_id AS conversation_id,
+          strftime('%Y-%m', m.date_utc) AS month_key,
+          COUNT(m.ss_id) AS message_count
+        FROM chat_to_message ctm
+        JOIN target t ON t.conversation_id = ctm.chat_ss_id
+        JOIN messages m ON m.ss_id = ctm.message_ss_id
+        WHERE m.date_utc IS NOT NULL
+          AND m.date_utc != ''
+        GROUP BY ctm.chat_ss_id, month_key
+      )
+      SELECT
+        rm.conversation_id,
+        CAST(strftime('%Y', rm.month_start) AS INTEGER) AS year,
+        CAST(strftime('%m', rm.month_start) AS INTEGER) AS month,
+        COALESCE(mc.message_count, 0) AS message_count
+      FROM recursive_months rm
+      LEFT JOIN monthly_counts mc
+        ON mc.conversation_id = rm.conversation_id
+       AND mc.month_key = strftime('%Y-%m', rm.month_start)
+      ORDER BY rm.conversation_id ASC, rm.month_start ASC
+      ''',
+      <Object?>[...conversationIds],
+    );
+
+    final traces = <int, List<ConversationActivityMonth>>{
+      for (final conversationId in conversationIds) conversationId: [],
+    };
+
+    for (final row in rows) {
+      final conversationId = _readInt(row['conversation_id']);
+      final bins = traces[conversationId];
+      if (bins == null) {
+        continue;
+      }
+      bins.add(
+        ConversationActivityMonth(
+          year: _readInt(row['year']),
+          month: _readInt(row['month']),
+          messageCount: _readInt(row['message_count']),
+        ),
+      );
+    }
+
+    return {
+      for (final entry in traces.entries)
+        entry.key: ConversationActivityTrace(
+          conversationId: entry.key,
+          months: List<ConversationActivityMonth>.unmodifiable(entry.value),
+        ),
+    };
   }
 
   @override

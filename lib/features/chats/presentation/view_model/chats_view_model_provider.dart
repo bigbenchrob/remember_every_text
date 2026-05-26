@@ -35,7 +35,14 @@ class ChatsViewModel extends _$ChatsViewModel {
       ChatReadModelSourceMode.legacy => MessagesSpec.forChat(chatId: chatId),
     };
     if (readModelSource == ChatReadModelSourceMode.conversationGraph) {
-      ref.read(sidebarFlowProvider.notifier).showConversationContext();
+      ref
+          .read(sidebarFlowProvider.notifier)
+          .selectConversation(
+            conversationId: chatId,
+            anchorMessageId: anchorMessageId,
+            searchQuery: searchQuery,
+          );
+      return;
     }
     notifier.show(
       panel: WindowPanel.center,

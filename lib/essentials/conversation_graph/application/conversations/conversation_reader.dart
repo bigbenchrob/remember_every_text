@@ -10,6 +10,12 @@ class ConversationReader {
     return repository.readOverviews(limit: limit);
   }
 
+  Future<List<ConversationOverview>> readOverviewsByIds({
+    required List<int> conversationIds,
+  }) {
+    return repository.readOverviewsByIds(conversationIds: conversationIds);
+  }
+
   Future<List<ConversationMessage>> readMessages({
     required int conversationId,
     int limit = 100,
@@ -18,6 +24,12 @@ class ConversationReader {
       conversationId: conversationId,
       limit: limit,
     );
+  }
+
+  Future<Map<int, ConversationActivityTrace>> readActivityTraces({
+    required List<int> conversationIds,
+  }) {
+    return repository.readActivityTraces(conversationIds: conversationIds);
   }
 
   Future<Set<int>> readConversationIdsMatchingMessageText({

@@ -400,8 +400,9 @@ bool _isCenterSpecCompatibleWithSidebar({
           return flowState.topMenuChoice == TopChatMenuChoice.conversations;
         },
         forChat: (_) => true,
-        forConversation: (_, _, _) {
-          return flowState.topMenuChoice == TopChatMenuChoice.conversations ||
+        forConversation: (conversationId, _, _) {
+          return (flowState.topMenuChoice == TopChatMenuChoice.conversations &&
+                  flowState.selectedConversationId == conversationId) ||
               (flowState.topMenuChoice == TopChatMenuChoice.contacts &&
                   flowState.messageScope == SidebarFlowMessageScope.regular &&
                   flowState.contactProjection ==

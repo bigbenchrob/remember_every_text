@@ -22,7 +22,7 @@ Synthetic deterministic archetypes are generated for:
 
 ## Controls
 
-- **Selected visual mode**: Switches signatures between trace, heatmap, participant rails, or a hybrid of all three.
+- **Selected visual mode**: Switches signatures between trace, heatmap, participant rails, hybrid, or pixel mode. Pixel mode represents every month in the shared synthetic timeline as one compact left-to-right row, with color intensity based on message volume for that month.
 - **Theme**: Switches between dark and light prototype color schemes.
 - **Seed**: Regenerates the same archetypes with deterministic variation. The same seed produces the same data every reload.
 - **Palette saturation**: Reduces or increases participant and signature color intensity.

@@ -55,9 +55,9 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
   }) async {
     switch (intent) {
       case TopMenuChanged(:final choice):
-        ref
+        await ref
             .read(sidebarFlowProvider.notifier)
-            .topMenuChanged(
+            .topMenuChangedRestoringContactContext(
               choice: _mapTopMenuChoice(choice),
               cassetteIndex: _requireCassetteIndex(context),
             );
@@ -139,6 +139,10 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
             );
       case HeatMapMonthFocused(:final monthAnchor, :final contactId):
         _dispatchHeatMapFocus(contactId: contactId, monthAnchor: monthAnchor);
+      case ConversationSelected(:final conversationId):
+        ref
+            .read(sidebarFlowProvider.notifier)
+            .selectConversation(conversationId: conversationId);
       case RecoveredMonthFocused(
         :final monthAnchor,
         :final contactId,
@@ -273,11 +277,13 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
     required SidebarActionDispatchContext context,
     required int contactId,
   }) async {
+    final previousProjection = ref.read(sidebarFlowProvider).contactProjection;
     ref
         .read(sidebarFlowProvider.notifier)
         .contactChosen(
           contactId: contactId,
           infoCardIndex: _requirePreviousCassetteIndex(context),
+          contactProjection: previousProjection,
         );
 
     final overlayDb = await ref.read(overlayDatabaseProvider.future);

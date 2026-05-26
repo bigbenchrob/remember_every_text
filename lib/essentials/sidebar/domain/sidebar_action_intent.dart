@@ -103,6 +103,12 @@ final class HeatMapMonthFocused extends SidebarPersistentIntent {
   final DateTime? monthAnchor;
 }
 
+final class ConversationSelected extends SidebarPersistentIntent {
+  const ConversationSelected({required this.conversationId});
+
+  final int conversationId;
+}
+
 final class RecoveredMonthFocused extends SidebarPersistentIntent {
   const RecoveredMonthFocused({
     required this.monthAnchor,

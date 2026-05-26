@@ -87,3 +87,25 @@ class ConversationMessageTextSnippet {
   final String? dateUtc;
   final String text;
 }
+
+class ConversationActivityTrace {
+  const ConversationActivityTrace({
+    required this.conversationId,
+    required this.months,
+  });
+
+  final int conversationId;
+  final List<ConversationActivityMonth> months;
+}
+
+class ConversationActivityMonth {
+  const ConversationActivityMonth({
+    required this.year,
+    required this.month,
+    required this.messageCount,
+  });
+
+  final int year;
+  final int month;
+  final int messageCount;
+}

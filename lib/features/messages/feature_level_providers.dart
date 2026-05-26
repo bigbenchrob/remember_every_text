@@ -4,6 +4,7 @@
 
 export './application/sidebar_cassette_spec/coordinators/cassette_coordinator.dart';
 export './application/sidebar_cassette_spec/coordinators/info_cassette_coordinator.dart';
+export './application/sidebar_cassette_spec/payloads/conversation_signatures_cassette_payload.dart';
 export './application/sidebar_cassette_spec/payloads/messages_heatmap_cassette_payload.dart';
 export './application/sidebar_cassette_spec/payloads/recovered_no_handle_from_me_navigator_cassette_payload.dart';
 export './application/sidebar_cassette_spec/payloads/recovered_unlinked_navigator_cassette_payload.dart';

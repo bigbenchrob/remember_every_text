@@ -427,31 +427,26 @@ void main() {
   });
 
   group('effectiveCenterPanelSpec', () {
-    test(
-      'initial messages mode derives the conversation browser from sidebar flow',
-      () {
-        final container = ProviderContainer(
-          overrides: [
-            workingDbPopulatedProvider.overrideWith(
-              _AlwaysPopulatedWorkingDb.new,
-            ),
-          ],
-        );
-
-        expect(
-          container.read(sidebarFlowProvider).topMenuChoice,
-          defaultTopChatMenuChoice,
-        );
-        expect(
-          container.read(
-            effectiveCenterPanelSpecProvider(SidebarMode.messages),
+    test('initial messages mode has no center projection until selection', () {
+      final container = ProviderContainer(
+        overrides: [
+          workingDbPopulatedProvider.overrideWith(
+            _AlwaysPopulatedWorkingDb.new,
           ),
-          equals(const ViewSpec.messages(MessagesSpec.conversationBrowser())),
-        );
+        ],
+      );
 
-        container.dispose();
-      },
-    );
+      expect(
+        container.read(sidebarFlowProvider).topMenuChoice,
+        defaultTopChatMenuChoice,
+      );
+      expect(
+        container.read(effectiveCenterPanelSpecProvider(SidebarMode.messages)),
+        isNull,
+      );
+
+      container.dispose();
+    });
 
     test(
       'derives flow-managed messages center without stored center stack',
@@ -664,7 +659,7 @@ void main() {
       },
     );
 
-    test('conversation browser follows top menu flow changes', () {
+    test('conversation top menu waits for sidebar-selected conversation', () {
       final container = ProviderContainer(
         overrides: [
           workingDbPopulatedProvider.overrideWith(
@@ -682,7 +677,20 @@ void main() {
 
       expect(
         container.read(effectiveCenterPanelSpecProvider(SidebarMode.messages)),
-        equals(const ViewSpec.messages(MessagesSpec.conversationBrowser())),
+        isNull,
+      );
+
+      container
+          .read(sidebarFlowProvider.notifier)
+          .selectConversation(conversationId: 8796093022216);
+
+      expect(
+        container.read(effectiveCenterPanelSpecProvider(SidebarMode.messages)),
+        equals(
+          const ViewSpec.messages(
+            MessagesSpec.forConversation(conversationId: 8796093022216),
+          ),
+        ),
       );
 
       container
@@ -698,7 +706,7 @@ void main() {
     });
 
     test(
-      'conversation top menu preserves compatible selected graph timeline',
+      'selected conversation center derives from sidebar flow, not stored stack',
       () {
         final container = ProviderContainer(
           overrides: [
@@ -710,10 +718,7 @@ void main() {
 
         container
             .read(sidebarFlowProvider.notifier)
-            .topMenuChanged(
-              choice: TopChatMenuChoice.conversations,
-              cassetteIndex: 0,
-            );
+            .selectConversation(conversationId: 8796093022216);
         container
             .read(panelsViewStateProvider(SidebarMode.messages).notifier)
             .show(
@@ -736,10 +741,7 @@ void main() {
 
         container
             .read(sidebarFlowProvider.notifier)
-            .topMenuChanged(
-              choice: TopChatMenuChoice.conversations,
-              cassetteIndex: 0,
-            );
+            .selectConversation(conversationId: 123);
 
         expect(
           container.read(
@@ -747,7 +749,7 @@ void main() {
           ),
           equals(
             const ViewSpec.messages(
-              MessagesSpec.forConversation(conversationId: 8796093022216),
+              MessagesSpec.forConversation(conversationId: 123),
             ),
           ),
         );

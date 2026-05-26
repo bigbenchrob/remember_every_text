@@ -195,6 +195,8 @@ Widget _buildPlacementGovernedCassetteBody({
       handles_feature.buildPlacementGovernedCassetteBody(payload: payload),
     handles_feature.StrayHandlesTypeSwitcherCassettePayload() =>
       handles_feature.buildPlacementGovernedCassetteBody(payload: payload),
+    messages_feature.ConversationSignaturesCassettePayload() =>
+      messages_feature.buildPlacementGovernedCassetteBody(payload: payload),
     messages_feature.MessagesHeatmapCassettePayload() =>
       messages_feature.buildPlacementGovernedCassetteBody(payload: payload),
     messages_feature.RecoveredUnlinkedNavigatorCassettePayload() =>

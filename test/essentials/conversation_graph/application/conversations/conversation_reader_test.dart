@@ -163,6 +163,59 @@ void main() {
     expect(messages.first.isSystemMessage, isFalse);
   });
 
+  test('reads monthly activity traces with absolute message counts', () async {
+    final conversationId = _id(7);
+    final januaryMessageId = _id(201);
+    final marchMessageId = _id(202);
+    final secondMarchMessageId = _id(203);
+
+    await _insertChat(workingDatabase, id: conversationId);
+    await _insertMessage(
+      workingDatabase,
+      id: januaryMessageId,
+      dateUtc: '2026-01-12T10:00:00.000Z',
+      text: 'january',
+    );
+    await _insertMessage(
+      workingDatabase,
+      id: marchMessageId,
+      dateUtc: '2026-03-01T10:00:00.000Z',
+      text: 'march',
+    );
+    await _insertMessage(
+      workingDatabase,
+      id: secondMarchMessageId,
+      dateUtc: '2026-03-20T10:00:00.000Z',
+      text: 'later march',
+    );
+    await _insertChatMessage(
+      workingDatabase,
+      conversationId: conversationId,
+      messageId: januaryMessageId,
+    );
+    await _insertChatMessage(
+      workingDatabase,
+      conversationId: conversationId,
+      messageId: marchMessageId,
+    );
+    await _insertChatMessage(
+      workingDatabase,
+      conversationId: conversationId,
+      messageId: secondMarchMessageId,
+    );
+
+    final traces = await _reader(
+      workingDatabase,
+    ).readActivityTraces(conversationIds: [conversationId]);
+
+    final months = traces[conversationId]?.months;
+    expect(months, isNotNull);
+    expect(
+      months!.map((month) => (month.year, month.month, month.messageCount)),
+      [(2026, 1, 1), (2026, 2, 0), (2026, 3, 2)],
+    );
+  });
+
   test('keeps sparse graph messages visible', () async {
     final conversationId = _id(7);
     final sparseMessageId = _id(203);

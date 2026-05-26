@@ -1,8 +1,11 @@
+import 'package:drift/native.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers/working_db_populated_provider.dart';
+import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'package:remember_this_text/essentials/navigation/application/panel_widget_providers.dart';
 import 'package:remember_this_text/essentials/navigation/domain/entities/view_spec.dart';
 import 'package:remember_this_text/essentials/navigation/domain/navigation_constants.dart';
@@ -31,14 +34,17 @@ void main() {
     late ProviderContainer container;
     late SidebarActionDispatcher dispatcher;
     late _FakeMessageDataResetService resetService;
+    late OverlayDatabase overlayDb;
 
     setUp(() {
       resetService = _FakeMessageDataResetService();
+      overlayDb = OverlayDatabase(NativeDatabase.memory());
       container = ProviderContainer(
         overrides: [
           workingDbPopulatedProvider.overrideWith(
             _AlwaysPopulatedWorkingDb.new,
           ),
+          overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
           messageDataResetServiceProvider.overrideWith((ref) => resetService),
           ...cassetteRackTestHarnessOverrides(),
         ],
@@ -46,8 +52,9 @@ void main() {
       dispatcher = container.read(sidebarActionDispatcherProvider.notifier);
     });
 
-    tearDown(() {
+    tearDown(() async {
       container.dispose();
+      await overlayDb.close();
     });
 
     testWidgets('dispatches top menu changes through sidebar flow', (
@@ -74,6 +81,33 @@ void main() {
       expect(
         centerSpec,
         equals(const ViewSpec.messages(MessagesSpec.globalTimeline())),
+      );
+    });
+
+    testWidgets('dispatches conversation selection through sidebar flow', (
+      tester,
+    ) async {
+      await _mountMessagesPanelReconciliation(tester, container);
+
+      await dispatcher.dispatch(
+        intent: const ConversationSelected(conversationId: 8796093022216),
+        context: const SidebarActionDispatchContext(
+          sidebarMode: SidebarMode.messages,
+        ),
+      );
+
+      await _flushMessagesPanelReconciliation(tester);
+
+      final flowState = container.read(sidebarFlowProvider);
+      expect(flowState.topMenuChoice, TopChatMenuChoice.conversations);
+      expect(flowState.selectedConversationId, 8796093022216);
+      expect(
+        _activeSpec(container, WindowPanel.center),
+        equals(
+          const ViewSpec.messages(
+            MessagesSpec.forConversation(conversationId: 8796093022216),
+          ),
+        ),
       );
     });
 
@@ -514,12 +548,6 @@ void main() {
           const CassetteSpec.contacts(
             ContactsCassetteSpec.contactHeroSummary(chosenContactId: 42),
           ),
-          const CassetteSpec.contactsInfo(
-            ContactsInfoCassetteSpec.infoCard(
-              key: ContactsInfoKey.chosenContact,
-              chosenContactId: 42,
-            ),
-          ),
           const CassetteSpec.contacts(
             ContactsCassetteSpec.messageScopeToggle(contactId: 42),
           ),
@@ -640,7 +668,7 @@ void main() {
         intent: const ContactHandleSelected(contactId: 42, handleId: 7),
         context: const SidebarActionDispatchContext(
           sidebarMode: SidebarMode.messages,
-          cassetteIndex: 5,
+          cassetteIndex: 4,
         ),
       );
 
@@ -673,7 +701,7 @@ void main() {
           ),
           context: const SidebarActionDispatchContext(
             sidebarMode: SidebarMode.messages,
-            cassetteIndex: 4,
+            cassetteIndex: 3,
           ),
         );
 

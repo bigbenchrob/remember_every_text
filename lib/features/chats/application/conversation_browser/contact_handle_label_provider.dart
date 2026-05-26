@@ -68,6 +68,42 @@ String contactHandleLabelKeyForTesting(String handle) => _handleKey(handle);
 List<String> contactHandleLabelKeysForTesting(String handle) =>
     contactHandleKeys(handle);
 
+ContactHandleLabel? findContactHandleLabel(
+  String handle,
+  Map<String, ContactHandleLabel> contactLabels,
+) {
+  for (final key in contactHandleKeys(handle)) {
+    final label = contactLabels[key];
+    if (label != null) {
+      return label;
+    }
+  }
+  return null;
+}
+
+List<String> resolveContactHandleDisplayNames(
+  List<String> handles,
+  Map<String, ContactHandleLabel> contactLabels,
+) {
+  final labels = <String>[];
+  final seenLabels = <String>{};
+
+  for (final handle in handles) {
+    final trimmedHandle = handle.trim();
+    if (trimmedHandle.isEmpty) {
+      continue;
+    }
+    final label =
+        findContactHandleLabel(trimmedHandle, contactLabels)?.displayName ??
+        trimmedHandle;
+    if (seenLabels.add(label.toLowerCase())) {
+      labels.add(label);
+    }
+  }
+
+  return labels;
+}
+
 String _handleKey(String handle) {
   return handle.trim().toLowerCase();
 }

@@ -3,8 +3,10 @@ import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
+import '../../../../essentials/conversation_graph/application/conversation_favourites/conversation_favourites_provider.dart';
 import '../../../../essentials/conversation_graph/application/conversations/conversation.dart';
 import '../../../../essentials/conversation_graph/application/conversations/conversation_reader_provider.dart';
+import '../../../../essentials/conversation_graph/presentation/widgets/conversation_favourite_button.dart';
 import '../../../../essentials/search/presentation/widgets/search_highlighted_text.dart';
 import '../../application/conversation_browser/conversation_browser_integrator.dart';
 import '../view_model/chats_view_model_provider.dart';
@@ -154,7 +156,7 @@ class _ConversationBrowserViewState
   }
 }
 
-class _ConversationBrowserContent extends StatelessWidget {
+class _ConversationBrowserContent extends ConsumerWidget {
   const _ConversationBrowserContent({
     required this.model,
     required this.filter,
@@ -199,7 +201,35 @@ class _ConversationBrowserContent extends StatelessWidget {
   onConversationSnippetSelected;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final favourites = ref.watch(conversationFavouritesControllerProvider);
+    final favouriteConversationIds = favourites.coreConversationIdSet;
+    final favouriteConversations = [
+      for (final conversation in model.conversations)
+        if (favouriteConversationIds.contains(conversation.chatId))
+          conversation,
+    ];
+    final regularConversations = [
+      for (final conversation in model.conversations)
+        if (!favouriteConversationIds.contains(conversation.chatId))
+          conversation,
+    ];
+
+    Widget conversationRow(RecentChatSummary conversation) {
+      return _ConversationRow(
+        conversation: conversation,
+        participantHighlightQuery: participantHighlightQuery,
+        messageTextHighlightQuery: messageTextHighlightQuery,
+        messageTextMatch: messageTextMatches[conversation.chatId],
+        isMessageTextSearchActive: isMessageTextSearchActive,
+        onPressed: () => onConversationSelected(conversation.chatId),
+        onSnippetPressed: (snippetMessageId) => onConversationSnippetSelected(
+          conversation.chatId,
+          snippetMessageId,
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -223,30 +253,80 @@ class _ConversationBrowserContent extends StatelessWidget {
         Expanded(
           child: model.conversations.isEmpty
               ? const Center(child: Text('No conversations match this filter.'))
-              : ListView.separated(
-                  itemCount: model.conversations.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final conversation = model.conversations[index];
-                    return _ConversationRow(
-                      conversation: conversation,
-                      participantHighlightQuery: participantHighlightQuery,
-                      messageTextHighlightQuery: messageTextHighlightQuery,
-                      messageTextMatch: messageTextMatches[conversation.chatId],
-                      isMessageTextSearchActive: isMessageTextSearchActive,
-                      onPressed: () =>
-                          onConversationSelected(conversation.chatId),
-                      onSnippetPressed: (snippetMessageId) =>
-                          onConversationSnippetSelected(
-                            conversation.chatId,
-                            snippetMessageId,
-                          ),
-                    );
-                  },
+              : ListView(
+                  children: [
+                    if (favouriteConversations.isNotEmpty) ...[
+                      const _ConversationBrowserSectionHeader(
+                        title: 'Favourites',
+                        subtitle: 'Core',
+                      ),
+                      for (
+                        var index = 0;
+                        index < favouriteConversations.length;
+                        index++
+                      ) ...[
+                        if (index > 0) const SizedBox(height: 8),
+                        conversationRow(favouriteConversations[index]),
+                      ],
+                      if (regularConversations.isNotEmpty)
+                        const SizedBox(height: 14),
+                    ],
+                    if (regularConversations.isNotEmpty) ...[
+                      if (favouriteConversations.isNotEmpty)
+                        const _ConversationBrowserSectionHeader(
+                          title: 'Conversations',
+                        ),
+                      for (
+                        var index = 0;
+                        index < regularConversations.length;
+                        index++
+                      ) ...[
+                        if (index > 0) const SizedBox(height: 8),
+                        conversationRow(regularConversations[index]),
+                      ],
+                    ],
+                  ],
                 ),
         ),
       ],
+    );
+  }
+}
+
+class _ConversationBrowserSectionHeader extends ConsumerWidget {
+  const _ConversationBrowserSectionHeader({required this.title, this.subtitle});
+
+  final String title;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: DefaultTextStyle.of(context).style.copyWith(
+                color: colors.content.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          if (subtitle != null)
+            Text(
+              subtitle!,
+              style: DefaultTextStyle.of(context).style.copyWith(
+                color: colors.content.textTertiary,
+                fontSize: 12,
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -491,12 +571,23 @@ class _ConversationRow extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SearchHighlightedText(
-                  text: participants,
-                  query: participantHighlightQuery,
-                  style: DefaultTextStyle.of(
-                    context,
-                  ).style.copyWith(fontWeight: FontWeight.w600),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: SearchHighlightedText(
+                        text: participants,
+                        query: participantHighlightQuery,
+                        style: DefaultTextStyle.of(
+                          context,
+                        ).style.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    ConversationFavouriteButton(
+                      conversationId: conversation.chatId,
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Text(
