@@ -308,7 +308,7 @@ class _ContactPageGraphSnapshotProviderElement
 }
 
 String _$contactPageGraphMessagesHash() =>
-    r'edf4081903f99817fe29693fc65bf498f92bd282';
+    r'3d25d03f4199295601d2f9bd8c24e943b381d754';
 
 /// See also [contactPageGraphMessages].
 @ProviderFor(contactPageGraphMessages)
@@ -324,15 +324,24 @@ class ContactPageGraphMessagesFamily
   ContactPageGraphMessagesProvider call({
     required int contactId,
     int limit = 500,
+    DateTime? monthAnchor,
   }) {
-    return ContactPageGraphMessagesProvider(contactId: contactId, limit: limit);
+    return ContactPageGraphMessagesProvider(
+      contactId: contactId,
+      limit: limit,
+      monthAnchor: monthAnchor,
+    );
   }
 
   @override
   ContactPageGraphMessagesProvider getProviderOverride(
     covariant ContactPageGraphMessagesProvider provider,
   ) {
-    return call(contactId: provider.contactId, limit: provider.limit);
+    return call(
+      contactId: provider.contactId,
+      limit: provider.limit,
+      monthAnchor: provider.monthAnchor,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -354,24 +363,29 @@ class ContactPageGraphMessagesFamily
 class ContactPageGraphMessagesProvider
     extends AutoDisposeFutureProvider<List<ConversationMessage>> {
   /// See also [contactPageGraphMessages].
-  ContactPageGraphMessagesProvider({required int contactId, int limit = 500})
-    : this._internal(
-        (ref) => contactPageGraphMessages(
-          ref as ContactPageGraphMessagesRef,
-          contactId: contactId,
-          limit: limit,
-        ),
-        from: contactPageGraphMessagesProvider,
-        name: r'contactPageGraphMessagesProvider',
-        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-            ? null
-            : _$contactPageGraphMessagesHash,
-        dependencies: ContactPageGraphMessagesFamily._dependencies,
-        allTransitiveDependencies:
-            ContactPageGraphMessagesFamily._allTransitiveDependencies,
-        contactId: contactId,
-        limit: limit,
-      );
+  ContactPageGraphMessagesProvider({
+    required int contactId,
+    int limit = 500,
+    DateTime? monthAnchor,
+  }) : this._internal(
+         (ref) => contactPageGraphMessages(
+           ref as ContactPageGraphMessagesRef,
+           contactId: contactId,
+           limit: limit,
+           monthAnchor: monthAnchor,
+         ),
+         from: contactPageGraphMessagesProvider,
+         name: r'contactPageGraphMessagesProvider',
+         debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+             ? null
+             : _$contactPageGraphMessagesHash,
+         dependencies: ContactPageGraphMessagesFamily._dependencies,
+         allTransitiveDependencies:
+             ContactPageGraphMessagesFamily._allTransitiveDependencies,
+         contactId: contactId,
+         limit: limit,
+         monthAnchor: monthAnchor,
+       );
 
   ContactPageGraphMessagesProvider._internal(
     super._createNotifier, {
@@ -382,10 +396,12 @@ class ContactPageGraphMessagesProvider
     required super.from,
     required this.contactId,
     required this.limit,
+    required this.monthAnchor,
   }) : super.internal();
 
   final int contactId;
   final int limit;
+  final DateTime? monthAnchor;
 
   @override
   Override overrideWith(
@@ -405,6 +421,7 @@ class ContactPageGraphMessagesProvider
         debugGetCreateSourceHash: null,
         contactId: contactId,
         limit: limit,
+        monthAnchor: monthAnchor,
       ),
     );
   }
@@ -418,7 +435,8 @@ class ContactPageGraphMessagesProvider
   bool operator ==(Object other) {
     return other is ContactPageGraphMessagesProvider &&
         other.contactId == contactId &&
-        other.limit == limit;
+        other.limit == limit &&
+        other.monthAnchor == monthAnchor;
   }
 
   @override
@@ -426,6 +444,7 @@ class ContactPageGraphMessagesProvider
     var hash = _SystemHash.combine(0, runtimeType.hashCode);
     hash = _SystemHash.combine(hash, contactId.hashCode);
     hash = _SystemHash.combine(hash, limit.hashCode);
+    hash = _SystemHash.combine(hash, monthAnchor.hashCode);
 
     return _SystemHash.finish(hash);
   }
@@ -440,6 +459,9 @@ mixin ContactPageGraphMessagesRef
 
   /// The parameter `limit` of this provider.
   int get limit;
+
+  /// The parameter `monthAnchor` of this provider.
+  DateTime? get monthAnchor;
 }
 
 class _ContactPageGraphMessagesProviderElement
@@ -451,6 +473,9 @@ class _ContactPageGraphMessagesProviderElement
   int get contactId => (origin as ContactPageGraphMessagesProvider).contactId;
   @override
   int get limit => (origin as ContactPageGraphMessagesProvider).limit;
+  @override
+  DateTime? get monthAnchor =>
+      (origin as ContactPageGraphMessagesProvider).monthAnchor;
 }
 
 // ignore_for_file: type=lint

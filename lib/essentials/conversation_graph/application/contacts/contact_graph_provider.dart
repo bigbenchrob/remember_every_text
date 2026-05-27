@@ -52,6 +52,7 @@ Future<List<ConversationMessage>> contactPageGraphMessages(
   Ref ref, {
   required int contactId,
   int limit = 500,
+  DateTime? monthAnchor,
 }) async {
   final reader = await ref.watch(contactGraphReaderProvider.future);
   final graphContactId = graphContactIdForContactPage(contactId);
@@ -59,6 +60,7 @@ Future<List<ConversationMessage>> contactPageGraphMessages(
     contactId: contactId,
     graphContactId: graphContactId,
     limit: limit,
+    monthAnchor: monthAnchor,
   );
 }
 

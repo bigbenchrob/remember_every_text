@@ -148,6 +148,15 @@ void main() {
       expect(messages.first.text, 'May');
       expect(messages.first.attachmentCount, 1);
       expect(messages.last.text, 'April');
+
+      final aprilMessages = await _reader(workingDatabase).readContactMessages(
+        contactId: contactId,
+        monthAnchor: DateTime.utc(2026, 4),
+      );
+
+      expect(aprilMessages.map((message) => message.messageId), [
+        firstMessageId,
+      ]);
     },
   );
 

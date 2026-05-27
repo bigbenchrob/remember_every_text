@@ -91,6 +91,7 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
   Future<List<ConversationMessage>> readContactMessages({
     required int contactId,
     int limit = 500,
+    DateTime? monthAnchor,
   }) {
     return _readContactMessagesWhere(
       '''
@@ -105,6 +106,7 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
       ''',
       <Object?>[contactId],
       limit: limit,
+      monthAnchor: monthAnchor,
     );
   }
 
@@ -113,10 +115,12 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
     required int contactId,
     required int graphContactId,
     int limit = 500,
+    DateTime? monthAnchor,
   }) async {
     final graphMessages = await readContactMessages(
       contactId: graphContactId,
       limit: limit,
+      monthAnchor: monthAnchor,
     );
     if (graphMessages.isNotEmpty) {
       return graphMessages;
@@ -126,6 +130,7 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
       final directMessages = await readContactMessages(
         contactId: contactId,
         limit: limit,
+        monthAnchor: monthAnchor,
       );
       if (directMessages.isNotEmpty) {
         return directMessages;
@@ -141,6 +146,7 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
     return _readContactMessagesForCanonicalHandles(
       canonicalHandleIds,
       limit: limit,
+      monthAnchor: monthAnchor,
     );
   }
 
@@ -164,6 +170,7 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
   Future<List<ConversationMessage>> _readContactMessagesForCanonicalHandles(
     List<int> canonicalHandleIds, {
     required int limit,
+    DateTime? monthAnchor,
   }) {
     return _readContactMessagesWhere(
       '''
@@ -175,6 +182,7 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
       '',
       canonicalHandleIds,
       limit: limit,
+      monthAnchor: monthAnchor,
     );
   }
 
@@ -235,7 +243,15 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
     String extraJoin,
     List<Object?> args, {
     required int limit,
+    DateTime? monthAnchor,
   }) async {
+    final dateRange = _monthDateRange(monthAnchor);
+    final dateWhereClause = dateRange == null
+        ? ''
+        : '''
+          AND m.date_utc >= ?
+          AND m.date_utc < ?
+        ''';
     final rows = await workingDatabase.selectRows(
       '''
       SELECT DISTINCT
@@ -274,10 +290,11 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
         ON sender_canonical.canonical_handle_ss_id =
           m.sender_canonical_handle_ss_id
       WHERE $whereClause
+        $dateWhereClause
       ORDER BY COALESCE(m.date_utc, '') DESC, m.ss_id DESC
       LIMIT ?
       ''',
-      <Object?>[...args, limit],
+      <Object?>[...args, if (dateRange != null) ...dateRange, limit],
     );
 
     return [
@@ -502,6 +519,15 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
   static bool _hasGraphEvidence(ContactGraphSnapshot snapshot) {
     return snapshot.conversations.isNotEmpty ||
         snapshot.messageActivity != null;
+  }
+
+  static List<String>? _monthDateRange(DateTime? monthAnchor) {
+    if (monthAnchor == null) {
+      return null;
+    }
+    final start = DateTime.utc(monthAnchor.year, monthAnchor.month);
+    final end = DateTime.utc(monthAnchor.year, monthAnchor.month + 1);
+    return [start.toIso8601String(), end.toIso8601String()];
   }
 
   static String _placeholders(int count) {
