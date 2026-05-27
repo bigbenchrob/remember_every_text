@@ -532,6 +532,50 @@ void main() {
       );
     });
 
+    testWidgets(
+      'dispatches contact all-messages heat map focus through projected graph route',
+      (tester) async {
+        await _mountMessagesPanelReconciliation(tester, container);
+
+        final flow = container.read(sidebarFlowProvider.notifier);
+        final anchor = DateTime(2024, 04, 01);
+
+        flow.topMenuChanged(
+          choice: TopChatMenuChoice.contacts,
+          cassetteIndex: 0,
+        );
+        flow.contactChosen(contactId: 42, infoCardIndex: 1);
+        await _flushMessagesPanelReconciliation(tester);
+
+        expect(
+          _activeSpec(container, WindowPanel.center),
+          equals(
+            const ViewSpec.messages(MessagesSpec.forContact(contactId: 42)),
+          ),
+        );
+
+        await dispatcher.dispatch(
+          intent: HeatMapMonthFocused(contactId: 42, monthAnchor: anchor),
+          context: const SidebarActionDispatchContext(
+            sidebarMode: SidebarMode.messages,
+          ),
+        );
+
+        await _flushMessagesPanelReconciliation(tester);
+
+        expect(container.read(sidebarFlowProvider).selectedHandleId, isNull);
+        expect(container.read(sidebarFlowProvider).scrollToDate, anchor);
+        expect(
+          _activeSpec(container, WindowPanel.center),
+          equals(
+            ViewSpec.messages(
+              MessagesSpec.forContact(contactId: 42, scrollToDate: anchor),
+            ),
+          ),
+        );
+      },
+    );
+
     test(
       'dispatches choose another contact from downstream cassette context',
       () async {

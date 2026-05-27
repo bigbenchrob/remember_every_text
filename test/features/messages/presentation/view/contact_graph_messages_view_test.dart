@@ -91,7 +91,7 @@ List<Override> _contactGraphOverrides({
   return [
     contactPageGraphMessagesProvider(
       contactId: 24,
-      limit: monthAnchor == null ? 500 : 5000,
+      limit: monthAnchor == null ? 500 : 100000,
       monthAnchor: monthAnchor,
     ).overrideWith((ref) async {
       return messages;

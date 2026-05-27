@@ -223,7 +223,8 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
     final flowState = ref.read(sidebarFlowProvider);
     if (flowState.chosenContactId == contactId &&
         flowState.topMenuChoice == TopChatMenuChoice.contacts &&
-        flowState.messageScope == SidebarFlowMessageScope.regular) {
+        flowState.messageScope == SidebarFlowMessageScope.regular &&
+        flowState.selectedHandleId != null) {
       final scope = MessageTimelineScope.contact(
         contactId: contactId,
         filterHandleId: flowState.selectedHandleId,

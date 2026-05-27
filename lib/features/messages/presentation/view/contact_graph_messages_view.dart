@@ -30,7 +30,12 @@ class ContactGraphMessagesView extends ConsumerStatefulWidget {
 
 class _ContactGraphMessagesViewState
     extends ConsumerState<ContactGraphMessagesView> {
-  late final int _messageLimit = widget.monthAnchor == null ? 500 : 5000;
+  static const int _latestMessageLimit = 500;
+  static const int _selectedMonthMessageLimit = 100000;
+
+  late final int _messageLimit = widget.monthAnchor == null
+      ? _latestMessageLimit
+      : _selectedMonthMessageLimit;
 
   @override
   Widget build(BuildContext context) {
