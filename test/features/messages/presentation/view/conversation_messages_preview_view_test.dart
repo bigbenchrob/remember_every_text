@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,6 +7,7 @@ import 'package:remember_this_text/essentials/conversation_graph/application/cha
 import 'package:remember_this_text/essentials/conversation_graph/application/chat_summaries/chat_summary_provider.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversations/conversation.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversations/conversation_reader_provider.dart';
+import 'package:remember_this_text/essentials/services/native_link_preview_service.dart';
 import 'package:remember_this_text/features/messages/presentation/view/conversation_messages_preview_view.dart';
 
 void main() {
@@ -65,9 +67,8 @@ void main() {
             ];
           }),
         ],
-        child: const Directionality(
-          textDirection: TextDirection.ltr,
-          child: ConversationMessagesPreviewView(conversationId: 42),
+        child: const CupertinoApp(
+          home: ConversationMessagesPreviewView(conversationId: 42),
         ),
       ),
     );
@@ -137,9 +138,8 @@ void main() {
             ];
           }),
         ],
-        child: const Directionality(
-          textDirection: TextDirection.ltr,
-          child: ConversationMessagesPreviewView(conversationId: 42),
+        child: const CupertinoApp(
+          home: ConversationMessagesPreviewView(conversationId: 42),
         ),
       ),
     );
@@ -194,9 +194,8 @@ void main() {
             ];
           }),
         ],
-        child: const Directionality(
-          textDirection: TextDirection.ltr,
-          child: ConversationMessagesPreviewView(conversationId: 42),
+        child: const CupertinoApp(
+          home: ConversationMessagesPreviewView(conversationId: 42),
         ),
       ),
     );
@@ -246,9 +245,8 @@ void main() {
             ];
           }),
         ],
-        child: const Directionality(
-          textDirection: TextDirection.ltr,
-          child: ConversationMessagesPreviewView(conversationId: 42),
+        child: const CupertinoApp(
+          home: ConversationMessagesPreviewView(conversationId: 42),
         ),
       ),
     );
@@ -302,7 +300,7 @@ void main() {
                 filename: '/source/photo.jpg',
                 transferName: 'photo.jpg',
                 uti: 'public.jpeg',
-                mimeType: 'image/jpeg',
+                mimeType: 'image/png',
                 totalBytes: 1200,
                 createdAtUtc: '2026-05-20T10:00:00.000Z',
                 localFileExists: false,
@@ -313,9 +311,8 @@ void main() {
             ];
           }),
         ],
-        child: const Directionality(
-          textDirection: TextDirection.ltr,
-          child: ConversationMessagesPreviewView(conversationId: 42),
+        child: const CupertinoApp(
+          home: ConversationMessagesPreviewView(conversationId: 42),
         ),
       ),
     );
@@ -323,9 +320,313 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('attachments: 1'), findsOneWidget);
-    expect(find.text('photo.jpg | archived'), findsOneWidget);
-    expect(find.text('Open'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey<String>('unavailable-media-card-Image')),
+      findsOneWidget,
+    );
+    expect(find.text('Archive'), findsOneWidget);
+    expect(find.text('photo.jpg | archived'), findsNothing);
+  });
+
+  testWidgets('renders graph video attachments through shared video evidence', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          conversationOverviewsProvider(limit: 1000).overrideWith((ref) async {
+            return const [];
+          }),
+          conversationMessagesProvider(
+            conversationId: 42,
+            limit: 100,
+          ).overrideWith((ref) async {
+            return const [
+              ConversationMessage(
+                messageId: 8,
+                dateUtc: '2026-05-20T10:00:00.000Z',
+                isFromMe: false,
+                text: 'has video',
+                associatedMessageId: null,
+                attachmentCount: 1,
+              ),
+            ];
+          }),
+          messageAttachmentsProvider(8).overrideWith((ref) async {
+            return const [
+              MessageAttachment(
+                attachmentSsId: 100,
+                guid: 'video-guid',
+                filename: '/source/clip.mov',
+                transferName: 'clip.mov',
+                uti: 'public.movie',
+                mimeType: 'video/quicktime',
+                totalBytes: 1200,
+                createdAtUtc: '2026-05-20T10:00:00.000Z',
+                localFileExists: false,
+                archiveRelativePath: 'ab/clip.mov',
+                archiveAbsolutePath: '/archive/ab/clip.mov',
+                archiveFileExists: true,
+              ),
+            ];
+          }),
+        ],
+        child: const CupertinoApp(
+          home: ConversationMessagesPreviewView(conversationId: 42),
+        ),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump();
+
+    expect(
+      find.byKey(const ValueKey<String>('unavailable-media-card-Video')),
+      findsOneWidget,
+    );
+    expect(find.text('Archive'), findsOneWidget);
+  });
+
+  testWidgets('renders unavailable graph image attachments visibly', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          conversationOverviewsProvider(limit: 1000).overrideWith((ref) async {
+            return const [];
+          }),
+          conversationMessagesProvider(
+            conversationId: 42,
+            limit: 100,
+          ).overrideWith((ref) async {
+            return const [
+              ConversationMessage(
+                messageId: 9,
+                dateUtc: '2026-05-20T10:00:00.000Z',
+                isFromMe: false,
+                text: 'missing image',
+                associatedMessageId: null,
+                attachmentCount: 1,
+              ),
+            ];
+          }),
+          messageAttachmentsProvider(9).overrideWith((ref) async {
+            return const [
+              MessageAttachment(
+                attachmentSsId: 101,
+                guid: 'missing-image-guid',
+                filename: '/missing/photo.jpg',
+                transferName: 'missing-photo.jpg',
+                uti: 'public.jpeg',
+                mimeType: 'image/jpeg',
+                totalBytes: 1200,
+                createdAtUtc: '2026-05-20T10:00:00.000Z',
+                localFileExists: false,
+                archiveRelativePath: 'ab/missing-photo.jpg',
+                archiveAbsolutePath: '/missing/archive/photo.jpg',
+                archiveFileExists: false,
+              ),
+            ];
+          }),
+        ],
+        child: const CupertinoApp(
+          home: ConversationMessagesPreviewView(conversationId: 42),
+        ),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump();
+
+    expect(
+      find.byKey(const ValueKey<String>('unavailable-media-card-Image')),
+      findsOneWidget,
+    );
+    expect(find.text('Image in iCloud'), findsOneWidget);
+  });
+
+  testWidgets(
+    'renders graph URL preview attachments without raw payload name',
+    (tester) async {
+      const channel = MethodChannel('com.remember_this_text/link_preview');
+      NativeLinkPreviewService.clearCache();
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+            return <Object?, Object?>{
+              'title': 'Example Link Preview',
+              'url': 'https://example.com/story',
+            };
+          });
+      addTearDown(() {
+        NativeLinkPreviewService.clearCache();
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, null);
+      });
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            conversationOverviewsProvider(limit: 1000).overrideWith((
+              ref,
+            ) async {
+              return const [];
+            }),
+            conversationMessagesProvider(
+              conversationId: 42,
+              limit: 100,
+            ).overrideWith((ref) async {
+              return const [
+                ConversationMessage(
+                  messageId: 10,
+                  dateUtc: '2026-05-20T10:00:00.000Z',
+                  isFromMe: false,
+                  text: 'Read this https://example.com/story',
+                  associatedMessageId: null,
+                  attachmentCount: 1,
+                ),
+              ];
+            }),
+            messageAttachmentsProvider(10).overrideWith((ref) async {
+              return const [
+                MessageAttachment(
+                  attachmentSsId: 102,
+                  guid: 'url-preview-guid',
+                  filename: '/source/GUID.pluginPayloadAttachment',
+                  transferName: 'GUID.pluginPayloadAttachment',
+                  uti: null,
+                  mimeType: null,
+                  totalBytes: 1200,
+                  createdAtUtc: '2026-05-20T10:00:00.000Z',
+                  localFileExists: false,
+                  archiveRelativePath: 'ab/GUID.pluginPayloadAttachment',
+                  archiveAbsolutePath: '/archive/GUID.pluginPayloadAttachment',
+                  archiveFileExists: true,
+                ),
+                MessageAttachment(
+                  attachmentSsId: 104,
+                  guid: 'url-preview-guid-2',
+                  filename: '/source/GUID-2.pluginPayloadAttachment',
+                  transferName: 'GUID-2.pluginPayloadAttachment',
+                  uti: null,
+                  mimeType: null,
+                  totalBytes: 900,
+                  createdAtUtc: '2026-05-20T10:00:00.000Z',
+                  localFileExists: false,
+                  archiveRelativePath: 'ab/GUID-2.pluginPayloadAttachment',
+                  archiveAbsolutePath:
+                      '/archive/GUID-2.pluginPayloadAttachment',
+                  archiveFileExists: true,
+                ),
+              ];
+            }),
+          ],
+          child: const CupertinoApp(
+            home: ConversationMessagesPreviewView(conversationId: 42),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Example Link Preview'), findsOneWidget);
+      expect(find.text('GUID.pluginPayloadAttachment'), findsNothing);
+      expect(find.text('GUID-2.pluginPayloadAttachment'), findsNothing);
+    },
+  );
+
+  testWidgets('renders URL preview fallback when message text has no URL', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          conversationOverviewsProvider(limit: 1000).overrideWith((ref) async {
+            return const [];
+          }),
+          conversationMessagesProvider(
+            conversationId: 42,
+            limit: 100,
+          ).overrideWith((ref) async {
+            return const [
+              ConversationMessage(
+                messageId: 11,
+                dateUtc: '2026-05-20T10:00:00.000Z',
+                isFromMe: false,
+                text: 'Link preview carrier',
+                associatedMessageId: null,
+                attachmentCount: 1,
+              ),
+            ];
+          }),
+          messageAttachmentsProvider(11).overrideWith((ref) async {
+            return const [
+              MessageAttachment(
+                attachmentSsId: 103,
+                guid: 'url-preview-guid',
+                filename: '/source/GUID.pluginPayloadAttachment',
+                transferName: 'GUID.pluginPayloadAttachment',
+                uti: null,
+                mimeType: null,
+                totalBytes: 1200,
+                createdAtUtc: '2026-05-20T10:00:00.000Z',
+                localFileExists: false,
+                archiveRelativePath: null,
+                archiveAbsolutePath: null,
+                archiveFileExists: false,
+              ),
+            ];
+          }),
+        ],
+        child: const CupertinoApp(
+          home: ConversationMessagesPreviewView(conversationId: 42),
+        ),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Link preview attachment'), findsOneWidget);
+    expect(find.text('GUID.pluginPayloadAttachment'), findsNothing);
+  });
+
+  testWidgets('renders text-only graph messages without attachment evidence', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          conversationOverviewsProvider(limit: 1000).overrideWith((ref) async {
+            return const [];
+          }),
+          conversationMessagesProvider(
+            conversationId: 42,
+            limit: 100,
+          ).overrideWith((ref) async {
+            return const [
+              ConversationMessage(
+                messageId: 10,
+                dateUtc: '2026-05-20T10:00:00.000Z',
+                isFromMe: false,
+                text: 'plain text only',
+                associatedMessageId: null,
+                attachmentCount: 0,
+              ),
+            ];
+          }),
+        ],
+        child: const CupertinoApp(
+          home: ConversationMessagesPreviewView(conversationId: 42),
+        ),
+      ),
+    );
+
+    await tester.pump();
+
+    expect(find.text('plain text only'), findsOneWidget);
+    expect(find.textContaining('attachments:'), findsNothing);
   });
 
   testWidgets('renders graph search context and anchor message', (

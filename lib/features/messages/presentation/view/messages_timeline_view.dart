@@ -37,6 +37,8 @@ import '../view_model/timeline/ordinal/message_timeline_index_coordinator_provid
 import '../view_model/timeline/timeline_metadata_provider.dart';
 import '../widgets/message_card.dart';
 import '../widgets/message_context_anchor_chrome.dart';
+import '../widgets/message_evidence/message_evidence_fade_overlay.dart';
+import '../widgets/message_evidence/message_evidence_header.dart';
 import '../widgets/message_user_metadata_widgets.dart';
 
 const Duration _contactMessageGroupingThreshold = Duration(minutes: 5);
@@ -513,7 +515,7 @@ class MessagesTimelineView extends HookConsumerWidget {
           ),
           _SearchBar(scope: scope, vm: vm),
           Expanded(
-            child: _FadeOverlayList(
+            child: MessageEvidenceFadeOverlay(
               backgroundColor: messageListBg,
               child: _RecoveredTimelineSection(
                 scope: recoveredScope,
@@ -548,7 +550,7 @@ class MessagesTimelineView extends HookConsumerWidget {
           _GlobalHeader(scope: scope, scrollToDate: scrollToDate),
           _SearchBar(scope: scope, vm: vm),
           Expanded(
-            child: _FadeOverlayList(
+            child: MessageEvidenceFadeOverlay(
               backgroundColor: messageListBg,
               child: _buildMessageList(context, ref, vm),
             ),
@@ -587,7 +589,7 @@ class MessagesTimelineView extends HookConsumerWidget {
               onPointerDown: (_) {
                 dismissPendingGlowBar();
               },
-              child: _FadeOverlayList(
+              child: MessageEvidenceFadeOverlay(
                 backgroundColor: messageListBg,
                 child: _buildMessageList(
                   context,
@@ -627,7 +629,7 @@ class MessagesTimelineView extends HookConsumerWidget {
           _ChatHeader(chatId: chatId, scope: scope, scrollToDate: scrollToDate),
           _SearchBar(scope: scope, vm: vm),
           Expanded(
-            child: _FadeOverlayList(
+            child: MessageEvidenceFadeOverlay(
               backgroundColor: messageListBg,
               child: _buildMessageList(context, ref, vm),
             ),
@@ -917,108 +919,6 @@ class _PendingMessagesGlowBarState
   }
 }
 
-/// Wraps the message list with a scroll-driven gradient fade overlay at top.
-///
-/// The overlay is invisible at rest and only appears during scroll motion,
-/// providing a soft collision boundary without becoming a visible surface.
-///
-/// ## Design Contract
-///
-/// Top-of-list blur is interaction-driven, not layout-driven.
-/// It must be invisible at rest, engage only during scrolling, and fade out
-/// immediately when motion stops. Height ≤ 24pt and strength must not be
-/// perceptible as a visual element.
-class _FadeOverlayList extends StatefulWidget {
-  const _FadeOverlayList({required this.backgroundColor, required this.child});
-
-  final Color backgroundColor;
-  final Widget child;
-
-  @override
-  State<_FadeOverlayList> createState() => _FadeOverlayListState();
-}
-
-class _FadeOverlayListState extends State<_FadeOverlayList>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _opacity;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 150), // Fast fade in
-      reverseDuration: const Duration(milliseconds: 300), // Slower fade out
-    );
-    _opacity = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOut,
-      reverseCurve: Curves.easeIn,
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _handleScrollNotification(ScrollNotification notification) {
-    if (notification is ScrollStartNotification) {
-      // User started scrolling — show overlay
-      _controller.forward();
-    } else if (notification is ScrollEndNotification) {
-      // User stopped scrolling — hide overlay
-      _controller.reverse();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ColoredBox(
-      color: widget.backgroundColor,
-      child: NotificationListener<ScrollNotification>(
-        onNotification: (notification) {
-          _handleScrollNotification(notification);
-          return false; // Don't consume the notification
-        },
-        child: Stack(
-          children: [
-            widget.child,
-            // Scroll-driven gradient fade overlay at top
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 20, // Shallow: just enough to soften collision
-              child: IgnorePointer(
-                child: FadeTransition(
-                  opacity: _opacity,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        stops: const [0.0, 0.4, 1.0],
-                        colors: [
-                          widget.backgroundColor,
-                          widget.backgroundColor.withValues(alpha: 0.6),
-                          widget.backgroundColor.withValues(alpha: 0),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 /// Unified search bar with mode toggle for all timeline scopes.
 class _SearchBar extends ConsumerWidget {
   const _SearchBar({required this.scope, required this.vm});
@@ -1169,10 +1069,6 @@ class _GlobalHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(themeColorsProvider);
-    final colors = ref.read(themeColorsProvider.notifier);
-    final secondaryColor = colors.content.textSecondary;
-
     final metadataAsync = ref.watch(timelineMetadataProvider(scope: scope));
     final visibleMonthAsync = ref.watch(
       currentVisibleMonthForScopeProvider(scope: scope),
@@ -1181,36 +1077,16 @@ class _GlobalHeader extends ConsumerWidget {
     final metadata = metadataAsync.valueOrNull;
     final visibleMonth = visibleMonthAsync.valueOrNull;
 
-    final primaryColor = colors.content.textPrimary;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'All Messages',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: primaryColor,
-            ),
-          ),
-          const SizedBox(height: 4),
-          if (metadata != null) ...[
-            Text(
-              _buildMetadataLine(metadata),
-              style: TextStyle(fontSize: 13, color: secondaryColor),
-            ),
-          ],
-          if (scrollToDate != null || visibleMonth != null) ...[
-            const SizedBox(height: 6),
-            _ScrollPositionIndicator(
-              scrollToDate: scrollToDate,
-              visibleMonthKey: visibleMonth,
-            ),
-          ],
-        ],
+    return MessageEvidenceHeader(
+      data: MessageEvidenceHeaderData(
+        title: 'All Messages',
+        subtitleParts: [if (metadata != null) _buildMetadataLine(metadata)],
+        scopeIndicator: scrollToDate != null || visibleMonth != null
+            ? _ScrollPositionIndicator(
+                scrollToDate: scrollToDate,
+                visibleMonthKey: visibleMonth,
+              )
+            : null,
       ),
     );
   }
@@ -1316,11 +1192,6 @@ class _ContactHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(themeColorsProvider);
-    final colors = ref.read(themeColorsProvider.notifier);
-    final secondaryColor = colors.content.textSecondary;
-
-    // Get contact profile for display name
     final profileAsync = ref.watch(
       contactProfileProvider(contactId: contactId),
     );
@@ -1333,36 +1204,16 @@ class _ContactHeader extends ConsumerWidget {
     final metadata = metadataAsync.valueOrNull;
     final visibleMonth = visibleMonthAsync.valueOrNull;
 
-    final primaryColor = colors.content.textPrimary;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'All messages from $displayName',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: primaryColor,
-            ),
-          ),
-          const SizedBox(height: 4),
-          if (metadata != null) ...[
-            Text(
-              _buildMetadataLine(metadata),
-              style: TextStyle(fontSize: 13, color: secondaryColor),
-            ),
-          ],
-          if (scrollToDate != null || visibleMonth != null) ...[
-            const SizedBox(height: 6),
-            _ScrollPositionIndicator(
-              scrollToDate: scrollToDate,
-              visibleMonthKey: visibleMonth,
-            ),
-          ],
-        ],
+    return MessageEvidenceHeader(
+      data: MessageEvidenceHeaderData(
+        title: 'All messages from $displayName',
+        subtitleParts: [if (metadata != null) _buildMetadataLine(metadata)],
+        scopeIndicator: scrollToDate != null || visibleMonth != null
+            ? _ScrollPositionIndicator(
+                scrollToDate: scrollToDate,
+                visibleMonthKey: visibleMonth,
+              )
+            : null,
       ),
     );
   }
@@ -1397,10 +1248,6 @@ class _ChatHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(themeColorsProvider);
-    final colors = ref.read(themeColorsProvider.notifier);
-    final secondaryColor = colors.content.textSecondary;
-
     final metadataAsync = ref.watch(timelineMetadataProvider(scope: scope));
     final visibleMonthAsync = ref.watch(
       currentVisibleMonthForScopeProvider(scope: scope),
@@ -1409,36 +1256,16 @@ class _ChatHeader extends ConsumerWidget {
     final metadata = metadataAsync.valueOrNull;
     final visibleMonth = visibleMonthAsync.valueOrNull;
 
-    final primaryColor = colors.content.textPrimary;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Conversation',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: primaryColor,
-            ),
-          ),
-          const SizedBox(height: 4),
-          if (metadata != null) ...[
-            Text(
-              _buildMetadataLine(metadata),
-              style: TextStyle(fontSize: 13, color: secondaryColor),
-            ),
-          ],
-          if (scrollToDate != null || visibleMonth != null) ...[
-            const SizedBox(height: 6),
-            _ScrollPositionIndicator(
-              scrollToDate: scrollToDate,
-              visibleMonthKey: visibleMonth,
-            ),
-          ],
-        ],
+    return MessageEvidenceHeader(
+      data: MessageEvidenceHeaderData(
+        title: 'Conversation',
+        subtitleParts: [if (metadata != null) _buildMetadataLine(metadata)],
+        scopeIndicator: scrollToDate != null || visibleMonth != null
+            ? _ScrollPositionIndicator(
+                scrollToDate: scrollToDate,
+                visibleMonthKey: visibleMonth,
+              )
+            : null,
       ),
     );
   }

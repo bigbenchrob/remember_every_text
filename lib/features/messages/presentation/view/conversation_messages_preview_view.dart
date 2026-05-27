@@ -3,18 +3,21 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
 import '../../../../config/theme/widgets/theme_widgets.dart';
-import '../../../../essentials/conversation_graph/application/chat_summaries/chat_summary.dart';
 import '../../../../essentials/conversation_graph/application/chat_summaries/chat_summary_provider.dart';
 import '../../../../essentials/conversation_graph/application/conversations/conversation.dart';
 import '../../../../essentials/conversation_graph/application/conversations/conversation_reader_provider.dart';
-import '../../../../essentials/search/presentation/widgets/search_highlighted_text.dart';
 import '../../../chats/application/conversation_browser/contact_handle_label_provider.dart';
 import '../../application/conversation_timeline/conversation_timeline_integrator.dart';
+import '../../application/message_evidence/graph_attachment_evidence.dart';
+import '../view_model/shared/display_widgets/new_display_widgets.dart';
+import '../widgets/message_evidence/graph_attachment_evidence_tiles.dart';
+import '../widgets/message_evidence/message_evidence_badges.dart';
+import '../widgets/message_evidence/message_evidence_fade_overlay.dart';
+import '../widgets/message_evidence/message_evidence_header.dart';
 
 class ConversationMessagesPreviewView extends ConsumerStatefulWidget {
   const ConversationMessagesPreviewView({
@@ -61,54 +64,51 @@ class _ConversationMessagesPreviewViewState
       conversationOverviewsProvider(limit: 1000),
     );
 
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: messagesAsync.when(
-        data: (messages) {
-          _scheduleAnchorScroll(_activeAnchorMessageId);
-          return _ConversationMessagesTimeline(
-            conversationId: widget.conversationId,
-            anchorMessageId: _activeAnchorMessageId,
-            searchQuery: widget.searchQuery,
-            overview: _overviewForConversation(
-              overviewsAsync.valueOrNull,
-              widget.conversationId,
-            ),
-            messages: messages,
-            messageLimit: _messageLimit,
-            timelineOrder: _timelineOrder,
-            timelineFilter: _timelineFilter,
-            searchMatchesOnly: _searchMatchesOnly,
-            messageRowKeyFor: _messageRowKeyFor,
-            onMessageLimitChanged: (value) {
-              setState(() {
-                _messageLimit = value;
-              });
-            },
-            onTimelineOrderChanged: (value) {
-              setState(() {
-                _timelineOrder = value;
-              });
-            },
-            onTimelineFilterChanged: (value) {
-              setState(() {
-                _timelineFilter = value;
-              });
-            },
-            onSearchMatchesOnlyChanged: (value) {
-              setState(() {
-                _searchMatchesOnly = value;
-              });
-              _scheduleAnchorScroll(_activeAnchorMessageId, force: true);
-            },
-            onAnchorMessageChanged: _setActiveAnchorMessage,
-          );
-        },
-        loading: () =>
-            const Center(child: Text('Loading conversation graph messages...')),
-        error: (error, stackTrace) =>
-            Center(child: Text('Conversation graph timeline failed: $error')),
-      ),
+    return messagesAsync.when(
+      data: (messages) {
+        _scheduleAnchorScroll(_activeAnchorMessageId);
+        return _ConversationMessagesTimeline(
+          conversationId: widget.conversationId,
+          anchorMessageId: _activeAnchorMessageId,
+          searchQuery: widget.searchQuery,
+          overview: _overviewForConversation(
+            overviewsAsync.valueOrNull,
+            widget.conversationId,
+          ),
+          messages: messages,
+          messageLimit: _messageLimit,
+          timelineOrder: _timelineOrder,
+          timelineFilter: _timelineFilter,
+          searchMatchesOnly: _searchMatchesOnly,
+          messageRowKeyFor: _messageRowKeyFor,
+          onMessageLimitChanged: (value) {
+            setState(() {
+              _messageLimit = value;
+            });
+          },
+          onTimelineOrderChanged: (value) {
+            setState(() {
+              _timelineOrder = value;
+            });
+          },
+          onTimelineFilterChanged: (value) {
+            setState(() {
+              _timelineFilter = value;
+            });
+          },
+          onSearchMatchesOnlyChanged: (value) {
+            setState(() {
+              _searchMatchesOnly = value;
+            });
+            _scheduleAnchorScroll(_activeAnchorMessageId, force: true);
+          },
+          onAnchorMessageChanged: _setActiveAnchorMessage,
+        );
+      },
+      loading: () =>
+          const Center(child: Text('Loading conversation graph messages...')),
+      error: (error, stackTrace) =>
+          Center(child: Text('Conversation graph timeline failed: $error')),
     );
   }
 
@@ -164,7 +164,7 @@ class _ConversationMessagesPreviewViewState
   }
 }
 
-class _ConversationMessagesTimeline extends StatelessWidget {
+class _ConversationMessagesTimeline extends ConsumerWidget {
   const _ConversationMessagesTimeline({
     required this.conversationId,
     required this.anchorMessageId,
@@ -200,7 +200,10 @@ class _ConversationMessagesTimeline extends StatelessWidget {
   final ValueChanged<int?> onAnchorMessageChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final messageListBg = colors.messagePanels.coolPanelSurface;
     final timeline = const ConversationTimelineIntegrator().build(
       overview: overview,
       messages: messages,
@@ -210,39 +213,49 @@ class _ConversationMessagesTimeline extends StatelessWidget {
       searchMatchesOnly: searchMatchesOnly,
     );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _TimelineHeader(
-          conversationId: conversationId,
-          anchorMessageId: anchorMessageId,
-          searchQuery: searchQuery,
-          timeline: timeline,
-          messageLimit: messageLimit,
-          timelineOrder: timelineOrder,
-          timelineFilter: timelineFilter,
-          searchMatchesOnly: searchMatchesOnly,
-          messages: messages,
-          onMessageLimitChanged: onMessageLimitChanged,
-          onTimelineOrderChanged: onTimelineOrderChanged,
-          onTimelineFilterChanged: onTimelineFilterChanged,
-          onSearchMatchesOnlyChanged: onSearchMatchesOnlyChanged,
-          onAnchorMessageChanged: onAnchorMessageChanged,
-        ),
-        const SizedBox(height: 16),
-        Expanded(
-          child: timeline.visibleMessageCount == 0
-              ? const Center(
-                  child: Text('No messages match this conversation filter.'),
-                )
-              : SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: _buildGroupedRows(timeline.groups),
-                  ),
-                ),
-        ),
-      ],
+    return ColoredBox(
+      color: messageListBg,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _TimelineHeader(
+            conversationId: conversationId,
+            anchorMessageId: anchorMessageId,
+            searchQuery: searchQuery,
+            timeline: timeline,
+            messageLimit: messageLimit,
+            timelineOrder: timelineOrder,
+            timelineFilter: timelineFilter,
+            searchMatchesOnly: searchMatchesOnly,
+            messages: messages,
+            onMessageLimitChanged: onMessageLimitChanged,
+            onTimelineOrderChanged: onTimelineOrderChanged,
+            onTimelineFilterChanged: onTimelineFilterChanged,
+            onSearchMatchesOnlyChanged: onSearchMatchesOnlyChanged,
+            onAnchorMessageChanged: onAnchorMessageChanged,
+          ),
+          Expanded(
+            child: MessageEvidenceFadeOverlay(
+              backgroundColor: messageListBg,
+              child: timeline.visibleMessageCount == 0
+                  ? const Center(
+                      child: Text(
+                        'No messages match this conversation filter.',
+                      ),
+                    )
+                  : SingleChildScrollView(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: _buildGroupedRows(timeline.groups),
+                        ),
+                      ),
+                    ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -337,9 +350,6 @@ class _TimelineHeaderState extends ConsumerState<_TimelineHeader> {
 
   @override
   Widget build(BuildContext context) {
-    ref.watch(themeColorsProvider);
-    final colors = ref.read(themeColorsProvider.notifier);
-    final typography = ref.watch(themeTypographyProvider);
     final labels = ref.watch(contactHandleLabelsProvider).valueOrNull;
     final overview = widget.timeline.overview;
     final title = _conversationTitle(overview, labels);
@@ -363,166 +373,152 @@ class _TimelineHeaderState extends ConsumerState<_TimelineHeader> {
     );
     final anchorMessage = _findMessage(widget.messages, widget.anchorMessageId);
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.surfaces.control,
-        border: Border.all(color: colors.lines.borderSubtle),
-        borderRadius: BorderRadius.circular(8),
+    return MessageEvidenceHeader(
+      data: MessageEvidenceHeaderData(
+        title: 'Conversation: $title',
+        subtitleParts: subtitleParts,
+        statusLine: statusParts.join(' • '),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Conversation: $title', style: typography.title2),
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 14,
-              runSpacing: 4,
-              children: [
-                for (final part in subtitleParts)
-                  Text(part, style: typography.callout),
-              ],
+      actionStrip: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (hasSearchQuery)
+            _SearchReviewStrip(
+              query: searchQuery,
+              matchCount: widget.timeline.loadedSearchMatchCount,
+              matchPosition: matchPosition,
+              isMatchingOnly: widget.searchMatchesOnly,
+              hasMatches: widget.timeline.matchingMessageIds.isNotEmpty,
+              onPrevious: () => widget.onAnchorMessageChanged(
+                _previousMatchId(
+                  widget.timeline.matchingMessageIds,
+                  widget.anchorMessageId,
+                ),
+              ),
+              onNext: () => widget.onAnchorMessageChanged(
+                _nextMatchId(
+                  widget.timeline.matchingMessageIds,
+                  widget.anchorMessageId,
+                ),
+              ),
+              onMatchingOnlyChanged: () =>
+                  widget.onSearchMatchesOnlyChanged(!widget.searchMatchesOnly),
             ),
-            const SizedBox(height: 4),
-            Text(statusParts.join(' • '), style: typography.caption),
-            if (hasSearchQuery) ...[
-              const SizedBox(height: 6),
-              _SearchReviewStrip(
-                query: searchQuery,
-                matchCount: widget.timeline.loadedSearchMatchCount,
-                matchPosition: matchPosition,
-                isMatchingOnly: widget.searchMatchesOnly,
-                hasMatches: widget.timeline.matchingMessageIds.isNotEmpty,
-                onPrevious: () => widget.onAnchorMessageChanged(
-                  _previousMatchId(
-                    widget.timeline.matchingMessageIds,
-                    widget.anchorMessageId,
-                  ),
-                ),
-                onNext: () => widget.onAnchorMessageChanged(
-                  _nextMatchId(
-                    widget.timeline.matchingMessageIds,
-                    widget.anchorMessageId,
-                  ),
-                ),
-                onMatchingOnlyChanged: () => widget.onSearchMatchesOnlyChanged(
-                  !widget.searchMatchesOnly,
-                ),
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              MessageEvidenceDisclosureButton(
+                label: 'View options',
+                isExpanded: _showOptions,
+                onPressed: () {
+                  setState(() {
+                    _showOptions = !_showOptions;
+                  });
+                },
+              ),
+              AppHeaderActionButton(
+                icon: CupertinoIcons.doc_on_doc,
+                label: _copiedEvidenceSummary
+                    ? 'Copied evidence summary'
+                    : 'Copy evidence summary',
+                isEnabled: true,
+                onPressed: () async {
+                  await _copyEvidenceSummary(
+                    title: title,
+                    dateSpan: dateSpan,
+                    messageCount: messageCount,
+                    searchQuery: searchQuery,
+                    matchPosition: matchPosition,
+                    matchCount: widget.timeline.loadedSearchMatchCount,
+                    anchorMessageId: widget.anchorMessageId,
+                    anchorMessage: anchorMessage,
+                  );
+                },
               ),
             ],
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 12,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
+          ),
+        ],
+      ),
+      details: _showOptions
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _showOptions = !_showOptions;
-                    });
-                  },
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _showOptions
-                            ? CupertinoIcons.chevron_down
-                            : CupertinoIcons.chevron_right,
-                        size: 13,
-                        color: colors.content.textSecondary,
-                      ),
-                      const SizedBox(width: 5),
-                      Text('View options', style: typography.caption),
-                    ],
-                  ),
-                ),
-                AppHeaderActionButton(
-                  icon: CupertinoIcons.doc_on_doc,
-                  label: _copiedEvidenceSummary
-                      ? 'Copied evidence summary'
-                      : 'Copy evidence summary',
-                  isEnabled: true,
-                  onPressed: () async {
-                    await _copyEvidenceSummary(
-                      title: title,
-                      dateSpan: dateSpan,
-                      messageCount: messageCount,
-                      searchQuery: searchQuery,
-                      matchPosition: matchPosition,
-                      matchCount: widget.timeline.loadedSearchMatchCount,
-                      anchorMessageId: widget.anchorMessageId,
-                      anchorMessage: anchorMessage,
-                    );
-                  },
-                ),
-              ],
-            ),
-            if (_showOptions) ...[
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _ChoiceButton(
-                    label: 'Latest 100',
-                    isSelected: widget.messageLimit == 100,
-                    onPressed: () => widget.onMessageLimitChanged(100),
-                  ),
-                  _ChoiceButton(
-                    label: 'Latest 500',
-                    isSelected: widget.messageLimit == 500,
-                    onPressed: () => widget.onMessageLimitChanged(500),
-                  ),
-                  _ChoiceButton(
-                    label: 'Oldest first',
-                    isSelected:
-                        widget.timelineOrder ==
-                        ConversationTimelineOrder.oldestFirst,
-                    onPressed: () => widget.onTimelineOrderChanged(
-                      ConversationTimelineOrder.oldestFirst,
-                    ),
-                  ),
-                  _ChoiceButton(
-                    label: 'Newest first',
-                    isSelected:
-                        widget.timelineOrder ==
-                        ConversationTimelineOrder.newestFirst,
-                    onPressed: () => widget.onTimelineOrderChanged(
-                      ConversationTimelineOrder.newestFirst,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final filter in ConversationTimelineFilter.values)
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
                     _ChoiceButton(
-                      label: conversationTimelineFilterLabel(filter),
-                      isSelected: widget.timelineFilter == filter,
-                      onPressed: () => widget.onTimelineFilterChanged(filter),
+                      label: 'Latest 100',
+                      isSelected: widget.messageLimit == 100,
+                      onPressed: () => widget.onMessageLimitChanged(100),
                     ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Showing ${_formatCount(widget.timeline.visibleMessageCount)} '
-                'of ${_formatCount(widget.timeline.totalLoadedMessageCount)} '
-                'loaded messages • text ${_formatCount(widget.timeline.textMessageCount)} '
-                '• no text ${_formatCount(widget.timeline.noTextMessageCount)} '
-                '• from me ${_formatCount(widget.timeline.fromMeMessageCount)} '
-                '• received ${_formatCount(widget.timeline.receivedMessageCount)} '
-                '• associated ${_formatCount(widget.timeline.associatedMessageCount)}',
-                style: typography.caption,
-              ),
-            ],
-          ],
-        ),
-      ),
+                    _ChoiceButton(
+                      label: 'Latest 500',
+                      isSelected: widget.messageLimit == 500,
+                      onPressed: () => widget.onMessageLimitChanged(500),
+                    ),
+                    _ChoiceButton(
+                      label: 'Oldest first',
+                      isSelected:
+                          widget.timelineOrder ==
+                          ConversationTimelineOrder.oldestFirst,
+                      onPressed: () => widget.onTimelineOrderChanged(
+                        ConversationTimelineOrder.oldestFirst,
+                      ),
+                    ),
+                    _ChoiceButton(
+                      label: 'Newest first',
+                      isSelected:
+                          widget.timelineOrder ==
+                          ConversationTimelineOrder.newestFirst,
+                      onPressed: () => widget.onTimelineOrderChanged(
+                        ConversationTimelineOrder.newestFirst,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final filter in ConversationTimelineFilter.values)
+                      _ChoiceButton(
+                        label: conversationTimelineFilterLabel(filter),
+                        isSelected: widget.timelineFilter == filter,
+                        onPressed: () => widget.onTimelineFilterChanged(filter),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                _ConversationLoadedMessageSummary(timeline: widget.timeline),
+              ],
+            )
+          : null,
+    );
+  }
+}
+
+class _ConversationLoadedMessageSummary extends ConsumerWidget {
+  const _ConversationLoadedMessageSummary({required this.timeline});
+
+  final ConversationTimelineModel timeline;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final typography = ref.watch(themeTypographyProvider);
+
+    return Text(
+      'Showing ${_formatCount(timeline.visibleMessageCount)} '
+      'of ${_formatCount(timeline.totalLoadedMessageCount)} '
+      'loaded messages • text ${_formatCount(timeline.textMessageCount)} '
+      '• no text ${_formatCount(timeline.noTextMessageCount)} '
+      '• from me ${_formatCount(timeline.fromMeMessageCount)} '
+      '• received ${_formatCount(timeline.receivedMessageCount)} '
+      '• associated ${_formatCount(timeline.associatedMessageCount)}',
+      style: typography.caption,
     );
   }
 }
@@ -825,89 +821,78 @@ class _ConversationMessageRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
-    final typography = ref.watch(themeTypographyProvider);
     final text = message.text;
-    final direction = message.isFromMe ? 'from me' : 'received';
-    final senderLabel = _messageSenderLabel(message);
+    final senderLabel = _conversationMessageSenderLabel(message);
     final associatedMessageId = message.associatedMessageId;
-    final semanticBadges = _messageSemanticBadges(message);
-
-    return Align(
-      alignment: message.isFromMe
-          ? Alignment.centerRight
-          : Alignment.centerLeft,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 620),
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: message.isFromMe
-                  ? colors.messagePanels.accentTintSoft
-                  : colors.surfaces.surface,
-              border: Border.all(
-                color: isAnchorMessage
-                    ? colors.accents.primary
-                    : colors.lines.borderSubtle,
-                width: isAnchorMessage ? 2 : 1,
-              ),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${message.messageId} | ${message.dateUtc ?? 'no date'} | '
-                    '$direction | $senderLabel',
-                    style: typography.caption,
-                  ),
-                  if (associatedMessageId != null ||
-                      semanticBadges.isNotEmpty) ...[
-                    const SizedBox(height: 5),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        if (associatedMessageId != null)
-                          _EvidenceBadge(
-                            label: 'associated $associatedMessageId',
-                          ),
-                        for (final badge in semanticBadges)
-                          _EvidenceBadge(label: badge),
-                      ],
-                    ),
-                  ],
-                  const SizedBox(height: 4),
-                  if (_hasText(text))
-                    SearchHighlightedText(
-                      text: text!,
-                      query: searchQuery,
-                      style: typography.body,
-                    )
-                  else
-                    Text(
-                      'no text',
-                      style: typography.body.copyWith(
-                        color: colors.content.textSecondary,
-                      ),
-                    ),
-                  if (message.attachmentCount > 0) ...[
-                    const SizedBox(height: 8),
-                    _ConversationMessageAttachments(
-                      messageId: message.messageId,
-                      expectedAttachmentCount: message.attachmentCount,
-                    ),
-                  ],
-                ],
-              ),
-            ),
+    final semanticBadges = <String>[
+      if (associatedMessageId != null) 'associated $associatedMessageId',
+      ..._messageSemanticBadges(message),
+    ];
+    final row = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextMessageTile(
+          isMe: message.isFromMe,
+          text: _messageDisplayText(text),
+          sender: senderLabel,
+          senderHandleLabel: message.senderDisplayHandle,
+          sentAt: _messageDate(message.dateUtc),
+          messageId: message.messageId,
+          highlight: searchQuery,
+          layout: MessageLayout.fullWidth,
+        ),
+        MessageEvidenceBadgeStrip(labels: semanticBadges),
+        if (message.attachmentCount > 0) ...[
+          const SizedBox(height: 2),
+          _ConversationMessageAttachments(
+            messageId: message.messageId,
+            expectedAttachmentCount: message.attachmentCount,
+            isFromMe: message.isFromMe,
+            sender: senderLabel,
+            senderHandleLabel: message.senderDisplayHandle,
+            sentAt: _messageDate(message.dateUtc),
+            messageText: message.text,
           ),
+        ],
+      ],
+    );
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: isAnchorMessage
+              ? Border.all(color: colors.accents.primary, width: 2)
+              : null,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(isAnchorMessage ? 4 : 0),
+          child: row,
         ),
       ),
     );
   }
+}
+
+DateTime _messageDate(String? value) {
+  if (value == null || value.isEmpty) {
+    return DateTime.fromMillisecondsSinceEpoch(0);
+  }
+  return DateTime.tryParse(value)?.toLocal() ??
+      DateTime.fromMillisecondsSinceEpoch(0);
+}
+
+String _messageDisplayText(String? value) {
+  if (_hasText(value)) {
+    return value!;
+  }
+  return 'no text';
+}
+
+String _conversationMessageSenderLabel(ConversationMessage message) {
+  final direction = message.isFromMe ? 'from me' : 'received';
+  return '$direction | ${_messageSenderLabel(message)}';
 }
 
 String _messageSenderLabel(ConversationMessage message) {
@@ -958,39 +943,24 @@ List<String> _messageSemanticBadges(ConversationMessage message) {
   return badges;
 }
 
-class _EvidenceBadge extends ConsumerWidget {
-  const _EvidenceBadge({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(themeColorsProvider);
-    final colors = ref.read(themeColorsProvider.notifier);
-    final typography = ref.watch(themeTypographyProvider);
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.surfaces.control,
-        border: Border.all(color: colors.lines.borderSubtle),
-        borderRadius: BorderRadius.circular(5),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-        child: Text(label, style: typography.caption),
-      ),
-    );
-  }
-}
-
 class _ConversationMessageAttachments extends ConsumerWidget {
   const _ConversationMessageAttachments({
     required this.messageId,
     required this.expectedAttachmentCount,
+    required this.isFromMe,
+    required this.sender,
+    required this.sentAt,
+    this.messageText,
+    this.senderHandleLabel,
   });
 
   final int messageId;
   final int expectedAttachmentCount;
+  final bool isFromMe;
+  final String sender;
+  final DateTime sentAt;
+  final String? messageText;
+  final String? senderHandleLabel;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1000,86 +970,21 @@ class _ConversationMessageAttachments extends ConsumerWidget {
         if (attachments.isEmpty) {
           return Text('attachments: $expectedAttachmentCount linked');
         }
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('attachments: ${attachments.length}'),
-            const SizedBox(height: 4),
-            for (final attachment in attachments)
-              _ConversationAttachmentChip(attachment: attachment),
-          ],
+        final evidence = graphAttachmentEvidenceFromMessageAttachments(
+          attachments,
+        );
+        return GraphAttachmentEvidenceTiles(
+          attachments: evidence,
+          isFromMe: isFromMe,
+          sender: sender,
+          senderHandleLabel: senderHandleLabel,
+          sentAt: sentAt,
+          messageId: messageId,
+          messageText: messageText,
         );
       },
       loading: () => Text('attachments: $expectedAttachmentCount loading'),
       error: (error, stackTrace) => Text('attachments failed: $error'),
-    );
-  }
-}
-
-class _ConversationAttachmentChip extends ConsumerWidget {
-  const _ConversationAttachmentChip({required this.attachment});
-
-  final MessageAttachment attachment;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(themeColorsProvider);
-    final colors = ref.read(themeColorsProvider.notifier);
-    final name =
-        attachment.transferName ??
-        attachment.filename?.split('/').last ??
-        attachment.guid ??
-        'attachment ${attachment.attachmentSsId}';
-    final archivePath = attachment.archiveAbsolutePath;
-    final canOpenArchive =
-        attachment.archiveFileExists &&
-        archivePath != null &&
-        archivePath.isNotEmpty;
-    final status = canOpenArchive
-        ? 'archived'
-        : attachment.hasArchiveRecord
-        ? 'archive missing'
-        : 'not archived';
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 4),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: colors.surfaces.control,
-          border: Border.all(color: colors.lines.borderSubtle),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          child: Row(
-            children: [
-              Expanded(child: Text('$name | $status')),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: canOpenArchive
-                    ? () => _openArchivedFile(archivePath)
-                    : null,
-                child: Text(
-                  canOpenArchive ? 'Open' : 'Unavailable',
-                  style: TextStyle(
-                    color: canOpenArchive
-                        ? colors.accents.primary
-                        : colors.grayFour,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  static Future<void> _openArchivedFile(String archivedFilePath) async {
-    await launchUrl(
-      Uri.file(archivedFilePath),
-      mode: LaunchMode.externalApplication,
     );
   }
 }
