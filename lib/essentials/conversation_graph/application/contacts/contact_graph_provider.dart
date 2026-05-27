@@ -64,6 +64,34 @@ Future<List<ConversationMessage>> contactPageGraphMessages(
   );
 }
 
+@riverpod
+Future<List<ContactGraphMessageTimelineEntry>> contactPageGraphMessageTimeline(
+  Ref ref, {
+  required int contactId,
+}) async {
+  final reader = await ref.watch(contactGraphReaderProvider.future);
+  final graphContactId = graphContactIdForContactPage(contactId);
+  return reader.readContactPageMessageTimeline(
+    contactId: contactId,
+    graphContactId: graphContactId,
+  );
+}
+
+@riverpod
+Future<ConversationMessage?> contactPageGraphMessageById(
+  Ref ref, {
+  required int contactId,
+  required int messageId,
+}) async {
+  final reader = await ref.watch(contactGraphReaderProvider.future);
+  final graphContactId = graphContactIdForContactPage(contactId);
+  return reader.readContactPageMessageById(
+    contactId: contactId,
+    graphContactId: graphContactId,
+    messageId: messageId,
+  );
+}
+
 int graphContactIdForContactPage(int contactId) {
   const virtualContactIdFloor = 1000000000;
   if (contactId <= 0 || contactId >= virtualContactIdFloor) {

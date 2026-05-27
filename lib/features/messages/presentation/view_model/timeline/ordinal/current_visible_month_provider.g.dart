@@ -7,7 +7,7 @@ part of 'current_visible_month_provider.dart';
 // **************************************************************************
 
 String _$currentVisibleMonthForScopeHash() =>
-    r'4ea8408524f7e0209fafd2530834b0a1a3e340af';
+    r'626005d7e26b44821bf00a1e74095b5df03f55dc';
 
 /// Copied from Dart SDK
 class _SystemHash {

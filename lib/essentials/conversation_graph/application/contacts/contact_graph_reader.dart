@@ -46,4 +46,27 @@ class ContactGraphReader {
       monthAnchor: monthAnchor,
     );
   }
+
+  Future<List<ContactGraphMessageTimelineEntry>>
+  readContactPageMessageTimeline({
+    required int contactId,
+    required int graphContactId,
+  }) {
+    return repository.readContactPageMessageTimeline(
+      contactId: contactId,
+      graphContactId: graphContactId,
+    );
+  }
+
+  Future<ConversationMessage?> readContactPageMessageById({
+    required int contactId,
+    required int graphContactId,
+    required int messageId,
+  }) {
+    return repository.readContactPageMessageById(
+      contactId: contactId,
+      graphContactId: graphContactId,
+      messageId: messageId,
+    );
+  }
 }

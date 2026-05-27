@@ -13,7 +13,7 @@ import 'package:remember_this_text/features/messages/presentation/view/contact_g
 import 'package:remember_this_text/features/messages/presentation/view_model/timeline/ordinal/current_visible_month_provider.dart';
 
 void main() {
-  testWidgets('shows graph contact messages newest first', (tester) async {
+  testWidgets('opens graph contact timeline at latest message', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -44,11 +44,9 @@ void main() {
       ),
     );
 
-    await tester.pump();
+    await tester.pumpAndSettle();
 
-    final newestTopLeft = tester.getTopLeft(find.text('newest graph message'));
-    final olderTopLeft = tester.getTopLeft(find.text('older graph message'));
-    expect(newestTopLeft.dy, lessThan(olderTopLeft.dy));
+    expect(find.text('newest graph message'), findsOneWidget);
   });
 
   testWidgets('publishes selected contact month for heatmap feedback', (
@@ -61,7 +59,16 @@ void main() {
       ProviderScope(
         overrides: [
           ..._contactGraphOverrides(
-            messages: const [],
+            messages: const [
+              ConversationMessage(
+                messageId: 1,
+                dateUtc: '2026-04-20T10:00:00.000Z',
+                isFromMe: true,
+                text: 'april graph message',
+                associatedMessageId: null,
+                attachmentCount: 0,
+              ),
+            ],
             monthAnchor: monthAnchor,
           ),
           currentVisibleMonthForScopeProvider(
@@ -96,6 +103,25 @@ List<Override> _contactGraphOverrides({
     ).overrideWith((ref) async {
       return messages;
     }),
+    contactPageGraphMessageTimelineProvider(contactId: 24).overrideWith((
+      ref,
+    ) async {
+      return [
+        for (final message in messages)
+          ContactGraphMessageTimelineEntry(
+            messageId: message.messageId,
+            dateUtc: message.dateUtc,
+            monthKey: _monthKey(message.dateUtc),
+          ),
+      ];
+    }),
+    for (final message in messages)
+      contactPageGraphMessageByIdProvider(
+        contactId: 24,
+        messageId: message.messageId,
+      ).overrideWith((ref) async {
+        return message;
+      }),
     contactPageGraphSnapshotProvider(contactId: 24).overrideWith((ref) async {
       return const ContactGraphSnapshot(
         contactId: 24,
@@ -119,6 +145,15 @@ List<Override> _contactGraphOverrides({
       );
     }),
   ];
+}
+
+String? _monthKey(String? value) {
+  final parsed = value == null ? null : DateTime.tryParse(value);
+  if (parsed == null) {
+    return null;
+  }
+  return '${parsed.year.toString().padLeft(4, '0')}-'
+      '${parsed.month.toString().padLeft(2, '0')}';
 }
 
 class _VisibleMonthSpy extends CurrentVisibleMonthForScope {

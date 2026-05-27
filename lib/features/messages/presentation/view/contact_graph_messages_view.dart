@@ -1,11 +1,11 @@
 import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../essentials/conversation_graph/application/contacts/contact_graph.dart';
 import '../../../../essentials/conversation_graph/application/contacts/contact_graph_provider.dart';
-import '../../../../essentials/conversation_graph/application/conversations/conversation.dart';
 import '../../../contacts/infrastructure/repositories/contact_profile_provider.dart';
 import '../../domain/value_objects/message_timeline_scope.dart';
 import '../view_model/timeline/ordinal/current_visible_month_provider.dart';
@@ -30,21 +30,10 @@ class ContactGraphMessagesView extends ConsumerStatefulWidget {
 
 class _ContactGraphMessagesViewState
     extends ConsumerState<ContactGraphMessagesView> {
-  static const int _latestMessageLimit = 500;
-  static const int _selectedMonthMessageLimit = 100000;
-
-  late final int _messageLimit = widget.monthAnchor == null
-      ? _latestMessageLimit
-      : _selectedMonthMessageLimit;
-
   @override
   Widget build(BuildContext context) {
-    final messagesAsync = ref.watch(
-      contactPageGraphMessagesProvider(
-        contactId: widget.contactId,
-        limit: _messageLimit,
-        monthAnchor: widget.monthAnchor,
-      ),
+    final timelineAsync = ref.watch(
+      contactPageGraphMessageTimelineProvider(contactId: widget.contactId),
     );
     final snapshotAsync = ref.watch(
       contactPageGraphSnapshotProvider(contactId: widget.contactId),
@@ -53,20 +42,19 @@ class _ContactGraphMessagesViewState
       contactProfileProvider(contactId: widget.contactId),
     );
 
-    return messagesAsync.when(
-      data: (messages) {
+    return timelineAsync.when(
+      data: (timelineEntries) {
         return _ContactGraphMessagesTimeline(
           contactId: widget.contactId,
           contactName: profileAsync.valueOrNull?.shortName,
           snapshot: snapshotAsync.valueOrNull,
-          messages: messages,
-          messageLimit: _messageLimit,
+          timelineEntries: timelineEntries,
           monthAnchor: widget.monthAnchor,
         );
       },
-      loading: () => const Center(child: Text('Loading contact messages...')),
+      loading: () => const Center(child: Text('Loading contact timeline...')),
       error: (error, stackTrace) =>
-          Center(child: Text('Contact graph messages failed: $error')),
+          Center(child: Text('Contact graph timeline failed: $error')),
     );
   }
 }
@@ -76,16 +64,14 @@ class _ContactGraphMessagesTimeline extends ConsumerStatefulWidget {
     required this.contactId,
     required this.contactName,
     required this.snapshot,
-    required this.messages,
-    required this.messageLimit,
+    required this.timelineEntries,
     required this.monthAnchor,
   });
 
   final int contactId;
   final String? contactName;
   final ContactGraphSnapshot? snapshot;
-  final List<ConversationMessage> messages;
-  final int messageLimit;
+  final List<ContactGraphMessageTimelineEntry> timelineEntries;
   final DateTime? monthAnchor;
 
   @override
@@ -95,17 +81,46 @@ class _ContactGraphMessagesTimeline extends ConsumerStatefulWidget {
 
 class _ContactGraphMessagesTimelineState
     extends ConsumerState<_ContactGraphMessagesTimeline> {
+  late final ItemScrollController _itemScrollController =
+      ItemScrollController();
+  late final ItemPositionsListener _itemPositionsListener =
+      ItemPositionsListener.create();
   int? _lastPublishedContactId;
   String? _lastPublishedMonthKey;
+  String? _lastJumpRequestKey;
+
+  @override
+  void initState() {
+    super.initState();
+    _itemPositionsListener.itemPositions.addListener(_publishTopVisibleMonth);
+  }
+
+  @override
+  void didUpdateWidget(covariant _ContactGraphMessagesTimeline oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.contactId != widget.contactId ||
+        oldWidget.monthAnchor != widget.monthAnchor ||
+        oldWidget.timelineEntries != widget.timelineEntries) {
+      _scheduleAnchorJump();
+    }
+  }
+
+  @override
+  void dispose() {
+    _itemPositionsListener.itemPositions.removeListener(
+      _publishTopVisibleMonth,
+    );
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final backgroundColor = colors.messagePanels.coolPanelSurface;
-    final visibleMessages = widget.messages;
+    final targetIndex = _targetIndex();
 
-    _publishVisibleMonth(visibleMessages);
+    _scheduleAnchorJump();
 
     return ColoredBox(
       color: backgroundColor,
@@ -122,16 +137,30 @@ class _ContactGraphMessagesTimelineState
           Expanded(
             child: MessageEvidenceFadeOverlay(
               backgroundColor: backgroundColor,
-              child: visibleMessages.isEmpty
+              child: widget.timelineEntries.isEmpty
                   ? Center(child: Text(_emptyMessage()))
-                  : SingleChildScrollView(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 32),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: _buildGroupedRows(visibleMessages),
-                        ),
-                      ),
+                  : ScrollablePositionedList.builder(
+                      itemScrollController: _itemScrollController,
+                      itemPositionsListener: _itemPositionsListener,
+                      initialScrollIndex: targetIndex,
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      itemCount: widget.timelineEntries.length,
+                      itemBuilder: (context, index) {
+                        final entry = widget.timelineEntries[index];
+                        final previousEntry = index == 0
+                            ? null
+                            : widget.timelineEntries[index - 1];
+                        final previousDayLabel = previousEntry == null
+                            ? null
+                            : _dayLabel(previousEntry.dateUtc);
+                        return _GraphContactMessageTimelineRow(
+                          contactId: widget.contactId,
+                          entry: entry,
+                          showDayDivider:
+                              previousEntry == null ||
+                              _dayLabel(entry.dateUtc) != previousDayLabel,
+                        );
+                      },
                     ),
             ),
           ),
@@ -140,8 +169,54 @@ class _ContactGraphMessagesTimelineState
     );
   }
 
-  void _publishVisibleMonth(List<ConversationMessage> visibleMessages) {
-    final monthKey = _visibleMonthKey(visibleMessages);
+  void _scheduleAnchorJump() {
+    if (widget.timelineEntries.isEmpty) {
+      _publishVisibleMonth(null);
+      return;
+    }
+
+    final requestKey =
+        '${widget.contactId}:${widget.monthAnchor?.toIso8601String() ?? 'latest'}:${widget.timelineEntries.length}';
+    if (_lastJumpRequestKey == requestKey) {
+      return;
+    }
+    _lastJumpRequestKey = requestKey;
+
+    final targetIndex = _targetIndex();
+    final monthKey = widget.timelineEntries[targetIndex].monthKey;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      if (_itemScrollController.isAttached) {
+        _itemScrollController.jumpTo(index: targetIndex);
+      }
+      _publishVisibleMonth(monthKey);
+    });
+  }
+
+  void _publishTopVisibleMonth() {
+    final positions = _itemPositionsListener.itemPositions.value
+        .where((position) {
+          return position.itemTrailingEdge > 0 && position.itemLeadingEdge < 1;
+        })
+        .toList(growable: false);
+    if (positions.isEmpty) {
+      return;
+    }
+
+    final topPosition = positions.reduce((left, right) {
+      return left.itemLeadingEdge <= right.itemLeadingEdge ? left : right;
+    });
+    final index = topPosition.index;
+    if (index < 0 || index >= widget.timelineEntries.length) {
+      return;
+    }
+
+    _publishVisibleMonth(widget.timelineEntries[index].monthKey);
+  }
+
+  void _publishVisibleMonth(String? monthKey) {
     if (_lastPublishedContactId == widget.contactId &&
         _lastPublishedMonthKey == monthKey) {
       return;
@@ -165,21 +240,23 @@ class _ContactGraphMessagesTimelineState
     });
   }
 
-  String? _visibleMonthKey(List<ConversationMessage> visibleMessages) {
-    final monthAnchor = widget.monthAnchor;
-    if (monthAnchor != null) {
-      return _monthKey(monthAnchor);
+  int _targetIndex() {
+    if (widget.timelineEntries.isEmpty) {
+      return 0;
     }
 
-    for (final message in visibleMessages) {
-      final value = message.dateUtc;
-      final parsed = value == null ? null : DateTime.tryParse(value);
-      if (parsed != null) {
-        return _monthKey(parsed);
+    final monthAnchor = widget.monthAnchor;
+    if (monthAnchor != null) {
+      final targetMonth = _monthKey(monthAnchor);
+      final index = widget.timelineEntries.indexWhere((entry) {
+        return entry.monthKey == targetMonth;
+      });
+      if (index >= 0) {
+        return index;
       }
     }
 
-    return null;
+    return widget.timelineEntries.length - 1;
   }
 
   List<String> _subtitleParts() {
@@ -187,13 +264,13 @@ class _ContactGraphMessagesTimelineState
     if (monthLabel != null) {
       return [
         monthLabel,
-        '${_formatCount(widget.messages.length)} loaded messages',
+        '${_formatCount(_monthMessageCount(_monthKey(widget.monthAnchor!)))} messages this month',
       ];
     }
 
     final activity = widget.snapshot?.messageActivity;
     if (activity == null) {
-      return ['${_formatCount(widget.messages.length)} loaded messages'];
+      return ['${_formatCount(widget.timelineEntries.length)} messages'];
     }
 
     return [
@@ -204,9 +281,9 @@ class _ContactGraphMessagesTimelineState
 
   String _statusLine() {
     if (widget.monthAnchor != null) {
-      return 'selected month • graph evidence • limit ${_formatCount(widget.messageLimit)}';
+      return 'selected month • graph skeleton • hydrate visible rows';
     }
-    return 'graph evidence • latest ${_formatCount(widget.messageLimit)} loaded';
+    return 'graph skeleton • latest position • hydrate visible rows';
   }
 
   String _emptyMessage() {
@@ -224,18 +301,72 @@ class _ContactGraphMessagesTimelineState
     return 'contact ${widget.contactId}';
   }
 
-  List<Widget> _buildGroupedRows(List<ConversationMessage> messages) {
-    final rows = <Widget>[];
-    String? activeDayLabel;
-    for (final message in messages) {
-      final dayLabel = _dayLabel(message.dateUtc);
-      if (dayLabel != activeDayLabel) {
-        activeDayLabel = dayLabel;
-        rows.add(_DayDivider(label: dayLabel));
-      }
-      rows.add(GraphMessageEvidenceRow(message: message));
-    }
-    return rows;
+  int _monthMessageCount(String monthKey) {
+    return widget.timelineEntries.where((entry) {
+      return entry.monthKey == monthKey;
+    }).length;
+  }
+}
+
+class _GraphContactMessageTimelineRow extends ConsumerWidget {
+  const _GraphContactMessageTimelineRow({
+    required this.contactId,
+    required this.entry,
+    required this.showDayDivider,
+  });
+
+  final int contactId;
+  final ContactGraphMessageTimelineEntry entry;
+  final bool showDayDivider;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final messageAsync = ref.watch(
+      contactPageGraphMessageByIdProvider(
+        contactId: contactId,
+        messageId: entry.messageId,
+      ),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (showDayDivider) _DayDivider(label: _dayLabel(entry.dateUtc)),
+        messageAsync.when(
+          data: (message) {
+            if (message == null) {
+              return _GraphMessageSkeleton(
+                label: 'Message ${entry.messageId} unavailable',
+              );
+            }
+            return GraphMessageEvidenceRow(message: message);
+          },
+          loading: () => const _GraphMessageSkeleton(label: 'Loading message'),
+          error: (error, stackTrace) =>
+              _GraphMessageSkeleton(label: 'Unable to load message: $error'),
+        ),
+      ],
+    );
+  }
+}
+
+class _GraphMessageSkeleton extends StatelessWidget {
+  const _GraphMessageSkeleton({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 88,
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          label,
+          style: DefaultTextStyle.of(context).style.copyWith(fontSize: 12),
+        ),
+      ),
+    );
   }
 }
 

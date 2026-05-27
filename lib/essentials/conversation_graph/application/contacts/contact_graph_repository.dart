@@ -21,4 +21,16 @@ abstract interface class ContactGraphRepository {
     int limit = 500,
     DateTime? monthAnchor,
   });
+
+  Future<List<ContactGraphMessageTimelineEntry>>
+  readContactPageMessageTimeline({
+    required int contactId,
+    required int graphContactId,
+  });
+
+  Future<ConversationMessage?> readContactPageMessageById({
+    required int contactId,
+    required int graphContactId,
+    required int messageId,
+  });
 }

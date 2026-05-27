@@ -150,6 +150,69 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
     );
   }
 
+  @override
+  Future<List<ContactGraphMessageTimelineEntry>>
+  readContactPageMessageTimeline({
+    required int contactId,
+    required int graphContactId,
+  }) async {
+    final graphTimeline = await _readContactMessageTimeline(graphContactId);
+    if (graphTimeline.isNotEmpty) {
+      return graphTimeline;
+    }
+
+    if (graphContactId != contactId) {
+      final directTimeline = await _readContactMessageTimeline(contactId);
+      if (directTimeline.isNotEmpty) {
+        return directTimeline;
+      }
+    }
+
+    final canonicalHandleIds =
+        await _readGraphCanonicalHandleIdsForLegacyContact(contactId);
+    if (canonicalHandleIds.isEmpty) {
+      return const <ContactGraphMessageTimelineEntry>[];
+    }
+
+    return _readContactMessageTimelineForCanonicalHandles(canonicalHandleIds);
+  }
+
+  @override
+  Future<ConversationMessage?> readContactPageMessageById({
+    required int contactId,
+    required int graphContactId,
+    required int messageId,
+  }) async {
+    final graphMessage = await _readContactMessageById(
+      contactId: graphContactId,
+      messageId: messageId,
+    );
+    if (graphMessage != null) {
+      return graphMessage;
+    }
+
+    if (graphContactId != contactId) {
+      final directMessage = await _readContactMessageById(
+        contactId: contactId,
+        messageId: messageId,
+      );
+      if (directMessage != null) {
+        return directMessage;
+      }
+    }
+
+    final canonicalHandleIds =
+        await _readGraphCanonicalHandleIdsForLegacyContact(contactId);
+    if (canonicalHandleIds.isEmpty) {
+      return null;
+    }
+
+    return _readContactMessageByIdForCanonicalHandles(
+      canonicalHandleIds,
+      messageId: messageId,
+    );
+  }
+
   Future<List<ConversationOverview>>
   _readContactConversationsForCanonicalHandles(List<int> canonicalHandleIds) {
     return _readContactConversationsWhere('''
@@ -183,6 +246,75 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
       canonicalHandleIds,
       limit: limit,
       monthAnchor: monthAnchor,
+    );
+  }
+
+  Future<List<ContactGraphMessageTimelineEntry>> _readContactMessageTimeline(
+    int contactId,
+  ) {
+    return _readContactMessageTimelineWhere(
+      '''
+      contact_handle.contact_id = ?
+      ''',
+      '''
+      JOIN contact_to_handle contact_handle
+        ON contact_handle.handle_ss_id = COALESCE(
+          contact_alias.canonical_handle_ss_id,
+          contact_chat_handle.handle_ss_id
+        )
+      ''',
+      <Object?>[contactId],
+    );
+  }
+
+  Future<List<ContactGraphMessageTimelineEntry>>
+  _readContactMessageTimelineForCanonicalHandles(List<int> canonicalHandleIds) {
+    return _readContactMessageTimelineWhere(
+      '''
+      COALESCE(
+        contact_alias.canonical_handle_ss_id,
+        contact_chat_handle.handle_ss_id
+      ) IN (${_placeholders(canonicalHandleIds.length)})
+      ''',
+      '',
+      canonicalHandleIds,
+    );
+  }
+
+  Future<ConversationMessage?> _readContactMessageById({
+    required int contactId,
+    required int messageId,
+  }) {
+    return _readContactMessageByIdWhere(
+      '''
+      contact_handle.contact_id = ?
+      ''',
+      '''
+      JOIN contact_to_handle contact_handle
+        ON contact_handle.handle_ss_id = COALESCE(
+          contact_alias.canonical_handle_ss_id,
+          contact_chat_handle.handle_ss_id
+        )
+      ''',
+      <Object?>[contactId],
+      messageId: messageId,
+    );
+  }
+
+  Future<ConversationMessage?> _readContactMessageByIdForCanonicalHandles(
+    List<int> canonicalHandleIds, {
+    required int messageId,
+  }) {
+    return _readContactMessageByIdWhere(
+      '''
+      COALESCE(
+        contact_alias.canonical_handle_ss_id,
+        contact_chat_handle.handle_ss_id
+      ) IN (${_placeholders(canonicalHandleIds.length)})
+      ''',
+      '',
+      canonicalHandleIds,
+      messageId: messageId,
     );
   }
 
@@ -297,33 +429,98 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
       <Object?>[...args, if (dateRange != null) ...dateRange, limit],
     );
 
+    return [for (final row in rows) _mapConversationMessage(row)];
+  }
+
+  Future<List<ContactGraphMessageTimelineEntry>>
+  _readContactMessageTimelineWhere(
+    String whereClause,
+    String extraJoin,
+    List<Object?> args,
+  ) async {
+    final rows = await workingDatabase.selectRows('''
+      SELECT DISTINCT
+        m.ss_id AS message_id,
+        m.date_utc,
+        CASE
+          WHEN m.date_utc IS NULL OR m.date_utc = '' THEN NULL
+          ELSE strftime('%Y-%m', m.date_utc)
+        END AS month_key
+      FROM messages m
+      JOIN chat_to_message ctm ON ctm.message_ss_id = m.ss_id
+      JOIN chat_to_handle contact_chat_handle
+        ON contact_chat_handle.chat_ss_id = ctm.chat_ss_id
+      LEFT JOIN handle_aliases contact_alias
+        ON contact_alias.handle_ss_id = contact_chat_handle.handle_ss_id
+      $extraJoin
+      WHERE $whereClause
+      ORDER BY COALESCE(m.date_utc, '') ASC, m.ss_id ASC
+      ''', args);
+
     return [
       for (final row in rows)
-        ConversationMessage(
+        ContactGraphMessageTimelineEntry(
           messageId: _readInt(row['message_id']),
           dateUtc: row['date_utc'] as String?,
-          isFromMe: _readInt(row['is_from_me']) == 1,
-          text: row['text'] as String?,
-          associatedMessageId: _readNullableInt(
-            row['associated_message_ss_id'],
-          ),
-          attachmentCount: _readInt(row['attachment_count']),
-          senderHandleId: _readNullableInt(row['sender_handle_ss_id']),
-          senderCanonicalHandleId: _readNullableInt(
-            row['sender_canonical_handle_ss_id'],
-          ),
-          senderDisplayHandle: row['sender_display_handle'] as String?,
-          semanticKind: row['semantic_kind'] as String?,
-          itemKind: row['item_kind'] as String?,
-          isSystemMessage: _readInt(row['is_system_message']) == 1,
-          isSparseArtifact: _readInt(row['is_sparse_artifact']) == 1,
-          hasAttributedBodySource:
-              _readInt(row['has_attributed_body_source']) == 1,
-          hasMessageSummaryInfo: _readInt(row['has_message_summary_info']) == 1,
-          hasPayloadDataSource: _readInt(row['has_payload_data_source']) == 1,
-          errorCode: _readNullableInt(row['error_code']),
+          monthKey: row['month_key'] as String?,
         ),
     ];
+  }
+
+  Future<ConversationMessage?> _readContactMessageByIdWhere(
+    String whereClause,
+    String extraJoin,
+    List<Object?> args, {
+    required int messageId,
+  }) async {
+    final rows = await workingDatabase.selectRows(
+      '''
+      SELECT DISTINCT
+        m.ss_id AS message_id,
+        m.date_utc,
+        m.is_from_me,
+        m.text,
+        m.associated_message_ss_id,
+        m.sender_handle_ss_id,
+        m.sender_canonical_handle_ss_id,
+        COALESCE(sender_canonical.display_handle, sender_handle.id)
+          AS sender_display_handle,
+        m.semantic_kind,
+        m.item_kind,
+        m.is_system_message,
+        m.is_sparse_artifact,
+        m.has_attributed_body_source,
+        m.has_message_summary_info,
+        m.has_payload_data_source,
+        m.error_code,
+        (
+          SELECT COUNT(*)
+          FROM message_to_attachment mta
+          WHERE mta.message_ss_id = m.ss_id
+        ) AS attachment_count
+      FROM messages m
+      JOIN chat_to_message ctm ON ctm.message_ss_id = m.ss_id
+      JOIN chat_to_handle contact_chat_handle
+        ON contact_chat_handle.chat_ss_id = ctm.chat_ss_id
+      LEFT JOIN handle_aliases contact_alias
+        ON contact_alias.handle_ss_id = contact_chat_handle.handle_ss_id
+      $extraJoin
+      LEFT JOIN handles sender_handle ON sender_handle.ss_id =
+        m.sender_handle_ss_id
+      LEFT JOIN canonical_handles sender_canonical
+        ON sender_canonical.canonical_handle_ss_id =
+          m.sender_canonical_handle_ss_id
+      WHERE $whereClause
+        AND m.ss_id = ?
+      LIMIT 1
+      ''',
+      <Object?>[...args, messageId],
+    );
+
+    if (rows.isEmpty) {
+      return null;
+    }
+    return _mapConversationMessage(rows.single);
   }
 
   Future<ContactMessageActivity?> _readContactMessageActivity(int contactId) {
@@ -494,6 +691,30 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
       for (final row in rows)
         if (row.data['identifier'] case final String identifier) identifier,
     ];
+  }
+
+  static ConversationMessage _mapConversationMessage(Map<String, Object?> row) {
+    return ConversationMessage(
+      messageId: _readInt(row['message_id']),
+      dateUtc: row['date_utc'] as String?,
+      isFromMe: _readInt(row['is_from_me']) == 1,
+      text: row['text'] as String?,
+      associatedMessageId: _readNullableInt(row['associated_message_ss_id']),
+      attachmentCount: _readInt(row['attachment_count']),
+      senderHandleId: _readNullableInt(row['sender_handle_ss_id']),
+      senderCanonicalHandleId: _readNullableInt(
+        row['sender_canonical_handle_ss_id'],
+      ),
+      senderDisplayHandle: row['sender_display_handle'] as String?,
+      semanticKind: row['semantic_kind'] as String?,
+      itemKind: row['item_kind'] as String?,
+      isSystemMessage: _readInt(row['is_system_message']) == 1,
+      isSparseArtifact: _readInt(row['is_sparse_artifact']) == 1,
+      hasAttributedBodySource: _readInt(row['has_attributed_body_source']) == 1,
+      hasMessageSummaryInfo: _readInt(row['has_message_summary_info']) == 1,
+      hasPayloadDataSource: _readInt(row['has_payload_data_source']) == 1,
+      errorCode: _readNullableInt(row['error_code']),
+    );
   }
 
   static int _readInt(Object? value) {

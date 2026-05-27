@@ -157,6 +157,28 @@ void main() {
       expect(aprilMessages.map((message) => message.messageId), [
         firstMessageId,
       ]);
+
+      final timeline = await _reader(workingDatabase)
+          .readContactPageMessageTimeline(
+            contactId: contactId,
+            graphContactId: contactId,
+          );
+
+      expect(timeline.map((entry) => entry.messageId), [
+        firstMessageId,
+        secondMessageId,
+      ]);
+      expect(timeline.map((entry) => entry.monthKey), ['2026-04', '2026-05']);
+
+      final hydratedMessage = await _reader(workingDatabase)
+          .readContactPageMessageById(
+            contactId: contactId,
+            graphContactId: contactId,
+            messageId: secondMessageId,
+          );
+
+      expect(hydratedMessage?.text, 'May');
+      expect(hydratedMessage?.attachmentCount, 1);
     },
   );
 
@@ -255,6 +277,33 @@ void main() {
 
       expect(messages.map((message) => message.messageId), [messageId]);
       expect(messages.single.text, 'May');
+
+      final timeline =
+          await ContactGraphReader(
+            repository: SqliteContactGraphRepository(
+              workingDatabase: workingDatabase,
+              legacyDatabase: legacyDatabase,
+            ),
+          ).readContactPageMessageTimeline(
+            contactId: legacyContactId,
+            graphContactId: graphContactId,
+          );
+
+      expect(timeline.map((entry) => entry.messageId), [messageId]);
+
+      final hydratedMessage =
+          await ContactGraphReader(
+            repository: SqliteContactGraphRepository(
+              workingDatabase: workingDatabase,
+              legacyDatabase: legacyDatabase,
+            ),
+          ).readContactPageMessageById(
+            contactId: legacyContactId,
+            graphContactId: graphContactId,
+            messageId: messageId,
+          );
+
+      expect(hydratedMessage?.text, 'May');
     },
   );
 
