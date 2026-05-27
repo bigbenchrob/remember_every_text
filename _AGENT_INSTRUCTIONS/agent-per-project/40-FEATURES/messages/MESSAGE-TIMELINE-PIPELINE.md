@@ -89,6 +89,37 @@ The ordinal model exists so the UI can:
 - avoid offset paging across large datasets
 - preserve scroll behavior when new rows arrive
 
+### Timeline Navigation Invariant
+
+Pagination is not timeline navigation.
+
+For any timeline-like MessageLens surface, the selected message scope must be represented by a full lightweight skeleton before the user navigates it. This applies to legacy `working.db` timelines and graph-backed `working_ss.db` / conversation-graph timelines.
+
+The skeleton must cover the full selected scope:
+
+- full date range
+- stable message ids / `ss_id`s
+- timestamps
+- month keys or equivalent ordinal lookup data
+- enough index data for heatmaps, latest jumps, month jumps, and visible-month feedback
+
+The skeleton must not hydrate heavy row bodies for the full scope. Text, attributed-body-derived text, identity overlays, attachment evidence, media display data, URL previews, and other expensive evidence should hydrate near the viewport or selected evidence window.
+
+Hard rules:
+
+- Heatmaps coordinate with the full skeleton, not with the most recent page.
+- Jumps target skeleton indices, not ad hoc message batches.
+- Row bodies/media hydrate near the viewport.
+- Limits apply to hydration windows, not to the selected message scope.
+- A `LIMIT 500` query may be valid for a preview, search sample, or evidence snippet, but it is not a valid implementation of a contact/global/conversation timeline surface.
+- Do not replace timeline navigation with pagination as the primary model.
+
+Graph-backed contact timelines currently express this invariant through:
+
+- `contactPageGraphMessageTimelineProvider`: full lightweight contact timeline skeleton.
+- `contactPageGraphMessageByIdProvider`: viewport-local message evidence hydration.
+- `ContactGraphMessagesView`: `ScrollablePositionedList` over the skeleton, with heatmap/month jumps into skeleton index space.
+
 Relationship of identifiers:
 
 - Source ROWIDs are preserved through import/projection for traceability.
@@ -169,12 +200,14 @@ Lightweight stage:
 - `messageTimelineOrdinalProvider(scope: ...)` computes `totalCount`
 - the view builds a `ScrollablePositionedList` skeleton
 - rows exist by ordinal before their content is loaded
+- graph-backed timeline equivalents may use an explicit full id/date/month-key skeleton when the legacy ordinal table has not yet been replaced by graph-native ordinal storage
 
 Per-row hydration stage:
 
 - visible rows watch `messageByTimelineOrdinalProvider(scope: ..., ordinal: ...)`
 - hydration maps `ordinal -> messageId -> working row joins -> MessageListItem`
 - search and pending-message contexts can hydrate direct IDs through `messageByIdProvider(messageId: ...)`
+- graph-backed row hydration maps `messageId/ss_id -> graph message evidence -> shared message evidence row`
 
 Content cost differs by type:
 

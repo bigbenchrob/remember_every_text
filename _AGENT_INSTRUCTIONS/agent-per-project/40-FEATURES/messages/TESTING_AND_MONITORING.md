@@ -29,6 +29,8 @@ This document focuses on the unified message timeline implementation.
 	- Timeline skeleton + hydration: fixed-height placeholders, no upward scroll jitter.
 	- Default behavior: jump to latest after initial frame.
 	- Date-scoped behavior: `scrollToDate` results in month jump.
+	- Graph-backed contact timelines: heatmap month selection must update the projected contact message spec and jump into a full skeleton, not trigger page-style message loading.
+	- Graph-backed contact timelines: tests must separately cover full skeleton month keys/order and per-row hydration by message `ss_id`.
 
 ## Test Data Requirements
 - Fixture scopes with large history spread across global, contact, chat, handle, and recovered scenarios where possible.

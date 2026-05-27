@@ -134,11 +134,27 @@ Diagnostic/reference legacy code:
 
 4. Migrate contact "All messages" to graph-backed evidence.
 
-   Add a graph contact message query that answers the same center-panel spec currently served by `MessageTimelineScope.contact`. Preserve heatmap navigation and month anchoring.
+   Add a graph contact message path that answers the same center-panel spec currently served by `MessageTimelineScope.contact`. Preserve the timeline invariant: full lightweight skeleton first; local row hydration second.
+
+   The graph contact route must not be implemented as a latest-page or month-page query. Pagination is not timeline navigation.
+
+   Required graph contact timeline shape:
+
+   - full selected-scope skeleton of stable message `ss_id`s, timestamps, and month keys
+   - heatmap counts and selected-month feedback coordinated against that full skeleton
+   - latest/month jumps into skeleton index space
+   - visible row hydration by message `ss_id`
+   - attachment/media/URL preview hydration outside the skeleton and near the viewport
+
+   Current graph contact implementation points:
+
+   - `contactPageGraphMessageTimelineProvider` supplies the full lightweight contact skeleton.
+   - `contactPageGraphMessageByIdProvider` hydrates one graph message row by id.
+   - `ContactGraphMessagesView` renders a `ScrollablePositionedList` over the skeleton and hydrates visible rows through shared graph evidence rows.
 
 5. Migrate global timeline/search/handle surfaces.
 
-   Move global/search/handle evidence onto graph-backed queries after contact evidence proves parity.
+   Move global/search/handle evidence onto graph-backed queries after contact evidence proves parity. Timeline-like surfaces must follow the same skeleton/hydration invariant; sample/search result lists may use bounded result sets only when they are not being presented as full timeline navigation.
 
 6. Delete or quarantine legacy message presentation paths.
 
@@ -187,6 +203,9 @@ Shared presentation:
 - Existing conversation message timeline tests continue to pass.
 - Existing `MessageCard` tests continue to pass.
 - Contact/global timeline tests continue to pass until those surfaces are migrated.
+- Graph contact timeline tests prove full skeleton ordering/month keys independently from row hydration.
+- Graph contact heatmap tests prove month selection updates projected contact timeline state and jumps into skeleton index space rather than issuing a page-style message query.
+- Graph message view tests prove default latest positioning and selected-month visible-month feedback using the skeleton.
 
 ## Eventually Deletable
 

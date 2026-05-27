@@ -26,6 +26,14 @@ last_updated: 2026-04-21
 - “Jump” behavior: jump to latest and jump to month (heatmap-driven) without requiring the view to know index math.
 - Search: debounced, provider-driven search results for global, contact, chat, and recovered/handle contexts where supported.
 
+## Hard Timeline Invariant
+- Full lightweight skeleton first; local hydration second.
+- Heatmaps coordinate with the full selected-scope skeleton, not a latest page.
+- Jumps target skeleton indices.
+- Row bodies, attachment evidence, media, previews, and other heavy evidence hydrate near the viewport.
+- Limits apply to hydration windows, not to the selected message scope.
+- Pagination is not timeline navigation.
+
 ## Success Metrics
 - Timeline opens quickly even with large histories (ordinal skeleton computation is bounded and cache-friendly).
 - No UI lockups during destructive DB maintenance (providers short-circuit rather than hanging).
