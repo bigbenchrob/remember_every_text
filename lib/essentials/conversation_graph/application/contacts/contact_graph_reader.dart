@@ -1,3 +1,4 @@
+import '../conversations/conversation.dart';
 import 'contact_graph.dart';
 import 'contact_graph_repository.dart';
 
@@ -17,6 +18,25 @@ class ContactGraphReader {
     return repository.readContactPageGraph(
       contactId: contactId,
       graphContactId: graphContactId,
+    );
+  }
+
+  Future<List<ConversationMessage>> readContactMessages({
+    required int contactId,
+    int limit = 500,
+  }) {
+    return repository.readContactMessages(contactId: contactId, limit: limit);
+  }
+
+  Future<List<ConversationMessage>> readContactPageMessages({
+    required int contactId,
+    required int graphContactId,
+    int limit = 500,
+  }) {
+    return repository.readContactPageMessages(
+      contactId: contactId,
+      graphContactId: graphContactId,
+      limit: limit,
     );
   }
 }

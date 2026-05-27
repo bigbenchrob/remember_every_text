@@ -307,5 +307,151 @@ class _ContactPageGraphSnapshotProviderElement
   int get contactId => (origin as ContactPageGraphSnapshotProvider).contactId;
 }
 
+String _$contactPageGraphMessagesHash() =>
+    r'edf4081903f99817fe29693fc65bf498f92bd282';
+
+/// See also [contactPageGraphMessages].
+@ProviderFor(contactPageGraphMessages)
+const contactPageGraphMessagesProvider = ContactPageGraphMessagesFamily();
+
+/// See also [contactPageGraphMessages].
+class ContactPageGraphMessagesFamily
+    extends Family<AsyncValue<List<ConversationMessage>>> {
+  /// See also [contactPageGraphMessages].
+  const ContactPageGraphMessagesFamily();
+
+  /// See also [contactPageGraphMessages].
+  ContactPageGraphMessagesProvider call({
+    required int contactId,
+    int limit = 500,
+  }) {
+    return ContactPageGraphMessagesProvider(contactId: contactId, limit: limit);
+  }
+
+  @override
+  ContactPageGraphMessagesProvider getProviderOverride(
+    covariant ContactPageGraphMessagesProvider provider,
+  ) {
+    return call(contactId: provider.contactId, limit: provider.limit);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'contactPageGraphMessagesProvider';
+}
+
+/// See also [contactPageGraphMessages].
+class ContactPageGraphMessagesProvider
+    extends AutoDisposeFutureProvider<List<ConversationMessage>> {
+  /// See also [contactPageGraphMessages].
+  ContactPageGraphMessagesProvider({required int contactId, int limit = 500})
+    : this._internal(
+        (ref) => contactPageGraphMessages(
+          ref as ContactPageGraphMessagesRef,
+          contactId: contactId,
+          limit: limit,
+        ),
+        from: contactPageGraphMessagesProvider,
+        name: r'contactPageGraphMessagesProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$contactPageGraphMessagesHash,
+        dependencies: ContactPageGraphMessagesFamily._dependencies,
+        allTransitiveDependencies:
+            ContactPageGraphMessagesFamily._allTransitiveDependencies,
+        contactId: contactId,
+        limit: limit,
+      );
+
+  ContactPageGraphMessagesProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.contactId,
+    required this.limit,
+  }) : super.internal();
+
+  final int contactId;
+  final int limit;
+
+  @override
+  Override overrideWith(
+    FutureOr<List<ConversationMessage>> Function(
+      ContactPageGraphMessagesRef provider,
+    )
+    create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: ContactPageGraphMessagesProvider._internal(
+        (ref) => create(ref as ContactPageGraphMessagesRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        contactId: contactId,
+        limit: limit,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<List<ConversationMessage>> createElement() {
+    return _ContactPageGraphMessagesProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ContactPageGraphMessagesProvider &&
+        other.contactId == contactId &&
+        other.limit == limit;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, contactId.hashCode);
+    hash = _SystemHash.combine(hash, limit.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin ContactPageGraphMessagesRef
+    on AutoDisposeFutureProviderRef<List<ConversationMessage>> {
+  /// The parameter `contactId` of this provider.
+  int get contactId;
+
+  /// The parameter `limit` of this provider.
+  int get limit;
+}
+
+class _ContactPageGraphMessagesProviderElement
+    extends AutoDisposeFutureProviderElement<List<ConversationMessage>>
+    with ContactPageGraphMessagesRef {
+  _ContactPageGraphMessagesProviderElement(super.provider);
+
+  @override
+  int get contactId => (origin as ContactPageGraphMessagesProvider).contactId;
+  @override
+  int get limit => (origin as ContactPageGraphMessagesProvider).limit;
+}
+
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

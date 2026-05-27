@@ -136,6 +136,18 @@ void main() {
         ),
         ['2026-4:1', '2026-5:1'],
       );
+
+      final messages = await _reader(
+        workingDatabase,
+      ).readContactMessages(contactId: contactId);
+
+      expect(messages.map((message) => message.messageId), [
+        secondMessageId,
+        firstMessageId,
+      ]);
+      expect(messages.first.text, 'May');
+      expect(messages.first.attachmentCount, 1);
+      expect(messages.last.text, 'April');
     },
   );
 
@@ -220,6 +232,20 @@ void main() {
         snapshot.messageActivity?.lastMessageAtUtc,
         '2026-05-10T10:00:00.000Z',
       );
+
+      final messages =
+          await ContactGraphReader(
+            repository: SqliteContactGraphRepository(
+              workingDatabase: workingDatabase,
+              legacyDatabase: legacyDatabase,
+            ),
+          ).readContactPageMessages(
+            contactId: legacyContactId,
+            graphContactId: graphContactId,
+          );
+
+      expect(messages.map((message) => message.messageId), [messageId]);
+      expect(messages.single.text, 'May');
     },
   );
 
