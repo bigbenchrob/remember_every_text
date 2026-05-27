@@ -7,6 +7,8 @@ import '../../../../essentials/conversation_graph/application/contacts/contact_g
 import '../../../../essentials/conversation_graph/application/contacts/contact_graph_provider.dart';
 import '../../../../essentials/conversation_graph/application/conversations/conversation.dart';
 import '../../../contacts/infrastructure/repositories/contact_profile_provider.dart';
+import '../../domain/value_objects/message_timeline_scope.dart';
+import '../view_model/timeline/ordinal/current_visible_month_provider.dart';
 import '../widgets/message_evidence/graph_message_evidence_row.dart';
 import '../widgets/message_evidence/message_evidence_fade_overlay.dart';
 import '../widgets/message_evidence/message_evidence_header.dart';
@@ -64,7 +66,7 @@ class _ContactGraphMessagesViewState
   }
 }
 
-class _ContactGraphMessagesTimeline extends ConsumerWidget {
+class _ContactGraphMessagesTimeline extends ConsumerStatefulWidget {
   const _ContactGraphMessagesTimeline({
     required this.contactId,
     required this.contactName,
@@ -82,11 +84,23 @@ class _ContactGraphMessagesTimeline extends ConsumerWidget {
   final DateTime? monthAnchor;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ContactGraphMessagesTimeline> createState() =>
+      _ContactGraphMessagesTimelineState();
+}
+
+class _ContactGraphMessagesTimelineState
+    extends ConsumerState<_ContactGraphMessagesTimeline> {
+  int? _lastPublishedContactId;
+  String? _lastPublishedMonthKey;
+
+  @override
+  Widget build(BuildContext context) {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final backgroundColor = colors.messagePanels.coolPanelSurface;
-    final chronologicalMessages = messages.reversed.toList(growable: false);
+    final visibleMessages = widget.messages;
+
+    _publishVisibleMonth(visibleMessages);
 
     return ColoredBox(
       color: backgroundColor,
@@ -103,14 +117,14 @@ class _ContactGraphMessagesTimeline extends ConsumerWidget {
           Expanded(
             child: MessageEvidenceFadeOverlay(
               backgroundColor: backgroundColor,
-              child: chronologicalMessages.isEmpty
+              child: visibleMessages.isEmpty
                   ? Center(child: Text(_emptyMessage()))
                   : SingleChildScrollView(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 32),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: _buildGroupedRows(chronologicalMessages),
+                          children: _buildGroupedRows(visibleMessages),
                         ),
                       ),
                     ),
@@ -121,15 +135,60 @@ class _ContactGraphMessagesTimeline extends ConsumerWidget {
     );
   }
 
-  List<String> _subtitleParts() {
-    final monthLabel = _monthLabel(monthAnchor);
-    if (monthLabel != null) {
-      return [monthLabel, '${_formatCount(messages.length)} loaded messages'];
+  void _publishVisibleMonth(List<ConversationMessage> visibleMessages) {
+    final monthKey = _visibleMonthKey(visibleMessages);
+    if (_lastPublishedContactId == widget.contactId &&
+        _lastPublishedMonthKey == monthKey) {
+      return;
     }
 
-    final activity = snapshot?.messageActivity;
+    _lastPublishedContactId = widget.contactId;
+    _lastPublishedMonthKey = monthKey;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+
+      ref
+          .read(
+            currentVisibleMonthForScopeProvider(
+              scope: MessageTimelineScope.contact(contactId: widget.contactId),
+            ).notifier,
+          )
+          .setVisibleMonthKey(monthKey);
+    });
+  }
+
+  String? _visibleMonthKey(List<ConversationMessage> visibleMessages) {
+    final monthAnchor = widget.monthAnchor;
+    if (monthAnchor != null) {
+      return _monthKey(monthAnchor);
+    }
+
+    for (final message in visibleMessages) {
+      final value = message.dateUtc;
+      final parsed = value == null ? null : DateTime.tryParse(value);
+      if (parsed != null) {
+        return _monthKey(parsed);
+      }
+    }
+
+    return null;
+  }
+
+  List<String> _subtitleParts() {
+    final monthLabel = _monthLabel(widget.monthAnchor);
+    if (monthLabel != null) {
+      return [
+        monthLabel,
+        '${_formatCount(widget.messages.length)} loaded messages',
+      ];
+    }
+
+    final activity = widget.snapshot?.messageActivity;
     if (activity == null) {
-      return ['${_formatCount(messages.length)} loaded messages'];
+      return ['${_formatCount(widget.messages.length)} loaded messages'];
     }
 
     return [
@@ -139,25 +198,25 @@ class _ContactGraphMessagesTimeline extends ConsumerWidget {
   }
 
   String _statusLine() {
-    if (monthAnchor != null) {
-      return 'selected month • graph evidence • limit ${_formatCount(messageLimit)}';
+    if (widget.monthAnchor != null) {
+      return 'selected month • graph evidence • limit ${_formatCount(widget.messageLimit)}';
     }
-    return 'graph evidence • latest ${_formatCount(messageLimit)} loaded';
+    return 'graph evidence • latest ${_formatCount(widget.messageLimit)} loaded';
   }
 
   String _emptyMessage() {
-    if (monthAnchor != null) {
+    if (widget.monthAnchor != null) {
       return 'No graph messages found for this contact in the selected month.';
     }
     return 'No graph messages found for this contact.';
   }
 
   String _contactLabel() {
-    final label = contactName?.trim();
+    final label = widget.contactName?.trim();
     if (label != null && label.isNotEmpty) {
       return label;
     }
-    return 'contact $contactId';
+    return 'contact ${widget.contactId}';
   }
 
   List<Widget> _buildGroupedRows(List<ConversationMessage> messages) {
@@ -173,6 +232,11 @@ class _ContactGraphMessagesTimeline extends ConsumerWidget {
     }
     return rows;
   }
+}
+
+String _monthKey(DateTime value) {
+  return '${value.year.toString().padLeft(4, '0')}-'
+      '${value.month.toString().padLeft(2, '0')}';
 }
 
 class _DayDivider extends StatelessWidget {

@@ -90,6 +90,16 @@ class CurrentVisibleMonthForScope extends _$CurrentVisibleMonthForScope {
     return initialMonth;
   }
 
+  /// Publishes the visible month for message surfaces that do not use the
+  /// ordinal scroll coordinator but still participate in heatmap feedback.
+  void setVisibleMonthKey(String? monthKey) {
+    if (state.valueOrNull == monthKey) {
+      return;
+    }
+
+    state = AsyncData(monthKey);
+  }
+
   void _debounceVisibleMonthUpdate({
     required ValueListenable<Iterable<ItemPosition>> positionsListener,
     required int sessionGeneration,
