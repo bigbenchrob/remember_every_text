@@ -163,6 +163,141 @@ void main() {
     expect(messages.first.isSystemMessage, isFalse);
   });
 
+  test('reads full conversation message timeline oldest first', () async {
+    final conversationId = _id(7);
+    final olderMessageId = _id(201);
+    final newerMessageId = _id(202);
+
+    await _insertChat(workingDatabase, id: conversationId);
+    await _insertMessage(
+      workingDatabase,
+      id: newerMessageId,
+      dateUtc: '2026-05-20T10:00:00.000Z',
+      text: 'newer',
+    );
+    await _insertMessage(
+      workingDatabase,
+      id: olderMessageId,
+      dateUtc: '2026-04-19T10:00:00.000Z',
+      text: 'older',
+    );
+    await _insertChatMessage(
+      workingDatabase,
+      conversationId: conversationId,
+      messageId: newerMessageId,
+    );
+    await _insertChatMessage(
+      workingDatabase,
+      conversationId: conversationId,
+      messageId: olderMessageId,
+    );
+
+    final timeline = await _reader(
+      workingDatabase,
+    ).readMessageTimeline(conversationId: conversationId);
+
+    expect(timeline.map((entry) => entry.messageId), [
+      olderMessageId,
+      newerMessageId,
+    ]);
+    expect(timeline.map((entry) => entry.monthKey), ['2026-04', '2026-05']);
+  });
+
+  test('hydrates one conversation message by scoped message id', () async {
+    final conversationId = _id(7);
+    final otherConversationId = _id(8);
+    final messageId = _id(201);
+
+    await _insertChat(workingDatabase, id: conversationId);
+    await _insertChat(workingDatabase, id: otherConversationId);
+    await _insertMessage(
+      workingDatabase,
+      id: messageId,
+      dateUtc: '2026-05-20T10:00:00.000Z',
+      text: 'scoped message',
+    );
+    await _insertChatMessage(
+      workingDatabase,
+      conversationId: conversationId,
+      messageId: messageId,
+    );
+
+    final message = await _reader(
+      workingDatabase,
+    ).readMessageById(conversationId: conversationId, messageId: messageId);
+    final missing = await _reader(workingDatabase).readMessageById(
+      conversationId: otherConversationId,
+      messageId: messageId,
+    );
+
+    expect(message?.messageId, messageId);
+    expect(message?.text, 'scoped message');
+    expect(missing, isNull);
+  });
+
+  test('reads full-scope conversation message ids matching text', () async {
+    final conversationId = _id(7);
+    final otherConversationId = _id(8);
+    final olderMatchId = _id(201);
+    final nonMatchId = _id(202);
+    final newerMatchId = _id(203);
+    final otherConversationMatchId = _id(204);
+
+    await _insertChat(workingDatabase, id: conversationId);
+    await _insertChat(workingDatabase, id: otherConversationId);
+    await _insertMessage(
+      workingDatabase,
+      id: newerMatchId,
+      dateUtc: '2026-05-20T10:00:00.000Z',
+      text: 'Settlement authority came later.',
+    );
+    await _insertMessage(
+      workingDatabase,
+      id: nonMatchId,
+      dateUtc: '2026-05-19T10:00:00.000Z',
+      text: 'Different topic.',
+    );
+    await _insertMessage(
+      workingDatabase,
+      id: olderMatchId,
+      dateUtc: '2026-05-18T10:00:00.000Z',
+      text: 'Discussed settlement timing.',
+    );
+    await _insertMessage(
+      workingDatabase,
+      id: otherConversationMatchId,
+      dateUtc: '2026-05-21T10:00:00.000Z',
+      text: 'Settlement elsewhere.',
+    );
+    await _insertChatMessage(
+      workingDatabase,
+      conversationId: conversationId,
+      messageId: newerMatchId,
+    );
+    await _insertChatMessage(
+      workingDatabase,
+      conversationId: conversationId,
+      messageId: nonMatchId,
+    );
+    await _insertChatMessage(
+      workingDatabase,
+      conversationId: conversationId,
+      messageId: olderMatchId,
+    );
+    await _insertChatMessage(
+      workingDatabase,
+      conversationId: otherConversationId,
+      messageId: otherConversationMatchId,
+    );
+
+    final matches = await _reader(workingDatabase).readMessageIdsMatchingText(
+      conversationId: conversationId,
+      query: 'settlement',
+    );
+
+    expect(matches, [olderMatchId, newerMatchId]);
+  });
+
   test('reads monthly activity traces with absolute message counts', () async {
     final conversationId = _id(7);
     final januaryMessageId = _id(201);

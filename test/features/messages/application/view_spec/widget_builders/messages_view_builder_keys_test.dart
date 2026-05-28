@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/features/messages/application/view_spec/widget_builders/global_timeline_builder.dart';
 import 'package:remember_this_text/features/messages/application/view_spec/widget_builders/messages_for_contact_builder.dart';
+import 'package:remember_this_text/features/messages/application/view_spec/widget_builders/messages_for_handle_builder.dart';
 import 'package:remember_this_text/features/messages/application/view_spec/widget_builders/recovered_unlinked_messages_builder.dart';
 
 void main() {
@@ -27,6 +28,14 @@ void main() {
 
       expect(unanchored.key, isA<ValueKey<String>>());
       expect(unanchored.key, isNot(anchored.key));
+    });
+
+    test('handle timeline builder keys vary by handle', () {
+      final handle12 = buildMessagesForHandleView(handleId: 12);
+      final handle13 = buildMessagesForHandleView(handleId: 13);
+
+      expect(handle12.key, isA<ValueKey<String>>());
+      expect(handle12.key, isNot(handle13.key));
     });
 
     test('recovered timeline builder keys vary by scope meaning', () {

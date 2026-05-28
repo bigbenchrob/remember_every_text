@@ -12,6 +12,20 @@ abstract interface class ConversationRepository {
     int limit = 100,
   });
 
+  Future<List<ConversationMessageTimelineEntry>> readMessageTimeline({
+    required int conversationId,
+  });
+
+  Future<ConversationMessage?> readMessageById({
+    required int conversationId,
+    required int messageId,
+  });
+
+  Future<List<int>> readMessageIdsMatchingText({
+    required int conversationId,
+    required String query,
+  });
+
   Future<Map<int, ConversationActivityTrace>> readActivityTraces({
     required List<int> conversationIds,
   });

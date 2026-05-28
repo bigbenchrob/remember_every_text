@@ -92,6 +92,56 @@ Future<ConversationMessage?> contactPageGraphMessageById(
   );
 }
 
+@riverpod
+Future<List<ContactGraphMessageTimelineEntry>>
+contactPageGraphHandleMessageTimeline(
+  Ref ref, {
+  required int contactId,
+  required int handleId,
+}) async {
+  final reader = await ref.watch(contactGraphReaderProvider.future);
+  final graphContactId = graphContactIdForContactPage(contactId);
+  return reader.readContactPageHandleMessageTimeline(
+    contactId: contactId,
+    graphContactId: graphContactId,
+    handleId: handleId,
+  );
+}
+
+@riverpod
+Future<ConversationMessage?> contactPageGraphHandleMessageById(
+  Ref ref, {
+  required int contactId,
+  required int handleId,
+  required int messageId,
+}) async {
+  final reader = await ref.watch(contactGraphReaderProvider.future);
+  final graphContactId = graphContactIdForContactPage(contactId);
+  return reader.readContactPageHandleMessageById(
+    contactId: contactId,
+    graphContactId: graphContactId,
+    handleId: handleId,
+    messageId: messageId,
+  );
+}
+
+@riverpod
+Future<List<int>> contactPageGraphMessageIdsMatchingText(
+  Ref ref, {
+  required int contactId,
+  required String query,
+  int? handleId,
+}) async {
+  final reader = await ref.watch(contactGraphReaderProvider.future);
+  final graphContactId = graphContactIdForContactPage(contactId);
+  return reader.readContactPageMessageIdsMatchingText(
+    contactId: contactId,
+    graphContactId: graphContactId,
+    query: query,
+    handleId: handleId,
+  );
+}
+
 int graphContactIdForContactPage(int contactId) {
   const virtualContactIdFloor = 1000000000;
   if (contactId <= 0 || contactId >= virtualContactIdFloor) {

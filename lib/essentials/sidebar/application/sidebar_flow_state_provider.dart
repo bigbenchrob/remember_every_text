@@ -725,12 +725,16 @@ class SidebarFlow extends _$SidebarFlow {
     );
   }
 
-  void showContactTimelineAt({required int contactId, DateTime? scrollToDate}) {
+  void showContactTimelineAt({
+    required int contactId,
+    DateTime? scrollToDate,
+    int? filterHandleId,
+  }) {
     _setState(
       state.copyWith(
         topMenuChoice: TopChatMenuChoice.contacts,
         chosenContactId: contactId,
-        selectedHandleId: null,
+        selectedHandleId: filterHandleId,
         selectedConversationId: null,
         selectedConversationAnchorMessageId: null,
         selectedConversationSearchQuery: null,

@@ -13,13 +13,17 @@ import '../../../contacts/application/services/manual_handle_link_service.dart';
 import '../../../contacts/presentation/widgets/contact_picker_dialog.dart';
 import '../../../handles/infrastructure/repositories/handle_display_name_provider.dart';
 import '../../../handles/infrastructure/repositories/stray_handles_provider.dart';
-import '../../infrastructure/repositories/messages_for_handle_provider.dart';
+import '../../application/message_evidence/message_evidence_spine_provider.dart';
+import '../../domain/message_evidence/message_evidence_scope.dart';
+import '../../domain/message_evidence/message_evidence_skeleton.dart';
+import '../widgets/message_evidence/message_evidence_header.dart';
+import '../widgets/message_evidence/message_evidence_timeline_view.dart';
 
 /// Triage view for a single stray handle.
 ///
 /// Shows a header with the handle value and service type, three action buttons
-/// (Create Contact, Link to Existing, Dismiss), and a scrollable message list
-/// powered by [messagesForHandleProvider].
+/// (Create Contact, Link to Existing, Dismiss), and a shared graph-backed
+/// message evidence timeline for identifying the correspondent.
 class HandleLensView extends HookConsumerWidget {
   const HandleLensView({required this.handleId, super.key});
 
@@ -30,9 +34,6 @@ class HandleLensView extends HookConsumerWidget {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
-    final asyncMessages = ref.watch(
-      messagesForHandleProvider(handleId: handleId),
-    );
     final asyncHandles = ref.watch(strayHandlesProvider);
     final asyncDisplayName = ref.watch(
       handleDisplayNameProvider(handleId: handleId),
@@ -40,7 +41,6 @@ class HandleLensView extends HookConsumerWidget {
     final isCreating = useState(false);
     final nameController = useTextEditingController();
     final isBusy = useState(false);
-    final newestFirst = useState(false);
 
     // Find the stray handle summary for header info.
     final handleSummary = asyncHandles.whenOrNull(
@@ -59,101 +59,36 @@ class HandleLensView extends HookConsumerWidget {
       children: [
         ContentArea(
           builder: (context, scrollController) {
-            return CustomScrollView(
-              controller: scrollController,
-              slivers: [
-                // Header + actions
-                SliverToBoxAdapter(
-                  child: _HandleLensHeader(
-                    handleValue: handleValue,
-                    serviceType: serviceType,
-                    messageCount: handleSummary?.totalMessages ?? 0,
-                    lastMessageDate: handleSummary?.lastMessageDate,
-                    isReviewed: handleSummary?.reviewedAt != null,
-                    colors: colors,
-                    typography: typography,
-                  ),
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _HandleLensHeader(
+                  handleValue: handleValue,
+                  serviceType: serviceType,
+                  messageCount: handleSummary?.totalMessages ?? 0,
+                  lastMessageDate: handleSummary?.lastMessageDate,
+                  isReviewed: handleSummary?.reviewedAt != null,
+                  colors: colors,
+                  typography: typography,
                 ),
-
-                // Action bar
-                SliverToBoxAdapter(
-                  child: _ActionBar(
+                _ActionBar(
+                  handleId: handleId,
+                  isCreating: isCreating,
+                  nameController: nameController,
+                  isBusy: isBusy,
+                  colors: colors,
+                ),
+                if (isCreating.value)
+                  _CreateContactForm(
                     handleId: handleId,
-                    isCreating: isCreating,
                     nameController: nameController,
                     isBusy: isBusy,
-                    newestFirst: newestFirst,
+                    isCreating: isCreating,
                     colors: colors,
                     typography: typography,
                   ),
-                ),
-
-                // Inline create contact form
-                if (isCreating.value)
-                  SliverToBoxAdapter(
-                    child: _CreateContactForm(
-                      handleId: handleId,
-                      nameController: nameController,
-                      isBusy: isBusy,
-                      isCreating: isCreating,
-                      colors: colors,
-                      typography: typography,
-                    ),
-                  ),
-
-                // Divider
-                SliverToBoxAdapter(
-                  child: Divider(height: 1, color: colors.lines.border),
-                ),
-
-                // Message list
-                asyncMessages.when(
-                  data: (messages) {
-                    if (messages.isEmpty) {
-                      return SliverFillRemaining(
-                        child: Center(
-                          child: Text(
-                            'No messages found for this handle.',
-                            style: typography.body.copyWith(
-                              color: colors.content.textTertiary,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ),
-                      );
-                    }
-
-                    // Order by user preference (default: oldest first)
-                    final ordered = newestFirst.value
-                        ? messages.reversed.toList()
-                        : messages;
-
-                    return SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) => _MessageRow(
-                          message: ordered[index],
-                          colors: colors,
-                          typography: typography,
-                        ),
-                        childCount: ordered.length,
-                      ),
-                    );
-                  },
-                  loading: () => const SliverFillRemaining(
-                    child: Center(child: ProgressCircle()),
-                  ),
-                  error: (error, _) => SliverFillRemaining(
-                    child: Center(
-                      child: Text(
-                        'Error loading messages: $error',
-                        style: typography.body.copyWith(
-                          color: colors.accents.secondary,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-                ),
+                Divider(height: 1, color: colors.lines.border),
+                Expanded(child: _HandleLensEvidencePane(handleId: handleId)),
               ],
             );
           },
@@ -319,18 +254,14 @@ class _ActionBar extends HookConsumerWidget {
     required this.isCreating,
     required this.nameController,
     required this.isBusy,
-    required this.newestFirst,
     required this.colors,
-    required this.typography,
   });
 
   final int handleId;
   final ValueNotifier<bool> isCreating;
   final TextEditingController nameController;
   final ValueNotifier<bool> isBusy;
-  final ValueNotifier<bool> newestFirst;
   final ThemeColors colors;
-  final ThemeTypography typography;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -395,25 +326,6 @@ class _ActionBar extends HookConsumerWidget {
                 SizedBox(width: 6),
                 Text('Dismiss'),
               ],
-            ),
-          ),
-
-          const Spacer(),
-
-          // Sort order toggle
-          MacosTooltip(
-            message: newestFirst.value
-                ? 'Showing newest first'
-                : 'Showing oldest first',
-            child: MacosIconButton(
-              icon: MacosIcon(
-                newestFirst.value
-                    ? CupertinoIcons.arrow_down
-                    : CupertinoIcons.arrow_up,
-                size: 16,
-                color: colors.content.textSecondary,
-              ),
-              onPressed: () => newestFirst.value = !newestFirst.value,
             ),
           ),
         ],
@@ -587,87 +499,69 @@ class _CreateContactForm extends HookConsumerWidget {
   }
 }
 
-// =============================================================================
-// Message row
-// =============================================================================
+class _HandleLensEvidencePane extends ConsumerWidget {
+  const _HandleLensEvidencePane({required this.handleId});
 
-class _MessageRow extends StatelessWidget {
-  const _MessageRow({
-    required this.message,
-    required this.colors,
-    required this.typography,
-  });
-
-  final MessageWithChatContext message;
-  final ThemeColors colors;
-  final ThemeTypography typography;
+  final int handleId;
 
   @override
-  Widget build(BuildContext context) {
-    final dateFormatter = DateFormat('MMM d, yyyy h:mm a');
+  Widget build(BuildContext context, WidgetRef ref) {
+    final evidenceScope = HandleMessagesEvidenceScope(handleId: handleId);
+    final skeletonAsync = ref.watch(
+      messageEvidenceTimelineSkeletonProvider(scope: evidenceScope),
+    );
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Timestamp + chat context
-          Row(
-            children: [
-              Text(
-                dateFormatter.format(message.sentAt),
-                style: typography.caption.copyWith(
-                  color: colors.content.textTertiary,
-                  fontSize: 11,
-                ),
-              ),
-              if (message.chatDisplayName != null) ...[
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    message.chatDisplayName!,
-                    style: typography.caption.copyWith(
-                      color: colors.content.textTertiary,
-                      fontSize: 11,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
+    return skeletonAsync.when(
+      data: (skeleton) {
+        return MessageEvidenceTimelineView(
+          evidenceScope: evidenceScope,
+          skeleton: skeleton,
+          headerData: MessageEvidenceHeaderData(
+            title: 'Message evidence',
+            subtitleParts: [
+              _dateSpan(skeleton.entries),
+              '${_formatCount(skeleton.totalCount)} messages',
             ],
+            statusLine: 'graph skeleton • handle scope • hydrate visible rows',
           ),
-          const SizedBox(height: 4),
-
-          // Direction indicator + message body
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                message.isFromMe
-                    ? CupertinoIcons.arrow_up_right
-                    : CupertinoIcons.arrow_down_left,
-                size: 12,
-                color: message.isFromMe
-                    ? colors.accents.primary
-                    : colors.content.textTertiary,
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  message.text.isEmpty ? '(No text content)' : message.text,
-                  style: typography.body.copyWith(
-                    color: colors.content.textPrimary,
-                    fontSize: 13,
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+          emptyMessage: 'No graph messages found for this handle.',
+        );
+      },
+      loading: () => const Center(child: ProgressCircle()),
+      error: (error, stackTrace) =>
+          Center(child: Text('Unable to load handle evidence: $error')),
     );
   }
+}
+
+String _dateSpan(List<MessageEvidenceSkeletonEntry> entries) {
+  final dates = [
+    for (final entry in entries)
+      if (_parseDate(entry.dateUtc) case final DateTime date) date,
+  ];
+  if (dates.isEmpty) {
+    return 'No dated messages';
+  }
+  dates.sort();
+  final first = _formatDateLabel(dates.first);
+  final last = _formatDateLabel(dates.last);
+  if (first == last) {
+    return first;
+  }
+  return '$first to $last';
+}
+
+DateTime? _parseDate(String? value) {
+  if (value == null || value.isEmpty) {
+    return null;
+  }
+  return DateTime.tryParse(value);
+}
+
+String _formatDateLabel(DateTime value) {
+  return DateFormat.yMMMd().format(value.toLocal());
+}
+
+String _formatCount(int count) {
+  return NumberFormat.decimalPattern().format(count);
 }

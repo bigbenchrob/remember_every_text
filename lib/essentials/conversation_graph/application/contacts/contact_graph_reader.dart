@@ -69,4 +69,45 @@ class ContactGraphReader {
       messageId: messageId,
     );
   }
+
+  Future<List<ContactGraphMessageTimelineEntry>>
+  readContactPageHandleMessageTimeline({
+    required int contactId,
+    required int graphContactId,
+    required int handleId,
+  }) {
+    return repository.readContactPageHandleMessageTimeline(
+      contactId: contactId,
+      graphContactId: graphContactId,
+      handleId: handleId,
+    );
+  }
+
+  Future<ConversationMessage?> readContactPageHandleMessageById({
+    required int contactId,
+    required int graphContactId,
+    required int handleId,
+    required int messageId,
+  }) {
+    return repository.readContactPageHandleMessageById(
+      contactId: contactId,
+      graphContactId: graphContactId,
+      handleId: handleId,
+      messageId: messageId,
+    );
+  }
+
+  Future<List<int>> readContactPageMessageIdsMatchingText({
+    required int contactId,
+    required int graphContactId,
+    required String query,
+    int? handleId,
+  }) {
+    return repository.readContactPageMessageIdsMatchingText(
+      contactId: contactId,
+      graphContactId: graphContactId,
+      query: query,
+      handleId: handleId,
+    );
+  }
 }

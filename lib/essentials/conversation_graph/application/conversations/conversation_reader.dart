@@ -26,6 +26,32 @@ class ConversationReader {
     );
   }
 
+  Future<List<ConversationMessageTimelineEntry>> readMessageTimeline({
+    required int conversationId,
+  }) {
+    return repository.readMessageTimeline(conversationId: conversationId);
+  }
+
+  Future<ConversationMessage?> readMessageById({
+    required int conversationId,
+    required int messageId,
+  }) {
+    return repository.readMessageById(
+      conversationId: conversationId,
+      messageId: messageId,
+    );
+  }
+
+  Future<List<int>> readMessageIdsMatchingText({
+    required int conversationId,
+    required String query,
+  }) {
+    return repository.readMessageIdsMatchingText(
+      conversationId: conversationId,
+      query: query,
+    );
+  }
+
   Future<Map<int, ConversationActivityTrace>> readActivityTraces({
     required List<int> conversationIds,
   }) {

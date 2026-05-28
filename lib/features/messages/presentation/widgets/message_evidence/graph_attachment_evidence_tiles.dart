@@ -88,7 +88,7 @@ class _GraphAttachmentEvidenceTile extends StatelessWidget {
       );
     }
 
-    if (attachment.isImage) {
+    if (attachment.isImage && attachment.isDisplayable) {
       return ImageMessageTile(
         isMe: isFromMe,
         attachment: tileAttachment,
@@ -100,7 +100,7 @@ class _GraphAttachmentEvidenceTile extends StatelessWidget {
       );
     }
 
-    if (attachment.isVideo) {
+    if (attachment.isVideo && attachment.isDisplayable) {
       return VideoMessageTile(
         isMe: isFromMe,
         attachment: tileAttachment,

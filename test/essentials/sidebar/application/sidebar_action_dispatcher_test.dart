@@ -174,6 +174,29 @@ void main() {
       );
     });
 
+    testWidgets(
+      'dispatches handle message opening to standalone handle route',
+      (tester) async {
+        await _mountMessagesPanelReconciliation(tester, container);
+
+        await dispatcher.dispatch(
+          intent: const HandleMessagesOpened(handleId: 9001),
+          context: const SidebarActionDispatchContext(
+            sidebarMode: SidebarMode.messages,
+          ),
+        );
+
+        await _flushMessagesPanelReconciliation(tester);
+
+        expect(
+          _rawActiveSpec(container, WindowPanel.center),
+          equals(
+            const ViewSpec.messages(MessagesSpec.forHandle(handleId: 9001)),
+          ),
+        );
+      },
+    );
+
     test('dispatches reset message data through reset service', () async {
       await dispatcher.dispatch(
         intent: const ResetMessageDataRequested(),
@@ -576,6 +599,48 @@ void main() {
       },
     );
 
+    testWidgets(
+      'dispatches filtered contact heat map focus through projected graph route',
+      (tester) async {
+        await _mountMessagesPanelReconciliation(tester, container);
+
+        final flow = container.read(sidebarFlowProvider.notifier);
+        final anchor = DateTime(2024, 04, 01);
+
+        flow.topMenuChanged(
+          choice: TopChatMenuChoice.contacts,
+          cassetteIndex: 0,
+        );
+        flow.contactChosen(contactId: 42, infoCardIndex: 1);
+        flow.handleSelected(contactId: 42, handleId: 7, cassetteIndex: 4);
+        await _flushMessagesPanelReconciliation(tester);
+
+        await dispatcher.dispatch(
+          intent: HeatMapMonthFocused(contactId: 42, monthAnchor: anchor),
+          context: const SidebarActionDispatchContext(
+            sidebarMode: SidebarMode.messages,
+          ),
+        );
+
+        await _flushMessagesPanelReconciliation(tester);
+
+        expect(container.read(sidebarFlowProvider).selectedHandleId, 7);
+        expect(container.read(sidebarFlowProvider).scrollToDate, anchor);
+        expect(
+          _activeSpec(container, WindowPanel.center),
+          equals(
+            ViewSpec.messages(
+              MessagesSpec.forContact(
+                contactId: 42,
+                scrollToDate: anchor,
+                filterHandleId: 7,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
     test(
       'dispatches choose another contact from downstream cassette context',
       () async {
@@ -808,6 +873,11 @@ ViewSpec? _activeSpec(ProviderContainer container, WindowPanel panel) {
     );
   }
 
+  final stacks = container.read(panelsViewStateProvider(SidebarMode.messages));
+  return stacks[panel]?.activePage?.spec;
+}
+
+ViewSpec? _rawActiveSpec(ProviderContainer container, WindowPanel panel) {
   final stacks = container.read(panelsViewStateProvider(SidebarMode.messages));
   return stacks[panel]?.activePage?.spec;
 }

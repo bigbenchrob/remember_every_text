@@ -48,6 +48,58 @@ void main() {
     expect(timeline?.firstMessageDate.month, 4);
     expect(timeline?.lastMessageDate.month, 5);
   });
+
+  test('contact timeline can be scoped to a selected graph handle', () async {
+    final container = ProviderContainer(
+      overrides: [
+        workingProjectionReadinessProvider.overrideWith((ref) async {
+          return const WorkingProjectionReadiness(
+            isReady: false,
+            reason: 'legacy not ready',
+          );
+        }),
+        chatReadModelSourceProvider.overrideWith(() => _GraphReadModelSource()),
+        contactPageGraphHandleMessageTimelineProvider(
+          contactId: 24,
+          handleId: 12,
+        ).overrideWith((ref) async {
+          return const [
+            ContactGraphMessageTimelineEntry(
+              messageId: 1,
+              dateUtc: '2026-04-10T10:00:00.000Z',
+              monthKey: '2026-04',
+            ),
+            ContactGraphMessageTimelineEntry(
+              messageId: 2,
+              dateUtc: '2026-04-11T10:00:00.000Z',
+              monthKey: '2026-04',
+            ),
+            ContactGraphMessageTimelineEntry(
+              messageId: 3,
+              dateUtc: '2026-06-10T10:00:00.000Z',
+              monthKey: '2026-06',
+            ),
+          ];
+        }),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final timeline = await container.read(
+      contactTimelineProvider(contactId: 24, filterHandleId: 12).future,
+    );
+
+    final months = {
+      for (final row in timeline!.yearRows)
+        for (final month in row.months)
+          '${month.year}-${month.month}': month.messageCount,
+    };
+    expect(timeline.totalMessages, 3);
+    expect(timeline.maxMonthCount, 2);
+    expect(months['2026-4'], 2);
+    expect(months['2026-5'], 0);
+    expect(months['2026-6'], 1);
+  });
 }
 
 class _GraphReadModelSource extends ChatReadModelSource {

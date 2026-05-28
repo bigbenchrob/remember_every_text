@@ -2,9 +2,9 @@ import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../../config/theme/colors/theme_colors.dart';
-import '../../../../../essentials/conversation_graph/application/chat_summaries/chat_summary_provider.dart';
 import '../../../../../essentials/conversation_graph/application/conversations/conversation.dart';
-import '../../../application/message_evidence/graph_attachment_evidence.dart';
+import '../../../application/message_evidence/message_evidence_spine_provider.dart';
+import '../../../domain/message_evidence/message_evidence_scope.dart';
 import '../../view_model/shared/display_widgets/new_display_widgets.dart';
 import 'graph_attachment_evidence_tiles.dart';
 import 'message_evidence_badges.dart';
@@ -12,12 +12,14 @@ import 'message_evidence_badges.dart';
 class GraphMessageEvidenceRow extends ConsumerWidget {
   const GraphMessageEvidenceRow({
     required this.message,
+    required this.evidenceScope,
     this.isAnchorMessage = false,
     this.searchQuery = '',
     super.key,
   });
 
   final ConversationMessage message;
+  final MessageEvidenceScope evidenceScope;
   final bool isAnchorMessage;
   final String searchQuery;
 
@@ -48,6 +50,7 @@ class GraphMessageEvidenceRow extends ConsumerWidget {
         if (message.attachmentCount > 0) ...[
           const SizedBox(height: 2),
           _GraphMessageAttachments(
+            evidenceScope: evidenceScope,
             messageId: message.messageId,
             expectedAttachmentCount: message.attachmentCount,
             isFromMe: message.isFromMe,
@@ -80,6 +83,7 @@ class GraphMessageEvidenceRow extends ConsumerWidget {
 
 class _GraphMessageAttachments extends ConsumerWidget {
   const _GraphMessageAttachments({
+    required this.evidenceScope,
     required this.messageId,
     required this.expectedAttachmentCount,
     required this.isFromMe,
@@ -89,6 +93,7 @@ class _GraphMessageAttachments extends ConsumerWidget {
     this.senderHandleLabel,
   });
 
+  final MessageEvidenceScope evidenceScope;
   final int messageId;
   final int expectedAttachmentCount;
   final bool isFromMe;
@@ -99,17 +104,19 @@ class _GraphMessageAttachments extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final attachmentsAsync = ref.watch(messageAttachmentsProvider(messageId));
+    final attachmentsAsync = ref.watch(
+      messageEvidenceAttachmentsProvider(
+        scope: evidenceScope,
+        messageId: messageId,
+      ),
+    );
     return attachmentsAsync.when(
       data: (attachments) {
         if (attachments.isEmpty) {
           return Text('attachments: $expectedAttachmentCount linked');
         }
-        final evidence = graphAttachmentEvidenceFromMessageAttachments(
-          attachments,
-        );
         return GraphAttachmentEvidenceTiles(
-          attachments: evidence,
+          attachments: attachments,
           isFromMe: isFromMe,
           sender: sender,
           senderHandleLabel: senderHandleLabel,

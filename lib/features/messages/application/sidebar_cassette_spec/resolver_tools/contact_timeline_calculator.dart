@@ -14,11 +14,22 @@ Future<CalendarHeatmapTimelineData?> calculateContactCalendarHeatmapTimeline(
   WorkingDatabase db,
   int contactId,
   DateTime firstMessageDate,
-  DateTime lastMessageDate,
-) async {
+  DateTime lastMessageDate, {
+  int? filterHandleId,
+}) async {
   final firstYear = firstMessageDate.year;
   final lastYear = lastMessageDate.year;
-
+  final filterJoin = filterHandleId == null
+      ? ''
+      : '''
+    JOIN messages m ON m.id = cmi.message_id
+    JOIN chat_to_handle cth
+      ON cth.chat_id = m.chat_id
+     AND cth.handle_id = ?
+    ''';
+  final filterVariables = filterHandleId == null
+      ? const <drift.Variable>[]
+      : [drift.Variable.withInt(filterHandleId)];
   final results = await db
       .customSelect(
         '''
@@ -27,14 +38,17 @@ Future<CalendarHeatmapTimelineData?> calculateContactCalendarHeatmapTimeline(
       strftime('%m', cmi.sent_at_utc) as month,
       COUNT(*) as count
     FROM contact_message_index cmi
+    $filterJoin
     WHERE cmi.contact_id = ?
       AND cmi.sent_at_utc IS NOT NULL
       AND cmi.sent_at_utc != ''
     GROUP BY year, month
     ORDER BY year, month
-    ''',
-        variables: [drift.Variable.withInt(contactId)],
-        readsFrom: {db.contactMessageIndex},
+        ''',
+        variables: [...filterVariables, drift.Variable.withInt(contactId)],
+        readsFrom: filterHandleId == null
+            ? {db.contactMessageIndex}
+            : {db.contactMessageIndex, db.workingMessages, db.chatToHandle},
       )
       .get();
 

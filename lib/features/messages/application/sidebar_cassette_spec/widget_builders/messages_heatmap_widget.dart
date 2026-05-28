@@ -178,8 +178,15 @@ class _ContactAllMessagesEvidence extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final flowState = ref.watch(sidebarFlowProvider);
+    final selectedHandleId = flowState.chosenContactId == contactId
+        ? flowState.selectedHandleId
+        : null;
     final timelineAsync = ref.watch(
-      contactTimelineProvider(contactId: contactId),
+      contactTimelineProvider(
+        contactId: contactId,
+        filterHandleId: selectedHandleId,
+      ),
     );
 
     return timelineAsync.when(
@@ -200,7 +207,12 @@ class _ContactAllMessagesEvidence extends ConsumerWidget {
       error: (error, _) => _HeatmapErrorCard(
         message: 'Unable to load heatmap data. $error',
         onRetry: () {
-          ref.invalidate(contactTimelineProvider(contactId: contactId));
+          ref.invalidate(
+            contactTimelineProvider(
+              contactId: contactId,
+              filterHandleId: selectedHandleId,
+            ),
+          );
         },
       ),
     );
@@ -218,9 +230,16 @@ class _ContactAllMessagesHeatmap extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final flowState = ref.watch(sidebarFlowProvider);
+    final selectedHandleId = flowState.chosenContactId == contactId
+        ? flowState.selectedHandleId
+        : null;
     final selectedMonthAsync = ref.watch(
       currentVisibleMonthForScopeProvider(
-        scope: MessageTimelineScope.contact(contactId: contactId),
+        scope: MessageTimelineScope.contact(
+          contactId: contactId,
+          filterHandleId: selectedHandleId,
+        ),
       ),
     );
 

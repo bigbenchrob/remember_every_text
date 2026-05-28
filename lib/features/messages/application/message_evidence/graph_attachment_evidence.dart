@@ -3,6 +3,7 @@ import 'dart:io';
 import '../../../../essentials/conversation_graph/application/chat_summaries/chat_summary.dart';
 import '../../../attachments/domain/constants/attachment_provenance.dart';
 import '../../../attachments/domain/constants/resolved_attachment_availability.dart';
+import '../../domain/entities/attachment_info.dart' as recovered_domain;
 
 class GraphAttachmentEvidence {
   const GraphAttachmentEvidence({
@@ -199,6 +200,31 @@ GraphAttachmentEvidence graphAttachmentEvidenceFromMessageAttachment(
   );
 }
 
+GraphAttachmentEvidence graphAttachmentEvidenceFromRecoveredAttachment(
+  recovered_domain.AttachmentInfo attachment,
+) {
+  final localPath = attachment.localPath;
+  final displayPath = _expandedExistingPath(localPath);
+  final hasDisplayFile = displayPath != null && displayPath.isNotEmpty;
+
+  return GraphAttachmentEvidence(
+    attachmentSsId: attachment.id,
+    displayName: _recoveredAttachmentDisplayName(attachment),
+    mimeType: attachment.mimeType,
+    uti: null,
+    transferName: attachment.transferName,
+    sourcePathHint: localPath,
+    displayPath: displayPath,
+    availability: hasDisplayFile
+        ? ResolvedAttachmentAvailability.available
+        : localPath != null && localPath.isNotEmpty
+        ? ResolvedAttachmentAvailability.unavailableAwaitingRecovery
+        : ResolvedAttachmentAvailability.nonRecoverable,
+    provenance: hasDisplayFile ? AttachmentProvenance.archived : null,
+    totalBytes: null,
+  );
+}
+
 String _attachmentDisplayName(MessageAttachment attachment) {
   final transferName = attachment.transferName?.trim();
   if (transferName != null && transferName.isNotEmpty) {
@@ -213,6 +239,20 @@ String _attachmentDisplayName(MessageAttachment attachment) {
     return guid;
   }
   return 'attachment ${attachment.attachmentSsId}';
+}
+
+String _recoveredAttachmentDisplayName(
+  recovered_domain.AttachmentInfo attachment,
+) {
+  final transferName = attachment.transferName?.trim();
+  if (transferName != null && transferName.isNotEmpty) {
+    return transferName;
+  }
+  final localPath = attachment.localPath?.trim();
+  if (localPath != null && localPath.isNotEmpty) {
+    return localPath.split('/').last;
+  }
+  return 'attachment ${attachment.id}';
 }
 
 String? _expandedExistingPath(String? rawPath) {

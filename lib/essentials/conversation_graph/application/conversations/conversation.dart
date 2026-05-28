@@ -62,6 +62,18 @@ class ConversationMessage {
   final int? errorCode;
 }
 
+class ConversationMessageTimelineEntry {
+  const ConversationMessageTimelineEntry({
+    required this.messageId,
+    required this.dateUtc,
+    required this.monthKey,
+  });
+
+  final int messageId;
+  final String? dateUtc;
+  final String? monthKey;
+}
+
 class ConversationMessageTextMatch {
   const ConversationMessageTextMatch({
     required this.conversationId,

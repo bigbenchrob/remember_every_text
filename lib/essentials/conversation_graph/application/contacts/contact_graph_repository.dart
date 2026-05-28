@@ -33,4 +33,25 @@ abstract interface class ContactGraphRepository {
     required int graphContactId,
     required int messageId,
   });
+
+  Future<List<ContactGraphMessageTimelineEntry>>
+  readContactPageHandleMessageTimeline({
+    required int contactId,
+    required int graphContactId,
+    required int handleId,
+  });
+
+  Future<ConversationMessage?> readContactPageHandleMessageById({
+    required int contactId,
+    required int graphContactId,
+    required int handleId,
+    required int messageId,
+  });
+
+  Future<List<int>> readContactPageMessageIdsMatchingText({
+    required int contactId,
+    required int graphContactId,
+    required String query,
+    int? handleId,
+  });
 }

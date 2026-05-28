@@ -698,6 +698,42 @@ They must display already-derived facts and meanings. They must not become a sep
 
 ---
 
+## Message Evidence Must Flow Through the Evidence Spine
+
+Message-bearing surfaces must converge on the shared Message Evidence Spine.
+
+The canonical flow is documented in:
+
+```text
+69-MESSAGE-EVIDENCE-SPINE-INVARIANT.md
+```
+
+In short:
+
+```text
+MessageEvidenceScope
+→ lightweight timeline skeleton
+→ visible row hydration
+→ render-ready attachment evidence
+→ shared evidence timeline / row widgets
+```
+
+Source-specific scopes are allowed. Source-specific evidence presentation is not.
+
+Hard rules:
+
+- no new source-specific message renderer without explicit architectural review
+- pagination is not timeline navigation
+- timeline-like evidence scopes must preserve the full logical selected message universe even when hydration/media loading is windowed
+- the skeleton is semantic timeline, heatmap coordination, jump/navigation, and temporal orientation infrastructure, not merely a performance cache
+- timeline-like surfaces coordinate heatmaps, jumps, and anchors against the full lightweight skeleton
+- hydration limits apply to visible rows, not to the selected logical message scope
+- attachment policy must be resolved before widgets receive render-ready evidence
+
+Visual changes to message evidence should usually be made in the shared evidence widgets, not in contact-, conversation-, search-, handle-, or recovered-specific surfaces.
+
+---
+
 # Execution Ownership Invariants
 
 ## Mutation-Producing Work Requires Explicit Ownership

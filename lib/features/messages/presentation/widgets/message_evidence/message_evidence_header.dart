@@ -5,18 +5,52 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
 
-class MessageEvidenceHeaderData {
-  const MessageEvidenceHeaderData({
+class MessageEvidenceHeaderModel {
+  const MessageEvidenceHeaderModel({
     required this.title,
-    this.subtitleParts = const <String>[],
+    this.identityContextLine,
+    this.scopeContextLine,
+    this.dateRangeLabel,
+    this.countLabel,
+    this.scopeNote,
+    this.activeScopeLabel,
     this.statusLine,
-    this.scopeIndicator,
+    this.activeScopeIndicator,
+    this.controls,
+    this.actions,
+    this.details,
+    this.legacySubtitleParts = const <String>[],
   });
 
   final String title;
-  final List<String> subtitleParts;
+  final String? identityContextLine;
+  final String? scopeContextLine;
+  final String? dateRangeLabel;
+  final String? countLabel;
+  final String? scopeNote;
+  final String? activeScopeLabel;
   final String? statusLine;
-  final Widget? scopeIndicator;
+  final Widget? activeScopeIndicator;
+  final Widget? controls;
+  final Widget? actions;
+  final Widget? details;
+  final List<String> legacySubtitleParts;
+}
+
+class MessageEvidenceHeaderData extends MessageEvidenceHeaderModel {
+  const MessageEvidenceHeaderData({
+    required String title,
+    List<String> subtitleParts = const <String>[],
+    String? statusLine,
+    Widget? scopeIndicator,
+    Widget? controls,
+  }) : super(
+         title: title,
+         statusLine: statusLine,
+         activeScopeIndicator: scopeIndicator,
+         controls: controls,
+         legacySubtitleParts: subtitleParts,
+       );
 }
 
 class MessageEvidenceHeader extends ConsumerWidget {
@@ -28,7 +62,7 @@ class MessageEvidenceHeader extends ConsumerWidget {
     super.key,
   });
 
-  final MessageEvidenceHeaderData data;
+  final MessageEvidenceHeaderModel data;
   final Widget? actionStrip;
   final Widget? details;
   final EdgeInsets padding;
@@ -38,10 +72,18 @@ class MessageEvidenceHeader extends ConsumerWidget {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
-    final subtitleParts = data.subtitleParts
-        .where((part) => part.trim().isNotEmpty)
-        .toList(growable: false);
+    final identityContextLine = data.identityContextLine?.trim();
+    final scopeContextLine = data.scopeContextLine?.trim();
+    final scopeNote = data.scopeNote?.trim();
+    final activeScopeLabel = data.activeScopeLabel?.trim();
     final statusLine = data.statusLine?.trim();
+    final metricParts =
+        [data.dateRangeLabel, data.countLabel, ...data.legacySubtitleParts]
+            .whereType<String>()
+            .where((part) => part.trim().isNotEmpty)
+            .toList(growable: false);
+    final actions = data.actions ?? actionStrip;
+    final resolvedDetails = data.details ?? details;
 
     return Padding(
       padding: padding,
@@ -49,15 +91,47 @@ class MessageEvidenceHeader extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(data.title, style: typography.title1),
-          if (subtitleParts.isNotEmpty) ...[
+          if (identityContextLine != null &&
+              identityContextLine.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(identityContextLine, style: typography.callout),
+          ],
+          if (metricParts.isNotEmpty) ...[
             const SizedBox(height: 5),
             Wrap(
               spacing: 14,
               runSpacing: 4,
               children: [
-                for (final part in subtitleParts)
+                for (final part in metricParts)
                   Text(part, style: typography.callout),
               ],
+            ),
+          ],
+          if (scopeContextLine != null && scopeContextLine.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              scopeContextLine,
+              style: typography.caption.copyWith(
+                color: colors.content.textSecondary,
+              ),
+            ),
+          ],
+          if (scopeNote != null && scopeNote.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              scopeNote,
+              style: typography.caption.copyWith(
+                color: colors.content.textSecondary,
+              ),
+            ),
+          ],
+          if (activeScopeLabel != null && activeScopeLabel.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              activeScopeLabel,
+              style: typography.caption.copyWith(
+                color: colors.content.textSecondary,
+              ),
             ),
           ],
           if (statusLine != null && statusLine.isNotEmpty) ...[
@@ -69,12 +143,19 @@ class MessageEvidenceHeader extends ConsumerWidget {
               ),
             ),
           ],
-          if (data.scopeIndicator != null) ...[
+          if (data.activeScopeIndicator != null) ...[
             const SizedBox(height: 6),
-            data.scopeIndicator!,
+            data.activeScopeIndicator!,
           ],
-          if (actionStrip != null) ...[const SizedBox(height: 8), actionStrip!],
-          if (details != null) ...[const SizedBox(height: 10), details!],
+          if (data.controls != null) ...[
+            const SizedBox(height: 8),
+            data.controls!,
+          ],
+          if (actions != null) ...[const SizedBox(height: 8), actions],
+          if (resolvedDetails != null) ...[
+            const SizedBox(height: 10),
+            resolvedDetails,
+          ],
         ],
       ),
     );

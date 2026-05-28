@@ -139,6 +139,12 @@ final class StrayHandleOpened extends SidebarPersistentIntent {
   final int handleId;
 }
 
+final class HandleMessagesOpened extends SidebarPersistentIntent {
+  const HandleMessagesOpened({required this.handleId});
+
+  final int handleId;
+}
+
 final class StrayHandleDismissed extends SidebarPersistentIntent {
   const StrayHandleDismissed({required this.normalizedHandle});
 

@@ -307,6 +307,332 @@ void main() {
     },
   );
 
+  test(
+    'reads contact handle timeline through canonical graph handles',
+    () async {
+      const contactId = 24;
+      final selectedChatId = _id(7);
+      final otherChatId = _id(8);
+      final selectedHandleId = _id(101);
+      final selectedAliasHandleId = _id(102);
+      final otherHandleId = _id(103);
+      final selectedMessageId = _id(201);
+      final otherMessageId = _id(202);
+
+      await _insertContact(workingDatabase, contactId: contactId);
+      await _insertHandle(
+        workingDatabase,
+        handleId: selectedHandleId,
+        value: '+16049995969-iMessage',
+      );
+      await _insertHandle(
+        workingDatabase,
+        handleId: selectedAliasHandleId,
+        value: '+16049995969-SMS',
+      );
+      await _insertHandle(
+        workingDatabase,
+        handleId: otherHandleId,
+        value: '+17789908506-iMessage',
+      );
+      await _insertCanonicalHandle(
+        workingDatabase,
+        canonicalHandleId: selectedHandleId,
+      );
+      await _insertCanonicalHandle(
+        workingDatabase,
+        canonicalHandleId: otherHandleId,
+        displayHandle: '+17789908506',
+        normalizedIdentifier: '17789908506',
+      );
+      await _insertHandleAlias(
+        workingDatabase,
+        handleId: selectedHandleId,
+        canonicalHandleId: selectedHandleId,
+      );
+      await _insertHandleAlias(
+        workingDatabase,
+        handleId: selectedAliasHandleId,
+        canonicalHandleId: selectedHandleId,
+      );
+      await _insertHandleAlias(
+        workingDatabase,
+        handleId: otherHandleId,
+        canonicalHandleId: otherHandleId,
+        normalizedIdentifier: '17789908506',
+      );
+      await _insertContactHandle(
+        workingDatabase,
+        contactId: contactId,
+        handleId: selectedHandleId,
+      );
+      await _insertContactHandle(
+        workingDatabase,
+        contactId: contactId,
+        handleId: otherHandleId,
+      );
+      await _insertChat(workingDatabase, chatId: selectedChatId);
+      await _insertChat(workingDatabase, chatId: otherChatId);
+      await _insertChatHandle(
+        workingDatabase,
+        chatId: selectedChatId,
+        handleId: selectedAliasHandleId,
+      );
+      await _insertChatHandle(
+        workingDatabase,
+        chatId: otherChatId,
+        handleId: otherHandleId,
+      );
+      await _insertMessage(
+        workingDatabase,
+        messageId: selectedMessageId,
+        dateUtc: '2026-05-10T10:00:00.000Z',
+        text: 'selected handle message',
+      );
+      await _insertMessage(
+        workingDatabase,
+        messageId: otherMessageId,
+        dateUtc: '2026-05-11T10:00:00.000Z',
+        text: 'other handle message',
+      );
+      await _insertChatMessage(
+        workingDatabase,
+        chatId: selectedChatId,
+        messageId: selectedMessageId,
+      );
+      await _insertChatMessage(
+        workingDatabase,
+        chatId: otherChatId,
+        messageId: otherMessageId,
+      );
+
+      final timeline = await _reader(workingDatabase)
+          .readContactPageHandleMessageTimeline(
+            contactId: contactId,
+            graphContactId: contactId,
+            handleId: selectedHandleId,
+          );
+      final selectedMessage = await _reader(workingDatabase)
+          .readContactPageHandleMessageById(
+            contactId: contactId,
+            graphContactId: contactId,
+            handleId: selectedHandleId,
+            messageId: selectedMessageId,
+          );
+      final otherMessage = await _reader(workingDatabase)
+          .readContactPageHandleMessageById(
+            contactId: contactId,
+            graphContactId: contactId,
+            handleId: selectedHandleId,
+            messageId: otherMessageId,
+          );
+
+      expect(timeline.map((entry) => entry.messageId), [selectedMessageId]);
+      expect(selectedMessage?.text, 'selected handle message');
+      expect(otherMessage, isNull);
+    },
+  );
+
+  test(
+    'reads contact message ids matching text through canonical graph handles',
+    () async {
+      const contactId = 24;
+      final chatId = _id(7);
+      final canonicalHandleId = _id(101);
+      final aliasHandleId = _id(102);
+      final olderMessageId = _id(201);
+      final newerMessageId = _id(202);
+      final nonMatchingMessageId = _id(203);
+
+      await _insertContact(workingDatabase, contactId: contactId);
+      await _insertHandle(
+        workingDatabase,
+        handleId: canonicalHandleId,
+        value: '+16049995969-iMessage',
+      );
+      await _insertHandle(
+        workingDatabase,
+        handleId: aliasHandleId,
+        value: '+16049995969-SMS',
+      );
+      await _insertCanonicalHandle(
+        workingDatabase,
+        canonicalHandleId: canonicalHandleId,
+      );
+      await _insertHandleAlias(
+        workingDatabase,
+        handleId: canonicalHandleId,
+        canonicalHandleId: canonicalHandleId,
+      );
+      await _insertHandleAlias(
+        workingDatabase,
+        handleId: aliasHandleId,
+        canonicalHandleId: canonicalHandleId,
+      );
+      await _insertContactHandle(
+        workingDatabase,
+        contactId: contactId,
+        handleId: canonicalHandleId,
+      );
+      await _insertChat(workingDatabase, chatId: chatId);
+      await _insertChatHandle(
+        workingDatabase,
+        chatId: chatId,
+        handleId: aliasHandleId,
+      );
+      await _insertMessage(
+        workingDatabase,
+        messageId: newerMessageId,
+        dateUtc: '2026-05-10T10:00:00.000Z',
+        text: 'newer settlement message',
+      );
+      await _insertMessage(
+        workingDatabase,
+        messageId: olderMessageId,
+        dateUtc: '2026-04-10T10:00:00.000Z',
+        text: 'older settlement message',
+      );
+      await _insertMessage(
+        workingDatabase,
+        messageId: nonMatchingMessageId,
+        dateUtc: '2026-03-10T10:00:00.000Z',
+        text: 'unrelated message',
+      );
+      await _insertChatMessage(
+        workingDatabase,
+        chatId: chatId,
+        messageId: newerMessageId,
+      );
+      await _insertChatMessage(
+        workingDatabase,
+        chatId: chatId,
+        messageId: olderMessageId,
+      );
+      await _insertChatMessage(
+        workingDatabase,
+        chatId: chatId,
+        messageId: nonMatchingMessageId,
+      );
+
+      final matches = await _reader(workingDatabase)
+          .readContactPageMessageIdsMatchingText(
+            contactId: contactId,
+            graphContactId: contactId,
+            query: 'settlement',
+          );
+
+      expect(matches, [olderMessageId, newerMessageId]);
+    },
+  );
+
+  test('reads handle-filtered contact message ids matching text', () async {
+    const contactId = 24;
+    final selectedChatId = _id(7);
+    final otherChatId = _id(8);
+    final selectedHandleId = _id(101);
+    final selectedAliasHandleId = _id(102);
+    final otherHandleId = _id(103);
+    final selectedMessageId = _id(201);
+    final otherMessageId = _id(202);
+
+    await _insertContact(workingDatabase, contactId: contactId);
+    await _insertHandle(
+      workingDatabase,
+      handleId: selectedHandleId,
+      value: '+16049995969-iMessage',
+    );
+    await _insertHandle(
+      workingDatabase,
+      handleId: selectedAliasHandleId,
+      value: '+16049995969-SMS',
+    );
+    await _insertHandle(
+      workingDatabase,
+      handleId: otherHandleId,
+      value: '+17789908506-iMessage',
+    );
+    await _insertCanonicalHandle(
+      workingDatabase,
+      canonicalHandleId: selectedHandleId,
+    );
+    await _insertCanonicalHandle(
+      workingDatabase,
+      canonicalHandleId: otherHandleId,
+      displayHandle: '+17789908506',
+      normalizedIdentifier: '17789908506',
+    );
+    await _insertHandleAlias(
+      workingDatabase,
+      handleId: selectedHandleId,
+      canonicalHandleId: selectedHandleId,
+    );
+    await _insertHandleAlias(
+      workingDatabase,
+      handleId: selectedAliasHandleId,
+      canonicalHandleId: selectedHandleId,
+    );
+    await _insertHandleAlias(
+      workingDatabase,
+      handleId: otherHandleId,
+      canonicalHandleId: otherHandleId,
+      normalizedIdentifier: '17789908506',
+    );
+    await _insertContactHandle(
+      workingDatabase,
+      contactId: contactId,
+      handleId: selectedHandleId,
+    );
+    await _insertContactHandle(
+      workingDatabase,
+      contactId: contactId,
+      handleId: otherHandleId,
+    );
+    await _insertChat(workingDatabase, chatId: selectedChatId);
+    await _insertChat(workingDatabase, chatId: otherChatId);
+    await _insertChatHandle(
+      workingDatabase,
+      chatId: selectedChatId,
+      handleId: selectedAliasHandleId,
+    );
+    await _insertChatHandle(
+      workingDatabase,
+      chatId: otherChatId,
+      handleId: otherHandleId,
+    );
+    await _insertMessage(
+      workingDatabase,
+      messageId: selectedMessageId,
+      dateUtc: '2026-05-10T10:00:00.000Z',
+      text: 'settlement from selected handle',
+    );
+    await _insertMessage(
+      workingDatabase,
+      messageId: otherMessageId,
+      dateUtc: '2026-05-11T10:00:00.000Z',
+      text: 'settlement from other handle',
+    );
+    await _insertChatMessage(
+      workingDatabase,
+      chatId: selectedChatId,
+      messageId: selectedMessageId,
+    );
+    await _insertChatMessage(
+      workingDatabase,
+      chatId: otherChatId,
+      messageId: otherMessageId,
+    );
+
+    final matches = await _reader(workingDatabase)
+        .readContactPageMessageIdsMatchingText(
+          contactId: contactId,
+          graphContactId: contactId,
+          query: 'settlement',
+          handleId: selectedHandleId,
+        );
+
+    expect(matches, [selectedMessageId]);
+  });
+
   test('maps legacy AddressBook contact ids to graph contact ids', () {
     expect(
       graphContactIdForContactPage(24),
@@ -353,11 +679,13 @@ Future<void> _insertHandle(
 Future<void> _insertCanonicalHandle(
   ConversationGraphDatabase workingDatabase, {
   required int canonicalHandleId,
+  String displayHandle = '+16049995969',
+  String normalizedIdentifier = '16049995969',
 }) {
   return workingDatabase.database.insert('canonical_handles', <String, Object?>{
     'canonical_handle_ss_id': canonicalHandleId,
-    'display_handle': '+16049995969',
-    'normalized_identifier': '16049995969',
+    'display_handle': displayHandle,
+    'normalized_identifier': normalizedIdentifier,
     'alias_count': 2,
   });
 }
@@ -366,12 +694,13 @@ Future<void> _insertHandleAlias(
   ConversationGraphDatabase workingDatabase, {
   required int handleId,
   required int canonicalHandleId,
+  String normalizedIdentifier = '6049995969',
 }) {
   return workingDatabase.database.insert('handle_aliases', <String, Object?>{
     'handle_ss_id': handleId,
     'canonical_handle_ss_id': canonicalHandleId,
     'raw_identifier': '$handleId',
-    'normalized_identifier': '6049995969',
+    'normalized_identifier': normalizedIdentifier,
     'alias_kind': handleId == canonicalHandleId ? 'canonical' : 'variant',
   });
 }

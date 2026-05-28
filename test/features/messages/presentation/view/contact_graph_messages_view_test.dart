@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:macos_ui/macos_ui.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/contacts/contact_graph.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/contacts/contact_graph_provider.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversations/conversation.dart';
@@ -38,9 +38,7 @@ void main() {
             ],
           ),
         ],
-        child: const CupertinoApp(
-          home: ContactGraphMessagesView(contactId: 24),
-        ),
+        child: const MacosApp(home: ContactGraphMessagesView(contactId: 24)),
       ),
     );
 
@@ -75,7 +73,7 @@ void main() {
             scope: const MessageTimelineScope.contact(contactId: 24),
           ).overrideWith(() => _VisibleMonthSpy(visibleMonthWrites)),
         ],
-        child: CupertinoApp(
+        child: MacosApp(
           home: ContactGraphMessagesView(
             contactId: 24,
             monthAnchor: monthAnchor,
@@ -89,11 +87,135 @@ void main() {
 
     expect(visibleMonthWrites, contains('2026-04'));
   });
+
+  testWidgets('opens filtered graph contact timeline through shared view', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          ..._contactGraphOverrides(
+            messages: const [
+              ConversationMessage(
+                messageId: 3,
+                dateUtc: '2026-05-20T10:00:00.000Z',
+                isFromMe: true,
+                text: 'selected handle graph message',
+                associatedMessageId: null,
+                attachmentCount: 0,
+              ),
+            ],
+            filterHandleId: 12,
+          ),
+        ],
+        child: const MacosApp(
+          home: ContactGraphMessagesView(contactId: 24, filterHandleId: 12),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('selected handle graph message'), findsOneWidget);
+  });
+
+  testWidgets(
+    'publishes filtered selected contact month for heatmap feedback',
+    (tester) async {
+      final visibleMonthWrites = <String?>[];
+      final monthAnchor = DateTime(2026, 4);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ..._contactGraphOverrides(
+              messages: const [
+                ConversationMessage(
+                  messageId: 3,
+                  dateUtc: '2026-04-20T10:00:00.000Z',
+                  isFromMe: true,
+                  text: 'filtered april graph message',
+                  associatedMessageId: null,
+                  attachmentCount: 0,
+                ),
+              ],
+              monthAnchor: monthAnchor,
+              filterHandleId: 12,
+            ),
+            currentVisibleMonthForScopeProvider(
+              scope: const MessageTimelineScope.contact(
+                contactId: 24,
+                filterHandleId: 12,
+              ),
+            ).overrideWith(() => _VisibleMonthSpy(visibleMonthWrites)),
+          ],
+          child: MacosApp(
+            home: ContactGraphMessagesView(
+              contactId: 24,
+              monthAnchor: monthAnchor,
+              filterHandleId: 12,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump();
+
+      expect(visibleMonthWrites, contains('2026-04'));
+    },
+  );
+
+  testWidgets(
+    'contact search overlays matching count without removing nonmatching rows',
+    (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ..._contactGraphOverrides(
+              messages: const [
+                ConversationMessage(
+                  messageId: 1,
+                  dateUtc: '2026-04-20T10:00:00.000Z',
+                  isFromMe: true,
+                  text: 'settlement message',
+                  associatedMessageId: null,
+                  attachmentCount: 0,
+                ),
+                ConversationMessage(
+                  messageId: 2,
+                  dateUtc: '2026-05-20T10:00:00.000Z',
+                  isFromMe: false,
+                  text: 'other message',
+                  associatedMessageId: null,
+                  attachmentCount: 0,
+                ),
+              ],
+              matchingIdsByQuery: const {
+                'settlement': [1],
+              },
+            ),
+          ],
+          child: const MacosApp(home: ContactGraphMessagesView(contactId: 24)),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(MacosTextField), 'settlement');
+      await tester.pumpAndSettle();
+
+      expect(find.text('settlement message'), findsOneWidget);
+      expect(find.text('other message'), findsOneWidget);
+      expect(find.text('1 of 2 messages match "settlement"'), findsOneWidget);
+    },
+  );
 }
 
 List<Override> _contactGraphOverrides({
   required List<ConversationMessage> messages,
   DateTime? monthAnchor,
+  int? filterHandleId,
+  Map<String, List<int>> matchingIdsByQuery = const <String, List<int>>{},
 }) {
   return [
     contactPageGraphMessagesProvider(
@@ -115,6 +237,28 @@ List<Override> _contactGraphOverrides({
           ),
       ];
     }),
+    if (filterHandleId != null)
+      contactPageGraphHandleMessageTimelineProvider(
+        contactId: 24,
+        handleId: filterHandleId,
+      ).overrideWith((ref) async {
+        return [
+          for (final message in messages)
+            ContactGraphMessageTimelineEntry(
+              messageId: message.messageId,
+              dateUtc: message.dateUtc,
+              monthKey: _monthKey(message.dateUtc),
+            ),
+        ];
+      }),
+    for (final entry in matchingIdsByQuery.entries)
+      contactPageGraphMessageIdsMatchingTextProvider(
+        contactId: 24,
+        query: entry.key,
+        handleId: filterHandleId,
+      ).overrideWith((ref) async {
+        return entry.value;
+      }),
     for (final message in messages)
       contactPageGraphMessageByIdProvider(
         contactId: 24,
@@ -122,6 +266,15 @@ List<Override> _contactGraphOverrides({
       ).overrideWith((ref) async {
         return message;
       }),
+    if (filterHandleId != null)
+      for (final message in messages)
+        contactPageGraphHandleMessageByIdProvider(
+          contactId: 24,
+          handleId: filterHandleId,
+          messageId: message.messageId,
+        ).overrideWith((ref) async {
+          return message;
+        }),
     contactPageGraphSnapshotProvider(contactId: 24).overrideWith((ref) async {
       return const ContactGraphSnapshot(
         contactId: 24,

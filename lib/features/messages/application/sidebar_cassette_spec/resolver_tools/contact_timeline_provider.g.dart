@@ -6,7 +6,7 @@ part of 'contact_timeline_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$contactTimelineHash() => r'eba6b9042c0915b838ced4231c08578d51e725c3';
+String _$contactTimelineHash() => r'772435b39543b84f06c9b4af615dd3ad8084e6f4';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -68,15 +68,21 @@ class ContactTimelineFamily
   /// delegates computation to [calculateContactCalendarHeatmapTimeline].
   ///
   /// Copied from [contactTimeline].
-  ContactTimelineProvider call({required int contactId}) {
-    return ContactTimelineProvider(contactId: contactId);
+  ContactTimelineProvider call({required int contactId, int? filterHandleId}) {
+    return ContactTimelineProvider(
+      contactId: contactId,
+      filterHandleId: filterHandleId,
+    );
   }
 
   @override
   ContactTimelineProvider getProviderOverride(
     covariant ContactTimelineProvider provider,
   ) {
-    return call(contactId: provider.contactId);
+    return call(
+      contactId: provider.contactId,
+      filterHandleId: provider.filterHandleId,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -112,10 +118,13 @@ class ContactTimelineProvider
   /// delegates computation to [calculateContactCalendarHeatmapTimeline].
   ///
   /// Copied from [contactTimeline].
-  ContactTimelineProvider({required int contactId})
+  ContactTimelineProvider({required int contactId, int? filterHandleId})
     : this._internal(
-        (ref) =>
-            contactTimeline(ref as ContactTimelineRef, contactId: contactId),
+        (ref) => contactTimeline(
+          ref as ContactTimelineRef,
+          contactId: contactId,
+          filterHandleId: filterHandleId,
+        ),
         from: contactTimelineProvider,
         name: r'contactTimelineProvider',
         debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -125,6 +134,7 @@ class ContactTimelineProvider
         allTransitiveDependencies:
             ContactTimelineFamily._allTransitiveDependencies,
         contactId: contactId,
+        filterHandleId: filterHandleId,
       );
 
   ContactTimelineProvider._internal(
@@ -135,9 +145,11 @@ class ContactTimelineProvider
     required super.debugGetCreateSourceHash,
     required super.from,
     required this.contactId,
+    required this.filterHandleId,
   }) : super.internal();
 
   final int contactId;
+  final int? filterHandleId;
 
   @override
   Override overrideWith(
@@ -154,6 +166,7 @@ class ContactTimelineProvider
         allTransitiveDependencies: null,
         debugGetCreateSourceHash: null,
         contactId: contactId,
+        filterHandleId: filterHandleId,
       ),
     );
   }
@@ -166,13 +179,16 @@ class ContactTimelineProvider
 
   @override
   bool operator ==(Object other) {
-    return other is ContactTimelineProvider && other.contactId == contactId;
+    return other is ContactTimelineProvider &&
+        other.contactId == contactId &&
+        other.filterHandleId == filterHandleId;
   }
 
   @override
   int get hashCode {
     var hash = _SystemHash.combine(0, runtimeType.hashCode);
     hash = _SystemHash.combine(hash, contactId.hashCode);
+    hash = _SystemHash.combine(hash, filterHandleId.hashCode);
 
     return _SystemHash.finish(hash);
   }
@@ -184,6 +200,9 @@ mixin ContactTimelineRef
     on AutoDisposeFutureProviderRef<CalendarHeatmapTimelineData?> {
   /// The parameter `contactId` of this provider.
   int get contactId;
+
+  /// The parameter `filterHandleId` of this provider.
+  int? get filterHandleId;
 }
 
 class _ContactTimelineProviderElement
@@ -193,6 +212,8 @@ class _ContactTimelineProviderElement
 
   @override
   int get contactId => (origin as ContactTimelineProvider).contactId;
+  @override
+  int? get filterHandleId => (origin as ContactTimelineProvider).filterHandleId;
 }
 
 // ignore_for_file: type=lint
