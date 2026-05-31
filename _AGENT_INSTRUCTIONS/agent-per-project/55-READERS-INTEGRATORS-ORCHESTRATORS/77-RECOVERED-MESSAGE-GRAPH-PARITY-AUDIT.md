@@ -290,6 +290,12 @@ This provider is diagnostic-only. It does not replace the production recovered
 message repository, does not mutate overlay/working data, and must not be used
 as a presentation workaround.
 
+The diagnostic is visible in the source-scoped Graph health tab so real-data
+cutover readiness can be checked in the app without running one-off SQL. The
+displayed gate reports recovered counts, now-projectable rows, graph-only rows,
+suppressed/unresolved legacy-only rows, attachment/text/GUID mismatches, and
+whether parity currently allows cutover without evidence loss.
+
 ## Cutover Criteria
 
 Graph recovered repository can replace the legacy repository only when:

@@ -586,6 +586,11 @@ archives.
   dismissed-handle overlay state, and pure parity comparator. Production
   recovered evidence remains on the legacy repository until cutover is
   separately reviewed.
+- Surfaced the recovered-message parity diagnostic in the source-scoped Graph
+  health tab. The UI reports the cutover gate, recovered row counts,
+  now-projectable rows, suppressed/unresolved legacy-only rows, graph-only rows,
+  and attachment/text/GUID mismatch counts without changing production
+  recovered-message routing.
 
 ### Exit Criteria
 
