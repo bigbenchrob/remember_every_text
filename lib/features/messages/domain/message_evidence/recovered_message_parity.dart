@@ -195,7 +195,24 @@ RecoveredMessageParityReport compareRecoveredMessageEvidence({
 }
 
 String _normalizeText(String value) {
-  return value.trim();
+  final trimmed = value.trim();
+  if (_isNoPreservedContentFallback(trimmed)) {
+    return '<no-preserved-content>';
+  }
+  return trimmed;
+}
+
+bool _isNoPreservedContentFallback(String value) {
+  return switch (value) {
+    '(Sparse artifact: no preserved text or payload)' ||
+    '(No preserved content)' ||
+    '(No plain text content; summary metadata preserved)' ||
+    '(No plain text content; app or balloon payload preserved)' ||
+    '(Associated message carrier without plain text)' ||
+    '(No text content)' ||
+    '(No plain text content)' => true,
+    _ => false,
+  };
 }
 
 RecoveredMessageParitySample _sampleForMessage(

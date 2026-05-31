@@ -301,6 +301,14 @@ rows and text mismatches. These samples are intended to explain blockers before
 any recovered-message provider cutover; they are not presentation policy and do
 not alter recovered evidence routing.
 
+Real-data drilldown showed the large text-mismatch count was dominated by
+equivalent no-content fallback labels, for example legacy
+`(Sparse artifact: no preserved text or payload)` versus graph
+`(No preserved content)`. These strings are diagnostic display fallbacks, not
+source text. The parity comparator now normalizes known no-content fallback
+labels to the same value so wording differences do not block cutover as
+evidence loss.
+
 ## Cutover Criteria
 
 Graph recovered repository can replace the legacy repository only when:

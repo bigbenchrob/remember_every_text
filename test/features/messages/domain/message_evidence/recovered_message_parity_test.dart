@@ -95,6 +95,37 @@ void main() {
       expect(report.canCutOverWithoutEvidenceLoss, isFalse);
     });
 
+    test('does not flag equivalent no-content fallback label differences', () {
+      final matchedGraphId = SourceScopedRowKey.pack(
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 10,
+      );
+
+      final report = compareRecoveredMessageEvidence(
+        legacyRecoveredSourceId: liveChatDbSourceId,
+        legacyMessages: [
+          _message(
+            id: 10,
+            guid: 'same-guid',
+            text: '(Sparse artifact: no preserved text or payload)',
+          ),
+        ],
+        graphRecoveredMessages: [
+          _message(
+            id: matchedGraphId,
+            guid: 'same-guid',
+            text: '(No preserved content)',
+          ),
+        ],
+        graphProjectableMessageIds: const <int>{},
+      );
+
+      expect(report.textMismatchCount, 0);
+      expect(report.textMismatchSamples, isEmpty);
+      expect(report.hasEvidenceMismatches, isFalse);
+      expect(report.canCutOverWithoutEvidenceLoss, isTrue);
+    });
+
     test(
       'does not treat known suppressed legacy-only rows as cutover blockers',
       () {

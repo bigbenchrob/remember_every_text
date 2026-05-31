@@ -594,6 +594,9 @@ archives.
 - Added drilldown samples for unresolved legacy-only rows and text mismatches so
   parity blockers can be investigated from typed diagnostic output instead of
   one-off SQL.
+- Classified equivalent "no preserved content" fallback labels as the same
+  parity value. Legacy and graph wording differences for sparse/no-content
+  artifacts no longer count as evidence text loss.
 
 ### Exit Criteria
 
