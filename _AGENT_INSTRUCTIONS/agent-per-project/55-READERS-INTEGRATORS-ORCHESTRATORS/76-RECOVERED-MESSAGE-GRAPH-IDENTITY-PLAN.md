@@ -8,6 +8,7 @@ depends_on:
   - 71-LEGACY-DEPENDENCY-MATRIX.md
   - 73-GRAPH-MIGRATION-EXECUTION-CHECKLIST.md
   - 75-ARCHIVE-RECOVERY-IDENTITY-PLAN.md
+  - 77-RECOVERED-MESSAGE-GRAPH-PARITY-AUDIT.md
 ---
 
 # 76 - Recovered Message Graph Identity Plan
@@ -195,6 +196,13 @@ It is intentionally not the production provider yet. The live recovered view
 continues to use `LegacyWorkingRecoveredMessageEvidenceRepository` until graph
 repository parity is reviewed against real data and remaining recovery/archive
 diagnostics are adjusted.
+
+Real-data parity review is now documented in
+`77-RECOVERED-MESSAGE-GRAPH-PARITY-AUDIT.md`. The graph repository candidate
+covers most legacy recovered evidence, but replacement is blocked by three
+legacy-only rows that are not present in the current source-scoped import/graph
+and by the need to intentionally accept that 195 legacy recovered rows are now
+ordinary graph-projectable conversation messages.
 
 ### 6. Retire legacy recovered tables only after parity is proven
 

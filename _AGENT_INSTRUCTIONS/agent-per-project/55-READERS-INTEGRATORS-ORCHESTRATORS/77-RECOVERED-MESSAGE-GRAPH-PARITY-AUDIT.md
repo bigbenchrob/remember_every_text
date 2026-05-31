@@ -1,0 +1,221 @@
+---
+tier: project
+scope: source-scoped-graph-migration
+status: active
+last_reviewed: 2026-05-31
+depends_on:
+  - 73-GRAPH-MIGRATION-EXECUTION-CHECKLIST.md
+  - 75-ARCHIVE-RECOVERY-IDENTITY-PLAN.md
+  - 76-RECOVERED-MESSAGE-GRAPH-IDENTITY-PLAN.md
+---
+
+# 77 - Recovered Message Graph Parity Audit
+
+## Purpose
+
+This audit compares the current legacy recovered-message evidence universe with
+the graph-backed recovered repository candidate.
+
+It is a cutover gate. The graph repository must not replace the legacy
+repository until the semantic differences below are either accepted or repaired.
+
+## Compared Sources
+
+Legacy recovered evidence:
+
+```text
+working.db.recovered_unlinked_messages
+working.db.recovered_unlinked_attachments
+```
+
+Graph recovered candidate:
+
+```text
+working_ss.db.messages
+LEFT JOIN working_ss.db.chat_to_message
+WHERE chat_to_message.message_ss_id IS NULL
+```
+
+Identity bridge used for comparison:
+
+```text
+legacy recovered id
+→ pack(liveChatDbSourceId, legacy id)
+→ graph message ss_id
+```
+
+This confirms the architectural expectation that legacy recovered `id` behaves
+as the live source message ROWID, while graph identity is source-scoped.
+
+## Real-Data Snapshot
+
+Observed on 2026-05-31:
+
+| Metric | Count |
+| --- | ---: |
+| legacy recovered messages | 20,895 |
+| legacy recovered attachments | 3,852 |
+| legacy no-handle outgoing recovered messages | 11,902 |
+| legacy recovered messages flagged with attachments | 3,622 |
+| graph messages without chat topology | 20,698 |
+| graph no-handle outgoing messages without chat topology | 11,785 |
+| graph orphan messages with attachments | 3,622 |
+
+## Identity Parity
+
+| Comparison | Count |
+| --- | ---: |
+| legacy recovered rows present in graph by packed legacy id | 20,892 |
+| legacy recovered rows still graph-orphaned | 20,697 |
+| legacy recovered rows now projectable into chat topology | 195 |
+| legacy recovered rows absent from graph entirely | 3 |
+| graph orphan rows not present in legacy recovered | 1 |
+
+## Interpretation
+
+The graph candidate is very close to the legacy recovered evidence universe, but
+it is not a byte-for-byte replacement.
+
+The difference is mostly architectural and appears desirable:
+
+- 20,697 legacy recovered rows remain graph-orphan evidence.
+- 195 legacy recovered rows now have `chat_to_message` topology and therefore
+  should be ordinary conversation evidence, not recovered evidence.
+- 3 legacy recovered rows are absent from both `macos_import_ss.messages` and
+  `working_ss.messages`; they require follow-up before legacy storage can be
+  retired completely.
+- 1 graph orphan row is not in legacy recovered evidence, which indicates graph
+  recovery can identify at least one newer orphan row that legacy recovered
+  tables do not contain.
+
+## Attachment Parity
+
+Attachment parity for matched graph-orphan recovered rows is strong:
+
+| Comparison | Count |
+| --- | ---: |
+| matched legacy recovered rows with attachments | 3,622 |
+| matched rows with graph attachment edges | 3,622 |
+| attachment count mismatches on matched rows | 0 |
+
+This supports the graph repository candidate for attachment-bearing recovered
+evidence.
+
+## Text and GUID Parity
+
+For rows matched by packed source identity:
+
+| Comparison | Count |
+| --- | ---: |
+| GUID mismatches | 0 |
+| trimmed text mismatches | 0 |
+
+This supports source-scoped identity as the correct bridge and confirms that
+ordinary recovered text is preserved in the graph path for matched rows.
+
+## Notable Samples
+
+### Legacy Rows Now Projectable
+
+These rows exist in legacy recovered evidence but now have graph chat topology:
+
+| legacy id | chat ss_id | sample |
+| ---: | ---: | --- |
+| 10577 | 8796093022580 | Let’s not talk about that. |
+| 25145 | 8796093022570 | And I knew he liked it. |
+| 25153 | 8796093022570 | Can we chat around 5-5:30? |
+
+Interpretation: graph topology has repaired records that legacy classified as
+unlinked. If accepted, these should disappear from the recovered bucket and
+appear in ordinary conversation evidence.
+
+### Legacy Rows Absent From Graph
+
+These rows exist in legacy recovered evidence but are absent from current graph
+and import_ss data:
+
+| legacy id | sent at UTC | sample |
+| ---: | --- | --- |
+| 130510 | 2026-02-12T05:13:09.000Z | TD Alert: Chequing ***9921 is below $100 |
+| 134337 | 2026-04-09T22:10:36.000Z | On Its Way: Purolator Your Way has shipp |
+| 134421 | 2026-04-10T14:32:36.000Z | CRA Multi-Factor Authentication (MFA): Y |
+
+Interpretation: these may be source rows that were present when legacy recovered
+tables were built but no longer exist in the current live source/import graph.
+They are the main blocker to deleting legacy recovered storage.
+
+### Graph Orphan Not In Legacy
+
+| source rowid | sent at UTC | sample |
+| ---: | --- | --- |
+| 148959 | 2026-05-26T18:43:17.000Z | TD will not send you sign-in links by text. Beware of scams. |
+
+Interpretation: graph recovered evidence can identify new orphan rows that are
+not represented in legacy recovered tables.
+
+## Cutover Implications
+
+Replacing the legacy recovered repository with the graph repository would:
+
+- preserve the large majority of recovered evidence
+- preserve attachment evidence for matched rows
+- preserve text/GUID facts for matched rows
+- intentionally remove 195 now-projectable rows from recovered views
+- add 1 graph-only orphan row
+- drop 3 legacy-only rows unless a fallback or recovered-source import is added
+
+The 195-row difference is likely correct under the graph architecture:
+recovered evidence means "not safely projectable into normal conversation
+topology." Once topology exists, the message belongs in conversation evidence.
+
+The 3 legacy-only rows are different. They represent evidence that graph cannot
+currently reconstruct from `macos_import_ss` / `working_ss`.
+
+## Recommendation
+
+Do not wire the graph recovered repository into production yet.
+
+Next safe implementation step:
+
+1. Keep the legacy recovered repository as the production provider.
+2. Add a diagnostic provider around the pure parity comparator so the app can
+   produce the same comparison without one-off SQL.
+3. Decide whether legacy-only rows should be:
+   - retained through a small compatibility fallback, or
+   - imported as a recovered source, or
+   - accepted as historical legacy-only evidence that blocks retirement until a
+     recovered-source model exists.
+
+Status: started. A pure `compareRecoveredMessageEvidence` comparator now
+classifies:
+
+- graph-orphan matches
+- now-projectable legacy rows
+- legacy-only rows
+- graph-only rows
+- attachment-count mismatches
+- GUID/text mismatches
+
+It is intentionally repository-agnostic and not wired into production.
+
+## Cutover Criteria
+
+Graph recovered repository can replace the legacy repository only when:
+
+- graph-orphan matched rows preserve text, sender, semantic, and attachment
+  evidence
+- now-projectable legacy rows are intentionally excluded from recovered views
+  and visible in conversation evidence
+- legacy-only rows have an explicit retention strategy
+- recovered no-handle outgoing inference remains acceptable on real contact
+  scopes
+- diagnostics explain expected count differences
+
+## Non-Goals
+
+Do not:
+
+- force now-projectable messages back into recovered evidence
+- collapse recovered identity by GUID
+- delete legacy recovered tables while legacy-only rows remain unaccounted for
+- add presentation-specific recovered workarounds

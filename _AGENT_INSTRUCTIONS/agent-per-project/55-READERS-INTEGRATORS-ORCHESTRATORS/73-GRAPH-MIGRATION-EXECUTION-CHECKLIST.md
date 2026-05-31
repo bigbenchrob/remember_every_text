@@ -9,6 +9,7 @@ depends_on:
   - 72-GRAPH-CHOKE-POINTS-AND-RETIREMENT-BLOCKERS.md
   - 75-ARCHIVE-RECOVERY-IDENTITY-PLAN.md
   - 76-RECOVERED-MESSAGE-GRAPH-IDENTITY-PLAN.md
+  - 77-RECOVERED-MESSAGE-GRAPH-PARITY-AUDIT.md
 ---
 
 # 73 - Graph Migration Execution Checklist
@@ -563,6 +564,16 @@ archives.
 - Focused graph recovered repository tests pass for topology exclusion,
   duplicate GUID/overlapping ROWID preservation, contact-scoped inference, and
   sparse/attachment-only evidence.
+- Added `77-RECOVERED-MESSAGE-GRAPH-PARITY-AUDIT.md` with real-data comparison
+  between legacy recovered rows and graph orphan evidence. The graph candidate
+  matches 20,697 legacy recovered rows as graph-orphan evidence, repairs 195
+  legacy recovered rows into ordinary chat topology, exposes 1 new graph-only
+  orphan row, and leaves 3 legacy-only rows without current import/graph
+  coverage. Attachment/text/GUID parity is clean for matched rows.
+- Added a pure recovered-message parity comparator so future cutover checks can
+  classify graph-orphan matches, now-projectable legacy rows, legacy-only rows,
+  graph-only rows, and evidence mismatches without embedding comparison logic
+  in widgets or repository implementations.
 
 ### Exit Criteria
 
