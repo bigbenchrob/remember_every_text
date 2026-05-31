@@ -554,6 +554,15 @@ archives.
   graph-projectable rows are excluded, recovered-only rows use source-scoped
   message ids, duplicate GUIDs do not collapse, sparse/attachment-only evidence
   remains visible, and contact-scoped no-handle inference remains intact.
+- Added `GraphRecoveredMessageEvidenceRepository` as an un-wired graph-backed
+  replacement candidate for the legacy recovered repository. It reads
+  source-scoped graph messages without `chat_to_message` topology, preserves
+  `ss_id` message identity, hydrates graph attachment evidence, and keeps
+  contact-scoped direct/no-handle inference behavior. Production recovered
+  evidence still uses the legacy repository until real-data parity is reviewed.
+- Focused graph recovered repository tests pass for topology exclusion,
+  duplicate GUID/overlapping ROWID preservation, contact-scoped inference, and
+  sparse/attachment-only evidence.
 
 ### Exit Criteria
 

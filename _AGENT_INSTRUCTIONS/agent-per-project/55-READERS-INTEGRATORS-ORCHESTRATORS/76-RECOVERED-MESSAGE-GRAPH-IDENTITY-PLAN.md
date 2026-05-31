@@ -184,6 +184,18 @@ any recovered storage schema exists. The contract locks:
 Do not migrate the tables until the repository contract and behavior tests make
 the old/new implementations substitutable.
 
+Status: started carefully. `GraphRecoveredMessageEvidenceRepository` now exists
+as an un-wired replacement candidate over source-scoped graph facts. It reads
+`working_ss.messages` rows that have no `chat_to_message` topology edge,
+preserves source-scoped `ss_id` identity, hydrates attachment evidence through
+`working_ss.message_to_attachment`, and preserves contact-scoped direct matching
+plus nearby no-handle outgoing inference.
+
+It is intentionally not the production provider yet. The live recovered view
+continues to use `LegacyWorkingRecoveredMessageEvidenceRepository` until graph
+repository parity is reviewed against real data and remaining recovery/archive
+diagnostics are adjusted.
+
 ### 6. Retire legacy recovered tables only after parity is proven
 
 The old `working.db.recovered_unlinked_*` tables can be deleted only when the
