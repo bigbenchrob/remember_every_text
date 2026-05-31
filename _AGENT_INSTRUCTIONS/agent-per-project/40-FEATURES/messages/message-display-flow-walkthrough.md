@@ -9,11 +9,20 @@ links:
 tests: []
 feature: messages
 doc_type: walkthrough
-status: active
-last_updated: 2026-04-21
+status: superseded
+last_updated: 2026-05-29
 ---
 
 # Message Display Flow Walkthrough (Unified Timeline)
+
+> **Superseded by the Message Evidence Spine.**
+>
+> This walkthrough describes the retired `MessagesTimelineView` /
+> ordinal-strategy implementation. Current message evidence surfaces use
+> `MessageEvidenceScope -> MessageEvidenceTimelineSkeleton ->
+> MessageEvidenceRowData -> MessageEvidenceTimelineView`.
+> See `55-READERS-INTEGRATORS-ORCHESTRATORS/69-MESSAGE-EVIDENCE-SPINE-INVARIANT.md`
+> before making message presentation changes.
 
 This is the *human-readable* walkthrough of how message display works today.
 It’s written to answer the question: **“If I open a message timeline, what code runs, in what order, and why is it split up this way?”**

@@ -18,7 +18,6 @@ class SqliteContactProjectionRepository implements ContactProjectionRepository {
       columns: <String>[
         'ss_id',
         'display_name',
-        'short_name',
         'first_name',
         'last_name',
         'organization',
@@ -48,13 +47,11 @@ class SqliteContactProjectionRepository implements ContactProjectionRepository {
       for (final row in contactRows) {
         final contactId = _requiredInt(row, 'ss_id');
         final displayName = (row['display_name'] as String?)?.trim();
-        final shortName = (row['short_name'] as String?)?.trim();
         final givenName = (row['first_name'] as String?)?.trim();
         final familyName = (row['last_name'] as String?)?.trim();
         final organization = (row['organization'] as String?)?.trim();
         if (!_isProjectableContact(
           displayName: displayName,
-          shortName: shortName,
           givenName: givenName,
           familyName: familyName,
           organization: organization,
@@ -68,25 +65,17 @@ class SqliteContactProjectionRepository implements ContactProjectionRepository {
               INSERT OR IGNORE INTO contacts (
                 contact_id,
                 display_name,
-                short_name,
                 given_name,
                 family_name,
                 organization
-              ) VALUES (?, ?, ?, ?, ?, ?)
+              ) VALUES (?, ?, ?, ?, ?)
               ''',
               <Object?>[
                 contactId,
                 _resolvedDisplayName(
                   displayName: displayName,
-                  shortName: shortName,
                   givenName: givenName,
                   familyName: familyName,
-                  organization: organization,
-                ),
-                _resolvedShortName(
-                  displayName: displayName,
-                  shortName: shortName,
-                  givenName: givenName,
                   organization: organization,
                 ),
                 givenName,
@@ -184,13 +173,11 @@ class SqliteContactProjectionRepository implements ContactProjectionRepository {
 
 bool _isProjectableContact({
   required String? displayName,
-  required String? shortName,
   required String? givenName,
   required String? familyName,
   required String? organization,
 }) {
   return _isMeaningful(displayName) ||
-      _isMeaningful(shortName) ||
       _isMeaningful(givenName) ||
       _isMeaningful(familyName) ||
       _isMeaningful(organization);
@@ -205,28 +192,13 @@ bool _isMeaningful(String? value) {
 
 String _resolvedDisplayName({
   required String? displayName,
-  required String? shortName,
   required String? givenName,
   required String? familyName,
   required String? organization,
 }) {
   return displayName ??
       organization ??
-      shortName ??
       givenName ??
       familyName ??
-      'Unknown Contact';
-}
-
-String _resolvedShortName({
-  required String? displayName,
-  required String? shortName,
-  required String? givenName,
-  required String? organization,
-}) {
-  return shortName ??
-      givenName ??
-      displayName ??
-      organization ??
       'Unknown Contact';
 }

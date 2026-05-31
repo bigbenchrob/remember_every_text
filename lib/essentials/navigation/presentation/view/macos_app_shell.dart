@@ -8,9 +8,6 @@ import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../providers.dart';
 import '../../../debug/application/developer_mode_provider.dart';
-import '../../../incremental_update/application/messages/integrators/import_decision_provider.dart';
-import '../../../incremental_update/application/messages/orchestrators/sync_state_polling_orchestrator_provider.dart';
-import '../../../incremental_update/domain/sealed_unions/import_decision.dart';
 import '../../../incremental_update_ss/presentation/incremental_update_status_sheet.dart';
 import '../../../onboarding/application/onboarding_gate_provider.dart';
 import '../../../onboarding/domain/onboarding_status.dart';
@@ -39,53 +36,15 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
   DateTime _lastFrameSave = DateTime.fromMillisecondsSinceEpoch(0);
   bool _pendingTrailingFrameSave = false;
 
-  late final ProviderSubscription<AsyncValue<ImportDecision>>
-  _importDecisionSubscription;
-  ImportDecision? _lastImportDecision;
-
   @override
   void initState() {
     super.initState();
-
-    _importDecisionSubscription = ref.listenManual<AsyncValue<ImportDecision>>(
-      importDecisionProvider,
-      (previous, next) {
-        next.when(
-          data: (decision) {
-            if (decision == _lastImportDecision) {
-              return;
-            }
-
-            _lastImportDecision = decision;
-            debugPrint('Shadow import decision changed: $decision');
-          },
-          loading: () {},
-          error: (error, stackTrace) {
-            debugPrint('Shadow import decision failed: $error');
-            debugPrint(stackTrace.toString());
-          },
-        );
-      },
-    );
   }
 
   @override
   void dispose() {
-    _importDecisionSubscription.close();
     _windowFrameDebounce?.cancel();
     super.dispose();
-  }
-
-  void _startMessageSnapshotDeltaPolling() {
-    ref.read(deltaRefreshOrchestratorProvider).startPolling();
-  }
-
-  void _stopMessageSnapshotDeltaPolling() {
-    ref.read(deltaRefreshOrchestratorProvider).stopPolling();
-  }
-
-  void _refreshMessageSnapshotDeltaOnce() {
-    unawaited(ref.read(deltaRefreshOrchestratorProvider).refreshOnce());
   }
 
   void _showIncrementalUpdateStatus() {
@@ -166,27 +125,6 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
               centerTitle: true,
               leading: const AppModeToggle(),
               actions: [
-                if (kDebugMode)
-                  ToolBarIconButton(
-                    label: 'Start message snapshot polling',
-                    icon: const MacosIcon(CupertinoIcons.play_fill),
-                    onPressed: _startMessageSnapshotDeltaPolling,
-                    showLabel: false,
-                  ),
-                if (kDebugMode)
-                  ToolBarIconButton(
-                    label: 'Stop message snapshot polling',
-                    icon: const MacosIcon(CupertinoIcons.stop_fill),
-                    onPressed: _stopMessageSnapshotDeltaPolling,
-                    showLabel: false,
-                  ),
-                if (kDebugMode)
-                  ToolBarIconButton(
-                    label: 'Refresh shadow incremental update once',
-                    icon: const MacosIcon(CupertinoIcons.arrow_clockwise),
-                    onPressed: _refreshMessageSnapshotDeltaOnce,
-                    showLabel: false,
-                  ),
                 if (kDebugMode)
                   ToolBarIconButton(
                     label: 'Source-scoped incremental update status',

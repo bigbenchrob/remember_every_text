@@ -4,13 +4,15 @@ import 'package:intl/intl.dart';
 
 import '../../../../essentials/conversation_graph/application/conversations/conversation.dart';
 import '../../../../essentials/conversation_graph/application/conversations/conversation_reader_provider.dart';
-import '../../../chats/application/conversation_browser/contact_handle_label_provider.dart';
+import '../../../contacts/feature_level_providers.dart';
 import '../../application/message_evidence/message_evidence_spine_provider.dart';
 import '../../domain/message_evidence/message_evidence_scope.dart';
+import '../../domain/message_evidence/message_evidence_search_mode.dart';
+import '../../domain/message_evidence/message_evidence_skeleton.dart';
 import '../widgets/message_evidence/message_evidence_header.dart';
 import '../widgets/message_evidence/message_evidence_timeline_view.dart';
 
-class ConversationMessagesPreviewView extends ConsumerWidget {
+class ConversationMessagesPreviewView extends ConsumerStatefulWidget {
   const ConversationMessagesPreviewView({
     required this.conversationId,
     this.anchorMessageId,
@@ -23,38 +25,108 @@ class ConversationMessagesPreviewView extends ConsumerWidget {
   final String? searchQuery;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ConversationMessagesPreviewView> createState() =>
+      _ConversationMessagesPreviewViewState();
+}
+
+class _ConversationMessagesPreviewViewState
+    extends ConsumerState<ConversationMessagesPreviewView> {
+  late final TextEditingController _searchController = TextEditingController(
+    text: widget.searchQuery?.trim() ?? '',
+  );
+  var _query = '';
+  var _searchMode = MessageEvidenceSearchMode.allTerms;
+
+  @override
+  void initState() {
+    super.initState();
+    _query = _searchController.text;
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    setState(() {
+      _query = _searchController.text;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final evidenceScope = ConversationEvidenceScope(
-      conversationId: conversationId,
+      conversationId: widget.conversationId,
     );
+    final normalizedQuery = _query.trim();
     final skeletonAsync = ref.watch(
       messageEvidenceTimelineSkeletonProvider(scope: evidenceScope),
     );
+    final matchingIdsAsync = normalizedQuery.isEmpty
+        ? null
+        : ref.watch(
+            messageEvidenceTextMatchIdsProvider(
+              scope: evidenceScope,
+              query: normalizedQuery,
+              mode: _searchMode,
+            ),
+          );
     final overviewsAsync = ref.watch(
       conversationOverviewsProvider(limit: 1000),
     );
-    final labelsAsync = ref.watch(contactHandleLabelsProvider);
+    final identityResolverAsync = ref.watch(displayIdentityResolverProvider);
 
     return skeletonAsync.when(
       data: (skeleton) {
         final overview = _overviewForConversation(
           overviewsAsync.valueOrNull,
-          conversationId,
+          widget.conversationId,
+        );
+        final matchingIds = matchingIdsAsync?.valueOrNull;
+        final isMatchingLoaded = matchingIdsAsync?.hasValue ?? false;
+        final visibleSkeleton = _visibleSkeleton(
+          skeleton: skeleton,
+          query: normalizedQuery,
+          matchingIds: matchingIds,
+          isMatchingLoaded: isMatchingLoaded,
         );
         return MessageEvidenceTimelineView(
           evidenceScope: evidenceScope,
-          skeleton: skeleton,
+          skeleton: visibleSkeleton,
           headerData: MessageEvidenceHeaderModel(
             title:
-                'Conversation: ${_conversationTitle(overview, labelsAsync.valueOrNull)}',
+                'Conversation with ${_conversationTitle(overview, identityResolverAsync.valueOrNull)}',
             dateRangeLabel: _dateRangeLabel(overview),
-            countLabel: _countLabel(overview, skeleton.totalCount),
-            activeScopeLabel: _activeScopeLabel(),
-            statusLine: _statusLine(),
+            countLabel: _countLabel(
+              overview,
+              skeleton.totalCount,
+              normalizedQuery,
+              matchingIds,
+              isMatchingLoaded,
+            ),
+            activeScopeLabel: _activeScopeLabel(normalizedQuery),
+            statusLine: _statusLine(normalizedQuery),
+            searchConfig: MessageEvidenceHeaderSearchConfig(
+              controller: _searchController,
+              placeholder: 'Search this conversation',
+              mode: _searchMode,
+              onModeChanged: (mode) {
+                setState(() {
+                  _searchMode = mode;
+                });
+              },
+            ),
           ),
-          emptyMessage: 'No graph messages found for this conversation.',
-          anchorMessageId: anchorMessageId,
-          highlightQuery: searchQuery ?? '',
+          emptyMessage: _emptyMessage(
+            query: normalizedQuery,
+            isMatchingLoaded: isMatchingLoaded,
+          ),
+          anchorMessageId: widget.anchorMessageId,
+          highlightQuery: normalizedQuery,
         );
       },
       loading: () =>
@@ -87,19 +159,31 @@ class ConversationMessagesPreviewView extends ConsumerWidget {
     return dateSpan;
   }
 
-  String _countLabel(ConversationOverview? overview, int skeletonCount) {
+  String _countLabel(
+    ConversationOverview? overview,
+    int skeletonCount,
+    String query,
+    List<int>? matchingIds,
+    bool isMatchingLoaded,
+  ) {
     final messageCount = overview?.messageCount ?? skeletonCount;
+    if (query.isNotEmpty) {
+      if (isMatchingLoaded) {
+        return '${_formatCount(matchingIds?.length ?? 0)} of '
+            '${_formatCount(messageCount)} messages match "$query"';
+      }
+      return 'matching messages...';
+    }
     return '${_formatCount(messageCount)} messages';
   }
 
-  String? _activeScopeLabel() {
+  String? _activeScopeLabel(String query) {
     final parts = <String>[];
-    final normalizedSearchQuery = searchQuery?.trim();
-    if (normalizedSearchQuery != null && normalizedSearchQuery.isNotEmpty) {
-      parts.add('Search context "$normalizedSearchQuery"');
+    if (query.isNotEmpty) {
+      parts.add('Message text contains "$query"');
     }
-    if (anchorMessageId != null) {
-      parts.add('Anchored at message $anchorMessageId');
+    if (widget.anchorMessageId != null) {
+      parts.add('Anchored at message ${widget.anchorMessageId}');
     }
     if (parts.isEmpty) {
       return null;
@@ -107,60 +191,60 @@ class ConversationMessagesPreviewView extends ConsumerWidget {
     return parts.join(' • ');
   }
 
-  String _statusLine() {
+  String _statusLine(String query) {
     final parts = <String>[
-      'graph skeleton',
+      'evidence skeleton',
       'full conversation',
       'hydrate visible rows',
     ];
-    final normalizedSearchQuery = searchQuery?.trim();
-    if (normalizedSearchQuery != null && normalizedSearchQuery.isNotEmpty) {
-      parts.add('search context "$normalizedSearchQuery"');
+    if (query.isNotEmpty) {
+      parts.add('search context "$query"');
     }
-    if (anchorMessageId != null) {
-      parts.add('anchor $anchorMessageId');
+    if (widget.anchorMessageId != null) {
+      parts.add('anchor ${widget.anchorMessageId}');
     }
     return parts.join(' • ');
   }
 }
 
-String _conversationTitle(
-  ConversationOverview? overview,
-  Map<String, ContactHandleLabel>? labels,
-) {
-  final participants = _conversationParticipants(overview, labels);
-  if (participants.isEmpty) {
-    return 'Unknown participants';
+MessageEvidenceTimelineSkeleton _visibleSkeleton({
+  required MessageEvidenceTimelineSkeleton skeleton,
+  required String query,
+  required List<int>? matchingIds,
+  required bool isMatchingLoaded,
+}) {
+  if (query.isEmpty) {
+    return skeleton;
   }
-  if (participants.length == 1) {
-    return participants.first;
+  if (!isMatchingLoaded) {
+    return const MessageEvidenceTimelineSkeleton(entries: []);
   }
-  if (participants.length == 2) {
-    return '${participants[0]} and ${participants[1]}';
-  }
-  return '${participants[0]}, ${participants[1]} + ${participants.length - 2} more';
+  return skeleton.filteredByMessageIds(matchingIds ?? const <int>[]);
 }
 
-List<String> _conversationParticipants(
-  ConversationOverview? overview,
-  Map<String, ContactHandleLabel>? labels,
-) {
-  final handles = overview?.participantHandles ?? const <String>[];
-  final participants = <String>[];
-  final seen = <String>{};
-  for (final handle in handles) {
-    final trimmed = handle.trim();
-    if (trimmed.isEmpty) {
-      continue;
-    }
-    final label =
-        labels?[contactHandleLabelKeyForTesting(trimmed)]?.displayName;
-    final participant = label ?? trimmed;
-    if (seen.add(participant.toLowerCase())) {
-      participants.add(participant);
-    }
+String _emptyMessage({required String query, required bool isMatchingLoaded}) {
+  if (query.isEmpty) {
+    return 'No messages found for this conversation.';
   }
-  return participants;
+  if (!isMatchingLoaded) {
+    return 'Matching conversation messages...';
+  }
+  return 'No conversation messages match "$query".';
+}
+
+String _conversationTitle(
+  ConversationOverview? overview,
+  DisplayIdentityResolver? identityResolver,
+) {
+  if (overview == null || identityResolver == null) {
+    return 'Unknown participants';
+  }
+  return identityResolver
+      .resolveConversationFromHandles(
+        conversationId: overview.conversationId,
+        handles: overview.participantHandles,
+      )
+      .title;
 }
 
 String _conversationDateSpan(ConversationOverview? overview) {

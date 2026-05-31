@@ -79,7 +79,7 @@ Current proposal:
 dateRangeLabel
 countLabel
 
-graph skeleton • hydrate visible rows
+evidence skeleton • hydrate visible rows
 
 is not long-term user-facing semantic meaning.
 
@@ -157,6 +157,6 @@ while preserving:
 
 * Message Evidence Spine invariants
 * shared evidence rendering
-* graph skeleton/hydration architecture
+* evidence skeleton/hydration architecture
 * existing message evidence behavior
 ```

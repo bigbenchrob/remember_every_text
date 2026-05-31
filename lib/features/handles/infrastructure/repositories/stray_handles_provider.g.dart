@@ -6,11 +6,10 @@ part of 'stray_handles_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$strayHandlesHash() => r'd198b606bee289aa82b8f46e7acccaa6c59b1db6';
+String _$strayHandlesHash() => r'72fb1f084952cf9e57d56656b6dc3c13b0e2faee';
 
-/// Returns all handles that are truly "stray": no participant link in the
-/// working DB AND no linked override (participant or virtual participant) in
-/// the overlay DB.
+/// Returns all handles that are truly "stray": no graph contact link and no
+/// linked override (participant or virtual participant) in the overlay DB.
 ///
 /// Handles with an overlay row that has only `reviewed_at` set (both
 /// participant IDs null) are still included — they are reviewed but unlinked.
@@ -62,12 +61,12 @@ final spamCandidateHandlesProvider =
 // ignore: unused_element
 typedef SpamCandidateHandlesRef =
     AutoDisposeFutureProviderRef<List<StrayHandleSummary>>;
-String _$dismissedHandlesHash() => r'9d636e75f470fe305fab1faa8803e5974403a8a7';
+String _$dismissedHandlesHash() => r'ddc7ca4a688a2d804c4de11d59b56dc675b8443e';
 
 /// Returns only dismissed handles for the escape hatch view.
 ///
 /// Note: This returns metadata about dismissed handles by looking them up
-/// in the working database using their normalized values.
+/// in the graph database using their normalized values.
 ///
 /// Copied from [dismissedHandles].
 @ProviderFor(dismissedHandles)

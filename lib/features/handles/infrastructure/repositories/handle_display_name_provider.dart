@@ -2,6 +2,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../essentials/db/feature_level_providers.dart';
+import '../../../contacts/feature_level_providers.dart';
 
 part 'handle_display_name_provider.g.dart';
 
@@ -11,7 +12,9 @@ part 'handle_display_name_provider.g.dart';
 @riverpod
 Future<String> handleDisplayName(Ref ref, {required int handleId}) async {
   final overlayDb = await ref.watch(overlayDatabaseProvider.future);
-  final workingDb = await ref.watch(driftWorkingDatabaseProvider.future);
+  final graphDb = await ref.watch(
+    driftConversationGraphDatabaseProvider.future,
+  );
 
   // Check overlay for a linked virtual or real participant.
   final override = await overlayDb.getHandleOverride(handleId);
@@ -28,19 +31,41 @@ Future<String> handleDisplayName(Ref ref, {required int handleId}) async {
 
     // Real participant link?
     if (override.participantId != null) {
-      final participant =
-          await (workingDb.select(workingDb.workingParticipants)
-                ..where((tbl) => tbl.id.equals(override.participantId!)))
-              .getSingleOrNull();
-      if (participant != null) {
-        return participant.displayName;
+      final resolver = await ref.watch(displayIdentityResolverProvider.future);
+      final identity = resolver.resolveContact(override.participantId!);
+      if (identity.isKnownContact) {
+        return identity.primaryLabel;
       }
     }
   }
 
-  // Fall back to the raw handle display name from the working DB.
-  final handle = await (workingDb.select(
-    workingDb.handlesCanonical,
-  )..where((tbl) => tbl.id.equals(handleId))).getSingleOrNull();
-  return handle?.displayName ?? 'Handle #$handleId';
+  final resolver = await ref.watch(displayIdentityResolverProvider.future);
+  final graphIdentity = resolver.identitiesByHandleId[handleId];
+  if (graphIdentity != null) {
+    return graphIdentity.primaryLabel;
+  }
+
+  final graphRows = await graphDb.selectRows(
+    '''
+    SELECT
+      COALESCE(ch.display_handle, h.id) AS display_value
+    FROM handles h
+    LEFT JOIN handle_aliases ha ON ha.handle_ss_id = h.ss_id
+    LEFT JOIN canonical_handles ch
+      ON ch.canonical_handle_ss_id =
+        COALESCE(ha.canonical_handle_ss_id, h.ss_id)
+    WHERE h.ss_id = ?
+       OR ch.canonical_handle_ss_id = ?
+    LIMIT 1
+    ''',
+    <Object?>[handleId, handleId],
+  );
+  if (graphRows.isNotEmpty) {
+    final displayValue = (graphRows.single['display_value'] as String?)?.trim();
+    if (displayValue != null && displayValue.isNotEmpty) {
+      return displayValue;
+    }
+  }
+
+  return 'Handle #$handleId';
 }

@@ -11,6 +11,7 @@
 // - Cassette payloads and render-edge builders
 // - Settings providers
 // - Repositories (for cross-feature data access)
+// - Public contact display identity read models/providers
 //
 // Does NOT export:
 // - Resolvers
@@ -18,6 +19,8 @@
 // - Infrastructure details
 // =============================================================================
 
+export './application/display_identity/display_identity.dart';
+export './application/display_identity/display_identity_resolver_provider.dart';
 export './application/sidebar_cassette_spec/coordinators/cassette_coordinator.dart';
 export './application/sidebar_cassette_spec/coordinators/contact_chooser_cassette_state_provider.dart';
 export './application/sidebar_cassette_spec/coordinators/info_cassette_coordinator.dart';
@@ -30,4 +33,6 @@ export './application/sidebar_cassette_spec/rendering/contacts_cassette_body_bui
 export './application/tooltips_spec/coordinators/contacts_tooltip_coordinator.dart';
 export './domain/spec_classes/contacts_cassette_spec.dart';
 export './domain/spec_classes/contacts_tooltip_spec.dart';
+export './infrastructure/repositories/contact_profile_provider.dart';
+export './infrastructure/repositories/handles_for_contact_provider.dart';
 export './infrastructure/repositories/recent_contacts_repository.dart';

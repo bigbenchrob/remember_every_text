@@ -674,7 +674,7 @@ class _EvidenceCard extends StatelessWidget {
             typography: typography,
           ),
           _EvidenceRow(
-            label: 'Working database',
+            label: 'Conversation graph',
             value: report.workingDatabase.hasData
                 ? 'Ready'
                 : 'Not prepared yet',

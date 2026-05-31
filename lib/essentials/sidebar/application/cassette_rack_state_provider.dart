@@ -1,7 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../db/feature_level_providers/working_db_populated_provider.dart';
+import '../../db/feature_level_providers/conversation_graph_readiness_provider.dart';
 import '../../navigation/domain/sidebar_mode.dart';
 import '../feature_level_providers.dart';
 import './sidebar_flow_state_provider.dart';
@@ -69,7 +69,7 @@ abstract class CassetteRack with _$CassetteRack {
 class CassetteRackState extends _$CassetteRackState {
   @override
   CassetteRack build(SidebarMode mode) {
-    final isPopulated = ref.watch(workingDbPopulatedProvider);
+    final isPopulated = ref.watch(conversationGraphPopulatedProvider);
     switch (mode) {
       case SidebarMode.messages:
         if (!isPopulated) {
@@ -154,7 +154,7 @@ class CassetteRackState extends _$CassetteRackState {
     }
 
     final preserved = state.cassettes.take(index).toList(growable: false);
-    final isPopulated = ref.read(workingDbPopulatedProvider);
+    final isPopulated = ref.read(conversationGraphPopulatedProvider);
     final cascaded = isPopulated
         ? _cascadeForCurrentMode(newSpec)
         : <CassetteSpec>[newSpec];

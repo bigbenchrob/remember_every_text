@@ -23,81 +23,25 @@ final searchServiceProvider = AutoDisposeProvider<SearchService>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef SearchServiceRef = AutoDisposeProviderRef<SearchService>;
-String _$searchIndexMetricsRepositoryHash() =>
-    r'd1a58e1e5c01199184a1bc5fa65f07078dfdd032';
+String _$graphSearchRepositoryHash() =>
+    r'61cce3e06bb300300fe10d514e6a73f60b1dbb95';
 
-/// See also [searchIndexMetricsRepository].
-@ProviderFor(searchIndexMetricsRepository)
-final searchIndexMetricsRepositoryProvider =
-    AutoDisposeProvider<SearchIndexMetricsRepository>.internal(
-      searchIndexMetricsRepository,
-      name: r'searchIndexMetricsRepositoryProvider',
+/// See also [graphSearchRepository].
+@ProviderFor(graphSearchRepository)
+final graphSearchRepositoryProvider =
+    AutoDisposeFutureProvider<GraphSearchRepository>.internal(
+      graphSearchRepository,
+      name: r'graphSearchRepositoryProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
           ? null
-          : _$searchIndexMetricsRepositoryHash,
+          : _$graphSearchRepositoryHash,
       dependencies: null,
       allTransitiveDependencies: null,
     );
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef SearchIndexMetricsRepositoryRef =
-    AutoDisposeProviderRef<SearchIndexMetricsRepository>;
-String _$searchIndexersHash() => r'264e610a174260152dddb804ccd2cde429035185';
-
-/// See also [searchIndexers].
-@ProviderFor(searchIndexers)
-final searchIndexersProvider =
-    AutoDisposeProvider<List<SearchIndexer>>.internal(
-      searchIndexers,
-      name: r'searchIndexersProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$searchIndexersHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef SearchIndexersRef = AutoDisposeProviderRef<List<SearchIndexer>>;
-String _$useFtsSearchByDefaultHash() =>
-    r'd0ea74625aee5e00de9a43a3ad7668d7266f7625';
-
-/// See also [useFtsSearchByDefault].
-@ProviderFor(useFtsSearchByDefault)
-final useFtsSearchByDefaultProvider = AutoDisposeProvider<bool>.internal(
-  useFtsSearchByDefault,
-  name: r'useFtsSearchByDefaultProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$useFtsSearchByDefaultHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef UseFtsSearchByDefaultRef = AutoDisposeProviderRef<bool>;
-String _$searchIndexOrchestratorHash() =>
-    r'8acac6542aa0dbae5614cd04b0e5640f80f822e9';
-
-/// See also [searchIndexOrchestrator].
-@ProviderFor(searchIndexOrchestrator)
-final searchIndexOrchestratorProvider =
-    AutoDisposeProvider<SearchIndexOrchestrator>.internal(
-      searchIndexOrchestrator,
-      name: r'searchIndexOrchestratorProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$searchIndexOrchestratorHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef SearchIndexOrchestratorRef =
-    AutoDisposeProviderRef<SearchIndexOrchestrator>;
+typedef GraphSearchRepositoryRef =
+    AutoDisposeFutureProviderRef<GraphSearchRepository>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

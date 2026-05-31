@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:remember_this_text/essentials/db/feature_level_providers/working_db_populated_provider.dart';
+import 'package:remember_this_text/essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart';
 import 'package:remember_this_text/essentials/navigation/application/panel_widget_providers.dart';
 import 'package:remember_this_text/essentials/navigation/application/panels_view_state_provider.dart';
 import 'package:remember_this_text/essentials/navigation/domain/entities/view_spec.dart';
@@ -19,12 +19,9 @@ import 'package:remember_this_text/essentials/sidebar/presentation/view/sidebar_
 import 'package:remember_this_text/essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 import 'package:remember_this_text/features/contacts/domain/spec_classes/contacts_cassette_spec.dart';
 import 'package:remember_this_text/features/contacts/domain/spec_classes/contacts_info_cassette_spec.dart';
-import 'package:remember_this_text/features/messages/application/timeline/ordinal/message_timeline_ordinal_provider.dart';
 import 'package:remember_this_text/features/messages/application/view_spec/coordinators/view_spec_coordinator.dart'
     as messages_view_spec;
 import 'package:remember_this_text/features/messages/domain/spec_classes/messages_view_spec.dart';
-import 'package:remember_this_text/features/messages/domain/value_objects/message_timeline_scope.dart';
-import 'package:remember_this_text/features/messages/presentation/view_model/timeline/message_timeline_view_model_provider.dart';
 import 'package:remember_this_text/features/settings/application/view_spec/coordinators/view_spec_coordinator.dart'
     as settings_view_spec;
 import 'package:remember_this_text/features/settings/domain/spec_classes/settings_view_spec.dart';
@@ -99,8 +96,8 @@ void main() {
         );
         final container = ProviderContainer(
           overrides: [
-            workingDbPopulatedProvider.overrideWith(
-              _AlwaysPopulatedWorkingDb.new,
+            conversationGraphPopulatedProvider.overrideWith(
+              _AlwaysPopulatedGraph.new,
             ),
             ...cassetteRackTestHarnessOverrides(),
             sidebarCassetteResolutionStateProvider(
@@ -207,8 +204,8 @@ void main() {
 
         final container = ProviderContainer(
           overrides: [
-            workingDbPopulatedProvider.overrideWith(
-              _AlwaysPopulatedWorkingDb.new,
+            conversationGraphPopulatedProvider.overrideWith(
+              _AlwaysPopulatedGraph.new,
             ),
             ...cassetteRackTestHarnessOverrides(),
             sidebarCassetteResolutionStateProvider(
@@ -329,8 +326,8 @@ void main() {
 
         final container = ProviderContainer(
           overrides: [
-            workingDbPopulatedProvider.overrideWith(
-              _AlwaysPopulatedWorkingDb.new,
+            conversationGraphPopulatedProvider.overrideWith(
+              _AlwaysPopulatedGraph.new,
             ),
             ...cassetteRackTestHarnessOverrides(),
             sidebarCassetteResolutionStateProvider(
@@ -430,8 +427,8 @@ void main() {
     test('initial messages mode has no center projection until selection', () {
       final container = ProviderContainer(
         overrides: [
-          workingDbPopulatedProvider.overrideWith(
-            _AlwaysPopulatedWorkingDb.new,
+          conversationGraphPopulatedProvider.overrideWith(
+            _AlwaysPopulatedGraph.new,
           ),
         ],
       );
@@ -453,8 +450,8 @@ void main() {
       () {
         final container = ProviderContainer(
           overrides: [
-            workingDbPopulatedProvider.overrideWith(
-              _AlwaysPopulatedWorkingDb.new,
+            conversationGraphPopulatedProvider.overrideWith(
+              _AlwaysPopulatedGraph.new,
             ),
           ],
         );
@@ -481,8 +478,8 @@ void main() {
       () {
         final container = ProviderContainer(
           overrides: [
-            workingDbPopulatedProvider.overrideWith(
-              _AlwaysPopulatedWorkingDb.new,
+            conversationGraphPopulatedProvider.overrideWith(
+              _AlwaysPopulatedGraph.new,
             ),
           ],
         );
@@ -518,8 +515,8 @@ void main() {
       (tester) async {
         final container = ProviderContainer(
           overrides: [
-            workingDbPopulatedProvider.overrideWith(
-              _AlwaysPopulatedWorkingDb.new,
+            conversationGraphPopulatedProvider.overrideWith(
+              _AlwaysPopulatedGraph.new,
             ),
             messages_view_spec.viewSpecCoordinatorProvider.overrideWith(
               _FakeMessagesViewSpecCoordinator.new,
@@ -555,8 +552,8 @@ void main() {
       (tester) async {
         final container = ProviderContainer(
           overrides: [
-            workingDbPopulatedProvider.overrideWith(
-              _AlwaysPopulatedWorkingDb.new,
+            conversationGraphPopulatedProvider.overrideWith(
+              _AlwaysPopulatedGraph.new,
             ),
             settings_view_spec.viewSpecCoordinatorProvider.overrideWith(
               _FakeSettingsViewSpecCoordinator.new,
@@ -594,8 +591,8 @@ void main() {
     test('preserves sidebar-independent center stack over flow projection', () {
       final container = ProviderContainer(
         overrides: [
-          workingDbPopulatedProvider.overrideWith(
-            _AlwaysPopulatedWorkingDb.new,
+          conversationGraphPopulatedProvider.overrideWith(
+            _AlwaysPopulatedGraph.new,
           ),
         ],
       );
@@ -621,8 +618,8 @@ void main() {
       () {
         final container = ProviderContainer(
           overrides: [
-            workingDbPopulatedProvider.overrideWith(
-              _AlwaysPopulatedWorkingDb.new,
+            conversationGraphPopulatedProvider.overrideWith(
+              _AlwaysPopulatedGraph.new,
             ),
           ],
         );
@@ -662,8 +659,8 @@ void main() {
     test('conversation top menu waits for sidebar-selected conversation', () {
       final container = ProviderContainer(
         overrides: [
-          workingDbPopulatedProvider.overrideWith(
-            _AlwaysPopulatedWorkingDb.new,
+          conversationGraphPopulatedProvider.overrideWith(
+            _AlwaysPopulatedGraph.new,
           ),
         ],
       );
@@ -710,8 +707,8 @@ void main() {
       () {
         final container = ProviderContainer(
           overrides: [
-            workingDbPopulatedProvider.overrideWith(
-              _AlwaysPopulatedWorkingDb.new,
+            conversationGraphPopulatedProvider.overrideWith(
+              _AlwaysPopulatedGraph.new,
             ),
           ],
         );
@@ -774,15 +771,11 @@ void main() {
 
   group('effectiveRightPanelSpec', () {
     test('derives stored right panel when effective center supports it', () {
-      const globalScope = MessageTimelineScope.global();
       final container = ProviderContainer(
         overrides: [
-          workingDbPopulatedProvider.overrideWith(
-            _AlwaysPopulatedWorkingDb.new,
+          conversationGraphPopulatedProvider.overrideWith(
+            _AlwaysPopulatedGraph.new,
           ),
-          messageTimelineViewModelProvider(
-            scope: globalScope,
-          ).overrideWith(_FakeSearchingGlobalTimelineViewModel.new),
         ],
       );
 
@@ -811,15 +804,11 @@ void main() {
     test(
       'flow-managed center change hides incompatible stored right panel by derivation',
       () {
-        const globalScope = MessageTimelineScope.global();
         final container = ProviderContainer(
           overrides: [
-            workingDbPopulatedProvider.overrideWith(
-              _AlwaysPopulatedWorkingDb.new,
+            conversationGraphPopulatedProvider.overrideWith(
+              _AlwaysPopulatedGraph.new,
             ),
-            messageTimelineViewModelProvider(
-              scope: globalScope,
-            ).overrideWith(_FakeSearchingGlobalTimelineViewModel.new),
           ],
         );
 
@@ -854,71 +843,12 @@ void main() {
       },
     );
 
-    test('clearing global search hides search-result context right panel', () {
-      const globalScope = MessageTimelineScope.global();
+    test('contact flow does not claim search-result context right panel', () {
       final container = ProviderContainer(
         overrides: [
-          workingDbPopulatedProvider.overrideWith(
-            _AlwaysPopulatedWorkingDb.new,
+          conversationGraphPopulatedProvider.overrideWith(
+            _AlwaysPopulatedGraph.new,
           ),
-          messageTimelineViewModelProvider(
-            scope: globalScope,
-          ).overrideWith(_FakeSearchingGlobalTimelineViewModel.new),
-        ],
-      );
-
-      container.read(sidebarFlowProvider.notifier).showGlobalTimeline();
-      container
-          .read(panelsViewStateProvider(SidebarMode.messages).notifier)
-          .show(
-            panel: WindowPanel.right,
-            spec: const ViewSpec.messages(
-              MessagesSpec.searchResultContext(messageId: 99, chatId: 5),
-            ),
-          );
-
-      expect(
-        container.read(effectiveRightPanelSpecProvider(SidebarMode.messages)),
-        equals(
-          const ViewSpec.messages(
-            MessagesSpec.searchResultContext(messageId: 99, chatId: 5),
-          ),
-        ),
-      );
-      expect(
-        container.read(shouldShowEndSidebarProvider(SidebarMode.messages)),
-        isTrue,
-      );
-
-      final notifier =
-          container.read(
-                messageTimelineViewModelProvider(scope: globalScope).notifier,
-              )
-              as _FakeSearchingGlobalTimelineViewModel;
-      notifier.setSearchActive(isActive: false);
-
-      expect(
-        container.read(effectiveRightPanelSpecProvider(SidebarMode.messages)),
-        isNull,
-      );
-      expect(
-        container.read(shouldShowEndSidebarProvider(SidebarMode.messages)),
-        isFalse,
-      );
-
-      container.dispose();
-    });
-
-    test('active contact search keeps search-result context right panel', () {
-      const contactScope = MessageTimelineScope.contact(contactId: 42);
-      final container = ProviderContainer(
-        overrides: [
-          workingDbPopulatedProvider.overrideWith(
-            _AlwaysPopulatedWorkingDb.new,
-          ),
-          messageTimelineViewModelProvider(
-            scope: contactScope,
-          ).overrideWith(_FakeSearchingContactTimelineViewModel.new),
         ],
       );
 
@@ -934,63 +864,6 @@ void main() {
             ),
           );
 
-      expect(
-        container.read(effectiveRightPanelSpecProvider(SidebarMode.messages)),
-        equals(
-          const ViewSpec.messages(
-            MessagesSpec.searchResultContext(messageId: 99, chatId: 5),
-          ),
-        ),
-      );
-      expect(
-        container.read(shouldShowEndSidebarProvider(SidebarMode.messages)),
-        isTrue,
-      );
-
-      container.dispose();
-    });
-
-    test('clearing contact search hides search-result context right panel', () {
-      const contactScope = MessageTimelineScope.contact(contactId: 42);
-      final container = ProviderContainer(
-        overrides: [
-          workingDbPopulatedProvider.overrideWith(
-            _AlwaysPopulatedWorkingDb.new,
-          ),
-          messageTimelineViewModelProvider(
-            scope: contactScope,
-          ).overrideWith(_FakeSearchingContactTimelineViewModel.new),
-        ],
-      );
-
-      container
-          .read(sidebarFlowProvider.notifier)
-          .showContactTimelineAt(contactId: 42);
-      container
-          .read(panelsViewStateProvider(SidebarMode.messages).notifier)
-          .show(
-            panel: WindowPanel.right,
-            spec: const ViewSpec.messages(
-              MessagesSpec.searchResultContext(messageId: 99, chatId: 5),
-            ),
-          );
-
-      expect(
-        container.read(shouldShowEndSidebarProvider(SidebarMode.messages)),
-        isTrue,
-      );
-
-      final notifier =
-          container.read(
-                messageTimelineViewModelProvider(scope: contactScope).notifier,
-              )
-              as _FakeSearchingContactTimelineViewModel;
-      notifier.setSearchActive(isActive: false);
-
-      expect(
-        container.read(effectiveRightPanelSpecProvider(SidebarMode.messages)),
-        isNull,
-      );
       expect(
         container.read(shouldShowEndSidebarProvider(SidebarMode.messages)),
         isFalse,
@@ -1002,15 +875,11 @@ void main() {
     testWidgets('right panel host renders derived right content', (
       tester,
     ) async {
-      const globalScope = MessageTimelineScope.global();
       final container = ProviderContainer(
         overrides: [
-          workingDbPopulatedProvider.overrideWith(
-            _AlwaysPopulatedWorkingDb.new,
+          conversationGraphPopulatedProvider.overrideWith(
+            _AlwaysPopulatedGraph.new,
           ),
-          messageTimelineViewModelProvider(
-            scope: globalScope,
-          ).overrideWith(_FakeSearchingGlobalTimelineViewModel.new),
           messages_view_spec.viewSpecCoordinatorProvider.overrideWith(
             _FakeMessagesViewSpecCoordinator.new,
           ),
@@ -1057,8 +926,8 @@ void main() {
       );
       final container = ProviderContainer(
         overrides: [
-          workingDbPopulatedProvider.overrideWith(
-            _AlwaysPopulatedWorkingDb.new,
+          conversationGraphPopulatedProvider.overrideWith(
+            _AlwaysPopulatedGraph.new,
           ),
           ...cassetteRackTestHarnessOverrides(),
           sidebarCassetteResolutionStateProvider(
@@ -1180,8 +1049,8 @@ void main() {
         );
         final container = ProviderContainer(
           overrides: [
-            workingDbPopulatedProvider.overrideWith(
-              _AlwaysPopulatedWorkingDb.new,
+            conversationGraphPopulatedProvider.overrideWith(
+              _AlwaysPopulatedGraph.new,
             ),
             ...cassetteRackTestHarnessOverrides(),
             sidebarCassetteResolutionStateProvider(
@@ -1325,8 +1194,8 @@ void main() {
         );
         final container = ProviderContainer(
           overrides: [
-            workingDbPopulatedProvider.overrideWith(
-              _AlwaysPopulatedWorkingDb.new,
+            conversationGraphPopulatedProvider.overrideWith(
+              _AlwaysPopulatedGraph.new,
             ),
             ...cassetteRackTestHarnessOverrides(),
             sidebarCassetteResolutionStateProvider(
@@ -1460,74 +1329,10 @@ void main() {
   });
 }
 
-class _AlwaysPopulatedWorkingDb extends WorkingDbPopulated {
+class _AlwaysPopulatedGraph extends ConversationGraphPopulated {
   @override
   bool build() {
     return true;
-  }
-}
-
-class _FakeSearchingGlobalTimelineViewModel extends MessageTimelineViewModel {
-  @override
-  MessageTimelineViewModelState build({required MessageTimelineScope scope}) {
-    final searchController = TextEditingController(text: 'anchor');
-    ref.onDispose(searchController.dispose);
-
-    return MessageTimelineViewModelState(
-      scope: scope,
-      searchController: searchController,
-      searchQuery: 'anchor',
-      debouncedQuery: 'anchor',
-      searchMode: MessageSearchMode.allTerms,
-      searchResultIds: const AsyncValue<List<int>>.data(<int>[99]),
-      ordinal: const AsyncValue<MessageTimelineOrdinalState>.loading(),
-    );
-  }
-
-  void setSearchActive({required bool isActive}) {
-    state = MessageTimelineViewModelState(
-      scope: state.scope,
-      searchController: state.searchController,
-      searchQuery: isActive ? 'anchor' : '',
-      debouncedQuery: isActive ? 'anchor' : '',
-      searchMode: state.searchMode,
-      searchResultIds: isActive
-          ? const AsyncValue<List<int>>.data(<int>[99])
-          : const AsyncValue<List<int>>.data(<int>[]),
-      ordinal: state.ordinal,
-    );
-  }
-}
-
-class _FakeSearchingContactTimelineViewModel extends MessageTimelineViewModel {
-  @override
-  MessageTimelineViewModelState build({required MessageTimelineScope scope}) {
-    final searchController = TextEditingController(text: 'anchor');
-    ref.onDispose(searchController.dispose);
-
-    return MessageTimelineViewModelState(
-      scope: scope,
-      searchController: searchController,
-      searchQuery: 'anchor',
-      debouncedQuery: 'anchor',
-      searchMode: MessageSearchMode.allTerms,
-      searchResultIds: const AsyncValue<List<int>>.data(<int>[99]),
-      ordinal: const AsyncValue<MessageTimelineOrdinalState>.loading(),
-    );
-  }
-
-  void setSearchActive({required bool isActive}) {
-    state = MessageTimelineViewModelState(
-      scope: state.scope,
-      searchController: state.searchController,
-      searchQuery: isActive ? 'anchor' : '',
-      debouncedQuery: isActive ? 'anchor' : '',
-      searchMode: state.searchMode,
-      searchResultIds: isActive
-          ? const AsyncValue<List<int>>.data(<int>[99])
-          : const AsyncValue<List<int>>.data(<int>[]),
-      ordinal: state.ordinal,
-    );
   }
 }
 
@@ -1553,7 +1358,6 @@ class _FakeMessagesViewSpecCoordinator
   Widget buildForSpec(MessagesSpec spec) {
     return spec.when(
       conversationBrowser: () => const Text('conversation-browser'),
-      forChat: (chatId) => Text('chat:$chatId'),
       forConversation: (conversationId, anchorMessageId, searchQuery) =>
           Text('conversation:$conversationId'),
       forContact: (contactId, scrollToDate, filterHandleId) =>
@@ -1569,8 +1373,6 @@ class _FakeMessagesViewSpecCoordinator
       searchResultContext: (messageId, chatId, beforeCount, afterCount) =>
           Text('search:$messageId'),
       handleLens: (handleId) => Text('lens:$handleId'),
-      forChatInDateRange: (chatId, startDate, endDate) =>
-          Text('chat-range:$chatId'),
     );
   }
 }

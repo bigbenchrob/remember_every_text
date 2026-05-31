@@ -5,7 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../essentials/conversation_graph/application/conversation_signatures/conversation_signature.dart';
 import '../../../../../essentials/conversation_graph/application/conversation_signatures/conversation_signature_provider.dart';
-import '../../../../chats/application/conversation_browser/contact_handle_label_provider.dart';
+import '../../../../contacts/feature_level_providers.dart';
 
 part 'conversation_signature_display_provider.g.dart';
 
@@ -84,16 +84,18 @@ Future<List<ConversationSignatureDisplayModel>> conversationSignatureDisplay(
   final signatures = await ref.watch(
     conversationSignaturesProvider(limit: limit).future,
   );
-  final contactLabels = await ref.watch(contactHandleLabelsProvider.future);
+  final identityResolver = await ref.watch(
+    displayIdentityResolverProvider.future,
+  );
   final excludedFavouriteIds = excludedFavouriteConversationIds.toSet();
 
   final displayModels = [
     for (final signature in signatures)
       _toDisplayModel(
         signature,
-        resolveContactHandleDisplayNames(
-          signature.participantLabels,
-          contactLabels,
+        identityResolver.resolveConversationFromHandles(
+          conversationId: signature.conversationId,
+          handles: signature.participantLabels,
         ),
       ),
   ];
@@ -139,14 +141,16 @@ Future<List<ConversationSignatureDisplayModel>> _readDisplayModelsByIds(
   final signatures = await reader.readSignaturesByIds(
     conversationIds: conversationIds,
   );
-  final contactLabels = await ref.watch(contactHandleLabelsProvider.future);
+  final identityResolver = await ref.watch(
+    displayIdentityResolverProvider.future,
+  );
   final displayModelsById = {
     for (final signature in signatures)
       signature.conversationId: _toDisplayModel(
         signature,
-        resolveContactHandleDisplayNames(
-          signature.participantLabels,
-          contactLabels,
+        identityResolver.resolveConversationFromHandles(
+          conversationId: signature.conversationId,
+          handles: signature.participantLabels,
         ),
       ),
   };
@@ -160,19 +164,12 @@ Future<List<ConversationSignatureDisplayModel>> _readDisplayModelsByIds(
 
 ConversationSignatureDisplayModel _toDisplayModel(
   ConversationSignature signature,
-  List<String> resolvedParticipants,
+  ConversationDisplayIdentity displayIdentity,
 ) {
-  final participantLabels = resolvedParticipants.isEmpty
-      ? const ['Unknown Contact']
-      : List<String>.unmodifiable(resolvedParticipants);
-
   return ConversationSignatureDisplayModel(
     conversationId: signature.conversationId,
-    title: _deriveTitle(
-      isGroup: signature.isGroup,
-      participants: participantLabels,
-    ),
-    participantLabels: participantLabels,
+    title: displayIdentity.title,
+    participantLabels: displayIdentity.participantLabels,
     participantCount: signature.participantCount,
     isGroup: signature.isGroup,
     messageCount: signature.messageCount,
@@ -182,22 +179,6 @@ ConversationSignatureDisplayModel _toDisplayModel(
     lastMessageText: signature.lastMessageText,
     activityMonths: signature.activityMonths,
   );
-}
-
-String _deriveTitle({
-  required bool isGroup,
-  required List<String> participants,
-}) {
-  if (participants.isEmpty) {
-    return 'Unknown Conversation';
-  }
-  if (!isGroup || participants.length == 1) {
-    return participants.first;
-  }
-  if (participants.length == 2) {
-    return '${participants[0]} and ${participants[1]}';
-  }
-  return '${participants[0]}, ${participants[1]} + ${participants.length - 2}';
 }
 
 String conversationSignatureFilterLabel(ConversationSignatureFilter filter) {

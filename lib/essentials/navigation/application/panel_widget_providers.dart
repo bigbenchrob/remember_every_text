@@ -81,7 +81,6 @@ PanelStack effectiveRightPanelStack(Ref ref, SidebarMode mode) {
   final flowState = ref.watch(sidebarFlowProvider);
   final effectiveCenterSpec = ref.watch(effectiveCenterPanelSpecProvider(mode));
   if (_shouldHideStoredRightPanel(
-    ref: ref,
     flowState: flowState,
     centerSpec: effectiveCenterSpec,
     rightStack: rightStack,
@@ -219,7 +218,6 @@ bool _shouldShowRecoveredContextFor(SidebarFlowState flowState) {
 }
 
 bool _shouldHideStoredRightPanel({
-  required Ref ref,
   required SidebarFlowState flowState,
   required ViewSpec? centerSpec,
   required PanelStack rightStack,
@@ -234,22 +232,9 @@ bool _shouldHideStoredRightPanel({
   }
 
   return !_isCenterSpecCompatibleWithSidebar(
-    ref: ref,
     flowState: flowState,
     centerSpec: rightSpec,
   );
-}
-
-bool _isContactTimelineSearchActive(Ref ref, {required int contactId}) {
-  final contactTimelineViewModel = ref.watch(
-    messages_feature.messageTimelineViewModelProvider(
-      scope: messages_feature.MessageTimelineScope.contact(
-        contactId: contactId,
-      ),
-    ),
-  );
-
-  return contactTimelineViewModel.isSearching;
 }
 
 PanelStack _resolveEffectiveCenterStack({
@@ -340,7 +325,6 @@ bool _shouldHideStoredCenterPanel({
     }
 
     return !_isCenterSpecCompatibleWithSidebar(
-      ref: ref,
       flowState: flowState,
       centerSpec: centerSpec,
     );
@@ -355,7 +339,6 @@ bool _shouldHideStoredCenterPanel({
   }
 
   return !_isCenterSpecCompatibleWithSidebar(
-    ref: ref,
     flowState: flowState,
     centerSpec: centerSpec,
   );
@@ -385,7 +368,6 @@ bool _isFlowManagedCenterSpec(ViewSpec spec) {
 }
 
 bool _isCenterSpecCompatibleWithSidebar({
-  required Ref ref,
   required SidebarFlowState flowState,
   required ViewSpec? centerSpec,
 }) {
@@ -399,7 +381,6 @@ bool _isCenterSpecCompatibleWithSidebar({
         conversationBrowser: () {
           return flowState.topMenuChoice == TopChatMenuChoice.conversations;
         },
-        forChat: (_) => true,
         forConversation: (conversationId, _, _) {
           return (flowState.topMenuChoice == TopChatMenuChoice.conversations &&
                   flowState.selectedConversationId == conversationId) ||
@@ -437,26 +418,11 @@ bool _isCenterSpecCompatibleWithSidebar({
         },
         recoveredAttachmentViewer: (_, __) => true,
         searchResultContext: (_, __, ___, ____) {
-          if (flowState.topMenuChoice == TopChatMenuChoice.searchAllMessages) {
-            return _isGlobalTimelineSearchActive(ref);
-          }
-
-          final chosenContactId = flowState.chosenContactId;
-          if (flowState.topMenuChoice == TopChatMenuChoice.contacts &&
-              flowState.messageScope == SidebarFlowMessageScope.regular &&
-              chosenContactId != null) {
-            return _isContactTimelineSearchActive(
-              ref,
-              contactId: chosenContactId,
-            );
-          }
-
-          return false;
+          return flowState.topMenuChoice == TopChatMenuChoice.searchAllMessages;
         },
         handleLens: (_) {
           return flowState.topMenuChoice == TopChatMenuChoice.strayHandles;
         },
-        forChatInDateRange: (_, __, ___) => true,
       );
     },
     settings: (settingsSpec) {
@@ -475,16 +441,6 @@ bool _isCenterSpecCompatibleWithSidebar({
     environmentReadiness: (_) => true,
     onboarding: (_) => true,
   );
-}
-
-bool _isGlobalTimelineSearchActive(Ref ref) {
-  final globalTimelineViewModel = ref.watch(
-    messages_feature.messageTimelineViewModelProvider(
-      scope: const messages_feature.MessageTimelineScope.global(),
-    ),
-  );
-
-  return globalTimelineViewModel.isSearching;
 }
 
 /// Widget provider for the left sidebar surface.

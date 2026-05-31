@@ -30,13 +30,10 @@ Future<List<FavoriteContactEntry>> favoriteContacts(
   }
 
   final contacts = await ref.watch(contactsListRepositoryProvider.future);
-  final contactsById = {
-    for (final contact in contacts) contact.participantId: contact,
-  };
 
   final resolved = <FavoriteContactEntry>[];
   for (final favorite in favorites) {
-    final contact = contactsById[favorite.participantId];
+    final contact = _findContactForFavorite(contacts, favorite.participantId);
     if (contact == null) {
       continue;
     }
@@ -52,4 +49,19 @@ Future<List<FavoriteContactEntry>> favoriteContacts(
   }
 
   return resolved;
+}
+
+ContactSummary? _findContactForFavorite(
+  List<ContactSummary> contacts,
+  int favoriteParticipantId,
+) {
+  for (final contact in contacts) {
+    if (contactIdsRepresentSamePerson(
+      contact.participantId,
+      favoriteParticipantId,
+    )) {
+      return contact;
+    }
+  }
+  return null;
 }

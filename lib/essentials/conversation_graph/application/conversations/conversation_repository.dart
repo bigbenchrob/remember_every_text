@@ -24,6 +24,7 @@ abstract interface class ConversationRepository {
   Future<List<int>> readMessageIdsMatchingText({
     required int conversationId,
     required String query,
+    bool matchAnyTerm = false,
   });
 
   Future<Map<int, ConversationActivityTrace>> readActivityTraces({

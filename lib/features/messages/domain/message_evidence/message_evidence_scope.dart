@@ -1,5 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'message_evidence_search_mode.dart';
+
 enum MessageEvidenceScopeKind { timeline, contextWindow }
 
 @immutable
@@ -139,26 +141,33 @@ final class GlobalMessagesEvidenceScope extends MessageEvidenceScope {
 
 @immutable
 final class MessageSearchEvidenceScope extends MessageEvidenceScope {
-  const MessageSearchEvidenceScope({required this.query})
-    : super(kind: MessageEvidenceScopeKind.timeline);
+  const MessageSearchEvidenceScope({
+    required this.query,
+    this.mode = MessageEvidenceSearchMode.allTerms,
+  }) : super(kind: MessageEvidenceScopeKind.timeline);
 
   final String query;
+  final MessageEvidenceSearchMode mode;
 
   @override
-  String get stableKey => 'message-search:${query.trim().toLowerCase()}';
+  String get stableKey =>
+      'message-search:${mode.name}:'
+      '${query.trim().toLowerCase()}';
 
   @override
   bool operator ==(Object other) {
     return other is MessageSearchEvidenceScope &&
+        other.mode == mode &&
         other.query.trim().toLowerCase() == query.trim().toLowerCase();
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, query.trim().toLowerCase());
+  int get hashCode =>
+      Object.hash(runtimeType, mode, query.trim().toLowerCase());
 
   @override
   String toString() {
-    return 'MessageSearchEvidenceScope(query: $query)';
+    return 'MessageSearchEvidenceScope(query: $query, mode: $mode)';
   }
 }
 

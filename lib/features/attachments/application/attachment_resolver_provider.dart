@@ -5,7 +5,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../essentials/db/feature_level_providers.dart';
 import '../../messages/domain/entities/attachment_info.dart';
-import '../../messages/presentation/debug/contact_timeline_scroll_probe.dart';
 import '../domain/constants/attachment_provenance.dart';
 import '../domain/constants/resolved_attachment_availability.dart';
 import '../domain/entities/attachment_recovery_metadata.dart';
@@ -33,22 +32,18 @@ Future<ResolvedAttachment> attachmentResolver(
   required String messageGuid,
   required int? importAttachmentId,
 }) async {
-  ContactTimelineScrollProbe.count('attachment_resolver.calls');
+  final settings = await ref.watch(archiveSettingsProvider.future);
 
-  return ContactTimelineScrollProbe.traceAsync('attachment_resolver', () async {
-    final settings = await ref.watch(archiveSettingsProvider.future);
+  if (!settings.isEnabled) {
+    return _resolveForLiveOnlyMode(attachmentInfo: attachmentInfo);
+  }
 
-    if (!settings.isEnabled) {
-      return _resolveForLiveOnlyMode(attachmentInfo: attachmentInfo);
-    }
-
-    return _resolveForArchiveEnabledMode(
-      ref,
-      attachmentInfo: attachmentInfo,
-      messageGuid: messageGuid,
-      importAttachmentId: importAttachmentId,
-    );
-  });
+  return _resolveForArchiveEnabledMode(
+    ref,
+    attachmentInfo: attachmentInfo,
+    messageGuid: messageGuid,
+    importAttachmentId: importAttachmentId,
+  );
 }
 
 Future<ResolvedAttachment> _resolveForArchiveEnabledMode(
@@ -57,173 +52,144 @@ Future<ResolvedAttachment> _resolveForArchiveEnabledMode(
   required String messageGuid,
   required int? importAttachmentId,
 }) async {
-  return ContactTimelineScrollProbe.traceAsync(
-    'attachment_resolver.archive_mode',
-    () async {
-      final resolvedPath = attachmentInfo.resolvedLocalPath();
-      final liveFile = resolvedPath == null ? null : File(resolvedPath);
-      final liveFileExists =
-          liveFile != null &&
-          ContactTimelineScrollProbe.traceSync(
-            'attachment_resolver.live_exists_sync',
-            liveFile.existsSync,
-          );
-      AttachmentRecoveryMetadata? persistedRecoveryHint;
+  final resolvedPath = attachmentInfo.resolvedLocalPath();
+  final liveFile = resolvedPath == null ? null : File(resolvedPath);
+  final liveFileExists = liveFile != null && liveFile.existsSync();
+  AttachmentRecoveryMetadata? persistedRecoveryHint;
 
-      if (importAttachmentId != null) {
-        final overlayDb = await ref.watch(overlayDatabaseProvider.future);
-        final archiveDir = ref.watch(attachmentArchiveDirectoryProvider);
-        persistedRecoveryHint = decodeAttachmentRecoveryHint(
-          await overlayDb.readOverlaySetting(
-            attachmentRecoveryHintSettingKey(
-              messageGuid: messageGuid,
-              importAttachmentId: importAttachmentId,
-            ),
-          ),
-        );
-
-        final archiveRecord =
-            await (overlayDb.select(overlayDb.archivedAttachments)..where(
-                  (t) =>
-                      t.messageGuid.equals(messageGuid) &
-                      t.importAttachmentId.equals(importAttachmentId),
-                ))
-                .getSingleOrNull();
-
-        if (archiveRecord != null) {
-          final archivePath =
-              '$archiveDir/${archiveRecord.archiveRelativePath}';
-          final archiveFile = File(archivePath);
-          final archiveFileExists = ContactTimelineScrollProbe.traceSync(
-            'attachment_resolver.archive_exists_sync',
-            archiveFile.existsSync,
-          );
-          if (archiveFileExists) {
-            final provenance = switch (archiveRecord.provenance) {
-              'imported_historical' => AttachmentProvenance.importedHistorical,
-              _ => AttachmentProvenance.archived,
-            };
-
-            return ResolvedAttachment(
-              attachmentInfo: attachmentInfo,
-              availability: ResolvedAttachmentAvailability.available,
-              provenance: provenance,
-              resolvedFile: archiveFile,
-            );
-          }
-        }
-      }
-
-      if (liveFileExists &&
-          resolvedPath != null &&
-          importAttachmentId != null) {
-        ContactTimelineScrollProbe.count('attachment_resolver.trigger_archive');
-        _triggerOnDemandArchive(
-          ref,
+  if (importAttachmentId != null) {
+    final overlayDb = await ref.watch(overlayDatabaseProvider.future);
+    final archiveDir = ref.watch(attachmentArchiveDirectoryProvider);
+    persistedRecoveryHint = decodeAttachmentRecoveryHint(
+      await overlayDb.readOverlaySetting(
+        attachmentRecoveryHintSettingKey(
           messageGuid: messageGuid,
           importAttachmentId: importAttachmentId,
-          resolvedLocalPath: resolvedPath,
-          mimeType: attachmentInfo.mimeType,
-        );
-
-        return ResolvedAttachment(
-          attachmentInfo: attachmentInfo,
-          availability: ResolvedAttachmentAvailability.pendingArchive,
-          recoveryMetadata: mergeAttachmentRecoveryMetadata(
-            base: AttachmentRecoveryMetadata(
-              nextRecoveryAttemptAt: DateTime.now().toUtc(),
-              recoveryPriority: 1,
-            ),
-            persistedHint: persistedRecoveryHint,
-          ),
-        );
-      }
-
-      if (liveFileExists) {
-        return ResolvedAttachment(
-          attachmentInfo: attachmentInfo,
-          availability:
-              ResolvedAttachmentAvailability.unavailableAwaitingRecovery,
-          recoveryMetadata: mergeAttachmentRecoveryMetadata(
-            base: AttachmentRecoveryMetadata(
-              nextRecoveryAttemptAt: DateTime.now().toUtc(),
-              lastRecoveryErrorSummary:
-                  'Live attachment is present but cannot be archived yet.',
-            ),
-            persistedHint: persistedRecoveryHint,
-          ),
-        );
-      }
-
-      final isRecoverable =
-          attachmentInfo.hasLocalFile || importAttachmentId != null;
-
-      return ResolvedAttachment(
-        attachmentInfo: attachmentInfo,
-        availability: isRecoverable
-            ? ResolvedAttachmentAvailability.unavailableAwaitingRecovery
-            : ResolvedAttachmentAvailability.nonRecoverable,
-        recoveryMetadata: mergeAttachmentRecoveryMetadata(
-          base: AttachmentRecoveryMetadata(
-            nextRecoveryAttemptAt: isRecoverable
-                ? DateTime.now().toUtc()
-                : null,
-            lastRecoveryErrorSummary: isRecoverable
-                ? null
-                : 'Attachment has no viable live or archive recovery key.',
-            isNonRecoverable: !isRecoverable,
-          ),
-          persistedHint: persistedRecoveryHint,
         ),
-      );
-    },
+      ),
+    );
+
+    final archiveRecord =
+        await (overlayDb.select(overlayDb.archivedAttachments)..where(
+              (t) =>
+                  t.messageGuid.equals(messageGuid) &
+                  t.importAttachmentId.equals(importAttachmentId),
+            ))
+            .getSingleOrNull();
+
+    if (archiveRecord != null) {
+      final archivePath = '$archiveDir/${archiveRecord.archiveRelativePath}';
+      final archiveFile = File(archivePath);
+      final archiveFileExists = archiveFile.existsSync();
+      if (archiveFileExists) {
+        final provenance = switch (archiveRecord.provenance) {
+          'imported_historical' => AttachmentProvenance.importedHistorical,
+          _ => AttachmentProvenance.archived,
+        };
+
+        return ResolvedAttachment(
+          attachmentInfo: attachmentInfo,
+          availability: ResolvedAttachmentAvailability.available,
+          provenance: provenance,
+          resolvedFile: archiveFile,
+        );
+      }
+    }
+  }
+
+  if (liveFileExists && resolvedPath != null && importAttachmentId != null) {
+    _triggerOnDemandArchive(
+      ref,
+      messageGuid: messageGuid,
+      importAttachmentId: importAttachmentId,
+      resolvedLocalPath: resolvedPath,
+      mimeType: attachmentInfo.mimeType,
+    );
+
+    return ResolvedAttachment(
+      attachmentInfo: attachmentInfo,
+      availability: ResolvedAttachmentAvailability.pendingArchive,
+      recoveryMetadata: mergeAttachmentRecoveryMetadata(
+        base: AttachmentRecoveryMetadata(
+          nextRecoveryAttemptAt: DateTime.now().toUtc(),
+          recoveryPriority: 1,
+        ),
+        persistedHint: persistedRecoveryHint,
+      ),
+    );
+  }
+
+  if (liveFileExists) {
+    return ResolvedAttachment(
+      attachmentInfo: attachmentInfo,
+      availability: ResolvedAttachmentAvailability.unavailableAwaitingRecovery,
+      recoveryMetadata: mergeAttachmentRecoveryMetadata(
+        base: AttachmentRecoveryMetadata(
+          nextRecoveryAttemptAt: DateTime.now().toUtc(),
+          lastRecoveryErrorSummary:
+              'Live attachment is present but cannot be archived yet.',
+        ),
+        persistedHint: persistedRecoveryHint,
+      ),
+    );
+  }
+
+  final isRecoverable =
+      attachmentInfo.hasLocalFile || importAttachmentId != null;
+
+  return ResolvedAttachment(
+    attachmentInfo: attachmentInfo,
+    availability: isRecoverable
+        ? ResolvedAttachmentAvailability.unavailableAwaitingRecovery
+        : ResolvedAttachmentAvailability.nonRecoverable,
+    recoveryMetadata: mergeAttachmentRecoveryMetadata(
+      base: AttachmentRecoveryMetadata(
+        nextRecoveryAttemptAt: isRecoverable ? DateTime.now().toUtc() : null,
+        lastRecoveryErrorSummary: isRecoverable
+            ? null
+            : 'Attachment has no viable live or archive recovery key.',
+        isNonRecoverable: !isRecoverable,
+      ),
+      persistedHint: persistedRecoveryHint,
+    ),
   );
 }
 
 ResolvedAttachment _resolveForLiveOnlyMode({
   required AttachmentInfo attachmentInfo,
 }) {
-  return ContactTimelineScrollProbe.traceSync(
-    'attachment_resolver.live_only_mode',
-    () {
-      final resolvedPath = attachmentInfo.resolvedLocalPath();
-      if (resolvedPath != null) {
-        final file = File(resolvedPath);
-        final exists = ContactTimelineScrollProbe.traceSync(
-          'attachment_resolver.live_exists_sync',
-          file.existsSync,
-        );
-        if (exists) {
-          return ResolvedAttachment(
-            attachmentInfo: attachmentInfo,
-            availability: ResolvedAttachmentAvailability.available,
-            provenance: AttachmentProvenance.messagesLive,
-            resolvedFile: file,
-          );
-        }
-      }
-
-      if (attachmentInfo.hasLocalFile) {
-        return ResolvedAttachment(
-          attachmentInfo: attachmentInfo,
-          availability:
-              ResolvedAttachmentAvailability.unavailableAwaitingRecovery,
-          recoveryMetadata: AttachmentRecoveryMetadata(
-            nextRecoveryAttemptAt: DateTime.now().toUtc(),
-          ),
-        );
-      }
-
+  final resolvedPath = attachmentInfo.resolvedLocalPath();
+  if (resolvedPath != null) {
+    final file = File(resolvedPath);
+    final exists = file.existsSync();
+    if (exists) {
       return ResolvedAttachment(
         attachmentInfo: attachmentInfo,
-        availability: ResolvedAttachmentAvailability.nonRecoverable,
-        recoveryMetadata: const AttachmentRecoveryMetadata(
-          isNonRecoverable: true,
-          lastRecoveryErrorSummary:
-              'Attachment has no local path for live-only resolution.',
-        ),
+        availability: ResolvedAttachmentAvailability.available,
+        provenance: AttachmentProvenance.messagesLive,
+        resolvedFile: file,
       );
-    },
+    }
+  }
+
+  if (attachmentInfo.hasLocalFile) {
+    return ResolvedAttachment(
+      attachmentInfo: attachmentInfo,
+      availability: ResolvedAttachmentAvailability.unavailableAwaitingRecovery,
+      recoveryMetadata: AttachmentRecoveryMetadata(
+        nextRecoveryAttemptAt: DateTime.now().toUtc(),
+      ),
+    );
+  }
+
+  return ResolvedAttachment(
+    attachmentInfo: attachmentInfo,
+    availability: ResolvedAttachmentAvailability.nonRecoverable,
+    recoveryMetadata: const AttachmentRecoveryMetadata(
+      isNonRecoverable: true,
+      lastRecoveryErrorSummary:
+          'Attachment has no local path for live-only resolution.',
+    ),
   );
 }
 

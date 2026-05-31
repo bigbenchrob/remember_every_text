@@ -101,12 +101,14 @@ class ContactGraphReader {
     required int contactId,
     required int graphContactId,
     required String query,
+    bool matchAnyTerm = false,
     int? handleId,
   }) {
     return repository.readContactPageMessageIdsMatchingText(
       contactId: contactId,
       graphContactId: graphContactId,
       query: query,
+      matchAnyTerm: matchAnyTerm,
       handleId: handleId,
     );
   }

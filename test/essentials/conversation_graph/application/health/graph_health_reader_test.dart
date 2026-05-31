@@ -138,6 +138,8 @@ void main() {
     expect(report.messageToAttachmentEdgesMissingAttachmentCount, 1);
     expect(report.contactToHandleEdgesMissingContactCount, 1);
     expect(report.contactToHandleEdgesMissingHandleCount, 1);
+    expect(report.archiveFileAuditIncluded, isFalse);
+    expect(report.attachmentRecoveryAuditIncluded, isFalse);
   });
 
   test('reports archive record and archive file readiness', () async {
@@ -226,8 +228,9 @@ void main() {
       ],
     );
 
-    final report = await reader.readHealthReport();
+    final report = await reader.readHealthReport(includeFileAudits: true);
 
+    expect(report.archiveFileAuditIncluded, isTrue);
     expect(report.archiveRecordCount, 2);
     expect(report.attachmentsWithArchiveRecordCount, 1);
     expect(report.attachmentsMissingArchiveRecordCount, 1);

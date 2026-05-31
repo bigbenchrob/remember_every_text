@@ -25,7 +25,7 @@ The desired architecture is:
 3. Heatmaps, timeline controls, and jumps coordinate with that skeleton.
 4. Visible rows hydrate by stable message identity near the viewport.
 5. Shared message presentation renders hydrated evidence rows.
-6. Attachment/media display uses the graph attachment evidence hydration boundary.
+6. Attachment/media display uses the message attachment evidence hydration boundary.
 
 Hard rule:
 
@@ -58,14 +58,14 @@ Limitations:
 
 Current path:
 
-`MessagesSpec.forContact(filterHandleId: null)` -> `ContactGraphMessagesView` -> `contactPageGraphMessageTimelineProvider` -> `contactPageGraphMessageByIdProvider` -> `GraphMessageEvidenceRow`
+`MessagesSpec.forContact(filterHandleId: null)` -> `ContactMessagesEvidenceView` -> `messageEvidenceTimelineSkeletonProvider` -> `messageEvidenceRowProvider` -> `MessageEvidenceRow`
 
 Strengths:
 
 - Uses graph data.
 - Preserves the core timeline invariant: full lightweight skeleton first, local hydration second.
 - Coordinates month jumping and visible-month feedback through the full skeleton.
-- Renders text and attachments through graph evidence rows.
+- Renders text and attachments through message evidence rows.
 
 Limitations:
 
@@ -76,20 +76,20 @@ Limitations:
 
 Current path:
 
-`MessagesSpec.forConversation` -> `ConversationMessagesPreviewView` -> `MessageEvidenceTimelineView` -> `GraphMessageEvidenceRow`
+`MessagesSpec.forConversation` -> `ConversationMessagesPreviewView` -> `MessageEvidenceTimelineView` -> `MessageEvidenceRow`
 
 Strengths:
 
 - Uses graph data.
 - Uses a full conversation skeleton through `MessageEvidenceScope`.
 - Hydrates visible rows by stable message `ss_id`.
-- Uses shared graph row and graph attachment evidence rendering.
+- Uses shared message row and message attachment evidence rendering.
 - Supports conversation-specific header/search review controls.
 
 Current status:
 
-- Conversation messages now use a full lightweight graph skeleton via the message evidence spine.
-- Visible rows hydrate by `ss_id` through the shared graph evidence row path.
+- Conversation messages now use a full lightweight evidence skeleton via the message evidence spine.
+- Visible rows hydrate by `ss_id` through the shared message evidence row path.
 - Conversation search-match ids are exposed as full-scope read-model facts, not batch-local UI facts.
 - Bounded latest-row preview should remain only as explicit diagnostic/dev behavior if it is retained.
 
@@ -97,12 +97,12 @@ Current status:
 
 | Surface | Current data source | Skeleton strategy | Hydration strategy | Presentation path | Attachment rendering | Conformance |
 | --- | --- | --- | --- | --- | --- | --- |
-| Contact All Messages | Graph `working_ss.db` via `conversation_graph` | Full lightweight graph skeleton through `MessageEvidenceScope` | Per-row graph hydration by `ss_id` | `MessageEvidenceTimelineView` -> `GraphMessageEvidenceRow` | Graph attachment evidence -> shared image/video/link/fallback tiles | Conforms for graph contact timeline |
-| Conversation messages | Graph `working_ss.db` via `conversation_graph` | Full lightweight conversation skeleton through `MessageEvidenceScope` | Per-row graph hydration by `ss_id` | `MessageEvidenceTimelineView` -> `GraphMessageEvidenceRow` | Graph attachment evidence -> shared image/video/link/fallback tiles | Conforms for graph conversation timeline |
+| Contact All Messages | Graph `working_ss.db` via `conversation_graph` | Full lightweight evidence skeleton through `MessageEvidenceScope` | Per-row graph hydration by `ss_id` | `MessageEvidenceTimelineView` -> `MessageEvidenceRow` | Message attachment evidence -> shared image/video/link/fallback tiles | Conforms for graph contact timeline |
+| Conversation messages | Graph `working_ss.db` via `conversation_graph` | Full lightweight conversation skeleton through `MessageEvidenceScope` | Per-row graph hydration by `ss_id` | `MessageEvidenceTimelineView` -> `MessageEvidenceRow` | Message attachment evidence -> shared image/video/link/fallback tiles | Conforms for graph conversation timeline |
 | Contact By Conversation selected messages | Graph conversation route after selecting a conversation | Same as conversation messages | Same as conversation messages | Same as conversation messages | Same as conversation messages | Conforms through conversation evidence scope |
-| Handle-filtered contact messages | Graph `working_ss.db` via `conversation_graph` | Full lightweight handle-filtered contact skeleton through `MessageEvidenceScope` | Per-row graph hydration by `ss_id` | `MessageEvidenceTimelineView` -> `GraphMessageEvidenceRow` | Graph attachment evidence -> shared image/video/link/fallback tiles | Conforms for graph handle-filtered contact timeline |
+| Handle-filtered contact messages | Graph `working_ss.db` via `conversation_graph` | Full lightweight handle-filtered contact skeleton through `MessageEvidenceScope` | Per-row graph hydration by `ss_id` | `MessageEvidenceTimelineView` -> `MessageEvidenceRow` | Message attachment evidence -> shared image/video/link/fallback tiles | Conforms for graph handle-filtered contact timeline |
 | Search result context | Legacy `working.db` | Bounded context window, no full skeleton | Direct selected row plus before/after window | `SearchResultContextSidebarView` -> `MessageCard` | Legacy `MessageListItem` attachments | Acceptable as a context window, but not unified and currently has query logic outside infrastructure |
-| Global timeline | Graph `working_ss.db` via `conversation_graph` | Full lightweight global skeleton through `MessageEvidenceScope` | Per-row graph hydration by `ss_id` | `MessageEvidenceTimelineView` -> `GraphMessageEvidenceRow` | Graph attachment evidence -> shared image/video/link/fallback tiles | Conforms for graph global timeline |
+| Global timeline | Graph `working_ss.db` via `conversation_graph` | Full lightweight global skeleton through `MessageEvidenceScope` | Per-row graph hydration by `ss_id` | `MessageEvidenceTimelineView` -> `MessageEvidenceRow` | Message attachment evidence -> shared image/video/link/fallback tiles | Conforms for graph global timeline |
 | Recovered messages | Legacy/recovery provider list | Full list-backed ordinal strategy over recovered candidates | Recovered item hydration into `MessageListItem` | `MessagesTimelineView` -> `MessageCard` | Recovered attachments mapped into legacy attachment info | Skeleton-like behavior conforms for recovered list; not graph spine |
 | `MessagesSpec.forHandle` | Legacy `working.db` provider | None / whole stream list | Stream emits full `MessageListItem` list | `MessagesForHandleView` custom card | No shared evidence row; attachment display not equivalent | Does not conform |
 | `MessagesSpec.handleLens` | Legacy `working.db` provider | None / whole stream list | Stream emits full `MessageListItem` list | `HandleLensView` custom row | Not the shared evidence surface | Does not conform |
@@ -121,7 +121,7 @@ Entropy risk:
 
 Correct direction:
 
-- lift the contact graph skeleton contract into a typed message evidence spine
+- lift the contact evidence skeleton contract into a typed message evidence spine
 - let contact/conversation/search/global define scopes, not renderers
 
 ### Risk: conversation messages remain a batch preview
@@ -228,7 +228,7 @@ Create one shared evidence surface:
 - timeline mode: renders a full skeleton with viewport-local hydration
 - context-window mode: renders a bounded evidence window
 - both modes render rows through the same hydrated evidence row widget family
-- attachments/media route through graph attachment evidence hydration
+- attachments/media route through message attachment evidence hydration
 
 Source-specific differences should arrive as typed display/header/configuration data, not as separate renderers.
 
@@ -243,8 +243,8 @@ Source-specific differences should arrive as typed display/header/configuration 
 
 ### Phase 2: generalize the graph contact skeleton
 
-- Extract the contact graph skeleton/hydration shape into a reusable evidence skeleton contract.
-- Keep `ContactGraphMessagesView` behavior equivalent.
+- Extract the contact evidence skeleton/hydration shape into a reusable evidence skeleton contract.
+- Keep `ContactMessagesEvidenceView` behavior equivalent.
 - Prove the extracted contract still supports full range, month keys, latest jump, and visible-month feedback.
 
 ### Phase 3: migrate conversation messages to skeleton/hydration
@@ -259,7 +259,7 @@ Status: completed for the default graph conversation route.
 ### Phase 4: unify graph row presentation
 
 - Ensure contact and conversation graph rows consume the same `HydratedMessageEvidenceRow`.
-- Keep graph attachment evidence hydration outside widgets.
+- Keep message attachment evidence hydration outside widgets.
 - Remove route-specific attachment/text fallback decisions from presentation widgets.
 
 ### Phase 5: migrate handle-filtered and global timelines
@@ -328,7 +328,7 @@ Current routing and specs:
 
 Current graph contact path:
 
-- `lib/features/messages/presentation/view/contact_graph_messages_view.dart`
+- `lib/features/messages/presentation/view/contact_messages_evidence_view.dart`
 - `lib/essentials/conversation_graph/application/contacts/contact_graph_provider.dart`
 - `lib/essentials/conversation_graph/application/contacts/contact_graph_reader.dart`
 - `lib/essentials/conversation_graph/infrastructure/repositories/contact_graph_repository.dart`
@@ -340,11 +340,11 @@ Current graph conversation path:
 - `lib/essentials/conversation_graph/application/conversations/conversation_reader.dart`
 - `lib/essentials/conversation_graph/infrastructure/repositories/conversation_repository.dart`
 
-Shared graph evidence row and attachments:
+Shared message evidence row and attachments:
 
-- `lib/features/messages/presentation/widgets/message_evidence/graph_message_evidence_row.dart`
-- `lib/features/messages/application/message_evidence/graph_attachment_evidence.dart`
-- `lib/features/messages/presentation/widgets/message_evidence/graph_attachment_evidence_tiles.dart`
+- `lib/features/messages/presentation/widgets/message_evidence/message_evidence_row.dart`
+- `lib/features/messages/application/message_evidence/message_attachment_evidence.dart`
+- `lib/features/messages/presentation/widgets/message_evidence/message_attachment_evidence_tiles.dart`
 - `lib/features/messages/presentation/widgets/message_evidence/message_evidence_header.dart`
 
 Legacy timeline and custom renderers:

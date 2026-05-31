@@ -160,7 +160,7 @@ Identity-related overlay tables:
 
 | Overlay table | Purpose |
 | --- | --- |
-| `participant_overrides` | Participant display preferences, including `display_name_override`, `nickname`, and `name_mode`. |
+| `participant_overrides` | Participant display preference, currently the single user-authored `display_name_override`. Legacy `nickname` data has been removed and `name_mode` must not become a competing identity path. |
 | `favorite_contacts` | Favorite/recent state keyed by `participants.id`. |
 | `handle_to_participant_overrides` | Manual handle links to a real participant or virtual participant; a row with both participant IDs null means reviewed/dismissed. |
 | `virtual_participants` | User-created participant-like identities stored only in overlay. |
@@ -185,12 +185,14 @@ Current storage:
 
 - table: `virtual_participants`
 - ID range: `id >= 1000000000`
-- fields include `display_name`, `short_name`, optional `notes`, and audit timestamps
+- fields include `display_name`, schema-compatible `short_name`, optional `notes`, and audit timestamps
 - manual links from canonical handles use `handle_to_participant_overrides.virtual_participant_id`
 
 Virtual participants are not written to `working.db`. They still map into participant-based UI through provider merge logic and feature resolvers.
 
 Do not treat virtual participants as AddressBook contacts. Do not expect them in `working.participants`.
+
+`virtual_participants.short_name` is not an app-facing identity field. It may remain physically present for schema compatibility, but display resolution must use `display_name` only.
 
 ## 7. Identity In The UI
 
@@ -215,12 +217,14 @@ Search:
 
 Display names may come from:
 
-1. overlay override or nickname
+1. overlay `display_name_override`
 2. virtual participant fields
 3. working participant fields derived from AddressBook
 4. fallback canonical handle display or normalized identifier
 
 Display name resolution order for real participant-backed UI is: overlay override -> contact/participant name -> fallback handle.
+
+There is no separate user-facing short-name or nickname identity. The only user-authored contact name override is the name edited through the contact hero card and stored as `participant_overrides.display_name_override`.
 
 Identity appears in spec payloads and resolved view models. It must not be reconstructed from rendered widgets.
 

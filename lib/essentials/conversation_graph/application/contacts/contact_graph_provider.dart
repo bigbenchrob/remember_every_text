@@ -16,12 +16,8 @@ Future<ContactGraphReader> contactGraphReader(Ref ref) async {
   final workingDatabase = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
-  final legacyDatabase = await ref.watch(driftWorkingDatabaseProvider.future);
   return ContactGraphReader(
-    repository: SqliteContactGraphRepository(
-      workingDatabase: workingDatabase,
-      legacyDatabase: legacyDatabase,
-    ),
+    repository: SqliteContactGraphRepository(workingDatabase: workingDatabase),
   );
 }
 
@@ -130,6 +126,7 @@ Future<List<int>> contactPageGraphMessageIdsMatchingText(
   Ref ref, {
   required int contactId,
   required String query,
+  bool matchAnyTerm = false,
   int? handleId,
 }) async {
   final reader = await ref.watch(contactGraphReaderProvider.future);
@@ -138,6 +135,7 @@ Future<List<int>> contactPageGraphMessageIdsMatchingText(
     contactId: contactId,
     graphContactId: graphContactId,
     query: query,
+    matchAnyTerm: matchAnyTerm,
     handleId: handleId,
   );
 }

@@ -55,12 +55,11 @@ extension MessagesSpecPatterns on MessagesSpec {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _ConversationBrowser value)?  conversationBrowser,TResult Function( _MessagesForChat value)?  forChat,TResult Function( _MessagesForConversation value)?  forConversation,TResult Function( _MessagesForContact value)?  forContact,TResult Function( _MessagesGlobalTimeline value)?  globalTimeline,TResult Function( _MessagesForHandle value)?  forHandle,TResult Function( _RecoveredUnlinkedMessages value)?  recoveredUnlinkedMessages,TResult Function( _RecoveredNoHandleFromMeMessages value)?  recoveredNoHandleFromMeMessages,TResult Function( _RecoveredAttachmentViewer value)?  recoveredAttachmentViewer,TResult Function( _MessagesSearchResultContext value)?  searchResultContext,TResult Function( _MessagesHandleLens value)?  handleLens,TResult Function( _MessagesForChatInDateRange value)?  forChatInDateRange,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _ConversationBrowser value)?  conversationBrowser,TResult Function( _MessagesForConversation value)?  forConversation,TResult Function( _MessagesForContact value)?  forContact,TResult Function( _MessagesGlobalTimeline value)?  globalTimeline,TResult Function( _MessagesForHandle value)?  forHandle,TResult Function( _RecoveredUnlinkedMessages value)?  recoveredUnlinkedMessages,TResult Function( _RecoveredNoHandleFromMeMessages value)?  recoveredNoHandleFromMeMessages,TResult Function( _RecoveredAttachmentViewer value)?  recoveredAttachmentViewer,TResult Function( _MessagesSearchResultContext value)?  searchResultContext,TResult Function( _MessagesHandleLens value)?  handleLens,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case _ConversationBrowser() when conversationBrowser != null:
-return conversationBrowser(_that);case _MessagesForChat() when forChat != null:
-return forChat(_that);case _MessagesForConversation() when forConversation != null:
+return conversationBrowser(_that);case _MessagesForConversation() when forConversation != null:
 return forConversation(_that);case _MessagesForContact() when forContact != null:
 return forContact(_that);case _MessagesGlobalTimeline() when globalTimeline != null:
 return globalTimeline(_that);case _MessagesForHandle() when forHandle != null:
@@ -69,8 +68,7 @@ return recoveredUnlinkedMessages(_that);case _RecoveredNoHandleFromMeMessages() 
 return recoveredNoHandleFromMeMessages(_that);case _RecoveredAttachmentViewer() when recoveredAttachmentViewer != null:
 return recoveredAttachmentViewer(_that);case _MessagesSearchResultContext() when searchResultContext != null:
 return searchResultContext(_that);case _MessagesHandleLens() when handleLens != null:
-return handleLens(_that);case _MessagesForChatInDateRange() when forChatInDateRange != null:
-return forChatInDateRange(_that);case _:
+return handleLens(_that);case _:
   return orElse();
 
 }
@@ -88,12 +86,11 @@ return forChatInDateRange(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _ConversationBrowser value)  conversationBrowser,required TResult Function( _MessagesForChat value)  forChat,required TResult Function( _MessagesForConversation value)  forConversation,required TResult Function( _MessagesForContact value)  forContact,required TResult Function( _MessagesGlobalTimeline value)  globalTimeline,required TResult Function( _MessagesForHandle value)  forHandle,required TResult Function( _RecoveredUnlinkedMessages value)  recoveredUnlinkedMessages,required TResult Function( _RecoveredNoHandleFromMeMessages value)  recoveredNoHandleFromMeMessages,required TResult Function( _RecoveredAttachmentViewer value)  recoveredAttachmentViewer,required TResult Function( _MessagesSearchResultContext value)  searchResultContext,required TResult Function( _MessagesHandleLens value)  handleLens,required TResult Function( _MessagesForChatInDateRange value)  forChatInDateRange,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _ConversationBrowser value)  conversationBrowser,required TResult Function( _MessagesForConversation value)  forConversation,required TResult Function( _MessagesForContact value)  forContact,required TResult Function( _MessagesGlobalTimeline value)  globalTimeline,required TResult Function( _MessagesForHandle value)  forHandle,required TResult Function( _RecoveredUnlinkedMessages value)  recoveredUnlinkedMessages,required TResult Function( _RecoveredNoHandleFromMeMessages value)  recoveredNoHandleFromMeMessages,required TResult Function( _RecoveredAttachmentViewer value)  recoveredAttachmentViewer,required TResult Function( _MessagesSearchResultContext value)  searchResultContext,required TResult Function( _MessagesHandleLens value)  handleLens,}){
 final _that = this;
 switch (_that) {
 case _ConversationBrowser():
-return conversationBrowser(_that);case _MessagesForChat():
-return forChat(_that);case _MessagesForConversation():
+return conversationBrowser(_that);case _MessagesForConversation():
 return forConversation(_that);case _MessagesForContact():
 return forContact(_that);case _MessagesGlobalTimeline():
 return globalTimeline(_that);case _MessagesForHandle():
@@ -102,8 +99,7 @@ return recoveredUnlinkedMessages(_that);case _RecoveredNoHandleFromMeMessages():
 return recoveredNoHandleFromMeMessages(_that);case _RecoveredAttachmentViewer():
 return recoveredAttachmentViewer(_that);case _MessagesSearchResultContext():
 return searchResultContext(_that);case _MessagesHandleLens():
-return handleLens(_that);case _MessagesForChatInDateRange():
-return forChatInDateRange(_that);case _:
+return handleLens(_that);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -120,12 +116,11 @@ return forChatInDateRange(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _ConversationBrowser value)?  conversationBrowser,TResult? Function( _MessagesForChat value)?  forChat,TResult? Function( _MessagesForConversation value)?  forConversation,TResult? Function( _MessagesForContact value)?  forContact,TResult? Function( _MessagesGlobalTimeline value)?  globalTimeline,TResult? Function( _MessagesForHandle value)?  forHandle,TResult? Function( _RecoveredUnlinkedMessages value)?  recoveredUnlinkedMessages,TResult? Function( _RecoveredNoHandleFromMeMessages value)?  recoveredNoHandleFromMeMessages,TResult? Function( _RecoveredAttachmentViewer value)?  recoveredAttachmentViewer,TResult? Function( _MessagesSearchResultContext value)?  searchResultContext,TResult? Function( _MessagesHandleLens value)?  handleLens,TResult? Function( _MessagesForChatInDateRange value)?  forChatInDateRange,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _ConversationBrowser value)?  conversationBrowser,TResult? Function( _MessagesForConversation value)?  forConversation,TResult? Function( _MessagesForContact value)?  forContact,TResult? Function( _MessagesGlobalTimeline value)?  globalTimeline,TResult? Function( _MessagesForHandle value)?  forHandle,TResult? Function( _RecoveredUnlinkedMessages value)?  recoveredUnlinkedMessages,TResult? Function( _RecoveredNoHandleFromMeMessages value)?  recoveredNoHandleFromMeMessages,TResult? Function( _RecoveredAttachmentViewer value)?  recoveredAttachmentViewer,TResult? Function( _MessagesSearchResultContext value)?  searchResultContext,TResult? Function( _MessagesHandleLens value)?  handleLens,}){
 final _that = this;
 switch (_that) {
 case _ConversationBrowser() when conversationBrowser != null:
-return conversationBrowser(_that);case _MessagesForChat() when forChat != null:
-return forChat(_that);case _MessagesForConversation() when forConversation != null:
+return conversationBrowser(_that);case _MessagesForConversation() when forConversation != null:
 return forConversation(_that);case _MessagesForContact() when forContact != null:
 return forContact(_that);case _MessagesGlobalTimeline() when globalTimeline != null:
 return globalTimeline(_that);case _MessagesForHandle() when forHandle != null:
@@ -134,8 +129,7 @@ return recoveredUnlinkedMessages(_that);case _RecoveredNoHandleFromMeMessages() 
 return recoveredNoHandleFromMeMessages(_that);case _RecoveredAttachmentViewer() when recoveredAttachmentViewer != null:
 return recoveredAttachmentViewer(_that);case _MessagesSearchResultContext() when searchResultContext != null:
 return searchResultContext(_that);case _MessagesHandleLens() when handleLens != null:
-return handleLens(_that);case _MessagesForChatInDateRange() when forChatInDateRange != null:
-return forChatInDateRange(_that);case _:
+return handleLens(_that);case _:
   return null;
 
 }
@@ -152,11 +146,10 @@ return forChatInDateRange(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  conversationBrowser,TResult Function( int chatId)?  forChat,TResult Function( int conversationId,  int? anchorMessageId,  String? searchQuery)?  forConversation,TResult Function( int contactId,  DateTime? scrollToDate,  int? filterHandleId)?  forContact,TResult Function( DateTime? scrollToDate)?  globalTimeline,TResult Function( int handleId)?  forHandle,TResult Function( int? contactId,  DateTime? scrollToDate)?  recoveredUnlinkedMessages,TResult Function( DateTime? scrollToDate)?  recoveredNoHandleFromMeMessages,TResult Function( int messageId,  AttachmentInfo attachment)?  recoveredAttachmentViewer,TResult Function( int messageId,  int chatId,  int beforeCount,  int afterCount)?  searchResultContext,TResult Function( int handleId)?  handleLens,TResult Function( int chatId,  DateTime startDate,  DateTime endDate)?  forChatInDateRange,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  conversationBrowser,TResult Function( int conversationId,  int? anchorMessageId,  String? searchQuery)?  forConversation,TResult Function( int contactId,  DateTime? scrollToDate,  int? filterHandleId)?  forContact,TResult Function( DateTime? scrollToDate)?  globalTimeline,TResult Function( int handleId)?  forHandle,TResult Function( int? contactId,  DateTime? scrollToDate)?  recoveredUnlinkedMessages,TResult Function( DateTime? scrollToDate)?  recoveredNoHandleFromMeMessages,TResult Function( int messageId,  AttachmentInfo attachment)?  recoveredAttachmentViewer,TResult Function( int messageId,  int chatId,  int beforeCount,  int afterCount)?  searchResultContext,TResult Function( int handleId)?  handleLens,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ConversationBrowser() when conversationBrowser != null:
-return conversationBrowser();case _MessagesForChat() when forChat != null:
-return forChat(_that.chatId);case _MessagesForConversation() when forConversation != null:
+return conversationBrowser();case _MessagesForConversation() when forConversation != null:
 return forConversation(_that.conversationId,_that.anchorMessageId,_that.searchQuery);case _MessagesForContact() when forContact != null:
 return forContact(_that.contactId,_that.scrollToDate,_that.filterHandleId);case _MessagesGlobalTimeline() when globalTimeline != null:
 return globalTimeline(_that.scrollToDate);case _MessagesForHandle() when forHandle != null:
@@ -165,8 +158,7 @@ return recoveredUnlinkedMessages(_that.contactId,_that.scrollToDate);case _Recov
 return recoveredNoHandleFromMeMessages(_that.scrollToDate);case _RecoveredAttachmentViewer() when recoveredAttachmentViewer != null:
 return recoveredAttachmentViewer(_that.messageId,_that.attachment);case _MessagesSearchResultContext() when searchResultContext != null:
 return searchResultContext(_that.messageId,_that.chatId,_that.beforeCount,_that.afterCount);case _MessagesHandleLens() when handleLens != null:
-return handleLens(_that.handleId);case _MessagesForChatInDateRange() when forChatInDateRange != null:
-return forChatInDateRange(_that.chatId,_that.startDate,_that.endDate);case _:
+return handleLens(_that.handleId);case _:
   return orElse();
 
 }
@@ -184,11 +176,10 @@ return forChatInDateRange(_that.chatId,_that.startDate,_that.endDate);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  conversationBrowser,required TResult Function( int chatId)  forChat,required TResult Function( int conversationId,  int? anchorMessageId,  String? searchQuery)  forConversation,required TResult Function( int contactId,  DateTime? scrollToDate,  int? filterHandleId)  forContact,required TResult Function( DateTime? scrollToDate)  globalTimeline,required TResult Function( int handleId)  forHandle,required TResult Function( int? contactId,  DateTime? scrollToDate)  recoveredUnlinkedMessages,required TResult Function( DateTime? scrollToDate)  recoveredNoHandleFromMeMessages,required TResult Function( int messageId,  AttachmentInfo attachment)  recoveredAttachmentViewer,required TResult Function( int messageId,  int chatId,  int beforeCount,  int afterCount)  searchResultContext,required TResult Function( int handleId)  handleLens,required TResult Function( int chatId,  DateTime startDate,  DateTime endDate)  forChatInDateRange,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  conversationBrowser,required TResult Function( int conversationId,  int? anchorMessageId,  String? searchQuery)  forConversation,required TResult Function( int contactId,  DateTime? scrollToDate,  int? filterHandleId)  forContact,required TResult Function( DateTime? scrollToDate)  globalTimeline,required TResult Function( int handleId)  forHandle,required TResult Function( int? contactId,  DateTime? scrollToDate)  recoveredUnlinkedMessages,required TResult Function( DateTime? scrollToDate)  recoveredNoHandleFromMeMessages,required TResult Function( int messageId,  AttachmentInfo attachment)  recoveredAttachmentViewer,required TResult Function( int messageId,  int chatId,  int beforeCount,  int afterCount)  searchResultContext,required TResult Function( int handleId)  handleLens,}) {final _that = this;
 switch (_that) {
 case _ConversationBrowser():
-return conversationBrowser();case _MessagesForChat():
-return forChat(_that.chatId);case _MessagesForConversation():
+return conversationBrowser();case _MessagesForConversation():
 return forConversation(_that.conversationId,_that.anchorMessageId,_that.searchQuery);case _MessagesForContact():
 return forContact(_that.contactId,_that.scrollToDate,_that.filterHandleId);case _MessagesGlobalTimeline():
 return globalTimeline(_that.scrollToDate);case _MessagesForHandle():
@@ -197,8 +188,7 @@ return recoveredUnlinkedMessages(_that.contactId,_that.scrollToDate);case _Recov
 return recoveredNoHandleFromMeMessages(_that.scrollToDate);case _RecoveredAttachmentViewer():
 return recoveredAttachmentViewer(_that.messageId,_that.attachment);case _MessagesSearchResultContext():
 return searchResultContext(_that.messageId,_that.chatId,_that.beforeCount,_that.afterCount);case _MessagesHandleLens():
-return handleLens(_that.handleId);case _MessagesForChatInDateRange():
-return forChatInDateRange(_that.chatId,_that.startDate,_that.endDate);case _:
+return handleLens(_that.handleId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -215,11 +205,10 @@ return forChatInDateRange(_that.chatId,_that.startDate,_that.endDate);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  conversationBrowser,TResult? Function( int chatId)?  forChat,TResult? Function( int conversationId,  int? anchorMessageId,  String? searchQuery)?  forConversation,TResult? Function( int contactId,  DateTime? scrollToDate,  int? filterHandleId)?  forContact,TResult? Function( DateTime? scrollToDate)?  globalTimeline,TResult? Function( int handleId)?  forHandle,TResult? Function( int? contactId,  DateTime? scrollToDate)?  recoveredUnlinkedMessages,TResult? Function( DateTime? scrollToDate)?  recoveredNoHandleFromMeMessages,TResult? Function( int messageId,  AttachmentInfo attachment)?  recoveredAttachmentViewer,TResult? Function( int messageId,  int chatId,  int beforeCount,  int afterCount)?  searchResultContext,TResult? Function( int handleId)?  handleLens,TResult? Function( int chatId,  DateTime startDate,  DateTime endDate)?  forChatInDateRange,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  conversationBrowser,TResult? Function( int conversationId,  int? anchorMessageId,  String? searchQuery)?  forConversation,TResult? Function( int contactId,  DateTime? scrollToDate,  int? filterHandleId)?  forContact,TResult? Function( DateTime? scrollToDate)?  globalTimeline,TResult? Function( int handleId)?  forHandle,TResult? Function( int? contactId,  DateTime? scrollToDate)?  recoveredUnlinkedMessages,TResult? Function( DateTime? scrollToDate)?  recoveredNoHandleFromMeMessages,TResult? Function( int messageId,  AttachmentInfo attachment)?  recoveredAttachmentViewer,TResult? Function( int messageId,  int chatId,  int beforeCount,  int afterCount)?  searchResultContext,TResult? Function( int handleId)?  handleLens,}) {final _that = this;
 switch (_that) {
 case _ConversationBrowser() when conversationBrowser != null:
-return conversationBrowser();case _MessagesForChat() when forChat != null:
-return forChat(_that.chatId);case _MessagesForConversation() when forConversation != null:
+return conversationBrowser();case _MessagesForConversation() when forConversation != null:
 return forConversation(_that.conversationId,_that.anchorMessageId,_that.searchQuery);case _MessagesForContact() when forContact != null:
 return forContact(_that.contactId,_that.scrollToDate,_that.filterHandleId);case _MessagesGlobalTimeline() when globalTimeline != null:
 return globalTimeline(_that.scrollToDate);case _MessagesForHandle() when forHandle != null:
@@ -228,8 +217,7 @@ return recoveredUnlinkedMessages(_that.contactId,_that.scrollToDate);case _Recov
 return recoveredNoHandleFromMeMessages(_that.scrollToDate);case _RecoveredAttachmentViewer() when recoveredAttachmentViewer != null:
 return recoveredAttachmentViewer(_that.messageId,_that.attachment);case _MessagesSearchResultContext() when searchResultContext != null:
 return searchResultContext(_that.messageId,_that.chatId,_that.beforeCount,_that.afterCount);case _MessagesHandleLens() when handleLens != null:
-return handleLens(_that.handleId);case _MessagesForChatInDateRange() when forChatInDateRange != null:
-return forChatInDateRange(_that.chatId,_that.startDate,_that.endDate);case _:
+return handleLens(_that.handleId);case _:
   return null;
 
 }
@@ -268,72 +256,6 @@ String toString() {
 
 
 
-
-/// @nodoc
-
-
-class _MessagesForChat implements MessagesSpec {
-  const _MessagesForChat({required this.chatId});
-  
-
- final  int chatId;
-
-/// Create a copy of MessagesSpec
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$MessagesForChatCopyWith<_MessagesForChat> get copyWith => __$MessagesForChatCopyWithImpl<_MessagesForChat>(this, _$identity);
-
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MessagesForChat&&(identical(other.chatId, chatId) || other.chatId == chatId));
-}
-
-
-@override
-int get hashCode => Object.hash(runtimeType,chatId);
-
-@override
-String toString() {
-  return 'MessagesSpec.forChat(chatId: $chatId)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class _$MessagesForChatCopyWith<$Res> implements $MessagesSpecCopyWith<$Res> {
-  factory _$MessagesForChatCopyWith(_MessagesForChat value, $Res Function(_MessagesForChat) _then) = __$MessagesForChatCopyWithImpl;
-@useResult
-$Res call({
- int chatId
-});
-
-
-
-
-}
-/// @nodoc
-class __$MessagesForChatCopyWithImpl<$Res>
-    implements _$MessagesForChatCopyWith<$Res> {
-  __$MessagesForChatCopyWithImpl(this._self, this._then);
-
-  final _MessagesForChat _self;
-  final $Res Function(_MessagesForChat) _then;
-
-/// Create a copy of MessagesSpec
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? chatId = null,}) {
-  return _then(_MessagesForChat(
-chatId: null == chatId ? _self.chatId : chatId // ignore: cast_nullable_to_non_nullable
-as int,
-  ));
-}
-
-
-}
 
 /// @nodoc
 
@@ -941,76 +863,6 @@ class __$MessagesHandleLensCopyWithImpl<$Res>
   return _then(_MessagesHandleLens(
 handleId: null == handleId ? _self.handleId : handleId // ignore: cast_nullable_to_non_nullable
 as int,
-  ));
-}
-
-
-}
-
-/// @nodoc
-
-
-class _MessagesForChatInDateRange implements MessagesSpec {
-  const _MessagesForChatInDateRange({required this.chatId, required this.startDate, required this.endDate});
-  
-
- final  int chatId;
- final  DateTime startDate;
- final  DateTime endDate;
-
-/// Create a copy of MessagesSpec
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$MessagesForChatInDateRangeCopyWith<_MessagesForChatInDateRange> get copyWith => __$MessagesForChatInDateRangeCopyWithImpl<_MessagesForChatInDateRange>(this, _$identity);
-
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MessagesForChatInDateRange&&(identical(other.chatId, chatId) || other.chatId == chatId)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.endDate, endDate) || other.endDate == endDate));
-}
-
-
-@override
-int get hashCode => Object.hash(runtimeType,chatId,startDate,endDate);
-
-@override
-String toString() {
-  return 'MessagesSpec.forChatInDateRange(chatId: $chatId, startDate: $startDate, endDate: $endDate)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class _$MessagesForChatInDateRangeCopyWith<$Res> implements $MessagesSpecCopyWith<$Res> {
-  factory _$MessagesForChatInDateRangeCopyWith(_MessagesForChatInDateRange value, $Res Function(_MessagesForChatInDateRange) _then) = __$MessagesForChatInDateRangeCopyWithImpl;
-@useResult
-$Res call({
- int chatId, DateTime startDate, DateTime endDate
-});
-
-
-
-
-}
-/// @nodoc
-class __$MessagesForChatInDateRangeCopyWithImpl<$Res>
-    implements _$MessagesForChatInDateRangeCopyWith<$Res> {
-  __$MessagesForChatInDateRangeCopyWithImpl(this._self, this._then);
-
-  final _MessagesForChatInDateRange _self;
-  final $Res Function(_MessagesForChatInDateRange) _then;
-
-/// Create a copy of MessagesSpec
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? chatId = null,Object? startDate = null,Object? endDate = null,}) {
-  return _then(_MessagesForChatInDateRange(
-chatId: null == chatId ? _self.chatId : chatId // ignore: cast_nullable_to_non_nullable
-as int,startDate: null == startDate ? _self.startDate : startDate // ignore: cast_nullable_to_non_nullable
-as DateTime,endDate: null == endDate ? _self.endDate : endDate // ignore: cast_nullable_to_non_nullable
-as DateTime,
   ));
 }
 

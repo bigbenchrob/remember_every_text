@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 mixin _$LinkedHandle {
 
  int get handleId; String get displayValue; String get service;/// Whether this link came from an overlay override (manual link)
-/// rather than the working DB (address book auto-link).
+/// rather than graph-projected AddressBook topology.
  bool get isOverrideLink;
 /// Create a copy of LinkedHandle
 /// with the given fields replaced by the non-null parameter values.
@@ -218,7 +218,7 @@ class _LinkedHandle implements LinkedHandle {
 @override final  String displayValue;
 @override final  String service;
 /// Whether this link came from an overlay override (manual link)
-/// rather than the working DB (address book auto-link).
+/// rather than graph-projected AddressBook topology.
 @override final  bool isOverrideLink;
 
 /// Create a copy of LinkedHandle

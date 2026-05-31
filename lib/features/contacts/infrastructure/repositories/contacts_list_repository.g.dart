@@ -7,7 +7,7 @@ part of 'contacts_list_repository.dart';
 // **************************************************************************
 
 String _$contactsListRepositoryHash() =>
-    r'4a51c5186aa88a5792b2d1ee21a34481ff2dfe8e';
+    r'9f98cfa2ac8c4a4653cacfdaa7054ad1016f130c';
 
 /// See also [contactsListRepository].
 @ProviderFor(contactsListRepository)

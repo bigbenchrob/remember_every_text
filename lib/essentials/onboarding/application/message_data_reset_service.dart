@@ -7,14 +7,23 @@ import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../db/feature_level_providers.dart';
+import '../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../logging/application/app_logger.dart';
 import '../../navigation/application/app_navigator_key.dart';
+import '../../source_scoped_import/infrastructure/import_database_provider.dart';
 import 'onboarding_environment_report_provider.dart';
 import 'onboarding_gate_provider.dart';
 
 part 'message_data_reset_service.g.dart';
 
 const _resetCompletionDialogExitDelay = Duration(milliseconds: 140);
+
+const derivedMessageDataDatabaseBaseNames = <String>[
+  'macos_import.db',
+  'working.db',
+  importDatabaseFileName,
+  conversationGraphDatabaseFileName,
+];
 
 abstract interface class MessageDataResetService {
   Future<void> resetDerivedData();
@@ -38,15 +47,17 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
     _ref.read(dbMaintenanceLockProvider.notifier).begin();
     try {
       logger.info(
-        'Closing import database before reset',
+        'Closing import databases before reset',
         source: 'MessageDataResetService',
       );
       await _closeImportDatabase();
+      await _closeSourceScopedImportDatabase();
       logger.info(
-        'Closing working database before reset',
+        'Closing projection databases before reset',
         source: 'MessageDataResetService',
       );
       await _closeWorkingDatabase();
+      await _closeConversationGraphDatabase();
 
       final deletedFilePaths = await _deleteDerivedDatabaseFiles();
       logger.info(
@@ -59,18 +70,36 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
       );
 
       _ref.invalidate(sqfliteImportDatabaseProvider);
+      _ref.invalidate(importDatabaseProvider);
       _ref.invalidate(driftWorkingDatabaseProvider);
+      _ref.invalidate(driftConversationGraphDatabaseProvider);
+      _ref.invalidate(conversationGraphReadinessProvider);
+      _ref.invalidate(conversationGraphPopulatedProvider);
       _ref.read(messageDataVersionProvider.notifier).bump();
 
       final importDbPath = path.join(databaseDirectoryPath, 'macos_import.db');
       final workingDbPath = path.join(databaseDirectoryPath, 'working.db');
+      final sourceScopedImportDbPath = path.join(
+        databaseDirectoryPath,
+        importDatabaseFileName,
+      );
+      final conversationGraphDbPath = path.join(
+        databaseDirectoryPath,
+        conversationGraphDatabaseFileName,
+      );
 
       logger.info(
-        'Invalidated import and working database providers after reset',
+        'Invalidated import and projection database providers after reset',
         source: 'MessageDataResetService',
         context: {
           'importDbExistsAfterReset': File(importDbPath).existsSync(),
           'workingDbExistsAfterReset': File(workingDbPath).existsSync(),
+          'sourceScopedImportDbExistsAfterReset': File(
+            sourceScopedImportDbPath,
+          ).existsSync(),
+          'conversationGraphDbExistsAfterReset': File(
+            conversationGraphDbPath,
+          ).existsSync(),
         },
       );
 
@@ -204,9 +233,25 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
     } catch (_) {}
   }
 
+  Future<void> _closeSourceScopedImportDatabase() async {
+    try {
+      final ledgerDb = await _ref.read(importDatabaseProvider.future);
+      await ledgerDb.close();
+    } catch (_) {}
+  }
+
+  Future<void> _closeConversationGraphDatabase() async {
+    try {
+      final graphDb = await _ref.read(
+        driftConversationGraphDatabaseProvider.future,
+      );
+      await graphDb.close();
+    } catch (_) {}
+  }
+
   Future<List<String>> _deleteDerivedDatabaseFiles() async {
     final deletedFilePaths = <String>[];
-    for (final baseName in <String>['macos_import.db', 'working.db']) {
+    for (final baseName in derivedMessageDataDatabaseBaseNames) {
       final basePath = path.join(databaseDirectoryPath, baseName);
       for (final filePath in <String>[
         basePath,

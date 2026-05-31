@@ -14,8 +14,14 @@ class MessageGraphReader {
     return repository.readGlobalMessageById(messageId: messageId);
   }
 
-  Future<List<int>> readGlobalMessageIdsMatchingText({required String query}) {
-    return repository.readGlobalMessageIdsMatchingText(query: query);
+  Future<List<int>> readGlobalMessageIdsMatchingText({
+    required String query,
+    bool matchAnyTerm = false,
+  }) {
+    return repository.readGlobalMessageIdsMatchingText(
+      query: query,
+      matchAnyTerm: matchAnyTerm,
+    );
   }
 
   Future<List<ConversationMessageTimelineEntry>> readHandleMessageTimeline({
@@ -31,6 +37,18 @@ class MessageGraphReader {
     return repository.readHandleMessageById(
       handleId: handleId,
       messageId: messageId,
+    );
+  }
+
+  Future<List<int>> readHandleMessageIdsMatchingText({
+    required int handleId,
+    required String query,
+    bool matchAnyTerm = false,
+  }) {
+    return repository.readHandleMessageIdsMatchingText(
+      handleId: handleId,
+      query: query,
+      matchAnyTerm: matchAnyTerm,
     );
   }
 

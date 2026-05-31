@@ -6,7 +6,7 @@ part of 'handles_for_contact_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$handlesForContactHash() => r'e7e7761d044abd8f6cc14110e2aac0de2df3bbcb';
+String _$handlesForContactHash() => r'9aa73df64e0623091be0c55a003df892ea7597ed';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -29,9 +29,9 @@ class _SystemHash {
   }
 }
 
-/// Returns all handles linked to a contact, merging working DB and overlay.
+/// Returns all handles linked to a contact, merging graph topology and overlay.
 ///
-/// For working-DB participants, handles come from `handle_to_participant`.
+/// For graph contacts, handles come from `contact_to_handle`.
 /// For virtual participants (id >= 1,000,000,000), handles come from
 /// `handle_to_participant_overrides` in the overlay DB.
 /// Overlay links for real participants are also included.
@@ -40,18 +40,18 @@ class _SystemHash {
 @ProviderFor(handlesForContact)
 const handlesForContactProvider = HandlesForContactFamily();
 
-/// Returns all handles linked to a contact, merging working DB and overlay.
+/// Returns all handles linked to a contact, merging graph topology and overlay.
 ///
-/// For working-DB participants, handles come from `handle_to_participant`.
+/// For graph contacts, handles come from `contact_to_handle`.
 /// For virtual participants (id >= 1,000,000,000), handles come from
 /// `handle_to_participant_overrides` in the overlay DB.
 /// Overlay links for real participants are also included.
 ///
 /// Copied from [handlesForContact].
 class HandlesForContactFamily extends Family<AsyncValue<List<LinkedHandle>>> {
-  /// Returns all handles linked to a contact, merging working DB and overlay.
+  /// Returns all handles linked to a contact, merging graph topology and overlay.
   ///
-  /// For working-DB participants, handles come from `handle_to_participant`.
+  /// For graph contacts, handles come from `contact_to_handle`.
   /// For virtual participants (id >= 1,000,000,000), handles come from
   /// `handle_to_participant_overrides` in the overlay DB.
   /// Overlay links for real participants are also included.
@@ -59,9 +59,9 @@ class HandlesForContactFamily extends Family<AsyncValue<List<LinkedHandle>>> {
   /// Copied from [handlesForContact].
   const HandlesForContactFamily();
 
-  /// Returns all handles linked to a contact, merging working DB and overlay.
+  /// Returns all handles linked to a contact, merging graph topology and overlay.
   ///
-  /// For working-DB participants, handles come from `handle_to_participant`.
+  /// For graph contacts, handles come from `contact_to_handle`.
   /// For virtual participants (id >= 1,000,000,000), handles come from
   /// `handle_to_participant_overrides` in the overlay DB.
   /// Overlay links for real participants are also included.
@@ -93,9 +93,9 @@ class HandlesForContactFamily extends Family<AsyncValue<List<LinkedHandle>>> {
   String? get name => r'handlesForContactProvider';
 }
 
-/// Returns all handles linked to a contact, merging working DB and overlay.
+/// Returns all handles linked to a contact, merging graph topology and overlay.
 ///
-/// For working-DB participants, handles come from `handle_to_participant`.
+/// For graph contacts, handles come from `contact_to_handle`.
 /// For virtual participants (id >= 1,000,000,000), handles come from
 /// `handle_to_participant_overrides` in the overlay DB.
 /// Overlay links for real participants are also included.
@@ -103,9 +103,9 @@ class HandlesForContactFamily extends Family<AsyncValue<List<LinkedHandle>>> {
 /// Copied from [handlesForContact].
 class HandlesForContactProvider
     extends AutoDisposeFutureProvider<List<LinkedHandle>> {
-  /// Returns all handles linked to a contact, merging working DB and overlay.
+  /// Returns all handles linked to a contact, merging graph topology and overlay.
   ///
-  /// For working-DB participants, handles come from `handle_to_participant`.
+  /// For graph contacts, handles come from `contact_to_handle`.
   /// For virtual participants (id >= 1,000,000,000), handles come from
   /// `handle_to_participant_overrides` in the overlay DB.
   /// Overlay links for real participants are also included.

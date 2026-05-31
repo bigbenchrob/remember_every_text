@@ -7,7 +7,7 @@ part of 'contact_graph_provider.dart';
 // **************************************************************************
 
 String _$contactGraphReaderHash() =>
-    r'4e0b408fb7227b26f83efc4f0814b05cde8c093d';
+    r'ec4ec5874df1bd92a8cd40d44c2c49c6210f0c7d';
 
 /// See also [contactGraphReader].
 @ProviderFor(contactGraphReader)
@@ -1098,7 +1098,7 @@ class _ContactPageGraphHandleMessageByIdProviderElement
 }
 
 String _$contactPageGraphMessageIdsMatchingTextHash() =>
-    r'ac7914a8e5d504220eda9d0b10f8318220a12ff7';
+    r'a77c950966309ad1c180136132537ca3fca4a8a3';
 
 /// See also [contactPageGraphMessageIdsMatchingText].
 @ProviderFor(contactPageGraphMessageIdsMatchingText)
@@ -1115,11 +1115,13 @@ class ContactPageGraphMessageIdsMatchingTextFamily
   ContactPageGraphMessageIdsMatchingTextProvider call({
     required int contactId,
     required String query,
+    bool matchAnyTerm = false,
     int? handleId,
   }) {
     return ContactPageGraphMessageIdsMatchingTextProvider(
       contactId: contactId,
       query: query,
+      matchAnyTerm: matchAnyTerm,
       handleId: handleId,
     );
   }
@@ -1131,6 +1133,7 @@ class ContactPageGraphMessageIdsMatchingTextFamily
     return call(
       contactId: provider.contactId,
       query: provider.query,
+      matchAnyTerm: provider.matchAnyTerm,
       handleId: provider.handleId,
     );
   }
@@ -1157,12 +1160,14 @@ class ContactPageGraphMessageIdsMatchingTextProvider
   ContactPageGraphMessageIdsMatchingTextProvider({
     required int contactId,
     required String query,
+    bool matchAnyTerm = false,
     int? handleId,
   }) : this._internal(
          (ref) => contactPageGraphMessageIdsMatchingText(
            ref as ContactPageGraphMessageIdsMatchingTextRef,
            contactId: contactId,
            query: query,
+           matchAnyTerm: matchAnyTerm,
            handleId: handleId,
          ),
          from: contactPageGraphMessageIdsMatchingTextProvider,
@@ -1176,6 +1181,7 @@ class ContactPageGraphMessageIdsMatchingTextProvider
              ._allTransitiveDependencies,
          contactId: contactId,
          query: query,
+         matchAnyTerm: matchAnyTerm,
          handleId: handleId,
        );
 
@@ -1188,11 +1194,13 @@ class ContactPageGraphMessageIdsMatchingTextProvider
     required super.from,
     required this.contactId,
     required this.query,
+    required this.matchAnyTerm,
     required this.handleId,
   }) : super.internal();
 
   final int contactId;
   final String query;
+  final bool matchAnyTerm;
   final int? handleId;
 
   @override
@@ -1213,6 +1221,7 @@ class ContactPageGraphMessageIdsMatchingTextProvider
         debugGetCreateSourceHash: null,
         contactId: contactId,
         query: query,
+        matchAnyTerm: matchAnyTerm,
         handleId: handleId,
       ),
     );
@@ -1228,6 +1237,7 @@ class ContactPageGraphMessageIdsMatchingTextProvider
     return other is ContactPageGraphMessageIdsMatchingTextProvider &&
         other.contactId == contactId &&
         other.query == query &&
+        other.matchAnyTerm == matchAnyTerm &&
         other.handleId == handleId;
   }
 
@@ -1236,6 +1246,7 @@ class ContactPageGraphMessageIdsMatchingTextProvider
     var hash = _SystemHash.combine(0, runtimeType.hashCode);
     hash = _SystemHash.combine(hash, contactId.hashCode);
     hash = _SystemHash.combine(hash, query.hashCode);
+    hash = _SystemHash.combine(hash, matchAnyTerm.hashCode);
     hash = _SystemHash.combine(hash, handleId.hashCode);
 
     return _SystemHash.finish(hash);
@@ -1252,6 +1263,9 @@ mixin ContactPageGraphMessageIdsMatchingTextRef
   /// The parameter `query` of this provider.
   String get query;
 
+  /// The parameter `matchAnyTerm` of this provider.
+  bool get matchAnyTerm;
+
   /// The parameter `handleId` of this provider.
   int? get handleId;
 }
@@ -1267,6 +1281,9 @@ class _ContactPageGraphMessageIdsMatchingTextProviderElement
   @override
   String get query =>
       (origin as ContactPageGraphMessageIdsMatchingTextProvider).query;
+  @override
+  bool get matchAnyTerm =>
+      (origin as ContactPageGraphMessageIdsMatchingTextProvider).matchAnyTerm;
   @override
   int? get handleId =>
       (origin as ContactPageGraphMessageIdsMatchingTextProvider).handleId;

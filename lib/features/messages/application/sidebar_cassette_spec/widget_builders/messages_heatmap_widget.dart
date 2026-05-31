@@ -13,8 +13,8 @@ import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart';
 import '../../../../sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../domain/calendar_heatmap_timeline_data.dart';
-import '../../../domain/value_objects/message_timeline_scope.dart';
-import '../../../presentation/view_model/timeline/ordinal/current_visible_month_provider.dart';
+import '../../../domain/message_evidence/message_evidence_scope.dart';
+import '../../../presentation/view_model/timeline/current_visible_month_provider.dart';
 import '../../../presentation/widgets/calendar_heatmap_timeline_widget.dart';
 import '../../../presentation/widgets/contact_graph_conversation_section.dart';
 import '../resolver_tools/contact_timeline_provider.dart';
@@ -76,14 +76,14 @@ class _GlobalHeatmapContent extends ConsumerWidget {
 
     final timeline = data!;
 
-    final selectedMonthAsync = ref.watch(
+    final selectedMonthKey = ref.watch(
       currentVisibleMonthForScopeProvider(
-        scope: const MessageTimelineScope.global(),
+        scope: const GlobalMessagesEvidenceScope(),
       ),
     );
     return MessageHeatmapContent(
       data: timeline,
-      selectedMonthKey: selectedMonthAsync.valueOrNull,
+      selectedMonthKey: selectedMonthKey,
       onMonthTap: (year, month, count) {
         if (count <= 0) {
           return;
@@ -234,18 +234,18 @@ class _ContactAllMessagesHeatmap extends ConsumerWidget {
     final selectedHandleId = flowState.chosenContactId == contactId
         ? flowState.selectedHandleId
         : null;
-    final selectedMonthAsync = ref.watch(
+    final selectedMonthKey = ref.watch(
       currentVisibleMonthForScopeProvider(
-        scope: MessageTimelineScope.contact(
+        scope: _contactEvidenceScope(
           contactId: contactId,
-          filterHandleId: selectedHandleId,
+          selectedHandleId: selectedHandleId,
         ),
       ),
     );
 
     return MessageHeatmapContent(
       data: timeline,
-      selectedMonthKey: selectedMonthAsync.valueOrNull,
+      selectedMonthKey: selectedMonthKey,
       onMonthTap: (year, month, count) {
         if (count <= 0) {
           return;
@@ -269,6 +269,19 @@ class _ContactAllMessagesHeatmap extends ConsumerWidget {
       },
     );
   }
+}
+
+MessageEvidenceScope _contactEvidenceScope({
+  required int contactId,
+  required int? selectedHandleId,
+}) {
+  if (selectedHandleId == null) {
+    return ContactAllMessagesEvidenceScope(contactId: contactId);
+  }
+  return ContactHandleMessagesEvidenceScope(
+    contactId: contactId,
+    handleId: selectedHandleId,
+  );
 }
 
 class _ContactEvidenceModeToggle extends ConsumerWidget {

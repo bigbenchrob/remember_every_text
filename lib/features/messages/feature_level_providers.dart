@@ -10,8 +10,8 @@ export './application/sidebar_cassette_spec/payloads/recovered_no_handle_from_me
 export './application/sidebar_cassette_spec/payloads/recovered_unlinked_navigator_cassette_payload.dart';
 export './application/sidebar_cassette_spec/rendering/messages_cassette_body_builder.dart';
 export './application/sidebar_cassette_spec/resolver_tools/prewarm_contact_messages_provider.dart';
+export './application/user_metadata/message_overlay_controller.dart';
 export './application/view_spec/coordinators/view_spec_coordinator.dart';
 export './application/view_spec/resolver_tools/recovered_messages_sidebar_provider.dart';
-export './domain/value_objects/message_timeline_scope.dart';
-export 'infrastructure/repositories/messages_repository_provider.dart';
-export 'presentation/view_model/timeline/message_timeline_view_model_provider.dart';
+export './domain/message_evidence/message_evidence_scope.dart';
+export './infrastructure/repositories/message_overlay_identity_bridge_repository.dart';

@@ -8,7 +8,6 @@ class OverlayParticipantsRepository {
     return OverlayVirtualContact(
       id: row.id,
       displayName: row.displayName,
-      shortName: row.shortName,
       notes: row.notes,
       createdAtUtc: row.createdAtUtc,
       updatedAtUtc: row.updatedAtUtc,

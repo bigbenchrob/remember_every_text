@@ -1,8 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import 'package:remember_this_text/essentials/db/feature_level_providers/working_db_populated_provider.dart';
-import 'package:remember_this_text/essentials/db/feature_level_providers/working_projection_readiness_provider.dart';
+import 'package:remember_this_text/essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart';
 import 'package:remember_this_text/essentials/navigation/domain/sidebar_mode.dart';
 import 'package:remember_this_text/essentials/sidebar/application/cassette_rack_state_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/application/sidebar_action_dispatcher.dart';
@@ -20,8 +19,8 @@ void main() {
     setUp(() {
       container = ProviderContainer(
         overrides: [
-          workingDbPopulatedProvider.overrideWith(
-            _AlwaysPopulatedWorkingDb.new,
+          conversationGraphPopulatedProvider.overrideWith(
+            _AlwaysPopulatedGraph.new,
           ),
         ],
       );
@@ -77,11 +76,8 @@ void main() {
       () {
         final guardedContainer = ProviderContainer(
           overrides: [
-            workingProjectionReadinessProvider.overrideWith(
-              (ref) async => const WorkingProjectionReadiness(
-                isReady: false,
-                reason: 'test incomplete projection',
-              ),
+            conversationGraphPopulatedProvider.overrideWith(
+              _NeverPopulatedGraph.new,
             ),
           ],
         );
@@ -102,9 +98,16 @@ void main() {
   });
 }
 
-class _AlwaysPopulatedWorkingDb extends WorkingDbPopulated {
+class _AlwaysPopulatedGraph extends ConversationGraphPopulated {
   @override
   bool build() {
     return true;
+  }
+}
+
+class _NeverPopulatedGraph extends ConversationGraphPopulated {
+  @override
+  bool build() {
+    return false;
   }
 }

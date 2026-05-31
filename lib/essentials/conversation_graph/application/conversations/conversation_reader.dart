@@ -45,10 +45,12 @@ class ConversationReader {
   Future<List<int>> readMessageIdsMatchingText({
     required int conversationId,
     required String query,
+    bool matchAnyTerm = false,
   }) {
     return repository.readMessageIdsMatchingText(
       conversationId: conversationId,
       query: query,
+      matchAnyTerm: matchAnyTerm,
     );
   }
 

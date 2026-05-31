@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/conversation_favourites/conversation_favourites_provider.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversations/conversation.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversations/conversation_reader_provider.dart';
 import 'package:remember_this_text/features/chats/presentation/view/conversation_browser_view.dart';
@@ -28,6 +29,9 @@ void main() {
               ),
             ];
           }),
+          conversationFavouritesControllerProvider.overrideWith(
+            _TestConversationFavouritesController.new,
+          ),
         ],
         child: _wrapWithTextEditingShell(const ConversationBrowserView()),
       ),
@@ -85,6 +89,9 @@ void main() {
               ),
             ];
           }),
+          conversationFavouritesControllerProvider.overrideWith(
+            _TestConversationFavouritesController.new,
+          ),
         ],
         child: _wrapWithTextEditingShell(const ConversationBrowserView()),
       ),
@@ -159,6 +166,9 @@ void main() {
               ),
             };
           }),
+          conversationFavouritesControllerProvider.overrideWith(
+            _TestConversationFavouritesController.new,
+          ),
         ],
         child: _wrapWithTextEditingShell(const ConversationBrowserView()),
       ),
@@ -203,6 +213,17 @@ Widget _wrapWithTextEditingShell(Widget child) {
   );
 }
 
+class _TestConversationFavouritesController
+    extends ConversationFavouritesController {
+  @override
+  ConversationFavourites build() {
+    return const ConversationFavourites();
+  }
+
+  @override
+  Future<void> toggleCoreFavourite(int conversationId) async {}
+}
+
 RecentChatSummary _summary({
   required int id,
   required List<String> participants,
@@ -220,8 +241,6 @@ RecentChatSummary _summary({
     isGroup: participants.length > 1,
     participants: participants,
     handles: participants,
-    recency: null,
-    timelineData: null,
     calendarHeatmapTimelineData: null,
     lastMessagePreview: preview ?? 'preview $id',
   );

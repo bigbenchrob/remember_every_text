@@ -24,13 +24,13 @@ The canonical flow is:
 MessageEvidenceScope
 → messageEvidenceTimelineSkeletonProvider
 → MessageEvidenceTimelineSkeleton
-→ graphMessageEvidenceRowProvider
-→ ConversationMessage
+→ messageEvidenceRowProvider
+→ MessageEvidenceRowData
 → messageEvidenceAttachmentsProvider
-→ GraphAttachmentEvidence
+→ MessageAttachmentEvidence
 → MessageEvidenceTimelineView
-→ GraphMessageEvidenceRow
-→ TextMessageTile / GraphAttachmentEvidenceTiles
+→ MessageEvidenceRow
+→ TextMessageTile / MessageAttachmentEvidenceTiles
 ```
 
 Meaning:
@@ -38,12 +38,12 @@ Meaning:
 - `MessageEvidenceScope` defines the selected logical message set.
 - `messageEvidenceTimelineSkeletonProvider` builds the lightweight full-scope skeleton for timeline-like scopes.
 - `MessageEvidenceTimelineSkeleton` carries stable message IDs, date ordering, month keys, and optional anchor identity.
-- `graphMessageEvidenceRowProvider` hydrates visible rows by stable message ID.
-- `ConversationMessage` is currently the hydrated row carrier used by the spine; this name should not be read as limiting the spine to conversation-only surfaces.
+- `messageEvidenceRowProvider` hydrates visible rows by stable message ID.
+- `MessageEvidenceRowData` is the neutral hydrated row carrier used by the spine; graph repositories may still return graph-specific models, but they are converted at the evidence boundary.
 - `messageEvidenceAttachmentsProvider` hydrates render-ready attachment evidence outside widgets.
 - `MessageEvidenceTimelineView` owns timeline scrolling, day dividers, month anchoring, and visible-row hydration.
-- `GraphMessageEvidenceRow` owns shared message evidence row composition.
-- `TextMessageTile` and `GraphAttachmentEvidenceTiles` own shared text/media evidence rendering.
+- `MessageEvidenceRow` owns shared message evidence row composition.
+- `TextMessageTile` and `MessageAttachmentEvidenceTiles` own shared text/media evidence rendering.
 
 Widgets may render typed evidence data and callbacks. They must not query source databases, reconstruct topology, resolve provenance, or invent source-specific evidence semantics.
 
@@ -63,7 +63,7 @@ The following graph-backed evidence surfaces now use the Message Evidence Spine:
 - Handle messages
 - Recovered deleted messages
 - Recovered no-handle outgoing messages
-- Graph attachment/media evidence inside message rows
+- Message attachment/media evidence inside message rows
 
 As new message-bearing surfaces are added, they should enter the same spine by defining a typed `MessageEvidenceScope` or by reusing an existing scope.
 
@@ -100,6 +100,56 @@ They do not justify a separate message renderer.
 
 ---
 
+# Contact Naming Invariant
+
+Known contacts must be referred to by the user-assigned name everywhere user-facing message evidence or conversation navigation names a person.
+
+There is exactly one user-defined contact name override:
+
+```text
+participant_overrides.display_name_override
+```
+
+This is written only by the contact hero-card pencil rename action. Other name-like fields are imported or derived metadata, not user intent.
+
+Name precedence is:
+
+```text
+user display-name override
+→ app-derived short name
+→ imported AddressBook display name
+→ raw handle only when no known contact identity exists
+```
+
+Imported AddressBook names are source facts, not final user-facing identity when the user has assigned a different name.
+
+Raw handles must not be used as the primary label for a known contact in:
+
+- conversation signatures
+- conversation message headers
+- message evidence headers
+- contact-derived conversation lists
+- search result context labels
+- recovered-message context labels
+
+Handles may be shown for known contacts only when the surface is explicitly handle-oriented, such as:
+
+- a contact sidebar scope menu where the user chooses one phone number or email address
+- developer diagnostics
+- metadata that explains why a specific handle-filtered scope is active
+
+This preserves the distinction between:
+
+```text
+person identity
+≠
+handle metadata
+```
+
+Graph-backed surfaces must resolve participant handles through the same preferred-contact-name boundary used by contact surfaces, rather than formatting handle strings directly.
+
+---
+
 # Where Visual Changes Belong
 
 Most visual evidence changes should be made in one of these shared locations:
@@ -114,7 +164,7 @@ Most visual evidence changes should be made in one of these shared locations:
 - `lib/features/messages/presentation/widgets/message_evidence/message_evidence_header.dart`
   - shared evidence header typography, spacing, controls placement
 
-- `lib/features/messages/presentation/widgets/message_evidence/graph_message_evidence_row.dart`
+- `lib/features/messages/presentation/widgets/message_evidence/message_evidence_row.dart`
   - per-message evidence composition
   - sender line
   - semantic badges
@@ -124,7 +174,7 @@ Most visual evidence changes should be made in one of these shared locations:
   - text message tile appearance
   - message bubble/body treatment
 
-- `lib/features/messages/presentation/widgets/message_evidence/graph_attachment_evidence_tiles.dart`
+- `lib/features/messages/presentation/widgets/message_evidence/message_attachment_evidence_tiles.dart`
   - image/video/link/fallback attachment evidence presentation
 
 Source-specific views should pass typed data and configuration into these shared widgets. They should not fork the row renderer to make local visual changes.
@@ -197,7 +247,7 @@ RecoveredMessagesEvidenceScope
 
 ## Attachment Policy Must Stay Outside Widgets
 
-Widgets may render `GraphAttachmentEvidence`.
+Widgets may render `MessageAttachmentEvidence`.
 
 Widgets must not:
 

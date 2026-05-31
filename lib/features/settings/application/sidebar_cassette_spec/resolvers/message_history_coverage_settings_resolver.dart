@@ -5,8 +5,8 @@ import 'package:sqlite3/sqlite3.dart';
 
 import '../../../../../core/util/date_converter.dart';
 import '../../../../../essentials/db/feature_level_providers.dart';
+import '../../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../../essentials/db/infrastructure/data_sources/local/working/working_database.dart';
-import '../../../../../essentials/onboarding/application/fda_checker.dart';
 import '../../../../../essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 import '../entities/message_history_coverage_report.dart';
@@ -35,7 +35,7 @@ Future<MessageHistoryCoverageReport> messageHistoryCoverageReport(
 ) async {
   final generatedAt = DateTime.now().toUtc();
   final chatDbPath = ref.read(onboardingMessagesDatabasePathProvider);
-  if (!const FdaChecker().canReadMessagesDatabase()) {
+  if (!ref.read(onboardingFullDiskAccessProvider)) {
     return MessageHistoryCoverageReport(
       status: MessageHistoryCoverageStatus.unknown,
       chatDbTotalCount: null,
@@ -65,9 +65,11 @@ Future<MessageHistoryCoverageReport> messageHistoryCoverageReport(
   }
 
   try {
-    final workingDb = await ref.read(driftWorkingDatabaseProvider.future);
-    final visibleCount = await _readVisibleCount(workingDb);
-    final recoveredCount = await _readRecoveredCount(workingDb);
+    final graphDb = await ref.read(
+      driftConversationGraphDatabaseProvider.future,
+    );
+    final visibleCount = await _readGraphVisibleCount(graphDb);
+    final recoveredCount = await _tryReadRecoveredCount(ref);
     final status = classifyMessageHistoryCoverageReport(
       sourceCount: sourceSummary.totalCount,
       accountedCount: visibleCount + recoveredCount,
@@ -92,8 +94,18 @@ Future<MessageHistoryCoverageReport> messageHistoryCoverageReport(
       earliestMessageDate: sourceSummary.earliestMessageDate,
       latestMessageDate: sourceSummary.latestMessageDate,
       generatedAt: generatedAt,
-      detail: 'MessageLens could not safely read the working database: $error',
+      detail:
+          'MessageLens could not safely read the conversation graph database: $error',
     );
+  }
+}
+
+Future<int> _tryReadRecoveredCount(MessageHistoryCoverageReportRef ref) async {
+  try {
+    final workingDb = await ref.read(driftWorkingDatabaseProvider.future);
+    return _readRecoveredCount(workingDb);
+  } catch (_) {
+    return 0;
   }
 }
 
@@ -179,14 +191,11 @@ _ChatDbSummary? _readChatDbSummary(String dbPath) {
   }
 }
 
-Future<int> _readVisibleCount(WorkingDatabase workingDb) async {
-  final result = await workingDb
-      .customSelect(
-        'SELECT COUNT(*) AS total_count FROM global_message_index',
-        readsFrom: {workingDb.globalMessageIndex},
-      )
-      .getSingle();
-  return result.read<int?>('total_count') ?? 0;
+Future<int> _readGraphVisibleCount(ConversationGraphDatabase graphDb) async {
+  final rows = await graphDb.selectRows(
+    'SELECT COUNT(*) AS total_count FROM messages',
+  );
+  return _asInt(rows.single['total_count']) ?? 0;
 }
 
 Future<int> _readRecoveredCount(WorkingDatabase workingDb) async {

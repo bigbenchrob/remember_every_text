@@ -7,6 +7,8 @@ import 'package:sqlite3/sqlite3.dart';
 
 import '../../../../features/attachments/application/attachment_archive_service_provider.dart';
 import '../../../../providers.dart';
+import '../../../conversation_graph/application/conversation_graph_build_controller_provider.dart';
+import '../../../conversation_graph/application/orchestrators/conversation_graph_build_orchestrator.dart';
 import '../../../db/feature_level_providers.dart';
 import '../../../db_migrate/domain/entities/db_migration_result.dart';
 import '../../../db_migrate/feature_level_providers.dart';
@@ -32,25 +34,38 @@ class StartupProbeDecision {
 }
 
 @visibleForTesting
-bool shouldAllowAutomaticIncrementalWork({
-  required bool workingProjectionReady,
-}) {
-  return workingProjectionReady;
+bool shouldAllowAutomaticIncrementalWork({required bool appDataReady}) {
+  return appDataReady;
 }
 
 @visibleForTesting
-StartupProbeDecision gateStartupProbeDecisionForProjectionReadiness({
-  required StartupProbeDecision decision,
-  required bool workingProjectionReady,
+String buildConversationGraphBuildSummaryLog({
+  required ConversationGraphBuildReport report,
 }) {
-  if (!decision.shouldSchedule || workingProjectionReady) {
+  final timeLabel = _formatLocalClockTime(report.finishedAt);
+  final durationMs = report.finishedAt
+      .difference(report.startedAt)
+      .inMilliseconds;
+  return 'Conversation graph build at $timeLabel completed in ${durationMs}ms: '
+      '${report.completedStageNames.length} stage(s), '
+      '${report.messageImportResult.insertedMessageCount} imported graph message(s), '
+      '${report.richTextEnrichmentResult.enrichedMessageCount} enriched text row(s), '
+      '${report.messageProjectionResult.insertedMessageCount} projected graph message row(s).';
+}
+
+@visibleForTesting
+StartupProbeDecision gateStartupProbeDecisionForAppDataReadiness({
+  required StartupProbeDecision decision,
+  required bool appDataReady,
+}) {
+  if (!decision.shouldSchedule || appDataReady) {
     return decision;
   }
 
   return const StartupProbeDecision(
     shouldSchedule: false,
     reason:
-        'working projection is not ready; skipping automatic incremental import/migration',
+        'app data graph is not ready; skipping automatic incremental import/migration',
   );
 }
 
@@ -199,13 +214,12 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
           'Reason: ${decision.reason}.';
 
       if (decision.shouldSchedule && decision.trigger != null) {
-        final gatedDecision = gateStartupProbeDecisionForProjectionReadiness(
+        final gatedDecision = gateStartupProbeDecisionForAppDataReadiness(
           decision: decision,
-          workingProjectionReady:
-              await _isWorkingProjectionReadyForAutomaticWork(),
+          appDataReady: await _isAppDataReadyForAutomaticWork(),
         );
         if (!gatedDecision.shouldSchedule) {
-          _logWorkingProjectionNotReadySkip();
+          _logAppDataNotReadySkip();
           return;
         }
 
@@ -232,18 +246,16 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
     }
   }
 
-  Future<bool> _isWorkingProjectionReadyForAutomaticWork() async {
-    final readiness = await ref.read(workingProjectionReadinessProvider.future);
-    return shouldAllowAutomaticIncrementalWork(
-      workingProjectionReady: readiness.isReady,
-    );
+  Future<bool> _isAppDataReadyForAutomaticWork() async {
+    final readiness = await ref.read(conversationGraphReadinessProvider.future);
+    return shouldAllowAutomaticIncrementalWork(appDataReady: readiness.isReady);
   }
 
-  void _logWorkingProjectionNotReadySkip() {
+  void _logAppDataNotReadySkip() {
     ref
         .read(appLoggerProvider.notifier)
         .info(
-          'working projection is not ready; skipping automatic incremental import/migration.',
+          'app data graph is not ready; skipping automatic incremental import/migration.',
           source: 'ChatDbMonitor',
         );
   }
@@ -365,8 +377,8 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
             _pendingProbeTrigger ?? StartupProbeTrigger.rowIdAdvanced;
         _pendingProbeTrigger = null;
 
-        if (!await _isWorkingProjectionReadyForAutomaticWork()) {
-          _logWorkingProjectionNotReadySkip();
+        if (!await _isAppDataReadyForAutomaticWork()) {
+          _logAppDataNotReadySkip();
           _restoreStableCursor(
             previousMaxRowId: attemptPreviousMaxRowId,
             detectedAt: attemptDetectedAt,
@@ -491,9 +503,27 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
                   ),
                   source: 'ChatDbMonitor',
                 );
-            // Signal to UI providers that new message data is available
-            // This causes message list providers to rebuild with updated counts
-            ref.read(messageDataVersionProvider.notifier).bump();
+
+            ref
+                .read(appLoggerProvider.notifier)
+                .info(
+                  'Legacy migration complete. Triggering conversation graph build',
+                  source: 'ChatDbMonitor',
+                );
+            final graphBuildReport = await ref
+                .read(conversationGraphBuildControllerProvider.notifier)
+                .runOnce(owner: 'chat-db-monitor');
+            ref
+                .read(appLoggerProvider.notifier)
+                .info(
+                  buildConversationGraphBuildSummaryLog(
+                    report: graphBuildReport,
+                  ),
+                  source: 'ChatDbMonitor',
+                );
+
+            // Signal to UI providers that new message data is available.
+            // This causes graph evidence providers to rebuild with updated counts.
             // Note: Do NOT invalidate driftWorkingDatabaseProvider here!
             // It closes the isolate connection and causes "connection was closed"
             // errors for in-flight queries. Drift's reactive streams automatically
@@ -684,14 +714,14 @@ WHERE guid IS NOT NULL AND LENGTH(TRIM(guid)) > 0;
         '${migrationResult.messagesProjected} working message row(s), '
         '${migrationResult.attachmentsProjected} working attachment row(s).';
   }
+}
 
-  String _formatLocalClockTime(DateTime timestamp) {
-    final local = timestamp.toLocal();
-    final hour = local.hour == 0
-        ? 12
-        : (local.hour > 12 ? local.hour - 12 : local.hour);
-    final minute = local.minute.toString().padLeft(2, '0');
-    final suffix = local.hour >= 12 ? 'PM' : 'AM';
-    return '$hour:$minute $suffix';
-  }
+String _formatLocalClockTime(DateTime timestamp) {
+  final local = timestamp.toLocal();
+  final hour = local.hour == 0
+      ? 12
+      : (local.hour > 12 ? local.hour - 12 : local.hour);
+  final minute = local.minute.toString().padLeft(2, '0');
+  final suffix = local.hour >= 12 ? 'PM' : 'AM';
+  return '$hour:$minute $suffix';
 }

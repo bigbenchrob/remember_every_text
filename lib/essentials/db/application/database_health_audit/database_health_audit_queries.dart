@@ -1,5 +1,8 @@
 import 'dart:io';
 
+import '../../../source_scoped_import/infrastructure/import_database_provider.dart'
+    as source_scoped_import;
+import '../../infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../infrastructure/data_sources/local/import/sqflite_import_database.dart';
 import '../../infrastructure/data_sources/local/overlay/overlay_database.dart';
 import '../../infrastructure/data_sources/local/working/working_database.dart';
@@ -192,6 +195,55 @@ class WorkingDatabaseHealthQueryLayer extends DatabaseHealthQueryLayer {
   Future<List<Map<String, Object?>>> query(String sql) async {
     final rows = await _database.customSelect(sql).get();
     return rows.map((row) => Map<String, Object?>.from(row.data)).toList();
+  }
+}
+
+class SourceScopedImportDatabaseHealthQueryLayer
+    extends DatabaseHealthQueryLayer {
+  SourceScopedImportDatabaseHealthQueryLayer({
+    required source_scoped_import.ImportDatabase database,
+    required this.databasePath,
+  }) : _database = database;
+
+  final source_scoped_import.ImportDatabase _database;
+
+  @override
+  final String databasePath;
+
+  @override
+  String get databaseKey => 'source_scoped_import';
+
+  @override
+  String get role => 'source_scoped_import_ledger';
+
+  @override
+  Future<List<Map<String, Object?>>> query(String sql) async {
+    final rows = await _database.database.rawQuery(sql);
+    return rows.map((row) => Map<String, Object?>.from(row)).toList();
+  }
+}
+
+class ConversationGraphDatabaseHealthQueryLayer
+    extends DatabaseHealthQueryLayer {
+  ConversationGraphDatabaseHealthQueryLayer({
+    required ConversationGraphDatabase database,
+    required this.databasePath,
+  }) : _database = database;
+
+  final ConversationGraphDatabase _database;
+
+  @override
+  final String databasePath;
+
+  @override
+  String get databaseKey => 'conversation_graph';
+
+  @override
+  String get role => 'source_scoped_working_graph';
+
+  @override
+  Future<List<Map<String, Object?>>> query(String sql) {
+    return _database.selectRows(sql);
   }
 }
 

@@ -7,7 +7,7 @@ part of 'attachment_resolver_provider.dart';
 // **************************************************************************
 
 String _$attachmentResolverHash() =>
-    r'541f46b7b6c408517b73851b24d6fa09be238680';
+    r'e39971fc29b99b692d74d2e4730e65dfb0c058f3';
 
 /// Copied from Dart SDK
 class _SystemHash {

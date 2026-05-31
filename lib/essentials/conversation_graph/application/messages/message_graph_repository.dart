@@ -5,7 +5,10 @@ abstract interface class MessageGraphRepository {
 
   Future<ConversationMessage?> readGlobalMessageById({required int messageId});
 
-  Future<List<int>> readGlobalMessageIdsMatchingText({required String query});
+  Future<List<int>> readGlobalMessageIdsMatchingText({
+    required String query,
+    bool matchAnyTerm = false,
+  });
 
   Future<List<ConversationMessageTimelineEntry>> readHandleMessageTimeline({
     required int handleId,
@@ -14,6 +17,12 @@ abstract interface class MessageGraphRepository {
   Future<ConversationMessage?> readHandleMessageById({
     required int handleId,
     required int messageId,
+  });
+
+  Future<List<int>> readHandleMessageIdsMatchingText({
+    required int handleId,
+    required String query,
+    bool matchAnyTerm = false,
   });
 
   Future<List<ConversationMessageTimelineEntry>> readMessageContextTimeline({

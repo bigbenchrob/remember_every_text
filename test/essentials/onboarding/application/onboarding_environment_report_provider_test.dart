@@ -152,7 +152,7 @@ void main() {
         'AddressBook-v22.abcddb',
       );
       _createProjectionDatabase(tempDir.path, 'macos_import.db');
-      _createProjectionDatabase(tempDir.path, 'working.db');
+      _createGraphDatabase(tempDir.path);
 
       container = ProviderContainer(
         overrides: [
@@ -187,76 +187,69 @@ void main() {
       expect(report.usingPersistedImportFailure, isFalse);
     });
 
-    test(
-      'working database with messages but null projection state is not ready',
-      () async {
-        final messagesDbPath = _createMessagesDatabase(
-          tempDir.path,
-          messageCount: 120,
-        );
-        final addressBookPath = _createReadableFile(
-          tempDir.path,
-          'AddressBook-v22.abcddb',
-        );
-        final importDb = SqfliteImportDatabase(
-          databaseDirectory: tempDir.path,
-          databaseName: 'macos_import.db',
-          debugSettings: const ImportDebugSettingsState(),
-        );
-        addTearDown(importDb.close);
-        final batchId = await importDb.insertImportBatch(
-          startedAtUtc: DateTime.utc(2026, 03, 24).toIso8601String(),
-        );
-        await importDb.insertChat(
-          id: 1,
-          guid: 'chat-1',
-          service: 'iMessage',
-          batchId: batchId,
-        );
-        await importDb.insertMessage(
-          id: 1,
-          guid: 'message-1',
-          chatId: 1,
-          service: 'iMessage',
-          isFromMe: false,
-          text: 'message-1',
-          hasAttributedBodySource: false,
-          hasMessageSummaryInfo: false,
-          hasPayloadDataSource: false,
-          isSystemMessage: false,
-          batchId: batchId,
-        );
-        _createProjectionDatabase(
-          tempDir.path,
-          'working.db',
-          projectionComplete: false,
-        );
+    test('conversation graph without topology is not ready', () async {
+      final messagesDbPath = _createMessagesDatabase(
+        tempDir.path,
+        messageCount: 120,
+      );
+      final addressBookPath = _createReadableFile(
+        tempDir.path,
+        'AddressBook-v22.abcddb',
+      );
+      final importDb = SqfliteImportDatabase(
+        databaseDirectory: tempDir.path,
+        databaseName: 'macos_import.db',
+        debugSettings: const ImportDebugSettingsState(),
+      );
+      addTearDown(importDb.close);
+      final batchId = await importDb.insertImportBatch(
+        startedAtUtc: DateTime.utc(2026, 03, 24).toIso8601String(),
+      );
+      await importDb.insertChat(
+        id: 1,
+        guid: 'chat-1',
+        service: 'iMessage',
+        batchId: batchId,
+      );
+      await importDb.insertMessage(
+        id: 1,
+        guid: 'message-1',
+        chatId: 1,
+        service: 'iMessage',
+        isFromMe: false,
+        text: 'message-1',
+        hasAttributedBodySource: false,
+        hasMessageSummaryInfo: false,
+        hasPayloadDataSource: false,
+        isSystemMessage: false,
+        batchId: batchId,
+      );
+      _createGraphDatabase(tempDir.path, graphComplete: false);
 
-        container = ProviderContainer(
-          overrides: [
-            overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
-            sqfliteImportDatabaseProvider.overrideWith((ref) async => importDb),
-            onboardingFullDiskAccessProvider.overrideWith((ref) => true),
-            onboardingMessagesDatabasePathProvider.overrideWith(
-              (ref) => messagesDbPath,
-            ),
-            onboardingDatabaseDirectoryPathProvider.overrideWith(
-              (ref) => tempDir.path,
-            ),
-            futureGetFolderAggregateProvider.overrideWith(
-              (ref) async => right(_addressBookAggregate(addressBookPath)),
-            ),
-          ],
-        );
+      container = ProviderContainer(
+        overrides: [
+          overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
+          sqfliteImportDatabaseProvider.overrideWith((ref) async => importDb),
+          onboardingFullDiskAccessProvider.overrideWith((ref) => true),
+          onboardingMessagesDatabasePathProvider.overrideWith(
+            (ref) => messagesDbPath,
+          ),
+          onboardingDatabaseDirectoryPathProvider.overrideWith(
+            (ref) => tempDir.path,
+          ),
+          futureGetFolderAggregateProvider.overrideWith(
+            (ref) async => right(_addressBookAggregate(addressBookPath)),
+          ),
+        ],
+      );
 
-        final report = await container.read(
-          onboardingEnvironmentReportProvider.future,
-        );
+      final report = await container.read(
+        onboardingEnvironmentReportProvider.future,
+      );
 
-        expect(report.state, OnboardingEnvironmentState.migrationFailed);
-        expect(report.blockerKind, OnboardingBlockerKind.migrationFailed);
-      },
-    );
+      expect(report.state, OnboardingEnvironmentState.migrationFailed);
+      expect(report.blockerKind, OnboardingBlockerKind.migrationFailed);
+    });
 
     test(
       'complete projection state allows normal startup classification',
@@ -297,11 +290,7 @@ void main() {
           isSystemMessage: false,
           batchId: batchId,
         );
-        _createProjectionDatabase(
-          tempDir.path,
-          'working.db',
-          projectionComplete: true,
-        );
+        _createGraphDatabase(tempDir.path, graphComplete: true);
 
         container = ProviderContainer(
           overrides: [
@@ -368,11 +357,7 @@ void main() {
           isSystemMessage: false,
           batchId: batchId,
         );
-        _createProjectionDatabase(
-          tempDir.path,
-          'working.db',
-          projectionComplete: true,
-        );
+        _createGraphDatabase(tempDir.path, graphComplete: true);
 
         container = ProviderContainer(
           overrides: [
@@ -408,7 +393,7 @@ void main() {
     );
 
     test(
-      'flags a populated import ledger plus tiny working database for automatic reset',
+      'flags a populated import ledger plus tiny conversation graph for automatic reset',
       () async {
         final messagesDbPath = _createMessagesDatabase(
           tempDir.path,
@@ -454,6 +439,7 @@ void main() {
             batchId: batchId,
           );
         }
+        _createGraphDatabase(tempDir.path, rowCount: 1, graphComplete: false);
         await storage.saveMigrationResult(
           const DbMigrationResult(
             batchId: 99,
@@ -548,6 +534,54 @@ String _createProjectionDatabase(
     );
     for (var index = 0; index < rowCount; index++) {
       db.execute('INSERT INTO messages (value) VALUES (?)', ['fixture-$index']);
+    }
+  } finally {
+    db.dispose();
+  }
+  return filePath;
+}
+
+String _createGraphDatabase(
+  String directoryPath, {
+  int rowCount = 1,
+  bool graphComplete = true,
+}) {
+  final filePath = '$directoryPath/working_ss.db';
+  final db = sqlite3.open(filePath);
+  try {
+    db
+      ..execute('CREATE TABLE messages (ss_id INTEGER PRIMARY KEY)')
+      ..execute('CREATE TABLE chats (ss_id INTEGER PRIMARY KEY)')
+      ..execute('CREATE TABLE handles (ss_id INTEGER PRIMARY KEY)')
+      ..execute('''
+        CREATE TABLE chat_to_message (
+          chat_ss_id INTEGER NOT NULL,
+          message_ss_id INTEGER NOT NULL
+        )
+      ''')
+      ..execute('''
+        CREATE TABLE chat_to_handle (
+          chat_ss_id INTEGER NOT NULL,
+          handle_ss_id INTEGER NOT NULL
+        )
+      ''')
+      ..execute('CREATE TABLE attachments (ss_id INTEGER PRIMARY KEY)')
+      ..execute('''
+        CREATE TABLE message_to_attachment (
+          message_ss_id INTEGER NOT NULL,
+          attachment_ss_id INTEGER NOT NULL
+        )
+      ''');
+    for (var index = 0; index < rowCount; index++) {
+      db.execute('INSERT INTO messages (ss_id) VALUES (?)', [index + 1]);
+    }
+    if (graphComplete && rowCount > 0) {
+      db
+        ..execute('INSERT INTO chats (ss_id) VALUES (10)')
+        ..execute(
+          'INSERT INTO chat_to_message (chat_ss_id, message_ss_id) '
+          'VALUES (10, 1)',
+        );
     }
   } finally {
     db.dispose();

@@ -7,7 +7,7 @@ part of 'recovered_unlinked_messages_provider.dart';
 // **************************************************************************
 
 String _$recoveredUnlinkedMessagesHash() =>
-    r'c0cae7d85cd2ff40baebdb8539bef8e5b4dcac88';
+    r'843029f69beed8f6b30c08c44de1633bcad58c74';
 
 /// Copied from Dart SDK
 class _SystemHash {

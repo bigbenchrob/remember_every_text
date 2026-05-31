@@ -31,17 +31,6 @@ class $ParticipantOverridesTable extends ParticipantOverrides
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _nicknameMeta = const VerificationMeta(
-    'nickname',
-  );
-  @override
-  late final GeneratedColumn<String> nickname = GeneratedColumn<String>(
-    'nickname',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
   static const VerificationMeta _displayNameOverrideMeta =
       const VerificationMeta('displayNameOverride');
   @override
@@ -79,7 +68,6 @@ class $ParticipantOverridesTable extends ParticipantOverrides
   List<GeneratedColumn> get $columns => [
     participantId,
     nameMode,
-    nickname,
     displayNameOverride,
     createdAtUtc,
     updatedAtUtc,
@@ -109,12 +97,6 @@ class $ParticipantOverridesTable extends ParticipantOverrides
       context.handle(
         _nameModeMeta,
         nameMode.isAcceptableOrUnknown(data['name_mode']!, _nameModeMeta),
-      );
-    }
-    if (data.containsKey('nickname')) {
-      context.handle(
-        _nicknameMeta,
-        nickname.isAcceptableOrUnknown(data['nickname']!, _nicknameMeta),
       );
     }
     if (data.containsKey('display_name_override')) {
@@ -165,10 +147,6 @@ class $ParticipantOverridesTable extends ParticipantOverrides
         DriftSqlType.int,
         data['${effectivePrefix}name_mode'],
       ),
-      nickname: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}nickname'],
-      ),
       displayNameOverride: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}display_name_override'],
@@ -201,9 +179,6 @@ class ParticipantOverride extends DataClass
   /// storing null for inherit).
   final int? nameMode;
 
-  /// User's nickname, e.g. "Westy"
-  final String? nickname;
-
   /// User's custom display name override, e.g. "Dad (Mobile)"
   final String? displayNameOverride;
   final String createdAtUtc;
@@ -211,7 +186,6 @@ class ParticipantOverride extends DataClass
   const ParticipantOverride({
     required this.participantId,
     this.nameMode,
-    this.nickname,
     this.displayNameOverride,
     required this.createdAtUtc,
     required this.updatedAtUtc,
@@ -222,9 +196,6 @@ class ParticipantOverride extends DataClass
     map['participant_id'] = Variable<int>(participantId);
     if (!nullToAbsent || nameMode != null) {
       map['name_mode'] = Variable<int>(nameMode);
-    }
-    if (!nullToAbsent || nickname != null) {
-      map['nickname'] = Variable<String>(nickname);
     }
     if (!nullToAbsent || displayNameOverride != null) {
       map['display_name_override'] = Variable<String>(displayNameOverride);
@@ -240,9 +211,6 @@ class ParticipantOverride extends DataClass
       nameMode: nameMode == null && nullToAbsent
           ? const Value.absent()
           : Value(nameMode),
-      nickname: nickname == null && nullToAbsent
-          ? const Value.absent()
-          : Value(nickname),
       displayNameOverride: displayNameOverride == null && nullToAbsent
           ? const Value.absent()
           : Value(displayNameOverride),
@@ -259,7 +227,6 @@ class ParticipantOverride extends DataClass
     return ParticipantOverride(
       participantId: serializer.fromJson<int>(json['participantId']),
       nameMode: serializer.fromJson<int?>(json['nameMode']),
-      nickname: serializer.fromJson<String?>(json['nickname']),
       displayNameOverride: serializer.fromJson<String?>(
         json['displayNameOverride'],
       ),
@@ -273,7 +240,6 @@ class ParticipantOverride extends DataClass
     return <String, dynamic>{
       'participantId': serializer.toJson<int>(participantId),
       'nameMode': serializer.toJson<int?>(nameMode),
-      'nickname': serializer.toJson<String?>(nickname),
       'displayNameOverride': serializer.toJson<String?>(displayNameOverride),
       'createdAtUtc': serializer.toJson<String>(createdAtUtc),
       'updatedAtUtc': serializer.toJson<String>(updatedAtUtc),
@@ -283,14 +249,12 @@ class ParticipantOverride extends DataClass
   ParticipantOverride copyWith({
     int? participantId,
     Value<int?> nameMode = const Value.absent(),
-    Value<String?> nickname = const Value.absent(),
     Value<String?> displayNameOverride = const Value.absent(),
     String? createdAtUtc,
     String? updatedAtUtc,
   }) => ParticipantOverride(
     participantId: participantId ?? this.participantId,
     nameMode: nameMode.present ? nameMode.value : this.nameMode,
-    nickname: nickname.present ? nickname.value : this.nickname,
     displayNameOverride: displayNameOverride.present
         ? displayNameOverride.value
         : this.displayNameOverride,
@@ -303,7 +267,6 @@ class ParticipantOverride extends DataClass
           ? data.participantId.value
           : this.participantId,
       nameMode: data.nameMode.present ? data.nameMode.value : this.nameMode,
-      nickname: data.nickname.present ? data.nickname.value : this.nickname,
       displayNameOverride: data.displayNameOverride.present
           ? data.displayNameOverride.value
           : this.displayNameOverride,
@@ -321,7 +284,6 @@ class ParticipantOverride extends DataClass
     return (StringBuffer('ParticipantOverride(')
           ..write('participantId: $participantId, ')
           ..write('nameMode: $nameMode, ')
-          ..write('nickname: $nickname, ')
           ..write('displayNameOverride: $displayNameOverride, ')
           ..write('createdAtUtc: $createdAtUtc, ')
           ..write('updatedAtUtc: $updatedAtUtc')
@@ -333,7 +295,6 @@ class ParticipantOverride extends DataClass
   int get hashCode => Object.hash(
     participantId,
     nameMode,
-    nickname,
     displayNameOverride,
     createdAtUtc,
     updatedAtUtc,
@@ -344,7 +305,6 @@ class ParticipantOverride extends DataClass
       (other is ParticipantOverride &&
           other.participantId == this.participantId &&
           other.nameMode == this.nameMode &&
-          other.nickname == this.nickname &&
           other.displayNameOverride == this.displayNameOverride &&
           other.createdAtUtc == this.createdAtUtc &&
           other.updatedAtUtc == this.updatedAtUtc);
@@ -354,14 +314,12 @@ class ParticipantOverridesCompanion
     extends UpdateCompanion<ParticipantOverride> {
   final Value<int> participantId;
   final Value<int?> nameMode;
-  final Value<String?> nickname;
   final Value<String?> displayNameOverride;
   final Value<String> createdAtUtc;
   final Value<String> updatedAtUtc;
   const ParticipantOverridesCompanion({
     this.participantId = const Value.absent(),
     this.nameMode = const Value.absent(),
-    this.nickname = const Value.absent(),
     this.displayNameOverride = const Value.absent(),
     this.createdAtUtc = const Value.absent(),
     this.updatedAtUtc = const Value.absent(),
@@ -369,7 +327,6 @@ class ParticipantOverridesCompanion
   ParticipantOverridesCompanion.insert({
     this.participantId = const Value.absent(),
     this.nameMode = const Value.absent(),
-    this.nickname = const Value.absent(),
     this.displayNameOverride = const Value.absent(),
     required String createdAtUtc,
     required String updatedAtUtc,
@@ -378,7 +335,6 @@ class ParticipantOverridesCompanion
   static Insertable<ParticipantOverride> custom({
     Expression<int>? participantId,
     Expression<int>? nameMode,
-    Expression<String>? nickname,
     Expression<String>? displayNameOverride,
     Expression<String>? createdAtUtc,
     Expression<String>? updatedAtUtc,
@@ -386,7 +342,6 @@ class ParticipantOverridesCompanion
     return RawValuesInsertable({
       if (participantId != null) 'participant_id': participantId,
       if (nameMode != null) 'name_mode': nameMode,
-      if (nickname != null) 'nickname': nickname,
       if (displayNameOverride != null)
         'display_name_override': displayNameOverride,
       if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
@@ -397,7 +352,6 @@ class ParticipantOverridesCompanion
   ParticipantOverridesCompanion copyWith({
     Value<int>? participantId,
     Value<int?>? nameMode,
-    Value<String?>? nickname,
     Value<String?>? displayNameOverride,
     Value<String>? createdAtUtc,
     Value<String>? updatedAtUtc,
@@ -405,7 +359,6 @@ class ParticipantOverridesCompanion
     return ParticipantOverridesCompanion(
       participantId: participantId ?? this.participantId,
       nameMode: nameMode ?? this.nameMode,
-      nickname: nickname ?? this.nickname,
       displayNameOverride: displayNameOverride ?? this.displayNameOverride,
       createdAtUtc: createdAtUtc ?? this.createdAtUtc,
       updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
@@ -420,9 +373,6 @@ class ParticipantOverridesCompanion
     }
     if (nameMode.present) {
       map['name_mode'] = Variable<int>(nameMode.value);
-    }
-    if (nickname.present) {
-      map['nickname'] = Variable<String>(nickname.value);
     }
     if (displayNameOverride.present) {
       map['display_name_override'] = Variable<String>(
@@ -443,7 +393,6 @@ class ParticipantOverridesCompanion
     return (StringBuffer('ParticipantOverridesCompanion(')
           ..write('participantId: $participantId, ')
           ..write('nameMode: $nameMode, ')
-          ..write('nickname: $nickname, ')
           ..write('displayNameOverride: $displayNameOverride, ')
           ..write('createdAtUtc: $createdAtUtc, ')
           ..write('updatedAtUtc: $updatedAtUtc')
@@ -5009,7 +4958,6 @@ typedef $$ParticipantOverridesTableCreateCompanionBuilder =
     ParticipantOverridesCompanion Function({
       Value<int> participantId,
       Value<int?> nameMode,
-      Value<String?> nickname,
       Value<String?> displayNameOverride,
       required String createdAtUtc,
       required String updatedAtUtc,
@@ -5018,7 +4966,6 @@ typedef $$ParticipantOverridesTableUpdateCompanionBuilder =
     ParticipantOverridesCompanion Function({
       Value<int> participantId,
       Value<int?> nameMode,
-      Value<String?> nickname,
       Value<String?> displayNameOverride,
       Value<String> createdAtUtc,
       Value<String> updatedAtUtc,
@@ -5040,11 +4987,6 @@ class $$ParticipantOverridesTableFilterComposer
 
   ColumnFilters<int> get nameMode => $composableBuilder(
     column: $table.nameMode,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get nickname => $composableBuilder(
-    column: $table.nickname,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5083,11 +5025,6 @@ class $$ParticipantOverridesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get nickname => $composableBuilder(
-    column: $table.nickname,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get displayNameOverride => $composableBuilder(
     column: $table.displayNameOverride,
     builder: (column) => ColumnOrderings(column),
@@ -5120,9 +5057,6 @@ class $$ParticipantOverridesTableAnnotationComposer
 
   GeneratedColumn<int> get nameMode =>
       $composableBuilder(column: $table.nameMode, builder: (column) => column);
-
-  GeneratedColumn<String> get nickname =>
-      $composableBuilder(column: $table.nickname, builder: (column) => column);
 
   GeneratedColumn<String> get displayNameOverride => $composableBuilder(
     column: $table.displayNameOverride,
@@ -5185,14 +5119,12 @@ class $$ParticipantOverridesTableTableManager
               ({
                 Value<int> participantId = const Value.absent(),
                 Value<int?> nameMode = const Value.absent(),
-                Value<String?> nickname = const Value.absent(),
                 Value<String?> displayNameOverride = const Value.absent(),
                 Value<String> createdAtUtc = const Value.absent(),
                 Value<String> updatedAtUtc = const Value.absent(),
               }) => ParticipantOverridesCompanion(
                 participantId: participantId,
                 nameMode: nameMode,
-                nickname: nickname,
                 displayNameOverride: displayNameOverride,
                 createdAtUtc: createdAtUtc,
                 updatedAtUtc: updatedAtUtc,
@@ -5201,14 +5133,12 @@ class $$ParticipantOverridesTableTableManager
               ({
                 Value<int> participantId = const Value.absent(),
                 Value<int?> nameMode = const Value.absent(),
-                Value<String?> nickname = const Value.absent(),
                 Value<String?> displayNameOverride = const Value.absent(),
                 required String createdAtUtc,
                 required String updatedAtUtc,
               }) => ParticipantOverridesCompanion.insert(
                 participantId: participantId,
                 nameMode: nameMode,
-                nickname: nickname,
                 displayNameOverride: displayNameOverride,
                 createdAtUtc: createdAtUtc,
                 updatedAtUtc: updatedAtUtc,

@@ -12,8 +12,7 @@ import '../../../../../attachments/application/attachment_archive_service_provid
 import '../../../../../attachments/domain/constants/attachment_provenance.dart';
 import '../../../../../attachments/domain/constants/resolved_attachment_availability.dart';
 import '../../../../../attachments/infrastructure/services/video_thumbnail_cache_service.dart';
-import '../../../debug/contact_timeline_scroll_probe.dart';
-import '../hydration/attachment_info.dart';
+import '../../../widgets/message_evidence/media_tile_attachment.dart';
 
 // ignore: avoid_classes_with_only_static_members
 class MsgTheme {
@@ -379,7 +378,7 @@ class TextMessageTile extends ConsumerWidget {
       backgroundColor: layout == MessageLayout.fullWidth
           ? isMe
                 ? colors.messagePanels.selectionTint
-                : colors.messagePanels.supportSurface
+                : colors.messageBubble(MessageBubble.receivedHighlight)
           : isMe
           ? colors.messageBubble(MessageBubble.sentHighlight)
           : colors.messageBubble(MessageBubble.receivedHighlight),
@@ -802,7 +801,9 @@ class _AttachmentSourceBadge extends ConsumerWidget {
   }
 }
 
-AttachmentProvenance? _placeholderSourceProvenance(AttachmentInfo attachment) {
+AttachmentProvenance? _placeholderSourceProvenance(
+  MediaTileAttachment attachment,
+) {
   final provenance = attachment.provenance;
   if (provenance != null) {
     return provenance;
@@ -830,7 +831,7 @@ class ImageMessageTile extends ConsumerWidget {
   });
 
   final bool isMe;
-  final AttachmentInfo attachment;
+  final MediaTileAttachment attachment;
   final String sender;
   final DateTime sentAt;
   final int messageId;
@@ -841,12 +842,7 @@ class ImageMessageTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ContactTimelineScrollProbe.count('media.image.build');
     final file = attachment.displayableFile();
-    final exists = file != null;
-    ContactTimelineScrollProbe.count(
-      exists ? 'media.image.available' : 'media.image.unavailable',
-    );
     final aspectRatio = attachment.aspectRatio ?? 4 / 3;
     final canPrioritizeRecovery =
         attachment.messageGuid != null &&
@@ -877,7 +873,7 @@ class ImageMessageTile extends ConsumerWidget {
           _alignMediaForLayout(
             layout: layout,
             isMe: isMe,
-            child: exists
+            child: file != null
                 ? ClipRRect(
                     borderRadius: MsgTheme.mediaRadius,
                     child: _IntrinsicSizedMedia(
@@ -921,7 +917,7 @@ class ImageMessageTile extends ConsumerWidget {
                         : null,
                   ),
           ),
-          if (exists)
+          if (file != null)
             if (provenance case final attachmentProvenance?) ...[
               const SizedBox(height: 8),
               _alignMediaForLayout(
@@ -965,7 +961,7 @@ class VideoMessageTile extends ConsumerStatefulWidget {
   });
 
   final bool isMe;
-  final AttachmentInfo attachment;
+  final MediaTileAttachment attachment;
   final String sender;
   final DateTime sentAt;
   final int messageId;
@@ -1086,7 +1082,6 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
       return;
     }
 
-    ContactTimelineScrollProbe.count('media.video.thumbnail.schedule');
     _thumbnailEnrichmentTimer = Timer(_thumbnailEnrichmentDelay, () {
       _thumbnailEnrichmentTimer = null;
       unawaited(_loadThumbnail(videoFile));
@@ -1102,18 +1097,11 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
     final thumbnailService = ref.read(videoThumbnailCacheServiceProvider);
 
     try {
-      final thumbnailFile = await ContactTimelineScrollProbe.traceAsync(
-        'media.video.thumbnail.resolve',
-        () => thumbnailService.getOrCreateThumbnail(videoPath: videoFile.path),
+      final thumbnailFile = await thumbnailService.getOrCreateThumbnail(
+        videoPath: videoFile.path,
       );
       if (!mounted || requestGeneration != _thumbnailRequestGeneration) {
         return;
-      }
-
-      if (thumbnailFile != null) {
-        ContactTimelineScrollProbe.count('media.video.thumbnail.ready');
-      } else {
-        ContactTimelineScrollProbe.count('media.video.thumbnail.miss');
       }
 
       setState(() {
@@ -1121,7 +1109,6 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
         _thumbnailSourcePath = videoFile.path;
       });
     } catch (_) {
-      ContactTimelineScrollProbe.count('media.video.thumbnail.failed');
       if (!mounted || requestGeneration != _thumbnailRequestGeneration) {
         return;
       }
@@ -1165,11 +1152,9 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
 
     final file = widget.attachment.displayableFile();
     if (file == null) {
-      ContactTimelineScrollProbe.count('media.video.unavailable');
       return;
     }
 
-    ContactTimelineScrollProbe.count('media.video.activation_request');
     setState(() {
       _isActivating = true;
       _activationFailed = false;
@@ -1179,16 +1164,10 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
     _thumbnailRequestGeneration++;
     final activationGeneration = ++_activationGeneration;
 
-    final controller = ContactTimelineScrollProbe.traceSync(
-      'media.video.controller_create',
-      () => VideoPlayerController.file(file),
-    );
+    final controller = VideoPlayerController.file(file);
 
     try {
-      await ContactTimelineScrollProbe.traceAsync(
-        'media.video.initialize',
-        controller.initialize,
-      );
+      await controller.initialize();
 
       if (!mounted || activationGeneration != _activationGeneration) {
         await controller.dispose();
@@ -1215,7 +1194,6 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
       }
     } catch (_) {
       await controller.dispose();
-      ContactTimelineScrollProbe.count('media.video.activation_failed');
       if (!mounted || activationGeneration != _activationGeneration) {
         return;
       }
@@ -1229,7 +1207,6 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
 
   @override
   Widget build(BuildContext context) {
-    ContactTimelineScrollProbe.count('media.video.build');
     ref.watch(themeColorsProvider);
     final aspectRatio = _effectiveAspectRatio();
     final file = widget.attachment.displayableFile();
@@ -1514,7 +1491,6 @@ class VideoActivationShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ContactTimelineScrollProbe.count('media.video.shell.build');
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
 
@@ -1901,7 +1877,7 @@ class DemoConversationList extends StatelessWidget {
           case MsgType.image:
             return ImageMessageTile(
               isMe: message.isMe,
-              attachment: AttachmentInfo(
+              attachment: MediaTileAttachment(
                 id: message.messageId,
                 localPath: message.file?.path,
                 mimeType: 'image/*',
@@ -1914,7 +1890,7 @@ class DemoConversationList extends StatelessWidget {
           case MsgType.video:
             return VideoMessageTile(
               isMe: message.isMe,
-              attachment: AttachmentInfo(
+              attachment: MediaTileAttachment(
                 id: message.messageId,
                 localPath: message.file?.path,
                 mimeType: 'video/*',

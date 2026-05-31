@@ -1,9 +1,11 @@
-import 'package:drift/drift.dart' as drift;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../../essentials/db/feature_level_providers.dart';
-import '../../../../../../essentials/db/infrastructure/data_sources/local/working/working_database.dart';
+import '../../../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
+import '../../../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import '../../../../../../essentials/source_scoped_import/domain/known_sources.dart';
+import '../../../../../../essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 
 part 'spam_management_provider.g.dart';
 
@@ -30,63 +32,70 @@ class SpamHandleInfo {
 /// Provider for managing spam/blacklisted handles
 @riverpod
 Future<List<SpamHandleInfo>> spamHandles(Ref ref) async {
-  final db = await ref.watch(driftWorkingDatabaseProvider.future);
+  final graphDb = await ref.watch(
+    driftConversationGraphDatabaseProvider.future,
+  );
   final overlayDb = await ref.watch(overlayDatabaseProvider.future);
 
-  // Load overlay visibility overrides (overlay wins on conflict).
+  return _readGraphSpamHandles(graphDb: graphDb, overlayDb: overlayDb);
+}
+
+Future<List<SpamHandleInfo>> _readGraphSpamHandles({
+  required ConversationGraphDatabase graphDb,
+  required OverlayDatabase overlayDb,
+}) async {
   final visibilityOverrides = await overlayDb.getAllHandleVisibilities();
-  final overrideMap = {for (final o in visibilityOverrides) o.handleId: o};
-
-  // Query all handles with their chat counts
-  final query = db.select(db.handlesCanonical).join([
-    drift.leftOuterJoin(
-      db.chatToHandle,
-      db.chatToHandle.handleId.equalsExp(db.handlesCanonical.id),
-    ),
-    drift.leftOuterJoin(
-      db.workingChats,
-      db.workingChats.id.equalsExp(db.chatToHandle.chatId),
-    ),
-  ]);
-
-  final rows = await query.get();
-  final handleChatCounts = <int, int>{};
-
-  // Count chats per handle
-  for (final row in rows) {
-    final handle = row.readTable(db.handlesCanonical);
-    final chat = row.readTableOrNull(db.workingChats);
-
-    if (chat != null) {
-      handleChatCounts[handle.id] = (handleChatCounts[handle.id] ?? 0) + 1;
-    } else if (!handleChatCounts.containsKey(handle.id)) {
-      handleChatCounts[handle.id] = 0;
+  final overrideMap = <int, HandleVisibilityOverride>{};
+  for (final override in visibilityOverrides) {
+    for (final handleId in _graphHandleIdsForOverlayId(override.handleId)) {
+      overrideMap[handleId] = override;
     }
   }
 
-  // Get unique handles and build SpamHandleInfo list
-  final uniqueHandles = <int, HandlesCanonicalData>{};
+  final rows = await graphDb.selectRows('''
+    SELECT
+      ch.canonical_handle_ss_id AS handle_id,
+      ch.display_handle AS display_handle,
+      COALESCE(ch.service, '') AS service,
+      COUNT(DISTINCT cth.chat_ss_id) AS chat_count
+    FROM canonical_handles ch
+    LEFT JOIN chat_to_handle cth
+      ON cth.handle_ss_id = ch.canonical_handle_ss_id
+      OR EXISTS (
+        SELECT 1
+        FROM handle_aliases handle_alias
+        WHERE handle_alias.handle_ss_id = cth.handle_ss_id
+          AND handle_alias.canonical_handle_ss_id =
+            ch.canonical_handle_ss_id
+      )
+    GROUP BY ch.canonical_handle_ss_id
+    ORDER BY ch.display_handle ASC
+    ''');
+
+  final results = <SpamHandleInfo>[];
   for (final row in rows) {
-    final handle = row.readTable(db.handlesCanonical);
-    uniqueHandles[handle.id] = handle;
+    final handleId = _readInt(row['handle_id']);
+    final displayHandle = (row['display_handle'] as String?)?.trim();
+    if (displayHandle == null || displayHandle.isEmpty) {
+      continue;
+    }
+
+    final overlay = overrideMap[handleId];
+    results.add(
+      SpamHandleInfo(
+        id: handleId,
+        handleId: displayHandle,
+        service: (row['service'] as String?)?.trim() ?? '',
+        isBlacklisted: overlay?.isBlacklisted ?? false,
+        isVisible: overlay?.isVisible ?? true,
+        chatCount: _readInt(row['chat_count']),
+      ),
+    );
   }
 
-  final results = uniqueHandles.values.map((handle) {
-    final overlay = overrideMap[handle.id];
-    return SpamHandleInfo(
-      id: handle.id,
-      handleId: handle.compoundIdentifier,
-      service: handle.service,
-      isBlacklisted: overlay?.isBlacklisted ?? handle.isBlacklisted,
-      isVisible: overlay?.isVisible ?? handle.isVisible,
-      chatCount: handleChatCounts[handle.id] ?? 0,
-    );
-  }).toList();
-
-  // Sort by status (blacklisted first) then by handle
   results.sort((a, b) {
     if (a.isBlacklisted != b.isBlacklisted) {
-      return a.isBlacklisted ? -1 : 1; // Blacklisted first
+      return a.isBlacklisted ? -1 : 1;
     }
     return a.handleId.compareTo(b.handleId);
   });
@@ -153,4 +162,36 @@ class SpamStats {
 
   double get blacklistPercentage =>
       totalHandles > 0 ? (blacklistedHandles / totalHandles) * 100 : 0.0;
+}
+
+int _readInt(Object? value) {
+  if (value is int) {
+    return value;
+  }
+  if (value is BigInt) {
+    return value.toInt();
+  }
+  if (value is num) {
+    return value.toInt();
+  }
+  return int.parse(value.toString());
+}
+
+Set<int> _graphHandleIdsForOverlayId(int handleId) {
+  final ids = <int>{handleId};
+  final packed = _graphHandleIdForLegacyId(handleId);
+  if (packed != null) {
+    ids.add(packed);
+  }
+  return ids;
+}
+
+int? _graphHandleIdForLegacyId(int handleId) {
+  if (handleId <= 0 || handleId > SourceScopedRowKey.maxSourceRowId) {
+    return null;
+  }
+  return SourceScopedRowKey.pack(
+    sourceId: liveChatDbSourceId,
+    sourceRowId: handleId,
+  );
 }

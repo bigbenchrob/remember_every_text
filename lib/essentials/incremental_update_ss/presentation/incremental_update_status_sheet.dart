@@ -9,16 +9,13 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../config/theme/colors/theme_colors_annotated.dart';
 import '../../../config/theme/theme_typography.dart';
-import '../../../features/chats/application/chat_read_model_source_provider.dart';
 import '../../../features/chats/presentation/view_model/chats_view_model_provider.dart';
-import '../../../features/chats/presentation/view_model/recent_chats_provider.dart';
 import '../../conversation_graph/application/chat_summaries/chat_summary.dart';
 import '../../conversation_graph/application/chat_summaries/chat_summary_provider.dart';
-import '../../conversation_graph/application/conversation_graph_build_service_provider.dart';
+import '../../conversation_graph/application/conversation_graph_build_controller_provider.dart';
 import '../../conversation_graph/application/health/graph_health_provider.dart';
 import '../../conversation_graph/application/health/graph_health_report.dart';
 import '../application/messages/status/incremental_update_status_provider.dart';
-import '../application/messages/status/recent_chats_comparison_provider.dart';
 import '../application/messages/status/source_scoped_proof_log_writer.dart';
 
 enum _StatusSheetTab { status, graphHealth, groupProfiles, messages }
@@ -42,19 +39,27 @@ class _IncrementalUpdateStatusSheetState
   @override
   Widget build(BuildContext context) {
     final statusAsync = ref.watch(incrementalUpdateStatusProvider);
-    final recentChatsComparisonAsync = ref.watch(
-      recentChatsComparisonProvider(),
-    );
-    final graphHealthAsync = ref.watch(graphHealthReportProvider);
-    final summariesAsync = ref.watch(chatSummariesProvider);
-    final summaryCountsAsync = ref.watch(chatSummarySanityCountsProvider);
-    final selectedMessagesAsync = _selectedChatSsId == null
+    final graphHealthAsync = _selectedTab == _StatusSheetTab.graphHealth
+        ? ref.watch(graphHealthReportProvider)
+        : const AsyncValue<GraphHealthReport>.loading();
+    final shouldReadSummaries =
+        _selectedTab == _StatusSheetTab.groupProfiles ||
+        _selectedTab == _StatusSheetTab.messages;
+    final summariesAsync = shouldReadSummaries
+        ? ref.watch(chatSummariesProvider)
+        : const AsyncValue<List<ChatSummary>>.data([]);
+    final summaryCountsAsync = _selectedTab == _StatusSheetTab.groupProfiles
+        ? ref.watch(chatSummarySanityCountsProvider)
+        : const AsyncValue<ChatSummarySanityCounts>.loading();
+    final shouldReadSelectedChat =
+        _selectedTab == _StatusSheetTab.messages && _selectedChatSsId != null;
+    final selectedMessagesAsync = !shouldReadSelectedChat
         ? const AsyncValue<List<RecentChatMessage>>.data([])
         : ref.watch(recentChatMessagesProvider(_selectedChatSsId!));
-    final selectedTextMessagesAsync = _selectedChatSsId == null
+    final selectedTextMessagesAsync = !shouldReadSelectedChat
         ? const AsyncValue<List<RecentChatMessage>>.data([])
         : ref.watch(recentTextChatMessagesProvider(_selectedChatSsId!));
-    final selectedTextStatsAsync = _selectedChatSsId == null
+    final selectedTextStatsAsync = !shouldReadSelectedChat
         ? const AsyncValue<ChatMessageTextStats>.data(
             ChatMessageTextStats(
               totalMessageCount: 0,
@@ -63,7 +68,7 @@ class _IncrementalUpdateStatusSheetState
             ),
           )
         : ref.watch(chatMessageTextStatsProvider(_selectedChatSsId!));
-    final selectedAttachmentStatsAsync = _selectedChatSsId == null
+    final selectedAttachmentStatsAsync = !shouldReadSelectedChat
         ? const AsyncValue<ChatAttachmentStats>.data(
             ChatAttachmentStats(
               messageWithAttachmentCount: 0,
@@ -80,11 +85,10 @@ class _IncrementalUpdateStatusSheetState
             ),
           )
         : ref.watch(chatAttachmentStatsProvider(_selectedChatSsId!));
-    final selectedMessageAttachmentsAsync = _selectedMessageSsId == null
+    final selectedMessageAttachmentsAsync =
+        !shouldReadSelectedChat || _selectedMessageSsId == null
         ? const AsyncValue<List<MessageAttachment>>.data([])
         : ref.watch(messageAttachmentsProvider(_selectedMessageSsId!));
-    final chatReadModelSource = ref.watch(chatReadModelSourceProvider);
-
     return MacosSheet(
       child: SizedBox(
         width: 760,
@@ -162,7 +166,6 @@ class _IncrementalUpdateStatusSheetState
                     selectedMessageAttachmentsAsync:
                         selectedMessageAttachmentsAsync,
                     graphHealthAsync: graphHealthAsync,
-                    recentChatsComparisonAsync: recentChatsComparisonAsync,
                     summaryFilter: _summaryFilter,
                     summarySort: _summarySort,
                     selectedChatSsId: _selectedChatSsId,
@@ -202,10 +205,7 @@ class _IncrementalUpdateStatusSheetState
                 ),
               ),
               const SizedBox(height: 16),
-              _StatusControls(
-                ref: ref,
-                chatReadModelSource: chatReadModelSource,
-              ),
+              _StatusControls(ref: ref),
             ],
           ),
         ),
@@ -226,7 +226,6 @@ class _StatusTabView extends StatelessWidget {
     required this.selectedAttachmentStatsAsync,
     required this.selectedMessageAttachmentsAsync,
     required this.graphHealthAsync,
-    required this.recentChatsComparisonAsync,
     required this.summaryFilter,
     required this.summarySort,
     required this.selectedChatSsId,
@@ -248,7 +247,6 @@ class _StatusTabView extends StatelessWidget {
   final AsyncValue<ChatAttachmentStats> selectedAttachmentStatsAsync;
   final AsyncValue<List<MessageAttachment>> selectedMessageAttachmentsAsync;
   final AsyncValue<GraphHealthReport> graphHealthAsync;
-  final AsyncValue<RecentChatsComparison> recentChatsComparisonAsync;
   final ChatSummaryFilter summaryFilter;
   final ChatSummarySort summarySort;
   final int? selectedChatSsId;
@@ -263,10 +261,7 @@ class _StatusTabView extends StatelessWidget {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       child: switch (selectedTab) {
-        _StatusSheetTab.status => _StatusContent(
-          status: status,
-          recentChatsComparisonAsync: recentChatsComparisonAsync,
-        ),
+        _StatusSheetTab.status => _StatusContent(status: status),
         _StatusSheetTab.graphHealth => _GraphHealthSection(
           graphHealthAsync: graphHealthAsync,
         ),
@@ -298,13 +293,9 @@ class _StatusTabView extends StatelessWidget {
 }
 
 class _StatusContent extends ConsumerWidget {
-  const _StatusContent({
-    required this.status,
-    required this.recentChatsComparisonAsync,
-  });
+  const _StatusContent({required this.status});
 
   final IncrementalUpdateStatus status;
-  final AsyncValue<RecentChatsComparison> recentChatsComparisonAsync;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -337,10 +328,6 @@ class _StatusContent extends ConsumerWidget {
               '${status.duplicateWorkingMessageToAttachmentEdgeCount}',
             ),
           ],
-        ),
-        const SizedBox(height: 12),
-        _RecentChatsComparisonSection(
-          comparisonAsync: recentChatsComparisonAsync,
         ),
       ],
     );
@@ -418,16 +405,23 @@ class _GraphHealthSection extends StatelessWidget {
                 '${report.attachmentsMissingArchiveRecordCount}',
                 labelWidth: 250,
               ),
-              _StatusRow(
-                'archive files available',
-                '${report.archiveFilesAvailableCount}',
-                labelWidth: 250,
-              ),
-              _StatusRow(
-                'archive files missing',
-                '${report.archiveFilesMissingCount}',
-                labelWidth: 250,
-              ),
+              if (report.archiveFileAuditIncluded) ...[
+                _StatusRow(
+                  'archive files available',
+                  '${report.archiveFilesAvailableCount}',
+                  labelWidth: 250,
+                ),
+                _StatusRow(
+                  'archive files missing',
+                  '${report.archiveFilesMissingCount}',
+                  labelWidth: 250,
+                ),
+              ] else
+                const _StatusRow(
+                  'archive file checks',
+                  'skipped in the default health report',
+                  labelWidth: 250,
+                ),
               _StatusRow(
                 'archive records without working attachment',
                 '${report.archiveRecordsWithoutWorkingAttachmentCount}',
@@ -437,96 +431,109 @@ class _GraphHealthSection extends StatelessWidget {
           ),
           _StatusSection(
             title: 'Attachment recovery source audit',
-            rows: [
-              _StatusRow(
-                'historical MessageLens archive',
-                report.historicalArchiveAvailable ? 'available' : 'not found',
-                labelWidth: 260,
-              ),
-              _StatusRow(
-                'historical archive records',
-                '${report.historicalArchiveRecordCount}',
-                labelWidth: 260,
-              ),
-              _StatusRow(
-                'historical archive files available',
-                '${report.historicalArchiveFilesAvailableCount}',
-                labelWidth: 260,
-              ),
-              _StatusRow(
-                'historical archive files missing',
-                '${report.historicalArchiveFilesMissingCount}',
-                labelWidth: 260,
-              ),
-              _StatusRow(
-                'recoverable from historical archive',
-                '${report.attachmentsRecoverableFromHistoricalArchiveCount}',
-                labelWidth: 260,
-              ),
-              _StatusRow(
-                'recovered Messages source',
-                report.recoveredMessagesSourceAvailable
-                    ? 'available'
-                    : 'not found',
-                labelWidth: 260,
-              ),
-              _StatusRow(
-                'recovered Messages attachment links',
-                '${report.recoveredMessagesAttachmentKeyCount}',
-                labelWidth: 260,
-              ),
-              _StatusRow(
-                'recoverable from recovered Messages',
-                '${report.attachmentsRecoverableFromRecoveredMessagesCount}',
-                labelWidth: 260,
-              ),
-              _StatusRow(
-                'recoverable from both sources',
-                '${report.attachmentsRecoverableFromBothRecoverySourcesCount}',
-                labelWidth: 260,
-              ),
-              _StatusRow(
-                'not found in known recovery sources',
-                '${report.attachmentsStillMissingFromKnownRecoverySourcesCount}',
-                labelWidth: 260,
-              ),
-            ],
+            rows: report.attachmentRecoveryAuditIncluded
+                ? [
+                    _StatusRow(
+                      'historical MessageLens archive',
+                      report.historicalArchiveAvailable
+                          ? 'available'
+                          : 'not found',
+                      labelWidth: 260,
+                    ),
+                    _StatusRow(
+                      'historical archive records',
+                      '${report.historicalArchiveRecordCount}',
+                      labelWidth: 260,
+                    ),
+                    _StatusRow(
+                      'historical archive files available',
+                      '${report.historicalArchiveFilesAvailableCount}',
+                      labelWidth: 260,
+                    ),
+                    _StatusRow(
+                      'historical archive files missing',
+                      '${report.historicalArchiveFilesMissingCount}',
+                      labelWidth: 260,
+                    ),
+                    _StatusRow(
+                      'recoverable from historical archive',
+                      '${report.attachmentsRecoverableFromHistoricalArchiveCount}',
+                      labelWidth: 260,
+                    ),
+                    _StatusRow(
+                      'recovered Messages source',
+                      report.recoveredMessagesSourceAvailable
+                          ? 'available'
+                          : 'not found',
+                      labelWidth: 260,
+                    ),
+                    _StatusRow(
+                      'recovered Messages attachment links',
+                      '${report.recoveredMessagesAttachmentKeyCount}',
+                      labelWidth: 260,
+                    ),
+                    _StatusRow(
+                      'recoverable from recovered Messages',
+                      '${report.attachmentsRecoverableFromRecoveredMessagesCount}',
+                      labelWidth: 260,
+                    ),
+                    _StatusRow(
+                      'recoverable from both sources',
+                      '${report.attachmentsRecoverableFromBothRecoverySourcesCount}',
+                      labelWidth: 260,
+                    ),
+                    _StatusRow(
+                      'not found in known recovery sources',
+                      '${report.attachmentsStillMissingFromKnownRecoverySourcesCount}',
+                      labelWidth: 260,
+                    ),
+                  ]
+                : const [
+                    _StatusRow(
+                      'status',
+                      'skipped in the default health report; recovery audits '
+                          'scan external backup sources and must be run '
+                          'deliberately',
+                      labelWidth: 260,
+                    ),
+                  ],
           ),
-          _StatusSection(
-            title: 'Archive rehydrate dry run',
-            rows: [
-              _StatusRow(
-                'already available in current archive',
-                '${report.dryRunAlreadyAvailableInCurrentArchiveCount}',
-                labelWidth: 270,
-              ),
-              _StatusRow(
-                'would copy from historical archive',
-                '${report.dryRunWouldCopyFromHistoricalArchiveCount}',
-                labelWidth: 270,
-              ),
-              _StatusRow(
-                'would copy from recovered Messages',
-                '${report.dryRunWouldCopyFromRecoveredMessagesCount}',
-                labelWidth: 270,
-              ),
-              _StatusRow(
-                'would archive from current source path',
-                '${report.dryRunWouldArchiveFromCurrentSourcePathCount}',
-                labelWidth: 270,
-              ),
-              _StatusRow(
-                'still missing after all sources',
-                '${report.dryRunStillMissingEverywhereCount}',
-                labelWidth: 270,
-              ),
-              _StatusRow(
-                'still-missing plugin payload candidates',
-                '${report.dryRunStillMissingPluginPayloadCandidateCount}',
-                labelWidth: 270,
-              ),
-            ],
-          ),
+          if (report.attachmentRecoveryAuditIncluded)
+            _StatusSection(
+              title: 'Archive rehydrate dry run',
+              rows: [
+                _StatusRow(
+                  'already available in current archive',
+                  '${report.dryRunAlreadyAvailableInCurrentArchiveCount}',
+                  labelWidth: 270,
+                ),
+                _StatusRow(
+                  'would copy from historical archive',
+                  '${report.dryRunWouldCopyFromHistoricalArchiveCount}',
+                  labelWidth: 270,
+                ),
+                _StatusRow(
+                  'would copy from recovered Messages',
+                  '${report.dryRunWouldCopyFromRecoveredMessagesCount}',
+                  labelWidth: 270,
+                ),
+                _StatusRow(
+                  'would archive from current source path',
+                  '${report.dryRunWouldArchiveFromCurrentSourcePathCount}',
+                  labelWidth: 270,
+                ),
+                _StatusRow(
+                  'still missing after all sources',
+                  '${report.dryRunStillMissingEverywhereCount}',
+                  labelWidth: 270,
+                ),
+                _StatusRow(
+                  'still-missing plugin payload candidates',
+                  '${report.dryRunStillMissingPluginPayloadCandidateCount}',
+                  labelWidth: 270,
+                ),
+              ],
+            ),
           if (report.missingAttachmentSamples.isNotEmpty)
             _MissingAttachmentSampleSection(
               samples: report.missingAttachmentSamples,
@@ -1207,53 +1214,6 @@ class _MetricProgressRow extends StatelessWidget {
         ],
       ],
     );
-  }
-}
-
-class _RecentChatsComparisonSection extends StatelessWidget {
-  const _RecentChatsComparisonSection({required this.comparisonAsync});
-
-  final AsyncValue<RecentChatsComparison> comparisonAsync;
-
-  @override
-  Widget build(BuildContext context) {
-    return comparisonAsync.when(
-      data: (comparison) => _StatusSection(
-        title: 'Recent chats comparison',
-        rows: [
-          _StatusRow('legacy count', '${comparison.legacyCount}'),
-          _StatusRow('graph count', '${comparison.graphCount}'),
-          const _StatusRow('legacy top rows', 'working.db recentChatsProvider'),
-          for (final row in comparison.legacyRows)
-            _StatusRow(_rowLabel(row), _rowValue(row), labelWidth: 210),
-          const _StatusRow(
-            'graph top rows',
-            'working_ss.db conversation graph',
-          ),
-          for (final row in comparison.graphRows)
-            _StatusRow(_rowLabel(row), _rowValue(row), labelWidth: 210),
-        ],
-      ),
-      loading: () => const _StatusSection(
-        title: 'Recent chats comparison',
-        rows: [_StatusRow('comparison', 'loading')],
-      ),
-      error: (error, stackTrace) => _StatusSection(
-        title: 'Recent chats comparison',
-        rows: [_StatusRow('comparison error', error.toString())],
-      ),
-    );
-  }
-
-  String _rowLabel(RecentChatsComparisonRow row) {
-    return '${row.chatId}';
-  }
-
-  String _rowValue(RecentChatsComparisonRow row) {
-    final groupText = row.isGroup ? 'group' : 'single';
-    final dateText = row.lastMessageDate?.toIso8601String() ?? 'no date';
-    return '$groupText | participants=${row.participantCount} | '
-        'messages=${row.messageCount} | $dateText | ${row.title}';
   }
 }
 
@@ -1961,10 +1921,9 @@ class _AttachmentDetailRow extends ConsumerWidget {
 }
 
 class _StatusControls extends StatefulWidget {
-  const _StatusControls({required this.ref, required this.chatReadModelSource});
+  const _StatusControls({required this.ref});
 
   final WidgetRef ref;
-  final ChatReadModelSourceMode chatReadModelSource;
 
   @override
   State<_StatusControls> createState() => _StatusControlsState();
@@ -1986,37 +1945,9 @@ class _StatusControlsState extends State<_StatusControls> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Recent chats',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(width: 8),
-            CupertinoSlidingSegmentedControl<ChatReadModelSourceMode>(
-              groupValue: widget.chatReadModelSource,
-              children: const {
-                ChatReadModelSourceMode.legacy: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 10),
-                  child: Text('Legacy'),
-                ),
-                ChatReadModelSourceMode.conversationGraph: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 10),
-                  child: Text('Graph'),
-                ),
-              },
-              onValueChanged: (value) {
-                if (value == null) {
-                  return;
-                }
-                widget.ref
-                    .read(chatReadModelSourceProvider.notifier)
-                    .setMode(value);
-                widget.ref.invalidate(recentChatsProvider);
-              },
-            ),
-          ],
+        const Text(
+          'Recent chats: graph',
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
         ),
         Row(
           mainAxisSize: MainAxisSize.min,
@@ -2120,10 +2051,9 @@ class _StatusControlsState extends State<_StatusControls> {
   Future<void> _importAndProjectOnce(WidgetRef ref) async {
     final before = await ref.read(incrementalUpdateStatusProvider.future);
     try {
-      final service = await ref.read(
-        conversationGraphBuildServiceProvider.future,
-      );
-      final buildReport = await service.runOnce();
+      final buildReport = await ref
+          .read(conversationGraphBuildControllerProvider.notifier)
+          .runOnce(owner: 'source-scoped-dev-panel');
       ref.invalidate(incrementalUpdateStatusProvider);
       ref.invalidate(graphHealthReportProvider);
       ref.invalidate(chatSummariesProvider);

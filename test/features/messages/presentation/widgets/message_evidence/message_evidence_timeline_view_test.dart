@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:remember_this_text/essentials/conversation_graph/application/conversations/conversation.dart';
 import 'package:remember_this_text/features/messages/application/message_evidence/message_evidence_spine_provider.dart';
+import 'package:remember_this_text/features/messages/domain/message_evidence/message_evidence_row_data.dart';
 import 'package:remember_this_text/features/messages/domain/message_evidence/message_evidence_scope.dart';
 import 'package:remember_this_text/features/messages/domain/message_evidence/message_evidence_skeleton.dart';
 import 'package:remember_this_text/features/messages/presentation/widgets/message_evidence/message_evidence_header.dart';
@@ -16,11 +16,10 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          graphMessageEvidenceRowProvider(
-            scope: scope,
-            messageId: 1,
-          ).overrideWith((ref) async {
-            return const ConversationMessage(
+          messageEvidenceRowProvider(scope: scope, messageId: 1).overrideWith((
+            ref,
+          ) async {
+            return const MessageEvidenceRowData(
               messageId: 1,
               dateUtc: '2026-05-20T10:00:00.000Z',
               isFromMe: false,
@@ -42,9 +41,9 @@ void main() {
                 ),
               ],
             ),
-            headerData: const MessageEvidenceHeaderData(
+            headerData: const MessageEvidenceHeaderModel(
               title: 'All messages from Claire',
-              subtitleParts: ['1 message'],
+              countLabel: '1 message',
             ),
             emptyMessage: 'No messages',
             onVisibleMonthChanged: visibleMonthWrites.add,
@@ -68,7 +67,7 @@ void main() {
           home: MessageEvidenceTimelineView(
             evidenceScope: ContactAllMessagesEvidenceScope(contactId: 24),
             skeleton: MessageEvidenceTimelineSkeleton(entries: []),
-            headerData: MessageEvidenceHeaderData(title: 'Empty scope'),
+            headerData: MessageEvidenceHeaderModel(title: 'Empty scope'),
             emptyMessage: 'No graph evidence',
           ),
         ),
@@ -87,11 +86,10 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          graphMessageEvidenceRowProvider(
-            scope: scope,
-            messageId: 1,
-          ).overrideWith((ref) async {
-            return const ConversationMessage(
+          messageEvidenceRowProvider(scope: scope, messageId: 1).overrideWith((
+            ref,
+          ) async {
+            return const MessageEvidenceRowData(
               messageId: 1,
               dateUtc: '2026-05-18T10:00:00.000Z',
               isFromMe: false,
@@ -100,11 +98,10 @@ void main() {
               attachmentCount: 0,
             );
           }),
-          graphMessageEvidenceRowProvider(
-            scope: scope,
-            messageId: 2,
-          ).overrideWith((ref) async {
-            return const ConversationMessage(
+          messageEvidenceRowProvider(scope: scope, messageId: 2).overrideWith((
+            ref,
+          ) async {
+            return const MessageEvidenceRowData(
               messageId: 2,
               dateUtc: '2026-05-20T10:00:00.000Z',
               isFromMe: true,
@@ -131,7 +128,7 @@ void main() {
                 ),
               ],
             ),
-            headerData: MessageEvidenceHeaderData(title: 'Conversation'),
+            headerData: MessageEvidenceHeaderModel(title: 'Conversation'),
             emptyMessage: 'No messages',
             anchorMessageId: 2,
             highlightQuery: 'settlement',

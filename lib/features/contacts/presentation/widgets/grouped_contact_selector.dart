@@ -781,7 +781,6 @@ class _ContactListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return ContactHighlightRow(
       displayName: contact.displayName,
-      shortName: contact.shortName,
       showFavoriteIndicator: showFavoriteIndicator,
       onHoverStart: onHoverStart,
       onTap: onTap,

@@ -1,19 +1,12 @@
-import 'package:drift/drift.dart';
-
 import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
-import '../../../db/infrastructure/data_sources/local/working/working_database.dart';
 import '../../application/contacts/contact_graph.dart';
 import '../../application/contacts/contact_graph_repository.dart';
 import '../../application/conversations/conversation.dart';
 
 class SqliteContactGraphRepository implements ContactGraphRepository {
-  const SqliteContactGraphRepository({
-    required this.workingDatabase,
-    this.legacyDatabase,
-  });
+  const SqliteContactGraphRepository({required this.workingDatabase});
 
   final ConversationGraphDatabase workingDatabase;
-  final WorkingDatabase? legacyDatabase;
 
   @override
   Future<ContactGraphSnapshot> readContactGraph({
@@ -47,24 +40,10 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
       }
     }
 
-    final canonicalHandleIds =
-        await _readGraphCanonicalHandleIdsForLegacyContact(contactId);
-    if (canonicalHandleIds.isEmpty) {
-      return ContactGraphSnapshot(
-        contactId: contactId,
-        conversations: const <ConversationOverview>[],
-        messageActivity: null,
-      );
-    }
-
     return ContactGraphSnapshot(
       contactId: contactId,
-      conversations: await _readContactConversationsForCanonicalHandles(
-        canonicalHandleIds,
-      ),
-      messageActivity: await _readContactMessageActivityForCanonicalHandles(
-        canonicalHandleIds,
-      ),
+      conversations: const <ConversationOverview>[],
+      messageActivity: null,
     );
   }
 
@@ -137,17 +116,7 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
       }
     }
 
-    final canonicalHandleIds =
-        await _readGraphCanonicalHandleIdsForLegacyContact(contactId);
-    if (canonicalHandleIds.isEmpty) {
-      return const <ConversationMessage>[];
-    }
-
-    return _readContactMessagesForCanonicalHandles(
-      canonicalHandleIds,
-      limit: limit,
-      monthAnchor: monthAnchor,
-    );
+    return const <ConversationMessage>[];
   }
 
   @override
@@ -168,13 +137,7 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
       }
     }
 
-    final canonicalHandleIds =
-        await _readGraphCanonicalHandleIdsForLegacyContact(contactId);
-    if (canonicalHandleIds.isEmpty) {
-      return const <ContactGraphMessageTimelineEntry>[];
-    }
-
-    return _readContactMessageTimelineForCanonicalHandles(canonicalHandleIds);
+    return const <ContactGraphMessageTimelineEntry>[];
   }
 
   @override
@@ -201,16 +164,7 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
       }
     }
 
-    final canonicalHandleIds =
-        await _readGraphCanonicalHandleIdsForLegacyContact(contactId);
-    if (canonicalHandleIds.isEmpty) {
-      return null;
-    }
-
-    return _readContactMessageByIdForCanonicalHandles(
-      canonicalHandleIds,
-      messageId: messageId,
-    );
+    return null;
   }
 
   @override
@@ -259,6 +213,7 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
     required int contactId,
     required int graphContactId,
     required String query,
+    bool matchAnyTerm = false,
     int? handleId,
   }) async {
     if (_searchTerms(query).isEmpty) {
@@ -277,12 +232,14 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
       return _readContactMessageIdsMatchingTextForCanonicalHandles(
         canonicalHandleIds,
         query: query,
+        matchAnyTerm: matchAnyTerm,
       );
     }
 
     final graphMatches = await _readContactMessageIdsMatchingText(
       contactId: graphContactId,
       query: query,
+      matchAnyTerm: matchAnyTerm,
     );
     if (graphMatches.isNotEmpty) {
       return graphMatches;
@@ -292,58 +249,14 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
       final directMatches = await _readContactMessageIdsMatchingText(
         contactId: contactId,
         query: query,
+        matchAnyTerm: matchAnyTerm,
       );
       if (directMatches.isNotEmpty) {
         return directMatches;
       }
     }
 
-    final canonicalHandleIds =
-        await _readGraphCanonicalHandleIdsForLegacyContact(contactId);
-    if (canonicalHandleIds.isEmpty) {
-      return const <int>[];
-    }
-
-    return _readContactMessageIdsMatchingTextForCanonicalHandles(
-      canonicalHandleIds,
-      query: query,
-    );
-  }
-
-  Future<List<ConversationOverview>>
-  _readContactConversationsForCanonicalHandles(List<int> canonicalHandleIds) {
-    return _readContactConversationsWhere('''
-      EXISTS (
-        SELECT 1
-        FROM chat_to_handle contact_chat_handle
-        LEFT JOIN handle_aliases contact_alias
-          ON contact_alias.handle_ss_id = contact_chat_handle.handle_ss_id
-        WHERE contact_chat_handle.chat_ss_id = c.ss_id
-          AND COALESCE(
-            contact_alias.canonical_handle_ss_id,
-            contact_chat_handle.handle_ss_id
-          ) IN (${_placeholders(canonicalHandleIds.length)})
-      )
-      ''', canonicalHandleIds);
-  }
-
-  Future<List<ConversationMessage>> _readContactMessagesForCanonicalHandles(
-    List<int> canonicalHandleIds, {
-    required int limit,
-    DateTime? monthAnchor,
-  }) {
-    return _readContactMessagesWhere(
-      '''
-      COALESCE(
-        contact_alias.canonical_handle_ss_id,
-        contact_chat_handle.handle_ss_id
-      ) IN (${_placeholders(canonicalHandleIds.length)})
-      ''',
-      '',
-      canonicalHandleIds,
-      limit: limit,
-      monthAnchor: monthAnchor,
-    );
+    return const <int>[];
   }
 
   Future<List<ContactGraphMessageTimelineEntry>> _readContactMessageTimeline(
@@ -381,6 +294,7 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
   Future<List<int>> _readContactMessageIdsMatchingText({
     required int contactId,
     required String query,
+    required bool matchAnyTerm,
   }) {
     return _readContactMessageIdsMatchingTextWhere(
       '''
@@ -395,12 +309,14 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
       ''',
       <Object?>[contactId],
       query: query,
+      matchAnyTerm: matchAnyTerm,
     );
   }
 
   Future<List<int>> _readContactMessageIdsMatchingTextForCanonicalHandles(
     List<int> canonicalHandleIds, {
     required String query,
+    required bool matchAnyTerm,
   }) {
     return _readContactMessageIdsMatchingTextWhere(
       '''
@@ -412,6 +328,7 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
       '',
       canonicalHandleIds,
       query: query,
+      matchAnyTerm: matchAnyTerm,
     );
   }
 
@@ -606,6 +523,7 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
     String extraJoin,
     List<Object?> args, {
     required String query,
+    required bool matchAnyTerm,
   }) async {
     final terms = _searchTerms(query);
     if (terms.isEmpty) {
@@ -645,7 +563,7 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
         ON sender_canonical.canonical_handle_ss_id =
           m.sender_canonical_handle_ss_id
       WHERE $whereClause
-        AND ${searchClauses.join(' AND ')}
+        AND (${searchClauses.join(matchAnyTerm ? ' OR ' : ' AND ')})
       ORDER BY COALESCE(m.date_utc, '') ASC, m.ss_id ASC
       ''',
       <Object?>[...args, ...searchArgs],
@@ -720,18 +638,6 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
         ON contact_handle.handle_ss_id = ha.canonical_handle_ss_id
       ''',
       <Object?>[contactId],
-    );
-  }
-
-  Future<ContactMessageActivity?>
-  _readContactMessageActivityForCanonicalHandles(List<int> canonicalHandleIds) {
-    return _readContactMessageActivityWhere(
-      '''
-      COALESCE(ha.canonical_handle_ss_id, ch.handle_ss_id)
-        IN (${_placeholders(canonicalHandleIds.length)})
-      ''',
-      '',
-      canonicalHandleIds,
     );
   }
 
@@ -825,21 +731,6 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
     ];
   }
 
-  Future<List<int>> _readGraphCanonicalHandleIdsForLegacyContact(
-    int contactId,
-  ) async {
-    final legacyIdentifiers = await _readLegacyContactNormalizedIdentifiers(
-      contactId,
-    );
-    if (legacyIdentifiers.isEmpty) {
-      return const <int>[];
-    }
-
-    return _readGraphCanonicalHandleIdsForNormalizedIdentifiers(
-      legacyIdentifiers,
-    );
-  }
-
   Future<List<int>> _readContactPageHandleFilterIds({
     required int contactId,
     required int graphContactId,
@@ -887,7 +778,7 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
       }
     }
 
-    return _readGraphCanonicalHandleIdsForLegacyContact(contactId);
+    return const <int>[];
   }
 
   Future<List<int>> _readGraphCanonicalHandleIdsForGraphContact(
@@ -942,91 +833,7 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
       return directIds;
     }
 
-    final legacyIdentifiers = await _readLegacyHandleNormalizedIdentifiers(
-      handleId,
-    );
-    if (legacyIdentifiers.isEmpty) {
-      return const <int>[];
-    }
-    return _readGraphCanonicalHandleIdsForNormalizedIdentifiers(
-      legacyIdentifiers,
-    );
-  }
-
-  Future<List<int>> _readGraphCanonicalHandleIdsForNormalizedIdentifiers(
-    List<String> normalizedIdentifiers,
-  ) async {
-    final rows = await workingDatabase.selectRows('''
-      SELECT DISTINCT canonical_handle_ss_id
-      FROM handle_aliases
-      WHERE lower(normalized_identifier)
-        IN (${_placeholders(normalizedIdentifiers.length)})
-      ORDER BY canonical_handle_ss_id ASC
-      ''', normalizedIdentifiers);
-
-    return [
-      for (final row in rows)
-        if (_readNullableInt(row['canonical_handle_ss_id']) case final int id)
-          id,
-    ];
-  }
-
-  Future<List<String>> _readLegacyContactNormalizedIdentifiers(
-    int contactId,
-  ) async {
-    final database = legacyDatabase;
-    if (database == null) {
-      return const <String>[];
-    }
-
-    final rows = await database
-        .customSelect(
-          '''
-          SELECT DISTINCT lower(map.normalized_identifier) AS identifier
-          FROM handle_to_participant htp
-          JOIN handles_canonical_to_alias map
-            ON map.canonical_handle_id = htp.handle_id
-          WHERE htp.participant_id = ?
-            AND map.normalized_identifier IS NOT NULL
-            AND map.normalized_identifier != ''
-          ORDER BY identifier ASC
-          ''',
-          variables: [Variable.withInt(contactId)],
-        )
-        .get();
-
-    return [
-      for (final row in rows)
-        if (row.data['identifier'] case final String identifier) identifier,
-    ];
-  }
-
-  Future<List<String>> _readLegacyHandleNormalizedIdentifiers(
-    int handleId,
-  ) async {
-    final database = legacyDatabase;
-    if (database == null) {
-      return const <String>[];
-    }
-
-    final rows = await database
-        .customSelect(
-          '''
-          SELECT DISTINCT lower(normalized_identifier) AS identifier
-          FROM handles_canonical_to_alias
-          WHERE canonical_handle_id = ?
-            AND normalized_identifier IS NOT NULL
-            AND normalized_identifier != ''
-          ORDER BY identifier ASC
-          ''',
-          variables: [Variable.withInt(handleId)],
-        )
-        .get();
-
-    return [
-      for (final row in rows)
-        if (row.data['identifier'] case final String identifier) identifier,
-    ];
+    return const <int>[];
   }
 
   static ConversationMessage _mapConversationMessage(Map<String, Object?> row) {

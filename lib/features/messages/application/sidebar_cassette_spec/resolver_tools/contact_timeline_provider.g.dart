@@ -6,7 +6,7 @@ part of 'contact_timeline_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$contactTimelineHash() => r'772435b39543b84f06c9b4af615dd3ad8084e6f4';
+String _$contactTimelineHash() => r'29f5c585d1a77ecd19a6273f8331985fc78246e8';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -33,8 +33,7 @@ class _SystemHash {
 /// across all their chats/handles.
 ///
 /// This is a resolver tool: a data-fetching provider used by resolvers and
-/// widget builders. It queries date bounds from `contact_message_index` then
-/// delegates computation to [calculateContactCalendarHeatmapTimeline].
+/// widget builders. It derives the timeline from graph contact activity.
 ///
 /// Copied from [contactTimeline].
 @ProviderFor(contactTimeline)
@@ -44,8 +43,7 @@ const contactTimelineProvider = ContactTimelineFamily();
 /// across all their chats/handles.
 ///
 /// This is a resolver tool: a data-fetching provider used by resolvers and
-/// widget builders. It queries date bounds from `contact_message_index` then
-/// delegates computation to [calculateContactCalendarHeatmapTimeline].
+/// widget builders. It derives the timeline from graph contact activity.
 ///
 /// Copied from [contactTimeline].
 class ContactTimelineFamily
@@ -54,8 +52,7 @@ class ContactTimelineFamily
   /// across all their chats/handles.
   ///
   /// This is a resolver tool: a data-fetching provider used by resolvers and
-  /// widget builders. It queries date bounds from `contact_message_index` then
-  /// delegates computation to [calculateContactCalendarHeatmapTimeline].
+  /// widget builders. It derives the timeline from graph contact activity.
   ///
   /// Copied from [contactTimeline].
   const ContactTimelineFamily();
@@ -64,8 +61,7 @@ class ContactTimelineFamily
   /// across all their chats/handles.
   ///
   /// This is a resolver tool: a data-fetching provider used by resolvers and
-  /// widget builders. It queries date bounds from `contact_message_index` then
-  /// delegates computation to [calculateContactCalendarHeatmapTimeline].
+  /// widget builders. It derives the timeline from graph contact activity.
   ///
   /// Copied from [contactTimeline].
   ContactTimelineProvider call({required int contactId, int? filterHandleId}) {
@@ -104,8 +100,7 @@ class ContactTimelineFamily
 /// across all their chats/handles.
 ///
 /// This is a resolver tool: a data-fetching provider used by resolvers and
-/// widget builders. It queries date bounds from `contact_message_index` then
-/// delegates computation to [calculateContactCalendarHeatmapTimeline].
+/// widget builders. It derives the timeline from graph contact activity.
 ///
 /// Copied from [contactTimeline].
 class ContactTimelineProvider
@@ -114,8 +109,7 @@ class ContactTimelineProvider
   /// across all their chats/handles.
   ///
   /// This is a resolver tool: a data-fetching provider used by resolvers and
-  /// widget builders. It queries date bounds from `contact_message_index` then
-  /// delegates computation to [calculateContactCalendarHeatmapTimeline].
+  /// widget builders. It derives the timeline from graph contact activity.
   ///
   /// Copied from [contactTimeline].
   ContactTimelineProvider({required int contactId, int? filterHandleId})

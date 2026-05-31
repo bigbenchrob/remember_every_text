@@ -6,18 +6,38 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../features/attachments/application/attachment_archive_service_provider.dart';
 import '../../../../features/chats/presentation/view_model/recent_chats_provider.dart';
+import '../../../conversation_graph/application/conversation_graph_build_controller_provider.dart';
 import '../../../db/feature_level_providers.dart';
+import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../db_migrate/domain/entities/db_migration_result.dart';
 import '../../../db_migrate/domain/states/table_migration_progress.dart';
 import '../../../db_migrate/feature_level_providers.dart';
 import '../../../logging/application/app_logger.dart';
 import '../../../onboarding/infrastructure/persistence/overlay_onboarding_failure_storage.dart';
+import '../../../source_scoped_import/infrastructure/import_database_provider.dart';
 import '../../application/services/import_status_checker.dart';
 import '../../domain/entities/db_import_result.dart';
 import '../../domain/states/table_import_progress.dart';
 import '../../feature_level_providers.dart';
 
 part 'db_import_control_provider.g.dart';
+
+const _legacyImportDatabaseFileName = 'macos_import.db';
+const _legacyWorkingDatabaseFileName = 'working.db';
+const _allDerivedDatabaseBaseNames = <String>[
+  _legacyImportDatabaseFileName,
+  _legacyWorkingDatabaseFileName,
+  importDatabaseFileName,
+  conversationGraphDatabaseFileName,
+];
+const _importDatabaseBaseNames = <String>[
+  _legacyImportDatabaseFileName,
+  importDatabaseFileName,
+];
+const _projectionDatabaseBaseNames = <String>[
+  _legacyWorkingDatabaseFileName,
+  conversationGraphDatabaseFileName,
+];
 
 enum DbImportMode { import, migration }
 
@@ -372,6 +392,29 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
     state = const DbImportControlState();
   }
 
+  Future<void> _deleteDatabaseBaseFiles(List<String> baseNames) async {
+    for (final baseName in baseNames) {
+      final basePath = path.join(databaseDirectoryPath, baseName);
+      for (final filePath in <String>[
+        basePath,
+        '$basePath-wal',
+        '$basePath-shm',
+      ]) {
+        final file = File(filePath);
+        if (!file.existsSync()) {
+          continue;
+        }
+        ref
+            .read(appLoggerProvider.notifier)
+            .debug(
+              'Deleting database file $filePath',
+              source: 'DbImportControl',
+            );
+        await file.delete();
+      }
+    }
+  }
+
   /// Deletes import and working databases (preserving overlay DB),
   /// invalidates their providers, and resets UI to virgin state.
   Future<void> resetAllDatabases() async {
@@ -401,6 +444,13 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
         // Already closed or not available
       }
       ref.invalidate(sqfliteImportDatabaseProvider);
+      try {
+        final graphImportDb = await ref.read(importDatabaseProvider.future);
+        await graphImportDb.close();
+      } catch (_) {
+        // Already closed or not available
+      }
+      ref.invalidate(importDatabaseProvider);
 
       // Close working database connection
       try {
@@ -410,31 +460,33 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
         // Already closed or not available
       }
       ref.invalidate(driftWorkingDatabaseProvider);
+      try {
+        final graphDb = await ref.read(
+          driftConversationGraphDatabaseProvider.future,
+        );
+        await graphDb.close();
+      } catch (_) {
+        // Already closed or not available
+      }
+      ref.invalidate(driftConversationGraphDatabaseProvider);
+      ref.invalidate(conversationGraphReadinessProvider);
+      ref.invalidate(conversationGraphPopulatedProvider);
 
       // Delete database files (NOT overlay DB)
-      final dbDir = databaseDirectoryPath;
-      for (final baseName in <String>['macos_import.db', 'working.db']) {
-        final basePath = path.join(dbDir, baseName);
-        for (final filePath in <String>[
-          basePath,
-          '$basePath-wal',
-          '$basePath-shm',
-        ]) {
-          final file = File(filePath);
-          if (file.existsSync()) {
-            await file.delete();
-          }
-        }
-      }
+      await _deleteDatabaseBaseFiles(_allDerivedDatabaseBaseNames);
 
       // Re-invalidate so next access creates fresh databases
       ref.invalidate(sqfliteImportDatabaseProvider);
+      ref.invalidate(importDatabaseProvider);
       ref.invalidate(driftWorkingDatabaseProvider);
+      ref.invalidate(driftConversationGraphDatabaseProvider);
+      ref.invalidate(conversationGraphReadinessProvider);
+      ref.invalidate(conversationGraphPopulatedProvider);
 
       state = state.copyWith(
         isProcessing: false,
         statusMessage:
-            'Databases reset. Import and working databases deleted (overlay preserved).',
+            'Databases reset. Import and graph databases deleted (overlay preserved).',
       );
     } catch (error) {
       final message = _mapDatabaseError('Reset failed', error);
@@ -507,29 +559,26 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
             source: 'DbImportControl',
           );
       ref.invalidate(sqfliteImportDatabaseProvider);
+      try {
+        final graphImportDb = await ref.read(importDatabaseProvider.future);
+        await graphImportDb.close();
+      } catch (_) {
+        ref
+            .read(appLoggerProvider.notifier)
+            .debug(
+              'clearImportDatabase: source-scoped import DB close skipped (already closed / not available)',
+              source: 'DbImportControl',
+            );
+      }
+      ref.invalidate(importDatabaseProvider);
 
       try {
-        final basePath = path.join(databaseDirectoryPath, 'macos_import.db');
-        final candidates = <String>[basePath, '$basePath-wal', '$basePath-shm'];
-
-        for (final filePath in candidates) {
-          final file = File(filePath);
-          if (!file.existsSync()) {
-            continue;
-          }
-          ref
-              .read(appLoggerProvider.notifier)
-              .debug(
-                'clearImportDatabase: deleting $filePath',
-                source: 'DbImportControl',
-              );
-          await file.delete();
-        }
+        await _deleteDatabaseBaseFiles(_importDatabaseBaseNames);
 
         ref
             .read(appLoggerProvider.notifier)
             .info(
-              'clearImportDatabase: macos_import.db files deleted',
+              'clearImportDatabase: import database files deleted',
               source: 'DbImportControl',
             );
       } catch (error) {
@@ -549,6 +598,7 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
             source: 'DbImportControl',
           );
       ref.invalidate(sqfliteImportDatabaseProvider);
+      ref.invalidate(importDatabaseProvider);
 
       ref
           .read(appLoggerProvider.notifier)
@@ -560,7 +610,7 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
       state = state.copyWith(
         isProcessing: false,
         statusMessage:
-            'Import database deleted and will be recreated on demand. Run Import again to repopulate it.',
+            'Import databases deleted and will be recreated on demand. Run Import again to repopulate them.',
         clearProgress: true,
         clearCurrentStage: true,
         clearTableProgress: true,
@@ -641,33 +691,34 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
             source: 'DbImportControl',
           );
       ref.invalidate(driftWorkingDatabaseProvider);
+      try {
+        final graphDb = await ref.read(
+          driftConversationGraphDatabaseProvider.future,
+        );
+        await graphDb.close();
+      } catch (_) {
+        ref
+            .read(appLoggerProvider.notifier)
+            .debug(
+              'clearWorkingDatabase: ConversationGraphDatabase close skipped (already closed / not available)',
+              source: 'DbImportControl',
+            );
+      }
+      ref.invalidate(driftConversationGraphDatabaseProvider);
+      ref.invalidate(conversationGraphReadinessProvider);
+      ref.invalidate(conversationGraphPopulatedProvider);
 
       // FAST PATH:
       // Clearing by issuing massive DELETE statements can hang indefinitely on
       // some SQLite setups (FTS triggers, WAL contention, long-lived readers).
       // Deleting the database files is deterministic and much faster.
       try {
-        final basePath = path.join(databaseDirectoryPath, 'working.db');
-        final candidates = <String>[basePath, '$basePath-wal', '$basePath-shm'];
-
-        for (final filePath in candidates) {
-          final file = File(filePath);
-          if (!file.existsSync()) {
-            continue;
-          }
-          ref
-              .read(appLoggerProvider.notifier)
-              .debug(
-                'clearWorkingDatabase: deleting $filePath',
-                source: 'DbImportControl',
-              );
-          await file.delete();
-        }
+        await _deleteDatabaseBaseFiles(_projectionDatabaseBaseNames);
 
         ref
             .read(appLoggerProvider.notifier)
             .info(
-              'clearWorkingDatabase: working.db files deleted',
+              'clearWorkingDatabase: projection database files deleted',
               source: 'DbImportControl',
             );
       } catch (error) {
@@ -694,6 +745,9 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
             source: 'DbImportControl',
           );
       ref.invalidate(driftWorkingDatabaseProvider);
+      ref.invalidate(driftConversationGraphDatabaseProvider);
+      ref.invalidate(conversationGraphReadinessProvider);
+      ref.invalidate(conversationGraphPopulatedProvider);
 
       ref
           .read(appLoggerProvider.notifier)
@@ -705,7 +759,7 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
       state = state.copyWith(
         isProcessing: false,
         statusMessage:
-            'Working database deleted and will be recreated on demand. Run Migration to repopulate it.',
+            'Projection databases deleted and will be recreated on demand. Run Migration or graph build to repopulate them.',
         clearProgress: true,
         clearCurrentStage: true,
         clearTableProgress: true,
@@ -798,7 +852,10 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
     }
   }
 
-  Future<void> startMigration({bool skipImportCheck = false}) async {
+  Future<void> startMigration({
+    bool skipImportCheck = false,
+    bool buildConversationGraph = true,
+  }) async {
     // Check if there's unimported data in macOS chat.db
     if (!skipImportCheck) {
       try {
@@ -907,6 +964,37 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
 
         if (result.success) {
           await _failureStorage.clearMigrationResult();
+          if (buildConversationGraph) {
+            state = state.copyWith(
+              statusMessage:
+                  'Migration completed successfully. Building conversation graph...',
+            );
+            try {
+              await ref
+                  .read(conversationGraphBuildControllerProvider.notifier)
+                  .runOnce(owner: 'db-import-control');
+              state = state.copyWith(
+                statusMessage:
+                    'Migration and conversation graph build completed successfully',
+              );
+            } catch (error) {
+              final graphFailureResult = DbMigrationResult(
+                batchId: result.batchId,
+                success: false,
+                error: 'Conversation graph build failed: $error',
+              );
+              state = state.copyWith(
+                lastMigrationResult: graphFailureResult,
+                statusMessage:
+                    'Migration completed, but conversation graph build failed: $error',
+              );
+              await _failureStorage.saveMigrationResult(
+                graphFailureResult,
+                recordedAt: DateTime.now().toUtc(),
+              );
+              return;
+            }
+          }
         } else {
           await _failureStorage.saveMigrationResult(
             result,

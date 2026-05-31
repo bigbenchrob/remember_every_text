@@ -7,7 +7,7 @@ part of 'prewarm_contact_messages_provider.dart';
 // **************************************************************************
 
 String _$prewarmContactMessagesHash() =>
-    r'935ccffa4285d43e8c4efb75af6e327b37409513';
+    r'9d1e12360dad56a75efc6df1158fa71b3ff1c839';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -30,7 +30,7 @@ class _SystemHash {
   }
 }
 
-/// Warms the contact-scoped sidebar heatmap and center-timeline ordinal state
+/// Warms the contact-scoped sidebar heatmap and center evidence skeleton
 /// before the user-visible contact transition completes.
 ///
 /// This exists to avoid the first contact selection on a cold launch showing
@@ -41,7 +41,7 @@ class _SystemHash {
 @ProviderFor(prewarmContactMessages)
 const prewarmContactMessagesProvider = PrewarmContactMessagesFamily();
 
-/// Warms the contact-scoped sidebar heatmap and center-timeline ordinal state
+/// Warms the contact-scoped sidebar heatmap and center evidence skeleton
 /// before the user-visible contact transition completes.
 ///
 /// This exists to avoid the first contact selection on a cold launch showing
@@ -50,7 +50,7 @@ const prewarmContactMessagesProvider = PrewarmContactMessagesFamily();
 ///
 /// Copied from [prewarmContactMessages].
 class PrewarmContactMessagesFamily extends Family<AsyncValue<void>> {
-  /// Warms the contact-scoped sidebar heatmap and center-timeline ordinal state
+  /// Warms the contact-scoped sidebar heatmap and center evidence skeleton
   /// before the user-visible contact transition completes.
   ///
   /// This exists to avoid the first contact selection on a cold launch showing
@@ -60,7 +60,7 @@ class PrewarmContactMessagesFamily extends Family<AsyncValue<void>> {
   /// Copied from [prewarmContactMessages].
   const PrewarmContactMessagesFamily();
 
-  /// Warms the contact-scoped sidebar heatmap and center-timeline ordinal state
+  /// Warms the contact-scoped sidebar heatmap and center evidence skeleton
   /// before the user-visible contact transition completes.
   ///
   /// This exists to avoid the first contact selection on a cold launch showing
@@ -94,7 +94,7 @@ class PrewarmContactMessagesFamily extends Family<AsyncValue<void>> {
   String? get name => r'prewarmContactMessagesProvider';
 }
 
-/// Warms the contact-scoped sidebar heatmap and center-timeline ordinal state
+/// Warms the contact-scoped sidebar heatmap and center evidence skeleton
 /// before the user-visible contact transition completes.
 ///
 /// This exists to avoid the first contact selection on a cold launch showing
@@ -103,7 +103,7 @@ class PrewarmContactMessagesFamily extends Family<AsyncValue<void>> {
 ///
 /// Copied from [prewarmContactMessages].
 class PrewarmContactMessagesProvider extends AutoDisposeFutureProvider<void> {
-  /// Warms the contact-scoped sidebar heatmap and center-timeline ordinal state
+  /// Warms the contact-scoped sidebar heatmap and center evidence skeleton
   /// before the user-visible contact transition completes.
   ///
   /// This exists to avoid the first contact selection on a cold launch showing

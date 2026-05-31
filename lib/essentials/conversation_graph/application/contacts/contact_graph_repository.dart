@@ -52,6 +52,7 @@ abstract interface class ContactGraphRepository {
     required int contactId,
     required int graphContactId,
     required String query,
+    bool matchAnyTerm = false,
     int? handleId,
   });
 }

@@ -33,6 +33,7 @@ class ConversationMessage {
     this.senderHandleId,
     this.senderCanonicalHandleId,
     this.senderDisplayHandle,
+    this.senderRawHandleLabel,
     this.semanticKind,
     this.itemKind,
     this.isSystemMessage = false,
@@ -52,6 +53,7 @@ class ConversationMessage {
   final int? senderHandleId;
   final int? senderCanonicalHandleId;
   final String? senderDisplayHandle;
+  final String? senderRawHandleLabel;
   final String? semanticKind;
   final String? itemKind;
   final bool isSystemMessage;

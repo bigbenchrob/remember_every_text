@@ -2,7 +2,7 @@
 tier: feature
 scope: message-timeline-pipeline
 owner: agent-per-project
-last_reviewed: 2026-04-21
+last_reviewed: 2026-05-29
 source_of_truth: doc
 links:
   - ./DOMAIN_AND_DATA_MAP.md
@@ -17,10 +17,21 @@ links:
 tests: []
 feature: messages
 doc_type: pipeline
-status: active
+status: superseded
 ---
 
 # Message Timeline Pipeline
+
+> **Superseded by the Message Evidence Spine.**
+>
+> The active message presentation path is now documented in
+> `55-READERS-INTEGRATORS-ORCHESTRATORS/69-MESSAGE-EVIDENCE-SPINE-INVARIANT.md`.
+> The old ordinal-strategy timeline providers, `MessageListItem` hydration path,
+> and `MessagesTimelineView` have been retired from active message evidence.
+> Timeline-like scopes still preserve the core invariant from this document:
+> full lightweight skeleton first, heatmaps and jumps coordinate with skeleton
+> indices, and visible rows hydrate locally. Pagination is not timeline
+> navigation.
 
 ## TL;DR
 
@@ -118,7 +129,7 @@ Graph-backed contact timelines currently express this invariant through:
 
 - `contactPageGraphMessageTimelineProvider`: full lightweight contact timeline skeleton.
 - `contactPageGraphMessageByIdProvider`: viewport-local message evidence hydration.
-- `ContactGraphMessagesView`: `ScrollablePositionedList` over the skeleton, with heatmap/month jumps into skeleton index space.
+- `ContactMessagesEvidenceView`: `ScrollablePositionedList` over the skeleton, with heatmap/month jumps into skeleton index space.
 
 Relationship of identifiers:
 
@@ -273,7 +284,8 @@ Current render path:
 - `MessagesTimelineView` chooses timeline/search/recovered layout for the active `MessageTimelineScope`.
 - `_MessageRow` watches row hydration and handles loading/error/null states.
 - `MessageCard` chooses text, image, video, or link-preview presentation from `MessageListItem`.
-- `MessageUserMetadataCardDecorator` applies saved/tag metadata affordances around cards.
+- Graph-keyed message overlay controllers apply saved/tag metadata affordances
+  through canonical message evidence rows.
 
 Layout behavior:
 

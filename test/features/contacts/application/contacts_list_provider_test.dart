@@ -1,42 +1,32 @@
-import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
-import 'package:remember_this_text/essentials/db/feature_level_providers/working_projection_readiness_provider.dart';
+import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/working/working_database.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/features/contacts/domain/participant_origin.dart';
 import 'package:remember_this_text/features/contacts/infrastructure/repositories/contacts_list_repository.dart';
 
-String buildCompoundIdentifier({
-  required String normalizedIdentifier,
-  required String rawIdentifier,
-  required String service,
-}) {
-  return '${normalizedIdentifier}_${rawIdentifier}_$service';
-}
+import '../../../essentials/conversation_graph/conversation_graph_test_database.dart';
 
 void main() {
   group('contactsListRepositoryProvider', () {
     late OverlayDatabase overlayDb;
-    late WorkingDatabase workingDb;
+    late ConversationGraphDatabase graphDb;
     late ProviderContainer container;
 
-    setUp(() {
+    setUp(() async {
       overlayDb = OverlayDatabase(NativeDatabase.memory());
-      workingDb = WorkingDatabase(NativeDatabase.memory());
+      graphDb = await openConversationGraphTestDatabase();
 
       container = ProviderContainer(
         overrides: [
           overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
-          driftWorkingDatabaseProvider.overrideWith((ref) async => workingDb),
-          workingProjectionReadinessProvider.overrideWith(
-            (ref) async => const WorkingProjectionReadiness(
-              isReady: true,
-              reason: 'test projection ready',
-            ),
+          driftConversationGraphDatabaseProvider.overrideWith(
+            (ref) async => graphDb,
           ),
         ],
       );
@@ -44,92 +34,100 @@ void main() {
 
     tearDown(() async {
       await overlayDb.close();
-      await workingDb.close();
+      await graphDb.close();
       container.dispose();
     });
 
-    test('includes virtual participants with overlay origin', () async {
-      final handleId = await workingDb
-          .into(workingDb.handlesCanonical)
-          .insert(
-            HandlesCanonicalCompanion.insert(
-              rawIdentifier: '+15550001',
-              displayName: '+15550001',
-              compoundIdentifier: buildCompoundIdentifier(
-                normalizedIdentifier: '+15550001',
-                rawIdentifier: '+15550001',
-                service: 'SMS',
-              ),
-              service: const drift.Value('SMS'),
-            ),
-          );
+    test(
+      'uses graph contacts with chat participation and display override',
+      () async {
+        await _insertGraphContact(
+          graphDb,
+          contactId: 9001,
+          displayName: 'Claire Merriman Campbell',
+          handleId: 7001,
+          chatId: 5001,
+          messageId: 8001,
+        );
+        await graphDb.database.insert('contacts', <String, Object?>{
+          'contact_id': 9002,
+          'display_name': 'Future Sender',
+          'given_name': 'Future',
+          'family_name': 'Sender',
+        });
+        await graphDb.database.insert('contact_to_handle', <String, Object?>{
+          'contact_id': 9002,
+          'handle_ss_id': 7002,
+          'handle_value': '+15550000000',
+        });
+        await overlayDb.setParticipantDisplayNameOverride(9001, 'Claire');
 
-      final participantId = await workingDb
-          .into(workingDb.workingParticipants)
-          .insert(
-            WorkingParticipantsCompanion.insert(
-              originalName: 'Existing Person',
-              displayName: 'Existing Person',
-              shortName: 'Existing',
-            ),
-          );
+        final results = await container.read(
+          contactsListRepositoryProvider.future,
+        );
 
-      await workingDb
-          .into(workingDb.handleToParticipant)
-          .insert(
-            HandleToParticipantCompanion.insert(
-              handleId: handleId,
-              participantId: participantId,
-              confidence: const drift.Value(1.0),
-              source: const drift.Value('addressbook'),
-            ),
-          );
+        expect(results, hasLength(1));
+        expect(results.single.participantId, 9001);
+        expect(results.single.displayName, 'Claire');
+        expect(results.single.autoGeneratedName, 'Claire Merriman Campbell');
+        expect(results.single.origin, ParticipantOrigin.overlayOverride);
+        expect(results.single.totalChats, 1);
+        expect(results.single.totalMessages, 1);
+        expect(results.single.handleCount, 1);
+      },
+    );
 
-      final chatId = await workingDb
-          .into(workingDb.workingChats)
-          .insert(WorkingChatsCompanion.insert(guid: 'chat-1'));
+    test(
+      'applies legacy-keyed overlay override to graph contact summaries',
+      () async {
+        const legacyContactId = 24;
+        final graphContactId = SourceScopedRowKey.pack(
+          sourceId: liveAddressBookSourceId,
+          sourceRowId: legacyContactId,
+        );
+        await _insertGraphContact(
+          graphDb,
+          contactId: graphContactId,
+          displayName: 'Claire Merriman Campbell',
+          handleId: 7001,
+          chatId: 5001,
+          messageId: 8001,
+        );
+        await overlayDb.setParticipantDisplayNameOverride(
+          legacyContactId,
+          'Claire',
+        );
 
-      await workingDb
-          .into(workingDb.chatToHandle)
-          .insert(
-            ChatToHandleCompanion.insert(
-              chatId: chatId,
-              handleId: handleId,
-              role: const drift.Value('member'),
-            ),
-          );
+        final results = await container.read(
+          contactsListRepositoryProvider.future,
+        );
 
-      final virtualHandleId = await workingDb
-          .into(workingDb.handlesCanonical)
-          .insert(
-            HandlesCanonicalCompanion.insert(
-              rawIdentifier: '+15550002',
-              displayName: '+15550002',
-              compoundIdentifier: buildCompoundIdentifier(
-                normalizedIdentifier: '+15550002',
-                rawIdentifier: '+15550002',
-                service: 'SMS',
-              ),
-              service: const drift.Value('SMS'),
-            ),
-          );
+        expect(results, hasLength(1));
+        expect(results.single.participantId, graphContactId);
+        expect(results.single.displayName, 'Claire');
+        expect(results.single.autoGeneratedName, 'Claire Merriman Campbell');
+        expect(results.single.origin, ParticipantOrigin.overlayOverride);
+      },
+    );
 
-      await workingDb
-          .into(workingDb.chatToHandle)
-          .insert(
-            ChatToHandleCompanion.insert(
-              chatId: chatId,
-              handleId: virtualHandleId,
-              role: const drift.Value('member'),
-            ),
-          );
+    test('includes virtual participants with graph-derived metrics', () async {
+      final graphHandleId = SourceScopedRowKey.pack(
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 42,
+      );
+      await _insertGraphConversationForHandle(
+        graphDb,
+        handleId: graphHandleId,
+        chatId: 5001,
+        messageId: 8001,
+      );
 
       final virtualParticipant = await overlayDb.createVirtualParticipant(
         displayName: 'Virtual Friend',
       );
 
       await overlayDb.setHandleVirtualParticipantOverride(
-        virtualHandleId,
+        42,
         virtualParticipant.id,
       );
 
@@ -137,90 +135,102 @@ void main() {
         contactsListRepositoryProvider.future,
       );
 
-      expect(results.length, equals(2));
-
-      final workingEntry = results.firstWhere(
-        (entry) => entry.participantId == participantId,
-      );
-      expect(workingEntry.origin, ParticipantOrigin.working);
-      expect(workingEntry.handleCount, equals(1));
-
-      final virtualEntry = results.firstWhere(
-        (entry) => entry.participantId == virtualParticipant.id,
-      );
-      expect(virtualEntry.origin, ParticipantOrigin.overlayVirtual);
-      expect(virtualEntry.displayName, 'Virtual Friend');
-      expect(virtualEntry.handleCount, equals(1));
-      expect(virtualEntry.isVirtual, isTrue);
+      expect(results, hasLength(1));
+      expect(results.single.participantId, virtualParticipant.id);
+      expect(results.single.origin, ParticipantOrigin.overlayVirtual);
+      expect(results.single.displayName, 'Virtual Friend');
+      expect(results.single.totalChats, 1);
+      expect(results.single.totalMessages, 1);
+      expect(results.single.handleCount, equals(1));
+      expect(results.single.isVirtual, isTrue);
     });
 
-    test(
-      'omits working participants that have not participated in chats',
-      () async {
-        final participantId = await workingDb
-            .into(workingDb.workingParticipants)
-            .insert(
-              WorkingParticipantsCompanion.insert(
-                originalName: 'Unlinked Person',
-                displayName: 'Unlinked Person',
-                shortName: 'Unlinked',
-              ),
-            );
+    test('omits graph contacts that have not participated in chats', () async {
+      await graphDb.database.insert('contacts', <String, Object?>{
+        'contact_id': 9003,
+        'display_name': 'Unlinked Person',
+      });
+      await graphDb.database.insert('contact_to_handle', <String, Object?>{
+        'contact_id': 9003,
+        'handle_ss_id': 7003,
+        'handle_value': '+15550000003',
+      });
 
-        final results = await container.read(
-          contactsListRepositoryProvider.future,
-        );
+      final results = await container.read(
+        contactsListRepositoryProvider.future,
+      );
 
-        expect(results, isEmpty);
-        expect(participantId, isPositive);
-      },
-    );
+      expect(results, isEmpty);
+    });
 
-    test(
-      'omits participants with address book handles but no chat participation',
-      () async {
-        final handleId = await workingDb
-            .into(workingDb.handlesCanonical)
-            .insert(
-              HandlesCanonicalCompanion.insert(
-                rawIdentifier: '+15550003',
-                displayName: '+15550003',
-                compoundIdentifier: buildCompoundIdentifier(
-                  normalizedIdentifier: '+15550003',
-                  rawIdentifier: '+15550003',
-                  service: 'SMS',
-                ),
-                service: const drift.Value('SMS'),
-              ),
-            );
+    test('omits virtual participants without graph chat evidence', () async {
+      final virtualParticipant = await overlayDb.createVirtualParticipant(
+        displayName: 'Virtual No Chat',
+      );
+      await overlayDb.setHandleVirtualParticipantOverride(
+        43,
+        virtualParticipant.id,
+      );
 
-        final participantId = await workingDb
-            .into(workingDb.workingParticipants)
-            .insert(
-              WorkingParticipantsCompanion.insert(
-                originalName: 'Handle No Chat',
-                displayName: 'Handle No Chat',
-                shortName: 'Handle',
-              ),
-            );
+      final results = await container.read(
+        contactsListRepositoryProvider.future,
+      );
 
-        await workingDb
-            .into(workingDb.handleToParticipant)
-            .insert(
-              HandleToParticipantCompanion.insert(
-                handleId: handleId,
-                participantId: participantId,
-                confidence: const drift.Value(1.0),
-                source: const drift.Value('addressbook'),
-              ),
-            );
+      expect(results, isEmpty);
+    });
+  });
+}
 
-        final results = await container.read(
-          contactsListRepositoryProvider.future,
-        );
+Future<void> _insertGraphContact(
+  ConversationGraphDatabase graphDb, {
+  required int contactId,
+  required String displayName,
+  required int handleId,
+  required int chatId,
+  required int messageId,
+}) async {
+  await graphDb.database.insert('contacts', <String, Object?>{
+    'contact_id': contactId,
+    'display_name': displayName,
+    'given_name': displayName.split(' ').first,
+    'family_name': displayName.split(' ').last,
+  });
+  await graphDb.database.insert('contact_to_handle', <String, Object?>{
+    'contact_id': contactId,
+    'handle_ss_id': handleId,
+    'handle_value': '+17789908506',
+  });
+  await _insertGraphConversationForHandle(
+    graphDb,
+    handleId: handleId,
+    chatId: chatId,
+    messageId: messageId,
+  );
+}
 
-        expect(results, isEmpty);
-      },
-    );
+Future<void> _insertGraphConversationForHandle(
+  ConversationGraphDatabase graphDb, {
+  required int handleId,
+  required int chatId,
+  required int messageId,
+}) async {
+  await graphDb.database.insert('handles', <String, Object?>{
+    'ss_id': handleId,
+    'id': '+17789908506',
+    'service': 'iMessage',
+  });
+  await graphDb.database.insert('chat_to_handle', <String, Object?>{
+    'chat_ss_id': chatId,
+    'handle_ss_id': handleId,
+  });
+  await graphDb.database.insert('chat_to_message', <String, Object?>{
+    'chat_ss_id': chatId,
+    'message_ss_id': messageId,
+  });
+  await graphDb.database.insert('messages', <String, Object?>{
+    'ss_id': messageId,
+    'guid': 'guid-$messageId',
+    'is_from_me': 0,
+    'date_utc': '2026-05-20T10:00:00.000Z',
   });
 }

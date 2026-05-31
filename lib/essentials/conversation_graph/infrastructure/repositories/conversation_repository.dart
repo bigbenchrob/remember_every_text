@@ -219,6 +219,7 @@ class SqliteConversationRepository implements ConversationRepository {
   Future<List<int>> readMessageIdsMatchingText({
     required int conversationId,
     required String query,
+    bool matchAnyTerm = false,
   }) async {
     final terms = _parseSearchTerms(query);
     if (terms.isEmpty) {
@@ -228,7 +229,7 @@ class SqliteConversationRepository implements ConversationRepository {
     final termClauses = List<String>.filled(
       terms.length,
       'lower(m.text) LIKE ?',
-    ).join(' OR ');
+    ).join(matchAnyTerm ? ' OR ' : ' AND ');
     final rows = await workingDatabase.selectRows(
       '''
       SELECT

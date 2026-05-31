@@ -1,5 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_projection_repository.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/orchestrators/conversation_graph_build_orchestrator.dart';
 import 'package:remember_this_text/essentials/db_importers/application/monitor/chat_db_change_monitor_provider.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_importer.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_rich_text_enricher.dart';
 
 void main() {
   group('resolveStartupProbeDecision', () {
@@ -57,29 +61,23 @@ void main() {
 
   group('shouldAllowAutomaticIncrementalWork', () {
     test(
-      'blocks automatic import and migration when projection is not ready',
+      'blocks automatic import and migration when app data is not ready',
       () {
         expect(
-          shouldAllowAutomaticIncrementalWork(workingProjectionReady: false),
+          shouldAllowAutomaticIncrementalWork(appDataReady: false),
           isFalse,
         );
       },
     );
 
-    test(
-      'preserves automatic import and migration when projection is ready',
-      () {
-        expect(
-          shouldAllowAutomaticIncrementalWork(workingProjectionReady: true),
-          isTrue,
-        );
-      },
-    );
+    test('preserves automatic import and migration when app data is ready', () {
+      expect(shouldAllowAutomaticIncrementalWork(appDataReady: true), isTrue);
+    });
   });
 
-  group('gateStartupProbeDecisionForProjectionReadiness', () {
+  group('gateStartupProbeDecisionForAppDataReadiness', () {
     test(
-      'suppresses startup import and migration when projection is not ready',
+      'suppresses startup import and migration when app data is not ready',
       () {
         const wouldSchedule = StartupProbeDecision(
           shouldSchedule: true,
@@ -87,16 +85,16 @@ void main() {
           reason: 'live MAX(ROWID) is ahead of imported MAX(source_rowid)',
         );
 
-        final gated = gateStartupProbeDecisionForProjectionReadiness(
+        final gated = gateStartupProbeDecisionForAppDataReadiness(
           decision: wouldSchedule,
-          workingProjectionReady: false,
+          appDataReady: false,
         );
 
         expect(gated.shouldSchedule, isFalse);
         expect(gated.trigger, isNull);
         expect(
           gated.reason,
-          'working projection is not ready; skipping automatic incremental import/migration',
+          'app data graph is not ready; skipping automatic incremental import/migration',
         );
       },
     );
@@ -108,13 +106,50 @@ void main() {
         reason: 'live MAX(ROWID) is ahead of imported MAX(source_rowid)',
       );
 
-      final gated = gateStartupProbeDecisionForProjectionReadiness(
+      final gated = gateStartupProbeDecisionForAppDataReadiness(
         decision: wouldSchedule,
-        workingProjectionReady: true,
+        appDataReady: true,
       );
 
       expect(gated.shouldSchedule, isTrue);
       expect(gated.trigger, StartupProbeTrigger.rowIdAdvanced);
+    });
+  });
+
+  group('buildConversationGraphBuildSummaryLog', () {
+    test('summarizes graph import enrichment and projection counts', () {
+      final report = ConversationGraphBuildReport(
+        startedAt: DateTime.utc(2026, 5, 30, 12, 0),
+        finishedAt: DateTime.utc(2026, 5, 30, 12, 0, 2),
+        completedStageNames: const <String>[
+          'import_messages',
+          'enrich_missing_text',
+          'project_messages',
+        ],
+        messageImportResult: const MessageImportResult(
+          startedAfterSourceRowId: 100,
+          insertedMessageCount: 2,
+          lastImportedSourceRowId: 102,
+        ),
+        richTextEnrichmentResult: const MessageRichTextEnrichmentResult(
+          candidateMessageCount: 3,
+          enrichedMessageCount: 1,
+          missingExtractionCount: 2,
+          extractorAvailable: true,
+        ),
+        messageProjectionResult: const MessageProjectionResult(
+          examinedMessageCount: 4,
+          insertedMessageCount: 2,
+        ),
+      );
+
+      final summary = buildConversationGraphBuildSummaryLog(report: report);
+
+      expect(summary, contains('completed in 2000ms'));
+      expect(summary, contains('3 stage(s)'));
+      expect(summary, contains('2 imported graph message(s)'));
+      expect(summary, contains('1 enriched text row(s)'));
+      expect(summary, contains('2 projected graph message row(s)'));
     });
   });
 }

@@ -142,7 +142,6 @@ void main() {
     expect(contactColumns.map((row) => row['name']).toSet(), <String>{
       'contact_id',
       'display_name',
-      'short_name',
       'given_name',
       'family_name',
       'organization',

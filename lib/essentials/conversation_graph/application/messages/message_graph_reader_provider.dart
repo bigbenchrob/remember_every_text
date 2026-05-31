@@ -12,11 +12,7 @@ Future<MessageGraphReader> messageGraphReader(Ref ref) async {
   final workingDatabase = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
-  final legacyDatabase = await ref.watch(driftWorkingDatabaseProvider.future);
   return MessageGraphReader(
-    repository: SqliteMessageGraphRepository(
-      workingDatabase: workingDatabase,
-      legacyDatabase: legacyDatabase,
-    ),
+    repository: SqliteMessageGraphRepository(workingDatabase: workingDatabase),
   );
 }

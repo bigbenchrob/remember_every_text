@@ -275,7 +275,7 @@ class _EffectiveCenterPanelSpecProviderElement
 }
 
 String _$effectiveRightPanelStackHash() =>
-    r'c01f13da628386de71fb3f2f9c6f30cdb1360fc6';
+    r'52cbc7193e85262e3a54e3e5f9639a80ad1c3088';
 
 /// See also [effectiveRightPanelStack].
 @ProviderFor(effectiveRightPanelStack)

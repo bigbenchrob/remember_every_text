@@ -7,7 +7,7 @@ part of 'conversation_signature_display_provider.dart';
 // **************************************************************************
 
 String _$conversationSignatureDisplayHash() =>
-    r'95959f0e1c44a7bf8fdc80ecc8d471de97dfc434';
+    r'76831b087f711a70c8324dd54ec40492b936f6d0';
 
 /// Copied from Dart SDK
 class _SystemHash {

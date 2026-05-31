@@ -69,7 +69,6 @@ class ContactImporter {
           final middle = _trim(row['ZMIDDLENAME']);
           final last = _trim(row['ZLASTNAME']);
           final organization = _trim(row['ZORGANIZATION']);
-          final nickname = _trim(row['ZNICKNAME']);
           final insertedId = await txn.insert('contacts', <String, Object?>{
             'ss_id': SourceScopedRowKey.pack(
               sourceId: sourceId,
@@ -81,11 +80,6 @@ class ContactImporter {
               firstName: first,
               middleName: middle,
               lastName: last,
-              organization: organization,
-            ),
-            'short_name': _buildShortName(
-              nickname: nickname,
-              firstName: first,
               organization: organization,
             ),
             'first_name': first,
@@ -218,21 +212,4 @@ String _buildContactDisplayName({
     return organization;
   }
   return 'Unknown Contact';
-}
-
-String? _buildShortName({
-  String? nickname,
-  String? firstName,
-  String? organization,
-}) {
-  if (nickname != null && nickname.isNotEmpty) {
-    return nickname;
-  }
-  if (firstName != null && firstName.isNotEmpty) {
-    return firstName;
-  }
-  if (organization != null && organization.isNotEmpty) {
-    return organization;
-  }
-  return null;
 }

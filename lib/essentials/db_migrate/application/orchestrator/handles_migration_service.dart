@@ -9,11 +9,8 @@ import 'package:sqflite/sqflite.dart';
 import '../../../db/feature_level_providers.dart';
 import '../../../db/infrastructure/data_sources/local/working/working_database.dart';
 import '../../../db_importers/application/debug_settings_provider.dart';
-import '../../../logging/application/app_logger.dart';
 import '../../../logging/application/migration_audit_writer.dart';
 import '../../../logging/application/pipeline_incident_tracker_provider.dart';
-import '../../../search/feature_level_providers.dart';
-import '../../../search/indexing/search_indexer.dart';
 import '../../domain/base_table_migrator.dart';
 import '../../domain/entities/db_migration_result.dart';
 import '../../domain/states/table_migration_progress.dart';
@@ -70,7 +67,6 @@ class HandlesMigrationService {
 
   /// Names of synthetic (non-orchestrated) post-migration steps.
   static const String _rebuildIndexesStep = 'rebuild_indexes';
-  static const String _rebuildSearchStep = 'rebuild_search';
 
   Future<DbMigrationResult> run({
     MigrationExecutionPlanCallback? onExecutionPlan,
@@ -122,11 +118,6 @@ class HandlesMigrationService {
         index: postStepBase,
         name: _rebuildIndexesStep,
         displayName: 'Rebuild Indexes',
-      ),
-      MigratorStep(
-        index: postStepBase + 1,
-        name: _rebuildSearchStep,
-        displayName: 'Rebuild Search',
       ),
     ];
     onExecutionPlan?.call(allSteps);
@@ -180,52 +171,6 @@ class HandlesMigrationService {
         onTableProgress,
         _rebuildIndexesStep,
         'Rebuild Indexes',
-        TableMigrationPhase.postValidate,
-        TableMigrationStatus.succeeded,
-      );
-
-      // Rebuild search indexes
-      _emitSyntheticEvent(
-        onTableProgress,
-        _rebuildSearchStep,
-        'Rebuild Search',
-        TableMigrationPhase.validatePrereqs,
-        TableMigrationStatus.succeeded,
-      );
-      _emitSyntheticEvent(
-        onTableProgress,
-        _rebuildSearchStep,
-        'Rebuild Search',
-        TableMigrationPhase.copy,
-        TableMigrationStatus.started,
-      );
-      await Future<void>.delayed(Duration.zero);
-
-      final searchIndexOrchestrator = ref.read(searchIndexOrchestratorProvider);
-      final logger = ref.read(appLoggerProvider.notifier);
-      await searchIndexOrchestrator.rebuildAllWithContext(
-        SearchIndexContext(
-          db: workingDatabase,
-          infoLogger: (message, {context = const {}}) {
-            logger.info(message, source: 'SearchIndex', context: context);
-          },
-          errorLogger: (message, {context = const {}}) {
-            logger.error(message, source: 'SearchIndex', context: context);
-          },
-        ),
-      );
-
-      _emitSyntheticEvent(
-        onTableProgress,
-        _rebuildSearchStep,
-        'Rebuild Search',
-        TableMigrationPhase.copy,
-        TableMigrationStatus.succeeded,
-      );
-      _emitSyntheticEvent(
-        onTableProgress,
-        _rebuildSearchStep,
-        'Rebuild Search',
         TableMigrationPhase.postValidate,
         TableMigrationStatus.succeeded,
       );

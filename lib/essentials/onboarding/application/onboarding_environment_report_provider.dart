@@ -10,7 +10,7 @@ import '../../../features/address_book_folders/domain/entities/address_book_fold
 import '../../../features/address_book_folders/domain/failures/more_failures/failures.dart';
 import '../../../features/address_book_folders/feature_level_providers.dart';
 import '../../db/feature_level_providers.dart';
-import '../../db/feature_level_providers/working_projection_readiness_provider.dart';
+import '../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../db_importers/domain/entities/db_import_result.dart';
 import '../../db_importers/presentation/view_model/db_import_control_provider.dart';
 import '../../db_migrate/domain/entities/db_migration_result.dart';
@@ -203,7 +203,10 @@ class _OnboardingEnvironmentEvaluator {
 
     final databaseDirPath = ref.watch(onboardingDatabaseDirectoryPathProvider);
     final importDbPath = p.join(databaseDirPath, 'macos_import.db');
-    final workingDbPath = p.join(databaseDirPath, 'working.db');
+    final graphDbPath = p.join(
+      databaseDirPath,
+      conversationGraphDatabaseFileName,
+    );
     final isMaintenanceLocked = ref.watch(dbMaintenanceLockProvider);
 
     final sourceMessageCount = devOverrides.simulateSparseSourceHistory
@@ -220,18 +223,21 @@ class _OnboardingEnvironmentEvaluator {
     );
 
     final importRowCount = await _readImportMessagesCount(importDbPath);
-    final workingRowCount = isMaintenanceLocked
+    final graphRowCount = isMaintenanceLocked
         ? null
-        : await _readWorkingMessagesCount(workingDbPath);
-    final workingProjectionReadiness = isMaintenanceLocked
-        ? const WorkingProjectionReadiness(
+        : _readSqliteCount(dbPath: graphDbPath, tableName: 'messages');
+    final graphReadiness = isMaintenanceLocked
+        ? const ConversationGraphReadiness(
             isReady: false,
             reason: 'database maintenance is active',
+            messageCount: 0,
+            chatCount: 0,
+            chatToMessageEdgeCount: 0,
           )
-        : const WorkingProjectionReadinessChecker().checkPath(workingDbPath);
+        : const ConversationGraphReadinessChecker().checkPath(graphDbPath);
 
     final importProbe = _probeFile(importDbPath, rowCount: importRowCount);
-    final workingProbe = _probeFile(workingDbPath, rowCount: workingRowCount);
+    final workingProbe = _probeFile(graphDbPath, rowCount: graphRowCount);
     final usingPersistedImportFailure =
         !devOverrides.simulateImportFailure &&
         !simulatedPipelineFailureActive &&
@@ -265,7 +271,7 @@ class _OnboardingEnvironmentEvaluator {
       usingPersistedImportFailure: usingPersistedImportFailure,
       usingPersistedMigrationFailure: usingPersistedMigrationFailure,
       resetAppDatabasesReason: resetAppDatabasesReason,
-      workingProjectionReady: workingProjectionReadiness.isReady,
+      graphProjectionReady: graphReadiness.isReady,
       importProbe: importProbe,
       workingProbe: workingProbe,
     );
@@ -283,7 +289,7 @@ class _OnboardingEnvironmentEvaluator {
       usingPersistedImportFailure: usingPersistedImportFailure,
       usingPersistedMigrationFailure: usingPersistedMigrationFailure,
       resetAppDatabasesReason: resetAppDatabasesReason,
-      workingProjectionReady: workingProjectionReadiness.isReady,
+      graphProjectionReady: graphReadiness.isReady,
       importProbe: importProbe,
       workingProbe: workingProbe,
     );
@@ -327,7 +333,7 @@ class _OnboardingEnvironmentEvaluator {
     required bool usingPersistedImportFailure,
     required bool usingPersistedMigrationFailure,
     required String? resetAppDatabasesReason,
-    required bool workingProjectionReady,
+    required bool graphProjectionReady,
     required OnboardingDatabaseProbe importProbe,
     required OnboardingDatabaseProbe workingProbe,
   }) {
@@ -356,11 +362,11 @@ class _OnboardingEnvironmentEvaluator {
       return OnboardingEnvironmentState.migrationFailed;
     }
 
-    if (importProbe.hasData && workingProjectionReady) {
+    if (importProbe.hasData && graphProjectionReady) {
       return OnboardingEnvironmentState.ready;
     }
 
-    if (importProbe.hasData && workingProbe.exists && !workingProjectionReady) {
+    if (importProbe.hasData && workingProbe.exists && !graphProjectionReady) {
       return OnboardingEnvironmentState.migrationFailed;
     }
 
@@ -400,7 +406,7 @@ class _OnboardingEnvironmentEvaluator {
     required bool usingPersistedImportFailure,
     required bool usingPersistedMigrationFailure,
     required String? resetAppDatabasesReason,
-    required bool workingProjectionReady,
+    required bool graphProjectionReady,
     required OnboardingDatabaseProbe importProbe,
     required OnboardingDatabaseProbe workingProbe,
   }) {
@@ -438,7 +444,7 @@ class _OnboardingEnvironmentEvaluator {
       return OnboardingBlockerKind.none;
     }
 
-    if (importProbe.hasData && workingProbe.exists && !workingProjectionReady) {
+    if (importProbe.hasData && workingProbe.exists && !graphProjectionReady) {
       return OnboardingBlockerKind.migrationFailed;
     }
 
@@ -598,23 +604,6 @@ class _OnboardingEnvironmentEvaluator {
     }
   }
 
-  Future<int?> _readWorkingMessagesCount(String dbPath) async {
-    final file = File(dbPath);
-    if (!file.existsSync() || file.lengthSync() == 0) {
-      return null;
-    }
-
-    try {
-      final workingDb = await ref.watch(driftWorkingDatabaseProvider.future);
-      final result = await workingDb
-          .customSelect('SELECT COUNT(*) as count FROM messages')
-          .get();
-      return _asInt(result.first.data['count']);
-    } catch (_) {
-      return null;
-    }
-  }
-
   int? _readSqliteCount({
     required String dbPath,
     required String tableName,
@@ -700,11 +689,11 @@ class _OnboardingEnvironmentEvaluator {
     }
 
     if (hasRecordedFailure) {
-      return 'A previous import or migration failure left a populated import ledger but an incomplete working database.';
+      return 'A previous import or migration failure left a populated import ledger but an incomplete conversation graph.';
     }
 
     if (workingProbe.hasData) {
-      return 'The working database contains far fewer messages than the import ledger, which strongly suggests a stale partial migration.';
+      return 'The conversation graph contains far fewer messages than the import ledger, which strongly suggests a stale partial migration.';
     }
 
     return null;

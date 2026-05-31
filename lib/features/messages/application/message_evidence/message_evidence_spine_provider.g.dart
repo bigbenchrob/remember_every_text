@@ -7,7 +7,7 @@ part of 'message_evidence_spine_provider.dart';
 // **************************************************************************
 
 String _$messageEvidenceTimelineSkeletonHash() =>
-    r'b5dfba0e198c6f19a4177574ed8946e7bb081462';
+    r'b6015bcd631cde53a89f79884d446619fe8aeab2';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -163,30 +163,30 @@ class _MessageEvidenceTimelineSkeletonProviderElement
       (origin as MessageEvidenceTimelineSkeletonProvider).scope;
 }
 
-String _$graphMessageEvidenceRowHash() =>
-    r'3eb451f9aa11c5420424a535def0b9e2d08d27fe';
+String _$messageEvidenceRowHash() =>
+    r'808d75f445fb97059b50ad1211fed51086633084';
 
-/// See also [graphMessageEvidenceRow].
-@ProviderFor(graphMessageEvidenceRow)
-const graphMessageEvidenceRowProvider = GraphMessageEvidenceRowFamily();
+/// See also [messageEvidenceRow].
+@ProviderFor(messageEvidenceRow)
+const messageEvidenceRowProvider = MessageEvidenceRowFamily();
 
-/// See also [graphMessageEvidenceRow].
-class GraphMessageEvidenceRowFamily
-    extends Family<AsyncValue<ConversationMessage?>> {
-  /// See also [graphMessageEvidenceRow].
-  const GraphMessageEvidenceRowFamily();
+/// See also [messageEvidenceRow].
+class MessageEvidenceRowFamily
+    extends Family<AsyncValue<MessageEvidenceRowData?>> {
+  /// See also [messageEvidenceRow].
+  const MessageEvidenceRowFamily();
 
-  /// See also [graphMessageEvidenceRow].
-  GraphMessageEvidenceRowProvider call({
+  /// See also [messageEvidenceRow].
+  MessageEvidenceRowProvider call({
     required MessageEvidenceScope scope,
     required int messageId,
   }) {
-    return GraphMessageEvidenceRowProvider(scope: scope, messageId: messageId);
+    return MessageEvidenceRowProvider(scope: scope, messageId: messageId);
   }
 
   @override
-  GraphMessageEvidenceRowProvider getProviderOverride(
-    covariant GraphMessageEvidenceRowProvider provider,
+  MessageEvidenceRowProvider getProviderOverride(
+    covariant MessageEvidenceRowProvider provider,
   ) {
     return call(scope: provider.scope, messageId: provider.messageId);
   }
@@ -203,35 +203,35 @@ class GraphMessageEvidenceRowFamily
       _allTransitiveDependencies;
 
   @override
-  String? get name => r'graphMessageEvidenceRowProvider';
+  String? get name => r'messageEvidenceRowProvider';
 }
 
-/// See also [graphMessageEvidenceRow].
-class GraphMessageEvidenceRowProvider
-    extends AutoDisposeFutureProvider<ConversationMessage?> {
-  /// See also [graphMessageEvidenceRow].
-  GraphMessageEvidenceRowProvider({
+/// See also [messageEvidenceRow].
+class MessageEvidenceRowProvider
+    extends AutoDisposeFutureProvider<MessageEvidenceRowData?> {
+  /// See also [messageEvidenceRow].
+  MessageEvidenceRowProvider({
     required MessageEvidenceScope scope,
     required int messageId,
   }) : this._internal(
-         (ref) => graphMessageEvidenceRow(
-           ref as GraphMessageEvidenceRowRef,
+         (ref) => messageEvidenceRow(
+           ref as MessageEvidenceRowRef,
            scope: scope,
            messageId: messageId,
          ),
-         from: graphMessageEvidenceRowProvider,
-         name: r'graphMessageEvidenceRowProvider',
+         from: messageEvidenceRowProvider,
+         name: r'messageEvidenceRowProvider',
          debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
              ? null
-             : _$graphMessageEvidenceRowHash,
-         dependencies: GraphMessageEvidenceRowFamily._dependencies,
+             : _$messageEvidenceRowHash,
+         dependencies: MessageEvidenceRowFamily._dependencies,
          allTransitiveDependencies:
-             GraphMessageEvidenceRowFamily._allTransitiveDependencies,
+             MessageEvidenceRowFamily._allTransitiveDependencies,
          scope: scope,
          messageId: messageId,
        );
 
-  GraphMessageEvidenceRowProvider._internal(
+  MessageEvidenceRowProvider._internal(
     super._createNotifier, {
     required super.name,
     required super.dependencies,
@@ -247,13 +247,13 @@ class GraphMessageEvidenceRowProvider
 
   @override
   Override overrideWith(
-    FutureOr<ConversationMessage?> Function(GraphMessageEvidenceRowRef provider)
+    FutureOr<MessageEvidenceRowData?> Function(MessageEvidenceRowRef provider)
     create,
   ) {
     return ProviderOverride(
       origin: this,
-      override: GraphMessageEvidenceRowProvider._internal(
-        (ref) => create(ref as GraphMessageEvidenceRowRef),
+      override: MessageEvidenceRowProvider._internal(
+        (ref) => create(ref as MessageEvidenceRowRef),
         from: from,
         name: null,
         dependencies: null,
@@ -266,13 +266,13 @@ class GraphMessageEvidenceRowProvider
   }
 
   @override
-  AutoDisposeFutureProviderElement<ConversationMessage?> createElement() {
-    return _GraphMessageEvidenceRowProviderElement(this);
+  AutoDisposeFutureProviderElement<MessageEvidenceRowData?> createElement() {
+    return _MessageEvidenceRowProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is GraphMessageEvidenceRowProvider &&
+    return other is MessageEvidenceRowProvider &&
         other.scope == scope &&
         other.messageId == messageId;
   }
@@ -289,8 +289,8 @@ class GraphMessageEvidenceRowProvider
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin GraphMessageEvidenceRowRef
-    on AutoDisposeFutureProviderRef<ConversationMessage?> {
+mixin MessageEvidenceRowRef
+    on AutoDisposeFutureProviderRef<MessageEvidenceRowData?> {
   /// The parameter `scope` of this provider.
   MessageEvidenceScope get scope;
 
@@ -298,20 +298,20 @@ mixin GraphMessageEvidenceRowRef
   int get messageId;
 }
 
-class _GraphMessageEvidenceRowProviderElement
-    extends AutoDisposeFutureProviderElement<ConversationMessage?>
-    with GraphMessageEvidenceRowRef {
-  _GraphMessageEvidenceRowProviderElement(super.provider);
+class _MessageEvidenceRowProviderElement
+    extends AutoDisposeFutureProviderElement<MessageEvidenceRowData?>
+    with MessageEvidenceRowRef {
+  _MessageEvidenceRowProviderElement(super.provider);
 
   @override
   MessageEvidenceScope get scope =>
-      (origin as GraphMessageEvidenceRowProvider).scope;
+      (origin as MessageEvidenceRowProvider).scope;
   @override
-  int get messageId => (origin as GraphMessageEvidenceRowProvider).messageId;
+  int get messageId => (origin as MessageEvidenceRowProvider).messageId;
 }
 
 String _$messageEvidenceAttachmentsHash() =>
-    r'ac5e7fc77d2b4c4e366145167257cc2809df9f99';
+    r'025617078666e536a612f81e3531c164600db138';
 
 /// See also [messageEvidenceAttachments].
 @ProviderFor(messageEvidenceAttachments)
@@ -319,7 +319,7 @@ const messageEvidenceAttachmentsProvider = MessageEvidenceAttachmentsFamily();
 
 /// See also [messageEvidenceAttachments].
 class MessageEvidenceAttachmentsFamily
-    extends Family<AsyncValue<List<GraphAttachmentEvidence>>> {
+    extends Family<AsyncValue<List<MessageAttachmentEvidence>>> {
   /// See also [messageEvidenceAttachments].
   const MessageEvidenceAttachmentsFamily();
 
@@ -358,7 +358,7 @@ class MessageEvidenceAttachmentsFamily
 
 /// See also [messageEvidenceAttachments].
 class MessageEvidenceAttachmentsProvider
-    extends AutoDisposeFutureProvider<List<GraphAttachmentEvidence>> {
+    extends AutoDisposeFutureProvider<List<MessageAttachmentEvidence>> {
   /// See also [messageEvidenceAttachments].
   MessageEvidenceAttachmentsProvider({
     required MessageEvidenceScope scope,
@@ -397,7 +397,7 @@ class MessageEvidenceAttachmentsProvider
 
   @override
   Override overrideWith(
-    FutureOr<List<GraphAttachmentEvidence>> Function(
+    FutureOr<List<MessageAttachmentEvidence>> Function(
       MessageEvidenceAttachmentsRef provider,
     )
     create,
@@ -418,7 +418,7 @@ class MessageEvidenceAttachmentsProvider
   }
 
   @override
-  AutoDisposeFutureProviderElement<List<GraphAttachmentEvidence>>
+  AutoDisposeFutureProviderElement<List<MessageAttachmentEvidence>>
   createElement() {
     return _MessageEvidenceAttachmentsProviderElement(this);
   }
@@ -443,7 +443,7 @@ class MessageEvidenceAttachmentsProvider
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 mixin MessageEvidenceAttachmentsRef
-    on AutoDisposeFutureProviderRef<List<GraphAttachmentEvidence>> {
+    on AutoDisposeFutureProviderRef<List<MessageAttachmentEvidence>> {
   /// The parameter `scope` of this provider.
   MessageEvidenceScope get scope;
 
@@ -452,7 +452,7 @@ mixin MessageEvidenceAttachmentsRef
 }
 
 class _MessageEvidenceAttachmentsProviderElement
-    extends AutoDisposeFutureProviderElement<List<GraphAttachmentEvidence>>
+    extends AutoDisposeFutureProviderElement<List<MessageAttachmentEvidence>>
     with MessageEvidenceAttachmentsRef {
   _MessageEvidenceAttachmentsProviderElement(super.provider);
 
@@ -464,7 +464,7 @@ class _MessageEvidenceAttachmentsProviderElement
 }
 
 String _$messageEvidenceTextMatchIdsHash() =>
-    r'd666b11bd8807a69a6dc4ceb70d27c3cdcd85827';
+    r'0373d28e180d973ea24a0b5c2f2d275d0b9ab7cc';
 
 /// See also [messageEvidenceTextMatchIds].
 @ProviderFor(messageEvidenceTextMatchIds)
@@ -479,15 +479,24 @@ class MessageEvidenceTextMatchIdsFamily extends Family<AsyncValue<List<int>>> {
   MessageEvidenceTextMatchIdsProvider call({
     required MessageEvidenceScope scope,
     required String query,
+    MessageEvidenceSearchMode mode = MessageEvidenceSearchMode.allTerms,
   }) {
-    return MessageEvidenceTextMatchIdsProvider(scope: scope, query: query);
+    return MessageEvidenceTextMatchIdsProvider(
+      scope: scope,
+      query: query,
+      mode: mode,
+    );
   }
 
   @override
   MessageEvidenceTextMatchIdsProvider getProviderOverride(
     covariant MessageEvidenceTextMatchIdsProvider provider,
   ) {
-    return call(scope: provider.scope, query: provider.query);
+    return call(
+      scope: provider.scope,
+      query: provider.query,
+      mode: provider.mode,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -512,11 +521,13 @@ class MessageEvidenceTextMatchIdsProvider
   MessageEvidenceTextMatchIdsProvider({
     required MessageEvidenceScope scope,
     required String query,
+    MessageEvidenceSearchMode mode = MessageEvidenceSearchMode.allTerms,
   }) : this._internal(
          (ref) => messageEvidenceTextMatchIds(
            ref as MessageEvidenceTextMatchIdsRef,
            scope: scope,
            query: query,
+           mode: mode,
          ),
          from: messageEvidenceTextMatchIdsProvider,
          name: r'messageEvidenceTextMatchIdsProvider',
@@ -528,6 +539,7 @@ class MessageEvidenceTextMatchIdsProvider
              MessageEvidenceTextMatchIdsFamily._allTransitiveDependencies,
          scope: scope,
          query: query,
+         mode: mode,
        );
 
   MessageEvidenceTextMatchIdsProvider._internal(
@@ -539,10 +551,12 @@ class MessageEvidenceTextMatchIdsProvider
     required super.from,
     required this.scope,
     required this.query,
+    required this.mode,
   }) : super.internal();
 
   final MessageEvidenceScope scope;
   final String query;
+  final MessageEvidenceSearchMode mode;
 
   @override
   Override overrideWith(
@@ -560,6 +574,7 @@ class MessageEvidenceTextMatchIdsProvider
         debugGetCreateSourceHash: null,
         scope: scope,
         query: query,
+        mode: mode,
       ),
     );
   }
@@ -573,7 +588,8 @@ class MessageEvidenceTextMatchIdsProvider
   bool operator ==(Object other) {
     return other is MessageEvidenceTextMatchIdsProvider &&
         other.scope == scope &&
-        other.query == query;
+        other.query == query &&
+        other.mode == mode;
   }
 
   @override
@@ -581,6 +597,7 @@ class MessageEvidenceTextMatchIdsProvider
     var hash = _SystemHash.combine(0, runtimeType.hashCode);
     hash = _SystemHash.combine(hash, scope.hashCode);
     hash = _SystemHash.combine(hash, query.hashCode);
+    hash = _SystemHash.combine(hash, mode.hashCode);
 
     return _SystemHash.finish(hash);
   }
@@ -595,6 +612,9 @@ mixin MessageEvidenceTextMatchIdsRef
 
   /// The parameter `query` of this provider.
   String get query;
+
+  /// The parameter `mode` of this provider.
+  MessageEvidenceSearchMode get mode;
 }
 
 class _MessageEvidenceTextMatchIdsProviderElement
@@ -607,6 +627,9 @@ class _MessageEvidenceTextMatchIdsProviderElement
       (origin as MessageEvidenceTextMatchIdsProvider).scope;
   @override
   String get query => (origin as MessageEvidenceTextMatchIdsProvider).query;
+  @override
+  MessageEvidenceSearchMode get mode =>
+      (origin as MessageEvidenceTextMatchIdsProvider).mode;
 }
 
 // ignore_for_file: type=lint

@@ -347,7 +347,6 @@ class ImportDatabase {
         source_id INTEGER NOT NULL,
         source_rowid INTEGER NOT NULL,
         display_name TEXT NOT NULL,
-        short_name TEXT,
         first_name TEXT,
         last_name TEXT,
         organization TEXT,

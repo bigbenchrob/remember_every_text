@@ -7,9 +7,12 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../onboarding/application/fda_checker.dart';
+import '../../../onboarding/application/onboarding_environment_report_provider.dart';
 import '../../../services/startup_flags_service.dart';
+import '../../../source_scoped_import/infrastructure/import_database_provider.dart'
+    as source_scoped_import;
 import '../../feature_level_providers.dart';
+import '../../infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import 'database_health_audit_models.dart';
 import 'database_health_audit_queries.dart';
 
@@ -32,9 +35,17 @@ const _defaultBuildNumber = String.fromEnvironment(
 Future<DatabaseHealthAuditService> databaseHealthAuditService(Ref ref) async {
   final importDb = await ref.read(sqfliteImportDatabaseProvider.future);
   final workingDb = await ref.read(driftWorkingDatabaseProvider.future);
+  final sourceScopedImportDb = await ref.read(
+    source_scoped_import.importDatabaseProvider.future,
+  );
+  final conversationGraphDb = await ref.read(
+    driftConversationGraphDatabaseProvider.future,
+  );
   final overlayDb = await ref.read(overlayDatabaseProvider.future);
+  final hasFullDiskAccess = ref.read(onboardingFullDiskAccessProvider);
 
   return DatabaseHealthAuditService(
+    hasFullDiskAccess: hasFullDiskAccess,
     queryLayers: <DatabaseHealthQueryLayer>[
       ImportDatabaseHealthQueryLayer(
         database: importDb,
@@ -43,6 +54,20 @@ Future<DatabaseHealthAuditService> databaseHealthAuditService(Ref ref) async {
       WorkingDatabaseHealthQueryLayer(
         database: workingDb,
         databasePath: path.join(databaseDirectoryPath, 'working.db'),
+      ),
+      SourceScopedImportDatabaseHealthQueryLayer(
+        database: sourceScopedImportDb,
+        databasePath: path.join(
+          databaseDirectoryPath,
+          source_scoped_import.importDatabaseFileName,
+        ),
+      ),
+      ConversationGraphDatabaseHealthQueryLayer(
+        database: conversationGraphDb,
+        databasePath: path.join(
+          databaseDirectoryPath,
+          conversationGraphDatabaseFileName,
+        ),
       ),
       OverlayDatabaseHealthQueryLayer(
         database: overlayDb,
@@ -54,9 +79,12 @@ Future<DatabaseHealthAuditService> databaseHealthAuditService(Ref ref) async {
 
 class DatabaseHealthAuditService {
   DatabaseHealthAuditService({
+    required bool hasFullDiskAccess,
     required List<DatabaseHealthQueryLayer> queryLayers,
-  }) : _queryLayers = queryLayers;
+  }) : _hasFullDiskAccess = hasFullDiskAccess,
+       _queryLayers = queryLayers;
 
+  final bool _hasFullDiskAccess;
   final List<DatabaseHealthQueryLayer> _queryLayers;
 
   Future<DatabaseHealthReport> buildPhase1Report() async {
@@ -135,7 +163,7 @@ class DatabaseHealthAuditService {
       platform: Platform.operatingSystem,
       platformVersion: Platform.operatingSystemVersion,
       timezone: timezone,
-      hasFullDiskAccess: const FdaChecker().canReadMessagesDatabase(),
+      hasFullDiskAccess: _hasFullDiskAccess,
       startupFlags: <String, dynamic>{
         'option_launch_reset_requested':
             startupFlags.optionLaunchResetRequested,

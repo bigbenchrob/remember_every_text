@@ -1,15 +1,10 @@
-import 'package:drift/drift.dart' as drift;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../essentials/conversation_graph/application/contacts/contact_graph.dart';
 import '../../../../../essentials/conversation_graph/application/contacts/contact_graph_provider.dart';
 import '../../../../../essentials/db/feature_level_providers.dart';
-import '../../../../chats/application/chat_read_model_source_provider.dart';
 import '../../../domain/calendar_heatmap_timeline_data.dart';
-import '../../../domain/value_objects/message_timeline_scope.dart';
-import '../../timeline/contact_timeline_display_version_provider.dart';
-import 'contact_timeline_calculator.dart';
 
 part 'contact_timeline_provider.g.dart';
 
@@ -17,90 +12,22 @@ part 'contact_timeline_provider.g.dart';
 /// across all their chats/handles.
 ///
 /// This is a resolver tool: a data-fetching provider used by resolvers and
-/// widget builders. It queries date bounds from `contact_message_index` then
-/// delegates computation to [calculateContactCalendarHeatmapTimeline].
+/// widget builders. It derives the timeline from graph contact activity.
 @riverpod
 Future<CalendarHeatmapTimelineData?> contactTimeline(
   Ref ref, {
   required int contactId,
   int? filterHandleId,
 }) async {
-  ref.watch(
-    contactTimelineDisplayVersionProvider(
-      scope: MessageTimelineScope.contact(
-        contactId: contactId,
-        filterHandleId: filterHandleId,
-      ),
-    ),
-  );
+  ref.watch(messageDataVersionProvider);
 
-  if (ref.watch(chatReadModelSourceProvider) ==
-      ChatReadModelSourceMode.conversationGraph) {
-    try {
-      final graphTimeline = filterHandleId == null
-          ? await _readGraphContactTimeline(ref, contactId: contactId)
-          : await _readGraphContactHandleTimeline(
-              ref,
-              contactId: contactId,
-              handleId: filterHandleId,
-            );
-      if (graphTimeline != null) {
-        return graphTimeline;
-      }
-    } on Object {
-      // Graph contact identity is still being adopted by legacy contact pages.
-      // Fall through to the legacy heatmap rather than rendering a blank card.
-    }
-  }
-
-  final readiness = await ref.watch(workingProjectionReadinessProvider.future);
-  if (!readiness.isReady) {
-    return null;
-  }
-
-  final db = await ref.watch(driftWorkingDatabaseProvider.future);
-
-  final datesQuery = await db
-      .customSelect(
-        '''
-    SELECT
-      MIN(sent_at_utc) as first_date,
-      MAX(sent_at_utc) as last_date
-    FROM contact_message_index
-    WHERE contact_id = ?
-      AND sent_at_utc IS NOT NULL
-      AND sent_at_utc != ''
-    ''',
-        variables: [drift.Variable.withInt(contactId)],
-        readsFrom: {db.contactMessageIndex},
-      )
-      .getSingleOrNull();
-
-  if (datesQuery == null) {
-    return null;
-  }
-
-  final firstUtc = datesQuery.read<String?>('first_date');
-  final lastUtc = datesQuery.read<String?>('last_date');
-
-  final firstDate = (firstUtc != null && firstUtc.isNotEmpty)
-      ? DateTime.tryParse(firstUtc)
-      : null;
-  final lastDate = (lastUtc != null && lastUtc.isNotEmpty)
-      ? DateTime.tryParse(lastUtc)
-      : null;
-
-  if (firstDate == null || lastDate == null) {
-    return null;
-  }
-
-  return calculateContactCalendarHeatmapTimeline(
-    db,
-    contactId,
-    firstDate,
-    lastDate,
-    filterHandleId: filterHandleId,
-  );
+  return filterHandleId == null
+      ? _readGraphContactTimeline(ref, contactId: contactId)
+      : _readGraphContactHandleTimeline(
+          ref,
+          contactId: contactId,
+          handleId: filterHandleId,
+        );
 }
 
 Future<CalendarHeatmapTimelineData?> _readGraphContactTimeline(

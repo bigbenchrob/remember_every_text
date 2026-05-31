@@ -8,19 +8,37 @@ import 'package:remember_this_text/essentials/conversation_graph/application/mes
 import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_graph_repository.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
+import 'package:remember_this_text/features/messages/application/message_evidence/message_evidence_spine_provider.dart';
+import 'package:remember_this_text/features/messages/domain/message_evidence/message_evidence_row_data.dart';
+import 'package:remember_this_text/features/messages/domain/message_evidence/message_evidence_scope.dart';
 import 'package:remember_this_text/features/messages/presentation/view/search_result_context_sidebar_view.dart';
 
 void main() {
-  testWidgets('renders search result context through graph evidence spine', (
+  testWidgets('renders search result context through message evidence spine', (
     tester,
   ) async {
     const messageId = 500;
     const chatId = 12;
     final anchorGraphId = _liveChatGraphId(messageId);
+    const evidenceScope = SearchResultContextEvidenceScope(
+      messageId: messageId,
+      chatId: chatId,
+      beforeCount: 10,
+      afterCount: 10,
+    );
+    final beforeMessage = _message(
+      id: _liveChatGraphId(498),
+      text: 'Before context',
+    );
+    final anchorMessage = _message(id: anchorGraphId, text: 'Anchor message');
+    final afterMessage = _message(
+      id: _liveChatGraphId(502),
+      text: 'After context',
+    );
     final repository = _FakeMessageGraphRepository(
       contextTimeline: [
         ConversationMessageTimelineEntry(
-          messageId: _liveChatGraphId(498),
+          messageId: beforeMessage.messageId,
           dateUtc: '2026-04-11T11:58:00.000Z',
           monthKey: '2026-04',
         ),
@@ -30,21 +48,15 @@ void main() {
           monthKey: '2026-04',
         ),
         ConversationMessageTimelineEntry(
-          messageId: _liveChatGraphId(502),
+          messageId: afterMessage.messageId,
           dateUtc: '2026-04-11T12:02:00.000Z',
           monthKey: '2026-04',
         ),
       ],
       messagesById: {
-        _liveChatGraphId(498): _message(
-          id: _liveChatGraphId(498),
-          text: 'Before context',
-        ),
-        anchorGraphId: _message(id: anchorGraphId, text: 'Anchor message'),
-        _liveChatGraphId(502): _message(
-          id: _liveChatGraphId(502),
-          text: 'After context',
-        ),
+        beforeMessage.messageId: beforeMessage,
+        anchorMessage.messageId: anchorMessage,
+        afterMessage.messageId: afterMessage,
       },
     );
 
@@ -54,6 +66,18 @@ void main() {
           messageGraphReaderProvider.overrideWith((ref) async {
             return MessageGraphReader(repository: repository);
           }),
+          messageEvidenceRowProvider(
+            scope: evidenceScope,
+            messageId: beforeMessage.messageId,
+          ).overrideWith((ref) async => _rowData(beforeMessage)),
+          messageEvidenceRowProvider(
+            scope: evidenceScope,
+            messageId: anchorMessage.messageId,
+          ).overrideWith((ref) async => _rowData(anchorMessage)),
+          messageEvidenceRowProvider(
+            scope: evidenceScope,
+            messageId: afterMessage.messageId,
+          ).overrideWith((ref) async => _rowData(afterMessage)),
         ],
         child: const MacosApp(
           home: MacosWindow(
@@ -80,6 +104,18 @@ void main() {
     expect(find.text('After context'), findsOneWidget);
     expect(repository.contextRequest, const (messageId, chatId, 10, 10));
   });
+}
+
+MessageEvidenceRowData _rowData(ConversationMessage message) {
+  return MessageEvidenceRowData(
+    messageId: message.messageId,
+    dateUtc: message.dateUtc,
+    isFromMe: message.isFromMe,
+    text: message.text,
+    associatedMessageId: message.associatedMessageId,
+    attachmentCount: message.attachmentCount,
+    senderDisplayHandle: message.senderDisplayHandle,
+  );
 }
 
 ConversationMessage _message({required int id, required String text}) {
@@ -127,6 +163,7 @@ class _FakeMessageGraphRepository implements MessageGraphRepository {
   @override
   Future<List<int>> readGlobalMessageIdsMatchingText({
     required String query,
+    bool matchAnyTerm = false,
   }) async {
     return const <int>[];
   }
@@ -144,6 +181,15 @@ class _FakeMessageGraphRepository implements MessageGraphRepository {
     required int messageId,
   }) async {
     return null;
+  }
+
+  @override
+  Future<List<int>> readHandleMessageIdsMatchingText({
+    required int handleId,
+    required String query,
+    bool matchAnyTerm = false,
+  }) async {
+    return const <int>[];
   }
 
   @override

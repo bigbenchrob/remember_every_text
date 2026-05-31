@@ -1,49 +1,32 @@
-import 'dart:io';
-
-import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
-import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/import/sqflite_import_database.dart';
+import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/working/working_database.dart';
-import 'package:remember_this_text/essentials/db/shared/handle_identifier_utils.dart';
-import 'package:remember_this_text/essentials/db_importers/application/debug_settings_provider.dart';
+import 'package:remember_this_text/features/handles/domain/utilities/handle_normalizer.dart'
+    as handle_normalizer;
 import 'package:remember_this_text/features/handles/infrastructure/repositories/stray_handles_provider.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+
+import '../../../../essentials/conversation_graph/conversation_graph_test_database.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(() {
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
-  });
-
   group('strayHandlesProvider', () {
-    late Directory tempDir;
-    late SqfliteImportDatabase importDb;
-    late WorkingDatabase workingDb;
+    late ConversationGraphDatabase graphDb;
     late OverlayDatabase overlayDb;
     late ProviderContainer container;
 
     setUp(() async {
-      tempDir = await Directory.systemTemp.createTemp('stray_handles_test');
-      importDb = SqfliteImportDatabase(
-        databaseDirectory: tempDir.path,
-        databaseName: 'import_test.db',
-        debugSettings: const ImportDebugSettingsState(),
-      );
-      workingDb = WorkingDatabase(NativeDatabase.memory());
+      graphDb = await openConversationGraphTestDatabase();
       overlayDb = OverlayDatabase(NativeDatabase.memory());
-
-      await workingDb.customStatement('PRAGMA foreign_keys = ON');
 
       container = ProviderContainer(
         overrides: [
-          sqfliteImportDatabaseProvider.overrideWith((ref) async => importDb),
-          driftWorkingDatabaseProvider.overrideWith((ref) async => workingDb),
+          driftConversationGraphDatabaseProvider.overrideWith(
+            (ref) async => graphDb,
+          ),
           overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
         ],
       );
@@ -52,120 +35,101 @@ void main() {
     tearDown(() async {
       container.dispose();
       await overlayDb.close();
-      await workingDb.close();
-      await importDb.deleteDatabaseFile();
-      if (tempDir.existsSync()) {
-        await tempDir.delete(recursive: true);
-      }
+      await graphDb.close();
     });
 
     test(
-      'returns stray handles when sender projection already exists',
+      'returns graph-native stray handles when graph evidence exists',
       () async {
-        const importHandleId = 9001;
-        const handleValue = 'stray@example.com';
-        const handleService = 'iMessage';
-        const messageGuid = 'message-guid-1';
-        const sentAtUtc = '2024-01-02T03:04:05Z';
-
-        final batchId = await importDb.insertImportBatch(
-          startedAtUtc: DateTime.now().toUtc().toIso8601String(),
+        await _insertGraphHandleEvidence(
+          graphDb,
+          handleSsId: 7001,
+          handleValue: '+16043078325',
+          messageSsId: 8001,
         );
-
-        await importDb.insertHandle(
-          id: importHandleId,
-          service: handleService,
-          rawIdentifier: handleValue,
-          normalizedIdentifier: handleValue,
-          compoundIdentifier: buildCompoundIdentifier(
-            normalizedIdentifier: handleValue,
-            rawIdentifier: handleValue,
-            service: handleService,
-          ),
-          batchId: batchId,
-        );
-
-        final importChatId = await importDb.insertChat(
-          id: 7001,
-          guid: 'import-chat-guid-1',
-          service: handleService,
-          batchId: batchId,
-        );
-
-        await importDb.insertMessage(
-          id: 8001,
-          guid: messageGuid,
-          chatId: importChatId,
-          senderHandleId: importHandleId,
-          service: handleService,
-          isFromMe: false,
-          dateUtc: sentAtUtc,
-          text: 'Recovered sender projection',
-          hasAttributedBodySource: false,
-          hasMessageSummaryInfo: false,
-          hasPayloadDataSource: false,
-          itemType: 'text',
-          isSystemMessage: false,
-          batchId: batchId,
-        );
-
-        final canonicalHandleId = await workingDb
-            .into(workingDb.handlesCanonical)
-            .insert(
-              HandlesCanonicalCompanion.insert(
-                rawIdentifier: handleValue,
-                displayName: handleValue,
-                compoundIdentifier: buildCompoundIdentifier(
-                  normalizedIdentifier: handleValue,
-                  rawIdentifier: handleValue,
-                  service: handleService,
-                ),
-                service: const drift.Value(handleService),
-              ),
-            );
-
-        await workingDb
-            .into(workingDb.handlesCanonicalToAlias)
-            .insert(
-              HandlesCanonicalToAliasCompanion.insert(
-                sourceHandleId: const drift.Value(importHandleId),
-                canonicalHandleId: canonicalHandleId,
-                rawIdentifier: handleValue,
-                compoundIdentifier: buildCompoundIdentifier(
-                  normalizedIdentifier: handleValue,
-                  rawIdentifier: handleValue,
-                  service: handleService,
-                ),
-                normalizedIdentifier: handleValue,
-                service: const drift.Value(handleService),
-                aliasKind: const drift.Value('variant'),
-              ),
-            );
-
-        final workingChatId = await workingDb
-            .into(workingDb.workingChats)
-            .insert(WorkingChatsCompanion.insert(guid: 'working-chat-guid-1'));
-
-        await workingDb
-            .into(workingDb.workingMessages)
-            .insert(
-              WorkingMessagesCompanion.insert(
-                guid: messageGuid,
-                chatId: workingChatId,
-                senderHandleId: drift.Value(canonicalHandleId),
-                isFromMe: const drift.Value(false),
-                sentAtUtc: const drift.Value(sentAtUtc),
-                textContent: const drift.Value('Recovered sender projection'),
-              ),
-            );
 
         final results = await container.read(strayHandlesProvider.future);
 
         expect(results, hasLength(1));
-        expect(results.single.handleId, canonicalHandleId);
-        expect(results.single.handleValue, handleValue);
+        expect(results.single.handleId, 7001);
+        expect(results.single.handleValue, '+16043078325');
         expect(results.single.totalMessages, 1);
       },
     );
+
+    test('excludes graph handles linked to a graph contact', () async {
+      await _insertGraphHandleEvidence(
+        graphDb,
+        handleSsId: 7002,
+        handleValue: '+17789908506',
+        messageSsId: 8002,
+      );
+      await graphDb.database.insert('contacts', <String, Object?>{
+        'contact_id': 9001,
+        'display_name': 'Claire',
+      });
+      await graphDb.database.insert('contact_to_handle', <String, Object?>{
+        'contact_id': 9001,
+        'handle_ss_id': 7002,
+        'handle_value': '+17789908506',
+      });
+
+      final results = await container.read(strayHandlesProvider.future);
+
+      expect(results, isEmpty);
+    });
+
+    test('routes dismissed graph handles to dismissed escape hatch', () async {
+      await _insertGraphHandleEvidence(
+        graphDb,
+        handleSsId: 7003,
+        handleValue: '+16048173537',
+        messageSsId: 8003,
+      );
+      await overlayDb.dismissHandle(
+        handle_normalizer.normalizeHandleIdentifier('+16048173537'),
+      );
+
+      final activeResults = await container.read(strayHandlesProvider.future);
+      final dismissedResults = await container.read(
+        dismissedHandlesProvider.future,
+      );
+
+      expect(activeResults, isEmpty);
+      expect(dismissedResults, hasLength(1));
+      expect(dismissedResults.single.handleId, 7003);
+      expect(dismissedResults.single.handleValue, '+16048173537');
+    });
+  });
+}
+
+Future<void> _insertGraphHandleEvidence(
+  ConversationGraphDatabase graphDb, {
+  required int handleSsId,
+  required String handleValue,
+  required int messageSsId,
+}) async {
+  await graphDb.database.insert('handles', <String, Object?>{
+    'ss_id': handleSsId,
+    'id': handleValue,
+    'service': 'SMS',
+  });
+  await graphDb.database.insert('canonical_handles', <String, Object?>{
+    'canonical_handle_ss_id': handleSsId,
+    'display_handle': handleValue,
+    'normalized_identifier': handle_normalizer.normalizeHandleIdentifier(
+      handleValue,
+    ),
+    'service': 'SMS',
+    'alias_count': 1,
+  });
+  await graphDb.database.insert('messages', <String, Object?>{
+    'ss_id': messageSsId,
+    'guid': 'graph-message-$messageSsId',
+    'sender_handle_ss_id': handleSsId,
+    'sender_canonical_handle_ss_id': handleSsId,
+    'is_from_me': 0,
+    'date_utc': '2026-05-20T10:00:00.000Z',
+    'text': 'Graph sender evidence',
   });
 }

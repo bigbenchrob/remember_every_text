@@ -78,15 +78,18 @@ class SearchResultContextSidebarView extends ConsumerWidget {
                 return MessageEvidenceTimelineView(
                   evidenceScope: evidenceScope,
                   skeleton: skeleton,
-                  headerData: MessageEvidenceHeaderData(
+                  // Search is intentionally disabled for this bounded
+                  // context-window scope: it is already a search-result
+                  // evidence excerpt, not an independently navigable timeline.
+                  headerData: MessageEvidenceHeaderModel(
                     title: 'Message context',
-                    subtitleParts: [
-                      'Chat $chatId',
-                      _dateSpan(skeleton.entries),
-                      '${beforeCount + afterCount + 1} message window',
-                    ],
+                    identityContextLine: 'Chat $chatId',
+                    dateRangeLabel: _dateSpan(skeleton.entries),
+                    countLabel:
+                        '${beforeCount + afterCount + 1} message window',
+                    scopeContextLine: 'Search result context',
                     statusLine:
-                        'search result context • graph skeleton • hydrate visible rows',
+                        'search result context • evidence skeleton • hydrate visible rows',
                   ),
                   emptyMessage: 'No context messages found.',
                   anchorMessageId: skeleton.initialAnchorMessageId,

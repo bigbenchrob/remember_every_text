@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-import '../../../presentation/view/recovered_unlinked_messages_placeholder_view.dart';
+import '../../../presentation/view/recovered_messages_evidence_view.dart';
 
 /// Widget builder for the recovered-unlinked-messages center panel view.
 Widget buildRecoveredUnlinkedMessagesView({
@@ -8,7 +8,7 @@ Widget buildRecoveredUnlinkedMessagesView({
   DateTime? scrollToDate,
   bool onlyNoHandleFromMe = false,
 }) {
-  return RecoveredUnlinkedMessagesPlaceholderView(
+  return RecoveredMessagesEvidenceView(
     key: ValueKey<String>(
       'messages-recovered:${contactId ?? 'global'}:$onlyNoHandleFromMe:${scrollToDate?.toIso8601String() ?? 'latest'}',
     ),

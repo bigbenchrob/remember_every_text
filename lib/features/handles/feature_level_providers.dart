@@ -29,3 +29,5 @@ export './application/sidebar_cassette_spec/payloads/unmatched_handles_cassette_
 export './application/sidebar_cassette_spec/rendering/handles_cassette_body_builder.dart';
 export './application/state/stray_handle_mode_provider.dart';
 export './application/view_spec/coordinators/view_spec_coordinator.dart';
+export './infrastructure/repositories/handle_display_name_provider.dart';
+export './infrastructure/repositories/stray_handles_provider.dart';

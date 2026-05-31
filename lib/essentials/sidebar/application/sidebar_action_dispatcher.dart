@@ -3,11 +3,9 @@ import 'dart:math' as math;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../features/contacts/domain/spec_classes/contacts_cassette_spec.dart';
-import '../../../features/contacts/infrastructure/repositories/recent_contacts_repository.dart';
-import '../../../features/handles/application/state/stray_handle_mode_provider.dart';
+import '../../../features/contacts/feature_level_providers.dart';
 import '../../../features/handles/domain/spec_classes/handles_cassette_spec.dart';
-import '../../../features/handles/infrastructure/repositories/stray_handles_provider.dart';
+import '../../../features/handles/feature_level_providers.dart';
 import '../../../features/settings/application/sidebar_cassette_spec/actions/message_history_coverage_report_actions.dart';
 import '../../../features/settings/application/sidebar_cassette_spec/resolvers/message_history_coverage_settings_resolver.dart';
 import '../../../features/settings/domain/spec_classes/settings_cassette_spec.dart';

@@ -2,9 +2,10 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 
-import '../../db/feature_level_providers/working_projection_readiness_provider.dart';
+import '../../db/feature_level_providers/conversation_graph_readiness_provider.dart';
+import '../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 
-/// Pure check: do `macos_import.db` and `working.db` both exist with data?
+/// Pure check: do `macos_import.db` and the conversation graph exist with data?
 ///
 /// Returns `true` when both files are present and non-empty (file size > 0).
 /// This is a cheap filesystem check that avoids opening SQLite connections.
@@ -14,10 +15,13 @@ import '../../db/feature_level_providers/working_projection_readiness_provider.d
 class DatabaseExistenceChecker {
   const DatabaseExistenceChecker();
 
-  /// Returns `true` if both import and working databases exist and are non-empty.
+  /// Returns `true` if both import and graph databases exist and are populated.
   bool hasPopulatedDatabases(String databaseDirectory) {
     final importFile = File(path.join(databaseDirectory, 'macos_import.db'));
-    final workingPath = path.join(databaseDirectory, 'working.db');
+    final graphPath = path.join(
+      databaseDirectory,
+      conversationGraphDatabaseFileName,
+    );
 
     if (!importFile.existsSync()) {
       return false;
@@ -27,9 +31,9 @@ class DatabaseExistenceChecker {
     // For a robust check we'd query row counts, but file size > 4096
     // (one page) is a reasonable heuristic for "has tables with data".
     // The gate provider does the definitive row-count check if the files exist.
-    final workingReady = const WorkingProjectionReadinessChecker()
-        .checkPath(workingPath)
+    final graphReady = const ConversationGraphReadinessChecker()
+        .checkPath(graphPath)
         .isReady;
-    return importFile.lengthSync() > 0 && workingReady;
+    return importFile.lengthSync() > 0 && graphReady;
   }
 }

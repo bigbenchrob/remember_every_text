@@ -1,4 +1,3 @@
-import 'package:characters/characters.dart';
 import 'package:drift/drift.dart';
 
 import '../../../../../../core/util/message_tag_normalizer.dart';
@@ -28,7 +27,7 @@ class OverlayDatabase extends _$OverlayDatabase {
   OverlayDatabase(QueryExecutor executor) : super(executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -44,6 +43,12 @@ class OverlayDatabase extends _$OverlayDatabase {
         await m.createTable(messageUserFlags);
         await m.createTable(messageUserTags);
       }
+      if (from < 4) {
+        await m.dropColumn(participantOverrides, 'nickname');
+      }
+      if (from < 5) {
+        await _createGraphMessageIntentTables();
+      }
       await _createOverlayIndexes();
     },
   );
@@ -54,6 +59,42 @@ class OverlayDatabase extends _$OverlayDatabase {
     );
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_message_user_tags_tag_normalized ON message_user_tags(tag_normalized)',
+    );
+    await _createGraphMessageIntentTables();
+  }
+
+  Future<void> _createGraphMessageIntentTables() async {
+    await customStatement('''
+      CREATE TABLE IF NOT EXISTS message_intent_overlays (
+        message_ss_id INTEGER PRIMARY KEY,
+        is_saved INTEGER NOT NULL DEFAULT 0 CHECK (is_saved IN (0, 1)),
+        is_starred INTEGER NOT NULL DEFAULT 0 CHECK (is_starred IN (0, 1)),
+        is_archived INTEGER NOT NULL DEFAULT 0 CHECK (is_archived IN (0, 1)),
+        user_notes TEXT,
+        priority INTEGER CHECK (priority IS NULL OR (priority BETWEEN 1 AND 5)),
+        remind_at TEXT,
+        created_at_utc TEXT NOT NULL,
+        updated_at_utc TEXT NOT NULL
+      )
+    ''');
+    await customStatement('''
+      CREATE TABLE IF NOT EXISTS message_intent_tags (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        message_ss_id INTEGER NOT NULL,
+        tag_display TEXT NOT NULL,
+        tag_normalized TEXT NOT NULL,
+        created_at_utc TEXT NOT NULL,
+        updated_at_utc TEXT NOT NULL,
+        UNIQUE(message_ss_id, tag_normalized)
+      )
+    ''');
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_message_intent_tags_message '
+      'ON message_intent_tags(message_ss_id)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_message_intent_tags_normalized '
+      'ON message_intent_tags(tag_normalized)',
     );
   }
 
@@ -68,17 +109,6 @@ class OverlayDatabase extends _$OverlayDatabase {
     return (select(
       participantOverrides,
     )..where((t) => t.participantId.equals(participantId))).getSingleOrNull();
-  }
-
-  /// Get all nicknames as a map (contact key -> nickname).
-  /// Useful for fast in-memory merge (similar to your prior shortName flow).
-  Future<Map<String, String>> getAllNicknamesByKey() async {
-    final rows = await select(participantOverrides).get();
-    return {
-      for (final row in rows)
-        if (row.nickname != null)
-          'participant:${row.participantId}': row.nickname!,
-    };
   }
 
   /// Upsert helper for setting display name override.
@@ -762,13 +792,12 @@ class OverlayDatabase extends _$OverlayDatabase {
     return transaction(() async {
       final newId = await _nextVirtualParticipantId();
       final now = DateTime.now().toUtc().toIso8601String();
-      final shortName = _deriveShortName(trimmedName);
 
       await into(virtualParticipants).insert(
         VirtualParticipantsCompanion.insert(
           id: Value(newId),
           displayName: trimmedName,
-          shortName: shortName,
+          shortName: '',
           notes: Value(notes),
           createdAtUtc: now,
           updatedAtUtc: now,
@@ -851,45 +880,6 @@ class OverlayDatabase extends _$OverlayDatabase {
 
     await (update(overlaySettings)..where((tbl) => tbl.key.equals(settingKey)))
         .write(OverlaySettingsCompanion(value: Value(settingValue)));
-  }
-
-  String _deriveShortName(String name) {
-    final tokens = name
-        .split(RegExp(r'\s+'))
-        .map((token) => token.trim())
-        .where((token) => token.isNotEmpty)
-        .toList(growable: false);
-
-    if (tokens.length >= 2) {
-      final first = _firstCharacter(tokens[0]);
-      final second = _firstCharacter(tokens[1]);
-      return '${first ?? ''}${second ?? ''}'.toUpperCase().padRight(2, '?');
-    }
-
-    if (tokens.length == 1) {
-      final chars = tokens.first.characters
-          .take(2)
-          .toList(growable: false)
-          .join();
-      if (chars.isNotEmpty) {
-        return chars.toUpperCase();
-      }
-    }
-
-    final fallback = name.characters.take(1).toList(growable: false).join();
-    if (fallback.isNotEmpty) {
-      return fallback.toUpperCase();
-    }
-
-    return '?';
-  }
-
-  String? _firstCharacter(String value) {
-    final iterator = value.characters.iterator;
-    if (!iterator.moveNext()) {
-      return null;
-    }
-    return iterator.current;
   }
 
   // Helper methods for favorite contacts
@@ -1099,7 +1089,6 @@ class OverlayDatabase extends _$OverlayDatabase {
   }
 }
 
-/// User-defined short names and preferences for participants
 /// User-defined naming overrides for participants.
 ///
 /// Naming is intentionally kept separate from the working.db projection.
@@ -1117,9 +1106,6 @@ class ParticipantOverrides extends Table {
   /// Stored values map to ParticipantNameMode.dbValue (except we recommend
   /// storing null for inherit).
   IntColumn get nameMode => integer().named('name_mode').nullable()();
-
-  /// User's nickname, e.g. "Westy"
-  TextColumn get nickname => text().named('nickname').nullable()();
 
   /// User's custom display name override, e.g. "Dad (Mobile)"
   TextColumn get displayNameOverride =>

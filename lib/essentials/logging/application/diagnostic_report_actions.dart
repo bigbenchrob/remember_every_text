@@ -99,7 +99,7 @@ List<String> buildOnboardingFailureReportHeaderLines(
       unavailableMessage: report.addressBookFailureMessage ?? 'unavailable',
     ),
     _describeProbe(label: 'Import database', probe: report.importDatabase),
-    _describeProbe(label: 'Working database', probe: report.workingDatabase),
+    _describeProbe(label: 'Conversation graph', probe: report.workingDatabase),
   ];
 
   final importMessage = report.importFailureMessage;

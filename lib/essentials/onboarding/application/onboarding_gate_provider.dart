@@ -8,15 +8,20 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../db/feature_level_providers.dart'
     show
+        conversationGraphPopulatedProvider,
+        conversationGraphReadinessProvider,
         databaseDirectoryPath,
         dbMaintenanceLockProvider,
+        driftConversationGraphDatabaseProvider,
         driftWorkingDatabaseProvider,
         sqfliteImportDatabaseProvider;
-import '../../db/feature_level_providers/message_data_version_provider.dart';
+import '../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../db_importers/presentation/view_model/db_import_control_provider.dart';
 import '../../logging/application/app_logger.dart';
 import '../../navigation/application/sidebar_mode_provider.dart';
 import '../../navigation/domain/sidebar_mode.dart';
+import '../../source_scoped_import/infrastructure/import_database_provider.dart'
+    as source_scoped_import;
 import '../domain/onboarding_environment_report.dart';
 import '../domain/onboarding_status.dart';
 import 'database_existence_checker.dart';
@@ -41,6 +46,19 @@ part 'onboarding_gate_provider.g.dart';
 /// watches its state to transition through importing → migrating → complete.
 @Riverpod(keepAlive: true)
 class OnboardingGate extends _$OnboardingGate {
+  static const _legacyImportDatabaseFileName = 'macos_import.db';
+  static const _legacyWorkingDatabaseFileName = 'working.db';
+  static const _importDatabaseBaseNames = <String>[
+    _legacyImportDatabaseFileName,
+    source_scoped_import.importDatabaseFileName,
+  ];
+  static const _derivedDatabaseBaseNames = <String>[
+    _legacyImportDatabaseFileName,
+    _legacyWorkingDatabaseFileName,
+    source_scoped_import.importDatabaseFileName,
+    conversationGraphDatabaseFileName,
+  ];
+
   static const _checker = DatabaseExistenceChecker();
   static const _fdaChecker = FdaChecker();
   OnboardingStatus? _workflowOverrideStatus;
@@ -258,14 +276,10 @@ class OnboardingGate extends _$OnboardingGate {
       return;
     }
 
-    // Signal all data-dependent providers (contacts, messages, etc.) to
-    // rebuild with the freshly-populated working database.
-    ref.read(messageDataVersionProvider.notifier).bump();
-
     ref
         .read(appLoggerProvider.notifier)
         .info(
-          'Fresh onboarding import and migration completed successfully',
+          'Fresh onboarding import, migration, and graph build completed successfully',
           source: 'OnboardingGate',
         );
 
@@ -304,16 +318,7 @@ class OnboardingGate extends _$OnboardingGate {
   /// files, and reset state to [OnboardingStatus.awaitingUserAction] so the
   /// next launch triggers a clean onboarding.
   Future<void> abortImport() async {
-    // Delete import and working DB files (plus WAL/SHM companions).
-    for (final name in ['macos_import.db', 'working.db']) {
-      final basePath = path.join(databaseDirectoryPath, name);
-      for (final suffix in ['', '-wal', '-shm']) {
-        final file = File('$basePath$suffix');
-        if (file.existsSync()) {
-          await file.delete();
-        }
-      }
-    }
+    await _deleteDerivedDatabaseFiles();
 
     // Reset to awaiting so the next launch shows the welcome screen.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -355,8 +360,6 @@ class OnboardingGate extends _$OnboardingGate {
     } catch (_) {
       // Swallow — land on complete so user can dismiss.
     }
-
-    ref.read(messageDataVersionProvider.notifier).bump();
 
     _setWorkflowOverride(OnboardingStatus.reimportComplete);
   }
@@ -472,8 +475,6 @@ class OnboardingGate extends _$OnboardingGate {
   /// Close any open import DB connection, delete the files, and
   /// invalidate the provider so the next access creates a fresh instance.
   Future<void> _deleteImportDatabaseFiles() async {
-    final deletedFiles = <String>[];
-
     // Close an existing connection if the provider was already accessed.
     try {
       final ledgerDb = await ref.read(sqfliteImportDatabaseProvider.future);
@@ -483,15 +484,19 @@ class OnboardingGate extends _$OnboardingGate {
     }
     ref.invalidate(sqfliteImportDatabaseProvider);
 
-    // Delete the file and WAL/SHM companions.
-    final basePath = path.join(databaseDirectoryPath, 'macos_import.db');
-    for (final suffix in ['', '-wal', '-shm']) {
-      final file = File('$basePath$suffix');
-      if (file.existsSync()) {
-        await file.delete();
-        deletedFiles.add(file.path);
-      }
+    try {
+      final graphLedgerDb = await ref.read(
+        source_scoped_import.importDatabaseProvider.future,
+      );
+      await graphLedgerDb.close();
+    } catch (_) {
+      // No connection open — safe to proceed.
     }
+    ref.invalidate(source_scoped_import.importDatabaseProvider);
+
+    final deletedFiles = await _deleteDatabaseBaseFiles(
+      _importDatabaseBaseNames,
+    );
 
     ref
         .read(appLoggerProvider.notifier)
@@ -504,11 +509,10 @@ class OnboardingGate extends _$OnboardingGate {
           },
         );
     ref.invalidate(sqfliteImportDatabaseProvider);
+    ref.invalidate(source_scoped_import.importDatabaseProvider);
   }
 
   Future<void> _deleteDerivedDatabaseFiles() async {
-    final deletedFiles = <String>[];
-
     try {
       final ledgerDb = await ref.read(sqfliteImportDatabaseProvider.future);
       await ledgerDb.close();
@@ -516,6 +520,15 @@ class OnboardingGate extends _$OnboardingGate {
       // No connection open — safe to proceed.
     }
     ref.invalidate(sqfliteImportDatabaseProvider);
+    try {
+      final graphLedgerDb = await ref.read(
+        source_scoped_import.importDatabaseProvider.future,
+      );
+      await graphLedgerDb.close();
+    } catch (_) {
+      // No connection open — safe to proceed.
+    }
+    ref.invalidate(source_scoped_import.importDatabaseProvider);
 
     final workingDbPath = path.join(databaseDirectoryPath, 'working.db');
     if (File(workingDbPath).existsSync()) {
@@ -527,22 +540,27 @@ class OnboardingGate extends _$OnboardingGate {
       }
     }
     ref.invalidate(driftWorkingDatabaseProvider);
+    try {
+      final graphDb = await ref.read(
+        driftConversationGraphDatabaseProvider.future,
+      );
+      await graphDb.close();
+    } catch (_) {
+      // No connection open — safe to proceed.
+    }
+    ref.invalidate(driftConversationGraphDatabaseProvider);
 
+    late final List<String> deletedFiles;
     ref.read(dbMaintenanceLockProvider.notifier).begin();
     try {
-      for (final baseName in <String>['macos_import.db', 'working.db']) {
-        final basePath = path.join(databaseDirectoryPath, baseName);
-        for (final suffix in ['', '-wal', '-shm']) {
-          final file = File('$basePath$suffix');
-          if (file.existsSync()) {
-            await file.delete();
-            deletedFiles.add(file.path);
-          }
-        }
-      }
+      deletedFiles = await _deleteDatabaseBaseFiles(_derivedDatabaseBaseNames);
 
       ref.invalidate(sqfliteImportDatabaseProvider);
+      ref.invalidate(source_scoped_import.importDatabaseProvider);
       ref.invalidate(driftWorkingDatabaseProvider);
+      ref.invalidate(driftConversationGraphDatabaseProvider);
+      ref.invalidate(conversationGraphReadinessProvider);
+      ref.invalidate(conversationGraphPopulatedProvider);
     } finally {
       ref.read(dbMaintenanceLockProvider.notifier).end();
     }
@@ -557,5 +575,20 @@ class OnboardingGate extends _$OnboardingGate {
             'deletedFiles': deletedFiles,
           },
         );
+  }
+
+  Future<List<String>> _deleteDatabaseBaseFiles(List<String> baseNames) async {
+    final deletedFiles = <String>[];
+    for (final baseName in baseNames) {
+      final basePath = path.join(databaseDirectoryPath, baseName);
+      for (final suffix in ['', '-wal', '-shm']) {
+        final file = File('$basePath$suffix');
+        if (file.existsSync()) {
+          await file.delete();
+          deletedFiles.add(file.path);
+        }
+      }
+    }
+    return deletedFiles;
   }
 }

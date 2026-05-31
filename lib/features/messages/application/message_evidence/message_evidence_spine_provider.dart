@@ -6,12 +6,18 @@ import '../../../../essentials/conversation_graph/application/contacts/contact_g
 import '../../../../essentials/conversation_graph/application/conversations/conversation.dart';
 import '../../../../essentials/conversation_graph/application/conversations/conversation_reader_provider.dart';
 import '../../../../essentials/conversation_graph/application/messages/message_graph_reader_provider.dart';
+import '../../../../essentials/search/application/search_service.dart';
+import '../../../../essentials/search/feature_level_providers.dart';
+import '../../../../essentials/search/infrastructure/repositories/graph_search_repository.dart';
 import '../../../../essentials/source_scoped_import/domain/known_sources.dart';
 import '../../../../essentials/source_scoped_import/domain/source_scoped_row_key.dart';
+import '../../../contacts/feature_level_providers.dart';
+import '../../domain/message_evidence/message_evidence_row_data.dart';
 import '../../domain/message_evidence/message_evidence_scope.dart';
+import '../../domain/message_evidence/message_evidence_search_mode.dart';
 import '../../domain/message_evidence/message_evidence_skeleton.dart';
 import '../../infrastructure/repositories/recovered_unlinked_messages_provider.dart';
-import 'graph_attachment_evidence.dart';
+import 'message_attachment_evidence.dart';
 
 part 'message_evidence_spine_provider.g.dart';
 
@@ -41,8 +47,8 @@ Future<MessageEvidenceTimelineSkeleton> messageEvidenceTimelineSkeleton(
         handleId: handleId,
       ),
     GlobalMessagesEvidenceScope() => _globalMessagesTimelineSkeleton(ref),
-    MessageSearchEvidenceScope(:final query) =>
-      _globalMessageSearchTimelineSkeleton(ref, query: query),
+    MessageSearchEvidenceScope(:final query, :final mode) =>
+      _globalMessageSearchTimelineSkeleton(ref, query: query, mode: mode),
     HandleMessagesEvidenceScope(:final handleId) =>
       _handleMessagesTimelineSkeleton(ref, handleId: handleId),
     ConversationEvidenceScope(:final conversationId) =>
@@ -73,12 +79,12 @@ Future<MessageEvidenceTimelineSkeleton> messageEvidenceTimelineSkeleton(
 }
 
 @riverpod
-Future<ConversationMessage?> graphMessageEvidenceRow(
+Future<MessageEvidenceRowData?> messageEvidenceRow(
   Ref ref, {
   required MessageEvidenceScope scope,
   required int messageId,
 }) async {
-  return switch (scope) {
+  final message = await switch (scope) {
     ContactAllMessagesEvidenceScope(:final contactId) => ref.watch(
       contactPageGraphMessageByIdProvider(
         contactId: contactId,
@@ -136,10 +142,78 @@ Future<ConversationMessage?> graphMessageEvidenceRow(
         messageId: messageId,
       ),
   };
+  if (message == null) {
+    return null;
+  }
+  if (scope is RecoveredMessagesEvidenceScope) {
+    return _messageEvidenceRowDataFromConversationMessage(message);
+  }
+  return _resolveGraphMessageSender(ref, message);
+}
+
+Future<MessageEvidenceRowData> _resolveGraphMessageSender(
+  Ref ref,
+  ConversationMessage message,
+) async {
+  final resolver = await ref.watch(displayIdentityResolverProvider.future);
+  final rawHandleLabel =
+      message.senderRawHandleLabel ?? message.senderDisplayHandle;
+  final senderIdentity = resolver.resolveSender(
+    isFromMe: message.isFromMe,
+    senderCanonicalHandleId: message.senderCanonicalHandleId,
+    senderHandleId: message.senderHandleId,
+    rawHandleLabel: rawHandleLabel,
+  );
+
+  return MessageEvidenceRowData(
+    messageId: message.messageId,
+    dateUtc: message.dateUtc,
+    isFromMe: message.isFromMe,
+    text: message.text,
+    associatedMessageId: message.associatedMessageId,
+    attachmentCount: message.attachmentCount,
+    senderHandleId: message.senderHandleId,
+    senderCanonicalHandleId: message.senderCanonicalHandleId,
+    senderDisplayHandle: senderIdentity.primaryLabel,
+    senderRawHandleLabel: senderIdentity.rawHandleLabel,
+    semanticKind: message.semanticKind,
+    itemKind: message.itemKind,
+    isSystemMessage: message.isSystemMessage,
+    isSparseArtifact: message.isSparseArtifact,
+    hasAttributedBodySource: message.hasAttributedBodySource,
+    hasMessageSummaryInfo: message.hasMessageSummaryInfo,
+    hasPayloadDataSource: message.hasPayloadDataSource,
+    errorCode: message.errorCode,
+  );
+}
+
+MessageEvidenceRowData _messageEvidenceRowDataFromConversationMessage(
+  ConversationMessage message,
+) {
+  return MessageEvidenceRowData(
+    messageId: message.messageId,
+    dateUtc: message.dateUtc,
+    isFromMe: message.isFromMe,
+    text: message.text,
+    associatedMessageId: message.associatedMessageId,
+    attachmentCount: message.attachmentCount,
+    senderHandleId: message.senderHandleId,
+    senderCanonicalHandleId: message.senderCanonicalHandleId,
+    senderDisplayHandle: message.senderDisplayHandle,
+    senderRawHandleLabel: message.senderRawHandleLabel,
+    semanticKind: message.semanticKind,
+    itemKind: message.itemKind,
+    isSystemMessage: message.isSystemMessage,
+    isSparseArtifact: message.isSparseArtifact,
+    hasAttributedBodySource: message.hasAttributedBodySource,
+    hasMessageSummaryInfo: message.hasMessageSummaryInfo,
+    hasPayloadDataSource: message.hasPayloadDataSource,
+    errorCode: message.errorCode,
+  );
 }
 
 @riverpod
-Future<List<GraphAttachmentEvidence>> messageEvidenceAttachments(
+Future<List<MessageAttachmentEvidence>> messageEvidenceAttachments(
   Ref ref, {
   required MessageEvidenceScope scope,
   required int messageId,
@@ -162,7 +236,7 @@ Future<List<GraphAttachmentEvidence>> messageEvidenceAttachments(
     GlobalMessagesEvidenceScope() ||
     HandleMessagesEvidenceScope() ||
     ConversationEvidenceScope() ||
-    SearchResultContextEvidenceScope() => _graphMessageAttachments(
+    SearchResultContextEvidenceScope() => _messageAttachments(
       ref,
       messageId: messageId,
     ),
@@ -174,11 +248,13 @@ Future<List<int>> messageEvidenceTextMatchIds(
   Ref ref, {
   required MessageEvidenceScope scope,
   required String query,
+  MessageEvidenceSearchMode mode = MessageEvidenceSearchMode.allTerms,
 }) async {
   final normalizedQuery = query.trim();
   if (normalizedQuery.isEmpty) {
     return const <int>[];
   }
+  final matchAnyTerm = mode == MessageEvidenceSearchMode.anyTerm;
 
   return switch (scope) {
     ConversationEvidenceScope(:final conversationId) =>
@@ -186,20 +262,24 @@ Future<List<int>> messageEvidenceTextMatchIds(
         ref,
         conversationId: conversationId,
         query: normalizedQuery,
+        matchAnyTerm: matchAnyTerm,
       ),
     GlobalMessagesEvidenceScope() => _globalMessageIdsMatchingText(
       ref,
       query: normalizedQuery,
+      matchAnyTerm: matchAnyTerm,
     ),
     MessageSearchEvidenceScope() => _globalMessageIdsMatchingText(
       ref,
       query: normalizedQuery,
+      matchAnyTerm: matchAnyTerm,
     ),
     ContactAllMessagesEvidenceScope(:final contactId) =>
       _contactMessageIdsMatchingText(
         ref,
         contactId: contactId,
         query: normalizedQuery,
+        matchAnyTerm: matchAnyTerm,
       ),
     ContactHandleMessagesEvidenceScope(:final contactId, :final handleId) =>
       _contactMessageIdsMatchingText(
@@ -207,6 +287,7 @@ Future<List<int>> messageEvidenceTextMatchIds(
         contactId: contactId,
         query: normalizedQuery,
         handleId: handleId,
+        matchAnyTerm: matchAnyTerm,
       ),
     ContactMessageSearchEvidenceScope(:final contactId, :final handleId) =>
       _contactMessageIdsMatchingText(
@@ -214,10 +295,15 @@ Future<List<int>> messageEvidenceTextMatchIds(
         contactId: contactId,
         query: normalizedQuery,
         handleId: handleId,
+        matchAnyTerm: matchAnyTerm,
       ),
-    HandleMessagesEvidenceScope() => throw UnimplementedError(
-      'Handle evidence text matches are not part of this slice.',
-    ),
+    HandleMessagesEvidenceScope(:final handleId) =>
+      _handleMessageIdsMatchingText(
+        ref,
+        handleId: handleId,
+        query: normalizedQuery,
+        matchAnyTerm: matchAnyTerm,
+      ),
     SearchResultContextEvidenceScope() => throw UnimplementedError(
       'Search result context text matches are not part of this slice.',
     ),
@@ -230,6 +316,7 @@ Future<List<int>> messageEvidenceTextMatchIds(
         contactId: contactId,
         onlyNoHandleFromMe: onlyNoHandleFromMe,
         query: normalizedQuery,
+        matchAnyTerm: matchAnyTerm,
       ),
   };
 }
@@ -258,11 +345,13 @@ Future<List<int>> _conversationMessageIdsMatchingText(
   Ref ref, {
   required int conversationId,
   required String query,
+  required bool matchAnyTerm,
 }) async {
-  final reader = await ref.watch(conversationReaderProvider.future);
-  return reader.readMessageIdsMatchingText(
-    conversationId: conversationId,
+  return _graphSearchMessageIds(
+    ref,
+    scope: GraphMessageSearchScope.conversation(conversationId),
     query: query,
+    matchAnyTerm: matchAnyTerm,
   );
 }
 
@@ -298,6 +387,7 @@ Future<MessageEvidenceTimelineSkeleton> _globalMessagesTimelineSkeleton(
 Future<MessageEvidenceTimelineSkeleton> _globalMessageSearchTimelineSkeleton(
   Ref ref, {
   required String query,
+  required MessageEvidenceSearchMode mode,
 }) async {
   final normalizedQuery = query.trim();
   if (normalizedQuery.isEmpty) {
@@ -307,6 +397,7 @@ Future<MessageEvidenceTimelineSkeleton> _globalMessageSearchTimelineSkeleton(
   final matchingIds = await _globalMessageIdsMatchingText(
     ref,
     query: normalizedQuery,
+    matchAnyTerm: mode == MessageEvidenceSearchMode.anyTerm,
   );
   return skeleton.filteredByMessageIds(matchingIds);
 }
@@ -322,9 +413,42 @@ Future<ConversationMessage?> _globalMessageById(
 Future<List<int>> _globalMessageIdsMatchingText(
   Ref ref, {
   required String query,
+  required bool matchAnyTerm,
 }) async {
-  final reader = await ref.watch(messageGraphReaderProvider.future);
-  return reader.readGlobalMessageIdsMatchingText(query: query);
+  return _graphSearchMessageIds(
+    ref,
+    scope: const GraphMessageSearchScope.global(),
+    query: query,
+    matchAnyTerm: matchAnyTerm,
+  );
+}
+
+Future<List<int>> _handleMessageIdsMatchingText(
+  Ref ref, {
+  required int handleId,
+  required String query,
+  required bool matchAnyTerm,
+}) async {
+  return _graphSearchMessageIds(
+    ref,
+    scope: GraphMessageSearchScope.handle(handleId),
+    query: query,
+    matchAnyTerm: matchAnyTerm,
+  );
+}
+
+Future<List<int>> _graphSearchMessageIds(
+  Ref ref, {
+  required GraphMessageSearchScope scope,
+  required String query,
+  required bool matchAnyTerm,
+}) async {
+  final searchService = ref.watch(searchServiceProvider);
+  return searchService.searchGraphMessageIds(
+    scope: scope,
+    query: query,
+    mode: matchAnyTerm ? SearchMode.anyTerm : SearchMode.allTerms,
+  );
 }
 
 Future<MessageEvidenceTimelineSkeleton> _handleMessagesTimelineSkeleton(
@@ -454,6 +578,7 @@ Future<MessageEvidenceTimelineSkeleton> _contactMessageSearchTimelineSkeleton(
     ref,
     contactId: contactId,
     query: normalizedQuery,
+    matchAnyTerm: false,
     handleId: handleId,
   );
   return baseSkeleton.filteredByMessageIds(matchingIds);
@@ -463,12 +588,14 @@ Future<List<int>> _contactMessageIdsMatchingText(
   Ref ref, {
   required int contactId,
   required String query,
+  required bool matchAnyTerm,
   int? handleId,
 }) {
   return ref.watch(
     contactPageGraphMessageIdsMatchingTextProvider(
       contactId: contactId,
       query: query,
+      matchAnyTerm: matchAnyTerm,
       handleId: handleId,
     ).future,
   );
@@ -530,17 +657,17 @@ Future<ConversationMessage?> _recoveredMessageById(
   );
 }
 
-Future<List<GraphAttachmentEvidence>> _graphMessageAttachments(
+Future<List<MessageAttachmentEvidence>> _messageAttachments(
   Ref ref, {
   required int messageId,
 }) async {
   final attachments = await ref.watch(
     messageAttachmentsProvider(messageId).future,
   );
-  return graphAttachmentEvidenceFromMessageAttachments(attachments);
+  return messageAttachmentEvidenceFromMessageAttachments(attachments);
 }
 
-Future<List<GraphAttachmentEvidence>> _recoveredMessageAttachments(
+Future<List<MessageAttachmentEvidence>> _recoveredMessageAttachments(
   Ref ref, {
   required int? contactId,
   required bool onlyNoHandleFromMe,
@@ -555,11 +682,11 @@ Future<List<GraphAttachmentEvidence>> _recoveredMessageAttachments(
     return item.id == messageId;
   }).firstOrNull;
   if (message == null) {
-    return const <GraphAttachmentEvidence>[];
+    return const <MessageAttachmentEvidence>[];
   }
   return [
     for (final attachment in message.attachments)
-      graphAttachmentEvidenceFromRecoveredAttachment(attachment),
+      messageAttachmentEvidenceFromRecoveredAttachment(attachment),
   ];
 }
 
@@ -568,6 +695,7 @@ Future<List<int>> _recoveredMessageIdsMatchingText(
   required int? contactId,
   required bool onlyNoHandleFromMe,
   required String query,
+  required bool matchAnyTerm,
 }) async {
   final terms = query
       .trim()
@@ -589,7 +717,11 @@ Future<List<int>> _recoveredMessageIdsMatchingText(
 
   return [
     for (final message in messages)
-      if (_recoveredMessageMatchesTerms(message: message, terms: terms))
+      if (_recoveredMessageMatchesTerms(
+        message: message,
+        terms: terms,
+        matchAnyTerm: matchAnyTerm,
+      ))
         message.id,
   ];
 }
@@ -597,6 +729,7 @@ Future<List<int>> _recoveredMessageIdsMatchingText(
 bool _recoveredMessageMatchesTerms({
   required RecoveredUnlinkedMessageItem message,
   required List<String> terms,
+  required bool matchAnyTerm,
 }) {
   final attachmentText = message.attachments
       .map((attachment) {
@@ -617,7 +750,9 @@ bool _recoveredMessageMatchesTerms({
     attachmentText,
   ].whereType<String>().join(' ').toLowerCase();
 
-  return terms.every(haystack.contains);
+  return matchAnyTerm
+      ? terms.any(haystack.contains)
+      : terms.every(haystack.contains);
 }
 
 Future<List<RecoveredUnlinkedMessageItem>> _recoveredMessagesForScope(

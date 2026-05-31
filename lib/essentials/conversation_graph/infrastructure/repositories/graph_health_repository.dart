@@ -26,11 +26,20 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
   final String recoveredMessagesAttachmentsFolderName;
 
   @override
-  Future<GraphHealthReport> readHealthReport() async {
-    final archiveHealth = await _readArchiveHealth();
-    final recoveryAudit = await _readAttachmentRecoveryAudit(
-      currentAvailableArchiveKeys: archiveHealth.currentAvailableArchiveKeys,
+  Future<GraphHealthReport> readHealthReport({
+    bool includeFileAudits = false,
+    bool includeRecoveryAudit = false,
+  }) async {
+    final shouldIncludeFileAudits = includeFileAudits || includeRecoveryAudit;
+    final archiveHealth = await _readArchiveHealth(
+      includeFileAudits: shouldIncludeFileAudits,
     );
+    final recoveryAudit = includeRecoveryAudit
+        ? await _readAttachmentRecoveryAudit(
+            currentAvailableArchiveKeys:
+                archiveHealth.currentAvailableArchiveKeys,
+          )
+        : const _AttachmentRecoveryAudit.skipped();
     return GraphHealthReport(
       messageCount: await _count('SELECT COUNT(*) FROM messages'),
       chatCount: await _count('SELECT COUNT(*) FROM chats'),
@@ -41,6 +50,7 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
       handleAliasCount: await _count('SELECT COUNT(*) FROM handle_aliases'),
       contactCount: await _count('SELECT COUNT(*) FROM contacts'),
       attachmentCount: await _count('SELECT COUNT(*) FROM attachments'),
+      archiveFileAuditIncluded: shouldIncludeFileAudits,
       archiveRecordCount: archiveHealth.archiveRecordCount,
       attachmentsWithArchiveRecordCount:
           archiveHealth.attachmentsWithArchiveRecordCount,
@@ -50,6 +60,7 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
       archiveFilesMissingCount: archiveHealth.archiveFilesMissingCount,
       archiveRecordsWithoutWorkingAttachmentCount:
           archiveHealth.archiveRecordsWithoutWorkingAttachmentCount,
+      attachmentRecoveryAuditIncluded: includeRecoveryAudit,
       historicalArchiveAvailable: recoveryAudit.historicalArchiveAvailable,
       historicalArchiveRecordCount: recoveryAudit.historicalArchiveRecordCount,
       historicalArchiveFilesAvailableCount:
@@ -202,7 +213,9 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
     return 0;
   }
 
-  Future<_ArchiveHealth> _readArchiveHealth() async {
+  Future<_ArchiveHealth> _readArchiveHealth({
+    required bool includeFileAudits,
+  }) async {
     final overlayDb = overlayDatabase;
     if (overlayDb == null) {
       return const _ArchiveHealth.empty();
@@ -256,7 +269,9 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
     var archiveFilesMissingCount = 0;
     final currentAvailableArchiveKeys = <String>{};
     final archiveDirectory = attachmentArchiveDirectory;
-    if (archiveDirectory != null && archiveDirectory.isNotEmpty) {
+    if (includeFileAudits &&
+        archiveDirectory != null &&
+        archiveDirectory.isNotEmpty) {
       for (final entry in archiveByKey.entries) {
         final relativePath = entry.value;
         if (File('$archiveDirectory/$relativePath').existsSync()) {
@@ -266,7 +281,7 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
           archiveFilesMissingCount += 1;
         }
       }
-    } else {
+    } else if (includeFileAudits) {
       archiveFilesMissingCount = archiveByKey.length;
     }
 
@@ -799,6 +814,25 @@ class _AttachmentRecoveryAudit {
     required this.dryRunStillMissingPluginPayloadCandidateCount,
     required this.missingAttachmentSamples,
   });
+
+  const _AttachmentRecoveryAudit.skipped()
+    : historicalArchiveAvailable = false,
+      historicalArchiveRecordCount = 0,
+      historicalArchiveFilesAvailableCount = 0,
+      historicalArchiveFilesMissingCount = 0,
+      attachmentsRecoverableFromHistoricalArchiveCount = 0,
+      recoveredMessagesSourceAvailable = false,
+      recoveredMessagesAttachmentKeyCount = 0,
+      attachmentsRecoverableFromRecoveredMessagesCount = 0,
+      attachmentsRecoverableFromBothRecoverySourcesCount = 0,
+      attachmentsStillMissingFromKnownRecoverySourcesCount = 0,
+      dryRunAlreadyAvailableInCurrentArchiveCount = 0,
+      dryRunWouldCopyFromHistoricalArchiveCount = 0,
+      dryRunWouldCopyFromRecoveredMessagesCount = 0,
+      dryRunWouldArchiveFromCurrentSourcePathCount = 0,
+      dryRunStillMissingEverywhereCount = 0,
+      dryRunStillMissingPluginPayloadCandidateCount = 0,
+      missingAttachmentSamples = const <MissingAttachmentRecoverySample>[];
 
   final bool historicalArchiveAvailable;
   final int historicalArchiveRecordCount;

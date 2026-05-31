@@ -1,20 +1,13 @@
-import 'package:drift/drift.dart';
-
 import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
-import '../../../db/infrastructure/data_sources/local/working/working_database.dart';
 import '../../../source_scoped_import/domain/known_sources.dart';
 import '../../../source_scoped_import/domain/source_scoped_row_key.dart';
 import '../../application/conversations/conversation.dart';
 import '../../application/messages/message_graph_repository.dart';
 
 class SqliteMessageGraphRepository implements MessageGraphRepository {
-  const SqliteMessageGraphRepository({
-    required this.workingDatabase,
-    this.legacyDatabase,
-  });
+  const SqliteMessageGraphRepository({required this.workingDatabase});
 
   final ConversationGraphDatabase workingDatabase;
-  final WorkingDatabase? legacyDatabase;
 
   @override
   Future<List<ConversationMessageTimelineEntry>>
@@ -92,6 +85,7 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
   @override
   Future<List<int>> readGlobalMessageIdsMatchingText({
     required String query,
+    bool matchAnyTerm = false,
   }) async {
     final terms = _searchTerms(query);
     if (terms.isEmpty) {
@@ -115,8 +109,7 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
       variables.addAll([pattern, pattern, pattern, pattern, pattern, pattern]);
     }
 
-    final rows = await workingDatabase.selectRows(
-      '''
+    final rows = await workingDatabase.selectRows('''
       SELECT DISTINCT m.ss_id AS message_id
       FROM messages m
       LEFT JOIN handles sender_handle ON sender_handle.ss_id =
@@ -124,15 +117,11 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
       LEFT JOIN canonical_handles sender_canonical
         ON sender_canonical.canonical_handle_ss_id =
           m.sender_canonical_handle_ss_id
-      WHERE ${clauses.join(' AND ')}
+      WHERE ${clauses.join(matchAnyTerm ? ' OR ' : ' AND ')}
       ORDER BY COALESCE(m.date_utc, '') ASC, m.ss_id ASC
-      ''',
-      variables,
-    );
+      ''', variables);
 
-    return [
-      for (final row in rows) _readInt(row['message_id']),
-    ];
+    return [for (final row in rows) _readInt(row['message_id'])];
   }
 
   @override
@@ -232,6 +221,60 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
     }
 
     return _mapConversationMessage(rows.single);
+  }
+
+  @override
+  Future<List<int>> readHandleMessageIdsMatchingText({
+    required int handleId,
+    required String query,
+    bool matchAnyTerm = false,
+  }) async {
+    final canonicalHandleIds = await _readGraphCanonicalHandleIdsForHandle(
+      handleId,
+    );
+    final terms = _searchTerms(query);
+    if (canonicalHandleIds.isEmpty || terms.isEmpty) {
+      return const <int>[];
+    }
+
+    final clauses = <String>[];
+    final variables = <Object?>[];
+    for (final term in terms) {
+      clauses.add('''
+        (
+          lower(COALESCE(m.text, '')) LIKE ?
+          OR lower(COALESCE(m.guid, '')) LIKE ?
+          OR lower(COALESCE(sender_handle.id, '')) LIKE ?
+          OR lower(COALESCE(sender_canonical.display_handle, '')) LIKE ?
+          OR lower(COALESCE(m.semantic_kind, '')) LIKE ?
+          OR lower(COALESCE(m.item_kind, '')) LIKE ?
+        )
+        ''');
+      final pattern = '%$term%';
+      variables.addAll([pattern, pattern, pattern, pattern, pattern, pattern]);
+    }
+
+    final rows = await workingDatabase.selectRows(
+      '''
+      SELECT DISTINCT m.ss_id AS message_id
+      FROM messages m
+      JOIN chat_to_message ctm ON ctm.message_ss_id = m.ss_id
+      JOIN chat_to_handle cth ON cth.chat_ss_id = ctm.chat_ss_id
+      LEFT JOIN handle_aliases ha ON ha.handle_ss_id = cth.handle_ss_id
+      LEFT JOIN handles sender_handle ON sender_handle.ss_id =
+        m.sender_handle_ss_id
+      LEFT JOIN canonical_handles sender_canonical
+        ON sender_canonical.canonical_handle_ss_id =
+          m.sender_canonical_handle_ss_id
+      WHERE COALESCE(ha.canonical_handle_ss_id, cth.handle_ss_id)
+          IN (${_placeholders(canonicalHandleIds.length)})
+        AND (${clauses.join(matchAnyTerm ? ' OR ' : ' AND ')})
+      ORDER BY COALESCE(m.date_utc, '') ASC, m.ss_id ASC
+      ''',
+      <Object?>[...canonicalHandleIds, ...variables],
+    );
+
+    return [for (final row in rows) _readInt(row['message_id'])];
   }
 
   @override
@@ -343,16 +386,7 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
       return directIds;
     }
 
-    final legacyIdentifiers = await _readLegacyHandleNormalizedIdentifiers(
-      handleId,
-    );
-    if (legacyIdentifiers.isEmpty) {
-      return const <int>[];
-    }
-
-    return _readGraphCanonicalHandleIdsForNormalizedIdentifiers(
-      legacyIdentifiers,
-    );
+    return const <int>[];
   }
 
   Future<List<int>> _readDirectGraphCanonicalHandleIds(int handleId) async {
@@ -382,52 +416,6 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
     return [
       for (final row in rows)
         if (_readNullableInt(row['canonical_handle_id']) case final int id) id,
-    ];
-  }
-
-  Future<List<String>> _readLegacyHandleNormalizedIdentifiers(
-    int handleId,
-  ) async {
-    final database = legacyDatabase;
-    if (database == null) {
-      return const <String>[];
-    }
-
-    final rows = await database
-        .customSelect(
-          '''
-          SELECT DISTINCT lower(normalized_identifier) AS identifier
-          FROM handles_canonical_to_alias
-          WHERE canonical_handle_id = ?
-            AND normalized_identifier IS NOT NULL
-            AND normalized_identifier != ''
-          ORDER BY identifier ASC
-          ''',
-          variables: [Variable.withInt(handleId)],
-        )
-        .get();
-
-    return [
-      for (final row in rows)
-        if (row.data['identifier'] case final String identifier) identifier,
-    ];
-  }
-
-  Future<List<int>> _readGraphCanonicalHandleIdsForNormalizedIdentifiers(
-    List<String> normalizedIdentifiers,
-  ) async {
-    final rows = await workingDatabase.selectRows('''
-      SELECT DISTINCT canonical_handle_ss_id
-      FROM handle_aliases
-      WHERE lower(normalized_identifier)
-        IN (${_placeholders(normalizedIdentifiers.length)})
-      ORDER BY canonical_handle_ss_id ASC
-      ''', normalizedIdentifiers);
-
-    return [
-      for (final row in rows)
-        if (_readNullableInt(row['canonical_handle_ss_id']) case final int id)
-          id,
     ];
   }
 

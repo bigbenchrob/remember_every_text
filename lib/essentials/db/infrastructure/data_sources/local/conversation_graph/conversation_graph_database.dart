@@ -180,7 +180,6 @@ class ConversationGraphDatabase extends _$ConversationGraphDatabase {
       CREATE TABLE IF NOT EXISTS contacts (
         contact_id INTEGER PRIMARY KEY,
         display_name TEXT NOT NULL,
-        short_name TEXT,
         given_name TEXT,
         family_name TEXT,
         organization TEXT

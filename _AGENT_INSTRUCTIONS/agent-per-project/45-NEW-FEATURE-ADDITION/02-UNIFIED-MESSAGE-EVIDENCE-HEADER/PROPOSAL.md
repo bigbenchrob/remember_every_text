@@ -4,6 +4,8 @@
 
 Unify center-panel message evidence headers without changing message evidence rendering, message data sources, sidebar behavior, skeleton construction, row hydration, or attachment presentation.
 
+In this plan, **header** means the entire non-scrolling evidence preface below the window toolbar and above the scrolling message list. It includes route/surface identity, entity context, caveats, metrics, active scope, and actions. It does not mean only the inner `MessageEvidenceHeader` widget.
+
 Core rule:
 
 ```text
@@ -18,6 +20,14 @@ Preserve this boundary strictly:
 - source-specific composers own meaning, wording, contextual semantics, caveat semantics, active scope semantics, and actions/controls configuration
 - the shared renderer owns typography, spacing, hierarchy, blur/fade behavior, layout rhythm, and chrome minimization
 - the renderer must not infer semantic wording from raw scopes or become a magical semantic interpreter
+
+Hard invariant:
+
+```text
+Header = everything below the window toolbar and above the scrolling message list.
+```
+
+Therefore, a surface is not header-unified if it still has separate toolbar-like titles, hero cards, action slabs, or secondary evidence headers stacked above the message list. The visual region must be composed as one coherent evidence header even when it contains multiple semantic regions.
 
 ---
 
@@ -38,11 +48,11 @@ Current issue:
 
 ## Contact / All Messages
 
-- `lib/features/messages/presentation/view/contact_graph_messages_view.dart`
+- `lib/features/messages/presentation/view/contact_messages_evidence_view.dart`
 - Current header:
   - title: `All messages from Claire`
   - subtitle: date span + count, or selected month + month count
-  - status: graph skeleton / selected handle / selected month / hydration wording
+  - status: evidence skeleton / selected handle / selected month / hydration wording
   - controls: contact message search field
 
 This is the current visual gold standard:
@@ -66,7 +76,7 @@ So header unification should target the selected conversation evidence header, n
 - Current header:
   - title: `Conversation: Claire and Cathie`
   - subtitle: date span + message count
-  - status: graph skeleton / full conversation / search context / anchor
+  - status: evidence skeleton / full conversation / search context / anchor
 
 Legitimate difference:
 
@@ -74,11 +84,11 @@ Legitimate difference:
 
 ## Search All Messages
 
-- `lib/features/messages/presentation/view/global_graph_messages_view.dart`
+- `lib/features/messages/presentation/view/global_messages_evidence_view.dart`
 - Current header:
   - title: `All messages`
   - subtitle: date span + total count, or match count
-  - status: graph skeleton / selected month / search overlay
+  - status: evidence skeleton / selected month / search overlay
   - controls: global search field
 
 Legitimate difference:
@@ -101,21 +111,29 @@ Legitimate difference:
 ## From Unfamiliar Sources
 
 - `lib/features/messages/presentation/view/handle_lens_view.dart`
-- embedded `_HandleLensEvidencePane`
-- Current header:
-  - title: `Message evidence`
-  - subtitle: date span + count
-  - status: graph skeleton / handle scope / hydration wording
+- visible center-panel header region currently includes:
+  - `ToolBar(title: Text(handleValue))`
+  - `_HandleLensHeader`
+  - `_ActionBar`
+  - embedded `_HandleLensEvidencePane` / `MessageEvidenceHeader`
+
+Current issue:
+
+- this surface has multiple stacked headers above the scrolling message list
+- the handle value is repeated as toolbar title and card title
+- the action row is visually detached from the evidence header
+- the embedded `MessageEvidenceHeader` is not enough to unify the actual user-visible header region
 
 Related direct handle route:
 
-- `lib/features/messages/presentation/view/handle_graph_messages_view.dart`
+- `lib/features/messages/presentation/view/handle_messages_evidence_view.dart`
 - title: `Handle messages`
 
 Current issue:
 
 - two handle-evidence surfaces use similar data with slightly different wording
 - this is a good candidate for early unification after contact/conversation
+- the HandleLens page shell must be treated as part of the header, not as unrelated chrome outside the header plan
 
 ## Recovered Deleted Messages
 
@@ -142,7 +160,7 @@ Legitimate difference:
 
 ## Handle-Filtered Messages
 
-- `contact_graph_messages_view.dart` through `ContactHandleMessagesEvidenceScope`
+- `contact_messages_evidence_view.dart` through `ContactHandleMessagesEvidenceScope`
 - Current header is still contact-owned:
   - `All messages from Claire`
   - status mentions selected handle
@@ -197,6 +215,15 @@ The unified model should represent these regions explicitly:
 7. **Scope-specific actions**
    - allowed only as explicit actions passed by source composers
    - not inferred by the renderer
+   - examples:
+     - create contact
+     - link to existing
+     - dismiss unfamiliar source
+
+8. **Header shell / surface preface**
+   - the window toolbar is outside the header
+   - everything below it and above the scrollable message list is inside the header
+   - page-specific hero cards, local title bars, action slabs, and nested evidence headers should collapse into one coherent header composition
 
 ---
 
@@ -224,6 +251,7 @@ The shared renderer decides:
 - control row placement
 - blur/fade boundary relationship to message scrolling
 - chrome minimization
+- how header regions cohere as a single pre-scroll evidence preface
 
 ---
 
@@ -279,7 +307,7 @@ class MessageEvidenceHeaderMetric {
 
 Metrics should eventually become a structured region rather than a pair of unrelated strings. The first slice should avoid overbuilding, so `dateRangeLabel` and `countLabel` are acceptable if the regions are named, stable, and easy to replace with structured metrics later.
 
-Status/debug wording such as `graph skeleton • hydrate visible rows` is not long-term user-facing semantic meaning. It may remain temporarily for development visibility, but the model should not let pipeline diagnostics masquerade as evidence context.
+Status/debug wording such as `evidence skeleton • hydrate visible rows` is not long-term user-facing semantic meaning. It may remain temporarily for development visibility, but the model should not let pipeline diagnostics masquerade as evidence context.
 
 Compatibility option:
 
@@ -306,6 +334,7 @@ Preferred first slice:
 - avoid cards, heavy panels, borders, or dashboard chrome
 - preserve the calm contact/all-messages visual language
 - keep the header visually attached to the evidence stream
+- support a whole-header composition rather than only the innermost evidence-title block
 
 Visual invariant:
 
@@ -323,6 +352,13 @@ Visual invariant:
 - decide recovered-message semantics
 - create navigation behavior
 - mutate state
+
+Surface widgets should not:
+
+- add separate title cards or duplicate header-like regions above `MessageEvidenceHeader`
+- repeat the same entity identity in a window toolbar, hero card, and evidence header
+- create detached action slabs that visually read as independent headers
+- treat page chrome as exempt from the header invariant when it sits above the message list
 
 ---
 
@@ -369,6 +405,12 @@ Reason:
 
 - these have more caveat/control/action variation
 - migrating them after contact/conversation will reveal whether the model needs a `scopeNote`, `activeScopeLabel`, or `actions` adjustment
+
+Important correction:
+
+- `From unfamiliar sources` cannot be considered migrated by changing only `_HandleLensEvidencePane`
+- its complete red-box region below the window toolbar and above the message list must be unified
+- that means removing or collapsing the duplicated handle toolbar/card/evidence-title stack into one calm evidence header with actions integrated as explicit header actions
 
 ---
 
@@ -419,6 +461,7 @@ Do not:
 - create source-specific header widgets
 - create a renderer that infers semantic wording from raw data
 - add a new message renderer
+- leave stacked page headers, hero cards, or duplicated title bars above a shared evidence header and call the surface unified
 
 Do:
 
@@ -427,6 +470,7 @@ Do:
 - centralize header form and rhythm
 - keep the contact/all-messages visual language as the baseline
 - migrate incrementally
+- treat the full pre-scroll region as the header for visual and architectural review
 
 ---
 
@@ -435,4 +479,5 @@ Do:
 1. Should recovered-message caveats use `scopeNote`, `scopeContextLine`, or both when recovered surfaces migrate?
 2. When should `dateRangeLabel` and `countLabel` become a structured metrics region?
 3. When should `MessageEvidenceHeaderData` be retired after compatibility migration is complete?
-4. Should status/debug wording such as `graph skeleton • hydrate visible rows` remain visible in normal user-facing mode, or should it become developer-only in a later slice?
+4. Should status/debug wording such as `evidence skeleton • hydrate visible rows` remain visible in normal user-facing mode, or should it become developer-only in a later slice?
+5. Should `HandleLensView` continue using a `MacosScaffold` toolbar title at all, or should the handle identity live only in the unified pre-scroll evidence header?

@@ -11,7 +11,6 @@ class ParticipantsMigrator extends BaseTableMigrator {
 $alias.Z_PK IS NOT NULL
 AND (
   COALESCE(TRIM($alias.display_name), '') NOT IN ('', 'Unknown Contact')
-  OR COALESCE(TRIM($alias.short_name), '') NOT IN ('', 'Unknown Contact')
   OR COALESCE(TRIM($alias.first_name), '') != ''
   OR COALESCE(TRIM($alias.last_name), '') != ''
   OR COALESCE(TRIM($alias.organization), '') != ''
@@ -23,20 +22,8 @@ AND (
 COALESCE(
   NULLIF(TRIM($alias.display_name), ''),
   NULLIF(TRIM($alias.organization), ''),
-  NULLIF(TRIM($alias.short_name), ''),
   NULLIF(TRIM($alias.first_name), ''),
   NULLIF(TRIM($alias.last_name), ''),
-  'Unknown Contact'
-)
-''';
-
-  static String _resolvedShortNameExpr(String alias) =>
-      '''
-COALESCE(
-  NULLIF(TRIM($alias.short_name), ''),
-  NULLIF(TRIM($alias.first_name), ''),
-  NULLIF(TRIM($alias.display_name), ''),
-  NULLIF(TRIM($alias.organization), ''),
   'Unknown Contact'
 )
 ''';
@@ -99,7 +86,7 @@ COALESCE(
           c.Z_PK AS id,
           ${_resolvedDisplayNameExpr('c')} AS original_name,
           ${_resolvedDisplayNameExpr('c')} AS display_name,
-          ${_resolvedShortNameExpr('c')} AS short_name,
+          '' AS short_name,
           NULL AS avatar_ref,
           NULLIF(TRIM(c.first_name), '') AS given_name,
           NULLIF(TRIM(c.last_name), '') AS family_name,

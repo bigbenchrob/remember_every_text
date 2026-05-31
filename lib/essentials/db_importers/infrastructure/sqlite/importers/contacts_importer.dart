@@ -60,7 +60,6 @@ class ContactsImporter extends BaseTableImporter {
       final middle = _trim(row['ZMIDDLENAME']);
       final last = _trim(row['ZLASTNAME']);
       final organization = _trim(row['ZORGANIZATION']);
-      final nickname = _trim(row['ZNICKNAME']);
 
       final displayName = _buildContactDisplayName(
         firstName: first,
@@ -68,19 +67,12 @@ class ContactsImporter extends BaseTableImporter {
         lastName: last,
         organization: organization,
       );
-      final shortName = _buildShortName(
-        nickname: nickname,
-        firstName: first,
-        organization: organization,
-      );
-
       await ctx.importDb.insertContact(
         zPk: recordId,
         firstName: first,
         lastName: last,
         organization: organization,
         displayName: displayName,
-        shortName: shortName,
         createdAtUtc: DateConverter.appleToIsoString(row['ZCREATIONDATE']),
         batchId: ctx.batchId,
       );
@@ -142,21 +134,4 @@ String _buildContactDisplayName({
   }
 
   return 'Unknown Contact';
-}
-
-String? _buildShortName({
-  String? nickname,
-  String? firstName,
-  String? organization,
-}) {
-  if (nickname != null && nickname.isNotEmpty) {
-    return nickname;
-  }
-  if (firstName != null && firstName.isNotEmpty) {
-    return firstName;
-  }
-  if (organization != null && organization.isNotEmpty) {
-    return organization;
-  }
-  return null;
 }

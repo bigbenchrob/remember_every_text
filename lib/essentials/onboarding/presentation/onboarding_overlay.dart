@@ -520,7 +520,7 @@ class _EnvironmentSummaryCard extends StatelessWidget {
             isGood: report.importDatabase.hasData,
           ),
           _DiagnosticRow(
-            label: 'Working database',
+            label: 'Conversation graph',
             value: _appDbValue(report.workingDatabase),
             colors: colors,
             typography: typography,
@@ -854,7 +854,7 @@ List<String> _migrationFailureNotes(OnboardingEnvironmentReport report) {
 
   if (!report.workingDatabase.hasData) {
     notes.add(
-      'The working database is still empty or incomplete. Retrying will rerun the full import and migration pipeline.',
+      'The conversation graph is still empty or incomplete. Retrying will rerun the full import and migration pipeline.',
     );
   }
 

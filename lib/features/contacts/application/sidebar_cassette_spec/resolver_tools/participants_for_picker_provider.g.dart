@@ -7,7 +7,7 @@ part of 'participants_for_picker_provider.dart';
 // **************************************************************************
 
 String _$participantsForPickerHash() =>
-    r'bb3afe8ad82e9de04e946aeb825c5ef2fcd321e1';
+    r'6c6d8d0d2e8f584f08126963e162b2b9a8cac5b1';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -33,7 +33,7 @@ class _SystemHash {
 /// Provider that fetches participants filtered by search query
 ///
 /// This is used by the ContactPickerDialog to show searchable participants.
-/// The search is case-insensitive and matches against display_name and short_name.
+/// The search is case-insensitive and matches against display name.
 ///
 /// Copied from [participantsForPicker].
 @ProviderFor(participantsForPicker)
@@ -42,7 +42,7 @@ const participantsForPickerProvider = ParticipantsForPickerFamily();
 /// Provider that fetches participants filtered by search query
 ///
 /// This is used by the ContactPickerDialog to show searchable participants.
-/// The search is case-insensitive and matches against display_name and short_name.
+/// The search is case-insensitive and matches against display name.
 ///
 /// Copied from [participantsForPicker].
 class ParticipantsForPickerFamily
@@ -50,7 +50,7 @@ class ParticipantsForPickerFamily
   /// Provider that fetches participants filtered by search query
   ///
   /// This is used by the ContactPickerDialog to show searchable participants.
-  /// The search is case-insensitive and matches against display_name and short_name.
+  /// The search is case-insensitive and matches against display name.
   ///
   /// Copied from [participantsForPicker].
   const ParticipantsForPickerFamily();
@@ -58,7 +58,7 @@ class ParticipantsForPickerFamily
   /// Provider that fetches participants filtered by search query
   ///
   /// This is used by the ContactPickerDialog to show searchable participants.
-  /// The search is case-insensitive and matches against display_name and short_name.
+  /// The search is case-insensitive and matches against display name.
   ///
   /// Copied from [participantsForPicker].
   ParticipantsForPickerProvider call({required String searchQuery}) {
@@ -90,7 +90,7 @@ class ParticipantsForPickerFamily
 /// Provider that fetches participants filtered by search query
 ///
 /// This is used by the ContactPickerDialog to show searchable participants.
-/// The search is case-insensitive and matches against display_name and short_name.
+/// The search is case-insensitive and matches against display name.
 ///
 /// Copied from [participantsForPicker].
 class ParticipantsForPickerProvider
@@ -98,7 +98,7 @@ class ParticipantsForPickerProvider
   /// Provider that fetches participants filtered by search query
   ///
   /// This is used by the ContactPickerDialog to show searchable participants.
-  /// The search is case-insensitive and matches against display_name and short_name.
+  /// The search is case-insensitive and matches against display name.
   ///
   /// Copied from [participantsForPicker].
   ParticipantsForPickerProvider({required String searchQuery})

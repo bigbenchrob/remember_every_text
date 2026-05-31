@@ -81,7 +81,10 @@ Stream<List<RecoveredUnlinkedMessageItem>> recoveredUnlinkedMessages(
 
   final db = await ref.watch(driftWorkingDatabaseProvider.future);
   final overlayDb = await ref.watch(overlayDatabaseProvider.future);
-  final displayNameOverrides = await displayNameOverridesMap(overlayDb);
+  final preferredParticipantNames = await preferredParticipantDisplayNamesMap(
+    workingDb: db,
+    overlayDb: overlayDb,
+  );
   final scopedHandleIds = contactId == null
       ? null
       : (await ref.watch(
@@ -99,7 +102,7 @@ Stream<List<RecoveredUnlinkedMessageItem>> recoveredUnlinkedMessages(
             .toSet();
   final contactNameByHandleId = await _loadContactNameByHandleId(
     db: db,
-    displayNameOverrides: displayNameOverrides,
+    preferredParticipantNames: preferredParticipantNames,
   );
 
   DateTime? parseUtc(String? value) {
@@ -324,7 +327,7 @@ String _fallbackRecoveredMessageText({required String semanticKind}) {
 
 Future<Map<int, String>> _loadContactNameByHandleId({
   required WorkingDatabase db,
-  required Map<int, String> displayNameOverrides,
+  required Map<int, String> preferredParticipantNames,
 }) async {
   final query = db.select(db.handleToParticipant).join([
     drift.innerJoin(
@@ -339,10 +342,10 @@ Future<Map<int, String>> _loadContactNameByHandleId({
   for (final row in rows) {
     final handleLink = row.readTable(db.handleToParticipant);
     final participant = row.readTable(db.workingParticipants);
-    final overrideName = displayNameOverrides[participant.id]?.trim();
+    final preferredName = preferredParticipantNames[participant.id]?.trim();
     final defaultName = participant.displayName.trim();
-    final resolvedName = overrideName != null && overrideName.isNotEmpty
-        ? overrideName
+    final resolvedName = preferredName != null && preferredName.isNotEmpty
+        ? preferredName
         : defaultName;
 
     if (resolvedName.isEmpty || isPlaceholderDisplayName(resolvedName)) {

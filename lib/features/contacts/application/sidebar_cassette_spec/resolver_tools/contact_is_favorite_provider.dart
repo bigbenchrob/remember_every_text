@@ -1,6 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../infrastructure/repositories/contacts_list_repository.dart';
 import 'favorite_contacts_repository_provider.dart';
 
 part 'contact_is_favorite_provider.g.dart';
@@ -12,5 +13,11 @@ part 'contact_is_favorite_provider.g.dart';
 @riverpod
 Future<bool> contactIsFavorite(Ref ref, {required int participantId}) async {
   final repository = await ref.watch(favoriteContactsRepositoryProvider.future);
-  return repository.isFavorite(participantId);
+  final favorites = await repository.getAllFavorites();
+  for (final favorite in favorites) {
+    if (contactIdsRepresentSamePerson(favorite.participantId, participantId)) {
+      return true;
+    }
+  }
+  return false;
 }

@@ -6,7 +6,7 @@ import 'package:remember_this_text/essentials/conversation_graph/application/con
 import 'package:remember_this_text/essentials/conversation_graph/application/conversations/conversation.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversations/conversation_reader.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversations/conversation_repository.dart';
-import 'package:remember_this_text/features/chats/application/conversation_browser/contact_handle_label_provider.dart';
+import 'package:remember_this_text/features/contacts/feature_level_providers.dart';
 import 'package:remember_this_text/features/messages/application/sidebar_cassette_spec/resolver_tools/conversation_signature_display_provider.dart';
 
 void main() {
@@ -36,15 +36,16 @@ void main() {
             ),
           ];
         }),
-        contactHandleLabelsProvider.overrideWith((ref) async {
-          return <String, ContactHandleLabel>{
-            contactHandleLabelKeyForTesting(
-              '6049995969',
-            ): const ContactHandleLabel(
-              handle: '6049995969',
-              displayName: 'Cathie Campbell',
-            ),
-          };
+        displayIdentityResolverProvider.overrideWith((ref) async {
+          return const DisplayIdentityResolver(
+            identitiesByHandleKey: {
+              '16049995969': ParticipantDisplayIdentity(
+                primaryLabel: 'Cathie',
+                source: DisplayIdentitySource.userOverride,
+                isKnownContact: true,
+              ),
+            },
+          );
         }),
       ],
     );
@@ -55,11 +56,8 @@ void main() {
     );
 
     expect(signatures, hasLength(1));
-    expect(signatures.single.title, 'Cathie Campbell and +17789908506');
-    expect(signatures.single.participantLabels, [
-      'Cathie Campbell',
-      '+17789908506',
-    ]);
+    expect(signatures.single.title, 'Cathie and +17789908506');
+    expect(signatures.single.participantLabels, ['Cathie', '+17789908506']);
     expect(signatures.single.activityMonths.single.messageCount, 12);
   });
 
@@ -132,8 +130,8 @@ void main() {
             ),
           ];
         }),
-        contactHandleLabelsProvider.overrideWith((ref) async {
-          return const <String, ContactHandleLabel>{};
+        displayIdentityResolverProvider.overrideWith((ref) async {
+          return const DisplayIdentityResolver(identitiesByHandleKey: {});
         }),
       ],
     );
@@ -223,8 +221,8 @@ void main() {
               reader: ConversationReader(repository: repository),
             );
           }),
-          contactHandleLabelsProvider.overrideWith((ref) async {
-            return const <String, ContactHandleLabel>{};
+          displayIdentityResolverProvider.overrideWith((ref) async {
+            return const DisplayIdentityResolver(identitiesByHandleKey: {});
           }),
         ],
       );
@@ -290,6 +288,30 @@ class _FakeConversationRepository implements ConversationRepository {
     int limit = 100,
   }) async {
     return const <ConversationMessage>[];
+  }
+
+  @override
+  Future<List<ConversationMessageTimelineEntry>> readMessageTimeline({
+    required int conversationId,
+  }) async {
+    return const <ConversationMessageTimelineEntry>[];
+  }
+
+  @override
+  Future<ConversationMessage?> readMessageById({
+    required int conversationId,
+    required int messageId,
+  }) async {
+    return null;
+  }
+
+  @override
+  Future<List<int>> readMessageIdsMatchingText({
+    required int conversationId,
+    required String query,
+    bool matchAnyTerm = false,
+  }) async {
+    return const <int>[];
   }
 
   @override

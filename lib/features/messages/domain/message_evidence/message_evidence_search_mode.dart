@@ -1,0 +1,1 @@
+enum MessageEvidenceSearchMode { allTerms, anyTerm }

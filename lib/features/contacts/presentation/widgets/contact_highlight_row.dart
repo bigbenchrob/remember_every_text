@@ -11,7 +11,6 @@ class ContactHighlightRow extends StatefulWidget {
   const ContactHighlightRow({
     super.key,
     required this.displayName,
-    required this.shortName,
     this.summaryLine,
     this.useHeroTitleStyle = false,
     this.showFavoriteIndicator = false,
@@ -22,7 +21,6 @@ class ContactHighlightRow extends StatefulWidget {
   });
 
   final String displayName;
-  final String shortName;
   final String? summaryLine;
   final bool useHeroTitleStyle;
   final bool showFavoriteIndicator;
@@ -81,12 +79,6 @@ class _ContactHighlightRowState extends State<ContactHighlightRow> {
                       style: titleStyle,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (widget.shortName != widget.displayName)
-                      Text(
-                        widget.shortName,
-                        style: typography.heroSubtitle,
-                        overflow: TextOverflow.ellipsis,
-                      ),
                     if (widget.summaryLine != null) ...[
                       const SizedBox(height: 6),
                       Text(

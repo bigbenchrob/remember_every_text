@@ -1,16 +1,18 @@
-import 'package:drift/drift.dart' as drift;
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../essentials/db/feature_level_providers.dart';
+import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
+import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import '../../../../essentials/source_scoped_import/domain/known_sources.dart';
+import '../../../../essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import '../../domain/utilities/handle_normalizer.dart';
 
 part 'stray_handles_provider.freezed.dart';
 part 'stray_handles_provider.g.dart';
 
-/// A handle that has no link to any participant (real or virtual) in either
-/// the working or overlay databases.
+/// A handle that has no graph contact link and no linked overlay override.
 @freezed
 abstract class StrayHandleSummary with _$StrayHandleSummary {
   const factory StrayHandleSummary({
@@ -33,9 +35,8 @@ abstract class StrayHandleSummary with _$StrayHandleSummary {
   }) = _StrayHandleSummary;
 }
 
-/// Returns all handles that are truly "stray": no participant link in the
-/// working DB AND no linked override (participant or virtual participant) in
-/// the overlay DB.
+/// Returns all handles that are truly "stray": no graph contact link and no
+/// linked override (participant or virtual participant) in the overlay DB.
 ///
 /// Handles with an overlay row that has only `reviewed_at` set (both
 /// participant IDs null) are still included — they are reviewed but unlinked.
@@ -46,95 +47,95 @@ abstract class StrayHandleSummary with _$StrayHandleSummary {
 /// Sorted by total message count descending (most messages first).
 @riverpod
 Future<List<StrayHandleSummary>> strayHandles(Ref ref) async {
-  final workingDb = await ref.watch(driftWorkingDatabaseProvider.future);
+  final graphDb = await ref.watch(
+    driftConversationGraphDatabaseProvider.future,
+  );
   final overlayDb = await ref.watch(overlayDatabaseProvider.future);
 
-  // 1. Get all overlay overrides so we can check link status per handle.
+  return _readGraphStrayHandles(
+    graphDb: graphDb,
+    overlayDb: overlayDb,
+    includeDismissedOnly: false,
+  );
+}
+
+Future<List<StrayHandleSummary>> _readGraphStrayHandles({
+  required ConversationGraphDatabase graphDb,
+  required OverlayDatabase overlayDb,
+  required bool includeDismissedOnly,
+}) async {
   final allOverrides = await overlayDb.getAllHandleOverrides();
   final linkedOverrideHandleIds = <int>{};
   final reviewedAtByHandle = <int, String>{};
-
   for (final override in allOverrides) {
     if (override.participantId != null ||
         override.virtualParticipantId != null) {
-      // This handle is linked to a real or virtual participant — not stray.
-      linkedOverrideHandleIds.add(override.handleId);
+      linkedOverrideHandleIds.addAll(
+        _graphHandleIdsForOverlayId(override.handleId),
+      );
     }
     if (override.reviewedAt != null) {
-      reviewedAtByHandle[override.handleId] = override.reviewedAt!;
+      for (final handleId in _graphHandleIdsForOverlayId(override.handleId)) {
+        reviewedAtByHandle[handleId] = override.reviewedAt!;
+      }
     }
   }
 
-  // 2. Get all dismissed handles (keyed by normalized value).
   final dismissedHandles = await overlayDb.getAllDismissedHandles();
-
-  // 3. Get overlay visibility overrides (blacklisted handles should not appear).
   final visibilityOverrides = await overlayDb.getAllHandleVisibilities();
   final blacklistedHandleIds = <int>{
-    for (final o in visibilityOverrides)
-      if (o.isBlacklisted) o.handleId,
+    for (final override in visibilityOverrides)
+      if (override.isBlacklisted)
+        ..._graphHandleIdsForOverlayId(override.handleId),
   };
 
-  // 4. Query working-DB handles that have no working-DB participant link.
-  final handlesQuery = workingDb.select(workingDb.handlesCanonical)
-    ..where(
-      (tbl) => drift.notExistsQuery(
-        workingDb.select(workingDb.handleToParticipant)
-          ..where((h2p) => h2p.handleId.equalsExp(tbl.id)),
-      ),
-    );
-
-  final handles = await handlesQuery.get();
+  final rows = await graphDb.selectRows('''
+    SELECT
+      ch.canonical_handle_ss_id AS handle_id,
+      ch.display_handle AS handle_value,
+      COALESCE(ch.service, '') AS service_type,
+      COUNT(DISTINCT m.ss_id) AS total_messages,
+      MAX(m.date_utc) AS last_message_utc
+    FROM canonical_handles ch
+    JOIN messages m
+      ON m.sender_canonical_handle_ss_id = ch.canonical_handle_ss_id
+      OR EXISTS (
+        SELECT 1
+        FROM handle_aliases sender_alias
+        WHERE sender_alias.handle_ss_id = m.sender_handle_ss_id
+          AND sender_alias.canonical_handle_ss_id =
+            ch.canonical_handle_ss_id
+      )
+    WHERE NOT EXISTS (
+      SELECT 1
+      FROM contact_to_handle contact_handle
+      WHERE contact_handle.handle_ss_id = ch.canonical_handle_ss_id
+    )
+    GROUP BY ch.canonical_handle_ss_id
+    HAVING COUNT(DISTINCT m.ss_id) > 0
+    ORDER BY COUNT(DISTINCT m.ss_id) DESC, ch.display_handle ASC
+    ''');
 
   final results = <StrayHandleSummary>[];
-
-  for (final handle in handles) {
-    // Skip handles that are linked via overlay override.
-    if (linkedOverrideHandleIds.contains(handle.id)) {
+  for (final row in rows) {
+    final handleId = _readInt(row['handle_id']);
+    if (linkedOverrideHandleIds.contains(handleId) ||
+        blacklistedHandleIds.contains(handleId)) {
       continue;
     }
 
-    // Skip handles that are blacklisted via overlay visibility overrides.
-    if (blacklistedHandleIds.contains(handle.id)) {
+    final handleValue = (row['handle_value'] as String?)?.trim();
+    if (handleValue == null || handleValue.isEmpty) {
       continue;
     }
 
-    // Skip dismissed handles.
-    final normalized = normalizeHandleIdentifier(handle.rawIdentifier);
-    if (dismissedHandles.contains(normalized)) {
+    final normalized = normalizeHandleIdentifier(handleValue);
+    if (includeDismissedOnly != dismissedHandles.contains(normalized)) {
       continue;
     }
 
-    // Count messages where this handle is the sender.
-    final messagesQuery = workingDb.selectOnly(workingDb.workingMessages)
-      ..addColumns([workingDb.workingMessages.id.count()])
-      ..where(workingDb.workingMessages.senderHandleId.equals(handle.id));
-
-    final messageCountRow = await messagesQuery.getSingleOrNull();
-    final totalMessages =
-        messageCountRow?.read(workingDb.workingMessages.id.count()) ?? 0;
-
-    if (totalMessages == 0) {
-      continue;
-    }
-
-    // Get last message date.
-    final lastMessageQuery = workingDb.selectOnly(workingDb.workingMessages)
-      ..addColumns([workingDb.workingMessages.sentAtUtc.max()])
-      ..where(workingDb.workingMessages.senderHandleId.equals(handle.id));
-
-    final lastMessageRow = await lastMessageQuery.getSingleOrNull();
-    final lastMessageUtc = lastMessageRow?.read(
-      workingDb.workingMessages.sentAtUtc.max(),
-    );
-
-    DateTime? lastMessageDate;
-    if (lastMessageUtc != null && lastMessageUtc.isNotEmpty) {
-      lastMessageDate = DateTime.tryParse(lastMessageUtc)?.toLocal();
-    }
-
-    // Calculate junk score for sorting/filtering.
-    final handleIsShortCode = isShortCode(handle.rawIdentifier);
+    final totalMessages = _readInt(row['total_messages']);
+    final handleIsShortCode = isShortCode(handleValue);
     var junkScore = 0;
     if (handleIsShortCode) {
       junkScore += 3;
@@ -144,26 +145,22 @@ Future<List<StrayHandleSummary>> strayHandles(Ref ref) async {
     } else if (totalMessages <= 3) {
       junkScore += 1;
     }
-    // Note: Additional keyword scoring requires message content, deferred to
-    // spamCandidateHandlesProvider for performance.
 
     results.add(
       StrayHandleSummary(
-        handleId: handle.id,
-        handleValue: handle.rawIdentifier,
-        serviceType: handle.service,
+        handleId: handleId,
+        handleValue: handleValue,
+        serviceType: (row['service_type'] as String?)?.trim() ?? '',
         totalMessages: totalMessages,
-        reviewedAt: reviewedAtByHandle[handle.id],
-        lastMessageDate: lastMessageDate,
+        reviewedAt: reviewedAtByHandle[handleId],
+        lastMessageDate: _parseDate(row['last_message_utc'] as String?),
         junkScore: junkScore,
         isShortCode: handleIsShortCode,
       ),
     );
   }
 
-  // Sort by message count descending (most messages first).
   results.sort((a, b) => b.totalMessages.compareTo(a.totalMessages));
-
   return results;
 }
 
@@ -187,67 +184,56 @@ Future<List<StrayHandleSummary>> spamCandidateHandles(Ref ref) async {
 /// Returns only dismissed handles for the escape hatch view.
 ///
 /// Note: This returns metadata about dismissed handles by looking them up
-/// in the working database using their normalized values.
+/// in the graph database using their normalized values.
 @riverpod
 Future<List<StrayHandleSummary>> dismissedHandles(Ref ref) async {
-  final workingDb = await ref.watch(driftWorkingDatabaseProvider.future);
+  final graphDb = await ref.watch(
+    driftConversationGraphDatabaseProvider.future,
+  );
   final overlayDb = await ref.watch(overlayDatabaseProvider.future);
 
-  // Get all dismissed normalized handles.
-  final dismissedNormalized = await overlayDb.getAllDismissedHandles();
-  if (dismissedNormalized.isEmpty) {
-    return [];
+  return _readGraphStrayHandles(
+    graphDb: graphDb,
+    overlayDb: overlayDb,
+    includeDismissedOnly: true,
+  );
+}
+
+int _readInt(Object? value) {
+  if (value is int) {
+    return value;
   }
-
-  // Query all handles from working DB.
-  final handles = await workingDb.select(workingDb.handlesCanonical).get();
-
-  final results = <StrayHandleSummary>[];
-
-  for (final handle in handles) {
-    final normalized = normalizeHandleIdentifier(handle.rawIdentifier);
-    if (!dismissedNormalized.contains(normalized)) {
-      continue;
-    }
-
-    // Count messages where this handle is the sender.
-    final messagesQuery = workingDb.selectOnly(workingDb.workingMessages)
-      ..addColumns([workingDb.workingMessages.id.count()])
-      ..where(workingDb.workingMessages.senderHandleId.equals(handle.id));
-
-    final messageCountRow = await messagesQuery.getSingleOrNull();
-    final totalMessages =
-        messageCountRow?.read(workingDb.workingMessages.id.count()) ?? 0;
-
-    // Get last message date.
-    final lastMessageQuery = workingDb.selectOnly(workingDb.workingMessages)
-      ..addColumns([workingDb.workingMessages.sentAtUtc.max()])
-      ..where(workingDb.workingMessages.senderHandleId.equals(handle.id));
-
-    final lastMessageRow = await lastMessageQuery.getSingleOrNull();
-    final lastMessageUtc = lastMessageRow?.read(
-      workingDb.workingMessages.sentAtUtc.max(),
-    );
-
-    DateTime? lastMessageDate;
-    if (lastMessageUtc != null && lastMessageUtc.isNotEmpty) {
-      lastMessageDate = DateTime.tryParse(lastMessageUtc)?.toLocal();
-    }
-
-    results.add(
-      StrayHandleSummary(
-        handleId: handle.id,
-        handleValue: handle.rawIdentifier,
-        serviceType: handle.service,
-        totalMessages: totalMessages,
-        lastMessageDate: lastMessageDate,
-        isShortCode: isShortCode(handle.rawIdentifier),
-      ),
-    );
+  if (value is BigInt) {
+    return value.toInt();
   }
+  if (value is num) {
+    return value.toInt();
+  }
+  return int.parse(value.toString());
+}
 
-  // Sort by message count descending.
-  results.sort((a, b) => b.totalMessages.compareTo(a.totalMessages));
+DateTime? _parseDate(String? value) {
+  if (value == null || value.isEmpty) {
+    return null;
+  }
+  return DateTime.tryParse(value)?.toLocal();
+}
 
-  return results;
+Set<int> _graphHandleIdsForOverlayId(int handleId) {
+  final ids = <int>{handleId};
+  final packed = _graphHandleIdForLegacyId(handleId);
+  if (packed != null) {
+    ids.add(packed);
+  }
+  return ids;
+}
+
+int? _graphHandleIdForLegacyId(int handleId) {
+  if (handleId <= 0 || handleId > SourceScopedRowKey.maxSourceRowId) {
+    return null;
+  }
+  return SourceScopedRowKey.pack(
+    sourceId: liveChatDbSourceId,
+    sourceRowId: handleId,
+  );
 }

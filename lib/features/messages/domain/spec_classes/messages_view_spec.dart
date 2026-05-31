@@ -8,8 +8,6 @@ part 'messages_view_spec.freezed.dart';
 abstract class MessagesSpec with _$MessagesSpec {
   const factory MessagesSpec.conversationBrowser() = _ConversationBrowser;
 
-  const factory MessagesSpec.forChat({required int chatId}) = _MessagesForChat;
-
   const factory MessagesSpec.forConversation({
     required int conversationId,
     int? anchorMessageId,
@@ -60,11 +58,4 @@ abstract class MessagesSpec with _$MessagesSpec {
   /// Triage view for a stray handle: header + action bar + message list.
   const factory MessagesSpec.handleLens({required int handleId}) =
       _MessagesHandleLens;
-
-  /// Show messages for a chat within a specific date range (e.g., for a month)
-  const factory MessagesSpec.forChatInDateRange({
-    required int chatId,
-    required DateTime startDate,
-    required DateTime endDate,
-  }) = _MessagesForChatInDateRange;
 }

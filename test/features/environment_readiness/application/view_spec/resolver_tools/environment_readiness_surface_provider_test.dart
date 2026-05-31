@@ -7,6 +7,8 @@ import 'package:remember_this_text/features/environment_readiness/application/vi
 import 'package:remember_this_text/features/environment_readiness/domain/entities/environment_readiness_surface_view_model.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('environmentReadinessSurfaceProvider', () {
     late ProviderContainer container;
 

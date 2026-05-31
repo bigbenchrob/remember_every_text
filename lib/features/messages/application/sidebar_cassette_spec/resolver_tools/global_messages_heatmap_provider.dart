@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../../essentials/db/feature_level_providers.dart';
+import '../../../../../essentials/conversation_graph/application/conversations/conversation.dart';
+import '../../../../../essentials/conversation_graph/application/messages/message_graph_reader_provider.dart';
 import '../../../../../essentials/db/feature_level_providers/message_data_version_provider.dart';
 import '../../../domain/calendar_heatmap_timeline_data.dart';
 
@@ -13,76 +14,36 @@ Future<CalendarHeatmapTimelineData?> globalMessagesHeatmap(
 ) async {
   // Watch message data version so we rebuild when new messages are imported.
   ref.watch(messageDataVersionProvider);
-  final readiness = await ref.watch(workingProjectionReadinessProvider.future);
-  if (!readiness.isReady) {
+
+  final reader = await ref.watch(messageGraphReaderProvider.future);
+  return _buildGraphGlobalTimeline(await reader.readGlobalMessageTimeline());
+}
+
+CalendarHeatmapTimelineData? _buildGraphGlobalTimeline(
+  List<ConversationMessageTimelineEntry> entries,
+) {
+  final datedEntries = [
+    for (final entry in entries)
+      if (entry.dateUtc != null && DateTime.tryParse(entry.dateUtc!) != null)
+        (date: DateTime.parse(entry.dateUtc!), monthKey: entry.monthKey),
+  ];
+  if (datedEntries.isEmpty) {
     return null;
   }
 
-  final db = await ref.watch(driftWorkingDatabaseProvider.future);
-
-  final boundsRow = await db
-      .customSelect(
-        '''
-        SELECT MIN(sent_at_utc) as first_date,
-               MAX(sent_at_utc) as last_date
-        FROM global_message_index
-        WHERE sent_at_utc IS NOT NULL
-          AND sent_at_utc != ''
-        ''',
-        readsFrom: {db.globalMessageIndex},
-      )
-      .getSingleOrNull();
-
-  if (boundsRow == null) {
-    return null;
-  }
-
-  final firstUtc = boundsRow.read<String?>('first_date');
-  final lastUtc = boundsRow.read<String?>('last_date');
-
-  final firstDate = firstUtc == null || firstUtc.isEmpty
-      ? null
-      : DateTime.tryParse(firstUtc);
-  final lastDate = lastUtc == null || lastUtc.isEmpty
-      ? null
-      : DateTime.tryParse(lastUtc);
-
-  if (firstDate == null || lastDate == null) {
-    return null;
-  }
-
-  final results = await db
-      .customSelect(
-        '''
-        SELECT 
-          strftime('%Y', sent_at_utc) as year,
-          strftime('%m', sent_at_utc) as month,
-          COUNT(*) as count
-        FROM global_message_index
-        WHERE sent_at_utc IS NOT NULL
-          AND sent_at_utc != ''
-        GROUP BY year, month
-        ORDER BY year, month
-        ''',
-        readsFrom: {db.globalMessageIndex},
-      )
-      .get();
-
-  if (results.isEmpty) {
-    return null;
+  datedEntries.sort((left, right) => left.date.compareTo(right.date));
+  final firstDate = datedEntries.first.date;
+  final lastDate = datedEntries.last.date;
+  final counts = <String, int>{};
+  for (final entry in datedEntries) {
+    final key =
+        entry.monthKey ??
+        '${entry.date.year}-${entry.date.month.toString().padLeft(2, '0')}';
+    counts[key] = (counts[key] ?? 0) + 1;
   }
 
   final firstYear = firstDate.year;
   final lastYear = lastDate.year;
-
-  final counts = <String, int>{};
-  for (final row in results) {
-    final year = row.read<String>('year');
-    final month = row.read<String>('month');
-    final count = row.read<int>('count');
-    counts['$year-$month'] = count;
-  }
-
   final firstMonth = DateTime(firstDate.year, firstDate.month);
   final yearRows = <YearRow>[];
   var totalMessages = 0;
@@ -94,11 +55,11 @@ Future<CalendarHeatmapTimelineData?> globalMessagesHeatmap(
 
     for (var month = 1; month <= 12; month++) {
       final key = '$year-${month.toString().padLeft(2, '0')}';
-      final count = counts[key] ?? 0;
       final monthDate = DateTime(year, month);
       final isBeforeStart = monthDate.isBefore(firstMonth);
+      final count = isBeforeStart ? 0 : counts[key] ?? 0;
 
-      if (!isBeforeStart && count > 0) {
+      if (count > 0) {
         yearHasMessages = true;
         totalMessages += count;
         if (count > maxMonthCount) {
@@ -106,16 +67,14 @@ Future<CalendarHeatmapTimelineData?> globalMessagesHeatmap(
         }
       }
 
-      final intensity = isBeforeStart
-          ? MonthIntensity.notYetStarted
-          : MonthIntensity.fromMessageCount(count);
-
       months.add(
         MonthData(
           year: year,
           month: month,
           messageCount: count,
-          intensity: intensity,
+          intensity: isBeforeStart
+              ? MonthIntensity.notYetStarted
+              : MonthIntensity.fromMessageCount(count),
           chatId: 0,
         ),
       );

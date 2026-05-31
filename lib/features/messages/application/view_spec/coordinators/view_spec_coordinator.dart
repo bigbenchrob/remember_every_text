@@ -29,15 +29,6 @@ class ViewSpecCoordinator extends _$ViewSpecCoordinator {
   Widget buildForSpec(MessagesSpec spec) {
     return spec.when(
       conversationBrowser: () => const ConversationBrowserView(),
-      forChat: (chatId) => const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Text(
-            'Messages for chat view is coming soon.',
-            textAlign: TextAlign.center,
-          ),
-        ),
-      ),
       forConversation: (conversationId, anchorMessageId, searchQuery) =>
           ConversationMessagesPreviewView(
             conversationId: conversationId,
@@ -78,15 +69,6 @@ class ViewSpecCoordinator extends _$ViewSpecCoordinator {
           ),
       handleLens: (handleId) =>
           HandleLensResolver().resolve(handleId: handleId),
-      forChatInDateRange: (chatId, startDate, endDate) => const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Text(
-            'Messages for chat in date range view is coming soon.',
-            textAlign: TextAlign.center,
-          ),
-        ),
-      ),
     );
   }
 }

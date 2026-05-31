@@ -1,10 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../../../../../essentials/db/feature_level_providers.dart';
 import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart';
@@ -32,12 +30,6 @@ class ContactGroupedPickerWidget extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    useEffect(() {
-      unawaited(ref.read(workingProjectionReadinessProvider.future));
-      unawaited(ref.read(overlayDatabaseProvider.future));
-      return null;
-    }, const []);
-
     final pickerFilterMode = payload.pickerFilterMode!;
     final filteredSections = payload.filteredSections!;
 

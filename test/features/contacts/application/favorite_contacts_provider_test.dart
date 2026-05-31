@@ -3,6 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
+import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/resolver_tools/contact_is_favorite_provider.dart';
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/resolver_tools/favorite_contacts_provider.dart';
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/resolver_tools/favorite_contacts_repository_provider.dart';
 import 'package:remember_this_text/features/contacts/infrastructure/repositories/contacts_list_repository.dart';
@@ -73,6 +76,40 @@ void main() {
       final results = await container!.read(favoriteContactsProvider.future);
 
       expect(results, isEmpty);
+    });
+
+    test('resolves legacy-keyed favorite to graph contact summary', () async {
+      const legacyContactId = 24;
+      final graphContactId = SourceScopedRowKey.pack(
+        sourceId: liveAddressBookSourceId,
+        sourceRowId: legacyContactId,
+      );
+      await overlayDb.addFavorite(legacyContactId, DateTime.utc(2024, 12, 1));
+
+      container = ProviderContainer(
+        overrides: [
+          favoriteContactsRepositoryProvider.overrideWith(
+            (ref) async => FavoriteContactsRepository(overlayDb),
+          ),
+          contactsListRepositoryProvider.overrideWith(
+            (ref) async => [
+              buildContactSummary(
+                participantId: graphContactId,
+                displayName: 'Claire',
+              ),
+            ],
+          ),
+        ],
+      );
+
+      final favorites = await container!.read(favoriteContactsProvider.future);
+      final isFavorite = await container!.read(
+        contactIsFavoriteProvider(participantId: graphContactId).future,
+      );
+
+      expect(favorites, hasLength(1));
+      expect(favorites.single.contact.participantId, graphContactId);
+      expect(isFavorite, isTrue);
     });
   });
 }

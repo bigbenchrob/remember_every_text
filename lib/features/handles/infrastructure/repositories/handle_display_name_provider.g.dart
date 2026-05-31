@@ -6,7 +6,7 @@ part of 'handle_display_name_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$handleDisplayNameHash() => r'ede41016b3bd38295413d9b972b75c91174ec556';
+String _$handleDisplayNameHash() => r'17993e46bcf8dbacbcbbb1eb22494443d517d37f';
 
 /// Copied from Dart SDK
 class _SystemHash {

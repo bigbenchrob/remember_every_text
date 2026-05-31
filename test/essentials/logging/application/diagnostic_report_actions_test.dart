@@ -30,7 +30,7 @@ void main() {
         rowCount: 123,
       ),
       workingDatabase: const OnboardingDatabaseProbe(
-        path: 'working.db',
+        path: 'working_ss.db',
         exists: true,
         readable: true,
         rowCount: 0,
@@ -58,7 +58,7 @@ void main() {
     expect(
       headerLines,
       contains(
-        'Working database: path=working.db; exists=true; readable=true; rows=0',
+        'Conversation graph: path=working_ss.db; exists=true; readable=true; rows=0',
       ),
     );
   });

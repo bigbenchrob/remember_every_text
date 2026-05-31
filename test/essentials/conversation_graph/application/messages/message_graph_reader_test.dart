@@ -1,8 +1,6 @@
-import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_graph_reader.dart';
 import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/message_graph_repository.dart';
-import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/working/working_database.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 
 import '../../conversation_graph_test_database.dart';
@@ -244,96 +242,6 @@ void main() {
 
     expect(message?.text, 'in handle scope');
     expect(missing, isNull);
-  });
-
-  test('bridges legacy handle id to graph canonical handle identity', () async {
-    const legacyHandleId = 38;
-    final canonicalHandleId = _id(38);
-    final aliasHandleId = _id(88);
-    final chatId = _id(301);
-    final messageId = _id(201);
-    final legacyDatabase = WorkingDatabase(NativeDatabase.memory());
-    addTearDown(legacyDatabase.close);
-    await legacyDatabase.customSelect('SELECT 1').get();
-    await legacyDatabase.customStatement(
-      '''
-      INSERT INTO handles_canonical_to_alias (
-        source_handle_id,
-        canonical_handle_id,
-        raw_identifier,
-        compound_identifier,
-        normalized_identifier,
-        service,
-        alias_kind
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
-      ''',
-      <Object?>[
-        legacyHandleId,
-        legacyHandleId,
-        '+16048173537',
-        '6048173537-iMessage',
-        '6048173537',
-        'iMessage',
-        'canonical',
-      ],
-    );
-
-    await _insertHandle(
-      workingDatabase,
-      handleId: canonicalHandleId,
-      rawIdentifier: '+16048173537',
-    );
-    await _insertHandle(
-      workingDatabase,
-      handleId: aliasHandleId,
-      rawIdentifier: '+16048173537',
-    );
-    await _insertCanonicalHandle(
-      workingDatabase,
-      canonicalHandleId: canonicalHandleId,
-      normalizedIdentifier: '6048173537',
-    );
-    await _insertHandleAlias(
-      workingDatabase,
-      handleId: aliasHandleId,
-      canonicalHandleId: canonicalHandleId,
-      rawIdentifier: '+16048173537',
-      normalizedIdentifier: '6048173537',
-    );
-    await _insertMessage(
-      workingDatabase,
-      messageId: messageId,
-      dateUtc: '2026-05-20T10:00:00.000Z',
-      text: 'legacy bridged handle row',
-    );
-    await _insertChatToMessage(
-      workingDatabase,
-      chatId: chatId,
-      messageId: messageId,
-    );
-    await _insertChatToHandle(
-      workingDatabase,
-      chatId: chatId,
-      handleId: aliasHandleId,
-    );
-
-    final reader = MessageGraphReader(
-      repository: SqliteMessageGraphRepository(
-        workingDatabase: workingDatabase,
-        legacyDatabase: legacyDatabase,
-      ),
-    );
-
-    final timeline = await reader.readHandleMessageTimeline(
-      handleId: legacyHandleId,
-    );
-    final message = await reader.readHandleMessageById(
-      handleId: legacyHandleId,
-      messageId: messageId,
-    );
-
-    expect(timeline.map((entry) => entry.messageId), [messageId]);
-    expect(message?.text, 'legacy bridged handle row');
   });
 
   test(

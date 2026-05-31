@@ -18,6 +18,7 @@ import 'infrastructure/data_sources/local/import/sqflite_import_database.dart';
 import 'infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'infrastructure/data_sources/local/working/working_database.dart';
 
+export 'feature_level_providers/conversation_graph_readiness_provider.dart';
 export 'feature_level_providers/db_maintenance_lock_provider.dart';
 export 'feature_level_providers/message_data_version_provider.dart';
 export 'feature_level_providers/working_projection_readiness_provider.dart';

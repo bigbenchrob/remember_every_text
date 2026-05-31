@@ -7,9 +7,9 @@ import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../application/message_evidence/message_evidence_spine_provider.dart';
 import '../../../domain/message_evidence/message_evidence_scope.dart';
 import '../../../domain/message_evidence/message_evidence_skeleton.dart';
-import 'graph_message_evidence_row.dart';
 import 'message_evidence_fade_overlay.dart';
 import 'message_evidence_header.dart';
+import 'message_evidence_row.dart';
 
 class MessageEvidenceTimelineView extends ConsumerStatefulWidget {
   const MessageEvidenceTimelineView({
@@ -96,7 +96,7 @@ class _MessageEvidenceTimelineViewState
                       itemScrollController: _itemScrollController,
                       itemPositionsListener: _itemPositionsListener,
                       initialScrollIndex: targetIndex,
-                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      padding: const EdgeInsets.fromLTRB(32, 8, 32, 0),
                       itemCount: widget.skeleton.totalCount,
                       itemBuilder: (context, index) {
                         final entry = widget.skeleton.entries[index];
@@ -228,7 +228,7 @@ class _MessageEvidenceTimelineRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final messageAsync = ref.watch(
-      graphMessageEvidenceRowProvider(
+      messageEvidenceRowProvider(
         scope: evidenceScope,
         messageId: entry.messageId,
       ),
@@ -245,7 +245,7 @@ class _MessageEvidenceTimelineRow extends ConsumerWidget {
                 label: 'Message ${entry.messageId} unavailable',
               );
             }
-            return GraphMessageEvidenceRow(
+            return MessageEvidenceRow(
               message: message,
               evidenceScope: evidenceScope,
               isAnchorMessage: isAnchorMessage,

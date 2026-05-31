@@ -1,11 +1,9 @@
 import 'dart:io';
 
-import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/contacts/contact_graph_provider.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/contacts/contact_graph_reader.dart';
 import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/contact_graph_repository.dart';
-import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/working/working_database.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:sqflite/sqflite.dart';
@@ -179,131 +177,6 @@ void main() {
 
       expect(hydratedMessage?.text, 'May');
       expect(hydratedMessage?.attachmentCount, 1);
-    },
-  );
-
-  test(
-    'resolves contact page conversations through legacy handle identity',
-    () async {
-      const legacyContactId = 24;
-      final graphContactId = SourceScopedRowKey.pack(
-        sourceId: liveAddressBookSourceId,
-        sourceRowId: legacyContactId,
-      );
-      final chatId = _id(7);
-      final canonicalHandleId = _id(101);
-      final smsAliasHandleId = _id(102);
-      final messageId = _id(201);
-      final legacyDatabase = WorkingDatabase(NativeDatabase.memory());
-      addTearDown(legacyDatabase.close);
-      await legacyDatabase.customSelect('SELECT 1').get();
-      await _insertLegacyContactHandleLink(
-        legacyDatabase,
-        contactId: legacyContactId,
-      );
-
-      await _insertHandle(
-        workingDatabase,
-        handleId: canonicalHandleId,
-        value: '+16049995969-iMessage',
-      );
-      await _insertHandle(
-        workingDatabase,
-        handleId: smsAliasHandleId,
-        value: '+16049995969-SMS',
-      );
-      await _insertCanonicalHandle(
-        workingDatabase,
-        canonicalHandleId: canonicalHandleId,
-      );
-      await _insertHandleAlias(
-        workingDatabase,
-        handleId: canonicalHandleId,
-        canonicalHandleId: canonicalHandleId,
-      );
-      await _insertHandleAlias(
-        workingDatabase,
-        handleId: smsAliasHandleId,
-        canonicalHandleId: canonicalHandleId,
-      );
-      await _insertChat(workingDatabase, chatId: chatId);
-      await _insertChatHandle(
-        workingDatabase,
-        chatId: chatId,
-        handleId: smsAliasHandleId,
-      );
-      await _insertMessage(
-        workingDatabase,
-        messageId: messageId,
-        dateUtc: '2026-05-10T10:00:00.000Z',
-        text: 'May',
-      );
-      await _insertChatMessage(
-        workingDatabase,
-        chatId: chatId,
-        messageId: messageId,
-      );
-
-      final snapshot =
-          await ContactGraphReader(
-            repository: SqliteContactGraphRepository(
-              workingDatabase: workingDatabase,
-              legacyDatabase: legacyDatabase,
-            ),
-          ).readContactPageGraph(
-            contactId: legacyContactId,
-            graphContactId: graphContactId,
-          );
-
-      expect(snapshot.contactId, legacyContactId);
-      expect(snapshot.conversations, hasLength(1));
-      expect(snapshot.conversations.single.conversationId, chatId);
-      expect(snapshot.conversations.single.messageCount, 1);
-      expect(
-        snapshot.messageActivity?.lastMessageAtUtc,
-        '2026-05-10T10:00:00.000Z',
-      );
-
-      final messages =
-          await ContactGraphReader(
-            repository: SqliteContactGraphRepository(
-              workingDatabase: workingDatabase,
-              legacyDatabase: legacyDatabase,
-            ),
-          ).readContactPageMessages(
-            contactId: legacyContactId,
-            graphContactId: graphContactId,
-          );
-
-      expect(messages.map((message) => message.messageId), [messageId]);
-      expect(messages.single.text, 'May');
-
-      final timeline =
-          await ContactGraphReader(
-            repository: SqliteContactGraphRepository(
-              workingDatabase: workingDatabase,
-              legacyDatabase: legacyDatabase,
-            ),
-          ).readContactPageMessageTimeline(
-            contactId: legacyContactId,
-            graphContactId: graphContactId,
-          );
-
-      expect(timeline.map((entry) => entry.messageId), [messageId]);
-
-      final hydratedMessage =
-          await ContactGraphReader(
-            repository: SqliteContactGraphRepository(
-              workingDatabase: workingDatabase,
-              legacyDatabase: legacyDatabase,
-            ),
-          ).readContactPageMessageById(
-            contactId: legacyContactId,
-            graphContactId: graphContactId,
-            messageId: messageId,
-          );
-
-      expect(hydratedMessage?.text, 'May');
     },
   );
 
@@ -784,70 +657,4 @@ Future<void> _insertMessageAttachment(
     'message_ss_id': messageId,
     'attachment_ss_id': attachmentId,
   });
-}
-
-Future<void> _insertLegacyContactHandleLink(
-  WorkingDatabase database, {
-  required int contactId,
-}) async {
-  await database.customStatement(
-    '''
-    INSERT INTO participants (
-      id,
-      original_name,
-      display_name,
-      short_name
-    ) VALUES (?, ?, ?, ?)
-    ''',
-    <Object?>[contactId, 'Cathie Campbell', 'Cathie Campbell', 'Cathie'],
-  );
-  await database.customStatement(
-    '''
-    INSERT INTO handles_canonical (
-      id,
-      raw_identifier,
-      display_name,
-      compound_identifier,
-      service
-    ) VALUES (?, ?, ?, ?, ?)
-    ''',
-    <Object?>[
-      12,
-      '+16049995969',
-      '+16049995969',
-      '6049995969-iMessage',
-      'iMessage',
-    ],
-  );
-  await database.customStatement(
-    '''
-    INSERT INTO handle_to_participant (
-      handle_id,
-      participant_id
-    ) VALUES (?, ?)
-    ''',
-    <Object?>[12, contactId],
-  );
-  await database.customStatement(
-    '''
-    INSERT INTO handles_canonical_to_alias (
-      source_handle_id,
-      canonical_handle_id,
-      raw_identifier,
-      compound_identifier,
-      normalized_identifier,
-      service,
-      alias_kind
-    ) VALUES (?, ?, ?, ?, ?, ?, ?)
-    ''',
-    <Object?>[
-      13,
-      12,
-      '+16049995969',
-      '6049995969-SMS',
-      '6049995969',
-      'SMS',
-      'normalized_variant',
-    ],
-  );
 }

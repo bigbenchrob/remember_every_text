@@ -58,14 +58,14 @@ Future<GroupedContacts> groupedContacts(GroupedContactsRef ref) async {
     grouped.putIfAbsent(key, () => []).add(contact);
   }
 
-  // Ensure determinism: sort each bucket by display name then short name.
+  // Ensure determinism: sort each bucket by display name then stable id.
   for (final entry in grouped.entries) {
     entry.value.sort((a, b) {
       final nameCompare = compareAsciiLowerCase(a.displayName, b.displayName);
       if (nameCompare != 0) {
         return nameCompare;
       }
-      return compareAsciiLowerCase(a.shortName, b.shortName);
+      return a.participantId.compareTo(b.participantId);
     });
   }
 

@@ -2,9 +2,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 
-// Export infrastructure providers
-export './infrastructure/chats_repository_provider.dart';
-
 part 'feature_level_providers.g.dart';
 
 // =============================================================================

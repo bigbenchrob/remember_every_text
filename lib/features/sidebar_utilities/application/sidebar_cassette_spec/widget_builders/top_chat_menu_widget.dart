@@ -6,7 +6,7 @@ import '../../../../../config/theme/colors/theme_colors.dart'
 import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../config/theme/widgets/theme_widgets.dart';
-import '../../../../../essentials/db/feature_level_providers/working_db_populated_provider.dart';
+import '../../../../../essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart';
 import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../../essentials/sidebar/application/sidebar_action_dispatcher.dart';
 import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
@@ -52,9 +52,9 @@ class TopChatMenuWidget extends ConsumerWidget {
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
 
-    // When contacts is selected but the working DB is empty (e.g. first launch
-    // before migration finishes), show a prompt instead of the choice label.
-    final isPopulated = ref.watch(workingDbPopulatedProvider);
+    // When contacts is selected but the graph is empty (e.g. first launch
+    // before projection finishes), show a prompt instead of the choice label.
+    final isPopulated = ref.watch(conversationGraphPopulatedProvider);
     final showPrompt =
         currentChoice == TopChatMenuChoice.contacts && !isPopulated;
     final dispatcher = ref.read(sidebarActionDispatcherProvider.notifier);

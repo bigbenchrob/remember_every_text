@@ -9,12 +9,34 @@ import 'package:remember_this_text/essentials/conversation_graph/application/con
 import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_graph_reader.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_graph_reader_provider.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_graph_repository.dart';
+import 'package:remember_this_text/essentials/search/feature_level_providers.dart';
+import 'package:remember_this_text/essentials/search/infrastructure/repositories/graph_search_repository.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
+import 'package:remember_this_text/features/contacts/feature_level_providers.dart';
 import 'package:remember_this_text/features/messages/application/message_evidence/message_evidence_spine_provider.dart';
 import 'package:remember_this_text/features/messages/domain/entities/attachment_info.dart';
 import 'package:remember_this_text/features/messages/domain/message_evidence/message_evidence_scope.dart';
 import 'package:remember_this_text/features/messages/infrastructure/repositories/recovered_unlinked_messages_provider.dart';
+
+Override _displayIdentityResolverOverride() {
+  return displayIdentityResolverProvider.overrideWith((ref) async {
+    return const DisplayIdentityResolver(identitiesByHandleKey: {});
+  });
+}
+
+Override _graphSearchRepositoryOverride({
+  Map<String, List<int>> globalMatchesByQuery = const <String, List<int>>{},
+  Map<String, List<int>> conversationMatchesByQuery =
+      const <String, List<int>>{},
+}) {
+  return graphSearchRepositoryProvider.overrideWith((ref) async {
+    return _FakeGraphSearchRepository(
+      globalMatchesByQuery: globalMatchesByQuery,
+      conversationMatchesByQuery: conversationMatchesByQuery,
+    );
+  });
+}
 
 void main() {
   test(
@@ -22,6 +44,7 @@ void main() {
     () async {
       final container = ProviderContainer(
         overrides: [
+          _displayIdentityResolverOverride(),
           contactPageGraphMessageTimelineProvider(contactId: 24).overrideWith((
             ref,
           ) async {
@@ -68,6 +91,7 @@ void main() {
       );
       final container = ProviderContainer(
         overrides: [
+          _displayIdentityResolverOverride(),
           contactPageGraphHandleMessageTimelineProvider(
             contactId: 24,
             handleId: 12,
@@ -102,7 +126,7 @@ void main() {
         messageEvidenceTimelineSkeletonProvider(scope: scope).future,
       );
       final message = await container.read(
-        graphMessageEvidenceRowProvider(scope: scope, messageId: 7).future,
+        messageEvidenceRowProvider(scope: scope, messageId: 7).future,
       );
 
       expect(skeleton.entries.map((entry) => entry.messageId), [7]);
@@ -119,6 +143,7 @@ void main() {
       );
       final container = ProviderContainer(
         overrides: [
+          _displayIdentityResolverOverride(),
           contactPageGraphMessageTimelineProvider(contactId: 24).overrideWith((
             ref,
           ) async {
@@ -162,7 +187,7 @@ void main() {
         messageEvidenceTimelineSkeletonProvider(scope: scope).future,
       );
       final message = await container.read(
-        graphMessageEvidenceRowProvider(scope: scope, messageId: 2).future,
+        messageEvidenceRowProvider(scope: scope, messageId: 2).future,
       );
 
       expect(skeleton.entries.map((entry) => entry.messageId), [2]);
@@ -192,6 +217,7 @@ void main() {
     );
     final container = ProviderContainer(
       overrides: [
+        _displayIdentityResolverOverride(),
         messageGraphReaderProvider.overrideWith((ref) async {
           return const MessageGraphReader(repository: repository);
         }),
@@ -203,11 +229,12 @@ void main() {
       messageEvidenceTimelineSkeletonProvider(scope: scope).future,
     );
     final message = await container.read(
-      graphMessageEvidenceRowProvider(scope: scope, messageId: 11).future,
+      messageEvidenceRowProvider(scope: scope, messageId: 11).future,
     );
 
     expect(skeleton.entries.map((entry) => entry.messageId), [11]);
-    expect(message, same(hydratedMessage));
+    expect(message?.messageId, hydratedMessage.messageId);
+    expect(message?.text, hydratedMessage.text);
   });
 
   test('global evidence scope exposes text match ids', () async {
@@ -228,6 +255,12 @@ void main() {
     );
     final container = ProviderContainer(
       overrides: [
+        _displayIdentityResolverOverride(),
+        _graphSearchRepositoryOverride(
+          globalMatchesByQuery: const {
+            'settlement': [11, 12],
+          },
+        ),
         messageGraphReaderProvider.overrideWith((ref) async {
           return const MessageGraphReader(repository: repository);
         }),
@@ -280,6 +313,12 @@ void main() {
       );
       final container = ProviderContainer(
         overrides: [
+          _displayIdentityResolverOverride(),
+          _graphSearchRepositoryOverride(
+            globalMatchesByQuery: const {
+              'settlement': [11],
+            },
+          ),
           messageGraphReaderProvider.overrideWith((ref) async {
             return const MessageGraphReader(repository: repository);
           }),
@@ -291,7 +330,7 @@ void main() {
         messageEvidenceTimelineSkeletonProvider(scope: scope).future,
       );
       final message = await container.read(
-        graphMessageEvidenceRowProvider(scope: scope, messageId: 11).future,
+        messageEvidenceRowProvider(scope: scope, messageId: 11).future,
       );
 
       expect(skeleton.entries.map((entry) => entry.messageId), [11]);
@@ -322,6 +361,7 @@ void main() {
     );
     final container = ProviderContainer(
       overrides: [
+        _displayIdentityResolverOverride(),
         messageGraphReaderProvider.overrideWith((ref) async {
           return const MessageGraphReader(repository: repository);
         }),
@@ -333,66 +373,71 @@ void main() {
       messageEvidenceTimelineSkeletonProvider(scope: scope).future,
     );
     final message = await container.read(
-      graphMessageEvidenceRowProvider(scope: scope, messageId: 21).future,
+      messageEvidenceRowProvider(scope: scope, messageId: 21).future,
     );
 
     expect(skeleton.entries.map((entry) => entry.messageId), [21]);
-    expect(message, same(hydratedMessage));
+    expect(message?.messageId, hydratedMessage.messageId);
+    expect(message?.text, hydratedMessage.text);
   });
 
-  test('search result context scope exposes bounded graph skeleton', () async {
-    const scope = SearchResultContextEvidenceScope(
-      messageId: 11,
-      chatId: 7,
-      beforeCount: 1,
-      afterCount: 1,
-    );
-    const repository = _FakeMessageGraphRepository(
-      timeline: [],
-      hydratedMessage: ConversationMessage(
+  test(
+    'search result context scope exposes bounded evidence skeleton',
+    () async {
+      const scope = SearchResultContextEvidenceScope(
         messageId: 11,
-        dateUtc: '2026-05-20T10:00:00.000Z',
-        isFromMe: false,
-        text: 'context row',
-        associatedMessageId: null,
-        attachmentCount: 0,
-      ),
-      contextTimeline: [
-        ConversationMessageTimelineEntry(
-          messageId: 10,
-          dateUtc: '2026-05-19T10:00:00.000Z',
-          monthKey: '2026-05',
-        ),
-        ConversationMessageTimelineEntry(
+        chatId: 7,
+        beforeCount: 1,
+        afterCount: 1,
+      );
+      const repository = _FakeMessageGraphRepository(
+        timeline: [],
+        hydratedMessage: ConversationMessage(
           messageId: 11,
           dateUtc: '2026-05-20T10:00:00.000Z',
-          monthKey: '2026-05',
+          isFromMe: false,
+          text: 'context row',
+          associatedMessageId: null,
+          attachmentCount: 0,
         ),
-      ],
-    );
-    final container = ProviderContainer(
-      overrides: [
-        messageGraphReaderProvider.overrideWith((ref) async {
-          return const MessageGraphReader(repository: repository);
-        }),
-      ],
-    );
-    addTearDown(container.dispose);
+        contextTimeline: [
+          ConversationMessageTimelineEntry(
+            messageId: 10,
+            dateUtc: '2026-05-19T10:00:00.000Z',
+            monthKey: '2026-05',
+          ),
+          ConversationMessageTimelineEntry(
+            messageId: 11,
+            dateUtc: '2026-05-20T10:00:00.000Z',
+            monthKey: '2026-05',
+          ),
+        ],
+      );
+      final container = ProviderContainer(
+        overrides: [
+          _displayIdentityResolverOverride(),
+          messageGraphReaderProvider.overrideWith((ref) async {
+            return const MessageGraphReader(repository: repository);
+          }),
+        ],
+      );
+      addTearDown(container.dispose);
 
-    final skeleton = await container.read(
-      messageEvidenceTimelineSkeletonProvider(scope: scope).future,
-    );
-    final message = await container.read(
-      graphMessageEvidenceRowProvider(scope: scope, messageId: 11).future,
-    );
+      final skeleton = await container.read(
+        messageEvidenceTimelineSkeletonProvider(scope: scope).future,
+      );
+      final message = await container.read(
+        messageEvidenceRowProvider(scope: scope, messageId: 11).future,
+      );
 
-    expect(skeleton.entries.map((entry) => entry.messageId), [10, 11]);
-    expect(
-      skeleton.initialAnchorMessageId,
-      SourceScopedRowKey.pack(sourceId: liveChatDbSourceId, sourceRowId: 11),
-    );
-    expect(message?.text, 'context row');
-  });
+      expect(skeleton.entries.map((entry) => entry.messageId), [10, 11]);
+      expect(
+        skeleton.initialAnchorMessageId,
+        SourceScopedRowKey.pack(sourceId: liveChatDbSourceId, sourceRowId: 11),
+      );
+      expect(message?.text, 'context row');
+    },
+  );
 
   test(
     'recovered evidence scope exposes skeleton rows and attachments',
@@ -403,6 +448,7 @@ void main() {
       );
       final container = ProviderContainer(
         overrides: [
+          _displayIdentityResolverOverride(),
           recoveredUnlinkedMessagesProvider(contactId: 7).overrideWith((ref) {
             return Stream<List<RecoveredUnlinkedMessageItem>>.value([
               RecoveredUnlinkedMessageItem(
@@ -452,7 +498,7 @@ void main() {
         messageEvidenceTimelineSkeletonProvider(scope: scope).future,
       );
       final message = await container.read(
-        graphMessageEvidenceRowProvider(scope: scope, messageId: 30).future,
+        messageEvidenceRowProvider(scope: scope, messageId: 30).future,
       );
       final attachments = await container.read(
         messageEvidenceAttachmentsProvider(scope: scope, messageId: 30).future,
@@ -473,6 +519,7 @@ void main() {
     );
     final container = ProviderContainer(
       overrides: [
+        _displayIdentityResolverOverride(),
         recoveredUnlinkedMessagesProvider(contactId: 7).overrideWith((ref) {
           return Stream<List<RecoveredUnlinkedMessageItem>>.value([
             RecoveredUnlinkedMessageItem(
@@ -570,6 +617,7 @@ void main() {
       );
       final container = ProviderContainer(
         overrides: [
+          _displayIdentityResolverOverride(),
           conversationReaderProvider.overrideWith((ref) async {
             return const ConversationReader(repository: repository);
           }),
@@ -581,12 +629,13 @@ void main() {
         messageEvidenceTimelineSkeletonProvider(scope: scope).future,
       );
       final message = await container.read(
-        graphMessageEvidenceRowProvider(scope: scope, messageId: 2).future,
+        messageEvidenceRowProvider(scope: scope, messageId: 2).future,
       );
 
       expect(skeleton.entries.map((entry) => entry.messageId), [1, 2]);
       expect(skeleton.latestIndex(), 1);
-      expect(message, same(hydratedMessage));
+      expect(message?.messageId, hydratedMessage.messageId);
+      expect(message?.text, hydratedMessage.text);
     },
   );
 
@@ -607,6 +656,12 @@ void main() {
       );
       final container = ProviderContainer(
         overrides: [
+          _displayIdentityResolverOverride(),
+          _graphSearchRepositoryOverride(
+            conversationMatchesByQuery: const {
+              'settlement': [1, 2],
+            },
+          ),
           conversationReaderProvider.overrideWith((ref) async {
             return const ConversationReader(repository: repository);
           }),
@@ -628,6 +683,35 @@ void main() {
       expect(emptyMatches, isEmpty);
     },
   );
+}
+
+class _FakeGraphSearchRepository implements GraphSearchRepository {
+  const _FakeGraphSearchRepository({
+    required this.globalMatchesByQuery,
+    required this.conversationMatchesByQuery,
+  });
+
+  final Map<String, List<int>> globalMatchesByQuery;
+  final Map<String, List<int>> conversationMatchesByQuery;
+
+  @override
+  Future<List<int>> searchMessageIds({
+    required GraphMessageSearchScope scope,
+    required String query,
+    required bool matchAnyTerm,
+    required bool filterSaved,
+    bool lastTokenComplete = false,
+    int limit = graphSearchResultLimit,
+  }) async {
+    return switch (scope.type) {
+      GraphMessageSearchScopeType.global =>
+        globalMatchesByQuery[query] ?? const <int>[],
+      GraphMessageSearchScopeType.conversation =>
+        conversationMatchesByQuery[query] ?? const <int>[],
+      GraphMessageSearchScopeType.handle ||
+      GraphMessageSearchScopeType.contact => const <int>[],
+    };
+  }
 }
 
 class _FakeMessageGraphRepository implements MessageGraphRepository {
@@ -661,6 +745,7 @@ class _FakeMessageGraphRepository implements MessageGraphRepository {
   @override
   Future<List<int>> readGlobalMessageIdsMatchingText({
     required String query,
+    bool matchAnyTerm = false,
   }) async {
     return globalMatchesByQuery[query] ?? const <int>[];
   }
@@ -678,6 +763,15 @@ class _FakeMessageGraphRepository implements MessageGraphRepository {
     required int messageId,
   }) async {
     return hydratedMessage.messageId == messageId ? hydratedMessage : null;
+  }
+
+  @override
+  Future<List<int>> readHandleMessageIdsMatchingText({
+    required int handleId,
+    required String query,
+    bool matchAnyTerm = false,
+  }) async {
+    return const <int>[];
   }
 
   @override
@@ -719,6 +813,7 @@ class _FakeConversationRepository implements ConversationRepository {
   Future<List<int>> readMessageIdsMatchingText({
     required int conversationId,
     required String query,
+    bool matchAnyTerm = false,
   }) async {
     if (query == 'settlement') {
       return const [1, 2];

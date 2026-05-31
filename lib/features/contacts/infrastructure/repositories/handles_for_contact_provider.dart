@@ -1,9 +1,12 @@
-import 'package:drift/drift.dart' as drift;
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../essentials/db/feature_level_providers.dart';
+import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
+import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import '../../../../essentials/source_scoped_import/domain/known_sources.dart';
+import '../../../../essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 
 part 'handles_for_contact_provider.freezed.dart';
 part 'handles_for_contact_provider.g.dart';
@@ -17,14 +20,14 @@ abstract class LinkedHandle with _$LinkedHandle {
     required String service,
 
     /// Whether this link came from an overlay override (manual link)
-    /// rather than the working DB (address book auto-link).
+    /// rather than graph-projected AddressBook topology.
     required bool isOverrideLink,
   }) = _LinkedHandle;
 }
 
-/// Returns all handles linked to a contact, merging working DB and overlay.
+/// Returns all handles linked to a contact, merging graph topology and overlay.
 ///
-/// For working-DB participants, handles come from `handle_to_participant`.
+/// For graph contacts, handles come from `contact_to_handle`.
 /// For virtual participants (id >= 1,000,000,000), handles come from
 /// `handle_to_participant_overrides` in the overlay DB.
 /// Overlay links for real participants are also included.
@@ -33,59 +36,202 @@ Future<List<LinkedHandle>> handlesForContact(
   Ref ref, {
   required int contactId,
 }) async {
-  final readiness = await ref.watch(workingProjectionReadinessProvider.future);
-  if (!readiness.isReady) {
-    return const <LinkedHandle>[];
-  }
-
-  final workingDb = await ref.watch(driftWorkingDatabaseProvider.future);
+  final graphDb = await ref.watch(
+    driftConversationGraphDatabaseProvider.future,
+  );
   final overlayDb = await ref.watch(overlayDatabaseProvider.future);
 
   final results = <int, LinkedHandle>{};
   const virtualIdFloor = 1000000000;
 
-  // Working DB handles (only for real participants).
-  if (contactId < virtualIdFloor) {
-    final query = workingDb.select(workingDb.handlesCanonical).join([
-      drift.innerJoin(
-        workingDb.handleToParticipant,
-        workingDb.handleToParticipant.handleId.equalsExp(
-          workingDb.handlesCanonical.id,
-        ),
-      ),
-    ])..where(workingDb.handleToParticipant.participantId.equals(contactId));
-
-    for (final row in await query.get()) {
-      final handle = row.readTable(workingDb.handlesCanonical);
-      results[handle.id] = LinkedHandle(
-        handleId: handle.id,
-        displayValue: handle.displayName,
-        service: handle.service,
-        isOverrideLink: false,
-      );
-    }
+  final graphHandles = await _readGraphHandlesForContact(
+    graphDb: graphDb,
+    contactId: contactId,
+  );
+  for (final handle in graphHandles) {
+    results[handle.handleId] = handle;
   }
 
   // Overlay overrides — could point to real or virtual participant.
-  final overrides = contactId >= virtualIdFloor
-      ? await overlayDb.getOverridesForVirtualParticipant(contactId)
-      : await overlayDb.getOverridesForParticipant(contactId);
-
-  for (final override in overrides) {
-    // Look up the handle's display value from the working DB.
-    final handle = await (workingDb.select(
-      workingDb.handlesCanonical,
-    )..where((tbl) => tbl.id.equals(override.handleId))).getSingleOrNull();
-
-    if (handle != null) {
-      results[handle.id] = LinkedHandle(
-        handleId: handle.id,
-        displayValue: handle.displayName,
-        service: handle.service,
-        isOverrideLink: true,
+  final overrides = <HandleToParticipantOverride>[];
+  if (contactId >= virtualIdFloor) {
+    overrides.addAll(
+      await overlayDb.getOverridesForVirtualParticipant(contactId),
+    );
+  } else {
+    for (final candidateContactId in _overlayContactIds(contactId)) {
+      overrides.addAll(
+        await overlayDb.getOverridesForParticipant(candidateContactId),
       );
     }
   }
 
-  return results.values.toList();
+  for (final override in overrides) {
+    final handle = await _readGraphHandleForOverlayLink(
+      graphDb: graphDb,
+      handleId: override.handleId,
+    );
+    if (handle != null) {
+      results[handle.handleId] = handle.copyWith(isOverrideLink: true);
+    }
+  }
+
+  final sorted = results.values.toList();
+  sorted.sort((left, right) {
+    return left.displayValue.compareTo(right.displayValue);
+  });
+  return sorted;
+}
+
+Future<List<LinkedHandle>> _readGraphHandlesForContact({
+  required ConversationGraphDatabase graphDb,
+  required int contactId,
+}) async {
+  final graphContactIds = <int>{contactId};
+  final packedContactId = _graphContactIdForLegacyContactId(contactId);
+  if (packedContactId != null) {
+    graphContactIds.add(packedContactId);
+  }
+
+  for (final graphContactId in graphContactIds) {
+    final rows = await graphDb.selectRows(
+      '''
+      SELECT DISTINCT
+        cth.handle_ss_id AS handle_id,
+        COALESCE(ch.display_handle, h.id, cth.handle_value) AS display_value,
+        COALESCE(ch.service, h.service, '') AS service
+      FROM contact_to_handle cth
+      LEFT JOIN canonical_handles ch
+        ON ch.canonical_handle_ss_id = cth.handle_ss_id
+      LEFT JOIN handles h ON h.ss_id = cth.handle_ss_id
+      WHERE cth.contact_id = ?
+      ORDER BY display_value ASC
+      ''',
+      <Object?>[graphContactId],
+    );
+    if (rows.isEmpty) {
+      continue;
+    }
+
+    return [
+      for (final row in rows)
+        LinkedHandle(
+          handleId: _readInt(row['handle_id']),
+          displayValue: (row['display_value'] as String?)?.trim() ?? '',
+          service: (row['service'] as String?)?.trim() ?? '',
+          isOverrideLink: false,
+        ),
+    ];
+  }
+
+  return const <LinkedHandle>[];
+}
+
+Future<LinkedHandle?> _readGraphHandleForOverlayLink({
+  required ConversationGraphDatabase graphDb,
+  required int handleId,
+}) async {
+  final candidateIds = _graphHandleIdsForOverlayHandleId(handleId);
+  if (candidateIds.isEmpty) {
+    return null;
+  }
+
+  final placeholders = List.filled(candidateIds.length, '?').join(', ');
+  final rows = await graphDb.selectRows(
+    '''
+    SELECT
+      ch.canonical_handle_ss_id AS handle_id,
+      ch.display_handle AS display_value,
+      COALESCE(ch.service, '') AS service
+    FROM canonical_handles ch
+    WHERE ch.canonical_handle_ss_id IN ($placeholders)
+    UNION
+    SELECT
+      COALESCE(ch.canonical_handle_ss_id, h.ss_id) AS handle_id,
+      COALESCE(ch.display_handle, h.id) AS display_value,
+      COALESCE(ch.service, h.service, '') AS service
+    FROM handles h
+    LEFT JOIN handle_aliases ha ON ha.handle_ss_id = h.ss_id
+    LEFT JOIN canonical_handles ch
+      ON ch.canonical_handle_ss_id = ha.canonical_handle_ss_id
+    WHERE h.ss_id IN ($placeholders)
+    LIMIT 1
+    ''',
+    <Object?>[...candidateIds, ...candidateIds],
+  );
+  if (rows.isEmpty) {
+    return null;
+  }
+
+  final row = rows.single;
+  return LinkedHandle(
+    handleId: _readInt(row['handle_id']),
+    displayValue: (row['display_value'] as String?)?.trim() ?? '',
+    service: (row['service'] as String?)?.trim() ?? '',
+    isOverrideLink: true,
+  );
+}
+
+Set<int> _overlayContactIds(int contactId) {
+  final ids = <int>{contactId};
+  final packedContactId = _graphContactIdForLegacyContactId(contactId);
+  if (packedContactId != null) {
+    ids.add(packedContactId);
+  }
+
+  final legacyContactId = _legacyContactIdForGraphContactId(contactId);
+  if (legacyContactId != null) {
+    ids.add(legacyContactId);
+  }
+
+  return ids;
+}
+
+Set<int> _graphHandleIdsForOverlayHandleId(int handleId) {
+  final ids = <int>{handleId};
+  final packedHandleId = _graphHandleIdForLegacyHandleId(handleId);
+  if (packedHandleId != null) {
+    ids.add(packedHandleId);
+  }
+  return ids;
+}
+
+int? _graphContactIdForLegacyContactId(int contactId) {
+  if (contactId <= 0 || contactId > SourceScopedRowKey.maxSourceRowId) {
+    return null;
+  }
+  return SourceScopedRowKey.pack(
+    sourceId: liveAddressBookSourceId,
+    sourceRowId: contactId,
+  );
+}
+
+int? _legacyContactIdForGraphContactId(int contactId) {
+  if (SourceScopedRowKey.unpackSourceId(contactId) != liveAddressBookSourceId) {
+    return null;
+  }
+  return SourceScopedRowKey.unpackSourceRowId(contactId);
+}
+
+int? _graphHandleIdForLegacyHandleId(int handleId) {
+  if (handleId <= 0 || handleId > SourceScopedRowKey.maxSourceRowId) {
+    return null;
+  }
+  return SourceScopedRowKey.pack(
+    sourceId: liveChatDbSourceId,
+    sourceRowId: handleId,
+  );
+}
+
+int _readInt(Object? value) {
+  if (value is int) {
+    return value;
+  }
+  if (value is BigInt) {
+    return value.toInt();
+  }
+  if (value is num) {
+    return value.toInt();
+  }
+  return int.parse(value.toString());
 }

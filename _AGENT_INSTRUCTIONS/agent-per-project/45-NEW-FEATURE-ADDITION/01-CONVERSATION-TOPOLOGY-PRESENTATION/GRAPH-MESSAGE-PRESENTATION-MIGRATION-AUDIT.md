@@ -69,13 +69,13 @@ This is primarily a read-model / evidence-model gap, not a schema or projection 
 
 The graph schema appears to preserve enough attachment facts to support display:
 
-- `message_to_attachment` links graph messages to graph attachments.
+- `message_to_attachment` links graph messages to message attachments.
 - `attachments` carries filename, transfer name, UTI, MIME type, byte count, and timestamps.
 - `messageAttachmentsProvider` can determine archive existence and archive path through overlay/archive lookup.
 
 However, graph-backed messages do not yet carry a first-class renderable attachment evidence model equivalent to hydrated `AttachmentInfo`. The current `MessageAttachment` model has useful archive facts, but it is not the same contract expected by `ImageMessageTile` / `VideoMessageTile`.
 
-An adapter could map `MessageAttachment.archiveAbsolutePath` into a displayable `AttachmentInfo`, but if that adapter lives in the presentation widget it would be a migration shortcut. The safer direction is to create a named graph attachment evidence read model or mapper outside the low-level renderer.
+An adapter could map `MessageAttachment.archiveAbsolutePath` into a displayable `AttachmentInfo`, but if that adapter lives in the presentation widget it would be a migration shortcut. The safer direction is to create a named message attachment evidence read model or mapper outside the low-level renderer.
 
 ## Graph Migration Status
 
@@ -124,11 +124,11 @@ Diagnostic/reference legacy code:
 
    Create an application/read-model object that can represent text, sender, date, semantic badges, and render-ready attachments for graph messages. This should be conceptually compatible with the shared tile primitives, but it does not need to reuse `MessageListItem` if that would import legacy assumptions.
 
-2. Add graph attachment evidence hydration outside widgets.
+2. Add message attachment evidence hydration outside widgets.
 
    Add a mapper or repository method that converts graph `MessageAttachment` facts into a render-ready attachment evidence object, including display path / availability / provenance. This may reuse the existing attachment resolver/archive services, but the conversion must be named and tested outside presentation.
 
-3. Make `ConversationMessagesPreviewView` consume render-ready graph evidence rows.
+3. Make `ConversationMessagesPreviewView` consume render-ready message evidence rows.
 
    Replace `_ConversationMessageAttachments` textual chip rendering with shared `ImageMessageTile` / `VideoMessageTile` / text fallback through the shared evidence row model. If a temporary adapter is needed, name it explicitly as temporary and keep it outside low-level widgets.
 
@@ -150,7 +150,7 @@ Diagnostic/reference legacy code:
 
    - `contactPageGraphMessageTimelineProvider` supplies the full lightweight contact skeleton.
    - `contactPageGraphMessageByIdProvider` hydrates one graph message row by id.
-   - `ContactGraphMessagesView` renders a `ScrollablePositionedList` over the skeleton and hydrates visible rows through shared graph evidence rows.
+   - `ContactMessagesEvidenceView` renders a `ScrollablePositionedList` over the skeleton and hydrates visible rows through shared message evidence rows.
 
 5. Migrate global timeline/search/handle surfaces.
 
@@ -195,8 +195,8 @@ Shared presentation:
 
 ## Tests Needed
 
-- Graph attachment evidence hydration maps archived image/video files to display-ready evidence.
-- Missing graph attachments remain visibly rendered as unavailable evidence.
+- Message attachment evidence hydration maps archived image/video files to display-ready evidence.
+- Missing message attachments remain visibly rendered as unavailable evidence.
 - Conversation messages render image attachments through shared media tiles.
 - Conversation messages render video attachments through shared media tiles or activation shell.
 - Text-only graph messages continue to render with shared text tile language.
@@ -222,7 +222,7 @@ After graph-backed message evidence fully replaces legacy center-panel evidence,
 
 Do not add a conversation-only attachment renderer.
 
-The next implementation slice should introduce graph attachment evidence hydration as a named application/read-model boundary, then make conversation messages use the shared media tiles through that boundary.
+The next implementation slice should introduce message attachment evidence hydration as a named application/read-model boundary, then make conversation messages use the shared media tiles through that boundary.
 
 If a temporary adapter is unavoidable, it should be:
 

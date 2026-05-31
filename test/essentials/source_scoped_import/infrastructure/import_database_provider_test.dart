@@ -255,7 +255,6 @@ void main() {
       'source_id',
       'source_rowid',
       'display_name',
-      'short_name',
       'first_name',
       'last_name',
       'organization',

@@ -49,7 +49,6 @@ class NavigationLogEntry {
         'type': 'messages',
         'spec': messagesSpec.when(
           conversationBrowser: () => {'variant': 'conversationBrowser'},
-          forChat: (chatId) => {'variant': 'forChat', 'chatId': chatId},
           forConversation: (conversationId, anchorMessageId, searchQuery) => {
             'variant': 'forConversation',
             'conversationId': conversationId,
@@ -98,12 +97,6 @@ class NavigationLogEntry {
             'chatId': chatId,
             'beforeCount': beforeCount,
             'afterCount': afterCount,
-          },
-          forChatInDateRange: (chatId, startDate, endDate) => {
-            'variant': 'forChatInDateRange',
-            'chatId': chatId,
-            'startDate': startDate.toIso8601String(),
-            'endDate': endDate.toIso8601String(),
           },
           handleLens: (handleId) => {
             'variant': 'handleLens',

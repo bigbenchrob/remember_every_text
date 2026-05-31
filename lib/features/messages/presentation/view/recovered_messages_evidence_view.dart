@@ -1,12 +1,12 @@
 import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
 import '../../application/message_evidence/message_evidence_spine_provider.dart';
 import '../../domain/message_evidence/message_evidence_scope.dart';
+import '../../domain/message_evidence/message_evidence_search_mode.dart';
 import '../../domain/message_evidence/message_evidence_skeleton.dart';
 import '../widgets/message_evidence/message_evidence_header.dart';
 import '../widgets/message_evidence/message_evidence_timeline_view.dart';
@@ -32,6 +32,7 @@ class _RecoveredMessagesEvidenceViewState
     extends ConsumerState<RecoveredMessagesEvidenceView> {
   late final TextEditingController _searchController = TextEditingController();
   String _query = '';
+  MessageEvidenceSearchMode _searchMode = MessageEvidenceSearchMode.allTerms;
 
   @override
   void initState() {
@@ -71,6 +72,7 @@ class _RecoveredMessagesEvidenceViewState
             messageEvidenceTextMatchIdsProvider(
               scope: scope,
               query: normalizedQuery,
+              mode: _searchMode,
             ),
           );
     final presentation = _RecoveredEvidencePresentation.from(
@@ -90,23 +92,34 @@ class _RecoveredMessagesEvidenceViewState
           return MessageEvidenceTimelineView(
             evidenceScope: scope,
             skeleton: visibleSkeleton,
-            headerData: MessageEvidenceHeaderData(
+            headerData: MessageEvidenceHeaderModel(
               title: presentation.title,
-              subtitleParts: [
-                presentation.description,
-                _countLabel(
-                  visibleCount: visibleSkeleton.totalCount,
-                  totalCount: skeleton.totalCount,
-                  query: normalizedQuery,
-                  isMatching: matchingIdsAsync?.hasValue ?? false,
-                ),
-              ],
-              scopeIndicator: widget.scrollToDate == null
+              scopeContextLine: presentation.description,
+              dateRangeLabel: _dateSpan(visibleSkeleton.entries),
+              countLabel: _countLabel(
+                visibleCount: visibleSkeleton.totalCount,
+                totalCount: skeleton.totalCount,
+                query: normalizedQuery,
+                isMatching: matchingIdsAsync?.hasValue ?? false,
+              ),
+              activeScopeLabel: normalizedQuery.isEmpty
+                  ? null
+                  : 'Message text contains "$normalizedQuery"',
+              activeScopeIndicator: widget.scrollToDate == null
                   ? null
                   : _RecoveredScrollIndicator(
                       scrollToDate: widget.scrollToDate!,
                     ),
-              controls: _RecoveredSearchField(controller: _searchController),
+              searchConfig: MessageEvidenceHeaderSearchConfig(
+                controller: _searchController,
+                placeholder: 'Search recovered messages',
+                mode: _searchMode,
+                onModeChanged: (mode) {
+                  setState(() {
+                    _searchMode = mode;
+                  });
+                },
+              ),
             ),
             emptyMessage: normalizedQuery.isEmpty
                 ? presentation.emptyMessage
@@ -168,22 +181,33 @@ String _countLabel({
   return '$visibleCount of $totalCount recovered messages match "$query"';
 }
 
-class _RecoveredSearchField extends StatelessWidget {
-  const _RecoveredSearchField({required this.controller});
-
-  final TextEditingController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 260,
-      child: MacosTextField(
-        controller: controller,
-        placeholder: 'Filter recovered messages',
-        clearButtonMode: OverlayVisibilityMode.editing,
-      ),
-    );
+String _dateSpan(List<MessageEvidenceSkeletonEntry> entries) {
+  final dates = [
+    for (final entry in entries)
+      if (_parseDate(entry.dateUtc) case final DateTime date) date,
+  ];
+  if (dates.isEmpty) {
+    return 'No dated messages';
   }
+  dates.sort();
+  final first = _formatDateLabel(dates.first);
+  final last = _formatDateLabel(dates.last);
+  if (first == last) {
+    return first;
+  }
+  return '$first to $last';
+}
+
+DateTime? _parseDate(String? value) {
+  if (value == null || value.isEmpty) {
+    return null;
+  }
+  return DateTime.tryParse(value);
+}
+
+String _formatDateLabel(DateTime value) {
+  return '${value.year}-${value.month.toString().padLeft(2, '0')}-'
+      '${value.day.toString().padLeft(2, '0')}';
 }
 
 class _RecoveredEvidencePresentation {

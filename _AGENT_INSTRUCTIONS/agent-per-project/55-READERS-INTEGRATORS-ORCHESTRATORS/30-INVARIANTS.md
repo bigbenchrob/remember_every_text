@@ -50,6 +50,34 @@ Lower-level factual observation should not become entangled with higher-level or
 
 ---
 
+# User-Facing Identity Invariant
+
+Known contacts are always named by the user-assigned name in user-facing UI.
+
+There is exactly one user-defined contact name override:
+
+```text
+participant_overrides.display_name_override
+```
+
+This is written only by the contact hero-card pencil rename action. Other name-like fields are imported or derived metadata, not user intent.
+
+Preferred display precedence:
+
+```text
+user display-name override
+→ imported AddressBook display name
+→ raw handle only when no known contact identity exists
+```
+
+There is no separate app-facing "short name" identity. Imported AddressBook names and raw handles remain source facts and useful metadata, but they must not replace the user's chosen identity label for a known contact.
+
+Handles may appear for a known contact only in explicitly handle-oriented contexts, such as a contact handle scope selector, developer diagnostics, or a metadata line explaining an active handle filter.
+
+Conversation graph surfaces must resolve participant handles through the preferred contact-name boundary before rendering conversation titles, signatures, message evidence headers, or search context labels.
+
+---
+
 # Reader Invariants
 
 ## Readers Observe Facts
