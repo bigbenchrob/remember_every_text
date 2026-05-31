@@ -8,6 +8,8 @@ class RecoveredMessageParityReport {
     required this.matchedRecoveredCount,
     required this.legacyNowProjectableCount,
     required this.legacyOnlyCount,
+    required this.suppressedLegacyOnlyCount,
+    required this.unresolvedLegacyOnlyCount,
     required this.graphOnlyCount,
     required this.attachmentCountMismatchCount,
     required this.guidMismatchCount,
@@ -22,6 +24,8 @@ class RecoveredMessageParityReport {
   final int matchedRecoveredCount;
   final int legacyNowProjectableCount;
   final int legacyOnlyCount;
+  final int suppressedLegacyOnlyCount;
+  final int unresolvedLegacyOnlyCount;
   final int graphOnlyCount;
   final int attachmentCountMismatchCount;
   final int guidMismatchCount;
@@ -32,15 +36,17 @@ class RecoveredMessageParityReport {
 
   bool get hasLegacyOnlyRows => legacyOnlyCount > 0;
 
+  bool get hasUnresolvedLegacyOnlyRows => unresolvedLegacyOnlyCount > 0;
+
   bool get hasEvidenceMismatches =>
       attachmentCountMismatchCount > 0 ||
       guidMismatchCount > 0 ||
       textMismatchCount > 0;
 
   bool get canCutOverWithoutEvidenceLoss =>
-      !hasLegacyOnlyRows && !hasEvidenceMismatches;
+      !hasUnresolvedLegacyOnlyRows && !hasEvidenceMismatches;
 
-  bool get requiresCompatibilityRetention => hasLegacyOnlyRows;
+  bool get requiresCompatibilityRetention => hasUnresolvedLegacyOnlyRows;
 }
 
 class RecoveredMessageParitySample {
@@ -62,6 +68,7 @@ RecoveredMessageParityReport compareRecoveredMessageEvidence({
   required List<RecoveredUnlinkedMessageItem> graphRecoveredMessages,
   required Set<int> graphProjectableMessageIds,
   required int legacyRecoveredSourceId,
+  Set<int> suppressedLegacyMessageIds = const <int>{},
   int sampleLimit = 10,
 }) {
   final legacyByGraphId = <int, RecoveredUnlinkedMessageItem>{
@@ -78,6 +85,8 @@ RecoveredMessageParityReport compareRecoveredMessageEvidence({
   var matchedRecoveredCount = 0;
   var legacyNowProjectableCount = 0;
   var legacyOnlyCount = 0;
+  var suppressedLegacyOnlyCount = 0;
+  var unresolvedLegacyOnlyCount = 0;
   var attachmentCountMismatchCount = 0;
   var guidMismatchCount = 0;
   var textMismatchCount = 0;
@@ -114,6 +123,12 @@ RecoveredMessageParityReport compareRecoveredMessageEvidence({
     }
 
     legacyOnlyCount += 1;
+    if (suppressedLegacyMessageIds.contains(legacyMessage.id)) {
+      suppressedLegacyOnlyCount += 1;
+      continue;
+    }
+
+    unresolvedLegacyOnlyCount += 1;
     _addSample(
       legacyOnlySamples,
       _sampleForMessage(legacyMessage),
@@ -137,6 +152,8 @@ RecoveredMessageParityReport compareRecoveredMessageEvidence({
     matchedRecoveredCount: matchedRecoveredCount,
     legacyNowProjectableCount: legacyNowProjectableCount,
     legacyOnlyCount: legacyOnlyCount,
+    suppressedLegacyOnlyCount: suppressedLegacyOnlyCount,
+    unresolvedLegacyOnlyCount: unresolvedLegacyOnlyCount,
     graphOnlyCount: graphOnlyCount,
     attachmentCountMismatchCount: attachmentCountMismatchCount,
     guidMismatchCount: guidMismatchCount,

@@ -90,7 +90,8 @@ The difference is mostly architectural and appears desirable:
 
 ## Resolution Of The 3 Legacy-Only Rows
 
-The 3 legacy-only rows were traced further after the initial audit.
+The 3 legacy-only rows were traced further after the initial audit and then
+explained by user action.
 
 They are present in:
 
@@ -107,52 +108,63 @@ macos_import_ss.db.messages
 working_ss.db.messages
 ```
 
-They are therefore not current source/import facts in either the legacy import
-ledger or the source-scoped import ledger. They are stale but real evidence
-retained only by the legacy working recovered table from earlier projection
-batches.
+The rows are short-code SMS alerts with no sender handle id. The user later
+identified these as rows affected by testing the Discard action on the Unknown
+Senders / From unfamiliar sources page.
 
-Batch classification:
+The discard path is user intent, not source truth:
+
+```text
+Unknown Senders Discard
+→ StrayHandleDismissed
+→ user_overlays.db.dismissed_handles
+→ graph-era visibility/read surfaces
+```
+
+It does not mutate `working.db.recovered_unlinked_messages`. Therefore the
+legacy table still shows these rows while graph-era unknown-source surfaces may
+hide them.
+
+Batch/source classification:
 
 | legacy working batch | classification | count |
 | ---: | --- | ---: |
-| 164 | legacy-only | 2 |
-| 337 | legacy-only | 1 |
+| 164 | graph-era dismissed / legacy-retained | 2 |
+| 337 | graph-era dismissed / legacy-retained | 1 |
 
-These rows should not be grafted into `working_ss.messages` as if they were
-current live-source rows. Doing so would blur the distinction between current
-source-derived graph evidence and historical recovered evidence.
+These rows should not be treated as source-integrity loss. They represent the
+expected difference between legacy recovered storage, which is unaware of the
+new graph-era discard overlay, and graph-era visibility surfaces, which honor
+that user intent.
 
 ## Retention Strategy
 
-Retain the 3 legacy-only rows through the legacy recovered compatibility
-repository until a recovered-source import model exists.
+Known user-suppressed legacy-only rows should not block graph cutover by
+themselves.
 
 The retention rule is:
 
 ```text
-If legacy recovered evidence contains rows absent from source-scoped import and
-graph projection, the legacy recovered repository remains the retention source
-for those rows.
+If a legacy-only recovered row is absent from graph-era visible recovered
+evidence because the user intentionally dismissed that sender/handle, classify
+it as expected suppression, not evidence loss.
 ```
 
-The long-term resolution is not a one-off row copy. It is a recovered-source
-model that can explicitly represent historical retained evidence:
+Only unresolved legacy-only rows block cutover.
 
 ```text
-legacy recovered retention source
-or recovered Messages folder source
-→ source-scoped recovered import
-→ recovered evidence projection
+legacy-only rows
+  - known user-suppressed → acceptable visibility delta
+  - unknown/unexplained → retention blocker
 ```
 
 Until then:
 
-- do not cut over recovered messages to graph-only storage
+- do not treat dismissed rows as source/import loss
+- do not copy dismissed rows into graph storage to force count parity
+- do not delete legacy recovered storage until unresolved legacy-only rows are
+  zero or explicitly explained
 - do not delete `working.db.recovered_unlinked_messages`
-- do not force these rows into ordinary conversation topology
-- do not treat them as current live `chat.db` rows
-- keep production recovered evidence on the legacy compatibility repository
 
 ## Attachment Parity
 
@@ -228,15 +240,16 @@ Replacing the legacy recovered repository with the graph repository would:
 - preserve text/GUID facts for matched rows
 - intentionally remove 195 now-projectable rows from recovered views
 - add 1 graph-only orphan row
-- drop 3 legacy-only rows unless a fallback or recovered-source import is added
+- omit 3 legacy-only rows from graph-era visible recovered evidence because
+  they were intentionally dismissed by the user
 
 The 195-row difference is likely correct under the graph architecture:
 recovered evidence means "not safely projectable into normal conversation
 topology." Once topology exists, the message belongs in conversation evidence.
 
-The 3 legacy-only rows are different. They represent evidence that graph cannot
-currently reconstruct from `macos_import_ss` / `working_ss`. They are the reason
-cutover without evidence loss is not yet allowed.
+The 3 legacy-only rows are different. They are now understood as expected
+user-intent suppression from the Unknown Senders discard flow. They are no
+longer classified as source-integrity blockers.
 
 ## Recommendation
 
@@ -259,6 +272,8 @@ classifies:
 - graph-orphan matches
 - now-projectable legacy rows
 - legacy-only rows
+- known suppressed legacy-only rows
+- unresolved legacy-only rows
 - graph-only rows
 - attachment-count mismatches
 - GUID/text mismatches
@@ -273,7 +288,8 @@ Graph recovered repository can replace the legacy repository only when:
   evidence
 - now-projectable legacy rows are intentionally excluded from recovered views
   and visible in conversation evidence
-- legacy-only rows have an explicit retention strategy
+- unresolved legacy-only rows are zero, or remaining legacy-only rows are
+  explicitly classified as user-suppressed/expected
 - recovered no-handle outgoing inference remains acceptable on real contact
   scopes
 - diagnostics explain expected count differences

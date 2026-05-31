@@ -46,8 +46,11 @@ void main() {
         expect(report.matchedRecoveredCount, 1);
         expect(report.legacyNowProjectableCount, 1);
         expect(report.legacyOnlyCount, 1);
+        expect(report.suppressedLegacyOnlyCount, 0);
+        expect(report.unresolvedLegacyOnlyCount, 1);
         expect(report.graphOnlyCount, 1);
         expect(report.hasLegacyOnlyRows, isTrue);
+        expect(report.hasUnresolvedLegacyOnlyRows, isTrue);
         expect(report.canCutOverWithoutEvidenceLoss, isFalse);
         expect(report.requiresCompatibilityRetention, isTrue);
         expect(report.hasEvidenceMismatches, isFalse);
@@ -86,6 +89,29 @@ void main() {
       expect(report.hasEvidenceMismatches, isTrue);
       expect(report.canCutOverWithoutEvidenceLoss, isFalse);
     });
+
+    test(
+      'does not treat known suppressed legacy-only rows as cutover blockers',
+      () {
+        final report = compareRecoveredMessageEvidence(
+          legacyRecoveredSourceId: liveChatDbSourceId,
+          legacyMessages: [
+            _message(id: 13, guid: 'dismissed', text: 'user dismissed'),
+          ],
+          graphRecoveredMessages: const [],
+          graphProjectableMessageIds: const <int>{},
+          suppressedLegacyMessageIds: const {13},
+        );
+
+        expect(report.legacyOnlyCount, 1);
+        expect(report.suppressedLegacyOnlyCount, 1);
+        expect(report.unresolvedLegacyOnlyCount, 0);
+        expect(report.hasLegacyOnlyRows, isTrue);
+        expect(report.hasUnresolvedLegacyOnlyRows, isFalse);
+        expect(report.canCutOverWithoutEvidenceLoss, isTrue);
+        expect(report.requiresCompatibilityRetention, isFalse);
+      },
+    );
 
     test(
       'allows cutover only when there are no legacy-only rows or mismatches',

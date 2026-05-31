@@ -574,12 +574,12 @@ archives.
   classify graph-orphan matches, now-projectable legacy rows, legacy-only rows,
   graph-only rows, and evidence mismatches without embedding comparison logic
   in widgets or repository implementations.
-- Resolved the 3 legacy-only recovered rows as stale but real evidence present
-  only in `working.db.recovered_unlinked_messages`, not in current legacy
-  import, source-scoped import, or graph projection. Retention strategy:
-  continue using the legacy recovered compatibility repository for production
-  recovered evidence until a recovered-source import model can carry those rows
-  forward explicitly.
+- Reclassified the 3 legacy-only recovered rows after user clarification: they
+  correspond to Unknown Senders discard testing and should be treated as
+  graph-era user-intent suppression, not source/import evidence loss. The
+  parity comparator now distinguishes known suppressed legacy-only rows from
+  unresolved legacy-only rows so diagnostics do not overstate dismissal effects
+  as retention blockers.
 
 ### Exit Criteria
 
