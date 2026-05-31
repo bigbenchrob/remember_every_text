@@ -548,6 +548,12 @@ archives.
   `pack(source_id, message.ROWID)`. Duplicate ROWIDs across live/archive
   sources remain distinct, GUID does not define identity, and topology controls
   projection surface rather than identity.
+- Added schema-free `RecoveredMessageEvidenceRepository` contract tests using
+  an in-memory graph-shaped implementation. These tests lock the target
+  source-scoped recovered evidence behavior before storage changes: ordinary
+  graph-projectable rows are excluded, recovered-only rows use source-scoped
+  message ids, duplicate GUIDs do not collapse, sparse/attachment-only evidence
+  remains visible, and contact-scoped no-handle inference remains intact.
 
 ### Exit Criteria
 

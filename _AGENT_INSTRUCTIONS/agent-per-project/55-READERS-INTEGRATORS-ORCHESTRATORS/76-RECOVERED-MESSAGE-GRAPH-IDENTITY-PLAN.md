@@ -167,6 +167,18 @@ Before schema changes, test the expected semantics:
 - sparse/system artifacts remain visible
 - attachment evidence remains renderable
 
+Status: started. A schema-free repository contract test now exercises the
+target graph semantics with an in-memory source-scoped implementation before
+any recovered storage schema exists. The contract locks:
+
+- graph-projectable rows are excluded from recovered-only evidence
+- recovered-only rows expose `pack(source_id, message.ROWID)` as their evidence
+  id
+- overlapping `ROWID` values and duplicate GUIDs across sources do not collapse
+- sparse and attachment-only rows remain visible
+- contact-scoped direct matches and nearby no-handle outgoing inference remain
+  part of the recovery contract
+
 ### 5. Add source-scoped recovered import/projection only after tests exist
 
 Do not migrate the tables until the repository contract and behavior tests make
