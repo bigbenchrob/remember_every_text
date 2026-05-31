@@ -296,6 +296,11 @@ displayed gate reports recovered counts, now-projectable rows, graph-only rows,
 suppressed/unresolved legacy-only rows, attachment/text/GUID mismatches, and
 whether parity currently allows cutover without evidence loss.
 
+The diagnostic also includes typed drilldown samples for unresolved legacy-only
+rows and text mismatches. These samples are intended to explain blockers before
+any recovered-message provider cutover; they are not presentation policy and do
+not alter recovered evidence routing.
+
 ## Cutover Criteria
 
 Graph recovered repository can replace the legacy repository only when:

@@ -591,6 +591,9 @@ archives.
   now-projectable rows, suppressed/unresolved legacy-only rows, graph-only rows,
   and attachment/text/GUID mismatch counts without changing production
   recovered-message routing.
+- Added drilldown samples for unresolved legacy-only rows and text mismatches so
+  parity blockers can be investigated from typed diagnostic output instead of
+  one-off SQL.
 
 ### Exit Criteria
 

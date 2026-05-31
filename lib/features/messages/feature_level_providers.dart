@@ -15,4 +15,5 @@ export './application/user_metadata/message_overlay_controller.dart';
 export './application/view_spec/coordinators/view_spec_coordinator.dart';
 export './application/view_spec/resolver_tools/recovered_messages_sidebar_provider.dart';
 export './domain/message_evidence/message_evidence_scope.dart';
+export './domain/message_evidence/recovered_message_parity.dart';
 export './infrastructure/repositories/message_overlay_identity_bridge_repository.dart';

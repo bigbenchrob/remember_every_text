@@ -86,6 +86,11 @@ void main() {
       expect(report.attachmentCountMismatchCount, 1);
       expect(report.guidMismatchCount, 1);
       expect(report.textMismatchCount, 1);
+      expect(report.textMismatchSamples, hasLength(1));
+      expect(report.textMismatchSamples.single.legacyMessageId, 10);
+      expect(report.textMismatchSamples.single.graphMessageId, matchedGraphId);
+      expect(report.textMismatchSamples.single.legacyTextPreview, 'legacy');
+      expect(report.textMismatchSamples.single.graphTextPreview, 'graph');
       expect(report.hasEvidenceMismatches, isTrue);
       expect(report.canCutOverWithoutEvidenceLoss, isFalse);
     });

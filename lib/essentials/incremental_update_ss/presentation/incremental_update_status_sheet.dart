@@ -891,10 +891,52 @@ class _RecoveredParitySection extends StatelessWidget {
               'legacy repository remains active',
               labelWidth: 260,
             ),
+            if (report.legacyOnlySamples.isNotEmpty) ...[
+              const _StatusRow(
+                'unresolved sample meaning',
+                'legacy recovered rows not explained by graph topology or '
+                    'known user suppression',
+                labelWidth: 260,
+              ),
+              for (final sample in report.legacyOnlySamples)
+                _StatusRow(
+                  'legacy row ${sample.messageId}',
+                  _formatParitySample(sample),
+                  labelWidth: 260,
+                ),
+            ],
+            if (report.textMismatchSamples.isNotEmpty) ...[
+              const _StatusRow(
+                'text mismatch sample meaning',
+                'matched rows where legacy and graph text previews differ',
+                labelWidth: 260,
+              ),
+              for (final sample in report.textMismatchSamples)
+                _StatusRow(
+                  'legacy row ${sample.legacyMessageId}',
+                  _formatTextMismatchSample(sample),
+                  labelWidth: 260,
+                ),
+            ],
           ],
         );
       },
     );
+  }
+
+  String _formatParitySample(RecoveredMessageParitySample sample) {
+    return '${_formatDate(sample.sentAt)} | ${sample.guid} | '
+        '${sample.textPreview}';
+  }
+
+  String _formatTextMismatchSample(RecoveredMessageTextMismatchSample sample) {
+    return 'graph ${sample.graphMessageId} | ${_formatDate(sample.sentAt)} | '
+        '${sample.guid}\nlegacy: ${sample.legacyTextPreview}\n'
+        'graph: ${sample.graphTextPreview}';
+  }
+
+  String _formatDate(DateTime? value) {
+    return value?.toIso8601String() ?? 'unknown date';
   }
 }
 

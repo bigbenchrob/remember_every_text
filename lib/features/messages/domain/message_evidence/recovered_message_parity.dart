@@ -17,6 +17,7 @@ class RecoveredMessageParityReport {
     required this.legacyOnlySamples,
     required this.graphOnlySamples,
     required this.nowProjectableSamples,
+    required this.textMismatchSamples,
   });
 
   final int legacyCount;
@@ -33,6 +34,7 @@ class RecoveredMessageParityReport {
   final List<RecoveredMessageParitySample> legacyOnlySamples;
   final List<RecoveredMessageParitySample> graphOnlySamples;
   final List<RecoveredMessageParitySample> nowProjectableSamples;
+  final List<RecoveredMessageTextMismatchSample> textMismatchSamples;
 
   bool get hasLegacyOnlyRows => legacyOnlyCount > 0;
 
@@ -61,6 +63,24 @@ class RecoveredMessageParitySample {
   final String guid;
   final DateTime? sentAt;
   final String textPreview;
+}
+
+class RecoveredMessageTextMismatchSample {
+  const RecoveredMessageTextMismatchSample({
+    required this.legacyMessageId,
+    required this.graphMessageId,
+    required this.guid,
+    required this.sentAt,
+    required this.legacyTextPreview,
+    required this.graphTextPreview,
+  });
+
+  final int legacyMessageId;
+  final int graphMessageId;
+  final String guid;
+  final DateTime? sentAt;
+  final String legacyTextPreview;
+  final String graphTextPreview;
 }
 
 RecoveredMessageParityReport compareRecoveredMessageEvidence({
@@ -92,6 +112,7 @@ RecoveredMessageParityReport compareRecoveredMessageEvidence({
   var textMismatchCount = 0;
   final legacyOnlySamples = <RecoveredMessageParitySample>[];
   final nowProjectableSamples = <RecoveredMessageParitySample>[];
+  final textMismatchSamples = <RecoveredMessageTextMismatchSample>[];
 
   for (final entry in legacyByGraphId.entries) {
     final graphId = entry.key;
@@ -108,6 +129,14 @@ RecoveredMessageParityReport compareRecoveredMessageEvidence({
       if (_normalizeText(legacyMessage.text) !=
           _normalizeText(graphMessage.text)) {
         textMismatchCount += 1;
+        _addSample(
+          textMismatchSamples,
+          _textMismatchSampleForMessages(
+            legacyMessage: legacyMessage,
+            graphMessage: graphMessage,
+          ),
+          sampleLimit,
+        );
       }
       continue;
     }
@@ -161,6 +190,7 @@ RecoveredMessageParityReport compareRecoveredMessageEvidence({
     legacyOnlySamples: legacyOnlySamples,
     graphOnlySamples: graphOnlySamples,
     nowProjectableSamples: nowProjectableSamples,
+    textMismatchSamples: textMismatchSamples,
   );
 }
 
@@ -179,6 +209,20 @@ RecoveredMessageParitySample _sampleForMessage(
   );
 }
 
+RecoveredMessageTextMismatchSample _textMismatchSampleForMessages({
+  required RecoveredUnlinkedMessageItem legacyMessage,
+  required RecoveredUnlinkedMessageItem graphMessage,
+}) {
+  return RecoveredMessageTextMismatchSample(
+    legacyMessageId: legacyMessage.id,
+    graphMessageId: graphMessage.id,
+    guid: legacyMessage.guid,
+    sentAt: legacyMessage.sentAt,
+    legacyTextPreview: _preview(legacyMessage.text),
+    graphTextPreview: _preview(graphMessage.text),
+  );
+}
+
 String _preview(String value) {
   final normalized = value.trim().replaceAll(RegExp(r'\s+'), ' ');
   if (normalized.length <= 80) {
@@ -187,11 +231,7 @@ String _preview(String value) {
   return normalized.substring(0, 80);
 }
 
-void _addSample(
-  List<RecoveredMessageParitySample> samples,
-  RecoveredMessageParitySample sample,
-  int sampleLimit,
-) {
+void _addSample<T>(List<T> samples, T sample, int sampleLimit) {
   if (samples.length >= sampleLimit) {
     return;
   }
