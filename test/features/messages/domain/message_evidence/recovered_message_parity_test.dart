@@ -48,6 +48,8 @@ void main() {
         expect(report.legacyOnlyCount, 1);
         expect(report.graphOnlyCount, 1);
         expect(report.hasLegacyOnlyRows, isTrue);
+        expect(report.canCutOverWithoutEvidenceLoss, isFalse);
+        expect(report.requiresCompatibilityRetention, isTrue);
         expect(report.hasEvidenceMismatches, isFalse);
         expect(report.legacyOnlySamples.single.guid, 'legacy-only');
         expect(report.graphOnlySamples.single.guid, 'graph-only');
@@ -82,7 +84,30 @@ void main() {
       expect(report.guidMismatchCount, 1);
       expect(report.textMismatchCount, 1);
       expect(report.hasEvidenceMismatches, isTrue);
+      expect(report.canCutOverWithoutEvidenceLoss, isFalse);
     });
+
+    test(
+      'allows cutover only when there are no legacy-only rows or mismatches',
+      () {
+        final matchedGraphId = SourceScopedRowKey.pack(
+          sourceId: liveChatDbSourceId,
+          sourceRowId: 10,
+        );
+
+        final report = compareRecoveredMessageEvidence(
+          legacyRecoveredSourceId: liveChatDbSourceId,
+          legacyMessages: [_message(id: 10, guid: 'matched', text: 'same')],
+          graphRecoveredMessages: [
+            _message(id: matchedGraphId, guid: 'matched', text: 'same'),
+          ],
+          graphProjectableMessageIds: const <int>{},
+        );
+
+        expect(report.canCutOverWithoutEvidenceLoss, isTrue);
+        expect(report.requiresCompatibilityRetention, isFalse);
+      },
+    );
   });
 }
 

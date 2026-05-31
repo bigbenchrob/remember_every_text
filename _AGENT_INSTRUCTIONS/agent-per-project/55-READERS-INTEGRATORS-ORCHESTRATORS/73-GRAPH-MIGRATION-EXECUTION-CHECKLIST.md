@@ -574,6 +574,12 @@ archives.
   classify graph-orphan matches, now-projectable legacy rows, legacy-only rows,
   graph-only rows, and evidence mismatches without embedding comparison logic
   in widgets or repository implementations.
+- Resolved the 3 legacy-only recovered rows as stale but real evidence present
+  only in `working.db.recovered_unlinked_messages`, not in current legacy
+  import, source-scoped import, or graph projection. Retention strategy:
+  continue using the legacy recovered compatibility repository for production
+  recovered evidence until a recovered-source import model can carry those rows
+  forward explicitly.
 
 ### Exit Criteria
 

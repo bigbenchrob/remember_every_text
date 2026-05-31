@@ -36,6 +36,11 @@ class RecoveredMessageParityReport {
       attachmentCountMismatchCount > 0 ||
       guidMismatchCount > 0 ||
       textMismatchCount > 0;
+
+  bool get canCutOverWithoutEvidenceLoss =>
+      !hasLegacyOnlyRows && !hasEvidenceMismatches;
+
+  bool get requiresCompatibilityRetention => hasLegacyOnlyRows;
 }
 
 class RecoveredMessageParitySample {

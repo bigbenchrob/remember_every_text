@@ -88,6 +88,72 @@ The difference is mostly architectural and appears desirable:
   recovery can identify at least one newer orphan row that legacy recovered
   tables do not contain.
 
+## Resolution Of The 3 Legacy-Only Rows
+
+The 3 legacy-only rows were traced further after the initial audit.
+
+They are present in:
+
+```text
+working.db.recovered_unlinked_messages
+```
+
+They are absent from:
+
+```text
+macos_import.db.recovered_unlinked_messages
+macos_import.db.messages
+macos_import_ss.db.messages
+working_ss.db.messages
+```
+
+They are therefore not current source/import facts in either the legacy import
+ledger or the source-scoped import ledger. They are stale but real evidence
+retained only by the legacy working recovered table from earlier projection
+batches.
+
+Batch classification:
+
+| legacy working batch | classification | count |
+| ---: | --- | ---: |
+| 164 | legacy-only | 2 |
+| 337 | legacy-only | 1 |
+
+These rows should not be grafted into `working_ss.messages` as if they were
+current live-source rows. Doing so would blur the distinction between current
+source-derived graph evidence and historical recovered evidence.
+
+## Retention Strategy
+
+Retain the 3 legacy-only rows through the legacy recovered compatibility
+repository until a recovered-source import model exists.
+
+The retention rule is:
+
+```text
+If legacy recovered evidence contains rows absent from source-scoped import and
+graph projection, the legacy recovered repository remains the retention source
+for those rows.
+```
+
+The long-term resolution is not a one-off row copy. It is a recovered-source
+model that can explicitly represent historical retained evidence:
+
+```text
+legacy recovered retention source
+or recovered Messages folder source
+→ source-scoped recovered import
+→ recovered evidence projection
+```
+
+Until then:
+
+- do not cut over recovered messages to graph-only storage
+- do not delete `working.db.recovered_unlinked_messages`
+- do not force these rows into ordinary conversation topology
+- do not treat them as current live `chat.db` rows
+- keep production recovered evidence on the legacy compatibility repository
+
 ## Attachment Parity
 
 Attachment parity for matched graph-orphan recovered rows is strong:
@@ -169,7 +235,8 @@ recovered evidence means "not safely projectable into normal conversation
 topology." Once topology exists, the message belongs in conversation evidence.
 
 The 3 legacy-only rows are different. They represent evidence that graph cannot
-currently reconstruct from `macos_import_ss` / `working_ss`.
+currently reconstruct from `macos_import_ss` / `working_ss`. They are the reason
+cutover without evidence loss is not yet allowed.
 
 ## Recommendation
 
@@ -210,6 +277,7 @@ Graph recovered repository can replace the legacy repository only when:
 - recovered no-handle outgoing inference remains acceptable on real contact
   scopes
 - diagnostics explain expected count differences
+- parity reports `canCutOverWithoutEvidenceLoss`
 
 ## Non-Goals
 

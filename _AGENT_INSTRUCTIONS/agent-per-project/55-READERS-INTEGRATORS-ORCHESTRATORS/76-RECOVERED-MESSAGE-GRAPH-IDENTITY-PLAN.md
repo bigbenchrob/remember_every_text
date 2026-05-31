@@ -204,6 +204,11 @@ legacy-only rows that are not present in the current source-scoped import/graph
 and by the need to intentionally accept that 195 legacy recovered rows are now
 ordinary graph-projectable conversation messages.
 
+The 3 legacy-only rows are resolved as stale but real evidence retained only in
+`working.db.recovered_unlinked_messages` from earlier legacy projection batches.
+They must remain available through the legacy recovered compatibility
+repository until a recovered-source import model can preserve them explicitly.
+
 ### 6. Retire legacy recovered tables only after parity is proven
 
 The old `working.db.recovered_unlinked_*` tables can be deleted only when the
