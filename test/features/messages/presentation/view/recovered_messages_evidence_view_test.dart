@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:remember_this_text/features/messages/domain/entities/attachment_info.dart';
+import 'package:remember_this_text/features/messages/domain/message_evidence/recovered_message_evidence.dart';
 import 'package:remember_this_text/features/messages/infrastructure/repositories/recovered_unlinked_messages_provider.dart';
 import 'package:remember_this_text/features/messages/presentation/view/recovered_messages_evidence_view.dart';
 

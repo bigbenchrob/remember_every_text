@@ -17,6 +17,7 @@ import 'package:remember_this_text/features/contacts/feature_level_providers.dar
 import 'package:remember_this_text/features/messages/application/message_evidence/message_evidence_spine_provider.dart';
 import 'package:remember_this_text/features/messages/domain/entities/attachment_info.dart';
 import 'package:remember_this_text/features/messages/domain/message_evidence/message_evidence_scope.dart';
+import 'package:remember_this_text/features/messages/domain/message_evidence/recovered_message_evidence.dart';
 import 'package:remember_this_text/features/messages/infrastructure/repositories/recovered_unlinked_messages_provider.dart';
 
 Override _displayIdentityResolverOverride() {

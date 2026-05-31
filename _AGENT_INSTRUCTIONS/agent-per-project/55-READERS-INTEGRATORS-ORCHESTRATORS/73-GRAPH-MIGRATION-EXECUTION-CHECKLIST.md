@@ -2,11 +2,13 @@
 tier: project
 scope: source-scoped-graph-migration
 status: active
-last_reviewed: 2026-05-30
+last_reviewed: 2026-05-31
 depends_on:
   - 70-GRAPH-SYSTEM-COMPLETION-ROADMAP.md
   - 71-LEGACY-DEPENDENCY-MATRIX.md
   - 72-GRAPH-CHOKE-POINTS-AND-RETIREMENT-BLOCKERS.md
+  - 75-ARCHIVE-RECOVERY-IDENTITY-PLAN.md
+  - 76-RECOVERED-MESSAGE-GRAPH-IDENTITY-PLAN.md
 ---
 
 # 73 - Graph Migration Execution Checklist
@@ -54,10 +56,10 @@ feature drift while completing the graph migration.
 | 1. Overlay identity key audit and bridge design | Review needed | Decide graph-era overlay keys before migrating search/contact identity. | `user_overlays.db`; saved/tags; participant overrides; favourites; manual links; archived attachments | prevents user-intent loss during identity migration | overlay schema audit; migration/bridge proposal; tests identified | every overlay identity form has target key, bridge plan, and duplicate-GUID rule where needed |
 | 2. Graph-native Search and Search Identity | Review needed | Make search select graph evidence directly. | `SearchService`; graph search repository; saved/tag overlays; `MessageEvidenceScope`; search result context | legacy `working.db` search-index rebuild and indexer providers retired | graph search tests for global/contact/conversation/handle/saved/tags; full-scope skeleton tests | ordinary search returns graph `message_ss_id` scopes and no longer requires legacy message IDs |
 | 3. Graph-native Contact and Handle Identity | Review needed | Move contact/profile/handle reads to graph facts plus overlay intent. | display identity resolver; contact picker; hero/profile; handle menus; manual links; favourites | graph read repositories no longer open legacy `working.db` for contact/handle identity bridges | identity precedence tests; contact picker tests; handle selector tests; manual link overlay tests | user override wins everywhere; contact/handle selectors are graph-native; overlay writes remain overlay-only |
-| 4. MessageEvidenceScope cleanup | Not started | Remove remaining legacy-selector-fed evidence scopes after search/contact migration. | message evidence spine; global/contact/handle/conversation/search scopes | prevents legacy selection leaking into shared renderer | route/spec tests; full-scope skeleton tests | all ordinary message-bearing routes start from typed graph evidence scopes |
+| 4. MessageEvidenceScope cleanup | Review needed | Remove remaining legacy-selector-fed evidence scopes after search/contact migration. | message evidence spine; global/contact/handle/conversation/search scopes | prevents legacy selection leaking into shared renderer | route/spec tests; full-scope skeleton tests | all ordinary message-bearing routes start from typed graph evidence scopes |
 | 5. Graph lifecycle orchestration | In progress | Make graph build/readiness/update flow production-owned. | graph build service; graph readiness; onboarding; reset; `ChatDbChangeMonitor`; invalidation | removes manual/dev-panel dependency | graph build idempotence; incremental update test; readiness state tests; reset/onboarding tests | graph build is first-class lifecycle path and failures are visible/actionable |
-| 6. Remaining ordinary read migration | In progress | Retire leftover ordinary `working.db` reads. | global heatmap; old chat summaries; stray/spam handle lists; diagnostics vs product routes | proof-era recent chat legacy-vs-graph comparison removed from SS status sheet | provider tests; route smoke tests; dependency `rg` checks | no ordinary user-facing read depends on `working.db` except documented compatibility bridges |
-| 7. Archive/recovery identity plan | Not started | Design source-scoped archive/recovery identity without disrupting archive integrity. | attachment archive; deterministic recovery; cross-snapshot mapper; recovered messages | prevents premature recovery rewrite | mapping audit; archive compatibility tests identified | recovery/archive path has graph identity plan and existing archive records remain usable |
+| 6. Remaining ordinary read migration | Review needed | Retire leftover ordinary `working.db` reads. | global heatmap; old chat summaries; stray/spam handle lists; diagnostics vs product routes | proof-era recent chat legacy-vs-graph comparison removed from SS status sheet | provider tests; route smoke tests; dependency `rg` checks | no ordinary user-facing read depends on `working.db` except documented compatibility bridges |
+| 7. Archive/recovery identity plan | In progress | Design source-scoped archive/recovery identity without disrupting archive integrity. | attachment archive; deterministic recovery; cross-snapshot mapper; recovered messages | prevents premature recovery rewrite | mapping audit; archive compatibility tests identified | recovery/archive path has graph identity plan and existing archive records remain usable |
 | 8. Legacy retirement | Not started | Delete legacy data/read/presentation systems only after blockers are closed. | legacy import/migration/read models; retired widgets; diagnostics | removes attractive nuisance code safely | dependency checks; analyzer; focused tests; smoke test | legacy systems are deleted, demoted to diagnostics, or explicitly preserved as recovery/lifecycle references |
 
 ## Slice 0 - Checkpoint Current Graph Branch
@@ -445,6 +447,19 @@ choke points are resolved.
   single compatibility-retirement slice. Source-scoped import, graph build, and
   live `chat.db` monitor lifecycle paths remain intact.
 
+2026-05-31:
+
+- Fresh `working.db` / `macos_import.db` dependency scan found no remaining
+  ordinary app-facing reads. Remaining legacy DB consumers are now classified
+  as production lifecycle, archive/recovery, diagnostics/settings, legacy DB
+  definitions, or tests for retained legacy systems.
+- `71-LEGACY-DEPENDENCY-MATRIX.md` was refreshed to remove stale search,
+  contact, handle, chat, and heatmap ordinary-read blockers that have already
+  been migrated.
+- Recovered deleted messages remain the only message evidence surface still
+  backed by legacy recovered-message tables, and are classified as
+  archive/recovery rather than ordinary app reads.
+
 ### Exit Criteria
 
 Done means:
@@ -462,6 +477,78 @@ Done means:
 Move archive/recovery toward source-scoped identity without risking existing
 archives.
 
+### Current Checkpoint Evidence
+
+2026-05-31:
+
+- Added `75-ARCHIVE-RECOVERY-IDENTITY-PLAN.md`.
+- Identified the current archive overlay key as
+  `(message_guid, import_attachment_id)` and the graph target identity as
+  `(message_ss_id, attachment_ss_id)`.
+- Documented the compatibility bridge that lets existing archive rows remain
+  resolvable through graph facts by deriving live-source attachment row identity
+  from `attachment_ss_id`.
+- Defined separate migration strategies for:
+  - current living attachment archive
+  - historical MessageLens archive backup
+  - recovered Messages folders
+  - recovered deleted-message evidence
+- Established the first implementation boundary: add graph archive identity/read
+  resolution before changing overlay schema or recovered-message storage.
+- Added `GraphAttachmentArchiveLookup` and
+  `LegacyOverlayGraphAttachmentArchiveLookup` as the first named graph archive
+  identity boundary.
+- Conversation graph attachment summaries now resolve existing archive overlay
+  records through the named graph archive lookup instead of deriving the legacy
+  key inline.
+- The compatibility bridge preserves existing
+  `(message_guid, import_attachment_id)` archive rows and refuses non-live
+  source ids to avoid cross-source rowid collisions.
+- Focused graph archive lookup and chat attachment summary tests pass.
+- Attachment archive rolling/manual sweeps and archive-all candidate selection
+  now read graph attachment facts from `working_ss.db` instead of legacy
+  `working.db.attachments`, while preserving existing overlay archive keys.
+- Legacy import-batch archive handling remains in place because live update
+  lifecycle still emits legacy import batches before graph build.
+- Focused attachment archive service tests pass against graph-backed sweep
+  fixtures.
+- Deterministic historical attachment recovery now maps through
+  `macos_import_ss.db` and `working_ss.db` via `GraphCrossSnapshotMapper`
+  instead of `macos_import.db` and `working.db`.
+- The mapper exposes graph identity (`message_ss_id`, `attachment_ss_id`) while
+  preserving the current overlay archive write key during transition.
+- The obsolete legacy `CrossSnapshotMapper` implementation and tests were
+  retired; shared mapping result types remain in a neutral model file used by
+  the graph mapper and deterministic recovery provider.
+- Focused graph cross-snapshot mapper tests pass.
+- Added `76-RECOVERED-MESSAGE-GRAPH-IDENTITY-PLAN.md` to separate the
+  recovered-message migration from ordinary graph message migration.
+- Recovered message presentation is already on the shared Message Evidence
+  Spine, but the source repository remains a legacy compatibility island until
+  a recovered-message evidence repository boundary is introduced.
+- Introduced the first recovered-message evidence repository boundary:
+  `RecoveredMessageEvidenceRepository`, backed for now by
+  `LegacyWorkingRecoveredMessageEvidenceRepository`. Runtime behavior remains
+  legacy-compatible, but the remaining `working.db.recovered_unlinked_*` reads
+  are now explicitly quarantined behind a named recovery boundary.
+- Added focused repository tests for the compatibility boundary covering
+  recovered fallback text, recovered attachment dedupe, contact scoping,
+  no-handle outgoing inference, and contact-name resolution through legacy
+  handle/participant links.
+- Split the recovered-message boundary into:
+  - domain read model/contract:
+    `domain/message_evidence/recovered_message_evidence.dart`
+  - legacy storage implementation:
+    `infrastructure/repositories/legacy_working_recovered_message_evidence_repository.dart`
+  - thin Riverpod wiring:
+    `infrastructure/repositories/recovered_unlinked_messages_provider.dart`
+  This keeps the replacement point explicit without changing runtime behavior.
+- Added schema-free `RecoveredMessageIdentity` domain tests that establish
+  recovered rows as source message occurrences with identity
+  `pack(source_id, message.ROWID)`. Duplicate ROWIDs across live/archive
+  sources remain distinct, GUID does not define identity, and topology controls
+  projection surface rather than identity.
+
 ### Exit Criteria
 
 Done means:
@@ -471,6 +558,8 @@ Done means:
 - recovered Messages folder source strategy is defined.
 - deterministic recovery no longer requires ordinary `working.db` identity in
   the long-term plan.
+- recovered-message repository ownership is named before recovered storage is
+  migrated.
 
 ## Slice 8 - Legacy Retirement
 

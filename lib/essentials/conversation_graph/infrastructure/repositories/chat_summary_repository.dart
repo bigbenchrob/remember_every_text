@@ -1,23 +1,18 @@
 import 'dart:io';
 
-import 'package:drift/drift.dart';
-
+import '../../../../features/attachments/application/graph_attachment_archive_lookup.dart';
 import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
-import '../../../db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import '../../../source_scoped_import/domain/source_scoped_row_key.dart';
 import '../../application/chat_summaries/chat_summary.dart';
 import '../../application/chat_summaries/chat_summary_repository.dart';
 
 class SqliteChatSummaryRepository implements ChatSummaryRepository {
   const SqliteChatSummaryRepository({
     required this.workingDatabase,
-    this.overlayDatabase,
-    this.attachmentArchiveDirectory,
+    this.archiveLookup,
   });
 
   final ConversationGraphDatabase workingDatabase;
-  final OverlayDatabase? overlayDatabase;
-  final String? attachmentArchiveDirectory;
+  final GraphAttachmentArchiveLookup? archiveLookup;
 
   @override
   Future<List<ChatSummary>> readSummaries({
@@ -283,7 +278,7 @@ class SqliteChatSummaryRepository implements ChatSummaryRepository {
       }
 
       final archiveAvailability = await _readArchiveAvailability(
-        messageGuid: row['message_guid'] as String?,
+        messageSsId: _readInt(row['message_ss_id']),
         attachmentSsId: _readInt(row['attachment_ss_id']),
       );
       if (archiveAvailability.hasArchiveRecord) {
@@ -319,6 +314,7 @@ class SqliteChatSummaryRepository implements ChatSummaryRepository {
       '''
       SELECT
         a.ss_id AS attachment_ss_id,
+        mta.message_ss_id,
         m.guid AS message_guid,
         a.guid,
         a.filename,
@@ -341,8 +337,9 @@ class SqliteChatSummaryRepository implements ChatSummaryRepository {
 
   Future<MessageAttachment> _attachmentFromRow(Map<String, Object?> row) async {
     final attachmentSsId = _readInt(row['attachment_ss_id']);
+    final messageSsId = _readInt(row['message_ss_id']);
     final archiveAvailability = await _readArchiveAvailability(
-      messageGuid: row['message_guid'] as String?,
+      messageSsId: messageSsId,
       attachmentSsId: attachmentSsId,
     );
     return MessageAttachment(
@@ -362,45 +359,26 @@ class SqliteChatSummaryRepository implements ChatSummaryRepository {
   }
 
   Future<_ArchiveAvailability> _readArchiveAvailability({
-    required String? messageGuid,
+    required int messageSsId,
     required int attachmentSsId,
   }) async {
-    final overlayDb = overlayDatabase;
-    final archiveDirectory = attachmentArchiveDirectory;
-    if (overlayDb == null ||
-        archiveDirectory == null ||
-        archiveDirectory.isEmpty ||
-        messageGuid == null ||
-        messageGuid.isEmpty) {
+    final lookup = archiveLookup;
+    if (lookup == null) {
       return const _ArchiveAvailability.none();
     }
 
-    final importAttachmentId = SourceScopedRowKey.unpackSourceRowId(
-      attachmentSsId,
+    final record = await lookup.readArchiveRecord(
+      messageSsId: messageSsId,
+      attachmentSsId: attachmentSsId,
     );
-    final rows = await overlayDb
-        .customSelect(
-          'SELECT archive_relative_path '
-          'FROM archived_attachments '
-          'WHERE message_guid = ? AND import_attachment_id = ? '
-          'LIMIT 1',
-          variables: [
-            Variable<String>(messageGuid),
-            Variable<int>(importAttachmentId),
-          ],
-        )
-        .get();
-    if (rows.isEmpty) {
+    if (record == null) {
       return const _ArchiveAvailability.none();
     }
 
-    final relativePath = rows.single.read<String>('archive_relative_path');
-    final archiveAbsolutePath = '$archiveDirectory/$relativePath';
-    final archiveFile = File(archiveAbsolutePath);
     return _ArchiveAvailability(
-      archiveRelativePath: relativePath,
-      archiveAbsolutePath: archiveAbsolutePath,
-      archiveFileExists: archiveFile.existsSync(),
+      archiveRelativePath: record.archiveRelativePath,
+      archiveAbsolutePath: record.archiveAbsolutePath,
+      archiveFileExists: record.archiveFileExists,
     );
   }
 

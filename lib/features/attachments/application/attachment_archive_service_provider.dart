@@ -9,9 +9,11 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 import '../../../essentials/db/feature_level_providers.dart';
+import '../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import '../../../essentials/db/infrastructure/data_sources/local/working/working_database.dart';
 import '../../../essentials/logging/application/app_logger.dart';
+import '../../../essentials/source_scoped_import/domain/known_sources.dart';
+import '../../../essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import '../../../providers.dart';
 import '../domain/entities/attachment_recovery_metadata.dart';
 import 'archive_settings_provider.dart';
@@ -299,14 +301,16 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
 
     try {
       final overlayDb = await ref.read(overlayDatabaseProvider.future);
-      final workingDb = await ref.read(driftWorkingDatabaseProvider.future);
+      final graphDb = await ref.read(
+        driftConversationGraphDatabaseProvider.future,
+      );
       final logger = ref.read(appLoggerProvider.notifier);
       final startedAtUtc = DateTime.now().toUtc().toIso8601String();
 
       final cursor = await _readWorkingSweepCursor(overlayDb);
       final selection = await _selectWorkingSweepRows(
         overlayDb: overlayDb,
-        workingDb: workingDb,
+        graphDb: graphDb,
         afterAttachmentId: cursor,
         limit: limit,
       );
@@ -388,7 +392,9 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
 
     try {
       final overlayDb = await ref.read(overlayDatabaseProvider.future);
-      final workingDb = await ref.read(driftWorkingDatabaseProvider.future);
+      final graphDb = await ref.read(
+        driftConversationGraphDatabaseProvider.future,
+      );
       final startedAtUtc = DateTime.now().toUtc().toIso8601String();
       var cursor = await _readWorkingSweepCursor(overlayDb);
       var totalScanned = 0;
@@ -401,7 +407,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
         final previousCursor = cursor;
         final selection = await _selectWorkingSweepRows(
           overlayDb: overlayDb,
-          workingDb: workingDb,
+          graphDb: graphDb,
           afterAttachmentId: cursor,
           limit: chunkLimit,
         );
@@ -478,26 +484,38 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       );
     }
 
-    final workingDb = await ref.read(driftWorkingDatabaseProvider.future);
+    final graphDb = await ref.read(
+      driftConversationGraphDatabaseProvider.future,
+    );
     final archiveDir = ref.read(attachmentArchiveDirectoryProvider);
     final logger = ref.read(appLoggerProvider.notifier);
 
     // Ensure archive directory exists.
     await Directory(archiveDir).create(recursive: true);
 
-    // Query all attachments with a local path from working DB.
-    final rows = await workingDb.customSelect('''
+    // Query all graph attachments with a source path.
+    final rows = await graphDb.selectRows(
+      '''
       SELECT
-        a.id,
-        a.message_guid,
-        a.import_attachment_id,
-        a.local_path,
+        a.ss_id AS working_attachment_id,
+        m.guid AS message_guid,
+        (a.ss_id & ?) AS import_attachment_id,
+        a.filename AS local_path,
         a.mime_type,
-        a.sha256_hex
+        NULL AS sha256_hex
       FROM attachments a
-      WHERE a.local_path IS NOT NULL
-        AND LENGTH(TRIM(a.local_path)) > 0
-      ''').get();
+      JOIN message_to_attachment mta ON mta.attachment_ss_id = a.ss_id
+      JOIN messages m ON m.ss_id = mta.message_ss_id
+      WHERE (a.ss_id >> ?) = ?
+        AND a.filename IS NOT NULL
+        AND LENGTH(TRIM(a.filename)) > 0
+      ''',
+      <Object?>[
+        SourceScopedRowKey.maxSourceRowId,
+        SourceScopedRowKey.sourceRowIdBits,
+        liveChatDbSourceId,
+      ],
+    );
 
     final archiveOutcome = await _archiveRows(
       rows: rows,
@@ -877,7 +895,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
 
   Future<_WorkingSweepSelection> _selectWorkingSweepRows({
     required OverlayDatabase overlayDb,
-    required WorkingDatabase workingDb,
+    required ConversationGraphDatabase graphDb,
     required int afterAttachmentId,
     required int limit,
   }) async {
@@ -888,7 +906,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
 
     while (selectedRows.length < limit) {
       final rawRows = await _fetchWorkingSweepRows(
-        workingDb,
+        graphDb,
         afterAttachmentId: cursor,
         limit: _kWorkingSweepSelectionPageSize,
       );
@@ -956,32 +974,38 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
   }
 
   Future<List<dynamic>> _fetchWorkingSweepRows(
-    WorkingDatabase workingDb, {
+    ConversationGraphDatabase graphDb, {
     required int afterAttachmentId,
     required int limit,
   }) async {
-    return workingDb
-        .customSelect(
-          '''
+    return graphDb.selectRows(
+      '''
           SELECT
-            a.id AS working_attachment_id,
-            a.message_guid,
-            a.import_attachment_id,
-            a.local_path,
+            a.ss_id AS working_attachment_id,
+            m.guid AS message_guid,
+            (a.ss_id & ?) AS import_attachment_id,
+            a.filename AS local_path,
             a.mime_type,
-            a.sha256_hex
+            NULL AS sha256_hex
           FROM attachments a
-          WHERE a.id > ?
-            AND a.import_attachment_id IS NOT NULL
-            AND a.local_path IS NOT NULL
-            AND LENGTH(TRIM(a.local_path)) > 0
+          JOIN message_to_attachment mta ON mta.attachment_ss_id = a.ss_id
+          JOIN messages m ON m.ss_id = mta.message_ss_id
+          WHERE a.ss_id > ?
+            AND (a.ss_id >> ?) = ?
+            AND a.filename IS NOT NULL
+            AND LENGTH(TRIM(a.filename)) > 0
             AND a.mime_type LIKE 'image/%'
-          ORDER BY a.id
+          ORDER BY a.ss_id
           LIMIT ?
           ''',
-          variables: [Variable<int>(afterAttachmentId), Variable<int>(limit)],
-        )
-        .get();
+      <Object?>[
+        SourceScopedRowKey.maxSourceRowId,
+        afterAttachmentId,
+        SourceScopedRowKey.sourceRowIdBits,
+        liveChatDbSourceId,
+        limit,
+      ],
+    );
   }
 
   Future<Set<String>> _loadArchivedKeysForRows(

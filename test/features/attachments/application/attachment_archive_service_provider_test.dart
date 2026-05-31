@@ -5,10 +5,11 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
+import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/import/sqflite_import_database.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/working/working_database.dart';
 import 'package:remember_this_text/essentials/db_importers/application/debug_settings_provider.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/features/attachments/application/archive_settings_provider.dart';
 import 'package:remember_this_text/features/attachments/application/attachment_archive_service_provider.dart';
 import 'package:remember_this_text/features/attachments/application/attachment_recovery_hint_storage.dart';
@@ -52,6 +53,51 @@ void main() {
       [attachmentId, localPath],
     );
     await db.close();
+  }
+
+  Future<void> insertGraphAttachment(
+    ConversationGraphDatabase graphDb, {
+    required String messageGuid,
+    required int importAttachmentId,
+    required String localPath,
+    required String mimeType,
+  }) async {
+    final messageSsId = SourceScopedRowKey.pack(
+      sourceId: 1,
+      sourceRowId: importAttachmentId + 100000,
+    );
+    final attachmentSsId = SourceScopedRowKey.pack(
+      sourceId: 1,
+      sourceRowId: importAttachmentId,
+    );
+    await graphDb.executeSql(
+      '''
+      INSERT OR IGNORE INTO messages (ss_id, guid, is_from_me)
+      VALUES (?, ?, 0)
+      ''',
+      <Object?>[messageSsId, messageGuid],
+    );
+    await graphDb.executeSql(
+      '''
+      INSERT OR IGNORE INTO attachments (ss_id, guid, filename, mime_type)
+      VALUES (?, ?, ?, ?)
+      ''',
+      <Object?>[
+        attachmentSsId,
+        'attachment-guid-$importAttachmentId',
+        localPath,
+        mimeType,
+      ],
+    );
+    await graphDb.executeSql(
+      '''
+      INSERT OR IGNORE INTO message_to_attachment (
+        message_ss_id,
+        attachment_ss_id
+      ) VALUES (?, ?)
+      ''',
+      <Object?>[messageSsId, attachmentSsId],
+    );
   }
 
   group('AttachmentArchiveService.prioritizeRecovery', () {
@@ -279,14 +325,14 @@ void main() {
 
   group('AttachmentArchiveService.archiveNextWorkingSweepChunk', () {
     late OverlayDatabase overlayDb;
-    late WorkingDatabase workingDb;
+    late ConversationGraphDatabase graphDb;
     late Directory tempDir;
     late String chatDbPath;
     late ProviderContainer container;
 
     setUp(() async {
       overlayDb = OverlayDatabase(NativeDatabase.memory());
-      workingDb = WorkingDatabase(NativeDatabase.memory());
+      graphDb = ConversationGraphDatabase(NativeDatabase.memory());
       tempDir = await Directory.systemTemp.createTemp(
         'attachment-working-sweep-test-',
       );
@@ -300,7 +346,9 @@ void main() {
       container = ProviderContainer(
         overrides: [
           overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
-          driftWorkingDatabaseProvider.overrideWith((ref) async => workingDb),
+          driftConversationGraphDatabaseProvider.overrideWith(
+            (ref) async => graphDb,
+          ),
           attachmentArchiveMessagesDatabasePathProvider.overrideWith(
             (ref) async => chatDbPath,
           ),
@@ -314,7 +362,7 @@ void main() {
     tearDown(() async {
       container.dispose();
       await overlayDb.close();
-      await workingDb.close();
+      await graphDb.close();
       if (tempDir.existsSync()) {
         await tempDir.delete(recursive: true);
       }
@@ -333,56 +381,41 @@ void main() {
       await secondSweepSource.writeAsString('second-sweep');
       await thirdSweepSource.writeAsString('third-sweep');
 
-      await workingDb
-          .into(workingDb.workingAttachments)
-          .insert(
-            WorkingAttachmentsCompanion.insert(
-              messageGuid: 'message-already-archived',
-              importAttachmentId: const Value(11),
-              localPath: Value(alreadyArchivedSource.path),
-              mimeType: const Value('image/png'),
-            ),
-          );
-      await workingDb
-          .into(workingDb.workingAttachments)
-          .insert(
-            WorkingAttachmentsCompanion.insert(
-              messageGuid: 'message-ignored-pdf',
-              importAttachmentId: const Value(12),
-              localPath: Value('${tempDir.path}/ignored.pdf'),
-              mimeType: const Value('application/pdf'),
-            ),
-          );
-      await workingDb
-          .into(workingDb.workingAttachments)
-          .insert(
-            WorkingAttachmentsCompanion.insert(
-              messageGuid: 'message-first-sweep',
-              importAttachmentId: const Value(13),
-              localPath: Value(firstSweepSource.path),
-              mimeType: const Value('image/png'),
-            ),
-          );
-      await workingDb
-          .into(workingDb.workingAttachments)
-          .insert(
-            WorkingAttachmentsCompanion.insert(
-              messageGuid: 'message-second-sweep',
-              importAttachmentId: const Value(14),
-              localPath: Value(secondSweepSource.path),
-              mimeType: const Value('image/png'),
-            ),
-          );
-      await workingDb
-          .into(workingDb.workingAttachments)
-          .insert(
-            WorkingAttachmentsCompanion.insert(
-              messageGuid: 'message-third-sweep',
-              importAttachmentId: const Value(15),
-              localPath: Value(thirdSweepSource.path),
-              mimeType: const Value('image/png'),
-            ),
-          );
+      await insertGraphAttachment(
+        graphDb,
+        messageGuid: 'message-already-archived',
+        importAttachmentId: 11,
+        localPath: alreadyArchivedSource.path,
+        mimeType: 'image/png',
+      );
+      await insertGraphAttachment(
+        graphDb,
+        messageGuid: 'message-ignored-pdf',
+        importAttachmentId: 12,
+        localPath: '${tempDir.path}/ignored.pdf',
+        mimeType: 'application/pdf',
+      );
+      await insertGraphAttachment(
+        graphDb,
+        messageGuid: 'message-first-sweep',
+        importAttachmentId: 13,
+        localPath: firstSweepSource.path,
+        mimeType: 'image/png',
+      );
+      await insertGraphAttachment(
+        graphDb,
+        messageGuid: 'message-second-sweep',
+        importAttachmentId: 14,
+        localPath: secondSweepSource.path,
+        mimeType: 'image/png',
+      );
+      await insertGraphAttachment(
+        graphDb,
+        messageGuid: 'message-third-sweep',
+        importAttachmentId: 15,
+        localPath: thirdSweepSource.path,
+        mimeType: 'image/png',
+      );
 
       await overlayDb
           .into(overlayDb.archivedAttachments)
@@ -402,7 +435,10 @@ void main() {
 
       expect(firstResult.totalScanned, 2);
       expect(firstResult.newlyArchived, 2);
-      expect(await overlayDb.readOverlaySetting(kArchiveSweepCursorKey), '4');
+      expect(
+        await overlayDb.readOverlaySetting(kArchiveSweepCursorKey),
+        '${SourceScopedRowKey.pack(sourceId: 1, sourceRowId: 14)}',
+      );
       expect(
         await overlayDb.readOverlaySetting(kArchiveSweepLastTotalScannedKey),
         '2',
@@ -473,16 +509,13 @@ void main() {
         localPath: liveSource.path,
       );
 
-      await workingDb
-          .into(workingDb.workingAttachments)
-          .insert(
-            WorkingAttachmentsCompanion.insert(
-              messageGuid: 'message-path-drift',
-              importAttachmentId: const Value(500),
-              localPath: Value('${tempDir.path}/messages/stale-path.png'),
-              mimeType: const Value('image/png'),
-            ),
-          );
+      await insertGraphAttachment(
+        graphDb,
+        messageGuid: 'message-path-drift',
+        importAttachmentId: 500,
+        localPath: '${tempDir.path}/messages/stale-path.png',
+        mimeType: 'image/png',
+      );
 
       final result = await container
           .read(attachmentArchiveServiceProvider.notifier)
@@ -521,46 +554,34 @@ void main() {
         await secondBurstSource.writeAsString('burst-second');
         await thirdBurstSource.writeAsString('burst-third');
 
-        await workingDb
-            .into(workingDb.workingAttachments)
-            .insert(
-              WorkingAttachmentsCompanion.insert(
-                messageGuid: 'message-maintenance',
-                importAttachmentId: const Value(20),
-                localPath: Value(maintenanceSource.path),
-                mimeType: const Value('image/png'),
-              ),
-            );
-        await workingDb
-            .into(workingDb.workingAttachments)
-            .insert(
-              WorkingAttachmentsCompanion.insert(
-                messageGuid: 'message-burst-first',
-                importAttachmentId: const Value(21),
-                localPath: Value(firstBurstSource.path),
-                mimeType: const Value('image/png'),
-              ),
-            );
-        await workingDb
-            .into(workingDb.workingAttachments)
-            .insert(
-              WorkingAttachmentsCompanion.insert(
-                messageGuid: 'message-burst-second',
-                importAttachmentId: const Value(22),
-                localPath: Value(secondBurstSource.path),
-                mimeType: const Value('image/png'),
-              ),
-            );
-        await workingDb
-            .into(workingDb.workingAttachments)
-            .insert(
-              WorkingAttachmentsCompanion.insert(
-                messageGuid: 'message-burst-third',
-                importAttachmentId: const Value(23),
-                localPath: Value(thirdBurstSource.path),
-                mimeType: const Value('image/png'),
-              ),
-            );
+        await insertGraphAttachment(
+          graphDb,
+          messageGuid: 'message-maintenance',
+          importAttachmentId: 20,
+          localPath: maintenanceSource.path,
+          mimeType: 'image/png',
+        );
+        await insertGraphAttachment(
+          graphDb,
+          messageGuid: 'message-burst-first',
+          importAttachmentId: 21,
+          localPath: firstBurstSource.path,
+          mimeType: 'image/png',
+        );
+        await insertGraphAttachment(
+          graphDb,
+          messageGuid: 'message-burst-second',
+          importAttachmentId: 22,
+          localPath: secondBurstSource.path,
+          mimeType: 'image/png',
+        );
+        await insertGraphAttachment(
+          graphDb,
+          messageGuid: 'message-burst-third',
+          importAttachmentId: 23,
+          localPath: thirdBurstSource.path,
+          mimeType: 'image/png',
+        );
 
         final maintenanceResult = await container
             .read(attachmentArchiveServiceProvider.notifier)
@@ -635,36 +656,27 @@ void main() {
         await secondTailSource.writeAsString('tail-second');
         await thirdTailSource.writeAsString('tail-third');
 
-        await workingDb
-            .into(workingDb.workingAttachments)
-            .insert(
-              WorkingAttachmentsCompanion.insert(
-                messageGuid: 'message-tail-first',
-                importAttachmentId: const Value(31),
-                localPath: Value(firstTailSource.path),
-                mimeType: const Value('image/png'),
-              ),
-            );
-        await workingDb
-            .into(workingDb.workingAttachments)
-            .insert(
-              WorkingAttachmentsCompanion.insert(
-                messageGuid: 'message-tail-second',
-                importAttachmentId: const Value(32),
-                localPath: Value(secondTailSource.path),
-                mimeType: const Value('image/png'),
-              ),
-            );
-        await workingDb
-            .into(workingDb.workingAttachments)
-            .insert(
-              WorkingAttachmentsCompanion.insert(
-                messageGuid: 'message-tail-third',
-                importAttachmentId: const Value(33),
-                localPath: Value(thirdTailSource.path),
-                mimeType: const Value('image/png'),
-              ),
-            );
+        await insertGraphAttachment(
+          graphDb,
+          messageGuid: 'message-tail-first',
+          importAttachmentId: 31,
+          localPath: firstTailSource.path,
+          mimeType: 'image/png',
+        );
+        await insertGraphAttachment(
+          graphDb,
+          messageGuid: 'message-tail-second',
+          importAttachmentId: 32,
+          localPath: secondTailSource.path,
+          mimeType: 'image/png',
+        );
+        await insertGraphAttachment(
+          graphDb,
+          messageGuid: 'message-tail-third',
+          importAttachmentId: 33,
+          localPath: thirdTailSource.path,
+          mimeType: 'image/png',
+        );
 
         final result = await container
             .read(attachmentArchiveServiceProvider.notifier)
@@ -683,26 +695,20 @@ void main() {
     );
 
     test('manual burst stores skipped sample details', () async {
-      await workingDb
-          .into(workingDb.workingAttachments)
-          .insert(
-            WorkingAttachmentsCompanion.insert(
-              messageGuid: 'message-missing-first',
-              importAttachmentId: const Value(41),
-              localPath: Value('${tempDir.path}/missing-first.png'),
-              mimeType: const Value('image/png'),
-            ),
-          );
-      await workingDb
-          .into(workingDb.workingAttachments)
-          .insert(
-            WorkingAttachmentsCompanion.insert(
-              messageGuid: 'message-missing-second',
-              importAttachmentId: const Value(42),
-              localPath: Value('${tempDir.path}/missing-second.png'),
-              mimeType: const Value('image/png'),
-            ),
-          );
+      await insertGraphAttachment(
+        graphDb,
+        messageGuid: 'message-missing-first',
+        importAttachmentId: 41,
+        localPath: '${tempDir.path}/missing-first.png',
+        mimeType: 'image/png',
+      );
+      await insertGraphAttachment(
+        graphDb,
+        messageGuid: 'message-missing-second',
+        importAttachmentId: 42,
+        localPath: '${tempDir.path}/missing-second.png',
+        mimeType: 'image/png',
+      );
 
       final result = await container
           .read(attachmentArchiveServiceProvider.notifier)

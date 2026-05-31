@@ -16,6 +16,7 @@ import '../../domain/message_evidence/message_evidence_row_data.dart';
 import '../../domain/message_evidence/message_evidence_scope.dart';
 import '../../domain/message_evidence/message_evidence_search_mode.dart';
 import '../../domain/message_evidence/message_evidence_skeleton.dart';
+import '../../domain/message_evidence/recovered_message_evidence.dart';
 import '../../infrastructure/repositories/recovered_unlinked_messages_provider.dart';
 import 'message_attachment_evidence.dart';
 

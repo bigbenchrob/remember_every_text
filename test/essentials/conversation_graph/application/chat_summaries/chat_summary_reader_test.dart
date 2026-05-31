@@ -8,6 +8,7 @@ import 'package:remember_this_text/essentials/conversation_graph/application/cha
 import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/chat_summary_repository.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
+import 'package:remember_this_text/features/attachments/infrastructure/repositories/legacy_overlay_graph_attachment_archive_lookup.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -487,8 +488,11 @@ void main() {
     final reader = ChatSummaryReader(
       repository: SqliteChatSummaryRepository(
         workingDatabase: workingDatabase,
-        overlayDatabase: overlayDatabase,
-        attachmentArchiveDirectory: archiveDir.path,
+        archiveLookup: LegacyOverlayGraphAttachmentArchiveLookup(
+          graphDatabase: workingDatabase,
+          overlayDatabase: overlayDatabase,
+          archiveDirectory: archiveDir.path,
+        ),
       ),
     );
     final stats = await reader.readAttachmentStats(chatSsId: chatSsId);

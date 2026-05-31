@@ -8,7 +8,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../essentials/db/feature_level_providers.dart';
 import '../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import '../../../essentials/logging/application/app_logger.dart';
-import 'cross_snapshot_mapper.dart';
+import '../../../essentials/source_scoped_import/infrastructure/import_database_provider.dart';
+import 'cross_snapshot_mapping.dart';
+import 'graph_cross_snapshot_mapper.dart';
 import 'historical_snapshot_reader.dart';
 
 part 'deterministic_recovery_provider.g.dart';
@@ -150,13 +152,15 @@ class DeterministicRecovery extends _$DeterministicRecovery {
       return;
     }
 
-    // Check import DB precondition.
-    final importDb = await ref.read(sqfliteImportDatabaseProvider.future);
-    final workingDb = await ref.read(driftWorkingDatabaseProvider.future);
+    // Check source-scoped graph import precondition.
+    final importDb = await ref.read(importDatabaseProvider.future);
+    final graphDb = await ref.read(
+      driftConversationGraphDatabaseProvider.future,
+    );
 
-    final mapper = CrossSnapshotMapper(
+    final mapper = GraphCrossSnapshotMapper(
       importDb: importDb,
-      workingDb: workingDb,
+      graphDb: graphDb,
     );
 
     final isPopulated = await mapper.isImportDbPopulated();
