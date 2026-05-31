@@ -2,6 +2,7 @@
 // PUBLIC API — Barrel exports
 // =============================================================================
 
+export './application/message_evidence/recovered_message_parity_diagnostic_provider.dart';
 export './application/sidebar_cassette_spec/coordinators/cassette_coordinator.dart';
 export './application/sidebar_cassette_spec/coordinators/info_cassette_coordinator.dart';
 export './application/sidebar_cassette_spec/payloads/conversation_signatures_cassette_payload.dart';

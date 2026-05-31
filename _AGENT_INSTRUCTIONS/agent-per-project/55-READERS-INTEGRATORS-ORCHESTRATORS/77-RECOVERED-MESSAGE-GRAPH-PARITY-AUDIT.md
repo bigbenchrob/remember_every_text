@@ -218,9 +218,11 @@ and import_ss data:
 | 134337 | 2026-04-09T22:10:36.000Z | On Its Way: Purolator Your Way has shipp |
 | 134421 | 2026-04-10T14:32:36.000Z | CRA Multi-Factor Authentication (MFA): Y |
 
-Interpretation: these may be source rows that were present when legacy recovered
-tables were built but no longer exist in the current live source/import graph.
-They are the main blocker to deleting legacy recovered storage.
+Interpretation: these initially appeared to be source rows that were present
+when legacy recovered tables were built but no longer exist in the current live
+source/import graph. They were later explained by user testing of the Unknown
+Senders discard flow and are now classified as user-suppressed legacy-only
+rows, not unexplained source-integrity loss.
 
 ### Graph Orphan Not In Legacy
 
@@ -258,16 +260,13 @@ Do not wire the graph recovered repository into production yet.
 Next safe implementation step:
 
 1. Keep the legacy recovered repository as the production provider.
-2. Add a diagnostic provider around the pure parity comparator so the app can
+2. Use the diagnostic provider around the pure parity comparator so the app can
    produce the same comparison without one-off SQL.
-3. Decide whether legacy-only rows should be:
-   - retained through a small compatibility fallback, or
-   - imported as a recovered source, or
-   - accepted as historical legacy-only evidence that blocks retirement until a
-     recovered-source model exists.
+3. Keep graph recovered cutover gated on diagnostics until unresolved
+   legacy-only rows remain zero on current real data.
 
-Status: started. A pure `compareRecoveredMessageEvidence` comparator now
-classifies:
+Status: diagnostic boundary added. A pure `compareRecoveredMessageEvidence`
+comparator now classifies:
 
 - graph-orphan matches
 - now-projectable legacy rows
@@ -278,7 +277,18 @@ classifies:
 - attachment-count mismatches
 - GUID/text mismatches
 
-It is intentionally repository-agnostic and not wired into production.
+It is intentionally repository-agnostic. The application-level
+`recoveredMessageParityDiagnosticProvider` composes:
+
+- legacy recovered evidence repository
+- graph recovered candidate repository
+- `GraphRecoveredMessageProjectabilityRepository`
+- overlay dismissed-handle state
+- the pure parity comparator
+
+This provider is diagnostic-only. It does not replace the production recovered
+message repository, does not mutate overlay/working data, and must not be used
+as a presentation workaround.
 
 ## Cutover Criteria
 

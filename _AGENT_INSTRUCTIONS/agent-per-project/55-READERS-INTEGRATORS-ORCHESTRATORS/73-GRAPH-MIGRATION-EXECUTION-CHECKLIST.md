@@ -580,6 +580,12 @@ archives.
   parity comparator now distinguishes known suppressed legacy-only rows from
   unresolved legacy-only rows so diagnostics do not overstate dismissal effects
   as retention blockers.
+- Added `recoveredMessageParityDiagnosticProvider` as a diagnostic-only
+  application boundary around the legacy recovered repository, graph recovered
+  candidate repository, `GraphRecoveredMessageProjectabilityRepository`,
+  dismissed-handle overlay state, and pure parity comparator. Production
+  recovered evidence remains on the legacy repository until cutover is
+  separately reviewed.
 
 ### Exit Criteria
 
