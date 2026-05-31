@@ -54,6 +54,7 @@ void main() {
         expect(report.canCutOverWithoutEvidenceLoss, isFalse);
         expect(report.requiresCompatibilityRetention, isTrue);
         expect(report.hasEvidenceMismatches, isFalse);
+        expect(report.matchedEvidenceParityPasses, isTrue);
         expect(report.legacyOnlySamples.single.guid, 'legacy-only');
         expect(report.graphOnlySamples.single.guid, 'graph-only');
         expect(report.nowProjectableSamples.single.guid, 'projectable');
@@ -92,6 +93,7 @@ void main() {
       expect(report.textMismatchSamples.single.legacyTextPreview, 'legacy');
       expect(report.textMismatchSamples.single.graphTextPreview, 'graph');
       expect(report.hasEvidenceMismatches, isTrue);
+      expect(report.matchedEvidenceParityPasses, isFalse);
       expect(report.canCutOverWithoutEvidenceLoss, isFalse);
     });
 

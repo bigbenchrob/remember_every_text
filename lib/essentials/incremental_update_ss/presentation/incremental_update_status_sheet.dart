@@ -826,11 +826,15 @@ class _RecoveredParitySection extends StatelessWidget {
           rows: [
             _StatusRow(
               'cutover gate',
-              diagnostic.canCutOverWithoutEvidenceLoss
-                  ? 'passes: no unresolved legacy-only rows or evidence mismatches'
-                  : 'blocked: unresolved rows or evidence mismatches remain',
+              _cutoverGateLabel(report),
               labelWidth: 260,
             ),
+            if (report.requiresCompatibilityRetention)
+              const _StatusRow(
+                'legacy-only caveat',
+                'legacy-only rows require retention or explicit acceptance',
+                labelWidth: 260,
+              ),
             _StatusRow(
               'legacy recovered rows',
               '${report.legacyCount}',
@@ -937,6 +941,16 @@ class _RecoveredParitySection extends StatelessWidget {
 
   String _formatDate(DateTime? value) {
     return value?.toIso8601String() ?? 'unknown date';
+  }
+
+  String _cutoverGateLabel(RecoveredMessageParityReport report) {
+    if (!report.matchedEvidenceParityPasses) {
+      return 'blocked: evidence mismatches remain';
+    }
+    if (report.requiresCompatibilityRetention) {
+      return 'matched evidence passes; legacy-only caveat remains';
+    }
+    return 'passes: no unresolved legacy-only rows or evidence mismatches';
   }
 }
 

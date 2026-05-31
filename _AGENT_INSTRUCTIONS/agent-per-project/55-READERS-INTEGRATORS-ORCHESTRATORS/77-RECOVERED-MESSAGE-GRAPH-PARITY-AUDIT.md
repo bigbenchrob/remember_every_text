@@ -309,6 +309,12 @@ source text. The parity comparator now normalizes known no-content fallback
 labels to the same value so wording differences do not block cutover as
 evidence loss.
 
+After that normalization, the remaining two legacy-only rows were identified by
+the user as intentionally deleted MFA/alert messages. They are a
+legacy-retention or explicit-acceptance caveat, not a graph evidence mismatch.
+The diagnostic wording therefore separates matched-evidence parity from
+legacy-only retention decisions.
+
 ## Cutover Criteria
 
 Graph recovered repository can replace the legacy repository only when:

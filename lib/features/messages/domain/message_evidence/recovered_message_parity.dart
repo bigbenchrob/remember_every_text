@@ -45,6 +45,8 @@ class RecoveredMessageParityReport {
       guidMismatchCount > 0 ||
       textMismatchCount > 0;
 
+  bool get matchedEvidenceParityPasses => !hasEvidenceMismatches;
+
   bool get canCutOverWithoutEvidenceLoss =>
       !hasUnresolvedLegacyOnlyRows && !hasEvidenceMismatches;
 

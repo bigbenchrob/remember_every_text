@@ -597,6 +597,8 @@ archives.
 - Classified equivalent "no preserved content" fallback labels as the same
   parity value. Legacy and graph wording differences for sparse/no-content
   artifacts no longer count as evidence text loss.
+- Clarified the graph parity gate wording: matched graph evidence can pass while
+  legacy-only rows remain a separate retention/acceptance caveat.
 
 ### Exit Criteria
 
