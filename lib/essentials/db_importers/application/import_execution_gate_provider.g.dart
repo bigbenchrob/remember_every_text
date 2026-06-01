@@ -9,11 +9,11 @@ part of 'import_execution_gate_provider.dart';
 String _$importExecutionGateHash() =>
     r'93208f85956e1d13cf047cd0f4a59dbd874dd463';
 
-/// Global import/migration execution gate.
+/// Global import/graph-maintenance execution gate.
 ///
-/// This acts as a single source of truth for who currently owns the import
-/// execution token ("the ball"). Only one owner may run import/migration work
-/// at a time. Re-entrant acquisition by the same owner is allowed.
+/// This acts as a single source of truth for who currently owns derived-data
+/// maintenance. Only one owner may run import, graph build, or migration work at
+/// a time. Re-entrant acquisition by the same owner is allowed.
 ///
 /// Copied from [ImportExecutionGate].
 @ProviderFor(ImportExecutionGate)
