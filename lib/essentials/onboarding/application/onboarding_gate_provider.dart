@@ -38,9 +38,9 @@ part 'onboarding_gate_provider.g.dart';
 /// screen is shown.  Nothing else can proceed until FDA is confirmed.
 ///
 /// Gate 2 — Data import:
-/// Once FDA is confirmed, checks whether both import and working databases
-/// exist with data.  If not, exposes [OnboardingStatus.awaitingUserAction]
-/// so the import overlay appears.
+/// Once FDA is confirmed, checks whether the source-scoped import ledger and
+/// app-facing conversation graph exist with data. If not, exposes
+/// [OnboardingStatus.awaitingUserAction] so the import overlay appears.
 ///
 /// [startImportAndMigration] delegates to [DbImportControlViewModel] and
 /// watches its state to transition through importing → migrating → complete.

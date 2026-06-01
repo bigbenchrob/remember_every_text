@@ -14,6 +14,8 @@ import '../../db/infrastructure/data_sources/local/conversation_graph/conversati
 import '../../db_importers/domain/entities/db_import_result.dart';
 import '../../db_importers/presentation/view_model/db_import_control_provider.dart';
 import '../../db_migrate/domain/entities/db_migration_result.dart';
+import '../../source_scoped_import/infrastructure/import_database_provider.dart'
+    as source_scoped_import;
 import '../domain/onboarding_environment_report.dart';
 import '../infrastructure/persistence/overlay_onboarding_failure_storage.dart';
 import 'fda_checker.dart';
@@ -202,7 +204,10 @@ class _OnboardingEnvironmentEvaluator {
           );
 
     final databaseDirPath = ref.watch(onboardingDatabaseDirectoryPathProvider);
-    final importDbPath = p.join(databaseDirPath, 'macos_import.db');
+    final importDbPath = p.join(
+      databaseDirPath,
+      source_scoped_import.importDatabaseFileName,
+    );
     final graphDbPath = p.join(
       databaseDirPath,
       conversationGraphDatabaseFileName,
@@ -222,7 +227,10 @@ class _OnboardingEnvironmentEvaluator {
       queryOnly: true,
     );
 
-    final importRowCount = await _readImportMessagesCount(importDbPath);
+    final importRowCount = _readSqliteCount(
+      dbPath: importDbPath,
+      tableName: 'messages',
+    );
     final graphRowCount = isMaintenanceLocked
         ? null
         : _readSqliteCount(dbPath: graphDbPath, tableName: 'messages');
@@ -583,25 +591,6 @@ class _OnboardingEnvironmentEvaluator {
         return _AddressBookProbeResult(probe: _probeFile(filePath));
       },
     );
-  }
-
-  Future<int?> _readImportMessagesCount(String dbPath) async {
-    final file = File(dbPath);
-    if (!file.existsSync() || file.lengthSync() == 0) {
-      return null;
-    }
-
-    try {
-      final importDb = await ref.watch(sqfliteImportDatabaseProvider.future);
-      final database = await importDb.database;
-      final result = await database.rawQuery(
-        'SELECT COUNT(*) as count FROM messages',
-      );
-      final value = result.first['count'];
-      return _asInt(value);
-    } catch (_) {
-      return null;
-    }
   }
 
   int? _readSqliteCount({

@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import 'package:remember_this_text/essentials/onboarding/application/database_existence_checker.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart'
+    as source_scoped_import;
 import 'package:sqlite3/sqlite3.dart';
 
 void main() {
@@ -22,10 +24,10 @@ void main() {
       }
     });
 
-    test('requires import database and ready graph database', () {
+    test('requires graph import database and ready graph database', () {
       const checker = DatabaseExistenceChecker();
       File(
-        path.join(tempDir.path, 'macos_import.db'),
+        path.join(tempDir.path, source_scoped_import.importDatabaseFileName),
       ).writeAsStringSync('not empty');
       _createReadyGraphDatabase(
         path.join(tempDir.path, conversationGraphDatabaseFileName),
@@ -34,17 +36,20 @@ void main() {
       expect(checker.hasPopulatedDatabases(tempDir.path), isTrue);
     });
 
-    test('does not treat legacy working database as sufficient', () {
-      const checker = DatabaseExistenceChecker();
-      File(
-        path.join(tempDir.path, 'macos_import.db'),
-      ).writeAsStringSync('not empty');
-      File(
-        path.join(tempDir.path, 'working.db'),
-      ).writeAsStringSync('legacy only');
+    test(
+      'does not treat legacy import and working databases as sufficient',
+      () {
+        const checker = DatabaseExistenceChecker();
+        File(
+          path.join(tempDir.path, 'macos_import.db'),
+        ).writeAsStringSync('not empty');
+        File(
+          path.join(tempDir.path, 'working.db'),
+        ).writeAsStringSync('legacy only');
 
-      expect(checker.hasPopulatedDatabases(tempDir.path), isFalse);
-    });
+        expect(checker.hasPopulatedDatabases(tempDir.path), isFalse);
+      },
+    );
   });
 }
 

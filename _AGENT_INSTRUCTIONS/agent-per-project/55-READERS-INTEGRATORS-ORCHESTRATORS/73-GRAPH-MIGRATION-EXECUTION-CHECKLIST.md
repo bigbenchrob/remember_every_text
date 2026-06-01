@@ -286,11 +286,11 @@ than dev-panel-owned.
 - The live `chat.db` monitor now gates automatic incremental work on graph app
   data readiness instead of legacy working projection readiness.
 - The onboarding fallback database-existence check now requires
-  `macos_import.db` plus a ready `working_ss.db` conversation graph; a legacy
-  `working.db` alone is no longer sufficient.
+  `macos_import_ss.db` plus a ready `working_ss.db` conversation graph; legacy
+  import/working databases alone are no longer sufficient.
 - The onboarding environment report now probes `working_ss.db` for the
-  app-facing conversation graph readiness view while leaving legacy reset/import
-  mechanics intact.
+  app-facing conversation graph readiness view and `macos_import_ss.db` for the
+  app-facing import ledger while leaving legacy reset/import mechanics intact.
 - Message data reset now treats `macos_import_ss.db` and `working_ss.db` as
   first-class derived app databases: it closes and invalidates the source-scoped
   import/graph providers, deletes `-wal`/`-shm` sidecars for all derived DBs,

@@ -4,10 +4,12 @@ import 'package:path/path.dart' as path;
 
 import '../../db/feature_level_providers/conversation_graph_readiness_provider.dart';
 import '../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
+import '../../source_scoped_import/infrastructure/import_database_provider.dart'
+    as source_scoped_import;
 
-/// Pure check: do `macos_import.db` and the conversation graph exist with data?
+/// Pure check: do `macos_import_ss.db` and the conversation graph exist?
 ///
-/// Returns `true` when both files are present and non-empty (file size > 0).
+/// Returns `true` when the graph import ledger exists and the graph is ready.
 /// This is a cheap filesystem check that avoids opening SQLite connections.
 ///
 /// A zero-byte file is treated the same as absent — SQLite creates the file
@@ -17,7 +19,9 @@ class DatabaseExistenceChecker {
 
   /// Returns `true` if both import and graph databases exist and are populated.
   bool hasPopulatedDatabases(String databaseDirectory) {
-    final importFile = File(path.join(databaseDirectory, 'macos_import.db'));
+    final importFile = File(
+      path.join(databaseDirectory, source_scoped_import.importDatabaseFileName),
+    );
     final graphPath = path.join(
       databaseDirectory,
       conversationGraphDatabaseFileName,

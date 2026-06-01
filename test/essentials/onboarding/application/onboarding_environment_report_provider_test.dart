@@ -6,19 +6,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/domain_driven_development/value_objects.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
-import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/import/sqflite_import_database.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import 'package:remember_this_text/essentials/db_importers/application/debug_settings_provider.dart';
 import 'package:remember_this_text/essentials/db_importers/domain/entities/db_import_result.dart';
 import 'package:remember_this_text/essentials/db_migrate/domain/entities/db_migration_result.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
 import 'package:remember_this_text/essentials/onboarding/infrastructure/persistence/overlay_onboarding_failure_storage.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart'
+    as source_scoped_import;
 import 'package:remember_this_text/features/address_book_folders/domain/entities/address_book_folder_aggregate.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/entities/address_book_folder_entity.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/value_objects/value_objects.dart';
 import 'package:remember_this_text/features/address_book_folders/feature_level_providers.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 void main() {
@@ -26,11 +25,6 @@ void main() {
     late Directory tempDir;
     late OverlayDatabase overlayDb;
     late ProviderContainer container;
-
-    setUpAll(() {
-      sqfliteFfiInit();
-      databaseFactory = databaseFactoryFfi;
-    });
 
     setUp(() async {
       tempDir = await Directory.systemTemp.createTemp(
@@ -151,7 +145,10 @@ void main() {
         tempDir.path,
         'AddressBook-v22.abcddb',
       );
-      _createProjectionDatabase(tempDir.path, 'macos_import.db');
+      _createProjectionDatabase(
+        tempDir.path,
+        source_scoped_import.importDatabaseFileName,
+      );
       _createGraphDatabase(tempDir.path);
 
       container = ProviderContainer(
@@ -196,40 +193,15 @@ void main() {
         tempDir.path,
         'AddressBook-v22.abcddb',
       );
-      final importDb = SqfliteImportDatabase(
-        databaseDirectory: tempDir.path,
-        databaseName: 'macos_import.db',
-        debugSettings: const ImportDebugSettingsState(),
-      );
-      addTearDown(importDb.close);
-      final batchId = await importDb.insertImportBatch(
-        startedAtUtc: DateTime.utc(2026, 03, 24).toIso8601String(),
-      );
-      await importDb.insertChat(
-        id: 1,
-        guid: 'chat-1',
-        service: 'iMessage',
-        batchId: batchId,
-      );
-      await importDb.insertMessage(
-        id: 1,
-        guid: 'message-1',
-        chatId: 1,
-        service: 'iMessage',
-        isFromMe: false,
-        text: 'message-1',
-        hasAttributedBodySource: false,
-        hasMessageSummaryInfo: false,
-        hasPayloadDataSource: false,
-        isSystemMessage: false,
-        batchId: batchId,
+      _createProjectionDatabase(
+        tempDir.path,
+        source_scoped_import.importDatabaseFileName,
       );
       _createGraphDatabase(tempDir.path, graphComplete: false);
 
       container = ProviderContainer(
         overrides: [
           overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
-          sqfliteImportDatabaseProvider.overrideWith((ref) async => importDb),
           onboardingFullDiskAccessProvider.overrideWith((ref) => true),
           onboardingMessagesDatabasePathProvider.overrideWith(
             (ref) => messagesDbPath,
@@ -262,40 +234,15 @@ void main() {
           tempDir.path,
           'AddressBook-v22.abcddb',
         );
-        final importDb = SqfliteImportDatabase(
-          databaseDirectory: tempDir.path,
-          databaseName: 'macos_import.db',
-          debugSettings: const ImportDebugSettingsState(),
-        );
-        addTearDown(importDb.close);
-        final batchId = await importDb.insertImportBatch(
-          startedAtUtc: DateTime.utc(2026, 03, 24).toIso8601String(),
-        );
-        await importDb.insertChat(
-          id: 1,
-          guid: 'chat-1',
-          service: 'iMessage',
-          batchId: batchId,
-        );
-        await importDb.insertMessage(
-          id: 1,
-          guid: 'message-1',
-          chatId: 1,
-          service: 'iMessage',
-          isFromMe: false,
-          text: 'message-1',
-          hasAttributedBodySource: false,
-          hasMessageSummaryInfo: false,
-          hasPayloadDataSource: false,
-          isSystemMessage: false,
-          batchId: batchId,
+        _createProjectionDatabase(
+          tempDir.path,
+          source_scoped_import.importDatabaseFileName,
         );
         _createGraphDatabase(tempDir.path, graphComplete: true);
 
         container = ProviderContainer(
           overrides: [
             overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
-            sqfliteImportDatabaseProvider.overrideWith((ref) async => importDb),
             onboardingFullDiskAccessProvider.overrideWith((ref) => true),
             onboardingMessagesDatabasePathProvider.overrideWith(
               (ref) => messagesDbPath,
@@ -329,40 +276,15 @@ void main() {
           tempDir.path,
           'AddressBook-v22.abcddb',
         );
-        final importDb = SqfliteImportDatabase(
-          databaseDirectory: tempDir.path,
-          databaseName: 'macos_import.db',
-          debugSettings: const ImportDebugSettingsState(),
-        );
-        addTearDown(importDb.close);
-        final batchId = await importDb.insertImportBatch(
-          startedAtUtc: DateTime.utc(2026, 03, 24).toIso8601String(),
-        );
-        await importDb.insertChat(
-          id: 1,
-          guid: 'chat-1',
-          service: 'iMessage',
-          batchId: batchId,
-        );
-        await importDb.insertMessage(
-          id: 1,
-          guid: 'message-1',
-          chatId: 1,
-          service: 'iMessage',
-          isFromMe: false,
-          text: 'message-1',
-          hasAttributedBodySource: false,
-          hasMessageSummaryInfo: false,
-          hasPayloadDataSource: false,
-          isSystemMessage: false,
-          batchId: batchId,
+        _createProjectionDatabase(
+          tempDir.path,
+          source_scoped_import.importDatabaseFileName,
         );
         _createGraphDatabase(tempDir.path, graphComplete: true);
 
         container = ProviderContainer(
           overrides: [
             overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
-            sqfliteImportDatabaseProvider.overrideWith((ref) async => importDb),
             driftWorkingDatabaseProvider.overrideWith((ref) async {
               throw StateError('working.db should not be opened');
             }),
@@ -403,42 +325,14 @@ void main() {
           tempDir.path,
           'AddressBook-v22.abcddb',
         );
-        final importDb = SqfliteImportDatabase(
-          databaseDirectory: tempDir.path,
-          databaseName: 'macos_import.db',
-          debugSettings: const ImportDebugSettingsState(),
-        );
-        addTearDown(() async {
-          await importDb.close();
-        });
-
         final storage = OverlayOnboardingFailureStorage(
           overlayDb: Future<OverlayDatabase>.value(overlayDb),
         );
-        final batchId = await importDb.insertImportBatch(
-          startedAtUtc: DateTime.utc(2026, 03, 24).toIso8601String(),
+        _createProjectionDatabase(
+          tempDir.path,
+          source_scoped_import.importDatabaseFileName,
+          rowCount: 120,
         );
-        await importDb.insertChat(
-          id: 1,
-          guid: 'chat-1',
-          service: 'iMessage',
-          batchId: batchId,
-        );
-        for (var index = 0; index < 120; index++) {
-          await importDb.insertMessage(
-            id: index + 1,
-            guid: 'message-$index',
-            chatId: 1,
-            service: 'iMessage',
-            isFromMe: false,
-            text: 'message-$index',
-            hasAttributedBodySource: false,
-            hasMessageSummaryInfo: false,
-            hasPayloadDataSource: false,
-            isSystemMessage: false,
-            batchId: batchId,
-          );
-        }
         _createGraphDatabase(tempDir.path, rowCount: 1, graphComplete: false);
         await storage.saveMigrationResult(
           const DbMigrationResult(
@@ -452,7 +346,6 @@ void main() {
         container = ProviderContainer(
           overrides: [
             overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
-            sqfliteImportDatabaseProvider.overrideWith((ref) async => importDb),
             onboardingFullDiskAccessProvider.overrideWith((ref) => true),
             onboardingMessagesDatabasePathProvider.overrideWith(
               (ref) => messagesDbPath,
