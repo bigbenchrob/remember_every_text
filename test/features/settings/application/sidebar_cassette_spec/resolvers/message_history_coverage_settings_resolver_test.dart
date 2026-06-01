@@ -70,61 +70,65 @@ void main() {
       expect(payload.footnote, isNull);
     });
 
-    test('reads visible message count from the conversation graph', () async {
-      final tempDir = await Directory.systemTemp.createTemp(
-        'message_history_coverage_settings_resolver_test',
-      );
-      final chatDbPath = '${tempDir.path}/chat.db';
-      final graphDb = ConversationGraphDatabase(NativeDatabase.memory());
-      final sourceDb = sqlite3.open(chatDbPath);
-      try {
-        sourceDb.execute('''
+    test(
+      'reads conversation-linked and recovered counts from the graph',
+      () async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'message_history_coverage_settings_resolver_test',
+        );
+        final chatDbPath = '${tempDir.path}/chat.db';
+        final graphDb = ConversationGraphDatabase(NativeDatabase.memory());
+        final sourceDb = sqlite3.open(chatDbPath);
+        try {
+          sourceDb.execute('''
           CREATE TABLE message (
             ROWID INTEGER PRIMARY KEY,
             date INTEGER
           )
         ''');
-        sourceDb.execute(
-          'INSERT INTO message (ROWID, date) VALUES (1, 0), (2, 0), (3, 0)',
-        );
-        await graphDb.executeSql('''
+          sourceDb.execute(
+            'INSERT INTO message (ROWID, date) VALUES (1, 0), (2, 0), (3, 0)',
+          );
+          await graphDb.executeSql('''
           INSERT INTO messages (ss_id, guid, is_from_me)
           VALUES
             (8796093022209, 'graph-message-1', 0),
             (8796093022210, 'graph-message-2', 1)
         ''');
+          await graphDb.executeSql('''
+          INSERT INTO chat_to_message (chat_ss_id, message_ss_id)
+          VALUES (8796093022300, 8796093022209)
+        ''');
 
-        final container = ProviderContainer(
-          overrides: [
-            onboardingFullDiskAccessProvider.overrideWith((ref) => true),
-            onboardingMessagesDatabasePathProvider.overrideWith(
-              (ref) => chatDbPath,
-            ),
-            driftConversationGraphDatabaseProvider.overrideWith(
-              (ref) async => graphDb,
-            ),
-            driftWorkingDatabaseProvider.overrideWith((ref) async {
-              throw StateError('legacy working database unavailable');
-            }),
-          ],
-        );
-        addTearDown(container.dispose);
+          final container = ProviderContainer(
+            overrides: [
+              onboardingFullDiskAccessProvider.overrideWith((ref) => true),
+              onboardingMessagesDatabasePathProvider.overrideWith(
+                (ref) => chatDbPath,
+              ),
+              driftConversationGraphDatabaseProvider.overrideWith(
+                (ref) async => graphDb,
+              ),
+            ],
+          );
+          addTearDown(container.dispose);
 
-        final report = await container.read(
-          messageHistoryCoverageReportProvider.future,
-        );
+          final report = await container.read(
+            messageHistoryCoverageReportProvider.future,
+          );
 
-        expect(report.chatDbTotalCount, 3);
-        expect(report.workingDbVisibleCount, 2);
-        expect(report.workingDbRecoveredCount, 0);
-        expect(report.status, MessageHistoryCoverageStatus.incompleteImport);
-      } finally {
-        sourceDb.dispose();
-        await graphDb.close();
-        if (tempDir.existsSync()) {
-          await tempDir.delete(recursive: true);
+          expect(report.chatDbTotalCount, 3);
+          expect(report.workingDbVisibleCount, 1);
+          expect(report.workingDbRecoveredCount, 1);
+          expect(report.status, MessageHistoryCoverageStatus.incompleteImport);
+        } finally {
+          sourceDb.dispose();
+          await graphDb.close();
+          if (tempDir.existsSync()) {
+            await tempDir.delete(recursive: true);
+          }
         }
-      }
-    });
+      },
+    );
   });
 }

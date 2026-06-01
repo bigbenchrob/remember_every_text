@@ -138,8 +138,10 @@ Focused tests now cover the compatibility boundary for:
 
 ### 2. Move legacy read logic behind that boundary
 
-Keep reading `working.db.recovered_unlinked_messages` temporarily, but classify
-the implementation as a legacy compatibility repository.
+Status: complete for production routing. The live recovered-message provider no
+longer reads `working.db.recovered_unlinked_messages`. Retained legacy reads are
+limited to `RetainedLegacyRecoveredMessageEvidenceRepository` for graph parity
+diagnostics and archive/recovery review.
 
 The Message Evidence Spine should depend on typed recovered evidence records,
 not legacy table details.
@@ -251,4 +253,5 @@ Recovered-message migration is complete only when:
 - recovered contact scoping still works
 - message evidence presentation remains shared
 - coverage settings no longer need `working.db.recovered_unlinked_messages`
+  (done; they count graph-orphan recovered rows from `working_ss.db`)
 - `working.db.recovered_unlinked_*` tables are no longer production blockers

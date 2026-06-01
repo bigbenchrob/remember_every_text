@@ -1,14 +1,9 @@
-import 'dart:io';
-
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:sqlite3/sqlite3.dart';
 
-import '../../../../../core/util/date_converter.dart';
 import '../../../../../essentials/db/feature_level_providers.dart';
-import '../../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
-import '../../../../../essentials/db/infrastructure/data_sources/local/working/working_database.dart';
 import '../../../../../essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
+import '../../../infrastructure/repositories/message_history_coverage_repository.dart';
 import '../entities/message_history_coverage_report.dart';
 import '../entities/message_history_coverage_report_logic.dart';
 
@@ -49,7 +44,8 @@ Future<MessageHistoryCoverageReport> messageHistoryCoverageReport(
     );
   }
 
-  final sourceSummary = _readChatDbSummary(chatDbPath);
+  const repository = MessageHistoryCoverageRepository();
+  final sourceSummary = repository.readChatDbSummary(chatDbPath);
   if (sourceSummary == null) {
     return MessageHistoryCoverageReport(
       status: MessageHistoryCoverageStatus.unknown,
@@ -68,19 +64,18 @@ Future<MessageHistoryCoverageReport> messageHistoryCoverageReport(
     final graphDb = await ref.read(
       driftConversationGraphDatabaseProvider.future,
     );
-    final visibleCount = await _readGraphVisibleCount(graphDb);
-    final recoveredCount = await _tryReadRecoveredCount(ref);
+    final graphSummary = await repository.readGraphSummary(graphDb);
     final status = classifyMessageHistoryCoverageReport(
       sourceCount: sourceSummary.totalCount,
-      accountedCount: visibleCount + recoveredCount,
+      accountedCount: graphSummary.totalAccountedCount,
       earliestMessageDate: sourceSummary.earliestMessageDate,
     );
 
     return MessageHistoryCoverageReport(
       status: status,
       chatDbTotalCount: sourceSummary.totalCount,
-      workingDbVisibleCount: visibleCount,
-      workingDbRecoveredCount: recoveredCount,
+      workingDbVisibleCount: graphSummary.conversationLinkedCount,
+      workingDbRecoveredCount: graphSummary.recoveredOrphanCount,
       earliestMessageDate: sourceSummary.earliestMessageDate,
       latestMessageDate: sourceSummary.latestMessageDate,
       generatedAt: generatedAt,
@@ -97,15 +92,6 @@ Future<MessageHistoryCoverageReport> messageHistoryCoverageReport(
       detail:
           'MessageLens could not safely read the conversation graph database: $error',
     );
-  }
-}
-
-Future<int> _tryReadRecoveredCount(MessageHistoryCoverageReportRef ref) async {
-  try {
-    final workingDb = await ref.read(driftWorkingDatabaseProvider.future);
-    return _readRecoveredCount(workingDb);
-  } catch (_) {
-    return 0;
   }
 }
 
@@ -143,92 +129,4 @@ class MessageHistoryCoverageSettingsResolver
       topSpacing: 16,
     );
   }
-}
-
-_ChatDbSummary? _readChatDbSummary(String dbPath) {
-  final file = File(dbPath);
-  if (!file.existsSync()) {
-    return null;
-  }
-
-  try {
-    final database = sqlite3.open(dbPath, mode: OpenMode.readOnly);
-    try {
-      database.execute('PRAGMA query_only = ON;');
-      database.execute('PRAGMA busy_timeout = 3000;');
-
-      final result = database.select('''
-        SELECT
-          COUNT(*) AS total_count,
-          MIN(CASE WHEN date IS NOT NULL AND date != 0 THEN date END) AS first_date,
-          MAX(CASE WHEN date IS NOT NULL AND date != 0 THEN date END) AS last_date
-        FROM message
-      ''');
-      if (result.isEmpty) {
-        return null;
-      }
-
-      final row = result.first;
-      final totalCount = _asInt(row['total_count']);
-      if (totalCount == null) {
-        return null;
-      }
-
-      return _ChatDbSummary(
-        totalCount: totalCount,
-        earliestMessageDate: DateConverter.appleToDateTime(
-          row['first_date'],
-        )?.toUtc(),
-        latestMessageDate: DateConverter.appleToDateTime(
-          row['last_date'],
-        )?.toUtc(),
-      );
-    } finally {
-      database.dispose();
-    }
-  } catch (_) {
-    return null;
-  }
-}
-
-Future<int> _readGraphVisibleCount(ConversationGraphDatabase graphDb) async {
-  final rows = await graphDb.selectRows(
-    'SELECT COUNT(*) AS total_count FROM messages',
-  );
-  return _asInt(rows.single['total_count']) ?? 0;
-}
-
-Future<int> _readRecoveredCount(WorkingDatabase workingDb) async {
-  final result = await workingDb
-      .customSelect(
-        'SELECT COUNT(*) AS total_count FROM recovered_unlinked_messages',
-        readsFrom: {workingDb.recoveredUnlinkedMessages},
-      )
-      .getSingle();
-  return result.read<int?>('total_count') ?? 0;
-}
-
-int? _asInt(Object? value) {
-  if (value == null) {
-    return null;
-  }
-  if (value is int) {
-    return value;
-  }
-  if (value is num) {
-    return value.toInt();
-  }
-  return int.tryParse('$value');
-}
-
-final class _ChatDbSummary {
-  const _ChatDbSummary({
-    required this.totalCount,
-    required this.earliestMessageDate,
-    required this.latestMessageDate,
-  });
-
-  final int totalCount;
-  final DateTime? earliestMessageDate;
-  final DateTime? latestMessageDate;
 }

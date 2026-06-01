@@ -429,8 +429,7 @@ choke points are resolved.
 
 - Message History Coverage settings now read visible message counts from the
   conversation graph and get FDA state through the onboarding provider
-  boundary. Legacy recovered-message count remains an explicit compatibility
-  fallback until recovered-message identity is migrated.
+  boundary.
 - Database Health Audit now receives FDA state from the provider-owned
   onboarding boundary instead of probing `FdaChecker` directly. Its legacy and
   graph database inventory remains intentionally broad because support bundles
@@ -607,6 +606,9 @@ archives.
   `RetainedLegacyRecoveredMessageEvidenceRepository` so remaining `working.db`
   recovered reads are clearly diagnostic/compatibility reads, not production
   recovered-message routing.
+- Message History Coverage no longer reads `working.db.recovered_unlinked_*`.
+  It now reads conversation-linked and graph-orphan recovered counts from the
+  conversation graph through a settings infrastructure repository.
 
 ### Exit Criteria
 
