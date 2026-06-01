@@ -2,7 +2,7 @@
 tier: project
 scope: source-scoped-graph-migration
 status: active
-last_reviewed: 2026-05-31
+last_reviewed: 2026-06-01
 depends_on:
   - 70-GRAPH-SYSTEM-COMPLETION-ROADMAP.md
   - 71-LEGACY-DEPENDENCY-MATRIX.md
@@ -626,6 +626,11 @@ archives.
   but no runtime diagnostic bridge now opens `working.db.recovered_unlinked_*`.
 - Removed the last `WorkingDatabase` helpers from `participant_merge_utils`;
   that utility now contains overlay/contact helper functions only.
+- Retired the unused Supabase mirror runtime stubs: provider, service,
+  bookkeeping repository, unimplemented migrators, config providers, value
+  objects, and obsolete validation failure case. Existing `working.db`
+  Supabase table definitions remain only because the retained legacy Drift
+  schema itself is still retained.
 
 ### Exit Criteria
 

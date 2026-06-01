@@ -2,7 +2,7 @@
 tier: project
 scope: source-scoped-graph-migration
 status: active
-last_reviewed: 2026-05-31
+last_reviewed: 2026-06-01
 depends_on:
   - 66-SS-MIGRATION-STRATEGY.md
   - 67-SS-LEGACY-PARITY-AUDIT.md
@@ -119,7 +119,7 @@ first-class and tested.
 | `lib/essentials/onboarding/application/onboarding_environment_report_provider.dart` | Legacy import state plus graph readiness | Environment diagnostics for onboarding | Production lifecycle | Keep; graph readiness is now app-facing readiness. |
 | `lib/essentials/db/infrastructure/data_sources/local/working/working_database.dart` | Drift `working.db` schema | Legacy working projection | Production lifecycle | Keep until ordinary reads and lifecycle no longer require `working.db`. |
 | `lib/essentials/db/infrastructure/data_sources/local/import/sqflite_import_database.dart` | Sqflite `macos_import.db` schema | Legacy import ledger | Production lifecycle | Keep until source-scoped import ledger replaces production import. |
-| `lib/essentials/db_migrate/application/application_providers/supabase_mirror_sync_service_provider.dart` and related Supabase mirror classes | `working.db` projection | External mirror/export path | Production lifecycle or diagnostic integration | Classify before removal; likely retire or rebase after graph lifecycle completion. |
+| Supabase mirror runtime/service/provider/repository/migrator stubs | Retired | Former external mirror/export path | Deletion candidate closed | Removed after reference scan confirmed no active caller and the service was stub-only. Legacy `working.db` Supabase table definitions remain until the retained `working.db` schema itself is retired, avoiding schema churn for no product gain. |
 
 ## Recovery and Archive Dependencies
 
@@ -214,9 +214,10 @@ and orchestration providers.
    already understand graph readiness, but upstream import/projection still
    depends on legacy DBs.
 
-4. **Classify or retire Supabase mirror and remaining legacy diagnostics.**
-   These should not block ordinary app graph usage, but they must not be
-   mistaken for production graph requirements.
+4. **Classify or retire remaining legacy diagnostics.**
+   Supabase mirror runtime stubs have been retired. Remaining diagnostics
+   should not block ordinary app graph usage, but they must not be mistaken for
+   production graph requirements.
 
 5. **Retire legacy import/projection after blockers close.**
    Delete `macos_import.db` / `working.db` systems only after recovery/archive
