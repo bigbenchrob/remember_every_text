@@ -76,8 +76,7 @@ StartupProbeDecision gateStartupProbeDecisionForAppDataReadiness({
 
   return const StartupProbeDecision(
     shouldSchedule: false,
-    reason:
-        'app data graph is not ready; skipping automatic incremental import/migration',
+    reason: 'app data graph is not ready; skipping automatic graph update',
   );
 }
 
@@ -244,7 +243,7 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
         ref
             .read(appLoggerProvider.notifier)
             .info(
-              '$summary Scheduling incremental import/migration.',
+              '$summary Scheduling live graph update.',
               source: 'ChatDbMonitor',
             );
         _scheduleProbe(trigger: decision.trigger!);
@@ -273,7 +272,7 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
     ref
         .read(appLoggerProvider.notifier)
         .info(
-          'app data graph is not ready; skipping automatic incremental import/migration.',
+          'app data graph is not ready; skipping automatic graph update.',
           source: 'ChatDbMonitor',
         );
   }

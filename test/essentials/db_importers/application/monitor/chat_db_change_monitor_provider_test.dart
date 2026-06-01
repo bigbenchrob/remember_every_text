@@ -60,17 +60,11 @@ void main() {
   });
 
   group('shouldAllowAutomaticIncrementalWork', () {
-    test(
-      'blocks automatic import and migration when app data is not ready',
-      () {
-        expect(
-          shouldAllowAutomaticIncrementalWork(appDataReady: false),
-          isFalse,
-        );
-      },
-    );
+    test('blocks automatic graph update when app data is not ready', () {
+      expect(shouldAllowAutomaticIncrementalWork(appDataReady: false), isFalse);
+    });
 
-    test('preserves automatic import and migration when app data is ready', () {
+    test('preserves automatic graph update when app data is ready', () {
       expect(shouldAllowAutomaticIncrementalWork(appDataReady: true), isTrue);
     });
   });
@@ -136,30 +130,27 @@ void main() {
   });
 
   group('gateStartupProbeDecisionForAppDataReadiness', () {
-    test(
-      'suppresses startup import and migration when app data is not ready',
-      () {
-        const wouldSchedule = StartupProbeDecision(
-          shouldSchedule: true,
-          trigger: StartupProbeTrigger.rowIdAdvanced,
-          reason: 'live MAX(ROWID) is ahead of imported MAX(source_rowid)',
-        );
+    test('suppresses startup graph update when app data is not ready', () {
+      const wouldSchedule = StartupProbeDecision(
+        shouldSchedule: true,
+        trigger: StartupProbeTrigger.rowIdAdvanced,
+        reason: 'live MAX(ROWID) is ahead of imported MAX(source_rowid)',
+      );
 
-        final gated = gateStartupProbeDecisionForAppDataReadiness(
-          decision: wouldSchedule,
-          appDataReady: false,
-        );
+      final gated = gateStartupProbeDecisionForAppDataReadiness(
+        decision: wouldSchedule,
+        appDataReady: false,
+      );
 
-        expect(gated.shouldSchedule, isFalse);
-        expect(gated.trigger, isNull);
-        expect(
-          gated.reason,
-          'app data graph is not ready; skipping automatic incremental import/migration',
-        );
-      },
-    );
+      expect(gated.shouldSchedule, isFalse);
+      expect(gated.trigger, isNull);
+      expect(
+        gated.reason,
+        'app data graph is not ready; skipping automatic graph update',
+      );
+    });
 
-    test('preserves startup import and migration when projection is ready', () {
+    test('preserves startup graph update when projection is ready', () {
       const wouldSchedule = StartupProbeDecision(
         shouldSchedule: true,
         trigger: StartupProbeTrigger.rowIdAdvanced,
