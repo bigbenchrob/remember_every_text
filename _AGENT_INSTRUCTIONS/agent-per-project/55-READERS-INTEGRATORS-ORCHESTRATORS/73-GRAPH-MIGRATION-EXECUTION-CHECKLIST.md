@@ -599,6 +599,10 @@ archives.
   artifacts no longer count as evidence text loss.
 - Clarified the graph parity gate wording: matched graph evidence can pass while
   legacy-only rows remain a separate retention/acceptance caveat.
+- Cut over `recoveredUnlinkedMessagesProvider` to
+  `GraphRecoveredMessageEvidenceRepository`. Recovered-message presentation
+  still uses the shared Message Evidence Spine, legacy recovered storage remains
+  retained for diagnostics/fallback, and the parity diagnostic remains visible.
 
 ### Exit Criteria
 

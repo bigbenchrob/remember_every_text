@@ -315,6 +315,12 @@ legacy-retention or explicit-acceptance caveat, not a graph evidence mismatch.
 The diagnostic wording therefore separates matched-evidence parity from
 legacy-only retention decisions.
 
+With matched evidence parity clean and the remaining legacy-only rows explained,
+`recoveredUnlinkedMessagesProvider` now reads from
+`GraphRecoveredMessageEvidenceRepository`. Legacy recovered storage remains in
+place as a retained compatibility/diagnostic source until legacy retirement is
+reviewed separately.
+
 ## Cutover Criteria
 
 Graph recovered repository can replace the legacy repository only when:
