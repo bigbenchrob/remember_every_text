@@ -665,6 +665,10 @@ archives.
   objects, and obsolete validation failure case. Existing `working.db`
   Supabase table definitions remain only because the retained legacy Drift
   schema itself is still retained.
+- Historical archive folder preflight now estimates GUID-backed duplicate/new
+  source rows against the conversation graph (`working_ss.db.messages`) instead
+  of legacy `working.db.messages`. This removes a low-risk legacy read while
+  keeping actual archive import/removal lifecycle behavior unchanged.
 
 ### Exit Criteria
 

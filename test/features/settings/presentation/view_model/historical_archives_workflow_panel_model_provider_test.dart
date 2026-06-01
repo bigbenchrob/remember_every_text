@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/working/working_database.dart';
+import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import 'package:remember_this_text/essentials/db_importers/application/import_execution_gate_provider.dart';
 import 'package:remember_this_text/features/settings/presentation/view_model/historical_archives_workflow_panel_model_provider.dart';
 import 'package:sqlite3/sqlite3.dart';
@@ -130,14 +130,14 @@ void main() {
   });
 
   group('preflightHistoricalArchivesFolder', () {
-    late WorkingDatabase workingDb;
+    late ConversationGraphDatabase graphDb;
 
     setUp(() {
-      workingDb = WorkingDatabase(NativeDatabase.memory());
+      graphDb = ConversationGraphDatabase(NativeDatabase.memory());
     });
 
     tearDown(() async {
-      await workingDb.close();
+      await graphDb.close();
     });
 
     test('reads source counts from a selected archive folder', () async {
@@ -167,16 +167,13 @@ void main() {
 
       Directory('${tempDirectory.path}/Attachments').createSync();
 
-      await workingDb.customStatement(
-        "INSERT INTO chats (id, guid, service) VALUES (1, 'chat-guid-1', 'iMessage')",
-      );
-      await workingDb.customStatement(
-        "INSERT INTO messages (guid, chat_id, status) VALUES ('m1', 1, 'unknown'), ('projected-only', 1, 'unknown')",
+      await graphDb.executeSql(
+        "INSERT INTO messages (ss_id, guid, is_from_me) VALUES (1, 'm1', 0), (2, 'projected-only', 0)",
       );
 
       final result = await preflightHistoricalArchivesFolder(
         folderPath: tempDirectory.path,
-        workingDb: workingDb,
+        graphDb: graphDb,
       );
 
       expect(
@@ -195,7 +192,7 @@ void main() {
       expect(
         result.preflightSummaryLines,
         contains(
-          'Likely duplicates already in working.db: 1 GUID-backed source rows',
+          'Likely duplicates already in conversation graph: 1 GUID-backed source rows',
         ),
       );
       expect(
@@ -205,7 +202,7 @@ void main() {
       expect(
         result.dryRunSummaryLines,
         contains(
-          'Estimated new messages: 1 GUID-backed source rows not present in working.db',
+          'Estimated new messages: 1 GUID-backed source rows not present in conversation graph',
         ),
       );
       expect(
@@ -229,7 +226,7 @@ void main() {
 
       final result = await preflightHistoricalArchivesFolder(
         folderPath: tempDirectory.path,
-        workingDb: workingDb,
+        graphDb: graphDb,
       );
 
       expect(result.preflight.status, HistoricalArchivesPreflightStatus.failed);

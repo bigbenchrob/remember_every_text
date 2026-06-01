@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:drift/drift.dart' as drift;
 import 'package:file_selector_platform_interface/file_selector_platform_interface.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:path/path.dart' as path;
@@ -8,8 +7,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 import '../../../../essentials/db/feature_level_providers.dart';
+import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/import/sqflite_import_database.dart';
-import '../../../../essentials/db/infrastructure/data_sources/local/working/working_database.dart';
 import '../../../../essentials/db_importers/application/import_execution_gate_provider.dart';
 import '../../../../essentials/db_importers/presentation/view_model/db_import_control_provider.dart';
 
@@ -403,10 +402,10 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       phases: _runningPreflightPhases(),
     );
 
-    WorkingDatabase? workingDb;
+    ConversationGraphDatabase? graphDb;
     SqfliteImportDatabase? importDb;
     try {
-      workingDb = await ref.read(driftWorkingDatabaseProvider.future);
+      graphDb = await ref.read(driftConversationGraphDatabaseProvider.future);
     } catch (_) {}
     try {
       importDb = await ref.read(sqfliteImportDatabaseProvider.future);
@@ -414,7 +413,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
 
     final result = await preflightHistoricalArchivesFolder(
       folderPath: folderPath,
-      workingDb: workingDb,
+      graphDb: graphDb,
       importDb: importDb,
     );
 
@@ -763,14 +762,14 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       return;
     }
 
-    WorkingDatabase? workingDb;
+    ConversationGraphDatabase? graphDb;
     try {
-      workingDb = await ref.read(driftWorkingDatabaseProvider.future);
+      graphDb = await ref.read(driftConversationGraphDatabaseProvider.future);
     } catch (_) {}
 
     final refreshedResult = await preflightHistoricalArchivesFolder(
       folderPath: selectedFolderPath,
-      workingDb: workingDb,
+      graphDb: graphDb,
       importDb: importDb,
     );
 
@@ -1166,7 +1165,7 @@ String _removeImportedArchiveDataDetail({
 Future<HistoricalArchivesFolderPreflightResult>
 preflightHistoricalArchivesFolder({
   required String folderPath,
-  WorkingDatabase? workingDb,
+  ConversationGraphDatabase? graphDb,
   SqfliteImportDatabase? importDb,
 }) async {
   final selectedDirectory = Directory(folderPath);
@@ -1230,9 +1229,9 @@ preflightHistoricalArchivesFolder({
         "SELECT COUNT(*) AS total_count FROM message WHERE guid IS NULL OR TRIM(guid) = ''",
       );
       final dateRange = _readArchiveDateRange(database);
-      final dryRunEstimate = await _estimateDryRunAgainstWorkingDatabase(
+      final dryRunEstimate = await _estimateDryRunAgainstConversationGraph(
         sourceDatabase: database,
-        workingDb: workingDb,
+        graphDb: graphDb,
       );
 
       return HistoricalArchivesFolderPreflightResult(
@@ -1241,7 +1240,7 @@ preflightHistoricalArchivesFolder({
           statusLabel: 'Preflight complete',
           detail: dryRunEstimate.isAvailable
               ? 'Source checks succeeded and GUID-based dry-run estimates are now visible. Canonical import wiring is still pending.'
-              : 'Source checks succeeded, but working.db dry-run comparison is unavailable right now. Canonical import wiring is still pending.',
+              : 'Source checks succeeded, but conversation graph dry-run comparison is unavailable right now. Canonical import wiring is still pending.',
         ),
         selectedFolderPath: folderPath,
         archiveRemovalTargetChatDbPath: chatDbPath,
@@ -1271,9 +1270,9 @@ preflightHistoricalArchivesFolder({
           'Earliest message: ${_dateSummaryLabel(dateRange.earliestMessageUtc)}',
           'Latest message: ${_dateSummaryLabel(dateRange.latestMessageUtc)}',
           if (dryRunEstimate.isAvailable)
-            'Likely duplicates already in working.db: ${dryRunEstimate.duplicateGuidCount} GUID-backed source rows'
+            'Likely duplicates already in conversation graph: ${dryRunEstimate.duplicateGuidCount} GUID-backed source rows'
           else
-            'Likely duplicates already in working.db: unavailable',
+            'Likely duplicates already in conversation graph: unavailable',
           if (dryRunEstimate.isAvailable)
             'Likely new rows: ${dryRunEstimate.newGuidCount} GUID-backed source rows'
           else
@@ -1281,13 +1280,13 @@ preflightHistoricalArchivesFolder({
         ],
         dryRunSummaryLines: [
           if (dryRunEstimate.isAvailable)
-            'Estimated new messages: ${dryRunEstimate.newGuidCount} GUID-backed source rows not present in working.db'
+            'Estimated new messages: ${dryRunEstimate.newGuidCount} GUID-backed source rows not present in conversation graph'
           else
-            'Estimated new messages: working.db comparison unavailable',
+            'Estimated new messages: conversation graph comparison unavailable',
           if (dryRunEstimate.isAvailable)
             'Estimated duplicates: ${dryRunEstimate.duplicateGuidCount} GUID-backed source rows already projected'
           else
-            'Estimated duplicates: working.db comparison unavailable',
+            'Estimated duplicates: conversation graph comparison unavailable',
         ],
         activityLog: [
           HistoricalArchivesLogEntryViewModel(
@@ -1299,7 +1298,7 @@ preflightHistoricalArchivesFolder({
                 ? 'Dry run ready'
                 : 'Dry run unavailable',
             message: dryRunEstimate.isAvailable
-                ? 'Compared ${dryRunEstimate.comparableGuidCount} GUID-backed source rows against working.db.'
+                ? 'Compared ${dryRunEstimate.comparableGuidCount} GUID-backed source rows against the conversation graph.'
                 : dryRunEstimate.unavailableReason!,
           ),
           const HistoricalArchivesLogEntryViewModel(
@@ -1482,7 +1481,10 @@ int _readCount(Database database, String sql) {
     return 0;
   }
 
-  final value = result.first['total_count'];
+  return _readIntegerValue(result.first['total_count']);
+}
+
+int _readIntegerValue(Object? value) {
   if (value is int) {
     return value;
   }
@@ -1585,14 +1587,15 @@ Future<int?> _readMatchedImportedArchiveBatchCount({
   return batchIds.length;
 }
 
-Future<HistoricalArchivesDryRunEstimate> _estimateDryRunAgainstWorkingDatabase({
+Future<HistoricalArchivesDryRunEstimate>
+_estimateDryRunAgainstConversationGraph({
   required Database sourceDatabase,
-  required WorkingDatabase? workingDb,
+  required ConversationGraphDatabase? graphDb,
 }) async {
-  if (workingDb == null) {
+  if (graphDb == null) {
     return const HistoricalArchivesDryRunEstimate.unavailable(
       unavailableReason:
-          'working.db comparison is unavailable because the projected database could not be opened.',
+          'conversation graph comparison is unavailable because the graph database could not be opened.',
     );
   }
 
@@ -1627,8 +1630,8 @@ Future<HistoricalArchivesDryRunEstimate> _estimateDryRunAgainstWorkingDatabase({
           if (_readTrimmedString(row['guid']) case final guid?) guid,
       ];
 
-      duplicateGuidCount += await _countMatchingProjectedGuids(
-        workingDb: workingDb,
+      duplicateGuidCount += await _countMatchingGraphGuids(
+        graphDb: graphDb,
         sourceGuids: sourceGuids,
       );
     }
@@ -1641,13 +1644,13 @@ Future<HistoricalArchivesDryRunEstimate> _estimateDryRunAgainstWorkingDatabase({
   } catch (error) {
     return HistoricalArchivesDryRunEstimate.unavailable(
       unavailableReason:
-          'working.db comparison failed while estimating duplicate GUIDs: $error',
+          'conversation graph comparison failed while estimating duplicate GUIDs: $error',
     );
   }
 }
 
-Future<int> _countMatchingProjectedGuids({
-  required WorkingDatabase workingDb,
+Future<int> _countMatchingGraphGuids({
+  required ConversationGraphDatabase graphDb,
   required List<String> sourceGuids,
 }) async {
   if (sourceGuids.isEmpty) {
@@ -1655,16 +1658,12 @@ Future<int> _countMatchingProjectedGuids({
   }
 
   final placeholders = List.filled(sourceGuids.length, '?').join(', ');
-  final row = await workingDb
-      .customSelect(
-        'SELECT COUNT(*) AS total_count FROM messages WHERE guid IN ($placeholders)',
-        variables: [
-          for (final guid in sourceGuids) drift.Variable.withString(guid),
-        ],
-      )
-      .getSingle();
+  final rows = await graphDb.selectRows(
+    'SELECT COUNT(*) AS total_count FROM messages WHERE guid IN ($placeholders)',
+    sourceGuids,
+  );
 
-  return row.read<int>('total_count');
+  return _readIntegerValue(rows.single['total_count']);
 }
 
 String? _readTrimmedString(Object? value) {
