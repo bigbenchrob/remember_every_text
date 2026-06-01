@@ -319,6 +319,9 @@ than dev-panel-owned.
   build after successful migration; a graph build failure is recorded as the
   user-visible migration failure state because the app-facing graph was not
   produced.
+- Settings-triggered reimport now uses the same success contract as first-run
+  onboarding: import result and migration/graph-build result must both succeed
+  before the overlay can land on reimport complete.
 - Concurrent graph build requests now coalesce through the central build
   controller instead of throwing. If the live monitor and a manual/status action
   overlap, both callers observe the same in-flight build result.

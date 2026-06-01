@@ -175,10 +175,10 @@ class OnboardingGate extends _$OnboardingGate {
       OnboardingStatus.complete ||
       OnboardingStatus.reimporting ||
       OnboardingStatus.reimportMigrating ||
-      OnboardingStatus.reimportComplete => true,
+      OnboardingStatus.reimportComplete ||
+      OnboardingStatus.awaitingUserAction => true,
       null ||
       OnboardingStatus.awaitingFda ||
-      OnboardingStatus.awaitingUserAction ||
       OnboardingStatus.notNeeded => false,
     };
   }
@@ -346,7 +346,15 @@ class OnboardingGate extends _$OnboardingGate {
     try {
       await ref.read(dbImportControlViewModelProvider.notifier).startImport();
     } catch (_) {
-      _setWorkflowOverride(OnboardingStatus.reimportComplete);
+      _finishReimportWithFailure();
+      return;
+    }
+
+    final importSucceeded =
+        ref.read(dbImportControlViewModelProvider).lastImportResult?.success ??
+        false;
+    if (!importSucceeded) {
+      _finishReimportWithFailure();
       return;
     }
 
@@ -358,7 +366,19 @@ class OnboardingGate extends _$OnboardingGate {
           .read(dbImportControlViewModelProvider.notifier)
           .startMigration(skipImportCheck: true);
     } catch (_) {
-      // Swallow — land on complete so user can dismiss.
+      _finishReimportWithFailure();
+      return;
+    }
+
+    final migrationSucceeded =
+        ref
+            .read(dbImportControlViewModelProvider)
+            .lastMigrationResult
+            ?.success ??
+        false;
+    if (!migrationSucceeded) {
+      _finishReimportWithFailure();
+      return;
     }
 
     _setWorkflowOverride(OnboardingStatus.reimportComplete);
@@ -469,7 +489,19 @@ class OnboardingGate extends _$OnboardingGate {
         );
     _clearWorkflowOverride();
     ref.invalidate(onboardingEnvironmentReportProvider);
-    state = OnboardingStatus.awaitingUserAction;
+    _setWorkflowOverride(OnboardingStatus.awaitingUserAction);
+  }
+
+  void _finishReimportWithFailure() {
+    ref
+        .read(appLoggerProvider.notifier)
+        .warn(
+          'Settings-triggered reimport failed; returning to awaiting user action',
+          source: 'OnboardingGate',
+        );
+    _clearWorkflowOverride();
+    ref.invalidate(onboardingEnvironmentReportProvider);
+    _setWorkflowOverride(OnboardingStatus.awaitingUserAction);
   }
 
   /// Close any open import DB connection, delete the files, and

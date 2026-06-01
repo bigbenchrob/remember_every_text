@@ -10,7 +10,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/domain_driven_development/value_objects.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import 'package:remember_this_text/essentials/db_importers/domain/entities/db_import_result.dart';
 import 'package:remember_this_text/essentials/db_importers/presentation/view_model/db_import_control_provider.dart';
+import 'package:remember_this_text/essentials/db_migrate/domain/entities/db_migration_result.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_gate_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
@@ -244,6 +246,119 @@ void main() {
     });
 
     testWidgets(
+      'settings reimport completes only when import and migration succeed',
+      (tester) async {
+        _FakeDbImportControlViewModel.resetFake();
+        _FakeDbImportControlViewModel.importResult = const DbImportResult(
+          batchId: 1,
+          success: true,
+        );
+        _FakeDbImportControlViewModel.migrationResult = const DbMigrationResult(
+          batchId: 1,
+          success: true,
+        );
+
+        addTearDown(_FakeDbImportControlViewModel.resetFake);
+
+        container = ProviderContainer(
+          overrides: [
+            onboardingEnvironmentReportProvider.overrideWith((ref) async {
+              final migrationFailed =
+                  _FakeDbImportControlViewModel.startMigrationCallCount > 0 &&
+                  _FakeDbImportControlViewModel.migrationResult?.success ==
+                      false;
+              return _report(
+                state: migrationFailed
+                    ? OnboardingEnvironmentState.migrationFailed
+                    : OnboardingEnvironmentState.ready,
+                blockerKind: migrationFailed
+                    ? OnboardingBlockerKind.migrationFailed
+                    : OnboardingBlockerKind.none,
+              );
+            }),
+            dbImportControlViewModelProvider.overrideWith(
+              _FakeDbImportControlViewModel.new,
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(_GateHarness(container: container));
+        expect(await _readGateStatus(container), OnboardingStatus.notNeeded);
+
+        final reimportFuture = container
+            .read(onboardingGateProvider.notifier)
+            .startReimport();
+        await tester.pump();
+        await tester.pump();
+        await reimportFuture;
+
+        expect(
+          container.read(onboardingGateProvider),
+          OnboardingStatus.reimportComplete,
+        );
+        expect(_FakeDbImportControlViewModel.startImportCallCount, 1);
+        expect(_FakeDbImportControlViewModel.startMigrationCallCount, 1);
+      },
+    );
+
+    testWidgets(
+      'settings reimport returns to awaitingUserAction when graph-backed migration fails',
+      (tester) async {
+        _FakeDbImportControlViewModel.resetFake();
+        _FakeDbImportControlViewModel.importResult = const DbImportResult(
+          batchId: 1,
+          success: true,
+        );
+        _FakeDbImportControlViewModel.migrationResult = const DbMigrationResult(
+          batchId: 1,
+          success: false,
+          error: 'Conversation graph build failed',
+        );
+
+        addTearDown(_FakeDbImportControlViewModel.resetFake);
+
+        container = ProviderContainer(
+          overrides: [
+            onboardingEnvironmentReportProvider.overrideWith((ref) async {
+              final migrationFailed =
+                  _FakeDbImportControlViewModel.startMigrationCallCount > 0 &&
+                  _FakeDbImportControlViewModel.migrationResult?.success ==
+                      false;
+              return _report(
+                state: migrationFailed
+                    ? OnboardingEnvironmentState.migrationFailed
+                    : OnboardingEnvironmentState.ready,
+                blockerKind: migrationFailed
+                    ? OnboardingBlockerKind.migrationFailed
+                    : OnboardingBlockerKind.none,
+              );
+            }),
+            dbImportControlViewModelProvider.overrideWith(
+              _FakeDbImportControlViewModel.new,
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(_GateHarness(container: container));
+        expect(await _readGateStatus(container), OnboardingStatus.notNeeded);
+
+        final reimportFuture = container
+            .read(onboardingGateProvider.notifier)
+            .startReimport();
+        await tester.pump();
+        await tester.pump();
+        await reimportFuture;
+
+        expect(
+          container.read(onboardingGateProvider),
+          OnboardingStatus.awaitingUserAction,
+        );
+        expect(_FakeDbImportControlViewModel.startImportCallCount, 1);
+        expect(_FakeDbImportControlViewModel.startMigrationCallCount, 1);
+      },
+    );
+
+    testWidgets(
       'automatically resets stale app databases once before returning to awaitingUserAction',
       (tester) async {
         var shouldReset = true;
@@ -284,19 +399,7 @@ void main() {
         );
 
         await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: Directionality(
-              textDirection: TextDirection.ltr,
-              child: Consumer(
-                builder: (context, ref, child) {
-                  final status = ref.watch(onboardingGateProvider);
-                  seenStatuses.add(status);
-                  return const SizedBox.shrink();
-                },
-              ),
-            ),
-          ),
+          _GateHarness(container: container, seenStatuses: seenStatuses),
         );
 
         await container.read(onboardingEnvironmentReportProvider.future);
@@ -323,6 +426,30 @@ void main() {
       },
     );
   });
+}
+
+class _GateHarness extends StatelessWidget {
+  const _GateHarness({required this.container, this.seenStatuses});
+
+  final ProviderContainer container;
+  final List<OnboardingStatus>? seenStatuses;
+
+  @override
+  Widget build(BuildContext context) {
+    return UncontrolledProviderScope(
+      container: container,
+      child: Directionality(
+        textDirection: TextDirection.ltr,
+        child: Consumer(
+          builder: (context, ref, child) {
+            final status = ref.watch(onboardingGateProvider);
+            seenStatuses?.add(status);
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+  }
 }
 
 Future<OnboardingStatus> _readGateStatus(ProviderContainer container) async {
@@ -373,12 +500,47 @@ OnboardingEnvironmentReport _report({
 
 class _FakeDbImportControlViewModel extends DbImportControlViewModel {
   static int resetCallCount = 0;
+  static int startImportCallCount = 0;
+  static int startMigrationCallCount = 0;
   static Completer<void>? resetCompleter;
   static void Function()? onResetStarted;
+  static DbImportResult? importResult;
+  static DbMigrationResult? migrationResult;
+
+  static void resetFake() {
+    resetCallCount = 0;
+    startImportCallCount = 0;
+    startMigrationCallCount = 0;
+    resetCompleter = null;
+    onResetStarted = null;
+    importResult = null;
+    migrationResult = null;
+  }
 
   @override
   DbImportControlState build() {
     return const DbImportControlState();
+  }
+
+  @override
+  Future<void> startImport({String? sourceChatDbOverride}) async {
+    startImportCallCount += 1;
+    state = state.copyWith(
+      lastImportResult:
+          importResult ?? const DbImportResult(batchId: 1, success: true),
+    );
+  }
+
+  @override
+  Future<void> startMigration({
+    bool skipImportCheck = false,
+    bool buildConversationGraph = true,
+  }) async {
+    startMigrationCallCount += 1;
+    state = state.copyWith(
+      lastMigrationResult:
+          migrationResult ?? const DbMigrationResult(batchId: 1, success: true),
+    );
   }
 
   @override
