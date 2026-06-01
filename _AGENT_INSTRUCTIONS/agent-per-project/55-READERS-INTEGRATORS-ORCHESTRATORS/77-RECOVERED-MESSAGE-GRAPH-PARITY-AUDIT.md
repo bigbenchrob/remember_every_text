@@ -13,11 +13,14 @@ depends_on:
 
 ## Purpose
 
-This audit compares the current legacy recovered-message evidence universe with
-the graph-backed recovered repository candidate.
+This audit compares the retained legacy recovered-message evidence universe with
+the graph-backed recovered repository now used by production recovered-message
+presentation.
 
-It is a cutover gate. The graph repository must not replace the legacy
-repository until the semantic differences below are either accepted or repaired.
+It began as a cutover gate. After parity review, production recovered evidence
+was cut over to the graph repository. The legacy repository now remains a
+diagnostic/retention comparison source until legacy retirement is reviewed
+separately.
 
 ## Compared Sources
 
@@ -255,15 +258,17 @@ longer classified as source-integrity blockers.
 
 ## Recommendation
 
-Do not wire the graph recovered repository into production yet.
+Production recovered evidence now uses the graph repository.
 
 Next safe implementation step:
 
-1. Keep the legacy recovered repository as the production provider.
-2. Use the diagnostic provider around the pure parity comparator so the app can
-   produce the same comparison without one-off SQL.
-3. Keep graph recovered cutover gated on diagnostics until unresolved
-   legacy-only rows remain zero on current real data.
+1. Keep the legacy recovered repository and tables as retained
+   diagnostic/compatibility sources.
+2. Continue using the diagnostic provider around the pure parity comparator so
+   the app can compare retained legacy evidence with current graph evidence
+   without one-off SQL.
+3. Treat remaining legacy-only rows as retention caveats unless they reveal
+   evidence loss or a graph import/projection defect.
 
 Status: diagnostic boundary added. A pure `compareRecoveredMessageEvidence`
 comparator now classifies:
@@ -286,20 +291,21 @@ It is intentionally repository-agnostic. The application-level
 - overlay dismissed-handle state
 - the pure parity comparator
 
-This provider is diagnostic-only. It does not replace the production recovered
-message repository, does not mutate overlay/working data, and must not be used
-as a presentation workaround.
+This provider is diagnostic-only. It does not drive production recovered-message
+presentation, does not mutate overlay/working data, and must not be used as a
+presentation workaround.
 
-The diagnostic is visible in the source-scoped Graph health tab so real-data
-cutover readiness can be checked in the app without running one-off SQL. The
-displayed gate reports recovered counts, now-projectable rows, graph-only rows,
-suppressed/unresolved legacy-only rows, attachment/text/GUID mismatches, and
-whether parity currently allows cutover without evidence loss.
+The diagnostic is visible in the source-scoped Graph health tab so retained
+legacy evidence can be compared against production graph evidence without
+running one-off SQL. The displayed parity status reports recovered counts,
+now-projectable rows, graph-only rows, suppressed/unresolved legacy-only rows,
+attachment/text/GUID mismatches, and whether current graph evidence remains
+lossless relative to retained legacy evidence.
 
 The diagnostic also includes typed drilldown samples for unresolved legacy-only
-rows and text mismatches. These samples are intended to explain blockers before
-any recovered-message provider cutover; they are not presentation policy and do
-not alter recovered evidence routing.
+rows and text mismatches. These samples are intended to explain retained legacy
+caveats and evidence mismatches; they are not presentation policy and do not
+alter recovered evidence routing.
 
 Real-data drilldown showed the large text-mismatch count was dominated by
 equivalent no-content fallback labels, for example legacy
@@ -321,9 +327,9 @@ With matched evidence parity clean and the remaining legacy-only rows explained,
 place as a retained compatibility/diagnostic source until legacy retirement is
 reviewed separately.
 
-## Cutover Criteria
+## Production Graph Criteria
 
-Graph recovered repository can replace the legacy repository only when:
+Graph recovered evidence remains acceptable only while:
 
 - graph-orphan matched rows preserve text, sender, semantic, and attachment
   evidence

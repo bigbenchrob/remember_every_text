@@ -814,7 +814,7 @@ class _RecoveredParitySection extends StatelessWidget {
               _StatusRow('status', diagnostic.reason, labelWidth: 260),
               const _StatusRow(
                 'production recovered evidence',
-                'legacy repository remains active',
+                'graph repository pending graph readiness',
                 labelWidth: 260,
               ),
             ],
@@ -825,8 +825,8 @@ class _RecoveredParitySection extends StatelessWidget {
           title: 'Recovered message graph parity',
           rows: [
             _StatusRow(
-              'cutover gate',
-              _cutoverGateLabel(report),
+              'graph parity status',
+              _graphParityStatusLabel(report),
               labelWidth: 260,
             ),
             if (report.requiresCompatibilityRetention)
@@ -892,7 +892,12 @@ class _RecoveredParitySection extends StatelessWidget {
             ),
             const _StatusRow(
               'production recovered evidence',
-              'legacy repository remains active',
+              'graph repository active',
+              labelWidth: 260,
+            ),
+            const _StatusRow(
+              'legacy recovered storage',
+              'retained for diagnostics/fallback review',
               labelWidth: 260,
             ),
             if (report.legacyOnlySamples.isNotEmpty) ...[
@@ -943,14 +948,14 @@ class _RecoveredParitySection extends StatelessWidget {
     return value?.toIso8601String() ?? 'unknown date';
   }
 
-  String _cutoverGateLabel(RecoveredMessageParityReport report) {
+  String _graphParityStatusLabel(RecoveredMessageParityReport report) {
     if (!report.matchedEvidenceParityPasses) {
-      return 'blocked: evidence mismatches remain';
+      return 'attention needed: evidence mismatches remain';
     }
     if (report.requiresCompatibilityRetention) {
       return 'matched evidence passes; legacy-only caveat remains';
     }
-    return 'passes: no unresolved legacy-only rows or evidence mismatches';
+    return 'clean: no unresolved legacy-only rows or evidence mismatches';
   }
 }
 

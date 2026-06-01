@@ -583,13 +583,13 @@ archives.
 - Added `recoveredMessageParityDiagnosticProvider` as a diagnostic-only
   application boundary around the legacy recovered repository, graph recovered
   candidate repository, `GraphRecoveredMessageProjectabilityRepository`,
-  dismissed-handle overlay state, and pure parity comparator. Production
-  recovered evidence remains on the legacy repository until cutover is
-  separately reviewed.
+  dismissed-handle overlay state, and pure parity comparator. This was used as
+  the cutover gate before production recovered evidence moved to the graph
+  repository.
 - Surfaced the recovered-message parity diagnostic in the source-scoped Graph
-  health tab. The UI reports the cutover gate, recovered row counts,
+  health tab. The UI reports graph parity status, recovered row counts,
   now-projectable rows, suppressed/unresolved legacy-only rows, graph-only rows,
-  and attachment/text/GUID mismatch counts without changing production
+  attachment/text/GUID mismatch counts, and the current production
   recovered-message routing.
 - Added drilldown samples for unresolved legacy-only rows and text mismatches so
   parity blockers can be investigated from typed diagnostic output instead of
