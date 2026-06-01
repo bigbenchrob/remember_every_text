@@ -165,7 +165,7 @@ class ImportDatabaseHealthQueryLayer extends DatabaseHealthQueryLayer {
   String get databaseKey => 'import';
 
   @override
-  String get role => 'import_ledger';
+  String get role => 'legacy_import_compatibility';
 
   @override
   Future<List<Map<String, Object?>>> query(String sql) async {
@@ -189,7 +189,7 @@ class WorkingDatabaseHealthQueryLayer extends DatabaseHealthQueryLayer {
   String get databaseKey => 'working';
 
   @override
-  String get role => 'application_primary';
+  String get role => 'legacy_working_compatibility';
 
   @override
   Future<List<Map<String, Object?>>> query(String sql) async {
@@ -239,7 +239,7 @@ class ConversationGraphDatabaseHealthQueryLayer
   String get databaseKey => 'conversation_graph';
 
   @override
-  String get role => 'source_scoped_working_graph';
+  String get role => 'application_primary_source_scoped_graph';
 
   @override
   Future<List<Map<String, Object?>>> query(String sql) {

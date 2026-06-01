@@ -872,6 +872,168 @@ _tableSpecsByDatabase = <String, List<AuditTableSpec>>{
     AuditTableSpec(tableName: 'supabase_sync_state'),
     AuditTableSpec(tableName: 'supabase_sync_logs'),
   ],
+  'source_scoped_import': <AuditTableSpec>[
+    AuditTableSpec(tableName: 'source_registry'),
+    AuditTableSpec(tableName: 'import_batches'),
+    AuditTableSpec(
+      tableName: 'messages',
+      importantColumns: <AuditImportantColumnSpec>[
+        AuditImportantColumnSpec('source_id'),
+        AuditImportantColumnSpec('source_rowid'),
+        AuditImportantColumnSpec('guid'),
+        AuditImportantColumnSpec('sender_handle_ss_id'),
+        AuditImportantColumnSpec(
+          'text',
+          omittedForPrivacy: true,
+          notes: <String>['Sensitive content field intentionally omitted.'],
+        ),
+        AuditImportantColumnSpec(
+          'attributed_body_blob',
+          omittedForPrivacy: true,
+          notes: <String>['Sensitive content field intentionally omitted.'],
+        ),
+        AuditImportantColumnSpec('raw_item_type'),
+        AuditImportantColumnSpec('raw_associated_message_type'),
+        AuditImportantColumnSpec('is_system_message'),
+      ],
+      notes: <String>[
+        'Source-scoped import ledger; ss_id preserves source occurrence identity.',
+      ],
+    ),
+    AuditTableSpec(
+      tableName: 'handles',
+      importantColumns: <AuditImportantColumnSpec>[
+        AuditImportantColumnSpec('source_id'),
+        AuditImportantColumnSpec('source_rowid'),
+        AuditImportantColumnSpec('service'),
+      ],
+    ),
+    AuditTableSpec(
+      tableName: 'chats',
+      importantColumns: <AuditImportantColumnSpec>[
+        AuditImportantColumnSpec('source_id'),
+        AuditImportantColumnSpec('source_rowid'),
+        AuditImportantColumnSpec('guid'),
+        AuditImportantColumnSpec('service'),
+        AuditImportantColumnSpec('group_id'),
+        AuditImportantColumnSpec('original_group_id'),
+      ],
+    ),
+    AuditTableSpec(tableName: 'chat_to_message'),
+    AuditTableSpec(tableName: 'chat_to_handle'),
+    AuditTableSpec(
+      tableName: 'contacts',
+      importantColumns: <AuditImportantColumnSpec>[
+        AuditImportantColumnSpec('source_id'),
+        AuditImportantColumnSpec('source_rowid'),
+        AuditImportantColumnSpec(
+          'display_name',
+          omittedForPrivacy: true,
+          notes: <String>['Contact names are intentionally omitted.'],
+        ),
+      ],
+    ),
+    AuditTableSpec(
+      tableName: 'contact_channels',
+      importantColumns: <AuditImportantColumnSpec>[
+        AuditImportantColumnSpec('kind'),
+        AuditImportantColumnSpec(
+          'value',
+          omittedForPrivacy: true,
+          notes: <String>['Contact channel values are intentionally omitted.'],
+        ),
+      ],
+    ),
+    AuditTableSpec(
+      tableName: 'attachments',
+      importantColumns: <AuditImportantColumnSpec>[
+        AuditImportantColumnSpec('source_id'),
+        AuditImportantColumnSpec('source_rowid'),
+        AuditImportantColumnSpec('guid'),
+        AuditImportantColumnSpec(
+          'transfer_name',
+          omittedForPrivacy: true,
+          notes: <String>['Attachment filenames are intentionally omitted.'],
+        ),
+        AuditImportantColumnSpec('mime_type'),
+      ],
+    ),
+    AuditTableSpec(tableName: 'message_to_attachment'),
+  ],
+  'conversation_graph': <AuditTableSpec>[
+    AuditTableSpec(
+      tableName: 'messages',
+      importantColumns: <AuditImportantColumnSpec>[
+        AuditImportantColumnSpec('guid'),
+        AuditImportantColumnSpec('sender_handle_ss_id'),
+        AuditImportantColumnSpec('sender_canonical_handle_ss_id'),
+        AuditImportantColumnSpec(
+          'text',
+          omittedForPrivacy: true,
+          notes: <String>['Sensitive content field intentionally omitted.'],
+        ),
+        AuditImportantColumnSpec('semantic_kind'),
+        AuditImportantColumnSpec('item_kind'),
+        AuditImportantColumnSpec('is_system_message'),
+        AuditImportantColumnSpec('is_sparse_artifact'),
+      ],
+      notes: <String>[
+        'Primary source-scoped working graph. ss_id is canonical row identity.',
+      ],
+    ),
+    AuditTableSpec(
+      tableName: 'handles',
+      importantColumns: <AuditImportantColumnSpec>[
+        AuditImportantColumnSpec('service'),
+      ],
+    ),
+    AuditTableSpec(
+      tableName: 'canonical_handles',
+      importantColumns: <AuditImportantColumnSpec>[
+        AuditImportantColumnSpec(
+          'display_handle',
+          omittedForPrivacy: true,
+          notes: <String>['Handle values are intentionally omitted.'],
+        ),
+        AuditImportantColumnSpec('alias_count'),
+      ],
+    ),
+    AuditTableSpec(tableName: 'handle_aliases'),
+    AuditTableSpec(
+      tableName: 'chats',
+      importantColumns: <AuditImportantColumnSpec>[
+        AuditImportantColumnSpec('guid'),
+        AuditImportantColumnSpec('service'),
+        AuditImportantColumnSpec('is_group'),
+      ],
+    ),
+    AuditTableSpec(tableName: 'chat_to_message'),
+    AuditTableSpec(tableName: 'chat_to_handle'),
+    AuditTableSpec(
+      tableName: 'contacts',
+      importantColumns: <AuditImportantColumnSpec>[
+        AuditImportantColumnSpec(
+          'display_name',
+          omittedForPrivacy: true,
+          notes: <String>['Contact names are intentionally omitted.'],
+        ),
+      ],
+    ),
+    AuditTableSpec(tableName: 'contact_to_handle'),
+    AuditTableSpec(
+      tableName: 'attachments',
+      importantColumns: <AuditImportantColumnSpec>[
+        AuditImportantColumnSpec('guid'),
+        AuditImportantColumnSpec(
+          'transfer_name',
+          omittedForPrivacy: true,
+          notes: <String>['Attachment filenames are intentionally omitted.'],
+        ),
+        AuditImportantColumnSpec('mime_type'),
+      ],
+    ),
+    AuditTableSpec(tableName: 'message_to_attachment'),
+  ],
   'overlay': <AuditTableSpec>[
     AuditTableSpec(tableName: 'participant_overrides'),
     AuditTableSpec(tableName: 'chat_overrides'),
@@ -1140,6 +1302,144 @@ _relationshipSpecsByDatabase = <String, List<_RelationshipCheckSpec>>{
       joinExpressionDescription: 'reactions.message_guid = messages.guid',
     ),
   ],
+  'source_scoped_import': <_RelationshipCheckSpec>[
+    _RelationshipCheckSpec(
+      checkKey: 'chat_to_message_to_chats_by_ss_id',
+      relationshipType: DatabaseHealthRelationshipType.existenceCheck,
+      parentTable: 'chat_to_message',
+      childTable: 'chats',
+      parentAliasPredicate: 'c.ss_id = p.chat_ss_id',
+      childAliasPredicate: 'p.chat_ss_id = c.ss_id',
+      joinExpressionDescription: 'chat_to_message.chat_ss_id = chats.ss_id',
+    ),
+    _RelationshipCheckSpec(
+      checkKey: 'chat_to_message_to_messages_by_ss_id',
+      relationshipType: DatabaseHealthRelationshipType.existenceCheck,
+      parentTable: 'chat_to_message',
+      childTable: 'messages',
+      parentAliasPredicate: 'c.ss_id = p.message_ss_id',
+      childAliasPredicate: 'p.message_ss_id = c.ss_id',
+      joinExpressionDescription:
+          'chat_to_message.message_ss_id = messages.ss_id',
+    ),
+    _RelationshipCheckSpec(
+      checkKey: 'chat_to_handle_to_chats_by_ss_id',
+      relationshipType: DatabaseHealthRelationshipType.existenceCheck,
+      parentTable: 'chat_to_handle',
+      childTable: 'chats',
+      parentAliasPredicate: 'c.ss_id = p.chat_ss_id',
+      childAliasPredicate: 'p.chat_ss_id = c.ss_id',
+      joinExpressionDescription: 'chat_to_handle.chat_ss_id = chats.ss_id',
+    ),
+    _RelationshipCheckSpec(
+      checkKey: 'chat_to_handle_to_handles_by_ss_id',
+      relationshipType: DatabaseHealthRelationshipType.existenceCheck,
+      parentTable: 'chat_to_handle',
+      childTable: 'handles',
+      parentAliasPredicate: 'c.ss_id = p.handle_ss_id',
+      childAliasPredicate: 'p.handle_ss_id = c.ss_id',
+      joinExpressionDescription: 'chat_to_handle.handle_ss_id = handles.ss_id',
+    ),
+    _RelationshipCheckSpec(
+      checkKey: 'message_to_attachment_to_messages_by_ss_id',
+      relationshipType: DatabaseHealthRelationshipType.existenceCheck,
+      parentTable: 'message_to_attachment',
+      childTable: 'messages',
+      parentAliasPredicate: 'c.ss_id = p.message_ss_id',
+      childAliasPredicate: 'p.message_ss_id = c.ss_id',
+      joinExpressionDescription:
+          'message_to_attachment.message_ss_id = messages.ss_id',
+    ),
+    _RelationshipCheckSpec(
+      checkKey: 'message_to_attachment_to_attachments_by_ss_id',
+      relationshipType: DatabaseHealthRelationshipType.existenceCheck,
+      parentTable: 'message_to_attachment',
+      childTable: 'attachments',
+      parentAliasPredicate: 'c.ss_id = p.attachment_ss_id',
+      childAliasPredicate: 'p.attachment_ss_id = c.ss_id',
+      joinExpressionDescription:
+          'message_to_attachment.attachment_ss_id = attachments.ss_id',
+    ),
+  ],
+  'conversation_graph': <_RelationshipCheckSpec>[
+    _RelationshipCheckSpec(
+      checkKey: 'chat_to_message_to_chats_by_ss_id',
+      relationshipType: DatabaseHealthRelationshipType.existenceCheck,
+      parentTable: 'chat_to_message',
+      childTable: 'chats',
+      parentAliasPredicate: 'c.ss_id = p.chat_ss_id',
+      childAliasPredicate: 'p.chat_ss_id = c.ss_id',
+      joinExpressionDescription: 'chat_to_message.chat_ss_id = chats.ss_id',
+    ),
+    _RelationshipCheckSpec(
+      checkKey: 'chat_to_message_to_messages_by_ss_id',
+      relationshipType: DatabaseHealthRelationshipType.existenceCheck,
+      parentTable: 'chat_to_message',
+      childTable: 'messages',
+      parentAliasPredicate: 'c.ss_id = p.message_ss_id',
+      childAliasPredicate: 'p.message_ss_id = c.ss_id',
+      joinExpressionDescription:
+          'chat_to_message.message_ss_id = messages.ss_id',
+    ),
+    _RelationshipCheckSpec(
+      checkKey: 'chat_to_handle_to_chats_by_ss_id',
+      relationshipType: DatabaseHealthRelationshipType.existenceCheck,
+      parentTable: 'chat_to_handle',
+      childTable: 'chats',
+      parentAliasPredicate: 'c.ss_id = p.chat_ss_id',
+      childAliasPredicate: 'p.chat_ss_id = c.ss_id',
+      joinExpressionDescription: 'chat_to_handle.chat_ss_id = chats.ss_id',
+    ),
+    _RelationshipCheckSpec(
+      checkKey: 'chat_to_handle_to_handles_by_ss_id',
+      relationshipType: DatabaseHealthRelationshipType.existenceCheck,
+      parentTable: 'chat_to_handle',
+      childTable: 'handles',
+      parentAliasPredicate: 'c.ss_id = p.handle_ss_id',
+      childAliasPredicate: 'p.handle_ss_id = c.ss_id',
+      joinExpressionDescription: 'chat_to_handle.handle_ss_id = handles.ss_id',
+    ),
+    _RelationshipCheckSpec(
+      checkKey: 'message_to_attachment_to_messages_by_ss_id',
+      relationshipType: DatabaseHealthRelationshipType.existenceCheck,
+      parentTable: 'message_to_attachment',
+      childTable: 'messages',
+      parentAliasPredicate: 'c.ss_id = p.message_ss_id',
+      childAliasPredicate: 'p.message_ss_id = c.ss_id',
+      joinExpressionDescription:
+          'message_to_attachment.message_ss_id = messages.ss_id',
+    ),
+    _RelationshipCheckSpec(
+      checkKey: 'message_to_attachment_to_attachments_by_ss_id',
+      relationshipType: DatabaseHealthRelationshipType.existenceCheck,
+      parentTable: 'message_to_attachment',
+      childTable: 'attachments',
+      parentAliasPredicate: 'c.ss_id = p.attachment_ss_id',
+      childAliasPredicate: 'p.attachment_ss_id = c.ss_id',
+      joinExpressionDescription:
+          'message_to_attachment.attachment_ss_id = attachments.ss_id',
+    ),
+    _RelationshipCheckSpec(
+      checkKey: 'contact_to_handle_to_contacts',
+      relationshipType: DatabaseHealthRelationshipType.existenceCheck,
+      parentTable: 'contact_to_handle',
+      childTable: 'contacts',
+      parentAliasPredicate: 'c.contact_id = p.contact_id',
+      childAliasPredicate: 'p.contact_id = c.contact_id',
+      joinExpressionDescription:
+          'contact_to_handle.contact_id = contacts.contact_id',
+    ),
+    _RelationshipCheckSpec(
+      checkKey: 'contact_to_handle_to_handles_by_ss_id',
+      relationshipType: DatabaseHealthRelationshipType.existenceCheck,
+      parentTable: 'contact_to_handle',
+      childTable: 'handles',
+      parentAliasPredicate: 'c.ss_id = p.handle_ss_id',
+      childAliasPredicate: 'p.handle_ss_id = c.ss_id',
+      joinExpressionDescription:
+          'contact_to_handle.handle_ss_id = handles.ss_id',
+    ),
+  ],
 };
 
 const Map<String, List<_InvariantCheckSpec>>
@@ -1238,6 +1538,82 @@ _invariantSpecsByDatabase = <String, List<_InvariantCheckSpec>>{
               ) THEN 0
               ELSE 1
             END AS c
+      ''',
+    ),
+  ],
+  'source_scoped_import': <_InvariantCheckSpec>[
+    _InvariantCheckSpec(
+      checkKey: 'source_scoped_attachment_edges_should_reference_rows',
+      severity: DatabaseHealthSeverity.high,
+      description:
+          'Every source-scoped message_to_attachment row should reference both a message and an attachment.',
+      evaluatedRowCountSql: 'SELECT COUNT(*) AS c FROM "message_to_attachment"',
+      violationCountSql: '''
+            SELECT COUNT(*) AS c
+            FROM "message_to_attachment" AS ma
+            WHERE NOT EXISTS (
+              SELECT 1 FROM "messages" AS m WHERE m.ss_id = ma.message_ss_id
+            )
+            OR NOT EXISTS (
+              SELECT 1
+              FROM "attachments" AS a
+              WHERE a.ss_id = ma.attachment_ss_id
+            )
+          ''',
+    ),
+  ],
+  'conversation_graph': <_InvariantCheckSpec>[
+    _InvariantCheckSpec(
+      checkKey: 'graph_message_attachment_edges_should_reference_rows',
+      severity: DatabaseHealthSeverity.high,
+      description:
+          'Every graph message_to_attachment row should reference both a message and an attachment.',
+      evaluatedRowCountSql: 'SELECT COUNT(*) AS c FROM "message_to_attachment"',
+      violationCountSql: '''
+            SELECT COUNT(*) AS c
+            FROM "message_to_attachment" AS ma
+            WHERE NOT EXISTS (
+              SELECT 1 FROM "messages" AS m WHERE m.ss_id = ma.message_ss_id
+            )
+            OR NOT EXISTS (
+              SELECT 1
+              FROM "attachments" AS a
+              WHERE a.ss_id = ma.attachment_ss_id
+            )
+          ''',
+    ),
+    _InvariantCheckSpec(
+      checkKey: 'graph_chat_handle_edges_should_reference_rows',
+      severity: DatabaseHealthSeverity.high,
+      description:
+          'Every graph chat_to_handle row should reference both a chat and a handle.',
+      evaluatedRowCountSql: 'SELECT COUNT(*) AS c FROM "chat_to_handle"',
+      violationCountSql: '''
+            SELECT COUNT(*) AS c
+            FROM "chat_to_handle" AS ch
+            WHERE NOT EXISTS (
+              SELECT 1 FROM "chats" AS c WHERE c.ss_id = ch.chat_ss_id
+            )
+            OR NOT EXISTS (
+              SELECT 1 FROM "handles" AS h WHERE h.ss_id = ch.handle_ss_id
+            )
+          ''',
+    ),
+    _InvariantCheckSpec(
+      checkKey: 'graph_contact_handle_edges_should_reference_rows',
+      severity: DatabaseHealthSeverity.high,
+      description:
+          'Every graph contact_to_handle row should reference both a contact and a handle.',
+      evaluatedRowCountSql: 'SELECT COUNT(*) AS c FROM "contact_to_handle"',
+      violationCountSql: '''
+            SELECT COUNT(*) AS c
+            FROM "contact_to_handle" AS ch
+            WHERE NOT EXISTS (
+              SELECT 1 FROM "contacts" AS c WHERE c.contact_id = ch.contact_id
+            )
+            OR NOT EXISTS (
+              SELECT 1 FROM "handles" AS h WHERE h.ss_id = ch.handle_ss_id
+            )
           ''',
     ),
   ],
