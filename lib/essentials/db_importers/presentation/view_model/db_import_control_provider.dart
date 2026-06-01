@@ -13,6 +13,7 @@ import '../../../db_migrate/domain/entities/db_migration_result.dart';
 import '../../../db_migrate/domain/states/table_migration_progress.dart';
 import '../../../db_migrate/feature_level_providers.dart';
 import '../../../logging/application/app_logger.dart';
+import '../../../onboarding/application/message_data_reset_service.dart';
 import '../../../onboarding/infrastructure/persistence/overlay_onboarding_failure_storage.dart';
 import '../../../source_scoped_import/infrastructure/import_database_provider.dart';
 import '../../application/services/import_status_checker.dart';
@@ -24,12 +25,6 @@ part 'db_import_control_provider.g.dart';
 
 const _legacyImportDatabaseFileName = 'macos_import.db';
 const _legacyWorkingDatabaseFileName = 'working.db';
-const _allDerivedDatabaseBaseNames = <String>[
-  _legacyImportDatabaseFileName,
-  _legacyWorkingDatabaseFileName,
-  importDatabaseFileName,
-  conversationGraphDatabaseFileName,
-];
 const _importDatabaseBaseNames = <String>[
   _legacyImportDatabaseFileName,
   importDatabaseFileName,
@@ -435,54 +430,8 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
       viewMode: DbImportViewMode.progress,
     );
 
-    ref.read(dbMaintenanceLockProvider.notifier).begin();
     try {
-      // Close import database connection
-      try {
-        final ledgerDb = await ref.read(sqfliteImportDatabaseProvider.future);
-        await ledgerDb.close();
-      } catch (_) {
-        // Already closed or not available
-      }
-      ref.invalidate(sqfliteImportDatabaseProvider);
-      try {
-        final graphImportDb = await ref.read(importDatabaseProvider.future);
-        await graphImportDb.close();
-      } catch (_) {
-        // Already closed or not available
-      }
-      ref.invalidate(importDatabaseProvider);
-
-      // Close working database connection
-      try {
-        final workingDb = await ref.read(driftWorkingDatabaseProvider.future);
-        await workingDb.close();
-      } catch (_) {
-        // Already closed or not available
-      }
-      ref.invalidate(driftWorkingDatabaseProvider);
-      try {
-        final graphDb = await ref.read(
-          driftConversationGraphDatabaseProvider.future,
-        );
-        await graphDb.close();
-      } catch (_) {
-        // Already closed or not available
-      }
-      ref.invalidate(driftConversationGraphDatabaseProvider);
-      ref.invalidate(conversationGraphReadinessProvider);
-      ref.invalidate(conversationGraphPopulatedProvider);
-
-      // Delete database files (NOT overlay DB)
-      await _deleteDatabaseBaseFiles(_allDerivedDatabaseBaseNames);
-
-      // Re-invalidate so next access creates fresh databases
-      ref.invalidate(sqfliteImportDatabaseProvider);
-      ref.invalidate(importDatabaseProvider);
-      ref.invalidate(driftWorkingDatabaseProvider);
-      ref.invalidate(driftConversationGraphDatabaseProvider);
-      ref.invalidate(conversationGraphReadinessProvider);
-      ref.invalidate(conversationGraphPopulatedProvider);
+      await ref.read(messageDataResetServiceProvider).resetDerivedData();
 
       state = state.copyWith(
         isProcessing: false,
@@ -492,8 +441,6 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
     } catch (error) {
       final message = _mapDatabaseError('Reset failed', error);
       state = state.copyWith(isProcessing: false, statusMessage: message);
-    } finally {
-      ref.read(dbMaintenanceLockProvider.notifier).end();
     }
   }
 

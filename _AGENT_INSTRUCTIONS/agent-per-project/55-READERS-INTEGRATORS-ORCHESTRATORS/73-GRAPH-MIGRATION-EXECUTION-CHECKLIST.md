@@ -674,6 +674,11 @@ archives.
   over `macos_import.db.historical_archive_sources`. Application/sidebar code
   consumes typed archive-source metadata and no longer imports the legacy DB
   provider or sqflite record type directly.
+- Import control's broad "reset all databases" action now delegates to
+  `MessageDataResetService.resetDerivedData()`. The overlay-preserving
+  deletion/invalidation behavior has one lifecycle owner; import control keeps
+  only its local UI state mapping and the narrower import/projection clear
+  actions.
 
 ### Exit Criteria
 
