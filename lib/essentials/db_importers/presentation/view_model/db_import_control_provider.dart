@@ -15,7 +15,6 @@ import '../../../db_migrate/feature_level_providers.dart';
 import '../../../logging/application/app_logger.dart';
 import '../../../onboarding/application/message_data_reset_service.dart';
 import '../../../onboarding/infrastructure/persistence/overlay_onboarding_failure_storage.dart';
-import '../../../source_scoped_import/infrastructure/import_database_provider.dart';
 import '../../application/services/import_status_checker.dart';
 import '../../domain/entities/db_import_result.dart';
 import '../../domain/states/table_import_progress.dart';
@@ -23,12 +22,7 @@ import '../../feature_level_providers.dart';
 
 part 'db_import_control_provider.g.dart';
 
-const _legacyImportDatabaseFileName = 'macos_import.db';
 const _legacyWorkingDatabaseFileName = 'working.db';
-const _importDatabaseBaseNames = <String>[
-  _legacyImportDatabaseFileName,
-  importDatabaseFileName,
-];
 const _projectionDatabaseBaseNames = <String>[
   _legacyWorkingDatabaseFileName,
   conversationGraphDatabaseFileName,
@@ -461,99 +455,7 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
     );
 
     try {
-      final startedAt = DateTime.now();
-      ref
-          .read(appLoggerProvider.notifier)
-          .info(
-            'clearImportDatabase: start @ $startedAt',
-            source: 'DbImportControl',
-          );
-
-      // Close the import DB connection so the file can be deleted.
-      try {
-        ref
-            .read(appLoggerProvider.notifier)
-            .debug(
-              'clearImportDatabase: acquiring sqfliteImportDatabaseProvider.future',
-              source: 'DbImportControl',
-            );
-        final ledgerDb = await ref.read(sqfliteImportDatabaseProvider.future);
-        ref
-            .read(appLoggerProvider.notifier)
-            .debug(
-              'clearImportDatabase: closing import DB',
-              source: 'DbImportControl',
-            );
-        await ledgerDb.close();
-        ref
-            .read(appLoggerProvider.notifier)
-            .debug(
-              'clearImportDatabase: import DB closed',
-              source: 'DbImportControl',
-            );
-      } catch (_) {
-        ref
-            .read(appLoggerProvider.notifier)
-            .debug(
-              'clearImportDatabase: import DB close skipped (already closed / not available)',
-              source: 'DbImportControl',
-            );
-      }
-
-      ref
-          .read(appLoggerProvider.notifier)
-          .debug(
-            'clearImportDatabase: invalidating sqfliteImportDatabaseProvider (pre-clear)',
-            source: 'DbImportControl',
-          );
-      ref.invalidate(sqfliteImportDatabaseProvider);
-      try {
-        final graphImportDb = await ref.read(importDatabaseProvider.future);
-        await graphImportDb.close();
-      } catch (_) {
-        ref
-            .read(appLoggerProvider.notifier)
-            .debug(
-              'clearImportDatabase: source-scoped import DB close skipped (already closed / not available)',
-              source: 'DbImportControl',
-            );
-      }
-      ref.invalidate(importDatabaseProvider);
-
-      try {
-        await _deleteDatabaseBaseFiles(_importDatabaseBaseNames);
-
-        ref
-            .read(appLoggerProvider.notifier)
-            .info(
-              'clearImportDatabase: import database files deleted',
-              source: 'DbImportControl',
-            );
-      } catch (error) {
-        ref
-            .read(appLoggerProvider.notifier)
-            .error(
-              'clearImportDatabase: delete files FAILED error=$error',
-              source: 'DbImportControl',
-            );
-        rethrow;
-      }
-
-      ref
-          .read(appLoggerProvider.notifier)
-          .debug(
-            'clearImportDatabase: invalidating sqfliteImportDatabaseProvider (post-clear)',
-            source: 'DbImportControl',
-          );
-      ref.invalidate(sqfliteImportDatabaseProvider);
-      ref.invalidate(importDatabaseProvider);
-
-      ref
-          .read(appLoggerProvider.notifier)
-          .info(
-            'clearImportDatabase: success in ${DateTime.now().difference(startedAt).inMilliseconds}ms',
-            source: 'DbImportControl',
-          );
+      await ref.read(messageDataResetServiceProvider).clearImportLedgers();
 
       state = state.copyWith(
         isProcessing: false,

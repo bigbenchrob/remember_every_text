@@ -25,8 +25,15 @@ const derivedMessageDataDatabaseBaseNames = <String>[
   conversationGraphDatabaseFileName,
 ];
 
+const importLedgerDatabaseBaseNames = <String>[
+  'macos_import.db',
+  importDatabaseFileName,
+];
+
 abstract interface class MessageDataResetService {
   Future<void> resetDerivedData();
+
+  Future<void> clearImportLedgers();
 
   Future<void> confirmResetAndPrepareReimport();
 }
@@ -122,6 +129,46 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
       rethrow;
     } finally {
       _ref.read(dbMaintenanceLockProvider.notifier).end();
+    }
+  }
+
+  @override
+  Future<void> clearImportLedgers() async {
+    final logger = _ref.read(appLoggerProvider.notifier);
+    logger.warn(
+      'Clearing import ledger databases',
+      source: 'MessageDataResetService',
+    );
+
+    try {
+      await _closeImportDatabase();
+      await _closeSourceScopedImportDatabase();
+
+      final deletedFilePaths = await _deleteDatabaseBaseFiles(
+        importLedgerDatabaseBaseNames,
+      );
+      logger.info(
+        'Deleted import ledger database files',
+        source: 'MessageDataResetService',
+        context: {
+          'deletedCount': deletedFilePaths.length,
+          'deletedFiles': deletedFilePaths,
+        },
+      );
+
+      _ref.invalidate(sqfliteImportDatabaseProvider);
+      _ref.invalidate(importDatabaseProvider);
+      _ref.read(messageDataVersionProvider.notifier).bump();
+    } catch (error, stackTrace) {
+      logger.error(
+        'Clear import ledgers failed',
+        source: 'MessageDataResetService',
+        context: {
+          'error': error.toString(),
+          'stack': stackTrace.toString().split('\n').take(10).join('\n'),
+        },
+      );
+      rethrow;
     }
   }
 
@@ -266,8 +313,12 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
   }
 
   Future<List<String>> _deleteDerivedDatabaseFiles() async {
+    return _deleteDatabaseBaseFiles(derivedMessageDataDatabaseBaseNames);
+  }
+
+  Future<List<String>> _deleteDatabaseBaseFiles(List<String> baseNames) async {
     final deletedFilePaths = <String>[];
-    for (final baseName in derivedMessageDataDatabaseBaseNames) {
+    for (final baseName in baseNames) {
       final basePath = path.join(databaseDirectoryPath, baseName);
       for (final filePath in <String>[
         basePath,

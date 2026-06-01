@@ -49,18 +49,75 @@ void main() {
       expect(state.statusMessage, contains('boom'));
     });
   });
+
+  group('DbImportControlViewModel clearImportDatabase', () {
+    test('delegates import-ledger clear to MessageDataResetService', () async {
+      final resetService = _FakeMessageDataResetService();
+      final container = ProviderContainer(
+        overrides: [
+          messageDataResetServiceProvider.overrideWith((ref) => resetService),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container
+          .read(dbImportControlViewModelProvider.notifier)
+          .clearImportDatabase();
+
+      expect(resetService.clearImportLedgersCallCount, 1);
+      final state = container.read(dbImportControlViewModelProvider);
+      expect(state.isProcessing, isFalse);
+      expect(
+        state.statusMessage,
+        'Import ledgers deleted and will be recreated on demand. Run Import again to repopulate them.',
+      );
+    });
+
+    test('reports import-ledger clear failures through status state', () async {
+      final resetService = _FakeMessageDataResetService(
+        clearImportLedgersError: StateError('ledger boom'),
+      );
+      final container = ProviderContainer(
+        overrides: [
+          messageDataResetServiceProvider.overrideWith((ref) => resetService),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container
+          .read(dbImportControlViewModelProvider.notifier)
+          .clearImportDatabase();
+
+      expect(resetService.clearImportLedgersCallCount, 1);
+      final state = container.read(dbImportControlViewModelProvider);
+      expect(state.isProcessing, isFalse);
+      expect(state.statusMessage, contains('Failed to clear import database'));
+      expect(state.statusMessage, contains('ledger boom'));
+    });
+  });
 }
 
 final class _FakeMessageDataResetService implements MessageDataResetService {
-  _FakeMessageDataResetService({this.resetError});
+  _FakeMessageDataResetService({this.resetError, this.clearImportLedgersError});
 
   final Object? resetError;
+  final Object? clearImportLedgersError;
   int resetCallCount = 0;
+  int clearImportLedgersCallCount = 0;
 
   @override
   Future<void> resetDerivedData() async {
     resetCallCount += 1;
     final error = resetError;
+    if (error != null) {
+      throw error;
+    }
+  }
+
+  @override
+  Future<void> clearImportLedgers() async {
+    clearImportLedgersCallCount += 1;
+    final error = clearImportLedgersError;
     if (error != null) {
       throw error;
     }
