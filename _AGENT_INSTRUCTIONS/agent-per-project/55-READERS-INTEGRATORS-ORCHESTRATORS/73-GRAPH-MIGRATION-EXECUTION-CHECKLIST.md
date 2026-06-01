@@ -304,6 +304,11 @@ than dev-panel-owned.
 - Successful live `chat.db` incremental import/migration now triggers the
   conversation graph build before message evidence invalidation, so automatic
   sync updates the app-facing graph rather than only the legacy projection.
+- Live `chat.db` monitor updates now treat source-scoped graph import/projection
+  as the app-facing success path after ledger import/archive. Legacy
+  `working.db` migration still runs for compatibility maintenance, but its
+  failure or exception no longer blocks refreshed graph evidence when the graph
+  build has succeeded.
 - The legacy import control panel reset/clear actions now close, invalidate,
   and delete graph-era derived databases (`macos_import_ss.db`,
   `working_ss.db`) as well as legacy import/working databases.

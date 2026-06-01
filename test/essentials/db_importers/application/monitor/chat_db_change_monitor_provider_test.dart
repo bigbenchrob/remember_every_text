@@ -75,6 +75,52 @@ void main() {
     });
   });
 
+  group('shouldRestoreCursorAfterIncrementalGraphUpdate', () {
+    test('does not restore cursor when graph update succeeds', () {
+      expect(
+        shouldRestoreCursorAfterIncrementalGraphUpdate(
+          importSucceeded: true,
+          graphBuildSucceeded: true,
+          legacyMigrationSucceeded: true,
+        ),
+        isFalse,
+      );
+    });
+
+    test(
+      'does not treat legacy migration failure as app-facing graph failure',
+      () {
+        expect(
+          shouldRestoreCursorAfterIncrementalGraphUpdate(
+            importSucceeded: true,
+            graphBuildSucceeded: true,
+            legacyMigrationSucceeded: false,
+          ),
+          isFalse,
+        );
+      },
+    );
+
+    test('restores cursor when import or graph build fails', () {
+      expect(
+        shouldRestoreCursorAfterIncrementalGraphUpdate(
+          importSucceeded: false,
+          graphBuildSucceeded: false,
+          legacyMigrationSucceeded: false,
+        ),
+        isTrue,
+      );
+      expect(
+        shouldRestoreCursorAfterIncrementalGraphUpdate(
+          importSucceeded: true,
+          graphBuildSucceeded: false,
+          legacyMigrationSucceeded: true,
+        ),
+        isTrue,
+      );
+    });
+  });
+
   group('gateStartupProbeDecisionForAppDataReadiness', () {
     test(
       'suppresses startup import and migration when app data is not ready',

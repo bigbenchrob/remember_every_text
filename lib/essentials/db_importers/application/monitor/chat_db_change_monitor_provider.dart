@@ -39,6 +39,15 @@ bool shouldAllowAutomaticIncrementalWork({required bool appDataReady}) {
 }
 
 @visibleForTesting
+bool shouldRestoreCursorAfterIncrementalGraphUpdate({
+  required bool importSucceeded,
+  required bool graphBuildSucceeded,
+  required bool legacyMigrationSucceeded,
+}) {
+  return !importSucceeded || !graphBuildSucceeded;
+}
+
+@visibleForTesting
 String buildConversationGraphBuildSummaryLog({
   required ConversationGraphBuildReport report,
 }) {
@@ -477,60 +486,83 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
           ref
               .read(appLoggerProvider.notifier)
               .info(
-                'Incremental batch ready. Triggering migration',
+                'Incremental batch ready. Triggering conversation graph build',
                 source: 'ChatDbMonitor',
               );
-          final migrationService = ref.read(handlesMigrationServiceProvider);
-          final migrationResult = await migrationService.run(
-            incrementalMode: true,
+
+          final graphBuildReport = await ref
+              .read(conversationGraphBuildControllerProvider.notifier)
+              .runOnce(owner: 'chat-db-monitor');
+          ref
+              .read(appLoggerProvider.notifier)
+              .info(
+                buildConversationGraphBuildSummaryLog(report: graphBuildReport),
+                source: 'ChatDbMonitor',
+              );
+
+          final completedAt = DateTime.now();
+          state = state.copyWith(
+            lastMaxRowId: currentMaxRowId,
+            lastChangeDetected: now,
+            clearError: true,
           );
 
-          if (migrationResult.success) {
-            final completedAt = DateTime.now();
-            state = state.copyWith(
-              lastMaxRowId: currentMaxRowId,
-              lastChangeDetected: now,
-              clearError: true,
+          // Signal to UI providers that new message data is available.
+          // This causes graph evidence providers to rebuild with updated counts.
+          // Note: Do NOT invalidate driftWorkingDatabaseProvider here!
+          // It closes the isolate connection and causes "connection was closed"
+          // errors for in-flight queries. Drift's reactive streams automatically
+          // detect data changes via its internal watch mechanisms.
+
+          ref
+              .read(appLoggerProvider.notifier)
+              .info(
+                'Conversation graph build complete. Running legacy migration for compatibility maintenance',
+                source: 'ChatDbMonitor',
+              );
+          try {
+            final migrationService = ref.read(handlesMigrationServiceProvider);
+            final migrationResult = await migrationService.run(
+              incrementalMode: true,
             );
-            ref
-                .read(appLoggerProvider.notifier)
-                .info(
-                  _buildMigrationSummaryLog(
-                    startedAt: updateStartedAt,
-                    completedAt: completedAt,
-                    importResult: importResult,
-                    migrationResult: migrationResult,
-                  ),
-                  source: 'ChatDbMonitor',
-                );
 
+            if (migrationResult.success) {
+              ref
+                  .read(appLoggerProvider.notifier)
+                  .info(
+                    _buildMigrationSummaryLog(
+                      startedAt: updateStartedAt,
+                      completedAt: completedAt,
+                      importResult: importResult,
+                      migrationResult: migrationResult,
+                    ),
+                    source: 'ChatDbMonitor',
+                  );
+            } else {
+              ref
+                  .read(appLoggerProvider.notifier)
+                  .warn(
+                    'Legacy compatibility migration failed after graph update: ${migrationResult.error}',
+                    source: 'ChatDbMonitor',
+                  );
+            }
+          } catch (error, stackTrace) {
             ref
                 .read(appLoggerProvider.notifier)
-                .info(
-                  'Legacy migration complete. Triggering conversation graph build',
+                .warn(
+                  'Legacy compatibility migration threw after graph update: $error',
                   source: 'ChatDbMonitor',
+                  context: {'stackTrace': '$stackTrace'},
                 );
-            final graphBuildReport = await ref
-                .read(conversationGraphBuildControllerProvider.notifier)
-                .runOnce(owner: 'chat-db-monitor');
-            ref
-                .read(appLoggerProvider.notifier)
-                .info(
-                  buildConversationGraphBuildSummaryLog(
-                    report: graphBuildReport,
-                  ),
-                  source: 'ChatDbMonitor',
-                );
-
-            // Signal to UI providers that new message data is available.
-            // This causes graph evidence providers to rebuild with updated counts.
-            // Note: Do NOT invalidate driftWorkingDatabaseProvider here!
-            // It closes the isolate connection and causes "connection was closed"
-            // errors for in-flight queries. Drift's reactive streams automatically
-            // detect data changes via its internal watch mechanisms.
-          } else {
+          }
+        } else {
+          if (shouldRestoreCursorAfterIncrementalGraphUpdate(
+            importSucceeded: false,
+            graphBuildSucceeded: false,
+            legacyMigrationSucceeded: false,
+          )) {
             _handleError(
-              'Incremental migration failed: ${migrationResult.error}',
+              'Incremental import failed: ${importResult.error}',
               null,
             );
             _restoreStableCursor(
@@ -538,15 +570,6 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
               detectedAt: now,
             );
           }
-        } else {
-          _handleError(
-            'Incremental import failed: ${importResult.error}',
-            null,
-          );
-          _restoreStableCursor(
-            previousMaxRowId: previousMaxRowId,
-            detectedAt: now,
-          );
         }
 
         _retryWhenGateReleases = false;
