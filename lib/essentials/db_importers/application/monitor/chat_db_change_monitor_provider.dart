@@ -43,11 +43,11 @@ bool shouldAllowAutomaticIncrementalWork({required bool appDataReady}) {
 
 @visibleForTesting
 bool shouldRestoreCursorAfterIncrementalGraphUpdate({
-  required bool importSucceeded,
+  required bool legacyImportSucceeded,
   required bool graphBuildSucceeded,
   required bool legacyMigrationSucceeded,
 }) {
-  return !importSucceeded || !graphBuildSucceeded;
+  return !graphBuildSucceeded;
 }
 
 @visibleForTesting
@@ -438,22 +438,29 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
               source: 'ChatDbMonitor',
             );
 
-        // Trigger incremental import and migration
         ref
             .read(appLoggerProvider.notifier)
             .info(
-              'Triggering incremental import and migration',
+              'Triggering live graph update and legacy compatibility import',
               source: 'ChatDbMonitor',
             );
 
         final importService = ref.read(orchestratedLedgerImportServiceProvider);
-        final importResult = await importService.runImport(
-          executionOwner: 'chat-db-monitor',
-          forceFullReimport:
-              pendingTrigger == StartupProbeTrigger.ledgerCountLagging,
-        );
+        DbImportResult? importResult;
+        Object? importError;
+        StackTrace? importStackTrace;
+        try {
+          importResult = await importService.runImport(
+            executionOwner: 'chat-db-monitor',
+            forceFullReimport:
+                pendingTrigger == StartupProbeTrigger.ledgerCountLagging,
+          );
+        } catch (error, stackTrace) {
+          importError = error;
+          importStackTrace = stackTrace;
+        }
 
-        if (_isImportExecutionDenied(importResult)) {
+        if (importResult != null && _isImportExecutionDenied(importResult)) {
           _retryWhenGateReleases = true;
           ref
               .read(appLoggerProvider.notifier)
@@ -464,76 +471,94 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
           continue;
         }
 
-        if (importResult.success) {
+        final successfulImportResult =
+            importResult != null && importResult.success ? importResult : null;
+        if (successfulImportResult != null) {
           ref
               .read(appLoggerProvider.notifier)
               .info(
                 _buildImportSummaryLog(
                   timestamp: updateStartedAt,
                   newMessageCount: newMessageCount,
-                  importResult: importResult,
+                  importResult: successfulImportResult,
                 ),
                 source: 'ChatDbMonitor',
               );
+        } else if (importResult != null) {
           ref
               .read(appLoggerProvider.notifier)
-              .info(
-                'Incremental import successful. Building graph before attachment archive',
+              .warn(
+                'Legacy compatibility import failed; attempting app-facing graph update directly: ${importResult.error}',
                 source: 'ChatDbMonitor',
               );
+        } else {
           ref
               .read(appLoggerProvider.notifier)
-              .info(
-                'Incremental batch ready. Triggering conversation graph build',
+              .warn(
+                'Legacy compatibility import threw; attempting app-facing graph update directly: $importError',
                 source: 'ChatDbMonitor',
+                context: {'stackTrace': '$importStackTrace'},
               );
+        }
 
-          final graphBuildReport = await ref
-              .read(conversationGraphBuildControllerProvider.notifier)
-              .runOnce(owner: 'chat-db-monitor');
-          ref
-              .read(appLoggerProvider.notifier)
-              .info(
-                buildConversationGraphBuildSummaryLog(report: graphBuildReport),
-                source: 'ChatDbMonitor',
-              );
-          final archiveService = ref.read(
-            attachmentArchiveServiceProvider.notifier,
-          );
-          final archiveResult = await archiveService
-              .archiveGraphMessageSourceRange(
-                sourceId: liveChatDbSourceId,
-                startedAfterSourceRowId: graphBuildReport
-                    .messageImportResult
-                    .startedAfterSourceRowId,
-                lastImportedSourceRowId: graphBuildReport
-                    .messageImportResult
-                    .lastImportedSourceRowId,
-              );
-          ref
-              .read(appLoggerProvider.notifier)
-              .info(
-                'Graph attachment archive completed: '
-                '${archiveResult.newlyArchived} archived, '
-                '${archiveResult.skipped} skipped, '
-                '${archiveResult.failed} failed.',
-                source: 'ChatDbMonitor',
-              );
+        ref
+            .read(appLoggerProvider.notifier)
+            .info(
+              'Building app-facing conversation graph before attachment archive',
+              source: 'ChatDbMonitor',
+            );
+        ref
+            .read(appLoggerProvider.notifier)
+            .info(
+              'Triggering conversation graph build',
+              source: 'ChatDbMonitor',
+            );
 
-          final completedAt = DateTime.now();
-          state = state.copyWith(
-            lastMaxRowId: currentMaxRowId,
-            lastChangeDetected: now,
-            clearError: true,
-          );
+        final graphBuildReport = await ref
+            .read(conversationGraphBuildControllerProvider.notifier)
+            .runOnce(owner: 'chat-db-monitor');
+        ref
+            .read(appLoggerProvider.notifier)
+            .info(
+              buildConversationGraphBuildSummaryLog(report: graphBuildReport),
+              source: 'ChatDbMonitor',
+            );
+        final archiveService = ref.read(
+          attachmentArchiveServiceProvider.notifier,
+        );
+        final archiveResult = await archiveService
+            .archiveGraphMessageSourceRange(
+              sourceId: liveChatDbSourceId,
+              startedAfterSourceRowId:
+                  graphBuildReport.messageImportResult.startedAfterSourceRowId,
+              lastImportedSourceRowId:
+                  graphBuildReport.messageImportResult.lastImportedSourceRowId,
+            );
+        ref
+            .read(appLoggerProvider.notifier)
+            .info(
+              'Graph attachment archive completed: '
+              '${archiveResult.newlyArchived} archived, '
+              '${archiveResult.skipped} skipped, '
+              '${archiveResult.failed} failed.',
+              source: 'ChatDbMonitor',
+            );
 
-          // Signal to UI providers that new message data is available.
-          // This causes graph evidence providers to rebuild with updated counts.
-          // Note: Do NOT invalidate driftWorkingDatabaseProvider here!
-          // It closes the isolate connection and causes "connection was closed"
-          // errors for in-flight queries. Drift's reactive streams automatically
-          // detect data changes via its internal watch mechanisms.
+        final completedAt = DateTime.now();
+        state = state.copyWith(
+          lastMaxRowId: currentMaxRowId,
+          lastChangeDetected: now,
+          clearError: true,
+        );
 
+        // Signal to UI providers that new message data is available.
+        // This causes graph evidence providers to rebuild with updated counts.
+        // Note: Do NOT invalidate driftWorkingDatabaseProvider here!
+        // It closes the isolate connection and causes "connection was closed"
+        // errors for in-flight queries. Drift's reactive streams automatically
+        // detect data changes via its internal watch mechanisms.
+
+        if (successfulImportResult != null) {
           ref
               .read(appLoggerProvider.notifier)
               .info(
@@ -553,7 +578,7 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
                     _buildMigrationSummaryLog(
                       startedAt: updateStartedAt,
                       completedAt: completedAt,
-                      importResult: importResult,
+                      importResult: successfulImportResult,
                       migrationResult: migrationResult,
                     ),
                     source: 'ChatDbMonitor',
@@ -576,20 +601,12 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
                 );
           }
         } else {
-          if (shouldRestoreCursorAfterIncrementalGraphUpdate(
-            importSucceeded: false,
-            graphBuildSucceeded: false,
-            legacyMigrationSucceeded: false,
-          )) {
-            _handleError(
-              'Incremental import failed: ${importResult.error}',
-              null,
-            );
-            _restoreStableCursor(
-              previousMaxRowId: previousMaxRowId,
-              detectedAt: now,
-            );
-          }
+          ref
+              .read(appLoggerProvider.notifier)
+              .warn(
+                'Skipping legacy compatibility migration because legacy import did not succeed; app-facing graph update succeeded',
+                source: 'ChatDbMonitor',
+              );
         }
 
         _retryWhenGateReleases = false;

@@ -301,14 +301,15 @@ than dev-panel-owned.
   build lifecycle state (`idle`, `running`, `succeeded`, `failed`) and is now
   the entry point for both the source-scoped dev panel and live `chat.db`
   monitor graph builds.
-- Successful live `chat.db` incremental import/migration now triggers the
-  conversation graph build before message evidence invalidation, so automatic
-  sync updates the app-facing graph rather than only the legacy projection.
+- Live `chat.db` changes now trigger the conversation graph build before any
+  legacy compatibility migration, so automatic sync updates the app-facing
+  graph rather than only the legacy projection.
 - Live `chat.db` monitor updates now treat source-scoped graph import/projection
-  as the app-facing success path after ledger import/archive. Legacy
-  `working.db` migration still runs for compatibility maintenance, but its
-  failure or exception no longer blocks refreshed graph evidence when the graph
-  build has succeeded.
+  as the app-facing success path. Legacy ledger import and `working.db`
+  migration still run for compatibility maintenance, but their failure or
+  exception no longer blocks refreshed graph evidence when the graph build has
+  succeeded. Import-execution denial still delays/retries to avoid overlapping
+  maintenance work.
 - Live monitor startup catch-up and cursor priming now compare `chat.db` to the
   source-scoped import ledger (`macos_import_ss.db`) rather than the legacy
   `macos_import.db` message cursor, so graph freshness is measured from the
@@ -527,8 +528,9 @@ archives.
 - Attachment archive rolling/manual sweeps and archive-all candidate selection
   now read graph attachment facts from `working_ss.db` instead of legacy
   `working.db.attachments`, while preserving existing overlay archive keys.
-- Legacy import-batch archive handling remains in place because live update
-  lifecycle still emits legacy import batches before graph build.
+- Legacy import-batch archive handling remains in place only for compatibility
+  callers; live update lifecycle archives attachments from source-scoped graph
+  message source-row ranges.
 - Focused attachment archive service tests pass against graph-backed sweep
   fixtures.
 - Deterministic historical attachment recovery now maps through

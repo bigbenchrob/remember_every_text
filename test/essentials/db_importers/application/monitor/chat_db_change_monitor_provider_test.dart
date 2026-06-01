@@ -79,7 +79,7 @@ void main() {
     test('does not restore cursor when graph update succeeds', () {
       expect(
         shouldRestoreCursorAfterIncrementalGraphUpdate(
-          importSucceeded: true,
+          legacyImportSucceeded: true,
           graphBuildSucceeded: true,
           legacyMigrationSucceeded: true,
         ),
@@ -92,7 +92,7 @@ void main() {
       () {
         expect(
           shouldRestoreCursorAfterIncrementalGraphUpdate(
-            importSucceeded: true,
+            legacyImportSucceeded: true,
             graphBuildSucceeded: true,
             legacyMigrationSucceeded: false,
           ),
@@ -101,10 +101,24 @@ void main() {
       },
     );
 
-    test('restores cursor when import or graph build fails', () {
+    test(
+      'does not treat legacy import failure as app-facing graph failure',
+      () {
+        expect(
+          shouldRestoreCursorAfterIncrementalGraphUpdate(
+            legacyImportSucceeded: false,
+            graphBuildSucceeded: true,
+            legacyMigrationSucceeded: false,
+          ),
+          isFalse,
+        );
+      },
+    );
+
+    test('restores cursor when graph build fails', () {
       expect(
         shouldRestoreCursorAfterIncrementalGraphUpdate(
-          importSucceeded: false,
+          legacyImportSucceeded: false,
           graphBuildSucceeded: false,
           legacyMigrationSucceeded: false,
         ),
@@ -112,7 +126,7 @@ void main() {
       );
       expect(
         shouldRestoreCursorAfterIncrementalGraphUpdate(
-          importSucceeded: true,
+          legacyImportSucceeded: true,
           graphBuildSucceeded: false,
           legacyMigrationSucceeded: true,
         ),
