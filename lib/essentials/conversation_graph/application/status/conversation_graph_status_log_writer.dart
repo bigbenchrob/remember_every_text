@@ -2,18 +2,18 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 
-import '../../../../conversation_graph/application/orchestrators/conversation_graph_build_orchestrator.dart';
-import 'incremental_update_status_provider.dart';
+import '../orchestrators/conversation_graph_build_orchestrator.dart';
+import 'conversation_graph_status_provider.dart';
 
-class SourceScopedProofLogWriter {
-  const SourceScopedProofLogWriter({Directory? logsDirectory})
+class ConversationGraphStatusLogWriter {
+  const ConversationGraphStatusLogWriter({Directory? logsDirectory})
     : _logsDirectory = logsDirectory;
 
   final Directory? _logsDirectory;
 
   Future<File> writeRun({
-    required IncrementalUpdateStatus before,
-    IncrementalUpdateStatus? after,
+    required ConversationGraphStatus before,
+    ConversationGraphStatus? after,
     ConversationGraphBuildReport? buildReport,
     Object? error,
     StackTrace? stackTrace,
@@ -26,7 +26,7 @@ class SourceScopedProofLogWriter {
     final file = File(
       path.join(
         logsDirectory.path,
-        'source_scoped_incremental_update_${_fileTimestamp(capturedAt)}.md',
+        'conversation_graph_status_${_fileTimestamp(capturedAt)}.md',
       ),
     );
 
@@ -48,8 +48,8 @@ class SourceScopedProofLogWriter {
 
 String _formatRun({
   required DateTime capturedAt,
-  required IncrementalUpdateStatus before,
-  required IncrementalUpdateStatus? after,
+  required ConversationGraphStatus before,
+  required ConversationGraphStatus? after,
   required ConversationGraphBuildReport? buildReport,
   required Object? error,
   required StackTrace? stackTrace,
@@ -60,10 +60,10 @@ String _formatRun({
             '- error: ${_singleLine(error.toString())}\n'
             '- stack_trace: ${_singleLine(stackTrace.toString())}\n';
 
-  return '# Source-scoped incremental-update proof log\n\n'
+  return '# Conversation graph status log\n\n'
       '- captured_at: ${capturedAt.toIso8601String()}\n'
-      '- action: Import + Project SS Graph\n'
-      '- source: dev status panel\n\n'
+      '- action: Import + Project Graph\n'
+      '- source: graph status panel\n\n'
       '## Build report\n\n'
       '- started_at: ${buildReport?.startedAt.toIso8601String() ?? 'not captured'}\n'
       '- finished_at: ${buildReport?.finishedAt.toIso8601String() ?? 'not captured'}\n'
@@ -87,7 +87,7 @@ String _formatRun({
       '$errorBlock';
 }
 
-String _formatStatus(IncrementalUpdateStatus status) {
+String _formatStatus(ConversationGraphStatus status) {
   return '- source_messages: ${status.sourceMessageCount}\n'
       '- import_ss_messages: ${status.ledgerMessageCount}\n'
       '- working_ss_messages: ${status.workingMessageCount}\n'

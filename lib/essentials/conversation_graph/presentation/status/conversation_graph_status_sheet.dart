@@ -7,29 +7,29 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../config/theme/colors/theme_colors_annotated.dart';
-import '../../../config/theme/theme_typography.dart';
-import '../../../features/chats/presentation/view_model/chats_view_model_provider.dart';
-import '../../conversation_graph/application/chat_summaries/chat_summary.dart';
-import '../../conversation_graph/application/chat_summaries/chat_summary_provider.dart';
-import '../../conversation_graph/application/conversation_graph_build_controller_provider.dart';
-import '../../conversation_graph/application/health/graph_health_provider.dart';
-import '../../conversation_graph/application/health/graph_health_report.dart';
-import '../application/messages/status/incremental_update_status_provider.dart';
-import '../application/messages/status/source_scoped_proof_log_writer.dart';
+import '../../../../config/theme/colors/theme_colors_annotated.dart';
+import '../../../../config/theme/theme_typography.dart';
+import '../../../../features/chats/presentation/view_model/chats_view_model_provider.dart';
+import '../../application/chat_summaries/chat_summary.dart';
+import '../../application/chat_summaries/chat_summary_provider.dart';
+import '../../application/conversation_graph_build_controller_provider.dart';
+import '../../application/health/graph_health_provider.dart';
+import '../../application/health/graph_health_report.dart';
+import '../../application/status/conversation_graph_status_log_writer.dart';
+import '../../application/status/conversation_graph_status_provider.dart';
 
 enum _StatusSheetTab { status, graphHealth, groupProfiles, messages }
 
-class IncrementalUpdateStatusSheet extends ConsumerStatefulWidget {
-  const IncrementalUpdateStatusSheet({super.key});
+class ConversationGraphStatusSheet extends ConsumerStatefulWidget {
+  const ConversationGraphStatusSheet({super.key});
 
   @override
-  ConsumerState<IncrementalUpdateStatusSheet> createState() =>
-      _IncrementalUpdateStatusSheetState();
+  ConsumerState<ConversationGraphStatusSheet> createState() =>
+      _ConversationGraphStatusSheetState();
 }
 
-class _IncrementalUpdateStatusSheetState
-    extends ConsumerState<IncrementalUpdateStatusSheet> {
+class _ConversationGraphStatusSheetState
+    extends ConsumerState<ConversationGraphStatusSheet> {
   _StatusSheetTab _selectedTab = _StatusSheetTab.status;
   ChatSummaryFilter _summaryFilter = ChatSummaryFilter.all;
   ChatSummarySort _summarySort = ChatSummarySort.mostRecentMessage;
@@ -38,7 +38,7 @@ class _IncrementalUpdateStatusSheetState
 
   @override
   Widget build(BuildContext context) {
-    final statusAsync = ref.watch(incrementalUpdateStatusProvider);
+    final statusAsync = ref.watch(conversationGraphStatusProvider);
     final graphHealthAsync = _selectedTab == _StatusSheetTab.graphHealth
         ? ref.watch(graphHealthReportProvider)
         : const AsyncValue<GraphHealthReport>.loading();
@@ -102,7 +102,7 @@ class _IncrementalUpdateStatusSheetState
                 children: [
                   const Expanded(
                     child: Text(
-                      'Source-scoped incremental update',
+                      'Conversation graph status',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
@@ -238,7 +238,7 @@ class _StatusTabView extends StatelessWidget {
   });
 
   final _StatusSheetTab selectedTab;
-  final IncrementalUpdateStatus status;
+  final ConversationGraphStatus status;
   final AsyncValue<List<ChatSummary>> summariesAsync;
   final AsyncValue<ChatSummarySanityCounts> summaryCountsAsync;
   final AsyncValue<List<RecentChatMessage>> selectedMessagesAsync;
@@ -295,7 +295,7 @@ class _StatusTabView extends StatelessWidget {
 class _StatusContent extends ConsumerWidget {
   const _StatusContent({required this.status});
 
-  final IncrementalUpdateStatus status;
+  final ConversationGraphStatus status;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -876,7 +876,7 @@ class _AttachmentSampleDetail extends ConsumerWidget {
 class _ProofScopeCard extends StatelessWidget {
   const _ProofScopeCard({required this.status, required this.colors});
 
-  final IncrementalUpdateStatus status;
+  final ConversationGraphStatus status;
   final ThemeColors colors;
 
   @override
@@ -968,7 +968,7 @@ class _ScopeValue extends StatelessWidget {
 class _PipelineDashboard extends StatelessWidget {
   const _PipelineDashboard({required this.status, required this.colors});
 
-  final IncrementalUpdateStatus status;
+  final ConversationGraphStatus status;
   final ThemeColors colors;
 
   @override
@@ -1956,7 +1956,7 @@ class _StatusControlsState extends State<_StatusControls> {
               controlSize: ControlSize.regular,
               secondary: true,
               onPressed: () {
-                widget.ref.invalidate(incrementalUpdateStatusProvider);
+                widget.ref.invalidate(conversationGraphStatusProvider);
                 widget.ref.invalidate(graphHealthReportProvider);
               },
               child: const Text('Refresh'),
@@ -2009,7 +2009,7 @@ class _StatusControlsState extends State<_StatusControls> {
                       Text(
                         _isImporting
                             ? 'Importing + Projecting...'
-                            : 'Import + Project SS Graph',
+                            : 'Import + Project Graph',
                       ),
                     ],
                   ),
@@ -2026,20 +2026,20 @@ class _StatusControlsState extends State<_StatusControls> {
     setState(() {
       _isImporting = true;
     });
-    widget.ref.invalidate(incrementalUpdateStatusProvider);
+    widget.ref.invalidate(conversationGraphStatusProvider);
     widget.ref.invalidate(graphHealthReportProvider);
     _statusRefreshTimer?.cancel();
     _statusRefreshTimer = Timer.periodic(const Duration(milliseconds: 750), (
       _,
     ) {
-      widget.ref.invalidate(incrementalUpdateStatusProvider);
+      widget.ref.invalidate(conversationGraphStatusProvider);
     });
     try {
       await _importAndProjectOnce(widget.ref);
     } finally {
       _statusRefreshTimer?.cancel();
       _statusRefreshTimer = null;
-      widget.ref.invalidate(incrementalUpdateStatusProvider);
+      widget.ref.invalidate(conversationGraphStatusProvider);
       if (mounted) {
         setState(() {
           _isImporting = false;
@@ -2049,23 +2049,23 @@ class _StatusControlsState extends State<_StatusControls> {
   }
 
   Future<void> _importAndProjectOnce(WidgetRef ref) async {
-    final before = await ref.read(incrementalUpdateStatusProvider.future);
+    final before = await ref.read(conversationGraphStatusProvider.future);
     try {
       final buildReport = await ref
           .read(conversationGraphBuildControllerProvider.notifier)
           .runOnce(owner: 'source-scoped-dev-panel');
-      ref.invalidate(incrementalUpdateStatusProvider);
+      ref.invalidate(conversationGraphStatusProvider);
       ref.invalidate(graphHealthReportProvider);
       ref.invalidate(chatSummariesProvider);
       ref.invalidate(chatSummarySanityCountsProvider);
-      final after = await ref.read(incrementalUpdateStatusProvider.future);
-      await const SourceScopedProofLogWriter().writeRun(
+      final after = await ref.read(conversationGraphStatusProvider.future);
+      await const ConversationGraphStatusLogWriter().writeRun(
         before: before,
         after: after,
         buildReport: buildReport,
       );
     } catch (error, stackTrace) {
-      await const SourceScopedProofLogWriter().writeRun(
+      await const ConversationGraphStatusLogWriter().writeRun(
         before: before,
         error: error,
         stackTrace: stackTrace,

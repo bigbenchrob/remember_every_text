@@ -7,8 +7,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../providers.dart';
+import '../../../conversation_graph/presentation/status/conversation_graph_status_sheet.dart';
 import '../../../debug/application/developer_mode_provider.dart';
-import '../../../incremental_update_ss/presentation/incremental_update_status_sheet.dart';
 import '../../../onboarding/application/onboarding_gate_provider.dart';
 import '../../../onboarding/domain/onboarding_status.dart';
 import '../../../onboarding/presentation/onboarding_overlay.dart';
@@ -47,12 +47,12 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
     super.dispose();
   }
 
-  void _showIncrementalUpdateStatus() {
+  void _showConversationGraphStatus() {
     unawaited(
       showMacosSheet<void>(
         context: context,
         barrierDismissible: true,
-        builder: (context) => const IncrementalUpdateStatusSheet(),
+        builder: (context) => const ConversationGraphStatusSheet(),
       ),
     );
   }
@@ -127,9 +127,9 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
               actions: [
                 if (kDebugMode)
                   ToolBarIconButton(
-                    label: 'Source-scoped incremental update status',
+                    label: 'Conversation graph status',
                     icon: const MacosIcon(CupertinoIcons.waveform_path_ecg),
-                    onPressed: _showIncrementalUpdateStatus,
+                    onPressed: _showConversationGraphStatus,
                     showLabel: false,
                   ),
                 if (kDebugMode)

@@ -2,16 +2,16 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sqflite/sqflite.dart';
 
-import '../../../../../providers.dart';
-import '../../../../db/feature_level_providers.dart';
-import '../../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
-import '../../../../source_scoped_import/domain/known_sources.dart';
-import '../../../../source_scoped_import/infrastructure/import_database_provider.dart';
+import '../../../../providers.dart';
+import '../../../db/feature_level_providers.dart';
+import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
+import '../../../source_scoped_import/domain/known_sources.dart';
+import '../../../source_scoped_import/infrastructure/import_database_provider.dart';
 
-part 'incremental_update_status_provider.g.dart';
+part 'conversation_graph_status_provider.g.dart';
 
-class IncrementalUpdateStatus {
-  const IncrementalUpdateStatus({
+class ConversationGraphStatus {
+  const ConversationGraphStatus({
     required this.chatDbPath,
     required this.importDatabaseName,
     required this.workingDatabaseName,
@@ -90,7 +90,7 @@ class IncrementalUpdateStatus {
 }
 
 @riverpod
-Future<IncrementalUpdateStatus> incrementalUpdateStatus(Ref ref) async {
+Future<ConversationGraphStatus> conversationGraphStatus(Ref ref) async {
   final pathsHelper = await ref.watch(pathsHelperProvider.future);
   final importDatabase = await ref.watch(importDatabaseProvider.future);
   final workingDatabase = await ref.watch(
@@ -117,7 +117,7 @@ Future<IncrementalUpdateStatus> incrementalUpdateStatus(Ref ref) async {
     workingDatabase,
   );
 
-  return IncrementalUpdateStatus(
+  return ConversationGraphStatus(
     chatDbPath: pathsHelper.chatDBPath,
     importDatabaseName: importDatabaseFileName,
     workingDatabaseName: conversationGraphDatabaseFileName,
