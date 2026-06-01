@@ -186,6 +186,46 @@ void main() {
     expect(guidIndex['unique'], 0);
   });
 
+  test('reports message cursor and count for one source only', () async {
+    final liveBatchId = await importDatabase.insertImportBatch(
+      sourceId: liveChatDbSourceId,
+      startedAtUtc: DateTime.now().toUtc().toIso8601String(),
+    );
+    await _insertSource(importDatabase, sourceId: 3);
+    final archiveBatchId = await importDatabase.insertImportBatch(
+      sourceId: 3,
+      startedAtUtc: DateTime.now().toUtc().toIso8601String(),
+    );
+
+    await _insertMessage(
+      importDatabase,
+      sourceId: liveChatDbSourceId,
+      sourceRowId: 10,
+      guid: 'live-10',
+      batchId: liveBatchId,
+    );
+    await _insertMessage(
+      importDatabase,
+      sourceId: liveChatDbSourceId,
+      sourceRowId: 20,
+      guid: 'live-20',
+      batchId: liveBatchId,
+    );
+    await _insertMessage(
+      importDatabase,
+      sourceId: 3,
+      sourceRowId: 999,
+      guid: 'archive-999',
+      batchId: archiveBatchId,
+    );
+
+    expect(
+      await importDatabase.maxMessageSourceRowIdForSource(liveChatDbSourceId),
+      20,
+    );
+    expect(await importDatabase.messageCountForSource(liveChatDbSourceId), 2);
+  });
+
   test('creates chats and chat_to_message topology schema', () async {
     final handleColumns = await importDatabase.database.rawQuery(
       'PRAGMA table_info(handles)',

@@ -111,6 +111,15 @@ class ImportDatabase {
     return rows.single['max_source_rowid'] as int?;
   }
 
+  Future<int> messageCountForSource(int sourceId) async {
+    final rows = await database.rawQuery(
+      'SELECT COUNT(*) AS message_count '
+      'FROM messages WHERE source_id = ?',
+      <Object?>[sourceId],
+    );
+    return rows.single['message_count'] as int? ?? 0;
+  }
+
   Future<int?> maxHandleSourceRowIdForSource(int sourceId) async {
     final rows = await database.rawQuery(
       'SELECT MAX(source_rowid) AS max_source_rowid '

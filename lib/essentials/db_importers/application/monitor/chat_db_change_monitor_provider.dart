@@ -13,6 +13,9 @@ import '../../../db/feature_level_providers.dart';
 import '../../../db_migrate/domain/entities/db_migration_result.dart';
 import '../../../db_migrate/feature_level_providers.dart';
 import '../../../logging/application/app_logger.dart';
+import '../../../source_scoped_import/domain/known_sources.dart';
+import '../../../source_scoped_import/infrastructure/import_database_provider.dart'
+    as source_scoped_import;
 import '../../domain/entities/db_import_result.dart';
 import '../../feature_level_providers.dart';
 import '../import_execution_gate_provider.dart';
@@ -201,13 +204,19 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
   /// the first polling interval (15 seconds).
   Future<void> _checkForNewMessagesOnStartup(String chatDbPath) async {
     try {
-      final importDb = await ref.read(sqfliteImportDatabaseProvider.future);
+      final importDb = await ref.read(
+        source_scoped_import.importDatabaseProvider.future,
+      );
       final currentMaxRowId = _readMaxRowId(chatDbPath);
-      final importedMaxRowId = await importDb.getMaxImportedMessageRowId();
+      final importedMaxRowId = await importDb.maxMessageSourceRowIdForSource(
+        liveChatDbSourceId,
+      );
       final liveImportableMessageCount = _readImportableMessageCount(
         chatDbPath,
       );
-      final importedMessageCount = await importDb.getImportedMessageCount();
+      final importedMessageCount = await importDb.messageCountForSource(
+        liveChatDbSourceId,
+      );
       final decision = resolveStartupProbeDecision(
         liveMaxRowId: currentMaxRowId,
         importedMaxSourceRowId: importedMaxRowId,
@@ -217,9 +226,9 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
       final summary =
           'Startup consistency probe: '
           'live MAX(ROWID)=$currentMaxRowId, '
-          'imported MAX(source_rowid)=${importedMaxRowId ?? 'null'}, '
+          'graph import MAX(source_rowid)=${importedMaxRowId ?? 'null'}, '
           'live importable count=$liveImportableMessageCount, '
-          'imported message count=$importedMessageCount. '
+          'graph import message count=$importedMessageCount. '
           'Reason: ${decision.reason}.';
 
       if (decision.shouldSchedule && decision.trigger != null) {
@@ -271,11 +280,15 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
 
   Future<void> _primeMaxRowId(String chatDbPath) async {
     try {
-      // CRITICAL: Prime from import.db, not chat.db!
+      // CRITICAL: Prime from the source-scoped import ledger, not chat.db.
       // This ensures we detect messages that arrived before app launch
       // but after the last import batch completed.
-      final importDb = await ref.read(sqfliteImportDatabaseProvider.future);
-      final importedMaxRowId = await importDb.getMaxImportedMessageRowId();
+      final importDb = await ref.read(
+        source_scoped_import.importDatabaseProvider.future,
+      );
+      final importedMaxRowId = await importDb.maxMessageSourceRowIdForSource(
+        liveChatDbSourceId,
+      );
 
       // Use imported max if available, otherwise fall back to chat.db
       final maxRowId = importedMaxRowId ?? _readMaxRowId(chatDbPath);

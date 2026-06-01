@@ -309,6 +309,10 @@ than dev-panel-owned.
   `working.db` migration still runs for compatibility maintenance, but its
   failure or exception no longer blocks refreshed graph evidence when the graph
   build has succeeded.
+- Live monitor startup catch-up and cursor priming now compare `chat.db` to the
+  source-scoped import ledger (`macos_import_ss.db`) rather than the legacy
+  `macos_import.db` message cursor, so graph freshness is measured from the
+  app-facing ledger.
 - The legacy import control panel reset/clear actions now close, invalidate,
   and delete graph-era derived databases (`macos_import_ss.db`,
   `working_ss.db`) as well as legacy import/working databases.
