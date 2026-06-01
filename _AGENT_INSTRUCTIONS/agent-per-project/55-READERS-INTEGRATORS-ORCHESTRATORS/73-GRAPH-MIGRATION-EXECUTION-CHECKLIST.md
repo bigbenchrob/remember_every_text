@@ -320,10 +320,11 @@ than dev-panel-owned.
   user-visible migration failure state because the app-facing graph was not
   produced.
 - Message History Coverage settings now count visible app messages from the
-  conversation graph while treating legacy recovered-message rows as a
-  compatibility contribution.
-- Legacy `workingProjectionReadinessProvider` remains for retained diagnostics
-  and legacy lifecycle paths until those blockers are migrated.
+  conversation graph.
+- Legacy `workingProjectionReadinessProvider` has been retired. Retained
+  recovered parity diagnostics now report legacy recovered evidence
+  unavailability directly instead of using a central `working.db` readiness
+  gate.
 - Focused graph readiness tests pass.
 
 ### Exit Criteria
@@ -609,6 +610,8 @@ archives.
 - Message History Coverage no longer reads `working.db.recovered_unlinked_*`.
   It now reads conversation-linked and graph-orphan recovered counts from the
   conversation graph through a settings infrastructure repository.
+- Removed `workingProjectionReadinessProvider` and its export. No production
+  code uses `working.db` readiness as an app gate.
 
 ### Exit Criteria
 

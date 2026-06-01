@@ -44,15 +44,6 @@ class RecoveredMessageParityDiagnostic {
 Future<RecoveredMessageParityDiagnostic> recoveredMessageParityDiagnostic(
   Ref ref,
 ) async {
-  final workingReadiness = await ref.watch(
-    workingProjectionReadinessProvider.future,
-  );
-  if (!workingReadiness.isReady) {
-    return RecoveredMessageParityDiagnostic.unavailable(
-      'legacy recovered evidence unavailable: ${workingReadiness.reason}',
-    );
-  }
-
   final graphReadiness = await ref.watch(
     conversationGraphReadinessProvider.future,
   );
@@ -62,16 +53,23 @@ Future<RecoveredMessageParityDiagnostic> recoveredMessageParityDiagnostic(
     );
   }
 
-  final workingDb = await ref.watch(driftWorkingDatabaseProvider.future);
   final graphDb = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
   final overlayDb = await ref.watch(overlayDatabaseProvider.future);
 
-  final legacyMessages = await RetainedLegacyRecoveredMessageEvidenceRepository(
-    db: workingDb,
-    overlayDb: overlayDb,
-  ).watchMessages().first;
+  final List<RecoveredUnlinkedMessageItem> legacyMessages;
+  try {
+    final workingDb = await ref.watch(driftWorkingDatabaseProvider.future);
+    legacyMessages = await RetainedLegacyRecoveredMessageEvidenceRepository(
+      db: workingDb,
+      overlayDb: overlayDb,
+    ).watchMessages().first;
+  } catch (error) {
+    return RecoveredMessageParityDiagnostic.unavailable(
+      'retained legacy recovered evidence unavailable: $error',
+    );
+  }
   final graphRecoveredMessages = await GraphRecoveredMessageEvidenceRepository(
     graphDb: graphDb,
   ).watchMessages().first;
