@@ -691,6 +691,10 @@ archives.
   implementation. Abort and fresh-start cleanup now route through the same
   import-control reset boundary, while settings reimport keeps its import-only
   ledger cleanup path.
+- `OnboardingGate` no longer owns import-ledger file deletion for settings
+  reimport. Reimport now delegates ledger cleanup to
+  `MessageDataResetService.clearImportLedgers()`, preserving onboarding as the
+  lifecycle decision owner while centralizing database deletion/invalidation.
 
 ### Exit Criteria
 

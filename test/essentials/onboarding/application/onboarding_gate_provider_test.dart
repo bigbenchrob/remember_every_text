@@ -13,6 +13,7 @@ import 'package:remember_this_text/essentials/db/infrastructure/data_sources/loc
 import 'package:remember_this_text/essentials/db_importers/domain/entities/db_import_result.dart';
 import 'package:remember_this_text/essentials/db_importers/presentation/view_model/db_import_control_provider.dart';
 import 'package:remember_this_text/essentials/db_migrate/domain/entities/db_migration_result.dart';
+import 'package:remember_this_text/essentials/onboarding/application/message_data_reset_service.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_gate_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
@@ -249,6 +250,7 @@ void main() {
       'settings reimport completes only when import and migration succeed',
       (tester) async {
         _FakeDbImportControlViewModel.resetFake();
+        final resetService = _FakeMessageDataResetService();
         _FakeDbImportControlViewModel.importResult = const DbImportResult(
           batchId: 1,
           success: true,
@@ -279,6 +281,7 @@ void main() {
             dbImportControlViewModelProvider.overrideWith(
               _FakeDbImportControlViewModel.new,
             ),
+            messageDataResetServiceProvider.overrideWith((ref) => resetService),
           ],
         );
 
@@ -298,6 +301,7 @@ void main() {
         );
         expect(_FakeDbImportControlViewModel.startImportCallCount, 1);
         expect(_FakeDbImportControlViewModel.startMigrationCallCount, 1);
+        expect(resetService.clearImportLedgersCallCount, 1);
       },
     );
 
@@ -305,6 +309,7 @@ void main() {
       'settings reimport returns to awaitingUserAction when graph-backed migration fails',
       (tester) async {
         _FakeDbImportControlViewModel.resetFake();
+        final resetService = _FakeMessageDataResetService();
         _FakeDbImportControlViewModel.importResult = const DbImportResult(
           batchId: 1,
           success: true,
@@ -336,6 +341,7 @@ void main() {
             dbImportControlViewModelProvider.overrideWith(
               _FakeDbImportControlViewModel.new,
             ),
+            messageDataResetServiceProvider.overrideWith((ref) => resetService),
           ],
         );
 
@@ -355,6 +361,7 @@ void main() {
         );
         expect(_FakeDbImportControlViewModel.startImportCallCount, 1);
         expect(_FakeDbImportControlViewModel.startMigrationCallCount, 1);
+        expect(resetService.clearImportLedgersCallCount, 1);
       },
     );
 
@@ -496,6 +503,33 @@ OnboardingEnvironmentReport _report({
     shouldResetAppDatabasesBeforeImport: shouldResetAppDatabasesBeforeImport,
     resetAppDatabasesReason: resetAppDatabasesReason,
   );
+}
+
+final class _FakeMessageDataResetService implements MessageDataResetService {
+  int resetDerivedDataCallCount = 0;
+  int clearImportLedgersCallCount = 0;
+  int clearProjectionDatabasesCallCount = 0;
+  int confirmResetAndPrepareReimportCallCount = 0;
+
+  @override
+  Future<void> resetDerivedData() async {
+    resetDerivedDataCallCount += 1;
+  }
+
+  @override
+  Future<void> clearImportLedgers() async {
+    clearImportLedgersCallCount += 1;
+  }
+
+  @override
+  Future<void> clearProjectionDatabases() async {
+    clearProjectionDatabasesCallCount += 1;
+  }
+
+  @override
+  Future<void> confirmResetAndPrepareReimport() async {
+    confirmResetAndPrepareReimportCallCount += 1;
+  }
 }
 
 class _FakeDbImportControlViewModel extends DbImportControlViewModel {

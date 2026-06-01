@@ -1,23 +1,19 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../db/feature_level_providers.dart'
-    show databaseDirectoryPath, sqfliteImportDatabaseProvider;
+import '../../db/feature_level_providers.dart' show databaseDirectoryPath;
 import '../../db_importers/presentation/view_model/db_import_control_provider.dart';
 import '../../logging/application/app_logger.dart';
 import '../../navigation/application/sidebar_mode_provider.dart';
 import '../../navigation/domain/sidebar_mode.dart';
-import '../../source_scoped_import/infrastructure/import_database_provider.dart'
-    as source_scoped_import;
 import '../domain/onboarding_environment_report.dart';
 import '../domain/onboarding_status.dart';
 import 'database_existence_checker.dart';
 import 'fda_checker.dart';
+import 'message_data_reset_service.dart';
 import 'onboarding_environment_report_provider.dart';
 
 part 'onboarding_gate_provider.g.dart';
@@ -38,12 +34,6 @@ part 'onboarding_gate_provider.g.dart';
 /// watches its state to transition through importing → migrating → complete.
 @Riverpod(keepAlive: true)
 class OnboardingGate extends _$OnboardingGate {
-  static const _legacyImportDatabaseFileName = 'macos_import.db';
-  static const _importDatabaseBaseNames = <String>[
-    _legacyImportDatabaseFileName,
-    source_scoped_import.importDatabaseFileName,
-  ];
-
   static const _checker = DatabaseExistenceChecker();
   static const _fdaChecker = FdaChecker();
   OnboardingStatus? _workflowOverrideStatus;
@@ -324,8 +314,8 @@ class OnboardingGate extends _$OnboardingGate {
       return;
     }
 
-    // Clean out the previous import DB so the pipeline reimports everything.
-    await _deleteImportDatabaseFiles();
+    // Clean out previous import ledgers so the pipeline reimports everything.
+    await ref.read(messageDataResetServiceProvider).clearImportLedgers();
 
     // ── Import phase ──
     _setWorkflowOverride(OnboardingStatus.reimporting);
@@ -491,68 +481,5 @@ class OnboardingGate extends _$OnboardingGate {
     _clearWorkflowOverride();
     ref.invalidate(onboardingEnvironmentReportProvider);
     _setWorkflowOverride(OnboardingStatus.awaitingUserAction);
-  }
-
-  /// Close any open import DB connection, delete the files, and
-  /// invalidate the provider so the next access creates a fresh instance.
-  Future<void> _deleteImportDatabaseFiles() async {
-    // Close an existing connection if the provider was already accessed.
-    if (_databaseBaseFileExists(_legacyImportDatabaseFileName)) {
-      try {
-        final ledgerDb = await ref.read(sqfliteImportDatabaseProvider.future);
-        await ledgerDb.close();
-      } catch (_) {
-        // No connection open — safe to proceed.
-      }
-    }
-    ref.invalidate(sqfliteImportDatabaseProvider);
-
-    if (_databaseBaseFileExists(source_scoped_import.importDatabaseFileName)) {
-      try {
-        final graphLedgerDb = await ref.read(
-          source_scoped_import.importDatabaseProvider.future,
-        );
-        await graphLedgerDb.close();
-      } catch (_) {
-        // No connection open — safe to proceed.
-      }
-    }
-    ref.invalidate(source_scoped_import.importDatabaseProvider);
-
-    final deletedFiles = await _deleteDatabaseBaseFiles(
-      _importDatabaseBaseNames,
-    );
-
-    ref
-        .read(appLoggerProvider.notifier)
-        .info(
-          'Deleted import ledger files for fresh onboarding start',
-          source: 'OnboardingGate',
-          context: {
-            'deletedCount': deletedFiles.length,
-            'deletedFiles': deletedFiles,
-          },
-        );
-    ref.invalidate(sqfliteImportDatabaseProvider);
-    ref.invalidate(source_scoped_import.importDatabaseProvider);
-  }
-
-  bool _databaseBaseFileExists(String baseName) {
-    return File(path.join(databaseDirectoryPath, baseName)).existsSync();
-  }
-
-  Future<List<String>> _deleteDatabaseBaseFiles(List<String> baseNames) async {
-    final deletedFiles = <String>[];
-    for (final baseName in baseNames) {
-      final basePath = path.join(databaseDirectoryPath, baseName);
-      for (final suffix in ['', '-wal', '-shm']) {
-        final file = File('$basePath$suffix');
-        if (file.existsSync()) {
-          await file.delete();
-          deletedFiles.add(file.path);
-        }
-      }
-    }
-    return deletedFiles;
   }
 }
