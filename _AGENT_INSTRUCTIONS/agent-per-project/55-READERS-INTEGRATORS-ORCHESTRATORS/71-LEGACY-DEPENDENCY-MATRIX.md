@@ -149,7 +149,7 @@ diagnostic/reference and not the ordinary app truth.
 | `lib/essentials/db_importers/presentation/view_model/db_import_control_provider.dart` and related panels | Legacy import/migration control | Import/migration UI and lifecycle entry | Production lifecycle plus diagnostic/settings | Replace with graph-aware build lifecycle, not with ad hoc dev controls. |
 | `lib/essentials/db_migrate/presentation/view/db_migration_panel.dart` | Legacy migration UI | Migration diagnostics | Diagnostic/settings | Keep until legacy migration retires, then delete. |
 | `lib/essentials/logging/application/import_audit_writer.dart` and `migration_audit_writer.dart` | Legacy import/migration logs | Audit diagnostics | Diagnostic/settings | Either add graph audit writers or retire with legacy lifecycle. |
-| `lib/debug_install/import_log` and `lib/debug_install/migrate_log` | Static/debug logs | Debug artifacts under `lib` | Deletion candidate | Remove if no build/runtime path reads them. |
+| `lib/debug_install/*` | Retired static/debug logs | Debug artifacts under `lib` | Deletion candidate closed | Removed after reference scan confirmed no build/runtime path reads them. Runtime logs remain in Application Support / `~/Library/Logs` paths. |
 
 ## Legacy Presentation Consumers
 
@@ -173,7 +173,7 @@ only after `rg` reference checks, focused tests, and graph replacement coverage.
 | Candidate | Evidence | Classification | Action |
 | --- | --- | --- | --- |
 | Legacy chat repository/timeline scaffolds and old message timeline/ordinal/hydration widgets | Removed in current branch; no active imports found in fresh scan | Deletion candidate closed | Keep closed; ordinary chat/message presentation is graph/evidence-spine based. |
-| `lib/debug_install/import_log` and `lib/debug_install/migrate_log` | Debug artifacts under production `lib` tree | Deletion candidate | Delete if unused and not intentionally packaged as fixtures. |
+| `lib/debug_install/*` | Removed after reference scan found only documentation references | Deletion candidate closed | Keep closed; static debug output does not belong under production `lib`. |
 | Tests that instantiate `WorkingDatabase` solely for legacy migrators/importers | Test-only coverage of retained lifecycle/recovery code | Not production blocker | Keep while corresponding lifecycle/recovery code exists. Delete with the code they cover. |
 
 ## High-Danger Areas

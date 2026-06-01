@@ -612,6 +612,10 @@ archives.
   conversation graph through a settings infrastructure repository.
 - Removed `workingProjectionReadinessProvider` and its export. No production
   code uses `working.db` readiness as an app gate.
+- Removed static `lib/debug_install/*` log artifacts after reference scan
+  confirmed they were not runtime inputs or fixtures. Runtime/import/migration
+  logs remain generated in their documented Application Support / Logs
+  locations.
 
 ### Exit Criteria
 
