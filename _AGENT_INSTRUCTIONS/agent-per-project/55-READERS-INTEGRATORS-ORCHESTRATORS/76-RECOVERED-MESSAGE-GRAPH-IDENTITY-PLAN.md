@@ -195,23 +195,24 @@ preserves source-scoped `ss_id` identity, hydrates attachment evidence through
 `working_ss.message_to_attachment`, and preserves contact-scoped direct matching
 plus nearby no-handle outgoing inference.
 
-The retained legacy recovered repository remains only as a diagnostic comparison
-source for graph parity and recovery/archive review.
+The retained legacy recovered repository was later retired as runtime
+diagnostic code after production recovered evidence moved to graph orphan
+evidence and the remaining legacy-only rows were accepted as retention caveats.
 
 Real-data parity review is now documented in
-`77-RECOVERED-MESSAGE-GRAPH-PARITY-AUDIT.md`. The graph repository candidate
-covers most legacy recovered evidence. The three initially suspicious
+`77-RECOVERED-MESSAGE-GRAPH-PARITY-AUDIT.md`. The graph repository covers the
+accepted recovered evidence surface. The three initially suspicious
 legacy-only rows are now resolved as expected graph-era user-intent suppression
 from testing the Unknown Senders discard action, not source/import evidence
-loss. The remaining cutover decision is whether to intentionally accept that
-195 legacy recovered rows are now ordinary graph-projectable conversation
-messages.
+loss. The cutover accepted that 195 legacy recovered rows are now ordinary
+graph-projectable conversation messages.
 
-### 6. Retire legacy recovered tables only after parity is proven
+### 6. Retire legacy recovered tables only with broader legacy DB retirement
 
-The old `working.db.recovered_unlinked_*` tables can be deleted only when the
-app no longer needs them for retained parity diagnostics, coverage reports, or
-archive/recovery review.
+The runtime parity diagnostic bridge has been removed. The old
+`working.db.recovered_unlinked_*` tables still physically exist as part of the
+retained legacy database schema and should be deleted only with the broader
+legacy DB retirement decision, not as a standalone recovery cleanup.
 
 ## Non-Goals
 

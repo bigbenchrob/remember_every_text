@@ -616,6 +616,16 @@ archives.
   confirmed they were not runtime inputs or fixtures. Runtime/import/migration
   logs remain generated in their documented Application Support / Logs
   locations.
+- Retired the recovered-message parity diagnostic bridge from the SS graph
+  health panel. Production recovered evidence already reads graph orphan
+  evidence, and the remaining legacy-only rows were accepted as retention
+  caveats rather than graph evidence loss.
+- Removed the retained legacy recovered-message diagnostic repository, pure
+  parity comparator, projectability lookup, and their focused diagnostic tests.
+  Legacy recovered tables still physically exist inside retained legacy DBs,
+  but no runtime diagnostic bridge now opens `working.db.recovered_unlinked_*`.
+- Removed the last `WorkingDatabase` helpers from `participant_merge_utils`;
+  that utility now contains overlay/contact helper functions only.
 
 ### Exit Criteria
 

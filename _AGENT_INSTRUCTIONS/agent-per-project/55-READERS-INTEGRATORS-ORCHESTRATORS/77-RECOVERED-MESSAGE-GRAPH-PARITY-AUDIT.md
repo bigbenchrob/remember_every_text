@@ -262,16 +262,14 @@ Production recovered evidence now uses the graph repository.
 
 Next safe implementation step:
 
-1. Keep the legacy recovered repository and tables as retained
-   diagnostic/compatibility sources.
-2. Continue using the diagnostic provider around the pure parity comparator so
-   the app can compare retained legacy evidence with current graph evidence
-   without one-off SQL.
-3. Treat remaining legacy-only rows as retention caveats unless they reveal
-   evidence loss or a graph import/projection defect.
+1. Treat the parity audit as complete for runtime purposes.
+2. Keep production recovered evidence on the graph repository.
+3. Retire the retained legacy parity diagnostic bridge from runtime code.
+4. Leave physical legacy recovered tables alone until broader legacy DB
+   retirement; they are historical storage, not the active evidence source.
 
-Status: diagnostic boundary added. A pure `compareRecoveredMessageEvidence`
-comparator now classifies:
+Status: diagnostic boundary added and later retired after graph cutover. The
+pure `compareRecoveredMessageEvidence` comparator classified:
 
 - graph-orphan matches
 - now-projectable legacy rows
@@ -282,8 +280,8 @@ comparator now classifies:
 - attachment-count mismatches
 - GUID/text mismatches
 
-It is intentionally repository-agnostic. The application-level
-`recoveredMessageParityDiagnosticProvider` composes:
+It was intentionally repository-agnostic. The application-level
+`recoveredMessageParityDiagnosticProvider` composed:
 
 - legacy recovered evidence repository
 - graph recovered candidate repository
@@ -291,21 +289,19 @@ It is intentionally repository-agnostic. The application-level
 - overlay dismissed-handle state
 - the pure parity comparator
 
-This provider is diagnostic-only. It does not drive production recovered-message
-presentation, does not mutate overlay/working data, and must not be used as a
-presentation workaround.
+This provider was diagnostic-only. It did not drive production
+recovered-message presentation, did not mutate overlay/working data, and was
+removed once production recovered evidence was graph-backed and the remaining
+legacy-only rows were accepted as retention caveats.
 
-The diagnostic is visible in the source-scoped Graph health tab so retained
-legacy evidence can be compared against production graph evidence without
-running one-off SQL. The displayed parity status reports recovered counts,
-now-projectable rows, graph-only rows, suppressed/unresolved legacy-only rows,
-attachment/text/GUID mismatches, and whether current graph evidence remains
-lossless relative to retained legacy evidence.
+The diagnostic was temporarily visible in the source-scoped Graph health tab so
+retained legacy evidence could be compared against production graph evidence
+without running one-off SQL. It has now been removed from the runtime panel.
 
-The diagnostic also includes typed drilldown samples for unresolved legacy-only
-rows and text mismatches. These samples are intended to explain retained legacy
-caveats and evidence mismatches; they are not presentation policy and do not
-alter recovered evidence routing.
+The diagnostic also included typed drilldown samples for unresolved legacy-only
+rows and text mismatches. These samples explained retained legacy caveats and
+evidence mismatches; they were not presentation policy and did not alter
+recovered evidence routing.
 
 Real-data drilldown showed the large text-mismatch count was dominated by
 equivalent no-content fallback labels, for example legacy

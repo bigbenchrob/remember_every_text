@@ -10,7 +10,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../config/theme/colors/theme_colors_annotated.dart';
 import '../../../config/theme/theme_typography.dart';
 import '../../../features/chats/presentation/view_model/chats_view_model_provider.dart';
-import '../../../features/messages/feature_level_providers.dart';
 import '../../conversation_graph/application/chat_summaries/chat_summary.dart';
 import '../../conversation_graph/application/chat_summaries/chat_summary_provider.dart';
 import '../../conversation_graph/application/conversation_graph_build_controller_provider.dart';
@@ -43,9 +42,6 @@ class _IncrementalUpdateStatusSheetState
     final graphHealthAsync = _selectedTab == _StatusSheetTab.graphHealth
         ? ref.watch(graphHealthReportProvider)
         : const AsyncValue<GraphHealthReport>.loading();
-    final recoveredParityAsync = _selectedTab == _StatusSheetTab.graphHealth
-        ? ref.watch(recoveredMessageParityDiagnosticProvider)
-        : const AsyncValue<RecoveredMessageParityDiagnostic>.loading();
     final shouldReadSummaries =
         _selectedTab == _StatusSheetTab.groupProfiles ||
         _selectedTab == _StatusSheetTab.messages;
@@ -170,7 +166,6 @@ class _IncrementalUpdateStatusSheetState
                     selectedMessageAttachmentsAsync:
                         selectedMessageAttachmentsAsync,
                     graphHealthAsync: graphHealthAsync,
-                    recoveredParityAsync: recoveredParityAsync,
                     summaryFilter: _summaryFilter,
                     summarySort: _summarySort,
                     selectedChatSsId: _selectedChatSsId,
@@ -231,7 +226,6 @@ class _StatusTabView extends StatelessWidget {
     required this.selectedAttachmentStatsAsync,
     required this.selectedMessageAttachmentsAsync,
     required this.graphHealthAsync,
-    required this.recoveredParityAsync,
     required this.summaryFilter,
     required this.summarySort,
     required this.selectedChatSsId,
@@ -253,7 +247,6 @@ class _StatusTabView extends StatelessWidget {
   final AsyncValue<ChatAttachmentStats> selectedAttachmentStatsAsync;
   final AsyncValue<List<MessageAttachment>> selectedMessageAttachmentsAsync;
   final AsyncValue<GraphHealthReport> graphHealthAsync;
-  final AsyncValue<RecoveredMessageParityDiagnostic> recoveredParityAsync;
   final ChatSummaryFilter summaryFilter;
   final ChatSummarySort summarySort;
   final int? selectedChatSsId;
@@ -271,7 +264,6 @@ class _StatusTabView extends StatelessWidget {
         _StatusSheetTab.status => _StatusContent(status: status),
         _StatusSheetTab.graphHealth => _GraphHealthSection(
           graphHealthAsync: graphHealthAsync,
-          recoveredParityAsync: recoveredParityAsync,
         ),
         _StatusSheetTab.groupProfiles => _ChatSummarySection(
           summariesAsync: summariesAsync,
@@ -343,13 +335,9 @@ class _StatusContent extends ConsumerWidget {
 }
 
 class _GraphHealthSection extends StatelessWidget {
-  const _GraphHealthSection({
-    required this.graphHealthAsync,
-    required this.recoveredParityAsync,
-  });
+  const _GraphHealthSection({required this.graphHealthAsync});
 
   final AsyncValue<GraphHealthReport> graphHealthAsync;
-  final AsyncValue<RecoveredMessageParityDiagnostic> recoveredParityAsync;
 
   @override
   Widget build(BuildContext context) {
@@ -585,7 +573,6 @@ class _GraphHealthSection extends StatelessWidget {
               ),
             ],
           ),
-          _RecoveredParitySection(parityAsync: recoveredParityAsync),
           _StatusSection(
             title: 'Semantic coverage',
             rows: [
@@ -784,178 +771,6 @@ class _MissingAttachmentSampleCard extends ConsumerWidget {
     }
     return 'No matching archive or recovered Messages key was found. This may '
         'be a true source gap, or the matching key differs across sources.';
-  }
-}
-
-class _RecoveredParitySection extends StatelessWidget {
-  const _RecoveredParitySection({required this.parityAsync});
-
-  final AsyncValue<RecoveredMessageParityDiagnostic> parityAsync;
-
-  @override
-  Widget build(BuildContext context) {
-    return parityAsync.when(
-      loading: () => const _StatusSection(
-        title: 'Recovered message graph parity',
-        rows: [_StatusRow('diagnostic', 'loading', labelWidth: 260)],
-      ),
-      error: (error, stackTrace) => _StatusSection(
-        title: 'Recovered message graph parity',
-        rows: [
-          _StatusRow('diagnostic error', error.toString(), labelWidth: 260),
-        ],
-      ),
-      data: (diagnostic) {
-        final report = diagnostic.report;
-        if (!diagnostic.isReady || report == null) {
-          return _StatusSection(
-            title: 'Recovered message graph parity',
-            rows: [
-              _StatusRow('status', diagnostic.reason, labelWidth: 260),
-              const _StatusRow(
-                'production recovered evidence',
-                'graph repository pending graph readiness',
-                labelWidth: 260,
-              ),
-            ],
-          );
-        }
-
-        return _StatusSection(
-          title: 'Recovered message graph parity',
-          rows: [
-            _StatusRow(
-              'graph parity status',
-              _graphParityStatusLabel(report),
-              labelWidth: 260,
-            ),
-            if (report.requiresCompatibilityRetention)
-              const _StatusRow(
-                'legacy-only caveat',
-                'legacy-only rows require retention or explicit acceptance',
-                labelWidth: 260,
-              ),
-            _StatusRow(
-              'legacy recovered rows',
-              '${report.legacyCount}',
-              labelWidth: 260,
-            ),
-            _StatusRow(
-              'graph recovered/orphan rows',
-              '${report.graphRecoveredCount}',
-              labelWidth: 260,
-            ),
-            _StatusRow(
-              'matched recovered rows',
-              '${report.matchedRecoveredCount}',
-              labelWidth: 260,
-            ),
-            _StatusRow(
-              'now ordinary conversation evidence',
-              '${report.legacyNowProjectableCount}',
-              labelWidth: 260,
-            ),
-            _StatusRow(
-              'legacy-only rows',
-              '${report.legacyOnlyCount}',
-              labelWidth: 260,
-            ),
-            _StatusRow(
-              'suppressed legacy-only rows',
-              '${report.suppressedLegacyOnlyCount}',
-              labelWidth: 260,
-            ),
-            _StatusRow(
-              'unresolved legacy-only rows',
-              '${report.unresolvedLegacyOnlyCount}',
-              labelWidth: 260,
-            ),
-            _StatusRow(
-              'graph-only recovered rows',
-              '${report.graphOnlyCount}',
-              labelWidth: 260,
-            ),
-            _StatusRow(
-              'attachment-count mismatches',
-              '${report.attachmentCountMismatchCount}',
-              labelWidth: 260,
-            ),
-            _StatusRow(
-              'GUID mismatches',
-              '${report.guidMismatchCount}',
-              labelWidth: 260,
-            ),
-            _StatusRow(
-              'text mismatches',
-              '${report.textMismatchCount}',
-              labelWidth: 260,
-            ),
-            const _StatusRow(
-              'production recovered evidence',
-              'graph repository active',
-              labelWidth: 260,
-            ),
-            const _StatusRow(
-              'legacy recovered storage',
-              'retained for diagnostics/fallback review',
-              labelWidth: 260,
-            ),
-            if (report.legacyOnlySamples.isNotEmpty) ...[
-              const _StatusRow(
-                'unresolved sample meaning',
-                'legacy recovered rows not explained by graph topology or '
-                    'known user suppression',
-                labelWidth: 260,
-              ),
-              for (final sample in report.legacyOnlySamples)
-                _StatusRow(
-                  'legacy row ${sample.messageId}',
-                  _formatParitySample(sample),
-                  labelWidth: 260,
-                ),
-            ],
-            if (report.textMismatchSamples.isNotEmpty) ...[
-              const _StatusRow(
-                'text mismatch sample meaning',
-                'matched rows where legacy and graph text previews differ',
-                labelWidth: 260,
-              ),
-              for (final sample in report.textMismatchSamples)
-                _StatusRow(
-                  'legacy row ${sample.legacyMessageId}',
-                  _formatTextMismatchSample(sample),
-                  labelWidth: 260,
-                ),
-            ],
-          ],
-        );
-      },
-    );
-  }
-
-  String _formatParitySample(RecoveredMessageParitySample sample) {
-    return '${_formatDate(sample.sentAt)} | ${sample.guid} | '
-        '${sample.textPreview}';
-  }
-
-  String _formatTextMismatchSample(RecoveredMessageTextMismatchSample sample) {
-    return 'graph ${sample.graphMessageId} | ${_formatDate(sample.sentAt)} | '
-        '${sample.guid}\nlegacy: ${sample.legacyTextPreview}\n'
-        'graph: ${sample.graphTextPreview}';
-  }
-
-  String _formatDate(DateTime? value) {
-    return value?.toIso8601String() ?? 'unknown date';
-  }
-
-  String _graphParityStatusLabel(RecoveredMessageParityReport report) {
-    if (!report.matchedEvidenceParityPasses) {
-      return 'attention needed: evidence mismatches remain';
-    }
-    if (report.requiresCompatibilityRetention) {
-      return 'matched evidence passes; legacy-only caveat remains';
-    }
-    return 'clean: no unresolved legacy-only rows or evidence mismatches';
   }
 }
 

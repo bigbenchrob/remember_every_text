@@ -1,32 +1,6 @@
 import 'package:drift/drift.dart';
 
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import '../../../../essentials/db/infrastructure/data_sources/local/working/working_database.dart';
-
-Future<Map<int, int>> workingHandleCountsByParticipant(
-  WorkingDatabase db,
-) async {
-  final participantColumn = db.handleToParticipant.participantId;
-  final countExpression = db.handleToParticipant.handleId.count();
-
-  final rows =
-      await (db.selectOnly(db.handleToParticipant)
-            ..addColumns([participantColumn, countExpression])
-            ..groupBy([participantColumn]))
-          .get();
-
-  final handleCounts = <int, int>{};
-
-  for (final row in rows) {
-    final participantId = row.read(participantColumn);
-    if (participantId == null) {
-      continue;
-    }
-    handleCounts[participantId] = row.read(countExpression) ?? 0;
-  }
-
-  return handleCounts;
-}
 
 Future<Map<int, int>> overlayHandleCountsByParticipant(
   OverlayDatabase db,
@@ -123,35 +97,6 @@ Future<Map<int, ParticipantOverride>> participantOverridesById(
 ) async {
   final rows = await db.select(db.participantOverrides).get();
   return {for (final row in rows) row.participantId: row};
-}
-
-Future<Map<int, String>> preferredParticipantDisplayNamesMap({
-  required WorkingDatabase workingDb,
-  required OverlayDatabase overlayDb,
-}) async {
-  final participants = await workingDb
-      .select(workingDb.workingParticipants)
-      .get();
-  final overrides = await participantOverridesById(overlayDb);
-  return {
-    for (final participant in participants)
-      participant.id: preferredParticipantDisplayName(
-        participant: participant,
-        override: overrides[participant.id],
-      ),
-  };
-}
-
-String preferredParticipantDisplayName({
-  required WorkingParticipant participant,
-  required ParticipantOverride? override,
-}) {
-  final displayNameOverride = override?.displayNameOverride?.trim();
-  if (displayNameOverride != null && displayNameOverride.isNotEmpty) {
-    return displayNameOverride;
-  }
-
-  return participant.displayName;
 }
 
 bool isPlaceholderDisplayName(String value) {

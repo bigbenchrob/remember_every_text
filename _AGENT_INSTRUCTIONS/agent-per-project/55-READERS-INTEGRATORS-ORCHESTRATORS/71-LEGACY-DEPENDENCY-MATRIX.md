@@ -62,11 +62,12 @@ view is an ordinary user-facing read dependency with bridge semantics.
    blocker-driven, not opportunistic.
 
 3. **Archive/recovery is now the main semantic blocker.**
-   Attachment archive sweeps, deterministic historical recovery, recovered
-   deleted messages, and historical archive workflow still use
-   `macos_import.db` / `working.db` identity. This is acceptable for now because
-   these systems preserve evidence, but it is the next architectural area that
-   needs a source-scoped identity plan.
+   Attachment archive lifecycle, deterministic historical recovery, and
+   historical archive workflow still use legacy import/working identity in
+   specific compatibility paths. Recovered deleted-message presentation is now
+   graph-backed, and its retained parity diagnostic bridge has been retired.
+   Recovery systems preserve evidence, so remaining legacy references need
+   source-scoped identity plans rather than opportunistic deletion.
 
 4. **Legacy import/migration is the main lifecycle blocker.**
    The app-facing graph is production-used, but first-run/reimport/live update
@@ -97,7 +98,7 @@ consumers**.
 | Global/contact/handle/conversation message evidence | Message Evidence Spine over graph scopes | Graph-backed ordinary read | Timeline-like scopes use full graph skeletons; hydration is windowed. |
 | Global/contact heatmaps | Graph timeline data only | Graph-backed ordinary read | Legacy `global_message_index` / `contact_message_index` fallback retired. |
 | Unfamiliar sources / manual linking / spam management | Graph canonical handles plus overlay intent | Graph-backed settings/user-facing read | Overlay writes remain overlay-only. |
-| Recovered deleted messages | Legacy recovered-message tables feed the shared evidence spine | Recovery/archive, not ordinary read | Keep until recovered sources are imported into source-scoped graph identity. |
+| Recovered deleted messages | Graph orphan evidence feeds the shared evidence spine | Graph-backed recovery/archive read | Retained legacy parity diagnostics retired; legacy recovered storage remains only as historical data until legacy DB retirement. |
 
 ## Production Lifecycle Dependencies
 
@@ -134,7 +135,6 @@ after the ordinary graph path is reliable.
 | `lib/features/settings/application/sidebar_cassette_spec/providers/historical_archives_sidebar_known_sources_provider.dart` | Historical archive settings and legacy-backed recovery assumptions | Historical archive source UI | Recovery/archive plus settings | Keep until source-scoped multi-source archive import exists. |
 | `lib/features/settings/application/sidebar_cassette_spec/resolvers/message_history_coverage_settings_resolver.dart` | Graph conversation-linked and graph-orphan counts | Coverage settings | Graph-backed settings | Legacy recovered-message count fallback retired. Keep source `chat.db` read as the comparison baseline until source-scoped live import owns the source summary. |
 | `lib/features/settings/presentation/view_model/historical_archives_workflow_panel_model_provider.dart` | Historical archive workflow state | Recovery workflow UI | Recovery/archive plus settings | Keep, then rebase on source-scoped archive imports. |
-| `lib/features/contacts/infrastructure/repositories/participant_merge_utils.dart` | `WorkingDatabase` helper used only by retained legacy recovered parity diagnostics | Legacy participant-name compatibility helper | Diagnostic compatibility | Retire with retained legacy recovered parity diagnostics. No longer used by production recovered views. |
 
 ## Diagnostic and Settings Dependencies
 
@@ -150,6 +150,7 @@ diagnostic/reference and not the ordinary app truth.
 | `lib/essentials/db_migrate/presentation/view/db_migration_panel.dart` | Legacy migration UI | Migration diagnostics | Diagnostic/settings | Keep until legacy migration retires, then delete. |
 | `lib/essentials/logging/application/import_audit_writer.dart` and `migration_audit_writer.dart` | Legacy import/migration logs | Audit diagnostics | Diagnostic/settings | Either add graph audit writers or retire with legacy lifecycle. |
 | `lib/debug_install/*` | Retired static/debug logs | Debug artifacts under `lib` | Deletion candidate closed | Removed after reference scan confirmed no build/runtime path reads them. Runtime logs remain in Application Support / `~/Library/Logs` paths. |
+| Retained recovered parity diagnostic bridge | Retired | Former `working.db.recovered_unlinked_*` comparison path | Deletion candidate closed | Removed after production recovered evidence cutover and user acceptance of the remaining legacy-only retention caveats. |
 
 ## Legacy Presentation Consumers
 

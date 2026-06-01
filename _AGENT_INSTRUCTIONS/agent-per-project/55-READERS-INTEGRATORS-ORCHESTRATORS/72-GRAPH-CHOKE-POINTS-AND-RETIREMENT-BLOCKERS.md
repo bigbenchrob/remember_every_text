@@ -399,7 +399,7 @@ This section names what prevents each legacy layer from being retired.
 | Contact read models remain legacy | contact picker, contact hero, handle filters | Graph contact summaries and handle scopes exist. | Second. |
 | Global heatmap remains legacy | global message timeline | Graph full-scope global skeleton exists. | After search/contact. |
 | Old chat summary providers remain fallback | recent/age/unmatched chats | Graph conversation summaries cover required views or old views are retired. | After frontmost graph conversation path is stable. |
-| Retained recovered-message legacy diagnostics remain | recovered parity diagnostics and legacy-retention review | Legacy recovered parity diagnostics are no longer needed, or retained legacy storage has a documented retirement decision. | Later; production recovered evidence is already graph-backed. |
+| Retained recovered-message legacy diagnostics remain | Retired recovered parity diagnostic bridge | Production recovered evidence is graph-backed and remaining legacy-only rows have an accepted retention explanation. | Closed; legacy recovered storage remains only as historical data inside retained legacy DBs until broader legacy DB retirement. |
 
 ### Legacy Projection Systems
 
