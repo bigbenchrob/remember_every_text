@@ -302,14 +302,17 @@ than dev-panel-owned.
   the entry point for both the source-scoped dev panel and live `chat.db`
   monitor graph builds.
 - Live `chat.db` changes now trigger the conversation graph build before any
-  legacy compatibility migration, so automatic sync updates the app-facing
-  graph rather than only the legacy projection.
+  legacy compatibility import or migration, so automatic sync updates the
+  app-facing graph before maintaining the legacy projection.
 - Live `chat.db` monitor updates now treat source-scoped graph import/projection
   as the app-facing success path. Legacy ledger import and `working.db`
   migration still run for compatibility maintenance, but their failure or
   exception no longer blocks refreshed graph evidence when the graph build has
-  succeeded. Import-execution denial still delays/retries to avoid overlapping
-  maintenance work.
+  succeeded.
+- The live monitor now claims the global derived-data maintenance gate around
+  the graph build, attachment archive pass, legacy import, and legacy migration.
+  Gate denial still delays/retries to avoid overlapping maintenance work, but
+  the gate is no longer provided indirectly by the legacy import path.
 - Live monitor startup catch-up and cursor priming now compare `chat.db` to the
   source-scoped import ledger (`macos_import_ss.db`) rather than the legacy
   `macos_import.db` message cursor, so graph freshness is measured from the
