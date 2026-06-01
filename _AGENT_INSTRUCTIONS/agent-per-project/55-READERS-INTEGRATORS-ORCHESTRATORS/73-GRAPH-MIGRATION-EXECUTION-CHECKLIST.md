@@ -669,6 +669,11 @@ archives.
   source rows against the conversation graph (`working_ss.db.messages`) instead
   of legacy `working.db.messages`. This removes a low-risk legacy read while
   keeping actual archive import/removal lifecycle behavior unchanged.
+- Historical archive known-source sidebar data now flows through
+  `HistoricalArchiveSourcesRepository`, a named settings infrastructure bridge
+  over `macos_import.db.historical_archive_sources`. Application/sidebar code
+  consumes typed archive-source metadata and no longer imports the legacy DB
+  provider or sqflite record type directly.
 
 ### Exit Criteria
 
