@@ -98,7 +98,10 @@ List<String> buildOnboardingFailureReportHeaderLines(
       probe: report.addressBookDatabase,
       unavailableMessage: report.addressBookFailureMessage ?? 'unavailable',
     ),
-    _describeProbe(label: 'Import database', probe: report.importDatabase),
+    _describeProbe(
+      label: 'Source-scoped import ledger',
+      probe: report.importDatabase,
+    ),
     _describeProbe(label: 'Conversation graph', probe: report.workingDatabase),
   ];
 

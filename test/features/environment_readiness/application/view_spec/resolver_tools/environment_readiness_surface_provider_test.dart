@@ -127,13 +127,13 @@ OnboardingEnvironmentReport _report({
       rowCount: 10,
     ),
     importDatabase: const OnboardingDatabaseProbe(
-      path: 'macos_import.db',
+      path: 'macos_import_ss.db',
       exists: true,
       readable: true,
       rowCount: 100,
     ),
     workingDatabase: const OnboardingDatabaseProbe(
-      path: 'working.db',
+      path: 'working_ss.db',
       exists: true,
       readable: true,
       rowCount: 100,

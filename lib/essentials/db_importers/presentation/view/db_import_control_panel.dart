@@ -57,7 +57,8 @@ class DbImportControlPanel extends ConsumerWidget {
                 ),
                 const SizedBox(width: 12),
                 MacosTooltip(
-                  message: 'Reset: Delete import & working databases',
+                  message:
+                      'Reset: Delete derived import ledgers and graph databases',
                   child: MacosIconButton(
                     semanticLabel: 'Reset databases',
                     icon: const MacosIcon(
@@ -171,7 +172,7 @@ class _ImportControls extends StatelessWidget {
               onPressed: controlState.isProcessing
                   ? null
                   : () => notifier.clearImportDatabase(),
-              child: const Text('Clear Import DB'),
+              child: const Text('Clear Import Ledgers'),
             ),
           ],
         ),

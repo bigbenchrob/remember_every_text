@@ -415,7 +415,8 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
     }
   }
 
-  /// Deletes import and working databases (preserving overlay DB),
+  /// Deletes derived import ledgers and graph/projection databases
+  /// (preserving overlay DB),
   /// invalidates their providers, and resets UI to virgin state.
   Future<void> resetAllDatabases() async {
     if (state.isProcessing) {
@@ -503,7 +504,7 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
 
     state = state.copyWith(
       isProcessing: true,
-      statusMessage: 'Clearing import database...',
+      statusMessage: 'Clearing import ledgers...',
       stages: const <UiStageProgress>[],
       clearProgress: true,
       clearCurrentStage: true,
@@ -610,7 +611,7 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
       state = state.copyWith(
         isProcessing: false,
         statusMessage:
-            'Import databases deleted and will be recreated on demand. Run Import again to repopulate them.',
+            'Import ledgers deleted and will be recreated on demand. Run Import again to repopulate them.',
         clearProgress: true,
         clearCurrentStage: true,
         clearTableProgress: true,
@@ -631,7 +632,7 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
 
     state = state.copyWith(
       isProcessing: true,
-      statusMessage: 'Clearing working database...',
+      statusMessage: 'Clearing graph/projection databases...',
       stages: const <UiStageProgress>[],
       clearProgress: true,
       clearCurrentStage: true,
@@ -927,7 +928,7 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
         final importDb = await ref.read(sqfliteImportDatabaseProvider.future);
         await importDb.close();
       } catch (_) {
-        // Import database might not exist yet or already closed - that's fine
+        // Import ledgers might not exist yet or already be closed.
       }
       ref.invalidate(sqfliteImportDatabaseProvider);
 
@@ -1133,8 +1134,8 @@ Common causes of database locks:
 8. File indexing (Spotlight)
 
 📁 Database file locations:
-• import.db (in ~/sqlite_rmc/messages/)
-• working.db (in ~/sqlite_rmc/messages/)
+• macos_import_ss.db and macos_import.db
+• working_ss.db and working.db
 
 🛠️ Troubleshooting steps:
 1. 🔄 RESTART THIS APP (closes internal connections)

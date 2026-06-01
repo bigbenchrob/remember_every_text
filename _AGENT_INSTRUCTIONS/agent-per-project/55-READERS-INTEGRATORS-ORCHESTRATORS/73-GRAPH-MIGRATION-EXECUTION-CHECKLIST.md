@@ -333,6 +333,10 @@ than dev-panel-owned.
   conversation graph table/relationship/invariant checks explicitly, while
   legacy `macos_import.db` and `working.db` are labelled as compatibility
   databases rather than production authority.
+- Onboarding, environment-readiness, diagnostic-report, and import-control
+  presentation copy now describes app-facing readiness as the source-scoped
+  import ledger plus conversation graph rather than generic import/working
+  databases.
 - Onboarding abort/fresh-start cleanup now deletes graph-era derived databases
   as well as legacy import/working databases.
 - First-run onboarding and settings-triggered reimport now rely on the import

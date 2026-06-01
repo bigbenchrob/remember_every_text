@@ -513,7 +513,7 @@ class _EnvironmentSummaryCard extends StatelessWidget {
             isGood: report.addressBookDatabase?.readable ?? false,
           ),
           _DiagnosticRow(
-            label: 'Import database',
+            label: 'Source-scoped import ledger',
             value: _appDbValue(report.importDatabase),
             colors: colors,
             typography: typography,

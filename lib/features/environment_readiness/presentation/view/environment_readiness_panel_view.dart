@@ -668,7 +668,7 @@ class _EvidenceCard extends StatelessWidget {
             typography: typography,
           ),
           _EvidenceRow(
-            label: 'Import database',
+            label: 'Source-scoped import ledger',
             value: report.importDatabase.hasData ? 'Ready' : 'Not prepared yet',
             colors: colors,
             typography: typography,

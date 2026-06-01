@@ -24,7 +24,7 @@ void main() {
         rowCount: 10,
       ),
       importDatabase: const OnboardingDatabaseProbe(
-        path: 'macos_import.db',
+        path: 'macos_import_ss.db',
         exists: true,
         readable: true,
         rowCount: 123,
@@ -55,6 +55,12 @@ void main() {
     expect(headerLines, contains('State: migrationFailed'));
     expect(headerLines, contains('Blocker: migrationFailed'));
     expect(headerLines, contains('Migration failure: foreign key failed'));
+    expect(
+      headerLines,
+      contains(
+        'Source-scoped import ledger: path=macos_import_ss.db; exists=true; readable=true; rows=123',
+      ),
+    );
     expect(
       headerLines,
       contains(
