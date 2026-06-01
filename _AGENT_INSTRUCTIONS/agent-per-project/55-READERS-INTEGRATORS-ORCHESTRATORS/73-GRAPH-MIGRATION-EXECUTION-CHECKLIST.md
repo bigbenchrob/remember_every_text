@@ -313,6 +313,9 @@ than dev-panel-owned.
   source-scoped import ledger (`macos_import_ss.db`) rather than the legacy
   `macos_import.db` message cursor, so graph freshness is measured from the
   app-facing ledger.
+- Live update attachment archiving now uses graph message source-row ranges
+  from the source-scoped build report instead of legacy import batch ids.
+  Existing overlay archive keys are preserved during transition.
 - The legacy import control panel reset/clear actions now close, invalidate,
   and delete graph-era derived databases (`macos_import_ss.db`,
   `working_ss.db`) as well as legacy import/working databases.

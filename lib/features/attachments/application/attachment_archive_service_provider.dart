@@ -259,6 +259,88 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     return result;
   }
 
+  Future<AttachmentArchiveResult> archiveGraphMessageSourceRange({
+    required int sourceId,
+    required int startedAfterSourceRowId,
+    required int? lastImportedSourceRowId,
+  }) async {
+    final lastSourceRowId = lastImportedSourceRowId;
+    if (lastSourceRowId == null || lastSourceRowId <= startedAfterSourceRowId) {
+      return const AttachmentArchiveResult(
+        totalScanned: 0,
+        newlyArchived: 0,
+        skipped: 0,
+        failed: 0,
+      );
+    }
+
+    final settings = await ref.read(archiveSettingsProvider.future);
+    if (!settings.isEnabled) {
+      return const AttachmentArchiveResult(
+        totalScanned: 0,
+        newlyArchived: 0,
+        skipped: 0,
+        failed: 0,
+      );
+    }
+
+    final graphDb = await ref.read(
+      driftConversationGraphDatabaseProvider.future,
+    );
+    final logger = ref.read(appLoggerProvider.notifier);
+
+    final rows = await graphDb.selectRows(
+      '''
+      SELECT DISTINCT
+        a.ss_id AS working_attachment_id,
+        m.guid AS message_guid,
+        (a.ss_id & ?) AS import_attachment_id,
+        a.filename AS local_path,
+        a.mime_type,
+        NULL AS sha256_hex
+      FROM messages m
+      JOIN message_to_attachment mta ON mta.message_ss_id = m.ss_id
+      JOIN attachments a ON a.ss_id = mta.attachment_ss_id
+      WHERE (m.ss_id >> ?) = ?
+        AND (m.ss_id & ?) > ?
+        AND (m.ss_id & ?) <= ?
+        AND (a.ss_id >> ?) = ?
+        AND a.filename IS NOT NULL
+        AND LENGTH(TRIM(a.filename)) > 0
+      ORDER BY m.ss_id, a.ss_id
+      ''',
+      <Object?>[
+        SourceScopedRowKey.maxSourceRowId,
+        SourceScopedRowKey.sourceRowIdBits,
+        sourceId,
+        SourceScopedRowKey.maxSourceRowId,
+        startedAfterSourceRowId,
+        SourceScopedRowKey.maxSourceRowId,
+        lastSourceRowId,
+        SourceScopedRowKey.sourceRowIdBits,
+        sourceId,
+      ],
+    );
+
+    final archiveOutcome = await _archiveRows(
+      rows: rows,
+      updateProgressState: false,
+    );
+    final result = archiveOutcome.result;
+
+    logger.info(
+      'Attachment archive graph source range '
+      '$startedAfterSourceRowId-$lastSourceRowId: '
+      '${result.newlyArchived} new, ${result.skipped} skipped, '
+      '${result.failed} failed out of ${result.totalScanned} attachment(s)',
+      source: 'AttachmentArchiveService',
+    );
+
+    ref.invalidate(archiveSettingsProvider);
+
+    return result;
+  }
+
   /// Sweep a small rolling chunk of working attachments looking for image
   /// files that are not yet archived but may now exist in Messages/Attachments.
   ///

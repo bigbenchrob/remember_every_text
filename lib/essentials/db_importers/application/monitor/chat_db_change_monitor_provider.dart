@@ -478,22 +478,7 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
           ref
               .read(appLoggerProvider.notifier)
               .info(
-                'Incremental import successful. Archiving new attachments before migration',
-                source: 'ChatDbMonitor',
-              );
-          final archiveService = ref.read(
-            attachmentArchiveServiceProvider.notifier,
-          );
-          final archiveResult = await archiveService.archiveImportedBatch(
-            batchId: importResult.batchId,
-          );
-          ref
-              .read(appLoggerProvider.notifier)
-              .info(
-                'Incremental attachment archive completed: '
-                '${archiveResult.newlyArchived} archived, '
-                '${archiveResult.skipped} skipped, '
-                '${archiveResult.failed} failed.',
+                'Incremental import successful. Building graph before attachment archive',
                 source: 'ChatDbMonitor',
               );
           ref
@@ -510,6 +495,28 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
               .read(appLoggerProvider.notifier)
               .info(
                 buildConversationGraphBuildSummaryLog(report: graphBuildReport),
+                source: 'ChatDbMonitor',
+              );
+          final archiveService = ref.read(
+            attachmentArchiveServiceProvider.notifier,
+          );
+          final archiveResult = await archiveService
+              .archiveGraphMessageSourceRange(
+                sourceId: liveChatDbSourceId,
+                startedAfterSourceRowId: graphBuildReport
+                    .messageImportResult
+                    .startedAfterSourceRowId,
+                lastImportedSourceRowId: graphBuildReport
+                    .messageImportResult
+                    .lastImportedSourceRowId,
+              );
+          ref
+              .read(appLoggerProvider.notifier)
+              .info(
+                'Graph attachment archive completed: '
+                '${archiveResult.newlyArchived} archived, '
+                '${archiveResult.skipped} skipped, '
+                '${archiveResult.failed} failed.',
                 source: 'ChatDbMonitor',
               );
 

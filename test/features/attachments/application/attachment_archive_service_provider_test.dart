@@ -61,10 +61,11 @@ void main() {
     required int importAttachmentId,
     required String localPath,
     required String mimeType,
+    int? messageSourceRowId,
   }) async {
     final messageSsId = SourceScopedRowKey.pack(
       sourceId: 1,
-      sourceRowId: importAttachmentId + 100000,
+      sourceRowId: messageSourceRowId ?? importAttachmentId + 100000,
     );
     final attachmentSsId = SourceScopedRowKey.pack(
       sourceId: 1,
@@ -540,6 +541,80 @@ void main() {
         isTrue,
       );
     });
+
+    test(
+      'archives graph attachments for the imported message source row range',
+      () async {
+        final beforeRangeSource = File('${tempDir.path}/before-range.png');
+        final inRangeSource = File('${tempDir.path}/in-range.png');
+        final afterRangeSource = File('${tempDir.path}/after-range.png');
+        await beforeRangeSource.writeAsString('before-range');
+        await inRangeSource.writeAsString('in-range');
+        await afterRangeSource.writeAsString('after-range');
+
+        await insertGraphAttachment(
+          graphDb,
+          messageGuid: 'message-before-range',
+          importAttachmentId: 610,
+          localPath: beforeRangeSource.path,
+          mimeType: 'image/png',
+          messageSourceRowId: 99,
+        );
+        await insertGraphAttachment(
+          graphDb,
+          messageGuid: 'message-in-range',
+          importAttachmentId: 611,
+          localPath: inRangeSource.path,
+          mimeType: 'image/png',
+          messageSourceRowId: 100,
+        );
+        await insertGraphAttachment(
+          graphDb,
+          messageGuid: 'message-after-range',
+          importAttachmentId: 612,
+          localPath: afterRangeSource.path,
+          mimeType: 'image/png',
+          messageSourceRowId: 102,
+        );
+
+        final result = await container
+            .read(attachmentArchiveServiceProvider.notifier)
+            .archiveGraphMessageSourceRange(
+              sourceId: 1,
+              startedAfterSourceRowId: 99,
+              lastImportedSourceRowId: 101,
+            );
+
+        expect(result.totalScanned, 1);
+        expect(result.newlyArchived, 1);
+
+        final inRangeArchive =
+            await (overlayDb.select(overlayDb.archivedAttachments)..where(
+                  (t) =>
+                      t.messageGuid.equals('message-in-range') &
+                      t.importAttachmentId.equals(611),
+                ))
+                .getSingleOrNull();
+        final beforeRangeArchive =
+            await (overlayDb.select(overlayDb.archivedAttachments)..where(
+                  (t) =>
+                      t.messageGuid.equals('message-before-range') &
+                      t.importAttachmentId.equals(610),
+                ))
+                .getSingleOrNull();
+        final afterRangeArchive =
+            await (overlayDb.select(overlayDb.archivedAttachments)..where(
+                  (t) =>
+                      t.messageGuid.equals('message-after-range') &
+                      t.importAttachmentId.equals(612),
+                ))
+                .getSingleOrNull();
+
+        expect(inRangeArchive, isNotNull);
+        expect(beforeRangeArchive, isNull);
+        expect(afterRangeArchive, isNull);
+      },
+    );
 
     test(
       'persists manual burst totals separately from chunk sweep status',
