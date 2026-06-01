@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/contacts/contact_projection_repository.dart';
@@ -59,11 +61,56 @@ void main() {
     expect(state.lastReport, isNull);
     expect(state.lastError, contains('boom'));
   });
+
+  test('coalesces concurrent graph build requests', () async {
+    final gate = Completer<void>();
+    var importChatsCallCount = 0;
+    final report = _report();
+    final container = ProviderContainer(
+      overrides: [
+        conversationGraphBuildServiceProvider.overrideWith(
+          (ref) async => ConversationGraphBuildService(
+            orchestrator: _orchestrator(
+              report: report,
+              importChats: () async {
+                importChatsCallCount += 1;
+                await gate.future;
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final notifier = container.read(
+      conversationGraphBuildControllerProvider.notifier,
+    );
+    final first = notifier.runOnce(owner: 'first-owner');
+    await Future<void>.delayed(Duration.zero);
+    final second = notifier.runOnce(owner: 'second-owner');
+
+    expect(identical(first, second), isTrue);
+    expect(
+      container.read(conversationGraphBuildControllerProvider).status,
+      ConversationGraphBuildStatus.running,
+    );
+
+    gate.complete();
+    final results = await Future.wait([first, second]);
+
+    expect(importChatsCallCount, 1);
+    expect(results[0], same(results[1]));
+    final state = container.read(conversationGraphBuildControllerProvider);
+    expect(state.status, ConversationGraphBuildStatus.succeeded);
+    expect(state.owner, 'first-owner');
+  });
 }
 
 ConversationGraphBuildOrchestrator _orchestrator({
   ConversationGraphBuildReport? report,
   Object? error,
+  GraphBuildStep? importChats,
 }) {
   Future<void> step() async {
     if (error != null) {
@@ -72,7 +119,7 @@ ConversationGraphBuildOrchestrator _orchestrator({
   }
 
   return ConversationGraphBuildOrchestrator(
-    importChats: step,
+    importChats: importChats ?? step,
     importHandles: step,
     importContacts: step,
     importMessages: () async {

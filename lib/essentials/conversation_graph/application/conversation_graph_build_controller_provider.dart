@@ -39,6 +39,8 @@ class ConversationGraphBuildState {
 @Riverpod(keepAlive: true)
 class ConversationGraphBuildController
     extends _$ConversationGraphBuildController {
+  Future<ConversationGraphBuildReport>? _inFlight;
+
   @override
   ConversationGraphBuildState build() {
     return const ConversationGraphBuildState.idle();
@@ -46,11 +48,23 @@ class ConversationGraphBuildController
 
   Future<ConversationGraphBuildReport> runOnce({
     String owner = 'conversation-graph-build-controller',
-  }) async {
-    if (state.isRunning) {
-      throw StateError('Conversation graph build is already running');
+  }) {
+    final inFlight = _inFlight;
+    if (inFlight != null) {
+      return inFlight;
     }
 
+    late final Future<ConversationGraphBuildReport> future;
+    future = _runBuild(owner).whenComplete(() {
+      if (identical(_inFlight, future)) {
+        _inFlight = null;
+      }
+    });
+    _inFlight = future;
+    return future;
+  }
+
+  Future<ConversationGraphBuildReport> _runBuild(String owner) async {
     final startedAt = DateTime.now().toUtc();
     state = ConversationGraphBuildState(
       status: ConversationGraphBuildStatus.running,

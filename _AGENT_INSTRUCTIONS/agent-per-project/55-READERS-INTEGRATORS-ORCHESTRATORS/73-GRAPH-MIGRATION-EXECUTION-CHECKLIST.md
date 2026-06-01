@@ -319,6 +319,9 @@ than dev-panel-owned.
   build after successful migration; a graph build failure is recorded as the
   user-visible migration failure state because the app-facing graph was not
   produced.
+- Concurrent graph build requests now coalesce through the central build
+  controller instead of throwing. If the live monitor and a manual/status action
+  overlap, both callers observe the same in-flight build result.
 - Message History Coverage settings now count visible app messages from the
   conversation graph.
 - Legacy `workingProjectionReadinessProvider` has been retired. Retained
