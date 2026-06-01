@@ -679,6 +679,10 @@ archives.
   deletion/invalidation behavior has one lifecycle owner; import control keeps
   only its local UI state mapping and the narrower import/projection clear
   actions.
+- `OnboardingGate` no longer owns a duplicate full derived-database deletion
+  implementation. Abort and fresh-start cleanup now route through the same
+  import-control reset boundary, while settings reimport keeps its import-only
+  ledger cleanup path.
 
 ### Exit Criteria
 
