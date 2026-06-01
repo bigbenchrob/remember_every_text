@@ -4,6 +4,8 @@ import 'package:remember_this_text/essentials/db_importers/presentation/view_mod
 import 'package:remember_this_text/essentials/onboarding/application/message_data_reset_service.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('DbImportControlViewModel resetAllDatabases', () {
     test('delegates broad reset to MessageDataResetService', () async {
       final resetService = _FakeMessageDataResetService();
@@ -95,15 +97,67 @@ void main() {
       expect(state.statusMessage, contains('ledger boom'));
     });
   });
+
+  group('DbImportControlViewModel clearWorkingDatabase', () {
+    test('delegates projection clear to MessageDataResetService', () async {
+      final resetService = _FakeMessageDataResetService();
+      final container = ProviderContainer(
+        overrides: [
+          messageDataResetServiceProvider.overrideWith((ref) => resetService),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container
+          .read(dbImportControlViewModelProvider.notifier)
+          .clearWorkingDatabase();
+
+      expect(resetService.clearProjectionDatabasesCallCount, 1);
+      final state = container.read(dbImportControlViewModelProvider);
+      expect(state.isProcessing, isFalse);
+      expect(
+        state.statusMessage,
+        'Projection databases deleted and will be recreated on demand. Run Migration or graph build to repopulate them.',
+      );
+    });
+
+    test('reports projection clear failures through status state', () async {
+      final resetService = _FakeMessageDataResetService(
+        clearProjectionDatabasesError: StateError('projection boom'),
+      );
+      final container = ProviderContainer(
+        overrides: [
+          messageDataResetServiceProvider.overrideWith((ref) => resetService),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container
+          .read(dbImportControlViewModelProvider.notifier)
+          .clearWorkingDatabase();
+
+      expect(resetService.clearProjectionDatabasesCallCount, 1);
+      final state = container.read(dbImportControlViewModelProvider);
+      expect(state.isProcessing, isFalse);
+      expect(state.statusMessage, contains('Failed to clear working database'));
+      expect(state.statusMessage, contains('projection boom'));
+    });
+  });
 }
 
 final class _FakeMessageDataResetService implements MessageDataResetService {
-  _FakeMessageDataResetService({this.resetError, this.clearImportLedgersError});
+  _FakeMessageDataResetService({
+    this.resetError,
+    this.clearImportLedgersError,
+    this.clearProjectionDatabasesError,
+  });
 
   final Object? resetError;
   final Object? clearImportLedgersError;
+  final Object? clearProjectionDatabasesError;
   int resetCallCount = 0;
   int clearImportLedgersCallCount = 0;
+  int clearProjectionDatabasesCallCount = 0;
 
   @override
   Future<void> resetDerivedData() async {
@@ -118,6 +172,15 @@ final class _FakeMessageDataResetService implements MessageDataResetService {
   Future<void> clearImportLedgers() async {
     clearImportLedgersCallCount += 1;
     final error = clearImportLedgersError;
+    if (error != null) {
+      throw error;
+    }
+  }
+
+  @override
+  Future<void> clearProjectionDatabases() async {
+    clearProjectionDatabasesCallCount += 1;
+    final error = clearProjectionDatabasesError;
     if (error != null) {
       throw error;
     }

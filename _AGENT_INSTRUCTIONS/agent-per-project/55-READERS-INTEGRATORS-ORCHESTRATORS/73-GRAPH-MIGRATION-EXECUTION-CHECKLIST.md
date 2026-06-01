@@ -683,6 +683,10 @@ archives.
   `MessageDataResetService.clearImportLedgers()`. Legacy and source-scoped
   import-ledger deletion share the same lifecycle owner; import control keeps
   only its local status/error presentation.
+- Import control's "clear working database" action now delegates to
+  `MessageDataResetService.clearProjectionDatabases()`. Legacy `working.db`
+  and graph `working_ss.db` projection deletion share the same lifecycle owner;
+  import control keeps only its local status/error presentation.
 - `OnboardingGate` no longer owns a duplicate full derived-database deletion
   implementation. Abort and fresh-start cleanup now route through the same
   import-control reset boundary, while settings reimport keeps its import-only

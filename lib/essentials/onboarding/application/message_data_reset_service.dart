@@ -30,10 +30,17 @@ const importLedgerDatabaseBaseNames = <String>[
   importDatabaseFileName,
 ];
 
+const projectionDatabaseBaseNames = <String>[
+  'working.db',
+  conversationGraphDatabaseFileName,
+];
+
 abstract interface class MessageDataResetService {
   Future<void> resetDerivedData();
 
   Future<void> clearImportLedgers();
+
+  Future<void> clearProjectionDatabases();
 
   Future<void> confirmResetAndPrepareReimport();
 }
@@ -169,6 +176,51 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
         },
       );
       rethrow;
+    }
+  }
+
+  @override
+  Future<void> clearProjectionDatabases() async {
+    final logger = _ref.read(appLoggerProvider.notifier);
+    logger.warn(
+      'Clearing projection databases',
+      source: 'MessageDataResetService',
+    );
+
+    _ref.read(dbMaintenanceLockProvider.notifier).begin();
+    try {
+      await _closeWorkingDatabase();
+      await _closeConversationGraphDatabase();
+
+      final deletedFilePaths = await _deleteDatabaseBaseFiles(
+        projectionDatabaseBaseNames,
+      );
+      logger.info(
+        'Deleted projection database files',
+        source: 'MessageDataResetService',
+        context: {
+          'deletedCount': deletedFilePaths.length,
+          'deletedFiles': deletedFilePaths,
+        },
+      );
+
+      _ref.invalidate(driftWorkingDatabaseProvider);
+      _ref.invalidate(driftConversationGraphDatabaseProvider);
+      _ref.invalidate(conversationGraphReadinessProvider);
+      _ref.invalidate(conversationGraphPopulatedProvider);
+      _ref.read(messageDataVersionProvider.notifier).bump();
+    } catch (error, stackTrace) {
+      logger.error(
+        'Clear projection databases failed',
+        source: 'MessageDataResetService',
+        context: {
+          'error': error.toString(),
+          'stack': stackTrace.toString().split('\n').take(10).join('\n'),
+        },
+      );
+      rethrow;
+    } finally {
+      _ref.read(dbMaintenanceLockProvider.notifier).end();
     }
   }
 

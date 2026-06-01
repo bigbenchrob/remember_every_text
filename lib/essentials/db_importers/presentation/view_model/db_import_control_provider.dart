@@ -1,14 +1,12 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../features/attachments/application/attachment_archive_service_provider.dart';
 import '../../../../features/chats/presentation/view_model/recent_chats_provider.dart';
 import '../../../conversation_graph/application/conversation_graph_build_controller_provider.dart';
 import '../../../db/feature_level_providers.dart';
-import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../db_migrate/domain/entities/db_migration_result.dart';
 import '../../../db_migrate/domain/states/table_migration_progress.dart';
 import '../../../db_migrate/feature_level_providers.dart';
@@ -21,12 +19,6 @@ import '../../domain/states/table_import_progress.dart';
 import '../../feature_level_providers.dart';
 
 part 'db_import_control_provider.g.dart';
-
-const _legacyWorkingDatabaseFileName = 'working.db';
-const _projectionDatabaseBaseNames = <String>[
-  _legacyWorkingDatabaseFileName,
-  conversationGraphDatabaseFileName,
-];
 
 enum DbImportMode { import, migration }
 
@@ -381,29 +373,6 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
     state = const DbImportControlState();
   }
 
-  Future<void> _deleteDatabaseBaseFiles(List<String> baseNames) async {
-    for (final baseName in baseNames) {
-      final basePath = path.join(databaseDirectoryPath, baseName);
-      for (final filePath in <String>[
-        basePath,
-        '$basePath-wal',
-        '$basePath-shm',
-      ]) {
-        final file = File(filePath);
-        if (!file.existsSync()) {
-          continue;
-        }
-        ref
-            .read(appLoggerProvider.notifier)
-            .debug(
-              'Deleting database file $filePath',
-              source: 'DbImportControl',
-            );
-        await file.delete();
-      }
-    }
-  }
-
   /// Deletes derived import ledgers and graph/projection databases
   /// (preserving overlay DB),
   /// invalidates their providers, and resets UI to virgin state.
@@ -490,121 +459,10 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
       viewMode: DbImportViewMode.progress,
     );
 
-    ref.read(dbMaintenanceLockProvider.notifier).begin();
     try {
-      final startedAt = DateTime.now();
-      ref
-          .read(appLoggerProvider.notifier)
-          .info(
-            'clearWorkingDatabase: start @ $startedAt',
-            source: 'DbImportControl',
-          );
-
-      // CRITICAL: Close the Drift working database connection BEFORE issuing
-      // bulk deletes. Otherwise, the background isolate can get stuck and the
-      // UI will hang waiting for the worker to respond.
-      try {
-        ref
-            .read(appLoggerProvider.notifier)
-            .debug(
-              'clearWorkingDatabase: acquiring driftWorkingDatabaseProvider.future',
-              source: 'DbImportControl',
-            );
-        final workingDb = await ref.read(driftWorkingDatabaseProvider.future);
-        ref
-            .read(appLoggerProvider.notifier)
-            .debug(
-              'clearWorkingDatabase: closing WorkingDatabase',
-              source: 'DbImportControl',
-            );
-        await workingDb.close();
-        ref
-            .read(appLoggerProvider.notifier)
-            .debug(
-              'clearWorkingDatabase: WorkingDatabase closed',
-              source: 'DbImportControl',
-            );
-      } catch (_) {
-        // Database might not exist yet or already be closed.
-        ref
-            .read(appLoggerProvider.notifier)
-            .debug(
-              'clearWorkingDatabase: WorkingDatabase close skipped (already closed / not available)',
-              source: 'DbImportControl',
-            );
-      }
-
-      ref
-          .read(appLoggerProvider.notifier)
-          .debug(
-            'clearWorkingDatabase: invalidating driftWorkingDatabaseProvider (pre-clear)',
-            source: 'DbImportControl',
-          );
-      ref.invalidate(driftWorkingDatabaseProvider);
-      try {
-        final graphDb = await ref.read(
-          driftConversationGraphDatabaseProvider.future,
-        );
-        await graphDb.close();
-      } catch (_) {
-        ref
-            .read(appLoggerProvider.notifier)
-            .debug(
-              'clearWorkingDatabase: ConversationGraphDatabase close skipped (already closed / not available)',
-              source: 'DbImportControl',
-            );
-      }
-      ref.invalidate(driftConversationGraphDatabaseProvider);
-      ref.invalidate(conversationGraphReadinessProvider);
-      ref.invalidate(conversationGraphPopulatedProvider);
-
-      // FAST PATH:
-      // Clearing by issuing massive DELETE statements can hang indefinitely on
-      // some SQLite setups (FTS triggers, WAL contention, long-lived readers).
-      // Deleting the database files is deterministic and much faster.
-      try {
-        await _deleteDatabaseBaseFiles(_projectionDatabaseBaseNames);
-
-        ref
-            .read(appLoggerProvider.notifier)
-            .info(
-              'clearWorkingDatabase: projection database files deleted',
-              source: 'DbImportControl',
-            );
-      } catch (error) {
-        ref
-            .read(appLoggerProvider.notifier)
-            .error(
-              'clearWorkingDatabase: delete files FAILED error=$error',
-              source: 'DbImportControl',
-            );
-        rethrow;
-      }
-
-      ref
-          .read(appLoggerProvider.notifier)
-          .debug(
-            'clearWorkingDatabase: skipping SQL clearWorkingProjection (fast delete-on-disk strategy)',
-            source: 'DbImportControl',
-          );
-
-      ref
-          .read(appLoggerProvider.notifier)
-          .debug(
-            'clearWorkingDatabase: invalidating driftWorkingDatabaseProvider (post-clear)',
-            source: 'DbImportControl',
-          );
-      ref.invalidate(driftWorkingDatabaseProvider);
-      ref.invalidate(driftConversationGraphDatabaseProvider);
-      ref.invalidate(conversationGraphReadinessProvider);
-      ref.invalidate(conversationGraphPopulatedProvider);
-
-      ref
-          .read(appLoggerProvider.notifier)
-          .info(
-            'clearWorkingDatabase: success in ${DateTime.now().difference(startedAt).inMilliseconds}ms',
-            source: 'DbImportControl',
-          );
+      await ref
+          .read(messageDataResetServiceProvider)
+          .clearProjectionDatabases();
 
       state = state.copyWith(
         isProcessing: false,
@@ -626,8 +484,6 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
         error,
       );
       state = state.copyWith(isProcessing: false, statusMessage: message);
-    } finally {
-      ref.read(dbMaintenanceLockProvider.notifier).end();
     }
   }
 

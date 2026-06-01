@@ -892,6 +892,7 @@ class _AlwaysPopulatedGraph extends ConversationGraphPopulated {
 final class _FakeMessageDataResetService implements MessageDataResetService {
   int resetDerivedDataCalls = 0;
   int clearImportLedgersCalls = 0;
+  int clearProjectionDatabasesCalls = 0;
   int confirmResetAndPrepareReimportCalls = 0;
 
   @override
@@ -902,6 +903,11 @@ final class _FakeMessageDataResetService implements MessageDataResetService {
   @override
   Future<void> clearImportLedgers() async {
     clearImportLedgersCalls += 1;
+  }
+
+  @override
+  Future<void> clearProjectionDatabases() async {
+    clearProjectionDatabasesCalls += 1;
   }
 
   @override
