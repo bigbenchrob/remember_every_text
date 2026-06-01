@@ -7,16 +7,17 @@ import '../../../contacts/infrastructure/repositories/participant_merge_utils.da
 import '../../domain/entities/attachment_info.dart';
 import '../../domain/message_evidence/recovered_message_evidence.dart';
 
-/// Legacy compatibility implementation for recovered deleted-message evidence.
+/// Retained legacy diagnostic implementation for recovered deleted-message
+/// evidence.
 ///
 /// This repository intentionally quarantines the remaining `working.db`
 /// recovered-message tables behind a named recovery boundary. Recovered
-/// evidence already renders through the shared Message Evidence Spine; this
-/// class is the storage compatibility island to replace when recovered sources
-/// become source-scoped graph sources.
-class LegacyWorkingRecoveredMessageEvidenceRepository
+/// production evidence now reads from the graph repository; this class exists
+/// only to compare retained legacy recovered rows with graph evidence until
+/// legacy retirement is reviewed.
+class RetainedLegacyRecoveredMessageEvidenceRepository
     implements RecoveredMessageEvidenceRepository {
-  const LegacyWorkingRecoveredMessageEvidenceRepository({
+  const RetainedLegacyRecoveredMessageEvidenceRepository({
     required this.db,
     required this.overlayDb,
   });

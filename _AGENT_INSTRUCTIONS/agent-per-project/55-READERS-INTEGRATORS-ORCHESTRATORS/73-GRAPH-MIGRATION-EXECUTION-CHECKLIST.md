@@ -322,8 +322,8 @@ than dev-panel-owned.
 - Message History Coverage settings now count visible app messages from the
   conversation graph while treating legacy recovered-message rows as a
   compatibility contribution.
-- Legacy `workingProjectionReadinessProvider` remains for recovered-message
-  compatibility and legacy lifecycle paths until those blockers are migrated.
+- Legacy `workingProjectionReadinessProvider` remains for retained diagnostics
+  and legacy lifecycle paths until those blockers are migrated.
 - Focused graph readiness tests pass.
 
 ### Exit Criteria
@@ -457,9 +457,9 @@ choke points are resolved.
 - `71-LEGACY-DEPENDENCY-MATRIX.md` was refreshed to remove stale search,
   contact, handle, chat, and heatmap ordinary-read blockers that have already
   been migrated.
-- Recovered deleted messages remain the only message evidence surface still
-  backed by legacy recovered-message tables, and are classified as
-  archive/recovery rather than ordinary app reads.
+- Recovered deleted messages are now graph-backed in production. Retained
+  legacy recovered-message tables remain diagnostic/archive compatibility
+  sources rather than ordinary app reads.
 
 ### Exit Criteria
 
@@ -529,7 +529,7 @@ archives.
   a recovered-message evidence repository boundary is introduced.
 - Introduced the first recovered-message evidence repository boundary:
   `RecoveredMessageEvidenceRepository`, backed for now by
-  `LegacyWorkingRecoveredMessageEvidenceRepository`. Runtime behavior remains
+  `RetainedLegacyRecoveredMessageEvidenceRepository`. Runtime behavior remains
   legacy-compatible, but the remaining `working.db.recovered_unlinked_*` reads
   are now explicitly quarantined behind a named recovery boundary.
 - Added focused repository tests for the compatibility boundary covering
@@ -540,7 +540,7 @@ archives.
   - domain read model/contract:
     `domain/message_evidence/recovered_message_evidence.dart`
   - legacy storage implementation:
-    `infrastructure/repositories/legacy_working_recovered_message_evidence_repository.dart`
+    `infrastructure/repositories/retained_legacy_recovered_message_evidence_repository.dart`
   - thin Riverpod wiring:
     `infrastructure/repositories/recovered_unlinked_messages_provider.dart`
   This keeps the replacement point explicit without changing runtime behavior.
@@ -603,6 +603,10 @@ archives.
   `GraphRecoveredMessageEvidenceRepository`. Recovered-message presentation
   still uses the shared Message Evidence Spine, legacy recovered storage remains
   retained for diagnostics/fallback, and the parity diagnostic remains visible.
+- Renamed the retained legacy recovered repository to
+  `RetainedLegacyRecoveredMessageEvidenceRepository` so remaining `working.db`
+  recovered reads are clearly diagnostic/compatibility reads, not production
+  recovered-message routing.
 
 ### Exit Criteria
 

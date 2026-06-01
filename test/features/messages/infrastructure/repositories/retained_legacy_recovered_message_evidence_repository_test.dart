@@ -3,18 +3,18 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/working/working_database.dart';
-import 'package:remember_this_text/features/messages/infrastructure/repositories/legacy_working_recovered_message_evidence_repository.dart';
+import 'package:remember_this_text/features/messages/infrastructure/repositories/retained_legacy_recovered_message_evidence_repository.dart';
 
 void main() {
-  group('LegacyWorkingRecoveredMessageEvidenceRepository', () {
+  group('RetainedLegacyRecoveredMessageEvidenceRepository', () {
     late WorkingDatabase workingDb;
     late OverlayDatabase overlayDb;
-    late LegacyWorkingRecoveredMessageEvidenceRepository repository;
+    late RetainedLegacyRecoveredMessageEvidenceRepository repository;
 
     setUp(() {
       workingDb = WorkingDatabase(NativeDatabase.memory());
       overlayDb = OverlayDatabase(NativeDatabase.memory());
-      repository = LegacyWorkingRecoveredMessageEvidenceRepository(
+      repository = RetainedLegacyRecoveredMessageEvidenceRepository(
         db: workingDb,
         overlayDb: overlayDb,
       );

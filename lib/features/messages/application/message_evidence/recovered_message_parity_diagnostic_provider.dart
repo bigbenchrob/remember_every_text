@@ -9,7 +9,7 @@ import '../../domain/message_evidence/recovered_message_evidence.dart';
 import '../../domain/message_evidence/recovered_message_parity.dart';
 import '../../infrastructure/repositories/graph_recovered_message_evidence_repository.dart';
 import '../../infrastructure/repositories/graph_recovered_message_projectability_repository.dart';
-import '../../infrastructure/repositories/legacy_working_recovered_message_evidence_repository.dart';
+import '../../infrastructure/repositories/retained_legacy_recovered_message_evidence_repository.dart';
 
 part 'recovered_message_parity_diagnostic_provider.g.dart';
 
@@ -68,7 +68,7 @@ Future<RecoveredMessageParityDiagnostic> recoveredMessageParityDiagnostic(
   );
   final overlayDb = await ref.watch(overlayDatabaseProvider.future);
 
-  final legacyMessages = await LegacyWorkingRecoveredMessageEvidenceRepository(
+  final legacyMessages = await RetainedLegacyRecoveredMessageEvidenceRepository(
     db: workingDb,
     overlayDb: overlayDb,
   ).watchMessages().first;

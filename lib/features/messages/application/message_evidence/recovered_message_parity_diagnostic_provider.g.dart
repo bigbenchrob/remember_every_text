@@ -7,7 +7,7 @@ part of 'recovered_message_parity_diagnostic_provider.dart';
 // **************************************************************************
 
 String _$recoveredMessageParityDiagnosticHash() =>
-    r'19b116643c4708282fd384f4851059599e0d4152';
+    r'35d769142bb7c9d85971a67f3594c059bf2f4670';
 
 /// See also [recoveredMessageParityDiagnostic].
 @ProviderFor(recoveredMessageParityDiagnostic)

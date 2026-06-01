@@ -122,7 +122,7 @@ directly.
 This is a low-risk structural step because it preserves runtime behavior.
 
 Status: started. `RecoveredMessageEvidenceRepository` is now the named
-contract, with `LegacyWorkingRecoveredMessageEvidenceRepository` quarantining
+contract, with `RetainedLegacyRecoveredMessageEvidenceRepository` quarantining
 the current `working.db.recovered_unlinked_*` reads. The contract/read model,
 legacy implementation, and Riverpod provider wiring are now split into separate
 files so a source-scoped implementation can replace the legacy repository
@@ -185,17 +185,16 @@ any recovered storage schema exists. The contract locks:
 Do not migrate the tables until the repository contract and behavior tests make
 the old/new implementations substitutable.
 
-Status: started carefully. `GraphRecoveredMessageEvidenceRepository` now exists
-as an un-wired replacement candidate over source-scoped graph facts. It reads
+Status: production recovered evidence now reads from
+`GraphRecoveredMessageEvidenceRepository` over source-scoped graph facts. It
+reads
 `working_ss.messages` rows that have no `chat_to_message` topology edge,
 preserves source-scoped `ss_id` identity, hydrates attachment evidence through
 `working_ss.message_to_attachment`, and preserves contact-scoped direct matching
 plus nearby no-handle outgoing inference.
 
-It is intentionally not the production provider yet. The live recovered view
-continues to use `LegacyWorkingRecoveredMessageEvidenceRepository` until graph
-repository parity is reviewed against real data and remaining recovery/archive
-diagnostics are adjusted.
+The retained legacy recovered repository remains only as a diagnostic comparison
+source for graph parity and recovery/archive review.
 
 Real-data parity review is now documented in
 `77-RECOVERED-MESSAGE-GRAPH-PARITY-AUDIT.md`. The graph repository candidate
@@ -209,8 +208,8 @@ messages.
 ### 6. Retire legacy recovered tables only after parity is proven
 
 The old `working.db.recovered_unlinked_*` tables can be deleted only when the
-graph/source-scoped implementation satisfies the repository contract and the
-app no longer reads them for coverage reports or recovered evidence.
+app no longer needs them for retained parity diagnostics, coverage reports, or
+archive/recovery review.
 
 ## Non-Goals
 
@@ -238,9 +237,9 @@ The next safe implementation step is:
    - attachment deduplication
    - sender label fallback
 
-This does not retire legacy storage yet. It removes direct architectural
-coupling so the graph-backed recovered implementation can replace the legacy
-repository later.
+This does not retire legacy storage yet. It removes production architectural
+coupling so the graph-backed recovered implementation can remain the live
+evidence path while retained legacy storage serves only diagnostics/review.
 
 ## Done Means
 
