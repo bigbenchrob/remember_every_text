@@ -508,21 +508,25 @@ class OnboardingGate extends _$OnboardingGate {
   /// invalidate the provider so the next access creates a fresh instance.
   Future<void> _deleteImportDatabaseFiles() async {
     // Close an existing connection if the provider was already accessed.
-    try {
-      final ledgerDb = await ref.read(sqfliteImportDatabaseProvider.future);
-      await ledgerDb.close();
-    } catch (_) {
-      // No connection open — safe to proceed.
+    if (_databaseBaseFileExists(_legacyImportDatabaseFileName)) {
+      try {
+        final ledgerDb = await ref.read(sqfliteImportDatabaseProvider.future);
+        await ledgerDb.close();
+      } catch (_) {
+        // No connection open — safe to proceed.
+      }
     }
     ref.invalidate(sqfliteImportDatabaseProvider);
 
-    try {
-      final graphLedgerDb = await ref.read(
-        source_scoped_import.importDatabaseProvider.future,
-      );
-      await graphLedgerDb.close();
-    } catch (_) {
-      // No connection open — safe to proceed.
+    if (_databaseBaseFileExists(source_scoped_import.importDatabaseFileName)) {
+      try {
+        final graphLedgerDb = await ref.read(
+          source_scoped_import.importDatabaseProvider.future,
+        );
+        await graphLedgerDb.close();
+      } catch (_) {
+        // No connection open — safe to proceed.
+      }
     }
     ref.invalidate(source_scoped_import.importDatabaseProvider);
 
@@ -545,25 +549,28 @@ class OnboardingGate extends _$OnboardingGate {
   }
 
   Future<void> _deleteDerivedDatabaseFiles() async {
-    try {
-      final ledgerDb = await ref.read(sqfliteImportDatabaseProvider.future);
-      await ledgerDb.close();
-    } catch (_) {
-      // No connection open — safe to proceed.
+    if (_databaseBaseFileExists(_legacyImportDatabaseFileName)) {
+      try {
+        final ledgerDb = await ref.read(sqfliteImportDatabaseProvider.future);
+        await ledgerDb.close();
+      } catch (_) {
+        // No connection open — safe to proceed.
+      }
     }
     ref.invalidate(sqfliteImportDatabaseProvider);
-    try {
-      final graphLedgerDb = await ref.read(
-        source_scoped_import.importDatabaseProvider.future,
-      );
-      await graphLedgerDb.close();
-    } catch (_) {
-      // No connection open — safe to proceed.
+    if (_databaseBaseFileExists(source_scoped_import.importDatabaseFileName)) {
+      try {
+        final graphLedgerDb = await ref.read(
+          source_scoped_import.importDatabaseProvider.future,
+        );
+        await graphLedgerDb.close();
+      } catch (_) {
+        // No connection open — safe to proceed.
+      }
     }
     ref.invalidate(source_scoped_import.importDatabaseProvider);
 
-    final workingDbPath = path.join(databaseDirectoryPath, 'working.db');
-    if (File(workingDbPath).existsSync()) {
+    if (_databaseBaseFileExists(_legacyWorkingDatabaseFileName)) {
       try {
         final workingDb = await ref.read(driftWorkingDatabaseProvider.future);
         await workingDb.close();
@@ -572,13 +579,15 @@ class OnboardingGate extends _$OnboardingGate {
       }
     }
     ref.invalidate(driftWorkingDatabaseProvider);
-    try {
-      final graphDb = await ref.read(
-        driftConversationGraphDatabaseProvider.future,
-      );
-      await graphDb.close();
-    } catch (_) {
-      // No connection open — safe to proceed.
+    if (_databaseBaseFileExists(conversationGraphDatabaseFileName)) {
+      try {
+        final graphDb = await ref.read(
+          driftConversationGraphDatabaseProvider.future,
+        );
+        await graphDb.close();
+      } catch (_) {
+        // No connection open — safe to proceed.
+      }
     }
     ref.invalidate(driftConversationGraphDatabaseProvider);
 
@@ -607,6 +616,10 @@ class OnboardingGate extends _$OnboardingGate {
             'deletedFiles': deletedFiles,
           },
         );
+  }
+
+  bool _databaseBaseFileExists(String baseName) {
+    return File(path.join(databaseDirectoryPath, baseName)).existsSync();
   }
 
   Future<List<String>> _deleteDatabaseBaseFiles(List<String> baseNames) async {

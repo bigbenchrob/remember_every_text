@@ -220,6 +220,9 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
   }
 
   Future<void> _closeImportDatabase() async {
+    if (!_databaseBaseFileExists('macos_import.db')) {
+      return;
+    }
     try {
       final ledgerDb = await _ref.read(sqfliteImportDatabaseProvider.future);
       await ledgerDb.close();
@@ -227,6 +230,9 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
   }
 
   Future<void> _closeWorkingDatabase() async {
+    if (!_databaseBaseFileExists('working.db')) {
+      return;
+    }
     try {
       final workingDb = await _ref.read(driftWorkingDatabaseProvider.future);
       await workingDb.close();
@@ -234,6 +240,9 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
   }
 
   Future<void> _closeSourceScopedImportDatabase() async {
+    if (!_databaseBaseFileExists(importDatabaseFileName)) {
+      return;
+    }
     try {
       final ledgerDb = await _ref.read(importDatabaseProvider.future);
       await ledgerDb.close();
@@ -241,12 +250,19 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
   }
 
   Future<void> _closeConversationGraphDatabase() async {
+    if (!_databaseBaseFileExists(conversationGraphDatabaseFileName)) {
+      return;
+    }
     try {
       final graphDb = await _ref.read(
         driftConversationGraphDatabaseProvider.future,
       );
       await graphDb.close();
     } catch (_) {}
+  }
+
+  bool _databaseBaseFileExists(String baseName) {
+    return File(path.join(databaseDirectoryPath, baseName)).existsSync();
   }
 
   Future<List<String>> _deleteDerivedDatabaseFiles() async {

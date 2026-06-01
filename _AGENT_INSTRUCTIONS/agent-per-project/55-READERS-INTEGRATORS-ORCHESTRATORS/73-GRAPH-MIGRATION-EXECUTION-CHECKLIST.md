@@ -295,6 +295,9 @@ than dev-panel-owned.
   first-class derived app databases: it closes and invalidates the source-scoped
   import/graph providers, deletes `-wal`/`-shm` sidecars for all derived DBs,
   and preserves overlay plus attachment archive state.
+- Onboarding fresh-start and message-data reset close derived database
+  providers only when the corresponding base database file already exists, so
+  graph-era cleanup does not recreate legacy database files just to delete them.
 - Onboarding failure/support-bundle diagnostics now label the app-facing probe
   as `Conversation graph` instead of `Working database`.
 - Added a central `conversationGraphBuildControllerProvider` that records graph
