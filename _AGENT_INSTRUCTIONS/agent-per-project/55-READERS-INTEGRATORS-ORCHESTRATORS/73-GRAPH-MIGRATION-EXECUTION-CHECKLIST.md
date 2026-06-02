@@ -634,7 +634,8 @@ archives.
 - Cut over `recoveredUnlinkedMessagesProvider` to
   `GraphRecoveredMessageEvidenceRepository`. Recovered-message presentation
   still uses the shared Message Evidence Spine, while legacy recovered storage
-  remains physical historical storage inside retained legacy DBs.
+  remains physical historical storage inside retained legacy DBs until broader
+  legacy DB retirement.
 - Renamed the retained legacy recovered repository to
   `RetainedLegacyRecoveredMessageEvidenceRepository` so remaining `working.db`
   recovered reads are clearly diagnostic/compatibility reads, not production
