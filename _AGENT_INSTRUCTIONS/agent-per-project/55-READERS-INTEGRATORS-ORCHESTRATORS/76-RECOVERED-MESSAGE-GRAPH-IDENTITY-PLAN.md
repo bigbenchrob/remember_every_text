@@ -15,12 +15,14 @@ depends_on:
 
 ## Purpose
 
-Recovered deleted/unlinked messages are the last message-evidence surface whose
-source records still come from legacy recovered-message tables in `working.db`.
+Recovered deleted/unlinked messages are now graph-orphan evidence: source-
+retained `working_ss.messages` rows without current `chat_to_message` topology
+render through the shared Message Evidence Spine.
 
-This document defines the conservative migration path. The goal is to preserve
-the hard-won recovery semantics while moving identity toward the source-scoped
-graph.
+This document records the conservative migration path that got there and the
+remaining retention rule: old `working.db.recovered_unlinked_*` tables are
+historical storage inside retained legacy DBs, not production recovered-message
+routing.
 
 ## Current State
 
@@ -41,13 +43,15 @@ The presentation path is therefore mostly aligned with the graph-era UI:
 - shared row renderer
 - shared attachment evidence rendering
 
-The remaining legacy dependency is the source repository:
+The former legacy source repository has been retired from production routing.
+The current source repository is:
 
 ```text
 recoveredUnlinkedMessagesProvider
-→ working.db.recovered_unlinked_messages
-→ working.db.recovered_unlinked_attachments
-→ legacy handle/participant compatibility helpers
+→ GraphRecoveredMessageEvidenceRepository
+→ working_ss.messages without chat_to_message topology
+→ working_ss.message_to_attachment
+→ shared graph attachment evidence hydration
 ```
 
 ## Why This Must Move Conservatively
@@ -226,23 +230,20 @@ Do not:
 - treat recovered-message GUIDs as canonical graph identity
 - recreate the legacy schema shape inside `working_ss.db`
 
-## First Safe Code Slice
+## Current Safe Next Step
 
-The next safe implementation step is:
+Do not continue deleting recovered storage in isolation.
 
-1. Define a recovered message evidence repository contract.
-2. Move the current `working.db` logic behind a clearly named legacy repository.
-3. Keep `RecoveredMessagesEvidenceScope` behavior unchanged.
-4. Add focused tests proving the repository preserves:
-   - contact scoping
-   - no-handle filtering
-   - inferred outgoing rows
-   - attachment deduplication
-   - sender label fallback
+The next safe work is broader legacy DB retirement planning:
 
-This does not retire legacy storage yet. It removes production architectural
-coupling so the graph-backed recovered implementation can remain the live
-evidence path while retained legacy storage serves only diagnostics/review.
+1. Keep `working.db.recovered_unlinked_*` tables as historical retained storage
+   while the legacy DB schema itself is retained.
+2. Keep production recovered evidence on
+   `GraphRecoveredMessageEvidenceRepository`.
+3. Treat recovered source-folder import as a future source-scoped import
+   problem, not a reason to resurrect the legacy recovered repository.
+4. When broader legacy DB retirement starts, decide whether the historical
+   recovered rows need export, source-scoped import, or no further retention.
 
 ## Done Means
 
