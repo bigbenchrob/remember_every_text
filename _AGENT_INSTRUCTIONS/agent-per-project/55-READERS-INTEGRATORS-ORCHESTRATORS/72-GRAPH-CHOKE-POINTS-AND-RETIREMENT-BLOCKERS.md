@@ -505,36 +505,33 @@ Lifecycle is the dominant production risk. The graph cannot become the app
 spine until onboarding, reset, readiness, live change monitoring, build state,
 and invalidation are graph-aware.
 
-However, hardening lifecycle while Search and Contact Identity still depend on
-legacy bridges risks making those bridges part of the new production spine.
-That would preserve split-brain identity at the exact layer that should remove
-it.
+Earlier in the migration, hardening lifecycle while Search and Contact Identity
+still depended on legacy bridges would have risked making those bridges part of
+the new production spine. That selector-identity work is now complete for
+ordinary user-facing surfaces.
 
-Search and Contact Identity are smaller choke points than lifecycle, and they
-remove ambiguity from the graph read layer before lifecycle is promoted.
+Therefore the current order is:
 
-Therefore the recommended order is:
-
-1. **Checkpoint current branch.**
+1. **Checkpoint current branch.** Done.
    Establish a known-good baseline before any more migration or deletion.
 
-2. **Overlay identity key audit and bridge design.**
+2. **Overlay identity key audit and bridge design.** Done.
    This is not a broad implementation pass. It is the minimum needed to avoid
    search/contact migration corrupting user intent.
 
-3. **Graph-native Search and Search Identity.**
+3. **Graph-native Search and Search Identity.** Done.
    Search must select graph evidence directly. Saved/tagged overlays need an
    explicit bridge from GUID-based legacy overlay state.
 
-4. **Graph-native Contact and Handle Identity.**
+4. **Graph-native Contact and Handle Identity.** Done.
    Contact picker, contact hero/profile, handle menus, manual links, and
    display labels move to graph facts plus overlay intent.
 
-5. **MessageEvidenceScope cleanup.**
+5. **MessageEvidenceScope cleanup.** Done.
    Remove remaining legacy-selector-fed evidence scopes exposed by Search and
    Contact paths. Preserve the evidence spine invariant.
 
-6. **Graph lifecycle orchestration.**
+6. **Graph lifecycle orchestration.** Active remaining production choke point.
    Productionize graph build/readiness/onboarding/reset/change-monitor
    behavior after selector identity is graph-native.
 
