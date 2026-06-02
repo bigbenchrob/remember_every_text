@@ -557,15 +557,16 @@ archives.
 - Recovered message presentation is already on the shared Message Evidence
   Spine. The later graph cutover in this slice replaced the temporary legacy
   compatibility repository with graph-orphan evidence.
-- Introduced the first recovered-message evidence repository boundary:
+- Earlier in the recovered-message slice, introduced the first recovered-message
+  evidence repository boundary:
   `RecoveredMessageEvidenceRepository`, backed for now by
   `RetainedLegacyRecoveredMessageEvidenceRepository`. Runtime behavior remains
   legacy-compatible, but the remaining `working.db.recovered_unlinked_*` reads
   are now explicitly quarantined behind a named recovery boundary.
-- Added focused repository tests for the compatibility boundary covering
+- Added focused repository tests for the temporary compatibility boundary
+  covering
   recovered fallback text, recovered attachment dedupe, contact scoping,
-  no-handle outgoing inference, and contact-name resolution through legacy
-  handle/participant links.
+  no-handle outgoing inference, and contact-name resolution.
 - Split the recovered-message boundary into:
   - domain read model/contract:
     `domain/message_evidence/recovered_message_evidence.dart`
@@ -630,12 +631,13 @@ archives.
   legacy-only rows remain a separate retention/acceptance caveat.
 - Cut over `recoveredUnlinkedMessagesProvider` to
   `GraphRecoveredMessageEvidenceRepository`. Recovered-message presentation
-  still uses the shared Message Evidence Spine, legacy recovered storage remains
-  retained for diagnostics/fallback, and the parity diagnostic remains visible.
+  still uses the shared Message Evidence Spine, while legacy recovered storage
+  remains physical historical storage inside retained legacy DBs.
 - Renamed the retained legacy recovered repository to
   `RetainedLegacyRecoveredMessageEvidenceRepository` so remaining `working.db`
   recovered reads are clearly diagnostic/compatibility reads, not production
-  recovered-message routing.
+  recovered-message routing. This diagnostic repository was later removed after
+  graph parity was accepted.
 - Message History Coverage no longer reads `working.db.recovered_unlinked_*`.
   It now reads conversation-linked and graph-orphan recovered counts from the
   conversation graph through a settings infrastructure repository.
