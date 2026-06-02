@@ -320,6 +320,11 @@ than dev-panel-owned.
   source-scoped import ledger (`macos_import_ss.db`) rather than the legacy
   `macos_import.db` message cursor, so graph freshness is measured from the
   app-facing ledger.
+- Live monitor graph-vs-legacy success semantics are expressed directly in the
+  control flow: graph build success advances the app-facing cursor and refreshes
+  graph evidence; legacy compatibility import/migration failures are logged as
+  warnings and do not roll back graph freshness. A stale helper that implied a
+  separate legacy-success decision API was retired.
 - Live update attachment archiving now uses graph message source-row ranges
   from the source-scoped build report instead of legacy import batch ids.
   Existing overlay archive keys are preserved during transition.

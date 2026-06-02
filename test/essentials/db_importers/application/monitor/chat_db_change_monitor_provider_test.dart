@@ -69,66 +69,6 @@ void main() {
     });
   });
 
-  group('shouldRestoreCursorAfterIncrementalGraphUpdate', () {
-    test('does not restore cursor when graph update succeeds', () {
-      expect(
-        shouldRestoreCursorAfterIncrementalGraphUpdate(
-          legacyImportSucceeded: true,
-          graphBuildSucceeded: true,
-          legacyMigrationSucceeded: true,
-        ),
-        isFalse,
-      );
-    });
-
-    test(
-      'does not treat legacy migration failure as app-facing graph failure',
-      () {
-        expect(
-          shouldRestoreCursorAfterIncrementalGraphUpdate(
-            legacyImportSucceeded: true,
-            graphBuildSucceeded: true,
-            legacyMigrationSucceeded: false,
-          ),
-          isFalse,
-        );
-      },
-    );
-
-    test(
-      'does not treat legacy import failure as app-facing graph failure',
-      () {
-        expect(
-          shouldRestoreCursorAfterIncrementalGraphUpdate(
-            legacyImportSucceeded: false,
-            graphBuildSucceeded: true,
-            legacyMigrationSucceeded: false,
-          ),
-          isFalse,
-        );
-      },
-    );
-
-    test('restores cursor when graph build fails', () {
-      expect(
-        shouldRestoreCursorAfterIncrementalGraphUpdate(
-          legacyImportSucceeded: false,
-          graphBuildSucceeded: false,
-          legacyMigrationSucceeded: false,
-        ),
-        isTrue,
-      );
-      expect(
-        shouldRestoreCursorAfterIncrementalGraphUpdate(
-          legacyImportSucceeded: true,
-          graphBuildSucceeded: false,
-          legacyMigrationSucceeded: true,
-        ),
-        isTrue,
-      );
-    });
-  });
-
   group('gateStartupProbeDecisionForAppDataReadiness', () {
     test('suppresses startup graph update when app data is not ready', () {
       const wouldSchedule = StartupProbeDecision(

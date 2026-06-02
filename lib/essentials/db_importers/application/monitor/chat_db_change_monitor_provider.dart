@@ -44,15 +44,6 @@ bool shouldAllowAutomaticIncrementalWork({required bool appDataReady}) {
 }
 
 @visibleForTesting
-bool shouldRestoreCursorAfterIncrementalGraphUpdate({
-  required bool legacyImportSucceeded,
-  required bool graphBuildSucceeded,
-  required bool legacyMigrationSucceeded,
-}) {
-  return !graphBuildSucceeded;
-}
-
-@visibleForTesting
 String buildConversationGraphBuildSummaryLog({
   required ConversationGraphBuildReport report,
 }) {
