@@ -535,7 +535,7 @@ Therefore the current order is:
    Productionize graph build/readiness/onboarding/reset/change-monitor
    behavior after selector identity is graph-native.
 
-7. **Remaining ordinary read migration.**
+7. **Remaining ordinary read migration.** Done.
    Global heatmap, old chat summary fallbacks, and settings-facing handle lists
    migrate or retire.
 

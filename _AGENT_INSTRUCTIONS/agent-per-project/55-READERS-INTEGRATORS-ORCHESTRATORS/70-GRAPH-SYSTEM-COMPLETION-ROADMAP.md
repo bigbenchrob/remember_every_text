@@ -693,8 +693,8 @@ search query
 → shared evidence spine
 ```
 
-Search should stop using legacy `working.db` message identity for ordinary
-message results.
+Search now avoids legacy `working.db` message identity for ordinary message
+results.
 
 Search may still query overlay for saved/tagged/user-intent filters.
 
@@ -1035,7 +1035,7 @@ without breaking base graph identity or ordinary message evidence.
 
 The UI already proves the graph is valuable. Continuing to add UI features
 without productionizing graph import/projection risks creating a polished graph
-viewer that still depends on manual rebuilds.
+viewer whose lifecycle is less mature than its UI.
 
 Mitigation:
 
