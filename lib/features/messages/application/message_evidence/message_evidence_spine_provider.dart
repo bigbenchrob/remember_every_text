@@ -88,8 +88,6 @@ Future<MessageEvidenceRowData?> messageEvidenceRow(
   required MessageEvidenceScope scope,
   required int messageId,
 }) async {
-  ref.watch(messageDataVersionProvider);
-
   final message = await switch (scope) {
     ContactAllMessagesEvidenceScope(:final contactId) => ref.watch(
       contactPageGraphMessageByIdProvider(
@@ -224,8 +222,6 @@ Future<List<MessageAttachmentEvidence>> messageEvidenceAttachments(
   required MessageEvidenceScope scope,
   required int messageId,
 }) async {
-  ref.watch(messageDataVersionProvider);
-
   return switch (scope) {
     RecoveredMessagesEvidenceScope(
       :final contactId,

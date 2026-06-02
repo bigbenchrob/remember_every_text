@@ -101,8 +101,6 @@ Future<List<MessageAttachment>> messageAttachments(
   Ref ref,
   int messageSsId,
 ) async {
-  ref.watch(messageDataVersionProvider);
-
   final workingDatabase = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );

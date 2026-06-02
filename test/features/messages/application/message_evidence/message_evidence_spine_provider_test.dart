@@ -131,6 +131,51 @@ void main() {
   );
 
   test(
+    'contact evidence row stays hydrated when message data version changes',
+    () async {
+      var lookupCount = 0;
+      var text = 'already hydrated';
+      final container = ProviderContainer(
+        overrides: [
+          _displayIdentityResolverOverride(),
+          contactPageGraphMessageByIdProvider(
+            contactId: 24,
+            messageId: 1,
+          ).overrideWith((ref) async {
+            lookupCount += 1;
+            return ConversationMessage(
+              messageId: 1,
+              dateUtc: '2026-04-20T10:00:00.000Z',
+              isFromMe: false,
+              text: text,
+              associatedMessageId: null,
+              attachmentCount: 0,
+            );
+          }),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      const scope = ContactAllMessagesEvidenceScope(contactId: 24);
+
+      final initialRow = await container.read(
+        messageEvidenceRowProvider(scope: scope, messageId: 1).future,
+      );
+      expect(initialRow?.text, 'already hydrated');
+      expect(lookupCount, 1);
+
+      text = 'would require explicit row invalidation';
+      container.read(messageDataVersionProvider.notifier).bump();
+
+      final preservedRow = await container.read(
+        messageEvidenceRowProvider(scope: scope, messageId: 1).future,
+      );
+      expect(preservedRow?.text, 'already hydrated');
+      expect(lookupCount, 1);
+    },
+  );
+
+  test(
     'contact handle evidence skeleton preserves filtered graph timeline entries',
     () async {
       const scope = ContactHandleMessagesEvidenceScope(

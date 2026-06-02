@@ -570,7 +570,7 @@ class _ChatAttachmentStatsProviderElement
 }
 
 String _$messageAttachmentsHash() =>
-    r'a4e197b2ed5da7e203f874417c0b7d395d1e481c';
+    r'e27c2fc76e1aece54aadfad068d3e9a67fda1599';
 
 /// See also [messageAttachments].
 @ProviderFor(messageAttachments)

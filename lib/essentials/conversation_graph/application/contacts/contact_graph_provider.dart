@@ -87,8 +87,6 @@ Future<ConversationMessage?> contactPageGraphMessageById(
   required int contactId,
   required int messageId,
 }) async {
-  ref.watch(messageDataVersionProvider);
-
   final reader = await ref.watch(contactGraphReaderProvider.future);
   final graphContactId = graphContactIdForContactPage(contactId);
   return reader.readContactPageMessageById(
@@ -123,8 +121,6 @@ Future<ConversationMessage?> contactPageGraphHandleMessageById(
   required int handleId,
   required int messageId,
 }) async {
-  ref.watch(messageDataVersionProvider);
-
   final reader = await ref.watch(contactGraphReaderProvider.future);
   final graphContactId = graphContactIdForContactPage(contactId);
   return reader.readContactPageHandleMessageById(
