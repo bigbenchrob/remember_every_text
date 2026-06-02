@@ -1,19 +1,32 @@
-import '../../../db_migrate/application/orchestrator/handles_migration_service.dart';
 import '../../../db_migrate/domain/entities/db_migration_result.dart';
-import '../../../logging/application/app_logger.dart';
 import '../../domain/entities/db_import_result.dart';
-import 'orchestrated_ledger_import_service.dart';
+
+typedef LegacyCompatibilityImportRunner =
+    Future<DbImportResult> Function({
+      required String executionOwner,
+      required bool forceFullReimport,
+    });
+typedef LegacyCompatibilityMigrationRunner =
+    Future<DbMigrationResult> Function({required bool incrementalMode});
+typedef LegacyCompatibilityLogCallback =
+    void Function(
+      String message, {
+      String? source,
+      Map<String, dynamic>? context,
+    });
 
 class LegacyCompatibilityMaintenanceService {
   const LegacyCompatibilityMaintenanceService({
-    required this.importService,
-    required this.migrationService,
-    required this.logger,
+    required this.runImport,
+    required this.runMigration,
+    required this.logInfo,
+    required this.logWarn,
   });
 
-  final OrchestratedLedgerImportService importService;
-  final HandlesMigrationService migrationService;
-  final AppLogger logger;
+  final LegacyCompatibilityImportRunner runImport;
+  final LegacyCompatibilityMigrationRunner runMigration;
+  final LegacyCompatibilityLogCallback logInfo;
+  final LegacyCompatibilityLogCallback logWarn;
 
   Future<void> runAfterGraphUpdate({
     required String executionOwner,
@@ -25,7 +38,7 @@ class LegacyCompatibilityMaintenanceService {
     Object? importError;
     StackTrace? importStackTrace;
     try {
-      importResult = await importService.runImport(
+      importResult = await runImport(
         executionOwner: executionOwner,
         forceFullReimport: forceFullReimport,
       );
@@ -38,7 +51,7 @@ class LegacyCompatibilityMaintenanceService {
         ? importResult
         : null;
     if (successfulImportResult != null) {
-      logger.info(
+      logInfo(
         _buildImportSummaryLog(
           timestamp: updateStartedAt,
           newMessageCount: newMessageCount,
@@ -46,7 +59,7 @@ class LegacyCompatibilityMaintenanceService {
         ),
         source: 'ChatDbMonitor',
       );
-      logger.info(
+      logInfo(
         'Conversation graph build complete. Running legacy migration for compatibility maintenance',
         source: 'ChatDbMonitor',
       );
@@ -55,12 +68,12 @@ class LegacyCompatibilityMaintenanceService {
         importResult: successfulImportResult,
       );
     } else if (importResult != null) {
-      logger.warn(
+      logWarn(
         'Legacy compatibility import failed after graph update: ${importResult.error}',
         source: 'ChatDbMonitor',
       );
     } else {
-      logger.warn(
+      logWarn(
         'Legacy compatibility import threw after graph update: $importError',
         source: 'ChatDbMonitor',
         context: {'stackTrace': '$importStackTrace'},
@@ -73,10 +86,10 @@ class LegacyCompatibilityMaintenanceService {
     required DbImportResult importResult,
   }) async {
     try {
-      final migrationResult = await migrationService.run(incrementalMode: true);
+      final migrationResult = await runMigration(incrementalMode: true);
 
       if (migrationResult.success) {
-        logger.info(
+        logInfo(
           _buildMigrationSummaryLog(
             startedAt: updateStartedAt,
             completedAt: DateTime.now(),
@@ -86,13 +99,13 @@ class LegacyCompatibilityMaintenanceService {
           source: 'ChatDbMonitor',
         );
       } else {
-        logger.warn(
+        logWarn(
           'Legacy compatibility migration failed after graph update: ${migrationResult.error}',
           source: 'ChatDbMonitor',
         );
       }
     } catch (error, stackTrace) {
-      logger.warn(
+      logWarn(
         'Legacy compatibility migration threw after graph update: $error',
         source: 'ChatDbMonitor',
         context: {'stackTrace': '$stackTrace'},

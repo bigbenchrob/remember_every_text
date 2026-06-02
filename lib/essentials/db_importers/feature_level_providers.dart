@@ -43,9 +43,13 @@ OrchestratedLedgerImportService orchestratedLedgerImportService(Ref ref) {
 LegacyCompatibilityMaintenanceService legacyCompatibilityMaintenanceService(
   Ref ref,
 ) {
+  final logger = ref.read(appLoggerProvider.notifier);
+  final importService = ref.watch(orchestratedLedgerImportServiceProvider);
+  final migrationService = ref.watch(handlesMigrationServiceProvider);
   return LegacyCompatibilityMaintenanceService(
-    importService: ref.watch(orchestratedLedgerImportServiceProvider),
-    migrationService: ref.watch(handlesMigrationServiceProvider),
-    logger: ref.read(appLoggerProvider.notifier),
+    runImport: importService.runImport,
+    runMigration: migrationService.run,
+    logInfo: logger.info,
+    logWarn: logger.warn,
   );
 }

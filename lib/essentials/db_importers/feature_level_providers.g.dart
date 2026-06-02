@@ -52,7 +52,7 @@ final orchestratedLedgerImportServiceProvider =
 typedef OrchestratedLedgerImportServiceRef =
     ProviderRef<OrchestratedLedgerImportService>;
 String _$legacyCompatibilityMaintenanceServiceHash() =>
-    r'efb5d85ee93ffd5e597e10929965615ba5f669cc';
+    r'c9d2491f31fcca2168a2f19d7ef62e76c23d950e';
 
 /// Runs the retained legacy import/migration tail after a successful graph
 /// update. This is compatibility maintenance, not the app-facing success path.
