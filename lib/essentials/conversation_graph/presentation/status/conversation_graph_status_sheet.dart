@@ -954,7 +954,7 @@ class _ProofScopeCard extends StatelessWidget {
             Expanded(
               child: _ScopeValue(
                 label: 'Mode',
-                value: 'manual import + project',
+                value: 'auto polling + manual build',
                 colors: colors,
               ),
             ),
