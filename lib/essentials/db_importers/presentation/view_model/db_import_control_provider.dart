@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:io';
-
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../features/attachments/application/attachment_archive_service_provider.dart';
@@ -13,7 +11,7 @@ import '../../../db_migrate/feature_level_providers.dart';
 import '../../../logging/application/app_logger.dart';
 import '../../../onboarding/application/message_data_reset_service.dart';
 import '../../../onboarding/infrastructure/persistence/overlay_onboarding_failure_storage.dart';
-import '../../application/services/import_status_checker.dart';
+import '../../application/services/live_import_status_service_provider.dart';
 import '../../domain/entities/db_import_result.dart';
 import '../../domain/states/table_import_progress.dart';
 import '../../feature_level_providers.dart';
@@ -565,20 +563,9 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
     // Check if there's unimported data in macOS chat.db
     if (!skipImportCheck) {
       try {
-        final importDb = await ref.read(sqfliteImportDatabaseProvider.future);
-
-        // macOS Messages database is always at this location
-        final homeDir = Platform.environment['HOME'];
-        if (homeDir == null) {
-          throw Exception('Could not determine home directory');
-        }
-        final macOsChatDbPath = '$homeDir/Library/Messages/chat.db';
-
-        const checker = ImportStatusChecker();
-        final status = await checker.checkStatus(
-          macOsChatDbPath: macOsChatDbPath,
-          importDb: importDb,
-        );
+        final status = await ref
+            .read(liveImportStatusServiceProvider)
+            .checkLiveImportStatus();
 
         // If there's unimported data, run import first
         if (status.hasUnimportedData) {

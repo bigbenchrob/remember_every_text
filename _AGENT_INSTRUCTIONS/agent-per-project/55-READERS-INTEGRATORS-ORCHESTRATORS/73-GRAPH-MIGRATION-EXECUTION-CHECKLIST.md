@@ -718,6 +718,10 @@ archives.
   incremental migration mode. That retained compatibility question now lives
   behind `LegacyProjectionStatusRepository`, an explicit db_migrate
   infrastructure boundary.
+- Import control no longer assembles the live Messages `chat.db` path and
+  legacy import-ledger comparison inline before migration. That pre-migration
+  freshness check now lives behind `LiveImportStatusService`, keeping the
+  presentation view model on a named application boundary.
 - The source-scoped conversation graph status provider no longer owns its
   diagnostic SQL. It now delegates source/import/working count collection to
   `ConversationGraphStatusRepository`, keeping the application provider as a
