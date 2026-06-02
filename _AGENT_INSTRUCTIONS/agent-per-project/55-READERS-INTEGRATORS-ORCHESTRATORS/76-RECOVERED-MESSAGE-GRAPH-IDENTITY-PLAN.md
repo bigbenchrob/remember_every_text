@@ -125,12 +125,10 @@ directly.
 
 This is a low-risk structural step because it preserves runtime behavior.
 
-Status: started. `RecoveredMessageEvidenceRepository` is now the named
-contract, with `RetainedLegacyRecoveredMessageEvidenceRepository` quarantining
-the current `working.db.recovered_unlinked_*` reads. The contract/read model,
-legacy implementation, and Riverpod provider wiring are now split into separate
-files so a source-scoped implementation can replace the legacy repository
-without changing the Message Evidence Spine or presentation.
+Status: complete. `RecoveredMessageEvidenceRepository` is the named contract,
+and production wiring now uses `GraphRecoveredMessageEvidenceRepository`. The
+earlier retained legacy implementation was removed after parity review and user
+acceptance of the remaining retention caveats.
 
 Focused tests now cover the compatibility boundary for:
 
@@ -143,9 +141,10 @@ Focused tests now cover the compatibility boundary for:
 ### 2. Move legacy read logic behind that boundary
 
 Status: complete for production routing. The live recovered-message provider no
-longer reads `working.db.recovered_unlinked_messages`. Retained legacy reads are
-limited to `RetainedLegacyRecoveredMessageEvidenceRepository` for graph parity
-diagnostics and archive/recovery review.
+longer reads `working.db.recovered_unlinked_messages`. The temporary retained
+legacy diagnostic repository and parity bridge were removed; the physical
+legacy tables remain only as historical storage inside the retained legacy DB
+schema.
 
 The Message Evidence Spine should depend on typed recovered evidence records,
 not legacy table details.
