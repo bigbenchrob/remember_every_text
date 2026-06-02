@@ -316,9 +316,9 @@ Current graph-backed evidence surfaces include:
 - Search result context windows
 - Recovered-message evidence presentation
 
-Some of these still depend on legacy source data for selection, recovery, or
-search inputs, but the center-panel message evidence presentation has largely
-converged.
+Ordinary selection and search now use graph evidence scopes. Remaining legacy
+source-data dependencies are recovery/archive or lifecycle compatibility
+concerns, not separate message presentation paths.
 
 ## Conversation-First UI Direction
 
