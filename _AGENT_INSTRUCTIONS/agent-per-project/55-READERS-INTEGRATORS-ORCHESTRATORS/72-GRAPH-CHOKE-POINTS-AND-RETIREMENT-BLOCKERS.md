@@ -466,7 +466,8 @@ identity once multi-source imports exist.
 
 ### Verification Areas
 
-Before migrating Search and Contact Identity, verify:
+Before retiring broader legacy databases, keep these overlay identity questions
+explicit:
 
 - whether `message_annotations` is still product-active or historical.
 - whether `chat_overrides` is still product-active or historical.
