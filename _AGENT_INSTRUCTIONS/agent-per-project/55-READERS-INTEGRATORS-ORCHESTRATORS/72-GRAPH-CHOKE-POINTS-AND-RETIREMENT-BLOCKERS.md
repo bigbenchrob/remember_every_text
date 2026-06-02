@@ -36,11 +36,11 @@ downstream legacy dependencies.
 
 | Choke point | Current state | Dependencies blocked | Estimated leverage | Recommended relative order |
 | --- | --- | --- | --- | --- |
-| `SearchService` | Still queries `working.db` `messages`, `messages_fts`, `contact_message_index`, saved GUIDs, and tag GUIDs. | Search All, search result context, saved/tagged message retrieval, evidence selection identity. | Very high | First after checkpoint. |
-| Search identity model | Search results still depend on legacy IDs and GUID bridges in places. | Prevents clean `MessageEvidenceScope` construction from search, saved, and tagged overlays. | Very high | Same slice as SearchService or immediately before it. |
-| Display Identity Resolver | Graph-aware resolver exists, but app-wide adoption and old contact/handle providers are incomplete. | Contact picker, hero card, conversation titles, sender labels, handle labels, search labels. | Very high | After search identity or parallel if small. |
-| Contact Identity Layer | Contact/profile/handle menus still read legacy participants, canonical handles, and handle aliases. | Removes contact graph repository bridges, handle selector bridges, favourite contact drift, raw-handle display leakage. | Very high | Before lifecycle hardening. |
-| MessageEvidenceScope construction | Evidence spine exists, but some scopes are still bridged from legacy selection identity. | Search, global timeline, handle scopes, recovered scopes, future tagged/favourite scopes. | High | Evolves with search/contact migration. |
+| `SearchService` | Graph search facade returns `message_ss_id` scopes through named graph search repositories. | Closed for ordinary search; retained compatibility is limited to explicitly bridged overlay rows. | Closed high-leverage blocker | Complete. |
+| Search identity model | Ordinary search, saved, and tagged scopes use graph message identity; duplicate GUID bridge behavior is explicit. | Closed for ordinary evidence selection. | Closed high-leverage blocker | Complete. |
+| Display Identity Resolver | Graph-aware resolver owns app-facing display names across ordinary contact/handle/conversation/sender surfaces. | Remaining risk is future surface drift, not an active legacy-read blocker. | Closed high-leverage blocker | Monitor during new surfaces. |
+| Contact Identity Layer | Contact/profile/handle menus read graph facts plus overlay intent; legacy participant/handle reads are retired from ordinary UI. | Closed for ordinary contact and handle identity. | Closed high-leverage blocker | Complete. |
+| MessageEvidenceScope construction | Ordinary contact, conversation, handle, global, search, and recovered routes enter through typed graph evidence scopes. | Closed for ordinary message-bearing routes. | Closed high-leverage blocker | Monitor during new evidence sources. |
 | Graph Readiness Provider | App-facing readiness now uses graph readiness; the old `workingProjectionReadinessProvider` has been retired. Lifecycle readiness still needs final production hardening around graph build state. | Onboarding, auto-sync eligibility, graph UI readiness, reset/maintenance, stale graph prevention. | Very high | After identity/search choke points, before legacy lifecycle retirement. |
 | `ChatDbChangeMonitor` | Polls live `chat.db`, triggers legacy import/migration and attachment sweep. | Live graph freshness, automatic incremental graph build, app launch consistency. | Very high | With lifecycle orchestration. |
 | `ConversationGraphBuildService` | Production-shaped build service exists; currently exposed as a service and used by proof/dev panel paths, not complete app lifecycle. | Normal graph build, idempotent incremental projection, post-build invalidation, readiness state. | Very high | With lifecycle orchestration. |
@@ -61,8 +61,9 @@ identity becomes the evidence scope.
 
 **Current state**
 
-`SearchService` still reads legacy `working.db` tables and returns legacy
-message IDs in ordinary search paths.
+`SearchService` now acts as a graph search facade over typed
+`GraphMessageSearchScope` values. Ordinary search returns canonical
+`message_ss_id` values.
 
 **Dependencies blocked**
 
@@ -79,7 +80,8 @@ path.
 
 **Recommended migration order**
 
-First after checkpoint, paired with explicit search identity model decisions.
+Complete. Future search work should extend graph scopes rather than reopening
+legacy `working.db` search indices.
 
 #### Search Identity Model
 
@@ -89,9 +91,9 @@ Defines what a search hit is in the graph world.
 
 **Current state**
 
-Legacy search results are message IDs from `working.db`; newer overlay saved
-and tag state is keyed by message GUID. The graph evidence spine wants stable
-`ss_id` message identity.
+Search hits are graph `ss_id` message identities. Legacy GUID saved/tag overlay
+rows remain only as an explicit compatibility bridge and are ignored when a GUID
+maps to more than one graph message.
 
 **Dependencies blocked**
 
@@ -107,7 +109,8 @@ identity ambiguity into a new repository.
 
 **Recommended migration order**
 
-Immediately before or inside SearchService migration.
+Complete. Keep duplicate-GUID behavior explicit when adding new saved/tagged
+search surfaces.
 
 #### Display Identity Resolver
 
@@ -149,8 +152,9 @@ and overlay display intent into one app-facing identity model.
 
 **Current state**
 
-Contact/profile/handle providers still use legacy `working.db` participants,
-canonical handles, handle-to-participant rows, and alias tables.
+Contact/profile/handle providers now read graph contacts, handles, canonical
+aliases, topology counts, and overlay intent. Legacy participant/handle tables
+are no longer ordinary UI identity sources.
 
 **Dependencies blocked**
 
@@ -167,7 +171,9 @@ Very high. This is the biggest reducer of legacy read pressure after search.
 
 **Recommended migration order**
 
-After graph-native search, before lifecycle hardening if feasible.
+Complete for ordinary UI. New contact/handle surfaces should depend on the
+graph identity/display resolver rather than raw handle or legacy participant
+lookups.
 
 #### MessageEvidenceScope Construction
 
@@ -178,8 +184,9 @@ evidence universe.
 
 **Current state**
 
-The evidence spine is in place and most views use it, but some scopes are still
-fed by legacy selector identity or recovery-specific legacy models.
+The evidence spine is in place for ordinary contact, conversation, handle,
+global, search, and graph-orphan recovered routes. Remaining work is future
+source addition discipline, not a known ordinary legacy selector blocker.
 
 **Dependencies blocked**
 
@@ -196,8 +203,8 @@ graph-native scopes.
 
 **Recommended migration order**
 
-Advance alongside search and contact identity; do not make it a separate large
-abstraction pass.
+Complete for current ordinary routes. Treat future source-specific evidence
+selectors as scope composers only; do not create source-specific renderers.
 
 #### Graph Readiness Provider
 
@@ -358,15 +365,7 @@ intentional and allowing them to become permanent architecture.
 
 | Bridge owner | Source side | Destination side | Why it exists | Intentional? | Removal condition |
 | --- | --- | --- | --- | --- | --- |
-| `SqliteContactGraphRepository` | legacy participant IDs, `handle_to_participant`, `handles_canonical_to_alias` | graph handle/message scopes | Contact UI still selects legacy contact identity while evidence is graph-backed. | Yes | Contact identity layer produces graph-native contact and handle scopes. |
-| `SqliteMessageGraphRepository` | legacy canonical handle aliases | graph handle message scopes | Handle-oriented surfaces may still pass legacy handle IDs. | Yes | Handle selectors and unfamiliar-source surfaces pass graph canonical handle identity. |
-| `contactTimelineProvider` fallback | legacy `contact_message_index` | graph contact evidence skeleton fallback | Preserves contact timeline behavior while graph contact scope stabilizes. | Yes, temporary | Graph contact timeline covers all selected scopes and tests prove no latest-N regression. |
-| `recentChatsProvider` legacy mode | legacy `workingChats` and related tables | `RecentChatSummary` | Supports older chat read-model mode while Conversations becomes graph-first. | Partially intentional | Product route no longer depends on legacy chats; graph conversation summaries cover required diagnostics. |
-| `SearchService` | legacy message IDs and `messages_fts` | graph evidence views downstream | Search has not yet migrated to graph identity. | No longer desirable | Search returns graph `ss_id` scopes and saved/tag filters are graph-compatible. |
-| `handleDisplayNameProvider` | legacy handle/participant rows | user-facing handle label | Name resolution has not fully centralized on graph display identity. | Temporary | Display identity resolver owns handle/contact labels everywhere. |
-| `strayHandlesProvider` | legacy canonical handles and message counts | unfamiliar-source workflow | Stray-handle workflows predate graph handles. | Temporary | Graph handle inventory and graph message counts drive unfamiliar-source workflows. |
-| `manualLinkingProvider` | legacy canonical handle IDs and participant IDs | overlay handle links | Manual linking UI still targets legacy identity. | Temporary but sensitive | Overlay link identity migrates to graph contact/handle identity with explicit bridge for existing rows. |
-| `spamManagementProvider` | legacy handle IDs and chat counts | overlay visibility/blacklist | Visibility UI still reads legacy handle inventory. | Temporary | Visibility overlays target graph handle identity or stable normalized handle identity. |
+| Graph contact/message repositories | graph identity plus retained compatibility APIs | graph evidence scopes | Some repository names still reflect the migration period, but ordinary UI selectors are graph-native. | Acceptable naming debt | Rename only if it removes confusion without destabilizing provider boundaries. |
 | `message_user_flags` / `message_user_tags` | message GUID | graph message evidence | GUID was stable across working rebuilds and useful before `ss_id` graph identity. | Intentional bridge, future risk | Source-scoped message overlay key strategy exists; duplicate GUID behavior is explicit. |
 | `message_annotations` | legacy working message ID | overlay message annotations | Older annotation system predates graph identity. | Legacy debt | Either migrate to `ss_id` or retire if unused. |
 | `chat_overrides` | legacy working chat ID | conversation display overrides | Older chat custom-name system predates graph conversations. | Legacy debt | Migrate to graph conversation identity or retire if unused. |
@@ -384,8 +383,8 @@ This section names what prevents each legacy layer from being retired.
 
 | Blocker | Affected systems | Removal criteria | Recommended sequencing |
 | --- | --- | --- | --- |
-| Search still selects legacy message IDs | Search All, search result context, saved/tagged search | Search returns graph `ss_id` scopes; saved/tag overlays resolve safely. | First. |
-| Contact/profile/handle providers still read working participants/handles | contact picker, hero card, handle menu, manual link UI | Graph contact identity layer covers contact summaries, handle lists, overrides, favourites. | After search or parallel. |
+| Search still selects legacy message IDs | Search All, search result context, saved/tagged search | Closed: search returns graph `ss_id` scopes and saved/tag overlays resolve through graph identity or documented bridges. | Complete. |
+| Contact/profile/handle providers still read working participants/handles | contact picker, hero card, handle menu, manual link UI | Closed: graph contact identity layer covers contact summaries, handle lists, overrides, favourites, and manual link reads. | Complete. |
 | Legacy readiness gates app startup | onboarding, contact providers, global heatmap | Graph readiness provider replaces working projection readiness for graph paths. | Lifecycle phase. |
 | `ChatDbChangeMonitor` triggers legacy migration | live update path, message data version bump | Monitor triggers graph build and graph invalidation; legacy path becomes compatibility/diagnostic. | Lifecycle phase. |
 | Archive/recovery maps through working identity | deterministic recovery, archived attachment lookup | Source-scoped attachment identity and graph recovery mapping exist. | Later. |
@@ -404,10 +403,10 @@ This section names what prevents each legacy layer from being retired.
 
 | Blocker | Affected systems | Removal criteria | Recommended sequencing |
 | --- | --- | --- | --- |
-| Search index/read models remain legacy | all search surfaces | Graph search index/query path exists. | First. |
-| Contact read models remain legacy | contact picker, contact hero, handle filters | Graph contact summaries and handle scopes exist. | Second. |
-| Global heatmap remains legacy | global message timeline | Graph full-scope global skeleton exists. | After search/contact. |
-| Old chat summary providers remain fallback | recent/age/unmatched chats | Graph conversation summaries cover required views or old views are retired. | After frontmost graph conversation path is stable. |
+| Search index/read models remain legacy | all search surfaces | Closed: graph search query path exists for ordinary search. | Complete. |
+| Contact read models remain legacy | contact picker, contact hero, handle filters | Closed: graph contact summaries and handle scopes exist. | Complete. |
+| Global heatmap remains legacy | global message timeline | Closed: graph full-scope global skeleton exists. | Complete. |
+| Old chat summary providers remain fallback | recent/age/unmatched chats | Closed: graph conversation summaries cover required product views and old fallbacks are retired or diagnostic-only. | Complete. |
 | Retained recovered-message legacy diagnostics remain | Retired recovered parity diagnostic bridge | Production recovered evidence is graph-backed and remaining legacy-only rows have an accepted retention explanation. | Closed; legacy recovered storage remains only as historical data inside retained legacy DBs until broader legacy DB retirement. |
 
 ### Legacy Projection Systems
