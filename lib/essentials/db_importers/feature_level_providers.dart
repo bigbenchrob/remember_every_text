@@ -1,7 +1,9 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../db_migrate/feature_level_providers.dart';
 import '../logging/application/app_logger.dart';
+import 'application/services/legacy_compatibility_maintenance_service.dart';
 import 'application/services/orchestrated_ledger_import_service.dart';
 import 'domain/ports/message_extractor_port.dart';
 import 'infrastructure/extraction/rust_message_extractor.dart';
@@ -32,5 +34,18 @@ OrchestratedLedgerImportService orchestratedLedgerImportService(Ref ref) {
   return OrchestratedLedgerImportService(
     ref: ref,
     extractor: ref.watch(dbImportMessageExtractorProvider),
+  );
+}
+
+/// Runs the retained legacy import/migration tail after a successful graph
+/// update. This is compatibility maintenance, not the app-facing success path.
+@Riverpod(keepAlive: true)
+LegacyCompatibilityMaintenanceService legacyCompatibilityMaintenanceService(
+  Ref ref,
+) {
+  return LegacyCompatibilityMaintenanceService(
+    importService: ref.watch(orchestratedLedgerImportServiceProvider),
+    migrationService: ref.watch(handlesMigrationServiceProvider),
+    logger: ref.read(appLoggerProvider.notifier),
   );
 }

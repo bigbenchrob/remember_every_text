@@ -10,13 +10,10 @@ import '../../../../providers.dart';
 import '../../../conversation_graph/application/conversation_graph_build_controller_provider.dart';
 import '../../../conversation_graph/application/orchestrators/conversation_graph_build_orchestrator.dart';
 import '../../../db/feature_level_providers.dart';
-import '../../../db_migrate/domain/entities/db_migration_result.dart';
-import '../../../db_migrate/feature_level_providers.dart';
 import '../../../logging/application/app_logger.dart';
 import '../../../source_scoped_import/domain/known_sources.dart';
 import '../../../source_scoped_import/infrastructure/import_database_provider.dart'
     as source_scoped_import;
-import '../../domain/entities/db_import_result.dart';
 import '../../feature_level_providers.dart';
 import '../import_execution_gate_provider.dart';
 
@@ -541,100 +538,15 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
     required DateTime updateStartedAt,
     required int newMessageCount,
   }) async {
-    final importService = ref.read(orchestratedLedgerImportServiceProvider);
-    DbImportResult? importResult;
-    Object? importError;
-    StackTrace? importStackTrace;
-    try {
-      importResult = await importService.runImport(
-        executionOwner: _chatDbMonitorExecutionOwner,
-        forceFullReimport:
-            pendingTrigger == StartupProbeTrigger.ledgerCountLagging,
-      );
-    } catch (error, stackTrace) {
-      importError = error;
-      importStackTrace = stackTrace;
-    }
-
-    final successfulImportResult = importResult != null && importResult.success
-        ? importResult
-        : null;
-    if (successfulImportResult != null) {
-      ref
-          .read(appLoggerProvider.notifier)
-          .info(
-            _buildImportSummaryLog(
-              timestamp: updateStartedAt,
-              newMessageCount: newMessageCount,
-              importResult: successfulImportResult,
-            ),
-            source: 'ChatDbMonitor',
-          );
-      ref
-          .read(appLoggerProvider.notifier)
-          .info(
-            'Conversation graph build complete. Running legacy migration for compatibility maintenance',
-            source: 'ChatDbMonitor',
-          );
-      await _runLegacyCompatibilityMigration(
-        updateStartedAt: updateStartedAt,
-        importResult: successfulImportResult,
-      );
-    } else if (importResult != null) {
-      ref
-          .read(appLoggerProvider.notifier)
-          .warn(
-            'Legacy compatibility import failed after graph update: ${importResult.error}',
-            source: 'ChatDbMonitor',
-          );
-    } else {
-      ref
-          .read(appLoggerProvider.notifier)
-          .warn(
-            'Legacy compatibility import threw after graph update: $importError',
-            source: 'ChatDbMonitor',
-            context: {'stackTrace': '$importStackTrace'},
-          );
-    }
-  }
-
-  Future<void> _runLegacyCompatibilityMigration({
-    required DateTime updateStartedAt,
-    required DbImportResult importResult,
-  }) async {
-    try {
-      final migrationService = ref.read(handlesMigrationServiceProvider);
-      final migrationResult = await migrationService.run(incrementalMode: true);
-
-      if (migrationResult.success) {
-        ref
-            .read(appLoggerProvider.notifier)
-            .info(
-              _buildMigrationSummaryLog(
-                startedAt: updateStartedAt,
-                completedAt: DateTime.now(),
-                importResult: importResult,
-                migrationResult: migrationResult,
-              ),
-              source: 'ChatDbMonitor',
-            );
-      } else {
-        ref
-            .read(appLoggerProvider.notifier)
-            .warn(
-              'Legacy compatibility migration failed after graph update: ${migrationResult.error}',
-              source: 'ChatDbMonitor',
-            );
-      }
-    } catch (error, stackTrace) {
-      ref
-          .read(appLoggerProvider.notifier)
-          .warn(
-            'Legacy compatibility migration threw after graph update: $error',
-            source: 'ChatDbMonitor',
-            context: {'stackTrace': '$stackTrace'},
-          );
-    }
+    await ref
+        .read(legacyCompatibilityMaintenanceServiceProvider)
+        .runAfterGraphUpdate(
+          executionOwner: _chatDbMonitorExecutionOwner,
+          forceFullReimport:
+              pendingTrigger == StartupProbeTrigger.ledgerCountLagging,
+          updateStartedAt: updateStartedAt,
+          newMessageCount: newMessageCount,
+        );
   }
 
   int _readMaxRowId(String chatDbPath) {
@@ -743,36 +655,6 @@ WHERE guid IS NOT NULL AND LENGTH(TRIM(guid)) > 0;
       lastMaxRowId: previousMaxRowId,
       lastChangeDetected: detectedAt,
     );
-  }
-
-  String _buildImportSummaryLog({
-    required DateTime timestamp,
-    required int newMessageCount,
-    required DbImportResult importResult,
-  }) {
-    final timeLabel = _formatLocalClockTime(timestamp);
-    return 'Incremental update at $timeLabel: '
-        '$newMessageCount new source row(s) detected; '
-        'import batch ${importResult.batchId} added '
-        '${importResult.messagesImported} message(s), '
-        '${importResult.attachmentsImported} attachment(s), and '
-        '${importResult.messageAttachmentsImported} message/attachment link(s).';
-  }
-
-  String _buildMigrationSummaryLog({
-    required DateTime startedAt,
-    required DateTime completedAt,
-    required DbImportResult importResult,
-    required DbMigrationResult migrationResult,
-  }) {
-    final timeLabel = _formatLocalClockTime(completedAt);
-    final durationMs = completedAt.difference(startedAt).inMilliseconds;
-    return 'Incremental update at $timeLabel completed in ${durationMs}ms: '
-        'batch ${importResult.batchId}, '
-        '${importResult.messagesImported} imported message(s), '
-        '${importResult.attachmentsImported} imported attachment(s), '
-        '${migrationResult.messagesProjected} working message row(s), '
-        '${migrationResult.attachmentsProjected} working attachment row(s).';
   }
 }
 

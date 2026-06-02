@@ -325,6 +325,10 @@ than dev-panel-owned.
   graph evidence; legacy compatibility import/migration failures are logged as
   warnings and do not roll back graph freshness. A stale helper that implied a
   separate legacy-success decision API was retired.
+- Legacy compatibility import/migration maintenance is now isolated behind
+  `LegacyCompatibilityMaintenanceService`. `ChatDbChangeMonitor` owns live
+  source detection and graph-first update sequencing; the retained legacy tail
+  is a named compatibility boundary with its own provider.
 - Real-data polling proof completed on 2026-06-02: sending one live message
   advanced the monitor cursor from source rowid `149213` to `149214`; the
   `chat-db-monitor` owner ran the graph build; graph build status ended

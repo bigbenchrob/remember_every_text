@@ -51,5 +51,28 @@ final orchestratedLedgerImportServiceProvider =
 // ignore: unused_element
 typedef OrchestratedLedgerImportServiceRef =
     ProviderRef<OrchestratedLedgerImportService>;
+String _$legacyCompatibilityMaintenanceServiceHash() =>
+    r'efb5d85ee93ffd5e597e10929965615ba5f669cc';
+
+/// Runs the retained legacy import/migration tail after a successful graph
+/// update. This is compatibility maintenance, not the app-facing success path.
+///
+/// Copied from [legacyCompatibilityMaintenanceService].
+@ProviderFor(legacyCompatibilityMaintenanceService)
+final legacyCompatibilityMaintenanceServiceProvider =
+    Provider<LegacyCompatibilityMaintenanceService>.internal(
+      legacyCompatibilityMaintenanceService,
+      name: r'legacyCompatibilityMaintenanceServiceProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$legacyCompatibilityMaintenanceServiceHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef LegacyCompatibilityMaintenanceServiceRef =
+    ProviderRef<LegacyCompatibilityMaintenanceService>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
