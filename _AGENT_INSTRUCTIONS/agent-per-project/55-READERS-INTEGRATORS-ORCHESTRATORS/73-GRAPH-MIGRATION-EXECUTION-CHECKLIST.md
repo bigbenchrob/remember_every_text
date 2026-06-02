@@ -709,6 +709,10 @@ archives.
   reimport. Reimport now delegates ledger cleanup to
   `MessageDataResetService.clearImportLedgers()`, preserving onboarding as the
   lifecycle decision owner while centralizing database deletion/invalidation.
+- Import control no longer queries legacy `working.db` directly to decide
+  incremental migration mode. That retained compatibility question now lives
+  behind `LegacyProjectionStatusRepository`, an explicit db_migrate
+  infrastructure boundary.
 
 ### Exit Criteria
 

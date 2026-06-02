@@ -601,8 +601,8 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
       }
     }
 
-    // Check if working DB has existing data BEFORE closing the connection
-    final useIncrementalMode = await _hasExistingMessages();
+    // Check if working DB has existing data BEFORE closing the connection.
+    final useIncrementalMode = await _shouldUseIncrementalMigration();
     final requiresExclusiveWorkingDb = !useIncrementalMode;
     if (requiresExclusiveWorkingDb) {
       ref.read(dbMaintenanceLockProvider.notifier).begin();
@@ -771,15 +771,11 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
     unawaited(pipeline());
   }
 
-  /// Check if working.db has existing messages to determine if incremental mode should be used
-  Future<bool> _hasExistingMessages() async {
+  Future<bool> _shouldUseIncrementalMigration() async {
     try {
-      final workingDb = await ref.read(driftWorkingDatabaseProvider.future);
-      final result = await workingDb
-          .customSelect('SELECT COUNT(*) as count FROM messages')
-          .getSingle();
-      final count = result.read<int>('count');
-      return count > 0;
+      return await ref
+          .read(legacyProjectionStatusRepositoryProvider)
+          .hasExistingMessages();
     } catch (_) {
       // If we can't determine, default to false (full migration)
       return false;
