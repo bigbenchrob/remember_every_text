@@ -721,6 +721,9 @@ archives.
   application-owned SQL. `AttachmentArchiveStatsRepository` owns the
   filesystem-size plus overlay archive-record count read, leaving
   `ArchiveSettings` focused on preference state and user actions.
+- Retired remaining commented boilerplate `use_cases_example.dart` stubs under
+  attachments, reactions, contacts essentials, and db essentials after
+  reference scans confirmed they were not runtime inputs or fixtures.
 
 ### Exit Criteria
 
