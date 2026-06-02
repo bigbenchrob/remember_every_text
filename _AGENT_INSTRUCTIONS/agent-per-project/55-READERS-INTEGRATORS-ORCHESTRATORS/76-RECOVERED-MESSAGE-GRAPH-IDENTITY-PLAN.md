@@ -130,13 +130,13 @@ and production wiring now uses `GraphRecoveredMessageEvidenceRepository`. The
 earlier retained legacy implementation was removed after parity review and user
 acceptance of the remaining retention caveats.
 
-Focused tests now cover the compatibility boundary for:
+The completed migration preserved and tested these recovery semantics:
 
 - recovered fallback text
 - recovered attachment dedupe
 - contact-scoped direct matching
 - no-handle outgoing inference
-- contact-name resolution through legacy handle/participant links
+- contact-name resolution through graph display identity
 
 ### 2. Move legacy read logic behind that boundary
 
@@ -146,8 +146,8 @@ legacy diagnostic repository and parity bridge were removed; the physical
 legacy tables remain only as historical storage inside the retained legacy DB
 schema.
 
-The Message Evidence Spine should depend on typed recovered evidence records,
-not legacy table details.
+The Message Evidence Spine depends on typed recovered evidence records, not
+legacy table details.
 
 ### 3. Define recovered source-scoped identity before schema
 
