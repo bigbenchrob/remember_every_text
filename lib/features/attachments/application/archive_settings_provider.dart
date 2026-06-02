@@ -6,6 +6,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../essentials/db/feature_level_providers.dart';
 import '../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import '../infrastructure/repositories/attachment_archive_stats_repository.dart';
 
 part 'archive_settings_provider.g.dart';
 
@@ -51,14 +52,16 @@ class ArchiveSettings extends _$ArchiveSettings {
     final enabledStr = await overlayDb.readOverlaySetting(_kArchiveEnabledKey);
     final enabled = enabledStr != 'false'; // Default: enabled.
 
-    // Compute archive stats from filesystem and overlay table.
-    final stats = await _computeStats(archiveDir, overlayDb);
+    final stats = await AttachmentArchiveStatsRepository(
+      archiveDirectoryPath: archiveDir,
+      overlayDatabase: overlayDb,
+    ).readStats();
     final sweepDebug = await _readSweepDebugState(overlayDb);
     final manualSweepDebug = await _readManualSweepDebugState(overlayDb);
 
     return ArchiveSettingsState(
       isEnabled: enabled,
-      archivedCount: stats.count,
+      archivedCount: stats.recordCount,
       archiveSizeBytes: stats.sizeBytes,
       sweepDebug: sweepDebug,
       manualSweepDebug: manualSweepDebug,
@@ -134,29 +137,6 @@ class ArchiveSettings extends _$ArchiveSettings {
     }
 
     return filesCopied;
-  }
-
-  static Future<_ArchiveStats> _computeStats(
-    String archiveDir,
-    OverlayDatabase overlayDb,
-  ) async {
-    var sizeBytes = 0;
-    final dir = Directory(archiveDir);
-    if (dir.existsSync()) {
-      await for (final entity in dir.list(recursive: true)) {
-        if (entity is File) {
-          sizeBytes += await entity.length();
-        }
-      }
-    }
-
-    // Count records from overlay DB.
-    final countResult = await overlayDb
-        .customSelect('SELECT COUNT(*) AS cnt FROM archived_attachments')
-        .getSingle();
-    final count = countResult.read<int>('cnt');
-
-    return _ArchiveStats(count: count, sizeBytes: sizeBytes);
   }
 
   static Future<ArchiveSweepDebugState> _readSweepDebugState(
@@ -240,12 +220,6 @@ class ArchiveSettings extends _$ArchiveSettings {
         .where((value) => value.isNotEmpty)
         .toList(growable: false);
   }
-}
-
-class _ArchiveStats {
-  const _ArchiveStats({required this.count, required this.sizeBytes});
-  final int count;
-  final int sizeBytes;
 }
 
 class ArchiveSettingsState {

@@ -717,6 +717,10 @@ archives.
   diagnostic SQL. It now delegates source/import/working count collection to
   `ConversationGraphStatusRepository`, keeping the application provider as a
   thin coordinator and the status panel as presentation only.
+- Attachment archive settings no longer compute archive record count through
+  application-owned SQL. `AttachmentArchiveStatsRepository` owns the
+  filesystem-size plus overlay archive-record count read, leaving
+  `ArchiveSettings` focused on preference state and user actions.
 
 ### Exit Criteria
 
