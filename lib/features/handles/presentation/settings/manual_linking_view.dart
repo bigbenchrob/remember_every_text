@@ -54,29 +54,27 @@ class ManualLinkingView extends HookConsumerWidget {
               child: unlinkedAsync.when(
                 data: (List<UnlinkedHandle> handles) {
                   if (handles.isEmpty) {
-                    return const Center(
+                    return Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           MacosIcon(
                             CupertinoIcons.link,
                             size: 48,
-                            color: Color(0xFFBDBDBD),
+                            color: colors.content.textTertiary,
                           ),
-                          SizedBox(height: 16),
+                          const SizedBox(height: 16),
                           Text(
                             'All handles are linked',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Color(0xFF767680),
+                            style: typography.callout.copyWith(
+                              color: colors.content.textSecondary,
                             ),
                           ),
-                          SizedBox(height: 8),
+                          const SizedBox(height: 8),
                           Text(
                             'Every handle is connected to a contact. Great job!',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Color(0xFF999999),
+                            style: typography.caption1.copyWith(
+                              color: colors.content.textTertiary,
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -128,7 +126,9 @@ class ManualLinkingView extends HookConsumerWidget {
                       const SizedBox(height: 8),
                       Text(
                         '$error',
-                        style: const TextStyle(color: Color(0xFF999999)),
+                        style: typography.caption1.copyWith(
+                          color: colors.content.textTertiary,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -246,7 +246,9 @@ class _UnlinkedHandleCard extends ConsumerWidget {
               ),
               error: (error, _) => Text(
                 'Error loading contacts: $error',
-                style: const TextStyle(color: Color(0xFFD14343)),
+                style: typography.caption1.copyWith(
+                  color: colors.buttons.destructiveForeground,
+                ),
               ),
             ),
           ],
