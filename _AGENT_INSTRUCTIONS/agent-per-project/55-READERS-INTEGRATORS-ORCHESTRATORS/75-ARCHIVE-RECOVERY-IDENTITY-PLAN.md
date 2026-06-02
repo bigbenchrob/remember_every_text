@@ -55,21 +55,24 @@ archived_attachments(
 )
 ```
 
-`import_attachment_id` currently means the live `chat.db.attachment.ROWID`
-as carried through the legacy import and working projection.
+`import_attachment_id` currently means the live `chat.db.attachment.ROWID`.
+Graph-era archive lookup derives that value from source-scoped attachment
+identity while the overlay archive row key remains legacy-compatible.
 
-Deterministic historical recovery currently maps:
+Deterministic historical recovery now maps:
 
 ```text
 historical chat.db attachment.guid
-  -> current macos_import.db.attachments.id
-  -> current working.db.attachments.import_attachment_id
+  -> current macos_import_ss.db attachment/message facts
+  -> current working_ss.db message/attachment topology
+  -> message_ss_id + attachment_ss_id
   -> overlay archived_attachments(message_guid, import_attachment_id)
 ```
 
-Recovered deleted messages are still projected through legacy
-`recovered_unlinked_messages` / `recovered_unlinked_attachments` tables and then
-adapted into the shared Message Evidence Spine.
+Recovered deleted messages are graph-orphan evidence: source-retained
+`working_ss.messages` rows without current `chat_to_message` topology are
+rendered through the shared Message Evidence Spine. Legacy recovered tables
+remain historical storage until broader legacy database retirement.
 
 ## Hard Invariants
 
@@ -284,7 +287,7 @@ archive/recovery compatibility surface.
 | Bridge | Owner | Source side | Destination side | Why it exists | Removal condition |
 | --- | --- | --- | --- | --- | --- |
 | Archive overlay legacy key bridge | Attachment archive/resolver infrastructure | `(message_guid, import_attachment_id)` | `(message_ss_id, attachment_ss_id)` | Existing archive records are keyed by legacy identity. | Overlay rows are graph-keyed or graph lookup can always derive legacy keys from source-scoped graph facts. |
-| Deterministic recovery legacy mapper | Recovery infrastructure | historical `attachment.guid` + legacy import/working DB | overlay archive row | Existing recovery maps through `macos_import.db` and `working.db`. | Recovery mapper reads `macos_import_ss.db` / `working_ss.db` and returns graph attachment identity. |
+| Deterministic recovery graph mapper | Recovery infrastructure | historical `attachment.guid` + source-scoped graph import/projection DBs | graph attachment identity + overlay archive row | Historical recovery still has to bridge recovered snapshot facts into the current archive overlay key. | Recovered `Messages` folders become source-scoped graph sources, or the mapper remains the bounded historical recovery bridge. |
 | Recovered deleted-message provider | Messages recovery infrastructure | graph messages without current `chat_to_message` topology | Message Evidence Spine rows | Recovered sources are not yet first-class graph import sources, so graph-orphan evidence is the production recovery projection. | Recovered `Messages` folders become source-scoped import sources or the graph-orphan recovered subsystem is explicitly preserved. |
 | Historical archive settings dry-run | Settings/archive workflow | backup/current legacy archive keys | user-facing readiness counts | Existing workflow estimates against legacy working/import identity. | Dry-run estimates use graph archive bridge and source-scoped import facts. |
 
@@ -327,7 +330,8 @@ preserving current overlay writes.
 
 ### Step 3 - Graph Deterministic Recovery Mapper
 
-Replace `CrossSnapshotMapper`'s legacy import/working lookup with a graph mapper:
+`GraphCrossSnapshotMapper` replaces the legacy import/working lookup with a
+graph mapper:
 
 ```text
 historical snapshot rows
