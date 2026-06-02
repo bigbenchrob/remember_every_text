@@ -636,7 +636,7 @@ archives.
   still uses the shared Message Evidence Spine, while legacy recovered storage
   remains physical historical storage inside retained legacy DBs until broader
   legacy DB retirement.
-- Renamed the retained legacy recovered repository to
+- Earlier, renamed the retained legacy recovered repository to
   `RetainedLegacyRecoveredMessageEvidenceRepository` so remaining `working.db`
   recovered reads are clearly diagnostic/compatibility reads, not production
   recovered-message routing. This diagnostic repository was later removed after
