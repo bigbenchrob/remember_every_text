@@ -48,6 +48,14 @@ abstract interface class ContactGraphRepository {
     required int messageId,
   });
 
+  Future<List<ConversationMessage>> readContactPageHandleMessages({
+    required int contactId,
+    required int graphContactId,
+    required int handleId,
+    int limit = 500,
+    DateTime? monthAnchor,
+  });
+
   Future<List<int>> readContactPageMessageIdsMatchingText({
     required int contactId,
     required int graphContactId,

@@ -463,6 +463,179 @@ class _MessageEvidenceAttachmentsProviderElement
   int get messageId => (origin as MessageEvidenceAttachmentsProvider).messageId;
 }
 
+String _$messageEvidenceInitialRowsHash() =>
+    r'fd741eda2c6276a06f0f0a8d2ff681049dd953b7';
+
+/// See also [messageEvidenceInitialRows].
+@ProviderFor(messageEvidenceInitialRows)
+const messageEvidenceInitialRowsProvider = MessageEvidenceInitialRowsFamily();
+
+/// See also [messageEvidenceInitialRows].
+class MessageEvidenceInitialRowsFamily
+    extends Family<AsyncValue<Map<int, MessageEvidenceRowData>>> {
+  /// See also [messageEvidenceInitialRows].
+  const MessageEvidenceInitialRowsFamily();
+
+  /// See also [messageEvidenceInitialRows].
+  MessageEvidenceInitialRowsProvider call({
+    required MessageEvidenceScope scope,
+    DateTime? monthAnchor,
+    int limit = 80,
+  }) {
+    return MessageEvidenceInitialRowsProvider(
+      scope: scope,
+      monthAnchor: monthAnchor,
+      limit: limit,
+    );
+  }
+
+  @override
+  MessageEvidenceInitialRowsProvider getProviderOverride(
+    covariant MessageEvidenceInitialRowsProvider provider,
+  ) {
+    return call(
+      scope: provider.scope,
+      monthAnchor: provider.monthAnchor,
+      limit: provider.limit,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'messageEvidenceInitialRowsProvider';
+}
+
+/// See also [messageEvidenceInitialRows].
+class MessageEvidenceInitialRowsProvider
+    extends AutoDisposeFutureProvider<Map<int, MessageEvidenceRowData>> {
+  /// See also [messageEvidenceInitialRows].
+  MessageEvidenceInitialRowsProvider({
+    required MessageEvidenceScope scope,
+    DateTime? monthAnchor,
+    int limit = 80,
+  }) : this._internal(
+         (ref) => messageEvidenceInitialRows(
+           ref as MessageEvidenceInitialRowsRef,
+           scope: scope,
+           monthAnchor: monthAnchor,
+           limit: limit,
+         ),
+         from: messageEvidenceInitialRowsProvider,
+         name: r'messageEvidenceInitialRowsProvider',
+         debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+             ? null
+             : _$messageEvidenceInitialRowsHash,
+         dependencies: MessageEvidenceInitialRowsFamily._dependencies,
+         allTransitiveDependencies:
+             MessageEvidenceInitialRowsFamily._allTransitiveDependencies,
+         scope: scope,
+         monthAnchor: monthAnchor,
+         limit: limit,
+       );
+
+  MessageEvidenceInitialRowsProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.scope,
+    required this.monthAnchor,
+    required this.limit,
+  }) : super.internal();
+
+  final MessageEvidenceScope scope;
+  final DateTime? monthAnchor;
+  final int limit;
+
+  @override
+  Override overrideWith(
+    FutureOr<Map<int, MessageEvidenceRowData>> Function(
+      MessageEvidenceInitialRowsRef provider,
+    )
+    create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: MessageEvidenceInitialRowsProvider._internal(
+        (ref) => create(ref as MessageEvidenceInitialRowsRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        scope: scope,
+        monthAnchor: monthAnchor,
+        limit: limit,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<Map<int, MessageEvidenceRowData>>
+  createElement() {
+    return _MessageEvidenceInitialRowsProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is MessageEvidenceInitialRowsProvider &&
+        other.scope == scope &&
+        other.monthAnchor == monthAnchor &&
+        other.limit == limit;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, scope.hashCode);
+    hash = _SystemHash.combine(hash, monthAnchor.hashCode);
+    hash = _SystemHash.combine(hash, limit.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin MessageEvidenceInitialRowsRef
+    on AutoDisposeFutureProviderRef<Map<int, MessageEvidenceRowData>> {
+  /// The parameter `scope` of this provider.
+  MessageEvidenceScope get scope;
+
+  /// The parameter `monthAnchor` of this provider.
+  DateTime? get monthAnchor;
+
+  /// The parameter `limit` of this provider.
+  int get limit;
+}
+
+class _MessageEvidenceInitialRowsProviderElement
+    extends AutoDisposeFutureProviderElement<Map<int, MessageEvidenceRowData>>
+    with MessageEvidenceInitialRowsRef {
+  _MessageEvidenceInitialRowsProviderElement(super.provider);
+
+  @override
+  MessageEvidenceScope get scope =>
+      (origin as MessageEvidenceInitialRowsProvider).scope;
+  @override
+  DateTime? get monthAnchor =>
+      (origin as MessageEvidenceInitialRowsProvider).monthAnchor;
+  @override
+  int get limit => (origin as MessageEvidenceInitialRowsProvider).limit;
+}
+
 String _$messageEvidenceTextMatchIdsHash() =>
     r'517bd5b36989491c27378d1444811bd3458b9b66';
 

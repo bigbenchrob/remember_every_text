@@ -132,6 +132,27 @@ Future<ConversationMessage?> contactPageGraphHandleMessageById(
 }
 
 @riverpod
+Future<List<ConversationMessage>> contactPageGraphHandleMessages(
+  Ref ref, {
+  required int contactId,
+  required int handleId,
+  int limit = 500,
+  DateTime? monthAnchor,
+}) async {
+  ref.watch(messageDataVersionProvider);
+
+  final reader = await ref.watch(contactGraphReaderProvider.future);
+  final graphContactId = graphContactIdForContactPage(contactId);
+  return reader.readContactPageHandleMessages(
+    contactId: contactId,
+    graphContactId: graphContactId,
+    handleId: handleId,
+    limit: limit,
+    monthAnchor: monthAnchor,
+  );
+}
+
+@riverpod
 Future<List<int>> contactPageGraphMessageIdsMatchingText(
   Ref ref, {
   required int contactId,

@@ -164,6 +164,13 @@ Future<MessageEvidenceRowData> _resolveGraphMessageSender(
   ConversationMessage message,
 ) async {
   final resolver = await ref.watch(displayIdentityResolverProvider.future);
+  return _messageEvidenceRowDataFromGraphMessage(message, resolver);
+}
+
+MessageEvidenceRowData _messageEvidenceRowDataFromGraphMessage(
+  ConversationMessage message,
+  DisplayIdentityResolver resolver,
+) {
   final rawHandleLabel =
       message.senderRawHandleLabel ?? message.senderDisplayHandle;
   final senderIdentity = resolver.resolveSender(
@@ -251,6 +258,43 @@ Future<List<MessageAttachmentEvidence>> messageEvidenceAttachments(
       messageId: messageId,
     ),
   };
+}
+
+@riverpod
+Future<Map<int, MessageEvidenceRowData>> messageEvidenceInitialRows(
+  Ref ref, {
+  required MessageEvidenceScope scope,
+  DateTime? monthAnchor,
+  int limit = 80,
+}) async {
+  ref.watch(messageDataVersionProvider);
+
+  final messages = await switch (scope) {
+    ContactAllMessagesEvidenceScope(:final contactId) => ref.watch(
+      contactPageGraphMessagesProvider(
+        contactId: contactId,
+        limit: limit,
+        monthAnchor: monthAnchor,
+      ).future,
+    ),
+    ContactHandleMessagesEvidenceScope(:final contactId, :final handleId) =>
+      ref.watch(
+        contactPageGraphHandleMessagesProvider(
+          contactId: contactId,
+          handleId: handleId,
+          limit: limit,
+          monthAnchor: monthAnchor,
+        ).future,
+      ),
+    _ => Future.value(const <ConversationMessage>[]),
+  };
+
+  final resolver = await ref.watch(displayIdentityResolverProvider.future);
+  final rows = [
+    for (final message in messages)
+      _messageEvidenceRowDataFromGraphMessage(message, resolver),
+  ];
+  return {for (final row in rows) row.messageId: row};
 }
 
 void _keepHydratedEvidenceAliveBriefly(Ref ref) {

@@ -5,6 +5,7 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../application/message_evidence/message_evidence_spine_provider.dart';
+import '../../../domain/message_evidence/message_evidence_row_data.dart';
 import '../../../domain/message_evidence/message_evidence_scope.dart';
 import '../../../domain/message_evidence/message_evidence_skeleton.dart';
 import 'message_evidence_fade_overlay.dart';
@@ -20,6 +21,8 @@ class MessageEvidenceTimelineView extends ConsumerStatefulWidget {
     this.monthAnchor,
     this.anchorMessageId,
     this.highlightQuery = '',
+    this.initialRows = const <int, MessageEvidenceRowData>{},
+    this.isInitialRowsLoading = false,
     this.onVisibleMonthChanged,
     super.key,
   });
@@ -31,6 +34,8 @@ class MessageEvidenceTimelineView extends ConsumerStatefulWidget {
   final DateTime? monthAnchor;
   final int? anchorMessageId;
   final String highlightQuery;
+  final Map<int, MessageEvidenceRowData> initialRows;
+  final bool isInitialRowsLoading;
   final ValueChanged<String?>? onVisibleMonthChanged;
 
   @override
@@ -92,6 +97,8 @@ class _MessageEvidenceTimelineViewState
               backgroundColor: backgroundColor,
               child: widget.skeleton.isEmpty
                   ? Center(child: Text(widget.emptyMessage))
+                  : widget.isInitialRowsLoading
+                  ? const Center(child: Text('Loading messages...'))
                   : ScrollablePositionedList.builder(
                       itemScrollController: _itemScrollController,
                       itemPositionsListener: _itemPositionsListener,
@@ -109,6 +116,7 @@ class _MessageEvidenceTimelineViewState
                         return _MessageEvidenceTimelineRow(
                           evidenceScope: widget.evidenceScope,
                           entry: entry,
+                          initialMessage: widget.initialRows[entry.messageId],
                           isAnchorMessage:
                               entry.messageId == widget.anchorMessageId,
                           highlightQuery: widget.highlightQuery,
@@ -214,6 +222,7 @@ class _MessageEvidenceTimelineRow extends ConsumerWidget {
   const _MessageEvidenceTimelineRow({
     required this.evidenceScope,
     required this.entry,
+    required this.initialMessage,
     required this.isAnchorMessage,
     required this.highlightQuery,
     required this.showDayDivider,
@@ -221,12 +230,25 @@ class _MessageEvidenceTimelineRow extends ConsumerWidget {
 
   final MessageEvidenceScope evidenceScope;
   final MessageEvidenceSkeletonEntry entry;
+  final MessageEvidenceRowData? initialMessage;
   final bool isAnchorMessage;
   final String highlightQuery;
   final bool showDayDivider;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final initialMessage = this.initialMessage;
+    if (initialMessage != null) {
+      return _ResolvedMessageEvidenceTimelineRow(
+        evidenceScope: evidenceScope,
+        entry: entry,
+        message: initialMessage,
+        isAnchorMessage: isAnchorMessage,
+        highlightQuery: highlightQuery,
+        showDayDivider: showDayDivider,
+      );
+    }
+
     final messageAsync = ref.watch(
       messageEvidenceRowProvider(
         scope: evidenceScope,
@@ -255,6 +277,40 @@ class _MessageEvidenceTimelineRow extends ConsumerWidget {
           loading: () => const _GraphMessageSkeleton(label: 'Loading message'),
           error: (error, stackTrace) =>
               _GraphMessageSkeleton(label: 'Unable to load message: $error'),
+        ),
+      ],
+    );
+  }
+}
+
+class _ResolvedMessageEvidenceTimelineRow extends StatelessWidget {
+  const _ResolvedMessageEvidenceTimelineRow({
+    required this.evidenceScope,
+    required this.entry,
+    required this.message,
+    required this.isAnchorMessage,
+    required this.highlightQuery,
+    required this.showDayDivider,
+  });
+
+  final MessageEvidenceScope evidenceScope;
+  final MessageEvidenceSkeletonEntry entry;
+  final MessageEvidenceRowData message;
+  final bool isAnchorMessage;
+  final String highlightQuery;
+  final bool showDayDivider;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (showDayDivider) _DayDivider(label: _dayLabel(entry.dateUtc)),
+        MessageEvidenceRow(
+          message: message,
+          evidenceScope: evidenceScope,
+          isAnchorMessage: isAnchorMessage,
+          searchQuery: highlightQuery,
         ),
       ],
     );

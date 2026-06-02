@@ -1097,6 +1097,196 @@ class _ContactPageGraphHandleMessageByIdProviderElement
       (origin as ContactPageGraphHandleMessageByIdProvider).messageId;
 }
 
+String _$contactPageGraphHandleMessagesHash() =>
+    r'916e1fca90a8b5e059eb25d2b107027bac63bac8';
+
+/// See also [contactPageGraphHandleMessages].
+@ProviderFor(contactPageGraphHandleMessages)
+const contactPageGraphHandleMessagesProvider =
+    ContactPageGraphHandleMessagesFamily();
+
+/// See also [contactPageGraphHandleMessages].
+class ContactPageGraphHandleMessagesFamily
+    extends Family<AsyncValue<List<ConversationMessage>>> {
+  /// See also [contactPageGraphHandleMessages].
+  const ContactPageGraphHandleMessagesFamily();
+
+  /// See also [contactPageGraphHandleMessages].
+  ContactPageGraphHandleMessagesProvider call({
+    required int contactId,
+    required int handleId,
+    int limit = 500,
+    DateTime? monthAnchor,
+  }) {
+    return ContactPageGraphHandleMessagesProvider(
+      contactId: contactId,
+      handleId: handleId,
+      limit: limit,
+      monthAnchor: monthAnchor,
+    );
+  }
+
+  @override
+  ContactPageGraphHandleMessagesProvider getProviderOverride(
+    covariant ContactPageGraphHandleMessagesProvider provider,
+  ) {
+    return call(
+      contactId: provider.contactId,
+      handleId: provider.handleId,
+      limit: provider.limit,
+      monthAnchor: provider.monthAnchor,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'contactPageGraphHandleMessagesProvider';
+}
+
+/// See also [contactPageGraphHandleMessages].
+class ContactPageGraphHandleMessagesProvider
+    extends AutoDisposeFutureProvider<List<ConversationMessage>> {
+  /// See also [contactPageGraphHandleMessages].
+  ContactPageGraphHandleMessagesProvider({
+    required int contactId,
+    required int handleId,
+    int limit = 500,
+    DateTime? monthAnchor,
+  }) : this._internal(
+         (ref) => contactPageGraphHandleMessages(
+           ref as ContactPageGraphHandleMessagesRef,
+           contactId: contactId,
+           handleId: handleId,
+           limit: limit,
+           monthAnchor: monthAnchor,
+         ),
+         from: contactPageGraphHandleMessagesProvider,
+         name: r'contactPageGraphHandleMessagesProvider',
+         debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+             ? null
+             : _$contactPageGraphHandleMessagesHash,
+         dependencies: ContactPageGraphHandleMessagesFamily._dependencies,
+         allTransitiveDependencies:
+             ContactPageGraphHandleMessagesFamily._allTransitiveDependencies,
+         contactId: contactId,
+         handleId: handleId,
+         limit: limit,
+         monthAnchor: monthAnchor,
+       );
+
+  ContactPageGraphHandleMessagesProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.contactId,
+    required this.handleId,
+    required this.limit,
+    required this.monthAnchor,
+  }) : super.internal();
+
+  final int contactId;
+  final int handleId;
+  final int limit;
+  final DateTime? monthAnchor;
+
+  @override
+  Override overrideWith(
+    FutureOr<List<ConversationMessage>> Function(
+      ContactPageGraphHandleMessagesRef provider,
+    )
+    create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: ContactPageGraphHandleMessagesProvider._internal(
+        (ref) => create(ref as ContactPageGraphHandleMessagesRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        contactId: contactId,
+        handleId: handleId,
+        limit: limit,
+        monthAnchor: monthAnchor,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<List<ConversationMessage>> createElement() {
+    return _ContactPageGraphHandleMessagesProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ContactPageGraphHandleMessagesProvider &&
+        other.contactId == contactId &&
+        other.handleId == handleId &&
+        other.limit == limit &&
+        other.monthAnchor == monthAnchor;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, contactId.hashCode);
+    hash = _SystemHash.combine(hash, handleId.hashCode);
+    hash = _SystemHash.combine(hash, limit.hashCode);
+    hash = _SystemHash.combine(hash, monthAnchor.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin ContactPageGraphHandleMessagesRef
+    on AutoDisposeFutureProviderRef<List<ConversationMessage>> {
+  /// The parameter `contactId` of this provider.
+  int get contactId;
+
+  /// The parameter `handleId` of this provider.
+  int get handleId;
+
+  /// The parameter `limit` of this provider.
+  int get limit;
+
+  /// The parameter `monthAnchor` of this provider.
+  DateTime? get monthAnchor;
+}
+
+class _ContactPageGraphHandleMessagesProviderElement
+    extends AutoDisposeFutureProviderElement<List<ConversationMessage>>
+    with ContactPageGraphHandleMessagesRef {
+  _ContactPageGraphHandleMessagesProviderElement(super.provider);
+
+  @override
+  int get contactId =>
+      (origin as ContactPageGraphHandleMessagesProvider).contactId;
+  @override
+  int get handleId =>
+      (origin as ContactPageGraphHandleMessagesProvider).handleId;
+  @override
+  int get limit => (origin as ContactPageGraphHandleMessagesProvider).limit;
+  @override
+  DateTime? get monthAnchor =>
+      (origin as ContactPageGraphHandleMessagesProvider).monthAnchor;
+}
+
 String _$contactPageGraphMessageIdsMatchingTextHash() =>
     r'0e828d2cc1a8d62158b6361cd7317c7803444384';
 

@@ -209,6 +209,30 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
   }
 
   @override
+  Future<List<ConversationMessage>> readContactPageHandleMessages({
+    required int contactId,
+    required int graphContactId,
+    required int handleId,
+    int limit = 500,
+    DateTime? monthAnchor,
+  }) async {
+    final canonicalHandleIds = await _readContactPageHandleFilterIds(
+      contactId: contactId,
+      graphContactId: graphContactId,
+      handleId: handleId,
+    );
+    if (canonicalHandleIds.isEmpty) {
+      return const <ConversationMessage>[];
+    }
+
+    return _readContactMessagesForCanonicalHandles(
+      canonicalHandleIds,
+      limit: limit,
+      monthAnchor: monthAnchor,
+    );
+  }
+
+  @override
   Future<List<int>> readContactPageMessageIdsMatchingText({
     required int contactId,
     required int graphContactId,
@@ -366,6 +390,25 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
       '',
       canonicalHandleIds,
       messageId: messageId,
+    );
+  }
+
+  Future<List<ConversationMessage>> _readContactMessagesForCanonicalHandles(
+    List<int> canonicalHandleIds, {
+    required int limit,
+    DateTime? monthAnchor,
+  }) {
+    return _readContactMessagesWhere(
+      '''
+      COALESCE(
+        contact_alias.canonical_handle_ss_id,
+        contact_chat_handle.handle_ss_id
+      ) IN (${_placeholders(canonicalHandleIds.length)})
+      ''',
+      '',
+      canonicalHandleIds,
+      limit: limit,
+      monthAnchor: monthAnchor,
     );
   }
 

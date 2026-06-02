@@ -60,6 +60,81 @@ void main() {
     expect(visibleMonthWrites, contains('2026-05'));
   });
 
+  testWidgets('renders initial row data without row provider placeholders', (
+    tester,
+  ) async {
+    const scope = ContactAllMessagesEvidenceScope(contactId: 24);
+
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: CupertinoApp(
+          home: MessageEvidenceTimelineView(
+            evidenceScope: scope,
+            skeleton: MessageEvidenceTimelineSkeleton(
+              entries: [
+                MessageEvidenceSkeletonEntry(
+                  messageId: 1,
+                  dateUtc: '2026-05-20T10:00:00.000Z',
+                  monthKey: '2026-05',
+                ),
+              ],
+            ),
+            initialRows: {
+              1: MessageEvidenceRowData(
+                messageId: 1,
+                dateUtc: '2026-05-20T10:00:00.000Z',
+                isFromMe: false,
+                text: 'initial window row',
+                associatedMessageId: null,
+                attachmentCount: 0,
+              ),
+            },
+            headerData: MessageEvidenceHeaderModel(title: 'Contact evidence'),
+            emptyMessage: 'No messages',
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+
+    expect(find.text('initial window row'), findsOneWidget);
+    expect(find.text('Loading message'), findsNothing);
+  });
+
+  testWidgets('defers row placeholders while initial rows are loading', (
+    tester,
+  ) async {
+    const scope = ContactAllMessagesEvidenceScope(contactId: 24);
+
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: CupertinoApp(
+          home: MessageEvidenceTimelineView(
+            evidenceScope: scope,
+            skeleton: MessageEvidenceTimelineSkeleton(
+              entries: [
+                MessageEvidenceSkeletonEntry(
+                  messageId: 1,
+                  dateUtc: '2026-05-20T10:00:00.000Z',
+                  monthKey: '2026-05',
+                ),
+              ],
+            ),
+            isInitialRowsLoading: true,
+            headerData: MessageEvidenceHeaderModel(title: 'Contact evidence'),
+            emptyMessage: 'No messages',
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+
+    expect(find.text('Loading messages...'), findsOneWidget);
+    expect(find.text('Loading message'), findsNothing);
+  });
+
   testWidgets('renders empty state without hydrating rows', (tester) async {
     await tester.pumpWidget(
       const ProviderScope(

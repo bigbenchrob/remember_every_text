@@ -6,6 +6,7 @@ import '../../../../essentials/conversation_graph/application/contacts/contact_g
 import '../../../../essentials/conversation_graph/application/contacts/contact_graph_provider.dart';
 import '../../../contacts/feature_level_providers.dart';
 import '../../application/message_evidence/message_evidence_spine_provider.dart';
+import '../../domain/message_evidence/message_evidence_row_data.dart';
 import '../../domain/message_evidence/message_evidence_scope.dart';
 import '../../domain/message_evidence/message_evidence_search_mode.dart';
 import '../../domain/message_evidence/message_evidence_skeleton.dart';
@@ -66,6 +67,13 @@ class _ContactMessagesEvidenceViewState
     final skeletonAsync = ref.watch(
       messageEvidenceTimelineSkeletonProvider(scope: evidenceScope),
     );
+    final initialRowsAsync = ref.watch(
+      messageEvidenceInitialRowsProvider(
+        scope: evidenceScope,
+        monthAnchor: widget.monthAnchor,
+        limit: widget.monthAnchor == null ? 80 : 500,
+      ),
+    );
     final snapshotAsync = ref.watch(
       contactPageGraphSnapshotProvider(contactId: widget.contactId),
     );
@@ -95,6 +103,9 @@ class _ContactMessagesEvidenceViewState
           evidenceScope: evidenceScope,
           snapshot: snapshotAsync.valueOrNull,
           skeleton: skeleton,
+          initialRows: initialRowsAsync.valueOrNull ?? const {},
+          isInitialRowsLoading:
+              initialRowsAsync.isLoading && !initialRowsAsync.hasValue,
           monthAnchor: widget.monthAnchor,
           filterHandleId: widget.filterHandleId,
           selectedHandleLabel: _selectedHandleLabel(
@@ -134,6 +145,8 @@ class _ContactMessagesEvidenceTimeline extends ConsumerWidget {
     required this.evidenceScope,
     required this.snapshot,
     required this.skeleton,
+    required this.initialRows,
+    required this.isInitialRowsLoading,
     required this.monthAnchor,
     required this.filterHandleId,
     required this.selectedHandleLabel,
@@ -150,6 +163,8 @@ class _ContactMessagesEvidenceTimeline extends ConsumerWidget {
   final MessageEvidenceScope evidenceScope;
   final ContactGraphSnapshot? snapshot;
   final MessageEvidenceTimelineSkeleton skeleton;
+  final Map<int, MessageEvidenceRowData> initialRows;
+  final bool isInitialRowsLoading;
   final DateTime? monthAnchor;
   final int? filterHandleId;
   final String? selectedHandleLabel;
@@ -165,6 +180,8 @@ class _ContactMessagesEvidenceTimeline extends ConsumerWidget {
     return MessageEvidenceTimelineView(
       evidenceScope: evidenceScope,
       skeleton: skeleton,
+      initialRows: initialRows,
+      isInitialRowsLoading: isInitialRowsLoading,
       headerData: MessageEvidenceHeaderModel(
         title: _title(),
         identityContextLine: _selectedHandleContextLine(),
