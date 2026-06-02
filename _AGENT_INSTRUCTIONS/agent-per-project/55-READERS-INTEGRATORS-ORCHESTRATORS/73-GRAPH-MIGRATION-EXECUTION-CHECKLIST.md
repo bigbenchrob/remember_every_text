@@ -198,8 +198,8 @@ Search should select graph message evidence directly.
 - Graph-native message saved/tag overlays are searchable by `message_ss_id`.
 - Legacy GUID saved/tag overlays remain as an explicit compatibility bridge and
   are ignored when a GUID maps to more than one graph message.
-- Contact evidence search still uses the contact graph reader until Slice 3
-  completes graph-native contact/handle identity.
+- Contact evidence search now participates in the graph evidence/search path
+  after Slice 3 completed graph-native contact/handle identity.
 - Removed the unused legacy-ID search service APIs
   (`searchChatMessageIds`, `searchContactMessageIds`, `searchGlobalMessageIds`)
   and their `working.db`/FTS fallback implementation. `SearchService` is now a
