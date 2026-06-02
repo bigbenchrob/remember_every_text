@@ -42,9 +42,9 @@ downstream legacy dependencies.
 | Contact Identity Layer | Contact/profile/handle menus read graph facts plus overlay intent; legacy participant/handle reads are retired from ordinary UI. | Closed for ordinary contact and handle identity. | Closed high-leverage blocker | Complete. |
 | MessageEvidenceScope construction | Ordinary contact, conversation, handle, global, search, and recovered routes enter through typed graph evidence scopes. | Closed for ordinary message-bearing routes. | Closed high-leverage blocker | Monitor during new evidence sources. |
 | Graph Readiness Provider | App-facing readiness now uses graph readiness; the old `workingProjectionReadinessProvider` has been retired. Lifecycle readiness still needs final production hardening around graph build state. | Onboarding, auto-sync eligibility, graph UI readiness, reset/maintenance, stale graph prevention. | Very high | After identity/search choke points, before legacy lifecycle retirement. |
-| `ChatDbChangeMonitor` | Polls live `chat.db`, triggers legacy import/migration and attachment sweep. | Live graph freshness, automatic incremental graph build, app launch consistency. | Very high | With lifecycle orchestration. |
-| `ConversationGraphBuildService` | Production-shaped build service exists; currently exposed as a service and used by proof/dev panel paths, not complete app lifecycle. | Normal graph build, idempotent incremental projection, post-build invalidation, readiness state. | Very high | With lifecycle orchestration. |
-| Graph lifecycle orchestration | Build service, readiness, onboarding, reset, monitor, and invalidation are not one production state machine. | Prevents graph from becoming app spine even if UI is graph-backed. | Highest production leverage | After search/contact identity ambiguity is reduced. |
+| `ChatDbChangeMonitor` | Polls live `chat.db` and triggers graph build as the app-facing success path before legacy compatibility maintenance. | Live graph freshness, automatic incremental graph build, app launch consistency. | Very high | With lifecycle orchestration. |
+| `ConversationGraphBuildService` | Production-shaped build service exists and is wired through build controller, readiness, onboarding, reset, monitor, and diagnostics. | Normal graph build, idempotent incremental projection, post-build invalidation, readiness state. | Very high | With lifecycle orchestration. |
+| Graph lifecycle orchestration | Graph lifecycle is substantially integrated; remaining work is sole production ownership after compatibility blockers close. | Prevents graph from becoming app spine without legacy import/projection support. | Highest production leverage | Current primary migration focus. |
 | Attachment archive/recovery identity mapping | Archive and deterministic recovery still map through message GUIDs, import attachment IDs, and legacy working/import DBs. | Blocks retirement of recovery/archive legacy dependencies and historical source ingestion. | High but hazardous | Later, after ordinary graph path is stable. |
 | Overlay identity key strategy | Overlay tables use mixed identity forms: working IDs, GUIDs, normalized strings, and graph IDs in settings. | Blocks safe migration of favourites, tags, saved flags, manual links, handle dismissal, message annotations. | Very high | Audit before search/contact migration; implement as part of those migrations. |
 | Message data invalidation | `messageDataVersionProvider` is still tied to legacy import/migration completion. | Graph evidence refresh, search refresh, contact metrics refresh, stale UI prevention. | High | With graph lifecycle orchestration. |
@@ -215,8 +215,17 @@ or needs repair.
 
 **Current state**
 
-Readiness remains centered on `working.db` projection state. Graph health exists
-but is not yet the app-level gate.
+Graph readiness is now the app-facing gate for ordinary message surfaces.
+`conversationGraphReadinessProvider` and `conversationGraphPopulatedProvider`
+are exported from the central database dependency entry point, and the old
+`workingProjectionReadinessProvider` has been retired.
+
+Remaining work is production hardening rather than initial migration:
+
+- stale/failed graph state must remain visible and actionable
+- source-scoped import/projection must become the sole production lifecycle
+  owner
+- legacy readiness may remain only as compatibility or diagnostic reference
 
 **Dependencies blocked**
 
@@ -244,8 +253,14 @@ projection.
 
 **Current state**
 
-It detects live `chat.db` changes, triggers legacy import/migration, bumps
-legacy message data version, and runs attachment archive sweeps.
+It detects live `chat.db` changes and now triggers the central graph build as
+the app-facing success path before maintaining legacy compatibility systems.
+Startup catch-up and cursor priming compare against the source-scoped import
+ledger. Attachment archiving uses graph message source-row ranges during live
+updates.
+
+Legacy import/migration still run as compatibility maintenance, but no longer
+define ordinary graph evidence freshness after the graph build succeeds.
 
 **Dependencies blocked**
 
@@ -272,9 +287,13 @@ projection, and topology edges.
 
 **Current state**
 
-It already composes importers, rich-text enrichment, topology importers, and
-projectors. It lacks full lifecycle state, readiness integration, reset
-integration, and automatic monitor integration.
+It composes source-scoped import, rich-text enrichment, topology import, and
+working graph projection. It is wired through the central graph build
+controller, participates in readiness/reset/onboarding flows, and is invoked by
+the live `chat.db` monitor.
+
+Remaining work is to remove legacy import/projection as a required
+compatibility path once archive/recovery and lifecycle blockers close.
 
 **Dependencies blocked**
 
@@ -413,7 +432,7 @@ This section names what prevents each legacy layer from being retired.
 
 | Blocker | Affected systems | Removal criteria | Recommended sequencing |
 | --- | --- | --- | --- |
-| Graph build is not normal lifecycle | whole app | Onboarding/reset/monitor/readiness all understand graph build. | Lifecycle phase. |
+| Graph build still shares lifecycle with legacy compatibility systems | whole app | Source-scoped import/projection can own production lifecycle without required legacy import/projection maintenance. | Lifecycle phase. |
 | Legacy migrators encode semantic parity | contacts, handles, attachments, message semantics | Graph parity tests prove equivalent behavior where semantics matter. | Continuous; do not shortcut. |
 | Overlay references legacy IDs | user intent preservation | Overlay bridge/migration strategy is proven. | Before deleting working DB. |
 | Recovery/archive depends on legacy identity | evidence archive | Recovery plan moves to graph/source-scoped identity. | Last major blocker. |

@@ -2,7 +2,7 @@
 tier: project
 scope: source-scoped-graph-migration
 owner: agent-per-project
-last_reviewed: 2026-05-30
+last_reviewed: 2026-06-02
 source_of_truth: roadmap
 links:
   - ./30-INVARIANTS.md
@@ -378,17 +378,23 @@ semantic reference, but not by recreating legacy schema shape blindly.
 
 ## Onboarding and Auto-Sync
 
-Current app lifecycle still retains legacy-oriented systems:
+Current app lifecycle is graph-aware but still retains legacy compatibility
+systems:
 
 - onboarding gate
 - import control panel
 - reset service
 - `ChatDbChangeMonitor`
-- legacy incremental update state
 - legacy import/migration compatibility maintenance
 
-The graph build service exists, but the graph is not yet the sole production
-import/projection pipeline.
+The graph build service, readiness providers, onboarding checks, reset flows,
+and live monitor are now wired into the app-facing graph path. Live changes
+trigger graph build as the app-facing success path before legacy compatibility
+maintenance.
+
+The remaining issue is sole production ownership: source-scoped import and
+graph projection must eventually replace legacy import/projection rather than
+coexisting with them for compatibility.
 
 ## Search
 
@@ -475,8 +481,8 @@ The graph migration is complete when these are all true.
 - Global messages read graph evidence.
 - Handle messages read graph evidence.
 - Search results resolve to graph message scopes.
-- Recovered/deleted message review either reads graph evidence or is explicitly
-  documented as a recovery subsystem awaiting graph import.
+- Recovered/deleted message review reads graph-orphan evidence through the
+  shared evidence spine.
 
 ## Presentation
 
@@ -665,18 +671,20 @@ Remove ordinary user-facing reliance on `working.db` read models.
 
 ## Current State
 
-Message evidence views are largely graph-backed.
+Message evidence views are graph-backed for ordinary product surfaces.
 
-Remaining legacy reads appear in:
+Closed ordinary read migrations:
 
 - search service
 - contact list/profile providers
 - handle/stray/manual-link providers
 - older chat/recent-chat providers
-- attachment archive/recovery services
-- settings/historical archive tools
+- global/contact heatmaps
+- recovered deleted/no-handle evidence presentation
 
-Not all of these should be moved in one slice.
+Remaining legacy dependencies are no longer ordinary reads. They are lifecycle,
+archive/recovery, diagnostics/settings, retained legacy schema, or tests for
+retained systems.
 
 ## Recommended Order
 
@@ -696,7 +704,8 @@ search query
 Search now avoids legacy `working.db` message identity for ordinary message
 results.
 
-Search may still query overlay for saved/tagged/user-intent filters.
+Search may still query overlay for saved/tagged/user-intent filters through
+named graph-compatible overlay bridges.
 
 ### 2B - Contacts
 
@@ -710,6 +719,9 @@ working_ss.db graph facts
 The contact view should not depend on legacy `working.db` for ordinary
 navigation once graph contact projection is stable.
 
+Status: complete for ordinary UI. Future contact work should extend graph
+identity/display resolvers rather than reintroducing legacy participant reads.
+
 ### 2C - Handles
 
 Handle management should migrate carefully because handles are where graph
@@ -722,6 +734,10 @@ Target:
 - unfamiliar-source evidence from graph handle scopes
 - manual contact/handle links in overlay
 - spam/dismissal flags in overlay
+
+Status: complete for ordinary UI. Future handle work should preserve the
+distinction between graph handle identity, canonical aliases, normalized
+address semantics, and overlay user intent.
 
 ### 2D - Chats / Recent Chats
 
@@ -739,12 +755,14 @@ as separate product entities.
 
 The product-facing entity should be conversation.
 
+Status: complete for ordinary product conversation reads. Legacy chat concepts
+remain only as retained schema/diagnostic reference until broader legacy
+retirement.
+
 ### 2E - Recovered Messages
 
-Recovered-message evidence currently uses the shared presentation vocabulary
-but still has legacy/recovery-specific data selection.
-
-That is acceptable while recovery remains a special subsystem.
+Recovered-message evidence now uses graph-orphan message evidence and the
+shared Message Evidence Spine.
 
 Long-term, recovered sources should become additional source-scoped imports
 with their own `source_id`, allowing recovered messages and attachments to
