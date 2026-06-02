@@ -29,10 +29,33 @@ class MessageRichTextEnricher {
   final int extractionLimit;
 
   Future<MessageRichTextEnrichmentResult> enrichMissingText() async {
+    return _enrichMissingTextWhere(
+      whereClause: 'text IS NULL AND attributed_body_blob IS NOT NULL',
+      whereArgs: const <Object?>[],
+    );
+  }
+
+  Future<MessageRichTextEnrichmentResult> enrichMissingTextAfterSourceRowId({
+    required int sourceId,
+    required int startedAfterSourceRowId,
+  }) {
+    return _enrichMissingTextWhere(
+      whereClause:
+          'source_id = ? AND source_rowid > ? '
+          'AND text IS NULL AND attributed_body_blob IS NOT NULL',
+      whereArgs: <Object?>[sourceId, startedAfterSourceRowId],
+    );
+  }
+
+  Future<MessageRichTextEnrichmentResult> _enrichMissingTextWhere({
+    required String whereClause,
+    required List<Object?> whereArgs,
+  }) async {
     final candidates = await importDatabase.database.query(
       'messages',
       columns: <String>['ss_id', 'source_rowid'],
-      where: 'text IS NULL AND attributed_body_blob IS NOT NULL',
+      where: whereClause,
+      whereArgs: whereArgs,
       orderBy: 'source_rowid ASC',
     );
 

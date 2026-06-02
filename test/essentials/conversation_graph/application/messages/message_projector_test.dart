@@ -93,6 +93,43 @@ void main() {
   });
 
   test(
+    'projects only messages after source rowid for incremental builds',
+    () async {
+      await _insertImportMessage(
+        importDatabase,
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 100,
+        guid: 'already-projected',
+        text: 'old',
+      );
+      await _insertImportMessage(
+        importDatabase,
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 101,
+        guid: 'newly-imported',
+        text: 'new',
+      );
+
+      final result =
+          await MessageProjector(
+            repository: SqliteMessageProjectionRepository(
+              importDatabase: importDatabase,
+              workingDatabase: workingDatabase,
+            ),
+          ).projectMessagesAfterSourceRowId(
+            sourceId: liveChatDbSourceId,
+            startedAfterSourceRowId: 100,
+          );
+      final rows = await workingDatabase.database.query('messages');
+
+      expect(result.examinedMessageCount, 1);
+      expect(result.insertedMessageCount, 1);
+      expect(rows, hasLength(1));
+      expect(rows.single['guid'], 'newly-imported');
+    },
+  );
+
+  test(
     'refreshes existing working text after import ledger enrichment',
     () async {
       await _insertImportMessage(

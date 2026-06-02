@@ -96,6 +96,46 @@ void main() {
     expect(second.enrichedMessageCount, 0);
   });
 
+  test(
+    'enriches only messages after source rowid for incremental builds',
+    () async {
+      await _insertImportMessage(
+        importDatabase,
+        sourceRowId: 100,
+        text: null,
+        attributedBodyBlob: Uint8List.fromList(<int>[1, 2, 3]),
+      );
+      await _insertImportMessage(
+        importDatabase,
+        sourceRowId: 101,
+        text: null,
+        attributedBodyBlob: Uint8List.fromList(<int>[4, 5, 6]),
+      );
+
+      final result =
+          await MessageRichTextEnricher(
+            chatDbPath: '/fake/chat.db',
+            importDatabase: importDatabase,
+            extractor: const _FakeExtractor(<int, String>{
+              100: 'old decoded text',
+              101: 'new decoded text',
+            }),
+          ).enrichMissingTextAfterSourceRowId(
+            sourceId: liveChatDbSourceId,
+            startedAfterSourceRowId: 100,
+          );
+      final rows = await importDatabase.database.query(
+        'messages',
+        columns: <String>['source_rowid', 'text'],
+        orderBy: 'source_rowid ASC',
+      );
+
+      expect(result.candidateMessageCount, 1);
+      expect(result.enrichedMessageCount, 1);
+      expect(rows.map((row) => row['text']), [null, 'new decoded text']);
+    },
+  );
+
   test('reports unavailable extractor without mutating rows', () async {
     await _insertImportMessage(
       importDatabase,

@@ -10,6 +10,7 @@ import '../../source_scoped_import/application/handles/handle_importer_provider.
 import '../../source_scoped_import/application/message_attachment_joins/message_attachment_join_importer_provider.dart';
 import '../../source_scoped_import/application/messages/message_importer_provider.dart';
 import '../../source_scoped_import/application/messages/message_rich_text_enricher_provider.dart';
+import '../../source_scoped_import/domain/known_sources.dart';
 import 'attachments/attachment_projector_provider.dart';
 import 'chat_handle_joins/chat_to_handle_projector_provider.dart';
 import 'chat_message_joins/chat_to_message_projector_provider.dart';
@@ -84,7 +85,15 @@ Future<ConversationGraphBuildService> conversationGraphBuildService(
         await contactImporter.importContacts();
       },
       importMessages: messageImporter.importNewMessages,
-      enrichMissingText: richTextEnricher.enrichMissingText,
+      enrichMissingText: (messageImportResult) {
+        if (messageImportResult.insertedMessageCount == 0) {
+          return richTextEnricher.enrichMissingText();
+        }
+        return richTextEnricher.enrichMissingTextAfterSourceRowId(
+          sourceId: liveChatDbSourceId,
+          startedAfterSourceRowId: messageImportResult.startedAfterSourceRowId,
+        );
+      },
       importAttachments: () async {
         await attachmentImporter.importAttachments();
       },
@@ -107,7 +116,15 @@ Future<ConversationGraphBuildService> conversationGraphBuildService(
       projectChats: () async {
         await chatProjector.projectChats();
       },
-      projectMessages: messageProjector.projectMessages,
+      projectMessages: (messageImportResult) {
+        if (messageImportResult.insertedMessageCount == 0) {
+          return messageProjector.projectMessages();
+        }
+        return messageProjector.projectMessagesAfterSourceRowId(
+          sourceId: liveChatDbSourceId,
+          startedAfterSourceRowId: messageImportResult.startedAfterSourceRowId,
+        );
+      },
       projectAttachments: () async {
         await attachmentProjector.projectAttachments();
       },

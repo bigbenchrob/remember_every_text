@@ -131,7 +131,7 @@ ConversationGraphBuildOrchestrator _orchestrator({
             lastImportedSourceRowId: null,
           );
     },
-    enrichMissingText: () async {
+    enrichMissingText: (messageImportResult) async {
       await step();
       return report?.richTextEnrichmentResult ??
           const MessageRichTextEnrichmentResult(
@@ -156,7 +156,7 @@ ConversationGraphBuildOrchestrator _orchestrator({
     },
     projectChatHandleEdges: step,
     projectChats: step,
-    projectMessages: () async {
+    projectMessages: (messageImportResult) async {
       await step();
       return report?.messageProjectionResult ??
           const MessageProjectionResult(

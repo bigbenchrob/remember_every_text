@@ -6,8 +6,13 @@ import '../messages/message_projection_repository.dart';
 typedef GraphBuildStep = Future<void> Function();
 typedef MessageImportStep = Future<MessageImportResult> Function();
 typedef RichTextEnrichmentStep =
-    Future<MessageRichTextEnrichmentResult> Function();
-typedef MessageProjectionStep = Future<MessageProjectionResult> Function();
+    Future<MessageRichTextEnrichmentResult> Function(
+      MessageImportResult messageImportResult,
+    );
+typedef MessageProjectionStep =
+    Future<MessageProjectionResult> Function(
+      MessageImportResult messageImportResult,
+    );
 
 class ConversationGraphBuildStageTiming {
   const ConversationGraphBuildStageTiming({
@@ -129,7 +134,7 @@ class ConversationGraphBuildOrchestrator {
 
     final richTextEnrichmentResult = await runValueStage(
       'enrich_missing_text',
-      enrichMissingText,
+      () => enrichMissingText(messageImportResult),
     );
 
     await runStage('import_attachments', importAttachments);
@@ -153,7 +158,7 @@ class ConversationGraphBuildOrchestrator {
 
     final messageProjectionResult = await runValueStage(
       'project_messages',
-      projectMessages,
+      () => projectMessages(messageImportResult),
     );
 
     await runStage('project_attachments', projectAttachments);

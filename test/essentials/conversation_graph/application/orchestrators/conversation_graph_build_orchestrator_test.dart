@@ -20,8 +20,9 @@ void main() {
           lastImportedSourceRowId: 12,
         );
       },
-      enrichMissingText: () async {
+      enrichMissingText: (messageImportResult) async {
         calls.add('enrich_missing_text');
+        expect(messageImportResult.insertedMessageCount, 2);
         return const MessageRichTextEnrichmentResult(
           candidateMessageCount: 3,
           enrichedMessageCount: 2,
@@ -47,8 +48,9 @@ void main() {
       },
       projectChatHandleEdges: _record(calls, 'project_chat_handle_edges'),
       projectChats: _record(calls, 'project_chats'),
-      projectMessages: () async {
+      projectMessages: (messageImportResult) async {
         calls.add('project_messages');
+        expect(messageImportResult.startedAfterSourceRowId, 10);
         return const MessageProjectionResult(
           examinedMessageCount: 5,
           insertedMessageCount: 4,

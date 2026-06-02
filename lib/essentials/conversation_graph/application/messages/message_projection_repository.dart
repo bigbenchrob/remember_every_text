@@ -10,4 +10,9 @@ class MessageProjectionResult {
 
 abstract interface class MessageProjectionRepository {
   Future<MessageProjectionResult> projectMessages();
+
+  Future<MessageProjectionResult> projectMessagesAfterSourceRowId({
+    required int sourceId,
+    required int startedAfterSourceRowId,
+  });
 }

@@ -13,6 +13,27 @@ class SqliteMessageProjectionRepository implements MessageProjectionRepository {
 
   @override
   Future<MessageProjectionResult> projectMessages() async {
+    return _projectMessagesWhere(
+      whereClause: null,
+      whereArgs: const <Object?>[],
+    );
+  }
+
+  @override
+  Future<MessageProjectionResult> projectMessagesAfterSourceRowId({
+    required int sourceId,
+    required int startedAfterSourceRowId,
+  }) {
+    return _projectMessagesWhere(
+      whereClause: 'source_id = ? AND source_rowid > ?',
+      whereArgs: <Object?>[sourceId, startedAfterSourceRowId],
+    );
+  }
+
+  Future<MessageProjectionResult> _projectMessagesWhere({
+    required String? whereClause,
+    required List<Object?> whereArgs,
+  }) async {
     final rows = await importDatabase.database.query(
       'messages',
       columns: <String>[
@@ -32,6 +53,8 @@ class SqliteMessageProjectionRepository implements MessageProjectionRepository {
         'has_message_summary_info',
         'has_payload_data_source',
       ],
+      where: whereClause,
+      whereArgs: whereArgs,
       orderBy: 'ss_id ASC',
     );
 
