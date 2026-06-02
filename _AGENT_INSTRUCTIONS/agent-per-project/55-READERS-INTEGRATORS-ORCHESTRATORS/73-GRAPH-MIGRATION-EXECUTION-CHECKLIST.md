@@ -389,8 +389,8 @@ scope.
   panel.
 - Removed unused legacy chat-by-age/unmatched-chat provider families that read
   `working.db` directly.
-- Contact timeline heatmaps now attempt graph timeline data by default and use
-  the legacy heatmap only as rebuild/reset compatibility fallback.
+- Contact and global timeline heatmaps now read graph timeline skeletons; the
+  legacy heatmap fallback was later retired in this slice.
 - Removed the unused legacy `ChatsRepository` aggregate skeleton, unimplemented
   SQLite repository provider, and old disabled chat timeline calculator/widget
   path. Calendar heatmap timeline data remains because conversation signatures
