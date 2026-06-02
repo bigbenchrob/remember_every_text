@@ -321,8 +321,16 @@ Messages folders, and displayed evidence.
 
 **Current state**
 
-Archive overlay records use `message_guid + import_attachment_id`. Historical
-recovery maps through legacy `macos_import.db` and `working.db`.
+Archive overlay records still use the legacy-compatible
+`message_guid + import_attachment_id` key. Ordinary archive lookup and
+historical snapshot recovery now map through graph identity before consulting
+that overlay key:
+
+- `GraphAttachmentArchiveLookup` is the named archive lookup boundary.
+- `OverlayArchiveCompatibilityLookup` is the explicit compatibility bridge
+  from graph attachment identity to existing overlay archive rows.
+- `GraphCrossSnapshotMapper` maps historical snapshot rows through
+  `macos_import_ss.db` and `working_ss.db`.
 
 **Dependencies blocked**
 
@@ -364,8 +372,9 @@ intentional and allowing them to become permanent architecture.
 | `chat_overrides` | legacy working chat ID | conversation display overrides | Older chat custom-name system predates graph conversations. | Legacy debt | Migrate to graph conversation identity or retire if unused. |
 | `favorite_contacts` | legacy participant ID | contact favourite state | Contact favourites predate graph contact identity. | Temporary | Contact identity layer provides graph contact IDs and overlay migration path. |
 | `conversation_favourites` overlay setting | graph conversation ID stored as comma-separated setting | conversation favourite state | First graph-native favourite implementation used lightweight settings storage. | Acceptable temporary | Replace with typed overlay table when tags/groups expand or before broad overlay migration. |
-| `archived_attachments` | `message_guid + import_attachment_id` | attachment archive availability | Archive must survive working rebuilds and historical recovery. | Intentional | Graph/source-scoped attachment identity maps archive availability without losing existing archive records. |
-| `CrossSnapshotMapper` | historical snapshot + legacy import/working identity | current archive identity | Recovered attachment mapping predates graph source registry. | Intentional recovery bridge | Historical sources import into source-scoped graph and archive mapping uses graph attachment identity. |
+| `archived_attachments` | `message_guid + import_attachment_id` | attachment archive availability | Archive overlay rows must survive working rebuilds and historical recovery. | Intentional | Overlay archive rows are migrated to a source-scoped archive key or retained behind a bounded compatibility bridge. |
+| `OverlayArchiveCompatibilityLookup` | graph `message_ss_id` + `attachment_ss_id` | existing overlay archive row | Existing archive rows use `message_guid + import_attachment_id`; graph evidence needs archive availability without rewriting archive storage yet. | Intentional compatibility bridge | Overlay archive identity migrates to source-scoped attachment identity or the compatibility bridge is formally retained as the only archive-key boundary. |
+| `GraphCrossSnapshotMapper` | historical snapshot records | graph `message_ss_id` + `attachment_ss_id` | Historical recovered attachment records need deterministic mapping into current graph identity. | Intentional recovery bridge | Historical sources are imported as source-scoped graph sources, or this mapper remains the bounded recovery import bridge. |
 
 ## Retirement Blockers
 
