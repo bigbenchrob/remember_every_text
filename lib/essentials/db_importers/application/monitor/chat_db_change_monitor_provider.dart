@@ -508,97 +508,11 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
           // errors for in-flight queries. Drift's reactive streams automatically
           // detect data changes via its internal watch mechanisms.
 
-          final importService = ref.read(
-            orchestratedLedgerImportServiceProvider,
+          await _runLegacyCompatibilityMaintenance(
+            pendingTrigger: pendingTrigger,
+            updateStartedAt: updateStartedAt,
+            newMessageCount: newMessageCount,
           );
-          DbImportResult? importResult;
-          Object? importError;
-          StackTrace? importStackTrace;
-          try {
-            importResult = await importService.runImport(
-              executionOwner: _chatDbMonitorExecutionOwner,
-              forceFullReimport:
-                  pendingTrigger == StartupProbeTrigger.ledgerCountLagging,
-            );
-          } catch (error, stackTrace) {
-            importError = error;
-            importStackTrace = stackTrace;
-          }
-
-          final successfulImportResult =
-              importResult != null && importResult.success
-              ? importResult
-              : null;
-          if (successfulImportResult != null) {
-            ref
-                .read(appLoggerProvider.notifier)
-                .info(
-                  _buildImportSummaryLog(
-                    timestamp: updateStartedAt,
-                    newMessageCount: newMessageCount,
-                    importResult: successfulImportResult,
-                  ),
-                  source: 'ChatDbMonitor',
-                );
-            ref
-                .read(appLoggerProvider.notifier)
-                .info(
-                  'Conversation graph build complete. Running legacy migration for compatibility maintenance',
-                  source: 'ChatDbMonitor',
-                );
-            try {
-              final migrationService = ref.read(
-                handlesMigrationServiceProvider,
-              );
-              final migrationResult = await migrationService.run(
-                incrementalMode: true,
-              );
-
-              if (migrationResult.success) {
-                ref
-                    .read(appLoggerProvider.notifier)
-                    .info(
-                      _buildMigrationSummaryLog(
-                        startedAt: updateStartedAt,
-                        completedAt: DateTime.now(),
-                        importResult: successfulImportResult,
-                        migrationResult: migrationResult,
-                      ),
-                      source: 'ChatDbMonitor',
-                    );
-              } else {
-                ref
-                    .read(appLoggerProvider.notifier)
-                    .warn(
-                      'Legacy compatibility migration failed after graph update: ${migrationResult.error}',
-                      source: 'ChatDbMonitor',
-                    );
-              }
-            } catch (error, stackTrace) {
-              ref
-                  .read(appLoggerProvider.notifier)
-                  .warn(
-                    'Legacy compatibility migration threw after graph update: $error',
-                    source: 'ChatDbMonitor',
-                    context: {'stackTrace': '$stackTrace'},
-                  );
-            }
-          } else if (importResult != null) {
-            ref
-                .read(appLoggerProvider.notifier)
-                .warn(
-                  'Legacy compatibility import failed after graph update: ${importResult.error}',
-                  source: 'ChatDbMonitor',
-                );
-          } else {
-            ref
-                .read(appLoggerProvider.notifier)
-                .warn(
-                  'Legacy compatibility import threw after graph update: $importError',
-                  source: 'ChatDbMonitor',
-                  context: {'stackTrace': '$importStackTrace'},
-                );
-          }
         } finally {
           executionGate.release(_chatDbMonitorExecutionOwner);
         }
@@ -619,6 +533,107 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
       if (_pendingProbe) {
         unawaited(_processPendingChanges());
       }
+    }
+  }
+
+  Future<void> _runLegacyCompatibilityMaintenance({
+    required StartupProbeTrigger pendingTrigger,
+    required DateTime updateStartedAt,
+    required int newMessageCount,
+  }) async {
+    final importService = ref.read(orchestratedLedgerImportServiceProvider);
+    DbImportResult? importResult;
+    Object? importError;
+    StackTrace? importStackTrace;
+    try {
+      importResult = await importService.runImport(
+        executionOwner: _chatDbMonitorExecutionOwner,
+        forceFullReimport:
+            pendingTrigger == StartupProbeTrigger.ledgerCountLagging,
+      );
+    } catch (error, stackTrace) {
+      importError = error;
+      importStackTrace = stackTrace;
+    }
+
+    final successfulImportResult = importResult != null && importResult.success
+        ? importResult
+        : null;
+    if (successfulImportResult != null) {
+      ref
+          .read(appLoggerProvider.notifier)
+          .info(
+            _buildImportSummaryLog(
+              timestamp: updateStartedAt,
+              newMessageCount: newMessageCount,
+              importResult: successfulImportResult,
+            ),
+            source: 'ChatDbMonitor',
+          );
+      ref
+          .read(appLoggerProvider.notifier)
+          .info(
+            'Conversation graph build complete. Running legacy migration for compatibility maintenance',
+            source: 'ChatDbMonitor',
+          );
+      await _runLegacyCompatibilityMigration(
+        updateStartedAt: updateStartedAt,
+        importResult: successfulImportResult,
+      );
+    } else if (importResult != null) {
+      ref
+          .read(appLoggerProvider.notifier)
+          .warn(
+            'Legacy compatibility import failed after graph update: ${importResult.error}',
+            source: 'ChatDbMonitor',
+          );
+    } else {
+      ref
+          .read(appLoggerProvider.notifier)
+          .warn(
+            'Legacy compatibility import threw after graph update: $importError',
+            source: 'ChatDbMonitor',
+            context: {'stackTrace': '$importStackTrace'},
+          );
+    }
+  }
+
+  Future<void> _runLegacyCompatibilityMigration({
+    required DateTime updateStartedAt,
+    required DbImportResult importResult,
+  }) async {
+    try {
+      final migrationService = ref.read(handlesMigrationServiceProvider);
+      final migrationResult = await migrationService.run(incrementalMode: true);
+
+      if (migrationResult.success) {
+        ref
+            .read(appLoggerProvider.notifier)
+            .info(
+              _buildMigrationSummaryLog(
+                startedAt: updateStartedAt,
+                completedAt: DateTime.now(),
+                importResult: importResult,
+                migrationResult: migrationResult,
+              ),
+              source: 'ChatDbMonitor',
+            );
+      } else {
+        ref
+            .read(appLoggerProvider.notifier)
+            .warn(
+              'Legacy compatibility migration failed after graph update: ${migrationResult.error}',
+              source: 'ChatDbMonitor',
+            );
+      }
+    } catch (error, stackTrace) {
+      ref
+          .read(appLoggerProvider.notifier)
+          .warn(
+            'Legacy compatibility migration threw after graph update: $error',
+            source: 'ChatDbMonitor',
+            context: {'stackTrace': '$stackTrace'},
+          );
     }
   }
 

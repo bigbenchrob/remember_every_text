@@ -325,6 +325,11 @@ than dev-panel-owned.
   graph evidence; legacy compatibility import/migration failures are logged as
   warnings and do not roll back graph freshness. A stale helper that implied a
   separate legacy-success decision API was retired.
+- Real-data polling proof completed on 2026-06-02: sending one live message
+  advanced the monitor cursor from source rowid `149213` to `149214`; the
+  `chat-db-monitor` owner ran the graph build; graph build status ended
+  `succeeded`; one graph message was imported and one graph message was
+  projected; `rowIdDelta` returned to `0`.
 - Live update attachment archiving now uses graph message source-row ranges
   from the source-scoped build report instead of legacy import batch ids.
   Existing overlay archive keys are preserved during transition.
