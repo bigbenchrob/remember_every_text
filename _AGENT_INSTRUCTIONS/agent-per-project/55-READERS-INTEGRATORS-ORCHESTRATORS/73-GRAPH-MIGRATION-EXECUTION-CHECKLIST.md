@@ -53,13 +53,13 @@ feature drift while completing the graph migration.
 
 | Slice | Status | Goal | Systems involved | Blockers closed | Required verification | Exit criteria |
 | --- | --- | --- | --- | --- | --- | --- |
-| 0. Checkpoint current graph branch | Review needed | Establish a known-good baseline before further migration. | current worktree; generated files; graph/evidence/contact/search tests; app smoke path | prevents uncertain rollback after broad graph changes | code generation if stale; analyzer; focused tests; smoke test core views | app compiles/analyzes; focused tests pass or failures are documented; current branch can be safely committed |
-| 1. Overlay identity key audit and bridge design | Review needed | Decide graph-era overlay keys before migrating search/contact identity. | `user_overlays.db`; saved/tags; participant overrides; favourites; manual links; archived attachments | prevents user-intent loss during identity migration | overlay schema audit; migration/bridge proposal; tests identified | every overlay identity form has target key, bridge plan, and duplicate-GUID rule where needed |
-| 2. Graph-native Search and Search Identity | Review needed | Make search select graph evidence directly. | `SearchService`; graph search repository; saved/tag overlays; `MessageEvidenceScope`; search result context | legacy `working.db` search-index rebuild and indexer providers retired | graph search tests for global/contact/conversation/handle/saved/tags; full-scope skeleton tests | ordinary search returns graph `message_ss_id` scopes and no longer requires legacy message IDs |
-| 3. Graph-native Contact and Handle Identity | Review needed | Move contact/profile/handle reads to graph facts plus overlay intent. | display identity resolver; contact picker; hero/profile; handle menus; manual links; favourites | graph read repositories no longer open legacy `working.db` for contact/handle identity bridges | identity precedence tests; contact picker tests; handle selector tests; manual link overlay tests | user override wins everywhere; contact/handle selectors are graph-native; overlay writes remain overlay-only |
-| 4. MessageEvidenceScope cleanup | Review needed | Remove remaining legacy-selector-fed evidence scopes after search/contact migration. | message evidence spine; global/contact/handle/conversation/search scopes | prevents legacy selection leaking into shared renderer | route/spec tests; full-scope skeleton tests | all ordinary message-bearing routes start from typed graph evidence scopes |
+| 0. Checkpoint current graph branch | Done | Establish a known-good baseline before further migration. | current worktree; generated files; graph/evidence/contact/search tests; app smoke path | prevents uncertain rollback after broad graph changes | code generation if stale; analyzer; focused tests; smoke test core views | app compiles/analyzes; focused tests pass or failures are documented; current branch can be safely committed |
+| 1. Overlay identity key audit and bridge design | Done | Decide graph-era overlay keys before migrating search/contact identity. | `user_overlays.db`; saved/tags; participant overrides; favourites; manual links; archived attachments | prevents user-intent loss during identity migration | overlay schema audit; migration/bridge proposal; tests identified | every overlay identity form has target key, bridge plan, and duplicate-GUID rule where needed |
+| 2. Graph-native Search and Search Identity | Done | Make search select graph evidence directly. | `SearchService`; graph search repository; saved/tag overlays; `MessageEvidenceScope`; search result context | legacy `working.db` search-index rebuild and indexer providers retired | graph search tests for global/contact/conversation/handle/saved/tags; full-scope skeleton tests | ordinary search returns graph `message_ss_id` scopes and no longer requires legacy message IDs |
+| 3. Graph-native Contact and Handle Identity | Done | Move contact/profile/handle reads to graph facts plus overlay intent. | display identity resolver; contact picker; hero/profile; handle menus; manual links; favourites | graph read repositories no longer open legacy `working.db` for contact/handle identity bridges | identity precedence tests; contact picker tests; handle selector tests; manual link overlay tests | user override wins everywhere; contact/handle selectors are graph-native; overlay writes remain overlay-only |
+| 4. MessageEvidenceScope cleanup | Done | Remove remaining legacy-selector-fed evidence scopes after search/contact migration. | message evidence spine; global/contact/handle/conversation/search scopes | prevents legacy selection leaking into shared renderer | route/spec tests; full-scope skeleton tests | all ordinary message-bearing routes start from typed graph evidence scopes |
 | 5. Graph lifecycle orchestration | In progress | Make graph build/readiness/update flow production-owned. | graph build service; graph readiness; onboarding; reset; `ChatDbChangeMonitor`; invalidation | removes manual/dev-panel dependency | graph build idempotence; incremental update test; readiness state tests; reset/onboarding tests | graph build is first-class lifecycle path and failures are visible/actionable |
-| 6. Remaining ordinary read migration | Review needed | Retire leftover ordinary `working.db` reads. | global heatmap; old chat summaries; stray/spam handle lists; diagnostics vs product routes | proof-era recent chat legacy-vs-graph comparison removed from SS status sheet | provider tests; route smoke tests; dependency `rg` checks | no ordinary user-facing read depends on `working.db` except documented compatibility bridges |
+| 6. Remaining ordinary read migration | Done | Retire leftover ordinary `working.db` reads. | global heatmap; old chat summaries; stray/spam handle lists; diagnostics vs product routes | proof-era recent chat legacy-vs-graph comparison removed from SS status sheet | provider tests; route smoke tests; dependency `rg` checks | no ordinary user-facing read depends on `working.db` except documented compatibility bridges |
 | 7. Archive/recovery identity plan | In progress | Design source-scoped archive/recovery identity without disrupting archive integrity. | attachment archive; deterministic recovery; cross-snapshot mapper; recovered messages | prevents premature recovery rewrite | mapping audit; archive compatibility tests identified | recovery/archive path has graph identity plan and existing archive records remain usable |
 | 8. Legacy retirement | Not started | Delete legacy data/read/presentation systems only after blockers are closed. | legacy import/migration/read models; retired widgets; diagnostics | removes attractive nuisance code safely | dependency checks; analyzer; focused tests; smoke test | legacy systems are deleted, demoted to diagnostics, or explicitly preserved as recovery/lifecycle references |
 
@@ -364,16 +364,12 @@ than dev-panel-owned.
 
 Done means:
 
-- contact picker/profile/hero read models are graph-backed.
-- handle selectors are graph-backed.
-- unfamiliar/stray handle review is graph-backed.
-- manual handle-to-contact linking is graph-backed on the read side and
-  overlay-only on the write side.
-- spam/blacklist handle management is graph-backed on the read side and
-  overlay-only on the write side.
-- display identity resolver owns user-facing names.
-- raw handle is primary only for unfamiliar sources or explicit handle controls.
-- manual links and favourites remain overlay-only user intent.
+- graph build has explicit lifecycle state.
+- onboarding can build or validate graph data.
+- reset/maintenance deliberately handles graph DBs.
+- live `chat.db` changes trigger graph import/projection.
+- graph evidence invalidates after successful projection.
+- dev panel is instrumentation, not the only graph build entry point.
 
 ## Slice 4 - MessageEvidenceScope Cleanup
 
@@ -559,8 +555,8 @@ archives.
 - Added `76-RECOVERED-MESSAGE-GRAPH-IDENTITY-PLAN.md` to separate the
   recovered-message migration from ordinary graph message migration.
 - Recovered message presentation is already on the shared Message Evidence
-  Spine, but the source repository remains a legacy compatibility island until
-  a recovered-message evidence repository boundary is introduced.
+  Spine. The later graph cutover in this slice replaced the temporary legacy
+  compatibility repository with graph-orphan evidence.
 - Introduced the first recovered-message evidence repository boundary:
   `RecoveredMessageEvidenceRepository`, backed for now by
   `RetainedLegacyRecoveredMessageEvidenceRepository`. Runtime behavior remains
@@ -589,12 +585,11 @@ archives.
   graph-projectable rows are excluded, recovered-only rows use source-scoped
   message ids, duplicate GUIDs do not collapse, sparse/attachment-only evidence
   remains visible, and contact-scoped no-handle inference remains intact.
-- Added `GraphRecoveredMessageEvidenceRepository` as an un-wired graph-backed
-  replacement candidate for the legacy recovered repository. It reads
+- Added `GraphRecoveredMessageEvidenceRepository` as a graph-backed
+  replacement for the legacy recovered repository. It reads
   source-scoped graph messages without `chat_to_message` topology, preserves
   `ss_id` message identity, hydrates graph attachment evidence, and keeps
-  contact-scoped direct/no-handle inference behavior. Production recovered
-  evidence still uses the legacy repository until real-data parity is reviewed.
+  contact-scoped direct/no-handle inference behavior.
 - Focused graph recovered repository tests pass for topology exclusion,
   duplicate GUID/overlapping ROWID preservation, contact-scoped inference, and
   sparse/attachment-only evidence.
