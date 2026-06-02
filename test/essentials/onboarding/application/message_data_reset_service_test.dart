@@ -16,4 +16,24 @@ void main() {
       );
     },
   );
+
+  test('import ledger reset includes only import ledger database files', () {
+    expect(
+      importLedgerDatabaseBaseNames,
+      <String>[
+        'macos_import.db',
+        'macos_import_ss.db',
+      ],
+    );
+  });
+
+  test('projection reset includes only projection database files', () {
+    expect(
+      projectionDatabaseBaseNames,
+      <String>[
+        'working.db',
+        'working_ss.db',
+      ],
+    );
+  });
 }
