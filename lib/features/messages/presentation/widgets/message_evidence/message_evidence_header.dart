@@ -22,7 +22,7 @@ class MessageEvidenceHeaderModel {
     this.searchConfig,
     this.actions,
     this.details,
-    this.legacySubtitleParts = const <String>[],
+    this.supplementalMetricParts = const <String>[],
   });
 
   final String title;
@@ -37,7 +37,7 @@ class MessageEvidenceHeaderModel {
   final MessageEvidenceHeaderSearchConfig? searchConfig;
   final Widget? actions;
   final Widget? details;
-  final List<String> legacySubtitleParts;
+  final List<String> supplementalMetricParts;
 }
 
 class MessageEvidenceHeaderSearchConfig {
@@ -84,7 +84,7 @@ class MessageEvidenceHeader extends ConsumerWidget {
     final hasIdentityContext =
         identityContextLine != null && identityContextLine.isNotEmpty;
     final metricParts =
-        [data.dateRangeLabel, data.countLabel, ...data.legacySubtitleParts]
+        [data.dateRangeLabel, data.countLabel, ...data.supplementalMetricParts]
             .whereType<String>()
             .where((part) => part.trim().isNotEmpty)
             .toList(growable: false);
