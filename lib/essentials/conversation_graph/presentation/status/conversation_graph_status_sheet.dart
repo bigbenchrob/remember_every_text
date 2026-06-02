@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../config/theme/colors/theme_colors_annotated.dart';
 import '../../../../config/theme/theme_typography.dart';
 import '../../../../features/chats/presentation/view_model/chats_view_model_provider.dart';
+import '../../../db_importers/application/monitor/chat_db_change_monitor_provider.dart';
 import '../../application/chat_summaries/chat_summary.dart';
 import '../../application/chat_summaries/chat_summary_provider.dart';
 import '../../application/conversation_graph_build_controller_provider.dart';
@@ -301,6 +302,8 @@ class _StatusContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
+    final buildState = ref.watch(conversationGraphBuildControllerProvider);
+    final monitorState = ref.watch(chatDbChangeMonitorProvider);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -308,6 +311,11 @@ class _StatusContent extends ConsumerWidget {
         _ProofScopeCard(status: status, colors: colors),
         const SizedBox(height: 12),
         _PipelineDashboard(status: status, colors: colors),
+        const SizedBox(height: 12),
+        _LifecycleStatusSection(
+          buildState: buildState,
+          monitorState: monitorState,
+        ),
         const SizedBox(height: 12),
         _StatusSection(
           title: 'Diagnostics',
@@ -329,6 +337,58 @@ class _StatusContent extends ConsumerWidget {
             ),
           ],
         ),
+      ],
+    );
+  }
+}
+
+class _LifecycleStatusSection extends StatelessWidget {
+  const _LifecycleStatusSection({
+    required this.buildState,
+    required this.monitorState,
+  });
+
+  final ConversationGraphBuildState buildState;
+  final ChatDbChangeMonitorState monitorState;
+
+  @override
+  Widget build(BuildContext context) {
+    final report = buildState.lastReport;
+    return _StatusSection(
+      title: 'Live update lifecycle',
+      rows: [
+        _StatusRow('graph build status', buildState.status.name),
+        _StatusRow('build owner', buildState.owner ?? 'none'),
+        _StatusRow(
+          'last build finished',
+          _formatStatusDateTime(buildState.finishedAt),
+        ),
+        if (report != null) ...[
+          _StatusRow(
+            'last imported graph messages',
+            '${report.messageImportResult.insertedMessageCount}',
+          ),
+          _StatusRow(
+            'last projected graph messages',
+            '${report.messageProjectionResult.insertedMessageCount}',
+          ),
+          _StatusRow(
+            'last imported source rowid',
+            '${report.messageImportResult.lastImportedSourceRowId ?? 'none'}',
+          ),
+        ],
+        if (buildState.lastError != null)
+          _StatusRow('graph build error', buildState.lastError!),
+        _StatusRow(
+          'monitor cursor rowid',
+          '${monitorState.lastMaxRowId ?? 'unknown'}',
+        ),
+        _StatusRow(
+          'last change detected',
+          _formatStatusDateTime(monitorState.lastChangeDetected),
+        ),
+        if (monitorState.lastError != null)
+          _StatusRow('monitor error', monitorState.lastError!),
       ],
     );
   }
@@ -2146,4 +2206,17 @@ class _StatusError extends StatelessWidget {
       child: Text('Unable to load source-scoped status: $error'),
     );
   }
+}
+
+String _formatStatusDateTime(DateTime? value) {
+  if (value == null) {
+    return 'none';
+  }
+  final local = value.toLocal();
+  return '${local.year.toString().padLeft(4, '0')}-'
+      '${local.month.toString().padLeft(2, '0')}-'
+      '${local.day.toString().padLeft(2, '0')} '
+      '${local.hour.toString().padLeft(2, '0')}:'
+      '${local.minute.toString().padLeft(2, '0')}:'
+      '${local.second.toString().padLeft(2, '0')}';
 }
