@@ -713,6 +713,10 @@ archives.
   incremental migration mode. That retained compatibility question now lives
   behind `LegacyProjectionStatusRepository`, an explicit db_migrate
   infrastructure boundary.
+- The source-scoped conversation graph status provider no longer owns its
+  diagnostic SQL. It now delegates source/import/working count collection to
+  `ConversationGraphStatusRepository`, keeping the application provider as a
+  thin coordinator and the status panel as presentation only.
 
 ### Exit Criteria
 
