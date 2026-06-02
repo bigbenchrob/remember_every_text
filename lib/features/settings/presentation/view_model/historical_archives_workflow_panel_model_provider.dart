@@ -11,6 +11,7 @@ import '../../../../essentials/db/infrastructure/data_sources/local/conversation
 import '../../../../essentials/db/infrastructure/data_sources/local/import/sqflite_import_database.dart';
 import '../../../../essentials/db_importers/application/import_execution_gate_provider.dart';
 import '../../../../essentials/db_importers/presentation/view_model/db_import_control_provider.dart';
+import '../../../../essentials/onboarding/application/message_data_reset_service.dart';
 
 part 'historical_archives_workflow_panel_model_provider.g.dart';
 
@@ -508,7 +509,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         await importDb.deleteBatchLedgerData(batchId: batchId);
       }
 
-      await _deleteWorkingDatabaseFiles(ref);
+      await ref.read(messageDataResetServiceProvider).clearProjectionDatabases();
       await ref
           .read(dbImportControlViewModelProvider.notifier)
           .startMigration(skipImportCheck: true);
@@ -1687,25 +1688,6 @@ String? _firstLineWithPrefix(List<String> lines, String prefix) {
   }
 
   return null;
-}
-
-Future<void> _deleteWorkingDatabaseFiles(Ref ref) async {
-  try {
-    final workingDb = await ref.read(driftWorkingDatabaseProvider.future);
-    await workingDb.close();
-  } catch (_) {}
-
-  ref.invalidate(driftWorkingDatabaseProvider);
-
-  final basePath = path.join(databaseDirectoryPath, 'working.db');
-  for (final filePath in <String>[basePath, '$basePath-wal', '$basePath-shm']) {
-    final file = File(filePath);
-    if (file.existsSync()) {
-      await file.delete();
-    }
-  }
-
-  ref.invalidate(driftWorkingDatabaseProvider);
 }
 
 bool _isCurrentMacChatDbPath(String sourceChatDbPath) {

@@ -701,6 +701,11 @@ archives.
   `MessageDataResetService.clearProjectionDatabases()`. Legacy `working.db`
   and graph `working_ss.db` projection deletion share the same lifecycle owner;
   import control keeps only its local status/error presentation.
+- Historical archive removal now delegates projection cleanup to
+  `MessageDataResetService.clearProjectionDatabases()` before triggering the
+  canonical rebuild. Archive workflow code removes archive ledger rows and
+  reports UI state, while projection database deletion/invalidation remains
+  centralized in the lifecycle reset service.
 - `OnboardingGate` no longer owns a duplicate full derived-database deletion
   implementation. Abort and fresh-start cleanup now route through the same
   import-control reset boundary, while settings reimport keeps its import-only
