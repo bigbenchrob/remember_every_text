@@ -163,8 +163,8 @@ legacy DB retirement.
 | Consumer | Current state | Classification | Action |
 | --- | --- | --- | --- |
 | `lib/features/messages/application/view_spec/widget_builders/messages_for_handle_builder.dart` | Routes handle messages into graph evidence view | Ordinary user-facing read, graph-backed | Keep. Ensure input identity becomes graph-native rather than legacy bridged. |
-| `lib/features/messages/application/view_spec/widget_builders/global_timeline_builder.dart` | Routes global messages to graph evidence view | Ordinary user-facing read, graph-backed | Keep. Verify global scope no longer depends on legacy heatmap/index after migration. |
-| `lib/features/messages/application/view_spec/widget_builders/messages_for_contact_builder.dart` | Routes contact messages to graph evidence view | Ordinary user-facing read, graph-backed | Keep. Remove legacy fallback after graph contact scope is stable. |
+| `lib/features/messages/application/view_spec/widget_builders/global_timeline_builder.dart` | Routes global messages to graph evidence view | Ordinary user-facing read, graph-backed | Keep. Global scope uses graph timeline/evidence data; legacy heatmap/index fallback is retired. |
+| `lib/features/messages/application/view_spec/widget_builders/messages_for_contact_builder.dart` | Routes contact messages to graph evidence view | Ordinary user-facing read, graph-backed | Keep. Contact scope uses graph timeline/evidence data; legacy fallback is retired. |
 | `lib/features/messages/application/view_spec/widget_builders/recovered_unlinked_messages_builder.dart` | Routes graph-orphan recovered messages to evidence view | Recovery/archive, graph-backed | Keep. Recovered source folders still need a future source-scoped import strategy, but production recovered evidence no longer reads legacy recovered tables. |
 
 ## Deletion Candidates
