@@ -310,7 +310,7 @@ HistoricalArchivesWorkflowState buildInitialHistoricalArchivesWorkflowState() {
     ],
     activityLog: [
       HistoricalArchivesLogEntryViewModel(
-        label: 'Workflow shell ready',
+        label: 'Archive workflow ready',
         message:
             'Historical Archives is visible, but no folder has been selected yet.',
       ),
@@ -334,7 +334,7 @@ HistoricalArchivesWorkflowState buildInitialHistoricalArchivesWorkflowState() {
       HistoricalArchivesWorkflowPhaseViewModel(
         label: 'Writing archive rows to db-import',
         status: HistoricalArchivesWorkflowPhaseStatus.waiting,
-        detail: 'Ledger ingestion is not wired in this shell phase.',
+        detail: 'Ledger ingestion starts after you run archive import.',
       ),
       HistoricalArchivesWorkflowPhaseViewModel(
         label: 'Running full canonical migration',
@@ -509,7 +509,9 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         await importDb.deleteBatchLedgerData(batchId: batchId);
       }
 
-      await ref.read(messageDataResetServiceProvider).clearProjectionDatabases();
+      await ref
+          .read(messageDataResetServiceProvider)
+          .clearProjectionDatabases();
       await ref
           .read(dbImportControlViewModelProvider.notifier)
           .startMigration(skipImportCheck: true);
@@ -896,7 +898,7 @@ buildHistoricalArchivesWorkflowPanelModel({
       workflowState,
     ),
     HistoricalArchivesExecutionGateStatus.busy =>
-      'The canonical import pipeline is currently busy. Historical Archives stays visible so you can inspect the workflow shell, but import cannot begin until the current pipeline owner releases the execution gate.',
+      'The canonical import pipeline is currently busy. Historical Archives stays visible so you can inspect the workflow, but import cannot begin until the current pipeline owner releases the execution gate.',
     HistoricalArchivesExecutionGateStatus.blocked =>
       'Message data maintenance is currently blocking new archive work. Historical Archives remains visible, but import cannot begin until maintenance completes and the execution gate becomes available again.',
   };
@@ -1027,9 +1029,9 @@ String _availableSummaryText(HistoricalArchivesWorkflowState workflowState) {
     HistoricalArchivesPreflightStatus.waitingForFolder =>
       'Historical archive import is a durable, step-by-step workflow. Choose an older Messages folder, review preflight evidence, then run canonical ledger import and full migration before messages become visible in normal app surfaces.',
     HistoricalArchivesPreflightStatus.running =>
-      'Historical Archives is reading the selected source folder now. The shell remains visible while source checks gather basic message, chat, handle, and GUID evidence.',
+      'Historical Archives is reading the selected source folder now. The workflow remains visible while source checks gather basic message, chat, handle, and GUID evidence.',
     HistoricalArchivesPreflightStatus.completeReadyToImport =>
-      'Historical Archives has completed source preflight for the selected folder. The shell now shows real source metadata and message counts, while canonical archive import wiring remains a separate step.',
+      'Historical Archives has completed source preflight for the selected folder. Review the source metadata and message counts, then run archive import when the evidence looks correct.',
     HistoricalArchivesPreflightStatus.failed =>
       'Historical Archives could not validate the selected folder as a usable Messages source. Review the failure details, then choose a different folder or fix the source contents before trying again.',
   };
@@ -1240,8 +1242,8 @@ preflightHistoricalArchivesFolder({
           status: HistoricalArchivesPreflightStatus.completeReadyToImport,
           statusLabel: 'Preflight complete',
           detail: dryRunEstimate.isAvailable
-              ? 'Source checks succeeded and GUID-based dry-run estimates are now visible. Canonical import wiring is still pending.'
-              : 'Source checks succeeded, but conversation graph dry-run comparison is unavailable right now. Canonical import wiring is still pending.',
+              ? 'Source checks succeeded and GUID-based dry-run estimates are now visible. Archive import can run when the evidence looks correct.'
+              : 'Source checks succeeded, but conversation graph dry-run comparison is unavailable right now. Archive import can still run if the source evidence looks correct.',
         ),
         selectedFolderPath: folderPath,
         archiveRemovalTargetChatDbPath: chatDbPath,
@@ -1305,7 +1307,7 @@ preflightHistoricalArchivesFolder({
           const HistoricalArchivesLogEntryViewModel(
             label: 'Preflight complete',
             message:
-                'The selected archive folder passed source checks and is ready for the next implementation slice.',
+                'The selected archive folder passed source checks and is ready for archive import.',
           ),
         ],
         phases: const [
@@ -1318,13 +1320,12 @@ preflightHistoricalArchivesFolder({
           HistoricalArchivesWorkflowPhaseViewModel(
             label: 'Normalizing records into canonical ledger format',
             status: HistoricalArchivesWorkflowPhaseStatus.waiting,
-            detail:
-                'Normalization begins when canonical archive import wiring lands.',
+            detail: 'Normalization begins when you run archive import.',
           ),
           HistoricalArchivesWorkflowPhaseViewModel(
             label: 'Writing archive rows to db-import',
             status: HistoricalArchivesWorkflowPhaseStatus.waiting,
-            detail: 'Ledger ingestion is not wired in this slice.',
+            detail: 'Ledger ingestion begins when you run archive import.',
           ),
           HistoricalArchivesWorkflowPhaseViewModel(
             label: 'Running full canonical migration',
