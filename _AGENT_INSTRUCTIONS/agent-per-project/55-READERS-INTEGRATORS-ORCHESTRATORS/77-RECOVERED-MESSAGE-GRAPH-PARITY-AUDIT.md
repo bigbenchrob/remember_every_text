@@ -280,8 +280,8 @@ pure `compareRecoveredMessageEvidence` comparator classified:
 - attachment-count mismatches
 - GUID/text mismatches
 
-It was intentionally repository-agnostic. The application-level
-`recoveredMessageParityDiagnosticProvider` composed:
+It was intentionally repository-agnostic. During the cutover review, the
+application-level `recoveredMessageParityDiagnosticProvider` composed:
 
 - legacy recovered evidence repository
 - graph recovered candidate repository
