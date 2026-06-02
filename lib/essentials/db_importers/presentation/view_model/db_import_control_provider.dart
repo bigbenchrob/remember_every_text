@@ -606,23 +606,9 @@ class DbImportControlViewModel extends _$DbImportControlViewModel {
         clearMigrationResult: true,
       );
 
-      // CRITICAL: Close ALL database connections BEFORE migration
-      // to avoid "database is locked" errors during ATTACH
-      try {
-        final workingDb = await ref.read(driftWorkingDatabaseProvider.future);
-        await workingDb.close();
-      } catch (_) {
-        // Database might not exist yet or already closed - that's fine
-      }
-      ref.invalidate(driftWorkingDatabaseProvider);
-
-      try {
-        final importDb = await ref.read(sqfliteImportDatabaseProvider.future);
-        await importDb.close();
-      } catch (_) {
-        // Import ledgers might not exist yet or already be closed.
-      }
-      ref.invalidate(sqfliteImportDatabaseProvider);
+      await ref
+          .read(messageDataResetServiceProvider)
+          .closeLegacyDatabasesForMigration();
 
       try {
         final result = await ref

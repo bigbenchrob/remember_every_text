@@ -42,6 +42,8 @@ abstract interface class MessageDataResetService {
 
   Future<void> clearProjectionDatabases();
 
+  Future<void> closeLegacyDatabasesForMigration();
+
   Future<void> confirmResetAndPrepareReimport();
 }
 
@@ -222,6 +224,14 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
     } finally {
       _ref.read(dbMaintenanceLockProvider.notifier).end();
     }
+  }
+
+  @override
+  Future<void> closeLegacyDatabasesForMigration() async {
+    await _closeWorkingDatabase();
+    await _closeImportDatabase();
+    _ref.invalidate(driftWorkingDatabaseProvider);
+    _ref.invalidate(sqfliteImportDatabaseProvider);
   }
 
   @override

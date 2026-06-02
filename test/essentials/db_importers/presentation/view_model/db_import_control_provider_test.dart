@@ -187,5 +187,8 @@ final class _FakeMessageDataResetService implements MessageDataResetService {
   }
 
   @override
+  Future<void> closeLegacyDatabasesForMigration() async {}
+
+  @override
   Future<void> confirmResetAndPrepareReimport() async {}
 }

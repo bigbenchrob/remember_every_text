@@ -722,6 +722,11 @@ archives.
   legacy import-ledger comparison inline before migration. That pre-migration
   freshness check now lives behind `LiveImportStatusService`, keeping the
   presentation view model on a named application boundary.
+- Import control no longer directly closes and invalidates legacy import /
+  projection database providers before migration. That close-only lifecycle
+  step now delegates to
+  `MessageDataResetService.closeLegacyDatabasesForMigration()`, keeping
+  connection lifecycle centralized without deleting database files.
 - The source-scoped conversation graph status provider no longer owns its
   diagnostic SQL. It now delegates source/import/working count collection to
   `ConversationGraphStatusRepository`, keeping the application provider as a
