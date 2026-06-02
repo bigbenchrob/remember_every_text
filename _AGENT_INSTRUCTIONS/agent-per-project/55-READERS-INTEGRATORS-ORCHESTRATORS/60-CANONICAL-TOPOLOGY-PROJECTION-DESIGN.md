@@ -159,20 +159,17 @@ The relationship row itself should also remain traceable to the source relations
 
 ---
 
-## Placeholder Chat Implication
+## Placeholder Chat Compatibility Is Retired For Graph Projection
 
-The current shadow message migration path still uses a placeholder working chat:
+Older shadow migration work used a placeholder working chat as a structural
+shim. That pattern must not be recreated in source-scoped graph projection.
 
-```text
-id = -1
-guid = __shadow_incremental_update_placeholder_chat__
-```
+Source-derived chat and message endpoints project directly to
+`SourceScopedRowKey` ids. Relationship topology is preserved by transforming
+each source endpoint into its source-scoped canonical working identity.
 
-That placeholder is a structural shim only.
-
-It must not satisfy source topology endpoint projection.
-
-It can be removed or bypassed only after source-derived chat and message endpoints exist with `SourceScopedRowKey` ids.
+Any retained placeholder-chat code in legacy compatibility systems is not a
+valid topology endpoint strategy for the graph.
 
 ---
 
