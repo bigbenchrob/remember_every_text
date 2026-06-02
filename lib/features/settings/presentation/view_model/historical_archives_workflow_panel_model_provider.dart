@@ -11,6 +11,7 @@ import '../../../../essentials/db/infrastructure/data_sources/local/conversation
 import '../../../../essentials/db/infrastructure/data_sources/local/import/sqflite_import_database.dart';
 import '../../../../essentials/db_importers/application/import_execution_gate_provider.dart';
 import '../../../../essentials/db_importers/presentation/view_model/db_import_control_provider.dart';
+import '../../../../essentials/onboarding/application/fda_checker.dart';
 import '../../../../essentials/onboarding/application/message_data_reset_service.dart';
 
 part 'historical_archives_workflow_panel_model_provider.g.dart';
@@ -1692,15 +1693,8 @@ String? _firstLineWithPrefix(List<String> lines, String prefix) {
 }
 
 bool _isCurrentMacChatDbPath(String sourceChatDbPath) {
-  final homeDir = Platform.environment['HOME'];
-  if (homeDir == null) {
-    return false;
-  }
-
-  final currentMacChatDbPath = path.normalize(
-    path.join(homeDir, 'Library', 'Messages', 'chat.db'),
-  );
-  return path.normalize(sourceChatDbPath) == currentMacChatDbPath;
+  return path.normalize(sourceChatDbPath) ==
+      path.normalize(FdaChecker.chatDbPath);
 }
 
 List<HistoricalArchivesWorkflowPhaseViewModel> _runningPreflightPhases() {
