@@ -113,10 +113,10 @@ class ManualLinkingView extends HookConsumerWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const MacosIcon(
+                      MacosIcon(
                         CupertinoIcons.exclamationmark_triangle,
                         size: 48,
-                        color: Color(0xFFD14343),
+                        color: colors.buttons.destructiveForeground,
                       ),
                       const SizedBox(height: 16),
                       Text(
