@@ -378,61 +378,55 @@ semantic reference, but not by recreating legacy schema shape blindly.
 
 ## Onboarding and Auto-Sync
 
-Current app lifecycle still contains legacy-oriented systems:
+Current app lifecycle still retains legacy-oriented systems:
 
 - onboarding gate
 - import control panel
 - reset service
 - `ChatDbChangeMonitor`
 - legacy incremental update state
-- working projection readiness
+- legacy import/migration compatibility maintenance
 
 The graph build service exists, but the graph is not yet the sole production
 import/projection pipeline.
 
 ## Search
 
-The shared message evidence presentation is graph-oriented, but legacy search
-services still query `working.db` in places.
+The shared message evidence presentation is graph-oriented, and ordinary search
+now selects graph `message_ss_id` evidence scopes.
 
 This means:
 
-- evidence rendering may be unified
-- search result identity/selection may still depend on legacy working IDs
-- compatibility bridges still exist
+- evidence rendering is unified through the Message Evidence Spine
+- ordinary search identity no longer depends on legacy working IDs
+- saved/tag GUID compatibility bridges remain explicit transitional inputs
 
-Search must eventually resolve graph `ss_id` message scopes directly.
+Future search work should add graph scopes rather than reopening legacy
+`working.db` search indices.
 
 ## Contacts and Handles
 
-Display identity resolution has begun moving toward a graph-backed semantic
-resolver.
+Display identity resolution and ordinary contact/handle reads now flow through
+graph facts plus overlay intent. Contact lists, contact profiles, handle lists,
+stray handle workflows, manual linking reads, and spam management reads are
+graph-backed for ordinary UI.
 
-However, some contact/handle providers still use legacy `working.db`, including
-contact lists, contact profiles, handle lists, stray handle workflows, manual
-linking, and spam management.
-
-These areas should migrate deliberately because they encode important user
-intent and contact-integrity behavior.
+Future contact/handle work should preserve the invariant that user override
+names win everywhere and overlay writes remain overlay-only.
 
 ## Chats Feature
 
-Some old chat/recent-chat providers still use legacy `working.db`.
-
-This is less product-critical now that Conversations is frontmost, but it
-should not remain as an accidental parallel conversation model.
-
-Legacy chat/read models should either:
-
-- become graph-backed conversation summaries, or
-- be retired as old diagnostics/reference paths.
+Conversation sidebar/signature and recent-chat product reads are graph-backed.
+Any remaining legacy chat/read-model code is diagnostic/reference or retained
+legacy schema, not an ordinary product conversation model.
 
 ## Attachments and Recovery
 
 Graph attachments are functioning in message evidence.
 
-However, attachment archive and deterministic recovery workflows still depend
-on legacy import/working databases in places.
+However, attachment archive overlay rows still use legacy-compatible archive
+keys, and historical recovery still needs carefully bounded graph-to-overlay
+compatibility mapping.
 
 This is acceptable temporarily because the attachment archive is a high-value
 data-integrity system and should not be rewritten casually.
@@ -942,10 +936,9 @@ are production-ready.
 ## Do Not Retire Yet If
 
 - onboarding still builds only `working.db`
-- live change monitor updates only legacy import/projection
-- search still needs legacy `working.db`
-- contacts/handles still depend on legacy read models
-- archive/recovery workflows still depend on legacy data
+- live change monitor does not reliably build/invalidate the graph
+- search/contact/handle surfaces have regressed to legacy selectors
+- archive/recovery workflows lack bounded compatibility mapping
 - graph health lacks validation coverage
 - reset/maintenance does not understand graph DBs
 
@@ -1173,4 +1166,3 @@ intended product:
 ```text
 a traversable communication graph and evidence exploration system
 ```
-
