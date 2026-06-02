@@ -610,14 +610,16 @@ archives.
   parity comparator now distinguishes known suppressed legacy-only rows from
   unresolved legacy-only rows so diagnostics do not overstate dismissal effects
   as retention blockers.
-- Added `recoveredMessageParityDiagnosticProvider` as a diagnostic-only
+- Added the now-retired `recoveredMessageParityDiagnosticProvider` as a
+  diagnostic-only
   application boundary around the legacy recovered repository, graph recovered
   candidate repository, `GraphRecoveredMessageProjectabilityRepository`,
   dismissed-handle overlay state, and pure parity comparator. This was used as
   the cutover gate before production recovered evidence moved to the graph
   repository.
-- Surfaced the recovered-message parity diagnostic in the source-scoped Graph
-  health tab. The UI reports graph parity status, recovered row counts,
+- Temporarily surfaced the recovered-message parity diagnostic in the
+  source-scoped Graph health tab. The UI reported graph parity status, recovered
+  row counts,
   now-projectable rows, suppressed/unresolved legacy-only rows, graph-only rows,
   attachment/text/GUID mismatch counts, and the current production
   recovered-message routing.
