@@ -1753,7 +1753,8 @@ List<HistoricalArchivesWorkflowPhaseViewModel> _runningArchiveRemovalPhases() {
     HistoricalArchivesWorkflowPhaseViewModel(
       label: 'Running full canonical migration',
       status: HistoricalArchivesWorkflowPhaseStatus.running,
-      detail: 'Rebuilding working.db from the remaining canonical ledger rows.',
+      detail:
+          'Rebuilding app-visible projection data from the remaining canonical ledger rows.',
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
       label: 'Refreshing app-visible data',
