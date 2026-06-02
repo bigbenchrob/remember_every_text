@@ -2,7 +2,7 @@
 tier: project
 scope: source-scoped-graph-migration
 status: active
-last_reviewed: 2026-06-01
+last_reviewed: 2026-06-02
 depends_on:
   - 66-SS-MIGRATION-STRATEGY.md
   - 67-SS-LEGACY-PARITY-AUDIT.md
@@ -49,12 +49,16 @@ Compatibility bridges are recorded inside the closest category. For example,
 a graph repository that reads legacy handle aliases to support a graph-facing
 view is an ordinary user-facing read dependency with bridge semantics.
 
-## Current Findings - 2026-05-31
+## Current Findings - 2026-06-02
 
 1. **No remaining ordinary app-facing `working.db` read was found.**
    Search, contact identity, handle identity, conversation summaries, global
    timelines, contact timelines, and ordinary message evidence now route
    through the graph/evidence spine or graph-backed read models.
+
+   A fresh scan on 2026-06-02 found the remaining tracked legacy references
+   concentrated in retained lifecycle, archive/recovery, diagnostics/settings,
+   legacy database definitions, and tests for retained systems.
 
 2. **The remaining legacy DB references are concentrated in four categories.**
    They are production lifecycle, archive/recovery, diagnostics/settings, and
@@ -84,6 +88,11 @@ view is an ordinary user-facing read dependency with bridge semantics.
    `lib/essentials/incremental_update/**` and its tests were removed after a
    reachability scan showed no production imports. Its documentation now
    remains only as architecture lineage.
+
+7. **A stale contacts essentials template stub was retired.**
+   `lib/essentials/contacts/feature_level_providers.dart` contained only
+   commented example/Supabase template code and had no imports. Active contacts
+   providers live under `lib/features/contacts/feature_level_providers.dart`.
 
 ## Ordinary User-Facing Reads
 
