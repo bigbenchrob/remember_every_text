@@ -26,6 +26,8 @@ Future<ContactGraphSnapshot> contactGraphSnapshot(
   Ref ref, {
   required int contactId,
 }) async {
+  ref.watch(messageDataVersionProvider);
+
   final reader = await ref.watch(contactGraphReaderProvider.future);
   return reader.readContactGraph(contactId: contactId);
 }
@@ -35,6 +37,8 @@ Future<ContactGraphSnapshot> contactPageGraphSnapshot(
   Ref ref, {
   required int contactId,
 }) async {
+  ref.watch(messageDataVersionProvider);
+
   final reader = await ref.watch(contactGraphReaderProvider.future);
   final graphContactId = graphContactIdForContactPage(contactId);
   return reader.readContactPageGraph(
@@ -50,6 +54,8 @@ Future<List<ConversationMessage>> contactPageGraphMessages(
   int limit = 500,
   DateTime? monthAnchor,
 }) async {
+  ref.watch(messageDataVersionProvider);
+
   final reader = await ref.watch(contactGraphReaderProvider.future);
   final graphContactId = graphContactIdForContactPage(contactId);
   return reader.readContactPageMessages(
@@ -65,6 +71,8 @@ Future<List<ContactGraphMessageTimelineEntry>> contactPageGraphMessageTimeline(
   Ref ref, {
   required int contactId,
 }) async {
+  ref.watch(messageDataVersionProvider);
+
   final reader = await ref.watch(contactGraphReaderProvider.future);
   final graphContactId = graphContactIdForContactPage(contactId);
   return reader.readContactPageMessageTimeline(
@@ -79,6 +87,8 @@ Future<ConversationMessage?> contactPageGraphMessageById(
   required int contactId,
   required int messageId,
 }) async {
+  ref.watch(messageDataVersionProvider);
+
   final reader = await ref.watch(contactGraphReaderProvider.future);
   final graphContactId = graphContactIdForContactPage(contactId);
   return reader.readContactPageMessageById(
@@ -95,6 +105,8 @@ contactPageGraphHandleMessageTimeline(
   required int contactId,
   required int handleId,
 }) async {
+  ref.watch(messageDataVersionProvider);
+
   final reader = await ref.watch(contactGraphReaderProvider.future);
   final graphContactId = graphContactIdForContactPage(contactId);
   return reader.readContactPageHandleMessageTimeline(
@@ -111,6 +123,8 @@ Future<ConversationMessage?> contactPageGraphHandleMessageById(
   required int handleId,
   required int messageId,
 }) async {
+  ref.watch(messageDataVersionProvider);
+
   final reader = await ref.watch(contactGraphReaderProvider.future);
   final graphContactId = graphContactIdForContactPage(contactId);
   return reader.readContactPageHandleMessageById(
@@ -129,6 +143,8 @@ Future<List<int>> contactPageGraphMessageIdsMatchingText(
   bool matchAnyTerm = false,
   int? handleId,
 }) async {
+  ref.watch(messageDataVersionProvider);
+
   final reader = await ref.watch(contactGraphReaderProvider.future);
   final graphContactId = graphContactIdForContactPage(contactId);
   return reader.readContactPageMessageIdsMatchingText(

@@ -11,6 +11,8 @@ part 'chat_summary_provider.g.dart';
 
 @riverpod
 Future<List<ChatSummary>> chatSummaries(Ref ref) async {
+  ref.watch(messageDataVersionProvider);
+
   final workingDatabase = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
@@ -21,6 +23,8 @@ Future<List<ChatSummary>> chatSummaries(Ref ref) async {
 
 @riverpod
 Future<ChatSummarySanityCounts> chatSummarySanityCounts(Ref ref) async {
+  ref.watch(messageDataVersionProvider);
+
   final workingDatabase = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
@@ -34,6 +38,8 @@ Future<List<RecentChatMessage>> recentChatMessages(
   Ref ref,
   int chatSsId,
 ) async {
+  ref.watch(messageDataVersionProvider);
+
   final workingDatabase = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
@@ -47,6 +53,8 @@ Future<List<RecentChatMessage>> recentTextChatMessages(
   Ref ref,
   int chatSsId,
 ) async {
+  ref.watch(messageDataVersionProvider);
+
   final workingDatabase = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
@@ -57,6 +65,8 @@ Future<List<RecentChatMessage>> recentTextChatMessages(
 
 @riverpod
 Future<ChatMessageTextStats> chatMessageTextStats(Ref ref, int chatSsId) async {
+  ref.watch(messageDataVersionProvider);
+
   final workingDatabase = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
@@ -67,6 +77,8 @@ Future<ChatMessageTextStats> chatMessageTextStats(Ref ref, int chatSsId) async {
 
 @riverpod
 Future<ChatAttachmentStats> chatAttachmentStats(Ref ref, int chatSsId) async {
+  ref.watch(messageDataVersionProvider);
+
   final workingDatabase = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
@@ -89,6 +101,8 @@ Future<List<MessageAttachment>> messageAttachments(
   Ref ref,
   int messageSsId,
 ) async {
+  ref.watch(messageDataVersionProvider);
+
   final workingDatabase = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );

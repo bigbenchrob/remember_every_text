@@ -23,6 +23,8 @@ Future<List<ConversationOverview>> conversationOverviews(
   Ref ref, {
   int limit = 100,
 }) async {
+  ref.watch(messageDataVersionProvider);
+
   final reader = await ref.watch(conversationReaderProvider.future);
   return reader.readOverviews(limit: limit);
 }
@@ -33,6 +35,8 @@ Future<List<ConversationMessage>> conversationMessages(
   required int conversationId,
   int limit = 100,
 }) async {
+  ref.watch(messageDataVersionProvider);
+
   final reader = await ref.watch(conversationReaderProvider.future);
   return reader.readMessages(conversationId: conversationId, limit: limit);
 }
@@ -43,6 +47,8 @@ Future<Set<int>> conversationIdsMatchingMessageText(
   required String query,
   int limit = 500,
 }) async {
+  ref.watch(messageDataVersionProvider);
+
   final reader = await ref.watch(conversationReaderProvider.future);
   return reader.readConversationIdsMatchingMessageText(
     query: query,
@@ -57,6 +63,8 @@ Future<Map<int, ConversationMessageTextMatch>> conversationMessageTextMatches(
   int limit = 500,
   int snippetsPerConversation = 3,
 }) async {
+  ref.watch(messageDataVersionProvider);
+
   final reader = await ref.watch(conversationReaderProvider.future);
   return reader.readConversationMessageTextMatches(
     query: query,

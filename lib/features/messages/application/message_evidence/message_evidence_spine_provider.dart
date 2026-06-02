@@ -6,6 +6,7 @@ import '../../../../essentials/conversation_graph/application/contacts/contact_g
 import '../../../../essentials/conversation_graph/application/conversations/conversation.dart';
 import '../../../../essentials/conversation_graph/application/conversations/conversation_reader_provider.dart';
 import '../../../../essentials/conversation_graph/application/messages/message_graph_reader_provider.dart';
+import '../../../../essentials/db/feature_level_providers.dart';
 import '../../../../essentials/search/application/search_service.dart';
 import '../../../../essentials/search/feature_level_providers.dart';
 import '../../../../essentials/search/infrastructure/repositories/graph_search_repository.dart';
@@ -27,6 +28,8 @@ Future<MessageEvidenceTimelineSkeleton> messageEvidenceTimelineSkeleton(
   Ref ref, {
   required MessageEvidenceScope scope,
 }) async {
+  ref.watch(messageDataVersionProvider);
+
   return switch (scope) {
     ContactAllMessagesEvidenceScope(:final contactId) =>
       _contactAllMessagesTimelineSkeleton(ref, contactId: contactId),
@@ -85,6 +88,8 @@ Future<MessageEvidenceRowData?> messageEvidenceRow(
   required MessageEvidenceScope scope,
   required int messageId,
 }) async {
+  ref.watch(messageDataVersionProvider);
+
   final message = await switch (scope) {
     ContactAllMessagesEvidenceScope(:final contactId) => ref.watch(
       contactPageGraphMessageByIdProvider(
@@ -219,6 +224,8 @@ Future<List<MessageAttachmentEvidence>> messageEvidenceAttachments(
   required MessageEvidenceScope scope,
   required int messageId,
 }) async {
+  ref.watch(messageDataVersionProvider);
+
   return switch (scope) {
     RecoveredMessagesEvidenceScope(
       :final contactId,
@@ -251,6 +258,8 @@ Future<List<int>> messageEvidenceTextMatchIds(
   required String query,
   MessageEvidenceSearchMode mode = MessageEvidenceSearchMode.allTerms,
 }) async {
+  ref.watch(messageDataVersionProvider);
+
   final normalizedQuery = query.trim();
   if (normalizedQuery.isEmpty) {
     return const <int>[];

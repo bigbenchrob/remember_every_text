@@ -9,6 +9,7 @@ import 'package:remember_this_text/essentials/conversation_graph/application/con
 import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_graph_reader.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_graph_reader_provider.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_graph_repository.dart';
+import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/search/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/search/infrastructure/repositories/graph_search_repository.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
@@ -80,6 +81,52 @@ void main() {
       ]);
       expect(skeleton.latestIndex(), 1);
       expect(skeleton.indexForMonth(DateTime(2026, 4)), 0);
+    },
+  );
+
+  test(
+    'contact evidence skeleton refreshes when message data version changes',
+    () async {
+      var includeNewMessage = false;
+      final container = ProviderContainer(
+        overrides: [
+          _displayIdentityResolverOverride(),
+          contactPageGraphMessageTimelineProvider(contactId: 24).overrideWith((
+            ref,
+          ) async {
+            ref.watch(messageDataVersionProvider);
+            return [
+              const ContactGraphMessageTimelineEntry(
+                messageId: 1,
+                dateUtc: '2026-04-20T10:00:00.000Z',
+                monthKey: '2026-04',
+              ),
+              if (includeNewMessage)
+                const ContactGraphMessageTimelineEntry(
+                  messageId: 2,
+                  dateUtc: '2026-05-20T10:00:00.000Z',
+                  monthKey: '2026-05',
+                ),
+            ];
+          }),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      const scope = ContactAllMessagesEvidenceScope(contactId: 24);
+
+      final initialSkeleton = await container.read(
+        messageEvidenceTimelineSkeletonProvider(scope: scope).future,
+      );
+      expect(initialSkeleton.entries.map((entry) => entry.messageId), [1]);
+
+      includeNewMessage = true;
+      container.read(messageDataVersionProvider.notifier).bump();
+
+      final refreshedSkeleton = await container.read(
+        messageEvidenceTimelineSkeletonProvider(scope: scope).future,
+      );
+      expect(refreshedSkeleton.entries.map((entry) => entry.messageId), [1, 2]);
     },
   );
 

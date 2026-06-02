@@ -27,7 +27,7 @@ final conversationReaderProvider =
 typedef ConversationReaderRef =
     AutoDisposeFutureProviderRef<ConversationReader>;
 String _$conversationOverviewsHash() =>
-    r'1004148b0973bb599273211682f1881c0feb930e';
+    r'41ec527ca3e2a8e9fcdc0beb390d088309fd6867';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -178,7 +178,7 @@ class _ConversationOverviewsProviderElement
 }
 
 String _$conversationMessagesHash() =>
-    r'bd95d1cb8b4a5876ec51dac8c223a8ac586bf7cc';
+    r'1eb6fa335178c45ca945fa7b16f5dd6580cb78b8';
 
 /// See also [conversationMessages].
 @ProviderFor(conversationMessages)
@@ -328,7 +328,7 @@ class _ConversationMessagesProviderElement
 }
 
 String _$conversationIdsMatchingMessageTextHash() =>
-    r'08d01047833d53a6f163cb5957f7f169a13d6f56';
+    r'006c0f8c9a5e9e094a0e3edcfa745244f0f6a91e';
 
 /// See also [conversationIdsMatchingMessageText].
 @ProviderFor(conversationIdsMatchingMessageText)
@@ -479,7 +479,7 @@ class _ConversationIdsMatchingMessageTextProviderElement
 }
 
 String _$conversationMessageTextMatchesHash() =>
-    r'54d768d531f264819a27ce4f8b2cfcb33050dfaf';
+    r'c0b6d08d28ef654522ac191d5df0f10d4475701b';
 
 /// See also [conversationMessageTextMatches].
 @ProviderFor(conversationMessageTextMatches)
