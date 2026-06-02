@@ -285,7 +285,7 @@ archive/recovery compatibility surface.
 | --- | --- | --- | --- | --- | --- |
 | Archive overlay legacy key bridge | Attachment archive/resolver infrastructure | `(message_guid, import_attachment_id)` | `(message_ss_id, attachment_ss_id)` | Existing archive records are keyed by legacy identity. | Overlay rows are graph-keyed or graph lookup can always derive legacy keys from source-scoped graph facts. |
 | Deterministic recovery legacy mapper | Recovery infrastructure | historical `attachment.guid` + legacy import/working DB | overlay archive row | Existing recovery maps through `macos_import.db` and `working.db`. | Recovery mapper reads `macos_import_ss.db` / `working_ss.db` and returns graph attachment identity. |
-| Recovered deleted-message provider | Messages recovery infrastructure | `working.db.recovered_unlinked_messages` | Message Evidence Spine rows | Recovered sources are not yet imported as graph sources. | Recovered `Messages` folders become source-scoped import sources or the recovered subsystem is explicitly preserved. |
+| Recovered deleted-message provider | Messages recovery infrastructure | graph messages without current `chat_to_message` topology | Message Evidence Spine rows | Recovered sources are not yet first-class graph import sources, so graph-orphan evidence is the production recovery projection. | Recovered `Messages` folders become source-scoped import sources or the graph-orphan recovered subsystem is explicitly preserved. |
 | Historical archive settings dry-run | Settings/archive workflow | backup/current legacy archive keys | user-facing readiness counts | Existing workflow estimates against legacy working/import identity. | Dry-run estimates use graph archive bridge and source-scoped import facts. |
 
 ## Proposed Migration Sequence
@@ -385,7 +385,10 @@ archive resolver migration.
 
 ### Recovered Messages
 
-- current legacy recovered-message evidence remains visible during transition
+- current graph-orphan recovered-message evidence remains visible during
+  transition
+- legacy recovered tables remain historical storage until broader legacy DB
+  retirement
 - future recovered-source import preserves source-scoped occurrence identity
 - recovered messages do not collapse into live-source messages by GUID
 
