@@ -16,6 +16,7 @@ import '../../application/chat_summaries/chat_summary_provider.dart';
 import '../../application/conversation_graph_build_controller_provider.dart';
 import '../../application/health/graph_health_provider.dart';
 import '../../application/health/graph_health_report.dart';
+import '../../application/orchestrators/conversation_graph_build_orchestrator.dart';
 import '../../application/status/conversation_graph_status_log_writer.dart';
 import '../../application/status/conversation_graph_status_provider.dart';
 
@@ -365,6 +366,10 @@ class _LifecycleStatusSection extends StatelessWidget {
         ),
         if (report != null) ...[
           _StatusRow(
+            'build duration',
+            '${report.finishedAt.difference(report.startedAt).inMilliseconds} ms',
+          ),
+          _StatusRow(
             'last imported graph messages',
             '${report.messageImportResult.insertedMessageCount}',
           ),
@@ -376,6 +381,13 @@ class _LifecycleStatusSection extends StatelessWidget {
             'last imported source rowid',
             '${report.messageImportResult.lastImportedSourceRowId ?? 'none'}',
           ),
+          if (report.stageTimings.isNotEmpty)
+            _StatusRow(
+              'slowest build stage',
+              _formatSlowestStage(report.stageTimings),
+            ),
+          for (final timing in report.stageTimings)
+            _StatusRow('stage ${timing.stageName}', '${timing.durationMs} ms'),
         ],
         if (buildState.lastError != null)
           _StatusRow('graph build error', buildState.lastError!),
@@ -2219,4 +2231,13 @@ String _formatStatusDateTime(DateTime? value) {
       '${local.hour.toString().padLeft(2, '0')}:'
       '${local.minute.toString().padLeft(2, '0')}:'
       '${local.second.toString().padLeft(2, '0')}';
+}
+
+String _formatSlowestStage(
+  List<ConversationGraphBuildStageTiming> stageTimings,
+) {
+  final slowest = stageTimings.reduce((left, right) {
+    return left.durationMs >= right.durationMs ? left : right;
+  });
+  return '${slowest.stageName} (${slowest.durationMs} ms)';
 }

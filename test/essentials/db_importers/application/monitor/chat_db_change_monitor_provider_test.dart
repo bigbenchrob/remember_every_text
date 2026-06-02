@@ -117,6 +117,18 @@ void main() {
           'enrich_missing_text',
           'project_messages',
         ],
+        stageTimings: [
+          ConversationGraphBuildStageTiming(
+            stageName: 'import_messages',
+            startedAt: DateTime.utc(2026, 5, 30, 12, 0),
+            finishedAt: DateTime.utc(2026, 5, 30, 12, 0, 1),
+          ),
+          ConversationGraphBuildStageTiming(
+            stageName: 'project_messages',
+            startedAt: DateTime.utc(2026, 5, 30, 12, 0, 1),
+            finishedAt: DateTime.utc(2026, 5, 30, 12, 0, 2),
+          ),
+        ],
         messageImportResult: const MessageImportResult(
           startedAfterSourceRowId: 100,
           insertedMessageCount: 2,
@@ -141,6 +153,7 @@ void main() {
       expect(summary, contains('2 imported graph message(s)'));
       expect(summary, contains('1 enriched text row(s)'));
       expect(summary, contains('2 projected graph message row(s)'));
+      expect(summary, contains('slowest stage: import_messages 1000ms'));
     });
   });
 }

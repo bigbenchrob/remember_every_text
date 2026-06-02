@@ -67,7 +67,10 @@ String _formatRun({
       '## Build report\n\n'
       '- started_at: ${buildReport?.startedAt.toIso8601String() ?? 'not captured'}\n'
       '- finished_at: ${buildReport?.finishedAt.toIso8601String() ?? 'not captured'}\n'
+      '- duration_ms: ${_formatBuildDurationMs(buildReport)}\n'
       '- completed_stages: ${buildReport?.completedStageNames.join(', ') ?? 'not captured'}\n\n'
+      '## Build stage timings\n\n'
+      '${_formatStageTimings(buildReport)}\n'
       '## Import result\n\n'
       '- started_after_source_rowid: ${_formatInt(buildReport?.messageImportResult.startedAfterSourceRowId)}\n'
       '- inserted_messages: ${_formatInt(buildReport?.messageImportResult.insertedMessageCount)}\n'
@@ -85,6 +88,30 @@ String _formatRun({
       '## After\n\n'
       '${after == null ? '- not captured\n' : _formatStatus(after)}'
       '$errorBlock';
+}
+
+String _formatBuildDurationMs(ConversationGraphBuildReport? buildReport) {
+  if (buildReport == null) {
+    return 'not captured';
+  }
+  return buildReport.finishedAt
+      .difference(buildReport.startedAt)
+      .inMilliseconds
+      .toString();
+}
+
+String _formatStageTimings(ConversationGraphBuildReport? buildReport) {
+  final timings = buildReport?.stageTimings;
+  if (timings == null) {
+    return '- not captured\n';
+  }
+  if (timings.isEmpty) {
+    return '- none\n';
+  }
+  return timings
+      .map((timing) => '- ${timing.stageName}: ${timing.durationMs} ms')
+      .join('\n')
+      .replaceFirst(RegExp(r'$'), '\n');
 }
 
 String _formatStatus(ConversationGraphStatus status) {

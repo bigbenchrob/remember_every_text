@@ -48,11 +48,23 @@ String buildConversationGraphBuildSummaryLog({
   final durationMs = report.finishedAt
       .difference(report.startedAt)
       .inMilliseconds;
+  final slowestStageLabel = _formatSlowestGraphBuildStage(report);
   return 'Conversation graph build at $timeLabel completed in ${durationMs}ms: '
       '${report.completedStageNames.length} stage(s), '
       '${report.messageImportResult.insertedMessageCount} imported graph message(s), '
       '${report.richTextEnrichmentResult.enrichedMessageCount} enriched text row(s), '
-      '${report.messageProjectionResult.insertedMessageCount} projected graph message row(s).';
+      '${report.messageProjectionResult.insertedMessageCount} projected graph message row(s), '
+      'slowest stage: $slowestStageLabel.';
+}
+
+String _formatSlowestGraphBuildStage(ConversationGraphBuildReport report) {
+  if (report.stageTimings.isEmpty) {
+    return 'no stage timings';
+  }
+  final slowestStage = report.stageTimings.reduce((left, right) {
+    return left.durationMs >= right.durationMs ? left : right;
+  });
+  return '${slowestStage.stageName} ${slowestStage.durationMs}ms';
 }
 
 @visibleForTesting

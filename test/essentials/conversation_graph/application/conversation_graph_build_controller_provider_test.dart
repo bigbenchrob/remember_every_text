@@ -175,6 +175,18 @@ ConversationGraphBuildReport _report() {
     startedAt: DateTime.utc(2026, 5, 30, 12),
     finishedAt: DateTime.utc(2026, 5, 30, 12, 0, 1),
     completedStageNames: const <String>['import_messages', 'project_messages'],
+    stageTimings: [
+      ConversationGraphBuildStageTiming(
+        stageName: 'import_messages',
+        startedAt: DateTime.utc(2026, 5, 30, 12, 0),
+        finishedAt: DateTime.utc(2026, 5, 30, 12, 0, 0, 400),
+      ),
+      ConversationGraphBuildStageTiming(
+        stageName: 'project_messages',
+        startedAt: DateTime.utc(2026, 5, 30, 12, 0, 0, 400),
+        finishedAt: DateTime.utc(2026, 5, 30, 12, 0, 1),
+      ),
+    ],
     messageImportResult: const MessageImportResult(
       startedAfterSourceRowId: 10,
       insertedMessageCount: 1,
