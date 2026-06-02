@@ -17,9 +17,9 @@ import '../../application/graph_attachment_archive_lookup.dart';
 ///
 /// This is an explicit compatibility bridge. It must not become the model for
 /// non-live sources because the legacy key does not carry source scope.
-class LegacyOverlayGraphAttachmentArchiveLookup
+class OverlayArchiveCompatibilityLookup
     implements GraphAttachmentArchiveLookup {
-  const LegacyOverlayGraphAttachmentArchiveLookup({
+  const OverlayArchiveCompatibilityLookup({
     required this.graphDatabase,
     required this.overlayDatabase,
     required this.archiveDirectory,

@@ -1,7 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../features/attachments/infrastructure/repositories/legacy_overlay_graph_attachment_archive_lookup.dart';
+import '../../../../features/attachments/infrastructure/repositories/overlay_archive_compatibility_lookup.dart';
 import '../../../db/feature_level_providers.dart';
 import '../../infrastructure/repositories/chat_summary_repository.dart';
 import 'chat_summary.dart';
@@ -75,7 +75,7 @@ Future<ChatAttachmentStats> chatAttachmentStats(Ref ref, int chatSsId) async {
   return ChatSummaryReader(
     repository: SqliteChatSummaryRepository(
       workingDatabase: workingDatabase,
-      archiveLookup: LegacyOverlayGraphAttachmentArchiveLookup(
+      archiveLookup: OverlayArchiveCompatibilityLookup(
         graphDatabase: workingDatabase,
         overlayDatabase: overlayDatabase,
         archiveDirectory: archiveDirectory,
@@ -97,7 +97,7 @@ Future<List<MessageAttachment>> messageAttachments(
   return ChatSummaryReader(
     repository: SqliteChatSummaryRepository(
       workingDatabase: workingDatabase,
-      archiveLookup: LegacyOverlayGraphAttachmentArchiveLookup(
+      archiveLookup: OverlayArchiveCompatibilityLookup(
         graphDatabase: workingDatabase,
         overlayDatabase: overlayDatabase,
         archiveDirectory: archiveDirectory,

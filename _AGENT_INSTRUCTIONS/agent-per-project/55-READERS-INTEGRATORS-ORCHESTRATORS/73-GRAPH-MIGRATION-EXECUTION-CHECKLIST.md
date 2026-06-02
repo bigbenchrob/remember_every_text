@@ -530,7 +530,7 @@ archives.
 - Established the first implementation boundary: add graph archive identity/read
   resolution before changing overlay schema or recovered-message storage.
 - Added `GraphAttachmentArchiveLookup` and
-  `LegacyOverlayGraphAttachmentArchiveLookup` as the first named graph archive
+  `OverlayArchiveCompatibilityLookup` as the first named graph archive
   identity boundary.
 - Conversation graph attachment summaries now resolve existing archive overlay
   records through the named graph archive lookup instead of deriving the legacy

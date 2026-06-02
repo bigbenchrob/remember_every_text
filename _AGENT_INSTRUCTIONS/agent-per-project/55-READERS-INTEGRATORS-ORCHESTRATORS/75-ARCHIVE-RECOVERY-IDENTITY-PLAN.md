@@ -414,7 +414,7 @@ Do not start by rewriting recovered deleted messages.
 
 - Added a named graph archive lookup boundary:
   `GraphAttachmentArchiveLookup`.
-- Added `LegacyOverlayGraphAttachmentArchiveLookup` as the explicit
+- Added `OverlayArchiveCompatibilityLookup` as the explicit
   compatibility bridge from graph attachment identity to existing overlay rows.
 - The bridge accepts `message_ss_id` and `attachment_ss_id`, verifies graph
   topology, derives the live-source legacy `import_attachment_id` from

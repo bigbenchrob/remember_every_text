@@ -6,7 +6,7 @@ import 'package:path/path.dart' as path;
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
-import 'package:remember_this_text/features/attachments/infrastructure/repositories/legacy_overlay_graph_attachment_archive_lookup.dart';
+import 'package:remember_this_text/features/attachments/infrastructure/repositories/overlay_archive_compatibility_lookup.dart';
 
 void main() {
   late Directory tempDir;
@@ -54,7 +54,7 @@ void main() {
         archiveRelativePath: 'ab/archived.jpg',
       );
 
-      final lookup = LegacyOverlayGraphAttachmentArchiveLookup(
+      final lookup = OverlayArchiveCompatibilityLookup(
         graphDatabase: graphDatabase,
         overlayDatabase: overlayDatabase,
         archiveDirectory: archiveDir.path,
@@ -98,7 +98,7 @@ void main() {
         archiveRelativePath: 'ab/archived.jpg',
       );
 
-      final lookup = LegacyOverlayGraphAttachmentArchiveLookup(
+      final lookup = OverlayArchiveCompatibilityLookup(
         graphDatabase: graphDatabase,
         overlayDatabase: overlayDatabase,
         archiveDirectory: archiveDir.path,
@@ -116,7 +116,7 @@ void main() {
   test(
     'returns null when graph topology does not link the endpoints',
     () async {
-      final lookup = LegacyOverlayGraphAttachmentArchiveLookup(
+      final lookup = OverlayArchiveCompatibilityLookup(
         graphDatabase: graphDatabase,
         overlayDatabase: overlayDatabase,
         archiveDirectory: archiveDir.path,
