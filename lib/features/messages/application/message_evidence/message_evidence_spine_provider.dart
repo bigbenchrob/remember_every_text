@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -88,6 +90,8 @@ Future<MessageEvidenceRowData?> messageEvidenceRow(
   required MessageEvidenceScope scope,
   required int messageId,
 }) async {
+  _keepHydratedEvidenceAliveBriefly(ref);
+
   final message = await switch (scope) {
     ContactAllMessagesEvidenceScope(:final contactId) => ref.watch(
       contactPageGraphMessageByIdProvider(
@@ -222,6 +226,8 @@ Future<List<MessageAttachmentEvidence>> messageEvidenceAttachments(
   required MessageEvidenceScope scope,
   required int messageId,
 }) async {
+  _keepHydratedEvidenceAliveBriefly(ref);
+
   return switch (scope) {
     RecoveredMessagesEvidenceScope(
       :final contactId,
@@ -245,6 +251,22 @@ Future<List<MessageAttachmentEvidence>> messageEvidenceAttachments(
       messageId: messageId,
     ),
   };
+}
+
+void _keepHydratedEvidenceAliveBriefly(Ref ref) {
+  final link = ref.keepAlive();
+  Timer? timer;
+
+  ref.onCancel(() {
+    timer = Timer(const Duration(minutes: 2), link.close);
+  });
+  ref.onResume(() {
+    timer?.cancel();
+    timer = null;
+  });
+  ref.onDispose(() {
+    timer?.cancel();
+  });
 }
 
 @riverpod
