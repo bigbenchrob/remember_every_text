@@ -7,6 +7,7 @@ import 'package:remember_this_text/essentials/conversation_graph/application/con
 import 'package:remember_this_text/essentials/conversation_graph/application/conversation_graph_build_service_provider.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_projection_repository.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/orchestrators/conversation_graph_build_orchestrator.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/application/attachments/attachment_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_rich_text_enricher.dart';
 
@@ -141,7 +142,15 @@ ConversationGraphBuildOrchestrator _orchestrator({
             extractorAvailable: true,
           );
     },
-    importAttachments: step,
+    importAttachments: () async {
+      await step();
+      return const AttachmentImportResult(
+        startedAfterSourceRowId: 0,
+        examinedAttachmentCount: 0,
+        insertedAttachmentCount: 0,
+        lastImportedSourceRowId: null,
+      );
+    },
     importChatMessageJoins: step,
     importChatHandleJoins: step,
     importMessageAttachmentJoins: step,
@@ -164,7 +173,9 @@ ConversationGraphBuildOrchestrator _orchestrator({
             insertedMessageCount: 0,
           );
     },
-    projectAttachments: step,
+    projectAttachments: (messageImportResult, attachmentImportResult) async {
+      await step();
+    },
     projectChatMessageEdges: (messageImportResult) async {
       await step();
     },

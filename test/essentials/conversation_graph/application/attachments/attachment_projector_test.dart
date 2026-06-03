@@ -37,6 +37,26 @@ void main() {
     expect(result.insertedAttachmentCount, 3);
   });
 
+  test('delegates bounded attachment projection to repository', () async {
+    final repository = _FakeAttachmentProjectionRepository(
+      result: const AttachmentProjectionResult(
+        examinedAttachmentCount: 1,
+        insertedAttachmentCount: 1,
+      ),
+    );
+    final result = await AttachmentProjector(repository: repository)
+        .projectAttachmentsAfterSourceRowId(
+          sourceId: 7,
+          startedAfterSourceRowId: 40,
+        );
+
+    expect(repository.boundedCallCount, 1);
+    expect(repository.lastSourceId, 7);
+    expect(repository.lastStartedAfterSourceRowId, 40);
+    expect(result.examinedAttachmentCount, 1);
+    expect(result.insertedAttachmentCount, 1);
+  });
+
   setUp(() async {
     tempDir = await Directory.systemTemp.createTemp(
       'attachment_projector_test_',
@@ -112,6 +132,38 @@ void main() {
     expect(secondResult.insertedAttachmentCount, 0);
     expect(rows.single['filename'], '/source/updated.jpg');
   });
+
+  test('projects attachments after source rowid', () async {
+    await _insertImportAttachment(
+      importDatabase,
+      sourceRowId: 40,
+      guid: 'old-attachment',
+      filename: '/source/old.jpg',
+    );
+    await _insertImportAttachment(
+      importDatabase,
+      sourceRowId: 42,
+      guid: 'new-attachment',
+      filename: '/source/new.jpg',
+    );
+
+    final result =
+        await AttachmentProjector(
+          repository: SqliteAttachmentProjectionRepository(
+            importDatabase: importDatabase,
+            workingDatabase: workingDatabase,
+          ),
+        ).projectAttachmentsAfterSourceRowId(
+          sourceId: liveChatDbSourceId,
+          startedAfterSourceRowId: 40,
+        );
+    final rows = await workingDatabase.database.query('attachments');
+
+    expect(result.examinedAttachmentCount, 1);
+    expect(result.insertedAttachmentCount, 1);
+    expect(rows, hasLength(1));
+    expect(rows.single['guid'], 'new-attachment');
+  });
 }
 
 class _FakeAttachmentProjectionRepository
@@ -120,10 +172,24 @@ class _FakeAttachmentProjectionRepository
 
   final AttachmentProjectionResult result;
   int callCount = 0;
+  int boundedCallCount = 0;
+  int? lastSourceId;
+  int? lastStartedAfterSourceRowId;
 
   @override
   Future<AttachmentProjectionResult> projectAttachments() async {
     callCount += 1;
+    return result;
+  }
+
+  @override
+  Future<AttachmentProjectionResult> projectAttachmentsAfterSourceRowId({
+    required int sourceId,
+    required int startedAfterSourceRowId,
+  }) async {
+    boundedCallCount += 1;
+    lastSourceId = sourceId;
+    lastStartedAfterSourceRowId = startedAfterSourceRowId;
     return result;
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/contacts/contact_projection_repository.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_projection_repository.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/orchestrators/conversation_graph_build_orchestrator.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/application/attachments/attachment_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_rich_text_enricher.dart';
 
@@ -30,7 +31,15 @@ void main() {
           extractorAvailable: true,
         );
       },
-      importAttachments: _record(calls, 'import_attachments'),
+      importAttachments: () async {
+        calls.add('import_attachments');
+        return const AttachmentImportResult(
+          startedAfterSourceRowId: 20,
+          examinedAttachmentCount: 1,
+          insertedAttachmentCount: 1,
+          lastImportedSourceRowId: 21,
+        );
+      },
       importChatMessageJoins: _record(calls, 'import_chat_message_joins'),
       importChatHandleJoins: _record(calls, 'import_chat_handle_joins'),
       importMessageAttachmentJoins: _record(
@@ -56,7 +65,11 @@ void main() {
           insertedMessageCount: 4,
         );
       },
-      projectAttachments: _record(calls, 'project_attachments'),
+      projectAttachments: (messageImportResult, attachmentImportResult) async {
+        calls.add('project_attachments');
+        expect(messageImportResult.startedAfterSourceRowId, 10);
+        expect(attachmentImportResult.startedAfterSourceRowId, 20);
+      },
       projectChatMessageEdges: (messageImportResult) async {
         calls.add('project_chat_message_edges');
         expect(messageImportResult.startedAfterSourceRowId, 10);

@@ -94,9 +94,7 @@ Future<ConversationGraphBuildService> conversationGraphBuildService(
           startedAfterSourceRowId: messageImportResult.startedAfterSourceRowId,
         );
       },
-      importAttachments: () async {
-        await attachmentImporter.importAttachments();
-      },
+      importAttachments: attachmentImporter.importAttachments,
       importChatMessageJoins: () async {
         await chatMessageJoinImporter.importJoins();
       },
@@ -125,8 +123,19 @@ Future<ConversationGraphBuildService> conversationGraphBuildService(
           startedAfterSourceRowId: messageImportResult.startedAfterSourceRowId,
         );
       },
-      projectAttachments: () async {
-        await attachmentProjector.projectAttachments();
+      projectAttachments: (messageImportResult, attachmentImportResult) async {
+        if (messageImportResult.insertedMessageCount == 0) {
+          await attachmentProjector.projectAttachments();
+          return;
+        }
+        if (attachmentImportResult.insertedAttachmentCount == 0) {
+          return;
+        }
+        await attachmentProjector.projectAttachmentsAfterSourceRowId(
+          sourceId: liveChatDbSourceId,
+          startedAfterSourceRowId:
+              attachmentImportResult.startedAfterSourceRowId,
+        );
       },
       projectChatMessageEdges: (messageImportResult) async {
         if (messageImportResult.insertedMessageCount == 0) {

@@ -1,3 +1,4 @@
+import '../../../source_scoped_import/application/attachments/attachment_importer.dart';
 import '../../../source_scoped_import/application/messages/message_importer.dart';
 import '../../../source_scoped_import/application/messages/message_rich_text_enricher.dart';
 import '../contacts/contact_projection_repository.dart';
@@ -5,8 +6,14 @@ import '../messages/message_projection_repository.dart';
 
 typedef GraphBuildStep = Future<void> Function();
 typedef MessageImportStep = Future<MessageImportResult> Function();
+typedef AttachmentImportStep = Future<AttachmentImportResult> Function();
 typedef MessageImportAwareGraphBuildStep =
     Future<void> Function(MessageImportResult messageImportResult);
+typedef AttachmentProjectionStep =
+    Future<void> Function(
+      MessageImportResult messageImportResult,
+      AttachmentImportResult attachmentImportResult,
+    );
 typedef RichTextEnrichmentStep =
     Future<MessageRichTextEnrichmentResult> Function(
       MessageImportResult messageImportResult,
@@ -76,7 +83,7 @@ class ConversationGraphBuildOrchestrator {
   final GraphBuildStep importContacts;
   final MessageImportStep importMessages;
   final RichTextEnrichmentStep enrichMissingText;
-  final GraphBuildStep importAttachments;
+  final AttachmentImportStep importAttachments;
   final GraphBuildStep importChatMessageJoins;
   final GraphBuildStep importChatHandleJoins;
   final GraphBuildStep importMessageAttachmentJoins;
@@ -85,7 +92,7 @@ class ConversationGraphBuildOrchestrator {
   final GraphBuildStep projectChatHandleEdges;
   final GraphBuildStep projectChats;
   final MessageProjectionStep projectMessages;
-  final GraphBuildStep projectAttachments;
+  final AttachmentProjectionStep projectAttachments;
   final MessageImportAwareGraphBuildStep projectChatMessageEdges;
   final MessageImportAwareGraphBuildStep projectMessageAttachmentEdges;
 
@@ -139,7 +146,10 @@ class ConversationGraphBuildOrchestrator {
       () => enrichMissingText(messageImportResult),
     );
 
-    await runStage('import_attachments', importAttachments);
+    final attachmentImportResult = await runValueStage(
+      'import_attachments',
+      importAttachments,
+    );
 
     await runStage('import_chat_message_joins', importChatMessageJoins);
 
@@ -163,7 +173,10 @@ class ConversationGraphBuildOrchestrator {
       () => projectMessages(messageImportResult),
     );
 
-    await runStage('project_attachments', projectAttachments);
+    await runStage(
+      'project_attachments',
+      () => projectAttachments(messageImportResult, attachmentImportResult),
+    );
 
     await runStage(
       'project_chat_message_edges',

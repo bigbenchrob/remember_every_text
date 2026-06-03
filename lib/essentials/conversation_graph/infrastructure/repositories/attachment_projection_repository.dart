@@ -14,6 +14,27 @@ class SqliteAttachmentProjectionRepository
 
   @override
   Future<AttachmentProjectionResult> projectAttachments() async {
+    return _projectAttachmentsWhere(
+      whereClause: null,
+      whereArgs: const <Object?>[],
+    );
+  }
+
+  @override
+  Future<AttachmentProjectionResult> projectAttachmentsAfterSourceRowId({
+    required int sourceId,
+    required int startedAfterSourceRowId,
+  }) {
+    return _projectAttachmentsWhere(
+      whereClause: 'source_id = ? AND source_rowid > ?',
+      whereArgs: <Object?>[sourceId, startedAfterSourceRowId],
+    );
+  }
+
+  Future<AttachmentProjectionResult> _projectAttachmentsWhere({
+    required String? whereClause,
+    required List<Object?> whereArgs,
+  }) async {
     final rows = await importDatabase.database.query(
       'attachments',
       columns: <String>[
@@ -26,6 +47,8 @@ class SqliteAttachmentProjectionRepository
         'total_bytes',
         'created_at_utc',
       ],
+      where: whereClause,
+      whereArgs: whereArgs,
       orderBy: 'ss_id ASC',
     );
 
