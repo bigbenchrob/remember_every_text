@@ -2176,7 +2176,7 @@ class _StatusRow extends StatelessWidget {
   const _StatusRow(
     this.label,
     this.value, {
-    this.labelWidth = 180,
+    this.labelWidth = 260,
     this.verticalPadding = 2,
   });
 
