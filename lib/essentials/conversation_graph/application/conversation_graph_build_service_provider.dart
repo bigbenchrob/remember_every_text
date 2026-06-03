@@ -138,8 +138,15 @@ Future<ConversationGraphBuildService> conversationGraphBuildService(
           startedAfterSourceRowId: messageImportResult.startedAfterSourceRowId,
         );
       },
-      projectMessageAttachmentEdges: () async {
-        await messageToAttachmentProjector.projectEdges();
+      projectMessageAttachmentEdges: (messageImportResult) async {
+        if (messageImportResult.insertedMessageCount == 0) {
+          await messageToAttachmentProjector.projectEdges();
+          return;
+        }
+        await messageToAttachmentProjector.projectEdgesAfterSourceMessageRowId(
+          sourceId: liveChatDbSourceId,
+          startedAfterSourceRowId: messageImportResult.startedAfterSourceRowId,
+        );
       },
     ),
   );

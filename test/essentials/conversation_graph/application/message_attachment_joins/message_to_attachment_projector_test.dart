@@ -37,6 +37,26 @@ void main() {
     expect(result.insertedEdgeCount, 2);
   });
 
+  test('delegates bounded edge projection to repository', () async {
+    final repository = _FakeMessageToAttachmentProjectionRepository(
+      result: const MessageToAttachmentProjectionResult(
+        examinedEdgeCount: 1,
+        insertedEdgeCount: 1,
+      ),
+    );
+    final result = await MessageToAttachmentProjector(repository: repository)
+        .projectEdgesAfterSourceMessageRowId(
+          sourceId: 7,
+          startedAfterSourceRowId: 40,
+        );
+
+    expect(repository.boundedCallCount, 1);
+    expect(repository.lastSourceId, 7);
+    expect(repository.lastStartedAfterSourceRowId, 40);
+    expect(result.examinedEdgeCount, 1);
+    expect(result.insertedEdgeCount, 1);
+  });
+
   setUp(() async {
     tempDir = await Directory.systemTemp.createTemp(
       'message_to_attachment_projector_test_',
@@ -106,6 +126,44 @@ void main() {
     expect(secondResult.insertedEdgeCount, 0);
     expect(rows, hasLength(1));
   });
+
+  test(
+    'projects message-to-attachment edges after source message rowid',
+    () async {
+      await _insertImportEdge(
+        importDatabase,
+        sourceMessageRowId: 40,
+        sourceAttachmentRowId: 21,
+      );
+      await _insertImportEdge(
+        importDatabase,
+        sourceMessageRowId: 42,
+        sourceAttachmentRowId: 22,
+      );
+
+      final result =
+          await MessageToAttachmentProjector(
+            repository: SqliteMessageToAttachmentProjectionRepository(
+              importDatabase: importDatabase,
+              workingDatabase: workingDatabase,
+            ),
+          ).projectEdgesAfterSourceMessageRowId(
+            sourceId: liveChatDbSourceId,
+            startedAfterSourceRowId: 40,
+          );
+      final rows = await workingDatabase.database.query(
+        'message_to_attachment',
+      );
+
+      expect(result.examinedEdgeCount, 1);
+      expect(result.insertedEdgeCount, 1);
+      expect(rows, hasLength(1));
+      expect(
+        rows.single['message_ss_id'],
+        SourceScopedRowKey.pack(sourceId: liveChatDbSourceId, sourceRowId: 42),
+      );
+    },
+  );
 }
 
 class _FakeMessageToAttachmentProjectionRepository
@@ -114,10 +172,25 @@ class _FakeMessageToAttachmentProjectionRepository
 
   final MessageToAttachmentProjectionResult result;
   int callCount = 0;
+  int boundedCallCount = 0;
+  int? lastSourceId;
+  int? lastStartedAfterSourceRowId;
 
   @override
   Future<MessageToAttachmentProjectionResult> projectEdges() async {
     callCount += 1;
+    return result;
+  }
+
+  @override
+  Future<MessageToAttachmentProjectionResult>
+  projectEdgesAfterSourceMessageRowId({
+    required int sourceId,
+    required int startedAfterSourceRowId,
+  }) async {
+    boundedCallCount += 1;
+    lastSourceId = sourceId;
+    lastStartedAfterSourceRowId = startedAfterSourceRowId;
     return result;
   }
 }

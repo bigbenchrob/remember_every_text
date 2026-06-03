@@ -7,4 +7,15 @@ class MessageToAttachmentProjector {
 
   Future<MessageToAttachmentProjectionResult> projectEdges() =>
       repository.projectEdges();
+
+  Future<MessageToAttachmentProjectionResult>
+  projectEdgesAfterSourceMessageRowId({
+    required int sourceId,
+    required int startedAfterSourceRowId,
+  }) {
+    return repository.projectEdgesAfterSourceMessageRowId(
+      sourceId: sourceId,
+      startedAfterSourceRowId: startedAfterSourceRowId,
+    );
+  }
 }

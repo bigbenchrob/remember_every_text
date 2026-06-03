@@ -10,4 +10,10 @@ class MessageToAttachmentProjectionResult {
 
 abstract interface class MessageToAttachmentProjectionRepository {
   Future<MessageToAttachmentProjectionResult> projectEdges();
+
+  Future<MessageToAttachmentProjectionResult>
+  projectEdgesAfterSourceMessageRowId({
+    required int sourceId,
+    required int startedAfterSourceRowId,
+  });
 }

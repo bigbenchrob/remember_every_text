@@ -168,7 +168,9 @@ ConversationGraphBuildOrchestrator _orchestrator({
     projectChatMessageEdges: (messageImportResult) async {
       await step();
     },
-    projectMessageAttachmentEdges: step,
+    projectMessageAttachmentEdges: (messageImportResult) async {
+      await step();
+    },
   );
 }
 

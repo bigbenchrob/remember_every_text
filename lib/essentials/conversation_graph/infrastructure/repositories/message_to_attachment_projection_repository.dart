@@ -14,9 +14,30 @@ class SqliteMessageToAttachmentProjectionRepository
 
   @override
   Future<MessageToAttachmentProjectionResult> projectEdges() async {
+    return _projectEdgesWhere(whereClause: null, whereArgs: const <Object?>[]);
+  }
+
+  @override
+  Future<MessageToAttachmentProjectionResult>
+  projectEdgesAfterSourceMessageRowId({
+    required int sourceId,
+    required int startedAfterSourceRowId,
+  }) {
+    return _projectEdgesWhere(
+      whereClause: 'message_source_id = ? AND source_message_rowid > ?',
+      whereArgs: <Object?>[sourceId, startedAfterSourceRowId],
+    );
+  }
+
+  Future<MessageToAttachmentProjectionResult> _projectEdgesWhere({
+    required String? whereClause,
+    required List<Object?> whereArgs,
+  }) async {
     final rows = await importDatabase.database.query(
       'message_to_attachment',
       columns: <String>['message_ss_id', 'attachment_ss_id'],
+      where: whereClause,
+      whereArgs: whereArgs,
       orderBy: 'message_ss_id ASC, attachment_ss_id ASC',
     );
 

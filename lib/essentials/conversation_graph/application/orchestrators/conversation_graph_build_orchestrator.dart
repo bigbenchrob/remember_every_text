@@ -87,7 +87,7 @@ class ConversationGraphBuildOrchestrator {
   final MessageProjectionStep projectMessages;
   final GraphBuildStep projectAttachments;
   final MessageImportAwareGraphBuildStep projectChatMessageEdges;
-  final GraphBuildStep projectMessageAttachmentEdges;
+  final MessageImportAwareGraphBuildStep projectMessageAttachmentEdges;
 
   Future<ConversationGraphBuildReport> runOnce() async {
     final startedAt = DateTime.now().toUtc();
@@ -172,7 +172,7 @@ class ConversationGraphBuildOrchestrator {
 
     await runStage(
       'project_message_attachment_edges',
-      projectMessageAttachmentEdges,
+      () => projectMessageAttachmentEdges(messageImportResult),
     );
 
     return ConversationGraphBuildReport(
