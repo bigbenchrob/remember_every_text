@@ -5,6 +5,8 @@ import '../messages/message_projection_repository.dart';
 
 typedef GraphBuildStep = Future<void> Function();
 typedef MessageImportStep = Future<MessageImportResult> Function();
+typedef MessageImportAwareGraphBuildStep =
+    Future<void> Function(MessageImportResult messageImportResult);
 typedef RichTextEnrichmentStep =
     Future<MessageRichTextEnrichmentResult> Function(
       MessageImportResult messageImportResult,
@@ -84,7 +86,7 @@ class ConversationGraphBuildOrchestrator {
   final GraphBuildStep projectChats;
   final MessageProjectionStep projectMessages;
   final GraphBuildStep projectAttachments;
-  final GraphBuildStep projectChatMessageEdges;
+  final MessageImportAwareGraphBuildStep projectChatMessageEdges;
   final GraphBuildStep projectMessageAttachmentEdges;
 
   Future<ConversationGraphBuildReport> runOnce() async {
@@ -163,7 +165,10 @@ class ConversationGraphBuildOrchestrator {
 
     await runStage('project_attachments', projectAttachments);
 
-    await runStage('project_chat_message_edges', projectChatMessageEdges);
+    await runStage(
+      'project_chat_message_edges',
+      () => projectChatMessageEdges(messageImportResult),
+    );
 
     await runStage(
       'project_message_attachment_edges',

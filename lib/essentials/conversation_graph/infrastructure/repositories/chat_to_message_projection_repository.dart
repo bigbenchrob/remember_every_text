@@ -14,9 +14,29 @@ class SqliteChatToMessageProjectionRepository
 
   @override
   Future<ChatToMessageProjectionResult> projectEdges() async {
+    return _projectEdgesWhere(whereClause: null, whereArgs: const <Object?>[]);
+  }
+
+  @override
+  Future<ChatToMessageProjectionResult> projectEdgesAfterSourceMessageRowId({
+    required int sourceId,
+    required int startedAfterSourceRowId,
+  }) {
+    return _projectEdgesWhere(
+      whereClause: 'source_id = ? AND source_message_rowid > ?',
+      whereArgs: <Object?>[sourceId, startedAfterSourceRowId],
+    );
+  }
+
+  Future<ChatToMessageProjectionResult> _projectEdgesWhere({
+    required String? whereClause,
+    required List<Object?> whereArgs,
+  }) async {
     final rows = await importDatabase.database.query(
       'chat_to_message',
       columns: <String>['chat_ss_id', 'message_ss_id'],
+      where: whereClause,
+      whereArgs: whereArgs,
       orderBy: 'ss_id ASC',
     );
 

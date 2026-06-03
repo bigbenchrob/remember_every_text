@@ -128,8 +128,15 @@ Future<ConversationGraphBuildService> conversationGraphBuildService(
       projectAttachments: () async {
         await attachmentProjector.projectAttachments();
       },
-      projectChatMessageEdges: () async {
-        await chatToMessageProjector.projectEdges();
+      projectChatMessageEdges: (messageImportResult) async {
+        if (messageImportResult.insertedMessageCount == 0) {
+          await chatToMessageProjector.projectEdges();
+          return;
+        }
+        await chatToMessageProjector.projectEdgesAfterSourceMessageRowId(
+          sourceId: liveChatDbSourceId,
+          startedAfterSourceRowId: messageImportResult.startedAfterSourceRowId,
+        );
       },
       projectMessageAttachmentEdges: () async {
         await messageToAttachmentProjector.projectEdges();

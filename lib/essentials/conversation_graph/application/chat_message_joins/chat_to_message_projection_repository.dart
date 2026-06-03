@@ -10,4 +10,9 @@ class ChatToMessageProjectionResult {
 
 abstract interface class ChatToMessageProjectionRepository {
   Future<ChatToMessageProjectionResult> projectEdges();
+
+  Future<ChatToMessageProjectionResult> projectEdgesAfterSourceMessageRowId({
+    required int sourceId,
+    required int startedAfterSourceRowId,
+  });
 }

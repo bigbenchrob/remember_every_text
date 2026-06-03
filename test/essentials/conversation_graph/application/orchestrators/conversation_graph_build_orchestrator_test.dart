@@ -57,7 +57,10 @@ void main() {
         );
       },
       projectAttachments: _record(calls, 'project_attachments'),
-      projectChatMessageEdges: _record(calls, 'project_chat_message_edges'),
+      projectChatMessageEdges: (messageImportResult) async {
+        calls.add('project_chat_message_edges');
+        expect(messageImportResult.startedAfterSourceRowId, 10);
+      },
       projectMessageAttachmentEdges: _record(
         calls,
         'project_message_attachment_edges',

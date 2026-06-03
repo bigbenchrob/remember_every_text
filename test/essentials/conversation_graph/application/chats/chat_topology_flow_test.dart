@@ -284,6 +284,65 @@ void main() {
     expect(rows, hasLength(1));
   });
 
+  test('projects topology edges after source message rowid', () async {
+    await importDatabase.database.insert('chat_to_message', <String, Object?>{
+      'ss_id': SourceScopedRowKey.pack(
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 98,
+      ),
+      'source_id': liveChatDbSourceId,
+      'source_rowid': 98,
+      'source_chat_rowid': 7,
+      'source_message_rowid': 40,
+      'chat_ss_id': SourceScopedRowKey.pack(
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 7,
+      ),
+      'message_ss_id': SourceScopedRowKey.pack(
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 40,
+      ),
+    });
+    await importDatabase.database.insert('chat_to_message', <String, Object?>{
+      'ss_id': SourceScopedRowKey.pack(
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 99,
+      ),
+      'source_id': liveChatDbSourceId,
+      'source_rowid': 99,
+      'source_chat_rowid': 7,
+      'source_message_rowid': 42,
+      'chat_ss_id': SourceScopedRowKey.pack(
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 7,
+      ),
+      'message_ss_id': SourceScopedRowKey.pack(
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 42,
+      ),
+    });
+
+    final projector = ChatToMessageProjector(
+      repository: SqliteChatToMessageProjectionRepository(
+        importDatabase: importDatabase,
+        workingDatabase: workingDatabase,
+      ),
+    );
+    final result = await projector.projectEdgesAfterSourceMessageRowId(
+      sourceId: liveChatDbSourceId,
+      startedAfterSourceRowId: 40,
+    );
+    final rows = await workingDatabase.database.query('chat_to_message');
+
+    expect(result.examinedEdgeCount, 1);
+    expect(result.insertedEdgeCount, 1);
+    expect(rows, hasLength(1));
+    expect(
+      rows.single['message_ss_id'],
+      SourceScopedRowKey.pack(sourceId: liveChatDbSourceId, sourceRowId: 42),
+    );
+  });
+
   test('working topology primary key prevents duplicate edges', () async {
     final chatSsId = SourceScopedRowKey.pack(
       sourceId: liveChatDbSourceId,
