@@ -26,6 +26,22 @@ class ChatMessageJoinImporter {
   final int sourceId;
 
   Future<ChatMessageJoinImportResult> importJoins() async {
+    return _importJoinsWhere(whereClause: null, whereArgs: const <Object?>[]);
+  }
+
+  Future<ChatMessageJoinImportResult> importJoinsAfterSourceMessageRowId({
+    required int startedAfterSourceRowId,
+  }) {
+    return _importJoinsWhere(
+      whereClause: 'WHERE message_id > ?',
+      whereArgs: <Object?>[startedAfterSourceRowId],
+    );
+  }
+
+  Future<ChatMessageJoinImportResult> _importJoinsWhere({
+    required String? whereClause,
+    required List<Object?> whereArgs,
+  }) async {
     final sourceDb = await openDatabase(
       chatDbPath,
       readOnly: true,
@@ -35,7 +51,10 @@ class ChatMessageJoinImporter {
     try {
       final rows = await sourceDb.rawQuery(
         'SELECT ROWID AS source_rowid, chat_id, message_id '
-        'FROM chat_message_join ORDER BY ROWID ASC',
+        'FROM chat_message_join '
+        '${whereClause ?? ''} '
+        'ORDER BY ROWID ASC',
+        whereArgs,
       );
 
       var insertedJoinCount = 0;

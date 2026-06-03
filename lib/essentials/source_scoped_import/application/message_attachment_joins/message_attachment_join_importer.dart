@@ -26,6 +26,22 @@ class MessageAttachmentJoinImporter {
   final int sourceId;
 
   Future<MessageAttachmentJoinImportResult> importJoins() async {
+    return _importJoinsWhere(whereClause: null, whereArgs: const <Object?>[]);
+  }
+
+  Future<MessageAttachmentJoinImportResult> importJoinsAfterSourceMessageRowId({
+    required int startedAfterSourceRowId,
+  }) {
+    return _importJoinsWhere(
+      whereClause: 'WHERE message_id > ?',
+      whereArgs: <Object?>[startedAfterSourceRowId],
+    );
+  }
+
+  Future<MessageAttachmentJoinImportResult> _importJoinsWhere({
+    required String? whereClause,
+    required List<Object?> whereArgs,
+  }) async {
     final sourceDb = await openDatabase(
       chatDbPath,
       readOnly: true,
@@ -36,7 +52,9 @@ class MessageAttachmentJoinImporter {
       final rows = await sourceDb.rawQuery(
         'SELECT message_id, attachment_id '
         'FROM message_attachment_join '
+        '${whereClause ?? ''} '
         'ORDER BY message_id ASC, attachment_id ASC',
+        whereArgs,
       );
 
       if (rows.isEmpty) {

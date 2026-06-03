@@ -249,6 +249,21 @@ void main() {
     );
   });
 
+  test('imports topology after source message rowid', () async {
+    await _insertSourceJoin(chatDbPath, rowId: 98, chatId: 7, messageId: 40);
+    await _insertSourceJoin(chatDbPath, rowId: 99, chatId: 7, messageId: 42);
+
+    final result = await ChatMessageJoinImporter(
+      chatDbPath: chatDbPath,
+      importDatabase: importDatabase,
+    ).importJoinsAfterSourceMessageRowId(startedAfterSourceRowId: 40);
+    final rows = await importDatabase.database.query('chat_to_message');
+
+    expect(result.examinedJoinCount, 1);
+    expect(result.insertedJoinCount, 1);
+    expect(rows.single['source_message_rowid'], 42);
+  });
+
   test('projects topology edges idempotently', () async {
     await importDatabase.database.insert('chat_to_message', <String, Object?>{
       'ss_id': SourceScopedRowKey.pack(

@@ -84,9 +84,9 @@ class ConversationGraphBuildOrchestrator {
   final MessageImportStep importMessages;
   final RichTextEnrichmentStep enrichMissingText;
   final AttachmentImportStep importAttachments;
-  final GraphBuildStep importChatMessageJoins;
+  final MessageImportAwareGraphBuildStep importChatMessageJoins;
   final GraphBuildStep importChatHandleJoins;
-  final GraphBuildStep importMessageAttachmentJoins;
+  final MessageImportAwareGraphBuildStep importMessageAttachmentJoins;
   final GraphBuildStep projectHandles;
   final Future<ContactProjectionResult> Function() projectContacts;
   final GraphBuildStep projectChatHandleEdges;
@@ -151,13 +151,16 @@ class ConversationGraphBuildOrchestrator {
       importAttachments,
     );
 
-    await runStage('import_chat_message_joins', importChatMessageJoins);
+    await runStage(
+      'import_chat_message_joins',
+      () => importChatMessageJoins(messageImportResult),
+    );
 
     await runStage('import_chat_handle_joins', importChatHandleJoins);
 
     await runStage(
       'import_message_attachment_joins',
-      importMessageAttachmentJoins,
+      () => importMessageAttachmentJoins(messageImportResult),
     );
 
     await runStage('project_handles', projectHandles);

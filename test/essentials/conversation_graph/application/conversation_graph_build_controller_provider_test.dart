@@ -151,9 +151,13 @@ ConversationGraphBuildOrchestrator _orchestrator({
         lastImportedSourceRowId: null,
       );
     },
-    importChatMessageJoins: step,
+    importChatMessageJoins: (messageImportResult) async {
+      await step();
+    },
     importChatHandleJoins: step,
-    importMessageAttachmentJoins: step,
+    importMessageAttachmentJoins: (messageImportResult) async {
+      await step();
+    },
     projectHandles: step,
     projectContacts: () async {
       await step();

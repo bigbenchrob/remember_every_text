@@ -80,6 +80,22 @@ void main() {
     expect(secondResult.insertedJoinCount, 0);
     expect(rows, hasLength(1));
   });
+
+  test('imports joins after source message rowid', () async {
+    await _insertSourceJoin(chatDbPath, messageId: 40, attachmentId: 21);
+    await _insertSourceJoin(chatDbPath, messageId: 42, attachmentId: 22);
+
+    final result = await MessageAttachmentJoinImporter(
+      chatDbPath: chatDbPath,
+      importDatabase: importDatabase,
+    ).importJoinsAfterSourceMessageRowId(startedAfterSourceRowId: 40);
+    final rows = await importDatabase.database.query('message_to_attachment');
+
+    expect(result.examinedJoinCount, 1);
+    expect(result.insertedJoinCount, 1);
+    expect(rows.single['source_message_rowid'], 42);
+    expect(rows.single['source_attachment_rowid'], 22);
+  });
 }
 
 Future<void> _createSourceJoinTable(String chatDbPath) async {

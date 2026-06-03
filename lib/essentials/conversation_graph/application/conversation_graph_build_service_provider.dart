@@ -95,14 +95,26 @@ Future<ConversationGraphBuildService> conversationGraphBuildService(
         );
       },
       importAttachments: attachmentImporter.importAttachments,
-      importChatMessageJoins: () async {
-        await chatMessageJoinImporter.importJoins();
+      importChatMessageJoins: (messageImportResult) async {
+        if (messageImportResult.insertedMessageCount == 0) {
+          await chatMessageJoinImporter.importJoins();
+          return;
+        }
+        await chatMessageJoinImporter.importJoinsAfterSourceMessageRowId(
+          startedAfterSourceRowId: messageImportResult.startedAfterSourceRowId,
+        );
       },
       importChatHandleJoins: () async {
         await chatHandleJoinImporter.importJoins();
       },
-      importMessageAttachmentJoins: () async {
-        await messageAttachmentJoinImporter.importJoins();
+      importMessageAttachmentJoins: (messageImportResult) async {
+        if (messageImportResult.insertedMessageCount == 0) {
+          await messageAttachmentJoinImporter.importJoins();
+          return;
+        }
+        await messageAttachmentJoinImporter.importJoinsAfterSourceMessageRowId(
+          startedAfterSourceRowId: messageImportResult.startedAfterSourceRowId,
+        );
       },
       projectHandles: () async {
         await handleProjector.projectHandles();

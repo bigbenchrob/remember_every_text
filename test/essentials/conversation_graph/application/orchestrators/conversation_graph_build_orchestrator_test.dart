@@ -40,12 +40,15 @@ void main() {
           lastImportedSourceRowId: 21,
         );
       },
-      importChatMessageJoins: _record(calls, 'import_chat_message_joins'),
+      importChatMessageJoins: (messageImportResult) async {
+        calls.add('import_chat_message_joins');
+        expect(messageImportResult.startedAfterSourceRowId, 10);
+      },
       importChatHandleJoins: _record(calls, 'import_chat_handle_joins'),
-      importMessageAttachmentJoins: _record(
-        calls,
-        'import_message_attachment_joins',
-      ),
+      importMessageAttachmentJoins: (messageImportResult) async {
+        calls.add('import_message_attachment_joins');
+        expect(messageImportResult.startedAfterSourceRowId, 10);
+      },
       projectHandles: _record(calls, 'project_handles'),
       projectContacts: () async {
         calls.add('project_contacts');
