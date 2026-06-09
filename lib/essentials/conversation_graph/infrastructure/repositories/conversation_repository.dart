@@ -3,9 +3,9 @@ import '../../application/conversations/conversation.dart';
 import '../../application/conversations/conversation_repository.dart';
 
 class SqliteConversationRepository implements ConversationRepository {
-  const SqliteConversationRepository({required this.workingDatabase});
+  const SqliteConversationRepository({required this.graphDatabase});
 
-  final ConversationGraphDatabase workingDatabase;
+  final ConversationGraphDatabase graphDatabase;
 
   @override
   Future<List<ConversationOverview>> readOverviews({int limit = 100}) async {
@@ -36,7 +36,7 @@ class SqliteConversationRepository implements ConversationRepository {
     List<Object?> whereArgs = const <Object?>[],
   }) async {
     final limitClause = limit == null ? '' : 'LIMIT ?';
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       SELECT
         c.ss_id AS conversation_id,
@@ -98,7 +98,7 @@ class SqliteConversationRepository implements ConversationRepository {
     required int conversationId,
     int limit = 100,
   }) async {
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       SELECT
         m.ss_id AS message_id,
@@ -141,7 +141,7 @@ class SqliteConversationRepository implements ConversationRepository {
   Future<List<ConversationMessageTimelineEntry>> readMessageTimeline({
     required int conversationId,
   }) async {
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       SELECT
         m.ss_id AS message_id,
@@ -173,7 +173,7 @@ class SqliteConversationRepository implements ConversationRepository {
     required int conversationId,
     required int messageId,
   }) async {
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       SELECT
         m.ss_id AS message_id,
@@ -230,7 +230,7 @@ class SqliteConversationRepository implements ConversationRepository {
       terms.length,
       'lower(m.text) LIKE ?',
     ).join(matchAnyTerm ? ' OR ' : ' AND ');
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       SELECT
         m.ss_id AS message_id
@@ -261,7 +261,7 @@ class SqliteConversationRepository implements ConversationRepository {
       '(?)',
     ).join(', ');
 
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       WITH RECURSIVE target(conversation_id) AS (
         VALUES $valuePlaceholders
@@ -362,7 +362,7 @@ class SqliteConversationRepository implements ConversationRepository {
       return <int, ConversationMessageTextMatch>{};
     }
 
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       WITH matching AS (
         SELECT
@@ -427,7 +427,7 @@ class SqliteConversationRepository implements ConversationRepository {
   }
 
   Future<List<String>> _readParticipantHandles(int conversationId) async {
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       SELECT DISTINCT
         COALESCE(ch.display_handle, h.id) AS handle_id,

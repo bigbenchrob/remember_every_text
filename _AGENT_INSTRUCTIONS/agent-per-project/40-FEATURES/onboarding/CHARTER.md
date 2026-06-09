@@ -1,6 +1,8 @@
 # Onboarding — Feature Charter
 
-> Legacy note (2026-04-21): this folder is V1 planning material. Current onboarding architecture lives primarily in `lib/essentials/onboarding`; readiness panel UI lives in `lib/features/environment_readiness`; canonical docs are under `../25-ONBOARDING-AND-ARCHIVE/`. Several V1 assumptions below are no longer current, including deferred FDA handling, happy-path-only failure handling, and the absence of ViewSpec participation for onboarding dev/readiness panels.
+> Legacy note (2026-04-21, updated 2026-06-03): this folder is V1 planning material. Current onboarding architecture lives primarily in `lib/essentials/onboarding`; readiness panel UI lives in `lib/features/environment_readiness`; canonical docs are under `../25-ONBOARDING-AND-ARCHIVE/`. Several V1 assumptions below are no longer current, including deferred FDA handling, happy-path-only failure handling, the absence of ViewSpec participation for onboarding dev/readiness panels, and any use of `DbImportControlProvider.runImportAndMigration()`.
+>
+> Current rule: onboarding and settings reimport are graph-lifecycle flows. They use `MessageDataResetService` for derived-data reset/cleanup and `ConversationGraphBuildController` for source-scoped graph build/rebuild. The retained legacy import-control panel is diagnostic/import-only and must not be used as the onboarding orchestrator.
 
 ## Mission
 
@@ -8,11 +10,11 @@ Present a full-window blocking overlay on first launch that detects absent/empty
 
 ## Inviolate Rules
 
-1. **Zero orchestrator changes for cosmetic purposes.** Onboarding calls `runImportAndMigration()` (or the underlying services directly) and listens to the same `onExecutionPlan` / `onTableProgress` callbacks the dev pane uses. If something needs to be _exposed_ from an orchestrator so the UI can initialize or update, that's fine — but no new orchestrator logic, no new migrator steps, no alternate code paths.
+1. **Zero orchestrator changes for cosmetic purposes.** Onboarding delegates lifecycle work to application services. Current app-facing setup/reimport resets derived data through `MessageDataResetService` and builds the source-scoped graph through `ConversationGraphBuildController`; it does not route through presentation controllers.
 2. **No user_overlays.db involvement.** Even if present from a prior run, the overlay DB is never read, written, or consulted during onboarding. The overlay merging at read time continues to work as normal once the app is running — onboarding simply doesn't touch it.
-3. **Identical sequence to dev pane.** The user sees the same stages, same table names, same three-phase lifecycle (validatePrereqs → copy → postValidate) as the dev pane. Labels may be made friendlier later, but the underlying data and ordering are identical.
+3. **Graph lifecycle is authoritative.** The user-facing setup sequence should describe source-scoped graph readiness/build state. Legacy import/migration progress surfaces are retained diagnostic/archive compatibility only.
 4. **Failure and early-dismiss are deferred.** V1 assumes success. Error handling, retry, partial progress, and mid-onboarding dismissal are future work.
-5. **First-run only (V1).** Detection: `macos_import.db` and `working.db` are both absent or empty (zero rows in key tables). Re-import after corruption, sync mismatch, etc. is a later scenario.
+5. **Graph readiness, not legacy working readiness.** Current setup gates should use source-scoped import/graph readiness and explicit failure state. `working.db` is no longer the ordinary app readiness signal.
 
 ## Two Phases
 
@@ -26,8 +28,8 @@ Present a full-window blocking overlay on first launch that detects absent/empty
 
 #### Trigger
 On app launch, before the main UI is usable, a provider checks:
-- Does `macos_import.db` exist at `_databaseDirectoryPath` AND contain data?
-- Does `working.db` exist at `_databaseDirectoryPath` AND contain data?
+- Does `macos_import_ss.db` exist at `_databaseDirectoryPath` AND contain data?
+- Does `working_ss.db` / the conversation graph exist at `_databaseDirectoryPath` AND contain data?
 
 If **either** is absent or empty → show the onboarding overlay.
 
@@ -35,10 +37,10 @@ If **either** is absent or empty → show the onboarding overlay.
 1. **Gray blocking overlay** covers the entire `MacosWindow` (including toolbar actions). Only the overlay is interactive.
 2. **Welcome / explanation panel** with a single primary button: _"Import My Messages"_ (or similar).
 3. User taps the button → overlay transitions to **progress view**.
-4. **Progress view** displays:
+4. **Progress view** displays graph lifecycle status:
    - Overall linear progress bar (completed stages / total stages)
    - Per-stage rows: icon (pending / active / complete / failed) + display name + row count + inline progress
-   - This is the same `UiStageProgress` list the dev pane renders — fed by the same callbacks.
+   - Source-scoped graph build progress is the current authoritative setup signal.
 5. On completion → overlay shows **success summary** (message count, contact count, etc.) with a _"Get Started"_ button.
 6. Tapping _"Get Started"_ dismisses the overlay and the normal app UI becomes interactive.
 
@@ -47,14 +49,13 @@ If **either** is absent or empty → show the onboarding overlay.
 ```
 lib/essentials/onboarding/
 ├── domain/
-│   └── onboarding_status.dart           # enum: notNeeded, awaitingUserAction, importing, migrating, complete
+│   └── onboarding_status.dart           # enum: notNeeded, awaitingUserAction, importing, buildingGraph, complete
 ├── application/
 │   └── onboarding_gate_provider.dart    # @riverpod — checks DB existence, exposes OnboardingStatus
 ├── infrastructure/
 │   └── database_existence_checker.dart  # pure function: path → bool (file exists + has rows)
 └── presentation/
-    ├── onboarding_overlay.dart          # the gray blocking overlay widget
-    └── onboarding_progress_view.dart    # reuses UiStageProgress rendering from dev pane (or mirrors it)
+    └── onboarding_overlay.dart          # current blocking workflow overlay
 ```
 
 #### Integration Point
@@ -77,13 +78,18 @@ The overlay sits above everything, absorbs all input (via `ModalBarrier` or `Abs
 
 Two options (decide during implementation):
 
-**Option A — Reuse `DbImportControlProvider` directly.**
-Onboarding calls `ref.read(dbImportControlProvider.notifier).runImportAndMigration()` and watches `dbImportControlProvider` for `stages`, `progress`, `lastImportResult`, `lastMigrationResult`. The dev pane and onboarding share the same notifier instance.
+**Retired Option A — Reuse `DbImportControlProvider` directly.**
+This option is no longer valid. `runImportAndMigration()` has been deleted, and onboarding must not depend on import-control presentation state.
 
-**Option B — Separate thin notifier that calls services directly.**
-Onboarding creates its own `OnboardingImportProvider` that calls `OrchestratedLedgerImportService.runImport()` and `HandlesMigrationService.run()` with its own callbacks. Avoids coupling to the dev pane's UI state.
+**Current direction — Dedicated onboarding lifecycle.**
+Onboarding owns its lifecycle state and calls application services directly:
+`MessageDataResetService` for reset/cleanup and
+`ConversationGraphBuildController` for graph build/rebuild. Environment
+readiness reads source probes, source-scoped graph readiness, overlay failure
+state, and the maintenance lock.
 
-**Recommendation:** Option A for V1 — simpler, already works, and the dev pane won't be visible during onboarding anyway. If coupling becomes a problem, refactor to Option B later.
+**Recommendation:** preserve this separation. Presentation controllers may show
+diagnostics, but they are not lifecycle orchestrators.
 
 ## Open Questions (deferred)
 

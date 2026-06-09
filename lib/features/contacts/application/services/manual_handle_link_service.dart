@@ -20,9 +20,9 @@ class Failure {
 
 /// Service for managing manual handle-to-contact links.
 ///
-/// All writes target the overlay database exclusively. The working database
-/// is never modified here — providers merge both databases at read time
-/// with overlay winning on conflict (inviolable architectural rule).
+/// All writes target the overlay database exclusively. The graph database is
+/// never modified here; providers merge graph facts with overlay intent at read
+/// time with overlay winning on conflict (inviolable architectural rule).
 @riverpod
 class ManualHandleLinkService extends _$ManualHandleLinkService {
   @override
@@ -76,7 +76,7 @@ class ManualHandleLinkService extends _$ManualHandleLinkService {
     }
   }
 
-  /// Links a handle to a real (working-DB) participant.
+  /// Links a handle to a graph contact/participant identity.
   ///
   /// Writes only to the overlay database. Providers merge at read time.
   ///
@@ -151,7 +151,7 @@ class ManualHandleLinkService extends _$ManualHandleLinkService {
 
   /// Removes a manual link between handle and participant.
   ///
-  /// Deletes the overlay override only. The working database is not touched.
+  /// Deletes the overlay override only. The graph database is not touched.
   /// The handle reverts to its automatic link (if any) or unlinked status.
   ///
   /// If the handle was linked to a virtual participant and that participant

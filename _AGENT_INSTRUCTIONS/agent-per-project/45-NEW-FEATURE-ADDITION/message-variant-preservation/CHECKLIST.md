@@ -2,8 +2,8 @@
 tier: feature
 scope: checklist
 owner: agent-per-project
-last_reviewed: 2026-03-14
-source_of_truth: doc
+last_reviewed: 2026-06-06
+source_of_truth: historical-record
 links:
   - ./PROPOSAL.md
   - ./DESIGN_NOTES.md
@@ -13,6 +13,12 @@ tests: []
 ---
 
 # Checklist — Message Variant Preservation
+
+## Current Conformance Note (2026-06-06)
+
+This checklist is historical. Do not use it as a field-parity todo list.
+Future work should be driven by named semantic/search/review behaviors and
+should follow the source-scoped graph preservation model.
 
 ## Proposal / Scope
 - [ ] Confirm feature name and branch name.

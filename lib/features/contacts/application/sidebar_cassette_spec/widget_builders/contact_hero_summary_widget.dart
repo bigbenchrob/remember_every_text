@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 
+import '../../../../../essentials/conversation_graph/domain/identity_key_bridge.dart';
 import '../../../../../essentials/db/feature_level_providers.dart';
 import '../../../infrastructure/repositories/contacts_list_repository.dart';
 import '../../../presentation/dialogs/contact_name_edit_dialog.dart';

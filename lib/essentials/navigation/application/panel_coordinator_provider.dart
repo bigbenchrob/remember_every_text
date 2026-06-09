@@ -7,16 +7,12 @@ import '../../../features/messages/feature_level_providers.dart'
     as messages_feature;
 import '../../../features/settings/feature_level_providers.dart'
     as settings_feature;
-import '../../db_importers/presentation/view/db_import_control_panel.dart';
-import '../../db_importers/presentation/view_model/db_import_control_provider.dart';
-import '../../onboarding/domain/import_spec.dart';
 import '../../onboarding/domain/spec_classes/onboarding_view_spec.dart';
 import '../../onboarding/presentation/onboarding_dev_panel.dart';
 import '../domain/entities/panel_stack.dart';
 import '../domain/entities/view_spec.dart';
 import '../domain/navigation_constants.dart';
 import '../domain/sidebar_mode.dart';
-import '../feature_level_providers.dart';
 import '../presentation/view/panel_stack_surface.dart';
 
 part 'panel_coordinator_provider.g.dart';
@@ -25,27 +21,7 @@ part 'panel_coordinator_provider.g.dart';
 @riverpod
 class PanelCoordinator extends _$PanelCoordinator {
   @override
-  void build(SidebarMode mode) {
-    ref.listen<Map<WindowPanel, PanelStack>>(panelsViewStateProvider(mode), (
-      previous,
-      next,
-    ) {
-      final nextStack = next[WindowPanel.center];
-      final nextSpec = nextStack?.activePage?.spec;
-      if (nextSpec == null) {
-        return;
-      }
-
-      nextSpec.maybeWhen(
-        import: (importSpec) {
-          _syncImportPanelMode(importSpec);
-        },
-        orElse: () {
-          // No-op for other specs.
-        },
-      );
-    });
-  }
+  void build(SidebarMode mode) {}
 
   Widget buildPanelSurface(WindowPanel panel, PanelStack stack) {
     return PanelStackSurface(
@@ -68,7 +44,6 @@ class PanelCoordinator extends _$PanelCoordinator {
       settings: (settingsSpec) => ref
           .read(settings_feature.viewSpecCoordinatorProvider.notifier)
           .buildForSpec(settingsSpec),
-      import: _buildImportPanel,
       environmentReadiness: (readinessSpec) => ref
           .read(
             environment_readiness_feature.viewSpecCoordinatorProvider.notifier,
@@ -77,29 +52,6 @@ class PanelCoordinator extends _$PanelCoordinator {
       onboarding: (onboardingSpec) =>
           onboardingSpec.when(devPanel: () => const OnboardingDevPanel()),
     );
-  }
-
-  Widget _buildImportPanel(ImportSpec spec) {
-    // Listener established in build() keeps the control view model in sync.
-    final panelKey = spec.when(
-      forImport: () => const ValueKey('import-mode'),
-      forMigration: () => const ValueKey('migration-mode'),
-    );
-    return DbImportControlPanel(key: panelKey);
-  }
-
-  void _syncImportPanelMode(ImportSpec spec) {
-    final desiredMode = spec.when(
-      forImport: () => DbImportMode.import,
-      forMigration: () => DbImportMode.migration,
-    );
-
-    final controlState = ref.read(dbImportControlViewModelProvider);
-    if (controlState.selectedMode == desiredMode) {
-      return;
-    }
-
-    ref.read(dbImportControlViewModelProvider.notifier).setMode(desiredMode);
   }
 
   /// Placeholder for empty panels

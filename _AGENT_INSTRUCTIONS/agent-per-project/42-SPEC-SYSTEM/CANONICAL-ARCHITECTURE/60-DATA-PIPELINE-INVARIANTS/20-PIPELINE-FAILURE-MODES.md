@@ -4,133 +4,140 @@
 
 This document defines known classes of failure in the MessageLens data pipeline.
 
-Each failure mode represents a violation (or potential violation) of pipeline invariants.
+Each failure mode represents a violation, or potential violation, of pipeline
+invariants.
 
 Agents MUST use this document to:
 
-- classify observed issues
-- avoid misdiagnosis
-- select correct remediation strategies
+- classify observed issues.
+- avoid misdiagnosis.
+- select correct remediation strategies.
 
 ---
 
 ## 1. Failure Mode Classification
 
-All pipeline failures fall into one or more of:
+Pipeline failures fall into one or more of:
 
-- ledger incompleteness
-- projection inconsistency
-- trigger/orchestration failure
-- identity/deduplication failure
-- authority boundary violation
-
----
-
-## 2. Ledger Incompleteness
-
-### Definition
-
-macos_import.db does not fully reflect source data.
-
-### Example (Observed)
-
-- restored ledger had:
-  - MAX(source_rowid) equal to chat.db
-  - BUT missing ~10k messages
-
-### Root Cause Pattern
-
-- reliance on cursor equality (MAX ROWID)
-- lack of secondary completeness signal
-
-### Detection
-
-- live importable count > imported count
-- gaps in message coverage
-
-### Correct Handling
-
-- trigger reimport (forceFullReimport)
-- DO NOT trust cursor alone
+- source-scoped ledger incompleteness.
+- graph projection inconsistency.
+- trigger/orchestration failure.
+- identity/deduplication failure.
+- evidence spine violation.
+- overlay authority violation.
+- retained compatibility leakage.
+- silent tolerance failure.
 
 ---
 
-## 3. Projection Inconsistency — Stale Rows
+## 2. Source-Scoped Ledger Incompleteness
 
 ### Definition
 
-working.db contains rows that are not present in authoritative ledger source set.
-
-### Example (Observed)
-
-- working.attachments contained:
-  - import_attachment_id = 40395
-- no corresponding row existed in macos_import.db
+`macos_import_ss.db` does not fully reflect source data required by graph
+projection.
 
 ### Root Cause Pattern
 
-- projection built from older ledger snapshot
-- ledger later changed
-- incremental migration did not remove stale rows
+- cursor-only source checks.
+- importer stage skipped or failed.
+- row-level source facts not preserved.
+- rich text or attachment source facts not imported before projection.
 
 ### Detection
 
-- row-count mismatch between working and source set
-- anti-join reveals orphan rows
+- source count > import ledger count.
+- gaps in source row coverage.
+- graph projection missing rows because import facts are absent.
 
 ### Correct Handling
 
-- migration MUST delete stale rows
-- validator MUST remain strict
+- trigger source-scoped import/rebuild.
+- inspect importer stage diagnostics.
+- do not trust cursor alone.
 
 ---
 
-## 4. Projection Inconsistency — Missing Rows
+## 3. Graph Projection Inconsistency — Stale Rows
 
 ### Definition
 
-working.db is missing rows that exist in ledger.
+`working_ss.db` contains graph rows or edges not present in the authoritative
+source-scoped source set under current projection rules.
 
 ### Root Cause Pattern
 
-- incomplete migration
-- migration aborted early
-- projection not rebuilt after ledger update
+- graph built from older ledger snapshot.
+- ledger later changed.
+- projector inserted but did not remove/update stale derived rows.
 
 ### Detection
 
-- working count < expected count
-- UI missing data
+- row-count mismatch between graph and source-scoped source set.
+- anti-join reveals orphan graph rows or edges.
+- graph health endpoint-integrity diagnostics fail.
 
 ### Correct Handling
 
-- rerun migration
-- ensure migration is idempotent
+- fix graph projector/rebuild logic.
+- keep validators strict.
+- do not patch individual graph rows as the real solution.
 
 ---
 
-## 5. Projection Inconsistency — Duplicate Rows
+## 4. Graph Projection Inconsistency — Missing Rows
 
 ### Definition
 
-working.db contains multiple rows representing same logical entity.
+`working_ss.db` is missing graph rows or edges that exist in source-scoped
+import facts and should project under current rules.
 
 ### Root Cause Pattern
 
-- deduplication failure
-- incorrect join logic
-- missing uniqueness constraint
+- incomplete graph build.
+- projector aborted early.
+- graph data version/readers refreshed before projection finished.
+- topology importer/projector skipped a relationship.
 
 ### Detection
 
-- COUNT(\*) > COUNT(DISTINCT identity)
-- duplicate (message_guid, import_attachment_id) pairs
+- graph count < expected count.
+- UI missing evidence that exists in import.
+- graph health reports missing endpoint rows or missing topology.
 
 ### Correct Handling
 
-- enforce uniqueness in migration
-- remove duplicates
-- add regression tests
+- rerun graph build.
+- ensure projectors are idempotent and complete.
+- add regression tests at importer/projector boundary.
+
+---
+
+## 5. Graph Projection Inconsistency — Duplicate Rows
+
+### Definition
+
+`working_ss.db` contains multiple rows or edges representing the same canonical
+graph entity.
+
+### Root Cause Pattern
+
+- incorrect uniqueness constraints.
+- GUID treated as canonical identity.
+- source-scoped identity not used consistently.
+- topology projection inserts duplicate edges.
+
+### Detection
+
+- `COUNT(*) > COUNT(DISTINCT ss_id)` where row identity should be unique.
+- duplicate canonical edge pairs.
+- duplicate participant/contact/handle aliases under canonical identity.
+
+### Correct Handling
+
+- enforce canonical `ss_id` or endpoint-pair uniqueness.
+- fix projector logic.
+- add duplicate-edge tests.
 
 ---
 
@@ -138,25 +145,24 @@ working.db contains multiple rows representing same logical entity.
 
 ### Definition
 
-system incorrectly concludes “no work needed” based on cursor equality.
-
-### Example (Observed)
-
-- chat.db MAX ROWID == imported MAX(source_rowid)
-- BUT ledger missing large number of rows
+The system incorrectly concludes no work is needed based on cursor equality.
 
 ### Root Cause Pattern
 
-- cursor-only decision logic
+- `MAX(ROWID)` is current but source-scoped import or graph projection is
+  incomplete.
+- restored app data folder contains stale derived DBs.
 
 ### Detection
 
-- count mismatch despite equal cursor
+- source/import/graph count mismatch despite equal cursor.
+- graph readiness says populated but evidence surfaces miss rows.
 
 ### Correct Handling
 
-- add secondary signal (count comparison)
-- trigger recovery import
+- add or use secondary completeness signals.
+- trigger graph rebuild/reconciliation.
+- do not weaken readiness checks.
 
 ---
 
@@ -164,24 +170,27 @@ system incorrectly concludes “no work needed” based on cursor equality.
 
 ### Definition
 
-correct work exists but is never scheduled or executed.
+Correct work exists but is never scheduled or executed.
 
 ### Root Cause Pattern
 
-- monitor not initialized
-- timer not started
-- gating logic incorrectly blocks execution
-- silent failure in scheduling path
+- monitor not initialized.
+- timer not started.
+- maintenance lock or gate blocks execution incorrectly.
+- silent failure in graph build scheduling path.
+- graph data-version invalidation omitted after success.
 
 ### Detection
 
-- no logs of migration attempt
-- expected triggers do not fire
+- no logs of graph build attempt.
+- `ChatDbChangeMonitor` cursor changes but build status remains idle.
+- imported/projected counts do not change after source change.
 
 ### Correct Handling
 
-- instrument startup and scheduler paths
-- ensure visibility of decisions
+- instrument startup and scheduler paths.
+- ensure graph build status is visible.
+- keep lifecycle ownership in orchestration/application services, not widgets.
 
 ---
 
@@ -189,139 +198,150 @@ correct work exists but is never scheduled or executed.
 
 ### Definition
 
-code bypasses canonical data flow.
+Code bypasses canonical data flow.
 
 ### Examples
 
-- UI reads from chat.db
-- feature writes directly to working.db
-- duplicate ingestion paths
-
-### Root Cause Pattern
-
-- convenience shortcuts
-- agent-generated “temporary fixes”
-
-### Detection
-
-- unexpected data sources
-- inconsistent data across layers
+- UI reads from `chat.db`.
+- feature writes directly to `working_ss.db`.
+- import/projection reads overlay user intent.
+- presentation layer performs graph identity conversion or topology lookup.
+- source-specific message renderer bypasses the evidence spine.
 
 ### Correct Handling
 
-- remove violation
-- restore pipeline flow
+- remove violation.
+- restore source-scoped import -> graph projection -> evidence provider flow.
+- move SQL/read logic behind named infrastructure repositories.
 
 ---
 
-## 9. Silent Tolerance Failure
+## 9. Overlay Authority Violation
 
 ### Definition
 
-system suppresses or ignores inconsistency instead of surfacing it.
+Durable user intent is stored in projection data, or projection/import consults
+overlay state.
 
-### Root Cause Pattern
+### Examples
 
-- weakened validator
-- catch-and-ignore exceptions
-- fallback logic
-
-### Detection
-
-- inconsistent data without errors
-- UI “mostly works” but is wrong
+- favourite/name/dismissal fields written into `working_ss.db`.
+- graph projection filters rows based on overlay dismissals.
+- manual links patched into derived graph tables instead of overlay bridge
+  state.
 
 ### Correct Handling
 
-- reintroduce strict validation
-- fail loudly and early
+- move user intent to overlay.
+- merge overlay at read/display boundary.
+- keep projection pure.
 
 ---
 
-## 10. Projection State Ambiguity
+## 10. Evidence Spine Violation
 
 ### Definition
 
-projection_state does not accurately represent projection completeness.
-
-### Example (Observed)
-
-- projection_state fields all NULL
-- UI still allowed to proceed
+A message-bearing surface uses a source-specific renderer, batch/pagination
+model, or local hydration path instead of the shared Message Evidence Spine.
 
 ### Root Cause Pattern
 
-- projection_state not authoritative
-- readiness determined by other signals
+- quick feature-specific UI implementation.
+- latest-N query mistaken for timeline navigation.
+- attachment evidence resolved inside widgets.
 
 ### Detection
 
-- mismatch between projection_state and actual DB state
+- surface does not produce a typed `MessageEvidenceScope`.
+- heatmap/search/jump controls only see hydrated rows.
+- row rendering differs by source for no explicit architectural reason.
 
 ### Correct Handling
 
-- treat projection_state as advisory unless strengthened
-- rely on actual data validation
+- restore shared evidence scope, skeleton, hydration, and row renderer.
+- remember: pagination is not timeline navigation.
 
 ---
 
-## 11. Recovery Gap (No New Data, Still Inconsistent)
+## 11. Retained Compatibility Leakage
 
 ### Definition
 
-projection is inconsistent but no new source data exists to trigger migration.
-
-### Example (Observed)
-
-- stale attachment row remained
-- incremental migration did not run
+Retained `macos_import.db` / `working.db` compatibility code becomes ordinary
+app authority again.
 
 ### Root Cause Pattern
 
-- migration only triggered by new data
-- no reconciliation path
+- old provider reused because it is convenient.
+- recovery/archive bridge not named as retained compatibility.
+- diagnostic read promoted into product surface.
 
 ### Detection
 
-- validator would fail if run
-- system appears idle
+- ordinary app surface opens retained legacy DBs.
+- documents describe retained projection as current app path.
+- tests depend on legacy row IDs for graph-era evidence.
 
 ### Correct Handling
 
-- introduce consistency-triggered migration (future)
-- OR ensure startup reconciliation
+- classify the retained path.
+- move ordinary reads to graph.
+- keep compatibility bridge named and removal criteria documented.
 
 ---
 
-## 12. Debugging Protocol (Agent Guidance)
+## 12. Silent Tolerance Failure
+
+### Definition
+
+The system suppresses or ignores inconsistency instead of surfacing it.
+
+### Root Cause Pattern
+
+- weakened validator.
+- catch-and-ignore exceptions.
+- fallback logic that hides missing graph topology.
+- UI hides anomalous records.
+
+### Correct Handling
+
+- reintroduce strict validation.
+- fail visibly.
+- render anomalous evidence with diagnostic state rather than suppressing it.
+
+---
+
+## 13. Debugging Protocol
 
 When investigating a pipeline issue:
 
-1. Classify failure mode(s)
-2. Identify violated invariant
+1. Classify failure mode(s).
+2. Identify violated invariant.
 3. Locate layer:
    - source
-   - ledger
-   - migration
-   - projection
+   - source-scoped ledger
+   - graph projection
+   - overlay merge
+   - evidence spine
+   - retained compatibility bridge
    - UI
-4. DO NOT patch data first
-5. Fix:
-   - migration logic
-   - trigger logic
-   - validation
+4. Do not patch data first.
+5. Fix the responsible logic.
 
 ---
 
-## 13. Key Insight
+## 14. Key Insight
 
 Most failures are not random bugs.
 
 They are violations of:
 
 - authority boundaries
-- projection consistency
+- graph projection consistency
 - trigger correctness
+- evidence spine convergence
+- overlay separation
 
 Correct diagnosis depends on identifying the class, not the symptom.
 

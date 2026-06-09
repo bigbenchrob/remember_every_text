@@ -2,7 +2,7 @@
 tier: project
 scope: databases
 owner: agent-per-project
-last_reviewed: 2026-04-21
+last_reviewed: 2026-06-08
 source_of_truth: doc
 links:
   - ./00-all-databases-accessed.md
@@ -16,17 +16,24 @@ links:
 tests: []
 ---
 
-# `db-import` — macOS Import Ledger (`macos_import.db`)
+# `db-import` - Retained Legacy macOS Import Ledger (`macos_import.db`)
 
 ## Overview
 
-`db-import` stores source-derived data extracted from macOS Messages (`db-chat`) and AddressBook (`db-address-book`). It preserves source identifiers and batch provenance, acting as the bridge between the raw Apple databases and the app-facing projection in `db-working`.
+`db-import` is the retained `macos_import.db` storage name. Fresh graph-era
+files now contain only archive-source metadata and schema migration records.
+Existing user data folders may still contain historical legacy ledger tables
+from earlier versions, and diagnostics/reset code must tolerate those files.
 
-Current caveat: this ledger is importer-owned, not manually immutable. Incremental import preserves prior imported rows and adds new rows by high-water marks; full/reimport paths may clear and rebuild source-derived ledger tables through `ClearLedgerImporter` / `SqfliteImportDatabase.clearAllData()`. Do not describe this database as append-only unless referring only to import-batch provenance.
+> Current conformance note (2026-06-08): ordinary graph-era import work uses
+> `macos_import_ss.db` via source-scoped import providers. Do not add new
+> product-facing behavior to `macos_import.db`. Its retained role is
+> archive-source metadata, read-only diagnostics of historical files, and reset
+> cleanup.
 
 - **Alias**: `db-import`
 - **Physical File**: `~/Library/Application Support/com.bigbenchsoftware.MessageLens/macos_import.db`
-- **Primary Consumers**: Import orchestrator, migration orchestrator, analytics/debug tooling
+- **Primary Consumers**: Historical archive-source metadata repository, database health diagnostics, reset cleanup
 
 ## File Location
 
@@ -53,47 +60,43 @@ final importDb = await ref.watch(sqfliteImportDatabaseProvider.future);
 
 Do not instantiate `SqfliteImportDatabase` manually; the provider handles directory creation, debug settings, and graceful shutdown.
 
-## Schema & Drift Definitions
+## Schema
 
-`db-import` is a plain Sqflite database; schema definitions live alongside the import infrastructure. Key references:
+`db-import` is a plain Sqflite database; schema definitions live alongside the retained import helper. Key reference:
 
 - `lib/essentials/db/infrastructure/data_sources/local/import/sqflite_import_database.dart` — Sqflite helper and schema bootstrap.
-- `_AGENT_INSTRUCTIONS/agent-per-project/20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md` — Canonical table/column descriptions.
 
-Core tables include:
+Fresh graph-era files create only:
 
 | Table | Purpose |
 | --- | --- |
-| `import_batches` | Audit log for each import run (timestamps, versions, paths). |
-| `source_files` / `import_logs` | Source file provenance and structured import diagnostics. |
-| `contacts` | AddressBook contacts with original `Z_PK`, organization flags, names. |
-| `contact_phone_email` | Normalised phone/email rows keyed by `ZOWNER`. |
-| `contact_to_chat_handle` | AddressBook/contact-channel matches to chat handles. |
-| `handles` | Raw chat handles from `db-chat`; retains original ROWIDs. |
-| `chats` | Chat metadata from Messages. |
-| `chat_to_handle` | Membership mapping directly from Messages source data. |
-| `messages` / `chat_to_message` | Thread-linked message payloads and chat-message joins. |
-| `recovered_unlinked_messages` | Source `message` rows that are not linked through `chat_message_join`. |
-| `attachments` / `message_attachments` / `recovered_unlinked_message_attachments` | Attachment metadata and normal/recovered message attachment joins. |
-| `reactions` / `message_links` | Parsed tapbacks and extracted URL spans. |
+| `schema_migrations` | Records retained helper schema upgrades. |
+| `historical_archive_sources` | User-registered historical Messages folder metadata and preflight results. |
+
+Existing user folders may still contain older tables such as `messages`,
+`attachments`, `recovered_unlinked_messages`, or `import_batches`. Treat them as
+historical retained compatibility inventory. Do not build new ordinary features
+on those tables.
 
 ## Typical Use Cases
 
-- Inspect the latest import batch metadata before running migrations.
-- Verify a particular contact/handle exists in the ledger before debugging projection issues.
-- Diff raw source rows against the working projection to confirm migration invariants.
+- Persist and display registered historical archive-source metadata.
+- Inspect old `macos_import.db` files read-only during diagnostics.
+- Delete the retained file during full derived-data reset.
 
-Because `db-import` records batches, source files, import logs, and source identifiers, it provides a reliable diagnostic trail without risking mutation of the UI-facing projection. Do not rely on data tables being append-only across full/reimport flows.
+Because historical user files may still contain old ledger tables, diagnostics
+should report what exists without treating those tables as active app truth.
 
 ## Related Rules & Contracts
 
-- **Source identity must remain traceable**: Source ROWIDs, GUIDs, and AddressBook `Z_PK` values must remain available through import and projection. Some working tables canonicalize identity relationships, but they must not erase source traceability. See `10-group-import-working.md` for the full contract.
 - **Provider-only access**: Always obtain connections via `sqfliteImportDatabaseProvider`; direct connections create locking issues.
-- **Importer-owned derivation only**: `db-import` captures source-derived data plus import diagnostics and limited derived metadata such as rich-text extraction, recovered-unlinked classification, reactions, and URL spans. App-level UI behavior and user intent do not belong here.
+- **No active import semantics**: Source identity, rich text, reactions,
+  recovered/orphan evidence, and attachment topology now belong to
+  `macos_import_ss.db` and `working_ss.db`, not fresh retained
+  `macos_import.db`.
 
 ## Cross-References
 
-- `10-group-import-working.md` — How `db-import` feeds `db-working`.
-- `02-db-working.md` — Projection database consuming this ledger.
-- `../20-DATA-IMPORT-MIGRATION/10-import-orchestrator.md` — Pipeline that populates `db-import`.
-- `../20-DATA-IMPORT-MIGRATION/20-migration-orchestrator.md` — Pipeline that reads from `db-import`.
+- `10-group-import-working.md` — Historical retained import/working contract.
+- `02-db-working.md` — Retained projection database status.
+- `../55-READERS-INTEGRATORS-ORCHESTRATORS/81-LEGACY-STORAGE-RETENTION-REGISTER.md` — Current retained storage status.

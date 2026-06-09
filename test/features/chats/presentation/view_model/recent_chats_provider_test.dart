@@ -45,7 +45,6 @@ void main() {
     expect(summaries.single.handles, ['+15551', '+15552']);
     expect(summaries.single.lastMessageDate, isNotNull);
     expect(summaries.single.lastMessagePreview, 'hello');
-    expect(summaries.single.calendarHeatmapTimelineData, isNull);
   });
 
   test(

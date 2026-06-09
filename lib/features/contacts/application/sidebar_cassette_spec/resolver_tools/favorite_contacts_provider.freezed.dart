@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$FavoriteContactEntry {
 
- ContactSummary get contact; DateTime get pinnedAt; DateTime? get lastInteractionAt; DateTime get updatedAt;
+ ContactSummary get contact; DateTime get favoritedAt; DateTime? get lastInteractionAt; DateTime get updatedAt;
 /// Create a copy of FavoriteContactEntry
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $FavoriteContactEntryCopyWith<FavoriteContactEntry> get copyWith => _$FavoriteCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FavoriteContactEntry&&(identical(other.contact, contact) || other.contact == contact)&&(identical(other.pinnedAt, pinnedAt) || other.pinnedAt == pinnedAt)&&(identical(other.lastInteractionAt, lastInteractionAt) || other.lastInteractionAt == lastInteractionAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FavoriteContactEntry&&(identical(other.contact, contact) || other.contact == contact)&&(identical(other.favoritedAt, favoritedAt) || other.favoritedAt == favoritedAt)&&(identical(other.lastInteractionAt, lastInteractionAt) || other.lastInteractionAt == lastInteractionAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,contact,pinnedAt,lastInteractionAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,contact,favoritedAt,lastInteractionAt,updatedAt);
 
 @override
 String toString() {
-  return 'FavoriteContactEntry(contact: $contact, pinnedAt: $pinnedAt, lastInteractionAt: $lastInteractionAt, updatedAt: $updatedAt)';
+  return 'FavoriteContactEntry(contact: $contact, favoritedAt: $favoritedAt, lastInteractionAt: $lastInteractionAt, updatedAt: $updatedAt)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $FavoriteContactEntryCopyWith<$Res>  {
   factory $FavoriteContactEntryCopyWith(FavoriteContactEntry value, $Res Function(FavoriteContactEntry) _then) = _$FavoriteContactEntryCopyWithImpl;
 @useResult
 $Res call({
- ContactSummary contact, DateTime pinnedAt, DateTime? lastInteractionAt, DateTime updatedAt
+ ContactSummary contact, DateTime favoritedAt, DateTime? lastInteractionAt, DateTime updatedAt
 });
 
 
@@ -62,10 +62,10 @@ class _$FavoriteContactEntryCopyWithImpl<$Res>
 
 /// Create a copy of FavoriteContactEntry
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? contact = null,Object? pinnedAt = null,Object? lastInteractionAt = freezed,Object? updatedAt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? contact = null,Object? favoritedAt = null,Object? lastInteractionAt = freezed,Object? updatedAt = null,}) {
   return _then(_self.copyWith(
 contact: null == contact ? _self.contact : contact // ignore: cast_nullable_to_non_nullable
-as ContactSummary,pinnedAt: null == pinnedAt ? _self.pinnedAt : pinnedAt // ignore: cast_nullable_to_non_nullable
+as ContactSummary,favoritedAt: null == favoritedAt ? _self.favoritedAt : favoritedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,lastInteractionAt: freezed == lastInteractionAt ? _self.lastInteractionAt : lastInteractionAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,
@@ -162,10 +162,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ContactSummary contact,  DateTime pinnedAt,  DateTime? lastInteractionAt,  DateTime updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ContactSummary contact,  DateTime favoritedAt,  DateTime? lastInteractionAt,  DateTime updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _FavoriteContactEntry() when $default != null:
-return $default(_that.contact,_that.pinnedAt,_that.lastInteractionAt,_that.updatedAt);case _:
+return $default(_that.contact,_that.favoritedAt,_that.lastInteractionAt,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -183,10 +183,10 @@ return $default(_that.contact,_that.pinnedAt,_that.lastInteractionAt,_that.updat
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ContactSummary contact,  DateTime pinnedAt,  DateTime? lastInteractionAt,  DateTime updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ContactSummary contact,  DateTime favoritedAt,  DateTime? lastInteractionAt,  DateTime updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _FavoriteContactEntry():
-return $default(_that.contact,_that.pinnedAt,_that.lastInteractionAt,_that.updatedAt);case _:
+return $default(_that.contact,_that.favoritedAt,_that.lastInteractionAt,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -203,10 +203,10 @@ return $default(_that.contact,_that.pinnedAt,_that.lastInteractionAt,_that.updat
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ContactSummary contact,  DateTime pinnedAt,  DateTime? lastInteractionAt,  DateTime updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ContactSummary contact,  DateTime favoritedAt,  DateTime? lastInteractionAt,  DateTime updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _FavoriteContactEntry() when $default != null:
-return $default(_that.contact,_that.pinnedAt,_that.lastInteractionAt,_that.updatedAt);case _:
+return $default(_that.contact,_that.favoritedAt,_that.lastInteractionAt,_that.updatedAt);case _:
   return null;
 
 }
@@ -218,11 +218,11 @@ return $default(_that.contact,_that.pinnedAt,_that.lastInteractionAt,_that.updat
 
 
 class _FavoriteContactEntry implements FavoriteContactEntry {
-  const _FavoriteContactEntry({required this.contact, required this.pinnedAt, this.lastInteractionAt, required this.updatedAt});
+  const _FavoriteContactEntry({required this.contact, required this.favoritedAt, this.lastInteractionAt, required this.updatedAt});
   
 
 @override final  ContactSummary contact;
-@override final  DateTime pinnedAt;
+@override final  DateTime favoritedAt;
 @override final  DateTime? lastInteractionAt;
 @override final  DateTime updatedAt;
 
@@ -236,16 +236,16 @@ _$FavoriteContactEntryCopyWith<_FavoriteContactEntry> get copyWith => __$Favorit
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FavoriteContactEntry&&(identical(other.contact, contact) || other.contact == contact)&&(identical(other.pinnedAt, pinnedAt) || other.pinnedAt == pinnedAt)&&(identical(other.lastInteractionAt, lastInteractionAt) || other.lastInteractionAt == lastInteractionAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FavoriteContactEntry&&(identical(other.contact, contact) || other.contact == contact)&&(identical(other.favoritedAt, favoritedAt) || other.favoritedAt == favoritedAt)&&(identical(other.lastInteractionAt, lastInteractionAt) || other.lastInteractionAt == lastInteractionAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,contact,pinnedAt,lastInteractionAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,contact,favoritedAt,lastInteractionAt,updatedAt);
 
 @override
 String toString() {
-  return 'FavoriteContactEntry(contact: $contact, pinnedAt: $pinnedAt, lastInteractionAt: $lastInteractionAt, updatedAt: $updatedAt)';
+  return 'FavoriteContactEntry(contact: $contact, favoritedAt: $favoritedAt, lastInteractionAt: $lastInteractionAt, updatedAt: $updatedAt)';
 }
 
 
@@ -256,7 +256,7 @@ abstract mixin class _$FavoriteContactEntryCopyWith<$Res> implements $FavoriteCo
   factory _$FavoriteContactEntryCopyWith(_FavoriteContactEntry value, $Res Function(_FavoriteContactEntry) _then) = __$FavoriteContactEntryCopyWithImpl;
 @override @useResult
 $Res call({
- ContactSummary contact, DateTime pinnedAt, DateTime? lastInteractionAt, DateTime updatedAt
+ ContactSummary contact, DateTime favoritedAt, DateTime? lastInteractionAt, DateTime updatedAt
 });
 
 
@@ -273,10 +273,10 @@ class __$FavoriteContactEntryCopyWithImpl<$Res>
 
 /// Create a copy of FavoriteContactEntry
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? contact = null,Object? pinnedAt = null,Object? lastInteractionAt = freezed,Object? updatedAt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? contact = null,Object? favoritedAt = null,Object? lastInteractionAt = freezed,Object? updatedAt = null,}) {
   return _then(_FavoriteContactEntry(
 contact: null == contact ? _self.contact : contact // ignore: cast_nullable_to_non_nullable
-as ContactSummary,pinnedAt: null == pinnedAt ? _self.pinnedAt : pinnedAt // ignore: cast_nullable_to_non_nullable
+as ContactSummary,favoritedAt: null == favoritedAt ? _self.favoritedAt : favoritedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,lastInteractionAt: freezed == lastInteractionAt ? _self.lastInteractionAt : lastInteractionAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,

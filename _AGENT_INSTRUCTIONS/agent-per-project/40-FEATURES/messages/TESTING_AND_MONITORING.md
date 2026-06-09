@@ -2,51 +2,69 @@
 tier: feature
 scope: testing-monitoring
 owner: agent-per-project
-last_reviewed: 2026-04-21
+last_reviewed: 2026-06-05
 links:
-	- ./STATE_AND_PROVIDER_INVENTORY.md
-	- ./WORK_LOG.md
+  - ./STATE_AND_PROVIDER_INVENTORY.md
+  - ./WORK_LOG.md
 tests: []
 feature: messages
 doc_type: testing-monitoring
-status: draft
-last_updated: 2026-04-21
+status: current
+last_updated: 2026-06-05
 ---
 
-# Testing & Monitoring — Messages
+# Testing & Monitoring - Messages
 
-This document focuses on the unified message timeline implementation.
+This document focuses on the graph-backed Message Evidence Spine.
 
 ## Automated Coverage Targets
+
 - Unit
-	- `ContactMessageIndexDataSource.getTotalCount`, `getMessageIdByOrdinal`, `getFirstOrdinalForMonth` semantics.
-	- `MessageTimelineViewModel` debounce behavior (controller updates → debounced query → loading/data).
-	- Scope-specific ordinal strategies for global, contact, filtered contact, chat, and recovered scopes.
+  - Message evidence scope construction for global, contact, handle-filtered,
+    conversation, recovered, and search contexts.
+  - Full-scope skeleton count/order/month-key behavior.
+  - Visible-row hydration by graph `message_ss_id`.
+  - Scope search and AND/OR matching against the selected logical scope.
+  - Attachment evidence hydration for archived, unavailable, and text-only rows.
 - Integration
-	- Query joins for row hydration: ensure hydration returns `MessageListItem` for valid ordinals.
-	- Maintenance lock behavior: when `dbMaintenanceLockProvider` is true, ordinal provider returns empty state without opening DB.
+  - Graph repository joins for contact, conversation, handle, recovered, and
+    global scopes.
+  - Display identity precedence in sender labels and conversation headers.
+  - Overlay saved/tag/annotation state merged at read time.
+  - Maintenance lock behavior during reset/rebuild.
 - Widget
-	- Timeline skeleton + hydration: fixed-height placeholders, no upward scroll jitter.
-	- Default behavior: jump to latest after initial frame.
-	- Date-scoped behavior: `scrollToDate` results in month jump.
-	- Graph-backed contact timelines: heatmap month selection must update the projected contact message spec and jump into a full skeleton, not trigger page-style message loading.
-	- Graph-backed contact timelines: tests must separately cover full skeleton month keys/order and per-row hydration by message `ss_id`.
+  - Shared header renders title, metrics, search, and actions from typed model
+    data.
+  - Shared evidence rows render text, media, URL previews, badges, and fallback
+    states consistently across surfaces.
+  - Heatmap month selection jumps into the full skeleton, not a page fetch.
+  - New-message affordance appears without forcing scroll when the user is
+    reading mid-list.
 
 ## Test Data Requirements
-- Fixture scopes with large history spread across global, contact, chat, handle, and recovered scenarios where possible.
-- Ensure month boundaries exist for jump testing (at least 3 distinct `YYYY-MM` buckets).
-- Include rows that return null on hydration (e.g., missing message ids) to confirm UI resilience.
 
-## Monitoring & Telemetry
-- Track time-to-first-render for contact messages timeline (skeleton should appear quickly).
-- Track the rate of “ordinal hydration returned null” as an integrity signal.
-- Log maintenance lock transitions + any provider attempting DB open during maintenance.
+- Large histories across multiple months/years.
+- Multiple handles for one known contact.
+- Group conversations and one-to-one conversations.
+- Text-only, attachment-only, URL preview, attributed-body-only, sparse/system,
+  and recovered/orphan messages.
+- Unknown/unfamiliar handles and known-contact handle fallbacks.
+
+## Monitoring & Diagnostics
+
+- Graph build status and stage timings in the conversation graph status panel.
+- Message evidence load time for skeleton and visible hydration.
+- Attachment archive availability and missing evidence counts.
+- Pending-new-message behavior during live polling updates.
+- Stale scope or maintenance-lock errors during reset/rebuild.
 
 ## Manual Verification Checklist
-- Open global/contact/chat/recovered scopes: list appears and jumps correctly where supported.
-- Toggle maintenance/reset flow: contact messages should not spin indefinitely (should show empty).
-- Type in search field: results update after debounce; clearing search returns to list.
-- Use heatmap month tap: timeline jumps to that month.
 
-## TODO
-- Add or update widget harnesses around `MessagesTimelineView` with fake providers.
+- Open Contacts -> All messages and verify heatmap jumps remain coordinated.
+- Apply a handle filter and verify heatmap/counts match the filtered scope.
+- Open Conversations and select a long conversation; search within it.
+- Open unfamiliar-source messages and verify known contacts are not mislabeled
+  by raw handles.
+- Send a new message while reading mid-list; verify the list does not force
+  scroll and the pending affordance appears.
+- Confirm attachments and URL previews render through the shared evidence tiles.

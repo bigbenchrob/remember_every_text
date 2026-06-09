@@ -1,5 +1,14 @@
 # macOS DB Onboarding Feature Plan
 
+## Current Conformance Note (2026-06-06)
+
+This plan is historical. Its useful principle remains: onboarding coordinates
+and presents setup state while data systems own source access and projection.
+The current ordinary setup path is source-scoped import plus conversation graph
+build/readiness. References below to `db_import`, `db_migrate`, `working.db`,
+or import/migration progress describe the retained legacy-era plan and should
+not guide new production onboarding work.
+
 ## Overview
 
 A **bootstrap gate** for first-run users that displays a friendly setup status UI while the app locates and imports local macOS databases. This is NOT a wizard—it's a simplified progress overlay that automatically renders until databases are ready.

@@ -2,7 +2,7 @@
 tier: project
 scope: macos-source-databases
 owner: agent-per-project
-last_reviewed: 2026-05-15
+last_reviewed: 2026-06-06
 source_of_truth: doc
 links:
   - ./README.md
@@ -17,7 +17,9 @@ tests: []
 
 # macOS Source Database Overview
 
-The app’s import pipeline depends on Apple-managed sqlite databases whose internal data model is richer and messier than the app’s thread-oriented projection model.
+The app's source-scoped import and graph projection depend on Apple-managed
+sqlite databases whose internal data model is richer and messier than the
+app's graph-oriented projection model.
 
 This document explains source-database interpretation only. Source observations describe what has been seen in Apple-owned data; they do not guarantee future source behavior or define durable MessageLens semantics. The current MessageLens pipeline is documented in `../10-DATABASES/`, `../20-DATA-IMPORT-MIGRATION/`, and `../25-ONBOARDING-AND-ARCHIVE/`; do not use this source overview to bypass those database, migration, or archive boundaries.
 
@@ -39,7 +41,10 @@ This database contains:
 - chat linkage (`chat_message_join`)
 - attachment linkage (`attachment`, `message_attachment_join`)
 
-`chat.db` does not contain MessageLens working `participants`. Participants are a working-db projection built during migration from source handles, AddressBook-derived contact data, and handle-to-participant mapping logic.
+`chat.db` does not contain MessageLens contacts, canonical handles, or
+conversation graph identities. Those are graph projections built from source
+handles, AddressBook-derived contact data, handle canonicalization, and
+source-scoped topology.
 
 ## Key Insight
 
@@ -87,18 +92,26 @@ must preserve provenance with at least:
 - `source_table`
 - `source_rowid`
 
-Canonical app identity is resolved later by import/migration semantics. It
-must not be inferred from raw Apple ROWIDs alone.
+Canonical app identity is resolved later by source-scoped import and graph
+projection semantics. It must not be inferred from raw Apple ROWIDs alone.
 
 ## Current App Mapping
 
-The current pipeline preserves source shape while separating thread-linked and recovered content:
+The current graph-era pipeline preserves source shape while separating
+thread-linked conversation evidence from graph-orphan/recovered evidence:
 
-1. `chat.db.message` rows with a `chat_message_join` mapping are imported into `macos_import.db.messages`.
-2. `chat.db.message` rows without a `chat_message_join` mapping are imported into `macos_import.db.recovered_unlinked_messages`.
-3. `message_attachment_join` rows are split into `message_attachments` or `recovered_unlinked_message_attachments` according to the imported message path.
-4. Migration projects normal rows into working `messages` / `attachments` and recovered rows into working `recovered_unlinked_messages` / `recovered_unlinked_attachments`.
-5. The UI must keep recovered-unlinked content visibly distinct from normal chat timelines unless a future documented migration boundary changes that contract.
+1. `chat.db.message` rows are imported into source-scoped
+   `macos_import_ss.db.messages` with source provenance and canonical `ss_id`.
+2. `chat_message_join` rows import as source-scoped topology facts and project
+   into graph `chat_to_message` edges when source topology exists.
+3. `message_attachment_join` rows import as source-scoped attachment topology
+   facts and project into graph `message_to_attachment` edges.
+4. Rows without current `chat_message_join` topology remain preserved as
+   graph-orphan/recovered evidence; they are not fabricated into ordinary
+   conversation membership.
+5. The UI must keep graph-orphan/recovered content visibly distinct from normal
+   chat timelines unless a future documented migration boundary changes that
+   contract.
 
 Do not fabricate normal chat membership for source rows that lack `chat_message_join`. Preserving the absence of topology is part of the data model.
 
@@ -115,7 +128,11 @@ MessageLens never writes back to Apple’s Messages attachment directories.
 
 ## Ongoing Sync Boundary
 
-`ChatDbChangeMonitor` reads `~/Library/Messages/chat.db` read-only and polls `MAX(ROWID)` from `message`. On change it runs incremental import, archives the imported attachment batch, runs incremental migration, and bumps message data version. It must not be treated as a source of presentation orchestration or as permission for feature code to open `chat.db` directly.
+`ChatDbChangeMonitor` reads `~/Library/Messages/chat.db` read-only and polls
+`MAX(ROWID)` from `message`. On change it runs the source-scoped graph build
+for new rows, archives the imported graph source range, and bumps graph message
+data version. It must not be treated as a source of presentation orchestration
+or as permission for feature code to open `chat.db` directly.
 
 ## Related Topics
 

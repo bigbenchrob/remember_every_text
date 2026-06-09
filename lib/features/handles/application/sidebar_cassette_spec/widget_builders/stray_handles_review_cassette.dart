@@ -71,7 +71,6 @@ class StrayHandlesReviewCassette extends HookConsumerWidget {
             orElse: () => null,
           ),
           settings: (_) => null,
-          import: (_) => null,
           onboarding: (_) => null,
           environmentReadiness: (_) => null,
         );

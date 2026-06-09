@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
+import '../../../../api.dart' as rust_api;
 import '../../domain/ports/message_extractor_port.dart';
 
 class RustMessageExtractor implements MessageExtractorPort {
@@ -18,6 +20,16 @@ class RustMessageExtractor implements MessageExtractorPort {
   _logWarn;
   final void Function(String message, {Map<String, dynamic>? context})?
   _logError;
+  static Future<bool>? _blobExtractionAvailability;
+
+  static final Uint8List _attributedBodySmokeTestBlob = _hexBytes(
+    '040B73747265616D747970656481E803840140848484124E534174747269'
+    '6275746564537472696E67008484084E534F626A65637400859284848408'
+    '4E53537472696E67019484012B045445535486840269490104928484840C'
+    '4E5344696374696F6E617279009484016901928496961D5F5F6B494D4D65'
+    '7373616765506172744174747269627574654E616D658692848484084E53'
+    '4E756D626572008484074E5356616C7565009484012A84999900868686',
+  );
 
   String get extractorPath {
     if (Platform.isMacOS) {
@@ -40,6 +52,14 @@ class RustMessageExtractor implements MessageExtractorPort {
 
   void _error(String message, {Map<String, dynamic>? context}) {
     _logError?.call(message, context: context);
+  }
+
+  static Uint8List _hexBytes(String hex) {
+    final bytes = <int>[];
+    for (var index = 0; index < hex.length; index += 2) {
+      bytes.add(int.parse(hex.substring(index, index + 2), radix: 16));
+    }
+    return Uint8List.fromList(bytes);
   }
 
   @override
@@ -125,6 +145,68 @@ class RustMessageExtractor implements MessageExtractorPort {
     );
 
     return map;
+  }
+
+  @override
+  Future<Map<int, String>> extractMessageTextsFromBlobs(
+    Map<int, Uint8List> attributedBodyBlobsByRowId,
+  ) async {
+    final map = <int, String>{};
+
+    for (final entry in attributedBodyBlobsByRowId.entries) {
+      try {
+        final decoded = rust_api
+            .decodeTypedstreamBlob(blob: entry.value)
+            .trim();
+        if (decoded.isNotEmpty) {
+          map[entry.key] = decoded;
+        }
+      } catch (error) {
+        _warn(
+          'Rust blob extractor failed for attributed body row',
+          context: <String, dynamic>{
+            'sourceRowId': entry.key,
+            'error': '$error',
+          },
+        );
+      }
+    }
+
+    return map;
+  }
+
+  @override
+  Future<bool> isBlobExtractionAvailable() async {
+    final cachedAvailability = _blobExtractionAvailability;
+    if (cachedAvailability != null) {
+      return cachedAvailability;
+    }
+
+    final availability = _checkBlobExtractionAvailability();
+    _blobExtractionAvailability = availability;
+    return availability;
+  }
+
+  Future<bool> _checkBlobExtractionAvailability() async {
+    try {
+      final decoded = rust_api.decodeTypedstreamBlob(
+        blob: _attributedBodySmokeTestBlob,
+      );
+      final available = decoded == 'TEST';
+      if (!available) {
+        _warn(
+          'Rust blob extractor smoke test returned unexpected text',
+          context: <String, dynamic>{'decoded': decoded},
+        );
+      }
+      return available;
+    } catch (error) {
+      _warn(
+        'Rust blob extractor unavailable',
+        context: <String, dynamic>{'error': '$error'},
+      );
+      return false;
+    }
   }
 
   @override

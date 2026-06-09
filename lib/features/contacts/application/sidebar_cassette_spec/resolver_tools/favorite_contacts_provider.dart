@@ -1,18 +1,19 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../../essentials/conversation_graph/domain/identity_key_bridge.dart';
 import '../../../infrastructure/repositories/contacts_list_repository.dart';
 import 'favorite_contacts_repository_provider.dart';
 
 part 'favorite_contacts_provider.freezed.dart';
 part 'favorite_contacts_provider.g.dart';
 
-/// Favorite contact resolved with display metadata from the working dataset.
+/// Favorite contact resolved with display metadata from graph contact facts.
 @freezed
 abstract class FavoriteContactEntry with _$FavoriteContactEntry {
   const factory FavoriteContactEntry({
     required ContactSummary contact,
-    required DateTime pinnedAt,
+    required DateTime favoritedAt,
     DateTime? lastInteractionAt,
     required DateTime updatedAt,
   }) = _FavoriteContactEntry;
@@ -41,7 +42,7 @@ Future<List<FavoriteContactEntry>> favoriteContacts(
     resolved.add(
       FavoriteContactEntry(
         contact: contact,
-        pinnedAt: favorite.pinnedAt,
+        favoritedAt: favorite.favoritedAt,
         lastInteractionAt: favorite.lastInteractionAt,
         updatedAt: favorite.updatedAt,
       ),

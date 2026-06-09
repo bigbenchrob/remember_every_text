@@ -11,14 +11,14 @@ part 'attachment_projector_provider.g.dart';
 @riverpod
 Future<AttachmentProjector> attachmentProjector(Ref ref) async {
   final importDatabase = await ref.watch(importDatabaseProvider.future);
-  final workingDatabase = await ref.watch(
+  final graphDatabase = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
 
   return AttachmentProjector(
     repository: SqliteAttachmentProjectionRepository(
       importDatabase: importDatabase,
-      workingDatabase: workingDatabase,
+      graphDatabase: graphDatabase,
     ),
   );
 }

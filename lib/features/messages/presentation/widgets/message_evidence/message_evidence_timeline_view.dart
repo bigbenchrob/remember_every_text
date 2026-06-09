@@ -51,28 +51,51 @@ class _MessageEvidenceTimelineViewState
       ItemPositionsListener.create();
   String? _lastPublishedMonthKey;
   String? _lastJumpRequestKey;
+  String? _listInitialRequestKey;
+  int? _listInitialScrollIndex;
+  var _pendingNewEvidenceCount = 0;
 
   @override
   void initState() {
     super.initState();
-    _itemPositionsListener.itemPositions.addListener(_publishTopVisibleMonth);
+    _itemPositionsListener.itemPositions.addListener(
+      _handleItemPositionsChanged,
+    );
   }
 
   @override
   void didUpdateWidget(covariant MessageEvidenceTimelineView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.evidenceScope != widget.evidenceScope ||
+    final scopeChanged = oldWidget.evidenceScope != widget.evidenceScope;
+    final anchorChanged =
         oldWidget.monthAnchor != widget.monthAnchor ||
-        oldWidget.anchorMessageId != widget.anchorMessageId ||
-        oldWidget.skeleton != widget.skeleton) {
+        oldWidget.anchorMessageId != widget.anchorMessageId;
+
+    if (scopeChanged || anchorChanged) {
+      _pendingNewEvidenceCount = 0;
       _scheduleAnchorJump();
+      return;
+    }
+
+    final addedCount =
+        widget.skeleton.totalCount - oldWidget.skeleton.totalCount;
+    if (addedCount <= 0) {
+      return;
+    }
+
+    if (_shouldFollowLiveEdge(oldWidget.skeleton)) {
+      _pendingNewEvidenceCount = 0;
+      _lastJumpRequestKey = null;
+      _scheduleAnchorJump();
+    } else {
+      _pendingNewEvidenceCount += addedCount;
     }
   }
 
   @override
   void dispose() {
     _itemPositionsListener.itemPositions.removeListener(
-      _publishTopVisibleMonth,
+      _handleItemPositionsChanged,
     );
     super.dispose();
   }
@@ -82,7 +105,8 @@ class _MessageEvidenceTimelineViewState
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final backgroundColor = colors.messagePanels.coolPanelSurface;
-    final targetIndex = _targetIndex();
+    final pendingGlowColor = colors.messagePanels.pendingEvidenceGlow;
+    final listInitialScrollIndex = _listInitialScrollIndexForCurrentAnchor();
 
     _scheduleAnchorJump();
 
@@ -93,39 +117,51 @@ class _MessageEvidenceTimelineViewState
         children: [
           MessageEvidenceHeader(data: widget.headerData),
           Expanded(
-            child: MessageEvidenceFadeOverlay(
-              backgroundColor: backgroundColor,
-              child: widget.skeleton.isEmpty
-                  ? Center(child: Text(widget.emptyMessage))
-                  : widget.isInitialRowsLoading
-                  ? const Center(child: Text('Loading messages...'))
-                  : ScrollablePositionedList.builder(
-                      itemScrollController: _itemScrollController,
-                      itemPositionsListener: _itemPositionsListener,
-                      initialScrollIndex: targetIndex,
-                      padding: const EdgeInsets.fromLTRB(32, 8, 32, 0),
-                      itemCount: widget.skeleton.totalCount,
-                      itemBuilder: (context, index) {
-                        final entry = widget.skeleton.entries[index];
-                        final previousEntry = index == 0
-                            ? null
-                            : widget.skeleton.entries[index - 1];
-                        final previousDayLabel = previousEntry == null
-                            ? null
-                            : _dayLabel(previousEntry.dateUtc);
-                        return _MessageEvidenceTimelineRow(
-                          evidenceScope: widget.evidenceScope,
-                          entry: entry,
-                          initialMessage: widget.initialRows[entry.messageId],
-                          isAnchorMessage:
-                              entry.messageId == widget.anchorMessageId,
-                          highlightQuery: widget.highlightQuery,
-                          showDayDivider:
-                              previousEntry == null ||
-                              _dayLabel(entry.dateUtc) != previousDayLabel,
-                        );
-                      },
-                    ),
+            child: Stack(
+              children: [
+                MessageEvidenceFadeOverlay(
+                  backgroundColor: backgroundColor,
+                  child: widget.skeleton.isEmpty
+                      ? Center(child: Text(widget.emptyMessage))
+                      : widget.isInitialRowsLoading &&
+                            widget.initialRows.isEmpty
+                      ? const _InitialEvidenceLoading()
+                      : ScrollablePositionedList.builder(
+                          itemScrollController: _itemScrollController,
+                          itemPositionsListener: _itemPositionsListener,
+                          initialScrollIndex: listInitialScrollIndex,
+                          padding: const EdgeInsets.fromLTRB(32, 8, 32, 0),
+                          itemCount: widget.skeleton.totalCount,
+                          itemBuilder: (context, index) {
+                            final entry = widget.skeleton.entries[index];
+                            final previousEntry = index == 0
+                                ? null
+                                : widget.skeleton.entries[index - 1];
+                            final previousDayLabel = previousEntry == null
+                                ? null
+                                : _dayLabel(previousEntry.dateUtc);
+                            return _MessageEvidenceTimelineRow(
+                              evidenceScope: widget.evidenceScope,
+                              entry: entry,
+                              initialMessage:
+                                  widget.initialRows[entry.messageId],
+                              isAnchorMessage:
+                                  entry.messageId == widget.anchorMessageId,
+                              highlightQuery: widget.highlightQuery,
+                              showDayDivider:
+                                  previousEntry == null ||
+                                  _dayLabel(entry.dateUtc) != previousDayLabel,
+                            );
+                          },
+                        ),
+                ),
+                _PendingEvidenceGlow(
+                  visible: _pendingNewEvidenceCount > 0,
+                  color: pendingGlowColor,
+                  intensity: _pendingGlowIntensity(),
+                  pulseKey: _pendingNewEvidenceCount,
+                ),
+              ],
             ),
           ),
         ],
@@ -139,8 +175,7 @@ class _MessageEvidenceTimelineViewState
       return;
     }
 
-    final requestKey =
-        '${widget.evidenceScope.stableKey}:${widget.monthAnchor?.toIso8601String() ?? 'latest'}:${widget.anchorMessageId ?? 'no-anchor'}:${widget.skeleton.totalCount}';
+    final requestKey = _anchorRequestKey();
     if (_lastJumpRequestKey == requestKey) {
       return;
     }
@@ -157,6 +192,67 @@ class _MessageEvidenceTimelineViewState
       }
       _publishVisibleMonth(monthKey);
     });
+  }
+
+  void _handleItemPositionsChanged() {
+    _publishTopVisibleMonth();
+    if (_pendingNewEvidenceCount > 0 && _isAtLiveEdge(widget.skeleton)) {
+      setState(() {
+        _pendingNewEvidenceCount = 0;
+      });
+    }
+  }
+
+  bool _shouldFollowLiveEdge(MessageEvidenceTimelineSkeleton skeleton) {
+    return widget.monthAnchor == null &&
+        widget.anchorMessageId == null &&
+        _isAtLiveEdge(skeleton);
+  }
+
+  bool _isAtLiveEdge(MessageEvidenceTimelineSkeleton skeleton) {
+    if (skeleton.isEmpty) {
+      return true;
+    }
+
+    final latestIndex = skeleton.latestIndex();
+    final positions = _itemPositionsListener.itemPositions.value;
+    if (positions.isEmpty) {
+      return false;
+    }
+
+    return positions.any((position) {
+      return position.index >= latestIndex && position.itemLeadingEdge < 1;
+    });
+  }
+
+  double _pendingGlowIntensity() {
+    if (_pendingNewEvidenceCount <= 0) {
+      return 0;
+    }
+    return (_pendingNewEvidenceCount / 4).clamp(0.35, 1).toDouble();
+  }
+
+  int _listInitialScrollIndexForCurrentAnchor() {
+    if (widget.skeleton.isEmpty) {
+      _listInitialRequestKey = null;
+      _listInitialScrollIndex = 0;
+      return 0;
+    }
+
+    final requestKey = _anchorRequestKey();
+    if (_listInitialRequestKey != requestKey) {
+      _listInitialRequestKey = requestKey;
+      _listInitialScrollIndex = _targetIndex();
+    }
+
+    final initialScrollIndex = _listInitialScrollIndex ?? _targetIndex();
+    return initialScrollIndex.clamp(0, widget.skeleton.latestIndex());
+  }
+
+  String _anchorRequestKey() {
+    return '${widget.evidenceScope.stableKey}:'
+        '${widget.monthAnchor?.toIso8601String() ?? 'latest'}:'
+        '${widget.anchorMessageId ?? 'no-anchor'}';
   }
 
   void _publishTopVisibleMonth() {
@@ -215,6 +311,73 @@ class _MessageEvidenceTimelineViewState
     }
 
     return widget.skeleton.latestIndex();
+  }
+}
+
+class _InitialEvidenceLoading extends StatelessWidget {
+  const _InitialEvidenceLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(child: Text('Loading messages...'));
+  }
+}
+
+class _PendingEvidenceGlow extends StatelessWidget {
+  const _PendingEvidenceGlow({
+    required this.visible,
+    required this.color,
+    required this.intensity,
+    required this.pulseKey,
+  });
+
+  final bool visible;
+  final Color color;
+  final double intensity;
+  final int pulseKey;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 0,
+      child: IgnorePointer(
+        child: AnimatedOpacity(
+          opacity: visible ? 1 : 0,
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOut,
+          child: TweenAnimationBuilder<double>(
+            key: ValueKey<int>(pulseKey),
+            tween: Tween<double>(begin: 1, end: 0),
+            duration: const Duration(milliseconds: 900),
+            curve: Curves.easeOutCubic,
+            builder: (context, pulse, child) {
+              final pulseBoost = 0.38 * pulse;
+              return Opacity(
+                opacity: (intensity + pulseBoost).clamp(0, 1).toDouble(),
+                child: child,
+              );
+            },
+            child: Container(
+              height: 24,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    color.withValues(alpha: 0),
+                    color.withValues(alpha: 0.55),
+                    color,
+                  ],
+                  stops: const [0, 0.62, 1],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

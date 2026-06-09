@@ -93,7 +93,24 @@ class _ContactMessagesEvidenceViewState
           );
 
     return skeletonAsync.when(
+      skipLoadingOnReload: true,
+      skipLoadingOnRefresh: true,
       data: (skeleton) {
+        if (identityResolverAsync.isLoading &&
+            !identityResolverAsync.hasValue) {
+          return MessageEvidenceTimelineView(
+            evidenceScope: evidenceScope,
+            skeleton: skeleton,
+            isInitialRowsLoading: true,
+            headerData: MessageEvidenceHeaderModel(
+              title: 'Loading contact messages',
+              countLabel: '${_formatCount(skeleton.totalCount)} messages',
+            ),
+            emptyMessage: 'No messages found for this contact.',
+            monthAnchor: widget.monthAnchor,
+          );
+        }
+
         return _ContactMessagesEvidenceTimeline(
           contactId: widget.contactId,
           contactName: _contactLabelForId(
@@ -297,7 +314,7 @@ class _ContactMessagesEvidenceTimeline extends ConsumerWidget {
     if (label != null && label.isNotEmpty) {
       return label;
     }
-    return 'contact $contactId';
+    return 'this contact';
   }
 
   String _title() {

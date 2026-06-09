@@ -2,11 +2,10 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../essentials/conversation_graph/domain/identity_key_bridge.dart';
 import '../../../../essentials/db/feature_level_providers.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import '../../../../essentials/source_scoped_import/domain/known_sources.dart';
-import '../../../../essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import '../../domain/utilities/handle_normalizer.dart';
 
 part 'stray_handles_provider.freezed.dart';
@@ -220,20 +219,5 @@ DateTime? _parseDate(String? value) {
 }
 
 Set<int> _graphHandleIdsForOverlayId(int handleId) {
-  final ids = <int>{handleId};
-  final packed = _graphHandleIdForLegacyId(handleId);
-  if (packed != null) {
-    ids.add(packed);
-  }
-  return ids;
-}
-
-int? _graphHandleIdForLegacyId(int handleId) {
-  if (handleId <= 0 || handleId > SourceScopedRowKey.maxSourceRowId) {
-    return null;
-  }
-  return SourceScopedRowKey.pack(
-    sourceId: liveChatDbSourceId,
-    sourceRowId: handleId,
-  );
+  return handleOverlayKeyVariants(handleId);
 }

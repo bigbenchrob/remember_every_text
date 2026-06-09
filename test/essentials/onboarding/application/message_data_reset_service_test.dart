@@ -3,7 +3,7 @@ import 'package:remember_this_text/essentials/onboarding/application/message_dat
 
 void main() {
   test(
-    'derived message data reset includes legacy and graph database files',
+    'derived message data reset includes retained and graph database files',
     () {
       expect(
         derivedMessageDataDatabaseBaseNames,
@@ -16,24 +16,4 @@ void main() {
       );
     },
   );
-
-  test('import ledger reset includes only import ledger database files', () {
-    expect(
-      importLedgerDatabaseBaseNames,
-      <String>[
-        'macos_import.db',
-        'macos_import_ss.db',
-      ],
-    );
-  });
-
-  test('projection reset includes only projection database files', () {
-    expect(
-      projectionDatabaseBaseNames,
-      <String>[
-        'working.db',
-        'working_ss.db',
-      ],
-    );
-  });
 }

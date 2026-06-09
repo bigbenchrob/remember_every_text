@@ -98,7 +98,7 @@ ViewSpec? effectiveRightPanelSpec(Ref ref, SidebarMode mode) {
 }
 
 /// Whether the center panel is showing content that operates independently
-/// of the sidebar (e.g. import/migration, workbench).
+/// of the sidebar (e.g. maintenance, diagnostics, workbench).
 ///
 /// When true, the sidebar should display a contextual overlay with a
 /// dismiss action rather than the cassette rack.
@@ -179,7 +179,6 @@ Widget? contextualSidebarWidget(Ref ref, SidebarMode mode) {
       );
     },
     settings: (_) => null,
-    import: (_) => null,
     environmentReadiness: (_) => null,
     onboarding: (_) => null,
   );
@@ -299,7 +298,6 @@ String _defaultPanelTitle(ViewSpec spec) {
   return spec.map(
     messages: (_) => 'Messages',
     settings: (_) => 'Settings',
-    import: (_) => 'Import',
     environmentReadiness: (_) => 'Environment Readiness',
     onboarding: (_) => 'Onboarding',
   );
@@ -437,7 +435,6 @@ bool _isCenterSpecCompatibleWithSidebar({
         },
       );
     },
-    import: (_) => true,
     environmentReadiness: (_) => true,
     onboarding: (_) => true,
   );

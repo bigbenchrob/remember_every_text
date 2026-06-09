@@ -1,5 +1,11 @@
 # MessageLens App Breakdown Refactor - Checklist
 
+> Current conformance note (2026-06-06): this checklist is retained as a
+> historical execution record. Do not continue it mechanically. Current message
+> evidence work must use the graph-backed Message Evidence Spine, not the older
+> `MessageTimelineScope` / `MessagesTimelineView` / `working.db` timeline
+> architecture referenced in completed checklist items.
+
 This checklist is the execution companion to `IMPLEMENTATION_PLAN.md`.
 
 Do not check a phase complete until every structural, automated, and runtime

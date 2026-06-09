@@ -1,5 +1,11 @@
 # Checklist: Enhanced Message Search
 
+## Current Conformance Note (2026-06-06)
+
+This checklist is historical. Future enhanced-search work should be planned
+against `GraphSearchRepository`, typed graph search scopes, and evidence-spine
+tests rather than retained `working.db` FTS/indexer tasks.
+
 ## Phase 1: Foundation & Lexical Search
 
 - [ ] **Infrastructure Setup**

@@ -2,7 +2,7 @@
 tier: project
 scope: data-import-migration
 owner: agent-per-project
-last_reviewed: 2026-04-21
+last_reviewed: 2026-06-08
 source_of_truth: code
 links:
   - ./01-overview.md
@@ -14,6 +14,12 @@ links:
 ---
 
 # Import Orchestrator
+
+> Current conformance note (2026-06-08): ordinary live sync is source-scoped
+> graph build, not retained legacy import/migration. The old retained
+> `ImportOrchestrator` implementation has been removed from active app code.
+> This page preserves historical importer mechanics and the monitor context for
+> interpreting old logs and retained storage only.
 
 ## 🔥 Automatic Polling (ChatDbChangeMonitor)
 
@@ -40,10 +46,9 @@ The app includes a `ChatDbChangeMonitor` provider that continuously watches macO
 │  3. Compare with lastMaxRowId stored in state                       │
 │  4. If increased → schedule probe (350ms debounce)                  │
 │  5. Probe runs:                                                     │
-│     a. orchestratedLedgerImportServiceProvider.runImport()          │
-│     b. archiveImportedBatch(batchId) for the imported attachments   │
-│     c. handlesMigrationServiceProvider.run(incrementalMode: true)   │
-│     d. messageDataVersionProvider.bump() → provider refresh signal  │
+│     a. run source-scoped graph build lifecycle                      │
+│     b. archiveGraphMessageSourceRange(...) for new attachments      │
+│     c. bump graph/message data version providers                    │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -59,25 +64,31 @@ This ensures the monitor starts at app launch and runs continuously. It is macOS
 ### Implications for Debugging
 
 - **New messages appear automatically** within ~15-20 seconds of arrival
-- **If messages aren't showing**, the monitor may have encountered an error — check `ChatDbMonitor` logs and `import_log` / `migrate_log`
+- **If messages aren't showing**, the monitor or graph build may have encountered an error; check `ChatDbMonitor` logs and the Conversation Graph status panel first
 - **Manual import is only needed** for initial setup or recovery scenarios
-- **Do not invalidate `driftWorkingDatabaseProvider` from the incremental path**. The monitor deliberately keeps the Drift connection alive and bumps `messageDataVersionProvider` after successful migration.
+- **Do not invalidate database providers from the live graph path**. The monitor keeps active graph readers alive and bumps graph/message data-version providers after successful graph build.
 
 ---
 
 ## Purpose
-- Replace the legacy monolithic import runner with a deterministic sequence of table-focused importers.
-- Ensure every ledger table is ingested with pre-flight validation, transactional copy logic, and post-flight verification.
-- Provide granular progress, logging, and failure reporting so issues surface with the specific importer responsible.
+- Preserve the historical retained legacy importer mechanics for old logs and
+  architecture archaeology.
+- Make clear that new source ingestion belongs to source-scoped import and graph
+  build services, not to the deleted retained import orchestrator.
+- Prevent future work from reintroducing retained ledger import as an ordinary
+  product path.
 
 ## Location
-- Orchestrator: `lib/essentials/db_importers/application/orchestrator/import_orchestrator.dart`
-- Shared context: `lib/essentials/db_importers/infrastructure/sqlite/import_context_sqlite.dart`
-- Base importer helpers: `lib/essentials/db_importers/domain/base_table_importer.dart`
-- Importer contract: `lib/essentials/db_importers/domain/i_importers.dart/table_importer.dart`
-- Progress events: `lib/essentials/db_importers/domain/states/table_import_progress.dart`
+- Retired retained orchestrator: `lib/essentials/db_importers/application/orchestrator/import_orchestrator.dart`
+- Retired shared context: `lib/essentials/db_importers/infrastructure/sqlite/import_context_sqlite.dart`
+- Retired base importer helpers: `lib/essentials/db_importers/domain/base_table_importer.dart`
+- Retired importer contract: `lib/essentials/db_importers/domain/i_importers.dart/table_importer.dart`
+- Retired progress events: `lib/essentials/db_importers/domain/states/table_import_progress.dart`
 - Riverpod wiring: `lib/essentials/db_importers/feature_level_providers.dart`
-- Service registry: `lib/essentials/db_importers/application/services/orchestrated_ledger_import_service.dart`
+- Retired service registry: `lib/essentials/db_importers/application/services/orchestrated_ledger_import_service.dart`
+
+These retained paths are intentionally not present in the current source tree.
+Current live import/build code is source-scoped and graph-backed.
 
 ## Execution Model
 1. **Importer registry** - The orchestrator receives a list of `TableImporter` instances (one per ledger table) and keeps them in `_importers` as an unmodifiable list.
@@ -86,7 +97,7 @@ This ensures the monitor starts at app launch and runs continuously. It is macOS
   - `validatePrereqs(ctx)` - must not mutate data; catches duplicate IDs, broken foreign keys, invalid enums, missing sources.
   - `copy(ctx)` - importer-owned deterministic SQL. Skipped automatically when `ImportContext.dryRun` is true.
   - `postValidate(ctx)` - confirms row counts, FK integrity, and any importer-specific invariants.
-4. **Progress events** - `_runPhase()` publishes `TableImportProgressEvent`s (`started`, `succeeded`, `failed`) with human-friendly names via `BaseTableImporter.displayName`. UI view models surface these updates in the import control panel.
+4. **Progress events** - `_runPhase()` publishes `TableImportProgressEvent`s (`started`, `succeeded`, `failed`) with human-friendly names via `BaseTableImporter.displayName`. Retained diagnostic UI view models may surface these updates in the import control panel.
 5. **Structured logging** - Every phase prints a timestamped banner (`=== [ISO8601] importer :: phase ===`) through `ImportContext.info()`, giving a chronological trace in console logs and batch notes.
 6. **Filesystem audit report** - At the end of each run the orchestrated service writes `import_log` in the MessageLens app-support directory, capturing source counts, ledger counts, rich-text extraction stats, and source-vs-destination deltas.
 7. **Dry-run support** - Validation and post-validation still execute while copy is skipped, enabling "check everything" workflows on user machines without mutating the ledger.
@@ -98,8 +109,8 @@ This ensures the monitor starts at app launch and runs continuously. It is macOS
 - Detects truncated or incomplete imported baselines and can force a full reimport by clearing previous max-row cursors before importer execution.
 
 ## Importer Responsibilities
-- Own one logical ledger table (or tight cluster) and copy rows from macOS sources into `macos_import.db` without altering source primary keys.
-- Enrich rows with derived columns when needed, but do not invent cross-table relationships; that work happens during migration.
+- Own one logical retained ledger table (or tight cluster) and copy rows from macOS sources into `macos_import.db` without altering source primary keys.
+- Enrich rows with derived columns when needed, but do not invent cross-table relationships; retained legacy relationship projection happens during migration, while production graph topology is built in the source-scoped graph lifecycle.
 - Use `BaseTableImporter` helpers (`count`, `expectTrueOrThrow`, `expectZeroOrThrow`) to keep validation consistent.
 - Emit progress names that help the UI explain which portion of the pipeline is running.
 
@@ -120,9 +131,9 @@ This ensures the monitor starts at app launch and runs continuously. It is macOS
 - If the run completes but the data looks wrong, inspect `import_log` before querying tables manually. In practice it is the fastest way to distinguish extractor failure, source orphan rows, and schema/count mismatches.
 
 ## When Adding Importers
-1. Implement the `TableImporter` contract (prefer extending `BaseTableImporter`).
-2. Declare every prerequisite table in `dependsOn` so topological sort enforces ordering.
-3. Keep copy logic idempotent (`INSERT OR REPLACE`, `INSERT OR IGNORE`).
-4. Use the orchestrator's progress callback to report meaningful status messages.
-5. Update `../10-DATABASES/10-group-import-working.md` if stage ordering or ledger expectations change.
-6. Coordinate with the migration team so new ledger fields are projected during migration before UI code relies on them.
+
+Do not add retained legacy importers for ordinary app behavior. New source
+facts should usually be modeled in `macos_import_ss.db` and projected into
+`working_ss.db`. If an explicit archive/recovery compatibility task truly
+requires retained `macos_import.db` behavior, write a reviewed graph-era plan
+first and update this page with the new concrete implementation path.

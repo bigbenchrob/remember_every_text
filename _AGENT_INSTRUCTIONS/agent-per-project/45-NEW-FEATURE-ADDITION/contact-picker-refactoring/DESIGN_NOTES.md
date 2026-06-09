@@ -13,6 +13,15 @@ tests: []
 
 # Design Notes: Smart Pinned Contact Picker
 
+## Current Conformance Note (2026-06-06)
+
+The desired interaction qualities remain valid: contact selection should remain
+clear, compact, and context-preserving. The current architecture has moved on:
+widgets should receive typed contact display/read-model data plus callbacks,
+not query or compose identity. Names must come from the graph-era display
+identity resolver, with one user display-name override and no short-name or
+nickname precedence.
+
 ## UX Overview
 
 The macOS sidebar should present a **single, coherent contact-selection surface** that scales from tens to hundreds of contacts while preserving context as the user scrolls.

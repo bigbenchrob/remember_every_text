@@ -7,7 +7,7 @@ source_of_truth: doc
 links:
   - ./README.md
   - ../05-COLOR-AND-TYPOGRAPHY-THEMING/05-dark-mode-theming.md
-  - ../56-VIEW-SPEC-PANEL-CONTENT-SYSTEM/README.md
+  - ../42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/30-panel-viewspec-system.md
 tests: []
 ---
 
@@ -210,7 +210,7 @@ It should not become a BI dashboard with many equally loud boxes competing for a
 
 This folder does not define color tokens or typography tokens. Those belong in `../05-COLOR-AND-TYPOGRAPHY-THEMING/`.
 
-This folder also does not define how center panels are routed. ViewSpec ownership and coordinator routing belong in `../56-VIEW-SPEC-PANEL-CONTENT-SYSTEM/`.
+This folder also does not define how center panels are routed. ViewSpec ownership and coordinator routing belong in `../42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/30-panel-viewspec-system.md`.
 
 This folder answers a narrower question:
 

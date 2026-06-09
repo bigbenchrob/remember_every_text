@@ -19,17 +19,17 @@ enum OnboardingStatus {
   /// Import orchestrator is running.
   importing,
 
-  /// Migration orchestrator is running.
-  migrating,
+  /// Conversation graph build is running.
+  buildingGraph,
 
-  /// Both pipelines succeeded — show summary with "Get Started" or "Done".
+  /// Import and graph build succeeded — show summary with "Get Started" or "Done".
   complete,
 
   /// Reimport triggered from settings — skip welcome, go straight to import.
   reimporting,
 
-  /// Reimport migration phase.
-  reimportMigrating,
+  /// Reimport graph build phase.
+  reimportBuildingGraph,
 
   /// Reimport finished — show summary with "Done" button.
   reimportComplete,

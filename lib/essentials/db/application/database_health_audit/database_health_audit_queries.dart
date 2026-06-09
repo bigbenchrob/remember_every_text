@@ -1,11 +1,11 @@
 import 'dart:io';
 
+import 'package:sqlite3/sqlite3.dart' as sqlite3;
+
 import '../../../source_scoped_import/infrastructure/import_database_provider.dart'
     as source_scoped_import;
 import '../../infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
-import '../../infrastructure/data_sources/local/import/sqflite_import_database.dart';
 import '../../infrastructure/data_sources/local/overlay/overlay_database.dart';
-import '../../infrastructure/data_sources/local/working/working_database.dart';
 import 'database_health_audit_models.dart';
 
 abstract class DatabaseHealthQueryLayer {
@@ -150,51 +150,44 @@ abstract class DatabaseHealthQueryLayer {
   }
 }
 
-class ImportDatabaseHealthQueryLayer extends DatabaseHealthQueryLayer {
-  ImportDatabaseHealthQueryLayer({
-    required SqfliteImportDatabase database,
+class ReadOnlySqliteFileHealthQueryLayer extends DatabaseHealthQueryLayer {
+  ReadOnlySqliteFileHealthQueryLayer({
+    required this.databaseKey,
+    required this.role,
     required this.databasePath,
-  }) : _database = database;
+  });
 
-  final SqfliteImportDatabase _database;
+  @override
+  final String databaseKey;
+
+  @override
+  final String role;
 
   @override
   final String databasePath;
 
   @override
-  String get databaseKey => 'import';
-
-  @override
-  String get role => 'legacy_import_compatibility';
-
-  @override
   Future<List<Map<String, Object?>>> query(String sql) async {
-    final rows = await _database.rawQuery(sql);
-    return rows.map((row) => Map<String, Object?>.from(row)).toList();
-  }
-}
+    if (!File(databasePath).existsSync()) {
+      throw StateError('Database file does not exist: $databasePath');
+    }
 
-class WorkingDatabaseHealthQueryLayer extends DatabaseHealthQueryLayer {
-  WorkingDatabaseHealthQueryLayer({
-    required WorkingDatabase database,
-    required this.databasePath,
-  }) : _database = database;
-
-  final WorkingDatabase _database;
-
-  @override
-  final String databasePath;
-
-  @override
-  String get databaseKey => 'working';
-
-  @override
-  String get role => 'legacy_working_compatibility';
-
-  @override
-  Future<List<Map<String, Object?>>> query(String sql) async {
-    final rows = await _database.customSelect(sql).get();
-    return rows.map((row) => Map<String, Object?>.from(row.data)).toList();
+    final db = sqlite3.sqlite3.open(
+      databasePath,
+      mode: sqlite3.OpenMode.readOnly,
+    );
+    try {
+      final resultSet = db.select(sql);
+      return <Map<String, Object?>>[
+        for (final row in resultSet)
+          <String, Object?>{
+            for (var i = 0; i < resultSet.columnNames.length; i++)
+              resultSet.columnNames[i]: row[i],
+          },
+      ];
+    } finally {
+      db.dispose();
+    }
   }
 }
 

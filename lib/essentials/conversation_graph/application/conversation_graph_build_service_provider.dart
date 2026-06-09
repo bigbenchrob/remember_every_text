@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -8,7 +9,9 @@ import '../../source_scoped_import/application/chats/chat_importer_provider.dart
 import '../../source_scoped_import/application/contacts/contact_importer_provider.dart';
 import '../../source_scoped_import/application/handles/handle_importer_provider.dart';
 import '../../source_scoped_import/application/message_attachment_joins/message_attachment_join_importer_provider.dart';
+import '../../source_scoped_import/application/messages/message_importer.dart';
 import '../../source_scoped_import/application/messages/message_importer_provider.dart';
+import '../../source_scoped_import/application/messages/message_rich_text_enricher.dart';
 import '../../source_scoped_import/application/messages/message_rich_text_enricher_provider.dart';
 import '../../source_scoped_import/domain/known_sources.dart';
 import 'attachments/attachment_projector_provider.dart';
@@ -33,6 +36,26 @@ class ConversationGraphBuildService {
   Future<ConversationGraphBuildReport> runOnce() {
     return _orchestrator.runOnce();
   }
+}
+
+@visibleForTesting
+Future<MessageRichTextEnrichmentResult> runGraphBuildRichTextEnrichment({
+  required MessageImportResult messageImportResult,
+  required Future<MessageRichTextEnrichmentResult> Function()
+  enrichAllMissingText,
+  required Future<MessageRichTextEnrichmentResult> Function({
+    required int sourceId,
+    required int startedAfterSourceRowId,
+  })
+  enrichMissingTextAfterSourceRowId,
+}) {
+  if (messageImportResult.insertedMessageCount == 0) {
+    return enrichAllMissingText();
+  }
+  return enrichMissingTextAfterSourceRowId(
+    sourceId: liveChatDbSourceId,
+    startedAfterSourceRowId: messageImportResult.startedAfterSourceRowId,
+  );
 }
 
 @riverpod
@@ -86,12 +109,11 @@ Future<ConversationGraphBuildService> conversationGraphBuildService(
       },
       importMessages: messageImporter.importNewMessages,
       enrichMissingText: (messageImportResult) {
-        if (messageImportResult.insertedMessageCount == 0) {
-          return richTextEnricher.enrichMissingText();
-        }
-        return richTextEnricher.enrichMissingTextAfterSourceRowId(
-          sourceId: liveChatDbSourceId,
-          startedAfterSourceRowId: messageImportResult.startedAfterSourceRowId,
+        return runGraphBuildRichTextEnrichment(
+          messageImportResult: messageImportResult,
+          enrichAllMissingText: richTextEnricher.enrichMissingText,
+          enrichMissingTextAfterSourceRowId:
+              richTextEnricher.enrichMissingTextAfterSourceRowId,
         );
       },
       importAttachments: attachmentImporter.importAttachments,

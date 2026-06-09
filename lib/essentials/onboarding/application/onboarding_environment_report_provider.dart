@@ -7,13 +7,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 import '../../../features/address_book_folders/domain/entities/address_book_folder_aggregate.dart';
-import '../../../features/address_book_folders/domain/failures/more_failures/failures.dart';
+import '../../../features/address_book_folders/domain/failures/folder_retrieval_failure.dart';
 import '../../../features/address_book_folders/feature_level_providers.dart';
 import '../../db/feature_level_providers.dart';
 import '../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
-import '../../db_importers/domain/entities/db_import_result.dart';
-import '../../db_importers/presentation/view_model/db_import_control_provider.dart';
-import '../../db_migrate/domain/entities/db_migration_result.dart';
 import '../../source_scoped_import/infrastructure/import_database_provider.dart'
     as source_scoped_import;
 import '../domain/onboarding_environment_report.dart';
@@ -33,7 +30,7 @@ class OnboardingDevOverridesState {
     this.simulateAddressBookUnavailable = false,
     this.simulateSparseSourceHistory = false,
     this.simulateImportFailure = false,
-    this.simulateMigrationFailure = false,
+    this.simulateGraphProjectionFailure = false,
   });
 
   final bool simulateFullDiskAccessBlocked;
@@ -41,7 +38,7 @@ class OnboardingDevOverridesState {
   final bool simulateAddressBookUnavailable;
   final bool simulateSparseSourceHistory;
   final bool simulateImportFailure;
-  final bool simulateMigrationFailure;
+  final bool simulateGraphProjectionFailure;
 
   bool get hasAnyOverride {
     return simulateFullDiskAccessBlocked ||
@@ -49,7 +46,7 @@ class OnboardingDevOverridesState {
         simulateAddressBookUnavailable ||
         simulateSparseSourceHistory ||
         simulateImportFailure ||
-        simulateMigrationFailure;
+        simulateGraphProjectionFailure;
   }
 
   OnboardingDevOverridesState copyWith({
@@ -58,7 +55,7 @@ class OnboardingDevOverridesState {
     bool? simulateAddressBookUnavailable,
     bool? simulateSparseSourceHistory,
     bool? simulateImportFailure,
-    bool? simulateMigrationFailure,
+    bool? simulateGraphProjectionFailure,
   }) {
     return OnboardingDevOverridesState(
       simulateFullDiskAccessBlocked:
@@ -72,8 +69,8 @@ class OnboardingDevOverridesState {
           simulateSparseSourceHistory ?? this.simulateSparseSourceHistory,
       simulateImportFailure:
           simulateImportFailure ?? this.simulateImportFailure,
-      simulateMigrationFailure:
-          simulateMigrationFailure ?? this.simulateMigrationFailure,
+      simulateGraphProjectionFailure:
+          simulateGraphProjectionFailure ?? this.simulateGraphProjectionFailure,
     );
   }
 }
@@ -105,8 +102,8 @@ class OnboardingDevOverrides extends _$OnboardingDevOverrides {
     state = state.copyWith(simulateImportFailure: enabled);
   }
 
-  void setMigrationFailure({required bool enabled}) {
-    state = state.copyWith(simulateMigrationFailure: enabled);
+  void setGraphProjectionFailure({required bool enabled}) {
+    state = state.copyWith(simulateGraphProjectionFailure: enabled);
   }
 
   void clearAll() {
@@ -141,43 +138,39 @@ class _OnboardingEnvironmentEvaluator {
   final Ref ref;
 
   Future<OnboardingEnvironmentReport> evaluate() async {
-    final controlState = ref.watch(dbImportControlViewModelProvider);
     final devOverrides = ref.watch(onboardingDevOverridesProvider);
     final failureStorage = OverlayOnboardingFailureStorage(
       overlayDb: ref.watch(overlayDatabaseProvider.future),
     );
     final persistedImportEntry = await failureStorage.loadImportResultEntry();
-    final persistedMigrationEntry = await failureStorage
-        .loadMigrationResultEntry();
-    final persistedImportResult = persistedImportEntry?.result;
-    final persistedMigrationResult = persistedMigrationEntry?.result;
-    final hasLiveImportFailure =
-        controlState.lastImportResult != null &&
-        controlState.lastImportResult!.success == false;
-    final hasLiveMigrationFailure =
-        controlState.lastMigrationResult != null &&
-        controlState.lastMigrationResult!.success == false;
+    final persistedGraphProjectionEntry = await failureStorage
+        .loadGraphProjectionResultEntry();
+    final persistedImportFailure = persistedImportEntry?.failure;
+    final persistedGraphProjectionFailure =
+        persistedGraphProjectionEntry?.failure;
     final simulatedPipelineFailureActive =
         devOverrides.simulateImportFailure ||
-        devOverrides.simulateMigrationFailure;
-    final lastImportResult = devOverrides.simulateImportFailure
-        ? const DbImportResult(
+        devOverrides.simulateGraphProjectionFailure;
+    final lastImportFailure = devOverrides.simulateImportFailure
+        ? const OnboardingPipelineFailure(
+            phase: OnboardingPipelinePhase.import,
             batchId: -1,
-            success: false,
-            error: 'Simulated import failure from onboarding dev panel',
+            message: 'Simulated import failure from onboarding dev panel',
           )
         : simulatedPipelineFailureActive
         ? null
-        : controlState.lastImportResult ?? persistedImportResult;
-    final lastMigrationResult = devOverrides.simulateMigrationFailure
-        ? const DbMigrationResult(
+        : persistedImportFailure;
+    final lastGraphProjectionFailure =
+        devOverrides.simulateGraphProjectionFailure
+        ? const OnboardingPipelineFailure(
+            phase: OnboardingPipelinePhase.graphProjection,
             batchId: -1,
-            success: false,
-            error: 'Simulated migration failure from onboarding dev panel',
+            message:
+                'Simulated graph projection failure from onboarding dev panel',
           )
         : simulatedPipelineFailureActive
         ? null
-        : controlState.lastMigrationResult ?? persistedMigrationResult;
+        : persistedGraphProjectionFailure;
     var hasFullDiskAccess = ref.watch(onboardingFullDiskAccessProvider);
     if (devOverrides.simulateFullDiskAccessBlocked) {
       hasFullDiskAccess = false;
@@ -245,26 +238,23 @@ class _OnboardingEnvironmentEvaluator {
         : const ConversationGraphReadinessChecker().checkPath(graphDbPath);
 
     final importProbe = _probeFile(importDbPath, rowCount: importRowCount);
-    final workingProbe = _probeFile(graphDbPath, rowCount: graphRowCount);
+    final graphProbe = _probeFile(graphDbPath, rowCount: graphRowCount);
     final usingPersistedImportFailure =
         !devOverrides.simulateImportFailure &&
         !simulatedPipelineFailureActive &&
-        controlState.lastImportResult == null &&
         persistedImportEntry != null;
-    final usingPersistedMigrationFailure =
-        !devOverrides.simulateMigrationFailure &&
+    final usingPersistedGraphProjectionFailure =
+        !devOverrides.simulateGraphProjectionFailure &&
         !simulatedPipelineFailureActive &&
-        controlState.lastMigrationResult == null &&
-        persistedMigrationEntry != null;
+        persistedGraphProjectionEntry != null;
     final resetAppDatabasesReason = _detectResetAppDatabasesReason(
-      isProcessing: controlState.isProcessing,
-      hasLiveImportFailure: hasLiveImportFailure,
-      hasLiveMigrationFailure: hasLiveMigrationFailure,
+      isMaintenanceLocked: isMaintenanceLocked,
       usingPersistedImportFailure: usingPersistedImportFailure,
-      usingPersistedMigrationFailure: usingPersistedMigrationFailure,
+      usingPersistedGraphProjectionFailure:
+          usingPersistedGraphProjectionFailure,
       sourceMessageCount: sourceMessageCount,
       importProbe: importProbe,
-      workingProbe: workingProbe,
+      graphProbe: graphProbe,
     );
 
     final state = _classifyState(
@@ -273,15 +263,14 @@ class _OnboardingEnvironmentEvaluator {
       addressBookProbe: addressBookProbe,
       sourceMessageCount: sourceMessageCount,
       forceImportFailure: devOverrides.simulateImportFailure,
-      forceMigrationFailure: devOverrides.simulateMigrationFailure,
-      hasLiveImportFailure: hasLiveImportFailure,
-      hasLiveMigrationFailure: hasLiveMigrationFailure,
+      forceGraphProjectionFailure: devOverrides.simulateGraphProjectionFailure,
       usingPersistedImportFailure: usingPersistedImportFailure,
-      usingPersistedMigrationFailure: usingPersistedMigrationFailure,
+      usingPersistedGraphProjectionFailure:
+          usingPersistedGraphProjectionFailure,
       resetAppDatabasesReason: resetAppDatabasesReason,
       graphProjectionReady: graphReadiness.isReady,
       importProbe: importProbe,
-      workingProbe: workingProbe,
+      graphProbe: graphProbe,
     );
 
     final blockerKind = _classifyBlocker(
@@ -291,15 +280,14 @@ class _OnboardingEnvironmentEvaluator {
       addressBookProbe: addressBookProbe,
       sourceMessageCount: sourceMessageCount,
       forceImportFailure: devOverrides.simulateImportFailure,
-      forceMigrationFailure: devOverrides.simulateMigrationFailure,
-      hasLiveImportFailure: hasLiveImportFailure,
-      hasLiveMigrationFailure: hasLiveMigrationFailure,
+      forceGraphProjectionFailure: devOverrides.simulateGraphProjectionFailure,
       usingPersistedImportFailure: usingPersistedImportFailure,
-      usingPersistedMigrationFailure: usingPersistedMigrationFailure,
+      usingPersistedGraphProjectionFailure:
+          usingPersistedGraphProjectionFailure,
       resetAppDatabasesReason: resetAppDatabasesReason,
       graphProjectionReady: graphReadiness.isReady,
       importProbe: importProbe,
-      workingProbe: workingProbe,
+      graphProbe: graphProbe,
     );
 
     final syncPlausibility = _classifySyncPlausibility(
@@ -314,16 +302,18 @@ class _OnboardingEnvironmentEvaluator {
       messagesDatabase: messagesProbe.copyWith(rowCount: sourceMessageCount),
       addressBookDatabase: addressBookProbe.probe,
       importDatabase: importProbe,
-      workingDatabase: workingProbe,
+      conversationGraph: graphProbe,
       hasFullDiskAccess: hasFullDiskAccess,
       sourceAttachmentCount: sourceAttachmentCount,
       addressBookFailureMessage: addressBookProbe.failureMessage,
-      lastImportResult: lastImportResult,
-      lastMigrationResult: lastMigrationResult,
+      lastImportFailure: lastImportFailure,
+      lastGraphProjectionFailure: lastGraphProjectionFailure,
       lastImportFailureRecordedAt: persistedImportEntry?.recordedAt,
-      lastMigrationFailureRecordedAt: persistedMigrationEntry?.recordedAt,
+      lastGraphProjectionFailureRecordedAt:
+          persistedGraphProjectionEntry?.recordedAt,
       usingPersistedImportFailure: usingPersistedImportFailure,
-      usingPersistedMigrationFailure: usingPersistedMigrationFailure,
+      usingPersistedGraphProjectionFailure:
+          usingPersistedGraphProjectionFailure,
       shouldResetAppDatabasesBeforeImport: resetAppDatabasesReason != null,
       resetAppDatabasesReason: resetAppDatabasesReason,
     );
@@ -335,15 +325,13 @@ class _OnboardingEnvironmentEvaluator {
     required _AddressBookProbeResult addressBookProbe,
     required int? sourceMessageCount,
     required bool forceImportFailure,
-    required bool forceMigrationFailure,
-    required bool hasLiveImportFailure,
-    required bool hasLiveMigrationFailure,
+    required bool forceGraphProjectionFailure,
     required bool usingPersistedImportFailure,
-    required bool usingPersistedMigrationFailure,
+    required bool usingPersistedGraphProjectionFailure,
     required String? resetAppDatabasesReason,
     required bool graphProjectionReady,
     required OnboardingDatabaseProbe importProbe,
-    required OnboardingDatabaseProbe workingProbe,
+    required OnboardingDatabaseProbe graphProbe,
   }) {
     if (!hasFullDiskAccess || !messagesProbe.readable) {
       return OnboardingEnvironmentState.permissionBlocked;
@@ -358,8 +346,8 @@ class _OnboardingEnvironmentEvaluator {
       return OnboardingEnvironmentState.sourceSparseOrUnsynced;
     }
 
-    if (forceMigrationFailure) {
-      return OnboardingEnvironmentState.migrationFailed;
+    if (forceGraphProjectionFailure) {
+      return OnboardingEnvironmentState.graphProjectionFailed;
     }
 
     if (forceImportFailure) {
@@ -367,33 +355,32 @@ class _OnboardingEnvironmentEvaluator {
     }
 
     if (resetAppDatabasesReason != null) {
-      return OnboardingEnvironmentState.migrationFailed;
+      return OnboardingEnvironmentState.graphProjectionFailed;
     }
 
     if (importProbe.hasData && graphProjectionReady) {
       return OnboardingEnvironmentState.ready;
     }
 
-    if (importProbe.hasData && workingProbe.exists && !graphProjectionReady) {
-      return OnboardingEnvironmentState.migrationFailed;
+    if (importProbe.hasData && graphProbe.exists && !graphProjectionReady) {
+      return OnboardingEnvironmentState.graphProjectionFailed;
     }
 
-    if (_shouldSurfaceMigrationFailure(
-      forceMigrationFailure: forceMigrationFailure,
-      hasLiveMigrationFailure: hasLiveMigrationFailure,
-      usingPersistedMigrationFailure: usingPersistedMigrationFailure,
+    if (_shouldSurfaceGraphProjectionFailure(
+      forceGraphProjectionFailure: forceGraphProjectionFailure,
+      usingPersistedGraphProjectionFailure:
+          usingPersistedGraphProjectionFailure,
       importProbe: importProbe,
-      workingProbe: workingProbe,
+      graphProbe: graphProbe,
     )) {
-      return OnboardingEnvironmentState.migrationFailed;
+      return OnboardingEnvironmentState.graphProjectionFailed;
     }
 
     if (_shouldSurfaceImportFailure(
       forceImportFailure: forceImportFailure,
-      hasLiveImportFailure: hasLiveImportFailure,
       usingPersistedImportFailure: usingPersistedImportFailure,
       importProbe: importProbe,
-      workingProbe: workingProbe,
+      graphProbe: graphProbe,
     )) {
       return OnboardingEnvironmentState.importFailed;
     }
@@ -408,15 +395,13 @@ class _OnboardingEnvironmentEvaluator {
     required _AddressBookProbeResult addressBookProbe,
     required int? sourceMessageCount,
     required bool forceImportFailure,
-    required bool forceMigrationFailure,
-    required bool hasLiveImportFailure,
-    required bool hasLiveMigrationFailure,
+    required bool forceGraphProjectionFailure,
     required bool usingPersistedImportFailure,
-    required bool usingPersistedMigrationFailure,
+    required bool usingPersistedGraphProjectionFailure,
     required String? resetAppDatabasesReason,
     required bool graphProjectionReady,
     required OnboardingDatabaseProbe importProbe,
-    required OnboardingDatabaseProbe workingProbe,
+    required OnboardingDatabaseProbe graphProbe,
   }) {
     if (!hasFullDiskAccess || !messagesProbe.readable) {
       return OnboardingBlockerKind.fullDiskAccessMissing;
@@ -436,8 +421,8 @@ class _OnboardingEnvironmentEvaluator {
       return OnboardingBlockerKind.sourceDataSparseOrUnsynced;
     }
 
-    if (forceMigrationFailure) {
-      return OnboardingBlockerKind.migrationFailed;
+    if (forceGraphProjectionFailure) {
+      return OnboardingBlockerKind.graphProjectionFailed;
     }
 
     if (forceImportFailure) {
@@ -445,33 +430,32 @@ class _OnboardingEnvironmentEvaluator {
     }
 
     if (resetAppDatabasesReason != null) {
-      return OnboardingBlockerKind.migrationFailed;
+      return OnboardingBlockerKind.graphProjectionFailed;
     }
 
     if (state == OnboardingEnvironmentState.ready) {
       return OnboardingBlockerKind.none;
     }
 
-    if (importProbe.hasData && workingProbe.exists && !graphProjectionReady) {
-      return OnboardingBlockerKind.migrationFailed;
+    if (importProbe.hasData && graphProbe.exists && !graphProjectionReady) {
+      return OnboardingBlockerKind.graphProjectionFailed;
     }
 
-    if (_shouldSurfaceMigrationFailure(
-      forceMigrationFailure: forceMigrationFailure,
-      hasLiveMigrationFailure: hasLiveMigrationFailure,
-      usingPersistedMigrationFailure: usingPersistedMigrationFailure,
+    if (_shouldSurfaceGraphProjectionFailure(
+      forceGraphProjectionFailure: forceGraphProjectionFailure,
+      usingPersistedGraphProjectionFailure:
+          usingPersistedGraphProjectionFailure,
       importProbe: importProbe,
-      workingProbe: workingProbe,
+      graphProbe: graphProbe,
     )) {
-      return OnboardingBlockerKind.migrationFailed;
+      return OnboardingBlockerKind.graphProjectionFailed;
     }
 
     if (_shouldSurfaceImportFailure(
       forceImportFailure: forceImportFailure,
-      hasLiveImportFailure: hasLiveImportFailure,
       usingPersistedImportFailure: usingPersistedImportFailure,
       importProbe: importProbe,
-      workingProbe: workingProbe,
+      graphProbe: graphProbe,
     )) {
       return OnboardingBlockerKind.importFailed;
     }
@@ -480,16 +464,16 @@ class _OnboardingEnvironmentEvaluator {
       return OnboardingBlockerKind.importDatabaseMissing;
     }
 
-    if (!workingProbe.exists) {
-      return OnboardingBlockerKind.workingDatabaseMissing;
+    if (!graphProbe.exists) {
+      return OnboardingBlockerKind.conversationGraphMissing;
     }
 
     if (!importProbe.hasData) {
       return OnboardingBlockerKind.importDatabaseEmpty;
     }
 
-    if (!workingProbe.hasData) {
-      return OnboardingBlockerKind.workingDatabaseEmpty;
+    if (!graphProbe.hasData) {
+      return OnboardingBlockerKind.conversationGraphEmpty;
     }
 
     return OnboardingBlockerKind.none;
@@ -497,12 +481,11 @@ class _OnboardingEnvironmentEvaluator {
 
   bool _shouldSurfaceImportFailure({
     required bool forceImportFailure,
-    required bool hasLiveImportFailure,
     required bool usingPersistedImportFailure,
     required OnboardingDatabaseProbe importProbe,
-    required OnboardingDatabaseProbe workingProbe,
+    required OnboardingDatabaseProbe graphProbe,
   }) {
-    if (forceImportFailure || hasLiveImportFailure) {
+    if (forceImportFailure) {
       return true;
     }
 
@@ -510,25 +493,24 @@ class _OnboardingEnvironmentEvaluator {
       return false;
     }
 
-    return importProbe.hasData || workingProbe.hasData;
+    return importProbe.hasData || graphProbe.hasData;
   }
 
-  bool _shouldSurfaceMigrationFailure({
-    required bool forceMigrationFailure,
-    required bool hasLiveMigrationFailure,
-    required bool usingPersistedMigrationFailure,
+  bool _shouldSurfaceGraphProjectionFailure({
+    required bool forceGraphProjectionFailure,
+    required bool usingPersistedGraphProjectionFailure,
     required OnboardingDatabaseProbe importProbe,
-    required OnboardingDatabaseProbe workingProbe,
+    required OnboardingDatabaseProbe graphProbe,
   }) {
-    if (forceMigrationFailure || hasLiveMigrationFailure) {
+    if (forceGraphProjectionFailure) {
       return true;
     }
 
-    if (!usingPersistedMigrationFailure) {
+    if (!usingPersistedGraphProjectionFailure) {
       return false;
     }
 
-    return importProbe.hasData || workingProbe.hasData;
+    return importProbe.hasData || graphProbe.hasData;
   }
 
   OnboardingSyncPlausibility _classifySyncPlausibility({
@@ -637,16 +619,14 @@ class _OnboardingEnvironmentEvaluator {
   }
 
   String? _detectResetAppDatabasesReason({
-    required bool isProcessing,
-    required bool hasLiveImportFailure,
-    required bool hasLiveMigrationFailure,
+    required bool isMaintenanceLocked,
     required bool usingPersistedImportFailure,
-    required bool usingPersistedMigrationFailure,
+    required bool usingPersistedGraphProjectionFailure,
     required int? sourceMessageCount,
     required OnboardingDatabaseProbe importProbe,
-    required OnboardingDatabaseProbe workingProbe,
+    required OnboardingDatabaseProbe graphProbe,
   }) {
-    if (isProcessing || !importProbe.hasData) {
+    if (isMaintenanceLocked || !importProbe.hasData) {
       return null;
     }
 
@@ -656,12 +636,9 @@ class _OnboardingEnvironmentEvaluator {
       return null;
     }
 
-    final workingCount = workingProbe.rowCount ?? 0;
+    final graphCount = graphProbe.rowCount ?? 0;
     final hasRecordedFailure =
-        hasLiveImportFailure ||
-        hasLiveMigrationFailure ||
-        usingPersistedImportFailure ||
-        usingPersistedMigrationFailure;
+        usingPersistedImportFailure || usingPersistedGraphProjectionFailure;
     final importTracksSource =
         sourceMessageCount == null ||
         sourceMessageCount <= _sparseMessagesThreshold ||
@@ -669,8 +646,8 @@ class _OnboardingEnvironmentEvaluator {
             (sourceMessageCount * _automaticRecoveryWorkingToImportRatio)
                 .round();
     final workingClearlyIncomplete =
-        !workingProbe.hasData ||
-        workingCount <
+        !graphProbe.hasData ||
+        graphCount <
             (importCount * _automaticRecoveryWorkingToImportRatio).round();
 
     if (!importTracksSource || !workingClearlyIncomplete) {
@@ -678,11 +655,11 @@ class _OnboardingEnvironmentEvaluator {
     }
 
     if (hasRecordedFailure) {
-      return 'A previous import or migration failure left a populated import ledger but an incomplete conversation graph.';
+      return 'A previous import or graph projection failure left a populated import ledger but an incomplete conversation graph.';
     }
 
-    if (workingProbe.hasData) {
-      return 'The conversation graph contains far fewer messages than the import ledger, which strongly suggests a stale partial migration.';
+    if (graphProbe.hasData) {
+      return 'The conversation graph contains far fewer messages than the import ledger, which strongly suggests a stale partial graph projection.';
     }
 
     return null;

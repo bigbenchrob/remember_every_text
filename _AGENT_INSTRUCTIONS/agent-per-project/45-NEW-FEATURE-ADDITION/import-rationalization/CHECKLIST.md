@@ -1,5 +1,13 @@
 # Import Rationalization Checklist
 
+## Current Conformance Note (2026-06-06)
+
+This checklist is historical. Do not treat it as an active request to reorganize
+or expand retained legacy import/migration packages. Current ordinary graph
+work should happen in source-scoped import and conversation graph boundaries;
+retained package cleanup should be limited to safe retirement or
+archive/recovery compatibility.
+
 ## Phase 1: Folder Reorganization
 
 ### db_importers Base Class

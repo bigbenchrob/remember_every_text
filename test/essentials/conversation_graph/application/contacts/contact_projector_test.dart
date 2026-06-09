@@ -13,7 +13,7 @@ import '../../conversation_graph_test_database.dart';
 void main() {
   late Directory tempDir;
   late ImportDatabase importDatabase;
-  late ConversationGraphDatabase workingDatabase;
+  late ConversationGraphDatabase graphDatabase;
 
   setUpAll(() {
     sqfliteFfiInit();
@@ -26,12 +26,12 @@ void main() {
       databaseDirectory: tempDir.path,
       databaseName: 'macos_import_ss_test.db',
     );
-    workingDatabase = await openConversationGraphTestDatabase();
+    graphDatabase = await openConversationGraphTestDatabase();
   });
 
   tearDown(() async {
     await importDatabase.close();
-    await workingDatabase.close();
+    await graphDatabase.close();
     if (tempDir.existsSync()) {
       await tempDir.delete(recursive: true);
     }
@@ -39,20 +39,19 @@ void main() {
 
   test('projects meaningful contacts and source-scoped handle edges', () async {
     final handleSsId = SourceScopedRowKey.pack(sourceId: 1, sourceRowId: 12);
-    await workingDatabase.database.insert('handles', <String, Object?>{
+    await graphDatabase.database.insert('handles', <String, Object?>{
       'ss_id': handleSsId,
       'id': '+16049995969',
       'service': 'iMessage',
     });
-    await workingDatabase.database
-        .insert('canonical_handles', <String, Object?>{
-          'canonical_handle_ss_id': handleSsId,
-          'display_handle': '+16049995969',
-          'normalized_identifier': '6049995969',
-          'service': 'iMessage',
-          'alias_count': 1,
-        });
-    await workingDatabase.database.insert('handle_aliases', <String, Object?>{
+    await graphDatabase.database.insert('canonical_handles', <String, Object?>{
+      'canonical_handle_ss_id': handleSsId,
+      'display_handle': '+16049995969',
+      'normalized_identifier': '6049995969',
+      'service': 'iMessage',
+      'alias_count': 1,
+    });
+    await graphDatabase.database.insert('handle_aliases', <String, Object?>{
       'handle_ss_id': handleSsId,
       'canonical_handle_ss_id': handleSsId,
       'raw_identifier': '+16049995969',
@@ -82,7 +81,7 @@ void main() {
     final result = await ContactProjector(
       repository: SqliteContactProjectionRepository(
         importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        graphDatabase: graphDatabase,
       ),
     ).projectContacts();
 
@@ -90,12 +89,12 @@ void main() {
     expect(result.insertedContactCount, 1);
     expect(result.insertedContactHandleEdgeCount, 1);
 
-    final contacts = await workingDatabase.database.query('contacts');
+    final contacts = await graphDatabase.database.query('contacts');
     expect(contacts.single['contact_id'], contactSsId);
     expect(contacts.single['display_name'], 'Cathie Campbell');
     expect(contacts.single.containsKey('source_id'), isFalse);
 
-    final edges = await workingDatabase.database.query('contact_to_handle');
+    final edges = await graphDatabase.database.query('contact_to_handle');
     expect(edges.single['contact_id'], contactSsId);
     expect(edges.single['handle_ss_id'], handleSsId);
     expect(edges.single['handle_value'], '6049995969');
@@ -103,7 +102,7 @@ void main() {
     final secondResult = await ContactProjector(
       repository: SqliteContactProjectionRepository(
         importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        graphDatabase: graphDatabase,
       ),
     ).projectContacts();
     expect(secondResult.insertedContactCount, 0);
@@ -124,7 +123,7 @@ void main() {
       final result = await ContactProjector(
         repository: SqliteContactProjectionRepository(
           importDatabase: importDatabase,
-          workingDatabase: workingDatabase,
+          graphDatabase: graphDatabase,
         ),
       ).projectContacts();
 
@@ -132,11 +131,11 @@ void main() {
       expect(result.insertedContactCount, 1);
       expect(result.insertedContactHandleEdgeCount, 0);
 
-      final contacts = await workingDatabase.database.query('contacts');
+      final contacts = await graphDatabase.database.query('contacts');
       expect(contacts.single['contact_id'], contactSsId);
       expect(contacts.single['display_name'], 'Future Sender');
 
-      final edges = await workingDatabase.database.query('contact_to_handle');
+      final edges = await graphDatabase.database.query('contact_to_handle');
       expect(edges, isEmpty);
     },
   );

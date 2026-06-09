@@ -16,6 +16,21 @@ tests: []
 **Status**: 🟡 In Progress  
 **Last Updated**: 2025-11-08
 
+## Current Conformance Note (2026-06-06)
+
+The UX direction remains useful, but the database and identity examples below
+are historical. Current graph-era rules supersede them:
+
+- favourites are overlay user intent keyed to stable graph/contact identity, not
+  a `working_participants` foreign key.
+- display names must resolve through the canonical display identity resolver;
+  short-name and nickname paths are deprecated and must not become display
+  precedence.
+- `working.db` is not the owner of ordinary contact reads.
+- contact picker/menu widgets should render typed contact display data and
+  callbacks; they should not reconstruct identities, query databases, or decide
+  whether raw handles outrank known contact names.
+
 ## Architecture Decisions
 
 ### Database Design

@@ -2,33 +2,33 @@
 tier: feature
 scope: charter
 owner: agent-per-project
-last_reviewed: 2025-11-06
+last_reviewed: 2026-06-06
 links:
 	- ./DOMAIN_AND_DATA_MAP.md
 	- ./STATE_AND_PROVIDER_INVENTORY.md
 tests: []
 feature: search
 doc_type: charter
-status: draft
-last_updated: 2025-11-06
+status: current
+last_updated: 2026-06-06
 ---
 
 # Feature Charter — Search
 
-> Legacy note (2026-04-21): this folder is an early feature scaffold. Current search services and indexing live under `lib/essentials/search`, not `lib/features/search`. Message timeline search consumes `searchServiceProvider` from `essentials/search/feature_level_providers.dart`.
+> Current conformance note (2026-06-06): search services live under `lib/essentials/search`, not `lib/features/search`. Ordinary search is graph-backed through `SearchService` and `GraphSearchRepository`, returning graph `message_ss_id` evidence scopes.
 
 ## Mission
-- Deliver unified search across chats, messages, and contacts with performant indexing and responsive UI.
+- Deliver unified search across conversations, messages, contacts, handles, saved/tag overlays, and recovered evidence with responsive graph-backed queries.
 - Provide extensible query capabilities (text, participants, dates, attachments) while respecting aggregate boundaries.
 
 ## Primary Outcomes
-- Indexed corpus kept up-to-date with imports, migrations, and overlays.
+- Graph-backed result scopes kept up-to-date with source-scoped graph builds and overlay intent.
 - Search UI that supports fast filtering, result previews, and navigation into underlying features.
 - Clear APIs for programmatic search (e.g., future automation or integrations).
 
 ## Success Metrics
 - Query latency P95 under agreed threshold.
-- Index freshness (time between data change and index update) within SLA.
+- Graph freshness (time between source change and searchable evidence update) within SLA.
 - Relevance scores validated via curated test corpus.
 
 ## Non-Goals
@@ -36,9 +36,9 @@ last_updated: 2025-11-06
 - Navigation architecture beyond search entry points.
 
 ## Stakeholders & Dependencies
-- Consumes chat, message, and handle projections.
+- Consumes conversation graph message, contact, handle, topology, and overlay projections.
 - Publishes results to navigation system and feature panels.
 
 ## Open Questions
-- What indexing backend will we ship (SQLite FTS vs. external service)?
+- Whether future performance work should add graph-native FTS/index acceleration behind the current graph search repository contract.
 - How do we prioritize ranking signals (recency vs. message importance)?

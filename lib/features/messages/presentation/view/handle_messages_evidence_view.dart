@@ -68,6 +68,8 @@ class _HandleMessagesEvidenceViewState
           );
 
     return skeletonAsync.when(
+      skipLoadingOnReload: true,
+      skipLoadingOnRefresh: true,
       data: (skeleton) {
         return MessageEvidenceTimelineView(
           evidenceScope: evidenceScope,

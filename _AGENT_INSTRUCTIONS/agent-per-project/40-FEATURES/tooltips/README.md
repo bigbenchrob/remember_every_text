@@ -176,4 +176,4 @@ lib/
 ## Planning Documents
 
 Development planning artifacts are in:
-`_AGENT_INSTRUCTIONS/agent-per-project/30-NEW-FEATURE-ADDITION/tooltips/`
+`_AGENT_INSTRUCTIONS/agent-per-project/45-NEW-FEATURE-ADDITION/tooltips/`

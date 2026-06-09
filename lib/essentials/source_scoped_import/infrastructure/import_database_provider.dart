@@ -46,7 +46,7 @@ class ImportDatabase {
 
     final db = await openDatabase(
       path.join(databaseDirectory, databaseName),
-      version: 8,
+      version: 9,
       onCreate: (db, version) async {
         await _createSchema(db);
       },
@@ -78,9 +78,13 @@ class ImportDatabase {
           await _createAttachmentSchema(db);
           await _createMessageToAttachmentSchema(db);
         }
+        if (oldVersion < 9) {
+          await _createIncrementalProjectionIndexes(db);
+        }
       },
       onOpen: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
+        await _createIncrementalProjectionIndexes(db);
       },
     );
 
@@ -102,6 +106,88 @@ class ImportDatabase {
     });
   }
 
+  Future<int> getOrCreateSource({
+    required String sourceKey,
+    required String sourceKind,
+    String? sourceLabel,
+  }) async {
+    final normalizedKey = sourceKey.trim();
+    final normalizedKind = sourceKind.trim();
+    final trimmedLabel = sourceLabel?.trim();
+    final normalizedLabel = trimmedLabel == null || trimmedLabel.isEmpty
+        ? null
+        : trimmedLabel;
+
+    if (normalizedKey.isEmpty) {
+      throw ArgumentError.value(sourceKey, 'sourceKey', 'must not be empty');
+    }
+    if (normalizedKind.isEmpty) {
+      throw ArgumentError.value(sourceKind, 'sourceKind', 'must not be empty');
+    }
+
+    return database.transaction((txn) async {
+      final existing = await txn.query(
+        'source_registry',
+        columns: <String>['source_id'],
+        where: 'source_key = ?',
+        whereArgs: <Object?>[normalizedKey],
+        limit: 1,
+      );
+      if (existing.isNotEmpty) {
+        final existingSourceId = existing.single['source_id'];
+        if (existingSourceId is! int) {
+          throw StateError('source_registry.source_id must be an integer');
+        }
+        return existingSourceId;
+      }
+
+      final nextRows = await txn.rawQuery(
+        'SELECT COALESCE(MAX(source_id), ?) + 1 AS next_source_id '
+        'FROM source_registry',
+        <Object?>[liveAddressBookSourceId],
+      );
+      final nextSourceIdValue = nextRows.single['next_source_id'];
+      if (nextSourceIdValue is! int) {
+        throw StateError('next source_id must be an integer');
+      }
+      final nextSourceId = nextSourceIdValue;
+
+      await txn.insert('source_registry', <String, Object?>{
+        'source_id': nextSourceId,
+        'source_key': normalizedKey,
+        'source_kind': normalizedKind,
+        'source_label': normalizedLabel,
+        'created_at_utc': DateTime.now().toUtc().toIso8601String(),
+      });
+
+      return nextSourceId;
+    });
+  }
+
+  Future<int?> sourceIdForKey(String sourceKey) async {
+    final normalizedKey = sourceKey.trim();
+    if (normalizedKey.isEmpty) {
+      throw ArgumentError.value(sourceKey, 'sourceKey', 'must not be empty');
+    }
+
+    final rows = await database.query(
+      'source_registry',
+      columns: <String>['source_id'],
+      where: 'source_key = ?',
+      whereArgs: <Object?>[normalizedKey],
+      limit: 1,
+    );
+    if (rows.isEmpty) {
+      return null;
+    }
+
+    final value = rows.single['source_id'];
+    if (value is! int) {
+      throw StateError('source_registry.source_id must be an integer');
+    }
+    return value;
+  }
+
   Future<int?> maxMessageSourceRowIdForSource(int sourceId) async {
     final rows = await database.rawQuery(
       'SELECT MAX(source_rowid) AS max_source_rowid '
@@ -118,6 +204,77 @@ class ImportDatabase {
       <Object?>[sourceId],
     );
     return rows.single['message_count'] as int? ?? 0;
+  }
+
+  Future<SourceScopedImportSourceDeletionResult> deleteRowsForSource({
+    required int sourceId,
+  }) async {
+    return database.transaction((txn) async {
+      final messageAttachmentEdges = await txn.delete(
+        'message_to_attachment',
+        where: 'message_source_id = ? OR attachment_source_id = ?',
+        whereArgs: <Object?>[sourceId, sourceId],
+      );
+      final chatHandleEdges = await txn.delete(
+        'chat_to_handle',
+        where: 'source_id = ?',
+        whereArgs: <Object?>[sourceId],
+      );
+      final chatMessageEdges = await txn.delete(
+        'chat_to_message',
+        where: 'source_id = ?',
+        whereArgs: <Object?>[sourceId],
+      );
+      final contactChannels = await txn.delete(
+        'contact_channels',
+        where: 'source_id = ?',
+        whereArgs: <Object?>[sourceId],
+      );
+      final contacts = await txn.delete(
+        'contacts',
+        where: 'source_id = ?',
+        whereArgs: <Object?>[sourceId],
+      );
+      final attachments = await txn.delete(
+        'attachments',
+        where: 'source_id = ?',
+        whereArgs: <Object?>[sourceId],
+      );
+      final messages = await txn.delete(
+        'messages',
+        where: 'source_id = ?',
+        whereArgs: <Object?>[sourceId],
+      );
+      final chats = await txn.delete(
+        'chats',
+        where: 'source_id = ?',
+        whereArgs: <Object?>[sourceId],
+      );
+      final handles = await txn.delete(
+        'handles',
+        where: 'source_id = ?',
+        whereArgs: <Object?>[sourceId],
+      );
+      final importBatches = await txn.delete(
+        'import_batches',
+        where: 'source_id = ?',
+        whereArgs: <Object?>[sourceId],
+      );
+
+      return SourceScopedImportSourceDeletionResult(
+        sourceId: sourceId,
+        messages: messages,
+        chats: chats,
+        handles: handles,
+        contacts: contacts,
+        contactChannels: contactChannels,
+        attachments: attachments,
+        chatMessageEdges: chatMessageEdges,
+        chatHandleEdges: chatHandleEdges,
+        messageAttachmentEdges: messageAttachmentEdges,
+        importBatches: importBatches,
+      );
+    });
   }
 
   Future<int?> maxHandleSourceRowIdForSource(int sourceId) async {
@@ -202,6 +359,7 @@ class ImportDatabase {
     await _createContactChannelSchema(db);
     await _createAttachmentSchema(db);
     await _createMessageToAttachmentSchema(db);
+    await _createIncrementalProjectionIndexes(db);
   }
 
   static Future<void> _addMessageSemanticSourceColumns(Database db) async {
@@ -322,6 +480,10 @@ class ImportDatabase {
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_chat_to_message_message '
       'ON chat_to_message(message_ss_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_chat_to_message_source_message_cursor '
+      'ON chat_to_message(source_id, source_message_rowid)',
     );
   }
 
@@ -458,6 +620,23 @@ class ImportDatabase {
       'CREATE INDEX IF NOT EXISTS idx_message_to_attachment_attachment '
       'ON message_to_attachment(attachment_ss_id)',
     );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS '
+      'idx_message_to_attachment_source_message_cursor '
+      'ON message_to_attachment(message_source_id, source_message_rowid)',
+    );
+  }
+
+  static Future<void> _createIncrementalProjectionIndexes(Database db) async {
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_chat_to_message_source_message_cursor '
+      'ON chat_to_message(source_id, source_message_rowid)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS '
+      'idx_message_to_attachment_source_message_cursor '
+      'ON message_to_attachment(message_source_id, source_message_rowid)',
+    );
   }
 
   static Future<void> _ensureLiveSource(Database db) async {
@@ -475,5 +654,46 @@ class ImportDatabase {
       'source_label': 'Live AddressBook',
       'created_at_utc': DateTime.now().toUtc().toIso8601String(),
     }, conflictAlgorithm: ConflictAlgorithm.ignore);
+  }
+}
+
+final class SourceScopedImportSourceDeletionResult {
+  const SourceScopedImportSourceDeletionResult({
+    required this.sourceId,
+    required this.messages,
+    required this.chats,
+    required this.handles,
+    required this.contacts,
+    required this.contactChannels,
+    required this.attachments,
+    required this.chatMessageEdges,
+    required this.chatHandleEdges,
+    required this.messageAttachmentEdges,
+    required this.importBatches,
+  });
+
+  final int sourceId;
+  final int messages;
+  final int chats;
+  final int handles;
+  final int contacts;
+  final int contactChannels;
+  final int attachments;
+  final int chatMessageEdges;
+  final int chatHandleEdges;
+  final int messageAttachmentEdges;
+  final int importBatches;
+
+  int get deletedSourceFactCount {
+    return messages +
+        chats +
+        handles +
+        contacts +
+        contactChannels +
+        attachments;
+  }
+
+  int get deletedTopologyEdgeCount {
+    return chatMessageEdges + chatHandleEdges + messageAttachmentEdges;
   }
 }

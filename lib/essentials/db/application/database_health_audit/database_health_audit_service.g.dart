@@ -7,7 +7,7 @@ part of 'database_health_audit_service.dart';
 // **************************************************************************
 
 String _$databaseHealthAuditServiceHash() =>
-    r'05c128f5eeb2e07eac3eeb76b590a2d6e6c1b3e1';
+    r'21a5136e334b97c038fbfe2e88615dd3fc88c9f7';
 
 /// See also [databaseHealthAuditService].
 @ProviderFor(databaseHealthAuditService)

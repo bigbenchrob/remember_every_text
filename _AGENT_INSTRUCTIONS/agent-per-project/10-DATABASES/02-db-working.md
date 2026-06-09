@@ -2,7 +2,7 @@
 tier: project
 scope: databases
 owner: agent-per-project
-last_reviewed: 2026-04-21
+last_reviewed: 2026-06-08
 source_of_truth: doc
 links:
   - ./00-all-databases-accessed.md
@@ -15,15 +15,24 @@ links:
 tests: []
 ---
 
-# `db-working` — Drift Projection (`working.db`)
+# `db-working` - Retained Historical Projection File (`working.db`)
 
 ## Overview
 
-`db-working` is the Drift-managed projection the Flutter application reads from. Migrators translate the source-derived ledger in `db-import` into normalized tables tailored for UI queries, search/index access, analytics, and provider-backed state.
+`db-working` is the retained `working.db` storage name. The Drift schema and
+migrator implementation have been retired from active app code. Existing user
+data folders may still contain a historical projection file, and reset or
+read-only diagnostics must tolerate that file.
+
+> Current conformance note (2026-06-08): ordinary Flutter UI reads now use the
+> source-scoped conversation graph in `working_ss.db` through
+> `driftConversationGraphDatabaseProvider` and graph read models. Do not add
+> new product-facing read behavior to `working.db`, and do not reintroduce a
+> general app provider for it.
 
 - **Alias**: `db-working`
 - **Physical File**: `~/Library/Application Support/com.bigbenchsoftware.MessageLens/working.db`
-- **Primary Consumers**: Flutter UI, background services, analytics tooling
+- **Primary Consumers**: Reset cleanup, read-only diagnostics, historical file interpretation
 
 ## File Location
 
@@ -31,31 +40,31 @@ tests: []
 | --- | --- |
 | Directory | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/`
 | Filename | `working.db`
-| Provisioning | Created/opened by `driftWorkingDatabaseProvider` using Drift + `NativeDatabase.createInBackground` |
+| Provisioning | Retained file/schema storage only; no central app provider remains |
 | Backups | External/operational backup if configured; not owned by the working database provider |
 
-Manual access requires shutting down the Flutter app and orchestration tooling to avoid WAL/locking conflicts.
+Manual access requires shutting down the Flutter app and orchestration tooling
+to avoid WAL/locking conflicts.
 
-## Provider Access
+## Access Boundary
 
-- **Riverpod entry point**: `driftWorkingDatabaseProvider`
-- **Definition**: `lib/essentials/db/feature_level_providers.dart`
-- **Type**: `Future<WorkingDatabase>` (Drift `GeneratedDatabase`)
+There is no central app provider for retained `working.db`. Ordinary app
+reads, search, timelines, heatmaps, recovered-message evidence, and contact
+identity use the source-scoped graph and Message Evidence Spine.
 
-Usage pattern:
+Reset may delete the retained file alongside other derived-data files.
+Diagnostics may inspect the retained file through explicit read-only file query
+boundaries. New product or compatibility work must not reintroduce a general
+provider for this database without a reviewed storage-retirement decision.
 
-```dart
-final workingDb = await ref.watch(driftWorkingDatabaseProvider.future);
-```
+## Retained File Contents
 
-Do not instantiate `WorkingDatabase` directly—providers configure foreign key pragmas and lifecycle management.
+The retained Drift schema implementation has been retired from app code.
+Existing user data folders may still contain a historical `working.db` file
+with the old projection tables, but MessageLens no longer opens that file
+through a Drift database class.
 
-## Schema & Drift Definitions
-
-- Drift database: `lib/essentials/db/infrastructure/data_sources/local/working/working_database.dart`
-- See `_AGENT_INSTRUCTIONS/agent-per-project/20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md` for full table listings and relationships.
-
-Representative tables:
+Representative historical tables that may still appear in old files:
 
 | Table | Purpose |
 | --- | --- |
@@ -66,28 +75,40 @@ Representative tables:
 | `chats` | Chat metadata (service, title, derived counters). |
 | `messages` | Message records referencing chat + handle IDs, along with derived UI flags. |
 | `recovered_unlinked_messages` / `recovered_unlinked_attachments` | Preserved source rows and attachments that are not linked through normal chat-message joins. |
-| `global_message_index` / `message_index` / `contact_message_index` | Rebuilt ordinal indexes for global, chat, and contact timelines. |
+| `global_message_index` / `message_index` / `contact_message_index` | Retained legacy ordinal-index tables. Ordinary timeline navigation and heatmap coordination now use graph evidence skeletons. |
 | `attachments` | Projected attachment metadata keyed to message GUIDs and import attachment IDs. |
 | `reactions` / `reaction_counts` | Projected tapbacks and cached reaction totals. |
 | `read_state` / `message_read_marks` | Chat-level and message-level read-state projection. |
 
 ## Typical Use Cases
 
-- Powering UI providers and queries for chats, messages, participants, and overlays.
-- Running analytics or smoke checks against the user-facing projection.
-- Verifying that migrations honored source IDs and relationships.
+- Reset cleanup may delete retained `working.db` files.
+- Diagnostics may inspect the retained file through read-only file query
+  boundaries while legacy storage remains in user data folders.
+- Historical documentation may refer to old projection tables when explaining
+  migration decisions.
 
-Remember: `db-working` is projection-owned. Full migration clears migrator target tables and rebuilds them; incremental migration preserves existing rows and applies migrator-specific inserts/updates. Any manual edits are unsupported and may be overwritten or made inconsistent by the next migration.
+Remember: `db-working` is retained compatibility storage, not the ordinary app
+truth. Historical retained projection concepts may still appear in schema
+records, but ordinary MessageLens evidence, search, timelines, and heatmaps use
+the source-scoped graph. Any manual edits are unsupported and may make retained
+diagnostics inconsistent.
 
 ## Related Rules & Contracts
 
-- **Source identity remains traceable**: Chat IDs/GUIDs, message IDs/GUIDs, handle IDs, and participant IDs must remain traceable from `db-import`. Canonical handle/participant tables may normalize relationships, but must not hide source identity. See `10-group-import-working.md` for the canonical flow.
+- **Source identity remains traceable in historical retained files**: Chat
+  IDs/GUIDs, message IDs/GUIDs, handle IDs, and participant IDs should remain
+  interpretable from old `db-import` / `db-working` pairs. See
+  `10-group-import-working.md` for the historical compatibility flow.
 - **Overlay independence**: `db-working` never writes to `db-overlay`, and vice versa. Providers merge overlay data at runtime (see `07-overlay-database-independence.md`).
-- **Provider-only access**: Always request the database via `driftWorkingDatabaseProvider` to avoid locking conflicts and to ensure foreign key enforcement is enabled.
+- **No general provider access**: do not reintroduce a general retained
+  `working.db` app provider. Use graph/overlay/source-scoped import providers
+  for active behavior, and explicit read-only diagnostic boundaries for
+  retained file inspection.
 
 ## Cross-References
 
-- `10-group-import-working.md` — Pipeline rules governing how data arrives here.
-- `01-db-import.md` — Source ledger feeding this projection.
+- `10-group-import-working.md` — Historical retained pipeline rules.
+- `01-db-import.md` — Retained archive-source metadata and historical ledger details.
 - `07-overlay-database-independence.md` — Runtime merge strategy for overlay data.
-- `../20-DATA-IMPORT-MIGRATION/20-migration-orchestrator.md` — Service orchestrating projections into `db-working`.
+- `../55-READERS-INTEGRATORS-ORCHESTRATORS/81-LEGACY-STORAGE-RETENTION-REGISTER.md` — Current retained storage status.

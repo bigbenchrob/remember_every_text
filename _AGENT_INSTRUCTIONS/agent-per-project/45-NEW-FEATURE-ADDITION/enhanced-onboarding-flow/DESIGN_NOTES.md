@@ -1,5 +1,13 @@
 # Enhanced Onboarding Flow Design Notes
 
+## Current Conformance Note (2026-06-06)
+
+These notes remain useful for the raw-evidence -> typed-report -> user-facing
+classification pattern. Replace references to import/migration readiness as
+the ordinary success path with source-scoped graph build/readiness. Retained
+legacy import/projection health may still appear as compatibility diagnostics
+where explicitly named.
+
 ## Summary
 
 The onboarding system should evolve from a two-gate startup check into an

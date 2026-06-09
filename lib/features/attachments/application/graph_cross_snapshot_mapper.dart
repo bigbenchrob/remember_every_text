@@ -7,15 +7,15 @@ import 'historical_snapshot_reader.dart';
 
 /// Maps historical attachment records to source-scoped graph identity.
 ///
-/// This replaces the legacy recovery bridge:
-/// historical snapshot -> macos_import.db -> working.db.
+/// This replaces the retained recovery bridge that routed historical snapshots
+/// through retained import/projection storage before graph refresh.
 ///
 /// The graph-era bridge is:
-/// historical snapshot -> macos_import_ss.db -> working_ss.db.
+/// historical snapshot -> source-scoped import ledger -> conversation graph.
 ///
 /// Overlay archive rows still use the existing legacy-compatible
-/// `(message_guid, import_attachment_id)` key during this migration slice, so
-/// mapped records also expose the live-source attachment ROWID as
+/// `(message_guid, import_attachment_id)` key during this compatibility slice,
+/// so mapped records also expose the live-source attachment ROWID as
 /// [MappedAttachmentRecord.currentImportAttachmentId].
 class GraphCrossSnapshotMapper {
   const GraphCrossSnapshotMapper({
@@ -87,7 +87,7 @@ class GraphCrossSnapshotMapper {
         unmapped.add(
           UnmappedAttachmentRecord(
             histMessageGuid: record.histMessageGuid,
-            reason: UnmappedReason.messageNotInWorking,
+            reason: UnmappedReason.messageNotInGraph,
             histAttachmentGuid: record.histAttachmentGuid,
             histLocalPath: record.histLocalPath,
           ),
@@ -134,7 +134,7 @@ class GraphCrossSnapshotMapper {
             unmappedAmbiguous++;
           case UnmappedReason.guidNullNoCurrentAttachment:
             unmappedNoCurrentAttachment++;
-          case UnmappedReason.messageNotInWorking:
+          case UnmappedReason.messageNotInGraph:
             unmappedMessageMissing++;
           case UnmappedReason.fileNotFound:
             unmappedFileMissing++;

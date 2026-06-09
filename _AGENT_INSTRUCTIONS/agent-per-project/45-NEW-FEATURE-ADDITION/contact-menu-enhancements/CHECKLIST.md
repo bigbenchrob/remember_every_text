@@ -18,6 +18,19 @@ tests: []
 **Started**: 2025-11-08  
 **Target Completion**: 2025-11-22 (2.5 weeks)
 
+## Current Conformance Note (2026-06-06)
+
+This checklist is retained as historical planning evidence. Do not execute it
+literally. A current implementation checklist must replace:
+
+- `participantId`-keyed favourites with graph-era contact identity keys.
+- `pinned` terminology with user-facing "Favourites".
+- `shortName` fields with canonical display identity resolver output.
+- `working.db` joins with graph read repositories plus overlay user intent.
+
+Any future contact menu work should start from the current Contacts feature and
+the graph/overlay identity rules, not from the schema sketches below.
+
 ## Phase 1: Foundation - Database & Domain Layer (Days 1-2)
 
 ### 1.1 Overlay Database Schema ⬜

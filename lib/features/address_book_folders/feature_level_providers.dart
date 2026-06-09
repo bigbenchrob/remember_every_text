@@ -3,9 +3,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../providers.dart';
-// import '../_shared/domain/failures/failure.dart';
 import 'domain/entities/address_book_folder_aggregate.dart';
-import 'domain/failures/more_failures/failures.dart';
+import 'domain/failures/folder_retrieval_failure.dart';
 import 'infrastructure/data_sources/local/address_book_folder_path_finder.dart';
 import 'infrastructure/repositories/address_book_folder_repository.dart';
 
@@ -16,7 +15,7 @@ import 'infrastructure/repositories/address_book_folder_repository.dart';
 part 'feature_level_providers.g.dart';
 
 const folderRetrieveFailureMessage = '''
-There was a problem locating the folder where your address book contancts are stored.
+There was a problem locating the folder where your address book contacts are stored.
 
 This folder is normally located at:
 
@@ -36,7 +35,7 @@ If you have not moved your address book, please contact the developer.
 ///
 /// A utility that scans a target directory for subfolders containing
 ///  an AddressBook SQLite database file ('AddressBook-v22.abcddb').
-/// Used by [AddressBookFolderListDataSource] to retrieve a list of candidate
+/// Used by [AddressBookFolderRepository] to retrieve a list of candidate
 @riverpod
 Future<AddressBookFolderPathsFinder> folderPathFinder(Ref ref) async {
   final pathsHelper = await ref.watch(pathsHelperProvider.future);
@@ -48,23 +47,20 @@ Future<AddressBookFolderPathsFinder> folderPathFinder(Ref ref) async {
 /// the folders in the expected path:
 ///  (Library/Application Support/AddressBook/Sources/)
 @riverpod
-Future<AddressBookFolderRepository> addressFolderListDataSource(Ref ref) async {
+Future<AddressBookFolderRepository> addressBookFolderRepository(Ref ref) async {
   final folderPathFinder = await ref.watch(folderPathFinderProvider.future);
   return AddressBookFolderRepository(folderPathsFinder: folderPathFinder);
 }
 
-/// Resolve the Future [AddressFolderListRepository.getFolders()]
+/// Resolve the most recent viable AddressBook folder aggregate.
 /// Lazily loaded when needed instead of pre-initialized.
 @riverpod
 Future<Either<FolderRetrievalFailure, AddressBookFolderAggregate>>
 futureGetFolderAggregate(Ref ref) async {
-  // Add a 1-second delay to make the loading state visible
-  await Future.delayed(const Duration(seconds: 1));
-
-  final dataSource = await ref.watch(
-    addressFolderListDataSourceProvider.future,
+  final repository = await ref.watch(
+    addressBookFolderRepositoryProvider.future,
   );
-  return dataSource.getFinalFolderAggregate();
+  return repository.getFinalFolderAggregate();
 }
 
 /// Caches an aggregate containing a list of candidate

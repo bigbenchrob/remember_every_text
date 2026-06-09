@@ -6,14 +6,14 @@ import 'package:remember_this_text/essentials/source_scoped_import/domain/source
 import '../../conversation_graph_test_database.dart';
 
 void main() {
-  late ConversationGraphDatabase workingDatabase;
+  late ConversationGraphDatabase graphDatabase;
 
   setUp(() async {
-    workingDatabase = await openConversationGraphTestDatabase();
+    graphDatabase = await openConversationGraphTestDatabase();
   });
 
   tearDown(() async {
-    await workingDatabase.close();
+    await graphDatabase.close();
   });
 
   test('reads full global message timeline oldest first', () async {
@@ -21,19 +21,19 @@ void main() {
     final newerMessageId = _id(202);
 
     await _insertMessage(
-      workingDatabase,
+      graphDatabase,
       messageId: newerMessageId,
       dateUtc: '2026-05-20T10:00:00.000Z',
       text: 'newer',
     );
     await _insertMessage(
-      workingDatabase,
+      graphDatabase,
       messageId: olderMessageId,
       dateUtc: '2026-04-19T10:00:00.000Z',
       text: 'older',
     );
 
-    final timeline = await _reader(workingDatabase).readGlobalMessageTimeline();
+    final timeline = await _reader(graphDatabase).readGlobalMessageTimeline();
 
     expect(timeline.map((entry) => entry.messageId), [
       olderMessageId,
@@ -47,23 +47,23 @@ void main() {
     final attachmentId = _id(301);
 
     await _insertMessage(
-      workingDatabase,
+      graphDatabase,
       messageId: messageId,
       dateUtc: '2026-05-20T10:00:00.000Z',
       text: 'global message',
     );
-    await _insertAttachment(workingDatabase, attachmentId: attachmentId);
+    await _insertAttachment(graphDatabase, attachmentId: attachmentId);
     await _insertMessageAttachment(
-      workingDatabase,
+      graphDatabase,
       messageId: messageId,
       attachmentId: attachmentId,
     );
 
     final message = await _reader(
-      workingDatabase,
+      graphDatabase,
     ).readGlobalMessageById(messageId: messageId);
     final missing = await _reader(
-      workingDatabase,
+      graphDatabase,
     ).readGlobalMessageById(messageId: _id(999));
 
     expect(message?.messageId, messageId);
@@ -78,26 +78,26 @@ void main() {
     final nonMatchingMessageId = _id(203);
 
     await _insertMessage(
-      workingDatabase,
+      graphDatabase,
       messageId: newerMessageId,
       dateUtc: '2026-05-20T10:00:00.000Z',
       text: 'settlement offer follow up',
     );
     await _insertMessage(
-      workingDatabase,
+      graphDatabase,
       messageId: olderMessageId,
       dateUtc: '2026-04-19T10:00:00.000Z',
       text: 'draft settlement terms',
     );
     await _insertMessage(
-      workingDatabase,
+      graphDatabase,
       messageId: nonMatchingMessageId,
       dateUtc: '2026-03-18T10:00:00.000Z',
       text: 'unrelated message',
     );
 
     final matches = await _reader(
-      workingDatabase,
+      graphDatabase,
     ).readGlobalMessageIdsMatchingText(query: 'settlement');
 
     expect(matches, [olderMessageId, newerMessageId]);
@@ -114,82 +114,82 @@ void main() {
     final otherMessageId = _id(203);
 
     await _insertHandle(
-      workingDatabase,
+      graphDatabase,
       handleId: canonicalHandleId,
       rawIdentifier: '+16049995969',
     );
     await _insertHandle(
-      workingDatabase,
+      graphDatabase,
       handleId: aliasHandleId,
       rawIdentifier: '6049995969',
     );
     await _insertHandle(
-      workingDatabase,
+      graphDatabase,
       handleId: otherHandleId,
       rawIdentifier: '+17789908506',
     );
     await _insertCanonicalHandle(
-      workingDatabase,
+      graphDatabase,
       canonicalHandleId: canonicalHandleId,
     );
     await _insertHandleAlias(
-      workingDatabase,
+      graphDatabase,
       handleId: canonicalHandleId,
       canonicalHandleId: canonicalHandleId,
       rawIdentifier: '+16049995969',
     );
     await _insertHandleAlias(
-      workingDatabase,
+      graphDatabase,
       handleId: aliasHandleId,
       canonicalHandleId: canonicalHandleId,
       rawIdentifier: '6049995969',
     );
     await _insertMessage(
-      workingDatabase,
+      graphDatabase,
       messageId: newerMessageId,
       dateUtc: '2026-05-20T10:00:00.000Z',
       text: 'newer alias chat',
     );
     await _insertMessage(
-      workingDatabase,
+      graphDatabase,
       messageId: olderMessageId,
       dateUtc: '2026-04-19T10:00:00.000Z',
       text: 'older alias chat',
     );
     await _insertMessage(
-      workingDatabase,
+      graphDatabase,
       messageId: otherMessageId,
       dateUtc: '2026-03-18T10:00:00.000Z',
       text: 'other chat',
     );
     await _insertChatToMessage(
-      workingDatabase,
+      graphDatabase,
       chatId: chatId,
       messageId: newerMessageId,
     );
     await _insertChatToMessage(
-      workingDatabase,
+      graphDatabase,
       chatId: chatId,
       messageId: olderMessageId,
     );
     await _insertChatToMessage(
-      workingDatabase,
+      graphDatabase,
       chatId: otherChatId,
       messageId: otherMessageId,
     );
     await _insertChatToHandle(
-      workingDatabase,
+      graphDatabase,
       chatId: chatId,
       handleId: aliasHandleId,
     );
     await _insertChatToHandle(
-      workingDatabase,
+      graphDatabase,
       chatId: otherChatId,
       handleId: otherHandleId,
     );
 
     final timeline = await _reader(
-      workingDatabase,
+      graphDatabase,
     ).readHandleMessageTimeline(handleId: canonicalHandleId);
 
     expect(timeline.map((entry) => entry.messageId), [
@@ -206,38 +206,38 @@ void main() {
     final outOfScopeMessageId = _id(202);
 
     await _insertHandle(
-      workingDatabase,
+      graphDatabase,
       handleId: handleId,
       rawIdentifier: '+16049995969',
     );
     await _insertMessage(
-      workingDatabase,
+      graphDatabase,
       messageId: inScopeMessageId,
       dateUtc: '2026-05-20T10:00:00.000Z',
       text: 'in handle scope',
     );
     await _insertMessage(
-      workingDatabase,
+      graphDatabase,
       messageId: outOfScopeMessageId,
       dateUtc: '2026-05-21T10:00:00.000Z',
       text: 'out of handle scope',
     );
     await _insertChatToMessage(
-      workingDatabase,
+      graphDatabase,
       chatId: chatId,
       messageId: inScopeMessageId,
     );
     await _insertChatToHandle(
-      workingDatabase,
+      graphDatabase,
       chatId: chatId,
       handleId: handleId,
     );
 
     final message = await _reader(
-      workingDatabase,
+      graphDatabase,
     ).readHandleMessageById(handleId: handleId, messageId: inScopeMessageId);
     final missing = await _reader(
-      workingDatabase,
+      graphDatabase,
     ).readHandleMessageById(handleId: handleId, messageId: outOfScopeMessageId);
 
     expect(message?.text, 'in handle scope');
@@ -256,58 +256,57 @@ void main() {
       final otherChatMessageId = _id(204);
 
       await _insertMessage(
-        workingDatabase,
+        graphDatabase,
         messageId: beforeMessageId,
         dateUtc: '2026-05-20T10:00:00.000Z',
         text: 'before context',
       );
       await _insertMessage(
-        workingDatabase,
+        graphDatabase,
         messageId: selectedMessageId,
         dateUtc: '2026-05-20T10:01:00.000Z',
         text: 'selected context',
       );
       await _insertMessage(
-        workingDatabase,
+        graphDatabase,
         messageId: afterMessageId,
         dateUtc: '2026-05-20T10:02:00.000Z',
         text: 'after context',
       );
       await _insertMessage(
-        workingDatabase,
+        graphDatabase,
         messageId: otherChatMessageId,
         dateUtc: '2026-05-20T10:03:00.000Z',
         text: 'other chat',
       );
       await _insertChatToMessage(
-        workingDatabase,
+        graphDatabase,
         chatId: chatId,
         messageId: beforeMessageId,
       );
       await _insertChatToMessage(
-        workingDatabase,
+        graphDatabase,
         chatId: chatId,
         messageId: selectedMessageId,
       );
       await _insertChatToMessage(
-        workingDatabase,
+        graphDatabase,
         chatId: chatId,
         messageId: afterMessageId,
       );
       await _insertChatToMessage(
-        workingDatabase,
+        graphDatabase,
         chatId: _id(302),
         messageId: otherChatMessageId,
       );
 
-      final timeline = await _reader(workingDatabase)
-          .readMessageContextTimeline(
-            messageId: legacyMessageId,
-            chatId: legacyChatId,
-            beforeCount: 1,
-            afterCount: 1,
-          );
-      final missing = await _reader(workingDatabase).readMessageContextTimeline(
+      final timeline = await _reader(graphDatabase).readMessageContextTimeline(
+        messageId: legacyMessageId,
+        chatId: legacyChatId,
+        beforeCount: 1,
+        afterCount: 1,
+      );
+      final missing = await _reader(graphDatabase).readMessageContextTimeline(
         messageId: legacyMessageId,
         chatId: 999,
         beforeCount: 1,
@@ -324,9 +323,9 @@ void main() {
   );
 }
 
-MessageGraphReader _reader(ConversationGraphDatabase workingDatabase) {
+MessageGraphReader _reader(ConversationGraphDatabase graphDatabase) {
   return MessageGraphReader(
-    repository: SqliteMessageGraphRepository(workingDatabase: workingDatabase),
+    repository: SqliteMessageGraphRepository(graphDatabase: graphDatabase),
   );
 }
 
@@ -335,12 +334,12 @@ int _id(int sourceRowId) {
 }
 
 Future<void> _insertMessage(
-  ConversationGraphDatabase workingDatabase, {
+  ConversationGraphDatabase graphDatabase, {
   required int messageId,
   required String dateUtc,
   required String text,
 }) {
-  return workingDatabase.database.insert('messages', <String, Object?>{
+  return graphDatabase.database.insert('messages', <String, Object?>{
     'ss_id': messageId,
     'guid': 'message-$messageId',
     'is_from_me': 0,
@@ -350,43 +349,43 @@ Future<void> _insertMessage(
 }
 
 Future<void> _insertAttachment(
-  ConversationGraphDatabase workingDatabase, {
+  ConversationGraphDatabase graphDatabase, {
   required int attachmentId,
 }) {
-  return workingDatabase.database.insert('attachments', <String, Object?>{
+  return graphDatabase.database.insert('attachments', <String, Object?>{
     'ss_id': attachmentId,
     'guid': 'attachment-$attachmentId',
   });
 }
 
 Future<void> _insertMessageAttachment(
-  ConversationGraphDatabase workingDatabase, {
+  ConversationGraphDatabase graphDatabase, {
   required int messageId,
   required int attachmentId,
 }) {
-  return workingDatabase.database.insert('message_to_attachment', {
+  return graphDatabase.database.insert('message_to_attachment', {
     'message_ss_id': messageId,
     'attachment_ss_id': attachmentId,
   });
 }
 
 Future<void> _insertHandle(
-  ConversationGraphDatabase workingDatabase, {
+  ConversationGraphDatabase graphDatabase, {
   required int handleId,
   required String rawIdentifier,
 }) {
-  return workingDatabase.database.insert('handles', <String, Object?>{
+  return graphDatabase.database.insert('handles', <String, Object?>{
     'ss_id': handleId,
     'id': rawIdentifier,
   });
 }
 
 Future<void> _insertCanonicalHandle(
-  ConversationGraphDatabase workingDatabase, {
+  ConversationGraphDatabase graphDatabase, {
   required int canonicalHandleId,
   String normalizedIdentifier = '16049995969',
 }) {
-  return workingDatabase.database.insert('canonical_handles', <String, Object?>{
+  return graphDatabase.database.insert('canonical_handles', <String, Object?>{
     'canonical_handle_ss_id': canonicalHandleId,
     'display_handle': '+16049995969',
     'normalized_identifier': normalizedIdentifier,
@@ -395,13 +394,13 @@ Future<void> _insertCanonicalHandle(
 }
 
 Future<void> _insertHandleAlias(
-  ConversationGraphDatabase workingDatabase, {
+  ConversationGraphDatabase graphDatabase, {
   required int handleId,
   required int canonicalHandleId,
   required String rawIdentifier,
   String normalizedIdentifier = '16049995969',
 }) {
-  return workingDatabase.database.insert('handle_aliases', <String, Object?>{
+  return graphDatabase.database.insert('handle_aliases', <String, Object?>{
     'handle_ss_id': handleId,
     'canonical_handle_ss_id': canonicalHandleId,
     'raw_identifier': rawIdentifier,
@@ -411,22 +410,22 @@ Future<void> _insertHandleAlias(
 }
 
 Future<void> _insertChatToMessage(
-  ConversationGraphDatabase workingDatabase, {
+  ConversationGraphDatabase graphDatabase, {
   required int chatId,
   required int messageId,
 }) {
-  return workingDatabase.database.insert('chat_to_message', <String, Object?>{
+  return graphDatabase.database.insert('chat_to_message', <String, Object?>{
     'chat_ss_id': chatId,
     'message_ss_id': messageId,
   });
 }
 
 Future<void> _insertChatToHandle(
-  ConversationGraphDatabase workingDatabase, {
+  ConversationGraphDatabase graphDatabase, {
   required int chatId,
   required int handleId,
 }) {
-  return workingDatabase.database.insert('chat_to_handle', <String, Object?>{
+  return graphDatabase.database.insert('chat_to_handle', <String, Object?>{
     'chat_ss_id': chatId,
     'handle_ss_id': handleId,
   });

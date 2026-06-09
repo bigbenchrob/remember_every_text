@@ -7,9 +7,9 @@ part of 'debug_settings_provider.dart';
 // **************************************************************************
 
 String _$importDebugSettingsHash() =>
-    r'92836ed12675f8347d2ddc4c707c7da41a22063b';
+    r'c8242f5833c5c9b5be98bfd7f9652cd5483b33ac';
 
-/// Debug settings for the import system
+/// Debug settings for retained import database diagnostics.
 ///
 /// Copied from [ImportDebugSettings].
 @ProviderFor(ImportDebugSettings)

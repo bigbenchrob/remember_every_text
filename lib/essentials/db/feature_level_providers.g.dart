@@ -9,7 +9,7 @@ part of 'feature_level_providers.dart';
 String _$sqfliteImportDatabaseHash() =>
     r'55e2769da44f8cff1a868a496a7715a3080047d4';
 
-/// Provides access to the Sqflite-powered import ledger database.
+/// Provides access to retained archive-source metadata in `macos_import.db`.
 ///
 /// Copied from [sqfliteImportDatabase].
 @ProviderFor(sqfliteImportDatabase)
@@ -27,26 +27,32 @@ final sqfliteImportDatabaseProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef SqfliteImportDatabaseRef = FutureProviderRef<SqfliteImportDatabase>;
-String _$driftWorkingDatabaseHash() =>
-    r'98e0237149c96ab333301823d092ce800548ce88';
+String _$retainedArchiveMetadataDatabaseHash() =>
+    r'b44dbd6c01f3a64151102406b93e1adf77e5580d';
 
-/// Provides access to the Drift projection database used by the UI.
+/// Semantic entry point for retained Historical Archives metadata.
 ///
-/// Copied from [driftWorkingDatabase].
-@ProviderFor(driftWorkingDatabase)
-final driftWorkingDatabaseProvider = FutureProvider<WorkingDatabase>.internal(
-  driftWorkingDatabase,
-  name: r'driftWorkingDatabaseProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$driftWorkingDatabaseHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+/// Prefer this provider over [sqfliteImportDatabaseProvider] for new callers.
+/// The returned object still wraps `macos_import.db` while archive-source
+/// metadata remains in retained storage.
+///
+/// Copied from [retainedArchiveMetadataDatabase].
+@ProviderFor(retainedArchiveMetadataDatabase)
+final retainedArchiveMetadataDatabaseProvider =
+    FutureProvider<SqfliteImportDatabase>.internal(
+      retainedArchiveMetadataDatabase,
+      name: r'retainedArchiveMetadataDatabaseProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$retainedArchiveMetadataDatabaseHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef DriftWorkingDatabaseRef = FutureProviderRef<WorkingDatabase>;
+typedef RetainedArchiveMetadataDatabaseRef =
+    FutureProviderRef<SqfliteImportDatabase>;
 String _$driftConversationGraphDatabaseHash() =>
     r'a24e4d5cdb2234f7185c5de114b7ad80607c414a';
 

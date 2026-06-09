@@ -13,11 +13,11 @@ part 'chat_summary_provider.g.dart';
 Future<List<ChatSummary>> chatSummaries(Ref ref) async {
   ref.watch(messageDataVersionProvider);
 
-  final workingDatabase = await ref.watch(
+  final graphDatabase = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
   return ChatSummaryReader(
-    repository: SqliteChatSummaryRepository(workingDatabase: workingDatabase),
+    repository: SqliteChatSummaryRepository(graphDatabase: graphDatabase),
   ).readSummaries(limit: 1000000);
 }
 
@@ -25,11 +25,11 @@ Future<List<ChatSummary>> chatSummaries(Ref ref) async {
 Future<ChatSummarySanityCounts> chatSummarySanityCounts(Ref ref) async {
   ref.watch(messageDataVersionProvider);
 
-  final workingDatabase = await ref.watch(
+  final graphDatabase = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
   return ChatSummaryReader(
-    repository: SqliteChatSummaryRepository(workingDatabase: workingDatabase),
+    repository: SqliteChatSummaryRepository(graphDatabase: graphDatabase),
   ).readSanityCounts();
 }
 
@@ -40,11 +40,11 @@ Future<List<RecentChatMessage>> recentChatMessages(
 ) async {
   ref.watch(messageDataVersionProvider);
 
-  final workingDatabase = await ref.watch(
+  final graphDatabase = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
   return ChatSummaryReader(
-    repository: SqliteChatSummaryRepository(workingDatabase: workingDatabase),
+    repository: SqliteChatSummaryRepository(graphDatabase: graphDatabase),
   ).readRecentMessages(chatSsId: chatSsId);
 }
 
@@ -55,11 +55,11 @@ Future<List<RecentChatMessage>> recentTextChatMessages(
 ) async {
   ref.watch(messageDataVersionProvider);
 
-  final workingDatabase = await ref.watch(
+  final graphDatabase = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
   return ChatSummaryReader(
-    repository: SqliteChatSummaryRepository(workingDatabase: workingDatabase),
+    repository: SqliteChatSummaryRepository(graphDatabase: graphDatabase),
   ).readRecentTextMessages(chatSsId: chatSsId);
 }
 
@@ -67,11 +67,11 @@ Future<List<RecentChatMessage>> recentTextChatMessages(
 Future<ChatMessageTextStats> chatMessageTextStats(Ref ref, int chatSsId) async {
   ref.watch(messageDataVersionProvider);
 
-  final workingDatabase = await ref.watch(
+  final graphDatabase = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
   return ChatSummaryReader(
-    repository: SqliteChatSummaryRepository(workingDatabase: workingDatabase),
+    repository: SqliteChatSummaryRepository(graphDatabase: graphDatabase),
   ).readMessageTextStats(chatSsId: chatSsId);
 }
 
@@ -79,16 +79,16 @@ Future<ChatMessageTextStats> chatMessageTextStats(Ref ref, int chatSsId) async {
 Future<ChatAttachmentStats> chatAttachmentStats(Ref ref, int chatSsId) async {
   ref.watch(messageDataVersionProvider);
 
-  final workingDatabase = await ref.watch(
+  final graphDatabase = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
   final overlayDatabase = await ref.watch(overlayDatabaseProvider.future);
   final archiveDirectory = ref.watch(attachmentArchiveDirectoryProvider);
   return ChatSummaryReader(
     repository: SqliteChatSummaryRepository(
-      workingDatabase: workingDatabase,
+      graphDatabase: graphDatabase,
       archiveLookup: OverlayArchiveCompatibilityLookup(
-        graphDatabase: workingDatabase,
+        graphDatabase: graphDatabase,
         overlayDatabase: overlayDatabase,
         archiveDirectory: archiveDirectory,
       ),
@@ -101,16 +101,16 @@ Future<List<MessageAttachment>> messageAttachments(
   Ref ref,
   int messageSsId,
 ) async {
-  final workingDatabase = await ref.watch(
+  final graphDatabase = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
   final overlayDatabase = await ref.watch(overlayDatabaseProvider.future);
   final archiveDirectory = ref.watch(attachmentArchiveDirectoryProvider);
   return ChatSummaryReader(
     repository: SqliteChatSummaryRepository(
-      workingDatabase: workingDatabase,
+      graphDatabase: graphDatabase,
       archiveLookup: OverlayArchiveCompatibilityLookup(
-        graphDatabase: workingDatabase,
+        graphDatabase: graphDatabase,
         overlayDatabase: overlayDatabase,
         archiveDirectory: archiveDirectory,
       ),

@@ -1,11 +1,11 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../essentials/conversation_graph/domain/identity_key_bridge.dart';
 import '../../../../essentials/db/feature_level_providers.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import '../../domain/overlay_virtual_contact.dart';
 import '../../domain/participant_origin.dart';
-import 'contacts_list_repository.dart';
 import 'participant_merge_utils.dart';
 import 'virtual_participants_provider.dart';
 

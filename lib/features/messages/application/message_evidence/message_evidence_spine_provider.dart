@@ -8,12 +8,11 @@ import '../../../../essentials/conversation_graph/application/contacts/contact_g
 import '../../../../essentials/conversation_graph/application/conversations/conversation.dart';
 import '../../../../essentials/conversation_graph/application/conversations/conversation_reader_provider.dart';
 import '../../../../essentials/conversation_graph/application/messages/message_graph_reader_provider.dart';
+import '../../../../essentials/conversation_graph/domain/identity_key_bridge.dart';
 import '../../../../essentials/db/feature_level_providers.dart';
 import '../../../../essentials/search/application/search_service.dart';
 import '../../../../essentials/search/feature_level_providers.dart';
 import '../../../../essentials/search/infrastructure/repositories/graph_search_repository.dart';
-import '../../../../essentials/source_scoped_import/domain/known_sources.dart';
-import '../../../../essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import '../../../contacts/feature_level_providers.dart';
 import '../../domain/message_evidence/message_evidence_row_data.dart';
 import '../../domain/message_evidence/message_evidence_scope.dart';
@@ -597,13 +596,7 @@ Future<MessageEvidenceTimelineSkeleton> _contactAllMessagesTimelineSkeleton(
 }
 
 int _liveChatGraphId(int value) {
-  if (value > SourceScopedRowKey.maxSourceRowId) {
-    return value;
-  }
-  return SourceScopedRowKey.pack(
-    sourceId: liveChatDbSourceId,
-    sourceRowId: value,
-  );
+  return graphMessageIdForLegacyMessageRowId(value) ?? value;
 }
 
 Future<MessageEvidenceTimelineSkeleton> _contactHandleMessagesTimelineSkeleton(

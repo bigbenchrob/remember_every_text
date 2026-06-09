@@ -2,35 +2,37 @@
 tier: feature
 scope: state-provider-inventory
 owner: agent-per-project
-last_reviewed: 2025-11-06
+last_reviewed: 2026-06-05
 links:
 	- ./CHARTER.md
 	- ./DOMAIN_AND_DATA_MAP.md
 tests: []
 feature: chat-handles
 doc_type: state-provider-inventory
-status: draft
-last_updated: 2025-11-06
+status: current
+last_updated: 2026-06-05
 ---
 
 # State & Provider Inventory — Chat Handles
 
-> Current conformance note (2026-04-21): provider names below were draft placeholders. Current concrete providers include `strayHandlesProvider`, `spamCandidateHandlesProvider`, `dismissedHandlesProvider`, `strayHandleModeProvider`, `virtualParticipantsProvider`, and contacts/handles merge repositories.
+> Current conformance note (2026-06-05): handle state is graph-backed for ordinary traversal and overlay-backed for user intent. Do not reintroduce draft provider placeholders as architecture.
 
 | Provider | Type | Parameters | Description | Downstream Users |
 | --- | --- | --- | --- | --- |
-| `handleCanonicalizerProvider` | @riverpod class | N/A | Normalizes raw handle data into canonical identifiers. | Import + migration orchestration. |
-| `handlesByChatProvider` | @riverpod family | `chatId` | Exposes handle roster for a chat. | Chats feature UI, search indexing. |
-| `manualHandleOverridesProvider` | @riverpod future | N/A | Loads manual overrides from overlay DB. | Manual link UI, participant resolution. |
+| graph handle read models | infrastructure/application providers | `ss_id` / scope-specific ids | Expose source-scoped handles, canonical aliases, and graph topology through named repositories/read models. | Conversations, contacts, message evidence, search. |
+| manual handle link service | application service | contact/handle identity | Persists user-authored handle/contact links to overlay storage only. | Contact linking UI, unfamiliar-source review. |
+| unfamiliar/spam handle providers | feature providers | mode/filter state | Review handles that are not yet resolved to known contacts or have user suppression state. | Unfamiliar sources and handle review surfaces. |
 
 ## State Objects & Caches
-- Drift DAOs: `HandlesDao`, projection caches.
-- Derived caches for normalized phone/email formats.
+- Graph tables: `working_ss.handles`, canonical aliases, `chat_to_handle`, and `contact_to_handle`.
+- Overlay tables: manual contact/handle links and dismissed/suppressed handle intent.
+- Derived read models for display labels, sender labels, and handle-scoped message evidence.
 
 ## Invalidations & Triggers
-- Overlay writes should invalidate `manualHandleOverridesProvider` and any derived caches.
-- Import refresh triggers full rebuild, ensure providers bubble change events.
+- Overlay writes should invalidate display identity and handle review read models.
+- Graph import/projection refresh should invalidate graph handle topology readers.
+- Widgets should consume typed read models; they should not inspect overlay/graph tables directly.
 
 ## TODO
-- Audit existing providers in `lib/features/contacts` and consolidate here.
-- Decide whether search feature should subscribe directly or via facade provider.
+- Keep active provider names documented here when handle review or linking surfaces change.
+- Retire retained legacy handle terminology from docs as remaining recovery/archive bridges are removed.

@@ -15,8 +15,8 @@ void main() {
           MessageHistoryCoverageReport(
             status: MessageHistoryCoverageStatus.complete,
             chatDbTotalCount: 120,
-            workingDbVisibleCount: 115,
-            workingDbRecoveredCount: 5,
+            graphConversationLinkedCount: 115,
+            graphRecoveredOrphanCount: 5,
             earliestMessageDate: DateTime.utc(2020, 01, 01),
             latestMessageDate: DateTime.utc(2026, 04, 26),
             generatedAt: DateTime.utc(2026, 04, 26, 18),
@@ -106,8 +106,8 @@ void main() {
         MessageHistoryCoverageReport(
           status: MessageHistoryCoverageStatus.incompleteImport,
           chatDbTotalCount: 100,
-          workingDbVisibleCount: 80,
-          workingDbRecoveredCount: 10,
+          graphConversationLinkedCount: 80,
+          graphRecoveredOrphanCount: 10,
           earliestMessageDate: DateTime.utc(2020, 01, 01),
           latestMessageDate: DateTime.utc(2026, 04, 26),
         ),

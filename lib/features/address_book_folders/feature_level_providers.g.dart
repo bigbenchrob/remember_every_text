@@ -13,7 +13,7 @@ String _$folderPathFinderHash() => r'4ba472b7817abc99b8db4113dedc89263e804e81';
 ///
 /// A utility that scans a target directory for subfolders containing
 ///  an AddressBook SQLite database file ('AddressBook-v22.abcddb').
-/// Used by [AddressBookFolderListDataSource] to retrieve a list of candidate
+/// Used by [AddressBookFolderRepository] to retrieve a list of candidate
 ///
 /// Copied from [folderPathFinder].
 @ProviderFor(folderPathFinder)
@@ -32,35 +32,35 @@ final folderPathFinderProvider =
 // ignore: unused_element
 typedef FolderPathFinderRef =
     AutoDisposeFutureProviderRef<AddressBookFolderPathsFinder>;
-String _$addressFolderListDataSourceHash() =>
-    r'69150041a3f512178bd545eb7e062036502c99cc';
+String _$addressBookFolderRepositoryHash() =>
+    r'4fb88cbc043bf5ceb65669ecdffa6372ff7b235a';
 
 /// Responsible for querying the  [AddressBookFolderPathsFinder]
 /// to retrieve an aggregate of AddressBookFolderModel objects corresponding to
 /// the folders in the expected path:
 ///  (Library/Application Support/AddressBook/Sources/)
 ///
-/// Copied from [addressFolderListDataSource].
-@ProviderFor(addressFolderListDataSource)
-final addressFolderListDataSourceProvider =
+/// Copied from [addressBookFolderRepository].
+@ProviderFor(addressBookFolderRepository)
+final addressBookFolderRepositoryProvider =
     AutoDisposeFutureProvider<AddressBookFolderRepository>.internal(
-      addressFolderListDataSource,
-      name: r'addressFolderListDataSourceProvider',
+      addressBookFolderRepository,
+      name: r'addressBookFolderRepositoryProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
           ? null
-          : _$addressFolderListDataSourceHash,
+          : _$addressBookFolderRepositoryHash,
       dependencies: null,
       allTransitiveDependencies: null,
     );
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef AddressFolderListDataSourceRef =
+typedef AddressBookFolderRepositoryRef =
     AutoDisposeFutureProviderRef<AddressBookFolderRepository>;
 String _$futureGetFolderAggregateHash() =>
-    r'ffe278749d499993e7f9e1b8ede9482327c6be86';
+    r'8af10596f7d56dc0a4d6268d823677988151c37a';
 
-/// Resolve the Future [AddressFolderListRepository.getFolders()]
+/// Resolve the most recent viable AddressBook folder aggregate.
 /// Lazily loaded when needed instead of pre-initialized.
 ///
 /// Copied from [futureGetFolderAggregate].

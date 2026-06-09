@@ -16,6 +16,16 @@ last_updated: 2025-11-07
 
 # Design Notes: Virtual Overlay Contacts
 
+## Current Conformance Note (2026-06-06)
+
+The overlay-only instinct in this design is correct, but the "virtual
+participant" mechanics are superseded. Future work should treat this as an
+app-created display identity overlay on graph handles/conversations, not as a
+parallel participant namespace with its own short-name semantics. The resolver
+answers "what should the user see?", not "which database row owns this person?"
+One user-edited display-name override is the only user-authored name variant
+that should outrank imported contact identity.
+
 ## Overlay Data Model
 
 - Create a dedicated `virtual_participants` table inside `user_overlays.db` with columns:

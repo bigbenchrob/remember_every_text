@@ -30,7 +30,7 @@ void main() {
     });
 
     test(
-      'fresh database creates nullable message source provenance columns',
+      'fresh database creates retained archive metadata schema only',
       () async {
         final ledgerDb = SqfliteImportDatabase(
           databaseDirectory: tempDir.path,
@@ -39,27 +39,32 @@ void main() {
         );
 
         final db = await ledgerDb.database;
-        final rows = await db.rawQuery('PRAGMA table_info(messages)');
-        final columns = <String, Map<String, Object?>>{
-          for (final row in rows) row['name']! as String: row,
+        final tableRows = await db.rawQuery(
+          "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name",
+        );
+        final tableNames = <String>{
+          for (final row in tableRows) row['name']! as String,
         };
 
-        expect(columns['source_rowid']?['type'], 'INTEGER');
-        expect(columns['source_id']?['type'], 'TEXT');
-        expect(columns['source_id']?['notnull'], 0);
-        expect(columns['source_kind']?['type'], 'TEXT');
-        expect(columns['source_kind']?['notnull'], 0);
-        expect(columns['source_chat_rowid']?['type'], 'INTEGER');
-        expect(columns['source_chat_rowid']?['notnull'], 0);
-        expect(columns['source_sender_handle_rowid']?['type'], 'INTEGER');
-        expect(columns['source_sender_handle_rowid']?['notnull'], 0);
+        expect(
+          tableNames,
+          containsAll(<String>{
+            'schema_migrations',
+            'historical_archive_sources',
+          }),
+        );
+        expect(tableNames, isNot(contains('import_batches')));
+        expect(tableNames, isNot(contains('messages')));
+        expect(tableNames, isNot(contains('handles')));
+        expect(tableNames, isNot(contains('chats')));
+        expect(tableNames, isNot(contains('chat_message_joins')));
 
         await ledgerDb.close();
       },
     );
 
     test(
-      'fresh database creates nullable handle source provenance columns',
+      'fresh database creates narrowed historical archive metadata schema',
       () async {
         final ledgerDb = SqfliteImportDatabase(
           databaseDirectory: tempDir.path,
@@ -68,74 +73,20 @@ void main() {
         );
 
         final db = await ledgerDb.database;
-        final rows = await db.rawQuery('PRAGMA table_info(handles)');
-        final columns = <String, Map<String, Object?>>{
-          for (final row in rows) row['name']! as String: row,
-        };
-
-        expect(columns['source_rowid']?['type'], 'INTEGER');
-        expect(columns['source_id']?['type'], 'TEXT');
-        expect(columns['source_id']?['notnull'], 0);
-        expect(columns['source_kind']?['type'], 'TEXT');
-        expect(columns['source_kind']?['notnull'], 0);
-
-        await ledgerDb.close();
-      },
-    );
-
-    test(
-      'fresh database creates nullable chat source provenance columns',
-      () async {
-        final ledgerDb = SqfliteImportDatabase(
-          databaseDirectory: tempDir.path,
-          databaseName: 'import_test.db',
-          debugSettings: const ImportDebugSettingsState(),
+        final rows = await db.rawQuery(
+          'PRAGMA table_info(historical_archive_sources)',
         );
-
-        final db = await ledgerDb.database;
-        final rows = await db.rawQuery('PRAGMA table_info(chats)');
-        final columns = <String, Map<String, Object?>>{
-          for (final row in rows) row['name']! as String: row,
+        final columnNames = <String>{
+          for (final row in rows) row['name']! as String,
         };
 
-        expect(columns['source_rowid']?['type'], 'INTEGER');
-        expect(columns['source_id']?['type'], 'TEXT');
-        expect(columns['source_id']?['notnull'], 0);
-        expect(columns['source_kind']?['type'], 'TEXT');
-        expect(columns['source_kind']?['notnull'], 0);
-
-        await ledgerDb.close();
-      },
-    );
-
-    test(
-      'fresh database creates source-scoped chat message join ledger table',
-      () async {
-        final ledgerDb = SqfliteImportDatabase(
-          databaseDirectory: tempDir.path,
-          databaseName: 'import_test.db',
-          debugSettings: const ImportDebugSettingsState(),
-        );
-
-        final db = await ledgerDb.database;
-        final rows = await db.rawQuery('PRAGMA table_info(chat_message_joins)');
-        final columns = <String, Map<String, Object?>>{
-          for (final row in rows) row['name']! as String: row,
-        };
-
-        expect(columns['id']?['type'], 'INTEGER');
-        expect(columns['source_rowid']?['type'], 'INTEGER');
-        expect(columns['source_rowid']?['notnull'], 1);
-        expect(columns['source_id']?['type'], 'TEXT');
-        expect(columns['source_id']?['notnull'], 1);
-        expect(columns['source_kind']?['type'], 'TEXT');
-        expect(columns['source_kind']?['notnull'], 1);
-        expect(columns['source_chat_rowid']?['type'], 'INTEGER');
-        expect(columns['source_chat_rowid']?['notnull'], 1);
-        expect(columns['source_message_rowid']?['type'], 'INTEGER');
-        expect(columns['source_message_rowid']?['notnull'], 1);
-        expect(columns['batch_id']?['type'], 'INTEGER');
-        expect(columns['batch_id']?['notnull'], 1);
+        expect(columnNames, contains('source_chat_db'));
+        expect(columnNames, contains('last_import_finished_at_utc'));
+        expect(columnNames, contains('last_import_success'));
+        expect(columnNames, contains('last_imported_message_count'));
+        expect(columnNames, isNot(contains('matched_imported_batch_count')));
+        expect(columnNames, isNot(contains('last_import_batch_id')));
+        expect(columnNames, isNot(contains('last_import_started_at_utc')));
 
         await ledgerDb.close();
       },
@@ -380,52 +331,6 @@ void main() {
       await upgradedDb.close();
     });
 
-    test(
-      'fresh database preserves multiple source rows with same imported raw identifier',
-      () async {
-        final ledgerDb = SqfliteImportDatabase(
-          databaseDirectory: tempDir.path,
-          databaseName: 'import_test.db',
-          debugSettings: const ImportDebugSettingsState(),
-        );
-
-        final batchId = await ledgerDb.insertImportBatch(
-          startedAtUtc: DateTime.now().toUtc().toIso8601String(),
-        );
-
-        await ledgerDb.insertHandle(
-          id: 22,
-          sourceRowid: 22,
-          service: 'iMessage',
-          rawIdentifier: 'cathie.campbell@gmail.com',
-          normalizedIdentifier: 'cathie.campbell@gmail.com',
-          compoundIdentifier: 'cathie.campbell@gmail.com-iMessage',
-          batchId: batchId,
-        );
-        await ledgerDb.insertHandle(
-          id: 203,
-          sourceRowid: 203,
-          service: 'iMessage',
-          rawIdentifier: 'cathie.campbell@gmail.com',
-          normalizedIdentifier: 'cathie.campbell@gmail.com',
-          compoundIdentifier: 'cathie.campbell@gmail.com-iMessage',
-          batchId: batchId,
-        );
-
-        final db = await ledgerDb.database;
-        final rows = await db.query('handles', orderBy: 'id ASC');
-
-        expect(rows, hasLength(2));
-        expect(rows.map((row) => row['id']), orderedEquals(<Object?>[22, 203]));
-        expect(
-          rows.map((row) => row['source_rowid']),
-          orderedEquals(<Object?>[22, 203]),
-        );
-
-        await ledgerDb.close();
-      },
-    );
-
     test('upgrades a v3 database to preserve multiple source rows', () async {
       final dbPath = '${tempDir.path}/import_test.db';
       final legacyDb = await openDatabase(dbPath);
@@ -459,136 +364,21 @@ void main() {
         debugSettings: const ImportDebugSettingsState(),
       );
 
-      final batchId = await upgradedDb.insertImportBatch(
-        startedAtUtc: DateTime.now().toUtc().toIso8601String(),
-      );
-
-      await upgradedDb.insertHandle(
-        id: 22,
-        sourceRowid: 22,
-        service: 'iMessage',
-        rawIdentifier: 'cathie.campbell@gmail.com',
-        normalizedIdentifier: 'cathie.campbell@gmail.com',
-        compoundIdentifier: 'cathie.campbell@gmail.com-iMessage',
-        batchId: batchId,
-      );
-      await upgradedDb.insertHandle(
+      final db = await upgradedDb.database;
+      final batchId = await _insertImportBatch(db);
+      await _insertHandleFixture(db, id: 22, sourceRowid: 22, batchId: batchId);
+      await _insertHandleFixture(
+        db,
         id: 203,
         sourceRowid: 203,
-        service: 'iMessage',
-        rawIdentifier: 'cathie.campbell@gmail.com',
-        normalizedIdentifier: 'cathie.campbell@gmail.com',
-        compoundIdentifier: 'cathie.campbell@gmail.com-iMessage',
         batchId: batchId,
       );
-
-      final db = await upgradedDb.database;
       final rows = await db.query('handles', orderBy: 'id ASC');
 
       expect(rows, hasLength(2));
       expect(rows.map((row) => row['id']), orderedEquals(<Object?>[22, 203]));
 
       await upgradedDb.close();
-    });
-
-    test('deletes only the selected source batch ledger rows', () async {
-      final ledgerDb = SqfliteImportDatabase(
-        databaseDirectory: tempDir.path,
-        databaseName: 'import_test.db',
-        debugSettings: const ImportDebugSettingsState(),
-      );
-
-      final archiveBatchId = await ledgerDb.insertImportBatch(
-        startedAtUtc: DateTime.now().toUtc().toIso8601String(),
-        sourceChatDb: '/Archives/2017/chat.db',
-      );
-      final currentBatchId = await ledgerDb.insertImportBatch(
-        startedAtUtc: DateTime.now().toUtc().toIso8601String(),
-        sourceChatDb: '/Users/test/Library/Messages/chat.db',
-      );
-
-      final db = await ledgerDb.database;
-      await db.insert('handles', <String, Object?>{
-        'id': 1,
-        'service': 'iMessage',
-        'raw_identifier': 'archive@example.com',
-        'compound_identifier': 'archive@example.com-iMessage',
-        'batch_id': archiveBatchId,
-      });
-      await db.insert('handles', <String, Object?>{
-        'id': 2,
-        'service': 'iMessage',
-        'raw_identifier': 'current@example.com',
-        'compound_identifier': 'current@example.com-iMessage',
-        'batch_id': currentBatchId,
-      });
-      await db.insert('chats', <String, Object?>{
-        'id': 11,
-        'guid': 'archive-chat',
-        'service': 'iMessage',
-        'batch_id': archiveBatchId,
-      });
-      await db.insert('chats', <String, Object?>{
-        'id': 12,
-        'guid': 'current-chat',
-        'service': 'iMessage',
-        'batch_id': currentBatchId,
-      });
-      await db.insert('messages', <String, Object?>{
-        'id': 21,
-        'guid': 'archive-guid',
-        'chat_id': 11,
-        'sender_handle_id': 1,
-        'is_from_me': 0,
-        'batch_id': archiveBatchId,
-      });
-      await db.insert('messages', <String, Object?>{
-        'id': 22,
-        'guid': 'current-guid',
-        'chat_id': 12,
-        'sender_handle_id': 2,
-        'is_from_me': 0,
-        'batch_id': currentBatchId,
-      });
-      await db.insert('chat_to_message', <String, Object?>{
-        'chat_id': 11,
-        'message_id': 21,
-      });
-      await db.insert('chat_to_message', <String, Object?>{
-        'chat_id': 12,
-        'message_id': 22,
-      });
-
-      expect(
-        await ledgerDb.batchIdsForSourceChatDb(
-          sourceChatDb: '/Archives/2017/chat.db',
-        ),
-        <int>[archiveBatchId],
-      );
-
-      await ledgerDb.deleteBatchLedgerData(batchId: archiveBatchId);
-
-      expect(
-        await ledgerDb.batchIdsForSourceChatDb(
-          sourceChatDb: '/Archives/2017/chat.db',
-        ),
-        isEmpty,
-      );
-      expect(await ledgerDb.countRows('messages'), 1);
-      expect(await ledgerDb.countRows('chats'), 1);
-      expect(await ledgerDb.countRows('handles'), 1);
-
-      final remainingMessages = await db.query('messages');
-      expect(remainingMessages.single['guid'], 'current-guid');
-
-      final remainingBatches = await db.query(
-        'import_batches',
-        orderBy: 'id ASC',
-      );
-      expect(remainingBatches, hasLength(1));
-      expect(remainingBatches.single['id'], currentBatchId);
-
-      await ledgerDb.close();
     });
 
     test(
@@ -600,11 +390,7 @@ void main() {
           debugSettings: const ImportDebugSettingsState(),
         );
 
-        final batchId = await ledgerDb.insertImportBatch(
-          startedAtUtc: DateTime.now().toUtc().toIso8601String(),
-          sourceChatDb: '/Archives/2017/chat.db',
-        );
-
+        await ledgerDb.database;
         await ledgerDb.upsertHistoricalArchiveSource(
           sourceChatDb: '/Archives/2017/chat.db',
           folderPath: '/Archives/2017',
@@ -621,7 +407,6 @@ void main() {
           latestMessageUtc: '2017-01-05T00:00:00.000Z',
           dryRunNewMessages: 10,
           dryRunDuplicateMessages: 32,
-          lastImportBatchId: batchId,
           lastImportFinishedAtUtc: '2026-04-29T18:30:00.000Z',
           lastImportSuccess: true,
           lastImportedMessageCount: 10,
@@ -640,5 +425,29 @@ void main() {
         await ledgerDb.close();
       },
     );
+  });
+}
+
+Future<int> _insertImportBatch(Database db, {String? sourceChatDb}) {
+  return db.insert('import_batches', <String, Object?>{
+    'started_at_utc': DateTime.now().toUtc().toIso8601String(),
+    'source_chat_db': sourceChatDb,
+  });
+}
+
+Future<void> _insertHandleFixture(
+  Database db, {
+  required int id,
+  required int sourceRowid,
+  required int batchId,
+}) {
+  return db.insert('handles', <String, Object?>{
+    'id': id,
+    'source_rowid': sourceRowid,
+    'service': 'iMessage',
+    'raw_identifier': 'cathie.campbell@gmail.com',
+    'normalized_identifier': 'cathie.campbell@gmail.com',
+    'compound_identifier': 'cathie.campbell@gmail.com-iMessage',
+    'batch_id': batchId,
   });
 }

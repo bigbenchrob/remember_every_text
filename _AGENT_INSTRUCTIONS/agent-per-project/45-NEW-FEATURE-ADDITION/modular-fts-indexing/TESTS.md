@@ -1,5 +1,11 @@
 # Modular FTS Indexing Test Plan
 
+## Current Conformance Note (2026-06-06)
+
+This test plan is historical. If FTS or semantic indexing returns, tests must
+prove graph `message_ss_id` selection, full-scope evidence behavior, and shared
+Message Evidence Spine rendering, not only retained FTS table correctness.
+
 ## Automated Tests
 
 ### Unit

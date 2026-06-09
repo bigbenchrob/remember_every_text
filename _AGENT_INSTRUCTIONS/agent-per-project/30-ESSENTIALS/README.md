@@ -25,9 +25,10 @@ Essentials owns:
 * sidebar cassette rack projection and topology dispatch
 * panel stacks, panel surface orchestration, and sidebar parking
 * onboarding gate state, onboarding overlay lifecycle, and readiness-panel sync
-* shared search service and search indexing infrastructure
-* app shell, window state, logging, database infrastructure, import/migration
-  orchestration, and shared cross-cutting services
+* shared graph search service and evidence selection infrastructure
+* app shell, window state, logging, database infrastructure, source-scoped
+  import, conversation graph build, retained compatibility services, and shared
+  cross-cutting services
 
 Features must not take ownership of app-level orchestration, global flow state,
 panel stack policy, sidebar topology, shared chrome, or cross-surface
@@ -41,11 +42,13 @@ Current `lib/essentials/` top-level areas include:
 | --- | --- |
 | `navigation/` | App shell, active sidebar mode, center/right panel stacks, `ViewSpec` routing, sidebar parking, panel host widgets. |
 | `sidebar/` | `CassetteSpec`, stable cassette rack projection, ephemeral cassette projection, topology dispatch, cassette payload resolution, shared sidebar rendering. |
-| `search/` | Shared message search service, FTS/simple indexers, search index orchestration and metrics. |
-| `onboarding/` | Full Disk Access and import/migration gate state, onboarding overlay lifecycle, environment reports, reset/recovery behavior. |
+| `search/` | Shared graph message search service, evidence selection, and retained search bridge handling where explicitly documented. |
+| `onboarding/` | Full Disk Access, graph readiness/build gate state, onboarding overlay lifecycle, environment reports, reset/recovery behavior. |
 | `db/` | Centralized database access providers and database infrastructure. |
-| `db_importers/` | Import orchestration and import UI/view models. |
-| `db_migrate/` | Migration orchestration and migration services. |
+| `source_scoped_import/` | Production source-scoped import ledger and importers for `macos_import_ss.db`. |
+| `conversation_graph/` | Production graph projection/build/read layer for `working_ss.db`. |
+| `db_importers/` | Retained import diagnostics, live source monitoring, and archive compatibility bridges. |
+| Retired `db_migrate/` | Historical retained projection reference only; no active app provider or service. |
 | `logging/` | Application logging and diagnostic export support. |
 | `window_state/` | Window persistence and platform window-management services. |
 | `config/`, `debug/`, `services/`, `tooltips/`, `contacts/` | Shared app infrastructure and smaller cross-cutting systems. |
@@ -168,9 +171,11 @@ Search infrastructure is essentials-owned.
 
 Current essentials search responsibilities:
 
-* `SearchService` searches global, contact, and chat message scopes.
-* search indexers and `SearchIndexOrchestrator` own shared indexing behavior.
-* search reads the centralized working database and overlay database providers.
+* `SearchService` searches global, contact, conversation, handle, saved, and
+  tagged graph message scopes.
+* Search selection returns graph `message_ss_id` evidence scopes.
+* Search reads graph evidence through the conversation graph/search boundaries
+  and merges overlay user intent where applicable.
 
 Feature responsibilities are narrower:
 
@@ -188,9 +193,9 @@ Onboarding lifecycle is essentials-owned.
 
 Current essentials onboarding responsibilities:
 
-* `OnboardingGate` owns Full Disk Access and import/migration gate state.
-* `OnboardingOverlay` owns the blocking overlay lifecycle for import,
-  migration, reimport, completion, and recovery.
+* `OnboardingGate` owns Full Disk Access and graph readiness/build gate state.
+* `OnboardingOverlay` owns the blocking overlay lifecycle for graph build,
+  reimport, completion, and recovery.
 * `OnboardingCenterPanelSyncObserver` synchronizes FDA/user-action onboarding
   states into the center panel with `ViewSpec.environmentReadiness`.
 * `OnboardingStatus` and environment reports classify readiness and recovery
@@ -210,7 +215,8 @@ Essentials may:
 * route top-level specs to feature-owned coordinators
 * reconcile sidebar, panel, onboarding, and related surfaces
 * provide shared infrastructure such as search, logging, database providers,
-  import/migration orchestration, and window state
+  source-scoped import, graph build, retained compatibility orchestration, and
+  window state
 
 Features may:
 

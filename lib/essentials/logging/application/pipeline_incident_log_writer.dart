@@ -11,10 +11,10 @@ class PipelineIncidentLogWriter {
 
     try {
       log.header(
-        'PIPELINE INCIDENT — ${report.stage.name} — ${report.recordedAtUtc.toIso8601String()}',
+        'PIPELINE INCIDENT — ${report.stage.displayLabel} — ${report.recordedAtUtc.toIso8601String()}',
       );
       log.stat('Report id', report.reportId);
-      log.stat('Stage', report.stage.name);
+      log.stat('Stage', report.stage.displayLabel);
       log.stat('Batch id', report.batchId);
       log.stat('Dismissed', report.dismissed);
       log.stat('Blocking incident', report.hasBlockingIncident);
@@ -27,7 +27,7 @@ class PipelineIncidentLogWriter {
         log.subHeader('ENTRIES');
         for (final entry in report.entries) {
           log.info(
-            '[${entry.severity.name}] ${entry.stage.name}: ${entry.summary}',
+            '[${entry.severity.name}] ${entry.stage.displayLabel}: ${entry.summary}',
           );
           if (entry.code != null && entry.code!.isNotEmpty) {
             log.stat('  code', entry.code!);

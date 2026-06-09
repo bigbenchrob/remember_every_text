@@ -208,7 +208,6 @@ RecentChatSummary _summary({
     isGroup: participants.length > 1,
     participants: participants,
     handles: participants,
-    calendarHeatmapTimelineData: null,
     lastMessagePreview: preview ?? 'preview $id',
   );
 }

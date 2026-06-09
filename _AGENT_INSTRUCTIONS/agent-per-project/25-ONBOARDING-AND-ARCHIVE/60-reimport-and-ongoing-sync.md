@@ -12,24 +12,24 @@ recovery scenarios.
 
 `ChatDbChangeMonitor` polls `~/Library/Messages/chat.db` every 15 seconds by
 reading source `MAX(ROWID)` from the `message` table. On startup it primes
-from the import ledger's max imported message row ID when available, then runs
+from the graph/source-scoped import cursor when available, then runs
 an immediate catch-up check before periodic polling begins.
 
 **Location:** `lib/essentials/db_importers/application/monitor/`
 
 ### On Change Detected
 
-1. Run incremental import.
-2. Archive the imported batch with `archiveImportedBatch(batchId:)`.
-3. Run incremental migration.
-4. Bump `messageDataVersionProvider` so data-dependent providers rebuild.
+1. Run the source-scoped graph build lifecycle.
+2. Archive the newly imported graph message source range with
+   `archiveGraphMessageSourceRange(...)`.
+3. Bump graph/message data version signals so data-dependent providers rebuild.
 
 In parallel with message polling, the monitor also runs a 5-minute attachment
-maintenance sweep with `archiveNextWorkingSweepChunk()`.
+maintenance sweep with `archiveNextGraphSweepChunk()`.
 
 ### User Experience
 
-- New messages appear after the polling/debounce/import/migration cycle
+- New messages appear after the polling/debounce/source-scoped graph build cycle
 - No user action required
 - No visible indicator during normal sync; errors are logged in monitor state
 
@@ -54,14 +54,14 @@ Settings → "Re-scan & Import"
   ├─ OnboardingGate.startReimport()
   │
   ├─ status = reimporting
-  │   └─ Full import pipeline runs through DbImportControlViewModel
+  │   └─ Derived data is prepared/reset as needed
   │   └─ No separate readiness gate is shown
   │   └─ No welcome preamble in overlay
   │
-  ├─ status = reimportMigrating
-  │   └─ Full migration pipeline runs
-  │   └─ Working tables are rebuilt from the import projection
-  │   └─ archiveAllAvailable() is launched after successful migration
+  ├─ status = reimportBuildingGraph
+  │   └─ ConversationGraphBuildController rebuilds the source-scoped graph
+  │   └─ working_ss graph tables are rebuilt from source-scoped import facts
+  │   └─ graph archive maintenance runs after successful build
   │
   └─ status = reimportComplete
       └─ Summary shown, "Done" button
@@ -78,19 +78,19 @@ Common reasons a user might re-import:
 
 ### Data Safety
 
-- Re-import deletes the import ledger first, then full migration rebuilds
-  working tables from the current import projection
+- Re-import prepares derived source-scoped import/graph data, then graph build
+  rebuilds `working_ss.db` from source-scoped import facts
 - Overlay DB rows (archive metadata, user preferences, favorites, etc.)
-  survive re-import because overlay is never touched by migration
-- Archive files on disk are preserved — `archiveAllAvailable()` is additive
-  and idempotent
+  survive re-import because overlay is never touched by graph projection
+- Archive files on disk are preserved — archive maintenance is additive and
+  idempotent
 
 ## Archive Maintenance During Sync
 
 Each auto-sync cycle maintains the living archive:
 
 1. **New attachments:** Imported-batch files are archived before incremental
-   migration when locally available and not already in the archive.
+   graph projection when locally available and not already in the archive.
 
 2. **Evicted files:** If a file was archived previously and Apple has since
    evicted the original, the archive copy remains valid. The resolution
@@ -105,9 +105,9 @@ Each auto-sync cycle maintains the living archive:
 
 | Phase | Sync mechanism | Archive behavior |
 |-------|---------------|-----------------|
-| First run | OnboardingGate → full import + migration | `archiveAllAvailable()` — bulk initial archive |
-| Normal use | ChatDbChangeMonitor every 15 seconds plus 5-minute sweep | Imported-batch archive, on-demand archive, and rolling working sweep |
-| Re-import | Manual trigger from Settings | Full rebuild + `archiveAllAvailable()` |
+| First run | OnboardingGate → source-scoped graph build | Graph source-range archive and graph-working sweeps |
+| Normal use | ChatDbChangeMonitor every 15 seconds plus 5-minute sweep | Graph source-range archive, on-demand archive, and rolling graph sweep |
+| Re-import | Manual trigger from Settings | Source-scoped graph rebuild + archive maintenance |
 | Historical recovery | User-initiated from Settings | Deterministic snapshot → archive |
 
 ## File Inventory
@@ -115,6 +115,6 @@ Each auto-sync cycle maintains the living archive:
 | File | Role |
 |------|------|
 | `lib/essentials/db_importers/application/monitor/chat_db_change_monitor_provider.dart` | Poll-based auto-sync and attachment sweep |
-| `lib/essentials/db_importers/presentation/view_model/db_import_control_provider.dart` | Import progress and control |
 | `lib/essentials/onboarding/application/onboarding_gate_provider.dart` | `startReimport()` trigger |
-| `lib/features/attachments/application/attachment_archive_service_provider.dart` | `archiveAllAvailable()`, `archiveImportedBatch()`, working sweeps |
+| `lib/essentials/conversation_graph/application/orchestrators/conversation_graph_build_controller_provider.dart` | Source-scoped graph build/rebuild lifecycle |
+| `lib/features/attachments/application/attachment_archive_service_provider.dart` | `archiveGraphMessageSourceRange()`, graph sweeps, retained archive compatibility |

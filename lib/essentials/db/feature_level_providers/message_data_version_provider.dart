@@ -3,7 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'message_data_version_provider.g.dart';
 
 /// A signal provider that message-related providers can watch to know when
-/// new data has been imported/migrated.
+/// graph-backed message data has changed.
 ///
 /// ## Purpose
 ///
@@ -14,7 +14,8 @@ part 'message_data_version_provider.g.dart';
 /// ## How it works
 ///
 /// 1. Message providers (e.g., `contactMessagesOrdinalProvider`) watch this
-/// 2. After migration completes, `ChatDbChangeMonitor` invalidates this provider
+/// 2. After graph build/projection completes, the graph lifecycle bumps this
+///    provider
 /// 3. The invalidation cascades to all watching providers, triggering rebuilds
 ///
 /// ## Usage

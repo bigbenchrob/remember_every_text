@@ -385,12 +385,18 @@ systems:
 - import control panel
 - reset service
 - `ChatDbChangeMonitor`
-- legacy import/migration compatibility maintenance
+- retained legacy import/migration compatibility boundaries
 
 The graph build service, readiness providers, onboarding checks, reset flows,
-and live monitor are now wired into the app-facing graph path. Live changes
-trigger graph build as the app-facing success path before legacy compatibility
-maintenance.
+and live monitor are now wired into the app-facing graph path.
+
+Current status update:
+
+- onboarding and settings reimport build the source-scoped graph directly
+- live `chat.db` polling imports/projects the graph directly
+- retained legacy import/migration no longer runs as the live-update tail
+- historical archive workflows use `RetainedLegacyArchivePipeline` as an
+  explicit archive/recovery compatibility bridge
 
 The remaining issue is sole production ownership: source-scoped import and
 graph projection must eventually replace legacy import/projection rather than

@@ -1,5 +1,12 @@
 # Enhanced Onboarding Flow Checklist
 
+## Current Conformance Note (2026-06-06)
+
+This checklist is historical. Current onboarding work should verify
+source-scoped import, conversation graph build/readiness, overlay failure
+persistence, and centralized reset/maintenance locks. Do not add new ordinary
+setup steps that depend on retained `working.db` migration completion.
+
 ## Phase 0 — Planning
 
 - [x] Write proposal

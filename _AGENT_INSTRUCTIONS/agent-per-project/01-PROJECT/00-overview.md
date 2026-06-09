@@ -2,7 +2,7 @@
 tier: project
 scope: overview
 owner: agent-per-project
-last_reviewed: 2026-04-21
+last_reviewed: 2026-06-06
 source_of_truth: doc
 links:
   - ../../agent-instructions-shared/INDEX.md
@@ -32,10 +32,10 @@ the subsystem docs when details matter.
 
 | Area | Current owner |
 | --- | --- |
-| App shell, navigation, global flow, sidebar, panel stacks, search, onboarding gate, database providers, import/migration services | `lib/essentials/` |
+| App shell, navigation, global flow, sidebar, panel stacks, search, onboarding gate, database providers, source-scoped import, graph build, and retained compatibility services | `lib/essentials/` |
 | Business feature content, feature-owned specs, domain repositories, terminal feature rendering | `lib/features/` |
 | Shared DDD helpers and generic utilities | `lib/domain_driven_development/`, `lib/core/` |
-| Import, working, and overlay database infrastructure | `lib/essentials/db/` |
+| Graph, retained import/working, and overlay database infrastructure | `lib/essentials/db/` plus `lib/essentials/source_scoped_import/` |
 | Attachment archive, deterministic recovery, attachment resolution | `lib/features/attachments/` plus overlay database metadata |
 
 ## Authoritative Reading Paths
@@ -43,7 +43,7 @@ the subsystem docs when details matter.
 - Spec-driven surfaces: start at `../42-SPEC-SYSTEM/README.md`.
 - Essentials vs feature ownership: read `../30-ESSENTIALS/README.md` and `../40-FEATURES/README.md`.
 - Database access and boundaries: read `../10-DATABASES/00-all-databases-accessed.md` and `../10-DATABASES/INVIOLATE_RULES.md`.
-- Import/migration behavior: read `../20-DATA-IMPORT-MIGRATION/01-overview.md`.
+- Source import, graph build, and retained compatibility behavior: read `../20-DATA-IMPORT-MIGRATION/01-overview.md`.
 - Onboarding, environment readiness, archive, and recovery: read `../25-ONBOARDING-AND-ARCHIVE/README.md`.
 - Build/FDA continuity: read `../60-BUILD-CONSIDERATIONS/02-macos-fda-grant-continuity.md` before production builds.
 
@@ -54,11 +54,13 @@ the subsystem docs when details matter.
 - Features provide content and approved feature-owned spec interpretation; they
   do not own app-level orchestration, global flow state, sidebar topology, panel
   stack policy, or shared chrome.
-- Import writes source-derived data to `macos_import.db`; migration writes the
-  projection to `working.db`; user intent writes to `user_overlays.db`.
-- Providers merge working + overlay at read time, and overlay wins on conflict.
-- Onboarding coordinates and presents import/migration readiness; it does not own
-  importer or migrator logic.
+- Ordinary app data flows through source-scoped import into `macos_import_ss.db`
+  and graph projection into `working_ss.db`; retained `macos_import.db` and
+  `working.db` are archive/recovery compatibility databases.
+- User intent writes to `user_overlays.db`. Providers merge graph projection +
+  overlay at read time, and overlay wins on conflict.
+- Onboarding coordinates and presents graph readiness/build state; it does not
+  own source-scoped import, graph projection, or retained compatibility logic.
 - Attachment archive metadata lives in overlay; archive files live under the app
   support archive directory and are never written back to Apple's Messages
   Attachments folder.

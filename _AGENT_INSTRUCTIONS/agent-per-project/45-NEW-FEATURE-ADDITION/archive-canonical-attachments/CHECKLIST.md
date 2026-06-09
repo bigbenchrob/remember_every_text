@@ -2,19 +2,27 @@
 tier: feature
 scope: checklist
 owner: agent-per-project
-last_reviewed: 2026-04-05
-source_of_truth: doc
+last_reviewed: 2026-06-06
+source_of_truth: historical-record
 links:
   - ./PROPOSAL.md
   - ./DESIGN_NOTES.md
   - ./TESTS.md
 tests: []
 feature: archive-canonical-attachments
-status: proposed
+status: historical-planning-record
 created: 2026-04-05
 ---
 
 # Checklist - Archive-Canonical Attachments
+
+> Current conformance note (2026-06-06): this checklist is retained as the
+> original planning checklist. Do not execute it mechanically. The current
+> source of truth is the archive-first resolver/service contract in
+> `../../25-ONBOARDING-AND-ARCHIVE/40-attachment-archive.md` and
+> `../../25-ONBOARDING-AND-ARCHIVE/70-attachments-end-to-end.md`, plus the
+> graph-backed Message Evidence Spine. Any remaining checklist item must be
+> revalidated against current graph/archive code before implementation.
 
 ## Phase 0 - Planning Alignment
 
@@ -32,7 +40,7 @@ created: 2026-04-05
 
 ## Phase 2 - Archive Ingestion Flow
 
-- [ ] Audit the current auto-sync/import/migration cycle to identify where archive ingestion should be scheduled
+- [ ] Audit the then-current auto-sync/import/migration cycle to identify where archive ingestion should be scheduled
 - [ ] Ensure newly arrived live attachments can enter a pending state before archival completes
 - [ ] Define retry and recovery behavior for attachments that are unavailable now but may reappear later in the live Messages folder
 - [ ] Add a detection path for placeholder clicks to prioritize background recovery rather than trigger synchronous UI-path loading

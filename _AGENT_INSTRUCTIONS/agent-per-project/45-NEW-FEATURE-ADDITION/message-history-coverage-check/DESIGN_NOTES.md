@@ -1,5 +1,10 @@
 # Design Notes: Message History Coverage Check
 
+> Current conformance note (2026-06-06): this design note is historical. The
+> active feature still answers the same user question, but current
+> implementation uses graph-accounted MessageLens evidence rather than retained
+> `working.db` as the ordinary accounting source.
+
 ## Overview
 
 This feature should be implemented as a Settings troubleshooting flow, not as a new panel or a new diagnostics subsystem.

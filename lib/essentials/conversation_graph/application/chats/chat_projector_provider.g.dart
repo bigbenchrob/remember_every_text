@@ -6,7 +6,7 @@ part of 'chat_projector_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$chatProjectorHash() => r'c50a1c60d28f3c9faac28af273abefa9e9cced86';
+String _$chatProjectorHash() => r'b545d33608fa48d750e24a1e52768505e55e9b91';
 
 /// See also [chatProjector].
 @ProviderFor(chatProjector)

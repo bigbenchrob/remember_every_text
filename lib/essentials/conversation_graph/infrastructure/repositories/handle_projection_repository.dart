@@ -6,11 +6,11 @@ import '../../application/handles/handle_projection_repository.dart';
 class SqliteHandleProjectionRepository implements HandleProjectionRepository {
   const SqliteHandleProjectionRepository({
     required this.importDatabase,
-    required this.workingDatabase,
+    required this.graphDatabase,
   });
 
   final ImportDatabase importDatabase;
-  final ConversationGraphDatabase workingDatabase;
+  final ConversationGraphDatabase graphDatabase;
 
   @override
   Future<HandleProjectionResult> projectHandles() async {
@@ -21,9 +21,9 @@ class SqliteHandleProjectionRepository implements HandleProjectionRepository {
     );
 
     var insertedHandleCount = 0;
-    await workingDatabase.transaction(() async {
+    await graphDatabase.transaction(() async {
       for (final row in rows) {
-        final insertedCount = await workingDatabase.executeAndReadChanges(
+        final insertedCount = await graphDatabase.executeAndReadChanges(
           '''
           INSERT OR IGNORE INTO handles (
             ss_id,
@@ -47,7 +47,7 @@ class SqliteHandleProjectionRepository implements HandleProjectionRepository {
   }
 
   Future<void> _rebuildHandleAliases() async {
-    final rows = await workingDatabase.selectRows('''
+    final rows = await graphDatabase.selectRows('''
       SELECT ss_id, id, service
       FROM handles
       ORDER BY ss_id ASC
@@ -65,13 +65,13 @@ class SqliteHandleProjectionRepository implements HandleProjectionRepository {
       group.add(parsed);
     }
 
-    await workingDatabase.executeSql('DELETE FROM handle_aliases');
-    await workingDatabase.executeSql('DELETE FROM canonical_handles');
+    await graphDatabase.executeSql('DELETE FROM handle_aliases');
+    await graphDatabase.executeSql('DELETE FROM canonical_handles');
 
     for (final group in groups.values) {
       group.sort(_compareHandlePreference);
       final canonical = group.first;
-      await workingDatabase.executeSql(
+      await graphDatabase.executeSql(
         '''
         INSERT INTO canonical_handles (
           canonical_handle_ss_id,
@@ -90,7 +90,7 @@ class SqliteHandleProjectionRepository implements HandleProjectionRepository {
         ],
       );
       for (final alias in group) {
-        await workingDatabase.executeSql(
+        await graphDatabase.executeSql(
           '''
           INSERT INTO handle_aliases (
             handle_ss_id,

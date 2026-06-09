@@ -8,7 +8,7 @@ part 'message_overlay_controller.g.dart';
 /// Graph-keyed controller for message user intent.
 ///
 /// This is the graph-era application boundary. It accepts canonical
-/// `message_ss_id` values and delegates legacy compatibility to the
+/// `message_ss_id` values and delegates old overlay-key compatibility to the
 /// infrastructure bridge.
 @riverpod
 class MessageOverlay extends _$MessageOverlay {

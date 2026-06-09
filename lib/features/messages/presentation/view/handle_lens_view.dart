@@ -360,6 +360,8 @@ class _HandleLensEvidencePane extends ConsumerWidget {
           );
 
     return skeletonAsync.when(
+      skipLoadingOnReload: true,
+      skipLoadingOnRefresh: true,
       data: (skeleton) {
         return MessageEvidenceTimelineView(
           evidenceScope: evidenceScope,
@@ -379,7 +381,8 @@ class _HandleLensEvidencePane extends ConsumerWidget {
             activeScopeLabel: searchQuery.isEmpty
                 ? null
                 : 'Message text contains "$searchQuery"',
-            statusLine: 'evidence skeleton • handle scope • hydrate visible rows',
+            statusLine:
+                'evidence skeleton • handle scope • hydrate visible rows',
             searchConfig: MessageEvidenceHeaderSearchConfig(
               controller: searchController,
               placeholder: 'Search messages from this handle',

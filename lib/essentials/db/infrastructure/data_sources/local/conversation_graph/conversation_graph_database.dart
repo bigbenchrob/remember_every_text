@@ -53,6 +53,22 @@ class ConversationGraphDatabase extends _$ConversationGraphDatabase {
     return 0;
   }
 
+  Future<void> clearProjectionRows() async {
+    await transaction(() async {
+      await executeSql('DELETE FROM message_to_attachment');
+      await executeSql('DELETE FROM chat_to_message');
+      await executeSql('DELETE FROM chat_to_handle');
+      await executeSql('DELETE FROM contact_to_handle');
+      await executeSql('DELETE FROM handle_aliases');
+      await executeSql('DELETE FROM canonical_handles');
+      await executeSql('DELETE FROM messages');
+      await executeSql('DELETE FROM attachments');
+      await executeSql('DELETE FROM chats');
+      await executeSql('DELETE FROM contacts');
+      await executeSql('DELETE FROM handles');
+    });
+  }
+
   Future<void> _createSchema() async {
     await customStatement('''
       CREATE TABLE IF NOT EXISTS messages (

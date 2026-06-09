@@ -45,9 +45,6 @@ class OnboardingCenterPanelSyncObserver extends ConsumerWidget {
           orElse: () => false,
         ) ??
         false;
-    final isShowingImport =
-        centerSpec?.maybeWhen(import: (_) => true, orElse: () => false) ??
-        false;
     final shouldShowIncident =
         incidentReport != null &&
         onboardingStatus != OnboardingStatus.awaitingFda &&
@@ -59,7 +56,7 @@ class OnboardingCenterPanelSyncObserver extends ConsumerWidget {
       );
       final logger = ref.read(appLoggerProvider.notifier);
 
-      if (shouldShowIncident && !isShowingIncident && !isShowingImport) {
+      if (shouldShowIncident && !isShowingIncident) {
         logger.info(
           'Showing pipeline incident center panel from onboarding observer',
           source: 'OnboardingCenterPanelSyncObserver',
@@ -81,10 +78,7 @@ class OnboardingCenterPanelSyncObserver extends ConsumerWidget {
         return;
       }
 
-      if (shouldShowReadiness &&
-          !shouldShowIncident &&
-          !isShowingReadiness &&
-          !isShowingImport) {
+      if (shouldShowReadiness && !shouldShowIncident && !isShowingReadiness) {
         logger.info(
           'Showing readiness center panel from onboarding observer',
           source: 'OnboardingCenterPanelSyncObserver',
@@ -151,7 +145,6 @@ class OnboardingCenterPanelSyncObserver extends ConsumerWidget {
     return spec.map(
       messages: (_) => 'messages',
       settings: (_) => 'settings',
-      import: (_) => 'import',
       environmentReadiness: (value) => value.spec.maybeWhen(
         readinessPanel: () => 'environmentReadiness.readinessPanel',
         pipelineIncidentPanel: () =>
@@ -166,10 +159,10 @@ class OnboardingCenterPanelSyncObserver extends ConsumerWidget {
     return switch (status) {
       OnboardingStatus.recoveringFailedAttempt ||
       OnboardingStatus.importing ||
-      OnboardingStatus.migrating ||
+      OnboardingStatus.buildingGraph ||
       OnboardingStatus.complete ||
       OnboardingStatus.reimporting ||
-      OnboardingStatus.reimportMigrating ||
+      OnboardingStatus.reimportBuildingGraph ||
       OnboardingStatus.reimportComplete => true,
       _ => false,
     };

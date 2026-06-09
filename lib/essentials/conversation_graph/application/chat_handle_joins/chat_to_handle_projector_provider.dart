@@ -11,14 +11,14 @@ part 'chat_to_handle_projector_provider.g.dart';
 @riverpod
 Future<ChatToHandleProjector> chatToHandleProjector(Ref ref) async {
   final importDatabase = await ref.watch(importDatabaseProvider.future);
-  final workingDatabase = await ref.watch(
+  final graphDatabase = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
 
   return ChatToHandleProjector(
     repository: SqliteChatToHandleProjectionRepository(
       importDatabase: importDatabase,
-      workingDatabase: workingDatabase,
+      graphDatabase: graphDatabase,
     ),
   );
 }

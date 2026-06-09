@@ -6,7 +6,7 @@ last_reviewed: 2026-04-21
 source_of_truth: doc
 links:
   - ./03-db-address-book.md
-  - ../00-PROJECT/01-aggregate-boundaries.md
+  - ../01-PROJECT/01-aggregate-boundaries.md
   - ../20-DATA-IMPORT-MIGRATION/20-migration-orchestrator.md
   - ../20-DATA-IMPORT-MIGRATION/10-import-orchestrator.md
 tests:

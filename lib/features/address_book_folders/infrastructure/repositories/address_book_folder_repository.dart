@@ -2,7 +2,7 @@ import 'package:dartz/dartz.dart';
 
 import '../../domain/entities/address_book_folder_aggregate.dart';
 import '../../domain/entities/address_book_folder_entity.dart';
-import '../../domain/failures/more_failures/failures.dart';
+import '../../domain/failures/folder_retrieval_failure.dart';
 import '../data_sources/local/address_book_db_helper_multi_instance.dart';
 import '../data_sources/local/address_book_folder_path_finder.dart';
 

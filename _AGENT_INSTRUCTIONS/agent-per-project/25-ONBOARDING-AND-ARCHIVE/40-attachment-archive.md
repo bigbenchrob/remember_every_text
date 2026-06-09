@@ -66,15 +66,17 @@ Table: `archived_attachments` in `user_overlays.db`
 
 **Unique constraint:** `(message_guid, import_attachment_id)`
 
-**Why overlay, not working:** The decision to archive is user intent, not
-source data. The working database is a pure projection of `chat.db`, rebuilt
-on every migration cycle. Archive metadata must survive migration rebuilds.
+**Why overlay, not projection:** The decision to archive is user intent, not
+source data. `working_ss.db` is a derived graph projection, and retained legacy
+`working.db` is historical compatibility/reference storage. Archive metadata
+must survive graph rebuilds and must not depend on retained compatibility
+files.
 
 ### Provenance Values
 
 | Value | Meaning |
 |-------|---------|
-| `archived` | Copied from live Messages Attachments during import/migration |
+| `archived` | Copied from live Messages Attachments during graph sync or retained archive compatibility |
 | `imported_historical_snapshot` | Recovered from a Time Machine or backup snapshot |
 
 ### Current Caveat: Attachment Provenance Naming
@@ -104,7 +106,7 @@ AttachmentResolverProvider(attachment)
   │       ├─ YES → available (provenance: archived)
   │       └─ NO → continue
   │
-  ├─ 2. Expand live localPath from working DB
+  ├─ 2. Expand live localPath from graph attachment evidence
   │   └─ Check file exists at ~/Library/Messages/Attachments/...
   │       ├─ YES + import_attachment_id → trigger archive ingestion,
   │       │   return pendingArchive
@@ -134,11 +136,13 @@ The record renders with an appropriate availability state. See
 
 ## Archive Service
 
-### Import-Time (Bulk) Archiving
+### Import-Time and Graph-Sync Archiving
 
-After a successful full migration, `DbImportControlViewModel` launches
-`AttachmentArchiveService.archiveAllAvailable()` fire-and-forget. It processes
-working attachments with local paths when the archive is enabled.
+In the graph-era app path, `ChatDbChangeMonitor` archives newly imported live
+graph source ranges and runs bounded graph-working sweeps. Retained legacy
+archive compatibility may still call `AttachmentArchiveService.archiveAllAvailable()`
+after explicit archive/recovery rebuilds. It processes working attachments
+with local paths when the archive is enabled.
 
 For each attachment where:
 - File exists at `localPath`
@@ -154,9 +158,9 @@ Actions:
 
 ### Ongoing Archiving
 
-The `ChatDbChangeMonitor` auto-sync cycle archives newly imported batches before
-incremental migration by calling `archiveImportedBatch(batchId:)`. It also runs
-a bounded working-attachment sweep every 5 minutes via
+The `ChatDbChangeMonitor` auto-sync cycle archives newly imported live graph
+source ranges by calling `archiveGraphMessageSourceRange(...)`. It also runs
+a bounded graph-working attachment sweep every 5 minutes via
 `archiveNextWorkingSweepChunk()` so files that appear later can be ingested.
 
 The resolver can also trigger on-demand archive ingestion when archive mode is
@@ -182,10 +186,10 @@ boundary unless current code introduces one.
 
 ## Invariants
 
-1. Archive metadata lives in overlay DB only — never in working DB.
-2. Working DB `attachments` table is unchanged — pure `chat.db` projection.
-3. `archiveAllAvailable()` is launched after successful full migrations; incremental sync uses batch archiving plus periodic sweeps.
+1. Archive metadata lives in overlay DB only — never in `working_ss.db` or legacy `working.db`.
+2. Graph `attachments` rows remain source projections — not durable file-store records.
+3. Graph incremental sync uses source-range archiving plus periodic graph-working sweeps; retained legacy archive compatibility may still call `archiveAllAvailable()`.
 4. The Messages Attachments folder is never written to.
 5. Content-addressable naming provides natural deduplication.
-6. The archive is additive — entries survive re-import and migration rebuilds.
+6. The archive is additive — entries survive re-import and graph rebuilds.
 7. Archive-enabled resolution displays from the archive and treats live Messages paths as ingestion sources.

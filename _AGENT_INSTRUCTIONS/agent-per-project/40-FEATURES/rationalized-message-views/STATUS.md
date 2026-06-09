@@ -1,5 +1,18 @@
 # Rationalize Message Views — Status
 
+> **Superseded historical status.** This folder records the February 2026
+> rationalized message-view work. The `MessageTimelineScope` /
+> `MessagesTimelineView` ordinal architecture described here has since been
+> retired as the active message presentation model.
+>
+> Current message evidence surfaces use the graph-backed Message Evidence Spine:
+> `MessageEvidenceScope` -> full logical skeleton -> viewport hydration by
+> graph `message_ss_id` -> shared `MessageEvidenceHeader` /
+> `MessageEvidenceTimelineView`. Use
+> `../messages/MESSAGE-TIMELINE-PIPELINE.md`,
+> `../messages/STATE_AND_PROVIDER_INVENTORY.md`, and
+> `../messages/message-display-flow-walkthrough.md` for current guidance.
+
 ## ✅ COMPLETE
 
 **Merged to main**: February 11, 2026  
@@ -17,8 +30,8 @@ Consolidated duplicate message timeline views into a unified infrastructure usin
 - Separate ordinal providers, hydration providers, view models, and search providers for each scope
 - Code duplication made changes error-prone
 
-### After
-- Single `MessagesTimelineView` widget handles all scopes
+### After at that stage
+- A single `MessagesTimelineView` widget handled the then-current scopes
 - `MessageTimelineScope` sealed class with variants: `global()`, `contact(contactId)`, `chat(chatId)`
 - Strategy pattern (`OrdinalStrategy`) delegates scope-specific queries to appropriate data sources
 - Unified providers parameterized by scope

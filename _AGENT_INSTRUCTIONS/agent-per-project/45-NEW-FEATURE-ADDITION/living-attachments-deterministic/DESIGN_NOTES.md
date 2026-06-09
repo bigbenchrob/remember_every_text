@@ -1,5 +1,13 @@
 # Deterministic Historical Attachment Recovery Design Notes
 
+## Current Conformance Note (2026-06-06)
+
+These design notes preserve the deterministic no-heuristics rule. Their
+three-layer import/working bridge is superseded by graph-era mapping:
+historical snapshot facts should map to source-scoped import facts and graph
+attachment/message edges, with overlay archive records remaining the durable
+user-owned file metadata.
+
 ## Summary
 
 Replace the heuristic historical recovery intake with a deterministic

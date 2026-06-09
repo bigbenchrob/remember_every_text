@@ -3,216 +3,109 @@ tier: feature
 scope: message-display-flow-walkthrough
 owner: agent-per-project
 links:
-	- ./DOMAIN_AND_DATA_MAP.md
-	- ./INTERACTIONS_AND_NAVIGATION.md
-	- ./STATE_AND_PROVIDER_INVENTORY.md
+  - ./DOMAIN_AND_DATA_MAP.md
+  - ./INTERACTIONS_AND_NAVIGATION.md
+  - ./STATE_AND_PROVIDER_INVENTORY.md
 tests: []
 feature: messages
 doc_type: walkthrough
-status: superseded
-last_updated: 2026-05-29
+status: current
+last_updated: 2026-06-05
 ---
 
-# Message Display Flow Walkthrough (Unified Timeline)
+# Message Display Flow Walkthrough
 
-> **Superseded by the Message Evidence Spine.**
->
-> This walkthrough describes the retired `MessagesTimelineView` /
-> ordinal-strategy implementation. Current message evidence surfaces use
-> `MessageEvidenceScope -> MessageEvidenceTimelineSkeleton ->
-> MessageEvidenceRowData -> MessageEvidenceTimelineView`.
-> See `55-READERS-INTEGRATORS-ORCHESTRATORS/69-MESSAGE-EVIDENCE-SPINE-INVARIANT.md`
-> before making message presentation changes.
+Current message display is graph-backed and routes through the Message Evidence
+Spine. The retired `MessagesTimelineView` / `MessageTimelineScope` ordinal
+stack is historical only.
 
-This is the *human-readable* walkthrough of how message display works today.
-It’s written to answer the question: **“If I open a message timeline, what code runs, in what order, and why is it split up this way?”**
+For the architectural invariant, see:
+`../../55-READERS-INTEGRATORS-ORCHESTRATORS/69-MESSAGE-EVIDENCE-SPINE-INVARIANT.md`.
 
-This doc is current for the unified timeline path:
-- ✅ `MessagesSpec.globalTimeline(...)`, `MessagesSpec.forContact(...)`, `MessagesSpec.forHandle(...)`, recovered specs, and routed chat specs all flow through the spec system.
-- ✅ `MessagesTimelineView` is the unified render surface selected by `MessageTimelineScope`.
-- ⚠️ Panel coordinators still return widgets in current code; this is the legacy/current-state migration boundary described in `42-SPEC-SYSTEM`, not a pattern for new work.
+## Current Flow
 
-## Organization
+```text
+sidebar / ViewSpec selection
+  -> typed MessageEvidenceScope
+  -> full lightweight evidence skeleton
+  -> viewport-local row hydration
+  -> shared MessageEvidenceHeader + MessageEvidenceTimelineView
+  -> shared media/text/evidence widgets
+```
 
-The code is organized around a **central view model** that exposes a small, cohesive API to the view.
-Everything else is a helper behind that facade.
+## 1. Scope Selection
 
-Think of the layout like this:
+Different surfaces may select different logical message universes:
 
-- **View (dumb):** renders a list and binds inputs.
-- **View model:** owns UI state (search), watches ordinal state, and triggers jumps.
-- **Jump/ordinal helper:** computes list size + owns scroll controllers + provides jump helpers.
-- **Hydration helper:** turns an `ordinal` into a fully-formed `MessageListItem`.
+- all messages
+- messages for a contact
+- messages for a selected contact handle
+- messages in a conversation
+- messages from an unfamiliar handle
+- recovered/orphan message evidence
+- search result context
 
-## Key files & folders
+The source-specific surface composes a typed `MessageEvidenceScope`. It does
+not create a source-specific message renderer.
 
-### View
+## 2. Skeleton First
 
-- `lib/features/messages/presentation/view/messages_timeline_view.dart`
+Timeline-like scopes build a lightweight full-scope skeleton before row bodies
+hydrate. The skeleton contains enough data for:
 
-Responsibilities:
-- Displays scope-specific header/search content and either:
-  - the **ordinal timeline list**, or
-  - the **search results list**.
-- Delegates navigation behaviors to the VM (`jumpToLatest`, `jumpToMonthForDate`).
-- Delegates per-row data loading to the hydration provider.
+- stable message identity (`message_ss_id`)
+- ordering
+- date range and month keys
+- heatmap coordination
+- jump/navigation targets
 
-### View model (the hub)
+The skeleton is semantic timeline infrastructure, not only a performance
+optimization.
 
-- `lib/features/messages/presentation/view_model/timeline/message_timeline_view_model_provider.dart`
+Hard rule: pagination is not timeline navigation. Limits may apply to visible
+hydration windows or preview samples, not to the selected logical scope.
 
-Responsibilities:
-- The single place you should look first.
-- Owns the `TextEditingController` and the debounce `Timer`.
-- Exposes:
-  - `ordinal` (AsyncValue of the ordinal/jump state)
-  - search-related state (`debouncedQuery`, `searchResults`, `isSearching`)
-  - jump methods: `jumpToLatest`, `jumpToMonthKey`, `jumpToMonthForDate`
+## 3. Visible-Row Hydration
 
-Why this exists:
-- Previously, “how messages work” could feel scattered across many providers.
-- The VM is a deliberate *facade* so the view depends on one thing.
+Rows hydrate near the viewport by stable graph id. Hydration resolves:
 
-### `jump/` folder (ordinal + scrolling + jumps)
+- message text and semantic badges
+- sender display identity
+- attachments and archive availability
+- URL previews
+- saved/tag/annotation overlay state
 
-- `lib/features/messages/application/timeline/ordinal/message_timeline_ordinal_provider.dart`
+Heavy evidence is local/on-demand. Widgets render typed row data and do not
+query databases.
 
-Responsibilities:
-- Defines the concept of a **skeleton list**:
-  - `totalCount` (how many items exist)
-  - `ItemScrollController` + `ItemPositionsListener` for `ScrollablePositionedList`
-- Implements “jump” behavior:
-  - `jumpToLatest()`
-  - `jumpToMonth(monthKey)`
+## 4. Header And Search
 
-Mental model:
-- This layer knows *where* to scroll, but does not load message bodies.
+Every message evidence surface uses the shared `MessageEvidenceHeader` model
+and renderer.
 
-### `hydration/` folder (ordinal → message)
+Header composers provide meaning:
 
-- `lib/features/messages/presentation/view_model/timeline/hydration/message_by_ordinal_provider.dart`
+- title
+- metrics and date range
+- scope details
+- search placeholder/config
+- action row
 
-Responsibilities:
-- Given `(MessageTimelineScope, ordinal)`, produce a **fully hydrated** `MessageListItem`.
-- Internally maps:
-  1) `ordinal` → `messageId` (via the contact-message index)
-  2) `messageId` → message joins/projection → `MessageListItem`
+The header renderer provides form. Search operates against the selected logical
+scope through the evidence spine, not just currently hydrated visible rows.
 
-Mental model:
-- This layer knows *what to render* for a given row.
+## 5. Attachments
 
-## Steps in display of a fully hydrated message
+Attachment rendering flows through graph attachment evidence hydration and
+shared media tiles. Conversation, contact, global, handle, and recovered
+surfaces must not invent separate attachment renderers.
 
-This is the “movie” from user action → pixels.
+## 6. Where To Look First
 
-### 1) User opens a message timeline
-
-Entry point:
-- The center panel shows `MessagesTimelineView(scope: ...)` after `ViewSpec.messages(MessagesSpec...)` routing.
-
-First provider read:
-- The view watches `messageTimelineViewModelProvider(scope: ...)`.
-
-### 2) Data retrieval: build the skeleton list (fast)
-
-Goal:
-- Get something on screen quickly without loading every message.
-
-Mechanism:
-- The view model watches:
-  - `messageTimelineOrdinalProvider(scope: ...)`
-
-That provider returns:
-- `totalCount`
-- scroll controllers/listeners
-
-UI effect:
-- The view builds `ScrollablePositionedList.builder(itemCount: totalCount)`.
-- At this point, rows exist by index, but message content is not yet loaded.
-
-### 3) Hydration: as rows come into view, load their message data
-
-Goal:
-- Make it *feel* like the full list is already there, while only loading what’s needed.
-
-Mechanism:
-- Each list row widget watches:
-  - `messageByOrdinalProvider(scope: ..., ordinal: ...)`
-
-That hydration provider performs (conceptually):
-- `ordinal → messageId → joins → MessageListItem`
-
-UI effect:
-- As you scroll, only the visible ordinals (and a few around them) are hydrated.
-
-### 4) Navigation and jumps: default positioning and later movement
-
-#### Initial positioning
-
-Goal:
-- Start the user somewhere sensible.
-
-Mechanism (in `messages_timeline_view.dart`):
-- Post-frame:
-  - if `scrollToDate != null`: `vm.jumpToMonthForDate(scrollToDate)`
-  - else: `vm.jumpToLatest()`
-
-Why post-frame:
-- Avoids list “rebuild quirks” while controllers are attaching.
-
-#### Continuous scrolling
-
-Goal:
-- Seamless “infinite list” feel.
-
-Mechanism:
-- `ScrollablePositionedList` builds rows on demand.
-- Each row independently hydrates via `messageByOrdinalProvider`.
-
-Important considerations:
-- **Jitter prevention:** hydration must not radically change row height.
-  - Example from earlier fixes: placeholders should use a consistent, fixed height.
-  - When a placeholder becomes a rich preview (image/site preview), keeping height stable avoids scroll jump.
-
-### 5) Searching (switches the UI mode)
-
-Goal:
-- Search within “messages with this contact”.
-
-Mechanism:
-- The search text field uses `vm.searchController`.
-- VM debounces input and loads results via:
-  - `contactMessageSearchResultsProvider(contactId: ..., query: ...)`
-
-UI effect:
-- When `vm.isSearching == true`, the view shows search results instead of the ordinal timeline.
-
-## Jumping (heatmap month selection)
-
-Common scenario:
-- The user clicks a month in a heatmap / month selector.
-
-Mechanism:
-- The UI calls:
-  - `vm.jumpToMonthKey('YYYY-MM')`
-
-Under the hood:
-- `MessageTimelineViewModel.jumpToMonthKey` delegates to:
-  - `messageTimelineOrdinalProvider(...).notifier.jumpToMonth(monthKey)`
-
-Why this is smooth:
-- The ordinal provider owns the list scroll controller and can jump by index.
-- Hydration then fills in the rows at the destination as they become visible.
-
-## “Where do I look first?” (quick triage)
-
-- **Something wrong with scroll/jumps/count:** start at `message_timeline_ordinal_provider.dart` and the scope strategy.
-- **A row shows the wrong message / missing data:** start at `message_by_ordinal_provider.dart` and the active scope's index/strategy.
-- **Search weirdness / repeated rebuild issues:** start at `message_timeline_view_model_provider.dart` (controller lifecycle + debounce).
-- **UI rendering glitches:** start at `messages_timeline_view.dart` (view should remain mostly dumb).
-
-## Related docs
-
-- Data structures + monthKey format: `./DOMAIN_AND_DATA_MAP.md`
-- High-level flows: `./INTERACTIONS_AND_NAVIGATION.md`
-- Complete provider list (agent-oriented): `./STATE_AND_PROVIDER_INVENTORY.md`
+- Wrong scope/count/date range: inspect the scope composer and skeleton query.
+- Heatmap jump wrong: inspect skeleton month keys and selected-scope identity.
+- Row content wrong: inspect visible-row hydration and graph repository query.
+- Image/video missing: inspect attachment evidence hydration and archive
+  resolver.
+- Visual inconsistency: inspect shared widgets under
+  `presentation/widgets/message_evidence/`.

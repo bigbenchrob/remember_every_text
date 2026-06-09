@@ -10,9 +10,9 @@ final class ConversationGraphStatusRepository {
   Future<ConversationGraphStatus> readStatus({
     required String chatDbPath,
     required ImportDatabase importDatabase,
-    required ConversationGraphDatabase workingDatabase,
+    required ConversationGraphDatabase graphDatabase,
     required String importDatabaseName,
-    required String workingDatabaseName,
+    required String graphDatabaseName,
     required int sourceId,
   }) async {
     final sourceSnapshot = await _readSourceMessageSnapshot(chatDbPath);
@@ -35,16 +35,16 @@ final class ConversationGraphStatusRepository {
       importDatabase,
       sourceId,
     );
-    final workingSnapshot = await _readWorkingMessageSnapshot(workingDatabase);
+    final graphMessageSnapshot = await _readGraphMessageSnapshot(graphDatabase);
     final graphSnapshot = await _readGraphSnapshot(
       importDatabase,
-      workingDatabase,
+      graphDatabase,
     );
 
     return ConversationGraphStatus(
       chatDbPath: chatDbPath,
       importDatabaseName: importDatabaseName,
-      workingDatabaseName: workingDatabaseName,
+      graphDatabaseName: graphDatabaseName,
       sourceId: sourceId,
       sourceMessageCount: sourceSnapshot.count,
       sourceMaxRowId: sourceSnapshot.maxRowId,
@@ -52,31 +52,32 @@ final class ConversationGraphStatusRepository {
       ledgerMaxSourceRowId: ledgerSnapshot.maxRowId,
       ledgerMessagesNeedingEnrichment: ledgerSnapshot.needingEnrichmentCount,
       ledgerMessagesStillWithoutText: ledgerSnapshot.withoutTextCount,
-      workingMessageCount: workingSnapshot.count,
-      associatedMessageEdgeCount: workingSnapshot.associatedMessageEdgeCount,
+      graphMessageCount: graphMessageSnapshot.count,
+      associatedMessageEdgeCount:
+          graphMessageSnapshot.associatedMessageEdgeCount,
       sourceChatCount: sourceChatCount,
       importChatCount: graphSnapshot.importChatCount,
-      workingChatCount: graphSnapshot.workingChatCount,
+      graphChatCount: graphSnapshot.graphChatCount,
       sourceHandleCount: sourceHandleCount,
       importHandleCount: graphSnapshot.importHandleCount,
-      workingHandleCount: graphSnapshot.workingHandleCount,
+      graphHandleCount: graphSnapshot.graphHandleCount,
       importTopologyEdgeCount: graphSnapshot.importTopologyEdgeCount,
-      workingTopologyEdgeCount: graphSnapshot.workingTopologyEdgeCount,
-      duplicateWorkingTopologyEdgeCount:
-          graphSnapshot.duplicateWorkingTopologyEdgeCount,
+      graphTopologyEdgeCount: graphSnapshot.graphTopologyEdgeCount,
+      duplicateGraphTopologyEdgeCount:
+          graphSnapshot.duplicateGraphTopologyEdgeCount,
       importChatToHandleEdgeCount: graphSnapshot.importChatToHandleEdgeCount,
-      workingChatToHandleEdgeCount: graphSnapshot.workingChatToHandleEdgeCount,
-      duplicateWorkingChatToHandleEdgeCount:
-          graphSnapshot.duplicateWorkingChatToHandleEdgeCount,
+      graphChatToHandleEdgeCount: graphSnapshot.graphChatToHandleEdgeCount,
+      duplicateGraphChatToHandleEdgeCount:
+          graphSnapshot.duplicateGraphChatToHandleEdgeCount,
       sourceAttachmentCount: sourceAttachmentCount,
       importAttachmentCount: graphSnapshot.importAttachmentCount,
-      workingAttachmentCount: graphSnapshot.workingAttachmentCount,
+      graphAttachmentCount: graphSnapshot.graphAttachmentCount,
       importMessageToAttachmentEdgeCount:
           graphSnapshot.importMessageToAttachmentEdgeCount,
-      workingMessageToAttachmentEdgeCount:
-          graphSnapshot.workingMessageToAttachmentEdgeCount,
-      duplicateWorkingMessageToAttachmentEdgeCount:
-          graphSnapshot.duplicateWorkingMessageToAttachmentEdgeCount,
+      graphMessageToAttachmentEdgeCount:
+          graphSnapshot.graphMessageToAttachmentEdgeCount,
+      duplicateGraphMessageToAttachmentEdgeCount:
+          graphSnapshot.duplicateGraphMessageToAttachmentEdgeCount,
     );
   }
 
@@ -154,17 +155,17 @@ final class ConversationGraphStatusRepository {
     );
   }
 
-  Future<_WorkingMessageSnapshot> _readWorkingMessageSnapshot(
-    ConversationGraphDatabase workingDatabase,
+  Future<_GraphMessageSnapshot> _readGraphMessageSnapshot(
+    ConversationGraphDatabase graphDatabase,
   ) async {
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       'SELECT COUNT(*) AS message_count, '
       'COUNT(associated_message_ss_id) AS associated_message_edge_count '
       'FROM messages',
     );
     final row = rows.single;
 
-    return _WorkingMessageSnapshot(
+    return _GraphMessageSnapshot(
       count: _readInt(row['message_count']),
       associatedMessageEdgeCount: _readInt(
         row['associated_message_edge_count'],
@@ -174,27 +175,27 @@ final class ConversationGraphStatusRepository {
 
   Future<_GraphSnapshot> _readGraphSnapshot(
     ImportDatabase importDatabase,
-    ConversationGraphDatabase workingDatabase,
+    ConversationGraphDatabase graphDatabase,
   ) async {
     final importChatRows = await importDatabase.database.rawQuery(
       'SELECT COUNT(*) AS chat_count FROM chats',
     );
-    final workingChatRows = await workingDatabase.selectRows(
+    final graphChatRows = await graphDatabase.selectRows(
       'SELECT COUNT(*) AS chat_count FROM chats',
     );
     final importHandleRows = await importDatabase.database.rawQuery(
       'SELECT COUNT(*) AS handle_count FROM handles',
     );
-    final workingHandleRows = await workingDatabase.selectRows(
+    final graphHandleRows = await graphDatabase.selectRows(
       'SELECT COUNT(*) AS handle_count FROM handles',
     );
     final importEdgeRows = await importDatabase.database.rawQuery(
       'SELECT COUNT(*) AS edge_count FROM chat_to_message',
     );
-    final workingEdgeRows = await workingDatabase.selectRows(
+    final graphEdgeRows = await graphDatabase.selectRows(
       'SELECT COUNT(*) AS edge_count FROM chat_to_message',
     );
-    final duplicateEdgeRows = await workingDatabase.selectRows('''
+    final duplicateEdgeRows = await graphDatabase.selectRows('''
       SELECT COUNT(*) AS duplicate_edge_count
       FROM (
         SELECT chat_ss_id, message_ss_id
@@ -206,10 +207,10 @@ final class ConversationGraphStatusRepository {
     final importChatToHandleRows = await importDatabase.database.rawQuery(
       'SELECT COUNT(*) AS edge_count FROM chat_to_handle',
     );
-    final workingChatToHandleRows = await workingDatabase.selectRows(
+    final graphChatToHandleRows = await graphDatabase.selectRows(
       'SELECT COUNT(*) AS edge_count FROM chat_to_handle',
     );
-    final duplicateChatToHandleRows = await workingDatabase.selectRows('''
+    final duplicateChatToHandleRows = await graphDatabase.selectRows('''
       SELECT COUNT(*) AS duplicate_edge_count
       FROM (
         SELECT chat_ss_id, handle_ss_id
@@ -221,16 +222,15 @@ final class ConversationGraphStatusRepository {
     final importAttachmentRows = await importDatabase.database.rawQuery(
       'SELECT COUNT(*) AS attachment_count FROM attachments',
     );
-    final workingAttachmentRows = await workingDatabase.selectRows(
+    final graphAttachmentRows = await graphDatabase.selectRows(
       'SELECT COUNT(*) AS attachment_count FROM attachments',
     );
     final importMessageToAttachmentRows = await importDatabase.database
         .rawQuery('SELECT COUNT(*) AS edge_count FROM message_to_attachment');
-    final workingMessageToAttachmentRows = await workingDatabase.selectRows(
+    final graphMessageToAttachmentRows = await graphDatabase.selectRows(
       'SELECT COUNT(*) AS edge_count FROM message_to_attachment',
     );
-    final duplicateMessageToAttachmentRows = await workingDatabase.selectRows(
-      '''
+    final duplicateMessageToAttachmentRows = await graphDatabase.selectRows('''
       SELECT COUNT(*) AS duplicate_edge_count
       FROM (
         SELECT message_ss_id, attachment_ss_id
@@ -238,41 +238,40 @@ final class ConversationGraphStatusRepository {
         GROUP BY message_ss_id, attachment_ss_id
         HAVING COUNT(*) > 1
       )
-      ''',
-    );
+      ''');
 
     return _GraphSnapshot(
       importChatCount: _readInt(importChatRows.single['chat_count']),
-      workingChatCount: _readInt(workingChatRows.single['chat_count']),
+      graphChatCount: _readInt(graphChatRows.single['chat_count']),
       importHandleCount: _readInt(importHandleRows.single['handle_count']),
-      workingHandleCount: _readInt(workingHandleRows.single['handle_count']),
+      graphHandleCount: _readInt(graphHandleRows.single['handle_count']),
       importTopologyEdgeCount: _readInt(importEdgeRows.single['edge_count']),
-      workingTopologyEdgeCount: _readInt(workingEdgeRows.single['edge_count']),
-      duplicateWorkingTopologyEdgeCount: _readInt(
+      graphTopologyEdgeCount: _readInt(graphEdgeRows.single['edge_count']),
+      duplicateGraphTopologyEdgeCount: _readInt(
         duplicateEdgeRows.single['duplicate_edge_count'],
       ),
       importChatToHandleEdgeCount: _readInt(
         importChatToHandleRows.single['edge_count'],
       ),
-      workingChatToHandleEdgeCount: _readInt(
-        workingChatToHandleRows.single['edge_count'],
+      graphChatToHandleEdgeCount: _readInt(
+        graphChatToHandleRows.single['edge_count'],
       ),
-      duplicateWorkingChatToHandleEdgeCount: _readInt(
+      duplicateGraphChatToHandleEdgeCount: _readInt(
         duplicateChatToHandleRows.single['duplicate_edge_count'],
       ),
       importAttachmentCount: _readInt(
         importAttachmentRows.single['attachment_count'],
       ),
-      workingAttachmentCount: _readInt(
-        workingAttachmentRows.single['attachment_count'],
+      graphAttachmentCount: _readInt(
+        graphAttachmentRows.single['attachment_count'],
       ),
       importMessageToAttachmentEdgeCount: _readInt(
         importMessageToAttachmentRows.single['edge_count'],
       ),
-      workingMessageToAttachmentEdgeCount: _readInt(
-        workingMessageToAttachmentRows.single['edge_count'],
+      graphMessageToAttachmentEdgeCount: _readInt(
+        graphMessageToAttachmentRows.single['edge_count'],
       ),
-      duplicateWorkingMessageToAttachmentEdgeCount: _readInt(
+      duplicateGraphMessageToAttachmentEdgeCount: _readInt(
         duplicateMessageToAttachmentRows.single['duplicate_edge_count'],
       ),
     );
@@ -303,8 +302,8 @@ class _MessageSnapshot {
   final int withoutTextCount;
 }
 
-class _WorkingMessageSnapshot {
-  const _WorkingMessageSnapshot({
+class _GraphMessageSnapshot {
+  const _GraphMessageSnapshot({
     required this.count,
     required this.associatedMessageEdgeCount,
   });
@@ -316,35 +315,35 @@ class _WorkingMessageSnapshot {
 class _GraphSnapshot {
   const _GraphSnapshot({
     required this.importChatCount,
-    required this.workingChatCount,
+    required this.graphChatCount,
     required this.importHandleCount,
-    required this.workingHandleCount,
+    required this.graphHandleCount,
     required this.importTopologyEdgeCount,
-    required this.workingTopologyEdgeCount,
-    required this.duplicateWorkingTopologyEdgeCount,
+    required this.graphTopologyEdgeCount,
+    required this.duplicateGraphTopologyEdgeCount,
     required this.importChatToHandleEdgeCount,
-    required this.workingChatToHandleEdgeCount,
-    required this.duplicateWorkingChatToHandleEdgeCount,
+    required this.graphChatToHandleEdgeCount,
+    required this.duplicateGraphChatToHandleEdgeCount,
     required this.importAttachmentCount,
-    required this.workingAttachmentCount,
+    required this.graphAttachmentCount,
     required this.importMessageToAttachmentEdgeCount,
-    required this.workingMessageToAttachmentEdgeCount,
-    required this.duplicateWorkingMessageToAttachmentEdgeCount,
+    required this.graphMessageToAttachmentEdgeCount,
+    required this.duplicateGraphMessageToAttachmentEdgeCount,
   });
 
   final int importChatCount;
-  final int workingChatCount;
+  final int graphChatCount;
   final int importHandleCount;
-  final int workingHandleCount;
+  final int graphHandleCount;
   final int importTopologyEdgeCount;
-  final int workingTopologyEdgeCount;
-  final int duplicateWorkingTopologyEdgeCount;
+  final int graphTopologyEdgeCount;
+  final int duplicateGraphTopologyEdgeCount;
   final int importChatToHandleEdgeCount;
-  final int workingChatToHandleEdgeCount;
-  final int duplicateWorkingChatToHandleEdgeCount;
+  final int graphChatToHandleEdgeCount;
+  final int duplicateGraphChatToHandleEdgeCount;
   final int importAttachmentCount;
-  final int workingAttachmentCount;
+  final int graphAttachmentCount;
   final int importMessageToAttachmentEdgeCount;
-  final int workingMessageToAttachmentEdgeCount;
-  final int duplicateWorkingMessageToAttachmentEdgeCount;
+  final int graphMessageToAttachmentEdgeCount;
+  final int duplicateGraphMessageToAttachmentEdgeCount;
 }

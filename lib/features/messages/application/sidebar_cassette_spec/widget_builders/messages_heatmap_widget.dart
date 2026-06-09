@@ -46,6 +46,8 @@ class MessagesHeatmapWidget extends ConsumerWidget {
     final timelineAsync = ref.watch(globalMessagesHeatmapProvider);
 
     return timelineAsync.when(
+      skipLoadingOnReload: true,
+      skipLoadingOnRefresh: true,
       data: (timeline) {
         return _GlobalHeatmapContent(data: timeline);
       },
@@ -190,6 +192,8 @@ class _ContactAllMessagesEvidence extends ConsumerWidget {
     );
 
     return timelineAsync.when(
+      skipLoadingOnReload: true,
+      skipLoadingOnRefresh: true,
       data: (timeline) {
         if (timeline == null) {
           return const _EmptyHeatmapCard(

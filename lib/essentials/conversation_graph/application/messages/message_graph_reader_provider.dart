@@ -9,10 +9,10 @@ part 'message_graph_reader_provider.g.dart';
 
 @riverpod
 Future<MessageGraphReader> messageGraphReader(Ref ref) async {
-  final workingDatabase = await ref.watch(
+  final graphDatabase = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
   return MessageGraphReader(
-    repository: SqliteMessageGraphRepository(workingDatabase: workingDatabase),
+    repository: SqliteMessageGraphRepository(graphDatabase: graphDatabase),
   );
 }

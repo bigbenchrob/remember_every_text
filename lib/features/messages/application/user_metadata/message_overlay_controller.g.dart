@@ -39,7 +39,7 @@ abstract class _$MessageOverlay
 /// Graph-keyed controller for message user intent.
 ///
 /// This is the graph-era application boundary. It accepts canonical
-/// `message_ss_id` values and delegates legacy compatibility to the
+/// `message_ss_id` values and delegates old overlay-key compatibility to the
 /// infrastructure bridge.
 ///
 /// Copied from [MessageOverlay].
@@ -49,7 +49,7 @@ const messageOverlayProvider = MessageOverlayFamily();
 /// Graph-keyed controller for message user intent.
 ///
 /// This is the graph-era application boundary. It accepts canonical
-/// `message_ss_id` values and delegates legacy compatibility to the
+/// `message_ss_id` values and delegates old overlay-key compatibility to the
 /// infrastructure bridge.
 ///
 /// Copied from [MessageOverlay].
@@ -57,7 +57,7 @@ class MessageOverlayFamily extends Family<AsyncValue<MessageOverlayState>> {
   /// Graph-keyed controller for message user intent.
   ///
   /// This is the graph-era application boundary. It accepts canonical
-  /// `message_ss_id` values and delegates legacy compatibility to the
+  /// `message_ss_id` values and delegates old overlay-key compatibility to the
   /// infrastructure bridge.
   ///
   /// Copied from [MessageOverlay].
@@ -66,7 +66,7 @@ class MessageOverlayFamily extends Family<AsyncValue<MessageOverlayState>> {
   /// Graph-keyed controller for message user intent.
   ///
   /// This is the graph-era application boundary. It accepts canonical
-  /// `message_ss_id` values and delegates legacy compatibility to the
+  /// `message_ss_id` values and delegates old overlay-key compatibility to the
   /// infrastructure bridge.
   ///
   /// Copied from [MessageOverlay].
@@ -99,7 +99,7 @@ class MessageOverlayFamily extends Family<AsyncValue<MessageOverlayState>> {
 /// Graph-keyed controller for message user intent.
 ///
 /// This is the graph-era application boundary. It accepts canonical
-/// `message_ss_id` values and delegates legacy compatibility to the
+/// `message_ss_id` values and delegates old overlay-key compatibility to the
 /// infrastructure bridge.
 ///
 /// Copied from [MessageOverlay].
@@ -112,7 +112,7 @@ class MessageOverlayProvider
   /// Graph-keyed controller for message user intent.
   ///
   /// This is the graph-era application boundary. It accepts canonical
-  /// `message_ss_id` values and delegates legacy compatibility to the
+  /// `message_ss_id` values and delegates old overlay-key compatibility to the
   /// infrastructure bridge.
   ///
   /// Copied from [MessageOverlay].

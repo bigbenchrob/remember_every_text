@@ -14,7 +14,7 @@ import '../../conversation_graph_test_database.dart';
 void main() {
   late Directory tempDir;
   late ImportDatabase importDatabase;
-  late ConversationGraphDatabase workingDatabase;
+  late ConversationGraphDatabase graphDatabase;
 
   setUpAll(() {
     sqfliteFfiInit();
@@ -65,11 +65,11 @@ void main() {
       databaseDirectory: tempDir.path,
       databaseName: 'macos_import_ss_test.db',
     );
-    workingDatabase = await openConversationGraphTestDatabase();
+    graphDatabase = await openConversationGraphTestDatabase();
   });
 
   tearDown(() async {
-    await workingDatabase.close();
+    await graphDatabase.close();
     await importDatabase.close();
     if (tempDir.existsSync()) {
       await tempDir.delete(recursive: true);
@@ -94,10 +94,10 @@ void main() {
     final result = await MessageToAttachmentProjector(
       repository: SqliteMessageToAttachmentProjectionRepository(
         importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        graphDatabase: graphDatabase,
       ),
     ).projectEdges();
-    final rows = await workingDatabase.database.query('message_to_attachment');
+    final rows = await graphDatabase.database.query('message_to_attachment');
 
     expect(result.examinedEdgeCount, 1);
     expect(result.insertedEdgeCount, 1);
@@ -115,12 +115,12 @@ void main() {
     final projector = MessageToAttachmentProjector(
       repository: SqliteMessageToAttachmentProjectionRepository(
         importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        graphDatabase: graphDatabase,
       ),
     );
     final firstResult = await projector.projectEdges();
     final secondResult = await projector.projectEdges();
-    final rows = await workingDatabase.database.query('message_to_attachment');
+    final rows = await graphDatabase.database.query('message_to_attachment');
 
     expect(firstResult.insertedEdgeCount, 1);
     expect(secondResult.insertedEdgeCount, 0);
@@ -145,15 +145,13 @@ void main() {
           await MessageToAttachmentProjector(
             repository: SqliteMessageToAttachmentProjectionRepository(
               importDatabase: importDatabase,
-              workingDatabase: workingDatabase,
+              graphDatabase: graphDatabase,
             ),
           ).projectEdgesAfterSourceMessageRowId(
             sourceId: liveChatDbSourceId,
             startedAfterSourceRowId: 40,
           );
-      final rows = await workingDatabase.database.query(
-        'message_to_attachment',
-      );
+      final rows = await graphDatabase.database.query('message_to_attachment');
 
       expect(result.examinedEdgeCount, 1);
       expect(result.insertedEdgeCount, 1);

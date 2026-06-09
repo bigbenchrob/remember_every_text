@@ -29,22 +29,22 @@ This README contains the canonical index to all project documentation including:
 7. **[Center Panel Layouts](_AGENT_INSTRUCTIONS/agent-per-project/07-CENTER-PANEL-LAYOUTS/00-center-panel-control-panels-and-infographics.md)** - Report, control-panel, and infographic composition rules
 8. **[Sidebar Layouts](_AGENT_INSTRUCTIONS/agent-per-project/08-SIDEBAR-LAYOUTS/00-sidebar-cassettes-controls-and-info-cards.md)** - Cassette, control-stack, and info-card composition rules
 9. **[Database Access](_AGENT_INSTRUCTIONS/agent-per-project/10-DATABASES/00-all-databases-accessed.md)** - Critical: Use centralized providers only
-10. **[Architecture Overview](_AGENT_INSTRUCTIONS/agent-per-project/00-PROJECT/02-architecture-overview.md)** - DDD layers and responsibilities
-11. **[Cross-Surface Spec Systems](_AGENT_INSTRUCTIONS/agent-per-project/50-CROSS-SURFACE-SPEC-SYSTEMS-OVERVIEW/)** - 🔥 CRITICAL: How sealed spec classes coordinate UI across all surfaces
-12. **[Feature Spec Handling](_AGENT_INSTRUCTIONS/agent-per-project/52-FEATURE-HANDLING-OF-X-SURFACE-SPECS/)** - Universal coordinator → resolver → widget_builder pattern
-13. **[Sidebar Cassette System](_AGENT_INSTRUCTIONS/agent-per-project/54-SIDEBAR-CASSETTE-SPEC-SYSTEM/)** - Rack state, cascade, card chrome
-14. **[View Spec Panel System](_AGENT_INSTRUCTIONS/agent-per-project/56-VIEW-SPEC-PANEL-CONTENT-SYSTEM/)** - ViewSpec panel navigation and feature dispatch
+10. **[Architecture Overview](_AGENT_INSTRUCTIONS/agent-per-project/01-PROJECT/02-architecture-overview.md)** - DDD layers and responsibilities
+11. **[Cross-Surface Spec System](_AGENT_INSTRUCTIONS/agent-per-project/42-SPEC-SYSTEM/)** - 🔥 CRITICAL: How sealed spec classes coordinate UI across all surfaces
+12. **[Feature Spec Responsibilities](_AGENT_INSTRUCTIONS/agent-per-project/42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/40-feature-responsibilities.md)** - Coordinator → resolver → payload/rendering boundaries
+13. **[Sidebar Cassette System](_AGENT_INSTRUCTIONS/agent-per-project/42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/20-sidebar-cassette-system.md)** - Rack state, cascade, card chrome
+14. **[View Spec Panel System](_AGENT_INSTRUCTIONS/agent-per-project/42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/30-panel-viewspec-system.md)** - ViewSpec panel navigation and feature dispatch
 15. **[macOS FDA Grant Continuity](_AGENT_INSTRUCTIONS/agent-per-project/60-BUILD-CONSIDERATIONS/02-macos-fda-grant-continuity.md)** - 🔥 MUST-READ before any production build; preserve bundle id and release signing so existing Full Disk Access grants carry over
 
 ### Quick Reference
 
 - **Lint Antipatterns**: [`_AGENT_INSTRUCTIONS/agent-instructions-shared/10-language/linter-antipatterns.md`](_AGENT_INSTRUCTIONS/agent-instructions-shared/10-language/linter-antipatterns.md) - One-stop list of analyzer tripwires
-- **Navigation / View Spec System**: [`_AGENT_INSTRUCTIONS/agent-per-project/56-VIEW-SPEC-PANEL-CONTENT-SYSTEM/`](_AGENT_INSTRUCTIONS/agent-per-project/56-VIEW-SPEC-PANEL-CONTENT-SYSTEM/)
+- **Navigation / View Spec System**: [`_AGENT_INSTRUCTIONS/agent-per-project/42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/30-panel-viewspec-system.md`](_AGENT_INSTRUCTIONS/agent-per-project/42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/30-panel-viewspec-system.md)
 - **AddressBook Imports**: [`_AGENT_INSTRUCTIONS/agent-per-project/10-DATABASES/06-addressbook-path-resolution.md`](_AGENT_INSTRUCTIONS/agent-per-project/10-DATABASES/06-addressbook-path-resolution.md)
 - **Dark Mode Theming**: [`_AGENT_INSTRUCTIONS/agent-per-project/05-COLOR-AND-TYPOGRAPHY-THEMING/05-dark-mode-theming.md`](_AGENT_INSTRUCTIONS/agent-per-project/05-COLOR-AND-TYPOGRAPHY-THEMING/05-dark-mode-theming.md) - Luminance hierarchy and dark mode selection rules
 - **Center Panel Layouts**: [`_AGENT_INSTRUCTIONS/agent-per-project/07-CENTER-PANEL-LAYOUTS/00-center-panel-control-panels-and-infographics.md`](_AGENT_INSTRUCTIONS/agent-per-project/07-CENTER-PANEL-LAYOUTS/00-center-panel-control-panels-and-infographics.md) - Report composition rules for center-panel control surfaces and infographics
 - **Sidebar Layouts**: [`_AGENT_INSTRUCTIONS/agent-per-project/08-SIDEBAR-LAYOUTS/00-sidebar-cassettes-controls-and-info-cards.md`](_AGENT_INSTRUCTIONS/agent-per-project/08-SIDEBAR-LAYOUTS/00-sidebar-cassettes-controls-and-info-cards.md) - Composition rules for sidebar branches, controls, and explanatory cards
-- **Cross-Surface Spec Systems**: [`_AGENT_INSTRUCTIONS/agent-per-project/50-CROSS-SURFACE-SPEC-SYSTEMS-OVERVIEW/`](_AGENT_INSTRUCTIONS/agent-per-project/50-CROSS-SURFACE-SPEC-SYSTEMS-OVERVIEW/) - Architecture overview and inviolate rules
+- **Cross-Surface Spec System**: [`_AGENT_INSTRUCTIONS/agent-per-project/42-SPEC-SYSTEM/`](_AGENT_INSTRUCTIONS/agent-per-project/42-SPEC-SYSTEM/) - Architecture overview and invariant rules
 - **Production Build / FDA Continuity**: [`_AGENT_INSTRUCTIONS/agent-per-project/60-BUILD-CONSIDERATIONS/02-macos-fda-grant-continuity.md`](_AGENT_INSTRUCTIONS/agent-per-project/60-BUILD-CONSIDERATIONS/02-macos-fda-grant-continuity.md) - Keep `com.bigbenchsoftware.MessageLens` and production signing stable so macOS FDA grants persist across shipped builds
 
 ## Critical Rules (Quick Reference)
@@ -52,27 +52,27 @@ This README contains the canonical index to all project documentation including:
 ### Imports & Dependencies
 
 - ✅ **Always use**: `hooks_riverpod` (never `flutter_riverpod`)
-- ✅ **Database access**: Use `sqfliteImportDatabaseProvider` & `driftWorkingDatabaseProvider` from `lib/essentials/db/feature_level_providers.dart`
+- ✅ **Database access**: Use centralized providers only. Ordinary graph reads use `driftConversationGraphDatabaseProvider`; source-scoped import uses `importDatabaseProvider` from `lib/essentials/source_scoped_import/infrastructure/import_database_provider.dart`; overlay intent uses `overlayDatabaseProvider`. Retained import metadata compatibility may use `sqfliteImportDatabaseProvider`; retained `working.db` has no central app provider and should be treated as retained file/schema storage only.
 - ❌ **Never**: Create direct database instances (causes SQLite locking)
 
 ### 🔥 INVIOLABLE: Overlay / Working DB Separation
 
 - ✅ **User intent** (labels, favorites, spam flags, manual links): Write ONLY to overlay DB
-- ✅ **Import/migration**: Write ONLY to working DB (pure function of source data)
-- ✅ **Providers**: Merge working ∪ overlay at read time; **overlay always wins on conflict**
-- ❌ **NEVER** dual-write to both overlay AND working DB
-- ❌ **NEVER** have migration read or consult overlay DB
-- ❌ **NEVER** snapshot overlay before migration then restore into working (the old "Restore Overrides" anti-pattern)
-- ❌ **NEVER** store user-intent flags (`is_blacklisted`, `is_visible`, manual links) on working tables rebuilt by migration
+- ✅ **Source import / graph projection**: Write ONLY to derived graph/import DBs as a pure function of source data
+- ✅ **Providers**: Merge graph projection ∪ overlay at read time; **overlay always wins on conflict**
+- ❌ **NEVER** dual-write to both overlay AND graph/working projection DBs
+- ❌ **NEVER** have import/projection read or consult overlay DB
+- ❌ **NEVER** snapshot overlay before projection then restore into graph/working projection (the old "Restore Overrides" anti-pattern)
+- ❌ **NEVER** store user-intent flags (`is_blacklisted`, `is_visible`, manual links) on projection tables rebuilt by graph projection or retained migration
 - 📖 See [`_AGENT_INSTRUCTIONS/agent-per-project/10-DATABASES/07-overlay-database-independence.md`](_AGENT_INSTRUCTIONS/agent-per-project/10-DATABASES/07-overlay-database-independence.md)
 
 ### 🔥 INVIOLABLE: Record-Level Data Fidelity — No Suppression of Anomalous Records
 
-- ✅ **Every source record** MUST be faithfully imported, migrated, and **rendered visibly** in the UI
+- ✅ **Every source record** MUST be faithfully imported, projected, and **rendered visibly** in the UI
 - ✅ **Anomalies are diagnostic signals** — a NULL-text message may be attachment-only, a reaction, a system event, or evidence of a pipeline bug
 - ✅ **Correct response to anomalous data**: log it, render it (even imperfectly), flag it, investigate the root cause
 - ❌ **NEVER** skip/filter records in importers (`if (text == null) continue;`)
-- ❌ **NEVER** add WHERE clauses in migrators that exclude anomalous rows (`WHERE text IS NOT NULL`)
+- ❌ **NEVER** add WHERE clauses in projectors/migrators that exclude anomalous rows (`WHERE text IS NOT NULL`)
 - ❌ **NEVER** hide records in UI with `SizedBox.shrink()`, empty containers, or zero-height boxes
 - ❌ **NEVER** silently exclude records in providers before returning query results
 - ❌ **NEVER** swallow exceptions during record processing — log them and include the record with error metadata
@@ -134,7 +134,7 @@ dart fix --apply
 
 ```
 lib/
-├── essentials/          # Core systems (navigation, import, databases, window state)
+├── essentials/          # Core systems (navigation, source import, graph, databases, window state)
 ├── features/            # Business features (DDD: messages, chats, contacts, address_book_folders)
 └── domain_driven_development/  # Shared DDD utilities
 
@@ -152,7 +152,7 @@ See the comprehensive documentation in [`_AGENT_INSTRUCTIONS/`](_AGENT_INSTRUCTI
 
 - Detailed architecture and DDD boundaries
 - Complete code standards and linting rules
-- Database schema and migration patterns
+- Database schema, source import, graph projection, and retained compatibility patterns
 - Navigation system implementation
 - Testing strategies
 - Rust FFI integration

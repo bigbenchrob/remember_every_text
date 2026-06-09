@@ -13,11 +13,11 @@ part 'contact_graph_provider.g.dart';
 
 @riverpod
 Future<ContactGraphReader> contactGraphReader(Ref ref) async {
-  final workingDatabase = await ref.watch(
+  final graphDatabase = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
   return ContactGraphReader(
-    repository: SqliteContactGraphRepository(workingDatabase: workingDatabase),
+    repository: SqliteContactGraphRepository(graphDatabase: graphDatabase),
   );
 }
 

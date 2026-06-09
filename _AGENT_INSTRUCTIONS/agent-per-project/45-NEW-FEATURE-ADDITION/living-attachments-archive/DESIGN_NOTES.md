@@ -1,5 +1,13 @@
 # Living Attachments Archive Design Notes
 
+## Current Conformance Note (2026-06-06)
+
+These notes remain conceptually current for archive ownership: archive metadata
+is overlay-owned and files live in the app-controlled archive. The runtime data
+path has moved from retained working attachment rows to source-scoped graph
+attachment evidence. Read old import/working examples below as historical
+implementation context, not as authority for new ordinary projection work.
+
 ## Summary
 
 The living attachments archive introduces a durable, app-controlled copy of

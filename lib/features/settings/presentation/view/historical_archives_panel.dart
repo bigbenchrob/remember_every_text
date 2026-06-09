@@ -190,7 +190,7 @@ class HistoricalArchivesPanel extends ConsumerWidget {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Developer/testing only. This deletes previously imported archive records from MessageLens for the selected archive source, then rebuilds the app timeline.',
+                        'Developer/testing only. This deletes source-scoped import rows from MessageLens for the selected archive source, then reprojects the conversation graph.',
                         style: typography.body.copyWith(
                           color: colors.content.textSecondary,
                         ),
@@ -292,8 +292,7 @@ Future<void> _showRemoveImportedArchiveDataConfirmationDialog({
   required HistoricalArchivesWorkflowPanelViewModel panelModel,
 }) async {
   final targetPath = panelModel.archiveRemovalTargetChatDbPath;
-  final batchCount = panelModel.matchedImportedArchiveBatchCount;
-  if (targetPath == null || batchCount == null || batchCount <= 0) {
+  if (targetPath == null) {
     return;
   }
 
@@ -304,8 +303,7 @@ Future<void> _showRemoveImportedArchiveDataConfirmationDialog({
         title: const Text('Remove Imported Archive Data?'),
         content: Text(
           'Removal target chat.db: $targetPath\n\n'
-          'Matched imported archive batches in db-import: $batchCount\n\n'
-          'This deletes previously imported archive records from MessageLens for this selected source, then rebuilds the app timeline. It does not delete or modify the source archive folder, and it does not reset overlay or user-intent data.',
+          'This deletes source-scoped import rows from MessageLens for this selected source, then reprojects the conversation graph from the remaining import facts. It does not delete or modify the source archive folder, and it does not reset overlay or user-intent data.',
         ),
         actions: [
           CupertinoDialogAction(

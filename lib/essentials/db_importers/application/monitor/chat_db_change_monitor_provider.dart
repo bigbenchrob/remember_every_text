@@ -14,7 +14,6 @@ import '../../../logging/application/app_logger.dart';
 import '../../../source_scoped_import/domain/known_sources.dart';
 import '../../../source_scoped_import/infrastructure/import_database_provider.dart'
     as source_scoped_import;
-import '../../feature_level_providers.dart';
 import '../import_execution_gate_provider.dart';
 
 part 'chat_db_change_monitor_provider.g.dart';
@@ -337,7 +336,7 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
       final archiveService = ref.read(
         attachmentArchiveServiceProvider.notifier,
       );
-      final sweepResult = await archiveService.archiveNextWorkingSweepChunk();
+      final sweepResult = await archiveService.archiveNextGraphSweepChunk();
 
       if (sweepResult.newlyArchived > 0 || sweepResult.failed > 0) {
         ref
@@ -441,10 +440,7 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
 
         ref
             .read(appLoggerProvider.notifier)
-            .info(
-              'Triggering live graph update and legacy compatibility maintenance',
-              source: 'ChatDbMonitor',
-            );
+            .info('Triggering live graph update', source: 'ChatDbMonitor');
 
         final executionGate = ref.read(importExecutionGateProvider.notifier);
         if (!executionGate.tryAcquire(_chatDbMonitorExecutionOwner)) {
@@ -512,15 +508,16 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
 
           // Signal to UI providers that new message data is available.
           // This causes graph evidence providers to rebuild with updated counts.
-          // Note: Do NOT invalidate driftWorkingDatabaseProvider here!
+          // Note: Do NOT invalidate the graph database provider here!
           // It closes the isolate connection and causes "connection was closed"
           // errors for in-flight queries. Drift's reactive streams automatically
           // detect data changes via its internal watch mechanisms.
 
-          await _runLegacyCompatibilityMaintenance(
+          _logLiveGraphUpdateComplete(
             pendingTrigger: pendingTrigger,
             updateStartedAt: updateStartedAt,
             newMessageCount: newMessageCount,
+            graphBuildReport: graphBuildReport,
           );
         } finally {
           executionGate.release(_chatDbMonitorExecutionOwner);
@@ -545,19 +542,32 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
     }
   }
 
-  Future<void> _runLegacyCompatibilityMaintenance({
+  void _logLiveGraphUpdateComplete({
     required StartupProbeTrigger pendingTrigger,
     required DateTime updateStartedAt,
     required int newMessageCount,
-  }) async {
-    await ref
-        .read(legacyCompatibilityMaintenanceServiceProvider)
-        .runAfterGraphUpdate(
-          executionOwner: _chatDbMonitorExecutionOwner,
-          forceFullReimport:
-              pendingTrigger == StartupProbeTrigger.ledgerCountLagging,
-          updateStartedAt: updateStartedAt,
-          newMessageCount: newMessageCount,
+    required ConversationGraphBuildReport graphBuildReport,
+  }) {
+    final timeLabel = _formatLocalClockTime(DateTime.now());
+    final durationMs = DateTime.now()
+        .difference(updateStartedAt)
+        .inMilliseconds;
+    final triggerLabel = switch (pendingTrigger) {
+      StartupProbeTrigger.ledgerCountLagging => 'ledger recovery',
+      StartupProbeTrigger.rowIdAdvanced => 'rowid advance',
+    };
+
+    ref
+        .read(appLoggerProvider.notifier)
+        .info(
+          'Live graph update at $timeLabel completed in ${durationMs}ms: '
+          '$newMessageCount new source row(s) detected by $triggerLabel; '
+          '${graphBuildReport.messageImportResult.insertedMessageCount} '
+          'imported graph message(s), '
+          '${graphBuildReport.messageProjectionResult.insertedMessageCount} '
+          'projected graph message row(s). Live polling updates only the '
+          'source-scoped conversation graph.',
+          source: 'ChatDbMonitor',
         );
   }
 

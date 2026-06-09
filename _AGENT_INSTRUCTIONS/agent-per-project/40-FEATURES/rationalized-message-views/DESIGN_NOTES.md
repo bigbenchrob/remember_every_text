@@ -1,6 +1,9 @@
 # Rationalize Message Views — Design Notes
 
-> Historical context note (2026-04-21): this design note records the implementation plan for the rationalized message views work. Use `STATUS.md` and `../messages/` for current names and provider locations before making code changes.
+> Historical context note (2026-06-06): this design note records an
+> intermediate implementation plan for rationalized message views. It is not
+> current implementation guidance. Use the graph-backed Message Evidence Spine
+> docs under `../messages/` for current names, providers, and invariants.
 
 ## Architecture Decision: Strategy Pattern
 

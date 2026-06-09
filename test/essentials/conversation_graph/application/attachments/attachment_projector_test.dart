@@ -14,7 +14,7 @@ import '../../conversation_graph_test_database.dart';
 void main() {
   late Directory tempDir;
   late ImportDatabase importDatabase;
-  late ConversationGraphDatabase workingDatabase;
+  late ConversationGraphDatabase graphDatabase;
 
   setUpAll(() {
     sqfliteFfiInit();
@@ -65,11 +65,11 @@ void main() {
       databaseDirectory: tempDir.path,
       databaseName: 'macos_import_ss_test.db',
     );
-    workingDatabase = await openConversationGraphTestDatabase();
+    graphDatabase = await openConversationGraphTestDatabase();
   });
 
   tearDown(() async {
-    await workingDatabase.close();
+    await graphDatabase.close();
     await importDatabase.close();
     if (tempDir.existsSync()) {
       await tempDir.delete(recursive: true);
@@ -91,10 +91,10 @@ void main() {
     final result = await AttachmentProjector(
       repository: SqliteAttachmentProjectionRepository(
         importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        graphDatabase: graphDatabase,
       ),
     ).projectAttachments();
-    final rows = await workingDatabase.database.query('attachments');
+    final rows = await graphDatabase.database.query('attachments');
 
     expect(result.examinedAttachmentCount, 1);
     expect(result.insertedAttachmentCount, 1);
@@ -114,7 +114,7 @@ void main() {
     final projector = AttachmentProjector(
       repository: SqliteAttachmentProjectionRepository(
         importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        graphDatabase: graphDatabase,
       ),
     );
 
@@ -126,7 +126,7 @@ void main() {
       whereArgs: <Object?>[liveChatDbSourceId, 10],
     );
     final secondResult = await projector.projectAttachments();
-    final rows = await workingDatabase.database.query('attachments');
+    final rows = await graphDatabase.database.query('attachments');
 
     expect(firstResult.insertedAttachmentCount, 1);
     expect(secondResult.insertedAttachmentCount, 0);
@@ -151,13 +151,13 @@ void main() {
         await AttachmentProjector(
           repository: SqliteAttachmentProjectionRepository(
             importDatabase: importDatabase,
-            workingDatabase: workingDatabase,
+            graphDatabase: graphDatabase,
           ),
         ).projectAttachmentsAfterSourceRowId(
           sourceId: liveChatDbSourceId,
           startedAfterSourceRowId: 40,
         );
-    final rows = await workingDatabase.database.query('attachments');
+    final rows = await graphDatabase.database.query('attachments');
 
     expect(result.examinedAttachmentCount, 1);
     expect(result.insertedAttachmentCount, 1);

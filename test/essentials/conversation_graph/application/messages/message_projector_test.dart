@@ -14,7 +14,7 @@ import '../../conversation_graph_test_database.dart';
 void main() {
   late Directory tempDir;
   late ImportDatabase importDatabase;
-  late ConversationGraphDatabase workingDatabase;
+  late ConversationGraphDatabase graphDatabase;
 
   setUpAll(() {
     sqfliteFfiInit();
@@ -27,11 +27,11 @@ void main() {
       databaseDirectory: tempDir.path,
       databaseName: 'macos_import_ss_test.db',
     );
-    workingDatabase = await openConversationGraphTestDatabase();
+    graphDatabase = await openConversationGraphTestDatabase();
   });
 
   tearDown(() async {
-    await workingDatabase.close();
+    await graphDatabase.close();
     await importDatabase.close();
     if (tempDir.existsSync()) {
       await tempDir.delete(recursive: true);
@@ -54,11 +54,11 @@ void main() {
     final result = await MessageProjector(
       repository: SqliteMessageProjectionRepository(
         importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        graphDatabase: graphDatabase,
       ),
     ).projectMessages();
 
-    final rows = await workingDatabase.database.query('messages');
+    final rows = await graphDatabase.database.query('messages');
 
     expect(result.examinedMessageCount, 1);
     expect(result.insertedMessageCount, 1);
@@ -79,12 +79,12 @@ void main() {
     final projector = MessageProjector(
       repository: SqliteMessageProjectionRepository(
         importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        graphDatabase: graphDatabase,
       ),
     );
     final firstResult = await projector.projectMessages();
     final secondResult = await projector.projectMessages();
-    final rows = await workingDatabase.database.query('messages');
+    final rows = await graphDatabase.database.query('messages');
 
     expect(firstResult.insertedMessageCount, 1);
     expect(secondResult.examinedMessageCount, 1);
@@ -114,13 +114,13 @@ void main() {
           await MessageProjector(
             repository: SqliteMessageProjectionRepository(
               importDatabase: importDatabase,
-              workingDatabase: workingDatabase,
+              graphDatabase: graphDatabase,
             ),
           ).projectMessagesAfterSourceRowId(
             sourceId: liveChatDbSourceId,
             startedAfterSourceRowId: 100,
           );
-      final rows = await workingDatabase.database.query('messages');
+      final rows = await graphDatabase.database.query('messages');
 
       expect(result.examinedMessageCount, 1);
       expect(result.insertedMessageCount, 1);
@@ -143,7 +143,7 @@ void main() {
       final projector = MessageProjector(
         repository: SqliteMessageProjectionRepository(
           importDatabase: importDatabase,
-          workingDatabase: workingDatabase,
+          graphDatabase: graphDatabase,
         ),
       );
       await projector.projectMessages();
@@ -154,7 +154,7 @@ void main() {
         whereArgs: <Object?>[liveChatDbSourceId, 101],
       );
       final secondResult = await projector.projectMessages();
-      final rows = await workingDatabase.database.query('messages');
+      final rows = await graphDatabase.database.query('messages');
 
       expect(secondResult.insertedMessageCount, 0);
       expect(rows.single['text'], 'decoded text');
@@ -181,10 +181,10 @@ void main() {
       final result = await MessageProjector(
         repository: SqliteMessageProjectionRepository(
           importDatabase: importDatabase,
-          workingDatabase: workingDatabase,
+          graphDatabase: graphDatabase,
         ),
       ).projectMessages();
-      final rows = await workingDatabase.database.query(
+      final rows = await graphDatabase.database.query(
         'messages',
         where: 'guid = ?',
         whereArgs: <Object?>['same-guid'],
@@ -219,10 +219,10 @@ void main() {
       await MessageProjector(
         repository: SqliteMessageProjectionRepository(
           importDatabase: importDatabase,
-          workingDatabase: workingDatabase,
+          graphDatabase: graphDatabase,
         ),
       ).projectMessages();
-      final rows = await workingDatabase.database.query(
+      final rows = await graphDatabase.database.query(
         'messages',
         where: 'guid = ?',
         whereArgs: <Object?>['reaction-guid'],
@@ -265,10 +265,10 @@ void main() {
     await MessageProjector(
       repository: SqliteMessageProjectionRepository(
         importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        graphDatabase: graphDatabase,
       ),
     ).projectMessages();
-    final rows = await workingDatabase.database.query(
+    final rows = await graphDatabase.database.query(
       'messages',
       where: 'guid = ?',
       whereArgs: <Object?>['archive-reaction-guid'],
@@ -292,10 +292,10 @@ void main() {
       await MessageProjector(
         repository: SqliteMessageProjectionRepository(
           importDatabase: importDatabase,
-          workingDatabase: workingDatabase,
+          graphDatabase: graphDatabase,
         ),
       ).projectMessages();
-      final rows = await workingDatabase.database.query(
+      final rows = await graphDatabase.database.query(
         'messages',
         where: 'guid = ?',
         whereArgs: <Object?>['missing-target-reaction'],
@@ -321,10 +321,10 @@ void main() {
     await MessageProjector(
       repository: SqliteMessageProjectionRepository(
         importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        graphDatabase: graphDatabase,
       ),
     ).projectMessages();
-    final rows = await workingDatabase.database.query(
+    final rows = await graphDatabase.database.query(
       'messages',
       where: 'guid = ?',
       whereArgs: <Object?>['rich-text-message'],
@@ -374,10 +374,10 @@ void main() {
       await MessageProjector(
         repository: SqliteMessageProjectionRepository(
           importDatabase: importDatabase,
-          workingDatabase: workingDatabase,
+          graphDatabase: graphDatabase,
         ),
       ).projectMessages();
-      final rows = await workingDatabase.database.query('messages');
+      final rows = await graphDatabase.database.query('messages');
       final byGuid = <Object?, Map<String, Object?>>{
         for (final row in rows) row['guid']: row,
       };
@@ -399,7 +399,7 @@ void main() {
       sourceId: liveChatDbSourceId,
       sourceRowId: 49,
     );
-    await workingDatabase.database.insert('handle_aliases', <String, Object?>{
+    await graphDatabase.database.insert('handle_aliases', <String, Object?>{
       'handle_ss_id': senderHandleSsId,
       'canonical_handle_ss_id': canonicalHandleSsId,
       'raw_identifier': '+16049995969',
@@ -416,10 +416,10 @@ void main() {
     await MessageProjector(
       repository: SqliteMessageProjectionRepository(
         importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        graphDatabase: graphDatabase,
       ),
     ).projectMessages();
-    final rows = await workingDatabase.database.query(
+    final rows = await graphDatabase.database.query(
       'messages',
       where: 'guid = ?',
       whereArgs: <Object?>['sender-alias-message'],

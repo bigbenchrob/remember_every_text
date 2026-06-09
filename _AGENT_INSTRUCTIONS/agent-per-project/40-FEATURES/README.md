@@ -5,7 +5,7 @@ owner: agent-per-project
 last_reviewed: 2026-04-21
 source_of_truth: doc
 links:
-	- ../30-NEW-FEATURE-ADDITION/README.md
+	- ../45-NEW-FEATURE-ADDITION/README.md
 	- ../42-SPEC-SYSTEM/README.md
 	- ./chat-handles/CHARTER.md
 	- ../90-USE-CASE-ILLUSTRATIONS/README.md
@@ -41,14 +41,14 @@ The current code tree also contains feature modules that do not all have full do
 
 | Code module | Current role |
 | --- | --- |
-| `address_book_folders` | AddressBook source folder discovery and readiness support. |
-| `attachments` | Attachment domain/support module with placeholder public coordinators. |
+| `address_book_folders` | AddressBook source folder discovery and readiness support. The old presentation/loading widgets and user-selectable candidate workflow are retired; the active value is the source path resolver used by onboarding and source-scoped contact import. |
+| `attachments` | Attachment archive, graph evidence resolution, deterministic recovery, and archive settings support. The old generic `Attachment`/`AttachmentId` feature-domain model is retired. |
 | `chats` | Chat repository, recent-chat and timeline support. |
 | `contacts` | Contact picker/sidebar cassettes, favorites, virtual participants, contact profile/name overrides, tooltip spec. |
 | `environment_readiness` | ViewSpec-driven readiness panel used by onboarding/system surfaces. |
-| `handles` | Stray-handle review cassettes, manual-linking/settings cassettes, handle state/providers, Handle Lens support. |
+| `handles` | Stray-handle review cassettes, graph/overlay handle providers, manual-linking operations, and Handle Lens support. |
 | `messages` | Message timeline scopes, sidebar heatmaps/navigators, ViewSpec handling, hydration, recovered-message surfaces. |
-| `reactions` | Reaction domain/support module. |
+| `reactions` | Retired feature shell. Reaction evidence is preserved by message import/projection semantics and retained legacy reaction tables, not by an active standalone feature module. |
 | `settings` | Settings sidebar cassettes and settings action surfaces. |
 | `sidebar_utilities` | Top-chat/settings menu cassettes and shared sidebar utility specs. |
 
@@ -67,11 +67,11 @@ For a fully documented shipped feature, create or maintain the following documen
 
 ## Using the Templates
 
-Reusable markdown templates for each file live in `agent-instructions-shared/AGENT_PER_PROJECT_SCHEMA/per_project_folder_file_schema.yaml` under the `templates` section. When you migrate a feature from `30-NEW-FEATURE-ADDITION/`, copy in the templates and populate them with project-specific details. Existing features should adopt the same structure for consistency.
+Reusable markdown templates for each file live in `agent-instructions-shared/AGENT_PER_PROJECT_SCHEMA/per_project_folder_file_schema.yaml` under the `templates` section. When you migrate a feature from `45-NEW-FEATURE-ADDITION/`, copy in the templates and populate them with project-specific details. Existing features should adopt the same structure for consistency.
 
 ## Migration Workflow
 
-1. **Promote a Feature**: Move the feature folder from `30-NEW-FEATURE-ADDITION/{feature}` to `40-FEATURES/{feature}` once it ships.
+1. **Promote a Feature**: Move the feature folder from `45-NEW-FEATURE-ADDITION/{feature}` to `40-FEATURES/{feature}` once it ships.
 2. **Apply Templates**: Ensure all required files exist and are filled out using the templates as a starting point.
 3. **Backfill History**: Update `WORK_LOG.md` with past milestones and decisions.
 4. **Link Documentation**: Cross-reference supporting docs (database guides, provider notes, etc.) so future contributors have a complete map.

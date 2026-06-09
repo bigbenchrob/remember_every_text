@@ -326,15 +326,15 @@ class _StatusContent extends ConsumerWidget {
             _StatusRow('messageCountDelta', '${status.messageCountDelta}'),
             _StatusRow(
               'duplicate chat/message edges',
-              '${status.duplicateWorkingTopologyEdgeCount}',
+              '${status.duplicateGraphTopologyEdgeCount}',
             ),
             _StatusRow(
               'duplicate chat/handle edges',
-              '${status.duplicateWorkingChatToHandleEdgeCount}',
+              '${status.duplicateGraphChatToHandleEdgeCount}',
             ),
             _StatusRow(
               'duplicate message/attachment edges',
-              '${status.duplicateWorkingMessageToAttachmentEdgeCount}',
+              '${status.duplicateGraphMessageToAttachmentEdgeCount}',
             ),
           ],
         ),
@@ -495,7 +495,7 @@ class _GraphHealthSection extends StatelessWidget {
                   labelWidth: 250,
                 ),
               _StatusRow(
-                'archive records without working attachment',
+                'archive records without graph attachment',
                 '${report.archiveRecordsWithoutWorkingAttachmentCount}',
                 labelWidth: 250,
               ),
@@ -986,8 +986,8 @@ class _ProofScopeCard extends StatelessWidget {
             ),
             Expanded(
               child: _ScopeValue(
-                label: 'Working DB',
-                value: status.workingDatabaseName,
+                label: 'Graph DB',
+                value: status.graphDatabaseName,
                 colors: colors,
               ),
             ),
@@ -1069,42 +1069,42 @@ class _PipelineDashboard extends StatelessWidget {
         detail: 'source paths are hints',
       ),
     ];
-    final importToWorking = <_PipelineMetric>[
+    final importToGraph = <_PipelineMetric>[
       _PipelineMetric(
         label: 'Messages',
-        current: status.workingMessageCount,
+        current: status.graphMessageCount,
         total: status.ledgerMessageCount,
       ),
       _PipelineMetric(
         label: 'Chats',
-        current: status.workingChatCount,
+        current: status.graphChatCount,
         total: status.importChatCount,
       ),
       _PipelineMetric(
         label: 'Handles',
-        current: status.workingHandleCount,
+        current: status.graphHandleCount,
         total: status.importHandleCount,
       ),
       _PipelineMetric(
         label: 'Attachments',
-        current: status.workingAttachmentCount,
+        current: status.graphAttachmentCount,
         total: status.importAttachmentCount,
       ),
     ];
     final topology = <_PipelineMetric>[
       _PipelineMetric(
         label: 'Chat -> message',
-        current: status.workingTopologyEdgeCount,
+        current: status.graphTopologyEdgeCount,
         total: status.importTopologyEdgeCount,
       ),
       _PipelineMetric(
         label: 'Chat -> handle',
-        current: status.workingChatToHandleEdgeCount,
+        current: status.graphChatToHandleEdgeCount,
         total: status.importChatToHandleEdgeCount,
       ),
       _PipelineMetric(
         label: 'Message -> attachment',
-        current: status.workingMessageToAttachmentEdgeCount,
+        current: status.graphMessageToAttachmentEdgeCount,
         total: status.importMessageToAttachmentEdgeCount,
       ),
       _PipelineMetric(
@@ -1132,9 +1132,9 @@ class _PipelineDashboard extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: _PipelineStageCard(
-                title: 'import_ss -> working_ss',
+                title: 'import_ss -> graph',
                 subtitle: 'canonical graph rows',
-                metrics: importToWorking,
+                metrics: importToGraph,
                 colors: colors,
               ),
             ),

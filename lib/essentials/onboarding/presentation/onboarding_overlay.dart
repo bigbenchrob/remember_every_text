@@ -3,10 +3,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../config/theme/colors/theme_colors.dart';
 import '../../../config/theme/theme_typography.dart';
+import '../../conversation_graph/application/conversation_graph_build_controller_provider.dart';
+import '../../conversation_graph/application/orchestrators/conversation_graph_build_orchestrator.dart';
 import '../../db/application/database_health_audit/database_health_audit_service.dart';
-import '../../db_importers/domain/entities/db_import_result.dart';
-import '../../db_importers/presentation/view_model/db_import_control_provider.dart';
-import '../../db_migrate/domain/entities/db_migration_result.dart';
 import '../../logging/application/app_logger.dart';
 import '../../logging/application/diagnostic_report_actions.dart';
 import '../../logging/infrastructure/log_export_service.dart';
@@ -14,7 +13,6 @@ import '../application/onboarding_environment_report_provider.dart';
 import '../application/onboarding_gate_provider.dart';
 import '../domain/onboarding_environment_report.dart';
 import '../domain/onboarding_status.dart';
-import 'onboarding_progress_view.dart';
 
 /// Amber tone for FDA warning icon and alert text.
 const _kWarningAmber = Color(0xFFFF9500);
@@ -24,7 +22,7 @@ const _kWarningAmber = Color(0xFFFF9500);
 /// Renders a semi-transparent barrier over the entire app and presents
 /// a centered card whose content switches based on [OnboardingStatus]:
 ///   - [awaitingUserAction] → welcome panel with "Import" button
-///   - [importing] / [migrating] → live stage progress
+///   - [importing] / [buildingGraph] → live stage progress
 ///   - [complete] → success summary with "Get Started" button
 class OnboardingOverlay extends ConsumerWidget {
   const OnboardingOverlay({super.key});
@@ -83,14 +81,14 @@ class OnboardingOverlay extends ConsumerWidget {
                   typography: typography,
                 ),
                 OnboardingStatus.importing ||
-                OnboardingStatus.migrating ||
+                OnboardingStatus.buildingGraph ||
                 OnboardingStatus.reimporting ||
-                OnboardingStatus.reimportMigrating => _ProgressContent(
+                OnboardingStatus.reimportBuildingGraph => _ProgressContent(
                   colors: colors,
                   typography: typography,
                   isReimport:
                       status == OnboardingStatus.reimporting ||
-                      status == OnboardingStatus.reimportMigrating,
+                      status == OnboardingStatus.reimportBuildingGraph,
                 ),
                 OnboardingStatus.complete => _CompleteContent(
                   colors: colors,
@@ -355,7 +353,7 @@ class _WelcomeContent extends ConsumerWidget {
                 onPressed: () {
                   ref
                       .read(onboardingGateProvider.notifier)
-                      .startImportAndMigration();
+                      .startImportAndGraphBuild();
                 },
                 style: FilledButton.styleFrom(
                   backgroundColor: colors.buttons.primaryBackground,
@@ -425,7 +423,7 @@ class _WelcomeContent extends ConsumerWidget {
               onPressed: () {
                 ref
                     .read(onboardingGateProvider.notifier)
-                    .startImportAndMigration();
+                    .startImportAndGraphBuild();
               },
               style: OutlinedButton.styleFrom(
                 foregroundColor: colors.content.textPrimary,
@@ -521,10 +519,10 @@ class _EnvironmentSummaryCard extends StatelessWidget {
           ),
           _DiagnosticRow(
             label: 'Conversation graph',
-            value: _appDbValue(report.workingDatabase),
+            value: _appDbValue(report.conversationGraph),
             colors: colors,
             typography: typography,
-            isGood: report.workingDatabase.hasData,
+            isGood: report.conversationGraph.hasData,
           ),
         ],
       ),
@@ -748,18 +746,18 @@ _AwaitingUserActionPresentation _awaitingUserActionPresentation(
         icon: Icons.error_outline_rounded,
         iconKind: _PresentationIconKind.warning,
       );
-    case OnboardingEnvironmentState.migrationFailed:
+    case OnboardingEnvironmentState.graphProjectionFailed:
       return _AwaitingUserActionPresentation(
         title: 'Imported Data Could Not Be Prepared',
         body:
             'MessageLens imported source data, but the app could not finish '
             'preparing it for use. You can retry now or send a report to the '
             'developer.',
-        notes: _migrationFailureNotes(report),
+        notes: _graphProjectionFailureNotes(report),
         canImportImmediately: true,
         canSendDiagnosticReport: true,
         allowsManualImport: false,
-        primaryActionLabel: 'Retry Import and Migration',
+        primaryActionLabel: 'Retry Import and Graph Build',
         icon: Icons.sync_problem_rounded,
         iconKind: _PresentationIconKind.warning,
       );
@@ -827,21 +825,21 @@ List<String> _importFailureNotes(OnboardingEnvironmentReport report) {
   return notes;
 }
 
-List<String> _migrationFailureNotes(OnboardingEnvironmentReport report) {
+List<String> _graphProjectionFailureNotes(OnboardingEnvironmentReport report) {
   final notes = <String>[];
 
-  final recordedAt = report.lastMigrationFailureRecordedAt;
-  if (report.usingPersistedMigrationFailure && recordedAt != null) {
+  final recordedAt = report.lastGraphProjectionFailureRecordedAt;
+  if (report.usingPersistedGraphProjectionFailure && recordedAt != null) {
     notes.add(
       _persistedFailureNote(
-        kind: 'migration',
-        freshness: report.migrationFailureFreshness(),
+        kind: 'graph projection',
+        freshness: report.graphProjectionFailureFreshness(),
         recordedAt: recordedAt,
       ),
     );
   }
 
-  final message = report.migrationFailureMessage;
+  final message = report.graphProjectionFailureMessage;
   if (message != null && message.isNotEmpty) {
     notes.add(message);
   }
@@ -852,9 +850,9 @@ List<String> _migrationFailureNotes(OnboardingEnvironmentReport report) {
     );
   }
 
-  if (!report.workingDatabase.hasData) {
+  if (!report.conversationGraph.hasData) {
     notes.add(
-      'The conversation graph is still empty or incomplete. Retrying will rerun the full import and migration pipeline.',
+      'The conversation graph is still empty or incomplete. Retrying will rerun the full import and graph build.',
     );
   }
 
@@ -1061,14 +1059,22 @@ class _ProgressContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final controlState = ref.watch(dbImportControlViewModelProvider);
+    final graphBuildState = ref.watch(conversationGraphBuildControllerProvider);
+    final statusMessage = _progressStatusMessage(
+      graphBuildState: graphBuildState,
+      isReimport: isReimport,
+    );
+    final progressValue =
+        graphBuildState.status == ConversationGraphBuildStatus.succeeded
+        ? 1.0
+        : null;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          controlState.statusMessage ?? 'Working…',
+          statusMessage,
           style: typography.headline.copyWith(
             color: colors.content.textPrimary,
           ),
@@ -1077,19 +1083,19 @@ class _ProgressContent extends ConsumerWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(4),
           child: LinearProgressIndicator(
-            value: controlState.progress,
+            value: progressValue,
             backgroundColor: colors.lines.borderSubtle,
             valueColor: AlwaysStoppedAnimation<Color>(colors.accents.primary),
             minHeight: 6,
           ),
         ),
         const SizedBox(height: 16),
-        Flexible(
-          child: OnboardingProgressView(
-            stages: controlState.stages,
-            colors: colors,
-            typography: typography,
-          ),
+        Text(
+          isReimport
+              ? 'MessageLens is rebuilding the source-scoped import ledger and conversation graph from Messages.'
+              : 'MessageLens is building the source-scoped import ledger and conversation graph from Messages.',
+          style: typography.body.copyWith(color: colors.content.textSecondary),
+          textAlign: TextAlign.center,
         ),
         if (!isReimport) ...[
           const SizedBox(height: 12),
@@ -1113,6 +1119,24 @@ class _ProgressContent extends ConsumerWidget {
   }
 }
 
+String _progressStatusMessage({
+  required ConversationGraphBuildState graphBuildState,
+  required bool isReimport,
+}) {
+  return switch (graphBuildState.status) {
+    ConversationGraphBuildStatus.running =>
+      isReimport
+          ? 'Rebuilding conversation graph…'
+          : 'Building conversation graph…',
+    ConversationGraphBuildStatus.succeeded =>
+      isReimport ? 'Conversation graph rebuilt' : 'Conversation graph built',
+    ConversationGraphBuildStatus.failed =>
+      graphBuildState.lastError ?? 'Conversation graph build failed',
+    ConversationGraphBuildStatus.idle =>
+      isReimport ? 'Preparing graph rebuild…' : 'Preparing graph build…',
+  };
+}
+
 /// Success panel: summary metrics + dismiss button.
 class _CompleteContent extends ConsumerWidget {
   const _CompleteContent({
@@ -1127,9 +1151,9 @@ class _CompleteContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final controlState = ref.watch(dbImportControlViewModelProvider);
-    final importResult = controlState.lastImportResult;
-    final migrationResult = controlState.lastMigrationResult;
+    final graphBuildReport = ref
+        .watch(conversationGraphBuildControllerProvider)
+        .lastReport;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1148,10 +1172,9 @@ class _CompleteContent extends ConsumerWidget {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 12),
-        if (importResult != null || migrationResult != null) ...[
-          _SummaryMetrics(
-            importResult: importResult,
-            migrationResult: migrationResult,
+        if (graphBuildReport != null) ...[
+          _GraphBuildSummaryMetrics(
+            report: graphBuildReport,
             colors: colors,
             typography: typography,
           ),
@@ -1189,8 +1212,6 @@ class _RecoveryContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final controlState = ref.watch(dbImportControlViewModelProvider);
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -1209,7 +1230,7 @@ class _RecoveryContent extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         Text(
-          'MessageLens detected signs that an earlier import or migration left incomplete app databases. It is deleting the app databases now so setup can restart from a clean slate.',
+          'MessageLens detected signs that an earlier import or graph build left incomplete app databases. It is deleting the app databases now so setup can restart from a clean slate.',
           style: typography.body.copyWith(color: colors.content.textSecondary),
           textAlign: TextAlign.center,
         ),
@@ -1240,45 +1261,30 @@ class _RecoveryContent extends ConsumerWidget {
             color: colors.accents.primary,
           ),
         ),
-        if (controlState.statusMessage != null) ...[
-          const SizedBox(height: 12),
-          Text(
-            controlState.statusMessage!,
-            style: typography.caption.copyWith(
-              color: colors.content.textTertiary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
       ],
     );
   }
 }
 
-/// Displays key counts from the import/migration results.
-class _SummaryMetrics extends StatelessWidget {
-  const _SummaryMetrics({
-    required this.importResult,
-    required this.migrationResult,
+/// Displays key counts from the source-scoped graph build result.
+class _GraphBuildSummaryMetrics extends StatelessWidget {
+  const _GraphBuildSummaryMetrics({
+    required this.report,
     required this.colors,
     required this.typography,
   });
 
-  final DbImportResult? importResult;
-  final DbMigrationResult? migrationResult;
+  final ConversationGraphBuildReport report;
   final ThemeColors colors;
   final ThemeTypography typography;
 
   @override
   Widget build(BuildContext context) {
-    final metrics = <(String, int)>[];
-
-    if (importResult != null) {
-      metrics.add(('Messages', importResult!.messagesImported));
-      metrics.add(('Chats', importResult!.chatsImported));
-      metrics.add(('Contacts', importResult!.contactsImported));
-      metrics.add(('Attachments', importResult!.attachmentsImported));
-    }
+    final metrics = <(String, int)>[
+      ('Imported', report.messageImportResult.insertedMessageCount),
+      ('Projected', report.messageProjectionResult.insertedMessageCount),
+      ('Text enriched', report.richTextEnrichmentResult.enrichedMessageCount),
+    ];
 
     return Wrap(
       spacing: 16,

@@ -6,7 +6,6 @@ import '../../../features/settings/domain/spec_classes/settings_view_spec.dart';
 import '../../navigation/domain/entities/view_spec.dart';
 import '../../navigation/domain/navigation_constants.dart';
 import '../../navigation/feature_level_providers.dart';
-import '../../onboarding/domain/import_spec.dart';
 import '../../onboarding/domain/spec_classes/onboarding_view_spec.dart';
 import 'app_logger.dart';
 
@@ -113,13 +112,6 @@ class NavigationLogEntry {
           messageHistoryCoverageReport: () => {
             'variant': 'messageHistoryCoverageReport',
           },
-        ),
-      },
-      import: (importSpec) => {
-        'type': 'import',
-        'spec': importSpec.when(
-          forImport: () => {'variant': 'forImport'},
-          forMigration: () => {'variant': 'forMigration'},
         ),
       },
       environmentReadiness: (readinessSpec) => {

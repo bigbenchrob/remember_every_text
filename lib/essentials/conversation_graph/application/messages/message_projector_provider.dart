@@ -11,14 +11,14 @@ part 'message_projector_provider.g.dart';
 @riverpod
 Future<MessageProjector> messageProjector(Ref ref) async {
   final importDatabase = await ref.watch(importDatabaseProvider.future);
-  final workingDatabase = await ref.watch(
+  final graphDatabase = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
 
   return MessageProjector(
     repository: SqliteMessageProjectionRepository(
       importDatabase: importDatabase,
-      workingDatabase: workingDatabase,
+      graphDatabase: graphDatabase,
     ),
   );
 }

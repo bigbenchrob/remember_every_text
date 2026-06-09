@@ -2,10 +2,10 @@
 tier: project
 scope: workflow
 owner: agent-per-project
-last_reviewed: 2025-11-06
+last_reviewed: 2026-06-06
 source_of_truth: doc
 links:
-  - ../agent-instructions-shared/INDEX.md
+  - ../../agent-instructions-shared/INDEX.md
   - ../40-FEATURES/README.md
 tests: []
 ---
@@ -16,7 +16,7 @@ This folder tracks feature work that is still in planning or active development.
 
 ## Lifecycle Overview
 
-1. **Kickoff** – Create a feature subfolder named `30-NEW-FEATURE-ADDITION/{feature-name}/`.
+1. **Kickoff** – Create a feature subfolder named `45-NEW-FEATURE-ADDITION/{feature-name}/`.
 2. **Proposal** – Draft `PROPOSAL.md` summarizing goals, constraints, and open questions. Wait for user sign-off before planning.
 3. **Planning** – Add `CHECKLIST.md`, `DESIGN_NOTES.md`, and `TESTS.md`. Flesh out the detailed checklist covering delivery, review, and verification steps.
 4. **Execution** – Implement code while updating the checklist. Keep design notes in sync with any architectural decisions.
@@ -35,7 +35,7 @@ Each feature folder inside this directory should contain:
 └── STATUS.md        # Added when feature is complete
 ```
 
-Templates live under `_AGENT_INSTRUCTIONS/agent-instructions-shared/90-templates/`. Copy them when creating a new feature so structure stays consistent.
+Templates live under `_AGENT_INSTRUCTIONS/agent-instructions-shared/90-templates/`. Copy the feature brief template or create the proposal/checklist/test documents directly when creating a new feature so structure stays consistent.
 
 ## Working Agreement
 
@@ -47,9 +47,7 @@ Templates live under `_AGENT_INSTRUCTIONS/agent-instructions-shared/90-templates
 ## Reference Material
 
 - Workflow guide: `AGENTS.md`
-- Proposal template: `_AGENT_INSTRUCTIONS/agent-instructions-shared/90-templates/feature-proposal-template.md`
-- Checklist template: `_AGENT_INSTRUCTIONS/agent-instructions-shared/90-templates/feature-checklist-template.md`
-- Testing template: `_AGENT_INSTRUCTIONS/agent-instructions-shared/90-templates/feature-tests-template.md`
+- Feature brief template: `_AGENT_INSTRUCTIONS/agent-instructions-shared/90-templates/TEMPLATE-feature-brief.md`
 
 ## Current Feature Folders
 

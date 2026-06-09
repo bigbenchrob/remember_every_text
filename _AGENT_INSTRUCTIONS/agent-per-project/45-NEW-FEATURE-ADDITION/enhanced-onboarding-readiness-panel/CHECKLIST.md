@@ -1,5 +1,11 @@
 # Environment Readiness Center Panel Checklist
 
+## Current Conformance Note (2026-06-06)
+
+This checklist is historical. Current readiness-panel execution should be
+validated against graph build/readiness and overlay persisted failure state, not
+retained `working.db` migration as the production gate.
+
 ## Phase 0 — Planning
 
 - [x] Capture seed concept from developer notes

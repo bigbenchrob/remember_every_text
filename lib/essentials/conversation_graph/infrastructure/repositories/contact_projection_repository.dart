@@ -5,11 +5,11 @@ import '../../application/contacts/contact_projection_repository.dart';
 class SqliteContactProjectionRepository implements ContactProjectionRepository {
   const SqliteContactProjectionRepository({
     required this.importDatabase,
-    required this.workingDatabase,
+    required this.graphDatabase,
   });
 
   final ImportDatabase importDatabase;
-  final ConversationGraphDatabase workingDatabase;
+  final ConversationGraphDatabase graphDatabase;
 
   @override
   Future<ContactProjectionResult> projectContacts() async {
@@ -43,7 +43,7 @@ class SqliteContactProjectionRepository implements ContactProjectionRepository {
 
     var insertedContactCount = 0;
     var insertedContactHandleEdgeCount = 0;
-    await workingDatabase.transaction(() async {
+    await graphDatabase.transaction(() async {
       for (final row in contactRows) {
         final contactId = _requiredInt(row, 'ss_id');
         final displayName = (row['display_name'] as String?)?.trim();
@@ -59,7 +59,7 @@ class SqliteContactProjectionRepository implements ContactProjectionRepository {
           continue;
         }
 
-        final insertedContactCountDelta = await workingDatabase
+        final insertedContactCountDelta = await graphDatabase
             .executeAndReadChanges(
               '''
               INSERT OR IGNORE INTO contacts (
@@ -94,7 +94,7 @@ class SqliteContactProjectionRepository implements ContactProjectionRepository {
             if (handleSsId == null) {
               continue;
             }
-            final insertedEdgeCountDelta = await workingDatabase
+            final insertedEdgeCountDelta = await graphDatabase
                 .executeAndReadChanges(
                   '''
                   INSERT OR IGNORE INTO contact_to_handle (
@@ -122,7 +122,7 @@ class SqliteContactProjectionRepository implements ContactProjectionRepository {
   }
 
   Future<Map<String, int>> _handleSsIdsByKey() async {
-    final rows = await workingDatabase.selectRows('''
+    final rows = await graphDatabase.selectRows('''
       SELECT
         h.id AS handle_value,
         ha.canonical_handle_ss_id AS canonical_handle_ss_id,

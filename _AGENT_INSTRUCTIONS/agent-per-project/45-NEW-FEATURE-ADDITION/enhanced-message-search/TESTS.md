@@ -1,5 +1,12 @@
 # Tests: Enhanced Message Search
 
+## Current Conformance Note (2026-06-06)
+
+This test plan is historical. Current search verification should prove
+graph-native selection, matching/highlighting across the full logical evidence
+scope, and shared evidence rendering. FTS-specific tests belong only to a
+future graph-search backend implementation.
+
 ## Manual Verification Steps
 
 ### 1. Multi-term Search (Lexical)

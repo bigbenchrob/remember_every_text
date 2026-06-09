@@ -6,9 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
-import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/import/sqflite_import_database.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import 'package:remember_this_text/essentials/db_importers/application/debug_settings_provider.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/features/attachments/application/archive_settings_provider.dart';
 import 'package:remember_this_text/features/attachments/application/attachment_archive_service_provider.dart';
@@ -183,148 +181,7 @@ void main() {
     );
   });
 
-  group('AttachmentArchiveService.archiveImportedBatch', () {
-    late OverlayDatabase overlayDb;
-    late SqfliteImportDatabase importDb;
-    late Directory tempDir;
-    late ProviderContainer container;
-
-    setUp(() async {
-      overlayDb = OverlayDatabase(NativeDatabase.memory());
-      tempDir = await Directory.systemTemp.createTemp(
-        'attachment-import-batch-test-',
-      );
-      importDb = SqfliteImportDatabase(
-        databaseDirectory: tempDir.path,
-        databaseName: 'macos_import_test.db',
-        debugSettings: const ImportDebugSettingsState(),
-      );
-      await overlayDb.writeOverlaySetting(
-        settingKey: 'attachment_archive_enabled',
-        settingValue: 'true',
-      );
-
-      container = ProviderContainer(
-        overrides: [
-          overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
-          sqfliteImportDatabaseProvider.overrideWith((ref) async => importDb),
-          attachmentArchiveDirectoryProvider.overrideWith(
-            (ref) => '${tempDir.path}/archive',
-          ),
-        ],
-      );
-    });
-
-    tearDown(() async {
-      container.dispose();
-      await overlayDb.close();
-      await importDb.deleteDatabaseFile();
-      if (tempDir.existsSync()) {
-        await tempDir.delete(recursive: true);
-      }
-    });
-
-    test('archives only attachments from the requested import batch', () async {
-      final batchOne = await importDb.insertImportBatch(
-        startedAtUtc: DateTime.now().toUtc().toIso8601String(),
-      );
-      final batchTwo = await importDb.insertImportBatch(
-        startedAtUtc: DateTime.now().toUtc().toIso8601String(),
-      );
-
-      await importDb.insertChat(
-        id: 1,
-        sourceRowid: 1,
-        guid: 'chat-1',
-        service: 'iMessage',
-        batchId: batchOne,
-      );
-
-      final batchOneSource = File('${tempDir.path}/batch-one.png');
-      final batchTwoSource = File('${tempDir.path}/batch-two.png');
-      await batchOneSource.writeAsString('batch-one');
-      await batchTwoSource.writeAsString('batch-two');
-
-      await importDb.insertMessage(
-        id: 100,
-        sourceRowid: 100,
-        guid: 'message-batch-one',
-        chatId: 1,
-        service: 'iMessage',
-        isFromMe: true,
-        text: 'one',
-        hasAttributedBodySource: false,
-        hasMessageSummaryInfo: false,
-        hasPayloadDataSource: false,
-        isSystemMessage: false,
-        batchId: batchOne,
-      );
-      await importDb.insertAttachment(
-        id: 200,
-        sourceRowid: 200,
-        localPath: batchOneSource.path,
-        mimeType: 'image/png',
-        batchId: batchOne,
-      );
-      await importDb.insertMessageAttachment(messageId: 100, attachmentId: 200);
-
-      await importDb.insertMessage(
-        id: 101,
-        sourceRowid: 101,
-        guid: 'message-batch-two',
-        chatId: 1,
-        service: 'iMessage',
-        isFromMe: true,
-        text: 'two',
-        hasAttributedBodySource: false,
-        hasMessageSummaryInfo: false,
-        hasPayloadDataSource: false,
-        isSystemMessage: false,
-        batchId: batchTwo,
-      );
-      await importDb.insertAttachment(
-        id: 201,
-        sourceRowid: 201,
-        localPath: batchTwoSource.path,
-        mimeType: 'image/png',
-        batchId: batchTwo,
-      );
-      await importDb.insertMessageAttachment(messageId: 101, attachmentId: 201);
-
-      final result = await container
-          .read(attachmentArchiveServiceProvider.notifier)
-          .archiveImportedBatch(batchId: batchTwo);
-
-      expect(result.totalScanned, 1);
-      expect(result.newlyArchived, 1);
-
-      final batchTwoArchive =
-          await (overlayDb.select(overlayDb.archivedAttachments)..where(
-                (t) =>
-                    t.messageGuid.equals('message-batch-two') &
-                    t.importAttachmentId.equals(201),
-              ))
-              .getSingleOrNull();
-      final batchOneArchive =
-          await (overlayDb.select(overlayDb.archivedAttachments)..where(
-                (t) =>
-                    t.messageGuid.equals('message-batch-one') &
-                    t.importAttachmentId.equals(200),
-              ))
-              .getSingleOrNull();
-
-      expect(batchTwoArchive, isNotNull);
-      expect(batchOneArchive, isNull);
-      expect(
-        File(
-          '${tempDir.path}/archive/${batchTwoArchive!.archiveRelativePath}',
-        ).existsSync(),
-        isTrue,
-      );
-    });
-  });
-
-  group('AttachmentArchiveService.archiveNextWorkingSweepChunk', () {
+  group('AttachmentArchiveService.archiveNextGraphSweepChunk', () {
     late OverlayDatabase overlayDb;
     late ConversationGraphDatabase graphDb;
     late Directory tempDir;
@@ -432,7 +289,7 @@ void main() {
 
       final firstResult = await container
           .read(attachmentArchiveServiceProvider.notifier)
-          .archiveNextWorkingSweepChunk(limit: 2);
+          .archiveNextGraphSweepChunk(limit: 2);
 
       expect(firstResult.totalScanned, 2);
       expect(firstResult.newlyArchived, 2);
@@ -484,7 +341,7 @@ void main() {
 
       final secondResult = await container
           .read(attachmentArchiveServiceProvider.notifier)
-          .archiveNextWorkingSweepChunk(limit: 2);
+          .archiveNextGraphSweepChunk(limit: 2);
 
       expect(secondResult.totalScanned, 1);
       expect(secondResult.newlyArchived, 1);
@@ -520,7 +377,7 @@ void main() {
 
       final result = await container
           .read(attachmentArchiveServiceProvider.notifier)
-          .archiveNextWorkingSweepChunk(limit: 1);
+          .archiveNextGraphSweepChunk(limit: 1);
 
       expect(result.totalScanned, 1);
       expect(result.newlyArchived, 1);
@@ -660,14 +517,14 @@ void main() {
 
         final maintenanceResult = await container
             .read(attachmentArchiveServiceProvider.notifier)
-            .archiveNextWorkingSweepChunk(limit: 1);
+            .archiveNextGraphSweepChunk(limit: 1);
 
         expect(maintenanceResult.totalScanned, 1);
         expect(maintenanceResult.newlyArchived, 1);
 
         final result = await container
             .read(attachmentArchiveServiceProvider.notifier)
-            .archiveWorkingSweepBurst(chunkLimit: 2, maxChunks: 2);
+            .archiveGraphSweepBurst(chunkLimit: 2, maxChunks: 2);
 
         expect(result.totalScanned, 3);
         expect(result.newlyArchived, 3);
@@ -755,7 +612,7 @@ void main() {
 
         final result = await container
             .read(attachmentArchiveServiceProvider.notifier)
-            .archiveWorkingSweepBurst(chunkLimit: 100, maxChunks: 25);
+            .archiveGraphSweepBurst(chunkLimit: 100, maxChunks: 25);
 
         expect(result.totalScanned, 3);
         expect(result.newlyArchived, 3);
@@ -787,7 +644,7 @@ void main() {
 
       final result = await container
           .read(attachmentArchiveServiceProvider.notifier)
-          .archiveWorkingSweepBurst(chunkLimit: 100, maxChunks: 25);
+          .archiveGraphSweepBurst(chunkLimit: 100, maxChunks: 25);
 
       expect(result.totalScanned, 2);
       expect(result.newlyArchived, 0);

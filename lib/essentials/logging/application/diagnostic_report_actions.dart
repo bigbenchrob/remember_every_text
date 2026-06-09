@@ -65,7 +65,7 @@ exportPipelineIncidentDiagnosticReport(
       'MessageLens attached the support bundle to this draft.',
       '',
       'This report was prepared from the pipeline incident screen.',
-      'Observed stage: ${report.stage.name}',
+      'Observed stage: ${report.stage.displayLabel}',
       'Headline: ${report.headline}',
       '',
       'Describe what happened just before the failure appeared:',
@@ -75,7 +75,7 @@ exportPipelineIncidentDiagnosticReport(
       'It has been revealed in Finder so it can be attached manually.',
       '',
       'This report was prepared from the pipeline incident screen.',
-      'Observed stage: ${report.stage.name}',
+      'Observed stage: ${report.stage.displayLabel}',
       'Headline: ${report.headline}',
       '',
       'Describe what happened just before the failure appeared:',
@@ -102,7 +102,10 @@ List<String> buildOnboardingFailureReportHeaderLines(
       label: 'Source-scoped import ledger',
       probe: report.importDatabase,
     ),
-    _describeProbe(label: 'Conversation graph', probe: report.workingDatabase),
+    _describeProbe(
+      label: 'Conversation graph',
+      probe: report.conversationGraph,
+    ),
   ];
 
   final importMessage = report.importFailureMessage;
@@ -110,9 +113,9 @@ List<String> buildOnboardingFailureReportHeaderLines(
     lines.add('Import failure: $importMessage');
   }
 
-  final migrationMessage = report.migrationFailureMessage;
-  if (migrationMessage != null && migrationMessage.isNotEmpty) {
-    lines.add('Migration failure: $migrationMessage');
+  final graphProjectionMessage = report.graphProjectionFailureMessage;
+  if (graphProjectionMessage != null && graphProjectionMessage.isNotEmpty) {
+    lines.add('Graph projection failure: $graphProjectionMessage');
   }
 
   final recordedAt = report.latestFailureRecordedAt;
@@ -129,7 +132,7 @@ List<String> buildPipelineIncidentReportHeaderLines(
 ) {
   final lines = <String>[
     'Context: pipeline_incident',
-    'Stage: ${report.stage.name}',
+    'Stage: ${report.stage.displayLabel}',
     'Headline: ${report.headline}',
     'Summary: ${report.summary}',
     'Blocking incident: ${report.hasBlockingIncident}',
@@ -139,7 +142,7 @@ List<String> buildPipelineIncidentReportHeaderLines(
 
   for (final entry in report.entries) {
     lines.add(
-      'Entry [${entry.severity.name}/${entry.stage.name}]: ${entry.summary}',
+      'Entry [${entry.severity.name}/${entry.stage.displayLabel}]: ${entry.summary}',
     );
     if (entry.code != null && entry.code!.isNotEmpty) {
       lines.add('Entry code: ${entry.code}');

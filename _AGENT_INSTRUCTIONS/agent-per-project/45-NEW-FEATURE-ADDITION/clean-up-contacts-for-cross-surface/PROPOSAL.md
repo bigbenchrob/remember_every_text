@@ -6,6 +6,21 @@
 
 ---
 
+## Current Conformance Note (2026-06-06)
+
+This cleanup direction remains relevant, but the cleanup target is now broader:
+Contacts must conform both to the cross-surface cassette/spec architecture and
+to the source-scoped graph identity model. Current cleanup should preserve:
+
+- graph-backed contact/handle facts.
+- overlay-only user intent for favourites, selected contact state, manual
+  links, and display-name overrides.
+- canonical display identity resolver precedence across picker, hero,
+  conversation titles, sender labels, and handle fallback labels.
+
+It should not preserve legacy cassette bridges merely to keep old participant
+or short-name display flows alive.
+
 ## Goal
 
 Audit and clean up the contacts feature to fully conform to the cross-surface spec system architecture, removing legacy code paths while preserving any functionality that may have future utility.

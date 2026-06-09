@@ -1,5 +1,11 @@
 # Living Attachments Archive Checklist
 
+## Current Conformance Note (2026-06-06)
+
+This checklist records the original living-archive implementation path. Current
+follow-up work should keep archive metadata overlay-owned while integrating
+through graph attachment evidence and shared message rendering.
+
 ## Phase 0 — Planning
 
 - [x] Capture seed concept from developer notes

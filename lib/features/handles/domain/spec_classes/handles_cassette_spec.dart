@@ -39,18 +39,6 @@ enum StrayHandleMode {
 /// instead of inline message strings.
 @freezed
 abstract class HandlesCassetteSpec with _$HandlesCassetteSpec {
-  /// A simple list of unmatched handles.
-  const factory HandlesCassetteSpec.unmatchedHandlesList({
-    int? chosenContactId,
-  }) = _HandlesListUnmatchedSpec;
-
-  /// A list of phone numbers not matched to any contact.
-  const factory HandlesCassetteSpec.strayPhoneNumbers() =
-      _HandlesStrayPhoneNumbersSpec;
-
-  /// A list of email addresses not matched to any contact.
-  const factory HandlesCassetteSpec.strayEmails() = _HandlesStrayEmailsSpec;
-
   /// Unified stray handles review — filtered by phone or email, with mode selector.
   const factory HandlesCassetteSpec.strayHandlesReview({
     required StrayHandleFilter filter,

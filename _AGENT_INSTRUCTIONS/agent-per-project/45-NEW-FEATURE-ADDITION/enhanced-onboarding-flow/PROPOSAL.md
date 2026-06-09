@@ -1,5 +1,17 @@
 # Enhanced Onboarding Flow Proposal
 
+## Current Conformance Note (2026-06-06)
+
+This proposal remains conceptually relevant for environment readiness: setup
+must distinguish permissions, source availability, AddressBook readiness,
+local-history sparsity, and app-owned data health. The pipeline authority has
+changed since this was written.
+
+Current onboarding/reimport success is based on source-scoped import and
+conversation graph build/readiness. Retained `db_importers` / `db_migrate`
+`macos_import.db` -> `working.db` flows are archive/recovery compatibility and
+diagnostics, not the ordinary production setup path.
+
 ## Problem
 
 The current onboarding gate answers only two questions:

@@ -1,11 +1,10 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../../../essentials/conversation_graph/domain/identity_key_bridge.dart';
 import '../../../../../../essentials/db/feature_level_providers.dart';
 import '../../../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import '../../../../../../essentials/source_scoped_import/domain/known_sources.dart';
-import '../../../../../../essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import '../../../../contacts/domain/overlay_virtual_contact.dart';
 import '../../../../contacts/infrastructure/repositories/participant_merge_utils.dart';
 import '../../../../contacts/infrastructure/repositories/virtual_participants_provider.dart';
@@ -61,7 +60,7 @@ Future<List<UnlinkedHandle>> _readGraphUnlinkedHandles({
   final blacklistedHandleIds = <int>{
     for (final override in visibilityOverrides)
       if (override.isBlacklisted)
-        ..._graphHandleIdsForOverlayId(override.handleId),
+        ...handleOverlayKeyVariants(override.handleId),
   };
 
   final handleOverrides = await overlayDb.getAllHandleOverrides();
@@ -70,7 +69,7 @@ Future<List<UnlinkedHandle>> _readGraphUnlinkedHandles({
     if (override.participantId != null ||
         override.virtualParticipantId != null) {
       overlayLinkedHandleIds.addAll(
-        _graphHandleIdsForOverlayId(override.handleId),
+        handleOverlayKeyVariants(override.handleId),
       );
     }
   }
@@ -198,7 +197,7 @@ Future<List<AvailableParticipant>> _readGraphAvailableParticipants({
       continue;
     }
 
-    final legacyContactId = _legacyContactIdForGraphContactId(contactId);
+    final legacyContactId = legacyContactIdForGraphContactId(contactId);
     final overrideLabel =
         overrides[contactId]?.displayNameOverride?.trim() ??
         (legacyContactId == null
@@ -367,7 +366,7 @@ Future<HandleLinkInfo?> _readGraphParticipantLinkInfo({
   required int participantId,
   required String source,
 }) async {
-  final candidateIds = _graphContactIdsForOverlayId(participantId);
+  final candidateIds = contactOverlayKeyVariants(participantId);
   final placeholders = List.filled(candidateIds.length, '?').join(', ');
   final rows = await graphDb.selectRows(
     '''
@@ -391,7 +390,7 @@ Future<HandleLinkInfo?> _readGraphParticipantLinkInfo({
   }
 
   final overrides = await participantOverridesById(overlayDb);
-  final legacyContactId = _legacyContactIdForGraphContactId(participantId);
+  final legacyContactId = legacyContactIdForGraphContactId(participantId);
   final overrideLabel =
       overrides[participantId]?.displayNameOverride?.trim() ??
       (legacyContactId == null
@@ -413,7 +412,7 @@ Future<HandleLinkInfo?> _readGraphHandleLinkInfo({
   required OverlayDatabase overlayDb,
   required int handleId,
 }) async {
-  final candidateIds = _graphHandleIdsForOverlayId(handleId);
+  final candidateIds = handleOverlayKeyVariants(handleId);
   final placeholders = List.filled(candidateIds.length, '?').join(', ');
   final graphRows = await graphDb.selectRows(
     '''
@@ -442,51 +441,6 @@ Future<HandleLinkInfo?> _readGraphHandleLinkInfo({
     overlayDb: overlayDb,
     participantId: _readInt(graphRow['participant_id']),
     source: 'graph_contact',
-  );
-}
-
-int? _legacyContactIdForGraphContactId(int contactId) {
-  if (SourceScopedRowKey.unpackSourceId(contactId) != liveAddressBookSourceId) {
-    return null;
-  }
-  return SourceScopedRowKey.unpackSourceRowId(contactId);
-}
-
-Set<int> _graphContactIdsForOverlayId(int contactId) {
-  final ids = <int>{contactId};
-  final packed = _graphContactIdForLegacyId(contactId);
-  if (packed != null) {
-    ids.add(packed);
-  }
-  return ids;
-}
-
-int? _graphContactIdForLegacyId(int contactId) {
-  if (contactId <= 0 || contactId > SourceScopedRowKey.maxSourceRowId) {
-    return null;
-  }
-  return SourceScopedRowKey.pack(
-    sourceId: liveAddressBookSourceId,
-    sourceRowId: contactId,
-  );
-}
-
-Set<int> _graphHandleIdsForOverlayId(int handleId) {
-  final ids = <int>{handleId};
-  final packed = _graphHandleIdForLegacyId(handleId);
-  if (packed != null) {
-    ids.add(packed);
-  }
-  return ids;
-}
-
-int? _graphHandleIdForLegacyId(int handleId) {
-  if (handleId <= 0 || handleId > SourceScopedRowKey.maxSourceRowId) {
-    return null;
-  }
-  return SourceScopedRowKey.pack(
-    sourceId: liveChatDbSourceId,
-    sourceRowId: handleId,
   );
 }
 

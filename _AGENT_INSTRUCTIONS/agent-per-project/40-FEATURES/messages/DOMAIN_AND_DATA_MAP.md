@@ -2,76 +2,96 @@
 tier: feature
 scope: domain-data-map
 owner: agent-per-project
-last_reviewed: 2026-04-21
+last_reviewed: 2026-06-05
 links:
-	- ./CHARTER.md
-	- ./STATE_AND_PROVIDER_INVENTORY.md
+  - ./CHARTER.md
+  - ./STATE_AND_PROVIDER_INVENTORY.md
 tests: []
 feature: messages
 doc_type: domain-data-map
-status: draft
-last_updated: 2026-04-21
+status: current
+last_updated: 2026-06-05
 ---
 
-# Domain & Data Map — Messages
+# Domain & Data Map - Messages
 
-This document describes the current unified message timeline implementation. Older contact-only docs were superseded by the rationalized message views work.
+This document describes the graph-era message evidence implementation. Older
+contact-only and `working.db` ordinal-timeline docs were superseded by the
+Message Evidence Spine.
 
 ## Core Entities
-- **Message projection (working DB):** `workingMessages` (Drift table: `db.workingMessages`)
-	- Hydrated into `MessageListItem` via `lib/features/messages/presentation/view_model/shared/message_row_mapper.dart` and timeline hydration providers.
-- **Contact ↔ message mapping:** `contact_message_index` (Drift table: `db.contactMessageIndex`)
-	- Provides a stable ordering context for “messages with contact across all chats”.
-- **Global message mapping:** `global_message_index` (Drift table: `db.globalMessageIndex`)
-	- Provides global timeline ordering and month lookup.
-- **Timeline scope:** `MessageTimelineScope` (`global`, `contact`, `chat`, `recovered`)
-	- Selects the ordinal strategy and hydration behavior for `MessagesTimelineView`.
 
-## Message Timeline Ordering Model (Ordinal)
+- **MessageEvidenceScope:** selects the logical message universe: global,
+  contact, handle-filtered contact, conversation, handle/unfamiliar source,
+  recovered/orphan, or search context.
+- **Message evidence skeleton:** lightweight full-scope graph skeleton of
+  `message_ss_id`, timestamps, and ordinal/month navigation facts.
+- **Hydrated evidence row:** visible-window graph evidence including text,
+  sender display identity, semantic badges, archive/media evidence, URL
+  previews, and overlay user intent.
+- **Canonical identity:** `message_ss_id` / `ss_id`, not legacy working row ids
+  or GUIDs.
 
-The UI never pages by “offset + limit” directly. Instead it uses an **ordinal** model:
+## Ordering Model
 
-- For a given `MessageTimelineScope`, the index/strategy layer exposes:
-	- `totalCount`: number of messages available
-	- `ordinal -> messageId` mapping
-	- `monthKey -> firstOrdinal` mapping
+Timeline-like scopes still use the core invariant proven by the legacy ordinal
+model:
 
-This enables:
-- fast list skeleton (count-only)
-- stable scroll targeting (`jumpToLatest`, `jumpToMonth`)
-- per-row hydration (`ordinal -> message`) without rebuilding the whole list
+- full lightweight skeleton first
+- local hydration second
+- heatmaps and jumps coordinate with the full skeleton
+- row bodies/media hydrate near the viewport
+- limits apply to hydration windows/previews, not selected scope size
+- pagination is not timeline navigation
 
-Canonical files:
-- Scope model: `lib/features/messages/domain/value_objects/message_timeline_scope.dart`
-- Ordinal provider: `lib/features/messages/application/timeline/ordinal/message_timeline_ordinal_provider.dart`
-- Index coordinator: `lib/features/messages/presentation/view_model/timeline/ordinal/message_timeline_index_coordinator_provider.dart`
-- Hydration provider: `lib/features/messages/presentation/view_model/timeline/hydration/message_by_ordinal_provider.dart`
-- Index data source: `lib/features/messages/infrastructure/data_sources/contact_message_index_data_source.dart`
-- Global index data source: `lib/features/messages/infrastructure/data_sources/global_message_index_data_source.dart`
+## Canonical Files
 
-## Supporting Tables & Views
+- Evidence spine:
+  `lib/features/messages/application/message_evidence/message_evidence_spine_provider.dart`
+- Shared evidence presentation:
+  `lib/features/messages/presentation/widgets/message_evidence/`
+- Evidence views:
+  `lib/features/messages/presentation/view/*_evidence_view.dart`
+- Graph message repository:
+  `lib/essentials/conversation_graph/infrastructure/repositories/message_graph_repository.dart`
+- Attachment evidence boundary:
+  `lib/features/attachments/application/attachment_resolver_provider.dart`
+
+## Supporting Tables
+
 | Database | Table/View | Purpose | Notes |
 | --- | --- | --- | --- |
-| `db-working` | `workingMessages` | Primary UI projection for message rows. | Must include stable `id`, `guid`, `sentAtUtc`, sender handle refs.
-| `db-working` | `globalMessageIndex` | Global ordering and month lookup. | Used by global scope.
-| `db-working` | `contactMessageIndex` | Contact-scoped ordering and lookup. | Provides `messageId` ordering and month bucketing.
-| `db-working` | `workingAttachments` (+ joins) | Attachments referenced by hydrated message rows. | Loaded via `attachment_info_loader.dart` when needed.
+| `macos_import_ss.db` | `messages` | Source facts/provenance ledger. | Preserves source row id, GUID metadata, raw semantics, attributed body, and enrichment source facts. |
+| `working_ss.db` | `messages` | Lean app graph message rows. | Uses `ss_id` as canonical row identity. |
+| `working_ss.db` | `chat_to_message` | Canonical conversation/message edges. | Drives conversation scopes and timeline skeletons. |
+| `working_ss.db` | `message_to_attachment` | Canonical message/attachment edges. | Drives attachment evidence hydration. |
+| `working_ss.db` | contacts/handles/aliases | Identity graph used to resolve sender/contact labels. | User override labels merge from overlay at read time. |
+| `user_overlays.db` | message annotations/saved/tag rows | Durable user intent. | Read through graph evidence/overlay repositories at read time; projection never reads overlay. |
 
-Notes:
-- Import DB tables still exist and are essential to migration/import pipelines, but message UI depends on the *working* projection and recovered-message repositories.
+Legacy `working.db` tables may remain for retained archive/recovery
+compatibility, but ordinary message UI must not depend on them.
 
 ## External Inputs
-- Message import/migration populates `workingMessages`, `globalMessageIndex`, and `contactMessageIndex`.
-- Rust extractor may enrich attributed bodies; message UI uses `textContent`, attachment metadata, user metadata, and recovered-message provenance where available.
+
+- Source-scoped import/project lifecycle populates `macos_import_ss.db` and
+  `working_ss.db`.
+- Rust attributed-body extraction enriches missing text in the import ledger
+  before projection.
+- Overlay repositories provide saved/tag/annotation intent at read time.
 
 ## Downstream Consumers
-- Messages center panel UI via `MessagesSpec` variants.
-- Sidebar heatmaps and recovered-message navigators.
-- Search services under `lib/essentials/search`, consumed by `messageTimelineViewModelProvider`.
+
+- Message center-panel evidence views for global, contact, handle,
+  conversation, recovered, and search-result contexts.
+- Sidebar heatmaps, conversation signatures, recovered-message navigators, and
+  unfamiliar-source views.
+- Graph search under `lib/essentials/search`.
 
 ## Data Contracts
-- **ID stability:** `workingMessages.id` must be stable enough for scroll targeting and linking.
-- **Index integrity:** every `contactMessageIndex.messageId` must exist in `workingMessages`.
-- **Month key format:** `YYYY-MM` (e.g. `2025-12`) for jump behavior.
-- **Maintenance safety:** during destructive DB maintenance/reset, contact messages providers must not open the DB.
-	- The ordinal provider short-circuits to an empty state when `dbMaintenanceLockProvider` is true.
+
+- `message_ss_id` is canonical message identity for graph-backed evidence.
+- Timeline-like scopes preserve the full logical selected message universe
+  before row hydration.
+- Source-specific scopes are allowed; source-specific message renderers are not.
+- Destructive reset/rebuild flows must not leave stale evidence scopes reading
+  partially cleared databases.

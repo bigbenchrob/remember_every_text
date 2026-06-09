@@ -3,21 +3,20 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/util/message_tag_normalizer.dart';
+import '../../../../essentials/conversation_graph/domain/identity_key_bridge.dart';
 import '../../../../essentials/db/feature_level_providers.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import '../../../../essentials/source_scoped_import/domain/known_sources.dart';
-import '../../../../essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import '../../domain/entities/message_overlay_state.dart';
 
 part 'message_overlay_identity_bridge_repository.g.dart';
 
-/// Bridges legacy message user-intent overlays to canonical graph message ids.
+/// Bridges old message user-intent overlay keys to canonical graph message ids.
 ///
 /// Identity resolution here is intentionally semantic: callers ask what user
 /// intent belongs to the graph message the user is looking at, not which legacy
 /// row owns that fact. New writes go to graph-native overlay tables keyed by
-/// `message_ss_id`; legacy rowid/GUID tables are read only as compatibility
+/// `message_ss_id`; old rowid/GUID tables are read only as compatibility
 /// fallbacks.
 class MessageOverlayIdentityBridgeRepository {
   const MessageOverlayIdentityBridgeRepository({
@@ -194,8 +193,7 @@ class MessageOverlayIdentityBridgeRepository {
 
     return _GraphMessageIdentity(
       messageSsId: messageSsId,
-      sourceId: SourceScopedRowKey.unpackSourceId(messageSsId),
-      sourceRowId: SourceScopedRowKey.unpackSourceRowId(messageSsId),
+      legacyMessageRowId: legacyMessageRowIdForGraphMessageId(messageSsId),
       guid: rows.isEmpty ? null : _readNullableString(rows.single.data['guid']),
     );
   }
@@ -273,10 +271,11 @@ class MessageOverlayIdentityBridgeRepository {
   Future<MessageAnnotation?> _readLegacyAnnotation(
     _GraphMessageIdentity identity,
   ) {
-    if (identity.sourceId != liveChatDbSourceId) {
+    final legacyMessageRowId = identity.legacyMessageRowId;
+    if (legacyMessageRowId == null) {
       return Future<MessageAnnotation?>.value();
     }
-    return _overlayDatabase.getMessageAnnotation(identity.sourceRowId);
+    return _overlayDatabase.getMessageAnnotation(legacyMessageRowId);
   }
 
   MessageOverlayState _applyLegacyAnnotation(
@@ -449,14 +448,12 @@ class MessageOverlayIdentityBridgeRepository {
 class _GraphMessageIdentity {
   const _GraphMessageIdentity({
     required this.messageSsId,
-    required this.sourceId,
-    required this.sourceRowId,
+    required this.legacyMessageRowId,
     required this.guid,
   });
 
   final int messageSsId;
-  final int sourceId;
-  final int sourceRowId;
+  final int? legacyMessageRowId;
   final String? guid;
 }
 

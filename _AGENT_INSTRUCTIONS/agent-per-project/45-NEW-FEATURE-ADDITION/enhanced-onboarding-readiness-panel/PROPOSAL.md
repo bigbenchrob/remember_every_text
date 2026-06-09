@@ -1,5 +1,13 @@
 # Environment Readiness Center Panel Proposal
 
+## Current Conformance Note (2026-06-06)
+
+This proposal remains directionally current: readiness belongs in a calm,
+durable center-panel surface rather than chained failure dialogs. The checks
+should now describe graph-era setup: source readability, AddressBook readiness,
+source-scoped import, conversation graph build/readiness, overlay failure
+state, and retained compatibility diagnostics only where clearly labeled.
+
 ## Problem
 
 The current onboarding implementation has outgrown the dialog/overlay shape.

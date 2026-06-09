@@ -2,18 +2,25 @@
 tier: feature
 scope: checklist
 owner: agent-per-project
-last_reviewed: 2025-11-06
+last_reviewed: 2026-06-06
 links:
   - ./PROPOSAL.md
   - ../../50-USE-CASE-ILLUSTRATIONS/manual-handle-to-contact-linking.md
 tests: []
 feature: manual-handle-to-contact-linking
-status: in-development
+status: historical-checklist-superseded-by-graph-overlay-implementation
 created: 2025-11-01
-last_updated: 2025-11-01
+last_updated: 2026-06-06
 ---
 
 # Development Checklist: Manual Handle-to-Contact Linking
+
+## Current Conformance Note (2026-06-06)
+
+This checklist is historical and does not represent the current implementation
+path. Current manual link work should remain overlay-only and graph-read-model
+based; it must not rebuild retained `working.db` participants or use migration
+as the way to preserve user intent.
 
 **Feature Status**: 🔴 Not Started
 

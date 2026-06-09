@@ -4,7 +4,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../essentials/conversation_graph/application/conversations/conversation.dart';
 import '../../../../essentials/conversation_graph/application/conversations/conversation_reader_provider.dart';
 import '../../../contacts/feature_level_providers.dart';
-import '../../domain/calendar_heatmap_timeline_data.dart';
 
 part 'recent_chats_provider.g.dart';
 
@@ -20,7 +19,6 @@ class RecentChatSummary {
     required this.isGroup,
     required this.participants,
     required this.handles,
-    required this.calendarHeatmapTimelineData,
     this.lastMessagePreview,
   });
 
@@ -33,7 +31,6 @@ class RecentChatSummary {
   final bool isGroup;
   final List<String> participants;
   final List<String> handles;
-  final CalendarHeatmapTimelineData? calendarHeatmapTimelineData;
   final String? lastMessagePreview;
 }
 
@@ -88,7 +85,6 @@ RecentChatSummary _mapGraphOverview(
         ? const ['Unknown Contact']
         : participantLabels,
     handles: overview.participantHandles,
-    calendarHeatmapTimelineData: null,
     lastMessagePreview: overview.lastMessageText,
   );
 }

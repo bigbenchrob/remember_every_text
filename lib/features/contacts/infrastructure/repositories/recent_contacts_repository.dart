@@ -21,7 +21,8 @@ class RecentContactSummary {
 }
 
 /// Provides list of recently accessed contacts (up to 3).
-/// Combines overlay DB recent access tracking with working DB participant info.
+/// Combines overlay DB recent access tracking with graph-backed contact
+/// summaries.
 /// The list persists across sessions via overlay.db.
 ///
 /// ## Behavior

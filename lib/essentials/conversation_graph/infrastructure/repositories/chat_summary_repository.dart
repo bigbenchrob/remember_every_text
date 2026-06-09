@@ -7,11 +7,11 @@ import '../../application/chat_summaries/chat_summary_repository.dart';
 
 class SqliteChatSummaryRepository implements ChatSummaryRepository {
   const SqliteChatSummaryRepository({
-    required this.workingDatabase,
+    required this.graphDatabase,
     this.archiveLookup,
   });
 
-  final ConversationGraphDatabase workingDatabase;
+  final ConversationGraphDatabase graphDatabase;
   final GraphAttachmentArchiveLookup? archiveLookup;
 
   @override
@@ -20,7 +20,7 @@ class SqliteChatSummaryRepository implements ChatSummaryRepository {
     ChatSummarySort sort = ChatSummarySort.mostRecentMessage,
     int limit = 50,
   }) async {
-    final rows = await workingDatabase.selectRows('''
+    final rows = await graphDatabase.selectRows('''
       SELECT
         c.ss_id AS chat_ss_id,
         COUNT(DISTINCT COALESCE(ha.canonical_handle_ss_id, cth.handle_ss_id))
@@ -119,7 +119,7 @@ class SqliteChatSummaryRepository implements ChatSummaryRepository {
     required int chatSsId,
     int limit = 20,
   }) async {
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       SELECT
         m.ss_id AS message_ss_id,
@@ -157,7 +157,7 @@ class SqliteChatSummaryRepository implements ChatSummaryRepository {
     required int chatSsId,
     int limit = 20,
   }) async {
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       SELECT
         m.ss_id AS message_ss_id,
@@ -196,7 +196,7 @@ class SqliteChatSummaryRepository implements ChatSummaryRepository {
   Future<ChatMessageTextStats> readMessageTextStats({
     required int chatSsId,
   }) async {
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       SELECT
         COUNT(*) AS total_message_count,
@@ -222,7 +222,7 @@ class SqliteChatSummaryRepository implements ChatSummaryRepository {
   Future<ChatAttachmentStats> readAttachmentStats({
     required int chatSsId,
   }) async {
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       SELECT
         a.ss_id AS attachment_ss_id,
@@ -310,7 +310,7 @@ class SqliteChatSummaryRepository implements ChatSummaryRepository {
   Future<List<MessageAttachment>> readMessageAttachments({
     required int messageSsId,
   }) async {
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       SELECT
         a.ss_id AS attachment_ss_id,
@@ -383,7 +383,7 @@ class SqliteChatSummaryRepository implements ChatSummaryRepository {
   }
 
   Future<List<String>> _readParticipantHandles(int chatSsId) async {
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       SELECT DISTINCT
         COALESCE(ch.display_handle, h.id) AS handle_id,

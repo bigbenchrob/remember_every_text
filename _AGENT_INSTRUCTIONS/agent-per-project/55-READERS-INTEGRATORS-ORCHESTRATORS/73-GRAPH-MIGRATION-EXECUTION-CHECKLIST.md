@@ -2,7 +2,7 @@
 tier: project
 scope: source-scoped-graph-migration
 status: active
-last_reviewed: 2026-06-01
+last_reviewed: 2026-06-04
 depends_on:
   - 70-GRAPH-SYSTEM-COMPLETION-ROADMAP.md
   - 71-LEGACY-DEPENDENCY-MATRIX.md
@@ -10,6 +10,8 @@ depends_on:
   - 75-ARCHIVE-RECOVERY-IDENTITY-PLAN.md
   - 76-RECOVERED-MESSAGE-GRAPH-IDENTITY-PLAN.md
   - 77-RECOVERED-MESSAGE-GRAPH-PARITY-AUDIT.md
+  - 81-LEGACY-STORAGE-RETENTION-REGISTER.md
+  - 82-SOURCE-SCOPED-ARCHIVE-IMPORT-CUTOVER-PLAN.md
 ---
 
 # 73 - Graph Migration Execution Checklist
@@ -58,10 +60,10 @@ feature drift while completing the graph migration.
 | 2. Graph-native Search and Search Identity | Done | Make search select graph evidence directly. | `SearchService`; graph search repository; saved/tag overlays; `MessageEvidenceScope`; search result context | legacy `working.db` search-index rebuild and indexer providers retired | graph search tests for global/contact/conversation/handle/saved/tags; full-scope skeleton tests | ordinary search returns graph `message_ss_id` scopes and no longer requires legacy message IDs |
 | 3. Graph-native Contact and Handle Identity | Done | Move contact/profile/handle reads to graph facts plus overlay intent. | display identity resolver; contact picker; hero/profile; handle menus; manual links; favourites | graph read repositories no longer open legacy `working.db` for contact/handle identity bridges | identity precedence tests; contact picker tests; handle selector tests; manual link overlay tests | user override wins everywhere; contact/handle selectors are graph-native; overlay writes remain overlay-only |
 | 4. MessageEvidenceScope cleanup | Done | Remove remaining legacy-selector-fed evidence scopes after search/contact migration. | message evidence spine; global/contact/handle/conversation/search scopes | prevents legacy selection leaking into shared renderer | route/spec tests; full-scope skeleton tests | all ordinary message-bearing routes start from typed graph evidence scopes |
-| 5. Graph lifecycle orchestration | In progress | Make graph build/readiness/update flow production-owned. | graph build service; graph readiness; onboarding; reset; `ChatDbChangeMonitor`; invalidation | removes manual/dev-panel dependency | graph build idempotence; incremental update test; readiness state tests; reset/onboarding tests | graph build is first-class lifecycle path and failures are visible/actionable |
+| 5. Graph lifecycle orchestration | Done | Make graph build/readiness/update flow production-owned. | graph build service; graph readiness; onboarding; reset; `ChatDbChangeMonitor`; invalidation | removes manual/dev-panel dependency | graph build idempotence; incremental update test; readiness state tests; reset/onboarding tests | graph build is first-class lifecycle path and failures are visible/actionable |
 | 6. Remaining ordinary read migration | Done | Retire leftover ordinary `working.db` reads. | global heatmap; old chat summaries; stray/spam handle lists; diagnostics vs product routes | proof-era recent chat legacy-vs-graph comparison removed from SS status sheet | provider tests; route smoke tests; dependency `rg` checks | no ordinary user-facing read depends on `working.db` except documented compatibility bridges |
-| 7. Archive/recovery identity plan | In progress | Design source-scoped archive/recovery identity without disrupting archive integrity. | attachment archive; deterministic recovery; cross-snapshot mapper; recovered messages | prevents premature recovery rewrite | mapping audit; archive compatibility tests identified | recovery/archive path has graph identity plan and existing archive records remain usable |
-| 8. Legacy retirement | Not started | Delete legacy data/read/presentation systems only after blockers are closed. | legacy import/migration/read models; retired widgets; diagnostics | removes attractive nuisance code safely | dependency checks; analyzer; focused tests; smoke test | legacy systems are deleted, demoted to diagnostics, or explicitly preserved as recovery/lifecycle references |
+| 7. Archive/recovery identity plan | Done | Design source-scoped archive/recovery identity without disrupting archive integrity. | attachment archive; deterministic recovery; cross-snapshot mapper; recovered messages | prevents premature recovery rewrite | mapping audit; archive compatibility tests identified | recovery/archive path has graph identity plan and existing archive records remain usable |
+| 8. Legacy retirement | In progress | Delete legacy data/read/presentation systems only after blockers are closed. | legacy import/migration/read models; retired widgets; diagnostics | removes attractive nuisance code safely | dependency checks; analyzer; focused tests; smoke test | legacy systems are deleted, demoted to diagnostics, or explicitly preserved as recovery/lifecycle references |
 
 ## Slice 0 - Checkpoint Current Graph Branch
 
@@ -256,11 +258,15 @@ Contact and handle reads should come from graph facts plus overlay intent.
 - Manual handle linking now reads unlinked handles and available participants
   from graph facts only. Link/create/unlink operations continue to write only
   to overlay user-intent tables; creating a contact for a graph handle creates
-  an overlay virtual contact rather than mutating working data.
+  an overlay virtual contact rather than mutating graph/import projection data.
 - Spam/blacklist handle management now reads graph canonical handles only and
   applies overlay visibility/blacklist state at read time. Block/unblock remain
   overlay-only writes.
 - Focused contact and handle settings tests pass for graph-native behavior.
+- Contact-name and chat-handle feature docs now describe graph-era display
+  identity: user override wins, imported graph/contact identity follows, and
+  raw handles are fallback/explicit-scope labels only. Short-name and nickname
+  paths are documented as retired app-facing concepts.
 
 ## Slice 5 - Graph Lifecycle Orchestration
 
@@ -320,15 +326,10 @@ than dev-panel-owned.
   source-scoped import ledger (`macos_import_ss.db`) rather than the legacy
   `macos_import.db` message cursor, so graph freshness is measured from the
   app-facing ledger.
-- Live monitor graph-vs-legacy success semantics are expressed directly in the
-  control flow: graph build success advances the app-facing cursor and refreshes
-  graph evidence; legacy compatibility import/migration failures are logged as
-  warnings and do not roll back graph freshness. A stale helper that implied a
-  separate legacy-success decision API was retired.
-- Legacy compatibility import/migration maintenance is now isolated behind
-  `LegacyCompatibilityMaintenanceService`. `ChatDbChangeMonitor` owns live
-  source detection and graph-first update sequencing; the retained legacy tail
-  is a named compatibility boundary with its own provider.
+- Live monitor success semantics are expressed directly in the control flow:
+  graph build success advances the app-facing cursor and refreshes graph
+  evidence. The former live-update legacy import/migration compatibility tail
+  was later retired during Slice 8.
 - Real-data polling proof completed on 2026-06-02: sending one live message
   advanced the monitor cursor from source rowid `149213` to `149214`; the
   `chat-db-monitor` owner ran the graph build; graph build status ended
@@ -353,16 +354,16 @@ than dev-panel-owned.
   databases.
 - Onboarding abort/fresh-start cleanup now deletes graph-era derived databases
   as well as legacy import/working databases.
-- First-run onboarding and settings-triggered reimport now rely on the import
-  control migration path to build the conversation graph after successful
-  migration, so successful setup requires graph-ready app data.
-- Manual legacy import-control migration now runs the central conversation graph
-  build after successful migration; a graph build failure is recorded as the
-  user-visible migration failure state because the app-facing graph was not
-  produced.
+- First-run onboarding and settings-triggered reimport now run the central
+  source-scoped conversation graph build directly. They no longer invoke the
+  retained legacy import/migration control path as the app-facing setup or
+  rebuild mechanism.
+- Graph build failure is recorded in overlay onboarding failure state using the
+  existing migration-failure reporting slot, so setup/reimport failures remain
+  visible without making legacy migration the authority.
 - Settings-triggered reimport now uses the same success contract as first-run
-  onboarding: import result and migration/graph-build result must both succeed
-  before the overlay can land on reimport complete.
+  onboarding: the source-scoped graph build must succeed before the overlay can
+  land on reimport complete.
 - Concurrent graph build requests now coalesce through the central build
   controller instead of throwing. If the live monitor and a manual/status action
   overlap, both callers observe the same in-flight build result.
@@ -372,6 +373,41 @@ than dev-panel-owned.
   recovered parity diagnostics now report legacy recovered evidence
   unavailability directly instead of using a central `working.db` readiness
   gate.
+- The unused `LegacyProjectionStatusRepository` / Drift implementation has
+  been retired. Graph readiness is now the only app-facing readiness gate for
+  whether message evidence can be shown. The retained archive pipeline keeps
+  its private legacy full-vs-incremental rebuild check inside the named archive
+  compatibility boundary.
+- Dead `db_migrate` scaffolding not used by the retained archive-compatible
+  projection path has been retired: the unimplemented `AppSettingsMigrator`
+  and empty `MigrationOrderPolicy` file.
+- Empty, unreferenced placeholder files were retired from contacts,
+  reactions, retained `db_migrate` sqlite helpers, and window-state macOS
+  utilities. No active imports referenced them.
+- Pipeline incident display language now renders retained migration-stage
+  incidents as “Retained historical projection” while preserving the persisted
+  `PipelineIncidentStage.migration` enum value for overlay compatibility.
+- Historical archive workflow presentation now refers to the retained
+  archive-compatible rebuild as a bounded retained projection instead of
+  generic “migration.” This was later superseded when Historical Archives
+  import/removal moved to source-scoped graph services and the retained
+  projection execution path was retired.
+- Real-data polling proof continued on 2026-06-03: live message and attachment
+  messages were imported/projected through the source-scoped graph and appeared
+  in open graph-backed contact evidence views without changing contact context.
+- Successful graph builds now bump the shared message-data version from the
+  central build controller, so graph evidence, conversation lists, heatmaps, and
+  identity-dependent message surfaces refresh from one lifecycle signal.
+- Incremental projection cursor indexes on import graph edge ledgers reduced
+  chat/message edge projection for a single-message live update to effectively
+  `0 ms` on the tested data set.
+- Rich-text enrichment is explicitly bounded for live imported source-row
+  ranges; full missing-text enrichment is reserved for builds with no newly
+  imported messages. The Rust blob extractor availability smoke test is cached
+  at the extractor boundary to avoid repeated fixed setup work.
+- Open message views preserve user scroll context during live updates and use
+  the shared pending-new-message indicator rather than forcing an automatic
+  scroll to the newest row.
 - Focused graph readiness tests pass.
 
 ### Exit Criteria
@@ -552,9 +588,8 @@ archives.
 - Attachment archive rolling/manual sweeps and archive-all candidate selection
   now read graph attachment facts from `working_ss.db` instead of legacy
   `working.db.attachments`, while preserving existing overlay archive keys.
-- Legacy import-batch archive handling remains in place only for compatibility
-  callers; live update lifecycle archives attachments from source-scoped graph
-  message source-row ranges.
+- Legacy import-batch archive handling has been retired; live update lifecycle
+  archives attachments from source-scoped graph message source-row ranges.
 - Focused attachment archive service tests pass against graph-backed sweep
   fixtures.
 - Deterministic historical attachment recovery now maps through
@@ -648,8 +683,8 @@ archives.
 - Cut over `recoveredUnlinkedMessagesProvider` to
   `GraphRecoveredMessageEvidenceRepository`. Recovered-message presentation
   still uses the shared Message Evidence Spine, while legacy recovered storage
-  remains physical historical storage inside retained legacy DBs until broader
-  legacy DB retirement.
+  remains physical historical storage inside retained DB files until broader
+  storage retirement.
 - Earlier, renamed the retained legacy recovered repository to
   `RetainedLegacyRecoveredMessageEvidenceRepository` so remaining `working.db`
   recovered reads are clearly diagnostic/compatibility reads, not production
@@ -670,7 +705,7 @@ archives.
   caveats rather than graph evidence loss.
 - Removed the retained legacy recovered-message diagnostic repository, pure
   parity comparator, projectability lookup, and their focused diagnostic tests.
-  Legacy recovered tables still physically exist inside retained legacy DBs,
+  Legacy recovered tables still physically exist inside retained DB files,
   but no runtime diagnostic bridge now opens `working.db.recovered_unlinked_*`.
 - Removed the last `WorkingDatabase` helpers from `participant_merge_utils`;
   that utility now contains overlay/contact helper functions only.
@@ -688,45 +723,32 @@ archives.
   over `macos_import.db.historical_archive_sources`. Application/sidebar code
   consumes typed archive-source metadata and no longer imports the legacy DB
   provider or sqflite record type directly.
-- Import control's broad "reset all databases" action now delegates to
-  `MessageDataResetService.resetDerivedData()`. The overlay-preserving
-  deletion/invalidation behavior has one lifecycle owner; import control keeps
-  only its local UI state mapping and the narrower import/projection clear
-  actions.
-- Import control's "clear import database" action now delegates to
-  `MessageDataResetService.clearImportLedgers()`. Legacy and source-scoped
-  import-ledger deletion share the same lifecycle owner; import control keeps
-  only its local status/error presentation.
-- Import control's "clear working database" action now delegates to
-  `MessageDataResetService.clearProjectionDatabases()`. Legacy `working.db`
-  and graph `working_ss.db` projection deletion share the same lifecycle owner;
-  import control keeps only its local status/error presentation.
-- Historical archive removal now delegates projection cleanup to
-  `MessageDataResetService.clearProjectionDatabases()` before triggering the
-  canonical rebuild. Archive workflow code removes archive ledger rows and
-  reports UI state, while projection database deletion/invalidation remains
-  centralized in the lifecycle reset service.
+- Import control's broad "reset all databases" action was consolidated into
+  `MessageDataResetService.resetDerivedData()`. The later retirement of the
+  import-control panel removed its narrower import/projection clear actions,
+  and the corresponding intermediate reset-service methods were retired.
+- Historical archive removal now uses source-scoped archive graph removal and
+  graph reprojection directly. It no longer depends on retained projection
+  cleanup helpers from the old import-control lifecycle.
 - `OnboardingGate` no longer owns a duplicate full derived-database deletion
   implementation. Abort and fresh-start cleanup now route through the same
   import-control reset boundary, while settings reimport keeps its import-only
   ledger cleanup path.
-- `OnboardingGate` no longer owns import-ledger file deletion for settings
-  reimport. Reimport now delegates ledger cleanup to
-  `MessageDataResetService.clearImportLedgers()`, preserving onboarding as the
-  lifecycle decision owner while centralizing database deletion/invalidation.
+- `OnboardingGate` no longer owns import-ledger-only deletion for settings
+  reimport. Reimport uses the full graph-era derived-data reset path before
+  rebuilding the source-scoped graph.
 - Import control no longer queries legacy `working.db` directly to decide
   incremental migration mode. That retained compatibility question now lives
-  behind `LegacyProjectionStatusRepository`, an explicit db_migrate
-  infrastructure boundary.
-- Import control no longer assembles the live Messages `chat.db` path and
-  legacy import-ledger comparison inline before migration. That pre-migration
-  freshness check now lives behind `LiveImportStatusService`, keeping the
-  presentation view model on a named application boundary.
-- Import control no longer directly closes and invalidates legacy import /
-  projection database providers before migration. That close-only lifecycle
-  step now delegates to
-  `MessageDataResetService.closeLegacyDatabasesForMigration()`, keeping
-  connection lifecycle centralized without deleting database files.
+  inside `RetainedLegacyArchivePipeline`, the named archive-compatible rebuild
+  boundary.
+- Import control no longer performs a live Messages `chat.db` freshness
+  precheck before retained migration. Historical archive workflows import the
+  selected archive source explicitly before migration, and app-facing live
+  updates use the graph monitor/build lifecycle instead.
+- The retired import-control migration path no longer has a close-only legacy
+  database lifecycle hook. Source-scoped graph lifecycle and reset own active
+  connection cleanup; retained `working.db` is deleted as a file when reset
+  requires it rather than opened through a retained provider.
 - The source-scoped conversation graph status provider no longer owns its
   diagnostic SQL. It now delegates source/import/working count collection to
   `ConversationGraphStatusRepository`, keeping the application provider as a
@@ -757,6 +779,662 @@ Done means:
 
 Remove legacy systems only after their blockers close.
 
+### Current Checkpoint Evidence
+
+2026-06-03:
+
+- Live `chat.db` polling no longer runs the retained legacy import/migration
+  tail after a successful graph build. The live monitor now performs only:
+  source change detection, source-scoped graph build, graph attachment archive
+  by source-row range, graph freshness cursor advancement, and shared message
+  evidence invalidation.
+- Removed `LegacyCompatibilityMaintenanceService`, its provider, generated
+  provider output, and focused service tests. Manual import/onboarding legacy
+  paths remain intact until those lifecycle entry points are retired
+  deliberately.
+- Updated `71-LEGACY-DEPENDENCY-MATRIX.md` so the live monitor is classified as
+  graph production lifecycle and the deleted compatibility service is recorded
+  as a closed deletion candidate.
+- Retired the standalone legacy migration panel and removed the
+  `ImportSpec.forMigration` route. The import control surface no longer offers
+  a user-facing migration tab; any retained legacy migration entry points are
+  compatibility/archive/diagnostic references, not onboarding/settings product
+  setup.
+- First-run onboarding and settings-triggered reimport now call the central
+  conversation graph build controller directly after derived-data reset. They
+  no longer call `DbImportControlViewModel.startImport()` or
+  `DbImportControlViewModel.startMigration()`.
+- The onboarding overlay progress copy now reflects graph build/rebuild status
+  from `ConversationGraphBuildController` rather than legacy import/migration
+  progress.
+- The onboarding overlay no longer watches `DbImportControlViewModel` for
+  progress or completion rendering. Successful setup/reimport summaries now
+  render the source-scoped graph build report directly.
+- `onboardingEnvironmentReportProvider` no longer watches
+  `DbImportControlViewModel`. It derives readiness from source probes,
+  source-scoped import/graph readiness, dev overrides, persisted overlay
+  failure state, and the centralized maintenance lock.
+- The onboarding dev panel now uses `MessageDataResetService` and
+  `ConversationGraphBuildController` directly for reset/progress display. The
+  obsolete `OnboardingProgressView` legacy-stage widget was removed.
+- Onboarding gate tests no longer override or fake
+  `DbImportControlViewModel`; graph rebuild behavior is tested through the
+  graph build service boundary directly.
+- `PanelCoordinator` no longer contains an import-panel route. `ImportSpec`,
+  `ViewSpec.import`, `DbImportControlPanel`, and
+  `DbImportControlViewModel` are retired; reset/clear maintenance remains
+  owned by `MessageDataResetService` and its active onboarding/sidebar callers.
+- The retained import-control UI is now import-only: `DbImportMode`,
+  `selectedMode`, and unreachable migration progress/summary rendering were
+  removed. Historical archive compatibility calls use
+  `RetainedLegacyArchivePipeline.rebuildLegacyProjectionAndGraph(...)`, not a
+  presentation-owned import-control migration method.
+- `OnboardingEnvironmentReport` now owns a semantic
+  `OnboardingPipelineFailure` model. Onboarding no longer imports or exposes
+  legacy `DbImportResult` / `DbMigrationResult` entities; overlay persistence
+  remains backwards-compatible with legacy diagnostic writers and maps those
+  rows into onboarding failure summaries at the read boundary.
+- Contact/handle/message overlay key compatibility is now centralized in
+  `identity_key_bridge.dart`. Contact lists, display identity, contact profile,
+  handle menus, manual linking, spam management, and stray-handle settings use
+  that bridge instead of duplicating graph-id/legacy-id pack/unpack logic inside
+  feature-local repositories. Message overlay fallback and bounded-search
+  context anchoring also use the same bridge for live `chat.db` rowid to graph
+  `message_ss_id` translation.
+- The obsolete live import status precheck was removed from the retained
+  `DbImportControlViewModel.startMigration()` path. Historical archive
+  workflows already run archive import explicitly before retained migration, so
+  `ImportStatusChecker`, `LiveImportStatusService`, and the unreachable
+  `runImportAndMigration()` control-provider path were deleted.
+- The retained archive-compatible projection rebuild API is now named
+  `RetainedLegacyArchivePipeline.rebuildLegacyProjectionAndGraph(...)`, making
+  explicit that it rebuilds legacy projection identity only as an archive /
+  recovery compatibility step before refreshing the graph. The old
+  presentation-owned `startMigration()` API was removed.
+- `AttachmentArchiveService.archiveImportedBatch()` was deleted. Live updates
+  archive graph/source-scoped live source ranges with
+  `archiveGraphMessageSourceRange(...)`; retained full/manual migration still
+  uses `archiveAllAvailable()`.
+- Retained archive-compatible legacy import/projection execution moved behind
+  `RetainedLegacyArchivePipeline`. The import-control panel now renders
+  diagnostic progress around that application service, and historical archive
+  settings workflows call the same service directly instead of reaching into
+  `DbImportControlViewModel`.
+- After that boundary extraction, `DbImportControlViewModel.startMigration()`
+  and its unreachable projection-clear/database-diagnostic residue were
+  removed. The retained import-control presentation surface is now import/reset
+  diagnostics only; archive-compatible projection rebuilds are application
+  service calls.
+- The retained import-control progress UI no longer uses `db_migrate`
+  table-progress types to render import progress. Its presentation model now
+  speaks in import-domain progress phases/statuses only.
+- Dead `db_migrate` scaffolding was deleted: fake `runMigration()`,
+  unused Freezed migration report/failure wrappers, empty DTO/use-case/service
+  files, the commented repository template, and the empty migrator-name value
+  object. This was an intermediate cleanup step before the remaining
+  projection execution stack was retired.
+- Onboarding readiness terminology now says graph projection / graph build for
+  app-facing setup failures and workflow states. `OnboardingEnvironmentReport`
+  no longer exposes migration-failure fields for graph failures, onboarding
+  persisted failure storage no longer imports `DbMigrationResult`, and the old
+  overlay key remains only as a backward-compatible storage key.
+- Remaining app-facing navigation/logging wording was cleaned so generic
+  "import/migration" language no longer appears in sidebar parking comments,
+  panel provider comments, pipeline audit comments, or retained archive
+  projection failure strings. The retained `db_migrate` implementation names
+  were later removed with the old projection execution stack.
+- Message History Coverage already reads graph summary counts, but its report
+  DTO and tests still used `workingDb*` field names. Those were renamed to
+  graph-accounted terminology so the settings read model no longer presents
+  the retired `working.db` projection as its conceptual source.
+- Attachment archiving, recent contacts, onboarding, and cross-snapshot mapper
+  comments were updated to describe graph-backed source-range archiving,
+  graph-backed contact summaries, import/projection compatibility, and retained
+  archive bridge behavior instead of generic migration / working-DB ownership.
+- The retained import/projection audit writers were later removed with the old
+  execution paths. Support bundles may still attach historical `import_log` and
+  `migrate_log` files from older data folders, but no active writer produces
+  those files.
+- The handles spam/visibility placeholder no longer exposes graph-migration
+  implementation wording to users; it now states the product capability is not
+  available yet.
+- Historical archive workflow code briefly named retained archive rebuild
+  results as projection results internally. That wording was later superseded
+  when Historical Archives import/removal moved to the source-scoped graph path.
+- Pipeline incident headlines/fallback errors now say retained historical
+  projection when old compatibility reports are displayed. The persisted
+  migration stage enum remains unchanged for overlay compatibility.
+- The shared execution gate and graph contacts list comments now describe
+  source import, graph build, archive graph projection, and graph data-version
+  invalidation directly instead of generic migration/import wording.
+- Pipeline incident stage display now maps the persisted `migration` enum to
+  "Retained legacy projection" so diagnostic UI reflects the compatibility
+  boundary without changing stored overlay values.
+- Attachment archive settings and handles-info spec comments now use
+  "derived-data rebuilds" / "dependency refactor" wording instead of migration
+  terminology where no legacy projection lifecycle is involved.
+- Message attachment presentation comments now refer to directly constructed
+  presentation instances rather than "legacy instances"; the shared evidence
+  widgets remain graph/evidence-spine based.
+- A fresh scan of remaining `legacy` / `migration` / `working.db` references
+  showed intentional compatibility bridges, persisted overlay keys, retained
+  archive projection internals, and explicit graph-to-legacy identity bridges.
+  Those should remain named as compatibility until the underlying storage
+  bridge is retired.
+- Live polling completion logs now say retained legacy `working.db` projection
+  maintenance is no longer run from live polling, matching the source-scoped
+  graph lifecycle boundary.
+- Obsolete onboarding `.gitkeep` placeholders were removed from directories
+  that now contain real graph-era onboarding application/domain/
+  infrastructure/presentation code.
+- The 2026-06-04 direct-provider dependency scan found no ordinary
+  user-facing feature/read surface opening the retained working/import
+  providers. Later slices removed the retained working provider entirely and
+  narrowed retained import provider access to archive metadata, reset, and
+  retained import schema compatibility.
+- Conversation graph infrastructure now names `ConversationGraphDatabase`
+  dependencies and status counts as graph database/data instead of
+  proof-stage `workingDatabase` terminology. The status panel still shows the
+  physical database filename where useful, but the read model no longer
+  presents the graph as legacy `working.db`-shaped data.
+- The conversation graph database upgrade test no longer opens two
+  `ConversationGraphDatabase` instances on the same executor at once, removing
+  a test-only Drift duplicate-database warning.
+- `PipelineIncidentTracker` now exposes
+  `recordRetainedProjectionResult(...)` for retained `db_migrate` callers
+  instead of `recordMigrationResult(...)`. The stored
+  `PipelineIncidentStage.migration` value remains unchanged for overlay
+  compatibility, but application code named the retained projection boundary
+  explicitly before that execution path was retired.
+- Attachment archive rolling sweeps now use graph terminology in code-facing
+  method/helper names (`archiveNextGraphSweepChunk`,
+  `archiveGraphSweepBurst`) and diagnostics. The persisted overlay cursor keys
+  remain unchanged as storage compatibility keys, but the service no longer
+  describes graph attachment sweeps as working-database sweeps.
+- Manual handle-link service tests no longer instantiate legacy
+  `WorkingDatabase` fixtures. The tests now exercise overlay-only user intent
+  directly with graph-era stable ids, matching the production boundary where
+  manual links write only to `user_overlays.db` and graph/contact readers merge
+  overlay intent at read time.
+- The unused `lib/essentials/contacts/domain/entities/` contact aggregate
+  files were retired. They carried obsolete `pinnedRank` terminology and had no
+  runtime imports; the still-used `ContactId` value object remains in
+  `lib/essentials/contacts/domain/value_objects/`.
+- Active contact favourite read models now use `favoritedAt` instead of
+  `pinnedAt`, and provider comments describe graph contact facts rather than
+  working-database metadata. Persisted overlay column names remain unchanged for
+  storage compatibility.
+- The unused `ManualHandleLink` domain entity was retired. Runtime manual-link
+  behavior is owned by `ManualHandleLinkService` plus graph/overlay read models,
+  and no active code imports the old entity.
+- Empty, unreferenced repository-interface placeholders were retired from
+  contacts essentials, database domain, attachments, handles, and reactions.
+  Real repository contracts remain as named graph/search/archive/evidence
+  boundaries rather than generic DDD template files.
+- The unused reactions feature shell was retired after reference scans found no
+  active imports for its feature-level provider, `Reaction`, `ReactionId`, or
+  `ReactionKind`. Retained legacy reaction tables/migrators and graph message
+  semantic fields remain because reaction evidence is preserved through the
+  message/projection path, not through the deleted feature-domain model.
+- Placeholder "coming soon" cross-surface shells were retired from attachments,
+  chats, and handles after reference scans found only placeholder tests. Active
+  attachment archive/recovery, graph conversation/chat presentation, and handle
+  settings/read behavior remain in their real feature files.
+- The superseded handle placeholder cassette branch was retired:
+  `unmatchedHandlesList`, `strayPhoneNumbers`, and `strayEmails` spec variants
+  plus their placeholder payloads, resolvers, widgets, generated providers, and
+  tests. The active handle triage topology remains info card -> type switcher
+  -> mode switcher -> `strayHandlesReview`.
+- The unreachable handles settings cassette shell was retired. `HandlesSettingsSpec`,
+  its coordinator, inert manual-link/spam payload resolvers, and placeholder
+  settings widgets had no runtime caller after the unified triage flow became
+  the active handle surface. The graph/overlay operation providers remain
+  because they are semantic services rather than dead presentation shell code.
+- The duplicate chats heatmap timeline model was retired. `RecentChatSummary`
+  no longer carries an always-null heatmap field, and timeline/heatmap data is
+  owned by the message evidence/sidebar heatmap path rather than a parallel
+  chats-domain model.
+- The unused generic attachment Freezed model was retired. `Attachment`,
+  `AttachmentId`, and `AttachmentStatus` had no active imports outside their
+  generated files and converter; graph attachment behavior remains owned by
+  message evidence rows, archive records, `AttachmentInfo`, and
+  `ResolvedAttachment`.
+- The unused `TopChatMenuChoiceConverter` utility was retired. Active
+  `SidebarUtilityCassetteSpec` serialization does not reference the converter,
+  and top-menu behavior remains owned by the sidebar utility spec/constants.
+- The duplicate unused `ComingSoonSettingsInfoResolver` was retired. The active
+  settings informational cassette path remains `SettingsInfoResolver`; no
+  settings topology or renderer referenced the duplicate resolver.
+- The unused AddressBook folder presentation layer was retired. Old loading,
+  data, error widgets and `FolderListViewModel` had no active imports and still
+  referenced obsolete route assumptions. The AddressBook folder resolver,
+  aggregate/domain entities, and repositories remain active because onboarding
+  and source-scoped contact import still require runtime AddressBook path
+  resolution.
+- The unused duplicate `AddressBookFolderListDataSource` was retired. Active
+  AddressBook candidate discovery and viability checks are owned by
+  `AddressBookFolderRepository`, which remains wired through
+  `feature_level_providers.dart`.
+- Obsolete AddressBook candidate-selection providers were retired:
+  `BadAddresses`, `ChosenAddressFolderPathRepository`, and
+  `FolderAggregateRepository`. The old user-selectable candidate workflow is
+  gone; production AddressBook resolution now flows through
+  `AddressBookFolderPathsFinder` -> `AddressBookFolderRepository` ->
+  `futureGetFolderAggregateProvider`. The persisted folder preference key is
+  retained so existing saved choices remain readable.
+- The obsolete `AddressBookFolderFailure.folderFavouriteNotStored` Freezed
+  wrapper was retired after reference scans found no active imports. The active
+  AddressBook readiness path continues to use `FolderRetrievalFailure`.
+- The generic `more_failures/Failure` Freezed union was replaced with a small
+  named `FolderRetrievalFailure` class. The dead template variants
+  (`empty`, `unprocessableEntity`, `unauthorized`, `badRequest`) had no active
+  imports, and AddressBook readiness still exposes the same failure message.
+- Stale feature docs for messages, search, chat handles, and chats were updated
+  to describe graph-era `ss_id` identity, the Message Evidence Spine,
+  conversation graph topology, and overlay-owned user intent. The old
+  `working.db` ordinal/index/provider language is now retained only in
+  explicitly superseded historical docs.
+- The message display walkthrough, message pipeline, interactions, and testing
+  docs were refreshed to describe the active Message Evidence Spine instead of
+  the retired `MessagesTimelineView` / `MessageTimelineScope` path.
+- Import/onboarding lifecycle docs now distinguish production source-scoped
+  graph build from retained legacy `macos_import.db` -> `working.db`
+  projection. Auto-sync documentation points to `ChatDbChangeMonitor` ->
+  source-scoped graph build -> graph data-version invalidation, while retained
+  import/migration docs are labeled archive/recovery compatibility.
+- Retained import/migration schema, importer, migrator, and Rust extractor docs
+  now label `macos_import.db` / `working.db` as compatibility references and
+  point new ordinary work toward `macos_import_ss.db`, `working_ss.db`, graph
+  projectors, and source-scoped rich-text enrichment.
+- Database access docs now list `db-import-ss` / `db-graph-working` as the
+  production graph database pair and classify legacy `db-import` /
+  `db-working` as retained archive/recovery compatibility. The contact/handle
+  identity model now describes graph/display identity plus overlay intent
+  instead of legacy participants as the active UI authority.
+- Overlay independence, `chat.db`, contact-to-conversation linking, and
+  inviolate database rules now describe source-scoped graph projection as the
+  production path while preserving retained projection wording only for old
+  compatibility references. The hard rules now prohibit overlay writes into
+  either graph projection or retained working projection.
+- Onboarding/archive docs now describe archive metadata as overlay-owned,
+  source-scoped graph projection as the ordinary app path, and retained
+  legacy import/working projection as archive/recovery compatibility. Generic
+  "working database" language was replaced where it blurred that boundary.
+- Deterministic recovery docs now match the graph-era mapper: historical
+  snapshots map through source-scoped import attachment `ss_id` and graph
+  `message_to_attachment` topology, while overlay archive rows retain the
+  compatibility-shaped `(message_guid, import_attachment_id)` key so existing
+  archived files remain usable.
+- Environment-safety snapshot/recovery docs now list the source-scoped graph
+  DBs, retained compatibility DBs, overlay DB, and SQLite sidecars explicitly,
+  and routine snapshots exclude the app-owned `attachment_archive` folder
+  rather than a stale `Attachments` directory name.
+- The April `archive-canonical-attachments` feature proposal/checklist/design
+  docs are now marked as historical planning records. They point future work to
+  the current archive-first onboarding/archive docs, graph attachment evidence
+  hydration, and shared resolver/service boundaries instead of serving as a
+  competing source of truth.
+- The older `app-breakdown-refactor` control docs are now explicitly marked as
+  historical refactor records. Their anti-drift principles remain valid, but
+  their concrete `MessageTimelineScope` / `MessagesTimelineView` /
+  `working.db` timeline vocabulary is superseded by the graph-backed Message
+  Evidence Spine.
+- The `message-history-coverage-check` planning docs now state that their
+  original `working.db` accounting language is historical. The active Message
+  History Coverage feature keeps the user-facing name but compares source
+  `chat.db` counts against graph-accounted MessageLens evidence.
+- Build-considerations docs now mark the March 2026 onboarding/import debug
+  handoff as a superseded historical record. Current setup/live-update guidance
+  points to onboarding/archive, source-scoped import/graph build, and this
+  execution checklist instead of the retired legacy import-panel brief.
+- Project overview, aggregate-boundary, data-location, essentials, macOS
+  source-database, and snapshot-protocol docs now identify the graph-era
+  ordinary data path (`macos_import_ss.db` -> `working_ss.db`) and classify
+  retained `macos_import.db` / `working.db` references as archive/recovery
+  compatibility. Source orphan-message docs now refer to graph-orphan/recovered
+  evidence rather than dedicated legacy working-table projection as current
+  architecture.
+- Spec-system data pipeline invariants now describe the source-scoped graph
+  pipeline, overlay authority, retained compatibility leakage, and Message
+  Evidence Spine rules. The coordinated message-display reference now uses
+  `MessageEvidenceScope`, full skeletons, viewport hydration, and shared
+  evidence rendering instead of retired `MessageTimelineScope` /
+  `MessagesTimelineView` guidance.
+- The `40-FEATURES/rationalized-message-views` folder is now explicitly marked
+  as superseded historical material. Its old `MessageTimelineScope`,
+  ordinal-strategy, and `MessagesTimelineView` guidance points readers to the
+  current graph-backed Message Evidence Spine docs before any new work.
+- Root agent quick-reference files (`AGENTS.md` and
+  `.github/copilot-instructions.md`) now direct ordinary database access to the
+  source-scoped import / conversation graph / overlay providers, classify
+  `sqfliteImportDatabaseProvider` as retained import metadata compatibility,
+  and state that retained `working.db` has no central app provider.
+- Active instruction index links now point to current `01-PROJECT` and
+  `42-SPEC-SYSTEM` paths instead of removed `00-PROJECT`, `00-GLOBAL`,
+  `50/52/54/56-*` spec-system folders, or `30-NEW-FEATURE-ADDITION`.
+- Active layout, database, feature, and build handoff docs now reference
+  current `42-SPEC-SYSTEM`, `45-NEW-FEATURE-ADDITION`, and `01-PROJECT`
+  paths instead of removed spec/project folder names.
+- The active new-feature workflow README now names `45-NEW-FEATURE-ADDITION`
+  as the staging location rather than its retired `30-*` predecessor.
+- The active new-feature workflow README now links to the shared instruction
+  submodule with the correct relative path and references the existing feature
+  brief template instead of removed proposal/checklist/test template files.
+- Active markdown link audit now passes for current per-project docs after
+  repairing the main use-case index link and macOS FDA continuity source-file
+  links.
+- Retained import-orchestrator guidance now describes the importer as an
+  archive/recovery compatibility path rather than the production replacement
+  path. The former `ImportSpec` diagnostic route tag has been retired.
+- Retained migration-orchestrator/table-migrator guidance now directs new
+  ordinary projection work to source-scoped graph import/projector/read-model
+  paths and reserves `db_migrate` additions for archive/recovery compatibility.
+- Retained `working.db` database docs no longer describe it as powering
+  ordinary UI providers or the user-facing projection; those docs now classify
+  it as archive/recovery compatibility and diagnostics only.
+- Database Health Audit docs now match the implemented five-layer audit scope:
+  source-scoped import, conversation graph, overlay, retained legacy import,
+  and retained legacy working compatibility databases.
+- Active messages feature docs now describe overlay reads through graph
+  evidence/overlay repositories rather than vague graph/legacy bridges, and
+  the Message Evidence Spine invariant path was corrected.
+- Active search and handle docs now describe graph-backed search/handle identity
+  plus overlay-owned manual links instead of retained `working.db` FTS,
+  working-DB participants, index rebuilds, or graph re-projection after user
+  link actions.
+- Active search charter/provider docs now identify `SearchService` and
+  `GraphSearchRepository` as the current graph-backed search spine, replacing
+  old planned FTS/index provider names with graph repository contract guidance.
+- Historical recovered/unlinked-message docs now preserve their data-fidelity
+  and quarantine-labeling intent while pointing current implementation work to
+  source-scoped graph recovered-message identity and parity/cutover plans.
+- Historical message-variant preservation docs now state that semantic parity
+  does not mean field parity, and that future semantic work belongs in
+  source-scoped import facts, lightweight graph/query semantics, and the
+  Message Evidence Spine rather than a resurrected legacy schema mirror.
+- Historical global/all-messages timeline docs now preserve the full-skeleton
+  plus viewport-hydration invariant while marking `working.db` ordinal/index
+  mechanics as superseded by graph-backed `MessageEvidenceScope` routing.
+- Historical manual handle-to-contact linking docs now preserve the
+  overlay-owned user-intent principle while marking working-DB menu merge and
+  retained reindex instructions as superseded by graph read models plus
+  overlay identity bridges.
+- Historical Messages Merge REDUX docs are now marked as historical archive
+  research. Their durable lesson remains "historical archives are additional
+  sources, not private presentation paths," while their concrete `db-import` ->
+  migration -> `working.db` visibility pipeline is superseded by source-scoped
+  import, conversation graph projection, and the Message Evidence Spine.
+- Historical enhanced-search and modular-FTS docs are now labeled as
+  search-backend research. Their modular indexer lessons remain useful, but
+  graph-native `SearchService` / `GraphSearchRepository` and `message_ss_id`
+  evidence scopes are the current search authority.
+- Living attachment archive and deterministic recovery planning docs now
+  preserve archive-first, overlay-owned, no-heuristics principles while
+  pointing current integration to source-scoped attachment identity, graph
+  `message_to_attachment` topology, and shared message evidence hydration.
+- Historical onboarding/readiness/import-rationalization docs now preserve
+  their useful setup-evidence and DDD-boundary principles while labeling the
+  retained `db_importers` / `db_migrate` / `working.db` setup path as legacy
+  context. Current onboarding guidance points to source-scoped import,
+  conversation graph build/readiness, overlay persisted failures, and retained
+  compatibility diagnostics only where explicitly named.
+- Historical contact menu, picker, virtual-contact, and cassette-cleanup docs
+  now preserve scalable contact selection and cross-surface separation intent
+  while marking participant-ID, `short_name`/nickname, and `working.db`
+  contact-favourite mechanics as superseded. Current guidance points to graph
+  contact/handle facts, overlay-only user intent, and canonical display
+  identity resolver precedence.
+- A 2026-06-06 retention-oriented dependency scan found no new ordinary
+  app-facing retained `working.db` / `macos_import.db` reads. Remaining direct
+  legacy provider/database use is classified as retained archive-compatible
+  import/projection execution, historical archive settings workflow,
+  onboarding reset/derived-data maintenance, database health/support
+  diagnostics, retained `db_migrate` internals/tests, legacy schema tests, or
+  graph-era source-scoped import/projector access to the source-scoped
+  `ImportDatabase` provider. The retained legacy database schemas are now
+  storage-retirement questions, not ordinary UI migration blockers.
+- Added `81-LEGACY-STORAGE-RETENTION-REGISTER.md` to make the remaining
+  storage-retention buckets explicit before further deletion: retained
+  archive-compatible import/projection, historical archive settings metadata,
+  reset/derived-data maintenance, database health/support diagnostics, and
+  retained schema/migrator tests.
+- Added `82-SOURCE-SCOPED-ARCHIVE-IMPORT-CUTOVER-PLAN.md` after reviewing the
+  retained storage register and archive/recovery identity plan. The plan
+  identifies the next high-leverage blocker as source-scoped historical archive
+  import, with the first implementation task limited to deterministic archive
+  source registration before row import or Historical Archives UI cutover.
+- Implemented the first source-scoped archive identity slice: historical
+  Messages archive source constants, `ImportDatabase.getOrCreateSource(...)`,
+  and `HistoricalMessagesArchiveSourceRegistrar`. The registrar validates a
+  selected archive folder contains `chat.db`, derives a deterministic
+  `historical-messages-archive:<chat.db path>` source key, registers/reuses the
+  source in `macos_import_ss.db.source_registry`, and returns the assigned
+  `source_id` without importing archive rows or changing the Historical
+  Archives UI workflow.
+- Added `SourceScopedArchiveImportService` as the first graph-native archive
+  import application boundary. It registers/reuses the selected archive source,
+  runs the existing source-scoped importers for messages, chats, handles,
+  attachments, chat/message edges, chat/handle edges, and message/attachment
+  edges with that archive `source_id`, and returns a typed per-table report.
+  This imports archive source facts into `macos_import_ss.db` only; graph
+  projection, Historical Archives UI cutover, and retained legacy archive path
+  retirement remain pending.
+- `SourceScopedArchiveImportService` now runs source-scoped rich-text
+  enrichment for the selected archive source after import. Enrichment decodes
+  imported `attributed_body_blob` values from `macos_import_ss.db.messages`
+  through the existing extractor boundary, does not reopen archive `chat.db`
+  for text extraction, and does not touch other sources.
+- Added `SourceScopedArchiveGraphImportService` under `conversation_graph` as
+  the graph projection wrapper around the source-scoped archive import service.
+  `source_scoped_import` remains responsible only for archive source facts and
+  enrichment; the graph-owned wrapper runs the safe full idempotent projectors
+  after archive import/enrichment instead of using live-source incremental
+  projection shortcuts. Focused graph tests verify an archive message, chat,
+  handle, attachment, and topology edges project into `working_ss.db` with
+  source-scoped `ss_id` endpoints and remain idempotent on rerun. Historical
+  Archives UI cutover and retained legacy archive removal retirement remained
+  pending at this point.
+- Added Riverpod provider wiring for the source-scoped archive import service
+  and the graph-owned archive import/projection service. The provider boundary
+  preserves the same architecture: archive source facts/enrichment are
+  constructed from `source_scoped_import`, while graph projection composition
+  is constructed from `conversation_graph` projectors. Historical Archives UI
+  cutover remains pending.
+- Historical Archives forward import now calls the graph-owned
+  `SourceScopedArchiveGraphImportService` instead of the retained legacy
+  archive pipeline. The workflow claims the shared maintenance/execution gate,
+  imports the selected archive as a source-scoped source, projects it into the
+  conversation graph, bumps the shared message-data version, and persists the
+  existing archive-source metadata record for settings visibility.
+- Historical Archives removal now calls a graph-owned
+  `SourceScopedArchiveGraphRemovalService` instead of deleting retained legacy
+  import batches and running retained projection. Removal deletes the
+  selected archive source's source facts, topology edges, and import batches
+  from `macos_import_ss.db`, preserves `source_registry`, clears/reprojects
+  `working_ss.db` from the remaining source-scoped import facts, invalidates
+  graph readiness/populated providers, and bumps the shared message-data
+  version. Focused tests cover source-scoped ledger deletion, graph removal,
+  source registry preservation, re-import with stable source identity, and
+  updated Historical Archives UI/view-model wording.
+- Retired the retained legacy archive pipeline provider, old
+  import-progress/detail widgets, import-control panel, import-control
+  view-model, `ImportSpec`, and `ViewSpec.import` route after Historical
+  Archives import/removal moved to source-scoped graph services. Derived-data
+  reset and import-ledger clearing remain available through active
+  `MessageDataResetService` callers rather than a standalone import panel.
+- Historical Archives UI/view-model language now reflects source-scoped graph
+  archive import/projection rather than retained projection. The
+  remaining archive metadata line is explicitly labeled compatibility metadata,
+  not an execution path.
+- Removed retained projection failure recording from the app-wide
+  `PipelineIncidentTracker`. The persisted `PipelineIncidentStage.migration`
+  value remains for old report compatibility, while active graph/onboarding
+  incident reporting no longer imports retained `DbMigrationResult` types.
+- Retired the old `OrchestratedLedgerImportService` and its provider after
+  confirming there were no active callers. The `db_importers` feature-level
+  provider now exposes only the Rust message extractor used by source-scoped
+  rich-text enrichment. With the old service gone, `PipelineIncidentTracker`
+  also no longer imports retained `DbImportResult` types or exposes a
+  retained import-result recording method.
+- Retired the dependent old table-importer execution stack after confirming
+  that the old ledger orchestrator was its only runtime owner. This removed the
+  old `application/importers/**`, duplicate `infrastructure/sqlite/importers/**`,
+  `ImportOrchestrator`, `IImportContext`, row-progress framework, incremental
+  ledger integrity check, and corresponding tests. The active `db_importers`
+  folder now contains the graph live monitor, import execution gate/debug
+  support, and Rust extractor boundary only.
+- Replaced onboarding failure persistence writes that depended on the retired
+  `DbImportResult` entity with an onboarding-owned `saveImportFailure(...)`
+  method. The old overlay key and JSON fields remain readable, but no retained
+  import-result class remains in production code.
+- Retired the old `db_migrate` projection execution stack after confirming it
+  had no production callers. This removed the retained projection
+  orchestrator, migrators, migration context/progress framework,
+  `DbMigrationResult`, and matching tests. Retained `working.db` storage/schema
+  remains available for diagnostics/reset/storage-retirement review, but no
+  retained projection execution service remains.
+- Trimmed the retained `SqfliteImportDatabase` public helper surface by
+  deleting uncalled legacy ledger-reset, row-existence, and spam-flag helpers.
+  The retained `macos_import.db` wrapper remains available for historical
+  archive metadata, health diagnostics, reset/storage checks, and retained
+  schema tests, not as an ordinary import execution API.
+- Retired the old `WorkingDatabase` ordinal-index rebuild and trigger
+  maintenance API (`global_message_index`, `message_index`, and
+  `contact_message_index`) after caller scans confirmed it was test-only. The
+  physical `working.db` tables remain retained schema/diagnostic inventory
+  until the broader legacy DB storage-retirement decision.
+- Demoted those retained ordinal-index tables in database health from integrity
+  checks to inventory-only diagnostics. Health no longer reports missing
+  `global_message_index` coverage or index-to-message relationships as graph
+  corruption, because graph evidence skeletons now own timeline navigation.
+- Removed the stale import-debug `ledgerRowCachingEnabled` toggle after scans
+  confirmed the retained table-importer cache path was gone. The remaining
+  import-debug settings only control diagnostic logging used by the retained
+  import DB wrapper.
+- Trimmed the remaining import-debug provider down to retained import database
+  logging only and relabeled central retained `macos_import.db` / `working.db`
+  provider comments so they no longer imply ordinary app-facing ownership.
+- Removed the retained `macos_import.db` batch-ledger deletion API and its test
+  after Historical Archives removal moved to source-scoped archive graph
+  deletion. The retained import DB wrapper still exposes archive-source
+  metadata needed by the settings workflow.
+- Removed the generic retained `SqfliteImportDatabase.rawQuery` wrapper after
+  caller scans confirmed health diagnostics and tests use their own
+  infrastructure query boundaries. This keeps retained `macos_import.db`
+  access limited to named metadata operations.
+- Removed the unused retained `SqfliteImportDatabase.countRows` helper. Retained
+  import row counts now live only behind the database-health query layer instead
+  of on the retained import DB wrapper itself.
+- Removed the retained archive batch-count compatibility read from Historical
+  Archives preflight and source-management copy. Archive removal now reports the
+  source-scoped removal target directly instead of inspecting old
+  `macos_import.db.import_batches` rows.
+- Removed retained archive-source batch ID / import-start timestamp fields from
+  the public metadata wrapper. The old SQLite columns remain only as physical
+  schema compatibility for existing retained `macos_import.db` files.
+- Fresh retained `macos_import.db` creation and the historical v5 archive-source
+  metadata upgrade now use the narrowed archive metadata schema and no longer
+  recreate retained import batch-count / batch-ID / import-start columns.
+- Database health now treats retained `macos_import.db` as archive-source
+  metadata storage only. Old retained import ledger table and relationship
+  checks moved out of the expected health surface; source-scoped import owns
+  active message/chat/handle/attachment health checks.
+- Fresh retained `macos_import.db` creation now creates only
+  `schema_migrations` and `historical_archive_sources`. Older retained import
+  files remain upgrade-compatible, but new files do not recreate
+  `import_batches`, `messages`, `handles`, `chats`, attachments, or old
+  topology ledger tables.
+- Database health now treats retained `working.db` as recovered-message
+  compatibility storage plus minimal projection-state storage sanity. Ordinary
+  message/chat/contact/handle/attachment/reaction health and timeline
+  navigation checks belong to `working_ss.db` and graph evidence skeletons.
+- Database health now inspects retained `macos_import.db` and `working.db`
+  through read-only file query layers instead of central retained DB providers.
+  Health/support diagnostics therefore report missing retained files without
+  recreating retained storage as a side effect.
+- The obsolete provider-backed retained import/working health query adapters
+  were removed after caller scans confirmed diagnostics use only the read-only
+  retained file query layer for `macos_import.db` and `working.db`.
+- The central retained `driftWorkingDatabaseProvider` was removed after scans
+  confirmed no production caller still opens retained `working.db`. Reset keeps
+  deleting the retained `working.db` files directly, but no longer instantiates
+  a Drift connection solely to close them.
+- The retained `WorkingDatabase` Drift schema implementation, generated file,
+  service-constraint constants, and schema parser test were removed after scans
+  confirmed `working.db` is now only retained file storage. Existing retained
+  `working.db` files may still be deleted by reset or inspected read-only by
+  diagnostics, but no app code instantiates the old schema.
+- Historical Archives workflow presentation no longer imports
+  `SqfliteImportDatabase` or reads `sqfliteImportDatabaseProvider` directly.
+  Retained `macos_import.db.historical_archive_sources` read/write access is
+  quarantined behind `HistoricalArchiveSourcesRepository`, keeping archive
+  metadata compatibility in infrastructure while source-scoped archive
+  import/removal remains the active execution path.
+- Historical Archives archive-source preflight no longer performs raw
+  `chat.db` SQLite inspection inside the presentation workflow model. Source
+  folder/file checks, archive `chat.db` counts, Apple date conversion, and
+  duplicate-GUID dry-run comparison now live behind
+  `ArchiveSourceInspectionRepository`; the workflow model composes typed
+  inspection results into UI state.
+- Active database/import documentation now matches the retired-code reality:
+  retained `macos_import.db` is documented as fresh archive-source metadata
+  storage only, retained `working.db` is documented as file/schema inventory
+  with no central provider, and the old import/migration orchestrator,
+  importer, and migrator guides are explicitly historical rather than active
+  implementation instructions.
+- Top-level agent/essentials indexes now mark `db_migrate/` as retired
+  historical projection reference material rather than an active retained
+  service folder. The remaining pipeline incident display label now says
+  "Historical retained projection" so old incident records do not imply an
+  active legacy projection path.
+- Canonical architecture and database index docs now describe retained
+  `macos_import.db` as archive-source metadata storage and retained
+  `working.db` as historical file/schema inventory. They no longer describe
+  `db-import` -> `db-working` as an active retained pipeline or `working.db`
+  as a Drift-backed ordinary projection.
+- Core data-integrity and overlay-separation invariants now distinguish active
+  source-scoped import/projection from retained archive metadata and retained
+  historical file inventory. The rules preserve overlay independence and
+  record fidelity without implying retained `working.db` is an active app
+  projection target.
+- Message data reset now avoids instantiating the retained `macos_import.db`
+  provider solely to close/delete retained files. It closes the retained import
+  database only if the provider already exists, preserving reset coverage while
+  avoiding accidental retained storage recreation during cleanup.
+- Live chat-db monitor completion logs now describe live polling as updating
+  only the source-scoped conversation graph, avoiding active runtime language
+  that suggests retained `working.db` projection maintenance remains part of
+  the polling path.
+- Onboarding gate source comments now describe retained legacy database files
+  as compatibility/reference storage only, while `startImportAndGraphBuild`
+  remains the app-facing setup path.
+- Database health audit role labels and notes now call retained
+  `macos_import.db` archive metadata and retained `working.db` historical
+  reference storage. The database keys remain stable for report consumers, but
+  exported role text no longer describes retained projection as an active
+  app-facing compatibility path.
+- Active source/test comments now avoid loose "legacy" wording where the
+  implementation is merely using retained files or old overlay/archive key
+  compatibility. Remaining legacy-named variables/tests are intentional bridge
+  terminology for old rowid/GUID/contact-id storage forms.
+- The retained pipeline incident stage display label now reads "Retained
+  historical projection" so old persisted reports remain readable without
+  implying there is an active retained projection lifecycle.
+- The source-scoped archive cutover plan and retained storage register now
+  reflect the implemented state: Historical Archives import/removal is
+  graph-backed, retained archive import/projection execution has been removed,
+  and the remaining blocker is storage/reference retirement for retained
+  `macos_import.db` / `working.db` file roles.
+- Migration planning docs 71, 72, 78, 80, 81, and 82 were tightened so retained
+  `macos_import.db` / `working.db` references mean storage, metadata,
+  diagnostics, reset cleanup, or compatibility-key lookup. They no longer
+  describe retained archive projection as a current fallback execution path.
+- Historical Archives metadata now reads through
+  `retainedArchiveMetadataDatabaseProvider`, a semantic alias over the retained
+  `macos_import.db` metadata store. The lower-level `sqfliteImportDatabase`
+  provider remains only as the centralized compatibility/storage owner, while
+  new settings/archive callers use the semantic retained-metadata boundary.
+
 ### Exit Criteria
 
 Done means:
@@ -764,8 +1442,9 @@ Done means:
 - every deleted system is listed in the dependency matrix or this checklist.
 - every preserved system has a current classification.
 - no ordinary user-facing read depends on legacy working/import identity.
-- legacy import/projection is either retired or explicitly preserved as
-  diagnostic/recovery infrastructure.
+- legacy import/projection execution is retired; any remaining retained database
+  access is explicitly classified as diagnostic, recovery, metadata, or storage
+  infrastructure.
 
 ## Update Rule
 

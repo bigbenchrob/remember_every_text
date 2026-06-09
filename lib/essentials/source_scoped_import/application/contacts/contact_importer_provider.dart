@@ -2,7 +2,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../features/address_book_folders/feature_level_providers.dart';
-import '../../../../features/address_book_folders/infrastructure/repositories/chosen_address_folder_repository.dart';
+import '../../../../features/address_book_folders/infrastructure/repositories/address_book_folder_preference_key.dart';
 import '../../../../providers.dart';
 import '../../infrastructure/import_database_provider.dart';
 import 'contact_importer.dart';
@@ -28,9 +28,7 @@ Future<ContactImporter> contactImporter(Ref ref) async {
 }
 
 Future<String> _mostRecentAddressBookPath(Ref ref) async {
-  final repository = await ref.watch(
-    addressFolderListDataSourceProvider.future,
-  );
+  final repository = await ref.watch(addressBookFolderRepositoryProvider.future);
   final aggregateEither = await repository.getFinalFolderAggregate();
   return aggregateEither.fold(
     (failure) => throw StateError(failure.error),

@@ -289,7 +289,15 @@ winning for user-facing display or selection.
 
 ### 1. Graph Lifecycle and Production Ownership
 
-This is the highest-priority remaining choke point.
+Current status update:
+
+This choke point is now closed for ordinary app lifecycle. Onboarding, settings
+reimport, live `chat.db` polling, graph readiness, and graph evidence
+invalidation are graph-owned. Retained legacy import/migration remains only for
+archive/recovery compatibility, diagnostics, legacy schema storage, and tests
+for those retained systems.
+
+Historical framing:
 
 The graph UI and graph evidence path work, but the app must not remain
 dependent on proof-panel or compatibility lifecycle behavior.
@@ -365,7 +373,7 @@ Remaining work:
 
 Done means:
 
-- archived attachments remain reachable after legacy DB retirement
+- archived attachments remain reachable after retained storage retirement
 - recovered-source imports can be linked to graph message/attachment identity
 - archive/recovery bridges are either retired or documented as permanent
   compatibility boundaries
@@ -499,7 +507,7 @@ Before the next implementation burst:
 4. Choose the next slice from lifecycle or archive/recovery blockers, not UI
    polish.
 5. Treat every remaining legacy reference as one of:
-   - production lifecycle dependency
+   - retained lifecycle/archive compatibility
    - archive/recovery bridge
    - diagnostic/settings support
    - deletion candidate

@@ -132,7 +132,7 @@ OnboardingEnvironmentReport _report({
       readable: true,
       rowCount: 100,
     ),
-    workingDatabase: const OnboardingDatabaseProbe(
+    conversationGraph: const OnboardingDatabaseProbe(
       path: 'working_ss.db',
       exists: true,
       readable: true,

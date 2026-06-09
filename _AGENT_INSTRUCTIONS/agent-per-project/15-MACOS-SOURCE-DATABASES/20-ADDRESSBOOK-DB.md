@@ -50,7 +50,7 @@ App-relevant fields already used or likely to be used include:
 
 | Field | Meaning for MessageLens |
 | --- | --- |
-| `Z_PK` | Source-local AddressBook contact id. Preserved into import/working projection for traceability. |
+| `Z_PK` | Source-local AddressBook contact id. Preserved through source-scoped import and graph contact projection for traceability. |
 | `ZFIRSTNAME` | Contact first name. |
 | `ZLASTNAME` | Contact last name. |
 | `ZORGANIZATION` | Organization name / organization contact signal. |

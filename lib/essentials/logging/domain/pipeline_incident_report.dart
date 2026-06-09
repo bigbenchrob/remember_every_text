@@ -2,6 +2,15 @@ enum PipelineIncidentSeverity { context, warning, blocking }
 
 enum PipelineIncidentStage { import, migration }
 
+extension PipelineIncidentStageDisplay on PipelineIncidentStage {
+  String get displayLabel {
+    return switch (this) {
+      PipelineIncidentStage.import => 'Import',
+      PipelineIncidentStage.migration => 'Retained historical projection',
+    };
+  }
+}
+
 class PipelineIncidentEntry {
   const PipelineIncidentEntry({
     required this.severity,

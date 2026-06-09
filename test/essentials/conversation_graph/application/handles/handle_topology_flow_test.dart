@@ -19,7 +19,7 @@ void main() {
   late Directory tempDir;
   late String chatDbPath;
   late ImportDatabase importDatabase;
-  late ConversationGraphDatabase workingDatabase;
+  late ConversationGraphDatabase graphDatabase;
 
   setUpAll(() {
     sqfliteFfiInit();
@@ -33,12 +33,12 @@ void main() {
       databaseDirectory: tempDir.path,
       databaseName: 'macos_import_ss_test.db',
     );
-    workingDatabase = await openConversationGraphTestDatabase();
+    graphDatabase = await openConversationGraphTestDatabase();
     await _createSourceTables(chatDbPath);
   });
 
   tearDown(() async {
-    await workingDatabase.close();
+    await graphDatabase.close();
     await importDatabase.close();
     if (tempDir.existsSync()) {
       await tempDir.delete(recursive: true);
@@ -60,7 +60,7 @@ void main() {
     final projectionResult = await HandleProjector(
       repository: SqliteHandleProjectionRepository(
         importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        graphDatabase: graphDatabase,
       ),
     ).projectHandles();
 
@@ -69,7 +69,7 @@ void main() {
       sourceRowId: 12,
     );
     final importRows = await importDatabase.database.query('handles');
-    final workingRows = await workingDatabase.database.query('handles');
+    final workingRows = await graphDatabase.database.query('handles');
 
     expect(importResult.startedAfterSourceRowId, 0);
     expect(importResult.insertedHandleCount, 1);
@@ -84,8 +84,8 @@ void main() {
     expect(workingRows.single.keys, isNot(contains('source_rowid')));
     expect(workingRows.single.keys, isNot(contains('batch_id')));
 
-    final aliases = await workingDatabase.database.query('handle_aliases');
-    final canonicalHandles = await workingDatabase.database.query(
+    final aliases = await graphDatabase.database.query('handle_aliases');
+    final canonicalHandles = await graphDatabase.database.query(
       'canonical_handles',
     );
     expect(aliases.single['handle_ss_id'], expectedSsId);
@@ -116,7 +116,7 @@ void main() {
       await HandleProjector(
         repository: SqliteHandleProjectionRepository(
           importDatabase: importDatabase,
-          workingDatabase: workingDatabase,
+          graphDatabase: graphDatabase,
         ),
       ).projectHandles();
 
@@ -128,11 +128,11 @@ void main() {
         sourceId: liveChatDbSourceId,
         sourceRowId: 13,
       );
-      final handles = await workingDatabase.database.query('handles');
-      final canonicalHandles = await workingDatabase.database.query(
+      final handles = await graphDatabase.database.query('handles');
+      final canonicalHandles = await graphDatabase.database.query(
         'canonical_handles',
       );
-      final aliases = await workingDatabase.database.query(
+      final aliases = await graphDatabase.database.query(
         'handle_aliases',
         orderBy: 'handle_ss_id ASC',
       );
@@ -183,13 +183,13 @@ void main() {
     final projector = ChatToHandleProjector(
       repository: SqliteChatToHandleProjectionRepository(
         importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        graphDatabase: graphDatabase,
       ),
     );
     final firstProjection = await projector.projectEdges();
     final secondProjection = await projector.projectEdges();
     final importRows = await importDatabase.database.query('chat_to_handle');
-    final workingRows = await workingDatabase.database.query('chat_to_handle');
+    final workingRows = await graphDatabase.database.query('chat_to_handle');
 
     final chatSsId = SourceScopedRowKey.pack(
       sourceId: liveChatDbSourceId,

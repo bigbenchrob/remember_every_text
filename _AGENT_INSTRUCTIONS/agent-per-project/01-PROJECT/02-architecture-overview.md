@@ -2,7 +2,7 @@
 tier: project
 scope: architecture
 owner: agent-per-project
-last_reviewed: 2026-04-21
+last_reviewed: 2026-06-08
 source_of_truth: doc
 links:
   - ./01-aggregate-boundaries.md
@@ -42,8 +42,9 @@ Current feature modules include `address_book_folders`, `attachments`, `chats`,
 `settings`, and `sidebar_utilities`.
 
 Current essentials areas include navigation, sidebar, search, onboarding, db,
-db importers, db migration, logging, window state, config, debug, services,
-tooltips, and shared contacts infrastructure.
+source-scoped import, conversation graph, retained compatibility import/
+projection, logging, window state, config, debug, services, tooltips, and shared
+contacts infrastructure.
 
 ## Essentials vs Features
 
@@ -53,8 +54,9 @@ Essentials owns app-level orchestration:
 - sidebar cassette rack topology and shared sidebar chrome
 - panel stack ownership and `ViewSpec` routing
 - onboarding gate state and overlay lifecycle
-- shared search service and search indexing
-- database providers and import/migration orchestration
+- shared search service and graph search/evidence selection
+- database providers, source-scoped import, graph build, and retained
+  compatibility orchestration
 - logging, window state, app shell, and cross-cutting services
 
 Features own domain content:
@@ -86,31 +88,38 @@ new work.
 
 ## Data Pipeline
 
-The app data pipeline is:
+The ordinary app-facing data pipeline is:
 
 ```text
 macOS Messages + AddressBook
-→ macos_import.db
-→ working.db
+→ macos_import_ss.db
+→ working_ss.db / conversation graph
 → provider merge with user_overlays.db
 → specs / payloads / rendering
 ```
 
-Import and migration details belong in `../20-DATA-IMPORT-MIGRATION/`.
+The old retained `macos_import.db` -> `working.db` projection implementation is
+retired from active app code. Fresh `macos_import.db` stores historical
+archive-source metadata, and existing `working.db` files are retained
+file/schema inventory for reset cleanup and read-only diagnostics. Source
+import, graph build, and retained storage details belong in
+`../20-DATA-IMPORT-MIGRATION/`.
 Database boundaries and provider access rules belong in `../10-DATABASES/`.
 
 Hard boundaries:
 
-- import writes only to `macos_import.db`
-- migration writes only to `working.db`
+- source-scoped import writes only to `macos_import_ss.db`
+- graph projection writes only to `working_ss.db`
+- retained archive-source metadata writes only to retained `macos_import.db`
 - user intent writes only to `user_overlays.db`
-- providers merge working + overlay at read time
+- providers merge graph projection + overlay at read time
 
 ## Onboarding And Archive
 
 Onboarding is essentials-owned orchestration. It evaluates environment readiness,
-drives the onboarding overlay lifecycle, coordinates import/migration actions,
-and syncs readiness states into panel surfaces.
+drives the onboarding overlay lifecycle, coordinates graph build actions, and
+syncs readiness states into panel surfaces. Retained legacy import/projection is
+not the ordinary onboarding success path.
 
 Attachment archive and deterministic recovery are feature-owned attachment
 systems that coordinate with onboarding and the database providers. Archive
@@ -122,9 +131,12 @@ Use `../25-ONBOARDING-AND-ARCHIVE/` for current behavior.
 ## Naming And Provider Conventions
 
 - Riverpod providers should use project-standard generated-provider patterns.
-- Use the current provider names from code and database docs:
-  `sqfliteImportDatabaseProvider`, `driftWorkingDatabaseProvider`, and
-  `overlayDatabaseProvider`.
+- Use the current provider names from code and database docs. Ordinary graph
+  reads use `driftConversationGraphDatabaseProvider`; source-scoped import uses
+  `importDatabaseProvider` from `source_scoped_import`; overlay user intent uses
+  `overlayDatabaseProvider`. Retained import metadata compatibility may still
+  use `sqfliteImportDatabaseProvider`; retained `working.db` is a file/schema
+  retention concern and no longer has a central app provider.
 - Do not invent generic provider names such as `workingDatabaseProvider` or
   `importDatabaseProvider` unless code first introduces them.
 - Keep generated files untouched unless running the approved generator.
@@ -133,5 +145,6 @@ Use `../25-ONBOARDING-AND-ARCHIVE/` for current behavior.
 
 Older project docs used generic feature scaffolds such as `_import_and_dbs` and
 example files like `import_db.dart`. Those examples are superseded by the
-current essentials-owned database/import/migration structure. Use this document
-and the linked subsystem docs for current placement decisions.
+current essentials-owned database, source import, graph build, and retained
+compatibility structure. Use this document and the linked subsystem docs for
+current placement decisions.

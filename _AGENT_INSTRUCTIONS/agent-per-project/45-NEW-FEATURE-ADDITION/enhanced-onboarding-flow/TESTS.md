@@ -1,5 +1,12 @@
 # Enhanced Onboarding Flow Tests
 
+## Current Conformance Note (2026-06-06)
+
+This test plan is historical. Current tests should prove graph readiness and
+source-scoped build failure reporting for ordinary setup; retained
+import/projection failure tests belong only to archive/recovery compatibility
+surfaces.
+
 ## Unit Tests
 
 ### Classification Tests

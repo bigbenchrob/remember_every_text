@@ -46,13 +46,19 @@ void main() {
           model.executionGate.status,
           HistoricalArchivesExecutionGateStatus.busy,
         );
-        expect(model.executionGate.detail, contains('Import or migration'));
+        expect(
+          model.executionGate.detail,
+          contains('Source import or graph projection'),
+        );
         expect(model.statusLabel, 'Execution Gate Busy');
         expect(
           model.summaryText,
           contains('canonical import pipeline is currently busy'),
         );
-        expect(model.importButtonDetail, contains('import or migration'));
+        expect(
+          model.importButtonDetail,
+          contains('source import or graph projection'),
+        );
         expect(model.activityLog.last.label, 'Execution gate busy');
       },
     );
@@ -90,7 +96,6 @@ void main() {
             attachmentsStatusLabel: 'Found',
             sourceLabel: 'Archive-2017',
             archiveRemovalTargetChatDbPath: '/tmp/Archive-2017/chat.db',
-            matchedImportedArchiveBatchCount: 2,
             preflightSummaryLines: const ['Total messages: 42'],
             dryRunSummaryLines: const ['Estimated new messages: unavailable'],
             activityLog: const [
@@ -119,12 +124,12 @@ void main() {
       );
       expect(
         model.archiveManagementSummaryLines,
-        contains('Matched imported archive batches in db-import: 2'),
+        contains('Source-scoped archive removal: available after preflight'),
       );
       expect(model.removeImportedArchiveDataEnabled, isTrue);
       expect(
         model.removeImportedArchiveDataDetail,
-        contains('2 matched batches'),
+        contains('source-scoped import rows'),
       );
     });
   });

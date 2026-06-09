@@ -81,6 +81,8 @@ class _ConversationMessagesPreviewViewState
     final identityResolverAsync = ref.watch(displayIdentityResolverProvider);
 
     return skeletonAsync.when(
+      skipLoadingOnReload: true,
+      skipLoadingOnRefresh: true,
       data: (skeleton) {
         final overview = _overviewForConversation(
           overviewsAsync.valueOrNull,

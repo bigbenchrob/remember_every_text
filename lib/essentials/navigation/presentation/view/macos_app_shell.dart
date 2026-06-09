@@ -90,10 +90,10 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
     final showOnboardingOverlay = switch (onboardingStatus) {
       OnboardingStatus.recoveringFailedAttempt ||
       OnboardingStatus.importing ||
-      OnboardingStatus.migrating ||
+      OnboardingStatus.buildingGraph ||
       OnboardingStatus.complete ||
       OnboardingStatus.reimporting ||
-      OnboardingStatus.reimportMigrating ||
+      OnboardingStatus.reimportBuildingGraph ||
       OnboardingStatus.reimportComplete => true,
       _ => false,
     };

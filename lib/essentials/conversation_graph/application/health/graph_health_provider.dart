@@ -18,14 +18,14 @@ const _historicalMessageLensDataFolderPath =
 
 @riverpod
 Future<GraphHealthReport> graphHealthReport(Ref ref) async {
-  final workingDatabase = await ref.watch(
+  final graphDatabase = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
   final overlayDatabase = await ref.watch(overlayDatabaseProvider.future);
   final archiveDirectory = ref.watch(attachmentArchiveDirectoryProvider);
   return GraphHealthReader(
     repository: SqliteGraphHealthRepository(
-      workingDatabase: workingDatabase,
+      graphDatabase: graphDatabase,
       overlayDatabase: overlayDatabase,
       attachmentArchiveDirectory: archiveDirectory,
       historicalMessageLensDataFolderPath: _historicalMessageLensDataFolderPath,

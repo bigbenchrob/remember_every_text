@@ -13,7 +13,7 @@ void main() {
     final database = await openConversationGraphTestDatabase();
     addTearDown(database.close);
     final reader = GraphHealthReader(
-      repository: SqliteGraphHealthRepository(workingDatabase: database),
+      repository: SqliteGraphHealthRepository(graphDatabase: database),
     );
 
     await database.database.insert('messages', {
@@ -160,7 +160,7 @@ void main() {
     archiveFile.writeAsStringSync('archived bytes');
     final reader = GraphHealthReader(
       repository: SqliteGraphHealthRepository(
-        workingDatabase: database,
+        graphDatabase: database,
         overlayDatabase: overlayDatabase,
         attachmentArchiveDirectory: tempDir.path,
       ),

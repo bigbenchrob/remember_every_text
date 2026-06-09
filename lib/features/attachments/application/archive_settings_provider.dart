@@ -40,7 +40,7 @@ const kArchiveManualSweepLastSkippedSamplesKey =
 /// Manages the attachment archive user preferences.
 ///
 /// The archive-enabled flag is persisted in the overlay DB's
-/// `overlay_settings` key-value table so it survives migrations.
+/// `overlay_settings` key-value table so it survives derived-data rebuilds.
 @Riverpod(keepAlive: true)
 class ArchiveSettings extends _$ArchiveSettings {
   @override

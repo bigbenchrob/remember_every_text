@@ -148,8 +148,8 @@ class MediaTileAttachment {
 
   /// Returns the file selected by resolver-backed hydration.
   ///
-  /// Directly-constructed legacy instances fall back to the local path so
-  /// existing tests and demo content continue to render.
+  /// Directly-constructed presentation instances fall back to the local path
+  /// so existing tests and demo content continue to render.
   File? displayableFile() {
     final explicitPath = resolvedDisplayPath;
     if (explicitPath != null && explicitPath.isNotEmpty) {

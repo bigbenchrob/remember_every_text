@@ -37,7 +37,7 @@ void main() {
     });
 
     test(
-      'does not treat legacy import and working databases as sufficient',
+      'does not treat retained import and working databases as sufficient',
       () {
         const checker = DatabaseExistenceChecker();
         File(
@@ -45,7 +45,7 @@ void main() {
         ).writeAsStringSync('not empty');
         File(
           path.join(tempDir.path, 'working.db'),
-        ).writeAsStringSync('legacy only');
+        ).writeAsStringSync('retained historical only');
 
         expect(checker.hasPopulatedDatabases(tempDir.path), isFalse);
       },

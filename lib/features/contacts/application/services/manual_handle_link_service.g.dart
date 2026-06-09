@@ -11,9 +11,9 @@ String _$manualHandleLinkServiceHash() =>
 
 /// Service for managing manual handle-to-contact links.
 ///
-/// All writes target the overlay database exclusively. The working database
-/// is never modified here — providers merge both databases at read time
-/// with overlay winning on conflict (inviolable architectural rule).
+/// All writes target the overlay database exclusively. The graph database is
+/// never modified here; providers merge graph facts with overlay intent at read
+/// time with overlay winning on conflict (inviolable architectural rule).
 ///
 /// Copied from [ManualHandleLinkService].
 @ProviderFor(ManualHandleLinkService)

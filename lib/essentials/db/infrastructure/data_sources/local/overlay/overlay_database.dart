@@ -5,8 +5,8 @@ import '../../../../../../core/util/message_tag_normalizer.dart';
 part 'overlay_database.g.dart';
 
 /// Overlay database for user preferences and customizations (user_overlays.db).
-/// This database stores user-specific overrides that enhance the working database
-/// without polluting it with UI-specific state.
+/// This database stores user-specific overrides that enhance graph/source data
+/// without polluting derived databases with UI-specific state.
 @DriftDatabase(
   tables: [
     ParticipantOverrides,
@@ -644,7 +644,7 @@ class OverlayDatabase extends _$OverlayDatabase {
     return {for (final row in rows) row.handleId};
   }
 
-  /// Link a handle to a real (working-DB) participant.
+  /// Link a handle to a graph contact/participant identity.
   Future<void> setHandleOverride(int handleId, int participantId) async {
     final now = DateTime.now().toUtc().toIso8601String();
 
@@ -768,7 +768,7 @@ class OverlayDatabase extends _$OverlayDatabase {
     );
   }
 
-  /// Remove the visibility override for a handle (reverts to working defaults).
+  /// Remove the visibility override for a handle (reverts to graph defaults).
   Future<void> deleteHandleVisibility(int handleId) async {
     await (delete(
       handleVisibilityOverrides,
@@ -1091,14 +1091,14 @@ class OverlayDatabase extends _$OverlayDatabase {
 
 /// User-defined naming overrides for participants.
 ///
-/// Naming is intentionally kept separate from the working.db projection.
+/// Naming is intentionally kept separate from graph/import projection.
 /// If a column is null, the UI resolver should fall back to global settings
-/// and/or working participant fields.
+/// and/or graph contact fields.
 class ParticipantOverrides extends Table {
   @override
   String get tableName => 'participant_overrides';
 
-  /// Matches working.participants.id
+  /// Matches the graph-era contact/participant identity.
   IntColumn get participantId => integer().named('participant_id')();
 
   /// Nullable: when null, this participant inherits global default.
@@ -1216,18 +1216,18 @@ class MessageUserTags extends Table {
 
 /// User-defined manual links from handles to participants or virtual participants.
 ///
-/// Each row links a handle to either a real participant (from working DB) or a
-/// virtual participant (from overlay DB). A row with both IDs null means the
+/// Each row links a graph handle to either a graph contact/participant identity
+/// or a virtual participant from overlay DB. A row with both IDs null means the
 /// handle has been reviewed but intentionally left unlinked ("dismissed").
 class HandleToParticipantOverrides extends Table {
   @override
   String get tableName => 'handle_to_participant_overrides';
 
-  /// Matches working.handles_canonical.id
+  /// Matches graph canonical handle identity.
   IntColumn get handleId => integer().named('handle_id')();
 
-  /// Matches working.participants.id (null when linking to a virtual participant
-  /// or when the handle is dismissed).
+  /// Matches graph contact/participant identity (null when linking to a virtual
+  /// participant or when the handle is dismissed).
   IntColumn get participantId => integer().named('participant_id').nullable()();
 
   /// Matches overlay virtual_participants.id (null when linking to a real
@@ -1283,19 +1283,19 @@ class OverlaySettings extends Table {
   Set<Column> get primaryKey => {key};
 }
 
-/// User's pinned/favorite contacts
+/// User's favorited contacts.
 class FavoriteContacts extends Table {
   @override
   String get tableName => 'favorite_contacts';
 
-  /// Matches working.participants.id
+  /// Matches graph-era contact/participant identity.
   IntColumn get participantId => integer().named('participant_id')();
 
   /// Order position (lower = higher priority, auto-managed)
   IntColumn get sortOrder =>
       integer().named('sort_order').withDefault(const Constant(0))();
 
-  /// ISO8601 timestamp when contact was pinned/created
+  /// ISO8601 timestamp when contact was favorited/created.
   TextColumn get createdAtUtc => text().named('created_at_utc')();
 
   /// ISO8601 timestamp of last user interaction (for auto-sorting)
@@ -1324,14 +1324,14 @@ class FavoriteContacts extends Table {
 /// reversible via restore or by labeling the handle.
 /// User overrides for handle visibility and blacklist state.
 ///
-/// When present, these values take precedence over the working DB defaults
-/// at the provider merge layer. Handles without a row here use the working
-/// DB values (visible=true, blacklisted=false).
+/// When present, these values take precedence over graph defaults at the
+/// provider merge layer. Handles without a row here use the graph default
+/// values (visible=true, blacklisted=false).
 class HandleVisibilityOverrides extends Table {
   @override
   String get tableName => 'handle_visibility_overrides';
 
-  /// The handle ID from handles_canonical in the working DB.
+  /// The graph canonical handle identity.
   IntColumn get handleId => integer().named('handle_id')();
 
   /// Whether the handle is visible in the UI.
@@ -1367,8 +1367,8 @@ class DismissedHandles extends Table {
 /// Tracks attachment files that MessageLens has archived locally.
 ///
 /// When macOS evicts files from ~/Library/Messages/Attachments, the archive
-/// retains the copy. The resolution provider merges working attachment records
-/// with this overlay table at read time to locate the file.
+/// retains the copy. Resolution providers merge graph attachment records with
+/// this overlay table at read time to locate the file.
 class ArchivedAttachments extends Table {
   @override
   String get tableName => 'archived_attachments';
@@ -1377,7 +1377,7 @@ class ArchivedAttachments extends Table {
   IntColumn get id => integer().named('id').autoIncrement()();
 
   /// The GUID of the parent message. Together with [importAttachmentId],
-  /// forms the stable composite key that survives migration cycles.
+  /// forms the stable archive compatibility key.
   TextColumn get messageGuid => text().named('message_guid')();
 
   /// The attachment's ROWID from chat.db, carried through import.

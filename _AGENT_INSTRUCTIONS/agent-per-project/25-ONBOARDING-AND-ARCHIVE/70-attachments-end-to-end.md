@@ -2,7 +2,7 @@
 tier: project
 scope: onboarding-and-archive
 owner: agent-per-project
-last_reviewed: 2026-04-21
+last_reviewed: 2026-06-04
 source_of_truth: doc
 links:
   - ./40-attachment-archive.md
@@ -27,7 +27,11 @@ MessageLens uses an archive-first attachment model.
 - Live Apple Messages files are ingestion sources only. They are useful when present, but they are not durable storage and must not be treated as stable.
 - Deterministic recovery uses a historical `chat.db` snapshot and matching historical `Attachments` folder to map old files back to current `(message_guid, import_attachment_id)` identity and write archive metadata into the overlay database.
 
-Only the import pipeline defines durable MessageLens semantics. Source database observations, row counts, orphan counts, and Apple path behavior are diagnostic evidence, not guarantees.
+Only the source-scoped graph/import pipeline defines durable app-facing
+MessageLens semantics. Source database observations, row counts, orphan counts,
+and Apple path behavior are diagnostic evidence, not guarantees. Retained
+legacy import/working identities remain compatibility bridges for archive and
+recovery flows until those flows are fully graph-native.
 
 ## 1. Source Reality (Apple `chat.db`)
 
@@ -48,7 +52,9 @@ The source database can explain why an attachment should exist structurally. It 
 
 ## 2. Import Stage
 
-Import reads Apple-owned source databases into `macos_import.db`. The import DB is structural. It preserves source identity, joins, and provenance needed for later projection and recovery.
+Import reads Apple-owned source databases into `macos_import_ss.db`. The import
+DB is structural. It preserves source-scoped identity, joins, and provenance
+needed for later graph projection and recovery.
 
 Attachment-related import tables:
 
@@ -66,20 +72,24 @@ Normal and recovered-unlinked flows are separated:
 
 Import does not assume the file exists at `attachment.filename`. It imports structural evidence and source metadata. Availability is resolved later.
 
-## 3. Working Database
+## 3. Working Graph
 
-Migration projects imported attachment data into `working.db`.
+Graph projection projects imported attachment data into `working_ss.db`.
 
-Current working attachment tables:
+Current graph attachment tables:
 
-| Working table | Purpose |
+| Graph table | Purpose |
 | --- | --- |
-| `attachments` | Projected attachment metadata for normal messages. Includes message identity, import attachment identity, source path, hash/path metadata when available, and presentation-query fields. |
-| `recovered_unlinked_attachments` | Projected attachment metadata for recovered-unlinked messages. Kept separate from normal timeline attachments. |
+| `attachments` | Canonical attachment facts keyed by source-scoped identity. Includes source path hints, hash/path metadata when available, and presentation-query fields. |
+| `message_to_attachment` | Canonical message-to-attachment graph edges keyed by `ss_id` endpoints. |
 
-The working DB tracks references and projected metadata. It does not guarantee file presence.
+The working graph tracks references and projected metadata. It does not
+guarantee file presence.
 
-The working `attachments` table is a projection from `macos_import.db`; it is not a durable file store. Full migration may rebuild projection tables. Incremental migration preserves existing projection rows and applies migrator-specific insert/update behavior.
+The graph `attachments` table is a projection from `macos_import_ss.db`; it is
+not a durable file store. Graph rebuilds may recreate derived graph tables.
+Incremental graph builds preserve source-scoped identity and apply
+idempotent insert/update behavior.
 
 ## 4. Archive Model (Core Concept)
 
@@ -91,7 +101,7 @@ Core rules:
 - The archive is the only durable source for UI rendering.
 - Live Messages files are ingestion sources only.
 - `local_path` may be used to find a file to ingest, but it must not be treated as durable display state.
-- Archive metadata lives in `user_overlays.db`, not `working.db`.
+- Archive metadata lives in `user_overlays.db`, not `working_ss.db`.
 
 Overlay table:
 
@@ -120,22 +130,28 @@ Inputs:
 
 - historical `chat.db`
 - matching historical `Attachments` folder
-- current `macos_import.db`
-- current `working.db`
+- current source-scoped graph/import databases where available
+- retained legacy `macos_import.db` / `working.db` only as compatibility
+  history or explicit fallback bridges where graph-native recovery has not
+  replaced a path
 - current `user_overlays.db`
 
 The historical snapshot is opened read-only. Recovery never mutates Apple backups, current source databases, import tables, or working projection tables.
 
-Identity mapping:
+Current graph-native identity mapping:
 
 1. Historical snapshot provides `(message.guid, attachment.guid)` pairs from historical `message_attachment_join`.
-2. Current import DB maps Apple `attachment.guid` to current import DB `attachments.id`.
-3. Working DB verifies that the mapped `import_attachment_id` belongs to the same `message_guid`.
-4. Overlay receives or skips an `archived_attachments` row keyed by `(message_guid, import_attachment_id)`.
+2. Current source-scoped import DB maps Apple `attachment.guid` to graph attachment `ss_id`.
+3. Current conversation graph verifies the mapped attachment through `message_to_attachment` topology and the current message `ss_id`.
+4. Overlay receives or skips an `archived_attachments` row keyed by the existing archive-compatible `(message_guid, import_attachment_id)` pair, where `import_attachment_id` is currently the source attachment ROWID unpacked from the graph attachment `ss_id`.
+
+The archive overlay key remains compatibility-shaped so existing archived files
+survive the graph migration. Do not extend retained legacy GUID/import-id
+bridges beyond explicit recovery compatibility.
 
 Primary match:
 
-- `attachment.guid` -> current import DB `attachments.id` -> working `(message_guid, import_attachment_id)`.
+- `attachment.guid` -> source-scoped import attachment `ss_id` -> graph `message_to_attachment` edge -> overlay-compatible `(message_guid, import_attachment_id)`.
 
 Allowed fallback:
 
@@ -167,15 +183,16 @@ Automatic sync is driven by `ChatDbChangeMonitor`.
 Exact current sequence:
 
 1. `ChatDbChangeMonitor` runs on macOS as a keep-alive provider.
-2. It primes from the import ledger's max imported message row ID when available.
+2. It primes from the graph/source-scoped import cursor when available.
 3. Every 15 seconds it reads `MAX(ROWID)` from `~/Library/Messages/chat.db`.
 4. If the max source message row ID increased, it schedules a debounced probe.
-5. The probe calls `orchestratedLedgerImportServiceProvider.runImport()`.
-6. On successful import, it calls `attachmentArchiveServiceProvider.archiveImportedBatch(batchId: importResult.batchId)`.
-7. After batch archive coordination, it calls `handlesMigrationServiceProvider.run(incrementalMode: true)`.
-8. On successful migration, it calls `messageDataVersionProvider.bump()`.
+5. The probe runs the source-scoped graph build lifecycle.
+6. On successful graph import/projection, it calls `archiveGraphMessageSourceRange(...)` for the newly imported live source range.
+7. It bumps graph/message data version signals so evidence providers refresh.
 
-The incremental path must not invalidate `driftWorkingDatabaseProvider`. Drift connection lifetime is preserved; UI refresh is signaled through `messageDataVersionProvider`.
+The incremental path treats `working_ss.db` as app truth for ordinary message
+evidence. Graph Drift connection lifetime is preserved; UI refresh is signaled
+through graph/message data version providers.
 
 The monitor also runs a bounded working-attachment sweep every 5 minutes via `archiveNextWorkingSweepChunk()` so files that appear later can be ingested.
 
@@ -208,7 +225,7 @@ Reference the canonical spec docs for the boundary rules; do not reimplement spe
 | Path mutation | `local_path` may become stale. The path is audit/ingestion input only, not an identifier. Durable identity remains `(message_guid, import_attachment_id)` plus archive metadata. |
 | Missing files at import time | Import still records structural attachment data and joins. Archive ingestion skips missing files; UI renders an unavailable state. |
 | Files appear later | Periodic working sweep or resolver-triggered ingestion can archive newly available files. |
-| Orphaned/unlinked attachments | Import routes joins for recovered-unlinked messages through `recovered_unlinked_message_attachments`; migration projects them into `recovered_unlinked_attachments`; UI keeps recovered content distinct from normal timelines. |
+| Orphaned/unlinked attachments | Import routes joins for recovered-unlinked messages through explicit recovered/unlinked attachment relationships; graph projection keeps recovered content distinct from normal timelines, while retained files remain compatibility/reference material. |
 | Historical file missing from backup | Deterministic recovery reports the mapped record as missing and does not guess. |
 | Ambiguous historical mapping | Recovery reports an unmapped/ambiguous reason and does not use heuristic fallback. |
 
@@ -221,7 +238,7 @@ No attachment record should be hidden merely because its file is missing.
 - Do not assume attachment existence at import, migration, hydration, or render time.
 - Do not render directly from live Messages files by reading raw paths in widgets.
 - Do not bypass the attachment resolver or archive logic.
-- Do not store archive metadata in `working.db`.
+- Do not store archive metadata in `working_ss.db` or legacy `working.db`.
 - Do not write to Apple Messages source databases or attachment directories.
 - Do not merge recovered-unlinked attachment data into normal timelines without an explicit documented migration boundary.
 - Do not invent heuristic recovery matching beyond the documented GUID match and single-attachment fallback.
@@ -230,9 +247,9 @@ No attachment record should be hidden merely because its file is missing.
 ## References
 
 - `../15-MACOS-SOURCE-DATABASES/00-overview.md` - Apple source DB interpretation and source observation boundary.
-- `../20-DATA-IMPORT-MIGRATION/01-overview.md` - import, archive coordination, migration, and incremental sync.
-- `../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md` - current import and working table names.
-- `../10-DATABASES/02-db-working.md` - working projection contract.
+- `../20-DATA-IMPORT-MIGRATION/01-overview.md` - retained legacy import/migration history and compatibility context.
+- `../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md` - retained legacy import and working table names.
+- `../10-DATABASES/02-db-working.md` - retained legacy working projection contract.
 - `../10-DATABASES/05-db-overlay.md` - overlay DB and archive metadata boundary.
 - `./40-attachment-archive.md` - archive storage and resolver details.
 - `./50-deterministic-recovery.md` - historical snapshot recovery algorithm.

@@ -2,7 +2,7 @@
 tier: feature
 scope: retrospective
 owner: agent-per-project
-last_reviewed: 2026-04-29
+last_reviewed: 2026-06-06
 source_of_truth: synthesis
 links:
   - ./spike-retrospective-seed.txt
@@ -10,6 +10,15 @@ tests: []
 ---
 
 # Spike Retrospective — Historical Archive Merge
+
+## Current Conformance Note (2026-06-06)
+
+This retrospective remains valuable evidence. It proved that historical sources
+must join the canonical app data path before their messages are trustworthy in
+normal timelines. The canonical app data path is now source-scoped import plus
+conversation graph projection, not retained `working.db` projection. Read
+references to `working.db` below as historical context for the spike, not as
+current implementation guidance.
 
 This note documents what the `historical archive merge` branch proved, what became brittle, and what must be carried forward into a future v2 plan.
 

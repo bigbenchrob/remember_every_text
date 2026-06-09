@@ -2,7 +2,7 @@
 tier: project
 scope: database-health-audit
 owner: agent-per-project
-last_reviewed: 2026-04-16
+last_reviewed: 2026-06-06
 source_of_truth: code
 links:
   - ./README.md
@@ -27,17 +27,24 @@ The output is currently a single Phase 1 artifact:
 
 The current implementation audits these app-owned databases:
 
-- `db-import` (`macos_import.db`)
-- `db-working` (`working.db`)
+- `db-import-ss` (`macos_import_ss.db`)
+- `db-graph-working` (`working_ss.db`)
 - `db-overlay` (`user_overlays.db`)
+- retained `db-import` (`macos_import.db`)
+- retained `db-working` (`working.db`)
 
-It does **not** open new ad-hoc SQLite connections. It uses the existing provider-managed database instances:
+It does **not** create retained database files as a side effect. It uses
+provider-managed instances for active graph/overlay/source-scoped databases
+and read-only file inspection for retained legacy databases:
 
-- `sqfliteImportDatabaseProvider`
-- `driftWorkingDatabaseProvider`
+- `importDatabaseProvider` from source-scoped import
+- `driftConversationGraphDatabaseProvider`
 - `overlayDatabaseProvider`
+- read-only file inspection for retained `macos_import.db`
+- read-only file inspection for retained `working.db`
 
-This preserves the project rule against opening competing connections to the same files.
+This preserves the project rule against competing writable connections while
+also preventing diagnostics from recreating retained legacy storage.
 
 ## Service Entry Point
 
@@ -84,11 +91,15 @@ Shared abstraction:
 
 Concrete adapters:
 
-- `ImportDatabaseHealthQueryLayer`
-- `WorkingDatabaseHealthQueryLayer`
+- `SourceScopedImportDatabaseHealthQueryLayer`
+- `ConversationGraphDatabaseHealthQueryLayer`
 - `OverlayDatabaseHealthQueryLayer`
+- read-only retained SQLite file query layers for `macos_import.db` and
+  `working.db`
 
-These adapters normalize query execution across sqflite and drift while keeping orchestration out of the query layer.
+These adapters normalize query execution across source-scoped import,
+conversation-graph Drift, overlay Drift, and retained read-only SQLite files
+while keeping orchestration out of the query layer.
 
 Shared query-layer responsibilities include:
 
@@ -119,7 +130,7 @@ The report includes:
 - `summary`
 - `errors`
 
-Phase 1 relationship checks currently include counts plus percentages where applicable:
+Phase 1 relationship checks currently include source-scoped graph checks, retained compatibility checks, and counts plus percentages where applicable:
 
 - `matched_percentage`
 - `unmatched_parent_percentage`
@@ -191,7 +202,7 @@ This appears as an invariant with:
 - check key: `overlay_cross_database_relationship_checks_deferred`
 - status: `not_applicable`
 
-That limitation is intentional. Phase 1 inventories overlay tables, but does not perform overlay-to-working cross-database relationship diagnostics.
+That limitation is intentional. Phase 1 inventories overlay tables, but does not perform overlay-to-graph or overlay-to-retained-working cross-database relationship diagnostics.
 
 ## Privacy and Safety Model
 

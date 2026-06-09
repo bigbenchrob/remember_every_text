@@ -354,6 +354,10 @@ class MessagePanels {
   Color get contextAnchorGlow =>
       _t.accents.primary.withValues(alpha: _t.isDark ? 0.28 : 0.18);
 
+  /// Bottom-edge glow indicating new evidence exists beyond the viewport.
+  Color get pendingEvidenceGlow =>
+      _t.accents.primary.withValues(alpha: _t.isDark ? 0.58 : 0.46);
+
   /// Neutral muted border.
   Color get mutedBorder => _t.content.textTertiary.withValues(alpha: 0.24);
 

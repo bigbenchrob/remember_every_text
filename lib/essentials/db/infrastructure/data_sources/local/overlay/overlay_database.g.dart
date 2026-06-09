@@ -170,7 +170,7 @@ class $ParticipantOverridesTable extends ParticipantOverrides
 
 class ParticipantOverride extends DataClass
     implements Insertable<ParticipantOverride> {
-  /// Matches working.participants.id
+  /// Matches the graph-era contact/participant identity.
   final int participantId;
 
   /// Nullable: when null, this participant inherits global default.
@@ -2374,11 +2374,11 @@ class $HandleToParticipantOverridesTable extends HandleToParticipantOverrides
 
 class HandleToParticipantOverride extends DataClass
     implements Insertable<HandleToParticipantOverride> {
-  /// Matches working.handles_canonical.id
+  /// Matches graph canonical handle identity.
   final int handleId;
 
-  /// Matches working.participants.id (null when linking to a virtual participant
-  /// or when the handle is dismissed).
+  /// Matches graph contact/participant identity (null when linking to a virtual
+  /// participant or when the handle is dismissed).
   final int? participantId;
 
   /// Matches overlay virtual_participants.id (null when linking to a real
@@ -3458,13 +3458,13 @@ class $FavoriteContactsTable extends FavoriteContacts
 }
 
 class FavoriteContact extends DataClass implements Insertable<FavoriteContact> {
-  /// Matches working.participants.id
+  /// Matches graph-era contact/participant identity.
   final int participantId;
 
   /// Order position (lower = higher priority, auto-managed)
   final int sortOrder;
 
-  /// ISO8601 timestamp when contact was pinned/created
+  /// ISO8601 timestamp when contact was favorited/created.
   final String createdAtUtc;
 
   /// ISO8601 timestamp of last user interaction (for auto-sorting)
@@ -4095,7 +4095,7 @@ class $HandleVisibilityOverridesTable extends HandleVisibilityOverrides
 
 class HandleVisibilityOverride extends DataClass
     implements Insertable<HandleVisibilityOverride> {
-  /// The handle ID from handles_canonical in the working DB.
+  /// The graph canonical handle identity.
   final int handleId;
 
   /// Whether the handle is visible in the UI.
@@ -4558,7 +4558,7 @@ class ArchivedAttachment extends DataClass
   final int id;
 
   /// The GUID of the parent message. Together with [importAttachmentId],
-  /// forms the stable composite key that survives migration cycles.
+  /// forms the stable archive compatibility key.
   final String messageGuid;
 
   /// The attachment's ROWID from chat.db, carried through import.

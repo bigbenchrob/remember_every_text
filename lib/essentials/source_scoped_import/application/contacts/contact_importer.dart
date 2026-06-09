@@ -1,7 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 
 import '../../../../core/util/date_converter.dart';
-import '../../../db_importers/application/importers/identifier_utils.dart';
+import '../../../db/shared/handle_identifier_utils.dart';
 import '../../domain/known_sources.dart';
 import '../../domain/source_scoped_row_key.dart';
 import '../../infrastructure/import_database_provider.dart';
@@ -129,7 +129,7 @@ class ContactImporter {
             txn,
             sourceContactRowId: owner,
             kind: 'phone',
-            value: normalizeIdentifier(rawNumber) ?? rawNumber,
+            value: normalizeHandleIdentifier(rawNumber) ?? rawNumber,
             label: _trim(row['ZLABEL']),
             batchId: batchId,
           );

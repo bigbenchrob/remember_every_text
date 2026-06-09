@@ -11,7 +11,7 @@ String _$archiveSettingsHash() => r'a6ac7eff712c81620c2519f179a417ae8a7ba879';
 /// Manages the attachment archive user preferences.
 ///
 /// The archive-enabled flag is persisted in the overlay DB's
-/// `overlay_settings` key-value table so it survives migrations.
+/// `overlay_settings` key-value table so it survives derived-data rebuilds.
 ///
 /// Copied from [ArchiveSettings].
 @ProviderFor(ArchiveSettings)

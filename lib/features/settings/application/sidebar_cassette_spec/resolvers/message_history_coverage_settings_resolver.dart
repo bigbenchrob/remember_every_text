@@ -34,8 +34,8 @@ Future<MessageHistoryCoverageReport> messageHistoryCoverageReport(
     return MessageHistoryCoverageReport(
       status: MessageHistoryCoverageStatus.unknown,
       chatDbTotalCount: null,
-      workingDbVisibleCount: null,
-      workingDbRecoveredCount: null,
+      graphConversationLinkedCount: null,
+      graphRecoveredOrphanCount: null,
       earliestMessageDate: null,
       latestMessageDate: null,
       generatedAt: generatedAt,
@@ -50,8 +50,8 @@ Future<MessageHistoryCoverageReport> messageHistoryCoverageReport(
     return MessageHistoryCoverageReport(
       status: MessageHistoryCoverageStatus.unknown,
       chatDbTotalCount: null,
-      workingDbVisibleCount: null,
-      workingDbRecoveredCount: null,
+      graphConversationLinkedCount: null,
+      graphRecoveredOrphanCount: null,
       earliestMessageDate: null,
       latestMessageDate: null,
       generatedAt: generatedAt,
@@ -74,8 +74,8 @@ Future<MessageHistoryCoverageReport> messageHistoryCoverageReport(
     return MessageHistoryCoverageReport(
       status: status,
       chatDbTotalCount: sourceSummary.totalCount,
-      workingDbVisibleCount: graphSummary.conversationLinkedCount,
-      workingDbRecoveredCount: graphSummary.recoveredOrphanCount,
+      graphConversationLinkedCount: graphSummary.conversationLinkedCount,
+      graphRecoveredOrphanCount: graphSummary.recoveredOrphanCount,
       earliestMessageDate: sourceSummary.earliestMessageDate,
       latestMessageDate: sourceSummary.latestMessageDate,
       generatedAt: generatedAt,
@@ -84,8 +84,8 @@ Future<MessageHistoryCoverageReport> messageHistoryCoverageReport(
     return MessageHistoryCoverageReport(
       status: MessageHistoryCoverageStatus.unknown,
       chatDbTotalCount: sourceSummary.totalCount,
-      workingDbVisibleCount: null,
-      workingDbRecoveredCount: null,
+      graphConversationLinkedCount: null,
+      graphRecoveredOrphanCount: null,
       earliestMessageDate: sourceSummary.earliestMessageDate,
       latestMessageDate: sourceSummary.latestMessageDate,
       generatedAt: generatedAt,

@@ -16,7 +16,6 @@ import 'feature_level_providers/db_maintenance_lock_provider.dart';
 import 'infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import 'infrastructure/data_sources/local/import/sqflite_import_database.dart';
 import 'infrastructure/data_sources/local/overlay/overlay_database.dart';
-import 'infrastructure/data_sources/local/working/working_database.dart';
 
 export 'feature_level_providers/conversation_graph_readiness_provider.dart';
 export 'feature_level_providers/db_maintenance_lock_provider.dart';
@@ -45,7 +44,7 @@ Future<void> _ensureDatabaseDirectoryExists() async {
   }
 }
 
-/// Provides access to the Sqflite-powered import ledger database.
+/// Provides access to retained archive-source metadata in `macos_import.db`.
 @Riverpod(keepAlive: true)
 Future<SqfliteImportDatabase> sqfliteImportDatabase(
   SqfliteImportDatabaseRef ref,
@@ -57,7 +56,8 @@ Future<SqfliteImportDatabase> sqfliteImportDatabase(
     debugSettings: ref.watch(importDebugSettingsProvider),
   );
 
-  // Ensure the database file is created immediately so dependent services can query schema metadata.
+  // Ensure the retained metadata file is created immediately so dependent
+  // archive-source services can query schema metadata.
   await database.database;
 
   ref.onDispose(() async {
@@ -67,36 +67,16 @@ Future<SqfliteImportDatabase> sqfliteImportDatabase(
   return database;
 }
 
-/// Provides access to the Drift projection database used by the UI.
+/// Semantic entry point for retained Historical Archives metadata.
+///
+/// Prefer this provider over [sqfliteImportDatabaseProvider] for new callers.
+/// The returned object still wraps `macos_import.db` while archive-source
+/// metadata remains in retained storage.
 @Riverpod(keepAlive: true)
-Future<WorkingDatabase> driftWorkingDatabase(
-  DriftWorkingDatabaseRef ref,
-) async {
-  if (ref.watch(dbMaintenanceLockProvider)) {
-    throw StateError('working.db is unavailable during database maintenance');
-  }
-
-  await _ensureDatabaseDirectoryExists();
-  final dbPath = path.join(databaseDirectoryPath, 'working.db');
-
-  final database = WorkingDatabase(
-    NativeDatabase.createInBackground(File(dbPath)),
-  );
-  final logger = ref.read(appLoggerProvider.notifier);
-
-  await database.doWhenOpened((_) async {
-    await database.customStatement('PRAGMA foreign_keys = ON');
-  });
-
-  ref.onDispose(() async {
-    logger.debug(
-      'Disposing WorkingDatabase for $dbPath',
-      source: 'WorkingDbProvider',
-    );
-    await database.close();
-  });
-
-  return database;
+Future<SqfliteImportDatabase> retainedArchiveMetadataDatabase(
+  RetainedArchiveMetadataDatabaseRef ref,
+) {
+  return ref.watch(sqfliteImportDatabaseProvider.future);
 }
 
 /// Provides access to the source-scoped conversation graph projection database.

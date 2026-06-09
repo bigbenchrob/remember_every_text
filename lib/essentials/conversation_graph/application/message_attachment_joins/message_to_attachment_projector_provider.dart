@@ -13,14 +13,14 @@ Future<MessageToAttachmentProjector> messageToAttachmentProjector(
   Ref ref,
 ) async {
   final importDatabase = await ref.watch(importDatabaseProvider.future);
-  final workingDatabase = await ref.watch(
+  final graphDatabase = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
 
   return MessageToAttachmentProjector(
     repository: SqliteMessageToAttachmentProjectionRepository(
       importDatabase: importDatabase,
-      workingDatabase: workingDatabase,
+      graphDatabase: graphDatabase,
     ),
   );
 }

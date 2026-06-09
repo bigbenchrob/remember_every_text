@@ -6,7 +6,7 @@ last_reviewed: 2026-04-26
 source_of_truth: doc
 links:
   - ../05-COLOR-AND-TYPOGRAPHY-THEMING/05-dark-mode-theming.md
-  - ../56-VIEW-SPEC-PANEL-CONTENT-SYSTEM/README.md
+  - ../42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/30-panel-viewspec-system.md
 tests: []
 ---
 
@@ -41,7 +41,7 @@ Those concerns belong respectively in:
 - `../08-SIDEBAR-LAYOUTS/`
 - `../05-COLOR-AND-TYPOGRAPHY-THEMING/`
 - feature-local docs under `../40-FEATURES/` or `../45-NEW-FEATURE-ADDITION/`
-- `../56-VIEW-SPEC-PANEL-CONTENT-SYSTEM/`
+- `../42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/30-panel-viewspec-system.md`
 
 ## Canonical docs
 

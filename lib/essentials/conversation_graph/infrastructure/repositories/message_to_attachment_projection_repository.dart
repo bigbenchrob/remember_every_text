@@ -6,11 +6,11 @@ class SqliteMessageToAttachmentProjectionRepository
     implements MessageToAttachmentProjectionRepository {
   const SqliteMessageToAttachmentProjectionRepository({
     required this.importDatabase,
-    required this.workingDatabase,
+    required this.graphDatabase,
   });
 
   final ImportDatabase importDatabase;
-  final ConversationGraphDatabase workingDatabase;
+  final ConversationGraphDatabase graphDatabase;
 
   @override
   Future<MessageToAttachmentProjectionResult> projectEdges() async {
@@ -42,9 +42,9 @@ class SqliteMessageToAttachmentProjectionRepository
     );
 
     var insertedEdgeCount = 0;
-    await workingDatabase.transaction(() async {
+    await graphDatabase.transaction(() async {
       for (final row in rows) {
-        final insertedCount = await workingDatabase.executeAndReadChanges(
+        final insertedCount = await graphDatabase.executeAndReadChanges(
           '''
           INSERT OR IGNORE INTO message_to_attachment (
             message_ss_id,

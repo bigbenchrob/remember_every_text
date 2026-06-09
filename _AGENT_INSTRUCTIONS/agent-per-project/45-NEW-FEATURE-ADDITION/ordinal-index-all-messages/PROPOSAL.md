@@ -1,5 +1,17 @@
 # Feature Proposal: Ordinal Index Global Message Timeline
 
+## Current Conformance Note (2026-06-06)
+
+This proposal is historical. The invariant it anticipated is now generalized by
+the Message Evidence Spine: timeline-like scopes need a full lightweight
+selected-message skeleton, with row/media hydration limited to the viewport.
+The old `working.db` ordinal/index dependency is not the production authority
+for new ordinary message surfaces.
+
+Future all-messages work should create a graph-backed `MessageEvidenceScope`
+instead of reviving `working.db` `message_index` or adding a source-specific
+message presentation path.
+
 ## Summary
 Enable a new global timeline view that lets users scroll or jump through every message they have sent or received, ordered strictly by the message ordinal maintained in `working.db`. The experience should reuse the existing ordinal index strategy so only lightweight identifiers are fetched up front while full message payloads stream in as the user scrolls.
 

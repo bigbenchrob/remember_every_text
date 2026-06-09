@@ -46,9 +46,9 @@ String buildMessageHistoryCoverageBodyText(
 ) {
   final summaryLines = [
     'Total messages on this Mac: ${_formatCount(report.chatDbTotalCount)}',
-    'Visible in MessageLens: ${_formatCount(report.workingDbVisibleCount)}',
-    'Recovered (unlinked): ${_formatCount(report.workingDbRecoveredCount)}',
-    'Total accounted for: ${_formatCount(report.workingDbTotalAccountedCount)}',
+    'Visible in MessageLens: ${_formatCount(report.graphConversationLinkedCount)}',
+    'Recovered (unlinked): ${_formatCount(report.graphRecoveredOrphanCount)}',
+    'Total accounted for: ${_formatCount(report.graphTotalAccountedCount)}',
     'Missing: ${_formatCount(report.missingCount)}',
     'Date range: ${_formatDateRange(report)}',
   ].join('\n');

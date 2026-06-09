@@ -6,7 +6,7 @@ part of 'onboarding_gate_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$onboardingGateHash() => r'00301fddc85801907f4997de871ccfa5e1e8794f';
+String _$onboardingGateHash() => r'72af0ee50c6a769528e68016da1fe83009ed53df';
 
 /// Controls the onboarding overlay lifecycle.
 ///
@@ -20,8 +20,9 @@ String _$onboardingGateHash() => r'00301fddc85801907f4997de871ccfa5e1e8794f';
 /// app-facing conversation graph exist with data. If not, exposes
 /// [OnboardingStatus.awaitingUserAction] so the import overlay appears.
 ///
-/// [startImportAndMigration] delegates to [DbImportControlViewModel] and
-/// watches its state to transition through importing → migrating → complete.
+/// [startImportAndGraphBuild] builds the source-scoped conversation graph
+/// directly. Retained database files are compatibility/reference storage only
+/// and are not the app-facing setup path.
 ///
 /// Copied from [OnboardingGate].
 @ProviderFor(OnboardingGate)

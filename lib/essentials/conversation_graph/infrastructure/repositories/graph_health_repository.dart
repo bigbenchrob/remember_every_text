@@ -10,7 +10,7 @@ import '../../application/health/graph_health_repository.dart';
 
 class SqliteGraphHealthRepository implements GraphHealthRepository {
   const SqliteGraphHealthRepository({
-    required this.workingDatabase,
+    required this.graphDatabase,
     this.overlayDatabase,
     this.attachmentArchiveDirectory,
     this.historicalMessageLensDataFolderPath,
@@ -18,7 +18,7 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
     this.recoveredMessagesAttachmentsFolderName = 'Attachments',
   });
 
-  final ConversationGraphDatabase workingDatabase;
+  final ConversationGraphDatabase graphDatabase;
   final OverlayDatabase? overlayDatabase;
   final String? attachmentArchiveDirectory;
   final String? historicalMessageLensDataFolderPath;
@@ -202,7 +202,7 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
   }
 
   Future<int> _count(String sql) async {
-    final rows = await workingDatabase.selectRows('SELECT ($sql) AS count');
+    final rows = await graphDatabase.selectRows('SELECT ($sql) AS count');
     final value = rows.single['count'];
     if (value is int) {
       return value;
@@ -233,7 +233,7 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
       archiveByKey['$messageGuid::$importAttachmentId'] = archiveRelativePath;
     }
 
-    final attachmentRows = await workingDatabase.selectRows('''
+    final attachmentRows = await graphDatabase.selectRows('''
       SELECT
         a.ss_id AS attachment_ss_id,
         m.guid AS message_guid
@@ -378,7 +378,7 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
 
   Future<_CurrentSourceAttachmentKeys>
   _readCurrentSourceAttachmentKeys() async {
-    final rows = await workingDatabase.selectRows('''
+    final rows = await graphDatabase.selectRows('''
       SELECT DISTINCT
         a.ss_id AS attachment_ss_id,
         m.guid AS message_guid,
@@ -446,7 +446,7 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
       return const <MissingAttachmentRecoverySample>[];
     }
 
-    final rows = await workingDatabase.selectRows('''
+    final rows = await graphDatabase.selectRows('''
       SELECT DISTINCT
         a.ss_id AS attachment_ss_id,
         m.guid AS message_guid,
@@ -504,7 +504,7 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
   }
 
   Future<Set<String>> _readWorkingAttachmentKeys() async {
-    final rows = await workingDatabase.selectRows('''
+    final rows = await graphDatabase.selectRows('''
       SELECT DISTINCT
         a.ss_id AS attachment_ss_id,
         m.guid AS message_guid

@@ -2,43 +2,62 @@
 tier: feature
 scope: charter
 owner: agent-per-project
-last_reviewed: 2025-11-06
+last_reviewed: 2026-06-05
 links:
 	- ./DOMAIN_AND_DATA_MAP.md
 	- ./STATE_AND_PROVIDER_INVENTORY.md
 tests: []
 feature: chats
 doc_type: charter
-status: draft
-last_updated: 2025-11-06
+status: current
+last_updated: 2026-06-05
 ---
 
-# Feature Charter — Chats
+# Feature Charter - Chats
 
-> Current conformance note (2026-04-21): this folder is a draft scaffold. Current `lib/features/chats` contains repository, recent-chat, view-model, and heatmap/timeline support, but the current top-level `ViewSpec` does not include `ViewSpec.chats`; chat-specific message display is routed through `MessagesSpec` where implemented.
+> Current conformance note (2026-06-05): MessageLens is now
+> conversation-frontmost, but conversation truth lives in
+> `essentials/conversation_graph`, not in a legacy `working.db` chat aggregate.
+> The chats feature may provide diagnostic/reference browsing and lightweight
+> graph adapters, but ordinary conversation navigation and message evidence
+> should remain graph-backed and evidence-spine based.
 
 ## Mission
-- Maintain the chat aggregate responsible for conversation metadata, membership, and derived counters.
-- Provide a coherent experience across list views, detail panels, and background projections.
+- Present conversations as first-class graph entities derived from canonical
+  chat/message/handle topology.
+- Preserve a coherent route from conversation selection to shared message
+  evidence rendering.
+- Avoid rebuilding legacy contact-first or GUID-first conversation identity.
 
 ## Primary Outcomes
-- Accurate chat summaries (last message, unread counts, pinned/archived state).
-- Deterministic participant rosters synchronized with handle canonicalization.
-- Efficient paging and filtering for the chat list.
+- Accurate conversation summaries: participants, message count, attachment
+  count, date range, and latest evidence preview.
+- Stable source-scoped conversation identity across sidebar, contact-derived
+  lists, search contexts, and favourites.
+- Conversation signatures that help users recognize communication structure
+  without moving navigation controls into the center panel.
 
 ## Success Metrics
-- Chat list render time under target threshold.
-- Zero drift between chat membership projection and source ledger.
-- Reliability of unread counter updates during import/migration batches.
+- Conversation lists remain graph-backed and responsive after live updates.
+- No ordinary conversation read path depends on legacy `working.db`.
+- Selected conversations render through the shared Message Evidence Spine.
+- Conversation favourites are overlay-owned and appear consistently wherever
+  the conversation appears.
 
 ## Non-Goals
 - Message rendering (covered by messages feature).
 - Navigation shell layout (tracked separately).
+- Contact identity reconstruction beyond display-label resolution.
+- Reintroducing legacy `Chat` aggregates or GUID-based conversation identity.
 
 ## Stakeholders & Dependencies
-- Depends on chat migrators, handle canonicalization, and overlay preferences.
-- Feeds messages feature (chat context) and search indexing.
+- Depends on source-scoped graph import/projection, handle canonicalization,
+  display identity resolution, and overlay favourites.
+- Feeds the conversations sidebar, contact-by-conversation lists, search
+  contexts, and message evidence headers.
 
 ## Open Questions
-- How to stage incremental sync for large chat histories without full re-projection.
-- Preferred strategy for handling archived chats in navigation vs. search.
+- Whether the retained diagnostic center-panel conversation browser should be
+  fully retired once sidebar signatures cover the remaining inspection use case.
+- Which future semantic overlays belong on conversation signatures versus in
+  evidence/search result surfaces.

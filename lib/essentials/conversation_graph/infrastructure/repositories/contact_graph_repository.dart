@@ -4,9 +4,9 @@ import '../../application/contacts/contact_graph_repository.dart';
 import '../../application/conversations/conversation.dart';
 
 class SqliteContactGraphRepository implements ContactGraphRepository {
-  const SqliteContactGraphRepository({required this.workingDatabase});
+  const SqliteContactGraphRepository({required this.graphDatabase});
 
-  final ConversationGraphDatabase workingDatabase;
+  final ConversationGraphDatabase graphDatabase;
 
   @override
   Future<ContactGraphSnapshot> readContactGraph({
@@ -416,7 +416,7 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
     String whereClause,
     List<Object?> args,
   ) async {
-    final rows = await workingDatabase.selectRows('''
+    final rows = await graphDatabase.selectRows('''
       SELECT
         c.ss_id AS conversation_id,
         COUNT(DISTINCT COALESCE(ha.canonical_handle_ss_id, cth.handle_ss_id))
@@ -478,7 +478,7 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
           AND m.date_utc >= ?
           AND m.date_utc < ?
         ''';
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       SELECT DISTINCT
         m.ss_id AS message_id,
@@ -532,7 +532,7 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
     String extraJoin,
     List<Object?> args,
   ) async {
-    final rows = await workingDatabase.selectRows('''
+    final rows = await graphDatabase.selectRows('''
       SELECT DISTINCT
         m.ss_id AS message_id,
         m.date_utc,
@@ -590,7 +590,7 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
       searchArgs.addAll([pattern, pattern, pattern, pattern, pattern, pattern]);
     }
 
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       SELECT DISTINCT m.ss_id AS message_id
       FROM messages m
@@ -621,7 +621,7 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
     List<Object?> args, {
     required int messageId,
   }) async {
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       SELECT DISTINCT
         m.ss_id AS message_id,
@@ -689,7 +689,7 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
     String extraJoin,
     List<Object?> args,
   ) async {
-    final dateRows = await workingDatabase.selectRows('''
+    final dateRows = await graphDatabase.selectRows('''
       WITH contact_messages AS (
         SELECT DISTINCT m.ss_id, m.date_utc
         FROM messages m
@@ -716,7 +716,7 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
       return null;
     }
 
-    final monthRows = await workingDatabase.selectRows('''
+    final monthRows = await graphDatabase.selectRows('''
       WITH contact_messages AS (
         SELECT DISTINCT m.ss_id, m.date_utc
         FROM messages m
@@ -752,7 +752,7 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
   }
 
   Future<List<String>> _readParticipantHandles(int conversationId) async {
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       SELECT DISTINCT
         COALESCE(ch.display_handle, h.id) AS handle_id,
@@ -827,7 +827,7 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
   Future<List<int>> _readGraphCanonicalHandleIdsForGraphContact(
     int contactId,
   ) async {
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       SELECT DISTINCT handle_ss_id
       FROM contact_to_handle
@@ -846,7 +846,7 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
   Future<List<int>> _readGraphCanonicalHandleIdsForHandleFilter(
     int handleId,
   ) async {
-    final directRows = await workingDatabase.selectRows(
+    final directRows = await graphDatabase.selectRows(
       '''
       SELECT DISTINCT canonical_handle_id
       FROM (

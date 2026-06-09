@@ -11,14 +11,14 @@ part 'handle_projector_provider.g.dart';
 @riverpod
 Future<HandleProjector> handleProjector(Ref ref) async {
   final importDatabase = await ref.watch(importDatabaseProvider.future);
-  final workingDatabase = await ref.watch(
+  final graphDatabase = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
 
   return HandleProjector(
     repository: SqliteHandleProjectionRepository(
       importDatabase: importDatabase,
-      workingDatabase: workingDatabase,
+      graphDatabase: graphDatabase,
     ),
   );
 }

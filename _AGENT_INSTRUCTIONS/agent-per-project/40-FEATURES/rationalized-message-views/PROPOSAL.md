@@ -1,8 +1,15 @@
 # Feature Proposal: Rationalize Message Views
 
-**Status**: APPROVED — Implementation in progress on branch `Ftr.msgview`
+**Status**: SUPERSEDED HISTORICAL PROPOSAL
 
-> Historical context note (2026-04-21): this proposal has been implemented and is no longer current guidance by itself. Use `STATUS.md` and `../messages/` for the current unified timeline structure. Some proposed names/scopes differ from the final code, which now includes `MessageTimelineScope.global`, `contact`, `chat`, and `recovered`.
+> Historical context note (2026-06-06): this proposal describes an intermediate
+> timeline rationalization stage. It is not current implementation guidance.
+> The active message architecture is the graph-backed Message Evidence Spine:
+> `MessageEvidenceScope` -> full logical skeleton -> viewport hydration by
+> graph `message_ss_id` -> shared evidence rendering. Use
+> `../messages/MESSAGE-TIMELINE-PIPELINE.md`,
+> `../messages/STATE_AND_PROVIDER_INVENTORY.md`, and
+> `../messages/message-display-flow-walkthrough.md` for current guidance.
 
 ## Summary
 

@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../../../db_importers/domain/ports/message_extractor_port.dart';
 import '../../infrastructure/import_database_provider.dart';
 
@@ -47,13 +49,23 @@ class MessageRichTextEnricher {
     );
   }
 
+  Future<MessageRichTextEnrichmentResult> enrichMissingTextForSource({
+    required int sourceId,
+  }) {
+    return _enrichMissingTextWhere(
+      whereClause:
+          'source_id = ? AND text IS NULL AND attributed_body_blob IS NOT NULL',
+      whereArgs: <Object?>[sourceId],
+    );
+  }
+
   Future<MessageRichTextEnrichmentResult> _enrichMissingTextWhere({
     required String whereClause,
     required List<Object?> whereArgs,
   }) async {
     final candidates = await importDatabase.database.query(
       'messages',
-      columns: <String>['ss_id', 'source_rowid'],
+      columns: <String>['ss_id', 'source_rowid', 'attributed_body_blob'],
       where: whereClause,
       whereArgs: whereArgs,
       orderBy: 'source_rowid ASC',
@@ -68,7 +80,7 @@ class MessageRichTextEnricher {
       );
     }
 
-    final extractorAvailable = await extractor.isAvailable();
+    final extractorAvailable = await extractor.isBlobExtractionAvailable();
     if (!extractorAvailable) {
       return MessageRichTextEnrichmentResult(
         candidateMessageCount: candidates.length,
@@ -78,9 +90,19 @@ class MessageRichTextEnricher {
       );
     }
 
-    final extracted = await extractor.extractAllMessageTexts(
-      limit: extractionLimit,
-      dbPath: chatDbPath,
+    final blobsBySourceRowId = <int, Uint8List>{};
+    for (final candidate in candidates) {
+      final sourceRowId = _readRequiredInt(candidate, 'source_rowid');
+      final blob = candidate['attributed_body_blob'];
+      if (blob is Uint8List) {
+        blobsBySourceRowId[sourceRowId] = blob;
+      } else if (blob is List<int>) {
+        blobsBySourceRowId[sourceRowId] = Uint8List.fromList(blob);
+      }
+    }
+
+    final extracted = await extractor.extractMessageTextsFromBlobs(
+      blobsBySourceRowId,
     );
 
     var enrichedMessageCount = 0;

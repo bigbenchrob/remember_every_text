@@ -55,6 +55,14 @@ Use these documents in this order when working on the source-scoped graph archit
 15. [`72-GRAPH-CHOKE-POINTS-AND-RETIREMENT-BLOCKERS.md`](72-GRAPH-CHOKE-POINTS-AND-RETIREMENT-BLOCKERS.md) - leverage-based migration ordering, compatibility bridges, overlay identity audit, and retirement blockers for finishing the graph transition.
 16. [`73-GRAPH-MIGRATION-EXECUTION-CHECKLIST.md`](73-GRAPH-MIGRATION-EXECUTION-CHECKLIST.md) - practical execution checklist for checkpointing, overlay identity, graph-native search, graph-native contact identity, lifecycle orchestration, remaining reads, recovery, and legacy retirement.
 17. [`74-OVERLAY-IDENTITY-KEY-AUDIT.md`](74-OVERLAY-IDENTITY-KEY-AUDIT.md) - graph-era overlay identity inventory, bridge strategy, migration order, and tests for preserving user intent while moving ordinary app identity to source-scoped graph ids.
+18. [`75-ARCHIVE-RECOVERY-IDENTITY-PLAN.md`](75-ARCHIVE-RECOVERY-IDENTITY-PLAN.md) - graph-era archive/recovery identity strategy for preserving attachment reachability and historical source compatibility.
+19. [`76-RECOVERED-MESSAGE-GRAPH-IDENTITY-PLAN.md`](76-RECOVERED-MESSAGE-GRAPH-IDENTITY-PLAN.md) - recovered/orphan message graph identity plan and retention strategy.
+20. [`77-RECOVERED-MESSAGE-GRAPH-PARITY-AUDIT.md`](77-RECOVERED-MESSAGE-GRAPH-PARITY-AUDIT.md) - recovered-message parity audit used to gate graph cutover.
+21. [`78-GRAPH-MIGRATION-PAUSE-AND-REMAINING-WORK.md`](78-GRAPH-MIGRATION-PAUSE-AND-REMAINING-WORK.md) - June 2 pause report summarizing graph migration state and remaining work.
+22. [`79-INDEPENDENT-ARCHITECTURAL-REVIEW-OF-GRAPH-MIGRATION-STATE.md`](79-INDEPENDENT-ARCHITECTURAL-REVIEW-OF-GRAPH-MIGRATION-STATE.md) - independent review snapshot and addendum against Documents 70-78.
+23. [`80-GRAPH-MIGRATION-INTERIM-PROGRESS-REPORT.md`](80-GRAPH-MIGRATION-INTERIM-PROGRESS-REPORT.md) - interim progress report covering graph lifecycle, legacy retirement, and documentation alignment completed after Documents 78-79.
+24. [`81-LEGACY-STORAGE-RETENTION-REGISTER.md`](81-LEGACY-STORAGE-RETENTION-REGISTER.md) - explicit retention register for remaining `macos_import.db` / `working.db` storage, archive/recovery blockers, diagnostics, reset behavior, tests, and removal criteria.
+25. [`82-SOURCE-SCOPED-ARCHIVE-IMPORT-CUTOVER-PLAN.md`](82-SOURCE-SCOPED-ARCHIVE-IMPORT-CUTOVER-PLAN.md) - cutover plan for replacing retained historical archive import/projection with source-scoped archive source registration, import, projection, and verification.
 
 Read [`64-SOURCE-SCOPED-ROW-KEY-STRATEGY.md`](64-SOURCE-SCOPED-ROW-KEY-STRATEGY.md) before adding archive-source support, topology projection, source occurrence tables, provenance sidecars, or any schema that stores source-derived relationship endpoints.
 
@@ -73,3 +81,9 @@ Read [`72-GRAPH-CHOKE-POINTS-AND-RETIREMENT-BLOCKERS.md`](72-GRAPH-CHOKE-POINTS-
 Read and update [`73-GRAPH-MIGRATION-EXECUTION-CHECKLIST.md`](73-GRAPH-MIGRATION-EXECUTION-CHECKLIST.md) while executing graph migration slices so status, blockers, required verification, and exit criteria remain explicit.
 
 Read [`74-OVERLAY-IDENTITY-KEY-AUDIT.md`](74-OVERLAY-IDENTITY-KEY-AUDIT.md) before changing overlay schemas, graph-native Search, message tags/saved state, contact favourites, manual handle links, dismissed/visibility behavior, or attachment archive identity.
+
+Read [`80-GRAPH-MIGRATION-INTERIM-PROGRESS-REPORT.md`](80-GRAPH-MIGRATION-INTERIM-PROGRESS-REPORT.md) for the current interim state after graph lifecycle productionization, live polling proof, ordinary-read migration, retained compatibility cleanup, and documentation alignment.
+
+Read [`81-LEGACY-STORAGE-RETENTION-REGISTER.md`](81-LEGACY-STORAGE-RETENTION-REGISTER.md) before deleting retained `macos_import.db` / `working.db` schemas, retained archive import/projection code, historical archive settings metadata, retained database diagnostics, or legacy schema/migrator tests.
+
+Read [`82-SOURCE-SCOPED-ARCHIVE-IMPORT-CUTOVER-PLAN.md`](82-SOURCE-SCOPED-ARCHIVE-IMPORT-CUTOVER-PLAN.md) before implementing graph-native historical archive import, registering non-live source IDs, parameterizing graph import/projection by source, or changing the Historical Archives workflow.

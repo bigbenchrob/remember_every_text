@@ -13,7 +13,7 @@ import '../../conversation_graph_test_database.dart';
 
 void main() {
   late Directory tempDir;
-  late ConversationGraphDatabase workingDatabase;
+  late ConversationGraphDatabase graphDatabase;
 
   setUpAll(() {
     sqfliteFfiInit();
@@ -22,11 +22,11 @@ void main() {
 
   setUp(() async {
     tempDir = await Directory.systemTemp.createTemp('contact_graph_test_');
-    workingDatabase = await openConversationGraphTestDatabase();
+    graphDatabase = await openConversationGraphTestDatabase();
   });
 
   tearDown(() async {
-    await workingDatabase.close();
+    await graphDatabase.close();
     if (tempDir.existsSync()) {
       await tempDir.delete(recursive: true);
     }
@@ -43,73 +43,73 @@ void main() {
       final secondMessageId = _id(202);
       final attachmentId = _id(301);
 
-      await _insertContact(workingDatabase, contactId: contactId);
+      await _insertContact(graphDatabase, contactId: contactId);
       await _insertHandle(
-        workingDatabase,
+        graphDatabase,
         handleId: canonicalHandleId,
         value: '+16049995969-iMessage',
       );
       await _insertHandle(
-        workingDatabase,
+        graphDatabase,
         handleId: smsAliasHandleId,
         value: '+16049995969-SMS',
       );
       await _insertCanonicalHandle(
-        workingDatabase,
+        graphDatabase,
         canonicalHandleId: canonicalHandleId,
       );
       await _insertHandleAlias(
-        workingDatabase,
+        graphDatabase,
         handleId: canonicalHandleId,
         canonicalHandleId: canonicalHandleId,
       );
       await _insertHandleAlias(
-        workingDatabase,
+        graphDatabase,
         handleId: smsAliasHandleId,
         canonicalHandleId: canonicalHandleId,
       );
       await _insertContactHandle(
-        workingDatabase,
+        graphDatabase,
         contactId: contactId,
         handleId: canonicalHandleId,
       );
-      await _insertChat(workingDatabase, chatId: chatId);
+      await _insertChat(graphDatabase, chatId: chatId);
       await _insertChatHandle(
-        workingDatabase,
+        graphDatabase,
         chatId: chatId,
         handleId: smsAliasHandleId,
       );
       await _insertMessage(
-        workingDatabase,
+        graphDatabase,
         messageId: firstMessageId,
         dateUtc: '2026-04-10T10:00:00.000Z',
         text: 'April',
       );
       await _insertMessage(
-        workingDatabase,
+        graphDatabase,
         messageId: secondMessageId,
         dateUtc: '2026-05-10T10:00:00.000Z',
         text: 'May',
       );
       await _insertChatMessage(
-        workingDatabase,
+        graphDatabase,
         chatId: chatId,
         messageId: firstMessageId,
       );
       await _insertChatMessage(
-        workingDatabase,
+        graphDatabase,
         chatId: chatId,
         messageId: secondMessageId,
       );
-      await _insertAttachment(workingDatabase, attachmentId: attachmentId);
+      await _insertAttachment(graphDatabase, attachmentId: attachmentId);
       await _insertMessageAttachment(
-        workingDatabase,
+        graphDatabase,
         messageId: secondMessageId,
         attachmentId: attachmentId,
       );
 
       final snapshot = await _reader(
-        workingDatabase,
+        graphDatabase,
       ).readContactGraph(contactId: contactId);
 
       expect(snapshot.contactId, contactId);
@@ -136,7 +136,7 @@ void main() {
       );
 
       final messages = await _reader(
-        workingDatabase,
+        graphDatabase,
       ).readContactMessages(contactId: contactId);
 
       expect(messages.map((message) => message.messageId), [
@@ -147,7 +147,7 @@ void main() {
       expect(messages.first.attachmentCount, 1);
       expect(messages.last.text, 'April');
 
-      final aprilMessages = await _reader(workingDatabase).readContactMessages(
+      final aprilMessages = await _reader(graphDatabase).readContactMessages(
         contactId: contactId,
         monthAnchor: DateTime.utc(2026, 4),
       );
@@ -156,7 +156,7 @@ void main() {
         firstMessageId,
       ]);
 
-      final timeline = await _reader(workingDatabase)
+      final timeline = await _reader(graphDatabase)
           .readContactPageMessageTimeline(
             contactId: contactId,
             graphContactId: contactId,
@@ -168,7 +168,7 @@ void main() {
       ]);
       expect(timeline.map((entry) => entry.monthKey), ['2026-04', '2026-05']);
 
-      final hydratedMessage = await _reader(workingDatabase)
+      final hydratedMessage = await _reader(graphDatabase)
           .readContactPageMessageById(
             contactId: contactId,
             graphContactId: contactId,
@@ -192,107 +192,107 @@ void main() {
       final selectedMessageId = _id(201);
       final otherMessageId = _id(202);
 
-      await _insertContact(workingDatabase, contactId: contactId);
+      await _insertContact(graphDatabase, contactId: contactId);
       await _insertHandle(
-        workingDatabase,
+        graphDatabase,
         handleId: selectedHandleId,
         value: '+16049995969-iMessage',
       );
       await _insertHandle(
-        workingDatabase,
+        graphDatabase,
         handleId: selectedAliasHandleId,
         value: '+16049995969-SMS',
       );
       await _insertHandle(
-        workingDatabase,
+        graphDatabase,
         handleId: otherHandleId,
         value: '+17789908506-iMessage',
       );
       await _insertCanonicalHandle(
-        workingDatabase,
+        graphDatabase,
         canonicalHandleId: selectedHandleId,
       );
       await _insertCanonicalHandle(
-        workingDatabase,
+        graphDatabase,
         canonicalHandleId: otherHandleId,
         displayHandle: '+17789908506',
         normalizedIdentifier: '17789908506',
       );
       await _insertHandleAlias(
-        workingDatabase,
+        graphDatabase,
         handleId: selectedHandleId,
         canonicalHandleId: selectedHandleId,
       );
       await _insertHandleAlias(
-        workingDatabase,
+        graphDatabase,
         handleId: selectedAliasHandleId,
         canonicalHandleId: selectedHandleId,
       );
       await _insertHandleAlias(
-        workingDatabase,
+        graphDatabase,
         handleId: otherHandleId,
         canonicalHandleId: otherHandleId,
         normalizedIdentifier: '17789908506',
       );
       await _insertContactHandle(
-        workingDatabase,
+        graphDatabase,
         contactId: contactId,
         handleId: selectedHandleId,
       );
       await _insertContactHandle(
-        workingDatabase,
+        graphDatabase,
         contactId: contactId,
         handleId: otherHandleId,
       );
-      await _insertChat(workingDatabase, chatId: selectedChatId);
-      await _insertChat(workingDatabase, chatId: otherChatId);
+      await _insertChat(graphDatabase, chatId: selectedChatId);
+      await _insertChat(graphDatabase, chatId: otherChatId);
       await _insertChatHandle(
-        workingDatabase,
+        graphDatabase,
         chatId: selectedChatId,
         handleId: selectedAliasHandleId,
       );
       await _insertChatHandle(
-        workingDatabase,
+        graphDatabase,
         chatId: otherChatId,
         handleId: otherHandleId,
       );
       await _insertMessage(
-        workingDatabase,
+        graphDatabase,
         messageId: selectedMessageId,
         dateUtc: '2026-05-10T10:00:00.000Z',
         text: 'selected handle message',
       );
       await _insertMessage(
-        workingDatabase,
+        graphDatabase,
         messageId: otherMessageId,
         dateUtc: '2026-05-11T10:00:00.000Z',
         text: 'other handle message',
       );
       await _insertChatMessage(
-        workingDatabase,
+        graphDatabase,
         chatId: selectedChatId,
         messageId: selectedMessageId,
       );
       await _insertChatMessage(
-        workingDatabase,
+        graphDatabase,
         chatId: otherChatId,
         messageId: otherMessageId,
       );
 
-      final timeline = await _reader(workingDatabase)
+      final timeline = await _reader(graphDatabase)
           .readContactPageHandleMessageTimeline(
             contactId: contactId,
             graphContactId: contactId,
             handleId: selectedHandleId,
           );
-      final selectedMessage = await _reader(workingDatabase)
+      final selectedMessage = await _reader(graphDatabase)
           .readContactPageHandleMessageById(
             contactId: contactId,
             graphContactId: contactId,
             handleId: selectedHandleId,
             messageId: selectedMessageId,
           );
-      final otherMessage = await _reader(workingDatabase)
+      final otherMessage = await _reader(graphDatabase)
           .readContactPageHandleMessageById(
             contactId: contactId,
             graphContactId: contactId,
@@ -317,77 +317,77 @@ void main() {
       final newerMessageId = _id(202);
       final nonMatchingMessageId = _id(203);
 
-      await _insertContact(workingDatabase, contactId: contactId);
+      await _insertContact(graphDatabase, contactId: contactId);
       await _insertHandle(
-        workingDatabase,
+        graphDatabase,
         handleId: canonicalHandleId,
         value: '+16049995969-iMessage',
       );
       await _insertHandle(
-        workingDatabase,
+        graphDatabase,
         handleId: aliasHandleId,
         value: '+16049995969-SMS',
       );
       await _insertCanonicalHandle(
-        workingDatabase,
+        graphDatabase,
         canonicalHandleId: canonicalHandleId,
       );
       await _insertHandleAlias(
-        workingDatabase,
+        graphDatabase,
         handleId: canonicalHandleId,
         canonicalHandleId: canonicalHandleId,
       );
       await _insertHandleAlias(
-        workingDatabase,
+        graphDatabase,
         handleId: aliasHandleId,
         canonicalHandleId: canonicalHandleId,
       );
       await _insertContactHandle(
-        workingDatabase,
+        graphDatabase,
         contactId: contactId,
         handleId: canonicalHandleId,
       );
-      await _insertChat(workingDatabase, chatId: chatId);
+      await _insertChat(graphDatabase, chatId: chatId);
       await _insertChatHandle(
-        workingDatabase,
+        graphDatabase,
         chatId: chatId,
         handleId: aliasHandleId,
       );
       await _insertMessage(
-        workingDatabase,
+        graphDatabase,
         messageId: newerMessageId,
         dateUtc: '2026-05-10T10:00:00.000Z',
         text: 'newer settlement message',
       );
       await _insertMessage(
-        workingDatabase,
+        graphDatabase,
         messageId: olderMessageId,
         dateUtc: '2026-04-10T10:00:00.000Z',
         text: 'older settlement message',
       );
       await _insertMessage(
-        workingDatabase,
+        graphDatabase,
         messageId: nonMatchingMessageId,
         dateUtc: '2026-03-10T10:00:00.000Z',
         text: 'unrelated message',
       );
       await _insertChatMessage(
-        workingDatabase,
+        graphDatabase,
         chatId: chatId,
         messageId: newerMessageId,
       );
       await _insertChatMessage(
-        workingDatabase,
+        graphDatabase,
         chatId: chatId,
         messageId: olderMessageId,
       );
       await _insertChatMessage(
-        workingDatabase,
+        graphDatabase,
         chatId: chatId,
         messageId: nonMatchingMessageId,
       );
 
-      final matches = await _reader(workingDatabase)
+      final matches = await _reader(graphDatabase)
           .readContactPageMessageIdsMatchingText(
             contactId: contactId,
             graphContactId: contactId,
@@ -408,94 +408,94 @@ void main() {
     final selectedMessageId = _id(201);
     final otherMessageId = _id(202);
 
-    await _insertContact(workingDatabase, contactId: contactId);
+    await _insertContact(graphDatabase, contactId: contactId);
     await _insertHandle(
-      workingDatabase,
+      graphDatabase,
       handleId: selectedHandleId,
       value: '+16049995969-iMessage',
     );
     await _insertHandle(
-      workingDatabase,
+      graphDatabase,
       handleId: selectedAliasHandleId,
       value: '+16049995969-SMS',
     );
     await _insertHandle(
-      workingDatabase,
+      graphDatabase,
       handleId: otherHandleId,
       value: '+17789908506-iMessage',
     );
     await _insertCanonicalHandle(
-      workingDatabase,
+      graphDatabase,
       canonicalHandleId: selectedHandleId,
     );
     await _insertCanonicalHandle(
-      workingDatabase,
+      graphDatabase,
       canonicalHandleId: otherHandleId,
       displayHandle: '+17789908506',
       normalizedIdentifier: '17789908506',
     );
     await _insertHandleAlias(
-      workingDatabase,
+      graphDatabase,
       handleId: selectedHandleId,
       canonicalHandleId: selectedHandleId,
     );
     await _insertHandleAlias(
-      workingDatabase,
+      graphDatabase,
       handleId: selectedAliasHandleId,
       canonicalHandleId: selectedHandleId,
     );
     await _insertHandleAlias(
-      workingDatabase,
+      graphDatabase,
       handleId: otherHandleId,
       canonicalHandleId: otherHandleId,
       normalizedIdentifier: '17789908506',
     );
     await _insertContactHandle(
-      workingDatabase,
+      graphDatabase,
       contactId: contactId,
       handleId: selectedHandleId,
     );
     await _insertContactHandle(
-      workingDatabase,
+      graphDatabase,
       contactId: contactId,
       handleId: otherHandleId,
     );
-    await _insertChat(workingDatabase, chatId: selectedChatId);
-    await _insertChat(workingDatabase, chatId: otherChatId);
+    await _insertChat(graphDatabase, chatId: selectedChatId);
+    await _insertChat(graphDatabase, chatId: otherChatId);
     await _insertChatHandle(
-      workingDatabase,
+      graphDatabase,
       chatId: selectedChatId,
       handleId: selectedAliasHandleId,
     );
     await _insertChatHandle(
-      workingDatabase,
+      graphDatabase,
       chatId: otherChatId,
       handleId: otherHandleId,
     );
     await _insertMessage(
-      workingDatabase,
+      graphDatabase,
       messageId: selectedMessageId,
       dateUtc: '2026-05-10T10:00:00.000Z',
       text: 'settlement from selected handle',
     );
     await _insertMessage(
-      workingDatabase,
+      graphDatabase,
       messageId: otherMessageId,
       dateUtc: '2026-05-11T10:00:00.000Z',
       text: 'settlement from other handle',
     );
     await _insertChatMessage(
-      workingDatabase,
+      graphDatabase,
       chatId: selectedChatId,
       messageId: selectedMessageId,
     );
     await _insertChatMessage(
-      workingDatabase,
+      graphDatabase,
       chatId: otherChatId,
       messageId: otherMessageId,
     );
 
-    final matches = await _reader(workingDatabase)
+    final matches = await _reader(graphDatabase)
         .readContactPageMessageIdsMatchingText(
           contactId: contactId,
           graphContactId: contactId,
@@ -518,9 +518,9 @@ void main() {
   });
 }
 
-ContactGraphReader _reader(ConversationGraphDatabase workingDatabase) {
+ContactGraphReader _reader(ConversationGraphDatabase graphDatabase) {
   return ContactGraphReader(
-    repository: SqliteContactGraphRepository(workingDatabase: workingDatabase),
+    repository: SqliteContactGraphRepository(graphDatabase: graphDatabase),
   );
 }
 
@@ -529,33 +529,33 @@ int _id(int sourceRowId) {
 }
 
 Future<void> _insertContact(
-  ConversationGraphDatabase workingDatabase, {
+  ConversationGraphDatabase graphDatabase, {
   required int contactId,
 }) {
-  return workingDatabase.database.insert('contacts', <String, Object?>{
+  return graphDatabase.database.insert('contacts', <String, Object?>{
     'contact_id': contactId,
     'display_name': 'Cathie Campbell',
   });
 }
 
 Future<void> _insertHandle(
-  ConversationGraphDatabase workingDatabase, {
+  ConversationGraphDatabase graphDatabase, {
   required int handleId,
   required String value,
 }) {
-  return workingDatabase.database.insert('handles', <String, Object?>{
+  return graphDatabase.database.insert('handles', <String, Object?>{
     'ss_id': handleId,
     'id': value,
   });
 }
 
 Future<void> _insertCanonicalHandle(
-  ConversationGraphDatabase workingDatabase, {
+  ConversationGraphDatabase graphDatabase, {
   required int canonicalHandleId,
   String displayHandle = '+16049995969',
   String normalizedIdentifier = '16049995969',
 }) {
-  return workingDatabase.database.insert('canonical_handles', <String, Object?>{
+  return graphDatabase.database.insert('canonical_handles', <String, Object?>{
     'canonical_handle_ss_id': canonicalHandleId,
     'display_handle': displayHandle,
     'normalized_identifier': normalizedIdentifier,
@@ -564,12 +564,12 @@ Future<void> _insertCanonicalHandle(
 }
 
 Future<void> _insertHandleAlias(
-  ConversationGraphDatabase workingDatabase, {
+  ConversationGraphDatabase graphDatabase, {
   required int handleId,
   required int canonicalHandleId,
   String normalizedIdentifier = '6049995969',
 }) {
-  return workingDatabase.database.insert('handle_aliases', <String, Object?>{
+  return graphDatabase.database.insert('handle_aliases', <String, Object?>{
     'handle_ss_id': handleId,
     'canonical_handle_ss_id': canonicalHandleId,
     'raw_identifier': '$handleId',
@@ -579,11 +579,11 @@ Future<void> _insertHandleAlias(
 }
 
 Future<void> _insertContactHandle(
-  ConversationGraphDatabase workingDatabase, {
+  ConversationGraphDatabase graphDatabase, {
   required int contactId,
   required int handleId,
 }) {
-  return workingDatabase.database.insert('contact_to_handle', <String, Object?>{
+  return graphDatabase.database.insert('contact_to_handle', <String, Object?>{
     'contact_id': contactId,
     'handle_ss_id': handleId,
     'handle_value': '+16049995969',
@@ -591,10 +591,10 @@ Future<void> _insertContactHandle(
 }
 
 Future<void> _insertChat(
-  ConversationGraphDatabase workingDatabase, {
+  ConversationGraphDatabase graphDatabase, {
   required int chatId,
 }) {
-  return workingDatabase.database.insert('chats', <String, Object?>{
+  return graphDatabase.database.insert('chats', <String, Object?>{
     'ss_id': chatId,
     'guid': 'chat-$chatId',
     'is_group': 0,
@@ -602,23 +602,23 @@ Future<void> _insertChat(
 }
 
 Future<void> _insertChatHandle(
-  ConversationGraphDatabase workingDatabase, {
+  ConversationGraphDatabase graphDatabase, {
   required int chatId,
   required int handleId,
 }) {
-  return workingDatabase.database.insert('chat_to_handle', <String, Object?>{
+  return graphDatabase.database.insert('chat_to_handle', <String, Object?>{
     'chat_ss_id': chatId,
     'handle_ss_id': handleId,
   });
 }
 
 Future<void> _insertMessage(
-  ConversationGraphDatabase workingDatabase, {
+  ConversationGraphDatabase graphDatabase, {
   required int messageId,
   required String dateUtc,
   required String text,
 }) {
-  return workingDatabase.database.insert('messages', <String, Object?>{
+  return graphDatabase.database.insert('messages', <String, Object?>{
     'ss_id': messageId,
     'guid': 'message-$messageId',
     'is_from_me': 0,
@@ -628,32 +628,32 @@ Future<void> _insertMessage(
 }
 
 Future<void> _insertChatMessage(
-  ConversationGraphDatabase workingDatabase, {
+  ConversationGraphDatabase graphDatabase, {
   required int chatId,
   required int messageId,
 }) {
-  return workingDatabase.database.insert('chat_to_message', <String, Object?>{
+  return graphDatabase.database.insert('chat_to_message', <String, Object?>{
     'chat_ss_id': chatId,
     'message_ss_id': messageId,
   });
 }
 
 Future<void> _insertAttachment(
-  ConversationGraphDatabase workingDatabase, {
+  ConversationGraphDatabase graphDatabase, {
   required int attachmentId,
 }) {
-  return workingDatabase.database.insert('attachments', <String, Object?>{
+  return graphDatabase.database.insert('attachments', <String, Object?>{
     'ss_id': attachmentId,
     'guid': 'attachment-$attachmentId',
   });
 }
 
 Future<void> _insertMessageAttachment(
-  ConversationGraphDatabase workingDatabase, {
+  ConversationGraphDatabase graphDatabase, {
   required int messageId,
   required int attachmentId,
 }) {
-  return workingDatabase.database.insert('message_to_attachment', {
+  return graphDatabase.database.insert('message_to_attachment', {
     'message_ss_id': messageId,
     'attachment_ss_id': attachmentId,
   });

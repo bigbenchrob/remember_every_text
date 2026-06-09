@@ -489,7 +489,7 @@ class _DetailPane extends ConsumerWidget {
                       onPressed: () {
                         ref
                             .read(onboardingGateProvider.notifier)
-                            .startImportAndMigration();
+                            .startImportAndGraphBuild();
                       },
                       style: FilledButton.styleFrom(
                         backgroundColor: colors.buttons.primaryBackground,
@@ -675,7 +675,7 @@ class _EvidenceCard extends StatelessWidget {
           ),
           _EvidenceRow(
             label: 'Conversation graph',
-            value: report.workingDatabase.hasData
+            value: report.conversationGraph.hasData
                 ? 'Ready'
                 : 'Not prepared yet',
             colors: colors,

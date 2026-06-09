@@ -60,6 +60,8 @@ class _GlobalMessagesEvidenceViewState
     );
 
     return allMessagesSkeletonAsync.when(
+      skipLoadingOnReload: true,
+      skipLoadingOnRefresh: true,
       data: (allMessagesSkeleton) {
         final hasMatchesLoaded =
             normalizedQuery.isEmpty || visibleSkeletonAsync.hasValue;

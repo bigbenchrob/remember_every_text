@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:remember_this_text/essentials/conversation_graph/domain/identity_key_bridge.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
-import 'package:remember_this_text/features/contacts/infrastructure/repositories/display_identity_repository.dart';
 
 void main() {
   test('legacy contact id is recoverable from live address book graph id', () {

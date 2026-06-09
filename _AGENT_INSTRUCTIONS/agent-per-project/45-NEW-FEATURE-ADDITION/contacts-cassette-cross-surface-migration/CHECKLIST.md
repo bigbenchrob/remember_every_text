@@ -4,6 +4,20 @@ This file tracks granular implementation steps. Update checkboxes as work comple
 
 ---
 
+## Current Conformance Note (2026-06-06)
+
+This checklist remains useful for cross-surface coordinator/resolver/builder
+separation, but it is not sufficient by itself. Current Contacts work must also
+preserve graph-era identity boundaries:
+
+- resolvers may compose graph facts and overlay user intent.
+- widgets render typed display identity data and callbacks only.
+- contact names come from the canonical display identity resolver.
+- legacy bridges that exist only for participant-ID, short-name, or `working.db`
+  contact flows should be retired rather than normalized.
+
+---
+
 ## Phase 1: Create Coordinator Structure
 
 ### Step 1.1: Create ContactsCassetteCoordinator

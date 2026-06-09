@@ -22,8 +22,8 @@ void main() {
         report: MessageHistoryCoverageReport(
           status: MessageHistoryCoverageStatus.complete,
           chatDbTotalCount: 120,
-          workingDbVisibleCount: 115,
-          workingDbRecoveredCount: 5,
+          graphConversationLinkedCount: 115,
+          graphRecoveredOrphanCount: 5,
           earliestMessageDate: DateTime.utc(2020, 01, 01),
           latestMessageDate: DateTime.utc(2026, 04, 26),
         ),
@@ -65,8 +65,8 @@ void main() {
         report: const MessageHistoryCoverageReport(
           status: MessageHistoryCoverageStatus.unknown,
           chatDbTotalCount: null,
-          workingDbVisibleCount: null,
-          workingDbRecoveredCount: null,
+          graphConversationLinkedCount: null,
+          graphRecoveredOrphanCount: null,
           earliestMessageDate: null,
           latestMessageDate: null,
           detail: 'chat.db is unavailable',

@@ -6,8 +6,28 @@ part of 'historical_archive_sources_repository.dart';
 // RiverpodGenerator
 // **************************************************************************
 
+String _$historicalArchiveSourcesRepositoryHash() =>
+    r'6cf50eb27afed61a43dfc9a3cc4decdac8b0b368';
+
+/// See also [historicalArchiveSourcesRepository].
+@ProviderFor(historicalArchiveSourcesRepository)
+final historicalArchiveSourcesRepositoryProvider =
+    AutoDisposeFutureProvider<HistoricalArchiveSourcesRepository>.internal(
+      historicalArchiveSourcesRepository,
+      name: r'historicalArchiveSourcesRepositoryProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$historicalArchiveSourcesRepositoryHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef HistoricalArchiveSourcesRepositoryRef =
+    AutoDisposeFutureProviderRef<HistoricalArchiveSourcesRepository>;
 String _$historicalArchiveSourceMetadataHash() =>
-    r'bc2da7405903a688e2ed019959c599395484a4a0';
+    r'444066734eed3f1768d811afa61b4097cb2f993c';
 
 /// See also [historicalArchiveSourceMetadata].
 @ProviderFor(historicalArchiveSourceMetadata)

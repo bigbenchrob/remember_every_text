@@ -33,7 +33,7 @@ void main() {
   });
 
   test(
-    'resolves existing legacy archive row from graph attachment identity',
+    'resolves existing archive row from graph attachment identity',
     () async {
       final messageSsId = _ss(100);
       final attachmentSsId = _ss(200);
@@ -74,7 +74,7 @@ void main() {
   );
 
   test(
-    'does not resolve legacy archive rows for non-live source ids',
+    'does not resolve old archive-key rows for non-live source ids',
     () async {
       final messageSsId = SourceScopedRowKey.pack(
         sourceId: 2,

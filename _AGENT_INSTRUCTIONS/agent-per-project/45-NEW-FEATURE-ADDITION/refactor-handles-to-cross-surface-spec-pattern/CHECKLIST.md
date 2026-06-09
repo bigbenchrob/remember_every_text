@@ -1,5 +1,11 @@
 # Handles Feature Refactoring — Progress Checklist
 
+> Current conformance note (2026-06-05): historical checklist only. The active
+> handles feature uses the cross-surface folder pattern for info and sidebar
+> cassettes. The old separate phone/email/unmatched sidebar cassette branches,
+> unreachable settings cassette shell, and placeholder handles ViewSpec
+> coordinator have been retired; do not recreate them from this checklist.
+
 ## Phase 1: Create Folder Structure
 - [ ] Create `sidebar_cassette_spec/coordinators/`
 - [ ] Create `sidebar_cassette_spec/resolvers/`

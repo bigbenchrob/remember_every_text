@@ -122,7 +122,7 @@ class _PipelineIncidentBody extends ConsumerWidget {
                   runSpacing: 10,
                   children: [
                     _MetaChip(
-                      label: 'Stage: ${report.stage.name}',
+                      label: 'Stage: ${report.stage.displayLabel}',
                       colors: colors,
                       typography: typography,
                     ),
@@ -183,13 +183,13 @@ class _PipelineIncidentBody extends ConsumerWidget {
                   onPressed: () {
                     ref
                         .read(onboardingGateProvider.notifier)
-                        .startImportAndMigration();
+                        .startImportAndGraphBuild();
                   },
                   style: FilledButton.styleFrom(
                     backgroundColor: colors.buttons.primaryBackground,
                     foregroundColor: colors.buttons.primaryForeground,
                   ),
-                  child: const Text('Retry Import and Migration'),
+                  child: const Text('Retry Import and Graph Build'),
                 ),
               OutlinedButton(
                 onPressed: () async {

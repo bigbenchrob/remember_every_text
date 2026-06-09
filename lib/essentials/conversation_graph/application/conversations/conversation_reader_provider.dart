@@ -10,11 +10,11 @@ part 'conversation_reader_provider.g.dart';
 
 @riverpod
 Future<ConversationReader> conversationReader(Ref ref) async {
-  final workingDatabase = await ref.watch(
+  final graphDatabase = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
   return ConversationReader(
-    repository: SqliteConversationRepository(workingDatabase: workingDatabase),
+    repository: SqliteConversationRepository(graphDatabase: graphDatabase),
   );
 }
 

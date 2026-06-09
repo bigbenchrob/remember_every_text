@@ -78,11 +78,132 @@ void main() {
         expect(report.errors, isEmpty);
       },
     );
+
+    test('treats retained import database as archive metadata only', () async {
+      final service = DatabaseHealthAuditService(
+        hasFullDiskAccess: true,
+        queryLayers: <DatabaseHealthQueryLayer>[
+          _FakeHealthQueryLayer(
+            databaseKey: 'import',
+            role: 'retained_archive_metadata',
+          ),
+        ],
+      );
+
+      final report = await service.buildPhase1Report();
+      final retainedImportTables = report.tableInventory
+          .where((entry) => entry.databaseKey == 'import')
+          .map((entry) => entry.tableName)
+          .toSet();
+
+      expect(
+        retainedImportTables,
+        containsAll(<String>{
+          'schema_migrations',
+          'historical_archive_sources',
+        }),
+      );
+      expect(retainedImportTables, isNot(contains('messages')));
+      expect(retainedImportTables, isNot(contains('import_batches')));
+      expect(
+        report.relationshipChecks
+            .where((check) => check.databaseKey == 'import')
+            .map((check) => check.checkKey),
+        isEmpty,
+      );
+      expect(report.invariantChecks, isEmpty);
+      expect(report.errors, isEmpty);
+    });
+
+    test(
+      'treats retained working database as historical reference only',
+      () async {
+        final service = DatabaseHealthAuditService(
+          hasFullDiskAccess: true,
+          queryLayers: <DatabaseHealthQueryLayer>[
+            _FakeHealthQueryLayer(
+              databaseKey: 'working',
+              role: 'retained_historical_reference',
+            ),
+          ],
+        );
+
+        final report = await service.buildPhase1Report();
+        final retainedWorkingTables = report.tableInventory
+            .where((entry) => entry.databaseKey == 'working')
+            .map((entry) => entry.tableName)
+            .toSet();
+
+        expect(
+          retainedWorkingTables,
+          containsAll(<String>{
+            'schema_migrations',
+            'projection_state',
+            'recovered_unlinked_messages',
+            'recovered_unlinked_attachments',
+          }),
+        );
+        expect(retainedWorkingTables, isNot(contains('messages')));
+        expect(retainedWorkingTables, isNot(contains('chats')));
+        expect(retainedWorkingTables, isNot(contains('global_message_index')));
+        expect(
+          report.relationshipChecks
+              .where((check) => check.databaseKey == 'working')
+              .map((check) => check.checkKey),
+          contains('recovered_unlinked_attachments_to_messages_by_guid'),
+        );
+        expect(
+          report.relationshipChecks
+              .where((check) => check.databaseKey == 'working')
+              .map((check) => check.checkKey),
+          isNot(contains('messages_to_chats')),
+        );
+        expect(
+          report.invariantChecks.map((check) => check.checkKey),
+          contains('projection_state_singleton_should_exist'),
+        );
+        expect(
+          report.invariantChecks.map((check) => check.checkKey),
+          isNot(contains('working_messages_should_have_chat_linkage')),
+        );
+        expect(report.errors, isEmpty);
+      },
+    );
+
+    test(
+      'does not inventory a retained database when its file is absent',
+      () async {
+        final service = DatabaseHealthAuditService(
+          hasFullDiskAccess: true,
+          queryLayers: <DatabaseHealthQueryLayer>[
+            _FakeHealthQueryLayer(
+              databaseKey: 'working',
+              role: 'retained_historical_reference',
+              fileExists: false,
+            ),
+          ],
+        );
+
+        final report = await service.buildPhase1Report();
+
+        expect(report.databases.single.databaseKey, 'working');
+        expect(report.databases.single.accessible, isFalse);
+        expect(report.databases.single.readOnlyOpenSucceeded, isFalse);
+        expect(report.tableInventory, isEmpty);
+        expect(report.relationshipChecks, isEmpty);
+        expect(report.invariantChecks, isEmpty);
+        expect(report.errors, isEmpty);
+      },
+    );
   });
 }
 
 class _FakeHealthQueryLayer extends DatabaseHealthQueryLayer {
-  _FakeHealthQueryLayer({required this.databaseKey, required this.role});
+  _FakeHealthQueryLayer({
+    required this.databaseKey,
+    required this.role,
+    this.fileExists = true,
+  });
 
   @override
   final String databaseKey;
@@ -90,18 +211,28 @@ class _FakeHealthQueryLayer extends DatabaseHealthQueryLayer {
   @override
   final String role;
 
+  final bool fileExists;
+
   @override
   String get databasePath => '/tmp/$databaseKey.db';
 
   @override
-  Future<bool> databaseFileExists() async => true;
+  Future<bool> databaseFileExists() async => fileExists;
 
   @override
   Future<List<Map<String, Object?>>> query(String sql) async {
+    if (!fileExists) {
+      throw StateError('Fake database file is absent');
+    }
     final normalized = sql.replaceAll(RegExp(r'\s+'), ' ').trim();
     if (normalized == 'SELECT 1 AS ok') {
       return <Map<String, Object?>>[
         <String, Object?>{'ok': 1},
+      ];
+    }
+    if (normalized == 'SELECT 1 AS c') {
+      return <Map<String, Object?>>[
+        <String, Object?>{'c': 1},
       ];
     }
     if (normalized == 'PRAGMA user_version') {
@@ -122,6 +253,11 @@ class _FakeHealthQueryLayer extends DatabaseHealthQueryLayer {
         <String, Object?>{'c': 0},
       ];
     }
+    if (normalized.startsWith('SELECT CASE WHEN EXISTS')) {
+      return <Map<String, Object?>>[
+        <String, Object?>{'c': 0},
+      ];
+    }
     if (normalized.startsWith('SELECT SUM(CASE')) {
       return <Map<String, Object?>>[
         <String, Object?>{
@@ -136,6 +272,16 @@ class _FakeHealthQueryLayer extends DatabaseHealthQueryLayer {
 
   List<String> _tablesFor(String key) {
     return switch (key) {
+      'import' => const <String>[
+        'schema_migrations',
+        'historical_archive_sources',
+      ],
+      'working' => const <String>[
+        'schema_migrations',
+        'projection_state',
+        'recovered_unlinked_messages',
+        'recovered_unlinked_attachments',
+      ],
       'source_scoped_import' => const <String>[
         'source_registry',
         'import_batches',

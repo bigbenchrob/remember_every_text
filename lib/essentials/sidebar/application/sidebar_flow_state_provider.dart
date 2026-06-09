@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -20,6 +21,22 @@ part 'sidebar_flow_state_provider.g.dart';
 enum SidebarFlowMessageScope { regular, recoveredDeleted }
 
 enum SidebarFlowContactProjection { allMessages, conversations }
+
+extension SidebarFlowMessageScopeStorage on SidebarFlowMessageScope {
+  String get storageValue {
+    return switch (this) {
+      SidebarFlowMessageScope.regular => 'regular',
+      SidebarFlowMessageScope.recoveredDeleted => 'recovered_deleted',
+    };
+  }
+
+  static SidebarFlowMessageScope fromStorage(String? rawValue) {
+    return switch (rawValue) {
+      'recovered_deleted' => SidebarFlowMessageScope.recoveredDeleted,
+      _ => SidebarFlowMessageScope.regular,
+    };
+  }
+}
 
 extension SidebarFlowContactProjectionStorage on SidebarFlowContactProjection {
   String get storageValue {
@@ -65,6 +82,114 @@ class SidebarContactContextPreference {
 }
 
 const String sidebarContactContextOverlaySettingKey = 'sidebar_contact_context';
+const String sidebarFlowNavigationOverlaySettingKey = 'sidebar_flow_navigation';
+
+@visibleForTesting
+class SidebarFlowNavigationPreference {
+  const SidebarFlowNavigationPreference._({required this.state});
+
+  final SidebarFlowState state;
+
+  String get storageValue {
+    final restorableState = _restorableSidebarFlowState(state);
+    return jsonEncode({
+      'topMenuChoice': restorableState.topMenuChoice.id,
+      'chosenContactId': restorableState.chosenContactId,
+      'selectedHandleId': restorableState.selectedHandleId,
+      'selectedConversationId': restorableState.selectedConversationId,
+      'messageScope': restorableState.messageScope.storageValue,
+      'contactProjection': restorableState.contactProjection.storageValue,
+    });
+  }
+
+  static SidebarFlowNavigationPreference fromState(SidebarFlowState state) {
+    return SidebarFlowNavigationPreference._(
+      state: _restorableSidebarFlowState(state),
+    );
+  }
+
+  static SidebarFlowNavigationPreference? fromStorage(String? rawValue) {
+    if (rawValue == null || rawValue.isEmpty) {
+      return null;
+    }
+
+    try {
+      final decoded = jsonDecode(rawValue);
+      if (decoded is! Map<String, Object?>) {
+        return null;
+      }
+
+      final state = SidebarFlowState(
+        topMenuChoice: TopChatMenuChoice.fromId(
+          decoded['topMenuChoice'] as String? ?? defaultTopChatMenuChoice.id,
+        ),
+        chosenContactId: decoded['chosenContactId'] as int?,
+        selectedHandleId: decoded['selectedHandleId'] as int?,
+        selectedConversationId: decoded['selectedConversationId'] as int?,
+        messageScope: SidebarFlowMessageScopeStorage.fromStorage(
+          decoded['messageScope'] as String?,
+        ),
+        contactProjection: SidebarFlowContactProjectionStorage.fromStorage(
+          decoded['contactProjection'] as String?,
+        ),
+      );
+      return SidebarFlowNavigationPreference._(
+        state: _restorableSidebarFlowState(state),
+      );
+    } on FormatException {
+      return null;
+    } on TypeError {
+      return null;
+    } on StateError {
+      return null;
+    }
+  }
+}
+
+SidebarFlowState _restorableSidebarFlowState(SidebarFlowState state) {
+  switch (state.topMenuChoice) {
+    case TopChatMenuChoice.conversations:
+      return SidebarFlowState(
+        topMenuChoice: TopChatMenuChoice.conversations,
+        selectedConversationId: state.selectedConversationId,
+      );
+    case TopChatMenuChoice.contacts:
+      if (state.chosenContactId == null) {
+        return const SidebarFlowState(
+          topMenuChoice: TopChatMenuChoice.contacts,
+        );
+      }
+
+      final isRecoveredScope =
+          state.messageScope == SidebarFlowMessageScope.recoveredDeleted;
+      return SidebarFlowState(
+        topMenuChoice: TopChatMenuChoice.contacts,
+        chosenContactId: state.chosenContactId,
+        selectedHandleId: isRecoveredScope ? null : state.selectedHandleId,
+        messageScope: state.messageScope,
+        contactProjection: isRecoveredScope
+            ? SidebarFlowContactProjection.allMessages
+            : state.contactProjection,
+      );
+    case TopChatMenuChoice.strayHandles:
+      return const SidebarFlowState(
+        topMenuChoice: TopChatMenuChoice.strayHandles,
+      );
+    case TopChatMenuChoice.searchAllMessages:
+      return const SidebarFlowState(
+        topMenuChoice: TopChatMenuChoice.searchAllMessages,
+      );
+    case TopChatMenuChoice.recoveredUnlinkedMessages:
+      return const SidebarFlowState(
+        topMenuChoice: TopChatMenuChoice.recoveredUnlinkedMessages,
+        messageScope: SidebarFlowMessageScope.recoveredDeleted,
+      );
+    case TopChatMenuChoice.recoveredNoHandleFromMeMessages:
+      return const SidebarFlowState(
+        topMenuChoice: TopChatMenuChoice.recoveredNoHandleFromMeMessages,
+      );
+  }
+}
 
 @visibleForTesting
 void debugAssertValidSidebarFlowState(SidebarFlowState state) {
@@ -350,9 +475,17 @@ abstract class SidebarFlowState with _$SidebarFlowState {
 @riverpod
 class SidebarFlow extends _$SidebarFlow {
   Future<void> _contactContextPersistChain = Future<void>.value();
+  Future<void> _navigationPreferencePersistChain = Future<void>.value();
+  bool _restoreScheduled = false;
+  bool _hasLocalMutation = false;
+  bool _isDisposed = false;
 
   @override
   SidebarFlowState build() {
+    ref.onDispose(() {
+      _isDisposed = true;
+    });
+    _scheduleNavigationPreferenceRestore();
     const initialState = SidebarFlowState();
     assert(() {
       debugAssertValidSidebarFlowState(initialState);
@@ -361,13 +494,21 @@ class SidebarFlow extends _$SidebarFlow {
     return initialState;
   }
 
-  void _setState(SidebarFlowState nextState) {
+  void _setState(SidebarFlowState nextState, {bool persistNavigation = true}) {
     assert(() {
       debugAssertValidSidebarFlowState(nextState);
       return true;
     }());
 
     state = nextState;
+    if (!persistNavigation) {
+      return;
+    }
+
+    _hasLocalMutation = true;
+    _scheduleNavigationPreferencePersist(
+      SidebarFlowNavigationPreference.fromState(nextState),
+    );
   }
 
   void topMenuChanged({
@@ -821,6 +962,87 @@ class SidebarFlow extends _$SidebarFlow {
         });
     unawaited(
       _contactContextPersistChain.catchError((Object _, StackTrace _) {}),
+    );
+  }
+
+  void _scheduleNavigationPreferenceRestore() {
+    if (_restoreScheduled) {
+      return;
+    }
+    _restoreScheduled = true;
+    unawaited(_restoreNavigationPreference());
+  }
+
+  Future<void> _restoreNavigationPreference() async {
+    try {
+      final preference = await _readNavigationPreference();
+      if (_isDisposed || _hasLocalMutation || preference == null) {
+        return;
+      }
+
+      _setState(preference.state, persistNavigation: false);
+      _restoreCassetteRackForState(preference.state);
+    } catch (_) {
+      // Restore is best-effort user intent. Invalid or unavailable overlay
+      // state should never block the default sidebar from rendering.
+    }
+  }
+
+  void _restoreCassetteRackForState(SidebarFlowState restoredState) {
+    final topMenuSpec = CassetteSpec.sidebarUtility(
+      SidebarUtilityCassetteSpec.topChatMenu(
+        selectedChoice: restoredState.topMenuChoice,
+      ),
+    );
+    final rack = ref.read(cassetteRackStateProvider(SidebarMode.messages));
+    if (rack.cassettes.isEmpty) {
+      return;
+    }
+
+    final rackNotifier = ref.read(
+      cassetteRackStateProvider(SidebarMode.messages).notifier,
+    );
+    rackNotifier.replaceAtIndexAndCascade(0, topMenuSpec);
+
+    final contactId = restoredState.chosenContactId;
+    if (restoredState.topMenuChoice != TopChatMenuChoice.contacts ||
+        contactId == null) {
+      return;
+    }
+
+    rackNotifier.replaceAtIndexAndCascade(
+      1,
+      CassetteSpec.contacts(
+        ContactsCassetteSpec.contactSelectionControl(
+          chosenContactId: contactId,
+        ),
+      ),
+    );
+  }
+
+  Future<SidebarFlowNavigationPreference?> _readNavigationPreference() async {
+    final overlayDb = await ref.read(overlayDatabaseProvider.future);
+    final rawValue = await overlayDb.readOverlaySetting(
+      sidebarFlowNavigationOverlaySettingKey,
+    );
+    return SidebarFlowNavigationPreference.fromStorage(rawValue);
+  }
+
+  void _scheduleNavigationPreferencePersist(
+    SidebarFlowNavigationPreference preference,
+  ) {
+    final overlayDbFuture = ref.read(overlayDatabaseProvider.future);
+    _navigationPreferencePersistChain = _navigationPreferencePersistChain
+        .catchError((Object _, StackTrace _) {})
+        .then((_) async {
+          final overlayDb = await overlayDbFuture;
+          await overlayDb.writeOverlaySetting(
+            settingKey: sidebarFlowNavigationOverlaySettingKey,
+            settingValue: preference.storageValue,
+          );
+        });
+    unawaited(
+      _navigationPreferencePersistChain.catchError((Object _, StackTrace _) {}),
     );
   }
 }

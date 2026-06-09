@@ -2,17 +2,34 @@
 tier: feature
 scope: proposal
 owner: agent-per-project
-last_reviewed: 2025-11-06
+last_reviewed: 2026-06-06
 links:
   - ../../50-USE-CASE-ILLUSTRATIONS/manual-handle-to-contact-linking.md
   - ../../40-FEATURES/chat-handles/CHARTER.md
 tests: []
 feature: manual-handle-to-contact-linking
-status: proposed
+status: historical-proposal-current-intent-implemented-through-graph-overlay
 created: 2025-11-01
 ---
 
 # Feature Proposal: Manual Handle-to-Contact Linking
+
+## Current Conformance Note (2026-06-06)
+
+The user-facing intent remains current: unmatched handles can be manually
+associated with known contacts, and the user-created association must survive
+source refreshes. The implementation authority has changed.
+
+Current architecture:
+
+- automatic contact/handle facts come from the source-scoped conversation graph
+- user-created links belong only in `user_overlays.db`
+- read models merge graph facts with overlay intent
+- import/projection must not consult overlay state
+
+This historical proposal should not be read as authority to rebuild ordinary
+`working.db` participant/link tables or to reindex retained legacy search
+after a manual link.
 
 ## Overview
 

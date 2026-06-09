@@ -1,5 +1,10 @@
 # Checklist: Message History Coverage Check
 
+> Current conformance note (2026-06-06): this checklist is historical. Completed
+> items that mention `working.db` describe the original implementation target;
+> current coverage maintenance should preserve graph-accounted read models and
+> must not reopen retained `working.db` as the ordinary coverage source.
+
 ## Phase 1: Core Coverage Report
 
 - [x] Add a new transient Settings troubleshooting action for `Message history coverage...`.

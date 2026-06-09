@@ -59,19 +59,18 @@ These mechanisms were useful stabilizers, but they also prove the system has
 not yet reduced panel projection to one clean semantic writer plus one passive
 render layer.
 
-### 2. Recovered timelines are integrated, but still special-cased
+### 2. Recovered evidence remains a distinct semantic scope
 
-Recovered timelines can flow through the same broad ordinal API surface, but
-they still take a different underlying path:
+Recovered evidence now routes through the shared Message Evidence Spine, but it
+remains semantically distinct from ordinary conversation evidence:
 
-- recovered items come from recovered-message providers rather than the normal
-  working-db ordinal strategies
-- recovered scopes are translated into an in-memory
-  `RecoveredListOrdinalStrategy`
-- `MessagesTimelineView` still treats recovered timelines as a dedicated surface
-  rather than fully using the same main scaffold path
+- recovered rows represent source-retained rows without ordinary current
+  conversation topology.
+- recovered scopes must remain visibly distinct from ordinary timelines.
+- archive/recovery compatibility code may still exist behind named boundaries.
 
-That is functional, but it is not full unification.
+That is intentional semantic separation, not permission to create a separate
+message renderer.
 
 ### 3. Sidebar layout still inspects built widgets for some decisions
 

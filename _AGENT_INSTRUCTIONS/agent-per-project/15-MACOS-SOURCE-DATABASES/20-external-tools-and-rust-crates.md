@@ -70,11 +70,14 @@ External tools are for:
 - reverse-engineering support
 - sanity checks when source-db behavior contradicts import assumptions
 
-They are not the source of truth for MessageLens architecture. Internal import, migration, and UI decisions remain governed by this repository’s docs and code.
+They are not the source of truth for MessageLens architecture. Internal
+source-scoped import, graph projection, retained compatibility, and UI
+decisions remain governed by this repository's docs and code.
 
 Do not copy external export semantics into MessageLens without reconciling them against current internal boundaries:
 
-- source `chat.db` rows map through the import ledger before reaching `working.db`
-- recovered-unlinked rows stay separate from normal chat-linked messages
+- source `chat.db` rows map through `macos_import_ss.db` before reaching
+  `working_ss.db`
+- graph-orphan/recovered rows stay separate from normal chat-linked messages
 - Apple attachment paths are volatile source hints, not durable archive guarantees
 - overlay archive and deterministic recovery decisions remain MessageLens-owned

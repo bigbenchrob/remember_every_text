@@ -8,26 +8,26 @@ import '../conversation_graph_test_database.dart';
 
 void main() {
   late Directory tempDir;
-  late ConversationGraphDatabase workingDatabase;
+  late ConversationGraphDatabase graphDatabase;
 
   setUpAll(() {
     sqfliteFfiInit();
   });
 
   setUp(() async {
-    tempDir = await Directory.systemTemp.createTemp('working_ss_db_test_');
-    workingDatabase = await openConversationGraphTestDatabase();
+    tempDir = await Directory.systemTemp.createTemp('conversation_graph_db_test_');
+    graphDatabase = await openConversationGraphTestDatabase();
   });
 
   tearDown(() async {
-    await workingDatabase.close();
+    await graphDatabase.close();
     if (tempDir.existsSync()) {
       await tempDir.delete(recursive: true);
     }
   });
 
   test('creates messages projection schema only', () async {
-    final messageColumns = await workingDatabase.database.rawQuery(
+    final messageColumns = await graphDatabase.database.rawQuery(
       'PRAGMA table_info(messages)',
     );
     final columnNames = messageColumns.map((row) => row['name']).toSet();
@@ -62,34 +62,34 @@ void main() {
   });
 
   test('creates chats and chat_to_message projection schema', () async {
-    final handleColumns = await workingDatabase.database.rawQuery(
+    final handleColumns = await graphDatabase.database.rawQuery(
       'PRAGMA table_info(handles)',
     );
-    final canonicalHandleColumns = await workingDatabase.database.rawQuery(
+    final canonicalHandleColumns = await graphDatabase.database.rawQuery(
       'PRAGMA table_info(canonical_handles)',
     );
-    final handleAliasColumns = await workingDatabase.database.rawQuery(
+    final handleAliasColumns = await graphDatabase.database.rawQuery(
       'PRAGMA table_info(handle_aliases)',
     );
-    final chatColumns = await workingDatabase.database.rawQuery(
+    final chatColumns = await graphDatabase.database.rawQuery(
       'PRAGMA table_info(chats)',
     );
-    final edgeColumns = await workingDatabase.database.rawQuery(
+    final edgeColumns = await graphDatabase.database.rawQuery(
       'PRAGMA table_info(chat_to_message)',
     );
-    final participantColumns = await workingDatabase.database.rawQuery(
+    final participantColumns = await graphDatabase.database.rawQuery(
       'PRAGMA table_info(chat_to_handle)',
     );
-    final contactColumns = await workingDatabase.database.rawQuery(
+    final contactColumns = await graphDatabase.database.rawQuery(
       'PRAGMA table_info(contacts)',
     );
-    final contactEdgeColumns = await workingDatabase.database.rawQuery(
+    final contactEdgeColumns = await graphDatabase.database.rawQuery(
       'PRAGMA table_info(contact_to_handle)',
     );
-    final attachmentColumns = await workingDatabase.database.rawQuery(
+    final attachmentColumns = await graphDatabase.database.rawQuery(
       'PRAGMA table_info(attachments)',
     );
-    final attachmentEdgeColumns = await workingDatabase.database.rawQuery(
+    final attachmentEdgeColumns = await graphDatabase.database.rawQuery(
       'PRAGMA table_info(message_to_attachment)',
     );
 
@@ -197,12 +197,10 @@ void main() {
       await legacyDatabase.execute('PRAGMA user_version = 0');
       await legacyDatabase.close();
 
-      final driftDatabase = ConversationGraphDatabase(
-        NativeDatabase(File(dbPath)),
-      );
-      addTearDown(driftDatabase.close);
+      await graphDatabase.close();
+      graphDatabase = ConversationGraphDatabase(NativeDatabase(File(dbPath)));
 
-      final tables = await driftDatabase.selectRows('''
+      final tables = await graphDatabase.selectRows('''
       SELECT name
       FROM sqlite_master
       WHERE type = 'table'

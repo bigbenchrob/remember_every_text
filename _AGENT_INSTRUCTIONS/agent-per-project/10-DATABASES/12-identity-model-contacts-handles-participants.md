@@ -2,7 +2,7 @@
 tier: project
 scope: databases
 owner: agent-per-project
-last_reviewed: 2026-04-21
+last_reviewed: 2026-06-05
 source_of_truth: doc
 links:
   - ./01-db-import.md
@@ -18,25 +18,27 @@ links:
 tests: []
 ---
 
-# Identity Model: Contacts, Handles, Participants
+# Identity Model: Contacts, Handles, Participants, and Graph Identity
+
+> Current conformance note (2026-06-05): identity resolution is semantic, not relational. The resolver answers "what should the user see?", not "which database row owns this information?" Ordinary app surfaces now use graph-backed contact/handle/conversation identity plus overlay user intent.
 
 ## TL;DR
 
 - Apple has handles: raw communication identifiers such as phone numbers and email addresses.
-- MessageLens uses participants as the canonical UI identity unit once identity has been resolved.
-- Contacts are source metadata and enrichment. They can seed participants, but they do not by themselves define identity.
+- MessageLens uses graph contact/conversation/handle topology plus display identity resolution once identity has been resolved.
+- Contacts are source metadata and enrichment. They can seed graph contact identity, but they do not by themselves define identity.
 - Overlay DB provides user-controlled identity refinement: display-name overrides, favorites, visibility/dismissal state, manual handle links, and virtual participants.
 
-Do not reduce identity to strings. Identity is layered: source handles and AddressBook records are imported, migration projects canonical handles and participants, and overlay merges user intent at read time.
+Do not reduce identity to strings. Identity is layered: source handles and AddressBook records are imported, source-scoped graph projection creates canonical handles/contact topology, and overlay merges user intent at read time.
 
 ## Identity Authority Rule
 
-Identity meaning must be derived only from the participant model.
+Identity meaning must be derived from the graph identity/display resolver model, not from isolated rows.
 
 - Handles are identifiers, not identity.
 - Contacts are metadata, not identity.
 - Overlay refines identity, but does not define base identity.
-- UI must operate on participants, not handles or contact records.
+- UI must operate on typed graph/display identity read models, not raw handles, raw contact records, or rendered labels.
 
 ## 1. Source Reality (Apple)
 
@@ -85,22 +87,23 @@ Import rules:
 - Do not assume every contact has a useful handle.
 - Do not treat display names as identity keys.
 
-Identity resolution happens during migration and overlay merge, not by mutating the source-derived import ledger.
+Identity resolution happens during source-scoped graph projection and overlay merge, not by mutating the source-derived import ledger.
 
-## 3. Working Database Model
+## 3. Graph Working Database Model
 
-`working.db` is the runtime projection used by providers, search/index rebuilds, and UI data access.
+`working_ss.db` is the production source-scoped graph projection used by ordinary providers, search, message evidence, and UI data access.
 
-Core identity tables:
+Core graph identity/topology tables:
 
-| Working table | Purpose |
+| Graph table | Purpose |
 | --- | --- |
-| `handles_canonical` | Canonical communication endpoints. Multiple raw source handle variants can collapse to one canonical handle. |
-| `handles_canonical_to_alias` | Maps every raw source handle ID to its canonical handle ID and normalized identifier. |
-| `participants` | App identity rows for resolved people/organizations. SQL table name is `participants`; Drift class name is `WorkingParticipants`. |
-| `handle_to_participant` | Confidence-scored links from canonical handles to participants. |
+| `handles` / canonical aliases | Canonical communication endpoints. Multiple raw source handle variants can collapse to one canonical handle. |
+| `contacts` | Graph contact identity projected from AddressBook facts. |
+| `contact_to_handle` | Graph links from contacts to canonical handles. |
+| `chat_to_handle` | Conversation participant topology. |
+| `messages.sender_handle_ss_id` | Sender endpoint identity for message evidence. |
 
-Participants are the canonical identity unit for UI when identity is resolved.
+Graph contact identity is the canonical app identity unit for known people/organizations. Canonical handles remain first-class endpoint identities for explicit handle-focused workflows and unknown/unlinked senders.
 
 A participant may represent:
 
@@ -108,9 +111,9 @@ A participant may represent:
 - multiple canonical handles for the same person or organization
 - an AddressBook-derived person or organization with zero currently linked handles
 
-Current implementation detail: real working `participants.id` preserves AddressBook `Z_PK`. That preserves traceability, but it does not mean AddressBook is the identity authority for all app behavior.
+Retained legacy implementation detail: real legacy `working.participants.id` preserves AddressBook `Z_PK`. That preserves traceability for retained compatibility paths, but it is not the production identity authority for graph-era app behavior.
 
-Canonical handles remain first-class endpoint identities. Unlinked handles may exist without a participant. UI and feature code must route identity through the participant model when operating on people, and through canonical handles only when the workflow is explicitly handle-focused.
+Canonical handles remain first-class endpoint identities. Unlinked handles may exist without a contact identity. UI and feature code must route identity through display identity read models when operating on people, and through canonical handles only when the workflow is explicitly handle-focused.
 
 ## 4. Contacts vs Participants
 
@@ -118,7 +121,7 @@ This distinction is non-negotiable.
 
 Contacts are external metadata from AddressBook.
 
-Participants are internal app identity units used by MessageLens surfaces.
+Graph contacts/display identities are internal app identity units used by MessageLens surfaces. Retained participant terminology exists for legacy compatibility and overlay bridges.
 
 Contacts can provide:
 
@@ -128,7 +131,7 @@ Contacts can provide:
 - phone/email channel data
 - avatar/source metadata when present
 
-Participants provide:
+Graph display identity provides:
 
 - the app-level identity key used by contact-scoped UI
 - a stable target for favorites, display overrides, message scopes, and search grouping
@@ -148,9 +151,9 @@ A contact may:
 - be incomplete or stale
 - fail to project if it has no useful display data
 
-Rule: contacts do not define identity. Participants define identity.
+Rule: contacts do not define identity by themselves. Graph display identity resolves what the user should see.
 
-In current code, AddressBook contacts seed real working participant rows. Overlay virtual participants extend the participant model without writing to `working.db`.
+In current code, AddressBook contacts seed graph contacts and retained compatibility participant rows. Overlay virtual participants extend display identity without writing to `working_ss.db` or legacy `working.db`.
 
 ## 5. Overlay Model (User Control Layer)
 
@@ -169,11 +172,11 @@ Identity-related overlay tables:
 
 `participant_overrides.display_name_override` is a presentation override. It does not rewrite the working `participants.display_name` column.
 
-Overlay modifies presentation and grouping at provider merge time. It must not be copied into import or working tables during migration.
+Overlay modifies presentation and grouping at provider merge time. It must not be copied into import, graph, or retained working tables during projection/migration.
 
 ## 6. Virtual Participants
 
-Virtual participants are user-defined identity constructs stored in overlay only.
+Virtual participants are user-defined identity constructs stored in overlay only. The term remains for compatibility, but app-facing display should treat them as overlay-owned display identities.
 
 They exist for cases where source data cannot provide the desired identity unit, such as:
 
@@ -188,41 +191,42 @@ Current storage:
 - fields include `display_name`, schema-compatible `short_name`, optional `notes`, and audit timestamps
 - manual links from canonical handles use `handle_to_participant_overrides.virtual_participant_id`
 
-Virtual participants are not written to `working.db`. They still map into participant-based UI through provider merge logic and feature resolvers.
+Virtual participants are not written to `working_ss.db` or legacy `working.db`. They still map into app UI through provider merge logic and feature resolvers.
 
-Do not treat virtual participants as AddressBook contacts. Do not expect them in `working.participants`.
+Do not treat virtual participants as AddressBook contacts. Do not expect them in graph contact tables or legacy `working.participants`.
 
 `virtual_participants.short_name` is not an app-facing identity field. It may remain physically present for schema compatibility, but display resolution must use `display_name` only.
 
 ## 7. Identity In The UI
 
-UI surfaces operate on resolved participants or explicit handle-focused specs, not raw source handles.
+UI surfaces operate on resolved graph/display identity models or explicit handle-focused specs, not raw source handles.
 
 Sidebar:
 
-- contact picker and contact cassettes use participant-like entries from working participants plus overlay virtual participants
+- contact picker and contact cassettes use graph contact/display identity entries plus overlay virtual participants
 - favorites and recents are overlay-backed participant state
 - handle review/Handle Lens flows are explicitly handle-focused and may create or update overlay links
 
 Message timelines:
 
-- contact-scoped timelines use participant identity and `contact_message_index`
+- contact-scoped timelines use graph contact identity and the Message Evidence Spine
 - sender display is resolved from handle, participant, contact, and overlay data
 - recovered/unlinked message surfaces must preserve uncertain identity rather than inventing contact membership
 
 Search:
 
-- search consumes working indexes and provider-layer identity resolution
-- result navigation should use stable identifiers such as participant IDs, chat IDs, message IDs/GUIDs, or specs, not display-name strings
+- search consumes graph search/evidence scopes and provider-layer identity resolution
+- result navigation should use stable identifiers such as graph contact ids, chat/conversation `ss_id`s, message `ss_id`s, or specs, not display-name strings
 
 Display names may come from:
 
-1. overlay `display_name_override`
-2. virtual participant fields
-3. working participant fields derived from AddressBook
-4. fallback canonical handle display or normalized identifier
+1. overlay display-name override
+2. overlay virtual contact/participant display name
+3. graph contact/imported AddressBook display identity
+4. stable conversation participant label
+5. fallback canonical handle display or normalized identifier
 
-Display name resolution order for real participant-backed UI is: overlay override -> contact/participant name -> fallback handle.
+Display name resolution order for known contact UI is: user override -> graph/imported contact name -> fallback handle. Raw handles should be primary only for unknown/unlinked handle workflows or explicit handle scopes.
 
 There is no separate user-facing short-name or nickname identity. The only user-authored contact name override is the name edited through the contact hero card and stored as `participant_overrides.display_name_override`.
 
@@ -236,13 +240,13 @@ Spec → Coordinator → Resolver → Payload / ViewModel → Rendering
 
 | Case | Handling |
 | --- | --- |
-| Multiple handles for one person | Canonical handle mapping and `handle_to_participant` can associate multiple endpoints with one participant. Overlay manual links can refine grouping. |
-| No contact match | The handle remains a canonical handle without automatic participant linkage. Handle-focused UI can surface it for review or manual linking. |
+| Multiple handles for one person | Canonical handle mapping and `contact_to_handle` can associate multiple endpoints with one graph contact/display identity. Overlay manual links can refine grouping. |
+| No contact match | The handle remains a canonical handle without automatic contact linkage. Handle-focused UI can surface it for review or manual linking. |
 | Conflicting contact data | Import preserves source evidence; working projection uses deterministic migration rules; overlay overrides provide user-controlled correction without mutating source/projection. |
 | Stale or incorrect AddressBook entry | The participant may inherit stale source names, but overlay `participant_overrides` can change presentation. Source contact data remains traceable. |
 | Orphaned handles | Unlinked canonical handles remain visible to handle-focused flows unless hidden/dismissed by overlay state. |
 | User override conflicts with contact data | Overlay wins at provider merge/read time. The working DB remains unchanged. |
-| Virtual participant linked to handles | UI can show the virtual identity after overlay merge; `working.participants` will not contain that row. |
+| Virtual participant linked to handles | UI can show the virtual identity after overlay merge; graph contact tables and legacy `working.participants` will not contain that row. |
 | Display names collide | Collision is allowed. Display names are labels, not identity keys. |
 
 ## 9. Non-Negotiable Rules
@@ -252,8 +256,8 @@ Spec → Coordinator → Resolver → Payload / ViewModel → Rendering
 - Do not derive identity from display names, short names, nicknames, or search strings.
 - Do not assume contact linkage exists for a handle.
 - Do not assume one contact means one handle or one handle means one contact.
-- Do not bypass the participant model in contact-scoped UI or features.
-- Do not write manual identity refinements into `macos_import.db` or `working.db`.
+- Do not bypass graph/display identity read models in contact-scoped UI or features.
+- Do not write manual identity refinements into `macos_import_ss.db`, `working_ss.db`, `macos_import.db`, or `working.db`.
 - Do not store durable identity meaning in widgets or ephemeral UI state.
 - Do not use raw Apple `handle.id` directly in UI unless the workflow is explicitly source-handle or handle-review oriented.
 - Do not ignore overlay state when presenting names, favorites, hidden/dismissed handles, or manual links.
@@ -262,8 +266,8 @@ Spec → Coordinator → Resolver → Payload / ViewModel → Rendering
 
 Known current-state caveats:
 
-- Real `working.participants` rows are currently AddressBook-derived and preserve `Z_PK`; virtual participants live only in overlay and appear through provider merge logic.
-- The Drift class for SQL table `participants` is `WorkingParticipants`.
+- Legacy `working.participants` rows are AddressBook-derived and preserve `Z_PK`; virtual participants live only in overlay and appear through provider merge logic.
+- The retained Drift class for SQL table `participants` is `WorkingParticipants`.
 - Some older feature docs still use stale table names such as `working.handles`, `import_handles`, or `handle_overrides`. Current names are `handles_canonical`, `handles_canonical_to_alias`, `handles`, and `handle_to_participant_overrides`.
 - `favorite_contacts` is keyed by real `participants.id`; virtual participant favorite behavior should be verified before adding new UI assumptions.
 - Path location alone does not determine architectural ownership. Some contact-related logic is shared infrastructure while other contact-related logic remains feature-owned.
@@ -272,9 +276,9 @@ When these caveats matter, prefer current schema/code and the `10-DATABASES` doc
 
 ## References
 
-- `./10-group-import-working.md` - import-to-working identity and ID preservation contract.
+- `./10-group-import-working.md` - retained import-to-working identity and ID preservation contract.
 - `./11-contact-to-chat-linking.md` - contact-to-handle-to-chat walkthrough.
 - `./05-db-overlay.md` - overlay identity and presentation tables.
-- `../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md` - current import and working table names.
+- `../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md` - retained import and working table names.
 - `../40-FEATURES/contact-names/VIRTUAL_PARTICIPANTS.md` - virtual participant behavior.
 - `../42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/00-overview.md` - spec pipeline and rendering boundaries.

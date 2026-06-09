@@ -1,5 +1,12 @@
 # Living Attachments Archive Tests
 
+## Current Conformance Note (2026-06-06)
+
+These tests remain useful at the archive-service level. Graph-era coverage
+should additionally prove that attachment evidence hydrates through graph
+message rows and shared media tiles, with archive-first resolution where
+available.
+
 ## Unit Tests
 
 ### Resolution Pipeline

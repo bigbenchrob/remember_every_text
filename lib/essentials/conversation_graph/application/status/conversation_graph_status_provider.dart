@@ -17,16 +17,16 @@ part 'conversation_graph_status_provider.g.dart';
 Future<ConversationGraphStatus> conversationGraphStatus(Ref ref) async {
   final pathsHelper = await ref.watch(pathsHelperProvider.future);
   final importDatabase = await ref.watch(importDatabaseProvider.future);
-  final workingDatabase = await ref.watch(
+  final graphDatabase = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
 
   return const ConversationGraphStatusRepository().readStatus(
     chatDbPath: pathsHelper.chatDBPath,
     importDatabase: importDatabase,
-    workingDatabase: workingDatabase,
+    graphDatabase: graphDatabase,
     importDatabaseName: importDatabaseFileName,
-    workingDatabaseName: conversationGraphDatabaseFileName,
+    graphDatabaseName: conversationGraphDatabaseFileName,
     sourceId: liveChatDbSourceId,
   );
 }

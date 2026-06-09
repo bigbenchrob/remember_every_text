@@ -2,8 +2,8 @@
 tier: feature
 scope: proposal
 owner: agent-per-project
-last_reviewed: 2026-04-26
-source_of_truth: doc
+last_reviewed: 2026-06-06
+source_of_truth: historical-record
 links:
   - ../../10-DATABASES/00-all-databases-accessed.md
   - ../../12-DATABASE-HEALTH-AUDIT/00-overview.md
@@ -12,15 +12,22 @@ links:
   - ../../42-SPEC-SYSTEM/REFERENCE/55-EPHEMERAL-SPEC-HANDLING/00-ephemeral-spec-handling-architecture.md
 tests: []
 feature: message-history-coverage-check
-status: approved
+status: historical-planning-record
 created: 2026-04-26
 ---
 
 # Feature Proposal - Message History Coverage Check
 
 **Proposed Branch**: `Ftr.msg-hist`
-**Status**: Approved
+**Status**: Historical planning record
 **Created**: 2026-04-26
+
+> Current conformance note (2026-06-06): the user-facing feature name
+> "Message History Coverage" remains active, but this proposal's `working.db`
+> data-source language is superseded. Current coverage reporting reads source
+> `chat.db` plus graph-accounted MessageLens evidence through the settings
+> repository/resolver path. Do not use this April proposal to reintroduce
+> retained `working.db` as the ordinary coverage authority.
 
 ## Overview
 
@@ -30,10 +37,14 @@ Add a user-facing support diagnostic that answers one specific trust question:
 
 The feature should live under Settings as a troubleshooting/support capability, not as a normal browsing workflow.
 
-The diagnostic compares:
+At proposal time, the diagnostic compared:
 
 - Apple's local source database at `~/Library/Messages/chat.db`
 - MessageLens working projection in `working.db`
+
+Current implementation compares source `chat.db` with graph-accounted
+MessageLens evidence. Retained `working.db` may remain relevant only to
+archive/recovery compatibility diagnostics, not the active coverage report.
 
 It then presents a calm summary that distinguishes between:
 

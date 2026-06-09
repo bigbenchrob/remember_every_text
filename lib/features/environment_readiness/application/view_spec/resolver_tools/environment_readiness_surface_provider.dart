@@ -170,15 +170,15 @@ EnvironmentReadinessDetailViewModel _detailFor({
         tone: EnvironmentReadinessTone.warning,
       );
     case EnvironmentReadinessStepKey.importReadiness:
-      final isMigrationRetry =
-          report?.state == OnboardingEnvironmentState.migrationFailed ||
-          report?.blockerKind == OnboardingBlockerKind.migrationFailed;
+      final isGraphProjectionRetry =
+          report?.state == OnboardingEnvironmentState.graphProjectionFailed ||
+          report?.blockerKind == OnboardingBlockerKind.graphProjectionFailed;
       final isImportRetry =
           report?.state == OnboardingEnvironmentState.importFailed ||
           report?.blockerKind == OnboardingBlockerKind.importFailed;
-      final isRetry = isImportRetry || isMigrationRetry;
-      final label = isMigrationRetry
-          ? 'Retry Import and Migration'
+      final isRetry = isImportRetry || isGraphProjectionRetry;
+      final label = isGraphProjectionRetry
+          ? 'Retry Import and Graph Build'
           : isImportRetry
           ? 'Try Import Again'
           : 'Import My Messages';
@@ -192,7 +192,7 @@ EnvironmentReadinessDetailViewModel _detailFor({
         instructions: isRetry
             ? [
                 'Review the machine view below to confirm the local sources still look healthy.',
-                'Start setup again to retry import and migration.',
+                'Start setup again to retry import and graph build.',
                 'If the problem repeats, use Send Report To Developer to have MessageLens prepare an email with the diagnostic report attached when possible.',
               ]
             : [

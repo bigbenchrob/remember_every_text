@@ -2,19 +2,32 @@
 tier: feature
 scope: implementation-plan
 owner: agent-per-project
-last_reviewed: 2026-04-29
-source_of_truth: doc
+last_reviewed: 2026-06-06
+source_of_truth: historical-record
 links:
   - ./V2_ARCHITECTURE_PLAN.md
   - ./CHECKLIST.md
   - ./SPIKE_RETROSPECTIVE.md
 tests: []
 feature: historical-messages-merge-redux
-status: proposed
+status: historical-implementation-plan-superseded-by-graph-recovery
 created: 2026-04-29
 ---
 
 # Historical Messages Merge Redux - Implementation Plan
+
+## Current Conformance Note (2026-06-06)
+
+This implementation plan is historical. Its safety principles remain useful:
+preflight must be read-only, ingestion must be durable and idempotent, UI
+success must not precede app-visible evidence, and archive data must not be
+rendered from a private staging database.
+
+Its concrete retained pipeline steps are superseded. Future work should target
+source-scoped archive import/provenance, graph projection, and shared message
+evidence scopes. Retained `db-import` / `working.db` rebuilds may still appear
+only as archive/recovery compatibility operations, not as the ordinary
+production visibility path.
 
 ## Purpose
 

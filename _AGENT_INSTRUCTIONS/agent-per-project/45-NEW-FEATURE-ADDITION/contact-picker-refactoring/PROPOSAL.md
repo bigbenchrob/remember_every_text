@@ -15,6 +15,21 @@ tests: []
 
 # Feature Proposal: Smart Pinned Contact Picker Refactor
 
+## Current Conformance Note (2026-06-06)
+
+This proposal is historical UI exploration. Current Contacts mode no longer
+uses the old flat picker as the architectural baseline. Any future picker work
+must preserve the current graph-era identity rules:
+
+- contact lists are graph-backed and merged with overlay user intent at read
+  time.
+- selected contact state may persist in overlay, but import/projection must not
+  consult it.
+- displayed names come from the canonical display identity resolver; raw
+  handles appear only as fallback or explicit handle-scope metadata.
+- do not revive short-name/nickname display variants or widget-local identity
+  reconstruction.
+
 ## Summary
 
 Replace the old flat Contacts dropdown and static grouped picker with a **smart pinned contact picker** in the macOS sidebar that:

@@ -1,5 +1,14 @@
 # Design Notes: Enhanced Message Search
 
+## Current Conformance Note (2026-06-06)
+
+These notes are historical search architecture notes. The current graph-era
+boundary is: search semantics resolve to graph `message_ss_id` scopes, and
+message display proceeds through the Message Evidence Spine. FTS, emotion, or
+semantic indexes may be reconsidered later as graph-search accelerators, but
+must not own evidence rendering or rely on retained `working.db` as the
+ordinary canonical source.
+
 ## 1. Core Concepts
 
 The search system mirrors the project's Import/Migration architecture, treating "Search" as a subsystem that maintains derived views of the canonical `working_messages` table.

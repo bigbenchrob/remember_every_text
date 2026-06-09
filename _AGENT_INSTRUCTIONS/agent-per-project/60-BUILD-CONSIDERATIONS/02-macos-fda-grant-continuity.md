@@ -6,8 +6,8 @@ last_reviewed: 2026-03-29
 source_of_truth: doc
 links:
   - ./README.md
-  - ../../macos/Runner/Configs/AppInfo.xcconfig
-  - ../../macos/Runner.xcodeproj/project.pbxproj
+  - ../../../macos/Runner/Configs/AppInfo.xcconfig
+  - ../../../macos/Runner.xcodeproj/project.pbxproj
 tests: []
 ---
 
@@ -40,8 +40,8 @@ For family distribution, manual testing, and ad hoc release sharing, preserving 
 
 The repository is currently configured so production builds can preserve FDA continuity:
 
-1. Bundle identifier in [macos/Runner/Configs/AppInfo.xcconfig](../../macos/Runner/Configs/AppInfo.xcconfig): `com.bigbenchsoftware.MessageLens`
-2. Release target signing in [macos/Runner.xcodeproj/project.pbxproj](../../macos/Runner.xcodeproj/project.pbxproj):
+1. Bundle identifier in [macos/Runner/Configs/AppInfo.xcconfig](../../../macos/Runner/Configs/AppInfo.xcconfig): `com.bigbenchsoftware.MessageLens`
+2. Release target signing in [macos/Runner.xcodeproj/project.pbxproj](../../../macos/Runner.xcodeproj/project.pbxproj):
    - Team: `FQHT2QP3NE`
    - Release signing identity: `Developer ID Application`
 

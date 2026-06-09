@@ -1,5 +1,12 @@
 # Deterministic Historical Attachment Recovery Checklist
 
+## Current Conformance Note (2026-06-06)
+
+This checklist is historical. Future deterministic recovery implementation
+should target source-scoped graph attachment identity and the current archive
+recovery identity plan. Do not implement new retained `working.db` attachment
+mapping steps from this checklist without explicit archive/recovery review.
+
 ## Phase 0 — Remove Heuristic Historical Importer
 
 - [ ] DELETE `lib/features/attachments/application/historical_import_provider.dart`

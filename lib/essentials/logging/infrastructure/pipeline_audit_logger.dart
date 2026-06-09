@@ -4,17 +4,12 @@ import 'package:path/path.dart' as path;
 
 import '../../db/feature_level_providers.dart';
 
-/// Writes structured, human-readable audit logs for import and migration
-/// pipelines.
+/// Writes structured, human-readable audit logs for active graph lifecycle and
+/// diagnostic pipelines.
 ///
 /// Each run appends a new timestamped section to the log file. Files are
 /// stored in the app's database directory so they sit alongside the databases
-/// they describe:
-///
-/// ```
-/// ~/Library/Application Support/com.bigbenchsoftware.MessageLens/import_log
-/// ~/Library/Application Support/com.bigbenchsoftware.MessageLens/migrate_log
-/// ```
+/// they describe.
 class PipelineAuditLogger {
   PipelineAuditLogger._(this._sink, this._filePath);
 
@@ -26,8 +21,7 @@ class PipelineAuditLogger {
 
   /// Open (or create) a log file in the database directory.
   ///
-  /// [fileName] is relative to [databaseDirectoryPath] — e.g. `import_log`
-  /// or `migrate_log`.
+  /// [fileName] is relative to [databaseDirectoryPath].
   static Future<PipelineAuditLogger> open(String fileName) async {
     final logPath = path.join(databaseDirectoryPath, fileName);
     final file = File(logPath);

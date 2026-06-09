@@ -25,24 +25,8 @@ const derivedMessageDataDatabaseBaseNames = <String>[
   conversationGraphDatabaseFileName,
 ];
 
-const importLedgerDatabaseBaseNames = <String>[
-  'macos_import.db',
-  importDatabaseFileName,
-];
-
-const projectionDatabaseBaseNames = <String>[
-  'working.db',
-  conversationGraphDatabaseFileName,
-];
-
 abstract interface class MessageDataResetService {
   Future<void> resetDerivedData();
-
-  Future<void> clearImportLedgers();
-
-  Future<void> clearProjectionDatabases();
-
-  Future<void> closeLegacyDatabasesForMigration();
 
   Future<void> confirmResetAndPrepareReimport();
 }
@@ -72,7 +56,6 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
         'Closing projection databases before reset',
         source: 'MessageDataResetService',
       );
-      await _closeWorkingDatabase();
       await _closeConversationGraphDatabase();
 
       final deletedFilePaths = await _deleteDerivedDatabaseFiles();
@@ -87,7 +70,6 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
 
       _ref.invalidate(sqfliteImportDatabaseProvider);
       _ref.invalidate(importDatabaseProvider);
-      _ref.invalidate(driftWorkingDatabaseProvider);
       _ref.invalidate(driftConversationGraphDatabaseProvider);
       _ref.invalidate(conversationGraphReadinessProvider);
       _ref.invalidate(conversationGraphPopulatedProvider);
@@ -139,99 +121,6 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
     } finally {
       _ref.read(dbMaintenanceLockProvider.notifier).end();
     }
-  }
-
-  @override
-  Future<void> clearImportLedgers() async {
-    final logger = _ref.read(appLoggerProvider.notifier);
-    logger.warn(
-      'Clearing import ledger databases',
-      source: 'MessageDataResetService',
-    );
-
-    try {
-      await _closeImportDatabase();
-      await _closeSourceScopedImportDatabase();
-
-      final deletedFilePaths = await _deleteDatabaseBaseFiles(
-        importLedgerDatabaseBaseNames,
-      );
-      logger.info(
-        'Deleted import ledger database files',
-        source: 'MessageDataResetService',
-        context: {
-          'deletedCount': deletedFilePaths.length,
-          'deletedFiles': deletedFilePaths,
-        },
-      );
-
-      _ref.invalidate(sqfliteImportDatabaseProvider);
-      _ref.invalidate(importDatabaseProvider);
-      _ref.read(messageDataVersionProvider.notifier).bump();
-    } catch (error, stackTrace) {
-      logger.error(
-        'Clear import ledgers failed',
-        source: 'MessageDataResetService',
-        context: {
-          'error': error.toString(),
-          'stack': stackTrace.toString().split('\n').take(10).join('\n'),
-        },
-      );
-      rethrow;
-    }
-  }
-
-  @override
-  Future<void> clearProjectionDatabases() async {
-    final logger = _ref.read(appLoggerProvider.notifier);
-    logger.warn(
-      'Clearing projection databases',
-      source: 'MessageDataResetService',
-    );
-
-    _ref.read(dbMaintenanceLockProvider.notifier).begin();
-    try {
-      await _closeWorkingDatabase();
-      await _closeConversationGraphDatabase();
-
-      final deletedFilePaths = await _deleteDatabaseBaseFiles(
-        projectionDatabaseBaseNames,
-      );
-      logger.info(
-        'Deleted projection database files',
-        source: 'MessageDataResetService',
-        context: {
-          'deletedCount': deletedFilePaths.length,
-          'deletedFiles': deletedFilePaths,
-        },
-      );
-
-      _ref.invalidate(driftWorkingDatabaseProvider);
-      _ref.invalidate(driftConversationGraphDatabaseProvider);
-      _ref.invalidate(conversationGraphReadinessProvider);
-      _ref.invalidate(conversationGraphPopulatedProvider);
-      _ref.read(messageDataVersionProvider.notifier).bump();
-    } catch (error, stackTrace) {
-      logger.error(
-        'Clear projection databases failed',
-        source: 'MessageDataResetService',
-        context: {
-          'error': error.toString(),
-          'stack': stackTrace.toString().split('\n').take(10).join('\n'),
-        },
-      );
-      rethrow;
-    } finally {
-      _ref.read(dbMaintenanceLockProvider.notifier).end();
-    }
-  }
-
-  @override
-  Future<void> closeLegacyDatabasesForMigration() async {
-    await _closeWorkingDatabase();
-    await _closeImportDatabase();
-    _ref.invalidate(driftWorkingDatabaseProvider);
-    _ref.invalidate(sqfliteImportDatabaseProvider);
   }
 
   @override
@@ -289,8 +178,9 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
         'hasPopulatedAppDatabases': environmentReport?.hasPopulatedAppDatabases,
         'importDbExists': environmentReport?.importDatabase.exists,
         'importDbRowCount': environmentReport?.importDatabase.rowCount,
-        'workingDbExists': environmentReport?.workingDatabase.exists,
-        'workingDbRowCount': environmentReport?.workingDatabase.rowCount,
+        'conversationGraphExists': environmentReport?.conversationGraph.exists,
+        'conversationGraphRowCount':
+            environmentReport?.conversationGraph.rowCount,
       },
     );
 
@@ -332,19 +222,12 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
     if (!_databaseBaseFileExists('macos_import.db')) {
       return;
     }
-    try {
-      final ledgerDb = await _ref.read(sqfliteImportDatabaseProvider.future);
-      await ledgerDb.close();
-    } catch (_) {}
-  }
-
-  Future<void> _closeWorkingDatabase() async {
-    if (!_databaseBaseFileExists('working.db')) {
+    if (!_ref.exists(sqfliteImportDatabaseProvider)) {
       return;
     }
     try {
-      final workingDb = await _ref.read(driftWorkingDatabaseProvider.future);
-      await workingDb.close();
+      final ledgerDb = await _ref.read(sqfliteImportDatabaseProvider.future);
+      await ledgerDb.close();
     } catch (_) {}
   }
 

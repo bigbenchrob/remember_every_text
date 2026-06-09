@@ -10,7 +10,7 @@ String _$messageDataVersionHash() =>
     r'67b276f40eb0facb1a1d6222a2afd2bcc43b03be';
 
 /// A signal provider that message-related providers can watch to know when
-/// new data has been imported/migrated.
+/// graph-backed message data has changed.
 ///
 /// ## Purpose
 ///
@@ -21,7 +21,8 @@ String _$messageDataVersionHash() =>
 /// ## How it works
 ///
 /// 1. Message providers (e.g., `contactMessagesOrdinalProvider`) watch this
-/// 2. After migration completes, `ChatDbChangeMonitor` invalidates this provider
+/// 2. After graph build/projection completes, the graph lifecycle bumps this
+///    provider
 /// 3. The invalidation cascades to all watching providers, triggering rebuilds
 ///
 /// ## Usage

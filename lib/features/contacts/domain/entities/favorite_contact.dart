@@ -9,7 +9,7 @@ abstract class FavoriteContact with _$FavoriteContact {
     required int participantId,
     required int sortOrder,
     required bool isFavorited,
-    required DateTime pinnedAt,
+    required DateTime favoritedAt,
     DateTime? lastInteractionAt,
     required DateTime updatedAt,
   }) = _FavoriteContact;

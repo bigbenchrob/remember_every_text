@@ -211,8 +211,9 @@ abstract class SidebarCassetteCard extends ConsumerWidget {
         final hasBoundedHeight = constraints.maxHeight.isFinite;
 
         // Compute effective margin/padding from layoutStyle or placement mode.
-        // If no legacy override is active, placementMode owns the horizontal body
-        // geometry and derives concrete constraints from the live sidebar width.
+        // If no explicit override is active, placementMode owns the horizontal
+        // body geometry and derives concrete constraints from the live sidebar
+        // width.
         final (effectiveMargin, effectivePadding, sectionTitleGap, geometry) =
             _computeLayout(maxWidth: constraints.maxWidth);
 

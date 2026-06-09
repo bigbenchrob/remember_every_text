@@ -2,22 +2,40 @@
 tier: project
 scope: handoff
 owner: agent-per-project
-last_reviewed: 2026-03-29
-source_of_truth: doc
+status: superseded-historical
+last_reviewed: 2026-06-06
+source_of_truth: historical-record
 links:
   - ../20-DATA-IMPORT-MIGRATION/10-import-orchestrator.md
   - ../20-DATA-IMPORT-MIGRATION/11-rust-message-extractor.md
-  - ../50-CROSS-SURFACE-SPEC-SYSTEMS-OVERVIEW/README.md
-  - ../56-VIEW-SPEC-PANEL-CONTENT-SYSTEM/README.md
+  - ../42-SPEC-SYSTEM/README.md
+  - ../42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/30-panel-viewspec-system.md
   - ./02-macos-fda-grant-continuity.md
 tests: []
 ---
 
 # Onboarding / Import Debug Handoff
 
-This document is the current handoff for the macOS first-run onboarding and import debugging effort.
+> **Superseded historical record.** This document describes a March 2026
+> legacy import-panel debugging incident. It is retained to preserve project
+> history, but it is not current graph-era onboarding, import, or lifecycle
+> guidance.
+>
+> Current ordinary app setup and live update flow is source-scoped:
+> `chat.db` -> `macos_import_ss.db` -> `working_ss.db`, coordinated by the
+> onboarding/readiness surfaces, `ConversationGraphBuildController`, and
+> `ChatDbChangeMonitor`. Retained legacy import/projection code exists only
+> for archive/recovery compatibility or explicit diagnostics.
 
-Use it when a fresh agent needs to resume work without re-deriving the recent history.
+Use this file only to understand the historical incident. For current work,
+start with:
+
+- `../25-ONBOARDING-AND-ARCHIVE/README.md`
+- `../20-DATA-IMPORT-MIGRATION/01-overview.md`
+- `../55-READERS-INTEGRATORS-ORCHESTRATORS/73-GRAPH-MIGRATION-EXECUTION-CHECKLIST.md`
+
+The original handoff follows below and should not be treated as an active
+debugging brief.
 
 ## Current Objective
 

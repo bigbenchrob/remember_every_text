@@ -1,5 +1,11 @@
 # Deterministic Historical Attachment Recovery Tests
 
+## Current Conformance Note (2026-06-06)
+
+This test plan is historical. Current tests should prove source-scoped
+attachment identity mapping, graph `message_to_attachment` endpoint integrity,
+overlay archive idempotence, and no heuristic path-tail matching.
+
 ## Unit Tests
 
 ### Historical Snapshot Reader

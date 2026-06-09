@@ -139,7 +139,7 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.unmapped, hasLength(1));
-      expect(result.unmapped.first.reason, UnmappedReason.messageNotInWorking);
+      expect(result.unmapped.first.reason, UnmappedReason.messageNotInGraph);
       expect(result.unmappedMessageMissing, 1);
     },
   );

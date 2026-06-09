@@ -1,12 +1,9 @@
-import '../../db_importers/domain/entities/db_import_result.dart';
-import '../../db_migrate/domain/entities/db_migration_result.dart';
-
 enum OnboardingEnvironmentState {
   permissionBlocked,
   sourceUnavailable,
   sourceSparseOrUnsynced,
   importFailed,
-  migrationFailed,
+  graphProjectionFailed,
   readyToImport,
   ready,
 }
@@ -18,11 +15,11 @@ enum OnboardingBlockerKind {
   addressBookUnavailable,
   sourceDataSparseOrUnsynced,
   importFailed,
-  migrationFailed,
+  graphProjectionFailed,
   importDatabaseMissing,
-  workingDatabaseMissing,
+  conversationGraphMissing,
   importDatabaseEmpty,
-  workingDatabaseEmpty,
+  conversationGraphEmpty,
 }
 
 enum OnboardingSyncPlausibility {
@@ -32,6 +29,20 @@ enum OnboardingSyncPlausibility {
 }
 
 enum OnboardingFailureFreshness { unknown, today, older }
+
+enum OnboardingPipelinePhase { import, graphProjection }
+
+class OnboardingPipelineFailure {
+  const OnboardingPipelineFailure({
+    required this.phase,
+    this.batchId,
+    this.message,
+  });
+
+  final OnboardingPipelinePhase phase;
+  final String? message;
+  final int? batchId;
+}
 
 class OnboardingDatabaseProbe {
   const OnboardingDatabaseProbe({
@@ -61,16 +72,16 @@ class OnboardingEnvironmentReport {
     required this.messagesDatabase,
     required this.addressBookDatabase,
     required this.importDatabase,
-    required this.workingDatabase,
+    required this.conversationGraph,
     required this.hasFullDiskAccess,
     this.sourceAttachmentCount,
     this.addressBookFailureMessage,
-    this.lastImportResult,
-    this.lastMigrationResult,
+    this.lastImportFailure,
+    this.lastGraphProjectionFailure,
     this.lastImportFailureRecordedAt,
-    this.lastMigrationFailureRecordedAt,
+    this.lastGraphProjectionFailureRecordedAt,
     this.usingPersistedImportFailure = false,
-    this.usingPersistedMigrationFailure = false,
+    this.usingPersistedGraphProjectionFailure = false,
     this.shouldResetAppDatabasesBeforeImport = false,
     this.resetAppDatabasesReason,
   });
@@ -81,29 +92,29 @@ class OnboardingEnvironmentReport {
   final OnboardingDatabaseProbe messagesDatabase;
   final OnboardingDatabaseProbe? addressBookDatabase;
   final OnboardingDatabaseProbe importDatabase;
-  final OnboardingDatabaseProbe workingDatabase;
+  final OnboardingDatabaseProbe conversationGraph;
   final bool hasFullDiskAccess;
   final int? sourceAttachmentCount;
   final String? addressBookFailureMessage;
-  final DbImportResult? lastImportResult;
-  final DbMigrationResult? lastMigrationResult;
+  final OnboardingPipelineFailure? lastImportFailure;
+  final OnboardingPipelineFailure? lastGraphProjectionFailure;
   final DateTime? lastImportFailureRecordedAt;
-  final DateTime? lastMigrationFailureRecordedAt;
+  final DateTime? lastGraphProjectionFailureRecordedAt;
   final bool usingPersistedImportFailure;
-  final bool usingPersistedMigrationFailure;
+  final bool usingPersistedGraphProjectionFailure;
   final bool shouldResetAppDatabasesBeforeImport;
   final String? resetAppDatabasesReason;
 
   bool get hasPopulatedAppDatabases {
-    return importDatabase.hasData && workingDatabase.hasData;
+    return importDatabase.hasData && conversationGraph.hasData;
   }
 
   bool get hasImportFailure {
-    return lastImportResult != null && !lastImportResult!.success;
+    return lastImportFailure != null;
   }
 
-  bool get hasMigrationFailure {
-    return lastMigrationResult != null && !lastMigrationResult!.success;
+  bool get hasGraphProjectionFailure {
+    return lastGraphProjectionFailure != null;
   }
 
   String? get importFailureMessage {
@@ -111,27 +122,27 @@ class OnboardingEnvironmentReport {
       return null;
     }
 
-    return lastImportResult!.error;
+    return lastImportFailure!.message;
   }
 
-  String? get migrationFailureMessage {
-    if (!hasMigrationFailure) {
+  String? get graphProjectionFailureMessage {
+    if (!hasGraphProjectionFailure) {
       return null;
     }
 
-    return lastMigrationResult!.error;
+    return lastGraphProjectionFailure!.message;
   }
 
   DateTime? get latestFailureRecordedAt {
-    return lastMigrationFailureRecordedAt ?? lastImportFailureRecordedAt;
+    return lastGraphProjectionFailureRecordedAt ?? lastImportFailureRecordedAt;
   }
 
   OnboardingFailureFreshness importFailureFreshness({DateTime? now}) {
     return _failureFreshness(lastImportFailureRecordedAt, now: now);
   }
 
-  OnboardingFailureFreshness migrationFailureFreshness({DateTime? now}) {
-    return _failureFreshness(lastMigrationFailureRecordedAt, now: now);
+  OnboardingFailureFreshness graphProjectionFailureFreshness({DateTime? now}) {
+    return _failureFreshness(lastGraphProjectionFailureRecordedAt, now: now);
   }
 
   OnboardingFailureFreshness _failureFreshness(

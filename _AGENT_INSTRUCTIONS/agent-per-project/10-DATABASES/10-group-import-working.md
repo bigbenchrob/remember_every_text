@@ -2,7 +2,7 @@
 tier: project
 scope: databases
 owner: agent-per-project
-last_reviewed: 2026-04-21
+last_reviewed: 2026-06-08
 source_of_truth: doc
 links:
        - ./00-all-databases-accessed.md
@@ -18,11 +18,21 @@ links:
 tests: []
 ---
 
-# `group-import-working-db` — Import Ledger ↔ Working Projection Contract
+# `group-import-working-db` - Historical Retained Import / Working Contract
 
-`db-import` and `db-working` operate as a tightly coupled pipeline. This document captures the non-negotiable rules governing how data flows from macOS sources into the app projection.
+`db-import` and `db-working` were the legacy import/projection pair. The active
+orchestrator/migrator implementation has been retired from app code. This
+document preserves the historical contract so old files, diagnostics, and
+archive/recovery decisions can still be interpreted correctly.
 
-## 1. Source → Import → Working Flow
+> Current conformance note (2026-06-08): ordinary app data now flows through
+> `macos_import_ss.db` -> `working_ss.db` using source-scoped `ss_id` graph
+> identity. Fresh retained `macos_import.db` files store historical archive
+> source metadata only, and retained `working.db` has no central app provider.
+> Do not use this retained import/working contract as the model for new
+> graph-era features.
+
+## 1. Historical Source -> Import -> Working Flow
 
 ```
 macOS AddressBook (db-address-book)
@@ -31,20 +41,42 @@ macOS AddressBook (db-address-book)
             ↓  import orchestrator
      db-import (source-derived ledger)
             ↓  migration orchestrator
-     db-working (projection for UI)
+     db-working (retained projection)
 ```
 
-- **Import orchestrator** (`../20-DATA-IMPORT-MIGRATION/10-import-orchestrator.md`) copies source-derived data into `db-import`, preserving source identifiers and batch metadata.
-- **Migration orchestrator** (`../20-DATA-IMPORT-MIGRATION/20-migration-orchestrator.md`) projects ledger tables into Drift models with UI-friendly indexing.
+The old retained import and migration orchestrator classes are no longer active
+runtime code. Historical files may still carry tables produced by that flow;
+diagnostics may inspect those files read-only, and reset may delete them.
 
-## 2. ID Preservation Rules (**Do Not Break**)
+Production source-scoped flow:
 
-1. **Contact IDs** (`Z_PK`) from AddressBook become `participants.id` in `db-working`. No remapping, no new sequences.
+```
+macOS AddressBook (db-address-book)
+            +
+ macOS Messages (db-chat)
+            |
+            v
+ db-import-ss (macos_import_ss.db)
+            |
+            v
+ db-graph-working (working_ss.db)
+```
+
+## 2. Historical ID Preservation Rules
+
+These rules explain old `working.db` contents. New graph-era work must use
+source-scoped graph identity instead.
+
+1. **Contact IDs** (`Z_PK`) from AddressBook become `participants.id` in historical `db-working`. No remapping, no new sequences.
 2. **Handle IDs** from the Messages ledger are mapped through `MigrationContext.handleIdCanonicalMap`; canonical rows use a stable source handle ID, and every raw source handle is preserved in `handles_canonical_to_alias`.
 3. **Chat GUIDs / IDs** from Messages remain identical throughout ledger and projection tables.
 4. **Message GUIDs / ROWIDs** remain traceable in `db-working.messages`; source rows without chat-message joins use the recovered-unlinked path.
 
-If a proposed change requires remapping IDs outside the documented canonical handle map, stop and revisit this contract. Undocumented remapping introduces data drift and breaks downstream joins. See `./11-contact-to-chat-linking.md` for an end-to-end walkthrough of the contact → chat relationship.
+If diagnostic interpretation of historical data requires remapping IDs outside
+the documented canonical handle map, stop and revisit this contract.
+Undocumented remapping introduces data drift and breaks downstream joins. See
+`./11-contact-to-chat-linking.md` for an end-to-end walkthrough of the
+historical contact -> chat relationship.
 
 ## 3. Table Mapping Snapshot
 
@@ -59,35 +91,49 @@ If a proposed change requires remapping IDs outside the documented canonical han
 | `recovered_unlinked_messages` | `db-import.recovered_unlinked_messages` | Preserves source rows that are not linked through normal chat-message joins. |
 | `attachments` / `recovered_unlinked_attachments` | `db-import.attachments` plus normal/recovered attachment joins | Preserves attachment source identity and separates normal chat-linked rows from recovered rows. |
 | `read_state` / `message_read_marks` | `db-import.messages` | Projects read timestamps and message-level read markers. |
-| `global_message_index` / `message_index` / `contact_message_index` | Built from `db-working.messages` and related joins | Rebuilt after migration for timeline and search access. |
+| `global_message_index` / `message_index` / `contact_message_index` | Built from `db-working.messages` and related joins | Retained legacy indexes; ordinary timelines/search now use graph evidence/search. |
 
-## 4. Lifecycle Expectations
+## 4. Current Lifecycle Expectations
 
-- **Import ledger is importer-owned**: Runtime features never mutate `db-import`. Incremental import preserves prior rows; full/reimport flows may clear and rebuild source-derived ledger tables through import code while preserving import metadata.
-- **Projection is disposable but mode-aware**: Full migration may clear and rebuild target tables; incremental migration skips truncation and applies migrator-specific insert/update semantics.
-- **Write policy**: Runtime features never mutate `db-import`. Durable user intent never writes to `db-working`; provider-layer merges must respect the overlay independence rules.
+- **Fresh `db-import` is metadata-owned**: Runtime features may update
+  `historical_archive_sources` only through the historical archive-source
+  repository. They must not rebuild old ledger tables.
+- **Retained `db-working` is file storage only**: No central app provider or
+  retained Drift schema remains. Reset may delete it; diagnostics may inspect it
+  read-only.
+- **Write policy**: Durable user intent never writes to `db-import` or
+  `db-working`; provider-layer merges must respect the overlay independence
+  rules.
 
 ## 5. Current Import Reality: Source Message Orphans
 
-The macOS source database may contain `message` rows that do not appear in `chat_message_join`. MessageLens now preserves those rows on a dedicated recovered path rather than leaving them outside the app's data model.
+The macOS source database may contain `message` rows that do not appear in
+`chat_message_join`. The ordinary graph path represents this evidence through
+source-scoped graph/orphan message semantics.
 
-- `chat.db.message` count can exceed thread-linked `db-import.messages`
-- the orphan portion should appear in `db-import.recovered_unlinked_messages`
-- migration should carry that preserved orphan set forward into `db-working.recovered_unlinked_messages`
+- `chat.db.message` count can exceed thread-linked graph topology
+- the orphan portion should appear in source-scoped recovered/orphan graph
+  evidence
+- historical retained files may contain `db-import.recovered_unlinked_messages`
+  and `db-working.recovered_unlinked_messages`
 - audit logs should distinguish thread-linked counts from recovered preserved counts
 
 This is the practical implication of the current Apple data shape: source visibility in `chat.db.message` and thread visibility via `chat_message_join` are not the same thing.
 
 ## 6. Debugging Checklist
 
-1. Confirm the row exists in `db-import` before suspecting migration bugs.
+1. Prefer the graph status panel and source-scoped graph evidence first.
+2. For historical retained files, confirm the row exists in `db-import` before suspecting retained migration bugs.
        For source orphan rows, check both `messages` and `recovered_unlinked_messages`.
-2. Verify the corresponding row in `db-working` retains the same ID.
+3. Verify the corresponding row in `db-working` retains the same ID.
        For recovered rows, check `recovered_unlinked_messages` and `recovered_unlinked_attachments` rather than normal chat-linked tables.
-3. Check `handle_to_participant` and `chat_to_handle` join paths using the preserved IDs.
-4. Re-run the migration orchestrator if the projection is stale or corrupted.
-5. Inspect `import_log` and `migrate_log` before manual SQL diffing; they already report source-vs-ledger-vs-working row deltas, text counts, and join-drop diagnostics.
-6. If IDs differ at any step, halt—someone attempted to remap during migration.
+4. Check `handle_to_participant` and `chat_to_handle` join paths using the preserved IDs.
+5. Do not attempt to re-run deleted retained orchestrators. If old retained
+   storage is required for a recovery task, design an explicit graph-era
+   compatibility/import path.
+6. Inspect retained `import_log` and `migrate_log` only as historical
+   diagnostics. Graph build status lives in the Conversation Graph status panel.
+7. If IDs differ at any step, halt - someone attempted to remap during historical migration.
 
 ## 7. Related Documents
 

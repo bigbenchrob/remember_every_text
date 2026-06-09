@@ -1,5 +1,13 @@
 # DB Onboarding Implementation Checklist
 
+## Current Conformance Note (2026-06-06)
+
+This checklist is historical. Current onboarding implementation should be
+validated against graph build/readiness, source probes, AddressBook readiness,
+and overlay persisted failure state. Do not add new ordinary setup logic that
+uses retained `working.db` emptiness or legacy migration completion as the
+production gate.
+
 ## Phase 1: Domain Layer Foundation
 - [x] Create `lib/essentials/db_onboarding/domain/db_onboarding_phase.dart`
   - Define `DbOnboardingPhase` enum with all phases

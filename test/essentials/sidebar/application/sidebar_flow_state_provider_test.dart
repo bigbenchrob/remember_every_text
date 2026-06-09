@@ -106,6 +106,50 @@ void main() {
     );
   });
 
+  group('SidebarFlowNavigationPreference', () {
+    test('serializes restorable contact navigation context', () {
+      final preference = SidebarFlowNavigationPreference.fromState(
+        SidebarFlowState(
+          topMenuChoice: TopChatMenuChoice.contacts,
+          chosenContactId: 42,
+          selectedHandleId: 7,
+          scrollToDate: DateTime(2026, 6, 1),
+        ),
+      );
+      final restored = SidebarFlowNavigationPreference.fromStorage(
+        preference.storageValue,
+      );
+
+      expect(restored?.state.topMenuChoice, TopChatMenuChoice.contacts);
+      expect(restored?.state.chosenContactId, 42);
+      expect(restored?.state.selectedHandleId, 7);
+      expect(restored?.state.scrollToDate, isNull);
+      expect(
+        restored?.state.contactProjection,
+        SidebarFlowContactProjection.allMessages,
+      );
+    });
+
+    test('serializes restorable conversation navigation context', () {
+      final preference = SidebarFlowNavigationPreference.fromState(
+        const SidebarFlowState(
+          topMenuChoice: TopChatMenuChoice.conversations,
+          selectedConversationId: 8796093022216,
+          selectedConversationAnchorMessageId: 8796093170832,
+          selectedConversationSearchQuery: 'flower',
+        ),
+      );
+      final restored = SidebarFlowNavigationPreference.fromStorage(
+        preference.storageValue,
+      );
+
+      expect(restored?.state.topMenuChoice, TopChatMenuChoice.conversations);
+      expect(restored?.state.selectedConversationId, 8796093022216);
+      expect(restored?.state.selectedConversationAnchorMessageId, isNull);
+      expect(restored?.state.selectedConversationSearchQuery, isNull);
+    });
+  });
+
   group('sidebarFlowProvider', () {
     late ProviderContainer container;
     late OverlayDatabase overlayDb;
@@ -324,6 +368,57 @@ void main() {
         overlayDb,
         sidebarContactContextOverlaySettingKey,
         '42|all_messages',
+      );
+    });
+
+    testWidgets('startup restores persisted sidebar flow navigation context', (
+      tester,
+    ) async {
+      await overlayDb.writeOverlaySetting(
+        settingKey: sidebarFlowNavigationOverlaySettingKey,
+        settingValue: SidebarFlowNavigationPreference.fromState(
+          const SidebarFlowState(
+            topMenuChoice: TopChatMenuChoice.contacts,
+            chosenContactId: 42,
+            selectedHandleId: 7,
+          ),
+        ).storageValue,
+      );
+      await _mountMessagesPanelReconciliation(tester, container);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1));
+
+      final flowState = container.read(sidebarFlowProvider);
+      final rack = container.read(
+        cassetteRackStateProvider(SidebarMode.messages),
+      );
+
+      expect(flowState.topMenuChoice, TopChatMenuChoice.contacts);
+      expect(flowState.chosenContactId, 42);
+      expect(flowState.selectedHandleId, 7);
+      expect(
+        flowState.projectedCenterSpec,
+        equals(
+          const ViewSpec.messages(
+            MessagesSpec.forContact(contactId: 42, filterHandleId: 7),
+          ),
+        ),
+      );
+      expect(
+        rack.cassettes.first,
+        const CassetteSpec.sidebarUtility(
+          SidebarUtilityCassetteSpec.topChatMenu(
+            selectedChoice: TopChatMenuChoice.contacts,
+          ),
+        ),
+      );
+      expect(
+        rack.cassettes,
+        contains(
+          const CassetteSpec.contacts(
+            ContactsCassetteSpec.contactSelectionControl(chosenContactId: 42),
+          ),
+        ),
       );
     });
 

@@ -1,7 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:remember_this_text/essentials/db_importers/domain/entities/db_import_result.dart';
-import 'package:remember_this_text/essentials/db_migrate/domain/entities/db_migration_result.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
 
 void main() {
@@ -17,61 +15,61 @@ void main() {
 
     test('import failure helpers expose persisted failure state', () {
       final report = _report(
-        lastImportResult: const DbImportResult(
+        lastImportFailure: const OnboardingPipelineFailure(
+          phase: OnboardingPipelinePhase.import,
           batchId: 1,
-          success: false,
-          error: 'Import exploded',
+          message: 'Import exploded',
         ),
       );
 
       expect(report.hasImportFailure, isTrue);
       expect(report.importFailureMessage, 'Import exploded');
-      expect(report.hasMigrationFailure, isFalse);
+      expect(report.hasGraphProjectionFailure, isFalse);
     });
 
-    test('migration failure helpers expose persisted failure state', () {
+    test('graph projection failure helpers expose persisted failure state', () {
       final report = _report(
-        lastMigrationResult: const DbMigrationResult(
+        lastGraphProjectionFailure: const OnboardingPipelineFailure(
+          phase: OnboardingPipelinePhase.graphProjection,
           batchId: 2,
-          success: false,
-          error: 'Migration exploded',
+          message: 'Graph projection exploded',
         ),
       );
 
-      expect(report.hasMigrationFailure, isTrue);
-      expect(report.migrationFailureMessage, 'Migration exploded');
+      expect(report.hasGraphProjectionFailure, isTrue);
+      expect(report.graphProjectionFailureMessage, 'Graph projection exploded');
       expect(report.hasImportFailure, isFalse);
     });
 
-    test('successful results do not report failures', () {
-      final report = _report(
-        lastImportResult: const DbImportResult(batchId: 3, success: true),
-        lastMigrationResult: const DbMigrationResult(batchId: 4, success: true),
-      );
+    test('absent failure summaries do not report failures', () {
+      final report = _report();
 
       expect(report.hasImportFailure, isFalse);
       expect(report.importFailureMessage, isNull);
-      expect(report.hasMigrationFailure, isFalse);
-      expect(report.migrationFailureMessage, isNull);
+      expect(report.hasGraphProjectionFailure, isFalse);
+      expect(report.graphProjectionFailureMessage, isNull);
     });
 
     test(
-      'latestFailureRecordedAt prefers migration timestamp when present',
+      'latestFailureRecordedAt prefers graph projection timestamp when present',
       () {
         final importAt = DateTime.utc(2026, 03, 24, 10, 00);
-        final migrationAt = DateTime.utc(2026, 03, 24, 11, 00);
+        final graphProjectionAt = DateTime.utc(2026, 03, 24, 11, 00);
 
         final report = _report(
-          lastImportResult: const DbImportResult(batchId: 1, success: false),
-          lastMigrationResult: const DbMigrationResult(
+          lastImportFailure: const OnboardingPipelineFailure(
+            phase: OnboardingPipelinePhase.import,
+            batchId: 1,
+          ),
+          lastGraphProjectionFailure: const OnboardingPipelineFailure(
+            phase: OnboardingPipelinePhase.graphProjection,
             batchId: 2,
-            success: false,
           ),
           lastImportFailureRecordedAt: importAt,
-          lastMigrationFailureRecordedAt: migrationAt,
+          lastGraphProjectionFailureRecordedAt: graphProjectionAt,
         );
 
-        expect(report.latestFailureRecordedAt, migrationAt);
+        expect(report.latestFailureRecordedAt, graphProjectionAt);
       },
     );
 
@@ -86,24 +84,29 @@ void main() {
       );
     });
 
-    test('migrationFailureFreshness is older for previous-day failures', () {
-      final report = _report(
-        lastMigrationFailureRecordedAt: DateTime(2026, 03, 23, 23, 50),
-      );
+    test(
+      'graphProjectionFailureFreshness is older for previous-day failures',
+      () {
+        final report = _report(
+          lastGraphProjectionFailureRecordedAt: DateTime(2026, 03, 23, 23, 50),
+        );
 
-      expect(
-        report.migrationFailureFreshness(now: DateTime(2026, 03, 24, 0, 10)),
-        OnboardingFailureFreshness.older,
-      );
-    });
+        expect(
+          report.graphProjectionFailureFreshness(
+            now: DateTime(2026, 03, 24, 0, 10),
+          ),
+          OnboardingFailureFreshness.older,
+        );
+      },
+    );
   });
 }
 
 OnboardingEnvironmentReport _report({
-  DbImportResult? lastImportResult,
-  DbMigrationResult? lastMigrationResult,
+  OnboardingPipelineFailure? lastImportFailure,
+  OnboardingPipelineFailure? lastGraphProjectionFailure,
   DateTime? lastImportFailureRecordedAt,
-  DateTime? lastMigrationFailureRecordedAt,
+  DateTime? lastGraphProjectionFailureRecordedAt,
 }) {
   return OnboardingEnvironmentReport(
     state: OnboardingEnvironmentState.ready,
@@ -127,16 +130,16 @@ OnboardingEnvironmentReport _report({
       readable: true,
       rowCount: 100,
     ),
-    workingDatabase: const OnboardingDatabaseProbe(
+    conversationGraph: const OnboardingDatabaseProbe(
       path: 'working_ss.db',
       exists: true,
       readable: true,
       rowCount: 100,
     ),
     hasFullDiskAccess: true,
-    lastImportResult: lastImportResult,
-    lastMigrationResult: lastMigrationResult,
+    lastImportFailure: lastImportFailure,
+    lastGraphProjectionFailure: lastGraphProjectionFailure,
     lastImportFailureRecordedAt: lastImportFailureRecordedAt,
-    lastMigrationFailureRecordedAt: lastMigrationFailureRecordedAt,
+    lastGraphProjectionFailureRecordedAt: lastGraphProjectionFailureRecordedAt,
   );
 }

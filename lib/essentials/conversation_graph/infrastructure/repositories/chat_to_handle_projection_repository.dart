@@ -6,11 +6,11 @@ class SqliteChatToHandleProjectionRepository
     implements ChatToHandleProjectionRepository {
   const SqliteChatToHandleProjectionRepository({
     required this.importDatabase,
-    required this.workingDatabase,
+    required this.graphDatabase,
   });
 
   final ImportDatabase importDatabase;
-  final ConversationGraphDatabase workingDatabase;
+  final ConversationGraphDatabase graphDatabase;
 
   @override
   Future<ChatToHandleProjectionResult> projectEdges() async {
@@ -21,9 +21,9 @@ class SqliteChatToHandleProjectionRepository
     );
 
     var insertedEdgeCount = 0;
-    await workingDatabase.transaction(() async {
+    await graphDatabase.transaction(() async {
       for (final row in rows) {
-        final insertedCount = await workingDatabase.executeAndReadChanges(
+        final insertedCount = await graphDatabase.executeAndReadChanges(
           '''
           INSERT OR IGNORE INTO chat_to_handle (
             chat_ss_id,

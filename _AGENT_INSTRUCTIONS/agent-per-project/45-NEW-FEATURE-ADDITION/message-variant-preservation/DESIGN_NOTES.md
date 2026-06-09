@@ -2,8 +2,8 @@
 tier: feature
 scope: design-notes
 owner: agent-per-project
-last_reviewed: 2026-03-14
-source_of_truth: doc
+last_reviewed: 2026-06-06
+source_of_truth: historical-record
 links:
   - ./PROPOSAL.md
   - ./RETROSPECTIVE.md
@@ -13,6 +13,15 @@ tests: []
 ---
 
 # Design Notes — Message Variant Preservation
+
+## Current Conformance Note (2026-06-06)
+
+These notes remain useful for the semantic-preservation principle, especially
+“preserve useful discriminators without mirroring Apple’s whole schema.” The
+storage vocabulary is superseded by source-scoped import and graph projection:
+ledger facts belong in `macos_import_ss.db`, lightweight app semantics belong in
+`working_ss.db` or query read models, and UI evidence must flow through the
+Message Evidence Spine.
 
 ## Core Principle
 

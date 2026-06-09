@@ -21,8 +21,8 @@ import 'attachment_recovery_hint_storage.dart';
 
 part 'attachment_archive_service_provider.g.dart';
 
-const _kDefaultWorkingSweepLimit = 100;
-const _kWorkingSweepSelectionPageSize = 250;
+const _kDefaultGraphSweepLimit = 100;
+const _kGraphSweepSelectionPageSize = 250;
 const _kManualSweepBurstChunkCount = 25;
 const _kManualSweepSkippedSampleLimit = 3;
 
@@ -41,7 +41,7 @@ Future<String> attachmentArchiveMessagesDatabasePath(Ref ref) async {
 class AttachmentArchiveService extends _$AttachmentArchiveService {
   bool _pauseRequested = false;
   bool _cancelRequested = false;
-  bool _workingSweepInFlight = false;
+  bool _graphSweepInFlight = false;
 
   @override
   BulkArchiveProgress build() {
@@ -201,64 +201,6 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     );
   }
 
-  /// Archive only the linked attachments imported in a specific ledger batch.
-  ///
-  /// This is used by the incremental import flow so newly imported messages
-  /// can remain hidden until their archive-backed display files are ready.
-  Future<AttachmentArchiveResult> archiveImportedBatch({
-    required int batchId,
-  }) async {
-    final settings = await ref.read(archiveSettingsProvider.future);
-    if (!settings.isEnabled) {
-      return const AttachmentArchiveResult(
-        totalScanned: 0,
-        newlyArchived: 0,
-        skipped: 0,
-        failed: 0,
-      );
-    }
-
-    final importDb = await ref.read(sqfliteImportDatabaseProvider.future);
-    final logger = ref.read(appLoggerProvider.notifier);
-
-    final rows = await importDb.rawQuery(
-      '''
-      SELECT DISTINCT
-        m.guid AS message_guid,
-        a.id AS import_attachment_id,
-        a.local_path,
-        a.mime_type,
-        a.sha256_hex
-      FROM attachments a
-      JOIN message_attachments ma ON ma.attachment_id = a.id
-      JOIN messages m ON m.id = ma.message_id
-      WHERE a.batch_id = ?
-        AND m.guid IS NOT NULL
-        AND LENGTH(TRIM(m.guid)) > 0
-        AND a.local_path IS NOT NULL
-        AND LENGTH(TRIM(a.local_path)) > 0
-      ''',
-      <Object?>[batchId],
-    );
-
-    final archiveOutcome = await _archiveRows(
-      rows: rows,
-      updateProgressState: false,
-    );
-    final result = archiveOutcome.result;
-
-    logger.info(
-      'Attachment archive batch $batchId: ${result.newlyArchived} new, '
-      '${result.skipped} skipped, ${result.failed} failed out of '
-      '${result.totalScanned} attachment(s)',
-      source: 'AttachmentArchiveService',
-    );
-
-    ref.invalidate(archiveSettingsProvider);
-
-    return result;
-  }
-
   Future<AttachmentArchiveResult> archiveGraphMessageSourceRange({
     required int sourceId,
     required int startedAfterSourceRowId,
@@ -292,7 +234,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     final rows = await graphDb.selectRows(
       '''
       SELECT DISTINCT
-        a.ss_id AS working_attachment_id,
+        a.ss_id AS graph_attachment_id,
         m.guid AS message_guid,
         (a.ss_id & ?) AS import_attachment_id,
         a.filename AS local_path,
@@ -341,14 +283,14 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     return result;
   }
 
-  /// Sweep a small rolling chunk of working attachments looking for image
+  /// Sweep a small rolling chunk of graph attachments looking for image
   /// files that are not yet archived but may now exist in Messages/Attachments.
   ///
-  /// This is intentionally low-cost: it advances by working attachment ID,
+  /// This is intentionally low-cost: it advances by graph attachment ID,
   /// touches only a bounded chunk per invocation, and persists its cursor in
   /// overlay settings so historical iCloud downloads are eventually archived.
-  Future<AttachmentArchiveResult> archiveNextWorkingSweepChunk({
-    int limit = _kDefaultWorkingSweepLimit,
+  Future<AttachmentArchiveResult> archiveNextGraphSweepChunk({
+    int limit = _kDefaultGraphSweepLimit,
     bool updateSweepDebugState = true,
   }) async {
     if (limit <= 0) {
@@ -370,7 +312,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       );
     }
 
-    if (_workingSweepInFlight) {
+    if (_graphSweepInFlight) {
       return const AttachmentArchiveResult(
         totalScanned: 0,
         newlyArchived: 0,
@@ -379,7 +321,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       );
     }
 
-    _workingSweepInFlight = true;
+    _graphSweepInFlight = true;
 
     try {
       final overlayDb = await ref.read(overlayDatabaseProvider.future);
@@ -389,8 +331,8 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       final logger = ref.read(appLoggerProvider.notifier);
       final startedAtUtc = DateTime.now().toUtc().toIso8601String();
 
-      final cursor = await _readWorkingSweepCursor(overlayDb);
-      final selection = await _selectWorkingSweepRows(
+      final cursor = await _readGraphSweepCursor(overlayDb);
+      final selection = await _selectGraphSweepRows(
         overlayDb: overlayDb,
         graphDb: graphDb,
         afterAttachmentId: cursor,
@@ -404,7 +346,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       final result = archiveOutcome.result;
       if (updateSweepDebugState) {
         final completedAtUtc = DateTime.now().toUtc().toIso8601String();
-        await _writeWorkingSweepStatus(
+        await _writeGraphSweepStatus(
           overlayDb,
           startedAtUtc: startedAtUtc,
           completedAtUtc: completedAtUtc,
@@ -412,14 +354,14 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
           result: result,
         );
       } else {
-        await _writeWorkingSweepCursor(
+        await _writeGraphSweepCursor(
           overlayDb,
           nextCursor: selection.nextCursor,
         );
       }
 
       logger.debug(
-        'Working attachment sweep: ${result.newlyArchived} new, '
+        'Graph attachment sweep: ${result.newlyArchived} new, '
         '${result.skipped} skipped, ${result.failed} failed out of '
         '${result.totalScanned} attachment(s); next cursor ${selection.nextCursor}',
         source: 'AttachmentArchiveService',
@@ -429,7 +371,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
 
       return result;
     } finally {
-      _workingSweepInFlight = false;
+      _graphSweepInFlight = false;
     }
   }
 
@@ -438,8 +380,8 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
   /// This scans multiple regular sweep chunks in one call, stopping once it
   /// reaches the end of the current cursor cycle so it does not rescan the
   /// same tail candidates repeatedly inside a single manual run.
-  Future<AttachmentArchiveResult> archiveWorkingSweepBurst({
-    int chunkLimit = _kDefaultWorkingSweepLimit,
+  Future<AttachmentArchiveResult> archiveGraphSweepBurst({
+    int chunkLimit = _kDefaultGraphSweepLimit,
     int maxChunks = _kManualSweepBurstChunkCount,
   }) async {
     if (chunkLimit <= 0 || maxChunks <= 0) {
@@ -461,7 +403,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       );
     }
 
-    if (_workingSweepInFlight) {
+    if (_graphSweepInFlight) {
       return const AttachmentArchiveResult(
         totalScanned: 0,
         newlyArchived: 0,
@@ -470,7 +412,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       );
     }
 
-    _workingSweepInFlight = true;
+    _graphSweepInFlight = true;
 
     try {
       final overlayDb = await ref.read(overlayDatabaseProvider.future);
@@ -478,7 +420,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
         driftConversationGraphDatabaseProvider.future,
       );
       final startedAtUtc = DateTime.now().toUtc().toIso8601String();
-      var cursor = await _readWorkingSweepCursor(overlayDb);
+      var cursor = await _readGraphSweepCursor(overlayDb);
       var totalScanned = 0;
       var newlyArchived = 0;
       var skipped = 0;
@@ -487,7 +429,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
 
       for (var index = 0; index < maxChunks; index++) {
         final previousCursor = cursor;
-        final selection = await _selectWorkingSweepRows(
+        final selection = await _selectGraphSweepRows(
           overlayDb: overlayDb,
           graphDb: graphDb,
           afterAttachmentId: cursor,
@@ -507,7 +449,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
         skippedSamples.addAll(archiveOutcome.skippedSamples);
 
         cursor = selection.nextCursor;
-        await _writeWorkingSweepCursor(overlayDb, nextCursor: cursor);
+        await _writeGraphSweepCursor(overlayDb, nextCursor: cursor);
 
         if (result.totalScanned == 0) {
           break;
@@ -542,15 +484,16 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
 
       return burstResult;
     } finally {
-      _workingSweepInFlight = false;
+      _graphSweepInFlight = false;
     }
   }
 
-  /// Archive all locally available attachments from the working DB.
+  /// Archive all locally available attachments from the conversation graph.
   ///
-  /// Intended to be called after a migration cycle completes. Runs in the
-  /// background without blocking the UI. Emits [BulkArchiveProgress] state
-  /// updates and supports pause/cancel.
+  /// Intended for retained full/manual archive sweeps. Live graph updates use
+  /// source-row-range archiving instead. Runs in the background without
+  /// blocking the UI. Emits [BulkArchiveProgress] state updates and supports
+  /// pause/cancel.
   Future<AttachmentArchiveResult> archiveAllAvailable() async {
     _pauseRequested = false;
     _cancelRequested = false;
@@ -579,7 +522,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     final rows = await graphDb.selectRows(
       '''
       SELECT
-        a.ss_id AS working_attachment_id,
+        a.ss_id AS graph_attachment_id,
         m.guid AS message_guid,
         (a.ss_id & ?) AS import_attachment_id,
         a.filename AS local_path,
@@ -966,7 +909,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     }
   }
 
-  Future<int> _readWorkingSweepCursor(OverlayDatabase overlayDb) async {
+  Future<int> _readGraphSweepCursor(OverlayDatabase overlayDb) async {
     final rawValue = await overlayDb.readOverlaySetting(kArchiveSweepCursorKey);
     if (rawValue == null || rawValue.isEmpty) {
       return 0;
@@ -975,7 +918,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     return int.tryParse(rawValue) ?? 0;
   }
 
-  Future<_WorkingSweepSelection> _selectWorkingSweepRows({
+  Future<_GraphSweepSelection> _selectGraphSweepRows({
     required OverlayDatabase overlayDb,
     required ConversationGraphDatabase graphDb,
     required int afterAttachmentId,
@@ -987,10 +930,10 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     var wrappedToStart = false;
 
     while (selectedRows.length < limit) {
-      final rawRows = await _fetchWorkingSweepRows(
+      final rawRows = await _fetchGraphSweepRows(
         graphDb,
         afterAttachmentId: cursor,
-        limit: _kWorkingSweepSelectionPageSize,
+        limit: _kGraphSweepSelectionPageSize,
       );
 
       if (rawRows.isEmpty) {
@@ -1000,7 +943,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
           continue;
         }
 
-        return _WorkingSweepSelection(rows: selectedRows, nextCursor: 0);
+        return _GraphSweepSelection(rows: selectedRows, nextCursor: 0);
       }
 
       final archivedKeys = await _loadArchivedKeysForRows(
@@ -1010,25 +953,22 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       var lastProcessedAttachmentId = cursor;
 
       for (final row in rawRows) {
-        final workingAttachmentId = _readNullableInt(
-          row,
-          'working_attachment_id',
-        );
+        final graphAttachmentId = _readNullableInt(row, 'graph_attachment_id');
         lastProcessedAttachmentId =
-            workingAttachmentId ?? lastProcessedAttachmentId;
+            graphAttachmentId ?? lastProcessedAttachmentId;
         final archiveKey = _buildArchiveIdentityKeyForRow(row);
         if (archiveKey == null || archivedKeys.contains(archiveKey)) {
           continue;
         }
 
-        if (workingAttachmentId != null &&
-            selectedAttachmentIds.contains(workingAttachmentId)) {
+        if (graphAttachmentId != null &&
+            selectedAttachmentIds.contains(graphAttachmentId)) {
           continue;
         }
 
         selectedRows.add(row);
-        if (workingAttachmentId != null) {
-          selectedAttachmentIds.add(workingAttachmentId);
+        if (graphAttachmentId != null) {
+          selectedAttachmentIds.add(graphAttachmentId);
         }
         if (selectedRows.length == limit) {
           break;
@@ -1036,7 +976,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       }
 
       cursor = lastProcessedAttachmentId;
-      if (rawRows.length < _kWorkingSweepSelectionPageSize) {
+      if (rawRows.length < _kGraphSweepSelectionPageSize) {
         if (selectedRows.length < limit &&
             !wrappedToStart &&
             afterAttachmentId > 0) {
@@ -1045,17 +985,17 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
           continue;
         }
 
-        return _WorkingSweepSelection(
+        return _GraphSweepSelection(
           rows: selectedRows,
           nextCursor: selectedRows.length < limit ? 0 : cursor,
         );
       }
     }
 
-    return _WorkingSweepSelection(rows: selectedRows, nextCursor: cursor);
+    return _GraphSweepSelection(rows: selectedRows, nextCursor: cursor);
   }
 
-  Future<List<dynamic>> _fetchWorkingSweepRows(
+  Future<List<dynamic>> _fetchGraphSweepRows(
     ConversationGraphDatabase graphDb, {
     required int afterAttachmentId,
     required int limit,
@@ -1063,7 +1003,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     return graphDb.selectRows(
       '''
           SELECT
-            a.ss_id AS working_attachment_id,
+            a.ss_id AS graph_attachment_id,
             m.guid AS message_guid,
             (a.ss_id & ?) AS import_attachment_id,
             a.filename AS local_path,
@@ -1160,14 +1100,14 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     return '$messageGuid::$importAttachmentId';
   }
 
-  Future<void> _writeWorkingSweepStatus(
+  Future<void> _writeGraphSweepStatus(
     OverlayDatabase overlayDb, {
     required String startedAtUtc,
     required String completedAtUtc,
     required int nextCursor,
     required AttachmentArchiveResult result,
   }) async {
-    await _writeWorkingSweepCursor(overlayDb, nextCursor: nextCursor);
+    await _writeGraphSweepCursor(overlayDb, nextCursor: nextCursor);
     await overlayDb.writeOverlaySetting(
       settingKey: kArchiveSweepLastStartedAtUtcKey,
       settingValue: startedAtUtc,
@@ -1194,7 +1134,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     );
   }
 
-  Future<void> _writeWorkingSweepCursor(
+  Future<void> _writeGraphSweepCursor(
     OverlayDatabase overlayDb, {
     required int nextCursor,
   }) async {
@@ -1312,8 +1252,8 @@ class AttachmentArchiveResult {
   final int failed;
 }
 
-class _WorkingSweepSelection {
-  const _WorkingSweepSelection({required this.rows, required this.nextCursor});
+class _GraphSweepSelection {
+  const _GraphSweepSelection({required this.rows, required this.nextCursor});
 
   final List<dynamic> rows;
   final int nextCursor;

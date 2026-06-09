@@ -1,5 +1,11 @@
 # Environment Readiness Center Panel Tests
 
+## Current Conformance Note (2026-06-06)
+
+This test plan is historical. Current tests should focus on graph-era
+readiness evidence, source probes, AddressBook readiness, and presentation
+separation. Retained import/projection diagnostics are compatibility evidence.
+
 ## Unit Tests
 
 ### Snapshot And Sequencing

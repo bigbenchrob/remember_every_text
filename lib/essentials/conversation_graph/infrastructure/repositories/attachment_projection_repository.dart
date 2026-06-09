@@ -6,11 +6,11 @@ class SqliteAttachmentProjectionRepository
     implements AttachmentProjectionRepository {
   const SqliteAttachmentProjectionRepository({
     required this.importDatabase,
-    required this.workingDatabase,
+    required this.graphDatabase,
   });
 
   final ImportDatabase importDatabase;
-  final ConversationGraphDatabase workingDatabase;
+  final ConversationGraphDatabase graphDatabase;
 
   @override
   Future<AttachmentProjectionResult> projectAttachments() async {
@@ -53,9 +53,9 @@ class SqliteAttachmentProjectionRepository
     );
 
     var insertedAttachmentCount = 0;
-    await workingDatabase.transaction(() async {
+    await graphDatabase.transaction(() async {
       for (final row in rows) {
-        final insertedCount = await workingDatabase.executeAndReadChanges(
+        final insertedCount = await graphDatabase.executeAndReadChanges(
           '''
           INSERT OR IGNORE INTO attachments (
             ss_id,
@@ -80,7 +80,7 @@ class SqliteAttachmentProjectionRepository
           ],
         );
         if (insertedCount == 0) {
-          await workingDatabase.executeSql(
+          await graphDatabase.executeSql(
             '''
             UPDATE attachments
             SET

@@ -1,5 +1,17 @@
 # Living Attachments Archive Proposal
 
+## Current Conformance Note (2026-06-06)
+
+This proposal remains conceptually active: MessageLens owns a durable
+attachment archive because Apple's Messages attachment folder is a volatile
+cache. The current implementation context has changed. Ordinary attachment
+evidence now flows through the source-scoped conversation graph and shared
+message evidence hydration; archive metadata remains overlay-owned.
+
+Future archive work should preserve archive-first resolution and graph
+attachment evidence boundaries. Do not store user-owned archive metadata in
+graph projection tables or retained `working.db`.
+
 ## Problem
 
 macOS treats `~/Library/Messages/Attachments` as a volatile cache. When

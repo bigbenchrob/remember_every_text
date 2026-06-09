@@ -1,10 +1,10 @@
 import 'package:sqflite/sqflite.dart';
 
-/// Necessary because AddressFolderRepository needs to
-/// rapidly generate a sequence of database for different
+/// Necessary because AddressBookFolderRepository needs to
+/// rapidly generate a sequence of database instances for different
 /// paths. A singleton is exactly what we *don't* want here!
 
-/// _db intialization is lazy loaded, so in order to test that
+/// _db initialization is lazy loaded, so in order to test that
 /// a folder path contains a functional sqlite database, need
 /// to instantiate this helper and call .database on it.
 

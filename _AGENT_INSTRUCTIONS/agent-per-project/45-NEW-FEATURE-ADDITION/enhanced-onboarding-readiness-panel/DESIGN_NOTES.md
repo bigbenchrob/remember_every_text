@@ -1,5 +1,12 @@
 # Environment Readiness Center Panel Design Notes
 
+## Current Conformance Note (2026-06-06)
+
+These design notes remain useful for the surface shape and coordinator /
+resolver / renderer split. Replace ordinary migration ownership references with
+source-scoped graph build/readiness ownership. Retained migration references
+should be diagnostic/compatibility-only.
+
 ## Summary
 
 The environment-readiness experience should move from an overlay/dialog model

@@ -5,11 +5,11 @@ import '../../application/chats/chat_projection_repository.dart';
 class SqliteChatProjectionRepository implements ChatProjectionRepository {
   const SqliteChatProjectionRepository({
     required this.importDatabase,
-    required this.workingDatabase,
+    required this.graphDatabase,
   });
 
   final ImportDatabase importDatabase;
-  final ConversationGraphDatabase workingDatabase;
+  final ConversationGraphDatabase graphDatabase;
 
   @override
   Future<ChatProjectionResult> projectChats() async {
@@ -20,14 +20,14 @@ class SqliteChatProjectionRepository implements ChatProjectionRepository {
     );
 
     var insertedChatCount = 0;
-    await workingDatabase.transaction(() async {
+    await graphDatabase.transaction(() async {
       for (final row in rows) {
         final chatSsId = _requiredInt(row, 'ss_id');
         final participantCount = await _participantCount(
-          workingDatabase,
+          graphDatabase,
           chatSsId,
         );
-        final insertedCount = await workingDatabase.executeAndReadChanges(
+        final insertedCount = await graphDatabase.executeAndReadChanges(
           '''
           INSERT OR IGNORE INTO chats (
             ss_id,

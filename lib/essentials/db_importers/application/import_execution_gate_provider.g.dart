@@ -12,8 +12,9 @@ String _$importExecutionGateHash() =>
 /// Global import/graph-maintenance execution gate.
 ///
 /// This acts as a single source of truth for who currently owns derived-data
-/// maintenance. Only one owner may run import, graph build, or migration work at
-/// a time. Re-entrant acquisition by the same owner is allowed.
+/// maintenance. Only one owner may run source import, graph build, or retained
+/// archive projection work at a time. Re-entrant acquisition by the same owner
+/// is allowed.
 ///
 /// Copied from [ImportExecutionGate].
 @ProviderFor(ImportExecutionGate)

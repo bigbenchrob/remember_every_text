@@ -5,11 +5,11 @@ import '../../application/messages/message_projection_repository.dart';
 class SqliteMessageProjectionRepository implements MessageProjectionRepository {
   const SqliteMessageProjectionRepository({
     required this.importDatabase,
-    required this.workingDatabase,
+    required this.graphDatabase,
   });
 
   final ImportDatabase importDatabase;
-  final ConversationGraphDatabase workingDatabase;
+  final ConversationGraphDatabase graphDatabase;
 
   @override
   Future<MessageProjectionResult> projectMessages() async {
@@ -59,7 +59,7 @@ class SqliteMessageProjectionRepository implements MessageProjectionRepository {
     );
 
     var insertedMessageCount = 0;
-    await workingDatabase.transaction(() async {
+    await graphDatabase.transaction(() async {
       for (final row in rows) {
         final associatedMessageSsId = await _resolveAssociatedMessageSsId(row);
         final senderCanonicalHandleSsId =
@@ -83,7 +83,7 @@ class SqliteMessageProjectionRepository implements MessageProjectionRepository {
           'has_payload_data_source': _boolInt(row['has_payload_data_source']),
           'error_code': row['error_code'],
         };
-        final insertedCount = await workingDatabase.executeAndReadChanges(
+        final insertedCount = await graphDatabase.executeAndReadChanges(
           '''
           INSERT OR IGNORE INTO messages (
             ss_id,
@@ -125,7 +125,7 @@ class SqliteMessageProjectionRepository implements MessageProjectionRepository {
         );
 
         if (insertedCount == 0) {
-          await workingDatabase.executeSql(
+          await graphDatabase.executeSql(
             '''
             UPDATE messages
             SET
@@ -213,7 +213,7 @@ class SqliteMessageProjectionRepository implements MessageProjectionRepository {
       return null;
     }
 
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       SELECT canonical_handle_ss_id
       FROM handle_aliases

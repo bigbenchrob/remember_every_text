@@ -5,6 +5,22 @@
 
 ---
 
+## Current Conformance Note (2026-06-06)
+
+This document predates the final graph/display-identity cleanup. Treat mentions
+of short-name cassettes, participant merge utilities, and legacy picker adapters
+as audit targets, not current architecture. Contacts cleanup now has two
+simultaneous standards:
+
+- Cross-surface spec compliance: coordinators route, resolvers compose meaning,
+  builders assemble widgets.
+- Graph identity compliance: resolvers use graph facts plus overlay user
+  intent; widgets receive typed display identity data and never decide name
+  precedence.
+
+Short-name settings and nickname precedence should be removed or deprecated in
+favor of a single user display-name override.
+
 ## Current Architecture Analysis
 
 ### Cross-Surface Compliant Structure (`application/sidebar_cassette_spec/`)

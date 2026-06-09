@@ -8,16 +8,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:remember_this_text/domain_driven_development/value_objects.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/contacts/contact_projection_repository.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/conversation_graph_build_service_provider.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_projection_repository.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/orchestrators/conversation_graph_build_orchestrator.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import 'package:remember_this_text/essentials/db_importers/domain/entities/db_import_result.dart';
-import 'package:remember_this_text/essentials/db_importers/presentation/view_model/db_import_control_provider.dart';
-import 'package:remember_this_text/essentials/db_migrate/domain/entities/db_migration_result.dart';
 import 'package:remember_this_text/essentials/onboarding/application/message_data_reset_service.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_gate_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_status.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/application/attachments/attachment_importer.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_importer.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_rich_text_enricher.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/entities/address_book_folder_aggregate.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/entities/address_book_folder_entity.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/value_objects/value_objects.dart';
@@ -97,14 +101,14 @@ void main() {
     });
 
     test(
-      'keeps migration failures inside awaitingUserAction contract',
+      'keeps graph projection failures inside awaitingUserAction contract',
       () async {
         container = ProviderContainer(
           overrides: [
             onboardingEnvironmentReportProvider.overrideWith(
               (ref) async => _report(
-                state: OnboardingEnvironmentState.migrationFailed,
-                blockerKind: OnboardingBlockerKind.migrationFailed,
+                state: OnboardingEnvironmentState.graphProjectionFailed,
+                blockerKind: OnboardingBlockerKind.graphProjectionFailed,
               ),
             ),
           ],
@@ -172,8 +176,8 @@ void main() {
       final status = OnboardingGate.resolveBuildStatus(
         reportAsync: AsyncData(
           _report(
-            state: OnboardingEnvironmentState.migrationFailed,
-            blockerKind: OnboardingBlockerKind.migrationFailed,
+            state: OnboardingEnvironmentState.graphProjectionFailed,
+            blockerKind: OnboardingBlockerKind.graphProjectionFailed,
           ),
         ),
         workflowOverrideStatus: OnboardingStatus.recoveringFailedAttempt,
@@ -187,8 +191,8 @@ void main() {
       final status = OnboardingGate.resolveBuildStatus(
         reportAsync: AsyncData(
           _report(
-            state: OnboardingEnvironmentState.migrationFailed,
-            blockerKind: OnboardingBlockerKind.migrationFailed,
+            state: OnboardingEnvironmentState.graphProjectionFailed,
+            blockerKind: OnboardingBlockerKind.graphProjectionFailed,
           ),
         ),
         workflowOverrideStatus: null,
@@ -246,100 +250,82 @@ void main() {
       expect(await _readGateStatus(container), OnboardingStatus.awaitingFda);
     });
 
-    testWidgets(
-      'settings reimport completes only when import and migration succeed',
-      (tester) async {
-        _FakeDbImportControlViewModel.resetFake();
-        final resetService = _FakeMessageDataResetService();
-        _FakeDbImportControlViewModel.importResult = const DbImportResult(
-          batchId: 1,
-          success: true,
-        );
-        _FakeDbImportControlViewModel.migrationResult = const DbMigrationResult(
-          batchId: 1,
-          success: true,
-        );
+    testWidgets('settings reimport completes when graph rebuild succeeds', (
+      tester,
+    ) async {
+      final resetService = _FakeMessageDataResetService();
+      final overlayDb = OverlayDatabase(NativeDatabase.memory());
+      var graphBuildCallCount = 0;
 
-        addTearDown(_FakeDbImportControlViewModel.resetFake);
+      addTearDown(() async {
+        await overlayDb.close();
+      });
 
-        container = ProviderContainer(
-          overrides: [
-            onboardingEnvironmentReportProvider.overrideWith((ref) async {
-              final migrationFailed =
-                  _FakeDbImportControlViewModel.startMigrationCallCount > 0 &&
-                  _FakeDbImportControlViewModel.migrationResult?.success ==
-                      false;
-              return _report(
-                state: migrationFailed
-                    ? OnboardingEnvironmentState.migrationFailed
-                    : OnboardingEnvironmentState.ready,
-                blockerKind: migrationFailed
-                    ? OnboardingBlockerKind.migrationFailed
-                    : OnboardingBlockerKind.none,
-              );
-            }),
-            dbImportControlViewModelProvider.overrideWith(
-              _FakeDbImportControlViewModel.new,
+      container = ProviderContainer(
+        overrides: [
+          overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
+          onboardingEnvironmentReportProvider.overrideWith(
+            (ref) async => _report(
+              state: OnboardingEnvironmentState.ready,
+              blockerKind: OnboardingBlockerKind.none,
             ),
-            messageDataResetServiceProvider.overrideWith((ref) => resetService),
-          ],
-        );
+          ),
+          conversationGraphBuildServiceProvider.overrideWith(
+            (ref) async => _fakeGraphBuildService(
+              onBuild: () {
+                graphBuildCallCount += 1;
+              },
+            ),
+          ),
+          messageDataResetServiceProvider.overrideWith((ref) => resetService),
+        ],
+      );
 
-        await tester.pumpWidget(_GateHarness(container: container));
-        expect(await _readGateStatus(container), OnboardingStatus.notNeeded);
+      await tester.pumpWidget(_GateHarness(container: container));
+      expect(await _readGateStatus(container), OnboardingStatus.notNeeded);
 
-        final reimportFuture = container
-            .read(onboardingGateProvider.notifier)
-            .startReimport();
-        await tester.pump();
-        await tester.pump();
-        await reimportFuture;
+      final reimportFuture = container
+          .read(onboardingGateProvider.notifier)
+          .startReimport();
+      await tester.pump();
+      await tester.pump();
+      await reimportFuture;
 
-        expect(
-          container.read(onboardingGateProvider),
-          OnboardingStatus.reimportComplete,
-        );
-        expect(_FakeDbImportControlViewModel.startImportCallCount, 1);
-        expect(_FakeDbImportControlViewModel.startMigrationCallCount, 1);
-        expect(resetService.clearImportLedgersCallCount, 1);
-      },
-    );
+      expect(
+        container.read(onboardingGateProvider),
+        OnboardingStatus.reimportComplete,
+      );
+      expect(graphBuildCallCount, 1);
+      expect(resetService.resetDerivedDataCallCount, 1);
+    });
 
     testWidgets(
-      'settings reimport returns to awaitingUserAction when graph-backed migration fails',
+      'settings reimport returns to awaitingUserAction when graph rebuild fails',
       (tester) async {
-        _FakeDbImportControlViewModel.resetFake();
         final resetService = _FakeMessageDataResetService();
-        _FakeDbImportControlViewModel.importResult = const DbImportResult(
-          batchId: 1,
-          success: true,
-        );
-        _FakeDbImportControlViewModel.migrationResult = const DbMigrationResult(
-          batchId: 1,
-          success: false,
-          error: 'Conversation graph build failed',
-        );
+        final overlayDb = OverlayDatabase(NativeDatabase.memory());
+        var graphBuildCallCount = 0;
 
-        addTearDown(_FakeDbImportControlViewModel.resetFake);
+        addTearDown(() async {
+          await overlayDb.close();
+        });
 
         container = ProviderContainer(
           overrides: [
-            onboardingEnvironmentReportProvider.overrideWith((ref) async {
-              final migrationFailed =
-                  _FakeDbImportControlViewModel.startMigrationCallCount > 0 &&
-                  _FakeDbImportControlViewModel.migrationResult?.success ==
-                      false;
-              return _report(
-                state: migrationFailed
-                    ? OnboardingEnvironmentState.migrationFailed
-                    : OnboardingEnvironmentState.ready,
-                blockerKind: migrationFailed
-                    ? OnboardingBlockerKind.migrationFailed
-                    : OnboardingBlockerKind.none,
-              );
-            }),
-            dbImportControlViewModelProvider.overrideWith(
-              _FakeDbImportControlViewModel.new,
+            overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
+            onboardingEnvironmentReportProvider.overrideWith(
+              (ref) async => _report(
+                state: OnboardingEnvironmentState.ready,
+                blockerKind: OnboardingBlockerKind.none,
+              ),
+            ),
+            conversationGraphBuildServiceProvider.overrideWith(
+              (ref) async => _fakeGraphBuildService(
+                error: StateError('graph failed'),
+                onBuild: () {
+                  graphBuildCallCount += 1;
+                },
+              ),
             ),
             messageDataResetServiceProvider.overrideWith((ref) => resetService),
           ],
@@ -359,9 +345,8 @@ void main() {
           container.read(onboardingGateProvider),
           OnboardingStatus.awaitingUserAction,
         );
-        expect(_FakeDbImportControlViewModel.startImportCallCount, 1);
-        expect(_FakeDbImportControlViewModel.startMigrationCallCount, 1);
-        expect(resetService.clearImportLedgersCallCount, 1);
+        expect(graphBuildCallCount, 1);
+        expect(resetService.resetDerivedDataCallCount, 1);
       },
     );
 
@@ -371,16 +356,15 @@ void main() {
         var shouldReset = true;
         final seenStatuses = <OnboardingStatus>[];
         final resetCompleter = Completer<void>();
-        _FakeDbImportControlViewModel.resetCallCount = 0;
-        _FakeDbImportControlViewModel.resetCompleter = resetCompleter;
-        _FakeDbImportControlViewModel.onResetStarted = () {
-          shouldReset = false;
-        };
+        final resetService = _FakeMessageDataResetService()
+          ..resetCompleter = resetCompleter
+          ..onResetStarted = () {
+            shouldReset = false;
+          };
 
         addTearDown(() {
-          _FakeDbImportControlViewModel.resetCallCount = 0;
-          _FakeDbImportControlViewModel.resetCompleter = null;
-          _FakeDbImportControlViewModel.onResetStarted = null;
+          resetService.resetCompleter = null;
+          resetService.onResetStarted = null;
         });
 
         container = ProviderContainer(
@@ -388,10 +372,10 @@ void main() {
             onboardingEnvironmentReportProvider.overrideWith((ref) async {
               return _report(
                 state: shouldReset
-                    ? OnboardingEnvironmentState.migrationFailed
+                    ? OnboardingEnvironmentState.graphProjectionFailed
                     : OnboardingEnvironmentState.readyToImport,
                 blockerKind: shouldReset
-                    ? OnboardingBlockerKind.migrationFailed
+                    ? OnboardingBlockerKind.graphProjectionFailed
                     : OnboardingBlockerKind.importDatabaseMissing,
                 shouldResetAppDatabasesBeforeImport: shouldReset,
                 resetAppDatabasesReason: shouldReset
@@ -399,9 +383,7 @@ void main() {
                     : null,
               );
             }),
-            dbImportControlViewModelProvider.overrideWith(
-              _FakeDbImportControlViewModel.new,
-            ),
+            messageDataResetServiceProvider.overrideWith((ref) => resetService),
           ],
         );
 
@@ -414,7 +396,7 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        expect(_FakeDbImportControlViewModel.resetCallCount, 1);
+        expect(resetService.resetDerivedDataCallCount, 1);
         expect(seenStatuses, contains(OnboardingStatus.awaitingUserAction));
         expect(
           seenStatuses,
@@ -429,7 +411,7 @@ void main() {
           container.read(onboardingGateProvider),
           OnboardingStatus.awaitingUserAction,
         );
-        expect(_FakeDbImportControlViewModel.resetCallCount, 1);
+        expect(resetService.resetDerivedDataCallCount, 1);
       },
     );
   });
@@ -493,8 +475,8 @@ OnboardingEnvironmentReport _report({
       readable: true,
       rowCount: 100,
     ),
-    workingDatabase: const OnboardingDatabaseProbe(
-      path: 'working.db',
+    conversationGraph: const OnboardingDatabaseProbe(
+      path: 'working_ss.db',
       exists: true,
       readable: true,
       rowCount: 100,
@@ -507,92 +489,20 @@ OnboardingEnvironmentReport _report({
 
 final class _FakeMessageDataResetService implements MessageDataResetService {
   int resetDerivedDataCallCount = 0;
-  int clearImportLedgersCallCount = 0;
-  int clearProjectionDatabasesCallCount = 0;
   int confirmResetAndPrepareReimportCallCount = 0;
+  Completer<void>? resetCompleter;
+  void Function()? onResetStarted;
 
   @override
   Future<void> resetDerivedData() async {
     resetDerivedDataCallCount += 1;
+    onResetStarted?.call();
+    await resetCompleter?.future;
   }
-
-  @override
-  Future<void> clearImportLedgers() async {
-    clearImportLedgersCallCount += 1;
-  }
-
-  @override
-  Future<void> clearProjectionDatabases() async {
-    clearProjectionDatabasesCallCount += 1;
-  }
-
-  @override
-  Future<void> closeLegacyDatabasesForMigration() async {}
 
   @override
   Future<void> confirmResetAndPrepareReimport() async {
     confirmResetAndPrepareReimportCallCount += 1;
-  }
-}
-
-class _FakeDbImportControlViewModel extends DbImportControlViewModel {
-  static int resetCallCount = 0;
-  static int startImportCallCount = 0;
-  static int startMigrationCallCount = 0;
-  static Completer<void>? resetCompleter;
-  static void Function()? onResetStarted;
-  static DbImportResult? importResult;
-  static DbMigrationResult? migrationResult;
-
-  static void resetFake() {
-    resetCallCount = 0;
-    startImportCallCount = 0;
-    startMigrationCallCount = 0;
-    resetCompleter = null;
-    onResetStarted = null;
-    importResult = null;
-    migrationResult = null;
-  }
-
-  @override
-  DbImportControlState build() {
-    return const DbImportControlState();
-  }
-
-  @override
-  Future<void> startImport({String? sourceChatDbOverride}) async {
-    startImportCallCount += 1;
-    state = state.copyWith(
-      lastImportResult:
-          importResult ?? const DbImportResult(batchId: 1, success: true),
-    );
-  }
-
-  @override
-  Future<void> startMigration({
-    bool skipImportCheck = false,
-    bool buildConversationGraph = true,
-  }) async {
-    startMigrationCallCount += 1;
-    state = state.copyWith(
-      lastMigrationResult:
-          migrationResult ?? const DbMigrationResult(batchId: 1, success: true),
-    );
-  }
-
-  @override
-  Future<void> resetAllDatabases() async {
-    resetCallCount += 1;
-    onResetStarted?.call();
-    state = state.copyWith(
-      isProcessing: true,
-      statusMessage: 'Resetting databases...',
-    );
-    await resetCompleter?.future;
-    state = state.copyWith(
-      isProcessing: false,
-      statusMessage: 'Databases reset.',
-    );
   }
 }
 
@@ -612,4 +522,74 @@ AddressBookFolderAggregate _addressBookAggregate(String addressBookPath) {
       recordCount: NonZeroInt(12),
     ),
   ]);
+}
+
+ConversationGraphBuildService _fakeGraphBuildService({
+  Object? error,
+  void Function()? onBuild,
+}) {
+  var reportedBuildStart = false;
+  Future<void> step() async {
+    if (!reportedBuildStart) {
+      reportedBuildStart = true;
+      onBuild?.call();
+    }
+    if (error != null) {
+      throw error;
+    }
+  }
+
+  return ConversationGraphBuildService(
+    orchestrator: ConversationGraphBuildOrchestrator(
+      importChats: step,
+      importHandles: () async {},
+      importContacts: () async {},
+      importMessages: () async {
+        await step();
+        return const MessageImportResult(
+          startedAfterSourceRowId: 0,
+          insertedMessageCount: 1,
+          lastImportedSourceRowId: 1,
+        );
+      },
+      enrichMissingText: (_) async {
+        return const MessageRichTextEnrichmentResult(
+          candidateMessageCount: 0,
+          enrichedMessageCount: 0,
+          missingExtractionCount: 0,
+          extractorAvailable: true,
+        );
+      },
+      importAttachments: () async {
+        return const AttachmentImportResult(
+          startedAfterSourceRowId: 0,
+          examinedAttachmentCount: 0,
+          insertedAttachmentCount: 0,
+          lastImportedSourceRowId: null,
+        );
+      },
+      importChatMessageJoins: (_) async {},
+      importChatHandleJoins: () async {},
+      importMessageAttachmentJoins: (_) async {},
+      projectHandles: () async {},
+      projectContacts: () async {
+        return const ContactProjectionResult(
+          examinedContactCount: 0,
+          insertedContactCount: 0,
+          insertedContactHandleEdgeCount: 0,
+        );
+      },
+      projectChatHandleEdges: () async {},
+      projectChats: () async {},
+      projectMessages: (_) async {
+        return const MessageProjectionResult(
+          examinedMessageCount: 1,
+          insertedMessageCount: 1,
+        );
+      },
+      projectAttachments: (_, _) async {},
+      projectChatMessageEdges: (_) async {},
+      projectMessageAttachmentEdges: (_) async {},
+    ),
+  );
 }

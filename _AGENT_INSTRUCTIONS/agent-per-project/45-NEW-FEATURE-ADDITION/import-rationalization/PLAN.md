@@ -1,5 +1,13 @@
 # Import Rationalization Plan
 
+## Current Conformance Note (2026-06-06)
+
+This plan is historical DDD cleanup guidance for the retained import/migration
+packages. New ordinary ingestion/projection work belongs to source-scoped import
+and conversation graph projectors/read models. Retained `db_importers` and
+`db_migrate` should only be extended for explicitly reviewed archive/recovery
+compatibility needs.
+
 **Branch**: `Ftr.import-fix` (created from `main`)  
 **Goal**: Reorganize `db_importers` and `db_migrate` folders to proper DDD structure and add real progress reporting
 

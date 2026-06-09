@@ -2,12 +2,11 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../essentials/conversation_graph/domain/identity_key_bridge.dart';
 import '../../../../essentials/db/feature_level_providers.dart';
 import '../../../../essentials/db/feature_level_providers/message_data_version_provider.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import '../../../../essentials/source_scoped_import/domain/known_sources.dart';
-import '../../../../essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import '../../domain/overlay_virtual_contact.dart';
 import '../../domain/participant_origin.dart';
 import 'participant_merge_utils.dart';
@@ -57,7 +56,7 @@ Future<List<ContactSummary>> contactsListRepository(Ref ref) async {
     return const <ContactSummary>[];
   }
 
-  // Rebuild when migration or import populates new data.
+  // Rebuild when graph maintenance publishes a new data version.
   ref.watch(messageDataVersionProvider);
 
   final graphDb = await ref.watch(
@@ -169,32 +168,7 @@ Future<List<ContactSummary>> _readGraphContactSummaries({
 }
 
 T? _overlayValueForContactId<T>(Map<int, T> valuesByContactId, int contactId) {
-  return valuesByContactId[contactId] ??
-      valuesByContactId[_legacyContactIdForGraphContactId(contactId)] ??
-      valuesByContactId[_graphContactIdForLegacyContactId(contactId)];
-}
-
-bool contactIdsRepresentSamePerson(int first, int second) {
-  return first == second ||
-      _graphContactIdForLegacyContactId(first) == second ||
-      _graphContactIdForLegacyContactId(second) == first;
-}
-
-int? _graphContactIdForLegacyContactId(int contactId) {
-  if (contactId <= 0 || contactId > SourceScopedRowKey.maxSourceRowId) {
-    return null;
-  }
-  return SourceScopedRowKey.pack(
-    sourceId: liveAddressBookSourceId,
-    sourceRowId: contactId,
-  );
-}
-
-int? _legacyContactIdForGraphContactId(int contactId) {
-  if (SourceScopedRowKey.unpackSourceId(contactId) != liveAddressBookSourceId) {
-    return null;
-  }
-  return SourceScopedRowKey.unpackSourceRowId(contactId);
+  return overlayValueForContactId(valuesByContactId, contactId);
 }
 
 Future<List<ContactSummary>> _readVirtualContactSummaries({
@@ -332,22 +306,7 @@ int _readInt(Object? value) {
 }
 
 Set<int> _graphHandleIdsForOverlayHandleId(int handleId) {
-  final ids = <int>{handleId};
-  final packedHandleId = _graphHandleIdForLegacyHandleId(handleId);
-  if (packedHandleId != null) {
-    ids.add(packedHandleId);
-  }
-  return ids;
-}
-
-int? _graphHandleIdForLegacyHandleId(int handleId) {
-  if (handleId <= 0 || handleId > SourceScopedRowKey.maxSourceRowId) {
-    return null;
-  }
-  return SourceScopedRowKey.pack(
-    sourceId: liveChatDbSourceId,
-    sourceRowId: handleId,
-  );
+  return handleOverlayKeyVariants(handleId);
 }
 
 int? _readNullableInt(Object? value) {

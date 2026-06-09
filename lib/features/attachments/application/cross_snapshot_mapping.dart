@@ -11,7 +11,7 @@ enum MatchMethod {
 /// Why a historical record could not be mapped.
 enum UnmappedReason {
   /// The message GUID is not present in the current graph.
-  messageNotInWorking,
+  messageNotInGraph,
 
   /// The attachment GUID exists in the historical snapshot but does not
   /// match any row in the current import ledger.

@@ -1,26 +1,25 @@
 import 'dart:convert';
 
 import '../../../db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import '../../../db_importers/domain/entities/db_import_result.dart';
-import '../../../db_migrate/domain/entities/db_migration_result.dart';
+import '../../domain/onboarding_environment_report.dart';
 
 class PersistedOnboardingImportResult {
   const PersistedOnboardingImportResult({
-    required this.result,
+    required this.failure,
     this.recordedAt,
   });
 
-  final DbImportResult result;
+  final OnboardingPipelineFailure failure;
   final DateTime? recordedAt;
 }
 
-class PersistedOnboardingMigrationResult {
-  const PersistedOnboardingMigrationResult({
-    required this.result,
+class PersistedOnboardingGraphProjectionResult {
+  const PersistedOnboardingGraphProjectionResult({
+    required this.failure,
     this.recordedAt,
   });
 
-  final DbMigrationResult result;
+  final OnboardingPipelineFailure failure;
   final DateTime? recordedAt;
 }
 
@@ -29,13 +28,16 @@ class OverlayOnboardingFailureStorage {
     : _overlayDb = overlayDb;
 
   static const String _importFailureKey = 'onboarding_last_import_result';
-  static const String _migrationFailureKey = 'onboarding_last_migration_result';
+  // Keep the historical key so existing persisted setup failures remain
+  // readable after the graph-projection terminology change.
+  static const String _graphProjectionFailureKey =
+      'onboarding_last_migration_result';
   static const String _recordedAtKey = 'recorded_at_utc';
 
   final Future<OverlayDatabase> _overlayDb;
 
-  Future<DbImportResult?> loadImportResult() async {
-    return (await loadImportResultEntry())?.result;
+  Future<OnboardingPipelineFailure?> loadImportResult() async {
+    return (await loadImportResultEntry())?.failure;
   }
 
   Future<PersistedOnboardingImportResult?> loadImportResultEntry() async {
@@ -56,25 +58,16 @@ class OverlayOnboardingFailureStorage {
       if (batchId == null || success == null) {
         return null;
       }
+      if (success) {
+        return null;
+      }
 
       return PersistedOnboardingImportResult(
         recordedAt: _asDateTime(decoded[_recordedAtKey]),
-        result: DbImportResult(
+        failure: OnboardingPipelineFailure(
+          phase: OnboardingPipelinePhase.import,
           batchId: batchId,
-          success: success,
-          error: decoded['error'] as String?,
-          handlesImported: _asInt(decoded['handles_imported']) ?? 0,
-          chatsImported: _asInt(decoded['chats_imported']) ?? 0,
-          participantsImported: _asInt(decoded['participants_imported']) ?? 0,
-          messagesImported: _asInt(decoded['messages_imported']) ?? 0,
-          attachmentsImported: _asInt(decoded['attachments_imported']) ?? 0,
-          messageAttachmentsImported:
-              _asInt(decoded['message_attachments_imported']) ?? 0,
-          reactionsImported: _asInt(decoded['reactions_imported']) ?? 0,
-          contactChannelsImported:
-              _asInt(decoded['contact_channels_imported']) ?? 0,
-          contactsImported: _asInt(decoded['contacts_imported']) ?? 0,
-          warnings: _asStringList(decoded['warnings']),
+          message: decoded['error'] as String?,
         ),
       );
     } catch (_) {
@@ -82,12 +75,17 @@ class OverlayOnboardingFailureStorage {
     }
   }
 
-  Future<void> saveImportResult(
-    DbImportResult result, {
+  Future<void> saveImportFailure({
+    required String message,
+    int batchId = -1,
     DateTime? recordedAt,
+    List<String> warnings = const <String>[],
   }) async {
     final summary = <String, Object?>{
-      ...result.toSummaryMap(),
+      'batch_id': batchId,
+      'success': false,
+      'error': message,
+      'warnings': warnings,
       _recordedAtKey: (recordedAt ?? DateTime.now().toUtc()).toIso8601String(),
     };
     await _writeJsonSetting(_importFailureKey, summary);
@@ -97,14 +95,17 @@ class OverlayOnboardingFailureStorage {
     await _clearSetting(_importFailureKey);
   }
 
-  Future<DbMigrationResult?> loadMigrationResult() async {
-    return (await loadMigrationResultEntry())?.result;
+  Future<OnboardingPipelineFailure?> loadGraphProjectionResult() async {
+    return (await loadGraphProjectionResultEntry())?.failure;
   }
 
-  Future<PersistedOnboardingMigrationResult?> loadMigrationResultEntry() async {
+  Future<PersistedOnboardingGraphProjectionResult?>
+  loadGraphProjectionResultEntry() async {
     try {
       final overlayDb = await _overlayDb;
-      final rawValue = await overlayDb.readOverlaySetting(_migrationFailureKey);
+      final rawValue = await overlayDb.readOverlaySetting(
+        _graphProjectionFailureKey,
+      );
       if (rawValue == null || rawValue.isEmpty) {
         return null;
       }
@@ -119,22 +120,16 @@ class OverlayOnboardingFailureStorage {
       if (batchId == null || success == null) {
         return null;
       }
+      if (success) {
+        return null;
+      }
 
-      return PersistedOnboardingMigrationResult(
+      return PersistedOnboardingGraphProjectionResult(
         recordedAt: _asDateTime(decoded[_recordedAtKey]),
-        result: DbMigrationResult(
+        failure: OnboardingPipelineFailure(
+          phase: OnboardingPipelinePhase.graphProjection,
           batchId: batchId,
-          success: success,
-          error: decoded['error'] as String?,
-          identitiesProjected: _asInt(decoded['identities_projected']) ?? 0,
-          identityHandleLinksProjected:
-              _asInt(decoded['identity_handle_links_projected']) ?? 0,
-          chatsProjected: _asInt(decoded['chats_projected']) ?? 0,
-          participantsProjected: _asInt(decoded['participants_projected']) ?? 0,
-          messagesProjected: _asInt(decoded['messages_projected']) ?? 0,
-          attachmentsProjected: _asInt(decoded['attachments_projected']) ?? 0,
-          reactionsProjected: _asInt(decoded['reactions_projected']) ?? 0,
-          warnings: _asStringList(decoded['warnings']),
+          message: decoded['error'] as String?,
         ),
       );
     } catch (_) {
@@ -142,19 +137,22 @@ class OverlayOnboardingFailureStorage {
     }
   }
 
-  Future<void> saveMigrationResult(
-    DbMigrationResult result, {
+  Future<void> saveGraphProjectionFailure({
+    required String message,
+    int batchId = -1,
     DateTime? recordedAt,
   }) async {
     final summary = <String, Object?>{
-      ...result.toSummaryMap(),
+      'batch_id': batchId,
+      'success': false,
+      'error': message,
       _recordedAtKey: (recordedAt ?? DateTime.now().toUtc()).toIso8601String(),
     };
-    await _writeJsonSetting(_migrationFailureKey, summary);
+    await _writeJsonSetting(_graphProjectionFailureKey, summary);
   }
 
-  Future<void> clearMigrationResult() async {
-    await _clearSetting(_migrationFailureKey);
+  Future<void> clearGraphProjectionResult() async {
+    await _clearSetting(_graphProjectionFailureKey);
   }
 
   Future<void> _writeJsonSetting(
@@ -176,29 +174,11 @@ class OverlayOnboardingFailureStorage {
     );
   }
 
-  int? _asInt(Object? value) {
-    if (value is int) {
-      return value;
-    }
-    if (value is num) {
-      return value.toInt();
-    }
-    return int.tryParse('$value');
-  }
-
   DateTime? _asDateTime(Object? value) {
     if (value is! String || value.isEmpty) {
       return null;
     }
 
     return DateTime.tryParse(value)?.toUtc();
-  }
-
-  List<String> _asStringList(Object? value) {
-    if (value is List) {
-      return value.whereType<String>().toList(growable: false);
-    }
-
-    return const <String>[];
   }
 }

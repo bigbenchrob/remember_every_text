@@ -7,7 +7,6 @@ import 'package:remember_this_text/essentials/navigation/application/panels_view
 import 'package:remember_this_text/essentials/navigation/domain/entities/view_spec.dart';
 import 'package:remember_this_text/essentials/navigation/domain/navigation_constants.dart';
 import 'package:remember_this_text/essentials/navigation/domain/sidebar_mode.dart';
-import 'package:remember_this_text/essentials/onboarding/domain/import_spec.dart';
 import 'package:remember_this_text/essentials/sidebar/application/cassette_rack_state_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/application/cassette_widget_coordinator_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/application/sidebar_flow_state_provider.dart';
@@ -19,6 +18,7 @@ import 'package:remember_this_text/essentials/sidebar/presentation/view/sidebar_
 import 'package:remember_this_text/essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 import 'package:remember_this_text/features/contacts/domain/spec_classes/contacts_cassette_spec.dart';
 import 'package:remember_this_text/features/contacts/domain/spec_classes/contacts_info_cassette_spec.dart';
+import 'package:remember_this_text/features/environment_readiness/domain/spec_classes/environment_readiness_view_spec.dart';
 import 'package:remember_this_text/features/messages/application/view_spec/coordinators/view_spec_coordinator.dart'
     as messages_view_spec;
 import 'package:remember_this_text/features/messages/domain/spec_classes/messages_view_spec.dart';
@@ -602,12 +602,18 @@ void main() {
           .read(panelsViewStateProvider(SidebarMode.messages).notifier)
           .show(
             panel: WindowPanel.center,
-            spec: const ViewSpec.import(ImportSpec.forImport()),
+            spec: const ViewSpec.environmentReadiness(
+              EnvironmentReadinessSpec.readinessPanel(),
+            ),
           );
 
       expect(
         container.read(effectiveCenterPanelSpecProvider(SidebarMode.messages)),
-        equals(const ViewSpec.import(ImportSpec.forImport())),
+        equals(
+          const ViewSpec.environmentReadiness(
+            EnvironmentReadinessSpec.readinessPanel(),
+          ),
+        ),
       );
 
       container.dispose();

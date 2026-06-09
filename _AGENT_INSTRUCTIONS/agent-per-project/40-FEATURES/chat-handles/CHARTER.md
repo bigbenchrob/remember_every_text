@@ -2,42 +2,43 @@
 tier: feature
 scope: charter
 owner: agent-per-project
-last_reviewed: 2025-11-06
+last_reviewed: 2026-06-05
 links:
 	- ../chat-handles/DOMAIN_AND_DATA_MAP.md
 	- ../../50-USE-CASE-ILLUSTRATIONS/manual-handle-to-contact-linking.md
 tests: []
 feature: chat-handles
 doc_type: charter
-status: draft
-last_updated: 2025-11-06
+status: current
+last_updated: 2026-06-05
 ---
 
-# Feature Charter — Chat Handles
+# Feature Charter - Chat Handles
 
-> Current conformance note (2026-04-21): this folder is a draft scaffold for handle identity concerns. Current concrete handle review/linking code lives primarily under `lib/features/handles`, while manual handle-to-contact writes are overlay-only through `lib/features/contacts/application/services/manual_handle_link_service.dart`.
+> Current conformance note (2026-06-05): handle identity is source-scoped and graph-backed. Handles are traversal endpoints and metadata; known contact display identity wins for user-facing labels except in explicit handle-scope controls and unfamiliar-source review.
 
 ## Mission
-- Capture how canonical handle identities are created, normalized, and associated with participants.
+- Capture how source handle identities are imported, canonicalized, aliased, and associated with contacts/conversations.
 - Document inbound data sources (macOS Messages handles, manual overrides) and the invariants we must preserve.
 
 ## Primary Outcomes
-- Deterministic mapping from Apple handle rows to application `HandleId`s.
-- Clear override story for user-driven corrections (see manual-handle-to-contact-linking).
-- Cohesive auditing so migrations and UI features share the same handle vocabulary.
+- Deterministic source-scoped mapping from Apple handle rows to graph handle identities.
+- Canonical handle aliases collapse phone/email/service variants without losing source facts.
+- Manual handle/contact links remain overlay-owned user intent.
+- Display identity surfaces use the shared resolver so raw handles do not win over known contacts.
 
 ## Success Metrics
-- Handle normalization errors detected in import logs.
-- Manual override latency between overlay write and projection update.
+- Handle normalization and aliasing errors detected by graph health diagnostics.
+- Manual override latency between overlay write and graph read-model refresh.
 - Regression tests covering canonicalization edge cases.
 
 ## Non-Goals
-- Contact display formatting (owned by contacts feature).
+- Contact display identity resolution (owned by contacts/display identity).
 - Navigation or UI presentation of handles (covered elsewhere).
 
 ## Stakeholders & Dependencies
-- Depends on import/migration pipelines for source data fidelity.
-- Provides identifiers consumed by chats, messages, and search features.
+- Depends on source-scoped import/projection for source data fidelity.
+- Provides graph endpoints consumed by conversations, contacts, message evidence, and search features.
 
 ## Open Questions
 - How do we stage alternative normalization strategies (e.g., phone formatting) without breaking projections?

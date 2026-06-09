@@ -5,14 +5,14 @@ import '../../application/conversations/conversation.dart';
 import '../../application/messages/message_graph_repository.dart';
 
 class SqliteMessageGraphRepository implements MessageGraphRepository {
-  const SqliteMessageGraphRepository({required this.workingDatabase});
+  const SqliteMessageGraphRepository({required this.graphDatabase});
 
-  final ConversationGraphDatabase workingDatabase;
+  final ConversationGraphDatabase graphDatabase;
 
   @override
   Future<List<ConversationMessageTimelineEntry>>
   readGlobalMessageTimeline() async {
-    final rows = await workingDatabase.selectRows('''
+    final rows = await graphDatabase.selectRows('''
       SELECT
         m.ss_id AS message_id,
         m.date_utc,
@@ -38,7 +38,7 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
   Future<ConversationMessage?> readGlobalMessageById({
     required int messageId,
   }) async {
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       SELECT
         m.ss_id AS message_id,
@@ -109,7 +109,7 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
       variables.addAll([pattern, pattern, pattern, pattern, pattern, pattern]);
     }
 
-    final rows = await workingDatabase.selectRows('''
+    final rows = await graphDatabase.selectRows('''
       SELECT DISTINCT m.ss_id AS message_id
       FROM messages m
       LEFT JOIN handles sender_handle ON sender_handle.ss_id =
@@ -135,7 +135,7 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
       return const <ConversationMessageTimelineEntry>[];
     }
 
-    final rows = await workingDatabase.selectRows('''
+    final rows = await graphDatabase.selectRows('''
       SELECT DISTINCT
         m.ss_id AS message_id,
         m.date_utc,
@@ -174,7 +174,7 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
       return null;
     }
 
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       SELECT
         m.ss_id AS message_id,
@@ -254,7 +254,7 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
       variables.addAll([pattern, pattern, pattern, pattern, pattern, pattern]);
     }
 
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       SELECT DISTINCT m.ss_id AS message_id
       FROM messages m
@@ -287,7 +287,7 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
     final graphMessageId = _liveChatGraphId(messageId);
     final graphChatId = _liveChatGraphId(chatId);
 
-    final selectedRows = await workingDatabase.selectRows(
+    final selectedRows = await graphDatabase.selectRows(
       '''
       SELECT 1
       FROM chat_to_message
@@ -337,7 +337,7 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
     if (limit <= 0) {
       return Future.value(const <Map<String, Object?>>[]);
     }
-    return workingDatabase.selectRows(
+    return graphDatabase.selectRows(
       '''
       SELECT
         m.ss_id AS message_id,
@@ -361,7 +361,7 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
     required int chatId,
     required int messageId,
   }) {
-    return workingDatabase.selectRows(
+    return graphDatabase.selectRows(
       '''
       SELECT
         m.ss_id AS message_id,
@@ -390,7 +390,7 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
   }
 
   Future<List<int>> _readDirectGraphCanonicalHandleIds(int handleId) async {
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       SELECT DISTINCT canonical_handle_id
       FROM (

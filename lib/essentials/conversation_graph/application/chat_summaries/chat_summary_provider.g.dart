@@ -6,7 +6,7 @@ part of 'chat_summary_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$chatSummariesHash() => r'3dc26fd12ed1545e28828d9ae870dc0d0bb0efe6';
+String _$chatSummariesHash() => r'47665c5b74a689e9ee302ba39ffc0e722aaa97c3';
 
 /// See also [chatSummaries].
 @ProviderFor(chatSummaries)
@@ -25,7 +25,7 @@ final chatSummariesProvider =
 // ignore: unused_element
 typedef ChatSummariesRef = AutoDisposeFutureProviderRef<List<ChatSummary>>;
 String _$chatSummarySanityCountsHash() =>
-    r'532c8f5d23db3a4e1650b015d97b609ea9173894';
+    r'0296acc4657e961408187e1b85b0005d3578037a';
 
 /// See also [chatSummarySanityCounts].
 @ProviderFor(chatSummarySanityCounts)
@@ -45,7 +45,7 @@ final chatSummarySanityCountsProvider =
 typedef ChatSummarySanityCountsRef =
     AutoDisposeFutureProviderRef<ChatSummarySanityCounts>;
 String _$recentChatMessagesHash() =>
-    r'3cf147ca5cd42b81d9b97a951dae0485382caf75';
+    r'd8b8f4b39dbc49533e45a8ab72fef63a89cb878f';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -191,7 +191,7 @@ class _RecentChatMessagesProviderElement
 }
 
 String _$recentTextChatMessagesHash() =>
-    r'65166051932bc65e4213f97d407092f7eb451710';
+    r'982a378cffc5ef75669e05e8792f5145f616444d';
 
 /// See also [recentTextChatMessages].
 @ProviderFor(recentTextChatMessages)
@@ -320,7 +320,7 @@ class _RecentTextChatMessagesProviderElement
 }
 
 String _$chatMessageTextStatsHash() =>
-    r'a6f0dda3e053ed233282aa686d5e3d28277a140e';
+    r'ff7dd67304944fbc87647b3156446194bed0b1c0';
 
 /// See also [chatMessageTextStats].
 @ProviderFor(chatMessageTextStats)
@@ -445,7 +445,7 @@ class _ChatMessageTextStatsProviderElement
 }
 
 String _$chatAttachmentStatsHash() =>
-    r'550b4becd4597529055f7d16c982b056b0244491';
+    r'bd646e3c98a99b110d7dbe680b5f19986f7da7d6';
 
 /// See also [chatAttachmentStats].
 @ProviderFor(chatAttachmentStats)
@@ -570,7 +570,7 @@ class _ChatAttachmentStatsProviderElement
 }
 
 String _$messageAttachmentsHash() =>
-    r'e27c2fc76e1aece54aadfad068d3e9a67fda1599';
+    r'2a228873353789ca6c631fe4e06e37b6e536e13c';
 
 /// See also [messageAttachments].
 @ProviderFor(messageAttachments)

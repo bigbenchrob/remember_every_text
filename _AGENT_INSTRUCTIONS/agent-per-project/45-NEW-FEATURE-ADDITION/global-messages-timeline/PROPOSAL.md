@@ -2,8 +2,8 @@
 tier: project
 scope: proposal
 owner: agent-per-project
-last_reviewed: 2025-12-24
-source_of_truth: doc
+last_reviewed: 2026-06-06
+source_of_truth: historical-record
 links:
   - ../../40-FEATURES/messages/message-display-flow-walkthrough.md
   - ../ordinal-index-all-messages/PROPOSAL.md
@@ -12,6 +12,18 @@ tests: []
 ---
 
 # Feature Proposal: Global Messages Timeline (All Messages)
+
+## Current Conformance Note (2026-06-06)
+
+This proposal captured the original global timeline ambition. Its UX goal
+remains relevant, but its `working.db: message_index` mechanics are superseded
+by the graph-backed Message Evidence Spine. Any future global timeline must be
+implemented as a typed graph `MessageEvidenceScope` with a full logical
+skeleton and viewport hydration. Pagination is not timeline navigation.
+
+Do not introduce a global-timeline-specific renderer. Once the scope resolves
+to message evidence, it must use the shared evidence header, skeleton,
+hydration, attachment evidence, and row rendering path.
 
 ## Summary
 Add a **Global Messages** experience: “every message I have ever sent to or received from anyone”, browsable as a single chronological timeline with:

@@ -1,8 +1,7 @@
 import '../../../../essentials/conversation_graph/application/contacts/contact_projector.dart';
+import '../../../../essentials/conversation_graph/domain/identity_key_bridge.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import '../../../../essentials/source_scoped_import/domain/known_sources.dart';
-import '../../../../essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import '../../application/display_identity/display_identity.dart';
 import '../../application/display_identity/display_identity_repository.dart';
 import 'participant_merge_utils.dart';
@@ -120,31 +119,11 @@ class SqliteDisplayIdentityRepository implements DisplayIdentityRepository {
   }
 }
 
-int? legacyContactIdForGraphContactId(int contactId) {
-  final sourceId = SourceScopedRowKey.unpackSourceId(contactId);
-  if (sourceId != liveAddressBookSourceId) {
-    return null;
-  }
-
-  return SourceScopedRowKey.unpackSourceRowId(contactId);
-}
-
 ParticipantOverride? participantOverrideForGraphContactId({
   required Map<int, ParticipantOverride> participantOverrides,
   required int contactId,
 }) {
-  final direct = participantOverrides[contactId];
-  if (direct != null) {
-    return direct;
-  }
-
-  final sourceId = SourceScopedRowKey.unpackSourceId(contactId);
-  if (sourceId != liveAddressBookSourceId) {
-    return null;
-  }
-
-  final legacyParticipantId = SourceScopedRowKey.unpackSourceRowId(contactId);
-  return participantOverrides[legacyParticipantId];
+  return overlayValueForContactId(participantOverrides, contactId);
 }
 
 void _putIdentity(

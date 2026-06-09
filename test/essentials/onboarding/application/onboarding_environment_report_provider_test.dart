@@ -7,8 +7,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/domain_driven_development/value_objects.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import 'package:remember_this_text/essentials/db_importers/domain/entities/db_import_result.dart';
-import 'package:remember_this_text/essentials/db_migrate/domain/entities/db_migration_result.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
 import 'package:remember_this_text/essentials/onboarding/infrastructure/persistence/overlay_onboarding_failure_storage.dart';
@@ -57,12 +55,9 @@ void main() {
         final storage = OverlayOnboardingFailureStorage(
           overlayDb: Future<OverlayDatabase>.value(overlayDb),
         );
-        await storage.saveImportResult(
-          const DbImportResult(
-            batchId: 99,
-            success: false,
-            error: 'Persisted import failure',
-          ),
+        await storage.saveImportFailure(
+          batchId: 99,
+          message: 'Persisted import failure',
           recordedAt: recordedAt,
         );
 
@@ -219,8 +214,8 @@ void main() {
         onboardingEnvironmentReportProvider.future,
       );
 
-      expect(report.state, OnboardingEnvironmentState.migrationFailed);
-      expect(report.blockerKind, OnboardingBlockerKind.migrationFailed);
+      expect(report.state, OnboardingEnvironmentState.graphProjectionFailed);
+      expect(report.blockerKind, OnboardingBlockerKind.graphProjectionFailed);
     });
 
     test(
@@ -285,9 +280,6 @@ void main() {
         container = ProviderContainer(
           overrides: [
             overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
-            driftWorkingDatabaseProvider.overrideWith((ref) async {
-              throw StateError('working.db should not be opened');
-            }),
             onboardingFullDiskAccessProvider.overrideWith((ref) => true),
             onboardingMessagesDatabasePathProvider.overrideWith(
               (ref) => messagesDbPath,
@@ -309,8 +301,8 @@ void main() {
           onboardingEnvironmentReportProvider.future,
         );
 
-        expect(report.workingDatabase.exists, isTrue);
-        expect(report.workingDatabase.rowCount, isNull);
+        expect(report.conversationGraph.exists, isTrue);
+        expect(report.conversationGraph.rowCount, isNull);
       },
     );
 
@@ -334,12 +326,9 @@ void main() {
           rowCount: 120,
         );
         _createGraphDatabase(tempDir.path, rowCount: 1, graphComplete: false);
-        await storage.saveMigrationResult(
-          const DbMigrationResult(
-            batchId: 99,
-            success: false,
-            error: 'Persisted migration failure',
-          ),
+        await storage.saveGraphProjectionFailure(
+          batchId: 99,
+          message: 'Persisted graph projection failure',
           recordedAt: DateTime.utc(2026, 03, 24, 12, 45),
         );
 
@@ -363,8 +352,8 @@ void main() {
           onboardingEnvironmentReportProvider.future,
         );
 
-        expect(report.state, OnboardingEnvironmentState.migrationFailed);
-        expect(report.blockerKind, OnboardingBlockerKind.migrationFailed);
+        expect(report.state, OnboardingEnvironmentState.graphProjectionFailed);
+        expect(report.blockerKind, OnboardingBlockerKind.graphProjectionFailed);
         expect(report.shouldResetAppDatabasesBeforeImport, isTrue);
         expect(report.resetAppDatabasesReason, isNotNull);
       },

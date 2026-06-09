@@ -57,6 +57,8 @@ class SearchResultContextSidebarView extends ConsumerWidget {
         children: [
           Expanded(
             child: skeletonAsync.when(
+              skipLoadingOnReload: true,
+              skipLoadingOnRefresh: true,
               data: (skeleton) {
                 if (skeleton.isEmpty) {
                   return Padding(

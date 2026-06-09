@@ -171,11 +171,27 @@ class _FakeExtractor implements MessageExtractorPort {
     int? limit,
     String? dbPath,
   }) async {
-    return extracted;
+    throw StateError('SS rich text enrichment must decode import blobs');
+  }
+
+  @override
+  Future<Map<int, String>> extractMessageTextsFromBlobs(
+    Map<int, Uint8List> attributedBodyBlobsByRowId,
+  ) async {
+    return Map<int, String>.fromEntries(
+      extracted.entries.where(
+        (entry) => attributedBodyBlobsByRowId.containsKey(entry.key),
+      ),
+    );
   }
 
   @override
   Future<bool> isAvailable() async {
+    return available;
+  }
+
+  @override
+  Future<bool> isBlobExtractionAvailable() async {
     return available;
   }
 }

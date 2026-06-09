@@ -2,7 +2,7 @@
 tier: project
 scope: data-import-migration
 owner: agent-per-project
-last_reviewed: 2026-04-21
+last_reviewed: 2026-06-08
 source_of_truth: code
 links:
   - ./01-overview.md
@@ -16,17 +16,31 @@ links:
 tests: []
 ---
 
-# Database Schema Reference
+# Retained Legacy Database Schema Reference
 
-Authoritative table lists for the import and working SQLite databases this project maintains. Consult this note before running ad-hoc SQL or modifying importers/migrators.
+Historical table lists for retained legacy import and working SQLite databases.
+Consult this note when interpreting old user data folders or retained
+diagnostics. Do not use it as an authoring guide for ordinary graph-era
+features.
+
+> Current conformance note (2026-06-08): ordinary app data now uses
+> `macos_import_ss.db` and `working_ss.db` through the source-scoped
+> conversation graph. Fresh `macos_import.db` files contain only
+> `schema_migrations` and `historical_archive_sources`; retained `working.db`
+> has no central app provider. The broader tables below may exist in historical
+> user data folders only.
 
 ## Boundary Summary
 
-- `macos_import.db` is the source-derived import ledger. It records batches, source file provenance, imported source rows, recovered unlinked rows, and import diagnostics. It is mutated only by import code.
-- `working.db` is the runtime projection consumed by providers, search/index rebuilds, and rendering. It is rebuilt from the import ledger by migration code.
-- `user_overlays.db` is outside this folder's schema list. It stores durable user intent and archive/recovery metadata; import and migration must not move user intent into `working.db`.
+- `macos_import_ss.db` is the production source-scoped import ledger for ordinary app data.
+- `working_ss.db` is the production conversation graph projection consumed by graph readers and the Message Evidence Spine.
+- `macos_import.db` is retained archive-source metadata storage in fresh
+  graph-era files; old files may still contain historical ledger tables.
+- `working.db` is retained file/schema storage only; old files may still contain
+  historical projection tables.
+- `user_overlays.db` stores durable user intent and archive/recovery metadata; neither graph projection nor retained legacy migration may move user intent into working tables.
 
-## macos_import.db (Ingest Ledger)
+## macos_import.db (Retained Legacy Ingest Ledger)
 
 Location: `~/Library/Application Support/com.bigbenchsoftware.MessageLens/macos_import.db`
 Schema source: `lib/essentials/db/infrastructure/data_sources/local/import/sqflite_import_database.dart`
@@ -53,14 +67,17 @@ Schema source: `lib/essentials/db/infrastructure/data_sources/local/import/sqfli
 | `message_links` | Extracted URL spans from messages. |
 
 ### Ledger Rules of Thumb
-- Treat imported data as source-derived, not user-editable. Full/reimport flows may clear and rebuild ledger tables through `ClearLedgerImporter`; incremental flows preserve prior imported rows and add new rows by high-water marks.
-- Always insert within a recorded `import_batches` row so provenance is traceable.
-- Before attaching this database in external tools, stop the Flutter app to avoid locking conflicts.
+- Treat old imported data as historical source-derived inventory, not
+  user-editable app truth.
+- Do not add ordinary app features that depend on old retained ledger tables.
+- Before attaching this database in external tools, stop the Flutter app to
+  avoid locking conflicts.
 
-## working.db (Projection / Runtime)
+## working.db (Retained Legacy Projection)
 
 Location: `~/Library/Application Support/com.bigbenchsoftware.MessageLens/working.db`
-Schema source: `lib/essentials/db/infrastructure/data_sources/local/working/working_database.dart`
+Schema source: historical retained Drift schema, now removed from active app
+code. Existing `working.db` files may still contain these tables.
 
 | Table | Purpose / Notes |
 | ----- | --------------- |
@@ -75,9 +92,9 @@ Schema source: `lib/essentials/db/infrastructure/data_sources/local/working/work
 | `chats` | Conversation metadata for presentation (last message, counts). |
 | `messages` | Fully normalised message timeline consumed by widgets. |
 | `recovered_unlinked_messages` | Projected recovered source rows kept separate from normal chat timelines. |
-| `global_message_index` | Stable ordinal index across all messages. |
-| `message_index` | Per-chat/per-message ordinal index used by timeline queries. |
-| `contact_message_index` | Per-contact message ordinal index. |
+| `global_message_index` | Retained legacy ordinal-index table. Ordinary global timeline navigation now uses graph evidence skeletons. |
+| `message_index` | Retained legacy per-chat ordinal-index table. Ordinary conversation timelines now use graph evidence skeletons. |
+| `contact_message_index` | Retained legacy per-contact ordinal-index table. Ordinary contact heatmaps/timelines now use graph evidence skeletons. |
 | `attachments` | Projected attachment metadata (paths, hashes, direction). |
 | `recovered_unlinked_attachments` | Projected attachment metadata for recovered unlinked messages. |
 | `reactions` | Canonicalised reactions linked to handle IDs. |
@@ -87,12 +104,18 @@ Schema source: `lib/essentials/db/infrastructure/data_sources/local/working/work
 | `supabase_sync_state` | Checkpoints for outbound sync processes. |
 | `supabase_sync_logs` | Audit log for sync attempts. |
 
-### Projection Rules of Thumb
-- Population is deterministic from `macos_import.db`. Full migration clears migrator target tables before projection; incremental migration skips truncation and relies on migrator-specific insert/update semantics.
-- Never modify rows manually; instead adjust the corresponding migrator and re-run projection.
-- Any schema change must be reflected here and in the Drift definitions inside `working_database.dart`.
+### Retained Projection Rules of Thumb
+- Historical population was deterministic from `macos_import.db`. Full
+  migration cleared migrator target tables before projection; incremental
+  migration skipped truncation and relied on migrator-specific insert/update
+  semantics.
+- Never modify rows manually. If old retained storage needs recovery, design an
+  explicit graph-era compatibility path rather than editing historical tables.
+- Do not add new ordinary schema to retained `working.db`; current projection
+  schema changes belong to the conversation graph database.
 
 ## Quick Checks
 - Need table DDL? Run `dart run drift_dev schema dump` or inspect the schema files listed above.
 - Unsure if a column exists? Search in the schema source files rather than guessing - both databases are versioned and enforced by migrations.
-- See `./20-migration-orchestrator.md` for operational steps before and after schema changes.
+- See `./20-migration-orchestrator.md` only for historical retained projection
+  behavior.

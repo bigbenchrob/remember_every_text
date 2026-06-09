@@ -83,6 +83,8 @@ class _RecoveredMessagesEvidenceViewState
     return ColoredBox(
       color: colors.messagePanels.coolPanelSurface,
       child: skeletonAsync.when(
+        skipLoadingOnReload: true,
+        skipLoadingOnRefresh: true,
         data: (skeleton) {
           final visibleSkeleton = _visibleSkeleton(
             skeleton: skeleton,

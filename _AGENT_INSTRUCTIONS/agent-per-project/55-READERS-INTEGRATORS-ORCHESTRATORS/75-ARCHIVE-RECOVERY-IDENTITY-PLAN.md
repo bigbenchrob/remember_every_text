@@ -434,8 +434,9 @@ Do not start by rewriting recovered deleted messages.
 - Archive writes still use the existing overlay archive row shape and the
   existing `attachment_archive/` folder. Existing archive rows are skipped
   idempotently.
-- The legacy import-batch archive path is still retained because the current
-  live update lifecycle still runs legacy import batches before graph build.
+- The legacy import-batch archive path is retired. The current live update
+  lifecycle archives newly imported graph/source-scoped live source ranges
+  after graph import/projection.
 - Deterministic historical attachment recovery now uses
   `GraphCrossSnapshotMapper` to map historical snapshot rows through
   `macos_import_ss.db` and `working_ss.db` instead of legacy

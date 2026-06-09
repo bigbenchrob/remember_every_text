@@ -2,7 +2,7 @@
 tier: project
 scope: database-health-audit
 owner: agent-per-project
-last_reviewed: 2026-04-16
+last_reviewed: 2026-06-06
 source_of_truth: code
 links:
   - ./00-overview.md
@@ -76,6 +76,8 @@ Included when available:
 
 - `import_log`
 - `migrate_log`
+
+These logs describe retained legacy import/projection runs when those compatibility paths are used. Source-scoped graph build health is represented in `database_health.json` and the conversation graph status surfaces, not in `migrate_log`.
 
 Included when audit succeeds:
 

@@ -27,7 +27,7 @@ void main() {
   late Directory tempDir;
   late String chatDbPath;
   late ImportDatabase importDatabase;
-  late ConversationGraphDatabase workingDatabase;
+  late ConversationGraphDatabase graphDatabase;
 
   setUpAll(() {
     sqfliteFfiInit();
@@ -55,12 +55,12 @@ void main() {
       databaseDirectory: tempDir.path,
       databaseName: 'macos_import_ss_test.db',
     );
-    workingDatabase = await openConversationGraphTestDatabase();
+    graphDatabase = await openConversationGraphTestDatabase();
     await _createSourceTables(chatDbPath);
   });
 
   tearDown(() async {
-    await workingDatabase.close();
+    await graphDatabase.close();
     await importDatabase.close();
     if (tempDir.existsSync()) {
       await tempDir.delete(recursive: true);
@@ -108,19 +108,19 @@ void main() {
     await HandleProjector(
       repository: SqliteHandleProjectionRepository(
         importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        graphDatabase: graphDatabase,
       ),
     ).projectHandles();
     await ChatToHandleProjector(
       repository: SqliteChatToHandleProjectionRepository(
         importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        graphDatabase: graphDatabase,
       ),
     ).projectEdges();
     final projectionResult = await ChatProjector(
       repository: SqliteChatProjectionRepository(
         importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        graphDatabase: graphDatabase,
       ),
     ).projectChats();
 
@@ -129,7 +129,7 @@ void main() {
       sourceRowId: 7,
     );
     final importRows = await importDatabase.database.query('chats');
-    final workingRows = await workingDatabase.database.query('chats');
+    final workingRows = await graphDatabase.database.query('chats');
 
     expect(importResult.insertedChatCount, 1);
     expect(projectionResult.insertedChatCount, 1);
@@ -199,25 +199,25 @@ void main() {
     await HandleProjector(
       repository: SqliteHandleProjectionRepository(
         importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        graphDatabase: graphDatabase,
       ),
     ).projectHandles();
     await ChatToHandleProjector(
       repository: SqliteChatToHandleProjectionRepository(
         importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        graphDatabase: graphDatabase,
       ),
     ).projectEdges();
 
     final projector = ChatProjector(
       repository: SqliteChatProjectionRepository(
         importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        graphDatabase: graphDatabase,
       ),
     );
     final first = await projector.projectChats();
     final second = await projector.projectChats();
-    final rows = await workingDatabase.database.query(
+    final rows = await graphDatabase.database.query(
       'chats',
       orderBy: 'ss_id ASC',
     );
@@ -287,12 +287,12 @@ void main() {
     final projector = ChatToMessageProjector(
       repository: SqliteChatToMessageProjectionRepository(
         importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        graphDatabase: graphDatabase,
       ),
     );
     final first = await projector.projectEdges();
     final second = await projector.projectEdges();
-    final rows = await workingDatabase.database.query('chat_to_message');
+    final rows = await graphDatabase.database.query('chat_to_message');
 
     expect(first.insertedEdgeCount, 1);
     expect(second.insertedEdgeCount, 0);
@@ -340,14 +340,14 @@ void main() {
     final projector = ChatToMessageProjector(
       repository: SqliteChatToMessageProjectionRepository(
         importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        graphDatabase: graphDatabase,
       ),
     );
     final result = await projector.projectEdgesAfterSourceMessageRowId(
       sourceId: liveChatDbSourceId,
       startedAfterSourceRowId: 40,
     );
-    final rows = await workingDatabase.database.query('chat_to_message');
+    final rows = await graphDatabase.database.query('chat_to_message');
 
     expect(result.examinedEdgeCount, 1);
     expect(result.insertedEdgeCount, 1);
@@ -368,13 +368,13 @@ void main() {
       sourceRowId: 42,
     );
 
-    await workingDatabase.database.insert('chat_to_message', <String, Object?>{
+    await graphDatabase.database.insert('chat_to_message', <String, Object?>{
       'chat_ss_id': chatSsId,
       'message_ss_id': messageSsId,
     });
 
     await expectLater(
-      workingDatabase.database.insert('chat_to_message', <String, Object?>{
+      graphDatabase.database.insert('chat_to_message', <String, Object?>{
         'chat_ss_id': chatSsId,
         'message_ss_id': messageSsId,
       }),

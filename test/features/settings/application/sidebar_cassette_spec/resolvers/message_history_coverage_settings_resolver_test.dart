@@ -118,8 +118,8 @@ void main() {
           );
 
           expect(report.chatDbTotalCount, 3);
-          expect(report.workingDbVisibleCount, 1);
-          expect(report.workingDbRecoveredCount, 1);
+          expect(report.graphConversationLinkedCount, 1);
+          expect(report.graphRecoveredOrphanCount, 1);
           expect(report.status, MessageHistoryCoverageStatus.incompleteImport);
         } finally {
           sourceDb.dispose();
