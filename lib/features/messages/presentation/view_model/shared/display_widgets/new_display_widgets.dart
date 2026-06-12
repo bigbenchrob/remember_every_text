@@ -824,14 +824,16 @@ File? _displayableMediaFile(
 ) {
   final explicitPath = attachment.resolvedDisplayPath;
   if (explicitPath != null && explicitPath.isNotEmpty) {
-    return fileAccess.existingFileAt(explicitPath);
+    final existingPath = fileAccess.existingExpandedPath(explicitPath);
+    return existingPath == null ? null : File(existingPath);
   }
 
   if (attachment.availability != null) {
     return null;
   }
 
-  return fileAccess.existingFileAt(attachment.localPath);
+  final existingPath = fileAccess.existingExpandedPath(attachment.localPath);
+  return existingPath == null ? null : File(existingPath);
 }
 
 class ImageMessageTile extends ConsumerWidget {

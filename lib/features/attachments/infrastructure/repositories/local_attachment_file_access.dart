@@ -22,15 +22,6 @@ class LocalAttachmentFileAccess implements AttachmentFileAccess {
   }
 
   @override
-  File? existingFileAt(String? path) {
-    final expandedPath = existingExpandedPath(path);
-    if (expandedPath == null) {
-      return null;
-    }
-    return File(expandedPath);
-  }
-
-  @override
   String? existingExpandedPath(String? path) {
     final expandedPath = expandPath(path);
     if (expandedPath == null) {

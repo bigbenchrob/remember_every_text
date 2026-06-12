@@ -2001,6 +2001,10 @@ Remove legacy systems only after their blockers close.
   `ExternalUriOpener` boundary. Message preview widgets still render tappable
   links, but external launch mechanics are centralized and protected by an
   architecture tripwire.
+- Narrowed `AttachmentFileAccess` to a path-based application contract.
+  Infrastructure still performs file-existence checks, and presentation may
+  create renderable `File` objects at the media edge, but the application port
+  no longer exposes concrete file handles.
 
 ### Exit Criteria
 

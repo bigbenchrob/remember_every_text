@@ -608,6 +608,20 @@ void main() {
       );
     });
 
+    test('AttachmentFileAccess remains path-based', () async {
+      final offenders = await _findAttachmentFileAccessContractOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'AttachmentFileAccess is an application boundary and should speak '
+            'in path strings. Concrete File objects belong at infrastructure '
+            'or presentation rendering edges.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('AttachmentInfo remains data-only', () async {
       final offenders = await _findAttachmentInfoDataOnlyOffenders();
 
@@ -1837,6 +1851,30 @@ _findMessageAttachmentEvidenceFileAccessBoundaryOffenders() async {
         uncommented.contains('Platform.environment')) {
       offenders.add('$filePath performs attachment file access directly');
     }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findAttachmentFileAccessContractOffenders() async {
+  const filePath =
+      'lib/features/attachments/application/attachment_file_access.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final source = await file.readAsString();
+  final uncommented = _stripComments(source);
+  final imports = _extractImports(uncommented);
+  final offenders = <String>[
+    for (final importTarget in imports)
+      if (importTarget == 'dart:io') '$filePath imports $importTarget',
+  ];
+
+  if (RegExp(r'(^|[^\w.])File\??\b').hasMatch(uncommented) ||
+      uncommented.contains('existingFileAt')) {
+    offenders.add('$filePath exposes concrete file objects');
   }
 
   return offenders..sort();

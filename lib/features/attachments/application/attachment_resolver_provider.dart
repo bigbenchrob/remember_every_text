@@ -57,8 +57,7 @@ Future<ResolvedAttachment> _resolveForArchiveEnabledMode(
   required AttachmentFileAccess fileAccess,
 }) async {
   final resolvedPath = fileAccess.expandPath(attachmentInfo.localPath);
-  final liveFile = fileAccess.existingFileAt(resolvedPath);
-  final liveFileExists = liveFile != null;
+  final liveFileExists = fileAccess.existingExpandedPath(resolvedPath) != null;
   AttachmentRecoveryMetadata? persistedRecoveryHint;
 
   if (importAttachmentId != null) {

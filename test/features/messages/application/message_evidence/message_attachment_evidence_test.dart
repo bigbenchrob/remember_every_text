@@ -209,12 +209,6 @@ class _FakeAttachmentFileAccess implements AttachmentFileAccess {
   }
 
   @override
-  File? existingFileAt(String? path) {
-    final expandedPath = existingExpandedPath(path);
-    return expandedPath == null ? null : File(expandedPath);
-  }
-
-  @override
   String? existingExpandedPath(String? path) {
     if (path == null || path.isEmpty || !existingPaths.contains(path)) {
       return null;
