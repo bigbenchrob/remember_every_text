@@ -1,9 +1,6 @@
-import 'dart:io';
-
 import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
-import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../db/feature_level_providers.dart';
@@ -11,6 +8,7 @@ import '../../db/infrastructure/data_sources/local/conversation_graph/conversati
 import '../../logging/application/app_logger.dart';
 import '../../navigation/application/app_navigator_key.dart';
 import '../../source_scoped_import/feature_level_providers.dart';
+import '../infrastructure/persistence/derived_message_data_file_store_provider.dart';
 import 'onboarding_environment_report_provider.dart';
 import 'onboarding_gate_provider.dart';
 
@@ -58,7 +56,10 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
       );
       await _closeConversationGraphDatabase();
 
-      final deletedFilePaths = await _deleteDerivedDatabaseFiles();
+      final fileStore = _ref.read(derivedMessageDataFileStoreProvider);
+      final deletedFilePaths = await fileStore.deleteDatabaseBaseFiles(
+        derivedMessageDataDatabaseBaseNames,
+      );
       logger.info(
         'Deleted derived database files',
         source: 'MessageDataResetService',
@@ -75,39 +76,22 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
       _ref.invalidate(conversationGraphPopulatedProvider);
       _ref.read(messageDataVersionProvider.notifier).bump();
 
-      final importDbPath = path.join(
-        databaseDirectoryPath,
-        retainedArchiveMetadataDatabaseFileName,
-      );
-      final workingDbPath = path.join(
-        databaseDirectoryPath,
-        retainedHistoricalReferenceDatabaseFileName,
-      );
-      final sourceScopedImportDbPath = path.join(
-        databaseDirectoryPath,
-        sourceScopedImportDatabaseFileName,
-      );
-      final conversationGraphDbPath = path.join(
-        databaseDirectoryPath,
-        conversationGraphDatabaseFileName,
+      final databaseExistsAfterReset = fileStore.databaseExistenceByBaseName(
+        derivedMessageDataDatabaseBaseNames,
       );
 
       logger.info(
         'Invalidated retained metadata and graph database providers after reset',
         source: 'MessageDataResetService',
         context: {
-          'retainedArchiveMetadataDbExistsAfterReset': File(
-            importDbPath,
-          ).existsSync(),
-          'retainedHistoricalReferenceDbExistsAfterReset': File(
-            workingDbPath,
-          ).existsSync(),
-          'sourceScopedImportDbExistsAfterReset': File(
-            sourceScopedImportDbPath,
-          ).existsSync(),
-          'conversationGraphDbExistsAfterReset': File(
-            conversationGraphDbPath,
-          ).existsSync(),
+          'retainedArchiveMetadataDbExistsAfterReset':
+              databaseExistsAfterReset[retainedArchiveMetadataDatabaseFileName],
+          'retainedHistoricalReferenceDbExistsAfterReset':
+              databaseExistsAfterReset[retainedHistoricalReferenceDatabaseFileName],
+          'sourceScopedImportDbExistsAfterReset':
+              databaseExistsAfterReset[sourceScopedImportDatabaseFileName],
+          'conversationGraphDbExistsAfterReset':
+              databaseExistsAfterReset[conversationGraphDatabaseFileName],
         },
       );
 
@@ -231,7 +215,10 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
   }
 
   Future<void> _closeRetainedArchiveMetadataStore() async {
-    if (!_databaseBaseFileExists(retainedArchiveMetadataDatabaseFileName)) {
+    final fileStore = _ref.read(derivedMessageDataFileStoreProvider);
+    if (!fileStore.databaseBaseFileExists(
+      retainedArchiveMetadataDatabaseFileName,
+    )) {
       return;
     }
     if (!_ref.exists(retainedArchiveMetadataStoreProvider)) {
@@ -246,7 +233,8 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
   }
 
   Future<void> _closeSourceScopedImportDatabase() async {
-    if (!_databaseBaseFileExists(sourceScopedImportDatabaseFileName)) {
+    final fileStore = _ref.read(derivedMessageDataFileStoreProvider);
+    if (!fileStore.databaseBaseFileExists(sourceScopedImportDatabaseFileName)) {
       return;
     }
     try {
@@ -258,7 +246,8 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
   }
 
   Future<void> _closeConversationGraphDatabase() async {
-    if (!_databaseBaseFileExists(conversationGraphDatabaseFileName)) {
+    final fileStore = _ref.read(derivedMessageDataFileStoreProvider);
+    if (!fileStore.databaseBaseFileExists(conversationGraphDatabaseFileName)) {
       return;
     }
     try {
@@ -267,34 +256,6 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
       );
       await graphDb.close();
     } catch (_) {}
-  }
-
-  bool _databaseBaseFileExists(String baseName) {
-    return File(path.join(databaseDirectoryPath, baseName)).existsSync();
-  }
-
-  Future<List<String>> _deleteDerivedDatabaseFiles() async {
-    return _deleteDatabaseBaseFiles(derivedMessageDataDatabaseBaseNames);
-  }
-
-  Future<List<String>> _deleteDatabaseBaseFiles(List<String> baseNames) async {
-    final deletedFilePaths = <String>[];
-    for (final baseName in baseNames) {
-      final basePath = path.join(databaseDirectoryPath, baseName);
-      for (final filePath in <String>[
-        basePath,
-        '$basePath-wal',
-        '$basePath-shm',
-      ]) {
-        final file = File(filePath);
-        if (file.existsSync()) {
-          await file.delete();
-          deletedFilePaths.add(filePath);
-        }
-      }
-    }
-
-    return deletedFilePaths;
   }
 
   Future<bool> _showResetProceedDialog(BuildContext context) async {

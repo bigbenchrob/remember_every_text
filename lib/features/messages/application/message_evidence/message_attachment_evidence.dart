@@ -1,6 +1,5 @@
-import 'dart:io';
-
 import '../../../../essentials/conversation_graph/application/chat_summaries/chat_summary.dart';
+import '../../../attachments/application/attachment_file_access.dart';
 import '../../../attachments/domain/constants/attachment_provenance.dart';
 import '../../../attachments/domain/constants/resolved_attachment_availability.dart';
 import '../../domain/entities/attachment_info.dart' as recovered_domain;
@@ -115,9 +114,15 @@ String? firstUrlInMessageText(String? text) {
 
 List<MessageAttachmentEvidence> messageAttachmentEvidenceFromMessageAttachments(
   List<MessageAttachment> attachments,
+  AttachmentFileAccess fileAccess,
 ) {
   final evidence = attachments
-      .map(messageAttachmentEvidenceFromMessageAttachment)
+      .map(
+        (attachment) => messageAttachmentEvidenceFromMessageAttachment(
+          attachment,
+          fileAccess,
+        ),
+      )
       .toList(growable: false);
   if (evidence.length < 2) {
     return evidence;
@@ -167,6 +172,7 @@ List<MessageAttachmentEvidence> messageAttachmentEvidenceFromMessageAttachments(
 
 MessageAttachmentEvidence messageAttachmentEvidenceFromMessageAttachment(
   MessageAttachment attachment,
+  AttachmentFileAccess fileAccess,
 ) {
   final sourcePathHint = attachment.filename;
   final archivedPath = attachment.archiveAbsolutePath;
@@ -174,7 +180,7 @@ MessageAttachmentEvidence messageAttachmentEvidenceFromMessageAttachment(
       attachment.archiveFileExists &&
       archivedPath != null &&
       archivedPath.isNotEmpty;
-  final expandedSourcePath = _expandedExistingPath(sourcePathHint);
+  final expandedSourcePath = fileAccess.existingExpandedPath(sourcePathHint);
   final displayPath = hasArchivedFile ? archivedPath : expandedSourcePath;
   final hasDisplayFile = displayPath != null && displayPath.isNotEmpty;
 
@@ -202,9 +208,10 @@ MessageAttachmentEvidence messageAttachmentEvidenceFromMessageAttachment(
 
 MessageAttachmentEvidence messageAttachmentEvidenceFromRecoveredAttachment(
   recovered_domain.AttachmentInfo attachment,
+  AttachmentFileAccess fileAccess,
 ) {
   final localPath = attachment.localPath;
-  final displayPath = _expandedExistingPath(localPath);
+  final displayPath = fileAccess.existingExpandedPath(localPath);
   final hasDisplayFile = displayPath != null && displayPath.isNotEmpty;
 
   return MessageAttachmentEvidence(
@@ -253,17 +260,4 @@ String _recoveredAttachmentDisplayName(
     return localPath.split('/').last;
   }
   return 'attachment ${attachment.id}';
-}
-
-String? _expandedExistingPath(String? rawPath) {
-  if (rawPath == null || rawPath.isEmpty) {
-    return null;
-  }
-  final expanded = rawPath.startsWith('~/')
-      ? rawPath.replaceFirst('~', Platform.environment['HOME'] ?? '')
-      : rawPath;
-  if (expanded.isEmpty) {
-    return null;
-  }
-  return File(expanded).existsSync() ? expanded : null;
 }

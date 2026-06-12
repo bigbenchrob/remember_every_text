@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'database_health_audit_models.dart';
 
 abstract class DatabaseHealthQueryLayer {
@@ -16,9 +14,7 @@ abstract class DatabaseHealthQueryLayer {
     return true;
   }
 
-  Future<bool> databaseFileExists() {
-    return Future<bool>.value(File(databasePath).existsSync());
-  }
+  Future<bool> databaseFileExists();
 
   Future<int?> schemaUserVersion() async {
     final rows = await query('PRAGMA user_version');

@@ -3,14 +3,16 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../../essentials/debug/application/developer_mode_provider.dart';
+import '../../../../../../essentials/external_links/feature_level_providers.dart';
 import '../../../../../attachments/application/attachment_archive_service_provider.dart';
+import '../../../../../attachments/application/attachment_file_access.dart';
 import '../../../../../attachments/domain/constants/attachment_provenance.dart';
 import '../../../../../attachments/domain/constants/resolved_attachment_availability.dart';
+import '../../../../../attachments/feature_level_providers.dart';
 import '../../../../../attachments/infrastructure/services/video_thumbnail_cache_service.dart';
 import '../../../widgets/message_evidence/media_tile_attachment.dart';
 
@@ -816,6 +818,22 @@ AttachmentProvenance? _placeholderSourceProvenance(
   return null;
 }
 
+File? _displayableMediaFile(
+  MediaTileAttachment attachment,
+  AttachmentFileAccess fileAccess,
+) {
+  final explicitPath = attachment.resolvedDisplayPath;
+  if (explicitPath != null && explicitPath.isNotEmpty) {
+    return fileAccess.existingFileAt(explicitPath);
+  }
+
+  if (attachment.availability != null) {
+    return null;
+  }
+
+  return fileAccess.existingFileAt(attachment.localPath);
+}
+
 class ImageMessageTile extends ConsumerWidget {
   const ImageMessageTile({
     super.key,
@@ -842,7 +860,8 @@ class ImageMessageTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final file = attachment.displayableFile();
+    final fileAccess = ref.watch(attachmentFileAccessProvider);
+    final file = _displayableMediaFile(attachment, fileAccess);
     final aspectRatio = attachment.aspectRatio ?? 4 / 3;
     final canPrioritizeRecovery =
         attachment.messageGuid != null &&
@@ -909,8 +928,9 @@ class ImageMessageTile extends ConsumerWidget {
                                   messageGuid: attachment.messageGuid!,
                                   importAttachmentId:
                                       attachment.importAttachmentId!,
-                                  resolvedLocalPath: attachment
-                                      .resolvedLocalPath(),
+                                  resolvedLocalPath: fileAccess.expandPath(
+                                    attachment.localPath,
+                                  ),
                                   mimeType: attachment.mimeType,
                                 );
                           }
@@ -998,8 +1018,15 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
   void didUpdateWidget(covariant VideoMessageTile oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    final previousVideoPath = oldWidget.attachment.displayableFile()?.path;
-    final currentVideoPath = widget.attachment.displayableFile()?.path;
+    final fileAccess = ref.read(attachmentFileAccessProvider);
+    final previousVideoPath = _displayableMediaFile(
+      oldWidget.attachment,
+      fileAccess,
+    )?.path;
+    final currentVideoPath = _displayableMediaFile(
+      widget.attachment,
+      fileAccess,
+    )?.path;
     if (previousVideoPath == currentVideoPath) {
       if (_thumbnailFile == null && currentVideoPath != null) {
         _scheduleThumbnailEnrichment();
@@ -1071,7 +1098,10 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
       return;
     }
 
-    final videoFile = widget.attachment.displayableFile();
+    final videoFile = _displayableMediaFile(
+      widget.attachment,
+      ref.read(attachmentFileAccessProvider),
+    );
     if (videoFile == null) {
       return;
     }
@@ -1150,7 +1180,10 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
       return;
     }
 
-    final file = widget.attachment.displayableFile();
+    final file = _displayableMediaFile(
+      widget.attachment,
+      ref.read(attachmentFileAccessProvider),
+    );
     if (file == null) {
       return;
     }
@@ -1209,7 +1242,8 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
   Widget build(BuildContext context) {
     ref.watch(themeColorsProvider);
     final aspectRatio = _effectiveAspectRatio();
-    final file = widget.attachment.displayableFile();
+    final fileAccess = ref.watch(attachmentFileAccessProvider);
+    final file = _displayableMediaFile(widget.attachment, fileAccess);
     final hasPlayableVideo = file != null;
     final hasVideoController = _controller != null;
     final canPrioritizeRecovery =
@@ -1278,8 +1312,9 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
                                   messageGuid: widget.attachment.messageGuid!,
                                   importAttachmentId:
                                       widget.attachment.importAttachmentId!,
-                                  resolvedLocalPath: widget.attachment
-                                      .resolvedLocalPath(),
+                                  resolvedLocalPath: fileAccess.expandPath(
+                                    widget.attachment.localPath,
+                                  ),
                                   mimeType: widget.attachment.mimeType,
                                 );
                           }
@@ -1791,13 +1826,13 @@ class LinkPreviewTile extends ConsumerWidget {
       ),
       child: Material(
         color: Colors.transparent,
-        child: InkWell(onTap: () => _launch(url), child: card),
+        child: InkWell(onTap: () => _launch(ref, url), child: card),
       ),
     );
   }
 
-  Future<void> _launch(Uri target) async {
-    if (!await launchUrl(target, mode: LaunchMode.externalApplication)) {
+  Future<void> _launch(WidgetRef ref, Uri target) async {
+    if (!await ref.read(externalUriOpenerProvider).open(target)) {
       // Optional: surface failure to caller.
     }
   }

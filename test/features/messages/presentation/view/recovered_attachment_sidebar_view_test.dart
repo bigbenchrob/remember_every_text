@@ -161,7 +161,7 @@ void main() {
               attachmentInfo: attachment,
               availability: ResolvedAttachmentAvailability.available,
               provenance: AttachmentProvenance.importedHistorical,
-              resolvedFile: recoveredFile,
+              resolvedFilePath: recoveredFile.path,
             );
           }),
         ],

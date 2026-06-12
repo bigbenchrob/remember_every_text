@@ -25,6 +25,11 @@ class ReadOnlySqliteFileHealthQueryLayer extends DatabaseHealthQueryLayer {
   final String databasePath;
 
   @override
+  Future<bool> databaseFileExists() async {
+    return File(databasePath).existsSync();
+  }
+
+  @override
   Future<List<Map<String, Object?>>> query(String sql) async {
     if (!File(databasePath).existsSync()) {
       throw StateError('Database file does not exist: $databasePath');
@@ -62,6 +67,11 @@ class SourceScopedImportDatabaseHealthQueryLayer
   final String databasePath;
 
   @override
+  Future<bool> databaseFileExists() async {
+    return File(databasePath).existsSync();
+  }
+
+  @override
   String get databaseKey => 'source_scoped_import';
 
   @override
@@ -87,6 +97,11 @@ class ConversationGraphDatabaseHealthQueryLayer
   final String databasePath;
 
   @override
+  Future<bool> databaseFileExists() async {
+    return File(databasePath).existsSync();
+  }
+
+  @override
   String get databaseKey => 'conversation_graph';
 
   @override
@@ -108,6 +123,11 @@ class OverlayDatabaseHealthQueryLayer extends DatabaseHealthQueryLayer {
 
   @override
   final String databasePath;
+
+  @override
+  Future<bool> databaseFileExists() async {
+    return File(databasePath).existsSync();
+  }
 
   @override
   String get databaseKey => 'overlay';

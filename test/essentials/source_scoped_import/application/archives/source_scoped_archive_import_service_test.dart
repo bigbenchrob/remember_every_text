@@ -8,6 +8,7 @@ import 'package:remember_this_text/essentials/source_scoped_import/application/a
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/ports/message_extractor_port.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/filesystem_historical_messages_archive_source_folder_resolver.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/source_database/sqflite_source_database.dart';
 import 'package:sqflite/sqflite.dart';
@@ -42,6 +43,8 @@ void main() {
     service = SourceScopedArchiveImportService(
       registrar: HistoricalMessagesArchiveSourceRegistrar(
         importLedger: importDatabase,
+        folderResolver:
+            const FilesystemHistoricalMessagesArchiveSourceFolderResolver(),
       ),
       richTextExtractor: const _FakeExtractor(<int, String>{
         300: 'enriched archive message',

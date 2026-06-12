@@ -1,7 +1,3 @@
-import 'dart:io';
-
-import 'package:file_selector_platform_interface/file_selector_platform_interface.dart';
-import 'package:path/path.dart' as p;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../essentials/db/feature_level_providers.dart'
@@ -83,65 +79,26 @@ class ArchiveSettings extends _$ArchiveSettings {
 
   Future<void> clearArchive() async {
     final archiveDir = ref.read(attachmentArchiveDirectoryProvider);
+    final archiveFileOperations = ref.read(
+      attachmentArchiveFileOperationsProvider,
+    );
     final settingsStore = await ref.read(
       attachmentArchiveSettingsStoreProvider.future,
     );
 
-    // Delete all files in the archive directory.
-    final dir = Directory(archiveDir);
-    if (dir.existsSync()) {
-      await dir.delete(recursive: true);
-      await dir.create(recursive: true);
-    }
-
+    await archiveFileOperations.resetArchiveDirectory(archiveDir);
     await settingsStore.clearArchivedAttachmentRecords();
 
     ref.invalidateSelf();
   }
 
-  /// Export the archive directory to a user-chosen destination.
-  ///
-  /// Opens a native folder picker, then recursively copies the archive
-  /// directory tree into `<chosen>/<timestamp>-messagelens-archive/`.
   /// Returns the number of files copied, or `null` if the user cancelled.
   Future<int?> exportArchive() async {
     final archiveDir = ref.read(attachmentArchiveDirectoryProvider);
-    final sourceDir = Directory(archiveDir);
-    if (!sourceDir.existsSync()) {
-      return 0;
-    }
-
-    final destPath = await FileSelectorPlatform.instance
-        .getDirectoryPathWithOptions(
-          const FileDialogOptions(confirmButtonText: 'Export Here'),
-        );
-
-    if (destPath == null) {
-      return null; // User cancelled.
-    }
-
-    final timestamp = DateTime.now()
-        .toIso8601String()
-        .replaceAll(':', '-')
-        .split('.')
-        .first;
-    final exportDir = Directory(
-      p.join(destPath, '$timestamp-messagelens-archive'),
+    final archiveFileOperations = ref.read(
+      attachmentArchiveFileOperationsProvider,
     );
-    await exportDir.create(recursive: true);
-
-    var filesCopied = 0;
-    await for (final entity in sourceDir.list(recursive: true)) {
-      if (entity is File) {
-        final relativePath = p.relative(entity.path, from: archiveDir);
-        final destFile = File(p.join(exportDir.path, relativePath));
-        await destFile.parent.create(recursive: true);
-        await entity.copy(destFile.path);
-        filesCopied++;
-      }
-    }
-
-    return filesCopied;
+    return archiveFileOperations.exportArchiveDirectory(archiveDir);
   }
 
   static Future<ArchiveSweepDebugState> _readSweepDebugState(

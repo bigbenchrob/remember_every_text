@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
 import 'package:remember_this_text/essentials/source_scoped_import/application/archives/historical_messages_archive_source_registrar.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/filesystem_historical_messages_archive_source_folder_resolver.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -33,6 +34,8 @@ void main() {
     );
     registrar = HistoricalMessagesArchiveSourceRegistrar(
       importLedger: importDatabase,
+      folderResolver:
+          const FilesystemHistoricalMessagesArchiveSourceFolderResolver(),
     );
   });
 

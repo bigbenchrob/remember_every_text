@@ -1,13 +1,11 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
-import 'package:path/path.dart' as path;
 
 import '../../../services/startup_flags_service.dart';
 import 'database_health_audit_models.dart';
+import 'database_health_audit_report_writer.dart';
 import 'database_health_query_layer.dart';
+import 'database_health_runtime_environment.dart';
 
 const _databaseHealthSchemaVersion = '1.0.0';
 const _databaseHealthAuditVersion = 'phase1';
@@ -26,11 +24,17 @@ class DatabaseHealthAuditService {
   DatabaseHealthAuditService({
     required bool hasFullDiskAccess,
     required List<DatabaseHealthQueryLayer> queryLayers,
+    required DatabaseHealthRuntimeEnvironment runtimeEnvironment,
+    required DatabaseHealthAuditReportWriter reportWriter,
   }) : _hasFullDiskAccess = hasFullDiskAccess,
-       _queryLayers = queryLayers;
+       _queryLayers = queryLayers,
+       _runtimeEnvironment = runtimeEnvironment,
+       _reportWriter = reportWriter;
 
   final bool _hasFullDiskAccess;
   final List<DatabaseHealthQueryLayer> _queryLayers;
+  final DatabaseHealthRuntimeEnvironment _runtimeEnvironment;
+  final DatabaseHealthAuditReportWriter _reportWriter;
 
   Future<DatabaseHealthReport> buildPhase1Report() async {
     final errors = <HealthReportError>[];
@@ -76,17 +80,10 @@ class DatabaseHealthAuditService {
     required String outputDirectoryPath,
   }) async {
     final report = await buildPhase1Report();
-    final directory = Directory(outputDirectoryPath);
-    if (!directory.existsSync()) {
-      await directory.create(recursive: true);
-    }
-
-    final reportPath = path.join(outputDirectoryPath, 'database_health.json');
-    const encoder = JsonEncoder.withIndent('  ');
-    await File(
-      reportPath,
-    ).writeAsString('${encoder.convert(report.toJson())}\n');
-
+    final reportPath = await _reportWriter.writeReport(
+      outputDirectoryPath: outputDirectoryPath,
+      report: report,
+    );
     return DatabaseHealthAuditOutput(reportPath: reportPath, report: report);
   }
 
@@ -106,12 +103,12 @@ class DatabaseHealthAuditService {
 
   DatabaseHealthEnvironmentInfo _buildEnvironmentInfo() {
     final startupFlags = StartupFlagsService.instance.cachedFlags;
-    final timezone = Platform.environment['TZ'] ?? DateTime.now().timeZoneName;
+    final runtimeEnvironment = _runtimeEnvironment.read();
 
     return DatabaseHealthEnvironmentInfo(
-      platform: Platform.operatingSystem,
-      platformVersion: Platform.operatingSystemVersion,
-      timezone: timezone,
+      platform: runtimeEnvironment.platform,
+      platformVersion: runtimeEnvironment.platformVersion,
+      timezone: runtimeEnvironment.timezone,
       hasFullDiskAccess: _hasFullDiskAccess,
       startupFlags: <String, dynamic>{
         'option_launch_reset_requested':

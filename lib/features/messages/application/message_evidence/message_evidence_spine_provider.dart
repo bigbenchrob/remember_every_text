@@ -13,6 +13,7 @@ import '../../../../essentials/db/feature_level_providers/message_data_version_p
 import '../../../../essentials/search/application/graph_message_search.dart';
 import '../../../../essentials/search/application/search_service.dart';
 import '../../../../essentials/search/feature_level_providers.dart';
+import '../../../attachments/feature_level_providers.dart';
 import '../../../contacts/feature_level_providers.dart';
 import '../../domain/message_evidence/message_evidence_row_data.dart';
 import '../../domain/message_evidence/message_evidence_scope.dart';
@@ -729,7 +730,11 @@ Future<List<MessageAttachmentEvidence>> _messageAttachments(
   final attachments = await ref.watch(
     messageAttachmentsProvider(messageId).future,
   );
-  return messageAttachmentEvidenceFromMessageAttachments(attachments);
+  final fileAccess = ref.watch(attachmentFileAccessProvider);
+  return messageAttachmentEvidenceFromMessageAttachments(
+    attachments,
+    fileAccess,
+  );
 }
 
 Future<List<MessageAttachmentEvidence>> _recoveredMessageAttachments(
@@ -749,9 +754,10 @@ Future<List<MessageAttachmentEvidence>> _recoveredMessageAttachments(
   if (message == null) {
     return const <MessageAttachmentEvidence>[];
   }
+  final fileAccess = ref.watch(attachmentFileAccessProvider);
   return [
     for (final attachment in message.attachments)
-      messageAttachmentEvidenceFromRecoveredAttachment(attachment),
+      messageAttachmentEvidenceFromRecoveredAttachment(attachment, fileAccess),
   ];
 }
 

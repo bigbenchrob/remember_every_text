@@ -12,3 +12,5 @@ export './application/sidebar_cassette_spec/rendering/settings_cassette_body_bui
 export './application/view_spec/coordinators/view_spec_coordinator.dart';
 export './domain/spec_classes/settings_cassette_spec.dart';
 export './domain/spec_classes/settings_view_spec.dart';
+export './infrastructure/repositories/historical_archive_folder_chooser_provider.dart';
+export './infrastructure/repositories/message_history_coverage_report_exporter_provider.dart';

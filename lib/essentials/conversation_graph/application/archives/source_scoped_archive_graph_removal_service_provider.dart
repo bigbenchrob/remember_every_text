@@ -50,5 +50,8 @@ sourceScopedArchiveGraphRemovalService(Ref ref) async {
     attachmentProjector: attachmentProjector,
     chatToMessageProjector: chatToMessageProjector,
     messageToAttachmentProjector: messageToAttachmentProjector,
+    folderResolver: ref.watch(
+      historicalMessagesArchiveSourceFolderResolverProvider,
+    ),
   );
 }

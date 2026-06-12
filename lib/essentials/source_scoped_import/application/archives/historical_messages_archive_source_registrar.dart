@@ -1,9 +1,6 @@
-import 'dart:io';
-
-import 'package:path/path.dart' as path;
-
 import '../../domain/known_sources.dart';
 import '../../domain/ports/import_ledger_port.dart';
+import 'historical_messages_archive_source_folder_resolver.dart';
 
 final class HistoricalMessagesArchiveSourceRegistration {
   const HistoricalMessagesArchiveSourceRegistration({
@@ -24,72 +21,52 @@ final class HistoricalMessagesArchiveSourceRegistration {
 }
 
 class HistoricalMessagesArchiveSourceRegistrar {
-  const HistoricalMessagesArchiveSourceRegistrar({required this.importLedger});
+  const HistoricalMessagesArchiveSourceRegistrar({
+    required this.importLedger,
+    required this.folderResolver,
+  });
 
   final ImportLedger importLedger;
+  final HistoricalMessagesArchiveSourceFolderResolver folderResolver;
 
   Future<HistoricalMessagesArchiveSourceRegistration> registerFolder({
     required String folderPath,
     String? sourceLabel,
   }) async {
-    final normalizedFolderPath = _normalizeFolderPath(folderPath);
-    final chatDbPath = path.join(normalizedFolderPath, 'chat.db');
-
-    if (!File(chatDbPath).existsSync()) {
-      throw FileSystemException(
-        'Historical Messages archive folder must contain chat.db',
-        chatDbPath,
-      );
-    }
-
+    final sourceFolder = folderResolver.resolveFolder(folderPath);
     final normalizedSourceLabel = _normalizeSourceLabel(
       sourceLabel: sourceLabel,
-      folderPath: normalizedFolderPath,
+      defaultSourceLabel: sourceFolder.defaultSourceLabel,
     );
-    final sourceKey = buildSourceKey(chatDbPath: chatDbPath);
     final sourceId = await importLedger.getOrCreateSource(
-      sourceKey: sourceKey,
+      sourceKey: sourceFolder.sourceKey,
       sourceKind: historicalMessagesArchiveSourceKind,
       sourceLabel: normalizedSourceLabel,
     );
 
     return HistoricalMessagesArchiveSourceRegistration(
       sourceId: sourceId,
-      sourceKey: sourceKey,
+      sourceKey: sourceFolder.sourceKey,
       sourceKind: historicalMessagesArchiveSourceKind,
       sourceLabel: normalizedSourceLabel,
-      selectedFolderPath: normalizedFolderPath,
-      chatDbPath: chatDbPath,
+      selectedFolderPath: sourceFolder.selectedFolderPath,
+      chatDbPath: sourceFolder.chatDbPath,
     );
   }
 
   static String buildSourceKey({required String chatDbPath}) {
-    final normalizedChatDbPath = File(chatDbPath).absolute.path;
-    return '$historicalMessagesArchiveSourceKeyPrefix$normalizedChatDbPath';
-  }
-
-  static String _normalizeFolderPath(String folderPath) {
-    final trimmed = folderPath.trim();
-    if (trimmed.isEmpty) {
-      throw ArgumentError.value(folderPath, 'folderPath', 'must not be empty');
-    }
-    return Directory(trimmed).absolute.path;
+    return '$historicalMessagesArchiveSourceKeyPrefix$chatDbPath';
   }
 
   static String _normalizeSourceLabel({
     required String? sourceLabel,
-    required String folderPath,
+    required String defaultSourceLabel,
   }) {
     final trimmedLabel = sourceLabel?.trim();
     if (trimmedLabel != null && trimmedLabel.isNotEmpty) {
       return trimmedLabel;
     }
 
-    final basename = path.basename(folderPath);
-    if (basename.isNotEmpty) {
-      return basename;
-    }
-
-    return folderPath;
+    return defaultSourceLabel;
   }
 }

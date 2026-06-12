@@ -15,7 +15,7 @@ import '../../source_scoped_import/feature_level_providers.dart'
 import '../domain/onboarding_environment_report.dart';
 import '../infrastructure/persistence/onboarding_database_probe_reader_provider.dart';
 import '../infrastructure/persistence/onboarding_failure_storage_provider.dart';
-import 'fda_checker.dart';
+import '../infrastructure/system/full_disk_access_provider.dart';
 import 'onboarding_database_probe_reader.dart';
 
 part 'onboarding_environment_report_provider.g.dart';
@@ -114,12 +114,12 @@ class OnboardingDevOverrides extends _$OnboardingDevOverrides {
 
 @Riverpod(keepAlive: true)
 bool onboardingFullDiskAccess(Ref ref) {
-  return const FdaChecker().canReadMessagesDatabase();
+  return ref.watch(fullDiskAccessProvider).canReadMessagesDatabase();
 }
 
 @Riverpod(keepAlive: true)
 String onboardingMessagesDatabasePath(Ref ref) {
-  return FdaChecker.chatDbPath;
+  return ref.watch(fullDiskAccessProvider).messagesDatabasePath;
 }
 
 @Riverpod(keepAlive: true)

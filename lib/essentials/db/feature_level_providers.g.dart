@@ -93,7 +93,7 @@ final attachmentArchiveDirectoryProvider = Provider<String>.internal(
 // ignore: unused_element
 typedef AttachmentArchiveDirectoryRef = ProviderRef<String>;
 String _$databaseHealthAuditServiceHash() =>
-    r'37bd0e8a0e2f3859b1bc91e3d9223dd34c8e5291';
+    r'96c80b0449a23741f9d7942beb47aa9bdfcb8f92';
 
 /// See also [databaseHealthAuditService].
 @ProviderFor(databaseHealthAuditService)

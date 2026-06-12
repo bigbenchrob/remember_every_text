@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
+import '../../../../essentials/external_links/feature_level_providers.dart';
 import '../../../../essentials/services/native_link_preview_service.dart';
 import '../view_model/shared/display_widgets/new_display_widgets.dart';
 
@@ -396,7 +396,7 @@ class _UrlPreviewWidgetState extends ConsumerState<UrlPreviewWidget> {
 
   Future<void> _launchUrl(String url) async {
     final uri = Uri.parse(url);
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+    await ref.read(externalUriOpenerProvider).open(uri);
   }
 }
 

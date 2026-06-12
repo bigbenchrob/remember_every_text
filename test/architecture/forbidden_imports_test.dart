@@ -382,6 +382,33 @@ void main() {
       );
     });
 
+    test('Database health query contract stays file-system agnostic', () async {
+      final offenders = await _findDatabaseHealthQueryLayerFileIoOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'DatabaseHealthQueryLayer is an application query contract. '
+            'Filesystem existence checks belong in concrete infrastructure '
+            'query-layer implementations.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Database health audit service stays IO agnostic', () async {
+      final offenders = await _findDatabaseHealthAuditServiceIoOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'DatabaseHealthAuditService owns audit semantics. Runtime platform '
+            'metadata and report file writes belong behind dedicated ports.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test(
       'Source-scoped import application layer does not import sqflite',
       () async {
@@ -522,6 +549,35 @@ void main() {
       );
     });
 
+    test('Archive settings uses file-operations port', () async {
+      final offenders = await _findArchiveSettingsFileOperationsOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'ArchiveSettings should coordinate archive user intent through '
+            'AttachmentArchiveFileOperations. Native file picking and '
+            'directory/file IO belong in attachments infrastructure.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Historical archives workflow uses folder chooser port', () async {
+      final offenders =
+          await _findHistoricalArchivesFolderChooserBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'HistoricalArchivesWorkflow should coordinate archive folder '
+            'selection through HistoricalArchiveFolderChooser. Native folder '
+            'dialogs belong in settings infrastructure.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Attachment resolver uses archive read-store port', () async {
       final offenders =
           await _findAttachmentResolverArchiveStorageImportOffenders();
@@ -533,6 +589,75 @@ void main() {
             'AttachmentResolver should resolve archive records and recovery '
             'hints through AttachmentArchiveReadStore. Overlay tables and '
             'hint storage details belong in infrastructure.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Message attachment evidence uses file-access boundary', () async {
+      final offenders =
+          await _findMessageAttachmentEvidenceFileAccessBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Message attachment evidence may classify attachments, but file '
+            'existence checks and home-directory expansion belong behind the '
+            'AttachmentFileAccess boundary.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('AttachmentInfo remains data-only', () async {
+      final offenders = await _findAttachmentInfoDataOnlyOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'AttachmentInfo is message metadata. File-system path expansion '
+            'and existence checks belong behind attachment feature boundaries.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('MediaTileAttachment remains data-only', () async {
+      final offenders = await _findMediaTileAttachmentDataOnlyOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'MediaTileAttachment is a rendering DTO. File resolution and '
+            'path expansion belong behind AttachmentFileAccess, not inside '
+            'the DTO.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Message URL previews use external URI opener boundary', () async {
+      final offenders = await _findMessageUrlPreviewOpenerBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Message URL previews may render tappable links, but external '
+            'launch mechanics belong behind ExternalUriOpener.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('ResolvedAttachment remains path-based data', () async {
+      final offenders = await _findResolvedAttachmentPathOnlyOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'ResolvedAttachment should describe attachment availability and '
+            'resolved file paths. Concrete File handles belong at rendering or '
+            'infrastructure boundaries.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -965,7 +1090,7 @@ void main() {
         reason:
             'ChatDbChangeMonitor owns live-source polling decisions, but '
             'source-scoped import ledger cursor/count reads and source chat.db '
-            'row probes should stay behind reader boundaries.\n'
+            'row/platform probes should stay behind reader boundaries.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -1005,6 +1130,22 @@ void main() {
       },
     );
 
+    test('Attachment archive service uses file-store boundary', () async {
+      final offenders =
+          await _findAttachmentArchiveFileStoreBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'AttachmentArchiveService may orchestrate archive policy, but '
+            'file copying, hashing, home expansion, existence checks, and '
+            'archive integrity file reads belong behind '
+            'AttachmentArchiveFileStore.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Onboarding environment report uses probe reader boundary', () async {
       final offenders =
           await _findOnboardingEnvironmentProbeBoundaryOffenders();
@@ -1016,6 +1157,81 @@ void main() {
             'OnboardingEnvironmentReport may classify setup state, but '
             'filesystem and SQLite probing belong behind '
             'OnboardingDatabaseProbeReader.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Full Disk Access uses access boundary', () async {
+      final offenders = await _findFullDiskAccessBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Onboarding and settings code should consume FullDiskAccess or '
+            'the onboarding path/FDA providers. macOS file probes and System '
+            'Settings process launches belong in onboarding infrastructure.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Message data reset uses file-store boundary', () async {
+      final offenders = await _findMessageDataResetFileStoreBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'MessageDataResetService may orchestrate reset semantics, but '
+            'database file probing/deletion belongs behind '
+            'DerivedMessageDataFileStore.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test(
+      'Historical archive source identity uses folder resolver boundary',
+      () async {
+        final offenders =
+            await _findHistoricalArchiveFolderResolverBoundaryOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'Historical archive source registration/removal may use a '
+              'source-folder resolver, but filesystem validation and source-key '
+              'path normalization belong behind that resolver boundary.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
+    test('Graph status logging uses writer boundary', () async {
+      final offenders = await _findGraphStatusLoggingBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Graph status log formatting may live in application code, but '
+            'filesystem writes belong to the infrastructure writer and '
+            'presentation should consume the writer provider.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Graph status archived-file actions use opener boundary', () async {
+      final offenders =
+          await _findGraphStatusArchivedFileOpenerBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Graph status presentation may expose archived-file actions, but '
+            'external launch mechanics belong behind '
+            'ArchivedAttachmentFileOpener.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -1293,6 +1509,58 @@ Future<List<String>> _findDatabaseConstructionOffenders() async {
   return offenders.toList()..sort();
 }
 
+Future<List<String>> _findDatabaseHealthQueryLayerFileIoOffenders() async {
+  const filePath =
+      'lib/essentials/db/application/database_health_audit/database_health_query_layer.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final source = await file.readAsString();
+  final uncommented = _stripComments(source);
+  final imports = _extractImports(uncommented);
+  final offenders = <String>[
+    for (final importTarget in imports)
+      if (importTarget == 'dart:io') '$filePath imports $importTarget',
+  ];
+
+  if (RegExp(r'(^|[^\w.])File\(').hasMatch(uncommented) ||
+      uncommented.contains('existsSync(')) {
+    offenders.add('$filePath performs filesystem probing directly');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findDatabaseHealthAuditServiceIoOffenders() async {
+  const filePath =
+      'lib/essentials/db/application/database_health_audit/database_health_audit_service.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final source = await file.readAsString();
+  final uncommented = _stripComments(source);
+  final imports = _extractImports(uncommented);
+  final offenders = <String>[
+    for (final importTarget in imports)
+      if (importTarget == 'dart:io' ||
+          importTarget == 'dart:convert' ||
+          importTarget == 'package:path/path.dart')
+        '$filePath imports $importTarget',
+  ];
+
+  if (RegExp(r'(^|[^\w.])File\(').hasMatch(uncommented) ||
+      RegExp(r'(^|[^\w.])Directory\(').hasMatch(uncommented) ||
+      uncommented.contains('Platform.')) {
+    offenders.add('$filePath performs runtime/file IO directly');
+  }
+
+  return offenders..sort();
+}
+
 Future<List<String>>
 _findSourceScopedImportApplicationSqfliteOffenders() async {
   final files = await _collectDartFiles((path) {
@@ -1484,6 +1752,35 @@ _findArchiveSettingsOverlayDatabaseImportOffenders() async {
   return offenders..sort();
 }
 
+Future<List<String>> _findArchiveSettingsFileOperationsOffenders() async {
+  const filePath =
+      'lib/features/attachments/application/archive_settings_provider.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final source = await file.readAsString();
+  final uncommented = _stripComments(source);
+  final imports = _extractImports(uncommented);
+  final offenders = <String>[
+    for (final importTarget in imports)
+      if (importTarget == 'dart:io' ||
+          importTarget ==
+              'package:file_selector_platform_interface/file_selector_platform_interface.dart' ||
+          importTarget == 'package:path/path.dart')
+        '$filePath imports $importTarget',
+  ];
+
+  if (RegExp(r'(^|[^\w.])File\(').hasMatch(uncommented) ||
+      RegExp(r'(^|[^\w.])Directory\(').hasMatch(uncommented) ||
+      uncommented.contains('FileSelectorPlatform.instance')) {
+    offenders.add('$filePath performs archive filesystem work directly');
+  }
+
+  return offenders..sort();
+}
+
 Future<List<String>>
 _findAttachmentResolverArchiveStorageImportOffenders() async {
   const filePath =
@@ -1498,12 +1795,173 @@ _findAttachmentResolverArchiveStorageImportOffenders() async {
   final imports = _extractImports(uncommented);
   final offenders = <String>[
     for (final importTarget in imports)
-      if (importTarget.endsWith(
+      if (importTarget == 'dart:io' ||
+          importTarget.endsWith(
             'essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart',
           ) ||
           importTarget.endsWith('attachment_recovery_hint_storage.dart'))
         '$filePath imports $importTarget',
   ];
+
+  if (uncommented.contains('File(') || uncommented.contains('existsSync(')) {
+    offenders.add('$filePath performs attachment filesystem access directly');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>>
+_findMessageAttachmentEvidenceFileAccessBoundaryOffenders() async {
+  const files = <String>{
+    'lib/features/messages/application/message_evidence/message_attachment_evidence.dart',
+    'lib/features/messages/application/message_evidence/message_evidence_spine_provider.dart',
+  };
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final file = File(filePath);
+    if (!file.existsSync()) {
+      continue;
+    }
+
+    final source = await file.readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    offenders.addAll([
+      for (final importTarget in imports)
+        if (importTarget == 'dart:io') '$filePath imports $importTarget',
+    ]);
+
+    if (RegExp(r'(^|[^\w.])File\(').hasMatch(uncommented) ||
+        uncommented.contains('existsSync(') ||
+        uncommented.contains('Platform.environment')) {
+      offenders.add('$filePath performs attachment file access directly');
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findAttachmentInfoDataOnlyOffenders() async {
+  const filePath = 'lib/features/messages/domain/entities/attachment_info.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final source = await file.readAsString();
+  final uncommented = _stripComments(source);
+  final imports = _extractImports(uncommented);
+  final offenders = <String>[
+    for (final importTarget in imports)
+      if (importTarget == 'dart:io' ||
+          importTarget == 'package:path/path.dart' ||
+          importTarget.endsWith('attachment_file_access.dart'))
+        '$filePath imports $importTarget',
+  ];
+
+  if (RegExp(r'(^|[^\w.])File\(').hasMatch(uncommented) ||
+      RegExp(r'(^|[^\w.])Directory\(').hasMatch(uncommented) ||
+      uncommented.contains('Platform.environment') ||
+      uncommented.contains('existsSync(') ||
+      uncommented.contains('resolvedLocalPath')) {
+    offenders.add('$filePath performs attachment file/path access directly');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findMediaTileAttachmentDataOnlyOffenders() async {
+  const filePath =
+      'lib/features/messages/presentation/widgets/message_evidence/media_tile_attachment.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final source = await file.readAsString();
+  final uncommented = _stripComments(source);
+  final imports = _extractImports(uncommented);
+  final offenders = <String>[
+    for (final importTarget in imports)
+      if (importTarget == 'dart:io' ||
+          importTarget == 'package:path/path.dart' ||
+          importTarget.endsWith('attachment_file_access.dart'))
+        '$filePath imports $importTarget',
+  ];
+
+  if (RegExp(r'(^|[^\w.])File\(').hasMatch(uncommented) ||
+      RegExp(r'(^|[^\w.])Directory\(').hasMatch(uncommented) ||
+      uncommented.contains('Platform.environment') ||
+      uncommented.contains('existsSync(') ||
+      uncommented.contains('displayableFile') ||
+      uncommented.contains('resolvedLocalPath')) {
+    offenders.add('$filePath performs attachment file/path access directly');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findMessageUrlPreviewOpenerBoundaryOffenders() async {
+  const files = <String>{
+    'lib/features/messages/presentation/widgets/url_preview_widget.dart',
+    'lib/features/messages/presentation/view_model/shared/display_widgets/new_display_widgets.dart',
+  };
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final file = File(filePath);
+    if (!file.existsSync()) {
+      continue;
+    }
+
+    final source = await file.readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    offenders.addAll([
+      for (final importTarget in imports)
+        if (importTarget == 'package:url_launcher/url_launcher.dart')
+          '$filePath imports $importTarget',
+    ]);
+
+    if (RegExp(r'(^|[^\w.])launchUrl\(').hasMatch(uncommented) ||
+        uncommented.contains('LaunchMode.externalApplication')) {
+      offenders.add('$filePath launches URL previews directly');
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findResolvedAttachmentPathOnlyOffenders() async {
+  const files = <String>{
+    'lib/features/attachments/domain/entities/resolved_attachment.dart',
+    'lib/features/attachments/domain/entities/resolved_attachment.freezed.dart',
+  };
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final file = File(filePath);
+    if (!file.existsSync()) {
+      continue;
+    }
+
+    final source = await file.readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    offenders.addAll([
+      for (final importTarget in imports)
+        if (importTarget == 'dart:io') '$filePath imports $importTarget',
+    ]);
+
+    if (RegExp(r'\bFile\??\b').hasMatch(uncommented) ||
+        uncommented.contains('resolvedFile;') ||
+        uncommented.contains('resolvedFile,') ||
+        uncommented.contains('resolvedFile:')) {
+      offenders.add('$filePath exposes concrete file handles');
+    }
+  }
+
   return offenders..sort();
 }
 
@@ -2303,6 +2761,35 @@ Future<List<String>> _findSettingsGraphReadBoundaryOffenders() async {
   return offenders..sort();
 }
 
+Future<List<String>>
+_findHistoricalArchivesFolderChooserBoundaryOffenders() async {
+  const filePath =
+      'lib/features/settings/presentation/view_model/historical_archives_workflow_panel_model_provider.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final source = await file.readAsString();
+  final uncommented = _stripComments(source);
+  final imports = _extractImports(uncommented);
+  final offenders = <String>[
+    for (final importTarget in imports)
+      if (importTarget ==
+              'package:file_selector_platform_interface/file_selector_platform_interface.dart' ||
+          importTarget.contains('file_selector'))
+        '$filePath imports $importTarget',
+  ];
+
+  if (uncommented.contains('FileSelectorPlatform') ||
+      uncommented.contains('FileDialogOptions') ||
+      uncommented.contains('getDirectoryPathWithOptions')) {
+    offenders.add('$filePath opens native folder picker directly');
+  }
+
+  return offenders..sort();
+}
+
 Future<List<String>> _findChatDbMonitorImportLedgerBoundaryOffenders() async {
   const filePath =
       'lib/essentials/conversation_graph/application/monitor/chat_db_change_monitor_provider.dart';
@@ -2316,7 +2803,8 @@ Future<List<String>> _findChatDbMonitorImportLedgerBoundaryOffenders() async {
   final imports = _extractImports(uncommented);
   final offenders = <String>[
     for (final importTarget in imports)
-      if (importTarget.endsWith('essentials/db/feature_level_providers.dart') ||
+      if (importTarget == 'dart:io' ||
+          importTarget.endsWith('essentials/db/feature_level_providers.dart') ||
           importTarget.endsWith(
             'source_scoped_import/feature_level_providers.dart',
           ) ||
@@ -2332,6 +2820,7 @@ Future<List<String>> _findChatDbMonitorImportLedgerBoundaryOffenders() async {
       uncommented.contains('messageCountForSource') ||
       uncommented.contains('sqlite3.open') ||
       uncommented.contains('OpenMode.readOnly') ||
+      uncommented.contains('Platform.isMacOS') ||
       uncommented.contains('SELECT MAX(ROWID)')) {
     offenders.add('$filePath opens import/source probe storage directly');
   }
@@ -2403,9 +2892,9 @@ _findAttachmentArchiveSourceLookupBoundaryOffenders() async {
   return offenders..sort();
 }
 
-Future<List<String>> _findOnboardingEnvironmentProbeBoundaryOffenders() async {
+Future<List<String>> _findAttachmentArchiveFileStoreBoundaryOffenders() async {
   const filePath =
-      'lib/essentials/onboarding/application/onboarding_environment_report_provider.dart';
+      'lib/features/attachments/application/attachment_archive_service_provider.dart';
   final file = File(filePath);
   if (!file.existsSync()) {
     return const <String>[];
@@ -2417,16 +2906,53 @@ Future<List<String>> _findOnboardingEnvironmentProbeBoundaryOffenders() async {
   final offenders = <String>[
     for (final importTarget in imports)
       if (importTarget == 'dart:io' ||
-          importTarget == 'package:sqlite3/sqlite3.dart' ||
-          importTarget.startsWith('package:sqflite') ||
-          importTarget.endsWith('conversation_graph_database.dart'))
+          importTarget == 'package:crypto/crypto.dart' ||
+          importTarget == 'package:path/path.dart')
         '$filePath imports $importTarget',
   ];
 
-  if (uncommented.contains('sqlite3.open') ||
-      uncommented.contains('OpenMode.readOnly') ||
-      uncommented.contains('ConversationGraphReadinessChecker')) {
-    offenders.add('$filePath performs onboarding database probing directly');
+  if (RegExp(r'(^|[^\w.])File\(').hasMatch(uncommented) ||
+      RegExp(r'(^|[^\w.])Directory\(').hasMatch(uncommented) ||
+      uncommented.contains('Platform.environment') ||
+      uncommented.contains('sha256.convert')) {
+    offenders.add('$filePath performs archive file-store work directly');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findOnboardingEnvironmentProbeBoundaryOffenders() async {
+  const filePath =
+      'lib/essentials/onboarding/application/onboarding_environment_report_provider.dart';
+  const files = <String>[
+    filePath,
+    'lib/essentials/onboarding/application/database_existence_checker.dart',
+  ];
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final file = File(filePath);
+    if (!file.existsSync()) {
+      continue;
+    }
+
+    final source = await file.readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    offenders.addAll([
+      for (final importTarget in imports)
+        if (importTarget == 'dart:io' ||
+            importTarget == 'package:sqlite3/sqlite3.dart' ||
+            importTarget.startsWith('package:sqflite') ||
+            importTarget.endsWith('conversation_graph_database.dart'))
+          '$filePath imports $importTarget',
+    ]);
+
+    if (uncommented.contains('sqlite3.open') ||
+        uncommented.contains('OpenMode.readOnly') ||
+        uncommented.contains('ConversationGraphReadinessChecker')) {
+      offenders.add('$filePath performs onboarding database probing directly');
+    }
   }
 
   return offenders..sort();
@@ -2460,6 +2986,205 @@ _findContactDisplayNameOverrideActionStorageOffenders() async {
       uncommented.contains('OverlayContactDisplayNameOverrideStore')) {
     offenders.add('$filePath constructs overlay display-name storage directly');
   }
+  return offenders..sort();
+}
+
+Future<List<String>> _findFullDiskAccessBoundaryOffenders() async {
+  const removedCheckerPath =
+      'lib/essentials/onboarding/application/fda_checker.dart';
+  const files = <String>{
+    'lib/essentials/onboarding/application/onboarding_environment_report_provider.dart',
+    'lib/essentials/onboarding/application/onboarding_gate_provider.dart',
+    'lib/features/settings/presentation/view_model/historical_archives_workflow_panel_model_provider.dart',
+  };
+  final offenders = <String>[];
+
+  if (File(removedCheckerPath).existsSync()) {
+    offenders.add('$removedCheckerPath reintroduced direct FDA checker');
+  }
+
+  for (final filePath in files) {
+    final file = File(filePath);
+    if (!file.existsSync()) {
+      continue;
+    }
+
+    final source = await file.readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    offenders.addAll([
+      for (final importTarget in imports)
+        if (importTarget == 'dart:io' ||
+            importTarget.endsWith('application/fda_checker.dart'))
+          '$filePath imports $importTarget',
+    ]);
+
+    if (uncommented.contains('Process.run(') ||
+        RegExp(r'(^|[^\w.])File\(').hasMatch(uncommented) ||
+        uncommented.contains('openSync(') ||
+        uncommented.contains('Platform.environment')) {
+      offenders.add('$filePath performs Full Disk Access probing directly');
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findMessageDataResetFileStoreBoundaryOffenders() async {
+  const filePath =
+      'lib/essentials/onboarding/application/message_data_reset_service.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final source = await file.readAsString();
+  final uncommented = _stripComments(source);
+  final imports = _extractImports(uncommented);
+  final offenders = <String>[
+    for (final importTarget in imports)
+      if (importTarget == 'dart:io') '$filePath imports $importTarget',
+  ];
+
+  if (RegExp(r'(^|[^\w.])File\(').hasMatch(uncommented) ||
+      RegExp(r'(^|[^\w.])Directory\(').hasMatch(uncommented) ||
+      uncommented.contains('existsSync(') ||
+      uncommented.contains('.delete(')) {
+    offenders.add('$filePath performs reset file access directly');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>>
+_findHistoricalArchiveFolderResolverBoundaryOffenders() async {
+  const files = <String>{
+    'lib/essentials/source_scoped_import/application/archives/historical_messages_archive_source_registrar.dart',
+    'lib/essentials/conversation_graph/application/archives/source_scoped_archive_graph_removal_service.dart',
+  };
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final file = File(filePath);
+    if (!file.existsSync()) {
+      continue;
+    }
+
+    final source = await file.readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    offenders.addAll([
+      for (final importTarget in imports)
+        if (importTarget == 'dart:io' ||
+            importTarget == 'package:path/path.dart')
+          '$filePath imports $importTarget',
+    ]);
+
+    if (uncommented.contains('File(') ||
+        uncommented.contains('Directory(') ||
+        uncommented.contains('FileSystemException') ||
+        uncommented.contains('path.join(')) {
+      offenders.add('$filePath performs archive folder resolution directly');
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findGraphStatusLoggingBoundaryOffenders() async {
+  const applicationFilePath =
+      'lib/essentials/conversation_graph/application/status/conversation_graph_status_log_writer.dart';
+  const presentationFilePath =
+      'lib/essentials/conversation_graph/presentation/status/conversation_graph_status_sheet.dart';
+  final offenders = <String>[];
+
+  final applicationFile = File(applicationFilePath);
+  if (applicationFile.existsSync()) {
+    final source = await applicationFile.readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    offenders.addAll([
+      for (final importTarget in imports)
+        if (importTarget == 'dart:io' ||
+            importTarget == 'package:path/path.dart')
+          '$applicationFilePath imports $importTarget',
+    ]);
+
+    if (uncommented.contains('File(') ||
+        uncommented.contains('Directory(') ||
+        uncommented.contains('writeAsString(')) {
+      offenders.add('$applicationFilePath writes status logs directly');
+    }
+  }
+
+  final presentationFile = File(presentationFilePath);
+  if (presentationFile.existsSync()) {
+    final source = await presentationFile.readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    offenders.addAll([
+      for (final importTarget in imports)
+        if (importTarget.endsWith(
+          'application/status/conversation_graph_status_log_writer.dart',
+        ))
+          '$presentationFilePath imports $importTarget',
+    ]);
+
+    if (uncommented.contains('ConversationGraphStatusLogWriter()') ||
+        uncommented.contains('const ConversationGraphStatusLogWriter')) {
+      offenders.add('$presentationFilePath constructs log writer directly');
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>>
+_findGraphStatusArchivedFileOpenerBoundaryOffenders() async {
+  const applicationFilePath =
+      'lib/essentials/conversation_graph/application/status/archived_attachment_file_opener.dart';
+  const presentationFilePath =
+      'lib/essentials/conversation_graph/presentation/status/conversation_graph_status_sheet.dart';
+  final offenders = <String>[];
+
+  final applicationFile = File(applicationFilePath);
+  if (applicationFile.existsSync()) {
+    final source = await applicationFile.readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    offenders.addAll([
+      for (final importTarget in imports)
+        if (importTarget == 'package:url_launcher/url_launcher.dart' ||
+            importTarget == 'dart:io')
+          '$applicationFilePath imports $importTarget',
+    ]);
+
+    if (uncommented.contains('launchUrl(') ||
+        uncommented.contains('LaunchMode.') ||
+        uncommented.contains('Process.run(')) {
+      offenders.add('$applicationFilePath opens archived files directly');
+    }
+  }
+
+  final presentationFile = File(presentationFilePath);
+  if (presentationFile.existsSync()) {
+    final source = await presentationFile.readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    offenders.addAll([
+      for (final importTarget in imports)
+        if (importTarget == 'package:url_launcher/url_launcher.dart')
+          '$presentationFilePath imports $importTarget',
+    ]);
+
+    if (uncommented.contains('launchUrl(') ||
+        uncommented.contains('LaunchMode.') ||
+        uncommented.contains('Uri.file(') ||
+        uncommented.contains('Process.run(')) {
+      offenders.add('$presentationFilePath opens archived files directly');
+    }
+  }
+
   return offenders..sort();
 }
 

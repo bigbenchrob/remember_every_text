@@ -1,8 +1,4 @@
-import 'dart:io';
-
-import 'package:path/path.dart' as path;
-
-import '../../../source_scoped_import/application/archives/historical_messages_archive_source_registrar.dart';
+import '../../../source_scoped_import/application/archives/historical_messages_archive_source_folder_resolver.dart';
 import '../../../source_scoped_import/domain/ports/import_ledger_port.dart';
 import '../attachments/attachment_projector.dart';
 import '../chat_handle_joins/chat_to_handle_projector.dart';
@@ -48,6 +44,7 @@ class SourceScopedArchiveGraphRemovalService {
     required this.attachmentProjector,
     required this.chatToMessageProjector,
     required this.messageToAttachmentProjector,
+    required this.folderResolver,
   });
 
   final ImportLedger importLedger;
@@ -60,14 +57,12 @@ class SourceScopedArchiveGraphRemovalService {
   final AttachmentProjector attachmentProjector;
   final ChatToMessageProjector chatToMessageProjector;
   final MessageToAttachmentProjector messageToAttachmentProjector;
+  final HistoricalMessagesArchiveSourceFolderResolver folderResolver;
 
   Future<SourceScopedArchiveGraphRemovalResult> removeArchiveSource({
     required String folderPath,
   }) async {
-    final chatDbPath = _chatDbPathForFolder(folderPath);
-    final sourceKey = HistoricalMessagesArchiveSourceRegistrar.buildSourceKey(
-      chatDbPath: chatDbPath,
-    );
+    final sourceKey = folderResolver.resolveFolder(folderPath).sourceKey;
     final sourceId = await importLedger.sourceIdForKey(sourceKey);
     if (sourceId == null) {
       return const SourceScopedArchiveGraphRemovalResult(
@@ -108,22 +103,5 @@ class SourceScopedArchiveGraphRemovalService {
     await attachmentProjector.projectAttachments();
     await chatToMessageProjector.projectEdges();
     await messageToAttachmentProjector.projectEdges();
-  }
-
-  static String _chatDbPathForFolder(String folderPath) {
-    final trimmed = folderPath.trim();
-    if (trimmed.isEmpty) {
-      throw ArgumentError.value(folderPath, 'folderPath', 'must not be empty');
-    }
-
-    final normalizedFolderPath = Directory(trimmed).absolute.path;
-    final chatDbPath = path.join(normalizedFolderPath, 'chat.db');
-    if (!File(chatDbPath).existsSync()) {
-      throw FileSystemException(
-        'Historical Messages archive folder must contain chat.db',
-        chatDbPath,
-      );
-    }
-    return chatDbPath;
   }
 }

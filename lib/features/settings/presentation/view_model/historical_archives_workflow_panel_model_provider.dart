@@ -1,4 +1,3 @@
-import 'package:file_selector_platform_interface/file_selector_platform_interface.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -9,8 +8,9 @@ import '../../../../essentials/conversation_graph/application/orchestration/grap
 import '../../../../essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart';
 import '../../../../essentials/db/feature_level_providers/db_maintenance_lock_provider.dart';
 import '../../../../essentials/db/feature_level_providers/message_data_version_provider.dart';
-import '../../../../essentials/onboarding/application/fda_checker.dart';
+import '../../../../essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import '../../infrastructure/repositories/archive_source_inspection_repository.dart';
+import '../../infrastructure/repositories/historical_archive_folder_chooser_provider.dart';
 import '../../infrastructure/repositories/historical_archive_sources_repository.dart';
 
 part 'historical_archives_workflow_panel_model_provider.g.dart';
@@ -322,10 +322,8 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
   }
 
   Future<void> chooseMessagesFolder() async {
-    final folderPath = await FileSelectorPlatform.instance
-        .getDirectoryPathWithOptions(
-          const FileDialogOptions(confirmButtonText: 'Use This Folder'),
-        );
+    final folderChooser = ref.read(historicalArchiveFolderChooserProvider);
+    final folderPath = await folderChooser.chooseMessagesFolder();
     if (folderPath == null) {
       return;
     }
@@ -401,7 +399,12 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     }
 
     final selectedChatDbPath = path.join(selectedFolderPath, 'chat.db');
-    if (_isCurrentMacChatDbPath(selectedChatDbPath)) {
+    if (_isCurrentMacChatDbPath(
+      selectedChatDbPath,
+      currentMessagesDatabasePath: ref.read(
+        onboardingMessagesDatabasePathProvider,
+      ),
+    )) {
       _prependActivityLog(
         const HistoricalArchivesLogEntryViewModel(
           label: 'Current Messages source protected',
@@ -518,7 +521,12 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     }
 
     final selectedChatDbPath = path.join(selectedFolderPath, 'chat.db');
-    if (_isCurrentMacChatDbPath(selectedChatDbPath)) {
+    if (_isCurrentMacChatDbPath(
+      selectedChatDbPath,
+      currentMessagesDatabasePath: ref.read(
+        onboardingMessagesDatabasePathProvider,
+      ),
+    )) {
       _prependActivityLog(
         const HistoricalArchivesLogEntryViewModel(
           label: 'Current Messages source protected',
@@ -757,11 +765,15 @@ HistoricalArchivesWorkflowPanelViewModel historicalArchivesWorkflowPanelModel(
   final executionGateState = ref.watch(graphMaintenanceExecutionGateProvider);
   final isMaintenanceLocked = ref.watch(dbMaintenanceLockProvider);
   final workflowState = ref.watch(historicalArchivesWorkflowProvider);
+  final currentMessagesDatabasePath = ref.watch(
+    onboardingMessagesDatabasePathProvider,
+  );
 
   return buildHistoricalArchivesWorkflowPanelModel(
     executionGateState: executionGateState,
     isMaintenanceLocked: isMaintenanceLocked,
     workflowState: workflowState,
+    currentMessagesDatabasePath: currentMessagesDatabasePath,
   );
 }
 
@@ -770,6 +782,7 @@ buildHistoricalArchivesWorkflowPanelModel({
   required GraphMaintenanceExecutionGateState executionGateState,
   required bool isMaintenanceLocked,
   required HistoricalArchivesWorkflowState workflowState,
+  required String currentMessagesDatabasePath,
 }) {
   final executionGate = _buildExecutionGateViewModel(
     executionGateState: executionGateState,
@@ -796,7 +809,10 @@ buildHistoricalArchivesWorkflowPanelModel({
 
   final importButtonDetail = switch (executionGate.status) {
     HistoricalArchivesExecutionGateStatus.available =>
-      _availableImportButtonDetail(workflowState),
+      _availableImportButtonDetail(
+        workflowState,
+        currentMessagesDatabasePath: currentMessagesDatabasePath,
+      ),
     HistoricalArchivesExecutionGateStatus.busy =>
       'Import is unavailable because ${_describeExecutionOwnerPhrase(executionGateState.owner)} currently owns the execution gate.',
     HistoricalArchivesExecutionGateStatus.blocked =>
@@ -817,6 +833,7 @@ buildHistoricalArchivesWorkflowPanelModel({
     importButtonEnabled: _importButtonEnabled(
       executionGate: executionGate,
       workflowState: workflowState,
+      currentMessagesDatabasePath: currentMessagesDatabasePath,
     ),
     importButtonDetail: importButtonDetail,
     archiveRemovalTargetChatDbPath:
@@ -827,11 +844,13 @@ buildHistoricalArchivesWorkflowPanelModel({
     removeImportedArchiveDataEnabled: _removeImportedArchiveDataEnabled(
       executionGate: executionGate,
       workflowState: workflowState,
+      currentMessagesDatabasePath: currentMessagesDatabasePath,
     ),
     removeImportedArchiveDataDetail: _removeImportedArchiveDataDetail(
       executionGateState: executionGateState,
       isMaintenanceLocked: isMaintenanceLocked,
       workflowState: workflowState,
+      currentMessagesDatabasePath: currentMessagesDatabasePath,
     ),
     activityLog: _buildActivityLog(
       executionGateState: executionGateState,
@@ -927,15 +946,19 @@ String _availableSummaryText(HistoricalArchivesWorkflowState workflowState) {
 }
 
 String _availableImportButtonDetail(
-  HistoricalArchivesWorkflowState workflowState,
-) {
+  HistoricalArchivesWorkflowState workflowState, {
+  required String currentMessagesDatabasePath,
+}) {
   final selectedFolderPath = workflowState.selectedFolderPath;
   final selectedChatDbPath = selectedFolderPath == null
       ? null
       : path.join(selectedFolderPath, 'chat.db');
 
   if (selectedChatDbPath != null &&
-      _isCurrentMacChatDbPath(selectedChatDbPath)) {
+      _isCurrentMacChatDbPath(
+        selectedChatDbPath,
+        currentMessagesDatabasePath: currentMessagesDatabasePath,
+      )) {
     return 'Historical Archives does not import the live current_mac Messages source. Choose an archive folder instead.';
   }
 
@@ -954,6 +977,7 @@ String _availableImportButtonDetail(
 bool _importButtonEnabled({
   required HistoricalArchivesExecutionGateViewModel executionGate,
   required HistoricalArchivesWorkflowState workflowState,
+  required String currentMessagesDatabasePath,
 }) {
   if (executionGate.status != HistoricalArchivesExecutionGateStatus.available) {
     return false;
@@ -964,7 +988,10 @@ bool _importButtonEnabled({
     return false;
   }
 
-  if (_isCurrentMacChatDbPath(path.join(selectedFolderPath, 'chat.db'))) {
+  if (_isCurrentMacChatDbPath(
+    path.join(selectedFolderPath, 'chat.db'),
+    currentMessagesDatabasePath: currentMessagesDatabasePath,
+  )) {
     return false;
   }
 
@@ -993,6 +1020,7 @@ List<String> _archiveManagementSummaryLines(
 bool _removeImportedArchiveDataEnabled({
   required HistoricalArchivesExecutionGateViewModel executionGate,
   required HistoricalArchivesWorkflowState workflowState,
+  required String currentMessagesDatabasePath,
 }) {
   final targetPath = workflowState.archiveRemovalTargetChatDbPath;
   if (executionGate.status != HistoricalArchivesExecutionGateStatus.available) {
@@ -1005,7 +1033,10 @@ bool _removeImportedArchiveDataEnabled({
   if (targetPath == null) {
     return false;
   }
-  if (_isCurrentMacChatDbPath(targetPath)) {
+  if (_isCurrentMacChatDbPath(
+    targetPath,
+    currentMessagesDatabasePath: currentMessagesDatabasePath,
+  )) {
     return false;
   }
   return true;
@@ -1015,6 +1046,7 @@ String _removeImportedArchiveDataDetail({
   required GraphMaintenanceExecutionGateState executionGateState,
   required bool isMaintenanceLocked,
   required HistoricalArchivesWorkflowState workflowState,
+  required String currentMessagesDatabasePath,
 }) {
   final targetPath = workflowState.archiveRemovalTargetChatDbPath;
   if (executionGateState.isLocked) {
@@ -1030,7 +1062,10 @@ String _removeImportedArchiveDataDetail({
   if (targetPath == null) {
     return 'Choose an archive folder first so MessageLens can identify which source-scoped archive rows would be removed.';
   }
-  if (_isCurrentMacChatDbPath(targetPath)) {
+  if (_isCurrentMacChatDbPath(
+    targetPath,
+    currentMessagesDatabasePath: currentMessagesDatabasePath,
+  )) {
     return 'Removal is unavailable for the live current_mac Messages source.';
   }
   return 'Removing imported archive data will delete source-scoped import rows for this selected source, then reproject the conversation graph from the remaining import facts.';
@@ -1306,9 +1341,12 @@ String? _firstLineWithPrefix(List<String> lines, String prefix) {
   return null;
 }
 
-bool _isCurrentMacChatDbPath(String sourceChatDbPath) {
+bool _isCurrentMacChatDbPath(
+  String sourceChatDbPath, {
+  required String currentMessagesDatabasePath,
+}) {
   return path.normalize(sourceChatDbPath) ==
-      path.normalize(FdaChecker.chatDbPath);
+      path.normalize(currentMessagesDatabasePath);
 }
 
 List<HistoricalArchivesWorkflowPhaseViewModel> _runningPreflightPhases() {

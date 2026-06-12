@@ -11,9 +11,10 @@ import '../../navigation/application/sidebar_mode_provider.dart';
 import '../../navigation/domain/sidebar_mode.dart';
 import '../domain/onboarding_environment_report.dart';
 import '../domain/onboarding_status.dart';
+import '../infrastructure/persistence/onboarding_database_probe_reader_provider.dart';
 import '../infrastructure/persistence/onboarding_failure_storage_provider.dart';
+import '../infrastructure/system/full_disk_access_provider.dart';
 import 'database_existence_checker.dart';
-import 'fda_checker.dart';
 import 'message_data_reset_service.dart';
 import 'onboarding_environment_report_provider.dart';
 
@@ -36,8 +37,6 @@ part 'onboarding_gate_provider.g.dart';
 /// and are not the app-facing setup path.
 @Riverpod(keepAlive: true)
 class OnboardingGate extends _$OnboardingGate {
-  static const _checker = DatabaseExistenceChecker();
-  static const _fdaChecker = FdaChecker();
   OnboardingStatus? _workflowOverrideStatus;
   bool _automaticRecoveryInFlight = false;
   bool _automaticRecoverySuppressed = false;
@@ -162,11 +161,14 @@ class OnboardingGate extends _$OnboardingGate {
   }
 
   OnboardingStatus _fallbackBuildStatus() {
-    if (!_fdaChecker.canReadMessagesDatabase()) {
+    if (!ref.read(onboardingFullDiskAccessProvider)) {
       return OnboardingStatus.awaitingFda;
     }
 
-    final hasData = _checker.hasPopulatedDatabases(databaseDirectoryPath);
+    final checker = DatabaseExistenceChecker(
+      ref.read(onboardingDatabaseProbeReaderProvider),
+    );
+    final hasData = checker.hasPopulatedDatabases(databaseDirectoryPath);
     if (hasData) {
       return OnboardingStatus.notNeeded;
     }
@@ -192,7 +194,7 @@ class OnboardingGate extends _$OnboardingGate {
     // Gate 2 safety check: verify we can still read chat.db before
     // committing to the import.  If FDA was revoked after the earlier
     // check, fall back to the FDA screen.
-    if (!_fdaChecker.canReadMessagesDatabase()) {
+    if (!ref.read(onboardingFullDiskAccessProvider)) {
       ref
           .read(appLoggerProvider.notifier)
           .warn(
@@ -245,7 +247,7 @@ class OnboardingGate extends _$OnboardingGate {
 
   /// Open System Settings to the Full Disk Access pane.
   Future<void> openFdaSettings() async {
-    await FdaChecker.openFdaSettings();
+    await ref.read(fullDiskAccessProvider).openSettings();
   }
 
   void refreshEnvironment() {

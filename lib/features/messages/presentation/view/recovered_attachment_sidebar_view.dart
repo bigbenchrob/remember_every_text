@@ -15,6 +15,7 @@ import '../../../attachments/application/attachment_resolver_provider.dart';
 import '../../../attachments/domain/constants/attachment_provenance.dart';
 import '../../../attachments/domain/constants/resolved_attachment_availability.dart';
 import '../../../attachments/domain/entities/resolved_attachment.dart';
+import '../../../attachments/feature_level_providers.dart';
 import '../../domain/entities/attachment_info.dart';
 
 class RecoveredAttachmentSidebarView extends ConsumerWidget {
@@ -33,8 +34,7 @@ class RecoveredAttachmentSidebarView extends ConsumerWidget {
       return transferName;
     }
 
-    final resolvedPath =
-        fallbackPath?.trim() ?? attachment.resolvedLocalPath()?.trim();
+    final resolvedPath = fallbackPath?.trim() ?? attachment.localPath?.trim();
     if (resolvedPath == null || resolvedPath.isEmpty) {
       return 'Recovered attachment';
     }
@@ -66,8 +66,10 @@ class RecoveredAttachmentSidebarView extends ConsumerWidget {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
+    final fileAccess = ref.watch(attachmentFileAccessProvider);
     final presentation = _RecoveredAttachmentSidebarPresentation.from(
       attachment: attachment,
+      recordedPath: fileAccess.expandPath(attachment.localPath),
       resolvedAttachmentAsync: _watchResolvedAttachment(ref),
     );
 
@@ -272,12 +274,11 @@ class _RecoveredAttachmentSidebarPresentation {
 
   factory _RecoveredAttachmentSidebarPresentation.from({
     required AttachmentInfo attachment,
+    required String? recordedPath,
     required AsyncValue<ResolvedAttachment>? resolvedAttachmentAsync,
   }) {
-    final recordedPath = attachment.resolvedLocalPath();
     final resolvedAttachment = resolvedAttachmentAsync?.valueOrNull;
-    final resolvedFile = resolvedAttachment?.resolvedFile;
-    final resolvedFilePath = resolvedFile?.path;
+    final resolvedFilePath = resolvedAttachment?.resolvedFilePath;
     final hasRecordedPath = recordedPath != null && recordedPath.isNotEmpty;
     final hasResolvedFile =
         resolvedFilePath != null && resolvedFilePath.isNotEmpty;
@@ -308,7 +309,7 @@ class _RecoveredAttachmentSidebarPresentation {
         availability: availability,
         hasRecordedPath: hasRecordedPath,
       ),
-      previewFile: hasResolvedFile ? resolvedFile : null,
+      previewFile: hasResolvedFile ? File(resolvedFilePath) : null,
       sourceLabel: _sourceLabel(provenance),
       sourceTooltipMessage: _sourceTooltipMessage(provenance),
     );

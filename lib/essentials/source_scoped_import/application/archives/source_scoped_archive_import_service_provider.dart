@@ -17,6 +17,9 @@ Future<SourceScopedArchiveImportService> sourceScopedArchiveImportService(
   return SourceScopedArchiveImportService(
     registrar: HistoricalMessagesArchiveSourceRegistrar(
       importLedger: importLedger,
+      folderResolver: ref.watch(
+        historicalMessagesArchiveSourceFolderResolverProvider,
+      ),
     ),
     richTextExtractor: ref.watch(sourceScopedMessageExtractorProvider),
     sourceDatabaseOpener: sourceDatabaseOpener,

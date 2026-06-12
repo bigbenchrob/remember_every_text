@@ -1,10 +1,7 @@
 import 'dart:async';
-import 'dart:io';
 
-import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:path/path.dart' as p;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../essentials/db/feature_level_providers.dart';
@@ -16,6 +13,7 @@ import '../../../essentials/source_scoped_import/domain/source_scoped_row_key.da
 import '../domain/entities/attachment_recovery_metadata.dart';
 import '../feature_level_providers.dart';
 import 'archive_settings_provider.dart';
+import 'attachment_archive_file_store.dart';
 import 'attachment_recovery_hint_storage.dart';
 
 part 'attachment_archive_service_provider.g.dart';
@@ -54,6 +52,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
   }) async {
     final overlayDb = await ref.read(overlayDatabaseProvider.future);
     final archiveDir = ref.read(attachmentArchiveDirectoryProvider);
+    final fileStore = ref.read(attachmentArchiveFileStoreProvider);
 
     // Idempotency check: skip if already archived.
     final existing =
@@ -81,28 +80,19 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       return false;
     }
 
-    final sourceFile = File(sourcePath);
-
-    // Compute hash if not available.
-    final contentHash = sha256Hex ?? await _computeSha256(sourceFile);
-
-    // Determine archive path.
-    final ext = p.extension(sourcePath).toLowerCase();
-    final String relativePath;
-    if (contentHash != null && contentHash.length >= 2) {
-      final prefix = contentHash.substring(0, 2);
-      relativePath = '$prefix/$contentHash$ext';
-    } else {
-      relativePath = '_by_id/$importAttachmentId$ext';
-    }
-
-    final destFile = File('$archiveDir/$relativePath');
-
-    // Copy file into archive.
+    late final ArchivedAttachmentFileWrite archiveWrite;
     try {
-      await destFile.parent.create(recursive: true);
-      await sourceFile.copy(destFile.path);
-    } on FileSystemException catch (e) {
+      final writeResult = await fileStore.writeArchiveEntry(
+        archiveDirectoryPath: archiveDir,
+        sourcePath: sourcePath,
+        importAttachmentId: importAttachmentId,
+        sha256Hex: sha256Hex,
+      );
+      if (writeResult == null) {
+        return false;
+      }
+      archiveWrite = writeResult;
+    } on Object catch (e) {
       ref
           .read(appLoggerProvider.notifier)
           .warn(
@@ -113,18 +103,17 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     }
 
     // Record in overlay DB.
-    final fileSize = await destFile.length();
     await overlayDb
         .into(overlayDb.archivedAttachments)
         .insert(
           ArchivedAttachmentsCompanion.insert(
             messageGuid: messageGuid,
             importAttachmentId: importAttachmentId,
-            archiveRelativePath: relativePath,
+            archiveRelativePath: archiveWrite.relativePath,
             archivedAtUtc: DateTime.now().toUtc().toIso8601String(),
-            fileSizeBytes: fileSize,
-            contentHash: Value(contentHash),
-            originalLocalPath: Value(sourcePath),
+            fileSizeBytes: archiveWrite.fileSizeBytes,
+            contentHash: Value(archiveWrite.contentHash),
+            originalLocalPath: Value(archiveWrite.sourcePath),
           ),
         );
 
@@ -178,8 +167,8 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       return;
     }
 
-    final sourceFile = File(resolvedLocalPath);
-    if (!sourceFile.existsSync()) {
+    final fileStore = ref.read(attachmentArchiveFileStoreProvider);
+    if (!fileStore.fileExists(fileStore.expandHomePath(resolvedLocalPath))) {
       return;
     }
 
@@ -506,10 +495,11 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       driftConversationGraphDatabaseProvider.future,
     );
     final archiveDir = ref.read(attachmentArchiveDirectoryProvider);
+    final fileStore = ref.read(attachmentArchiveFileStoreProvider);
     final logger = ref.read(appLoggerProvider.notifier);
 
     // Ensure archive directory exists.
-    await Directory(archiveDir).create(recursive: true);
+    await fileStore.ensureArchiveDirectory(archiveDir);
 
     // Query all graph attachments with a source path.
     final rows = await graphDb.selectRows(
@@ -576,6 +566,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     var skipped = 0;
     var failed = 0;
     final skippedSamples = <String>[];
+    final fileStore = ref.read(attachmentArchiveFileStoreProvider);
 
     for (final row in rows) {
       // Handle cancellation.
@@ -620,8 +611,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
         continue;
       }
 
-      // Expand ~/
-      final resolvedPath = _expandHomePath(localPath);
+      final resolvedPath = fileStore.expandHomePath(localPath);
 
       final archivablePath = await _resolveArchivableSourcePath(
         preferredLocalPath: resolvedPath,
@@ -744,6 +734,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     final overlayDb = await ref.read(overlayDatabaseProvider.future);
     final archiveDir = ref.read(attachmentArchiveDirectoryProvider);
     final logger = ref.read(appLoggerProvider.notifier);
+    final fileStore = ref.read(attachmentArchiveFileStoreProvider);
 
     final rows = await overlayDb
         .customSelect(
@@ -760,9 +751,13 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     for (final row in rows) {
       final relativePath = row.read<String>('archive_relative_path');
       final storedHash = row.readNullable<String>('content_hash');
-      final file = File('$archiveDir/$relativePath');
+      final integrityCheck = await fileStore.checkIntegrity(
+        archiveDirectoryPath: archiveDir,
+        relativePath: relativePath,
+        storedHash: storedHash,
+      );
 
-      if (!file.existsSync()) {
+      if (!integrityCheck.fileExists) {
         fileMissing++;
         continue;
       }
@@ -772,14 +767,13 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
         continue;
       }
 
-      final actualHash = await _computeSha256(file);
-      if (actualHash == storedHash) {
+      if (integrityCheck.hashMatches == true) {
         verified++;
       } else {
         hashMismatch++;
         logger.warn(
           'Archive integrity: hash mismatch for $relativePath '
-          '(stored: $storedHash, actual: $actualHash)',
+          '(stored: $storedHash, actual: ${integrityCheck.actualHash})',
           source: 'AttachmentArchiveService',
         );
       }
@@ -801,31 +795,13 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     );
   }
 
-  static String _expandHomePath(String rawPath) {
-    if (rawPath.startsWith('~/')) {
-      final home = Platform.environment['HOME'] ?? '';
-      if (home.isNotEmpty) {
-        return rawPath.replaceFirst('~', home);
-      }
-    }
-    return rawPath;
-  }
-
-  static Future<String?> _computeSha256(File file) async {
-    try {
-      final bytes = await file.readAsBytes();
-      return sha256.convert(bytes).toString();
-    } on Exception {
-      return null;
-    }
-  }
-
   Future<String?> _resolveArchivableSourcePath({
     required String preferredLocalPath,
     required int importAttachmentId,
   }) async {
-    final expandedPreferredPath = _expandHomePath(preferredLocalPath);
-    if (File(expandedPreferredPath).existsSync()) {
+    final fileStore = ref.read(attachmentArchiveFileStoreProvider);
+    final expandedPreferredPath = fileStore.expandHomePath(preferredLocalPath);
+    if (fileStore.fileExists(expandedPreferredPath)) {
       return expandedPreferredPath;
     }
 
@@ -836,8 +812,8 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       return null;
     }
 
-    final expandedRefreshedPath = _expandHomePath(refreshedPath);
-    if (!File(expandedRefreshedPath).existsSync()) {
+    final expandedRefreshedPath = fileStore.expandHomePath(refreshedPath);
+    if (!fileStore.fileExists(expandedRefreshedPath)) {
       return null;
     }
 

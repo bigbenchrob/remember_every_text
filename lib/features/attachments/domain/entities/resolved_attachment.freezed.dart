@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ResolvedAttachment {
 
- AttachmentInfo get attachmentInfo; ResolvedAttachmentAvailability get availability; AttachmentProvenance? get provenance; File? get resolvedFile; AttachmentRecoveryMetadata? get recoveryMetadata;
+ AttachmentInfo get attachmentInfo; ResolvedAttachmentAvailability get availability; AttachmentProvenance? get provenance; String? get resolvedFilePath; AttachmentRecoveryMetadata? get recoveryMetadata;
 /// Create a copy of ResolvedAttachment
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $ResolvedAttachmentCopyWith<ResolvedAttachment> get copyWith => _$ResolvedAttach
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ResolvedAttachment&&(identical(other.attachmentInfo, attachmentInfo) || other.attachmentInfo == attachmentInfo)&&(identical(other.availability, availability) || other.availability == availability)&&(identical(other.provenance, provenance) || other.provenance == provenance)&&(identical(other.resolvedFile, resolvedFile) || other.resolvedFile == resolvedFile)&&(identical(other.recoveryMetadata, recoveryMetadata) || other.recoveryMetadata == recoveryMetadata));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ResolvedAttachment&&(identical(other.attachmentInfo, attachmentInfo) || other.attachmentInfo == attachmentInfo)&&(identical(other.availability, availability) || other.availability == availability)&&(identical(other.provenance, provenance) || other.provenance == provenance)&&(identical(other.resolvedFilePath, resolvedFilePath) || other.resolvedFilePath == resolvedFilePath)&&(identical(other.recoveryMetadata, recoveryMetadata) || other.recoveryMetadata == recoveryMetadata));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,attachmentInfo,availability,provenance,resolvedFile,recoveryMetadata);
+int get hashCode => Object.hash(runtimeType,attachmentInfo,availability,provenance,resolvedFilePath,recoveryMetadata);
 
 @override
 String toString() {
-  return 'ResolvedAttachment(attachmentInfo: $attachmentInfo, availability: $availability, provenance: $provenance, resolvedFile: $resolvedFile, recoveryMetadata: $recoveryMetadata)';
+  return 'ResolvedAttachment(attachmentInfo: $attachmentInfo, availability: $availability, provenance: $provenance, resolvedFilePath: $resolvedFilePath, recoveryMetadata: $recoveryMetadata)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $ResolvedAttachmentCopyWith<$Res>  {
   factory $ResolvedAttachmentCopyWith(ResolvedAttachment value, $Res Function(ResolvedAttachment) _then) = _$ResolvedAttachmentCopyWithImpl;
 @useResult
 $Res call({
- AttachmentInfo attachmentInfo, ResolvedAttachmentAvailability availability, AttachmentProvenance? provenance, File? resolvedFile, AttachmentRecoveryMetadata? recoveryMetadata
+ AttachmentInfo attachmentInfo, ResolvedAttachmentAvailability availability, AttachmentProvenance? provenance, String? resolvedFilePath, AttachmentRecoveryMetadata? recoveryMetadata
 });
 
 
@@ -62,13 +62,13 @@ class _$ResolvedAttachmentCopyWithImpl<$Res>
 
 /// Create a copy of ResolvedAttachment
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? attachmentInfo = null,Object? availability = null,Object? provenance = freezed,Object? resolvedFile = freezed,Object? recoveryMetadata = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? attachmentInfo = null,Object? availability = null,Object? provenance = freezed,Object? resolvedFilePath = freezed,Object? recoveryMetadata = freezed,}) {
   return _then(_self.copyWith(
 attachmentInfo: null == attachmentInfo ? _self.attachmentInfo : attachmentInfo // ignore: cast_nullable_to_non_nullable
 as AttachmentInfo,availability: null == availability ? _self.availability : availability // ignore: cast_nullable_to_non_nullable
 as ResolvedAttachmentAvailability,provenance: freezed == provenance ? _self.provenance : provenance // ignore: cast_nullable_to_non_nullable
-as AttachmentProvenance?,resolvedFile: freezed == resolvedFile ? _self.resolvedFile : resolvedFile // ignore: cast_nullable_to_non_nullable
-as File?,recoveryMetadata: freezed == recoveryMetadata ? _self.recoveryMetadata : recoveryMetadata // ignore: cast_nullable_to_non_nullable
+as AttachmentProvenance?,resolvedFilePath: freezed == resolvedFilePath ? _self.resolvedFilePath : resolvedFilePath // ignore: cast_nullable_to_non_nullable
+as String?,recoveryMetadata: freezed == recoveryMetadata ? _self.recoveryMetadata : recoveryMetadata // ignore: cast_nullable_to_non_nullable
 as AttachmentRecoveryMetadata?,
   ));
 }
@@ -154,10 +154,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( AttachmentInfo attachmentInfo,  ResolvedAttachmentAvailability availability,  AttachmentProvenance? provenance,  File? resolvedFile,  AttachmentRecoveryMetadata? recoveryMetadata)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( AttachmentInfo attachmentInfo,  ResolvedAttachmentAvailability availability,  AttachmentProvenance? provenance,  String? resolvedFilePath,  AttachmentRecoveryMetadata? recoveryMetadata)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ResolvedAttachment() when $default != null:
-return $default(_that.attachmentInfo,_that.availability,_that.provenance,_that.resolvedFile,_that.recoveryMetadata);case _:
+return $default(_that.attachmentInfo,_that.availability,_that.provenance,_that.resolvedFilePath,_that.recoveryMetadata);case _:
   return orElse();
 
 }
@@ -175,10 +175,10 @@ return $default(_that.attachmentInfo,_that.availability,_that.provenance,_that.r
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( AttachmentInfo attachmentInfo,  ResolvedAttachmentAvailability availability,  AttachmentProvenance? provenance,  File? resolvedFile,  AttachmentRecoveryMetadata? recoveryMetadata)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( AttachmentInfo attachmentInfo,  ResolvedAttachmentAvailability availability,  AttachmentProvenance? provenance,  String? resolvedFilePath,  AttachmentRecoveryMetadata? recoveryMetadata)  $default,) {final _that = this;
 switch (_that) {
 case _ResolvedAttachment():
-return $default(_that.attachmentInfo,_that.availability,_that.provenance,_that.resolvedFile,_that.recoveryMetadata);case _:
+return $default(_that.attachmentInfo,_that.availability,_that.provenance,_that.resolvedFilePath,_that.recoveryMetadata);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -195,10 +195,10 @@ return $default(_that.attachmentInfo,_that.availability,_that.provenance,_that.r
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( AttachmentInfo attachmentInfo,  ResolvedAttachmentAvailability availability,  AttachmentProvenance? provenance,  File? resolvedFile,  AttachmentRecoveryMetadata? recoveryMetadata)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( AttachmentInfo attachmentInfo,  ResolvedAttachmentAvailability availability,  AttachmentProvenance? provenance,  String? resolvedFilePath,  AttachmentRecoveryMetadata? recoveryMetadata)?  $default,) {final _that = this;
 switch (_that) {
 case _ResolvedAttachment() when $default != null:
-return $default(_that.attachmentInfo,_that.availability,_that.provenance,_that.resolvedFile,_that.recoveryMetadata);case _:
+return $default(_that.attachmentInfo,_that.availability,_that.provenance,_that.resolvedFilePath,_that.recoveryMetadata);case _:
   return null;
 
 }
@@ -210,13 +210,13 @@ return $default(_that.attachmentInfo,_that.availability,_that.provenance,_that.r
 
 
 class _ResolvedAttachment extends ResolvedAttachment {
-  const _ResolvedAttachment({required this.attachmentInfo, required this.availability, this.provenance, this.resolvedFile, this.recoveryMetadata}): super._();
+  const _ResolvedAttachment({required this.attachmentInfo, required this.availability, this.provenance, this.resolvedFilePath, this.recoveryMetadata}): super._();
   
 
 @override final  AttachmentInfo attachmentInfo;
 @override final  ResolvedAttachmentAvailability availability;
 @override final  AttachmentProvenance? provenance;
-@override final  File? resolvedFile;
+@override final  String? resolvedFilePath;
 @override final  AttachmentRecoveryMetadata? recoveryMetadata;
 
 /// Create a copy of ResolvedAttachment
@@ -229,16 +229,16 @@ _$ResolvedAttachmentCopyWith<_ResolvedAttachment> get copyWith => __$ResolvedAtt
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ResolvedAttachment&&(identical(other.attachmentInfo, attachmentInfo) || other.attachmentInfo == attachmentInfo)&&(identical(other.availability, availability) || other.availability == availability)&&(identical(other.provenance, provenance) || other.provenance == provenance)&&(identical(other.resolvedFile, resolvedFile) || other.resolvedFile == resolvedFile)&&(identical(other.recoveryMetadata, recoveryMetadata) || other.recoveryMetadata == recoveryMetadata));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ResolvedAttachment&&(identical(other.attachmentInfo, attachmentInfo) || other.attachmentInfo == attachmentInfo)&&(identical(other.availability, availability) || other.availability == availability)&&(identical(other.provenance, provenance) || other.provenance == provenance)&&(identical(other.resolvedFilePath, resolvedFilePath) || other.resolvedFilePath == resolvedFilePath)&&(identical(other.recoveryMetadata, recoveryMetadata) || other.recoveryMetadata == recoveryMetadata));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,attachmentInfo,availability,provenance,resolvedFile,recoveryMetadata);
+int get hashCode => Object.hash(runtimeType,attachmentInfo,availability,provenance,resolvedFilePath,recoveryMetadata);
 
 @override
 String toString() {
-  return 'ResolvedAttachment(attachmentInfo: $attachmentInfo, availability: $availability, provenance: $provenance, resolvedFile: $resolvedFile, recoveryMetadata: $recoveryMetadata)';
+  return 'ResolvedAttachment(attachmentInfo: $attachmentInfo, availability: $availability, provenance: $provenance, resolvedFilePath: $resolvedFilePath, recoveryMetadata: $recoveryMetadata)';
 }
 
 
@@ -249,7 +249,7 @@ abstract mixin class _$ResolvedAttachmentCopyWith<$Res> implements $ResolvedAtta
   factory _$ResolvedAttachmentCopyWith(_ResolvedAttachment value, $Res Function(_ResolvedAttachment) _then) = __$ResolvedAttachmentCopyWithImpl;
 @override @useResult
 $Res call({
- AttachmentInfo attachmentInfo, ResolvedAttachmentAvailability availability, AttachmentProvenance? provenance, File? resolvedFile, AttachmentRecoveryMetadata? recoveryMetadata
+ AttachmentInfo attachmentInfo, ResolvedAttachmentAvailability availability, AttachmentProvenance? provenance, String? resolvedFilePath, AttachmentRecoveryMetadata? recoveryMetadata
 });
 
 
@@ -266,13 +266,13 @@ class __$ResolvedAttachmentCopyWithImpl<$Res>
 
 /// Create a copy of ResolvedAttachment
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? attachmentInfo = null,Object? availability = null,Object? provenance = freezed,Object? resolvedFile = freezed,Object? recoveryMetadata = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? attachmentInfo = null,Object? availability = null,Object? provenance = freezed,Object? resolvedFilePath = freezed,Object? recoveryMetadata = freezed,}) {
   return _then(_ResolvedAttachment(
 attachmentInfo: null == attachmentInfo ? _self.attachmentInfo : attachmentInfo // ignore: cast_nullable_to_non_nullable
 as AttachmentInfo,availability: null == availability ? _self.availability : availability // ignore: cast_nullable_to_non_nullable
 as ResolvedAttachmentAvailability,provenance: freezed == provenance ? _self.provenance : provenance // ignore: cast_nullable_to_non_nullable
-as AttachmentProvenance?,resolvedFile: freezed == resolvedFile ? _self.resolvedFile : resolvedFile // ignore: cast_nullable_to_non_nullable
-as File?,recoveryMetadata: freezed == recoveryMetadata ? _self.recoveryMetadata : recoveryMetadata // ignore: cast_nullable_to_non_nullable
+as AttachmentProvenance?,resolvedFilePath: freezed == resolvedFilePath ? _self.resolvedFilePath : resolvedFilePath // ignore: cast_nullable_to_non_nullable
+as String?,recoveryMetadata: freezed == recoveryMetadata ? _self.recoveryMetadata : recoveryMetadata // ignore: cast_nullable_to_non_nullable
 as AttachmentRecoveryMetadata?,
   ));
 }

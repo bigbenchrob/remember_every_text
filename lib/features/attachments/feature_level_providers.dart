@@ -3,15 +3,21 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../essentials/db/feature_level_providers.dart';
 import '../../essentials/source_scoped_import/feature_level_providers.dart';
 import '../../providers.dart';
+import 'application/attachment_archive_file_operations.dart';
+import 'application/attachment_archive_file_store.dart';
 import 'application/attachment_archive_read_store.dart';
 import 'application/attachment_archive_settings_store.dart';
 import 'application/attachment_archive_stats_reader.dart';
+import 'application/attachment_file_access.dart';
 import 'application/cross_snapshot_mapper.dart';
 import 'application/current_messages_attachment_path_lookup.dart';
 import 'application/historical_snapshot_reader.dart';
 import 'application/recovered_attachment_archive_writer.dart';
 import 'infrastructure/repositories/attachment_archive_stats_repository.dart';
+import 'infrastructure/repositories/filesystem_attachment_archive_file_operations.dart';
+import 'infrastructure/repositories/filesystem_attachment_archive_file_store.dart';
 import 'infrastructure/repositories/graph_cross_snapshot_mapper.dart';
+import 'infrastructure/repositories/local_attachment_file_access.dart';
 import 'infrastructure/repositories/overlay_attachment_archive_read_store.dart';
 import 'infrastructure/repositories/overlay_attachment_archive_settings_store.dart';
 import 'infrastructure/repositories/overlay_recovered_attachment_archive_writer.dart';
@@ -20,6 +26,25 @@ import 'infrastructure/repositories/source_scoped_attachment_snapshot_lookup.dar
 import 'infrastructure/repositories/sqlite_historical_snapshot_reader.dart';
 
 part 'feature_level_providers.g.dart';
+
+@riverpod
+AttachmentFileAccess attachmentFileAccess(AttachmentFileAccessRef ref) {
+  return const LocalAttachmentFileAccess();
+}
+
+@riverpod
+AttachmentArchiveFileOperations attachmentArchiveFileOperations(
+  AttachmentArchiveFileOperationsRef ref,
+) {
+  return const FilesystemAttachmentArchiveFileOperations();
+}
+
+@riverpod
+AttachmentArchiveFileStore attachmentArchiveFileStore(
+  AttachmentArchiveFileStoreRef ref,
+) {
+  return const FilesystemAttachmentArchiveFileStore();
+}
 
 @riverpod
 Future<AttachmentArchiveSettingsStore> attachmentArchiveSettingsStore(

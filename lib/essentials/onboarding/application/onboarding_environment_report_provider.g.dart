@@ -7,7 +7,7 @@ part of 'onboarding_environment_report_provider.dart';
 // **************************************************************************
 
 String _$onboardingFullDiskAccessHash() =>
-    r'aa6531924225ab436a8b422362b4085e076938b8';
+    r'3ce4b51a704c19545c6242e3b21fcd126ba3e144';
 
 /// See also [onboardingFullDiskAccess].
 @ProviderFor(onboardingFullDiskAccess)
@@ -25,7 +25,7 @@ final onboardingFullDiskAccessProvider = Provider<bool>.internal(
 // ignore: unused_element
 typedef OnboardingFullDiskAccessRef = ProviderRef<bool>;
 String _$onboardingMessagesDatabasePathHash() =>
-    r'6035e52ff366dffc5881dd7bffc68ddce74e0e33';
+    r'3ab27ed645fb7a85a0204a6b3d94f97f77b7832d';
 
 /// See also [onboardingMessagesDatabasePath].
 @ProviderFor(onboardingMessagesDatabasePath)

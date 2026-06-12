@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../messages/domain/entities/attachment_info.dart';
@@ -10,6 +8,7 @@ import '../domain/entities/resolved_attachment.dart';
 import '../feature_level_providers.dart';
 import 'archive_settings_provider.dart';
 import 'attachment_archive_service_provider.dart';
+import 'attachment_file_access.dart';
 import 'attachment_recovery_metadata_merge.dart';
 
 part 'attachment_resolver_provider.g.dart';
@@ -32,9 +31,13 @@ Future<ResolvedAttachment> attachmentResolver(
   required int? importAttachmentId,
 }) async {
   final settings = await ref.watch(archiveSettingsProvider.future);
+  final fileAccess = ref.watch(attachmentFileAccessProvider);
 
   if (!settings.isEnabled) {
-    return _resolveForLiveOnlyMode(attachmentInfo: attachmentInfo);
+    return _resolveForLiveOnlyMode(
+      attachmentInfo: attachmentInfo,
+      fileAccess: fileAccess,
+    );
   }
 
   return _resolveForArchiveEnabledMode(
@@ -42,6 +45,7 @@ Future<ResolvedAttachment> attachmentResolver(
     attachmentInfo: attachmentInfo,
     messageGuid: messageGuid,
     importAttachmentId: importAttachmentId,
+    fileAccess: fileAccess,
   );
 }
 
@@ -50,10 +54,11 @@ Future<ResolvedAttachment> _resolveForArchiveEnabledMode(
   required AttachmentInfo attachmentInfo,
   required String messageGuid,
   required int? importAttachmentId,
+  required AttachmentFileAccess fileAccess,
 }) async {
-  final resolvedPath = attachmentInfo.resolvedLocalPath();
-  final liveFile = resolvedPath == null ? null : File(resolvedPath);
-  final liveFileExists = liveFile != null && liveFile.existsSync();
+  final resolvedPath = fileAccess.expandPath(attachmentInfo.localPath);
+  final liveFile = fileAccess.existingFileAt(resolvedPath);
+  final liveFileExists = liveFile != null;
   AttachmentRecoveryMetadata? persistedRecoveryHint;
 
   if (importAttachmentId != null) {
@@ -80,7 +85,7 @@ Future<ResolvedAttachment> _resolveForArchiveEnabledMode(
         attachmentInfo: attachmentInfo,
         availability: ResolvedAttachmentAvailability.available,
         provenance: provenance,
-        resolvedFile: File(archiveRecord.archiveAbsolutePath),
+        resolvedFilePath: archiveRecord.archiveAbsolutePath,
       );
     }
   }
@@ -145,19 +150,17 @@ Future<ResolvedAttachment> _resolveForArchiveEnabledMode(
 
 ResolvedAttachment _resolveForLiveOnlyMode({
   required AttachmentInfo attachmentInfo,
+  required AttachmentFileAccess fileAccess,
 }) {
-  final resolvedPath = attachmentInfo.resolvedLocalPath();
-  if (resolvedPath != null) {
-    final file = File(resolvedPath);
-    final exists = file.existsSync();
-    if (exists) {
-      return ResolvedAttachment(
-        attachmentInfo: attachmentInfo,
-        availability: ResolvedAttachmentAvailability.available,
-        provenance: AttachmentProvenance.messagesLive,
-        resolvedFile: file,
-      );
-    }
+  final resolvedPath = fileAccess.expandPath(attachmentInfo.localPath);
+  final resolvedFilePath = fileAccess.existingExpandedPath(resolvedPath);
+  if (resolvedFilePath != null) {
+    return ResolvedAttachment(
+      attachmentInfo: attachmentInfo,
+      availability: ResolvedAttachmentAvailability.available,
+      provenance: AttachmentProvenance.messagesLive,
+      resolvedFilePath: resolvedFilePath,
+    );
   }
 
   if (attachmentInfo.hasLocalFile) {

@@ -753,6 +753,12 @@ archives.
   diagnostic SQL. It now delegates source/import/working count collection to
   `ConversationGraphStatusRepository`, keeping the application provider as a
   thin coordinator and the status panel as presentation only.
+- Conversation graph status log writing now follows the same boundary:
+  application owns the typed log-writer contract and markdown formatting,
+  infrastructure owns `_LOGS` path discovery and file writes, and the status
+  sheet consumes `conversationGraphStatusLogWriterProvider` instead of
+  constructing a filesystem writer directly. An architecture tripwire protects
+  this diagnostic boundary.
 - Attachment archive settings no longer compute archive record count through
   application-owned SQL. `AttachmentArchiveStatsRepository` owns the
   filesystem-size plus overlay archive-record count read, leaving
@@ -1465,6 +1471,13 @@ Remove legacy systems only after their blockers close.
   `sourceScopedImportDatabase`, and gate/reset diagnostic log keys use
   `sourceScopedImportDb*`. This keeps onboarding readiness language separate
   from retained archive metadata storage.
+- Full Disk Access probing and System Settings launching now live behind the
+  `FullDiskAccess` boundary. Onboarding gate/report code consumes semantic
+  FDA/path providers, Historical Archives receives the current Messages
+  `chat.db` path as typed view-model data, and the old application-level
+  `FdaChecker` was removed. An architecture tripwire prevents onboarding and
+  settings code from reintroducing direct `dart:io`, `Process.run`, or
+  `FdaChecker` access.
 - Attachment cross-snapshot mapping comments now distinguish canonical graph
   `ss_id` endpoints from the temporary overlay-compatible
   `(message_guid, import_attachment_id)` archive key. Historical attachment
@@ -1706,6 +1719,13 @@ Remove legacy systems only after their blockers close.
   `ImportDatabase`. The conversation graph application tripwire now covers the
   whole application layer, not just provider files, so concrete source-scoped
   import database access stays out of graph application code.
+- Historical Messages archive folder validation, `chat.db` path resolution,
+  source-key path normalization, and default label derivation now live behind
+  `HistoricalMessagesArchiveSourceFolderResolver`. Archive source registration
+  and archive graph removal consume the typed resolver result instead of
+  performing direct filesystem/path work, and an architecture tripwire prevents
+  those application services from reintroducing `File`, `Directory`, or
+  `path.join` logic.
 - Moved `GraphCrossSnapshotMapper` out of attachments application code and into
   attachments infrastructure repositories, because it is a retained recovery
   query adapter over source-scoped import and graph databases. Deterministic
@@ -1752,6 +1772,11 @@ Remove legacy systems only after their blockers close.
 - Added an attachment archive read-store port. `AttachmentResolver` no longer
   reads overlay archive rows or recovery-hint settings directly; infrastructure
   owns compatibility archive lookup and hint decoding.
+- Added an `AttachmentFileAccess` boundary. `AttachmentResolver` still owns
+  attachment availability semantics, but local file construction and
+  existence checks now live behind attachments infrastructure. The architecture
+  tripwire prevents `attachment_resolver_provider.dart` from reintroducing
+  direct `dart:io`, `File(...)`, or `existsSync()` access.
 - Moved graph search scope and repository contract into the search application
   layer. SQL-backed graph search remains infrastructure; search service and
   message evidence code now depend on the application search contract.
@@ -1905,6 +1930,77 @@ Remove legacy systems only after their blockers close.
   `OnboardingDatabaseProbeReader`. The environment report still owns setup
   classification semantics, while infrastructure owns file probing, table
   counts, and graph-readiness database inspection.
+- Routed onboarding fallback database-existence checks through the same
+  `OnboardingDatabaseProbeReader` boundary. The fallback gate now asks whether
+  source-scoped import and graph storage are populated without owning file or
+  graph-readiness probing directly.
+- Split historical Messages snapshot reading into an application contract plus
+  a `SqliteHistoricalSnapshotReader` infrastructure implementation. Recovery
+  orchestration still owns phase semantics, while SQLite enumeration and
+  deterministic historical attachment path resolution live behind the
+  attachments feature boundary.
+- Moved message attachment evidence path probing behind `AttachmentFileAccess`.
+  Message evidence still maps graph/recovered attachment facts into
+  display-ready evidence, but file existence checks and home-directory
+  expansion now belong to the attachments feature boundary. A focused
+  architecture tripwire prevents the message evidence model/composer from
+  regaining direct filesystem access.
+- Split message-history coverage export into application semantics and a
+  settings infrastructure exporter. The application layer now owns the export
+  result contract, filename, and JSON payload shape; filesystem writes and
+  Finder reveal live behind `MessageHistoryCoverageReportExporter`, exposed
+  through the settings feature boundary.
+- Moved derived database file probing/deletion behind
+  `DerivedMessageDataFileStore`. `MessageDataResetService` still owns reset
+  orchestration, provider invalidation, maintenance locking, and dialogs, while
+  infrastructure owns file existence checks and deletion of database
+  base/WAL/SHM files.
+- Moved attachment archive clear/export filesystem operations behind
+  `AttachmentArchiveFileOperations`. `ArchiveSettings` still owns archive
+  preference orchestration and overlay record clearing, while infrastructure
+  owns native folder picking and archive directory IO.
+- Moved Chat DB monitor platform capability detection behind
+  `ChatDbMonitorRuntimeEnvironment`. `ChatDbChangeMonitor` still owns live
+  polling and graph-update lifecycle decisions, while infrastructure owns the
+  concrete macOS runtime check.
+- Moved database-health database file existence checks out of the
+  `DatabaseHealthQueryLayer` application contract and into concrete
+  infrastructure query-layer implementations. The health audit service still
+  owns audit semantics; infrastructure owns filesystem interpretation of
+  database paths.
+- Moved database-health report writing and runtime platform metadata behind
+  `DatabaseHealthAuditReportWriter` and `DatabaseHealthRuntimeEnvironment`.
+  `DatabaseHealthAuditService` now owns report construction semantics only,
+  while infrastructure owns JSON file output and OS/timezone inspection.
+- Moved attachment archive file-store mechanics behind
+  `AttachmentArchiveFileStore`. `AttachmentArchiveService` still owns archive
+  policy, graph/overlay coordination, recovery hints, and progress state, while
+  infrastructure owns home-path expansion, source-file existence checks,
+  hashing, archive file writes, and integrity file reads.
+- Moved historical archive folder selection behind
+  `HistoricalArchiveFolderChooser`. The historical archive workflow still owns
+  selected-source/preflight/import semantics, while settings infrastructure owns
+  the native folder picker mechanics.
+- Moved recovered attachment path expansion out of message-domain
+  `AttachmentInfo` and into `AttachmentFileAccess`. `AttachmentInfo` now
+  remains source metadata/classification data, while the attachments feature
+  boundary owns home-directory expansion and file-presence interpretation.
+- Moved shared media tile file resolution out of `MediaTileAttachment` and
+  into `AttachmentFileAccess` use at the rendering boundary. The media tile
+  adapter now remains a display DTO, while file existence and path expansion
+  stay in the attachments feature boundary.
+- Changed `ResolvedAttachment` from a concrete `File`-carrying domain object
+  to a path-based availability result. Attachment resolution now returns
+  `resolvedFilePath`; widgets may create renderable files at the presentation
+  edge, while the attachments domain remains data-oriented.
+- Moved graph-status archived-file opening behind an
+  `ArchivedAttachmentFileOpener` boundary. The status sheet still exposes the
+  diagnostic action, but URL-launch/runtime mechanics live in graph
+  infrastructure and are guarded by an architecture tripwire.
+- Moved message URL-preview launching behind an app-level
+  `ExternalUriOpener` boundary. Message preview widgets still render tappable
+  links, but external launch mechanics are centralized and protected by an
+  architecture tripwire.
 
 ### Exit Criteria
 

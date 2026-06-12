@@ -3,8 +3,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/actions/message_history_coverage_report_actions.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/entities/message_history_coverage_report.dart';
+import 'package:remember_this_text/features/settings/infrastructure/repositories/filesystem_message_history_coverage_report_exporter.dart';
 
 void main() {
   group('exportMessageHistoryCoverageReport', () {
@@ -18,7 +18,11 @@ void main() {
         }
       });
 
-      final result = await exportMessageHistoryCoverageReport(
+      final exporter = FilesystemMessageHistoryCoverageReportExporter(
+        processRunner: (_, _) async => ProcessResult(0, 0, '', ''),
+      );
+
+      final result = await exporter.export(
         report: MessageHistoryCoverageReport(
           status: MessageHistoryCoverageStatus.complete,
           chatDbTotalCount: 120,
@@ -27,7 +31,7 @@ void main() {
           earliestMessageDate: DateTime.utc(2020, 01, 01),
           latestMessageDate: DateTime.utc(2026, 04, 26),
         ),
-        exportDirectory: tempDirectory,
+        exportDirectoryPath: tempDirectory.path,
         now: DateTime.utc(2026, 04, 26, 17, 45, 12),
       );
 
@@ -61,7 +65,11 @@ void main() {
         }
       });
 
-      final result = await exportMessageHistoryCoverageReport(
+      final exporter = FilesystemMessageHistoryCoverageReportExporter(
+        processRunner: (_, _) async => ProcessResult(0, 0, '', ''),
+      );
+
+      final result = await exporter.export(
         report: const MessageHistoryCoverageReport(
           status: MessageHistoryCoverageStatus.unknown,
           chatDbTotalCount: null,
@@ -71,7 +79,7 @@ void main() {
           latestMessageDate: null,
           detail: 'chat.db is unavailable',
         ),
-        exportDirectory: tempDirectory,
+        exportDirectoryPath: tempDirectory.path,
         now: DateTime.utc(2026, 04, 26, 17, 46, 00),
       );
 

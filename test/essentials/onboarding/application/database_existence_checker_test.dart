@@ -1,89 +1,110 @@
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
-import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
+import 'package:remember_this_text/essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/application/database_existence_checker.dart';
+import 'package:remember_this_text/essentials/onboarding/application/onboarding_database_probe_reader.dart';
+import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart'
     as source_scoped_import;
-import 'package:sqlite3/sqlite3.dart';
 
 void main() {
   group('DatabaseExistenceChecker', () {
-    late Directory tempDir;
-
-    setUp(() async {
-      tempDir = await Directory.systemTemp.createTemp(
-        'database_existence_checker_',
-      );
-    });
-
-    tearDown(() {
-      if (tempDir.existsSync()) {
-        tempDir.deleteSync(recursive: true);
-      }
-    });
+    const databaseDirectory = '/tmp/database_existence_checker';
 
     test('requires graph import database and ready graph database', () {
-      const checker = DatabaseExistenceChecker();
-      File(
-        path.join(tempDir.path, source_scoped_import.importDatabaseFileName),
-      ).writeAsStringSync('not empty');
-      _createReadyGraphDatabase(
-        path.join(tempDir.path, conversationGraphDatabaseFileName),
+      final checker = DatabaseExistenceChecker(
+        _FakeDatabaseProbeReader(
+          probes: {
+            path.join(
+              databaseDirectory,
+              source_scoped_import.importDatabaseFileName,
+            ): const OnboardingDatabaseProbe(
+              path: 'import',
+              exists: true,
+              readable: true,
+              sizeBytes: 1,
+            ),
+          },
+          graphReadiness: const ConversationGraphReadiness(
+            isReady: true,
+            reason: 'ready',
+            messageCount: 1,
+            chatCount: 1,
+            chatToMessageEdgeCount: 1,
+          ),
+        ),
       );
 
-      expect(checker.hasPopulatedDatabases(tempDir.path), isTrue);
+      expect(checker.hasPopulatedDatabases(databaseDirectory), isTrue);
     });
 
     test(
       'does not treat retained metadata and historical reference databases as sufficient',
       () {
-        const checker = DatabaseExistenceChecker();
-        File(
-          path.join(tempDir.path, retainedArchiveMetadataDatabaseFileName),
-        ).writeAsStringSync('not empty');
-        File(
-          path.join(tempDir.path, retainedHistoricalReferenceDatabaseFileName),
-        ).writeAsStringSync('retained historical only');
+        const checker = DatabaseExistenceChecker(
+          _FakeDatabaseProbeReader(
+            probes: {
+              retainedArchiveMetadataDatabaseFileName: OnboardingDatabaseProbe(
+                path: 'retained archive metadata',
+                exists: true,
+                readable: true,
+                sizeBytes: 1,
+              ),
+              retainedHistoricalReferenceDatabaseFileName:
+                  OnboardingDatabaseProbe(
+                    path: 'retained historical reference',
+                    exists: true,
+                    readable: true,
+                    sizeBytes: 1,
+                  ),
+            },
+          ),
+        );
 
-        expect(checker.hasPopulatedDatabases(tempDir.path), isFalse);
+        expect(checker.hasPopulatedDatabases(databaseDirectory), isFalse);
       },
     );
   });
 }
 
-void _createReadyGraphDatabase(String dbPath) {
-  final db = sqlite3.open(dbPath);
-  db
-    ..execute('CREATE TABLE messages (ss_id INTEGER PRIMARY KEY)')
-    ..execute('CREATE TABLE chats (ss_id INTEGER PRIMARY KEY)')
-    ..execute('CREATE TABLE handles (ss_id INTEGER PRIMARY KEY)')
-    ..execute('''
-      CREATE TABLE chat_to_message (
-        chat_ss_id INTEGER NOT NULL,
-        message_ss_id INTEGER NOT NULL
-      )
-    ''')
-    ..execute('''
-      CREATE TABLE chat_to_handle (
-        chat_ss_id INTEGER NOT NULL,
-        handle_ss_id INTEGER NOT NULL
-      )
-    ''')
-    ..execute('CREATE TABLE attachments (ss_id INTEGER PRIMARY KEY)')
-    ..execute('''
-      CREATE TABLE message_to_attachment (
-        message_ss_id INTEGER NOT NULL,
-        attachment_ss_id INTEGER NOT NULL
-      )
-    ''')
-    ..execute('INSERT INTO messages (ss_id) VALUES (1)')
-    ..execute('INSERT INTO chats (ss_id) VALUES (10)')
-    ..execute(
-      'INSERT INTO chat_to_message (chat_ss_id, message_ss_id) '
-      'VALUES (10, 1)',
-    )
-    ..dispose();
+class _FakeDatabaseProbeReader implements OnboardingDatabaseProbeReader {
+  const _FakeDatabaseProbeReader({
+    required this.probes,
+    this.graphReadiness = const ConversationGraphReadiness(
+      isReady: false,
+      reason: 'not ready',
+      messageCount: 0,
+      chatCount: 0,
+      chatToMessageEdgeCount: 0,
+    ),
+  });
+
+  final Map<String, OnboardingDatabaseProbe> probes;
+  final ConversationGraphReadiness graphReadiness;
+
+  @override
+  OnboardingDatabaseProbe probeFile(String filePath, {int? rowCount}) {
+    return probes[filePath] ??
+        OnboardingDatabaseProbe(
+          path: filePath,
+          exists: false,
+          readable: false,
+          rowCount: rowCount,
+        );
+  }
+
+  @override
+  ConversationGraphReadiness readConversationGraphReadiness(String dbPath) {
+    return graphReadiness;
+  }
+
+  @override
+  int? readTableCount({
+    required String dbPath,
+    required String tableName,
+    bool queryOnly = false,
+  }) {
+    return null;
+  }
 }

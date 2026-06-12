@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -11,6 +10,7 @@ import '../../../logging/application/app_logger.dart';
 import '../../../source_scoped_import/domain/known_sources.dart';
 import '../../infrastructure/repositories/chat_db_source_probe_reader_provider.dart';
 import '../../infrastructure/repositories/import_ledger_probe_reader_provider.dart';
+import '../../infrastructure/system/chat_db_monitor_runtime_environment_provider.dart';
 import '../conversation_graph_build_controller_provider.dart';
 import '../orchestration/graph_maintenance_execution_gate_provider.dart';
 import '../orchestrators/conversation_graph_build_orchestrator.dart';
@@ -160,7 +160,10 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
   @override //#FLOW:chatdb:build
   ChatDbChangeMonitorState build() {
     _sourceProbeReader = ref.read(chatDbSourceProbeReaderProvider);
-    if (!Platform.isMacOS) {
+    final runtimeEnvironment = ref.read(
+      chatDbMonitorRuntimeEnvironmentProvider,
+    );
+    if (!runtimeEnvironment.supportsChatDbMonitoring) {
       return const ChatDbChangeMonitorState();
     }
 

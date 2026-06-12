@@ -2,10 +2,12 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../logging/application/app_logger.dart';
+import 'application/archives/historical_messages_archive_source_folder_resolver.dart';
 import 'domain/ports/import_ledger_port.dart';
 import 'domain/ports/message_extractor_port.dart';
 import 'domain/ports/source_database_port.dart';
 import 'infrastructure/extraction/rust_message_extractor.dart';
+import 'infrastructure/filesystem_historical_messages_archive_source_folder_resolver.dart';
 import 'infrastructure/import_database_provider.dart';
 import 'infrastructure/source_database/sqflite_source_database.dart';
 
@@ -45,6 +47,12 @@ Future<ImportLedger> sourceScopedImportLedger(Ref ref) async {
 @riverpod
 Future<ImportDatabase> sourceScopedImportDatabase(Ref ref) async {
   return ref.watch(importDatabaseProvider.future);
+}
+
+@riverpod
+HistoricalMessagesArchiveSourceFolderResolver
+historicalMessagesArchiveSourceFolderResolver(Ref ref) {
+  return const FilesystemHistoricalMessagesArchiveSourceFolderResolver();
 }
 
 const sourceScopedImportDatabaseFileName = importDatabaseFileName;

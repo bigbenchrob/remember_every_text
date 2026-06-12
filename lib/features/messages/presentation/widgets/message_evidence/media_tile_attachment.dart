@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import '../../../../attachments/domain/constants/attachment_provenance.dart';
 import '../../../../attachments/domain/constants/resolved_attachment_availability.dart';
 import '../../../../attachments/domain/entities/attachment_recovery_metadata.dart';
@@ -124,54 +122,8 @@ class MediaTileAttachment {
     return localPath!.toLowerCase().endsWith('.pluginpayloadattachment');
   }
 
-  /// Returns the expanded absolute path if the [localPath] begins with `~/`.
-  /// Otherwise, returns [localPath] unchanged.
-  String? resolvedLocalPath() {
-    if (!hasLocalFile) {
-      return null;
-    }
-    final rawPath = localPath!;
-    if (rawPath.startsWith('~/')) {
-      final home = Platform.environment['HOME'] ?? '';
-      if (home.isEmpty) {
-        return rawPath;
-      }
-      return rawPath.replaceFirst('~', home);
-    }
-    return rawPath;
-  }
-
   bool get isDisplayable {
     return availability == ResolvedAttachmentAvailability.available &&
         resolvedDisplayPath != null;
-  }
-
-  /// Returns the file selected by resolver-backed hydration.
-  ///
-  /// Directly-constructed presentation instances fall back to the local path
-  /// so existing tests and demo content continue to render.
-  File? displayableFile() {
-    final explicitPath = resolvedDisplayPath;
-    if (explicitPath != null && explicitPath.isNotEmpty) {
-      final file = File(explicitPath);
-      if (file.existsSync()) {
-        return file;
-      }
-      return null;
-    }
-
-    if (availability != null) {
-      return null;
-    }
-
-    final localResolved = resolvedLocalPath();
-    if (localResolved != null) {
-      final file = File(localResolved);
-      if (file.existsSync()) {
-        return file;
-      }
-    }
-
-    return null;
   }
 }

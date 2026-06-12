@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/chat_summaries/chat_summary.dart';
+import 'package:remember_this_text/features/attachments/application/attachment_file_access.dart';
 import 'package:remember_this_text/features/attachments/domain/constants/attachment_provenance.dart';
 import 'package:remember_this_text/features/attachments/domain/constants/resolved_attachment_availability.dart';
 import 'package:remember_this_text/features/messages/application/message_evidence/message_attachment_evidence.dart';
@@ -34,6 +35,7 @@ void main() {
           archiveAbsolutePath: archivedFile.path,
           archiveFileExists: true,
         ),
+        _FakeAttachmentFileAccess(existingPaths: {archivedFile.path}),
       );
 
       expect(evidence.isImage, isTrue);
@@ -60,6 +62,7 @@ void main() {
         archiveAbsolutePath: '/missing/archive/photo.jpg',
         archiveFileExists: false,
       ),
+      const _FakeAttachmentFileAccess(),
     );
 
     expect(evidence.isImage, isTrue);
@@ -98,6 +101,7 @@ void main() {
           archiveAbsolutePath: archivedFile.path,
           archiveFileExists: true,
         ),
+        _FakeAttachmentFileAccess(existingPaths: {archivedFile.path}),
       );
 
       expect(evidence.isVideo, isTrue);
@@ -124,6 +128,7 @@ void main() {
         archiveAbsolutePath: '/archive/GUID.pluginPayloadAttachment',
         archiveFileExists: false,
       ),
+      const _FakeAttachmentFileAccess(),
     );
 
     expect(evidence.isUrlPreview, isTrue);
@@ -183,7 +188,7 @@ void main() {
         archiveAbsolutePath: null,
         archiveFileExists: false,
       ),
-    ]);
+    ], const _FakeAttachmentFileAccess());
 
     expect(evidence, hasLength(2));
     expect(evidence.first.isUrlPreview, isTrue);
@@ -191,4 +196,29 @@ void main() {
     expect(evidence.first.sourceRecordCount, 2);
     expect(evidence.last.isImage, isTrue);
   });
+}
+
+class _FakeAttachmentFileAccess implements AttachmentFileAccess {
+  const _FakeAttachmentFileAccess({this.existingPaths = const <String>{}});
+
+  final Set<String> existingPaths;
+
+  @override
+  String? expandPath(String? path) {
+    return path == null || path.isEmpty ? null : path;
+  }
+
+  @override
+  File? existingFileAt(String? path) {
+    final expandedPath = existingExpandedPath(path);
+    return expandedPath == null ? null : File(expandedPath);
+  }
+
+  @override
+  String? existingExpandedPath(String? path) {
+    if (path == null || path.isEmpty || !existingPaths.contains(path)) {
+      return null;
+    }
+    return path;
+  }
 }

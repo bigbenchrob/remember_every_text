@@ -6,6 +6,65 @@ part of 'feature_level_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
+String _$attachmentFileAccessHash() =>
+    r'08e7fc2dfd8d8b5269373b691e68df9d2709d3a6';
+
+/// See also [attachmentFileAccess].
+@ProviderFor(attachmentFileAccess)
+final attachmentFileAccessProvider =
+    AutoDisposeProvider<AttachmentFileAccess>.internal(
+      attachmentFileAccess,
+      name: r'attachmentFileAccessProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$attachmentFileAccessHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef AttachmentFileAccessRef = AutoDisposeProviderRef<AttachmentFileAccess>;
+String _$attachmentArchiveFileOperationsHash() =>
+    r'989590689db769b726455bada38873845f54a79d';
+
+/// See also [attachmentArchiveFileOperations].
+@ProviderFor(attachmentArchiveFileOperations)
+final attachmentArchiveFileOperationsProvider =
+    AutoDisposeProvider<AttachmentArchiveFileOperations>.internal(
+      attachmentArchiveFileOperations,
+      name: r'attachmentArchiveFileOperationsProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$attachmentArchiveFileOperationsHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef AttachmentArchiveFileOperationsRef =
+    AutoDisposeProviderRef<AttachmentArchiveFileOperations>;
+String _$attachmentArchiveFileStoreHash() =>
+    r'6135cee2463757db6611bb6654fff933a5ba27f3';
+
+/// See also [attachmentArchiveFileStore].
+@ProviderFor(attachmentArchiveFileStore)
+final attachmentArchiveFileStoreProvider =
+    AutoDisposeProvider<AttachmentArchiveFileStore>.internal(
+      attachmentArchiveFileStore,
+      name: r'attachmentArchiveFileStoreProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$attachmentArchiveFileStoreHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef AttachmentArchiveFileStoreRef =
+    AutoDisposeProviderRef<AttachmentArchiveFileStore>;
 String _$attachmentArchiveSettingsStoreHash() =>
     r'17ea41ba6cc69f75bceb0690cf99bf0885a95c95';
 

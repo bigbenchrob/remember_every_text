@@ -9,6 +9,8 @@ import 'package:remember_this_text/features/settings/presentation/view_model/his
 import 'package:sqlite3/sqlite3.dart';
 
 void main() {
+  const currentMessagesDatabasePath = '/Users/test/Library/Messages/chat.db';
+
   group('buildHistoricalArchivesWorkflowPanelModel', () {
     test(
       'reports available execution gate when no shared pipeline owns it',
@@ -17,6 +19,7 @@ void main() {
           executionGateState: const GraphMaintenanceExecutionGateState(),
           isMaintenanceLocked: false,
           workflowState: buildInitialHistoricalArchivesWorkflowState(),
+          currentMessagesDatabasePath: currentMessagesDatabasePath,
         );
 
         expect(
@@ -41,6 +44,7 @@ void main() {
           ),
           isMaintenanceLocked: true,
           workflowState: buildInitialHistoricalArchivesWorkflowState(),
+          currentMessagesDatabasePath: currentMessagesDatabasePath,
         );
 
         expect(
@@ -71,6 +75,7 @@ void main() {
           executionGateState: const GraphMaintenanceExecutionGateState(),
           isMaintenanceLocked: true,
           workflowState: buildInitialHistoricalArchivesWorkflowState(),
+          currentMessagesDatabasePath: currentMessagesDatabasePath,
         );
 
         expect(
@@ -111,6 +116,7 @@ void main() {
         executionGateState: const GraphMaintenanceExecutionGateState(),
         isMaintenanceLocked: false,
         workflowState: workflowState,
+        currentMessagesDatabasePath: currentMessagesDatabasePath,
       );
 
       expect(model.statusLabel, 'Archive Source Ready');

@@ -1,15 +1,17 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:remember_this_text/essentials/db/application/database_health_audit/database_health_audit_models.dart';
+import 'package:remember_this_text/essentials/db/application/database_health_audit/database_health_audit_report_writer.dart';
 import 'package:remember_this_text/essentials/db/application/database_health_audit/database_health_audit_service.dart';
 import 'package:remember_this_text/essentials/db/application/database_health_audit/database_health_query_layer.dart';
+import 'package:remember_this_text/essentials/db/application/database_health_audit/database_health_runtime_environment.dart';
 
 void main() {
   group('DatabaseHealthAuditService', () {
     test(
       'uses injected full disk access state in environment report',
       () async {
-        final service = DatabaseHealthAuditService(
+        final service = _buildService(
           hasFullDiskAccess: false,
           queryLayers: const [],
         );
@@ -23,7 +25,7 @@ void main() {
     test(
       'curates source-scoped graph databases in the health report',
       () async {
-        final service = DatabaseHealthAuditService(
+        final service = _buildService(
           hasFullDiskAccess: true,
           queryLayers: <DatabaseHealthQueryLayer>[
             _FakeHealthQueryLayer(
@@ -82,7 +84,7 @@ void main() {
     test(
       'treats retained archive metadata database as metadata only',
       () async {
-        final service = DatabaseHealthAuditService(
+        final service = _buildService(
           hasFullDiskAccess: true,
           queryLayers: <DatabaseHealthQueryLayer>[
             _FakeHealthQueryLayer(
@@ -121,7 +123,7 @@ void main() {
     test(
       'treats retained working database as historical reference only',
       () async {
-        final service = DatabaseHealthAuditService(
+        final service = _buildService(
           hasFullDiskAccess: true,
           queryLayers: <DatabaseHealthQueryLayer>[
             _FakeHealthQueryLayer(
@@ -176,7 +178,7 @@ void main() {
     test(
       'does not inventory a retained database when its file is absent',
       () async {
-        final service = DatabaseHealthAuditService(
+        final service = _buildService(
           hasFullDiskAccess: true,
           queryLayers: <DatabaseHealthQueryLayer>[
             _FakeHealthQueryLayer(
@@ -199,6 +201,43 @@ void main() {
       },
     );
   });
+}
+
+DatabaseHealthAuditService _buildService({
+  required bool hasFullDiskAccess,
+  required List<DatabaseHealthQueryLayer> queryLayers,
+}) {
+  return DatabaseHealthAuditService(
+    hasFullDiskAccess: hasFullDiskAccess,
+    queryLayers: queryLayers,
+    runtimeEnvironment: const _FakeRuntimeEnvironment(),
+    reportWriter: const _FakeReportWriter(),
+  );
+}
+
+class _FakeRuntimeEnvironment implements DatabaseHealthRuntimeEnvironment {
+  const _FakeRuntimeEnvironment();
+
+  @override
+  DatabaseHealthRuntimeEnvironmentSnapshot read() {
+    return const DatabaseHealthRuntimeEnvironmentSnapshot(
+      platform: 'test',
+      platformVersion: 'test-version',
+      timezone: 'test-zone',
+    );
+  }
+}
+
+class _FakeReportWriter implements DatabaseHealthAuditReportWriter {
+  const _FakeReportWriter();
+
+  @override
+  Future<String> writeReport({
+    required String outputDirectoryPath,
+    required DatabaseHealthReport report,
+  }) async {
+    return '$outputDirectoryPath/database_health.json';
+  }
 }
 
 class _FakeHealthQueryLayer extends DatabaseHealthQueryLayer {

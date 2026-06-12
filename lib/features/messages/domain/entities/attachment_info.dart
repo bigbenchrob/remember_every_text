@@ -1,5 +1,3 @@
-import 'dart:io';
-
 class AttachmentInfo {
   const AttachmentInfo({
     required this.id,
@@ -74,22 +72,5 @@ class AttachmentInfo {
       return false;
     }
     return localPath!.toLowerCase().endsWith('.pluginpayloadattachment');
-  }
-
-  /// Returns the expanded absolute path if the [localPath] begins with `~/`.
-  /// Otherwise, returns [localPath] unchanged.
-  String? resolvedLocalPath() {
-    if (!hasLocalFile) {
-      return null;
-    }
-    final rawPath = localPath!;
-    if (rawPath.startsWith('~/')) {
-      final home = Platform.environment['HOME'] ?? '';
-      if (home.isEmpty) {
-        return rawPath;
-      }
-      return rawPath.replaceFirst('~', home);
-    }
-    return rawPath;
   }
 }

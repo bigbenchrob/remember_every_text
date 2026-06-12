@@ -6,9 +6,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../features/contacts/feature_level_providers.dart';
 import '../../../features/handles/domain/spec_classes/handles_cassette_spec.dart';
 import '../../../features/handles/feature_level_providers.dart';
-import '../../../features/settings/application/sidebar_cassette_spec/actions/message_history_coverage_report_actions.dart';
 import '../../../features/settings/application/sidebar_cassette_spec/resolvers/message_history_coverage_settings_resolver.dart';
 import '../../../features/settings/domain/spec_classes/settings_cassette_spec.dart';
+import '../../../features/settings/feature_level_providers.dart';
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
 import '../../db/feature_level_providers.dart'
@@ -208,9 +208,10 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
         final report = await ref.read(
           messageHistoryCoverageReportProvider.future,
         );
-        await exportMessageHistoryCoverageReport(
+        final exporter = ref.read(messageHistoryCoverageReportExporterProvider);
+        await exporter.export(
           report: report,
-          exportDirectory: writer.logDir,
+          exportDirectoryPath: writer.logDir.path,
         );
       case ResetMessageDataRequested():
         final resetService = ref.read(messageDataResetServiceProvider);

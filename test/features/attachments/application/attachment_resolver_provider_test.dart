@@ -74,7 +74,7 @@ void main() {
 
       expect(result.availability, ResolvedAttachmentAvailability.available);
       expect(result.provenance, AttachmentProvenance.messagesLive);
-      expect(result.resolvedFile?.path, liveFile.path);
+      expect(result.resolvedFilePath, liveFile.path);
     });
 
     test('archive enabled resolves archived file first', () async {
@@ -113,7 +113,7 @@ void main() {
 
       expect(result.availability, ResolvedAttachmentAvailability.available);
       expect(result.provenance, AttachmentProvenance.archived);
-      expect(result.resolvedFile?.path, archiveFile.path);
+      expect(result.resolvedFilePath, archiveFile.path);
     });
 
     test(
@@ -142,7 +142,7 @@ void main() {
           result.availability,
           ResolvedAttachmentAvailability.pendingArchive,
         );
-        expect(result.resolvedFile, isNull);
+        expect(result.resolvedFilePath, isNull);
         expect(result.recoveryMetadata?.recoveryPriority, 1);
 
         var archiveCreated = false;
@@ -188,7 +188,7 @@ void main() {
           ResolvedAttachmentAvailability.unavailableAwaitingRecovery,
         );
         expect(result.recoveryMetadata?.isNonRecoverable, isFalse);
-        expect(result.resolvedFile, isNull);
+        expect(result.resolvedFilePath, isNull);
       },
     );
 

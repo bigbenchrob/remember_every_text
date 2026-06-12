@@ -22,6 +22,8 @@ import 'infrastructure/data_sources/local/conversation_graph/conversation_graph_
 import 'infrastructure/data_sources/local/import/retained_archive_metadata_database.dart';
 import 'infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'infrastructure/repositories/database_health_audit_queries.dart';
+import 'infrastructure/repositories/filesystem_database_health_audit_report_writer.dart';
+import 'infrastructure/repositories/local_database_health_runtime_environment.dart';
 
 export 'feature_level_providers/conversation_graph_readiness_provider.dart';
 export 'feature_level_providers/db_maintenance_lock_provider.dart';
@@ -165,6 +167,8 @@ Future<DatabaseHealthAuditService> databaseHealthAuditService(
 
   return DatabaseHealthAuditService(
     hasFullDiskAccess: hasFullDiskAccess,
+    runtimeEnvironment: const LocalDatabaseHealthRuntimeEnvironment(),
+    reportWriter: const FilesystemDatabaseHealthAuditReportWriter(),
     queryLayers: <DatabaseHealthQueryLayer>[
       ReadOnlySqliteFileHealthQueryLayer(
         databaseKey: 'import',

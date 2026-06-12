@@ -7,7 +7,7 @@ part of 'attachment_archive_service_provider.dart';
 // **************************************************************************
 
 String _$attachmentArchiveServiceHash() =>
-    r'dae5012e2b7047dae93ca3ebe85c583e9c20f223';
+    r'057221ec1d26e9c952a64ea6f98806b2445887ba';
 
 /// Service that copies attachment files into the MessageLens archive and
 /// records them in the overlay database.

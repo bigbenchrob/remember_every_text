@@ -5,7 +5,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../config/theme/colors/theme_colors_annotated.dart';
 import '../../../../config/theme/theme_typography.dart';
@@ -17,7 +16,8 @@ import '../../application/health/graph_health_provider.dart';
 import '../../application/health/graph_health_report.dart';
 import '../../application/monitor/chat_db_change_monitor_provider.dart';
 import '../../application/orchestrators/conversation_graph_build_orchestrator.dart';
-import '../../application/status/conversation_graph_status_log_writer.dart';
+import '../../application/status/archived_attachment_file_opener_provider.dart';
+import '../../application/status/conversation_graph_status_log_writer_provider.dart';
 import '../../application/status/conversation_graph_status_provider.dart';
 
 enum _StatusSheetTab { status, graphHealth, groupProfiles, messages }
@@ -1882,7 +1882,9 @@ class _AttachmentMetadataRow extends ConsumerWidget {
               controlSize: ControlSize.small,
               secondary: true,
               onPressed: canOpenArchivedFile
-                  ? () => _openArchivedFile(archivedFilePath)
+                  ? () => ref
+                        .read(archivedAttachmentFileOpenerProvider)
+                        .open(archivedFilePath)
                   : null,
               child: Text(
                 canOpenArchivedFile
@@ -1911,11 +1913,6 @@ class _AttachmentMetadataRow extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  static Future<void> _openArchivedFile(String archivedFilePath) async {
-    final uri = Uri.file(archivedFilePath);
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   static String _disabledArchiveActionLabel(MessageAttachment attachment) {
@@ -2131,17 +2128,13 @@ class _StatusControlsState extends State<_StatusControls> {
       ref.invalidate(chatSummariesProvider);
       ref.invalidate(chatSummarySanityCountsProvider);
       final after = await ref.read(conversationGraphStatusProvider.future);
-      await const ConversationGraphStatusLogWriter().writeRun(
-        before: before,
-        after: after,
-        buildReport: buildReport,
-      );
+      await ref
+          .read(conversationGraphStatusLogWriterProvider)
+          .writeRun(before: before, after: after, buildReport: buildReport);
     } catch (error, stackTrace) {
-      await const ConversationGraphStatusLogWriter().writeRun(
-        before: before,
-        error: error,
-        stackTrace: stackTrace,
-      );
+      await ref
+          .read(conversationGraphStatusLogWriterProvider)
+          .writeRun(before: before, error: error, stackTrace: stackTrace);
       rethrow;
     }
   }
