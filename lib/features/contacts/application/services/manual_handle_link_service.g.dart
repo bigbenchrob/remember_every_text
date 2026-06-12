@@ -7,13 +7,13 @@ part of 'manual_handle_link_service.dart';
 // **************************************************************************
 
 String _$manualHandleLinkServiceHash() =>
-    r'd471bb6cfd6abf0342d0a66a36e6d062957a5f52';
+    r'1a5e785a575af0ba830eb83fe7a5e91ab5483b5c';
 
-/// Service for managing manual handle-to-contact links.
+/// Action boundary for managing manual handle-to-contact links.
 ///
-/// All writes target the overlay database exclusively. The graph database is
-/// never modified here; providers merge graph facts with overlay intent at read
-/// time with overlay winning on conflict (inviolable architectural rule).
+/// All writes target the manual-link store, whose production implementation is
+/// overlay-only. The graph database is never modified here; providers merge
+/// graph facts with overlay intent at read time with overlay winning on conflict.
 ///
 /// Copied from [ManualHandleLinkService].
 @ProviderFor(ManualHandleLinkService)

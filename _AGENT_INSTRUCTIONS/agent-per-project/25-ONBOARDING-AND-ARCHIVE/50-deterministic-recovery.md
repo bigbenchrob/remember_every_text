@@ -12,14 +12,14 @@ SHA-256 hash — was proven fundamentally broken by forensic analysis:
 | Failure mode | Impact |
 |-------------|--------|
 | Sent-attachment directory conventions change (`at_0_` GUID prefix) | Path-tail matching breaks |
-| `sha256_hex` frequently NULL in retained legacy working projections | Hash matching disabled there |
+| `sha256_hex` frequently NULL in retained historical working projections | Hash matching disabled there |
 | Common filenames (`IMG_1234.jpeg`) | False-positive ambiguity |
 | **Observed success rate** | **~40%** |
 
 The heuristic system was replaced with a deterministic three-layer mapping flow.
 The current implementation maps through source-scoped graph identity first.
-Retained legacy `macos_import.db` / `working.db` identity is compatibility
-history, not the ordinary recovery direction.
+Retained `macos_import.db` / `working.db` identity is historical/reference
+context, not the ordinary recovery direction.
 
 ## Three-Layer Read Topology
 

@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:path/path.dart' as path;
 
 import '../../domain/known_sources.dart';
-import '../../infrastructure/import_database_provider.dart';
+import '../../domain/ports/import_ledger_port.dart';
 
 final class HistoricalMessagesArchiveSourceRegistration {
   const HistoricalMessagesArchiveSourceRegistration({
@@ -24,11 +24,9 @@ final class HistoricalMessagesArchiveSourceRegistration {
 }
 
 class HistoricalMessagesArchiveSourceRegistrar {
-  const HistoricalMessagesArchiveSourceRegistrar({
-    required this.importDatabase,
-  });
+  const HistoricalMessagesArchiveSourceRegistrar({required this.importLedger});
 
-  final ImportDatabase importDatabase;
+  final ImportLedger importLedger;
 
   Future<HistoricalMessagesArchiveSourceRegistration> registerFolder({
     required String folderPath,
@@ -49,7 +47,7 @@ class HistoricalMessagesArchiveSourceRegistrar {
       folderPath: normalizedFolderPath,
     );
     final sourceKey = buildSourceKey(chatDbPath: chatDbPath);
-    final sourceId = await importDatabase.getOrCreateSource(
+    final sourceId = await importLedger.getOrCreateSource(
       sourceKey: sourceKey,
       sourceKind: historicalMessagesArchiveSourceKind,
       sourceLabel: normalizedSourceLabel,

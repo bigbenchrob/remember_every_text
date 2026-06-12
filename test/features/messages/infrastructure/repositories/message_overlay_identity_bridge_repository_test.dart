@@ -42,7 +42,7 @@ void main() {
   });
 
   test(
-    'reads legacy rowid annotations for live-source graph messages',
+    'reads retained rowid annotations for live-source graph messages',
     () async {
       final messageId = _messageId(42);
       await _insertGraphMessage(
@@ -53,7 +53,7 @@ void main() {
       await overlayDatabase.toggleMessageStar(42);
       await overlayDatabase.setMessageArchived(messageId: 42, archived: true);
       await overlayDatabase.addMessageTags(42, <String>['receipt']);
-      await overlayDatabase.setMessageNotes(42, 'legacy note');
+      await overlayDatabase.setMessageNotes(42, 'retained note');
       await overlayDatabase.setMessagePriority(42, 4);
 
       final state = await repository.readForMessage(messageId);
@@ -61,9 +61,9 @@ void main() {
       expect(state.isStarred, isTrue);
       expect(state.isArchived, isTrue);
       expect(state.tags, contains('receipt'));
-      expect(state.userNotes, 'legacy note');
+      expect(state.userNotes, 'retained note');
       expect(state.priority, 4);
-      expect(state.usedLegacyAnnotationFallback, isTrue);
+      expect(state.usedRetainedAnnotationFallback, isTrue);
     },
   );
 
@@ -131,7 +131,7 @@ void main() {
   );
 
   test(
-    'graph-native writes use message_ss_id and override legacy fallback',
+    'graph-native writes use message_ss_id and override retained fallback',
     () async {
       final messageId = _messageId(45);
       await _insertGraphMessage(
@@ -146,7 +146,7 @@ void main() {
       await repository.addTags(messageSsId: messageId, tags: <String>['Graph']);
 
       final state = await repository.readForMessage(messageId);
-      final legacyGuidFlag = await overlayDatabase.getMessageUserFlag(
+      final retainedGuidFlag = await overlayDatabase.getMessageUserFlag(
         'guid-45',
       );
 
@@ -154,8 +154,8 @@ void main() {
       expect(state.isStarred, isFalse);
       expect(state.isSaved, isTrue);
       expect(state.tags, contains('Graph'));
-      expect(state.usedLegacyAnnotationFallback, isFalse);
-      expect(legacyGuidFlag, isNull);
+      expect(state.usedRetainedAnnotationFallback, isFalse);
+      expect(retainedGuidFlag, isNull);
     },
   );
 }

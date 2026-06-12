@@ -69,8 +69,8 @@ Current ordinary message evidence reads from the source-scoped graph:
   membership.
 - `user_overlays.db` stores durable user intent and merges at read time.
 
-Legacy `working.db` may remain for retained archive/recovery compatibility, but
-it is not ordinary app-facing message evidence truth.
+Retained `working.db` may remain as historical reference / diagnostic storage,
+but it is not ordinary app-facing message evidence truth.
 
 ## Identity
 

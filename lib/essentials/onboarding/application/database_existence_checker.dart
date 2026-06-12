@@ -4,8 +4,7 @@ import 'package:path/path.dart' as path;
 
 import '../../db/feature_level_providers/conversation_graph_readiness_provider.dart';
 import '../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
-import '../../source_scoped_import/infrastructure/import_database_provider.dart'
-    as source_scoped_import;
+import '../../source_scoped_import/feature_level_providers.dart';
 
 /// Pure check: do `macos_import_ss.db` and the conversation graph exist?
 ///
@@ -20,7 +19,7 @@ class DatabaseExistenceChecker {
   /// Returns `true` if both import and graph databases exist and are populated.
   bool hasPopulatedDatabases(String databaseDirectory) {
     final importFile = File(
-      path.join(databaseDirectory, source_scoped_import.importDatabaseFileName),
+      path.join(databaseDirectory, sourceScopedImportDatabaseFileName),
     );
     final graphPath = path.join(
       databaseDirectory,

@@ -96,13 +96,13 @@ Future<ContactProfileSummary?> _readGraphContactProfile({
 
     final overrides = await participantOverridesById(overlayDb);
     final directOverride = overrides[graphContactId];
-    final legacyOverride = _overlayOverrideForEquivalentContactId(
+    final retainedKeyOverride = _overlayOverrideForEquivalentContactId(
       overrides,
       graphContactId,
     );
     final overrideLabel =
         directOverride?.displayNameOverride?.trim() ??
-        legacyOverride?.displayNameOverride?.trim();
+        retainedKeyOverride?.displayNameOverride?.trim();
 
     return ContactProfileSummary(
       contactId: graphContactId,

@@ -269,7 +269,7 @@ Agents MUST NOT:
 - weaken validators.
 - introduce new data paths.
 - rely on "seems to work" behavior.
-- treat retained legacy DBs as the ordinary app source.
+- treat retained historical DBs as the ordinary app source.
 - create source-specific message renderers.
 
 ---

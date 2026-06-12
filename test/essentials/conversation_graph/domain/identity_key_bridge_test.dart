@@ -4,14 +4,14 @@ import 'package:remember_this_text/essentials/source_scoped_import/domain/known_
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 
 void main() {
-  group('legacyMessageRowIdForGraphMessageId', () {
+  group('retainedOverlayMessageRowIdForGraphMessageId', () {
     test('returns source rowid for live chat-db message ids', () {
       final messageSsId = SourceScopedRowKey.pack(
         sourceId: liveChatDbSourceId,
         sourceRowId: 42,
       );
 
-      expect(legacyMessageRowIdForGraphMessageId(messageSsId), 42);
+      expect(retainedOverlayMessageRowIdForGraphMessageId(messageSsId), 42);
     });
 
     test('returns null for non-live message ids', () {
@@ -20,13 +20,13 @@ void main() {
         sourceRowId: 42,
       );
 
-      expect(legacyMessageRowIdForGraphMessageId(messageSsId), isNull);
+      expect(retainedOverlayMessageRowIdForGraphMessageId(messageSsId), isNull);
     });
   });
 
-  group('graphMessageIdForLegacyMessageRowId', () {
-    test('packs valid legacy live message rowids', () {
-      final messageSsId = graphMessageIdForLegacyMessageRowId(42);
+  group('graphMessageIdForRetainedOverlayMessageRowId', () {
+    test('packs valid retained-overlay live message rowids', () {
+      final messageSsId = graphMessageIdForRetainedOverlayMessageRowId(42);
 
       expect(
         messageSsId,
@@ -34,10 +34,10 @@ void main() {
       );
     });
 
-    test('returns null for invalid legacy live message rowids', () {
-      expect(graphMessageIdForLegacyMessageRowId(0), isNull);
+    test('returns null for invalid retained-overlay live message rowids', () {
+      expect(graphMessageIdForRetainedOverlayMessageRowId(0), isNull);
       expect(
-        graphMessageIdForLegacyMessageRowId(
+        graphMessageIdForRetainedOverlayMessageRowId(
           SourceScopedRowKey.maxSourceRowId + 1,
         ),
         isNull,

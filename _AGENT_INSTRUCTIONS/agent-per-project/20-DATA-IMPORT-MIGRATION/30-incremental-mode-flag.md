@@ -14,19 +14,19 @@ tests: []
 
 # Retained Legacy Incremental Mode Flag
 
-This document explains the retained legacy `incrementalMode` contract in the `db_migrate` projection system. It is not the production live-sync mechanism for ordinary app data.
+This document explains the retained historical `incrementalMode` contract in the `db_migrate` projection system. It is not the production live-sync mechanism for ordinary app data.
 
 ## TL;DR
 
-- `incrementalMode: true` means retained legacy projection preserves existing `working.db` rows and skips the orchestrator table-truncation step.
+- `incrementalMode: true` means retained historical projection preserves existing `working.db` rows and skips the orchestrator table-truncation step.
 - `incrementalMode: false` means full retained projection rebuild: migrator target tables are cleared, then rebuilt from `macos_import.db`.
-- `ChatDbChangeMonitor` no longer runs retained legacy migration for live sync. It runs the source-scoped graph build lifecycle.
+- `ChatDbChangeMonitor` no longer runs retained migration for live sync. It runs the source-scoped graph build lifecycle.
 - Retained incremental projection must not invalidate active Drift working database connections.
-- First-run/reimport app setup is graph-owned through the conversation graph build controller; retained legacy projection is archive/recovery compatibility.
+- First-run/reimport app setup is graph-owned through the conversation graph build controller; retained projection is archive/recovery compatibility.
 
 ## Why The Flag Exists
 
-Full retained legacy migration clears target working tables before rebuilding the projection. That remains useful for explicit archive/recovery compatibility, but it is too expensive and conceptually wrong for graph-era background sync when the app is already displaying a populated graph message store.
+Full retained migration clears target working tables before rebuilding the projection. That remains useful for explicit archive/recovery compatibility, but it is too expensive and conceptually wrong for graph-era background sync when the app is already displaying a populated graph message store.
 
 Incremental mode was introduced to avoid:
 
@@ -91,7 +91,7 @@ Why: invalidating `driftWorkingDatabaseProvider` closes the Drift isolate connec
 2. recreate message-index triggers
 3. call `searchIndexOrchestrator.rebuildAll()`
 
-This describes retained legacy service behavior. Ordinary graph search now selects graph `message_ss_id` evidence through the graph search/evidence spine, not legacy working indexes. If retained projection behavior changes, update this document and `20-migration-orchestrator.md`.
+This describes retained historical service behavior. Ordinary graph search now selects graph `message_ss_id` evidence through the graph search/evidence spine, not retained working indexes. If retained projection behavior changes, update this document and `20-migration-orchestrator.md`.
 
 ## Historical Context
 

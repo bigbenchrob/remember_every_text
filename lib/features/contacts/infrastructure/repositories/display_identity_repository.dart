@@ -70,9 +70,13 @@ class SqliteDisplayIdentityRepository implements DisplayIdentityRepository {
       );
       _putIdentity(identities, handleValue, identity);
       identitiesByContactId.putIfAbsent(contactId, () => identity);
-      final legacyContactId = legacyContactIdForGraphContactId(contactId);
-      if (legacyContactId != null) {
-        identitiesByContactId.putIfAbsent(legacyContactId, () => identity);
+      final retainedOverlayContactId =
+          retainedOverlayContactIdForGraphContactId(contactId);
+      if (retainedOverlayContactId != null) {
+        identitiesByContactId.putIfAbsent(
+          retainedOverlayContactId,
+          () => identity,
+        );
       }
       if (handleSsId != null) {
         identitiesByHandleId.putIfAbsent(handleSsId, () => identity);

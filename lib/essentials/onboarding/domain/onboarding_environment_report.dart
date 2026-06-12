@@ -71,7 +71,7 @@ class OnboardingEnvironmentReport {
     required this.syncPlausibility,
     required this.messagesDatabase,
     required this.addressBookDatabase,
-    required this.importDatabase,
+    required this.sourceScopedImportDatabase,
     required this.conversationGraph,
     required this.hasFullDiskAccess,
     this.sourceAttachmentCount,
@@ -91,7 +91,7 @@ class OnboardingEnvironmentReport {
   final OnboardingSyncPlausibility syncPlausibility;
   final OnboardingDatabaseProbe messagesDatabase;
   final OnboardingDatabaseProbe? addressBookDatabase;
-  final OnboardingDatabaseProbe importDatabase;
+  final OnboardingDatabaseProbe sourceScopedImportDatabase;
   final OnboardingDatabaseProbe conversationGraph;
   final bool hasFullDiskAccess;
   final int? sourceAttachmentCount;
@@ -106,7 +106,7 @@ class OnboardingEnvironmentReport {
   final String? resetAppDatabasesReason;
 
   bool get hasPopulatedAppDatabases {
-    return importDatabase.hasData && conversationGraph.hasData;
+    return sourceScopedImportDatabase.hasData && conversationGraph.hasData;
   }
 
   bool get hasImportFailure {

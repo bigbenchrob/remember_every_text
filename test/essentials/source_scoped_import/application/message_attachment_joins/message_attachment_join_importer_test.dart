@@ -5,6 +5,7 @@ import 'package:remember_this_text/essentials/source_scoped_import/application/m
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/source_database/sqflite_source_database.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -44,7 +45,8 @@ void main() {
 
       final result = await MessageAttachmentJoinImporter(
         chatDbPath: chatDbPath,
-        importDatabase: importDatabase,
+        importLedger: importDatabase,
+        sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
       ).importJoins();
       final rows = await importDatabase.database.query('message_to_attachment');
 
@@ -70,7 +72,8 @@ void main() {
 
     final importer = MessageAttachmentJoinImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
     );
     final firstResult = await importer.importJoins();
     final secondResult = await importer.importJoins();
@@ -87,7 +90,8 @@ void main() {
 
     final result = await MessageAttachmentJoinImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
     ).importJoinsAfterSourceMessageRowId(startedAfterSourceRowId: 40);
     final rows = await importDatabase.database.query('message_to_attachment');
 

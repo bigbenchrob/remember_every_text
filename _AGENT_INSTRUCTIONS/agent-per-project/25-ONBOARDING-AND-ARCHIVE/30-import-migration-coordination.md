@@ -4,7 +4,7 @@
 
 Onboarding coordinates startup/retry lifecycle but does not own source-scoped
 import, projection, or graph query systems. This document describes the current
-graph-first setup flow and the retained legacy compatibility boundary.
+graph-first setup flow and the retained storage/reference boundary.
 
 ## Ownership Boundaries
 
@@ -13,13 +13,13 @@ graph-first setup flow and the retained legacy compatibility boundary.
 | Bootstrap gate and user-facing status | Onboarding | `lib/essentials/onboarding/` |
 | Source-scoped import ledger | source_scoped_import | `lib/essentials/source_scoped_import/` |
 | Conversation graph build/projection/readiness | conversation_graph | `lib/essentials/conversation_graph/` |
-| Retained archive-compatible legacy import/projection | db_importers / db_migrate | Explicit compatibility services only |
+| Retained archive metadata and historical reference storage | db / database health / reset infrastructure | Explicit metadata, diagnostics, and reset boundaries only |
 | Attachment archiving and recovery | attachments feature | `lib/features/attachments/` |
 
 **Rule:** `OnboardingGate` delegates cleanup to `MessageDataResetService` and
 graph build/rebuild to `ConversationGraphBuildController`. It must not call
-`DbImportControlViewModel`, `runImportAndMigration()`, or retained legacy
-migration services as the app-facing setup path.
+`DbImportControlViewModel`, `runImportAndMigration()`, or retired retained
+legacy migration paths as the app-facing setup path.
 
 ## Pipeline Sequence
 
@@ -46,9 +46,10 @@ OnboardingGate.startImportAndGraphBuild()
 
 ## Progress Reporting
 
-Onboarding progress is graph-lifecycle progress. The retained import-control
-panel may still render legacy import diagnostics, but onboarding does not
-consume `DbImportControlViewModel` or `runImportAndMigration()`.
+Onboarding progress is graph-lifecycle progress. Retained database files may
+still be reset or inspected by diagnostics, but onboarding does not consume
+`DbImportControlViewModel`, `runImportAndMigration()`, or retired retained
+projection paths.
 
 The graph build lifecycle reports enough status for onboarding to show:
 

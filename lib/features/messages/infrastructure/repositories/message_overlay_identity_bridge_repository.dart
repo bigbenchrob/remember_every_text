@@ -1,24 +1,21 @@
 import 'package:drift/drift.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/util/message_tag_normalizer.dart';
 import '../../../../essentials/conversation_graph/domain/identity_key_bridge.dart';
-import '../../../../essentials/db/feature_level_providers.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import '../../application/user_metadata/message_overlay_repository.dart';
 import '../../domain/entities/message_overlay_state.dart';
 
-part 'message_overlay_identity_bridge_repository.g.dart';
-
-/// Bridges old message user-intent overlay keys to canonical graph message ids.
+/// Bridges retained message user-intent overlay keys to graph message ids.
 ///
 /// Identity resolution here is intentionally semantic: callers ask what user
-/// intent belongs to the graph message the user is looking at, not which legacy
-/// row owns that fact. New writes go to graph-native overlay tables keyed by
-/// `message_ss_id`; old rowid/GUID tables are read only as compatibility
-/// fallbacks.
-class MessageOverlayIdentityBridgeRepository {
+/// intent belongs to the graph message the user is looking at, not which
+/// retained row owns that fact. New writes go to graph-native overlay tables
+/// keyed by `message_ss_id`; retained rowid/GUID tables are read only as
+/// compatibility fallbacks.
+class MessageOverlayIdentityBridgeRepository
+    implements MessageOverlayRepository {
   const MessageOverlayIdentityBridgeRepository({
     required ConversationGraphDatabase graphDatabase,
     required OverlayDatabase overlayDatabase,
@@ -28,6 +25,7 @@ class MessageOverlayIdentityBridgeRepository {
   final ConversationGraphDatabase _graphDatabase;
   final OverlayDatabase _overlayDatabase;
 
+  @override
   Future<MessageOverlayState> readForMessage(int messageSsId) async {
     final identity = await _readGraphIdentity(messageSsId);
     final graphOverlay = await _readGraphOverlay(messageSsId);
@@ -40,9 +38,9 @@ class MessageOverlayIdentityBridgeRepository {
         ).copyWith(tags: graphTags);
 
     if (graphOverlay == null) {
-      final legacyAnnotation = await _readLegacyAnnotation(identity);
-      if (legacyAnnotation != null) {
-        state = _applyLegacyAnnotation(state, legacyAnnotation);
+      final retainedAnnotation = await _readRetainedAnnotation(identity);
+      if (retainedAnnotation != null) {
+        state = _applyRetainedAnnotation(state, retainedAnnotation);
       }
     } else if (graphTags.isNotEmpty) {
       state = graphOverlay.copyWith(tags: graphTags);
@@ -55,14 +53,14 @@ class MessageOverlayIdentityBridgeRepository {
 
     final guidOccurrenceCount = await _readGuidOccurrenceCount(guid);
     if (guidOccurrenceCount != 1) {
-      final legacyGuidIntentExists = await _legacyGuidIntentExists(guid);
-      if (!legacyGuidIntentExists) {
+      final retainedGuidIntentExists = await _retainedGuidIntentExists(guid);
+      if (!retainedGuidIntentExists) {
         return state;
       }
       return state.copyWith(skippedGuidFallbackBecauseAmbiguous: true);
     }
 
-    final guidState = await _readLegacyGuidState(messageSsId, guid);
+    final guidState = await _readRetainedGuidState(messageSsId, guid);
     if (!guidState.hasUserIntent) {
       return state;
     }
@@ -74,10 +72,12 @@ class MessageOverlayIdentityBridgeRepository {
     );
   }
 
+  @override
   Future<void> setSaved({required int messageSsId, required bool isSaved}) {
     return _upsertGraphOverlay(messageSsId: messageSsId, isSaved: isSaved);
   }
 
+  @override
   Future<bool> toggleSaved(int messageSsId) async {
     final current = await readForMessage(messageSsId);
     final nextValue = !current.isSaved;
@@ -85,10 +85,12 @@ class MessageOverlayIdentityBridgeRepository {
     return nextValue;
   }
 
+  @override
   Future<void> setStarred({required int messageSsId, required bool isStarred}) {
     return _upsertGraphOverlay(messageSsId: messageSsId, isStarred: isStarred);
   }
 
+  @override
   Future<void> setArchived({
     required int messageSsId,
     required bool isArchived,
@@ -130,6 +132,7 @@ class MessageOverlayIdentityBridgeRepository {
     );
   }
 
+  @override
   Future<void> addTags({
     required int messageSsId,
     required Iterable<String> tags,
@@ -164,6 +167,7 @@ class MessageOverlayIdentityBridgeRepository {
     }
   }
 
+  @override
   Future<void> removeTag({required int messageSsId, required String tag}) {
     final normalized = normalizeMessageTagValue(tag);
     if (normalized.isEmpty) {
@@ -193,7 +197,9 @@ class MessageOverlayIdentityBridgeRepository {
 
     return _GraphMessageIdentity(
       messageSsId: messageSsId,
-      legacyMessageRowId: legacyMessageRowIdForGraphMessageId(messageSsId),
+      retainedOverlayMessageRowId: retainedOverlayMessageRowIdForGraphMessageId(
+        messageSsId,
+      ),
       guid: rows.isEmpty ? null : _readNullableString(rows.single.data['guid']),
     );
   }
@@ -268,32 +274,35 @@ class MessageOverlayIdentityBridgeRepository {
     ];
   }
 
-  Future<MessageAnnotation?> _readLegacyAnnotation(
+  Future<MessageAnnotation?> _readRetainedAnnotation(
     _GraphMessageIdentity identity,
   ) {
-    final legacyMessageRowId = identity.legacyMessageRowId;
-    if (legacyMessageRowId == null) {
+    final retainedOverlayMessageRowId = identity.retainedOverlayMessageRowId;
+    if (retainedOverlayMessageRowId == null) {
       return Future<MessageAnnotation?>.value();
     }
-    return _overlayDatabase.getMessageAnnotation(legacyMessageRowId);
+    return _overlayDatabase.getMessageAnnotation(retainedOverlayMessageRowId);
   }
 
-  MessageOverlayState _applyLegacyAnnotation(
+  MessageOverlayState _applyRetainedAnnotation(
     MessageOverlayState state,
     MessageAnnotation annotation,
   ) {
     return state.copyWith(
       isStarred: annotation.isStarred,
       isArchived: annotation.isArchived,
-      tags: _mergeTags(state.tags, _parseLegacyAnnotationTags(annotation.tags)),
+      tags: _mergeTags(
+        state.tags,
+        _parseRetainedAnnotationTags(annotation.tags),
+      ),
       userNotes: annotation.userNotes,
       priority: annotation.priority,
       remindAtUtc: annotation.remindAt,
-      usedLegacyAnnotationFallback: true,
+      usedRetainedAnnotationFallback: true,
     );
   }
 
-  Future<bool> _legacyGuidIntentExists(String guid) async {
+  Future<bool> _retainedGuidIntentExists(String guid) async {
     final saved = await _overlayDatabase.getMessageUserFlag(guid);
     if (saved != null) {
       return true;
@@ -302,7 +311,7 @@ class MessageOverlayIdentityBridgeRepository {
     return tags.isNotEmpty;
   }
 
-  Future<MessageOverlayState> _readLegacyGuidState(
+  Future<MessageOverlayState> _readRetainedGuidState(
     int messageSsId,
     String guid,
   ) async {
@@ -374,7 +383,7 @@ class MessageOverlayIdentityBridgeRepository {
     );
   }
 
-  static List<String> _parseLegacyAnnotationTags(String? tagsJson) {
+  static List<String> _parseRetainedAnnotationTags(String? tagsJson) {
     final raw = tagsJson
         ?.replaceAll('[', '')
         .replaceAll(']', '')
@@ -448,24 +457,11 @@ class MessageOverlayIdentityBridgeRepository {
 class _GraphMessageIdentity {
   const _GraphMessageIdentity({
     required this.messageSsId,
-    required this.legacyMessageRowId,
+    required this.retainedOverlayMessageRowId,
     required this.guid,
   });
 
   final int messageSsId;
-  final int? legacyMessageRowId;
+  final int? retainedOverlayMessageRowId;
   final String? guid;
-}
-
-@riverpod
-Future<MessageOverlayIdentityBridgeRepository>
-messageOverlayIdentityBridgeRepository(Ref ref) async {
-  final graphDatabase = await ref.watch(
-    driftConversationGraphDatabaseProvider.future,
-  );
-  final overlayDatabase = await ref.watch(overlayDatabaseProvider.future);
-  return MessageOverlayIdentityBridgeRepository(
-    graphDatabase: graphDatabase,
-    overlayDatabase: overlayDatabase,
-  );
 }

@@ -7,7 +7,7 @@ part of 'source_scoped_archive_graph_removal_service_provider.dart';
 // **************************************************************************
 
 String _$sourceScopedArchiveGraphRemovalServiceHash() =>
-    r'72709d0856eb7d05f004b61a4c83950e1316a51c';
+    r'858cc686c638158e657afd7c6b9a13b9b7579639';
 
 /// See also [sourceScopedArchiveGraphRemovalService].
 @ProviderFor(sourceScopedArchiveGraphRemovalService)

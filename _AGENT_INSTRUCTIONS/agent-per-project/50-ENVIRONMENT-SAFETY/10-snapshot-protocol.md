@@ -7,8 +7,8 @@ Define the required procedure for creating a safe, restorable snapshot of Messag
 This protocol MUST be followed before:
 
 - schema changes
-- source import, graph projection, retained import/projection, or overlay
-  schema changes
+- source-scoped import, graph projection, retained metadata/reference storage,
+  or overlay schema changes
 - archival import experiments
 - any operation that may mutate `macos_import_ss.db`, `working_ss.db`,
   `macos_import.db`, `working.db`, or `user_overlays.db`
@@ -37,8 +37,8 @@ Includes:
 
 - macos_import_ss.db (source-scoped import ledger)
 - working_ss.db (conversation graph projection)
-- macos_import.db (retained archive/recovery compatibility ledger)
-- working.db (retained archive/recovery compatibility projection)
+- macos_import.db (retained archive-source metadata storage)
+- working.db (retained historical reference/storage inventory)
 - user_overlays.db
 - any matching SQLite sidecar files (`*.db-wal`, `*.db-shm`) if present
 - logs

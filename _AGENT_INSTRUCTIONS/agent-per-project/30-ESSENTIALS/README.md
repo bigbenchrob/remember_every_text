@@ -27,8 +27,8 @@ Essentials owns:
 * onboarding gate state, onboarding overlay lifecycle, and readiness-panel sync
 * shared graph search service and evidence selection infrastructure
 * app shell, window state, logging, database infrastructure, source-scoped
-  import, conversation graph build, retained compatibility services, and shared
-  cross-cutting services
+  import, conversation graph build, retained metadata/diagnostic boundaries,
+  and shared cross-cutting services
 
 Features must not take ownership of app-level orchestration, global flow state,
 panel stack policy, sidebar topology, shared chrome, or cross-surface
@@ -47,7 +47,7 @@ Current `lib/essentials/` top-level areas include:
 | `db/` | Centralized database access providers and database infrastructure. |
 | `source_scoped_import/` | Production source-scoped import ledger and importers for `macos_import_ss.db`. |
 | `conversation_graph/` | Production graph projection/build/read layer for `working_ss.db`. |
-| `db_importers/` | Retained import diagnostics, live source monitoring, and archive compatibility bridges. |
+| Retired `db_importers/` | Removed. Source-scoped importers live in `source_scoped_import/`; live `chat.db` monitoring and graph lifecycle work live in `conversation_graph/`; retained DB diagnostics live in `db/`. |
 | Retired `db_migrate/` | Historical retained projection reference only; no active app provider or service. |
 | `logging/` | Application logging and diagnostic export support. |
 | `window_state/` | Window persistence and platform window-management services. |

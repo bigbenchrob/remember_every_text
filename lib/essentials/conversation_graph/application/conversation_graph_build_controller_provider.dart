@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../db/feature_level_providers.dart';
+import '../../db/feature_level_providers/conversation_graph_readiness_provider.dart';
+import '../../db/feature_level_providers/message_data_version_provider.dart';
 import 'conversation_graph_build_service_provider.dart';
 import 'orchestrators/conversation_graph_build_orchestrator.dart';
 

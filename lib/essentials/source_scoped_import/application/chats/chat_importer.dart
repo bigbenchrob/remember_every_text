@@ -1,9 +1,8 @@
-import 'package:sqflite/sqflite.dart';
-
 import '../../../../core/util/date_converter.dart';
 import '../../domain/known_sources.dart';
+import '../../domain/ports/import_ledger_port.dart';
+import '../../domain/ports/source_database_port.dart';
 import '../../domain/source_scoped_row_key.dart';
-import '../../infrastructure/import_database_provider.dart';
 
 class ChatImportResult {
   const ChatImportResult({
@@ -18,36 +17,34 @@ class ChatImportResult {
 class ChatImporter {
   const ChatImporter({
     required this.chatDbPath,
-    required this.importDatabase,
+    required this.importLedger,
+    required this.sourceDatabaseOpener,
     this.sourceId = liveChatDbSourceId,
   });
 
   final String chatDbPath;
-  final ImportDatabase importDatabase;
+  final ImportLedger importLedger;
+  final SourceDatabaseOpener sourceDatabaseOpener;
   final int sourceId;
 
   Future<ChatImportResult> importChats() async {
-    final sourceDb = await openDatabase(
-      chatDbPath,
-      readOnly: true,
-      singleInstance: false,
-    );
+    final sourceDb = await sourceDatabaseOpener.openReadOnly(chatDbPath);
 
     try {
       final rows = await sourceDb.rawQuery(
         'SELECT ROWID AS source_rowid, * FROM chat ORDER BY ROWID ASC',
       );
-      final batchId = await importDatabase.insertImportBatch(
+      final batchId = await importLedger.insertImportBatch(
         sourceId: sourceId,
         startedAtUtc: DateTime.now().toUtc().toIso8601String(),
       );
 
       var insertedChatCount = 0;
-      await importDatabase.database.transaction((txn) async {
+      await importLedger.writeTransaction((txn) async {
         for (final row in rows) {
           final sourceRowId = _requiredInt(row, 'source_rowid');
           final guid = _requiredString(row, 'guid');
-          final insertedId = await txn.insert('chats', <String, Object?>{
+          final insertedId = await txn.insertIgnore('chats', <String, Object?>{
             'ss_id': SourceScopedRowKey.pack(
               sourceId: sourceId,
               sourceRowId: sourceRowId,
@@ -64,7 +61,7 @@ class ChatImporter {
               row['last_read_message_timestamp'],
             ),
             'batch_id': batchId,
-          }, conflictAlgorithm: ConflictAlgorithm.ignore);
+          });
 
           if (insertedId != 0) {
             insertedChatCount += 1;

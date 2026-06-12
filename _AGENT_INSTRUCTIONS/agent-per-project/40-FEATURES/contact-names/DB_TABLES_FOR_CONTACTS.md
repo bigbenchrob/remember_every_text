@@ -34,7 +34,7 @@ Overlay storage owns user intent and must survive graph rebuilds.
 
 The contact hero-card pencil is the only app-facing entry point for an existing contact's user-edited display name. That override is sparse: clearing it returns the contact to the graph/imported fallback name.
 
-Do not add a second display-name override column. Do not write user-authored names into `working_ss.db` or legacy `working.db`.
+Do not add a second display-name override column. Do not write user-authored names into `working_ss.db` or retained `working.db`.
 
 ## 4. Virtual Contacts
 
@@ -44,6 +44,6 @@ If legacy compatibility columns such as `short_name`, `name_mode`, or `nickname`
 
 ## 5. Legacy Compatibility
 
-Legacy `working.db.participants` and `working.db.handles_canonical` remain useful historical references while retained recovery/archive paths exist, but they are not the production naming authority for ordinary graph-backed surfaces.
+Retained `working.db.participants` and `working.db.handles_canonical` remain useful historical references while retained recovery/archive paths exist, but they are not the production naming authority for ordinary graph-backed surfaces.
 
-If a retained legacy path must bridge into the graph era, it should resolve display names through the shared display identity resolver rather than reading legacy participant columns directly.
+If a retained historical-reference path must bridge into the graph era, it should resolve display names through the shared display identity resolver rather than reading retained participant columns directly.

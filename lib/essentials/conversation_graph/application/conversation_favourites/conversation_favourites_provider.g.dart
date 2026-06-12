@@ -7,7 +7,7 @@ part of 'conversation_favourites_provider.dart';
 // **************************************************************************
 
 String _$conversationFavouritesControllerHash() =>
-    r'a74eeb9d33b963f1f6ad16eb8b7dead92c7a282b';
+    r'49312a73dbe583560ad5236a6ab8239777f9d049';
 
 /// See also [ConversationFavouritesController].
 @ProviderFor(ConversationFavouritesController)

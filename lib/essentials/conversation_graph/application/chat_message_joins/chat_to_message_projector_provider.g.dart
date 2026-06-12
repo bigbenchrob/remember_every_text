@@ -7,7 +7,7 @@ part of 'chat_to_message_projector_provider.dart';
 // **************************************************************************
 
 String _$chatToMessageProjectorHash() =>
-    r'2b3115acdcf7fb3fd71b4328699d8477dd972b70';
+    r'0acee646ee68bd3b64ae8323fa156b84a070115d';
 
 /// See also [chatToMessageProjector].
 @ProviderFor(chatToMessageProjector)

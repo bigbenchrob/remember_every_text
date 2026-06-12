@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
+import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import 'package:remember_this_text/essentials/onboarding/application/database_existence_checker.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart'
@@ -37,14 +38,14 @@ void main() {
     });
 
     test(
-      'does not treat retained import and working databases as sufficient',
+      'does not treat retained metadata and historical reference databases as sufficient',
       () {
         const checker = DatabaseExistenceChecker();
         File(
-          path.join(tempDir.path, 'macos_import.db'),
+          path.join(tempDir.path, retainedArchiveMetadataDatabaseFileName),
         ).writeAsStringSync('not empty');
         File(
-          path.join(tempDir.path, 'working.db'),
+          path.join(tempDir.path, retainedHistoricalReferenceDatabaseFileName),
         ).writeAsStringSync('retained historical only');
 
         expect(checker.hasPopulatedDatabases(tempDir.path), isFalse);

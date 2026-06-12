@@ -7,7 +7,7 @@ part of 'contact_graph_provider.dart';
 // **************************************************************************
 
 String _$contactGraphReaderHash() =>
-    r'dc423114234e80b3cbce806e09b6a81ad256c739';
+    r'3345f5aa5fe11984899294587457f11677001dae';
 
 /// See also [contactGraphReader].
 @ProviderFor(contactGraphReader)

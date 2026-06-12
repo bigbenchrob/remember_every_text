@@ -10,7 +10,7 @@ import '../../db/feature_level_providers.dart';
 import '../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../logging/application/app_logger.dart';
 import '../../navigation/application/app_navigator_key.dart';
-import '../../source_scoped_import/infrastructure/import_database_provider.dart';
+import '../../source_scoped_import/feature_level_providers.dart';
 import 'onboarding_environment_report_provider.dart';
 import 'onboarding_gate_provider.dart';
 
@@ -19,9 +19,9 @@ part 'message_data_reset_service.g.dart';
 const _resetCompletionDialogExitDelay = Duration(milliseconds: 140);
 
 const derivedMessageDataDatabaseBaseNames = <String>[
-  'macos_import.db',
-  'working.db',
-  importDatabaseFileName,
+  retainedArchiveMetadataDatabaseFileName,
+  retainedHistoricalReferenceDatabaseFileName,
+  sourceScopedImportDatabaseFileName,
   conversationGraphDatabaseFileName,
 ];
 
@@ -47,13 +47,13 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
     _ref.read(dbMaintenanceLockProvider.notifier).begin();
     try {
       logger.info(
-        'Closing import databases before reset',
+        'Closing retained metadata and source-scoped import databases before reset',
         source: 'MessageDataResetService',
       );
-      await _closeImportDatabase();
+      await _closeRetainedArchiveMetadataStore();
       await _closeSourceScopedImportDatabase();
       logger.info(
-        'Closing projection databases before reset',
+        'Closing source-scoped graph database before reset',
         source: 'MessageDataResetService',
       );
       await _closeConversationGraphDatabase();
@@ -68,18 +68,24 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
         },
       );
 
-      _ref.invalidate(sqfliteImportDatabaseProvider);
-      _ref.invalidate(importDatabaseProvider);
+      _ref.invalidate(retainedArchiveMetadataStoreProvider);
+      _ref.invalidate(sourceScopedImportDatabaseProvider);
       _ref.invalidate(driftConversationGraphDatabaseProvider);
       _ref.invalidate(conversationGraphReadinessProvider);
       _ref.invalidate(conversationGraphPopulatedProvider);
       _ref.read(messageDataVersionProvider.notifier).bump();
 
-      final importDbPath = path.join(databaseDirectoryPath, 'macos_import.db');
-      final workingDbPath = path.join(databaseDirectoryPath, 'working.db');
+      final importDbPath = path.join(
+        databaseDirectoryPath,
+        retainedArchiveMetadataDatabaseFileName,
+      );
+      final workingDbPath = path.join(
+        databaseDirectoryPath,
+        retainedHistoricalReferenceDatabaseFileName,
+      );
       final sourceScopedImportDbPath = path.join(
         databaseDirectoryPath,
-        importDatabaseFileName,
+        sourceScopedImportDatabaseFileName,
       );
       final conversationGraphDbPath = path.join(
         databaseDirectoryPath,
@@ -87,11 +93,15 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
       );
 
       logger.info(
-        'Invalidated import and projection database providers after reset',
+        'Invalidated retained metadata and graph database providers after reset',
         source: 'MessageDataResetService',
         context: {
-          'importDbExistsAfterReset': File(importDbPath).existsSync(),
-          'workingDbExistsAfterReset': File(workingDbPath).existsSync(),
+          'retainedArchiveMetadataDbExistsAfterReset': File(
+            importDbPath,
+          ).existsSync(),
+          'retainedHistoricalReferenceDbExistsAfterReset': File(
+            workingDbPath,
+          ).existsSync(),
           'sourceScopedImportDbExistsAfterReset': File(
             sourceScopedImportDbPath,
           ).existsSync(),
@@ -176,8 +186,10 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
         'environmentState': environmentReport?.state.name,
         'environmentBlocker': environmentReport?.blockerKind.name,
         'hasPopulatedAppDatabases': environmentReport?.hasPopulatedAppDatabases,
-        'importDbExists': environmentReport?.importDatabase.exists,
-        'importDbRowCount': environmentReport?.importDatabase.rowCount,
+        'sourceScopedImportDbExists':
+            environmentReport?.sourceScopedImportDatabase.exists,
+        'sourceScopedImportDbRowCount':
+            environmentReport?.sourceScopedImportDatabase.rowCount,
         'conversationGraphExists': environmentReport?.conversationGraph.exists,
         'conversationGraphRowCount':
             environmentReport?.conversationGraph.rowCount,
@@ -218,25 +230,29 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
     _ref.read(onboardingGateProvider.notifier).refreshEnvironment();
   }
 
-  Future<void> _closeImportDatabase() async {
-    if (!_databaseBaseFileExists('macos_import.db')) {
+  Future<void> _closeRetainedArchiveMetadataStore() async {
+    if (!_databaseBaseFileExists(retainedArchiveMetadataDatabaseFileName)) {
       return;
     }
-    if (!_ref.exists(sqfliteImportDatabaseProvider)) {
+    if (!_ref.exists(retainedArchiveMetadataStoreProvider)) {
       return;
     }
     try {
-      final ledgerDb = await _ref.read(sqfliteImportDatabaseProvider.future);
-      await ledgerDb.close();
+      final metadataStore = await _ref.read(
+        retainedArchiveMetadataStoreProvider.future,
+      );
+      await metadataStore.close();
     } catch (_) {}
   }
 
   Future<void> _closeSourceScopedImportDatabase() async {
-    if (!_databaseBaseFileExists(importDatabaseFileName)) {
+    if (!_databaseBaseFileExists(sourceScopedImportDatabaseFileName)) {
       return;
     }
     try {
-      final ledgerDb = await _ref.read(importDatabaseProvider.future);
+      final ledgerDb = await _ref.read(
+        sourceScopedImportDatabaseProvider.future,
+      );
       await ledgerDb.close();
     } catch (_) {}
   }

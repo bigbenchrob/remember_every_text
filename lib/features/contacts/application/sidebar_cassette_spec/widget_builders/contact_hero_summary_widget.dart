@@ -3,15 +3,13 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../../essentials/conversation_graph/domain/identity_key_bridge.dart';
-import '../../../../../essentials/db/feature_level_providers.dart';
 import '../../../infrastructure/repositories/contacts_list_repository.dart';
 import '../../../presentation/dialogs/contact_name_edit_dialog.dart';
 import '../../../presentation/widgets/contact_cassette_error.dart';
 import '../../../presentation/widgets/contact_highlight_row.dart';
+import '../resolver_tools/contact_display_name_override_actions_provider.dart';
+import '../resolver_tools/contact_favorite_actions_provider.dart';
 import '../resolver_tools/contact_is_favorite_provider.dart';
-import '../resolver_tools/favorite_contacts_provider.dart';
-import '../resolver_tools/favorite_contacts_repository_provider.dart';
-import '../resolver_tools/unified_picker_sections_provider.dart';
 
 /// Widget builder for the contact hero summary cassette.
 ///
@@ -166,44 +164,26 @@ class _ContactHeroSummaryWidgetState
       return;
     }
 
-    // Get the overlay database
-    final overlayDb = await ref.read(overlayDatabaseProvider.future);
-
     // Empty string = clear override (use auto-generated name)
     // Non-empty = set custom name
     final newDisplayName = result.isEmpty ? null : result;
 
-    // Save to overlay database
-    await overlayDb.setParticipantDisplayNameOverride(
-      contact.participantId,
-      newDisplayName,
-    );
-
-    // Invalidate contacts list to refresh the UI
-    ref.invalidate(contactsListRepositoryProvider);
+    await ref
+        .read(contactDisplayNameOverrideActionsProvider.notifier)
+        .setDisplayNameOverride(
+          contactId: contact.participantId,
+          displayName: newDisplayName,
+        );
   }
 
-  /// Add or remove a contact from favorites and invalidate dependent providers.
   Future<void> _handleToggleFavorite(
     WidgetRef ref,
     int participantId,
     bool wantsFavorite,
   ) async {
-    final repository = await ref.read(
-      favoriteContactsRepositoryProvider.future,
-    );
-
-    if (wantsFavorite) {
-      await repository.addFavorite(participantId: participantId);
-    } else {
-      await repository.removeFavorite(participantId);
-    }
-
-    // Drive reactivity: invalidate the is-favorite check and the picker
-    // sections that depend on the favorites list.
-    ref.invalidate(contactIsFavoriteProvider(participantId: participantId));
-    ref.invalidate(favoriteContactsProvider);
-    ref.invalidate(unifiedPickerSectionsProvider);
+    await ref
+        .read(contactFavoriteActionsProvider.notifier)
+        .setFavorite(contactId: participantId, isFavorite: wantsFavorite);
   }
 }
 

@@ -1,9 +1,8 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../features/attachments/infrastructure/repositories/overlay_archive_compatibility_lookup.dart';
-import '../../../db/feature_level_providers.dart';
-import '../../infrastructure/repositories/chat_summary_repository.dart';
+import '../../../db/feature_level_providers/message_data_version_provider.dart';
+import '../../infrastructure/repositories/chat_summary_repository_provider.dart';
 import 'chat_summary.dart';
 import 'chat_summary_reader.dart';
 
@@ -13,11 +12,9 @@ part 'chat_summary_provider.g.dart';
 Future<List<ChatSummary>> chatSummaries(Ref ref) async {
   ref.watch(messageDataVersionProvider);
 
-  final graphDatabase = await ref.watch(
-    driftConversationGraphDatabaseProvider.future,
-  );
+  final repository = await ref.watch(chatSummaryRepositoryProvider.future);
   return ChatSummaryReader(
-    repository: SqliteChatSummaryRepository(graphDatabase: graphDatabase),
+    repository: repository,
   ).readSummaries(limit: 1000000);
 }
 
@@ -25,12 +22,8 @@ Future<List<ChatSummary>> chatSummaries(Ref ref) async {
 Future<ChatSummarySanityCounts> chatSummarySanityCounts(Ref ref) async {
   ref.watch(messageDataVersionProvider);
 
-  final graphDatabase = await ref.watch(
-    driftConversationGraphDatabaseProvider.future,
-  );
-  return ChatSummaryReader(
-    repository: SqliteChatSummaryRepository(graphDatabase: graphDatabase),
-  ).readSanityCounts();
+  final repository = await ref.watch(chatSummaryRepositoryProvider.future);
+  return ChatSummaryReader(repository: repository).readSanityCounts();
 }
 
 @riverpod
@@ -40,11 +33,9 @@ Future<List<RecentChatMessage>> recentChatMessages(
 ) async {
   ref.watch(messageDataVersionProvider);
 
-  final graphDatabase = await ref.watch(
-    driftConversationGraphDatabaseProvider.future,
-  );
+  final repository = await ref.watch(chatSummaryRepositoryProvider.future);
   return ChatSummaryReader(
-    repository: SqliteChatSummaryRepository(graphDatabase: graphDatabase),
+    repository: repository,
   ).readRecentMessages(chatSsId: chatSsId);
 }
 
@@ -55,11 +46,9 @@ Future<List<RecentChatMessage>> recentTextChatMessages(
 ) async {
   ref.watch(messageDataVersionProvider);
 
-  final graphDatabase = await ref.watch(
-    driftConversationGraphDatabaseProvider.future,
-  );
+  final repository = await ref.watch(chatSummaryRepositoryProvider.future);
   return ChatSummaryReader(
-    repository: SqliteChatSummaryRepository(graphDatabase: graphDatabase),
+    repository: repository,
   ).readRecentTextMessages(chatSsId: chatSsId);
 }
 
@@ -67,11 +56,9 @@ Future<List<RecentChatMessage>> recentTextChatMessages(
 Future<ChatMessageTextStats> chatMessageTextStats(Ref ref, int chatSsId) async {
   ref.watch(messageDataVersionProvider);
 
-  final graphDatabase = await ref.watch(
-    driftConversationGraphDatabaseProvider.future,
-  );
+  final repository = await ref.watch(chatSummaryRepositoryProvider.future);
   return ChatSummaryReader(
-    repository: SqliteChatSummaryRepository(graphDatabase: graphDatabase),
+    repository: repository,
   ).readMessageTextStats(chatSsId: chatSsId);
 }
 
@@ -79,20 +66,9 @@ Future<ChatMessageTextStats> chatMessageTextStats(Ref ref, int chatSsId) async {
 Future<ChatAttachmentStats> chatAttachmentStats(Ref ref, int chatSsId) async {
   ref.watch(messageDataVersionProvider);
 
-  final graphDatabase = await ref.watch(
-    driftConversationGraphDatabaseProvider.future,
-  );
-  final overlayDatabase = await ref.watch(overlayDatabaseProvider.future);
-  final archiveDirectory = ref.watch(attachmentArchiveDirectoryProvider);
+  final repository = await ref.watch(chatSummaryRepositoryProvider.future);
   return ChatSummaryReader(
-    repository: SqliteChatSummaryRepository(
-      graphDatabase: graphDatabase,
-      archiveLookup: OverlayArchiveCompatibilityLookup(
-        graphDatabase: graphDatabase,
-        overlayDatabase: overlayDatabase,
-        archiveDirectory: archiveDirectory,
-      ),
-    ),
+    repository: repository,
   ).readAttachmentStats(chatSsId: chatSsId);
 }
 
@@ -101,19 +77,8 @@ Future<List<MessageAttachment>> messageAttachments(
   Ref ref,
   int messageSsId,
 ) async {
-  final graphDatabase = await ref.watch(
-    driftConversationGraphDatabaseProvider.future,
-  );
-  final overlayDatabase = await ref.watch(overlayDatabaseProvider.future);
-  final archiveDirectory = ref.watch(attachmentArchiveDirectoryProvider);
+  final repository = await ref.watch(chatSummaryRepositoryProvider.future);
   return ChatSummaryReader(
-    repository: SqliteChatSummaryRepository(
-      graphDatabase: graphDatabase,
-      archiveLookup: OverlayArchiveCompatibilityLookup(
-        graphDatabase: graphDatabase,
-        overlayDatabase: overlayDatabase,
-        archiveDirectory: archiveDirectory,
-      ),
-    ),
+    repository: repository,
   ).readMessageAttachments(messageSsId: messageSsId);
 }

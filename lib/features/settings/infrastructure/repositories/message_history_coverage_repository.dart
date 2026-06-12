@@ -6,7 +6,11 @@ import '../../../../core/util/date_converter.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 
 class MessageHistoryCoverageRepository {
-  const MessageHistoryCoverageRepository();
+  const MessageHistoryCoverageRepository({
+    required ConversationGraphDatabase graphDb,
+  }) : _graphDb = graphDb;
+
+  final ConversationGraphDatabase _graphDb;
 
   MessageHistorySourceSummary? readChatDbSummary(String dbPath) {
     final file = File(dbPath);
@@ -54,10 +58,8 @@ class MessageHistoryCoverageRepository {
     }
   }
 
-  Future<MessageHistoryGraphSummary> readGraphSummary(
-    ConversationGraphDatabase graphDb,
-  ) async {
-    final rows = await graphDb.selectRows('''
+  Future<MessageHistoryGraphSummary> readGraphSummary() async {
+    final rows = await _graphDb.selectRows('''
       SELECT
         (
           SELECT COUNT(*)

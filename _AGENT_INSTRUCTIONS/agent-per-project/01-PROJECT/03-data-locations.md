@@ -34,11 +34,11 @@ Current app-owned files/directories include:
 | --- | --- | --- |
 | Source-scoped import ledger | `macos_import_ss.db` | `importDatabaseProvider`, source-scoped import pipeline |
 | Conversation graph projection | `working_ss.db` | `driftConversationGraphDatabaseProvider`, graph projection/readers |
-| Retained archive-source metadata | `macos_import.db` | `sqfliteImportDatabaseProvider`, historical archive-source metadata; old files may contain historical ledger tables |
+| Retained archive-source metadata | `macos_import.db` | `retainedArchiveMetadataStoreProvider` for archive metadata; concrete storage adapter is constructed only by the central DB provider |
 | Retained working file inventory | `working.db` | Retained file/schema for reset cleanup and read-only diagnostics; no central app provider |
 | Overlay database | `user_overlays.db` | `overlayDatabaseProvider`, user-intent services |
 | Attachment archive | `attachment_archive/` | Attachment archive service |
-| Import/projection audit logs | `import_log`, `migrate_log` | Retained audit writers and compatibility diagnostics |
+| Historical import/projection audit logs | `import_log`, `migrate_log` | Historical retained diagnostics; source-scoped graph status is reported through graph lifecycle/health surfaces |
 
 The repository folder may still be named `remember_every_text`; do not confuse
 the repo path with runtime storage paths.
@@ -67,14 +67,14 @@ deployment automation in this repository owns that behavior.
   can lock files.
 - Never manually mutate `macos_import_ss.db`, `working_ss.db`,
   `macos_import.db`, `working.db`, or `user_overlays.db` as a substitute for
-  source import, graph projection, retained compatibility, or overlay service
-  behavior.
+  source import, graph projection, retained metadata/reference diagnostics, or
+  overlay service behavior.
 
 ## Schema References
 
 - Source-scoped import DB: `lib/essentials/source_scoped_import/infrastructure/import_database_provider.dart`
 - Conversation graph DB: `lib/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart`
-- Retained import DB: `lib/essentials/db/infrastructure/data_sources/local/import/sqflite_import_database.dart`
+- Retained archive metadata DB: `lib/essentials/db/infrastructure/data_sources/local/import/retained_archive_metadata_database.dart`
 - Retained working DB: no live Drift schema remains; existing `working.db`
   files are retained storage only and may be inspected read-only by diagnostics
   or removed by reset cleanup.

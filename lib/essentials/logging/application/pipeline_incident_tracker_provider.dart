@@ -1,9 +1,9 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../db/feature_level_providers.dart';
 import '../domain/pipeline_incident_report.dart';
 import '../infrastructure/pipeline_incident_storage.dart';
+import '../infrastructure/pipeline_incident_storage_provider.dart';
 import 'app_logger.dart';
 import 'pipeline_incident_log_writer.dart';
 
@@ -15,9 +15,7 @@ class PipelineIncidentTracker extends _$PipelineIncidentTracker {
 
   @override
   Future<PipelineIncidentReport?> build() async {
-    _storage = PipelineIncidentStorage(
-      overlayDb: ref.watch(overlayDatabaseProvider.future),
-    );
+    _storage = ref.watch(pipelineIncidentStorageProvider);
     return _storage.loadLatestReport();
   }
 

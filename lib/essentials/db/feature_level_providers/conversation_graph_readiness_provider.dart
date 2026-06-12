@@ -8,6 +8,9 @@ import '../feature_level_providers.dart' show databaseDirectoryPath;
 import '../infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import 'message_data_version_provider.dart';
 
+export '../infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart'
+    show conversationGraphDatabaseFileName;
+
 part 'conversation_graph_readiness_provider.g.dart';
 
 class ConversationGraphReadiness {
@@ -34,7 +37,7 @@ class ConversationGraphReadinessChecker {
     if (!file.existsSync()) {
       return const ConversationGraphReadiness(
         isReady: false,
-        reason: 'working_ss.db is missing',
+        reason: '$conversationGraphDatabaseFileName is missing',
         messageCount: 0,
         chatCount: 0,
         chatToMessageEdgeCount: 0,
@@ -44,7 +47,7 @@ class ConversationGraphReadinessChecker {
     if (file.lengthSync() == 0) {
       return const ConversationGraphReadiness(
         isReady: false,
-        reason: 'working_ss.db is empty',
+        reason: '$conversationGraphDatabaseFileName is empty',
         messageCount: 0,
         chatCount: 0,
         chatToMessageEdgeCount: 0,
@@ -62,7 +65,7 @@ class ConversationGraphReadinessChecker {
           return ConversationGraphReadiness(
             isReady: false,
             reason:
-                'working_ss.db is missing graph tables: '
+                '$conversationGraphDatabaseFileName is missing graph tables: '
                 '${missingTables.join(', ')}',
             messageCount: 0,
             chatCount: 0,
@@ -77,7 +80,7 @@ class ConversationGraphReadinessChecker {
         if (messageCount == 0) {
           return ConversationGraphReadiness(
             isReady: false,
-            reason: 'working_ss.db has no messages',
+            reason: '$conversationGraphDatabaseFileName has no messages',
             messageCount: messageCount,
             chatCount: chatCount,
             chatToMessageEdgeCount: chatToMessageEdgeCount,
@@ -86,7 +89,7 @@ class ConversationGraphReadinessChecker {
         if (chatCount == 0) {
           return ConversationGraphReadiness(
             isReady: false,
-            reason: 'working_ss.db has no chats',
+            reason: '$conversationGraphDatabaseFileName has no chats',
             messageCount: messageCount,
             chatCount: chatCount,
             chatToMessageEdgeCount: chatToMessageEdgeCount,
@@ -95,7 +98,8 @@ class ConversationGraphReadinessChecker {
         if (chatToMessageEdgeCount == 0) {
           return ConversationGraphReadiness(
             isReady: false,
-            reason: 'working_ss.db has no chat/message topology',
+            reason:
+                '$conversationGraphDatabaseFileName has no chat/message topology',
             messageCount: messageCount,
             chatCount: chatCount,
             chatToMessageEdgeCount: chatToMessageEdgeCount,

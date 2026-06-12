@@ -35,7 +35,10 @@ Add new architecture spines beside legacy essentials when the responsibility is 
 
 Examples:
 
-- `essentials/db_importers/` remains the legacy import spine.
+- Retired `essentials/db_importers/` must not return. Source-scoped import
+  belongs in `essentials/source_scoped_import/`; graph lifecycle belongs in
+  `essentials/conversation_graph/`; retained metadata/diagnostics belong in
+  `essentials/db/`.
 - `essentials/source_scoped_import/` may become the production source-scoped import spine.
 - `essentials/db/` remains the legacy database access spine.
 - `essentials/conversation_graph/` may become the source-scoped working graph spine.

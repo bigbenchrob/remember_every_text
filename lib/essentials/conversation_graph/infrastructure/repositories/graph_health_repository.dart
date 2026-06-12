@@ -526,7 +526,7 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
       return const _ExternalArchiveKeys.unavailable();
     }
 
-    final overlayFile = File('$dataFolderPath/user_overlays.db');
+    final overlayFile = File('$dataFolderPath/$overlayDatabaseFileName');
     final archiveDirectory = Directory('$dataFolderPath/attachment_archive');
     if (!overlayFile.existsSync() || !archiveDirectory.existsSync()) {
       return const _ExternalArchiveKeys.unavailable();

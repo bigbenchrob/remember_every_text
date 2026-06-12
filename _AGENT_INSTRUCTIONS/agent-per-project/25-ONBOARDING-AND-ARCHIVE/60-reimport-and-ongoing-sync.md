@@ -15,7 +15,7 @@ reading source `MAX(ROWID)` from the `message` table. On startup it primes
 from the graph/source-scoped import cursor when available, then runs
 an immediate catch-up check before periodic polling begins.
 
-**Location:** `lib/essentials/db_importers/application/monitor/`
+**Location:** `lib/essentials/conversation_graph/application/monitor/`
 
 ### On Change Detected
 
@@ -114,7 +114,7 @@ Each auto-sync cycle maintains the living archive:
 
 | File | Role |
 |------|------|
-| `lib/essentials/db_importers/application/monitor/chat_db_change_monitor_provider.dart` | Poll-based auto-sync and attachment sweep |
+| `lib/essentials/conversation_graph/application/monitor/chat_db_change_monitor_provider.dart` | Poll-based auto-sync and attachment sweep |
 | `lib/essentials/onboarding/application/onboarding_gate_provider.dart` | `startReimport()` trigger |
 | `lib/essentials/conversation_graph/application/orchestrators/conversation_graph_build_controller_provider.dart` | Source-scoped graph build/rebuild lifecycle |
 | `lib/features/attachments/application/attachment_archive_service_provider.dart` | `archiveGraphMessageSourceRange()`, graph sweeps, retained archive compatibility |

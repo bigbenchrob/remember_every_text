@@ -16,7 +16,7 @@ tests: []
 
 ## 🚨 INVIOLABLE ARCHITECTURAL PRINCIPLE 🚨
 
-**`db-overlay` (`user_overlays.db`) is completely independent from graph projection (`working_ss.db`) and from retained legacy files (`macos_import.db` / `working.db`).**
+**`db-overlay` (`user_overlays.db`) is completely independent from graph projection (`working_ss.db`) and from retained historical files (`macos_import.db` / `working.db`).**
 
 1. **No synchronization** — The databases never copy data to each other.
 2. **No cross-writing** — Code that writes to overlay never writes to working, and vice versa. **No dual-writes.**

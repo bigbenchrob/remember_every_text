@@ -14,17 +14,17 @@ links:
 
 ## Purpose
 - Decode the binary `attributedBody` column from macOS `chat.db` so that messages missing plain `text` still display content.
-- Run as a standalone native binary (`extract_messages_limited`) used by both retained legacy rich-text import and source-scoped rich-text enrichment.
+- Run as a standalone native binary (`extract_messages_limited`) used by
+  source-scoped rich-text enrichment and source-scoped archive import.
 - Without this binary many messages land with empty bodies, weakening search and UI rendering.
 
 ## Component Map
 - Binary: `target/release/extract_messages_limited` (also searched for next to `Platform.resolvedExecutable` when the macOS app is bundled).
 - Rust crate: `rust/rust/attributed-string-decoder/` (Cargo project that produces the binary and flutter_rust_bridge bindings).
-- Flutter adapter: `lib/essentials/db_importers/infrastructure/extraction/rust_message_extractor.dart` implements `MessageExtractorPort`.
-- Provider wiring: `lib/essentials/db_importers/feature_level_providers.dart` exposes `dbImportMessageExtractorProvider` for orchestrators.
-- Retained import consumer: `lib/essentials/db_importers/application/importers/message_rich_text_importer.dart`.
+- Flutter adapter: `lib/essentials/source_scoped_import/infrastructure/extraction/rust_message_extractor.dart` implements `MessageExtractorPort`.
+- Provider wiring: `lib/essentials/source_scoped_import/feature_level_providers.dart` exposes `sourceScopedMessageExtractorProvider`.
 - Source-scoped enrichment consumer: `lib/essentials/source_scoped_import/application/messages/message_rich_text_enricher.dart`.
-- Database sink: retained import writes decoded bodies into `macos_import.db`; source-scoped enrichment updates `macos_import_ss.db.messages.text` from the stored `attributed_body_blob`.
+- Database sink: source-scoped enrichment updates `macos_import_ss.db.messages.text` from the stored `attributed_body_blob`.
 
 ## Runtime Flow (Source-Scoped Enrichment)
 
@@ -36,16 +36,11 @@ links:
 
 Do not merge this enrichment into the main message importer. Import preserves source facts; enrichment derives app-usable text; projection moves enriched evidence into the graph.
 
-## Runtime Flow (Retained Legacy Ledger Import)
-1. `MessagesImporter` stages extraction candidates where `message.text` is empty and `message.attributedBody` is a non-null blob.
-2. `MessageRichTextImporter` checks `extract_messages_limited` availability via `MessageExtractorPort.isAvailable()` (toggled by `importDebugSettingsProvider`).
-3. On success the service invokes `extractAllMessageTexts(limit: rustExtractionLimit, dbPath: messagesDbPath)`.
-4. The adapter shells out with `Process.run(extractorPath, args)` and expects JSON shaped like:
-   ```json
-   {"messages":[{"rowid":123,"text":"..."}]}
-   ```
-5. `SqfliteImportDatabase.updateMessageText` trims each string, writes it to `messages.text`, and promotes misclassified text-bearing rows from `attachment-only` / `unknown` / `balloon` to `text` while preserving meaningful types like `reaction-carrier`.
-6. The orchestrated importer persists scratchpad stats (`messages.richTextApplied`) so retained migration and telemetry can confirm the extractor ran.
+## Retired Retained Ledger Import
+
+The old retained `macos_import.db` rich-text importer has been removed from the
+active app path. Historical retained files may still contain decoded text from
+older runs, but new text enrichment belongs to the source-scoped import stage.
 
 ## Binary Interface
 ```
@@ -101,13 +96,11 @@ Do not merge this enrichment into the main message importer. Import preserves so
 - Missing binary or unreadable helper -> the importer logs extractor unavailability, writes `messages.richTextApplied = 0`, and the run still succeeds structurally with mostly blank message text.
 - Non-zero exit codes bubble up as exceptions in `extractAllMessageTexts`; the rich-text importer catches the exception, records the failure in import logs, and continues without rich text.
 - In graph live sync, watch the Conversation Graph status panel stage timings and text-enrichment counts.
-- In retained legacy import, watch both `messages.richTextApplied` and message text counts in `import_log`.
 
 ## Validation Checklist
 - `target/release/extract_messages_limited` exists and is executable.
 - Running `./target/release/extract_messages_limited 5 /Users/rob/sqlite_rmc/messages/chat.db` emits JSON with `rowid` / `text` pairs.
 - After source-scoped enrichment, `macos_import_ss.db.messages.text` is populated for rows that previously had only `attributed_body_blob`.
-- After retained legacy import, `macos_import.db.messages.text` is populated for rows that previously had only `attributedBody`.
 
 ## Related References
 - `../10-DATABASES/10-group-import-working.md` (contract binding import and projection).

@@ -6,7 +6,6 @@ import 'package:drift/drift.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:sqlite3/sqlite3.dart';
 
 import '../../../essentials/db/feature_level_providers.dart';
 import '../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
@@ -14,8 +13,8 @@ import '../../../essentials/db/infrastructure/data_sources/local/overlay/overlay
 import '../../../essentials/logging/application/app_logger.dart';
 import '../../../essentials/source_scoped_import/domain/known_sources.dart';
 import '../../../essentials/source_scoped_import/domain/source_scoped_row_key.dart';
-import '../../../providers.dart';
 import '../domain/entities/attachment_recovery_metadata.dart';
+import '../feature_level_providers.dart';
 import 'archive_settings_provider.dart';
 import 'attachment_recovery_hint_storage.dart';
 
@@ -25,12 +24,6 @@ const _kDefaultGraphSweepLimit = 100;
 const _kGraphSweepSelectionPageSize = 250;
 const _kManualSweepBurstChunkCount = 25;
 const _kManualSweepSkippedSampleLimit = 3;
-
-@riverpod
-Future<String> attachmentArchiveMessagesDatabasePath(Ref ref) async {
-  final pathsHelper = await ref.watch(pathsHelperProvider.future);
-  return pathsHelper.chatDBPath;
-}
 
 /// Service that copies attachment files into the MessageLens archive and
 /// records them in the overlay database.
@@ -865,39 +858,10 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     int importAttachmentId,
   ) async {
     try {
-      final chatDbPath = await ref.read(
-        attachmentArchiveMessagesDatabasePathProvider.future,
+      final lookup = await ref.read(
+        currentMessagesAttachmentPathLookupProvider.future,
       );
-      if (!File(chatDbPath).existsSync()) {
-        return null;
-      }
-
-      final database = sqlite3.open(chatDbPath, mode: OpenMode.readOnly);
-      try {
-        database.execute('PRAGMA query_only = ON;');
-        database.execute('PRAGMA busy_timeout = 3000;');
-        final rows = database.select(
-          'SELECT filename FROM attachment WHERE ROWID = ? LIMIT 1;',
-          [importAttachmentId],
-        );
-        if (rows.isEmpty) {
-          return null;
-        }
-
-        final value = rows.first['filename'];
-        if (value == null) {
-          return null;
-        }
-
-        final path = '$value'.trim();
-        if (path.isEmpty) {
-          return null;
-        }
-
-        return path;
-      } finally {
-        database.dispose();
-      }
+      return lookup.attachmentPathForSourceRowId(importAttachmentId);
     } on Object catch (error) {
       ref
           .read(appLoggerProvider.notifier)

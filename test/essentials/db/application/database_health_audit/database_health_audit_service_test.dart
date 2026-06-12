@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:remember_this_text/essentials/db/application/database_health_audit/database_health_audit_models.dart';
-import 'package:remember_this_text/essentials/db/application/database_health_audit/database_health_audit_queries.dart';
 import 'package:remember_this_text/essentials/db/application/database_health_audit/database_health_audit_service.dart';
+import 'package:remember_this_text/essentials/db/application/database_health_audit/database_health_query_layer.dart';
 
 void main() {
   group('DatabaseHealthAuditService', () {
@@ -79,41 +79,44 @@ void main() {
       },
     );
 
-    test('treats retained import database as archive metadata only', () async {
-      final service = DatabaseHealthAuditService(
-        hasFullDiskAccess: true,
-        queryLayers: <DatabaseHealthQueryLayer>[
-          _FakeHealthQueryLayer(
-            databaseKey: 'import',
-            role: 'retained_archive_metadata',
-          ),
-        ],
-      );
+    test(
+      'treats retained archive metadata database as metadata only',
+      () async {
+        final service = DatabaseHealthAuditService(
+          hasFullDiskAccess: true,
+          queryLayers: <DatabaseHealthQueryLayer>[
+            _FakeHealthQueryLayer(
+              databaseKey: 'import',
+              role: 'retained_archive_metadata',
+            ),
+          ],
+        );
 
-      final report = await service.buildPhase1Report();
-      final retainedImportTables = report.tableInventory
-          .where((entry) => entry.databaseKey == 'import')
-          .map((entry) => entry.tableName)
-          .toSet();
+        final report = await service.buildPhase1Report();
+        final retainedMetadataTables = report.tableInventory
+            .where((entry) => entry.databaseKey == 'import')
+            .map((entry) => entry.tableName)
+            .toSet();
 
-      expect(
-        retainedImportTables,
-        containsAll(<String>{
-          'schema_migrations',
-          'historical_archive_sources',
-        }),
-      );
-      expect(retainedImportTables, isNot(contains('messages')));
-      expect(retainedImportTables, isNot(contains('import_batches')));
-      expect(
-        report.relationshipChecks
-            .where((check) => check.databaseKey == 'import')
-            .map((check) => check.checkKey),
-        isEmpty,
-      );
-      expect(report.invariantChecks, isEmpty);
-      expect(report.errors, isEmpty);
-    });
+        expect(
+          retainedMetadataTables,
+          containsAll(<String>{
+            'schema_migrations',
+            'historical_archive_sources',
+          }),
+        );
+        expect(retainedMetadataTables, isNot(contains('messages')));
+        expect(retainedMetadataTables, isNot(contains('import_batches')));
+        expect(
+          report.relationshipChecks
+              .where((check) => check.databaseKey == 'import')
+              .map((check) => check.checkKey),
+          isEmpty,
+        );
+        expect(report.invariantChecks, isEmpty);
+        expect(report.errors, isEmpty);
+      },
+    );
 
     test(
       'treats retained working database as historical reference only',

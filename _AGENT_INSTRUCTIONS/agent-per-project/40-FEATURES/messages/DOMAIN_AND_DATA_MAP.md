@@ -68,8 +68,8 @@ model:
 | `working_ss.db` | contacts/handles/aliases | Identity graph used to resolve sender/contact labels. | User override labels merge from overlay at read time. |
 | `user_overlays.db` | message annotations/saved/tag rows | Durable user intent. | Read through graph evidence/overlay repositories at read time; projection never reads overlay. |
 
-Legacy `working.db` tables may remain for retained archive/recovery
-compatibility, but ordinary message UI must not depend on them.
+Retained `working.db` tables may remain as historical reference / diagnostic
+storage, but ordinary message UI must not depend on them.
 
 ## External Inputs
 

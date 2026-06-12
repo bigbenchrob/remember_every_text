@@ -6,7 +6,7 @@ part of 'message_importer_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$messageImporterHash() => r'42c197372beef36a3cb4caa606c9ef2398978141';
+String _$messageImporterHash() => r'bb81c7acf8b9c46dd8aaa5e9919f9b19575a279c';
 
 /// See also [messageImporter].
 @ProviderFor(messageImporter)

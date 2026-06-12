@@ -10,7 +10,7 @@ void main() {
       sourceRowId: 17,
     );
 
-    expect(legacyContactIdForGraphContactId(graphContactId), 17);
+    expect(retainedOverlayContactIdForGraphContactId(graphContactId), 17);
   });
 
   test('non-address-book graph id does not produce a legacy contact id', () {
@@ -19,6 +19,6 @@ void main() {
       sourceRowId: 17,
     );
 
-    expect(legacyContactIdForGraphContactId(graphContactId), isNull);
+    expect(retainedOverlayContactIdForGraphContactId(graphContactId), isNull);
   });
 }

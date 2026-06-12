@@ -7,7 +7,7 @@ part of 'message_graph_reader_provider.dart';
 // **************************************************************************
 
 String _$messageGraphReaderHash() =>
-    r'4121712f20ac1fd86f43529f4504dd33ca9e768c';
+    r'346a9298826a7878c40d2d05e1cfa1139eae2172';
 
 /// See also [messageGraphReader].
 @ProviderFor(messageGraphReader)

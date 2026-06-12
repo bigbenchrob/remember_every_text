@@ -11,8 +11,8 @@ import '../../../features/settings/application/sidebar_cassette_spec/resolvers/m
 import '../../../features/settings/domain/spec_classes/settings_cassette_spec.dart';
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
-import '../../db/application/database_health_audit/database_health_audit_service.dart';
-import '../../db/feature_level_providers.dart';
+import '../../db/feature_level_providers.dart'
+    show databaseHealthAuditServiceProvider;
 import '../../logging/application/app_logger.dart';
 import '../../logging/application/diagnostic_report_actions.dart';
 import '../../navigation/domain/entities/view_spec.dart';
@@ -181,9 +181,13 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
               ),
             );
       case StrayHandleDismissed(:final normalizedHandle):
-        await _dismissHandle(normalizedHandle);
+        await ref
+            .read(handleReviewActionsProvider.notifier)
+            .dismissUnfamiliarHandle(normalizedHandle);
       case StrayHandleRestored(:final normalizedHandle):
-        await _restoreHandle(normalizedHandle);
+        await ref
+            .read(handleReviewActionsProvider.notifier)
+            .restoreUnfamiliarHandle(normalizedHandle);
       case SettingsTransientActionCancelled():
         ref
             .read(
@@ -254,18 +258,6 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
         .showRecoveredDeletedAt(contactId: contactId, startDate: monthAnchor);
   }
 
-  Future<void> _dismissHandle(String normalizedHandle) async {
-    final overlayDb = await ref.read(overlayDatabaseProvider.future);
-    await overlayDb.dismissHandle(normalizedHandle);
-    _invalidateStrayHandleProviders();
-  }
-
-  Future<void> _restoreHandle(String normalizedHandle) async {
-    final overlayDb = await ref.read(overlayDatabaseProvider.future);
-    await overlayDb.restoreHandle(normalizedHandle);
-    _invalidateStrayHandleProviders();
-  }
-
   Future<void> _handleContactChosen({
     required SidebarActionDispatchContext context,
     required int contactId,
@@ -279,15 +271,9 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
           contactProjection: previousProjection,
         );
 
-    final overlayDb = await ref.read(overlayDatabaseProvider.future);
-    await overlayDb.trackContactAccess(contactId);
-    ref.invalidate(recentContactsProvider);
-  }
-
-  void _invalidateStrayHandleProviders() {
-    ref.invalidate(strayHandlesProvider);
-    ref.invalidate(spamCandidateHandlesProvider);
-    ref.invalidate(dismissedHandlesProvider);
+    await ref
+        .read(contactAccessActionsProvider.notifier)
+        .recordContactSelection(contactId);
   }
 
   void _replaceCassetteAtContext({

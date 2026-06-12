@@ -1,21 +1,22 @@
-import 'dart:io';
-
 import 'package:dartz/dartz.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:sqlite3/sqlite3.dart';
 
 import '../../../features/address_book_folders/domain/entities/address_book_folder_aggregate.dart';
 import '../../../features/address_book_folders/domain/failures/folder_retrieval_failure.dart';
 import '../../../features/address_book_folders/feature_level_providers.dart';
-import '../../db/feature_level_providers.dart';
-import '../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
-import '../../source_scoped_import/infrastructure/import_database_provider.dart'
-    as source_scoped_import;
+import '../../db/feature_level_providers.dart'
+    show databaseDirectoryPath, dbMaintenanceLockProvider;
+import '../../db/feature_level_providers/conversation_graph_readiness_provider.dart'
+    show ConversationGraphReadiness, conversationGraphDatabaseFileName;
+import '../../source_scoped_import/feature_level_providers.dart'
+    show sourceScopedImportDatabaseFileName;
 import '../domain/onboarding_environment_report.dart';
-import '../infrastructure/persistence/overlay_onboarding_failure_storage.dart';
+import '../infrastructure/persistence/onboarding_database_probe_reader_provider.dart';
+import '../infrastructure/persistence/onboarding_failure_storage_provider.dart';
 import 'fda_checker.dart';
+import 'onboarding_database_probe_reader.dart';
 
 part 'onboarding_environment_report_provider.g.dart';
 
@@ -139,8 +140,9 @@ class _OnboardingEnvironmentEvaluator {
 
   Future<OnboardingEnvironmentReport> evaluate() async {
     final devOverrides = ref.watch(onboardingDevOverridesProvider);
-    final failureStorage = OverlayOnboardingFailureStorage(
-      overlayDb: ref.watch(overlayDatabaseProvider.future),
+    final failureStorage = ref.watch(onboardingFailureStorageProvider);
+    final databaseProbeReader = ref.watch(
+      onboardingDatabaseProbeReaderProvider,
     );
     final persistedImportEntry = await failureStorage.loadImportResultEntry();
     final persistedGraphProjectionEntry = await failureStorage
@@ -184,7 +186,7 @@ class _OnboardingEnvironmentEvaluator {
             exists: false,
             readable: false,
           )
-        : _probeFile(messagesDatabasePath);
+        : databaseProbeReader.probeFile(messagesDatabasePath);
 
     final addressBookProbe = devOverrides.simulateAddressBookUnavailable
         ? const _AddressBookProbeResult(
@@ -193,13 +195,14 @@ class _OnboardingEnvironmentEvaluator {
                 'Simulated unavailable Contacts source from onboarding dev panel',
           )
         : _probeAddressBook(
+            databaseProbeReader,
             await ref.watch(futureGetFolderAggregateProvider.future),
           );
 
     final databaseDirPath = ref.watch(onboardingDatabaseDirectoryPathProvider);
-    final importDbPath = p.join(
+    final sourceScopedImportDbPath = p.join(
       databaseDirPath,
-      source_scoped_import.importDatabaseFileName,
+      sourceScopedImportDatabaseFileName,
     );
     final graphDbPath = p.join(
       databaseDirPath,
@@ -209,24 +212,27 @@ class _OnboardingEnvironmentEvaluator {
 
     final sourceMessageCount = devOverrides.simulateSparseSourceHistory
         ? 0
-        : _readSqliteCount(
+        : databaseProbeReader.readTableCount(
             dbPath: messagesDatabasePath,
             tableName: 'message',
             queryOnly: true,
           );
-    final sourceAttachmentCount = _readSqliteCount(
+    final sourceAttachmentCount = databaseProbeReader.readTableCount(
       dbPath: messagesDatabasePath,
       tableName: 'attachment',
       queryOnly: true,
     );
 
-    final importRowCount = _readSqliteCount(
-      dbPath: importDbPath,
+    final importRowCount = databaseProbeReader.readTableCount(
+      dbPath: sourceScopedImportDbPath,
       tableName: 'messages',
     );
     final graphRowCount = isMaintenanceLocked
         ? null
-        : _readSqliteCount(dbPath: graphDbPath, tableName: 'messages');
+        : databaseProbeReader.readTableCount(
+            dbPath: graphDbPath,
+            tableName: 'messages',
+          );
     final graphReadiness = isMaintenanceLocked
         ? const ConversationGraphReadiness(
             isReady: false,
@@ -235,10 +241,16 @@ class _OnboardingEnvironmentEvaluator {
             chatCount: 0,
             chatToMessageEdgeCount: 0,
           )
-        : const ConversationGraphReadinessChecker().checkPath(graphDbPath);
+        : databaseProbeReader.readConversationGraphReadiness(graphDbPath);
 
-    final importProbe = _probeFile(importDbPath, rowCount: importRowCount);
-    final graphProbe = _probeFile(graphDbPath, rowCount: graphRowCount);
+    final importProbe = databaseProbeReader.probeFile(
+      sourceScopedImportDbPath,
+      rowCount: importRowCount,
+    );
+    final graphProbe = databaseProbeReader.probeFile(
+      graphDbPath,
+      rowCount: graphRowCount,
+    );
     final usingPersistedImportFailure =
         !devOverrides.simulateImportFailure &&
         !simulatedPipelineFailureActive &&
@@ -301,7 +313,7 @@ class _OnboardingEnvironmentEvaluator {
       syncPlausibility: syncPlausibility,
       messagesDatabase: messagesProbe.copyWith(rowCount: sourceMessageCount),
       addressBookDatabase: addressBookProbe.probe,
-      importDatabase: importProbe,
+      sourceScopedImportDatabase: importProbe,
       conversationGraph: graphProbe,
       hasFullDiskAccess: hasFullDiskAccess,
       sourceAttachmentCount: sourceAttachmentCount,
@@ -528,40 +540,8 @@ class _OnboardingEnvironmentEvaluator {
     return OnboardingSyncPlausibility.likelySyncedOrLocallyAvailable;
   }
 
-  OnboardingDatabaseProbe _probeFile(String filePath, {int? rowCount}) {
-    final file = File(filePath);
-    if (!file.existsSync()) {
-      return OnboardingDatabaseProbe(
-        path: filePath,
-        exists: false,
-        readable: false,
-      );
-    }
-
-    try {
-      final stat = file.statSync();
-      final raf = file.openSync(mode: FileMode.read);
-      raf.closeSync();
-
-      return OnboardingDatabaseProbe(
-        path: filePath,
-        exists: true,
-        readable: true,
-        sizeBytes: stat.size,
-        lastModified: stat.modified,
-        rowCount: rowCount,
-      );
-    } catch (_) {
-      return OnboardingDatabaseProbe(
-        path: filePath,
-        exists: true,
-        readable: false,
-        rowCount: rowCount,
-      );
-    }
-  }
-
   _AddressBookProbeResult _probeAddressBook(
+    OnboardingDatabaseProbeReader databaseProbeReader,
     Either<FolderRetrievalFailure, AddressBookFolderAggregate>
     addressBookEither,
   ) {
@@ -570,52 +550,11 @@ class _OnboardingEnvironmentEvaluator {
           _AddressBookProbeResult(probe: null, failureMessage: failure.message),
       (aggregate) {
         final filePath = aggregate.mostRecentFolderPath;
-        return _AddressBookProbeResult(probe: _probeFile(filePath));
+        return _AddressBookProbeResult(
+          probe: databaseProbeReader.probeFile(filePath),
+        );
       },
     );
-  }
-
-  int? _readSqliteCount({
-    required String dbPath,
-    required String tableName,
-    bool queryOnly = false,
-  }) {
-    final file = File(dbPath);
-    if (!file.existsSync()) {
-      return null;
-    }
-
-    try {
-      final db = sqlite3.open(dbPath, mode: OpenMode.readOnly);
-      try {
-        if (queryOnly) {
-          db.execute('PRAGMA query_only = ON;');
-          db.execute('PRAGMA busy_timeout = 3000;');
-        }
-        final result = db.select('SELECT COUNT(*) as count FROM $tableName');
-        if (result.isEmpty || result.first.values.isEmpty) {
-          return null;
-        }
-        return _asInt(result.first.values.first);
-      } finally {
-        db.dispose();
-      }
-    } catch (_) {
-      return null;
-    }
-  }
-
-  int? _asInt(Object? value) {
-    if (value == null) {
-      return null;
-    }
-    if (value is int) {
-      return value;
-    }
-    if (value is num) {
-      return value.toInt();
-    }
-    return int.tryParse('$value');
   }
 
   String? _detectResetAppDatabasesReason({

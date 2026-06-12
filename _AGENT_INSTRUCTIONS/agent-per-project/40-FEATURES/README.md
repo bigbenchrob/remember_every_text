@@ -48,7 +48,7 @@ The current code tree also contains feature modules that do not all have full do
 | `environment_readiness` | ViewSpec-driven readiness panel used by onboarding/system surfaces. |
 | `handles` | Stray-handle review cassettes, graph/overlay handle providers, manual-linking operations, and Handle Lens support. |
 | `messages` | Message timeline scopes, sidebar heatmaps/navigators, ViewSpec handling, hydration, recovered-message surfaces. |
-| `reactions` | Retired feature shell. Reaction evidence is preserved by message import/projection semantics and retained legacy reaction tables, not by an active standalone feature module. |
+| `reactions` | Retired feature shell. Reaction evidence is preserved by message import/projection semantics and retained historical reaction tables, not by an active standalone feature module. |
 | `settings` | Settings sidebar cassettes and settings action surfaces. |
 | `sidebar_utilities` | Top-chat/settings menu cassettes and shared sidebar utility specs. |
 

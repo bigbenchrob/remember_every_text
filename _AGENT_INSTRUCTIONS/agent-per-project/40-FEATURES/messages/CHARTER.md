@@ -61,7 +61,7 @@ last_updated: 2026-06-05
 - App-level navigation orchestration, sidebar topology, and panel-stack
   ownership. Those belong to essentials and the canonical spec system.
 - Direct widget-driven database access.
-- Recreating legacy `working.db` message index tables as the app-facing model.
+- Recreating retained `working.db` message index tables as the app-facing model.
 
 ## Stakeholders & Dependencies
 

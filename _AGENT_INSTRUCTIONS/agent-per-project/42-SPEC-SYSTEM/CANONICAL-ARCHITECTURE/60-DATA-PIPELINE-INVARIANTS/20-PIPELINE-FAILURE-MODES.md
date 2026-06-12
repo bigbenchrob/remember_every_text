@@ -279,7 +279,7 @@ app authority again.
 
 ### Detection
 
-- ordinary app surface opens retained legacy DBs.
+- ordinary app surface opens retained historical DBs.
 - documents describe retained projection as current app path.
 - tests depend on legacy row IDs for graph-era evidence.
 

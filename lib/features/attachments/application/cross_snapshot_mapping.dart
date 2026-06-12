@@ -14,7 +14,7 @@ enum UnmappedReason {
   messageNotInGraph,
 
   /// The attachment GUID exists in the historical snapshot but does not
-  /// match any row in the current import ledger.
+  /// match any row in the current source-scoped import ledger.
   guidMismatch,
 
   /// The attachment GUID was non-null but the matched import row belongs to
@@ -49,6 +49,9 @@ class MappedAttachmentRecord {
 
   final String histMessageGuid;
   final String currentMessageGuid;
+  /// Compatibility row id used by existing overlay archive keys.
+  ///
+  /// Canonical graph attachment identity is [currentAttachmentSsId].
   final int currentImportAttachmentId;
   final String resolvedFilePath;
   final MatchMethod matchMethod;

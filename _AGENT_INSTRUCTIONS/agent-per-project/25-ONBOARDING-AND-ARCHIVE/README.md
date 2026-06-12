@@ -30,7 +30,7 @@ wording as legacy/transitional.
 - **`lib/essentials/navigation/`** — readiness panel synchronization, panel stack ownership, and sidebar parking
 - **`lib/essentials/source_scoped_import/`** — source-scoped import ledger
 - **`lib/essentials/conversation_graph/`** — graph build, projection, readiness, and app-facing graph queries
-- **`lib/essentials/db_importers/`** — retained import diagnostics, live source monitoring, and archive compatibility bridges
+- **Retired `lib/essentials/db_importers/`** — removed; source-scoped importers live in `lib/essentials/source_scoped_import/`, live monitoring and graph lifecycle live in `lib/essentials/conversation_graph/`, and retained DB diagnostics live in `lib/essentials/db/`
 - **Retired `lib/essentials/db_migrate/`** — historical retained projection
   reference only; no active onboarding setup ownership
 - **`lib/features/attachments/`** — archive service, resolver, deterministic recovery, settings

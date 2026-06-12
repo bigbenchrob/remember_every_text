@@ -9,11 +9,12 @@ import '../../../features/messages/domain/spec_classes/messages_view_spec.dart';
 import '../../../features/settings/domain/spec_classes/settings_view_spec.dart';
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../features/sidebar_utilities/feature_level_providers.dart';
-import '../../db/feature_level_providers.dart';
 import '../../logging/application/app_logger.dart';
 import '../../navigation/domain/entities/view_spec.dart';
 import '../../navigation/domain/sidebar_mode.dart';
 import '../feature_level_providers.dart';
+import '../infrastructure/persistence/sidebar_flow_preference_store_provider.dart';
+import 'sidebar_flow_preference_store.dart';
 
 part 'sidebar_flow_state_provider.freezed.dart';
 part 'sidebar_flow_state_provider.g.dart';
@@ -81,8 +82,10 @@ class SidebarContactContextPreference {
   }
 }
 
-const String sidebarContactContextOverlaySettingKey = 'sidebar_contact_context';
-const String sidebarFlowNavigationOverlaySettingKey = 'sidebar_flow_navigation';
+const String sidebarContactContextOverlaySettingKey =
+    sidebarContactContextPreferenceSettingKey;
+const String sidebarFlowNavigationOverlaySettingKey =
+    sidebarFlowNavigationPreferenceSettingKey;
 
 @visibleForTesting
 class SidebarFlowNavigationPreference {
@@ -940,25 +943,20 @@ class SidebarFlow extends _$SidebarFlow {
 
   Future<SidebarContactContextPreference>
   _readContactContextPreference() async {
-    final overlayDb = await ref.read(overlayDatabaseProvider.future);
-    final rawValue = await overlayDb.readOverlaySetting(
-      sidebarContactContextOverlaySettingKey,
-    );
+    final store = await ref.read(sidebarFlowPreferenceStoreProvider.future);
+    final rawValue = await store.readContactContextPreference();
     return SidebarContactContextPreference.fromStorage(rawValue);
   }
 
   void _scheduleContactContextPreferencePersist(
     SidebarContactContextPreference preference,
   ) {
-    final overlayDbFuture = ref.read(overlayDatabaseProvider.future);
+    final storeFuture = ref.read(sidebarFlowPreferenceStoreProvider.future);
     _contactContextPersistChain = _contactContextPersistChain
         .catchError((Object _, StackTrace _) {})
         .then((_) async {
-          final overlayDb = await overlayDbFuture;
-          await overlayDb.writeOverlaySetting(
-            settingKey: sidebarContactContextOverlaySettingKey,
-            settingValue: preference.storageValue,
-          );
+          final store = await storeFuture;
+          await store.writeContactContextPreference(preference.storageValue);
         });
     unawaited(
       _contactContextPersistChain.catchError((Object _, StackTrace _) {}),
@@ -1021,25 +1019,20 @@ class SidebarFlow extends _$SidebarFlow {
   }
 
   Future<SidebarFlowNavigationPreference?> _readNavigationPreference() async {
-    final overlayDb = await ref.read(overlayDatabaseProvider.future);
-    final rawValue = await overlayDb.readOverlaySetting(
-      sidebarFlowNavigationOverlaySettingKey,
-    );
+    final store = await ref.read(sidebarFlowPreferenceStoreProvider.future);
+    final rawValue = await store.readNavigationPreference();
     return SidebarFlowNavigationPreference.fromStorage(rawValue);
   }
 
   void _scheduleNavigationPreferencePersist(
     SidebarFlowNavigationPreference preference,
   ) {
-    final overlayDbFuture = ref.read(overlayDatabaseProvider.future);
+    final storeFuture = ref.read(sidebarFlowPreferenceStoreProvider.future);
     _navigationPreferencePersistChain = _navigationPreferencePersistChain
         .catchError((Object _, StackTrace _) {})
         .then((_) async {
-          final overlayDb = await overlayDbFuture;
-          await overlayDb.writeOverlaySetting(
-            settingKey: sidebarFlowNavigationOverlaySettingKey,
-            settingValue: preference.storageValue,
-          );
+          final store = await storeFuture;
+          await store.writeNavigationPreference(preference.storageValue);
         });
     unawaited(
       _navigationPreferencePersistChain.catchError((Object _, StackTrace _) {}),

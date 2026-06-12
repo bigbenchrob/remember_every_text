@@ -16,7 +16,7 @@ links:
 tests: []
 ---
 
-# `db-import` - Retained Legacy macOS Import Ledger (`macos_import.db`)
+# `db-import` - Retained Archive Metadata Storage (`macos_import.db`)
 
 ## Overview
 
@@ -41,30 +41,38 @@ from earlier versions, and diagnostics/reset code must tolerate those files.
 | --- | --- |
 | Directory | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/`
 | Filename | `macos_import.db`
-| Provisioning | Created on demand by `sqfliteImportDatabaseProvider` (see below) |
+| Provisioning | Created on demand by `retainedArchiveMetadataStoreProvider`, which constructs the concrete retained metadata storage adapter behind the central DB boundary |
 | Backups | External/operational backup if configured; not owned by the import database provider |
 
 Always let the provider create and open the file; manual SQLite clients will lock it while the app runs.
 
 ## Provider Access
 
-- **Riverpod entry point**: `sqfliteImportDatabaseProvider`
+- **Semantic Riverpod entry point**: `retainedArchiveMetadataStoreProvider`
+- **Concrete storage adapter**: `RetainedArchiveMetadataDatabase`
 - **Definition**: `lib/essentials/db/feature_level_providers.dart`
-- **Type**: `Future<SqfliteImportDatabase>` (Sqflite-backed)
+- **Provider type**: `Future<RetainedArchiveMetadataStore>`
+- **Adapter type**: Sqflite-backed
 
 Access pattern:
 
 ```dart
-final importDb = await ref.watch(sqfliteImportDatabaseProvider.future);
+final metadataStore = await ref.watch(
+  retainedArchiveMetadataStoreProvider.future,
+);
 ```
 
-Do not instantiate `SqfliteImportDatabase` manually; the provider handles directory creation, debug settings, and graceful shutdown.
+Do not instantiate `RetainedArchiveMetadataDatabase` manually outside the
+central DB provider. Archive-source metadata callers should use the semantic
+retained metadata store provider. Reset/storage cleanup may invalidate or close
+the store provider when it already exists, but must not recreate ordinary
+retained import behavior.
 
 ## Schema
 
-`db-import` is a plain Sqflite database; schema definitions live alongside the retained import helper. Key reference:
+`db-import` is a plain Sqflite database; schema definitions live alongside the retained archive metadata adapter. Key reference:
 
-- `lib/essentials/db/infrastructure/data_sources/local/import/sqflite_import_database.dart` — Sqflite helper and schema bootstrap.
+- `lib/essentials/db/infrastructure/data_sources/local/import/retained_archive_metadata_database.dart` — Sqflite adapter and retained metadata schema bootstrap.
 
 Fresh graph-era files create only:
 
@@ -89,7 +97,9 @@ should report what exists without treating those tables as active app truth.
 
 ## Related Rules & Contracts
 
-- **Provider-only access**: Always obtain connections via `sqfliteImportDatabaseProvider`; direct connections create locking issues.
+- **Provider-only access**: Archive metadata callers obtain connections via
+  `retainedArchiveMetadataStoreProvider`. Direct connections create locking
+  issues and bypass the retained-storage boundary.
 - **No active import semantics**: Source identity, rich text, reactions,
   recovered/orphan evidence, and attachment topology now belong to
   `macos_import_ss.db` and `working_ss.db`, not fresh retained

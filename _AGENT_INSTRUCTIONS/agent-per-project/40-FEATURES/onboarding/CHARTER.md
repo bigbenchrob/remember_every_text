@@ -2,7 +2,7 @@
 
 > Legacy note (2026-04-21, updated 2026-06-03): this folder is V1 planning material. Current onboarding architecture lives primarily in `lib/essentials/onboarding`; readiness panel UI lives in `lib/features/environment_readiness`; canonical docs are under `../25-ONBOARDING-AND-ARCHIVE/`. Several V1 assumptions below are no longer current, including deferred FDA handling, happy-path-only failure handling, the absence of ViewSpec participation for onboarding dev/readiness panels, and any use of `DbImportControlProvider.runImportAndMigration()`.
 >
-> Current rule: onboarding and settings reimport are graph-lifecycle flows. They use `MessageDataResetService` for derived-data reset/cleanup and `ConversationGraphBuildController` for source-scoped graph build/rebuild. The retained legacy import-control panel is diagnostic/import-only and must not be used as the onboarding orchestrator.
+> Current rule: onboarding and settings reimport are graph-lifecycle flows. They use `MessageDataResetService` for derived-data reset/cleanup and `ConversationGraphBuildController` for source-scoped graph build/rebuild. The retained historical import-control panel is diagnostic/import-only and must not be used as the onboarding orchestrator.
 
 ## Mission
 

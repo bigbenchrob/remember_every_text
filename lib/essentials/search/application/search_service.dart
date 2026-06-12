@@ -1,7 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../feature_level_providers.dart';
-import '../infrastructure/repositories/graph_search_repository.dart';
+import 'graph_message_search.dart';
 
 enum SearchMode { allTerms, anyTerm }
 

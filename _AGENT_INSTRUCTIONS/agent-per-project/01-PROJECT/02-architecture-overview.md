@@ -118,8 +118,8 @@ Hard boundaries:
 
 Onboarding is essentials-owned orchestration. It evaluates environment readiness,
 drives the onboarding overlay lifecycle, coordinates graph build actions, and
-syncs readiness states into panel surfaces. Retained legacy import/projection is
-not the ordinary onboarding success path.
+syncs readiness states into panel surfaces. Retained metadata/reference storage
+is not the ordinary onboarding success path.
 
 Attachment archive and deterministic recovery are feature-owned attachment
 systems that coordinate with onboarding and the database providers. Archive
@@ -134,9 +134,11 @@ Use `../25-ONBOARDING-AND-ARCHIVE/` for current behavior.
 - Use the current provider names from code and database docs. Ordinary graph
   reads use `driftConversationGraphDatabaseProvider`; source-scoped import uses
   `importDatabaseProvider` from `source_scoped_import`; overlay user intent uses
-  `overlayDatabaseProvider`. Retained import metadata compatibility may still
-  use `sqfliteImportDatabaseProvider`; retained `working.db` is a file/schema
-  retention concern and no longer has a central app provider.
+  `overlayDatabaseProvider`. Retained archive metadata callers use
+  `retainedArchiveMetadataStoreProvider`; the central DB provider constructs
+  the concrete retained metadata adapter.
+  Retained `working.db` is a file/schema retention concern and no longer has a
+  central app provider.
 - Do not invent generic provider names such as `workingDatabaseProvider` or
   `importDatabaseProvider` unless code first introduces them.
 - Keep generated files untouched unless running the approved generator.

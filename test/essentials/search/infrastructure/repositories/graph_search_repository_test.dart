@@ -1,6 +1,7 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import 'package:remember_this_text/essentials/search/application/graph_message_search.dart';
 import 'package:remember_this_text/essentials/search/infrastructure/repositories/graph_search_repository.dart';
 
 import '../../../conversation_graph/conversation_graph_test_database.dart';
@@ -110,13 +111,13 @@ void main() {
   });
 
   test(
-    'uses unique legacy GUID saved overlay as compatibility bridge',
+    'uses unique GUID-keyed saved overlay as compatibility bridge',
     () async {
       await _insertMessage(
         graphDatabase,
         messageId: 4001,
         guid: 'guid-4001',
-        text: 'Legacy saved message.',
+        text: 'GUID-keyed saved message.',
         dateUtc: '2026-05-01T12:00:00Z',
       );
       await overlayDatabase.setMessageSaved(
@@ -136,7 +137,7 @@ void main() {
   );
 
   test(
-    'does not use legacy GUID saved overlay when GUID is ambiguous',
+    'does not use GUID-keyed saved overlay when GUID is ambiguous',
     () async {
       await _insertMessage(
         graphDatabase,

@@ -1,10 +1,10 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../db/feature_level_providers.dart';
+import '../../../db/feature_level_providers/message_data_version_provider.dart';
 import '../../../source_scoped_import/domain/known_sources.dart';
 import '../../../source_scoped_import/domain/source_scoped_row_key.dart';
-import '../../infrastructure/repositories/contact_graph_repository.dart';
+import '../../infrastructure/repositories/contact_graph_repository_provider.dart';
 import '../conversations/conversation.dart';
 import 'contact_graph.dart';
 import 'contact_graph_reader.dart';
@@ -13,12 +13,8 @@ part 'contact_graph_provider.g.dart';
 
 @riverpod
 Future<ContactGraphReader> contactGraphReader(Ref ref) async {
-  final graphDatabase = await ref.watch(
-    driftConversationGraphDatabaseProvider.future,
-  );
-  return ContactGraphReader(
-    repository: SqliteContactGraphRepository(graphDatabase: graphDatabase),
-  );
+  final repository = await ref.watch(contactGraphRepositoryProvider.future);
+  return ContactGraphReader(repository: repository);
 }
 
 @riverpod

@@ -35,7 +35,7 @@ The current implementation audits these app-owned databases:
 
 It does **not** create retained database files as a side effect. It uses
 provider-managed instances for active graph/overlay/source-scoped databases
-and read-only file inspection for retained legacy databases:
+and read-only file inspection for retained historical databases:
 
 - `importDatabaseProvider` from source-scoped import
 - `driftConversationGraphDatabaseProvider`
@@ -44,7 +44,7 @@ and read-only file inspection for retained legacy databases:
 - read-only file inspection for retained `working.db`
 
 This preserves the project rule against competing writable connections while
-also preventing diagnostics from recreating retained legacy storage.
+also preventing diagnostics from recreating retained historical storage.
 
 ## Service Entry Point
 

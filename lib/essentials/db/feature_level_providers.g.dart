@@ -6,55 +6,30 @@ part of 'feature_level_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$sqfliteImportDatabaseHash() =>
-    r'55e2769da44f8cff1a868a496a7715a3080047d4';
+String _$retainedArchiveMetadataStoreHash() =>
+    r'21d36db7df5097e110e967d00c7796f43e1ef0b3';
 
 /// Provides access to retained archive-source metadata in `macos_import.db`.
 ///
-/// Copied from [sqfliteImportDatabase].
-@ProviderFor(sqfliteImportDatabase)
-final sqfliteImportDatabaseProvider =
-    FutureProvider<SqfliteImportDatabase>.internal(
-      sqfliteImportDatabase,
-      name: r'sqfliteImportDatabaseProvider',
+/// Copied from [retainedArchiveMetadataStore].
+@ProviderFor(retainedArchiveMetadataStore)
+final retainedArchiveMetadataStoreProvider =
+    FutureProvider<RetainedArchiveMetadataStore>.internal(
+      retainedArchiveMetadataStore,
+      name: r'retainedArchiveMetadataStoreProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
           ? null
-          : _$sqfliteImportDatabaseHash,
+          : _$retainedArchiveMetadataStoreHash,
       dependencies: null,
       allTransitiveDependencies: null,
     );
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef SqfliteImportDatabaseRef = FutureProviderRef<SqfliteImportDatabase>;
-String _$retainedArchiveMetadataDatabaseHash() =>
-    r'b44dbd6c01f3a64151102406b93e1adf77e5580d';
-
-/// Semantic entry point for retained Historical Archives metadata.
-///
-/// Prefer this provider over [sqfliteImportDatabaseProvider] for new callers.
-/// The returned object still wraps `macos_import.db` while archive-source
-/// metadata remains in retained storage.
-///
-/// Copied from [retainedArchiveMetadataDatabase].
-@ProviderFor(retainedArchiveMetadataDatabase)
-final retainedArchiveMetadataDatabaseProvider =
-    FutureProvider<SqfliteImportDatabase>.internal(
-      retainedArchiveMetadataDatabase,
-      name: r'retainedArchiveMetadataDatabaseProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$retainedArchiveMetadataDatabaseHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef RetainedArchiveMetadataDatabaseRef =
-    FutureProviderRef<SqfliteImportDatabase>;
+typedef RetainedArchiveMetadataStoreRef =
+    FutureProviderRef<RetainedArchiveMetadataStore>;
 String _$driftConversationGraphDatabaseHash() =>
-    r'a24e4d5cdb2234f7185c5de114b7ad80607c414a';
+    r'6b5758ced4eddacc44e4c709b6363adf0603ed2d';
 
 /// Provides access to the source-scoped conversation graph projection database.
 ///
@@ -75,7 +50,7 @@ final driftConversationGraphDatabaseProvider =
 // ignore: unused_element
 typedef DriftConversationGraphDatabaseRef =
     FutureProviderRef<ConversationGraphDatabase>;
-String _$overlayDatabaseHash() => r'af7bedb84580f233fac919c553fd2df670e3e30c';
+String _$overlayDatabaseHash() => r'9ebaf6ae0ce04b419b092445b7076a0d81819857';
 
 /// Provides access to the overlay database for user preferences and customizations.
 ///
@@ -117,5 +92,25 @@ final attachmentArchiveDirectoryProvider = Provider<String>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef AttachmentArchiveDirectoryRef = ProviderRef<String>;
+String _$databaseHealthAuditServiceHash() =>
+    r'37bd0e8a0e2f3859b1bc91e3d9223dd34c8e5291';
+
+/// See also [databaseHealthAuditService].
+@ProviderFor(databaseHealthAuditService)
+final databaseHealthAuditServiceProvider =
+    FutureProvider<DatabaseHealthAuditService>.internal(
+      databaseHealthAuditService,
+      name: r'databaseHealthAuditServiceProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$databaseHealthAuditServiceHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef DatabaseHealthAuditServiceRef =
+    FutureProviderRef<DatabaseHealthAuditService>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

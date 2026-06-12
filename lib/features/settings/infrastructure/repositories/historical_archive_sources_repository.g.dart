@@ -7,7 +7,7 @@ part of 'historical_archive_sources_repository.dart';
 // **************************************************************************
 
 String _$historicalArchiveSourcesRepositoryHash() =>
-    r'6cf50eb27afed61a43dfc9a3cc4decdac8b0b368';
+    r'4350a9113e467dad7a97c7ae5f02133fca0e4ba9';
 
 /// See also [historicalArchiveSourcesRepository].
 @ProviderFor(historicalArchiveSourcesRepository)

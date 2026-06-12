@@ -6,7 +6,7 @@ part of 'contact_importer_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$contactImporterHash() => r'35daef59a4f2605b3432cbb310c80fdac7510c9a';
+String _$contactImporterHash() => r'c1f4f679cf015238f667ee92338b27411d5693b4';
 
 /// See also [contactImporter].
 @ProviderFor(contactImporter)

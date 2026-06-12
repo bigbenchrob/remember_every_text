@@ -7,7 +7,7 @@ part of 'message_attachment_join_importer_provider.dart';
 // **************************************************************************
 
 String _$messageAttachmentJoinImporterHash() =>
-    r'17d9c1015ea3d2f5f1fba7bea03a89794935623f';
+    r'899489c42a40842d6cc6b4cea541689e083fa6aa';
 
 /// See also [messageAttachmentJoinImporter].
 @ProviderFor(messageAttachmentJoinImporter)

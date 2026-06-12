@@ -1,17 +1,16 @@
 import 'dart:io';
 
-import 'package:drift/drift.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../essentials/db/feature_level_providers.dart';
 import '../../messages/domain/entities/attachment_info.dart';
 import '../domain/constants/attachment_provenance.dart';
 import '../domain/constants/resolved_attachment_availability.dart';
 import '../domain/entities/attachment_recovery_metadata.dart';
 import '../domain/entities/resolved_attachment.dart';
+import '../feature_level_providers.dart';
 import 'archive_settings_provider.dart';
 import 'attachment_archive_service_provider.dart';
-import 'attachment_recovery_hint_storage.dart';
+import 'attachment_recovery_metadata_merge.dart';
 
 part 'attachment_resolver_provider.g.dart';
 
@@ -58,42 +57,31 @@ Future<ResolvedAttachment> _resolveForArchiveEnabledMode(
   AttachmentRecoveryMetadata? persistedRecoveryHint;
 
   if (importAttachmentId != null) {
-    final overlayDb = await ref.watch(overlayDatabaseProvider.future);
-    final archiveDir = ref.watch(attachmentArchiveDirectoryProvider);
-    persistedRecoveryHint = decodeAttachmentRecoveryHint(
-      await overlayDb.readOverlaySetting(
-        attachmentRecoveryHintSettingKey(
-          messageGuid: messageGuid,
-          importAttachmentId: importAttachmentId,
-        ),
-      ),
+    final archiveReadStore = await ref.watch(
+      attachmentArchiveReadStoreProvider.future,
+    );
+    persistedRecoveryHint = await archiveReadStore.readRecoveryHint(
+      messageGuid: messageGuid,
+      importAttachmentId: importAttachmentId,
     );
 
-    final archiveRecord =
-        await (overlayDb.select(overlayDb.archivedAttachments)..where(
-              (t) =>
-                  t.messageGuid.equals(messageGuid) &
-                  t.importAttachmentId.equals(importAttachmentId),
-            ))
-            .getSingleOrNull();
+    final archiveRecord = await archiveReadStore.readArchiveRecord(
+      messageGuid: messageGuid,
+      importAttachmentId: importAttachmentId,
+    );
 
-    if (archiveRecord != null) {
-      final archivePath = '$archiveDir/${archiveRecord.archiveRelativePath}';
-      final archiveFile = File(archivePath);
-      final archiveFileExists = archiveFile.existsSync();
-      if (archiveFileExists) {
-        final provenance = switch (archiveRecord.provenance) {
-          'imported_historical' => AttachmentProvenance.importedHistorical,
-          _ => AttachmentProvenance.archived,
-        };
+    if (archiveRecord != null && archiveRecord.archiveFileExists) {
+      final provenance = switch (archiveRecord.provenance) {
+        'imported_historical' => AttachmentProvenance.importedHistorical,
+        _ => AttachmentProvenance.archived,
+      };
 
-        return ResolvedAttachment(
-          attachmentInfo: attachmentInfo,
-          availability: ResolvedAttachmentAvailability.available,
-          provenance: provenance,
-          resolvedFile: archiveFile,
-        );
-      }
+      return ResolvedAttachment(
+        attachmentInfo: attachmentInfo,
+        availability: ResolvedAttachmentAvailability.available,
+        provenance: provenance,
+        resolvedFile: File(archiveRecord.archiveAbsolutePath),
+      );
     }
   }
 

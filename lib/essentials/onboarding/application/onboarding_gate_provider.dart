@@ -5,14 +5,13 @@ import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../conversation_graph/application/conversation_graph_build_controller_provider.dart';
-import '../../db/feature_level_providers.dart'
-    show databaseDirectoryPath, overlayDatabaseProvider;
+import '../../db/feature_level_providers.dart' show databaseDirectoryPath;
 import '../../logging/application/app_logger.dart';
 import '../../navigation/application/sidebar_mode_provider.dart';
 import '../../navigation/domain/sidebar_mode.dart';
 import '../domain/onboarding_environment_report.dart';
 import '../domain/onboarding_status.dart';
-import '../infrastructure/persistence/overlay_onboarding_failure_storage.dart';
+import '../infrastructure/persistence/onboarding_failure_storage_provider.dart';
 import 'database_existence_checker.dart';
 import 'fda_checker.dart';
 import 'message_data_reset_service.dart';
@@ -93,8 +92,9 @@ class OnboardingGate extends _$OnboardingGate {
       'environmentBlocker': report?.blockerKind.name,
       'hasFullDiskAccess': report?.hasFullDiskAccess,
       'hasPopulatedAppDatabases': hasPopulatedAppDatabases,
-      'importDbExists': report?.importDatabase.exists,
-      'importDbRowCount': report?.importDatabase.rowCount,
+      'sourceScopedImportDbExists': report?.sourceScopedImportDatabase.exists,
+      'sourceScopedImportDbRowCount':
+          report?.sourceScopedImportDatabase.rowCount,
       'conversationGraphExists': report?.conversationGraph.exists,
       'conversationGraphRowCount': report?.conversationGraph.rowCount,
       'shouldResetAppDatabasesBeforeImport':
@@ -400,9 +400,7 @@ class OnboardingGate extends _$OnboardingGate {
   }
 
   Future<void> _recordConversationGraphBuildFailure(Object error) async {
-    final storage = OverlayOnboardingFailureStorage(
-      overlayDb: ref.read(overlayDatabaseProvider.future),
-    );
+    final storage = ref.read(onboardingFailureStorageProvider);
     await storage.saveGraphProjectionFailure(
       message: 'Conversation graph build failed: $error',
       recordedAt: DateTime.now().toUtc(),
@@ -410,9 +408,7 @@ class OnboardingGate extends _$OnboardingGate {
   }
 
   Future<void> _clearConversationGraphBuildFailure() async {
-    final storage = OverlayOnboardingFailureStorage(
-      overlayDb: ref.read(overlayDatabaseProvider.future),
-    );
+    final storage = ref.read(onboardingFailureStorageProvider);
     await storage.clearGraphProjectionResult();
   }
 

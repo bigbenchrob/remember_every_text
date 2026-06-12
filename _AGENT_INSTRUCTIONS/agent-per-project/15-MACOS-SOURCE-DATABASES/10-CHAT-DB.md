@@ -24,7 +24,7 @@ This document is intentionally not an exhaustive schema dump. It records the app
 - Treat `chat.db` as read-only external source data.
 - Verify source fields and relationship ownership before using them in importer logic.
 - Do not infer source columns from MessageLens import ledgers, graph
-  projection, retained legacy databases, or Drift entities.
+  projection, retained databases, or Drift entities.
 - Preserve source-local row identity as provenance, not canonical app identity.
 - For multi-source/archive support, source provenance should include `source_id + source_table + source_rowid`.
 

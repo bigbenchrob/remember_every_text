@@ -3,12 +3,13 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
-import 'package:remember_this_text/essentials/db_importers/domain/ports/message_extractor_port.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/archives/historical_messages_archive_source_registrar.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/archives/source_scoped_archive_import_service.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/ports/message_extractor_port.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/source_database/sqflite_source_database.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -40,11 +41,12 @@ void main() {
     );
     service = SourceScopedArchiveImportService(
       registrar: HistoricalMessagesArchiveSourceRegistrar(
-        importDatabase: importDatabase,
+        importLedger: importDatabase,
       ),
       richTextExtractor: const _FakeExtractor(<int, String>{
         300: 'enriched archive message',
       }),
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
     );
   });
 

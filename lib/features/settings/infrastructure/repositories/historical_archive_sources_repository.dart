@@ -1,7 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../essentials/db/application/retained_archive_metadata_store.dart';
 import '../../../../essentials/db/feature_level_providers.dart';
-import '../../../../essentials/db/infrastructure/data_sources/local/import/sqflite_import_database.dart';
 
 part 'historical_archive_sources_repository.g.dart';
 
@@ -81,13 +81,13 @@ final class HistoricalArchiveSourceMetadataUpdate {
 
 class HistoricalArchiveSourcesRepository {
   const HistoricalArchiveSourcesRepository({
-    required SqfliteImportDatabase importDb,
-  }) : _importDb = importDb;
+    required RetainedArchiveMetadataStore metadataStore,
+  }) : _metadataStore = metadataStore;
 
-  final SqfliteImportDatabase _importDb;
+  final RetainedArchiveMetadataStore _metadataStore;
 
   Future<List<HistoricalArchiveSourceMetadata>> readKnownSources() async {
-    final records = await _importDb.listHistoricalArchiveSources();
+    final records = await _metadataStore.listHistoricalArchiveSources();
     return [
       for (final record in records)
         HistoricalArchiveSourceMetadata(
@@ -109,7 +109,7 @@ class HistoricalArchiveSourcesRepository {
   Future<void> upsertSourceMetadata(
     HistoricalArchiveSourceMetadataUpdate update,
   ) {
-    return _importDb.upsertHistoricalArchiveSource(
+    return _metadataStore.upsertHistoricalArchiveSource(
       sourceChatDb: update.sourceChatDb,
       folderPath: update.folderPath,
       sourceLabel: update.sourceLabel,
@@ -138,10 +138,10 @@ class HistoricalArchiveSourcesRepository {
 Future<HistoricalArchiveSourcesRepository> historicalArchiveSourcesRepository(
   HistoricalArchiveSourcesRepositoryRef ref,
 ) async {
-  final importDb = await ref.watch(
-    retainedArchiveMetadataDatabaseProvider.future,
+  final metadataStore = await ref.watch(
+    retainedArchiveMetadataStoreProvider.future,
   );
-  return HistoricalArchiveSourcesRepository(importDb: importDb);
+  return HistoricalArchiveSourcesRepository(metadataStore: metadataStore);
 }
 
 @riverpod

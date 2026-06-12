@@ -7,7 +7,7 @@ part of 'conversation_reader_provider.dart';
 // **************************************************************************
 
 String _$conversationReaderHash() =>
-    r'b1fe2a96322d6fb7d9c32a245cb709e2c576c241';
+    r'35e9006b7fc559dc37724df0405a4b6e951d6923';
 
 /// See also [conversationReader].
 @ProviderFor(conversationReader)

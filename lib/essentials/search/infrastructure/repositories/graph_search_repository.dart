@@ -3,52 +3,7 @@ import 'package:collection/collection.dart';
 import '../../../../core/util/message_tag_normalizer.dart';
 import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-
-const int graphSearchResultLimit = 500;
-
-enum GraphMessageSearchScopeType { global, conversation, handle, contact }
-
-class GraphMessageSearchScope {
-  const GraphMessageSearchScope._({
-    required this.type,
-    this.id,
-    this.ids = const <int>[],
-  });
-
-  const GraphMessageSearchScope.global()
-    : this._(type: GraphMessageSearchScopeType.global);
-
-  const GraphMessageSearchScope.conversation(int conversationId)
-    : this._(
-        type: GraphMessageSearchScopeType.conversation,
-        id: conversationId,
-      );
-
-  const GraphMessageSearchScope.handle(int canonicalHandleId)
-    : this._(type: GraphMessageSearchScopeType.handle, id: canonicalHandleId);
-
-  const GraphMessageSearchScope.contactCanonicalHandles(
-    List<int> canonicalHandleIds,
-  ) : this._(
-        type: GraphMessageSearchScopeType.contact,
-        ids: canonicalHandleIds,
-      );
-
-  final GraphMessageSearchScopeType type;
-  final int? id;
-  final List<int> ids;
-}
-
-abstract interface class GraphSearchRepository {
-  Future<List<int>> searchMessageIds({
-    required GraphMessageSearchScope scope,
-    required String query,
-    required bool matchAnyTerm,
-    required bool filterSaved,
-    bool lastTokenComplete = false,
-    int limit = graphSearchResultLimit,
-  });
-}
+import '../../application/graph_message_search.dart';
 
 class SqliteGraphSearchRepository implements GraphSearchRepository {
   const SqliteGraphSearchRepository({
@@ -171,13 +126,13 @@ class SqliteGraphSearchRepository implements GraphSearchRepository {
       matchAnyTerm: matchAnyTerm,
       lastTokenComplete: lastTokenComplete,
     );
-    final legacyGuidTagIds = await _searchLegacyGuidTagIds(
+    final guidKeyedTagIds = await _searchGuidKeyedTagIds(
       terms: terms,
       matchAnyTerm: matchAnyTerm,
       lastTokenComplete: lastTokenComplete,
     );
 
-    final merged = _mergeIds(graphTagIds, legacyGuidTagIds, limit: limit);
+    final merged = _mergeIds(graphTagIds, guidKeyedTagIds, limit: limit);
     return _filterIdsToScope(scope: scope, messageIds: merged, limit: limit);
   }
 
@@ -215,14 +170,14 @@ class SqliteGraphSearchRepository implements GraphSearchRepository {
     return _rankScoredIds(scored);
   }
 
-  Future<List<int>> _searchLegacyGuidTagIds({
+  Future<List<int>> _searchGuidKeyedTagIds({
     required List<String> terms,
     required bool matchAnyTerm,
     required bool lastTokenComplete,
   }) async {
-    final legacyTags = await overlayDatabase.getAllMessageUserTags();
+    final guidKeyedTags = await overlayDatabase.getAllMessageUserTags();
     final matchingGuids = <String, int>{};
-    for (final tag in legacyTags) {
+    for (final tag in guidKeyedTags) {
       final score = _tagMatchScore(
         normalizedTag: tag.tagNormalized,
         terms: terms,
@@ -264,12 +219,12 @@ class SqliteGraphSearchRepository implements GraphSearchRepository {
       for (final row in graphNativeRows) _readInt(row.data['message_ss_id']),
     ];
 
-    final legacySavedGuids = await overlayDatabase.getAllSavedMessageGuids();
-    final legacyIds = await _resolveUniqueGuidMessageIds(
-      legacySavedGuids,
+    final guidKeyedSavedGuids = await overlayDatabase.getAllSavedMessageGuids();
+    final guidKeyedIds = await _resolveUniqueGuidMessageIds(
+      guidKeyedSavedGuids,
     ).then((idsByGuid) => idsByGuid.values.toList(growable: false));
 
-    final merged = _mergeIds(graphNativeIds, legacyIds, limit: limit);
+    final merged = _mergeIds(graphNativeIds, guidKeyedIds, limit: limit);
     return _filterIdsToScope(scope: scope, messageIds: merged, limit: limit);
   }
 

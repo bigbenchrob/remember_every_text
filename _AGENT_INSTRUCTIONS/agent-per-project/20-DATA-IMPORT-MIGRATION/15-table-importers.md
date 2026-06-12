@@ -13,9 +13,9 @@ links:
   - lib/essentials/source_scoped_import/
 ---
 
-# Retained Legacy Table Importers Guide
+# Retained Historical Table Importers Guide
 
-Historical reference for the deleted retained legacy ledger importer framework
+Historical reference for the deleted retained ledger importer framework
 that populated `macos_import.db`. Use this only to interpret old logs, old docs,
 or old user data folders.
 
@@ -40,7 +40,7 @@ supplied by `ImportOrchestrator.run(...)`.
 ## ImportContext Summary
 
 The retired `ImportContext` bundled:
-- `importDb`: `SqfliteImportDatabase` handle that exposes retained legacy ledger helper methods.
+- `importDb`: `SqfliteImportDatabase` handle that exposes retained ledger helper methods.
 - `messagesDb`, `messagesDbPath`: Live `chat.db` connection and absolute path for shelling out to the Rust extractor.
 - `addressBookDb`: Live AddressBook connection for contact importers.
 - `batchId`: Primary key from `import_batches` for current run.
@@ -49,7 +49,7 @@ The retired `ImportContext` bundled:
 - `extractor`: `MessageExtractorPort` for rich text decoding.
 - `rustExtractionLimit`: Upper bound for extractor batch size (default 200000).
 - `previousMax*RowId` fields: High-water marks that incremental importers can consult.
-- `hasExistingLedgerData`: Signals whether retained legacy tables already contain rows.
+- `hasExistingLedgerData`: Signals whether retained tables already contain rows.
 - `scratchpad`: Mutable `Map<String, Object?>` for passing stats between phases (e.g., `messages.richTextApplied`).
 
 ### Convenience Helpers
@@ -90,7 +90,7 @@ phases:
 
 ## Adding or Modifying Importers
 
-Do not add retained legacy importers for ordinary app behavior. New source
+Do not add retained importers for ordinary app behavior. New source
 facts belong in `lib/essentials/source_scoped_import/` and should project into
 the conversation graph. If an explicit archive/recovery compatibility task
 requires retained `macos_import.db` behavior, write a reviewed graph-era plan
@@ -102,4 +102,4 @@ first and update this page with the new concrete implementation path.
 - `./11-rust-message-extractor.md` for the rich text helper binary contract.
 - `../10-DATABASES/10-group-import-working.md` for cross-database responsibilities.
 - Source-scoped importers under `lib/essentials/source_scoped_import/` are the current production examples for new graph-era work.
-- Retained legacy importer descriptions remain historical examples only.
+- Retained importer descriptions remain historical examples only.

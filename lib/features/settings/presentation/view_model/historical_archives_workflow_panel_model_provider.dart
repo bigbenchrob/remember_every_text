@@ -5,9 +5,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../essentials/conversation_graph/application/archives/source_scoped_archive_graph_import_service_provider.dart';
 import '../../../../essentials/conversation_graph/application/archives/source_scoped_archive_graph_removal_service_provider.dart';
-import '../../../../essentials/db/feature_level_providers.dart';
-import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
-import '../../../../essentials/db_importers/application/import_execution_gate_provider.dart';
+import '../../../../essentials/conversation_graph/application/orchestration/graph_maintenance_execution_gate_provider.dart';
+import '../../../../essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart';
+import '../../../../essentials/db/feature_level_providers/db_maintenance_lock_provider.dart';
+import '../../../../essentials/db/feature_level_providers/message_data_version_provider.dart';
 import '../../../../essentials/onboarding/application/fda_checker.dart';
 import '../../infrastructure/repositories/archive_source_inspection_repository.dart';
 import '../../infrastructure/repositories/historical_archive_sources_repository.dart';
@@ -356,10 +357,12 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       phases: _runningPreflightPhases(),
     );
 
-    ConversationGraphDatabase? graphDb;
+    ArchiveSourceInspectionRepository? archiveSourceInspectionRepository;
     HistoricalArchiveSourcesRepository? archiveSourcesRepository;
     try {
-      graphDb = await ref.read(driftConversationGraphDatabaseProvider.future);
+      archiveSourceInspectionRepository = await ref.read(
+        archiveSourceInspectionRepositoryProvider.future,
+      );
     } catch (_) {}
     try {
       archiveSourcesRepository = await ref.read(
@@ -369,7 +372,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
 
     final result = await preflightHistoricalArchivesFolder(
       folderPath: folderPath,
-      graphDb: graphDb,
+      archiveSourceInspectionRepository: archiveSourceInspectionRepository,
     );
 
     await _persistHistoricalArchiveSourceIfEligible(
@@ -409,9 +412,13 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       return;
     }
 
-    final executionGate = ref.read(importExecutionGateProvider.notifier);
+    final executionGate = ref.read(
+      graphMaintenanceExecutionGateProvider.notifier,
+    );
     if (!executionGate.tryAcquire(_historicalArchivesTestingOwner)) {
-      final currentOwner = ref.read(importExecutionGateProvider).owner;
+      final currentOwner = ref
+          .read(graphMaintenanceExecutionGateProvider)
+          .owner;
       _prependActivityLog(
         HistoricalArchivesLogEntryViewModel(
           label: 'Execution gate busy',
@@ -522,9 +529,13 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       return;
     }
 
-    final executionGate = ref.read(importExecutionGateProvider.notifier);
+    final executionGate = ref.read(
+      graphMaintenanceExecutionGateProvider.notifier,
+    );
     if (!executionGate.tryAcquire('historical-archives-import')) {
-      final currentOwner = ref.read(importExecutionGateProvider).owner;
+      final currentOwner = ref
+          .read(graphMaintenanceExecutionGateProvider)
+          .owner;
       _prependActivityLog(
         HistoricalArchivesLogEntryViewModel(
           label: 'Execution gate busy',
@@ -573,14 +584,16 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       ref.invalidate(conversationGraphPopulatedProvider);
       ref.read(messageDataVersionProvider.notifier).bump();
 
-      ConversationGraphDatabase? graphDb;
+      ArchiveSourceInspectionRepository? archiveSourceInspectionRepository;
       try {
-        graphDb = await ref.read(driftConversationGraphDatabaseProvider.future);
+        archiveSourceInspectionRepository = await ref.read(
+          archiveSourceInspectionRepositoryProvider.future,
+        );
       } catch (_) {}
 
       final refreshedResult = await preflightHistoricalArchivesFolder(
         folderPath: selectedFolderPath,
-        graphDb: graphDb,
+        archiveSourceInspectionRepository: archiveSourceInspectionRepository,
       );
       final importedMessageCount =
           archiveResult.importResult.messages.insertedMessageCount;
@@ -741,7 +754,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
 HistoricalArchivesWorkflowPanelViewModel historicalArchivesWorkflowPanelModel(
   Ref ref,
 ) {
-  final executionGateState = ref.watch(importExecutionGateProvider);
+  final executionGateState = ref.watch(graphMaintenanceExecutionGateProvider);
   final isMaintenanceLocked = ref.watch(dbMaintenanceLockProvider);
   final workflowState = ref.watch(historicalArchivesWorkflowProvider);
 
@@ -754,7 +767,7 @@ HistoricalArchivesWorkflowPanelViewModel historicalArchivesWorkflowPanelModel(
 
 HistoricalArchivesWorkflowPanelViewModel
 buildHistoricalArchivesWorkflowPanelModel({
-  required ImportExecutionGateState executionGateState,
+  required GraphMaintenanceExecutionGateState executionGateState,
   required bool isMaintenanceLocked,
   required HistoricalArchivesWorkflowState workflowState,
 }) {
@@ -831,7 +844,7 @@ buildHistoricalArchivesWorkflowPanelModel({
 }
 
 HistoricalArchivesExecutionGateViewModel _buildExecutionGateViewModel({
-  required ImportExecutionGateState executionGateState,
+  required GraphMaintenanceExecutionGateState executionGateState,
   required bool isMaintenanceLocked,
 }) {
   if (executionGateState.isLocked) {
@@ -861,7 +874,7 @@ HistoricalArchivesExecutionGateViewModel _buildExecutionGateViewModel({
 }
 
 List<HistoricalArchivesLogEntryViewModel> _buildActivityLog({
-  required ImportExecutionGateState executionGateState,
+  required GraphMaintenanceExecutionGateState executionGateState,
   required bool isMaintenanceLocked,
   required HistoricalArchivesWorkflowState workflowState,
 }) {
@@ -999,7 +1012,7 @@ bool _removeImportedArchiveDataEnabled({
 }
 
 String _removeImportedArchiveDataDetail({
-  required ImportExecutionGateState executionGateState,
+  required GraphMaintenanceExecutionGateState executionGateState,
   required bool isMaintenanceLocked,
   required HistoricalArchivesWorkflowState workflowState,
 }) {
@@ -1026,10 +1039,12 @@ String _removeImportedArchiveDataDetail({
 Future<HistoricalArchivesFolderPreflightResult>
 preflightHistoricalArchivesFolder({
   required String folderPath,
-  ConversationGraphDatabase? graphDb,
+  ArchiveSourceInspectionRepository? archiveSourceInspectionRepository,
 }) async {
-  final inspection = await const ArchiveSourceInspectionRepository()
-      .inspectFolder(folderPath: folderPath, graphDb: graphDb);
+  final inspection =
+      await (archiveSourceInspectionRepository ??
+              const ArchiveSourceInspectionRepository(graphDb: null))
+          .inspectFolder(folderPath: folderPath);
   if (!inspection.isReadable) {
     return _failedPreflightResult(
       folderPath: inspection.folderPath,

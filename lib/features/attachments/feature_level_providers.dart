@@ -1,0 +1,95 @@
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+import '../../essentials/db/feature_level_providers.dart';
+import '../../essentials/source_scoped_import/feature_level_providers.dart';
+import '../../providers.dart';
+import 'application/attachment_archive_read_store.dart';
+import 'application/attachment_archive_settings_store.dart';
+import 'application/attachment_archive_stats_reader.dart';
+import 'application/cross_snapshot_mapper.dart';
+import 'application/current_messages_attachment_path_lookup.dart';
+import 'application/historical_snapshot_reader.dart';
+import 'application/recovered_attachment_archive_writer.dart';
+import 'infrastructure/repositories/attachment_archive_stats_repository.dart';
+import 'infrastructure/repositories/graph_cross_snapshot_mapper.dart';
+import 'infrastructure/repositories/overlay_attachment_archive_read_store.dart';
+import 'infrastructure/repositories/overlay_attachment_archive_settings_store.dart';
+import 'infrastructure/repositories/overlay_recovered_attachment_archive_writer.dart';
+import 'infrastructure/repositories/source_database_attachment_path_lookup.dart';
+import 'infrastructure/repositories/source_scoped_attachment_snapshot_lookup.dart';
+import 'infrastructure/repositories/sqlite_historical_snapshot_reader.dart';
+
+part 'feature_level_providers.g.dart';
+
+@riverpod
+Future<AttachmentArchiveSettingsStore> attachmentArchiveSettingsStore(
+  AttachmentArchiveSettingsStoreRef ref,
+) async {
+  final overlayDb = await ref.watch(overlayDatabaseProvider.future);
+  return OverlayAttachmentArchiveSettingsStore(overlayDb: overlayDb);
+}
+
+@riverpod
+Future<AttachmentArchiveReadStore> attachmentArchiveReadStore(
+  AttachmentArchiveReadStoreRef ref,
+) async {
+  final overlayDb = await ref.watch(overlayDatabaseProvider.future);
+  return OverlayAttachmentArchiveReadStore(
+    overlayDb: overlayDb,
+    archiveDirectory: ref.watch(attachmentArchiveDirectoryProvider),
+  );
+}
+
+@riverpod
+Future<AttachmentArchiveStatsReader> attachmentArchiveStatsReader(
+  AttachmentArchiveStatsReaderRef ref,
+) async {
+  final overlayDb = await ref.watch(overlayDatabaseProvider.future);
+  return AttachmentArchiveStatsRepository(
+    archiveDirectoryPath: ref.watch(attachmentArchiveDirectoryProvider),
+    overlayDatabase: overlayDb,
+  );
+}
+
+@riverpod
+Future<CrossSnapshotMapper> crossSnapshotMapper(
+  CrossSnapshotMapperRef ref,
+) async {
+  final importDb = await ref.watch(sourceScopedImportDatabaseProvider.future);
+  final graphDb = await ref.watch(
+    driftConversationGraphDatabaseProvider.future,
+  );
+  return GraphCrossSnapshotMapper(
+    attachmentLookup: SourceScopedAttachmentSnapshotLookup(importDb: importDb),
+    graphDb: graphDb,
+  );
+}
+
+@riverpod
+Future<RecoveredAttachmentArchiveWriter> recoveredAttachmentArchiveWriter(
+  RecoveredAttachmentArchiveWriterRef ref,
+) async {
+  final overlayDb = await ref.watch(overlayDatabaseProvider.future);
+  return OverlayRecoveredAttachmentArchiveWriter(
+    overlayDb: overlayDb,
+    archiveDir: ref.watch(attachmentArchiveDirectoryProvider),
+  );
+}
+
+@riverpod
+HistoricalSnapshotReaderFactory historicalSnapshotReaderFactory(
+  HistoricalSnapshotReaderFactoryRef ref,
+) {
+  return const SqliteHistoricalSnapshotReaderFactory();
+}
+
+@riverpod
+Future<CurrentMessagesAttachmentPathLookup> currentMessagesAttachmentPathLookup(
+  CurrentMessagesAttachmentPathLookupRef ref,
+) async {
+  final pathsHelper = await ref.watch(pathsHelperProvider.future);
+  return SourceDatabaseAttachmentPathLookup(
+    databasePath: pathsHelper.chatDBPath,
+    sourceDatabaseOpener: ref.watch(sourceDatabaseOpenerProvider),
+  );
+}

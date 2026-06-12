@@ -3,13 +3,13 @@ class GraphAttachmentArchiveRecord {
     required this.archiveRelativePath,
     required this.archiveAbsolutePath,
     required this.archiveFileExists,
-    required this.legacyImportAttachmentId,
+    required this.retainedImportAttachmentId,
   });
 
   final String archiveRelativePath;
   final String archiveAbsolutePath;
   final bool archiveFileExists;
-  final int legacyImportAttachmentId;
+  final int retainedImportAttachmentId;
 }
 
 abstract interface class GraphAttachmentArchiveLookup {

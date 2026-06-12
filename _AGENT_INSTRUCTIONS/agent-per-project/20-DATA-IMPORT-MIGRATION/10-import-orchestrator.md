@@ -16,7 +16,7 @@ links:
 # Import Orchestrator
 
 > Current conformance note (2026-06-08): ordinary live sync is source-scoped
-> graph build, not retained legacy import/migration. The old retained
+> graph build, not retained historical import/migration. The old retained
 > `ImportOrchestrator` implementation has been removed from active app code.
 > This page preserves historical importer mechanics and the monitor context for
 > interpreting old logs and retained storage only.
@@ -30,7 +30,7 @@ The app includes a `ChatDbChangeMonitor` provider that continuously watches macO
 | Aspect | Detail |
 |--------|--------|
 | **Provider** | `chatDbChangeMonitorProvider` (keepAlive: true) |
-| **Location** | `lib/essentials/db_importers/application/monitor/chat_db_change_monitor_provider.dart` |
+| **Location** | `lib/essentials/conversation_graph/application/monitor/chat_db_change_monitor_provider.dart` |
 | **Poll interval** | Every **15 seconds** |
 | **Detection method** | Compares `MAX(ROWID)` from `message` table against stored value |
 | **Trigger** | When ROWID increases, schedules debounced import (350ms debounce) |
@@ -71,7 +71,7 @@ This ensures the monitor starts at app launch and runs continuously. It is macOS
 ---
 
 ## Purpose
-- Preserve the historical retained legacy importer mechanics for old logs and
+- Preserve the historical retained importer mechanics for old logs and
   architecture archaeology.
 - Make clear that new source ingestion belongs to source-scoped import and graph
   build services, not to the deleted retained import orchestrator.
@@ -84,7 +84,7 @@ This ensures the monitor starts at app launch and runs continuously. It is macOS
 - Retired base importer helpers: `lib/essentials/db_importers/domain/base_table_importer.dart`
 - Retired importer contract: `lib/essentials/db_importers/domain/i_importers.dart/table_importer.dart`
 - Retired progress events: `lib/essentials/db_importers/domain/states/table_import_progress.dart`
-- Riverpod wiring: `lib/essentials/db_importers/feature_level_providers.dart`
+- Retired Riverpod wiring: `lib/essentials/db_importers/feature_level_providers.dart`
 - Retired service registry: `lib/essentials/db_importers/application/services/orchestrated_ledger_import_service.dart`
 
 These retained paths are intentionally not present in the current source tree.
@@ -110,7 +110,7 @@ Current live import/build code is source-scoped and graph-backed.
 
 ## Importer Responsibilities
 - Own one logical retained ledger table (or tight cluster) and copy rows from macOS sources into `macos_import.db` without altering source primary keys.
-- Enrich rows with derived columns when needed, but do not invent cross-table relationships; retained legacy relationship projection happens during migration, while production graph topology is built in the source-scoped graph lifecycle.
+- Enrich rows with derived columns when needed, but do not invent cross-table relationships; retained historical relationship projection happens during migration, while production graph topology is built in the source-scoped graph lifecycle.
 - Use `BaseTableImporter` helpers (`count`, `expectTrueOrThrow`, `expectZeroOrThrow`) to keep validation consistent.
 - Emit progress names that help the UI explain which portion of the pipeline is running.
 
@@ -132,7 +132,7 @@ Current live import/build code is source-scoped and graph-backed.
 
 ## When Adding Importers
 
-Do not add retained legacy importers for ordinary app behavior. New source
+Do not add retained importers for ordinary app behavior. New source
 facts should usually be modeled in `macos_import_ss.db` and projected into
 `working_ss.db`. If an explicit archive/recovery compatibility task truly
 requires retained `macos_import.db` behavior, write a reviewed graph-era plan

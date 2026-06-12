@@ -4,6 +4,8 @@ import '../../../../../../core/util/message_tag_normalizer.dart';
 
 part 'overlay_database.g.dart';
 
+const overlayDatabaseFileName = 'user_overlays.db';
+
 /// Overlay database for user preferences and customizations (user_overlays.db).
 /// This database stores user-specific overrides that enhance graph/source data
 /// without polluting derived databases with UI-specific state.

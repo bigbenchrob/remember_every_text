@@ -6,7 +6,7 @@ part of 'handle_importer_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$handleImporterHash() => r'b67f0088a329cb2dcac06515b804d4d61ed3475b';
+String _$handleImporterHash() => r'77c33ed8982061d4e13db187d469ba78da693eb6';
 
 /// See also [handleImporter].
 @ProviderFor(handleImporter)

@@ -209,7 +209,7 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
   }
 }
 
-// Legacy placeholder widgets removed; dynamic providers now supply content.
+// Retired placeholder widgets removed; dynamic providers now supply content.
 
 class _EndSidebarSyncObserver extends ConsumerWidget {
   const _EndSidebarSyncObserver({required this.mode});

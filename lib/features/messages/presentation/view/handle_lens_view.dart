@@ -6,9 +6,8 @@ import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../config/theme/theme_typography.dart';
 import '../../../../config/theme/widgets/buttons/buttons.dart';
-import '../../../../essentials/db/feature_level_providers.dart';
 import '../../../../essentials/logging/application/app_logger.dart';
-import '../../../contacts/application/services/manual_handle_link_service.dart';
+import '../../../contacts/feature_level_providers.dart';
 import '../../../contacts/presentation/widgets/contact_picker_dialog.dart';
 import '../../../handles/feature_level_providers.dart';
 import '../../application/message_evidence/message_evidence_spine_provider.dart';
@@ -196,9 +195,9 @@ class _ActionBar extends HookConsumerWidget {
   Future<void> _dismiss(WidgetRef ref) async {
     isBusy.value = true;
     try {
-      final overlayDb = await ref.read(overlayDatabaseProvider.future);
-      await overlayDb.setHandleReviewed(handleId);
-      ref.invalidate(strayHandlesProvider);
+      await ref
+          .read(handleReviewActionsProvider.notifier)
+          .markReviewed(handleId: handleId);
     } finally {
       isBusy.value = false;
     }

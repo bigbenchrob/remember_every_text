@@ -5,7 +5,7 @@ import '../../../config/theme/colors/theme_colors.dart';
 import '../../../config/theme/theme_typography.dart';
 import '../../conversation_graph/application/conversation_graph_build_controller_provider.dart';
 import '../../conversation_graph/application/orchestrators/conversation_graph_build_orchestrator.dart';
-import '../../db/application/database_health_audit/database_health_audit_service.dart';
+import '../../db/feature_level_providers.dart';
 import '../../logging/application/app_logger.dart';
 import '../../logging/application/diagnostic_report_actions.dart';
 import '../../logging/infrastructure/log_export_service.dart';
@@ -512,10 +512,10 @@ class _EnvironmentSummaryCard extends StatelessWidget {
           ),
           _DiagnosticRow(
             label: 'Source-scoped import ledger',
-            value: _appDbValue(report.importDatabase),
+            value: _appDbValue(report.sourceScopedImportDatabase),
             colors: colors,
             typography: typography,
-            isGood: report.importDatabase.hasData,
+            isGood: report.sourceScopedImportDatabase.hasData,
           ),
           _DiagnosticRow(
             label: 'Conversation graph',
@@ -816,7 +816,8 @@ List<String> _importFailureNotes(OnboardingEnvironmentReport report) {
     'If the import fails again, use "Send Report To Developer" to have MessageLens prepare an email with the diagnostic report attached when possible.',
   );
 
-  if (!report.importDatabase.exists || !report.importDatabase.hasData) {
+  if (!report.sourceScopedImportDatabase.exists ||
+      !report.sourceScopedImportDatabase.hasData) {
     notes.add(
       'No usable import ledger was left behind, so the next retry will start from a clean import pass.',
     );
@@ -844,7 +845,7 @@ List<String> _graphProjectionFailureNotes(OnboardingEnvironmentReport report) {
     notes.add(message);
   }
 
-  if (report.importDatabase.hasData) {
+  if (report.sourceScopedImportDatabase.hasData) {
     notes.add(
       'The import ledger contains data, so the failure happened while preparing app-facing tables.',
     );

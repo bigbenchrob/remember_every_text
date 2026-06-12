@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
-import '../../../db_importers/domain/ports/message_extractor_port.dart';
-import '../../infrastructure/import_database_provider.dart';
+import '../../domain/ports/import_ledger_port.dart';
+import '../../domain/ports/message_extractor_port.dart';
 
 class MessageRichTextEnrichmentResult {
   const MessageRichTextEnrichmentResult({
@@ -20,55 +20,46 @@ class MessageRichTextEnrichmentResult {
 class MessageRichTextEnricher {
   const MessageRichTextEnricher({
     required this.chatDbPath,
-    required this.importDatabase,
+    required this.importLedger,
     required this.extractor,
     this.extractionLimit = 200000,
   });
 
   final String chatDbPath;
-  final ImportDatabase importDatabase;
+  final ImportLedger importLedger;
   final MessageExtractorPort extractor;
   final int extractionLimit;
 
   Future<MessageRichTextEnrichmentResult> enrichMissingText() async {
-    return _enrichMissingTextWhere(
-      whereClause: 'text IS NULL AND attributed_body_blob IS NOT NULL',
-      whereArgs: const <Object?>[],
-    );
+    return _enrichMissingText(sourceId: null, startedAfterSourceRowId: null);
   }
 
   Future<MessageRichTextEnrichmentResult> enrichMissingTextAfterSourceRowId({
     required int sourceId,
     required int startedAfterSourceRowId,
   }) {
-    return _enrichMissingTextWhere(
-      whereClause:
-          'source_id = ? AND source_rowid > ? '
-          'AND text IS NULL AND attributed_body_blob IS NOT NULL',
-      whereArgs: <Object?>[sourceId, startedAfterSourceRowId],
+    return _enrichMissingText(
+      sourceId: sourceId,
+      startedAfterSourceRowId: startedAfterSourceRowId,
     );
   }
 
   Future<MessageRichTextEnrichmentResult> enrichMissingTextForSource({
     required int sourceId,
   }) {
-    return _enrichMissingTextWhere(
-      whereClause:
-          'source_id = ? AND text IS NULL AND attributed_body_blob IS NOT NULL',
-      whereArgs: <Object?>[sourceId],
+    return _enrichMissingText(
+      sourceId: sourceId,
+      startedAfterSourceRowId: null,
     );
   }
 
-  Future<MessageRichTextEnrichmentResult> _enrichMissingTextWhere({
-    required String whereClause,
-    required List<Object?> whereArgs,
+  Future<MessageRichTextEnrichmentResult> _enrichMissingText({
+    required int? sourceId,
+    required int? startedAfterSourceRowId,
   }) async {
-    final candidates = await importDatabase.database.query(
-      'messages',
-      columns: <String>['ss_id', 'source_rowid', 'attributed_body_blob'],
-      where: whereClause,
-      whereArgs: whereArgs,
-      orderBy: 'source_rowid ASC',
+    final candidates = await importLedger.findMessagesNeedingTextEnrichment(
+      sourceId: sourceId,
+      startedAfterSourceRowId: startedAfterSourceRowId,
     );
 
     if (candidates.isEmpty) {
@@ -92,13 +83,7 @@ class MessageRichTextEnricher {
 
     final blobsBySourceRowId = <int, Uint8List>{};
     for (final candidate in candidates) {
-      final sourceRowId = _readRequiredInt(candidate, 'source_rowid');
-      final blob = candidate['attributed_body_blob'];
-      if (blob is Uint8List) {
-        blobsBySourceRowId[sourceRowId] = blob;
-      } else if (blob is List<int>) {
-        blobsBySourceRowId[sourceRowId] = Uint8List.fromList(blob);
-      }
+      blobsBySourceRowId[candidate.sourceRowId] = candidate.attributedBodyBlob;
     }
 
     final extracted = await extractor.extractMessageTextsFromBlobs(
@@ -107,11 +92,9 @@ class MessageRichTextEnricher {
 
     var enrichedMessageCount = 0;
     var missingExtractionCount = 0;
-    await importDatabase.database.transaction((txn) async {
+    await importLedger.writeTransaction((txn) async {
       for (final candidate in candidates) {
-        final sourceRowId = _readRequiredInt(candidate, 'source_rowid');
-        final ssId = _readRequiredInt(candidate, 'ss_id');
-        final normalized = extracted[sourceRowId]?.trim();
+        final normalized = extracted[candidate.sourceRowId]?.trim();
         if (normalized == null || normalized.isEmpty) {
           missingExtractionCount += 1;
           continue;
@@ -120,7 +103,7 @@ class MessageRichTextEnricher {
           'messages',
           <String, Object?>{'text': normalized},
           where: 'ss_id = ? AND text IS NULL',
-          whereArgs: <Object?>[ssId],
+          whereArgs: <Object?>[candidate.ssId],
         );
         if (updated > 0) {
           enrichedMessageCount += 1;
@@ -134,16 +117,5 @@ class MessageRichTextEnricher {
       missingExtractionCount: missingExtractionCount,
       extractorAvailable: true,
     );
-  }
-
-  static int _readRequiredInt(Map<String, Object?> row, String field) {
-    final value = row[field];
-    if (value is int) {
-      return value;
-    }
-    if (value is num) {
-      return value.toInt();
-    }
-    throw StateError('messages.$field is required');
   }
 }

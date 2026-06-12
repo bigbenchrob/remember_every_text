@@ -13,7 +13,7 @@ import '../../application/view_spec/resolver_tools/recovered_messages_heatmap_da
 import '../../domain/calendar_heatmap_timeline_data.dart';
 import '../../domain/message_evidence/message_evidence_scope.dart';
 import '../../domain/message_evidence/recovered_message_evidence.dart';
-import '../../infrastructure/repositories/recovered_unlinked_messages_provider.dart';
+import '../../feature_level_providers.dart';
 import '../view_model/timeline/current_visible_month_provider.dart';
 
 class RecoveredMessagesHeatmapSidebar extends ConsumerWidget {

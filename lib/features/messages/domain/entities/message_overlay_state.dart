@@ -9,7 +9,7 @@ class MessageOverlayState {
     this.priority,
     this.remindAtUtc,
     this.hasGraphNativeOverlay = false,
-    this.usedLegacyAnnotationFallback = false,
+    this.usedRetainedAnnotationFallback = false,
     this.usedGuidFallback = false,
     this.skippedGuidFallbackBecauseAmbiguous = false,
   });
@@ -35,10 +35,10 @@ class MessageOverlayState {
   /// True when user intent was found on the graph-native overlay tables.
   final bool hasGraphNativeOverlay;
 
-  /// True when legacy integer-keyed message annotations were used.
-  final bool usedLegacyAnnotationFallback;
+  /// True when retained integer-keyed message annotations were used.
+  final bool usedRetainedAnnotationFallback;
 
-  /// True when legacy GUID-keyed saved/tag rows were used.
+  /// True when retained GUID-keyed saved/tag rows were used.
   final bool usedGuidFallback;
 
   /// True when GUID-keyed rows existed but were intentionally not applied
@@ -64,7 +64,7 @@ class MessageOverlayState {
     int? priority,
     String? remindAtUtc,
     bool? hasGraphNativeOverlay,
-    bool? usedLegacyAnnotationFallback,
+    bool? usedRetainedAnnotationFallback,
     bool? usedGuidFallback,
     bool? skippedGuidFallbackBecauseAmbiguous,
   }) {
@@ -79,8 +79,8 @@ class MessageOverlayState {
       remindAtUtc: remindAtUtc ?? this.remindAtUtc,
       hasGraphNativeOverlay:
           hasGraphNativeOverlay ?? this.hasGraphNativeOverlay,
-      usedLegacyAnnotationFallback:
-          usedLegacyAnnotationFallback ?? this.usedLegacyAnnotationFallback,
+      usedRetainedAnnotationFallback:
+          usedRetainedAnnotationFallback ?? this.usedRetainedAnnotationFallback,
       usedGuidFallback: usedGuidFallback ?? this.usedGuidFallback,
       skippedGuidFallbackBecauseAmbiguous:
           skippedGuidFallbackBecauseAmbiguous ??

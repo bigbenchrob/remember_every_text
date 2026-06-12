@@ -379,7 +379,7 @@ class _DevEnvironmentSummary extends StatelessWidget {
             ),
           ),
           Text(
-            'Source-scoped import ledger: ${_probeSummary(report.importDatabase)}',
+            'Source-scoped import ledger: ${_probeSummary(report.sourceScopedImportDatabase)}',
             style: typography.caption.copyWith(
               color: colors.content.textSecondary,
             ),

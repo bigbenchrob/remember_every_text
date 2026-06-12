@@ -2,9 +2,9 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:remember_this_text/essentials/db_importers/domain/ports/message_extractor_port.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_rich_text_enricher.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/ports/message_extractor_port.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart';
 import 'package:sqflite/sqflite.dart';
@@ -53,7 +53,7 @@ void main() {
 
       final result = await MessageRichTextEnricher(
         chatDbPath: '/fake/chat.db',
-        importDatabase: importDatabase,
+        importLedger: importDatabase,
         extractor: const _FakeExtractor(<int, String>{100: ' decoded text '}),
       ).enrichMissingText();
 
@@ -84,7 +84,7 @@ void main() {
 
     final enricher = MessageRichTextEnricher(
       chatDbPath: '/fake/chat.db',
-      importDatabase: importDatabase,
+      importLedger: importDatabase,
       extractor: const _FakeExtractor(<int, String>{100: 'decoded text'}),
     );
 
@@ -115,7 +115,7 @@ void main() {
       final result =
           await MessageRichTextEnricher(
             chatDbPath: '/fake/chat.db',
-            importDatabase: importDatabase,
+            importLedger: importDatabase,
             extractor: const _FakeExtractor(<int, String>{
               100: 'old decoded text',
               101: 'new decoded text',
@@ -146,7 +146,7 @@ void main() {
 
     final result = await MessageRichTextEnricher(
       chatDbPath: '/fake/chat.db',
-      importDatabase: importDatabase,
+      importLedger: importDatabase,
       extractor: const _FakeExtractor(<int, String>{
         100: 'decoded',
       }, available: false),

@@ -18,14 +18,16 @@ import 'package:remember_this_text/essentials/conversation_graph/infrastructure/
 import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/chat_to_handle_projection_repository.dart';
 import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/chat_to_message_projection_repository.dart';
 import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/contact_projection_repository.dart';
+import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/drift_graph_projection_resetter.dart';
 import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/handle_projection_repository.dart';
 import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/message_projection_repository.dart';
 import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/message_to_attachment_projection_repository.dart';
-import 'package:remember_this_text/essentials/db_importers/domain/ports/message_extractor_port.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/archives/historical_messages_archive_source_registrar.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/archives/source_scoped_archive_import_service.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/ports/message_extractor_port.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/source_database/sqflite_source_database.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -62,11 +64,12 @@ void main() {
     graphDatabase = await openConversationGraphTestDatabase();
     final importService = SourceScopedArchiveImportService(
       registrar: HistoricalMessagesArchiveSourceRegistrar(
-        importDatabase: importDatabase,
+        importLedger: importDatabase,
       ),
       richTextExtractor: const _FakeExtractor(<int, String>{
         300: 'enriched archive message',
       }),
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
     );
     service = SourceScopedArchiveGraphImportService(
       importService: importService,
@@ -114,8 +117,10 @@ void main() {
       ),
     );
     removalService = SourceScopedArchiveGraphRemovalService(
-      importDatabase: importDatabase,
-      graphDatabase: graphDatabase,
+      importLedger: importDatabase,
+      graphProjectionResetter: DriftGraphProjectionResetter(
+        graphDatabase: graphDatabase,
+      ),
       handleProjector: HandleProjector(
         repository: SqliteHandleProjectionRepository(
           importDatabase: importDatabase,

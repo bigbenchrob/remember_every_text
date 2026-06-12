@@ -3,20 +3,11 @@ import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:path/path.dart' as path;
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../onboarding/application/onboarding_environment_report_provider.dart';
 import '../../../services/startup_flags_service.dart';
-import '../../../source_scoped_import/infrastructure/import_database_provider.dart'
-    as source_scoped_import;
-import '../../feature_level_providers.dart';
-import '../../infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import 'database_health_audit_models.dart';
-import 'database_health_audit_queries.dart';
-
-part 'database_health_audit_service.g.dart';
+import 'database_health_query_layer.dart';
 
 const _databaseHealthSchemaVersion = '1.0.0';
 const _databaseHealthAuditVersion = 'phase1';
@@ -30,52 +21,6 @@ const _defaultBuildNumber = String.fromEnvironment(
   'FLUTTER_BUILD_NUMBER',
   defaultValue: '4',
 );
-
-@Riverpod(keepAlive: true)
-Future<DatabaseHealthAuditService> databaseHealthAuditService(Ref ref) async {
-  final sourceScopedImportDb = await ref.read(
-    source_scoped_import.importDatabaseProvider.future,
-  );
-  final conversationGraphDb = await ref.read(
-    driftConversationGraphDatabaseProvider.future,
-  );
-  final overlayDb = await ref.read(overlayDatabaseProvider.future);
-  final hasFullDiskAccess = ref.read(onboardingFullDiskAccessProvider);
-
-  return DatabaseHealthAuditService(
-    hasFullDiskAccess: hasFullDiskAccess,
-    queryLayers: <DatabaseHealthQueryLayer>[
-      ReadOnlySqliteFileHealthQueryLayer(
-        databaseKey: 'import',
-        role: 'retained_archive_metadata',
-        databasePath: path.join(databaseDirectoryPath, 'macos_import.db'),
-      ),
-      ReadOnlySqliteFileHealthQueryLayer(
-        databaseKey: 'working',
-        role: 'retained_historical_reference',
-        databasePath: path.join(databaseDirectoryPath, 'working.db'),
-      ),
-      SourceScopedImportDatabaseHealthQueryLayer(
-        database: sourceScopedImportDb,
-        databasePath: path.join(
-          databaseDirectoryPath,
-          source_scoped_import.importDatabaseFileName,
-        ),
-      ),
-      ConversationGraphDatabaseHealthQueryLayer(
-        database: conversationGraphDb,
-        databasePath: path.join(
-          databaseDirectoryPath,
-          conversationGraphDatabaseFileName,
-        ),
-      ),
-      OverlayDatabaseHealthQueryLayer(
-        database: overlayDb,
-        databasePath: path.join(databaseDirectoryPath, 'user_overlays.db'),
-      ),
-    ],
-  );
-}
 
 class DatabaseHealthAuditService {
   DatabaseHealthAuditService({
@@ -757,9 +702,7 @@ _tableSpecsByDatabase = <String, List<AuditTableSpec>>{
         AuditImportantColumnSpec('import_attachment_id'),
         AuditImportantColumnSpec('local_path'),
       ],
-      notes: <String>[
-        'Retained recovered-message attachment reference rows.',
-      ],
+      notes: <String>['Retained recovered-message attachment reference rows.'],
     ),
   ],
   'source_scoped_import': <AuditTableSpec>[

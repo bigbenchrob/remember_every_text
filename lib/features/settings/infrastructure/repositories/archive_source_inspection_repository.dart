@@ -1,9 +1,13 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sqlite3/sqlite3.dart';
 
+import '../../../../essentials/db/feature_level_providers.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
+
+part 'archive_source_inspection_repository.g.dart';
 
 final class ArchiveSourceInspection {
   const ArchiveSourceInspection({
@@ -73,11 +77,14 @@ final class ArchiveSourceDateRange {
 }
 
 class ArchiveSourceInspectionRepository {
-  const ArchiveSourceInspectionRepository();
+  const ArchiveSourceInspectionRepository({
+    required ConversationGraphDatabase? graphDb,
+  }) : _graphDb = graphDb;
+
+  final ConversationGraphDatabase? _graphDb;
 
   Future<ArchiveSourceInspection> inspectFolder({
     required String folderPath,
-    ConversationGraphDatabase? graphDb,
   }) async {
     final selectedDirectory = Directory(folderPath);
     final sourceLabel = path.basename(folderPath);
@@ -142,7 +149,7 @@ class ArchiveSourceInspectionRepository {
         final dateRange = _readArchiveDateRange(database);
         final dryRunEstimate = await _estimateDryRunAgainstConversationGraph(
           sourceDatabase: database,
-          graphDb: graphDb,
+          graphDb: _graphDb,
         );
 
         return ArchiveSourceInspection(
@@ -185,6 +192,20 @@ class ArchiveSourceInspectionRepository {
       );
     }
   }
+}
+
+@riverpod
+Future<ArchiveSourceInspectionRepository> archiveSourceInspectionRepository(
+  ArchiveSourceInspectionRepositoryRef ref,
+) async {
+  ConversationGraphDatabase? graphDb;
+  try {
+    graphDb = await ref.watch(driftConversationGraphDatabaseProvider.future);
+  } catch (_) {
+    graphDb = null;
+  }
+
+  return ArchiveSourceInspectionRepository(graphDb: graphDb);
 }
 
 int _readCount(Database database, String sql) {

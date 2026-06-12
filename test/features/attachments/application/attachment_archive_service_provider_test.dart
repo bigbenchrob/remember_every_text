@@ -11,47 +11,11 @@ import 'package:remember_this_text/essentials/source_scoped_import/domain/source
 import 'package:remember_this_text/features/attachments/application/archive_settings_provider.dart';
 import 'package:remember_this_text/features/attachments/application/attachment_archive_service_provider.dart';
 import 'package:remember_this_text/features/attachments/application/attachment_recovery_hint_storage.dart';
-import 'package:sqflite/sqflite.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:remember_this_text/features/attachments/application/current_messages_attachment_path_lookup.dart';
+import 'package:remember_this_text/features/attachments/feature_level_providers.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-
-  setUpAll(() {
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
-  });
-
-  Future<void> ensureTestChatDb(String dbPath) async {
-    final db = await openDatabase(
-      dbPath,
-      version: 1,
-      onCreate: (db, version) async {
-        await db.execute('CREATE TABLE attachment (filename TEXT)');
-      },
-    );
-    await db.execute('CREATE TABLE IF NOT EXISTS attachment (filename TEXT)');
-    await db.close();
-  }
-
-  Future<void> upsertTestChatAttachmentPath({
-    required String dbPath,
-    required int attachmentId,
-    required String localPath,
-  }) async {
-    final db = await openDatabase(dbPath, version: 1);
-    await db.execute('CREATE TABLE IF NOT EXISTS attachment (filename TEXT)');
-    await db.delete(
-      'attachment',
-      where: 'ROWID = ?',
-      whereArgs: [attachmentId],
-    );
-    await db.rawInsert(
-      'INSERT INTO attachment(ROWID, filename) VALUES (?, ?)',
-      [attachmentId, localPath],
-    );
-    await db.close();
-  }
 
   Future<void> insertGraphAttachment(
     ConversationGraphDatabase graphDb, {
@@ -185,8 +149,8 @@ void main() {
     late OverlayDatabase overlayDb;
     late ConversationGraphDatabase graphDb;
     late Directory tempDir;
-    late String chatDbPath;
     late ProviderContainer container;
+    late _TestCurrentMessagesAttachmentPathLookup attachmentPathLookup;
 
     setUp(() async {
       overlayDb = OverlayDatabase(NativeDatabase.memory());
@@ -194,8 +158,7 @@ void main() {
       tempDir = await Directory.systemTemp.createTemp(
         'attachment-working-sweep-test-',
       );
-      chatDbPath = '${tempDir.path}/chat.db';
-      await ensureTestChatDb(chatDbPath);
+      attachmentPathLookup = _TestCurrentMessagesAttachmentPathLookup();
       await overlayDb.writeOverlaySetting(
         settingKey: 'attachment_archive_enabled',
         settingValue: 'true',
@@ -207,8 +170,8 @@ void main() {
           driftConversationGraphDatabaseProvider.overrideWith(
             (ref) async => graphDb,
           ),
-          attachmentArchiveMessagesDatabasePathProvider.overrideWith(
-            (ref) async => chatDbPath,
+          currentMessagesAttachmentPathLookupProvider.overrideWith(
+            (ref) async => attachmentPathLookup,
           ),
           attachmentArchiveDirectoryProvider.overrideWith(
             (ref) => '${tempDir.path}/archive',
@@ -361,11 +324,7 @@ void main() {
       final liveSource = File('${tempDir.path}/messages/live-path.png');
       await liveSource.parent.create(recursive: true);
       await liveSource.writeAsString('live-path');
-      await upsertTestChatAttachmentPath(
-        dbPath: chatDbPath,
-        attachmentId: 500,
-        localPath: liveSource.path,
-      );
+      attachmentPathLookup.pathsBySourceRowId[500] = liveSource.path;
 
       await insertGraphAttachment(
         graphDb,
@@ -660,4 +619,14 @@ void main() {
       expect(skippedSamples, contains('missing-second.png'));
     });
   });
+}
+
+final class _TestCurrentMessagesAttachmentPathLookup
+    implements CurrentMessagesAttachmentPathLookup {
+  final Map<int, String> pathsBySourceRowId = <int, String>{};
+
+  @override
+  Future<String?> attachmentPathForSourceRowId(int sourceRowId) async {
+    return pathsBySourceRowId[sourceRowId];
+  }
 }

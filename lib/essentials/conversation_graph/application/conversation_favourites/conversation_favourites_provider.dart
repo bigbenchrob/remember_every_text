@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../db/feature_level_providers.dart';
+import '../../infrastructure/repositories/conversation_favourites_store_provider.dart';
 
 part 'conversation_favourites_provider.g.dart';
 
@@ -76,8 +76,6 @@ class ConversationFavourites {
 @Riverpod(keepAlive: true)
 class ConversationFavouritesController
     extends _$ConversationFavouritesController {
-  static const String _settingPrefix = 'conversation_favourites';
-
   bool _restoreScheduled = false;
   bool _hasLocalMutation = false;
 
@@ -100,25 +98,16 @@ class ConversationFavouritesController
   }
 
   Future<void> _persistCoreFavourites() async {
-    final overlayDb = await ref.read(overlayDatabaseProvider.future);
-    await overlayDb.writeOverlaySetting(
-      settingKey: _settingKeyFor(ConversationFavouriteGroup.core),
-      settingValue: state.coreStorageValue,
-    );
+    final store = await ref.read(conversationFavouritesStoreProvider.future);
+    await store.writeCoreFavourites(state.coreStorageValue);
   }
 
   Future<void> _restoreFavourites() async {
-    final overlayDb = await ref.read(overlayDatabaseProvider.future);
-    final rawValue = await overlayDb.readOverlaySetting(
-      _settingKeyFor(ConversationFavouriteGroup.core),
-    );
+    final store = await ref.read(conversationFavouritesStoreProvider.future);
+    final rawValue = await store.readCoreFavourites();
     if (_hasLocalMutation) {
       return;
     }
     state = ConversationFavourites.fromCoreStorage(rawValue);
-  }
-
-  static String _settingKeyFor(ConversationFavouriteGroup group) {
-    return '$_settingPrefix/${group.storageKey}';
   }
 }

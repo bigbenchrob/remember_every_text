@@ -2,7 +2,7 @@
 tier: project
 scope: source-scoped-graph-migration
 status: active
-last_reviewed: 2026-06-04
+last_reviewed: 2026-06-09
 depends_on:
   - 70-GRAPH-SYSTEM-COMPLETION-ROADMAP.md
   - 71-LEGACY-DEPENDENCY-MATRIX.md
@@ -958,8 +958,11 @@ Remove legacy systems only after their blockers close.
   overlay intent at read time.
 - The unused `lib/essentials/contacts/domain/entities/` contact aggregate
   files were retired. They carried obsolete `pinnedRank` terminology and had no
-  runtime imports; the still-used `ContactId` value object remains in
-  `lib/essentials/contacts/domain/value_objects/`.
+  runtime imports.
+- Removed the now-unused `ContactId` / `MessageId` Freezed value objects and
+  the unreferenced JSON converters in `domain_driven_development`. Graph-era
+  contact/message identity is source-scoped integer identity plus typed
+  graph/evidence read models, not these old string value-object wrappers.
 - Active contact favourite read models now use `favoritedAt` instead of
   `pinnedAt`, and provider comments describe graph contact facts rather than
   working-database metadata. Persisted overlay column names remain unchanged for
@@ -1107,7 +1110,7 @@ Remove legacy systems only after their blockers close.
 - Root agent quick-reference files (`AGENTS.md` and
   `.github/copilot-instructions.md`) now direct ordinary database access to the
   source-scoped import / conversation graph / overlay providers, classify
-  `sqfliteImportDatabaseProvider` as retained import metadata compatibility,
+  `retainedArchiveMetadataStoreProvider` as retained archive metadata compatibility,
   and state that retained `working.db` has no central app provider.
 - Active instruction index links now point to current `01-PROJECT` and
   `42-SPEC-SYSTEM` paths instead of removed `00-PROJECT`, `00-GLOBAL`,
@@ -1293,7 +1296,7 @@ Remove legacy systems only after their blockers close.
   `DbMigrationResult`, and matching tests. Retained `working.db` storage/schema
   remains available for diagnostics/reset/storage-retirement review, but no
   retained projection execution service remains.
-- Trimmed the retained `SqfliteImportDatabase` public helper surface by
+- Trimmed the retained `RetainedArchiveMetadataDatabase` public helper surface by
   deleting uncalled legacy ledger-reset, row-existence, and spam-flag helpers.
   The retained `macos_import.db` wrapper remains available for historical
   archive metadata, health diagnostics, reset/storage checks, and retained
@@ -1318,11 +1321,11 @@ Remove legacy systems only after their blockers close.
   after Historical Archives removal moved to source-scoped archive graph
   deletion. The retained import DB wrapper still exposes archive-source
   metadata needed by the settings workflow.
-- Removed the generic retained `SqfliteImportDatabase.rawQuery` wrapper after
+- Removed the generic retained `RetainedArchiveMetadataDatabase.rawQuery` wrapper after
   caller scans confirmed health diagnostics and tests use their own
   infrastructure query boundaries. This keeps retained `macos_import.db`
   access limited to named metadata operations.
-- Removed the unused retained `SqfliteImportDatabase.countRows` helper. Retained
+- Removed the unused retained `RetainedArchiveMetadataDatabase.countRows` helper. Retained
   import row counts now live only behind the database-health query layer instead
   of on the retained import DB wrapper itself.
 - Removed the retained archive batch-count compatibility read from Historical
@@ -1365,7 +1368,7 @@ Remove legacy systems only after their blockers close.
   `working.db` files may still be deleted by reset or inspected read-only by
   diagnostics, but no app code instantiates the old schema.
 - Historical Archives workflow presentation no longer imports
-  `SqfliteImportDatabase` or reads `sqfliteImportDatabaseProvider` directly.
+  `RetainedArchiveMetadataDatabase` or reads `retainedArchiveMetadataStoreProvider` directly.
   Retained `macos_import.db.historical_archive_sources` read/write access is
   quarantined behind `HistoricalArchiveSourcesRepository`, keeping archive
   metadata compatibility in infrastructure while source-scoped archive
@@ -1429,11 +1432,479 @@ Remove legacy systems only after their blockers close.
   `macos_import.db` / `working.db` references mean storage, metadata,
   diagnostics, reset cleanup, or compatibility-key lookup. They no longer
   describe retained archive projection as a current fallback execution path.
-- Historical Archives metadata now reads through
-  `retainedArchiveMetadataDatabaseProvider`, a semantic alias over the retained
-  `macos_import.db` metadata store. The lower-level `sqfliteImportDatabase`
-  provider remains only as the centralized compatibility/storage owner, while
-  new settings/archive callers use the semantic retained-metadata boundary.
+- Historical Archives metadata now reads through the typed
+  `RetainedArchiveMetadataStore` contract. The central DB provider remains the
+  sole owner that constructs the retained `macos_import.db` archive metadata
+  adapter; settings/archive callers use the semantic store boundary rather than
+  importing the concrete database wrapper.
+- Retained database filenames are now centralized in the DB dependency entry
+  point as `retainedArchiveMetadataDatabaseFileName` and
+  `retainedHistoricalReferenceDatabaseFileName`. Reset and database-health
+  code no longer hard-code `macos_import.db` / `working.db` outside that
+  retained-storage boundary.
+- Retained filename tests now assert against the central constants instead of
+  repeating raw database names, and `RetainedArchiveMetadataDatabase` has a class-level
+  comment documenting that fresh files are archive-metadata-only while old
+  upgrade paths exist for historical compatibility.
+- A production/test scan for raw `macos_import.db` / `working.db` strings now
+  resolves only to the central retained filename constants.
+- Historical archive source metadata repository constructor and field names now
+  use `metadataDb` / `_metadataDb`, avoiding generic import-ledger terminology
+  inside the settings metadata boundary.
+- Message data reset support logs now name retained metadata, source-scoped
+  import, and source-scoped graph databases explicitly instead of referring to
+  generic import/projection databases.
+- Retained metadata database tests and health-audit test names now refer to the
+  retained archive metadata role rather than calling the wrapper an active
+  import database. Local retained-metadata variables now use `metadataDb`.
+- Active database access docs now name `retainedArchiveMetadataStoreProvider`
+  as the retained archive-source metadata store for settings metadata plus
+  reset/storage cleanup. The central DB provider remains the only production
+  owner that imports and constructs the concrete retained database adapter.
+- Onboarding environment reporting now calls the app setup ledger
+  `sourceScopedImportDatabase`, and gate/reset diagnostic log keys use
+  `sourceScopedImportDb*`. This keeps onboarding readiness language separate
+  from retained archive metadata storage.
+- Attachment cross-snapshot mapping comments now distinguish canonical graph
+  `ss_id` endpoints from the temporary overlay-compatible
+  `(message_guid, import_attachment_id)` archive key. Historical attachment
+  recovery mapping is documented as source-scoped import ledger plus graph
+  topology, not retained `macos_import.db` / `working.db` projection storage.
+- The remaining import-debug settings comments now describe retained database
+  diagnostics generically rather than implying an active retained import
+  execution database.
+- Active environment safety and database-health README docs now describe
+  retained `macos_import.db` as archive-source metadata storage and retained
+  `working.db` as historical reference/storage inventory, not as an active
+  retained import/projection pair.
+- Onboarding/archive coordination docs now describe retained files as metadata,
+  diagnostics, reset, and historical-reference storage. Mentions of
+  `DbImportControlViewModel` / `runImportAndMigration()` are now explicit
+  "do not call retired paths" guardrails rather than live service ownership.
+- The top-level data-location index now points retained archive-source metadata
+  readers at the retained metadata store boundary and describes `import_log` /
+  `migrate_log` as historical retained diagnostics rather than active graph
+  lifecycle logs.
+- AddressBook database docs now describe contact facts flowing into the
+  source-scoped import ledger and graph contact/handle identity. They no longer
+  tell application code to use retained `db-working.participants` as the
+  projected contact authority.
+- Contact/participant identity docs now treat old retained
+  `working.participants` rows as historical-file interpretation only and no
+  longer reference the removed retained Drift `WorkingParticipants` class.
+- Project overview, architecture overview, and essentials index now use
+  retained metadata/reference terminology. They point retained archive metadata
+  callers at the semantic retained metadata store boundary instead of
+  suggesting the retained database provider as a normal feature entry point.
+- Message, onboarding, and contact-name feature docs now distinguish retained
+  archive-source metadata / historical-reference storage from active graph
+  authority. The docs no longer describe retained `working.db` as ordinary
+  archive/recovery compatibility for production message evidence.
+- Chats and chat-handles feature docs now use the same retained-reference
+  vocabulary: conversation and handle truth are graph-backed; retained
+  `working.db` / canonical-handle rows are historical/reference context only.
+- Remaining current feature docs now avoid "retained legacy" as generic
+  terminology. They distinguish retained historical/reference material from
+  active graph, overlay, and evidence-spine ownership.
+- Onboarding/archive docs now use retained historical/reference terminology
+  for old `macos_import.db` / `working.db` attachment-recovery context while
+  preserving the current rule that archive metadata is overlay-owned and graph
+  recovery maps through source-scoped identity first.
+- Source database and retained import/migration docs now distinguish source-
+  scoped graph import/projection from retained historical import/projection
+  mechanics. These docs still preserve old mechanics for interpreting old logs
+  and data folders, but no longer describe them as active legacy authority.
+- Canonical pipeline-invariant and database-health docs now classify old
+  `macos_import.db` / `working.db` access as retained historical/reference
+  storage. Failure-mode docs still forbid ordinary app surfaces from reopening
+  those files as authority.
+- Build-handoff guidance now uses the same retained historical terminology for
+  old import/projection code and keeps it limited to explicit
+  archive/recovery compatibility or diagnostics.
+- Production retained-database access scan is now small and classified:
+  reset/storage infrastructure owns low-level retained file closing, Historical
+  Archives reads retained metadata through the semantic provider, and recovered
+  message evidence uses graph rows rather than retained `working.db` rows.
+- The storage-retention register now uses retained historical storage language
+  in its active register sections while preserving explicit compatibility
+  boundaries for old data folders and archive metadata.
+- A remaining navigation comment now refers to retired placeholder widgets
+  rather than "legacy" placeholders, keeping active-code terminology focused on
+  intentional compatibility bridges.
+- Overlay identity audit now has a current implementation snapshot that
+  classifies remaining active-code `legacy` symbols as intentional old-overlay
+  key bridges. Those bridge names are preserved until old overlay rows are
+  migrated or intentionally retained read-only.
+- Architecture guard test wording now refers to tracked temporary exceptions
+  rather than "legacy exceptions"; remaining test uses of `legacy` cover
+  intentional overlay/id compatibility behavior.
+- Added an architecture tripwire that keeps direct
+  `retainedArchiveMetadataStoreProvider` access limited to reset/storage
+  infrastructure and the Historical Archives repository boundary. Archive
+  metadata readers should depend on `RetainedArchiveMetadataStore`, while the
+  concrete `RetainedArchiveMetadataDatabase` adapter remains quarantined behind
+  the central DB provider.
+- Added a companion architecture tripwire that keeps retained `working.db`
+  filename access limited to central DB constants, reset cleanup, and database
+  health inspection. Ordinary code should not add retained working-file access.
+- Added a retained database filename-literal tripwire so `macos_import.db` and
+  `working.db` code literals stay centralized in `feature_level_providers.dart`.
+  Other code must use the named retained filename constants.
+- Added an architecture tripwire that forbids retired retained import/migration
+  execution symbols and package paths from returning to `lib/`. Ordinary
+  import/projection must remain source-scoped graph lifecycle work.
+- Added a retained import-wrapper import tripwire so
+  `RetainedArchiveMetadataDatabase` remains quarantined behind the central DB
+  provider instead of spreading into ordinary feature code. Historical Archives
+  uses the typed retained metadata store boundary.
+- Centralized the overlay database filename as `overlayDatabaseFileName` on the
+  overlay Drift database. The graph health and database health paths now use
+  the shared constant instead of hard-coded `user_overlays.db` literals.
+- Added an architecture tripwire that keeps the `user_overlays.db` filename
+  literal centralized on the overlay database type.
+- Added an architecture tripwire that keeps app database construction behind
+  database classes and provider boundaries. Feature code should consume named
+  providers rather than constructing import, graph, overlay, or retained
+  database instances directly.
+- Conversation graph readiness and maintenance-lock diagnostics now interpolate
+  `conversationGraphDatabaseFileName` instead of hard-coding `working_ss.db`
+  inside production code.
+- Added an architecture tripwire that keeps source-scoped database filename
+  literals centralized on `importDatabaseFileName` and
+  `conversationGraphDatabaseFileName`.
+- Added an architecture tripwire that keeps active-code `legacy` terminology
+  quarantined inside explicit old-overlay/key compatibility bridges. New
+  production code should use graph, retained metadata, retained reference, or
+  source-scoped terminology instead of introducing new legacy-named concepts.
+- Attachment archive compatibility read models now use
+  `retainedImportAttachmentId` wording at the graph boundary. The persisted
+  overlay column remains `import_attachment_id`, but active typed code no
+  longer describes this as a legacy import attachment identity.
+- Focused architecture and attachment-archive bridge tests confirm the
+  retained/source-scoped filename guards and archive compatibility read model
+  remain intact after the terminology hardening pass.
+- Moved the Rust attributed-body extractor port, implementation, and provider
+  from `essentials/db_importers` into `essentials/source_scoped_import`. The
+  extractor is now owned by source-scoped message enrichment and archive import
+  rather than the retired import-execution folder.
+- Moved the shared execution gate from `essentials/db_importers` into
+  `essentials/conversation_graph/application/orchestration` as
+  `GraphMaintenanceExecutionGate`. Live polling and Historical Archives now
+  coordinate through a graph-maintenance lifecycle owner instead of an
+  importer-owned gate. `db_importers` is now reduced to live source monitoring
+  plus retained database debug settings.
+- Moved retained database debug settings from `essentials/db_importers` into
+  `essentials/db/application` as `RetainedDatabaseDebugSettings`. The retained
+  metadata DB wrapper now depends on a database-layer diagnostic setting, not
+  an importer-layer setting. `db_importers` now contains only the live
+  `chat.db` monitor.
+- Moved the live `chat.db` monitor from `essentials/db_importers` into
+  `essentials/conversation_graph/application/monitor`. The public
+  `chatDbChangeMonitorProvider` name is preserved, but ownership now matches
+  its current responsibility: detecting live source changes and triggering
+  conversation graph lifecycle work.
+- Removed the retired `essentials/db_importers` source and test folders
+  entirely. Added an architecture tripwire that fails if those folders return;
+  source fact importers belong to `source_scoped_import`, graph lifecycle work
+  belongs to `conversation_graph`, and retained DB diagnostics belong to
+  `essentials/db`.
+- Removed the empty retired `essentials/db_migrate` source and test directory
+  shells after confirming no files remained. The retired-folder tripwire now
+  protects both `db_importers` and `db_migrate` so old retained execution roots
+  cannot quietly reappear.
+- Removed empty proof-era `test/essentials/incremental_update_ss` and retained
+  Drift `working` schema test/source directory shells. The retired-folder
+  tripwire now also protects `incremental_update_ss` and the removed retained
+  Drift working-schema path while leaving future graph-native search indexing
+  paths available if they are deliberately introduced.
+- Re-ran full `flutter analyze` after source-scoped import/graph ownership
+  moves and fixed the remaining test import-order fallout. Focused
+  architecture, source-scoped archive import, graph archive import, and
+  rich-text enrichment tests pass.
+- Fresh active source/test scans confirm the retired `db_importers`,
+  `db_migrate`, `incremental_update_ss`, and retained Drift `working` schema
+  paths are absent except for the intentional architecture tripwire strings.
+- Retained `macos_import.db` and `working.db` are now documented as
+  transitional compatibility storage, not permanent system-of-record storage
+  and not deletion targets by default. Future slices should reduce retained
+  purposes through the storage retention register, and full deletion requires
+  archive/recovery independence, graph/source-scoped diagnostic equivalents,
+  historical-reference migration/export/rejection, and a user-safe
+  backup/retention path.
+- Added an architecture tripwire that keeps
+  `retainedArchiveMetadataStoreProvider` limited to reset cleanup and the
+  Historical Archives metadata repository. This turns the retained
+  transitional-storage policy into a source-level guard: ordinary app behavior
+  must not start reading or writing retained `macos_import.db` through the
+  semantic metadata provider.
+- Renamed the retained `macos_import.db` wrapper from the old
+  `SqfliteImportDatabase` / `sqflite_import_database.dart` identity to
+  `RetainedArchiveMetadataDatabase` /
+  `retained_archive_metadata_database.dart`, and collapsed the old
+  `sqfliteImportDatabaseProvider` alias into the single semantic
+  `retainedArchiveMetadataStoreProvider`. The old class, provider, and file
+  names are now guarded by the retired import/projection tripwire.
+- Added `RetainedArchiveMetadataStore` as the narrow settings/archive metadata
+  contract. Feature infrastructure no longer imports the concrete retained DB
+  adapter; the architecture tripwire now allows that adapter import only in the
+  central DB provider.
+- Renamed the final active message overlay compatibility bridge terminology
+  from legacy row ownership to retained-overlay identity. Rowid annotation
+  fallback is now described as retained annotation fallback, GUID fallback
+  remains explicitly GUID-keyed, and active `lib/` code is protected by an
+  architecture tripwire that forbids new legacy-named concepts.
+- Updated the deterministic historical attachment recovery planning notes so
+  future implementation targets source-scoped import facts, graph
+  message/attachment edges, and named retained overlay-compatible archive
+  bridges. The folder no longer instructs future work to use the removed
+  `sqfliteImportDatabaseProvider`, retained `working.db` attachment identity,
+  or retained import/working DBs as the ordinary recovery mapping spine.
+- Added a source database port for source-scoped import reads:
+  `SourceDatabaseOpener` / `ReadOnlySourceDatabase`. Source-scoped application
+  importers now depend on that port, while the sqflite `chat.db` /
+  AddressBook adapter is quarantined in infrastructure. An architecture
+  tripwire now prevents `package:sqflite` from returning to
+  `source_scoped_import/application`. Import DB write transactions now expose a
+  small infrastructure-owned `ImportDatabaseWriteTransaction` wrapper so
+  application importers do not depend on sqflite `Transaction` or
+  `ConflictAlgorithm` types.
+- Added an `ImportLedger` domain port for source-scoped import application
+  services. Importers, archive registration, and rich-text enrichment now type
+  themselves against the semantic ledger port instead of the concrete
+  `ImportDatabase` infrastructure wrapper. Provider files remain composition
+  points for wiring concrete dependencies. An architecture tripwire now guards
+  non-provider source-scoped import services from importing the concrete import
+  database provider.
+- Added `sourceScopedImportLedgerProvider` as the source-scoped import
+  feature-level provider for the import ledger port. Source-scoped application
+  provider files now watch that semantic provider instead of
+  `importDatabaseProvider` directly, and the architecture tripwire now protects
+  the entire `source_scoped_import/application` tree from importing the
+  concrete import database provider.
+- Renamed source-scoped application constructor fields, provider locals, and
+  importer call sites from `importDatabase` to `importLedger` where the
+  dependency is typed as `ImportLedger`. Concrete `ImportDatabase` names remain
+  only in infrastructure adapters, projection repositories, and tests that need
+  direct fixture assertions.
+- Moved source-scoped contact importer provider access to the AddressBook
+  folder preference key behind the `address_book_folders` public
+  `feature_level_providers.dart` boundary. Added an architecture tripwire so
+  source-scoped import application code cannot import feature infrastructure
+  files directly.
+- Added `sourceScopedImportDatabaseProvider` as the public source-scoped import
+  feature boundary for graph projection/status provider composition that still
+  needs concrete import-DB access. Conversation graph provider files now watch
+  that feature-level provider instead of importing the import database
+  infrastructure provider directly, with a tripwire to prevent regression.
+- Onboarding existence checks, environment report path construction, and
+  derived-data reset now use `sourceScopedImportDatabaseFileName` /
+  `sourceScopedImportDatabaseProvider` from the source-scoped import
+  feature-level boundary instead of importing the import database
+  infrastructure provider directly.
+- Archive graph removal now depends on the `ImportLedger` port for source-key
+  lookup and source-fact deletion instead of importing concrete
+  `ImportDatabase`. The conversation graph application tripwire now covers the
+  whole application layer, not just provider files, so concrete source-scoped
+  import database access stays out of graph application code.
+- Moved `GraphCrossSnapshotMapper` out of attachments application code and into
+  attachments infrastructure repositories, because it is a retained recovery
+  query adapter over source-scoped import and graph databases. Deterministic
+  recovery now obtains source-scoped import DB access through the public
+  `sourceScopedImportDatabaseProvider` boundary.
+- Database health audit service composition now obtains source-scoped import DB
+  access and filename metadata through the public source-scoped import feature
+  boundary. The concrete source-scoped import database type remains only in the
+  database health query adapter for now, pending a later infrastructure split.
+- Moved the database health audit query layer out of application and into
+  `essentials/db/infrastructure/repositories/`. The application service still
+  owns report composition; infrastructure now owns concrete SQL/DB query
+  adapters for retained databases, source-scoped import, graph, and overlay DBs.
+- Split the database health query contract from the concrete adapters:
+  `DatabaseHealthQueryLayer`, table specs, and column specs now live in the
+  application audit package, while sqlite/Drift-backed query adapters remain in
+  infrastructure. Application tests fake the contract without importing
+  infrastructure.
+- Moved `databaseHealthAuditServiceProvider` composition into the central DB
+  feature-level provider entry point. `DatabaseHealthAuditService` is now a
+  pure application report composer; provider wiring owns source-scoped import,
+  graph, overlay, and retained database adapter construction.
+- Added a narrow `CurrentAttachmentSnapshotLookup` contract for historical
+  attachment recovery. `GraphCrossSnapshotMapper` now depends on that lookup
+  plus the graph DB instead of taking the full source-scoped import database;
+  the concrete source-scoped attachment lookup remains in attachments
+  infrastructure.
+- Renamed the deterministic recovery precondition from import-DB population to
+  current attachment snapshot availability, and added an architecture tripwire
+  that prevents `GraphCrossSnapshotMapper` from re-importing the concrete
+  source-scoped import database.
+- Added attachment recovery application ports for cross-snapshot mapping and
+  recovered-file archive writing. Deterministic recovery now orchestrates
+  recovery phases against those capabilities; infrastructure owns the concrete
+  graph/import lookup and overlay/filesystem archive writes.
+- Added an architecture tripwire so deterministic recovery cannot drift back
+  into direct infrastructure mapper/archive-writer imports.
+- Added an attachment archive stats reader port. `ArchiveSettings` no longer
+  constructs the concrete archive stats repository directly; feature-level
+  provider composition owns the concrete overlay/archive-directory wiring.
+- Added an attachment archive settings store port. `ArchiveSettings` still owns
+  archive preference semantics and debug key parsing, but overlay settings and
+  archive-record deletion are now behind attachments infrastructure.
+- Added an attachment archive read-store port. `AttachmentResolver` no longer
+  reads overlay archive rows or recovery-hint settings directly; infrastructure
+  owns compatibility archive lookup and hint decoding.
+- Moved graph search scope and repository contract into the search application
+  layer. SQL-backed graph search remains infrastructure; search service and
+  message evidence code now depend on the application search contract.
+- Moved `displayIdentityResolverProvider` composition into the contacts
+  feature-level provider boundary. The display-identity application package now
+  contains semantic identity types/contracts only; concrete graph/overlay
+  repository construction belongs to feature composition.
+- Moved message user-intent overlay composition into the messages feature-level
+  provider boundary. The message user-metadata application package now contains
+  the graph-keyed controller and repository contract only; the retained
+  graph/overlay compatibility bridge remains an infrastructure implementation.
+- Moved recovered-unlinked message evidence provider composition into the
+  messages feature-level boundary. Evidence spine and recovered heatmap UI now
+  consume the public provider while concrete graph recovered-message reads stay
+  in infrastructure behind the domain repository contract.
+- Moved unfamiliar-source handle review actions behind the handles feature
+  boundary. `HandleLensView` now calls a typed handle review action provider;
+  overlay persistence for reviewed/unlinked handles is owned by handles
+  infrastructure and guarded by an architecture tripwire.
+- Moved contact hero display-name override writes behind a contact action
+  boundary. The hero widget still collects the edited name, but user-intent
+  persistence now flows through `ContactDisplayNameOverrideController` and an
+  overlay-backed store instead of direct widget database access.
+- Moved contact hero favourite toggles behind a contact action provider. The
+  widget reports favourite intent; provider-level action code owns repository
+  calls and invalidation of dependent contact picker/favourite projections.
+- Moved `favoriteContactsRepositoryProvider` out of contacts sidebar resolver
+  tools and into contacts infrastructure. Favourites projection providers still
+  consume the repository provider, but concrete overlay-backed repository
+  composition no longer lives in the application resolver folder.
+- Moved manual handle-link persistence behind a contacts store boundary.
+  `ManualHandleLinkService` now owns validation and cache invalidation only;
+  overlay virtual-contact and handle-link table operations are performed by an
+  infrastructure `ManualHandleLinkStore` implementation. `HandleLensView`
+  consumes the contacts public feature boundary instead of importing contacts
+  application internals directly.
+- Moved Conversations sidebar signature preference persistence behind a
+  messages store boundary. `ConversationSignaturePreferencesController` now
+  owns filter/sort preference semantics only; overlay setting read/write
+  mechanics live in messages infrastructure and are protected by an architecture
+  tripwire.
+- Moved Contact picker filter-mode persistence behind a contacts store boundary.
+  `PickerFilter` now owns all/favourites preference semantics only; overlay
+  settings storage lives in contacts infrastructure and is covered by a focused
+  persistence test plus architecture tripwire.
+- Moved global conversation Favourites/Core persistence behind a conversation
+  graph store boundary. `ConversationFavouritesController` now owns graph
+  favourite semantics only; overlay setting read/write mechanics live in graph
+  infrastructure and are guarded by an architecture tripwire.
+- Moved contact display-name override store composition into contacts
+  infrastructure. `ContactDisplayNameOverrideActions` now owns only user-intent
+  action semantics and dependent provider invalidation; overlay store
+  construction is guarded by an architecture tripwire.
+- Moved handle spam/visibility persistence behind a handles store boundary.
+  `SpamManagement` now owns graph handle visibility semantics and provider
+  invalidation only; overlay visibility table operations live in handles
+  infrastructure and are guarded by an architecture tripwire.
+- Moved developer-mode persistence behind a debug store boundary.
+  `DeveloperMode` now owns release/default/debug semantics only; overlay
+  setting read/write mechanics live in debug infrastructure and are guarded by
+  an architecture tripwire.
+- Moved handle manual-link mutations in the handles settings resolver through
+  `ManualHandleLinkService`. The transitional read model still composes graph
+  and overlay facts, but link/unlink/create actions no longer write overlay
+  tables directly and are guarded by an architecture tripwire.
+- Moved sidebar flow preference persistence behind a sidebar store boundary.
+  `SidebarFlow` still owns deterministic state, validation, serialization, and
+  projection semantics, but overlay setting read/write mechanics now live in
+  sidebar infrastructure and are guarded by an architecture tripwire.
+- Moved sidebar action storage mutations behind feature-owned action/store
+  boundaries. `SidebarActionDispatcher` now routes contact access and
+  unfamiliar-handle dismiss/restore intents without opening overlay storage or
+  performing storage-backed mutations directly.
+- Moved onboarding failure-storage construction behind an infrastructure
+  provider. Onboarding gate/status application code now records and reads graph
+  build/import failure state through an onboarding storage boundary rather than
+  constructing overlay-backed storage directly.
+- Moved pipeline incident storage construction behind logging infrastructure.
+  `PipelineIncidentTracker` still owns incident semantics and lifecycle, but no
+  longer reaches for overlay storage directly.
+- Moved graph-health repository construction into conversation graph
+  infrastructure. The graph-health application provider now reads through the
+  repository boundary instead of wiring graph DB, overlay DB, archive directory,
+  and external recovery-source paths itself.
+- Moved chat-summary repository construction into conversation graph
+  infrastructure. Chat summary application providers now read through the
+  `ChatSummaryRepository` boundary instead of wiring graph DB, overlay DB, and
+  archive lookup infrastructure directly.
+- Moved manual-linking read composition behind an infrastructure repository.
+  Manual-linking providers now expose unlinked-handle, available-participant,
+  and handle-link-info read providers without performing graph/overlay SQL or
+  overlay read composition directly.
+- Moved conversation-reader repository construction into conversation graph
+  infrastructure. Conversation reader application providers now depend on the
+  `ConversationRepository` boundary instead of constructing the SQLite
+  repository directly.
+- Moved contact-graph repository construction into conversation graph
+  infrastructure. Contact graph application providers now depend on the
+  `ContactGraphRepository` boundary instead of constructing the SQLite
+  repository directly.
+- Moved message-graph repository construction into conversation graph
+  infrastructure. Message graph reader providers now depend on the
+  `MessageGraphRepository` boundary instead of constructing the SQLite
+  repository directly.
+- Moved message-projection repository construction into conversation graph
+  infrastructure. Message projector providers now depend on the
+  `MessageProjectionRepository` boundary instead of wiring import DB, graph DB,
+  and the SQLite repository directly.
+- Moved the remaining graph projector repository construction into
+  conversation graph infrastructure. Chat, handle, contact, attachment, and
+  topology projector providers now depend on projection repository boundaries
+  instead of wiring import DB, graph DB, and concrete SQLite repositories
+  directly.
+- Moved graph status repository/path/database composition into conversation
+  graph infrastructure. The public graph status application provider now
+  exposes status semantics without opening source/import/working graph storage
+  directly.
+- Moved archive graph projection clearing behind a `GraphProjectionResetter`
+  application port with a Drift-backed infrastructure implementation. Archive
+  graph removal now requests projection reset semantically instead of importing
+  or clearing the graph database directly.
+- Moved handle spam-management read composition behind a handles
+  infrastructure repository. `SpamManagement` still owns block/unblock action
+  semantics, while graph handle reads and overlay visibility composition now
+  live behind `SpamHandlesRepository`.
+- Moved settings graph read composition behind infrastructure repositories.
+  Message-history coverage and historical-archive preflight workflow code now
+  ask named repositories for graph-aware summaries instead of opening the
+  conversation graph database from application or presentation view-model code.
+- Moved live monitor import-ledger cursor/count reads behind an
+  `ImportLedgerProbeReader` boundary. `ChatDbChangeMonitor` still owns
+  live-source polling and scheduling decisions, but no longer opens the
+  source-scoped import database provider directly for startup/cursor probes.
+- Moved live monitor source `chat.db` row/count probes behind a
+  `ChatDbSourceProbeReader` boundary. `ChatDbChangeMonitor` owns polling
+  decisions, while infrastructure owns the SQLite mechanics of reading
+  `MAX(ROWID)` and importable source message counts.
+- Narrowed graph refresh-token imports. Conversation graph readers, chat
+  summaries, graph build controller, and message evidence/contact timeline
+  providers now import the specific message-data-version/readiness provider
+  files they need instead of the broad central database provider entry point.
+- Moved current Messages attachment path refresh behind a feature-owned
+  `CurrentMessagesAttachmentPathLookup` boundary. The attachment archive
+  service still owns archive/recovery orchestration, but source `chat.db`
+  attachment path lookup now lives in infrastructure behind a typed port.
+- Narrowed historical archive workflow lifecycle imports. The workflow
+  view-model now imports graph readiness, maintenance lock, and message data
+  version provider files directly instead of depending on the broad database
+  provider entry point.
+- Moved onboarding environment filesystem/SQLite probes behind
+  `OnboardingDatabaseProbeReader`. The environment report still owns setup
+  classification semantics, while infrastructure owns file probing, table
+  counts, and graph-readiness database inspection.
 
 ### Exit Criteria
 

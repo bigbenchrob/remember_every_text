@@ -13,9 +13,9 @@ links:
   - lib/essentials/conversation_graph/
 ---
 
-# Retained Legacy Table Migrators Guide
+# Retained Historical Table Migrators Guide
 
-Historical reference for the deleted retained legacy projection migrator
+Historical reference for the deleted retained projection migrator
 framework that moved data from `macos_import.db` into `working.db`. Use this
 only to interpret old logs, old docs, or old user data folders.
 
@@ -88,7 +88,7 @@ Migrators receive a shared `MigrationContext` instance from `HandlesMigrationSer
 
 ## Adding or Modifying Migrators
 
-Do not add retained legacy migrators for ordinary app behavior. New ordinary
+Do not add retained migrators for ordinary app behavior. New ordinary
 projection belongs in the source-scoped graph projectors and graph read models.
 If an explicit archive/recovery compatibility task requires retained
 `working.db` projection behavior, write a reviewed graph-era plan first and

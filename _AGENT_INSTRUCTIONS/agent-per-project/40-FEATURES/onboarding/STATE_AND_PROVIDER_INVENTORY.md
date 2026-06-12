@@ -22,7 +22,7 @@
 | `conversationGraphBuildControllerProvider` | `conversation_graph/application/` | App-facing graph build/rebuild lifecycle |
 | `messageDataResetServiceProvider` | `onboarding/application/` | Derived-data reset, reimport preparation, database cleanup |
 | `onboardingEnvironmentReportProvider` | `onboarding/application/` | Source probes, graph readiness, FDA state, persisted failure summaries |
-| `sqfliteImportDatabaseProvider` | `db/feature_level_providers.dart` | Legacy import-ledger compatibility checks only where explicitly retained |
+| `retainedArchiveMetadataStoreProvider` | `db/feature_level_providers.dart` | Retained archive-source metadata checks only where explicitly needed |
 | `conversationGraphDatabaseProvider` | `db/feature_level_providers.dart` | Source-scoped graph readiness / app-facing data state |
 
 ## New Domain Types

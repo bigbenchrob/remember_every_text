@@ -32,7 +32,7 @@ void main() {
       databaseName: 'macos_import_ss_test.db',
     );
     registrar = HistoricalMessagesArchiveSourceRegistrar(
-      importDatabase: importDatabase,
+      importLedger: importDatabase,
     );
   });
 

@@ -131,7 +131,7 @@ Inputs:
 - historical `chat.db`
 - matching historical `Attachments` folder
 - current source-scoped graph/import databases where available
-- retained legacy `macos_import.db` / `working.db` only as compatibility
+- retained `macos_import.db` / `working.db` only as historical/reference
   history or explicit fallback bridges where graph-native recovery has not
   replaced a path
 - current `user_overlays.db`
@@ -146,7 +146,7 @@ Current graph-native identity mapping:
 4. Overlay receives or skips an `archived_attachments` row keyed by the existing archive-compatible `(message_guid, import_attachment_id)` pair, where `import_attachment_id` is currently the source attachment ROWID unpacked from the graph attachment `ss_id`.
 
 The archive overlay key remains compatibility-shaped so existing archived files
-survive the graph migration. Do not extend retained legacy GUID/import-id
+survive the graph migration. Do not extend retained historical GUID/import-id
 bridges beyond explicit recovery compatibility.
 
 Primary match:
@@ -238,7 +238,7 @@ No attachment record should be hidden merely because its file is missing.
 - Do not assume attachment existence at import, migration, hydration, or render time.
 - Do not render directly from live Messages files by reading raw paths in widgets.
 - Do not bypass the attachment resolver or archive logic.
-- Do not store archive metadata in `working_ss.db` or legacy `working.db`.
+- Do not store archive metadata in `working_ss.db` or retained `working.db`.
 - Do not write to Apple Messages source databases or attachment directories.
 - Do not merge recovered-unlinked attachment data into normal timelines without an explicit documented migration boundary.
 - Do not invent heuristic recovery matching beyond the documented GUID match and single-attachment fallback.
@@ -247,9 +247,9 @@ No attachment record should be hidden merely because its file is missing.
 ## References
 
 - `../15-MACOS-SOURCE-DATABASES/00-overview.md` - Apple source DB interpretation and source observation boundary.
-- `../20-DATA-IMPORT-MIGRATION/01-overview.md` - retained legacy import/migration history and compatibility context.
-- `../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md` - retained legacy import and working table names.
-- `../10-DATABASES/02-db-working.md` - retained legacy working projection contract.
+- `../20-DATA-IMPORT-MIGRATION/01-overview.md` - retained import/migration history and compatibility context.
+- `../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md` - retained import and working table names.
+- `../10-DATABASES/02-db-working.md` - retained working projection contract.
 - `../10-DATABASES/05-db-overlay.md` - overlay DB and archive metadata boundary.
 - `./40-attachment-archive.md` - archive storage and resolver details.
 - `./50-deterministic-recovery.md` - historical snapshot recovery algorithm.

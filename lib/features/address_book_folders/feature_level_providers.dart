@@ -8,6 +8,8 @@ import 'domain/failures/folder_retrieval_failure.dart';
 import 'infrastructure/data_sources/local/address_book_folder_path_finder.dart';
 import 'infrastructure/repositories/address_book_folder_repository.dart';
 
+export 'infrastructure/repositories/address_book_folder_preference_key.dart';
+
 ///***************************************************************** */
 ///* The entry point for dependency injection for the feature.
 ///***************************************************************** */

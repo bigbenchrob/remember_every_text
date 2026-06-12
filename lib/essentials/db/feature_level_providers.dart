@@ -9,13 +9,19 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../db_importers/application/debug_settings_provider.dart';
 import '../logging/application/app_logger.dart';
+import '../onboarding/application/onboarding_environment_report_provider.dart';
+import '../source_scoped_import/feature_level_providers.dart';
 
+import 'application/database_health_audit/database_health_audit_service.dart';
+import 'application/database_health_audit/database_health_query_layer.dart';
+import 'application/retained_archive_metadata_store.dart';
+import 'application/retained_database_debug_settings_provider.dart';
 import 'feature_level_providers/db_maintenance_lock_provider.dart';
 import 'infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
-import 'infrastructure/data_sources/local/import/sqflite_import_database.dart';
+import 'infrastructure/data_sources/local/import/retained_archive_metadata_database.dart';
 import 'infrastructure/data_sources/local/overlay/overlay_database.dart';
+import 'infrastructure/repositories/database_health_audit_queries.dart';
 
 export 'feature_level_providers/conversation_graph_readiness_provider.dart';
 export 'feature_level_providers/db_maintenance_lock_provider.dart';
@@ -30,6 +36,12 @@ part 'feature_level_providers.g.dart';
 /// All DB providers below also use this path.
 /// FOR DEVELOPER'S REFERENCE ONLY: path is ~/Library/Application Support/com.bigbenchsoftware.MessageLens/ on macOS.
 late final String databaseDirectoryPath;
+
+/// Retained storage file for Historical Archives metadata compatibility.
+const retainedArchiveMetadataDatabaseFileName = 'macos_import.db';
+
+/// Retained storage file for historical/reference data compatibility.
+const retainedHistoricalReferenceDatabaseFileName = 'working.db';
 
 /// Must be called once in `main()` after `WidgetsFlutterBinding.ensureInitialized()`.
 Future<void> initDatabaseDirectoryPath() async {
@@ -46,14 +58,14 @@ Future<void> _ensureDatabaseDirectoryExists() async {
 
 /// Provides access to retained archive-source metadata in `macos_import.db`.
 @Riverpod(keepAlive: true)
-Future<SqfliteImportDatabase> sqfliteImportDatabase(
-  SqfliteImportDatabaseRef ref,
+Future<RetainedArchiveMetadataStore> retainedArchiveMetadataStore(
+  RetainedArchiveMetadataStoreRef ref,
 ) async {
   await _ensureDatabaseDirectoryExists();
-  final database = SqfliteImportDatabase(
+  final database = RetainedArchiveMetadataDatabase(
     databaseDirectory: databaseDirectoryPath,
-    databaseName: 'macos_import.db',
-    debugSettings: ref.watch(importDebugSettingsProvider),
+    databaseName: retainedArchiveMetadataDatabaseFileName,
+    debugSettings: ref.watch(retainedDatabaseDebugSettingsProvider),
   );
 
   // Ensure the retained metadata file is created immediately so dependent
@@ -67,18 +79,6 @@ Future<SqfliteImportDatabase> sqfliteImportDatabase(
   return database;
 }
 
-/// Semantic entry point for retained Historical Archives metadata.
-///
-/// Prefer this provider over [sqfliteImportDatabaseProvider] for new callers.
-/// The returned object still wraps `macos_import.db` while archive-source
-/// metadata remains in retained storage.
-@Riverpod(keepAlive: true)
-Future<SqfliteImportDatabase> retainedArchiveMetadataDatabase(
-  RetainedArchiveMetadataDatabaseRef ref,
-) {
-  return ref.watch(sqfliteImportDatabaseProvider.future);
-}
-
 /// Provides access to the source-scoped conversation graph projection database.
 @Riverpod(keepAlive: true)
 Future<ConversationGraphDatabase> driftConversationGraphDatabase(
@@ -86,7 +86,7 @@ Future<ConversationGraphDatabase> driftConversationGraphDatabase(
 ) async {
   if (ref.watch(dbMaintenanceLockProvider)) {
     throw StateError(
-      'working_ss.db is unavailable during database maintenance',
+      '$conversationGraphDatabaseFileName is unavailable during database maintenance',
     );
   }
 
@@ -120,7 +120,7 @@ Future<ConversationGraphDatabase> driftConversationGraphDatabase(
 @Riverpod(keepAlive: true)
 Future<OverlayDatabase> overlayDatabase(OverlayDatabaseRef ref) async {
   await _ensureDatabaseDirectoryExists();
-  final dbPath = path.join(databaseDirectoryPath, 'user_overlays.db');
+  final dbPath = path.join(databaseDirectoryPath, overlayDatabaseFileName);
 
   final database = OverlayDatabase(
     NativeDatabase.createInBackground(File(dbPath)),
@@ -148,4 +148,58 @@ Future<OverlayDatabase> overlayDatabase(OverlayDatabaseRef ref) async {
 @Riverpod(keepAlive: true)
 String attachmentArchiveDirectory(AttachmentArchiveDirectoryRef ref) {
   return path.join(databaseDirectoryPath, 'attachment_archive');
+}
+
+@Riverpod(keepAlive: true)
+Future<DatabaseHealthAuditService> databaseHealthAuditService(
+  DatabaseHealthAuditServiceRef ref,
+) async {
+  final sourceScopedImportDb = await ref.read(
+    sourceScopedImportDatabaseProvider.future,
+  );
+  final conversationGraphDb = await ref.read(
+    driftConversationGraphDatabaseProvider.future,
+  );
+  final overlayDb = await ref.read(overlayDatabaseProvider.future);
+  final hasFullDiskAccess = ref.read(onboardingFullDiskAccessProvider);
+
+  return DatabaseHealthAuditService(
+    hasFullDiskAccess: hasFullDiskAccess,
+    queryLayers: <DatabaseHealthQueryLayer>[
+      ReadOnlySqliteFileHealthQueryLayer(
+        databaseKey: 'import',
+        role: 'retained_archive_metadata',
+        databasePath: path.join(
+          databaseDirectoryPath,
+          retainedArchiveMetadataDatabaseFileName,
+        ),
+      ),
+      ReadOnlySqliteFileHealthQueryLayer(
+        databaseKey: 'working',
+        role: 'retained_historical_reference',
+        databasePath: path.join(
+          databaseDirectoryPath,
+          retainedHistoricalReferenceDatabaseFileName,
+        ),
+      ),
+      SourceScopedImportDatabaseHealthQueryLayer(
+        database: sourceScopedImportDb,
+        databasePath: path.join(
+          databaseDirectoryPath,
+          sourceScopedImportDatabaseFileName,
+        ),
+      ),
+      ConversationGraphDatabaseHealthQueryLayer(
+        database: conversationGraphDb,
+        databasePath: path.join(
+          databaseDirectoryPath,
+          conversationGraphDatabaseFileName,
+        ),
+      ),
+      OverlayDatabaseHealthQueryLayer(
+        database: overlayDb,
+        databasePath: path.join(databaseDirectoryPath, overlayDatabaseFileName),
+      ),
+    ],
+  );
 }

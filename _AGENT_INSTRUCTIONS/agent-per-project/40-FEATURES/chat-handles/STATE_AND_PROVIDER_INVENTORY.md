@@ -35,4 +35,4 @@ last_updated: 2026-06-05
 
 ## TODO
 - Keep active provider names documented here when handle review or linking surfaces change.
-- Retire retained legacy handle terminology from docs as remaining recovery/archive bridges are removed.
+- Retire retained historical handle terminology from docs as remaining recovery/archive bridges are removed.

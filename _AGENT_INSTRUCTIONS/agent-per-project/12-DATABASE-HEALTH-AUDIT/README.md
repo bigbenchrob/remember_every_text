@@ -34,11 +34,14 @@ Use it when you need to understand:
 - **Output artifact:** `database_health.json`
 - **Invocation path:** support bundle export
 - **Privacy model:** aggregate-only; no raw database copies; no row-level sampling
-- **Current DB scope:** source-scoped import, conversation graph, overlay, and retained legacy import/working compatibility databases
+- **Current DB scope:** source-scoped import, conversation graph, overlay,
+  retained archive-source metadata, and retained historical reference storage
 
 ## Important Constraints
 
-- The audit reads the app-owned and retained compatibility databases through the existing provider-managed connections.
+- The audit reads app-owned graph databases through provider-managed
+  connections and retained storage through explicit read-only diagnostic
+  boundaries.
 - The audit service remains service-layer only and does not know about UI or presentation.
 - Overlay cross-database relationship checks are intentionally deferred beyond Phase 1.
 - Phase 2 and Phase 3 remain out of scope for the implemented system.

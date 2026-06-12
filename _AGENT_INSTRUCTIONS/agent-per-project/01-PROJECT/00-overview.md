@@ -32,10 +32,10 @@ the subsystem docs when details matter.
 
 | Area | Current owner |
 | --- | --- |
-| App shell, navigation, global flow, sidebar, panel stacks, search, onboarding gate, database providers, source-scoped import, graph build, and retained compatibility services | `lib/essentials/` |
+| App shell, navigation, global flow, sidebar, panel stacks, search, onboarding gate, database providers, source-scoped import, graph build, and retained metadata/diagnostic boundaries | `lib/essentials/` |
 | Business feature content, feature-owned specs, domain repositories, terminal feature rendering | `lib/features/` |
 | Shared DDD helpers and generic utilities | `lib/domain_driven_development/`, `lib/core/` |
-| Graph, retained import/working, and overlay database infrastructure | `lib/essentials/db/` plus `lib/essentials/source_scoped_import/` |
+| Graph, retained archive metadata, retained historical reference, and overlay database infrastructure | `lib/essentials/db/` plus `lib/essentials/source_scoped_import/` |
 | Attachment archive, deterministic recovery, attachment resolution | `lib/features/attachments/` plus overlay database metadata |
 
 ## Authoritative Reading Paths
@@ -55,12 +55,13 @@ the subsystem docs when details matter.
   do not own app-level orchestration, global flow state, sidebar topology, panel
   stack policy, or shared chrome.
 - Ordinary app data flows through source-scoped import into `macos_import_ss.db`
-  and graph projection into `working_ss.db`; retained `macos_import.db` and
-  `working.db` are archive/recovery compatibility databases.
+  and graph projection into `working_ss.db`; retained `macos_import.db` stores
+  archive-source metadata and retained `working.db` is historical
+  reference/storage inventory.
 - User intent writes to `user_overlays.db`. Providers merge graph projection +
   overlay at read time, and overlay wins on conflict.
 - Onboarding coordinates and presents graph readiness/build state; it does not
-  own source-scoped import, graph projection, or retained compatibility logic.
+  own source-scoped import, graph projection, or retained storage diagnostics.
 - Attachment archive metadata lives in overlay; archive files live under the app
   support archive directory and are never written back to Apple's Messages
   Attachments folder.

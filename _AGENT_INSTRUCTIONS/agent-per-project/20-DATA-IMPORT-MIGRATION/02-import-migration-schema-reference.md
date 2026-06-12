@@ -18,7 +18,7 @@ tests: []
 
 # Retained Legacy Database Schema Reference
 
-Historical table lists for retained legacy import and working SQLite databases.
+Historical table lists for retained import and working SQLite databases.
 Consult this note when interpreting old user data folders or retained
 diagnostics. Do not use it as an authoring guide for ordinary graph-era
 features.
@@ -38,12 +38,12 @@ features.
   graph-era files; old files may still contain historical ledger tables.
 - `working.db` is retained file/schema storage only; old files may still contain
   historical projection tables.
-- `user_overlays.db` stores durable user intent and archive/recovery metadata; neither graph projection nor retained legacy migration may move user intent into working tables.
+- `user_overlays.db` stores durable user intent and archive/recovery metadata; neither graph projection nor retained migration may move user intent into working tables.
 
 ## macos_import.db (Retained Legacy Ingest Ledger)
 
 Location: `~/Library/Application Support/com.bigbenchsoftware.MessageLens/macos_import.db`
-Schema source: `lib/essentials/db/infrastructure/data_sources/local/import/sqflite_import_database.dart`
+Retained metadata schema source: `lib/essentials/db/infrastructure/data_sources/local/import/retained_archive_metadata_database.dart`
 
 | Table | Purpose / Notes |
 | ----- | --------------- |

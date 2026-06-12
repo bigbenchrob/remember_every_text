@@ -18,6 +18,7 @@ import 'package:remember_this_text/essentials/source_scoped_import/application/h
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/source_database/sqflite_source_database.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -95,15 +96,18 @@ void main() {
 
     final importResult = await ChatImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
     ).importChats();
     await HandleImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
     ).importNewHandles();
     await ChatHandleJoinImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
     ).importJoins();
     await HandleProjector(
       repository: SqliteHandleProjectionRepository(
@@ -186,15 +190,18 @@ void main() {
 
     await ChatImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
     ).importChats();
     await HandleImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
     ).importNewHandles();
     await ChatHandleJoinImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
     ).importJoins();
     await HandleProjector(
       repository: SqliteHandleProjectionRepository(
@@ -232,7 +239,8 @@ void main() {
 
     final result = await ChatMessageJoinImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
     ).importJoins();
     final rows = await importDatabase.database.query('chat_to_message');
 
@@ -255,7 +263,8 @@ void main() {
 
     final result = await ChatMessageJoinImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
     ).importJoinsAfterSourceMessageRowId(startedAfterSourceRowId: 40);
     final rows = await importDatabase.database.query('chat_to_message');
 

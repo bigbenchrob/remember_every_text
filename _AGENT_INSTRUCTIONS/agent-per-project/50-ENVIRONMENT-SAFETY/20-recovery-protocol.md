@@ -43,9 +43,10 @@ After relaunch:
 - app starts normally
 - source-scoped graph message counts are plausible
 - overlay intent such as favourites and contact display-name overrides is present
-- retained archive/recovery compatibility databases are present if they existed
-  in the snapshot
-- no graph build, retained projection, or overlay recovery errors are shown
+- retained archive metadata and historical reference databases are present if
+  they existed in the snapshot
+- no graph build, retained storage diagnostic, or overlay recovery errors are
+  shown
 - UI behaves correctly
 
 ---

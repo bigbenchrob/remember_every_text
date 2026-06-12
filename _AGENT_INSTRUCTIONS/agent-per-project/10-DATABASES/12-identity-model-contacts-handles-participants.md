@@ -111,7 +111,9 @@ A participant may represent:
 - multiple canonical handles for the same person or organization
 - an AddressBook-derived person or organization with zero currently linked handles
 
-Retained legacy implementation detail: real legacy `working.participants.id` preserves AddressBook `Z_PK`. That preserves traceability for retained compatibility paths, but it is not the production identity authority for graph-era app behavior.
+Historical retained-file detail: old `working.participants.id` rows preserved
+AddressBook `Z_PK`. That may help interpret old retained files, but it is not
+the production identity authority for graph-era app behavior.
 
 Canonical handles remain first-class endpoint identities. Unlinked handles may exist without a contact identity. UI and feature code must route identity through display identity read models when operating on people, and through canonical handles only when the workflow is explicitly handle-focused.
 
@@ -153,7 +155,11 @@ A contact may:
 
 Rule: contacts do not define identity by themselves. Graph display identity resolves what the user should see.
 
-In current code, AddressBook contacts seed graph contacts and retained compatibility participant rows. Overlay virtual participants extend display identity without writing to `working_ss.db` or legacy `working.db`.
+In current code, AddressBook contacts seed graph contacts. Older retained
+`working.db` files may still contain historical participant rows, but they are
+not the current app-facing identity authority. Overlay virtual participants
+extend display identity without writing to `working_ss.db` or retained
+`working.db`.
 
 ## 5. Overlay Model (User Control Layer)
 
@@ -191,9 +197,12 @@ Current storage:
 - fields include `display_name`, schema-compatible `short_name`, optional `notes`, and audit timestamps
 - manual links from canonical handles use `handle_to_participant_overrides.virtual_participant_id`
 
-Virtual participants are not written to `working_ss.db` or legacy `working.db`. They still map into app UI through provider merge logic and feature resolvers.
+Virtual participants are not written to `working_ss.db` or retained
+`working.db`. They still map into app UI through provider merge logic and
+feature resolvers.
 
-Do not treat virtual participants as AddressBook contacts. Do not expect them in graph contact tables or legacy `working.participants`.
+Do not treat virtual participants as AddressBook contacts. Do not expect them
+in graph contact tables or old retained `working.participants` rows.
 
 `virtual_participants.short_name` is not an app-facing identity field. It may remain physically present for schema compatibility, but display resolution must use `display_name` only.
 
@@ -246,7 +255,7 @@ Spec → Coordinator → Resolver → Payload / ViewModel → Rendering
 | Stale or incorrect AddressBook entry | The participant may inherit stale source names, but overlay `participant_overrides` can change presentation. Source contact data remains traceable. |
 | Orphaned handles | Unlinked canonical handles remain visible to handle-focused flows unless hidden/dismissed by overlay state. |
 | User override conflicts with contact data | Overlay wins at provider merge/read time. The working DB remains unchanged. |
-| Virtual participant linked to handles | UI can show the virtual identity after overlay merge; graph contact tables and legacy `working.participants` will not contain that row. |
+| Virtual participant linked to handles | UI can show the virtual identity after overlay merge; graph contact tables and old retained `working.participants` rows will not contain that row. |
 | Display names collide | Collision is allowed. Display names are labels, not identity keys. |
 
 ## 9. Non-Negotiable Rules
@@ -266,8 +275,9 @@ Spec → Coordinator → Resolver → Payload / ViewModel → Rendering
 
 Known current-state caveats:
 
-- Legacy `working.participants` rows are AddressBook-derived and preserve `Z_PK`; virtual participants live only in overlay and appear through provider merge logic.
-- The retained Drift class for SQL table `participants` is `WorkingParticipants`.
+- Old retained `working.participants` rows are AddressBook-derived and preserve
+  `Z_PK`; virtual participants live only in overlay and appear through provider
+  merge logic.
 - Some older feature docs still use stale table names such as `working.handles`, `import_handles`, or `handle_overrides`. Current names are `handles_canonical`, `handles_canonical_to_alias`, `handles`, and `handle_to_participant_overrides`.
 - `favorite_contacts` is keyed by real `participants.id`; virtual participant favorite behavior should be verified before adding new UI assumptions.
 - Path location alone does not determine architectural ownership. Some contact-related logic is shared infrastructure while other contact-related logic remains feature-owned.

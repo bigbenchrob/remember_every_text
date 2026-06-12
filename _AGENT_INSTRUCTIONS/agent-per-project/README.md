@@ -27,7 +27,7 @@ Use [`01-PROJECT/AGENT-PROMPT-HARNESS.md`](01-PROJECT/AGENT-PROMPT-HARNESS.md) b
 | **Auto-sync enabled**              | `ChatDbChangeMonitor` polls `chat.db` every **15 seconds** and auto-imports new messages |
 | **Manual import rarely needed**    | Only for initial setup or recovery; ongoing sync is automatic                            |
 | **New messages appear in ~15-20s** | After arrival in macOS Messages, no user action required                                 |
-| **Provider**                       | `chatDbChangeMonitorProvider` in `lib/essentials/db_importers/application/monitor/`      |
+| **Provider**                       | `chatDbChangeMonitorProvider` in `lib/essentials/conversation_graph/application/monitor/` |
 
 ## Canonical Map
 

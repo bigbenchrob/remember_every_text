@@ -176,7 +176,7 @@ Restored app data folders may contain:
 
 - stale `working_ss.db` graph projections.
 - incomplete `macos_import_ss.db` relative to live `chat.db`.
-- retained legacy compatibility DBs that do not match current graph state.
+- retained historical/reference DBs that do not match current graph state.
 - overlay archive/user-intent data that must be preserved.
 
 System MUST:
@@ -184,7 +184,7 @@ System MUST:
 - detect stale source-scoped graph state.
 - rebuild/reconcile graph projection when needed.
 - preserve overlay user intent and archive metadata.
-- keep retained legacy compatibility paths explicitly named.
+- keep retained historical/reference paths explicitly named.
 
 Agents MUST NOT:
 
@@ -258,7 +258,7 @@ System is healthy when:
 - graph relationships use canonical `ss_id` endpoints.
 - overlay user intent is preserved and merged at read time.
 - message evidence surfaces use the shared evidence spine.
-- retained legacy databases are either unused by ordinary app reads or
+- retained historical databases are either unused by ordinary app reads or
   explicitly classified as archive/recovery/diagnostic compatibility.
 - no hidden inconsistencies exist.
 

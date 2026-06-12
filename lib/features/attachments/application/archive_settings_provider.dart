@@ -4,9 +4,10 @@ import 'package:file_selector_platform_interface/file_selector_platform_interfac
 import 'package:path/path.dart' as p;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../essentials/db/feature_level_providers.dart';
-import '../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import '../infrastructure/repositories/attachment_archive_stats_repository.dart';
+import '../../../essentials/db/feature_level_providers.dart'
+    show attachmentArchiveDirectoryProvider;
+import '../feature_level_providers.dart';
+import 'attachment_archive_settings_store.dart';
 
 part 'archive_settings_provider.g.dart';
 
@@ -45,19 +46,20 @@ const kArchiveManualSweepLastSkippedSamplesKey =
 class ArchiveSettings extends _$ArchiveSettings {
   @override
   Future<ArchiveSettingsState> build() async {
-    final overlayDb = await ref.watch(overlayDatabaseProvider.future);
-    final archiveDir = ref.watch(attachmentArchiveDirectoryProvider);
+    final settingsStore = await ref.watch(
+      attachmentArchiveSettingsStoreProvider.future,
+    );
 
     // Read enabled flag from overlay settings.
-    final enabledStr = await overlayDb.readOverlaySetting(_kArchiveEnabledKey);
+    final enabledStr = await settingsStore.readSetting(_kArchiveEnabledKey);
     final enabled = enabledStr != 'false'; // Default: enabled.
 
-    final stats = await AttachmentArchiveStatsRepository(
-      archiveDirectoryPath: archiveDir,
-      overlayDatabase: overlayDb,
-    ).readStats();
-    final sweepDebug = await _readSweepDebugState(overlayDb);
-    final manualSweepDebug = await _readManualSweepDebugState(overlayDb);
+    final statsReader = await ref.watch(
+      attachmentArchiveStatsReaderProvider.future,
+    );
+    final stats = await statsReader.readStats();
+    final sweepDebug = await _readSweepDebugState(settingsStore);
+    final manualSweepDebug = await _readManualSweepDebugState(settingsStore);
 
     return ArchiveSettingsState(
       isEnabled: enabled,
@@ -69,17 +71,21 @@ class ArchiveSettings extends _$ArchiveSettings {
   }
 
   Future<void> setEnabled({required bool enabled}) async {
-    final overlayDb = await ref.read(overlayDatabaseProvider.future);
-    await overlayDb.writeOverlaySetting(
-      settingKey: _kArchiveEnabledKey,
-      settingValue: enabled.toString(),
+    final settingsStore = await ref.read(
+      attachmentArchiveSettingsStoreProvider.future,
+    );
+    await settingsStore.writeSetting(
+      key: _kArchiveEnabledKey,
+      value: enabled.toString(),
     );
     ref.invalidateSelf();
   }
 
   Future<void> clearArchive() async {
     final archiveDir = ref.read(attachmentArchiveDirectoryProvider);
-    final overlayDb = await ref.read(overlayDatabaseProvider.future);
+    final settingsStore = await ref.read(
+      attachmentArchiveSettingsStoreProvider.future,
+    );
 
     // Delete all files in the archive directory.
     final dir = Directory(archiveDir);
@@ -88,8 +94,7 @@ class ArchiveSettings extends _$ArchiveSettings {
       await dir.create(recursive: true);
     }
 
-    // Delete all overlay records.
-    await overlayDb.delete(overlayDb.archivedAttachments).go();
+    await settingsStore.clearArchivedAttachmentRecords();
 
     ref.invalidateSelf();
   }
@@ -140,61 +145,59 @@ class ArchiveSettings extends _$ArchiveSettings {
   }
 
   static Future<ArchiveSweepDebugState> _readSweepDebugState(
-    OverlayDatabase overlayDb,
+    AttachmentArchiveSettingsStore settingsStore,
   ) async {
     return ArchiveSweepDebugState(
       cursor: _parseInt(
-        await overlayDb.readOverlaySetting(kArchiveSweepCursorKey),
+        await settingsStore.readSetting(kArchiveSweepCursorKey),
       ),
-      lastStartedAtUtc: await overlayDb.readOverlaySetting(
+      lastStartedAtUtc: await settingsStore.readSetting(
         kArchiveSweepLastStartedAtUtcKey,
       ),
-      lastCompletedAtUtc: await overlayDb.readOverlaySetting(
+      lastCompletedAtUtc: await settingsStore.readSetting(
         kArchiveSweepLastCompletedAtUtcKey,
       ),
       lastTotalScanned: _parseInt(
-        await overlayDb.readOverlaySetting(kArchiveSweepLastTotalScannedKey),
+        await settingsStore.readSetting(kArchiveSweepLastTotalScannedKey),
       ),
       lastNewlyArchived: _parseInt(
-        await overlayDb.readOverlaySetting(kArchiveSweepLastNewlyArchivedKey),
+        await settingsStore.readSetting(kArchiveSweepLastNewlyArchivedKey),
       ),
       lastSkipped: _parseInt(
-        await overlayDb.readOverlaySetting(kArchiveSweepLastSkippedKey),
+        await settingsStore.readSetting(kArchiveSweepLastSkippedKey),
       ),
       lastFailed: _parseInt(
-        await overlayDb.readOverlaySetting(kArchiveSweepLastFailedKey),
+        await settingsStore.readSetting(kArchiveSweepLastFailedKey),
       ),
     );
   }
 
   static Future<ArchiveSweepRunDebugState> _readManualSweepDebugState(
-    OverlayDatabase overlayDb,
+    AttachmentArchiveSettingsStore settingsStore,
   ) async {
     return ArchiveSweepRunDebugState(
-      lastStartedAtUtc: await overlayDb.readOverlaySetting(
+      lastStartedAtUtc: await settingsStore.readSetting(
         kArchiveManualSweepLastStartedAtUtcKey,
       ),
-      lastCompletedAtUtc: await overlayDb.readOverlaySetting(
+      lastCompletedAtUtc: await settingsStore.readSetting(
         kArchiveManualSweepLastCompletedAtUtcKey,
       ),
       lastTotalScanned: _parseInt(
-        await overlayDb.readOverlaySetting(
-          kArchiveManualSweepLastTotalScannedKey,
-        ),
+        await settingsStore.readSetting(kArchiveManualSweepLastTotalScannedKey),
       ),
       lastNewlyArchived: _parseInt(
-        await overlayDb.readOverlaySetting(
+        await settingsStore.readSetting(
           kArchiveManualSweepLastNewlyArchivedKey,
         ),
       ),
       lastSkipped: _parseInt(
-        await overlayDb.readOverlaySetting(kArchiveManualSweepLastSkippedKey),
+        await settingsStore.readSetting(kArchiveManualSweepLastSkippedKey),
       ),
       lastFailed: _parseInt(
-        await overlayDb.readOverlaySetting(kArchiveManualSweepLastFailedKey),
+        await settingsStore.readSetting(kArchiveManualSweepLastFailedKey),
       ),
       lastSkippedSamples: _parseLines(
-        await overlayDb.readOverlaySetting(
+        await settingsStore.readSetting(
           kArchiveManualSweepLastSkippedSamplesKey,
         ),
       ),

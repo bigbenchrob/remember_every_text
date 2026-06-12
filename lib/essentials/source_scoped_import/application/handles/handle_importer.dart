@@ -1,8 +1,7 @@
-import 'package:sqflite/sqflite.dart';
-
 import '../../domain/known_sources.dart';
+import '../../domain/ports/import_ledger_port.dart';
+import '../../domain/ports/source_database_port.dart';
 import '../../domain/source_scoped_row_key.dart';
-import '../../infrastructure/import_database_provider.dart';
 
 class HandleImportResult {
   const HandleImportResult({
@@ -19,26 +18,24 @@ class HandleImportResult {
 class HandleImporter {
   const HandleImporter({
     required this.chatDbPath,
-    required this.importDatabase,
+    required this.importLedger,
+    required this.sourceDatabaseOpener,
     this.sourceId = liveChatDbSourceId,
   });
 
   final String chatDbPath;
-  final ImportDatabase importDatabase;
+  final ImportLedger importLedger;
+  final SourceDatabaseOpener sourceDatabaseOpener;
   final int sourceId;
 
   Future<HandleImportResult> importNewHandles() async {
     final startedAfterSourceRowId =
-        await importDatabase.maxHandleSourceRowIdForSource(sourceId) ?? 0;
-    final batchId = await importDatabase.insertImportBatch(
+        await importLedger.maxHandleSourceRowIdForSource(sourceId) ?? 0;
+    final batchId = await importLedger.insertImportBatch(
       sourceId: sourceId,
       startedAtUtc: DateTime.now().toUtc().toIso8601String(),
     );
-    final sourceDb = await openDatabase(
-      chatDbPath,
-      readOnly: true,
-      singleInstance: false,
-    );
+    final sourceDb = await sourceDatabaseOpener.openReadOnly(chatDbPath);
 
     var insertedHandleCount = 0;
     int? lastImportedSourceRowId;
@@ -49,21 +46,22 @@ class HandleImporter {
         <Object?>[startedAfterSourceRowId],
       );
 
-      await importDatabase.database.transaction((txn) async {
+      await importLedger.writeTransaction((txn) async {
         for (final row in rows) {
           final sourceRowId = _requiredInt(row, 'source_rowid');
           lastImportedSourceRowId = sourceRowId;
-          final insertedId = await txn.insert('handles', <String, Object?>{
-            'ss_id': SourceScopedRowKey.pack(
-              sourceId: sourceId,
-              sourceRowId: sourceRowId,
-            ),
-            'source_id': sourceId,
-            'source_rowid': sourceRowId,
-            'id': _requiredString(row, 'id'),
-            'service': _nullableString(row, 'service'),
-            'batch_id': batchId,
-          }, conflictAlgorithm: ConflictAlgorithm.ignore);
+          final insertedId = await txn
+              .insertIgnore('handles', <String, Object?>{
+                'ss_id': SourceScopedRowKey.pack(
+                  sourceId: sourceId,
+                  sourceRowId: sourceRowId,
+                ),
+                'source_id': sourceId,
+                'source_rowid': sourceRowId,
+                'id': _requiredString(row, 'id'),
+                'service': _nullableString(row, 'service'),
+                'batch_id': batchId,
+              });
 
           if (insertedId != 0) {
             insertedHandleCount += 1;

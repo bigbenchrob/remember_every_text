@@ -1,8 +1,7 @@
-import 'package:sqflite/sqflite.dart';
-
 import '../../domain/known_sources.dart';
+import '../../domain/ports/import_ledger_port.dart';
+import '../../domain/ports/source_database_port.dart';
 import '../../domain/source_scoped_row_key.dart';
-import '../../infrastructure/import_database_provider.dart';
 
 class MessageAttachmentJoinImportResult {
   const MessageAttachmentJoinImportResult({
@@ -17,12 +16,14 @@ class MessageAttachmentJoinImportResult {
 class MessageAttachmentJoinImporter {
   const MessageAttachmentJoinImporter({
     required this.chatDbPath,
-    required this.importDatabase,
+    required this.importLedger,
+    required this.sourceDatabaseOpener,
     this.sourceId = liveChatDbSourceId,
   });
 
   final String chatDbPath;
-  final ImportDatabase importDatabase;
+  final ImportLedger importLedger;
+  final SourceDatabaseOpener sourceDatabaseOpener;
   final int sourceId;
 
   Future<MessageAttachmentJoinImportResult> importJoins() async {
@@ -42,11 +43,7 @@ class MessageAttachmentJoinImporter {
     required String? whereClause,
     required List<Object?> whereArgs,
   }) async {
-    final sourceDb = await openDatabase(
-      chatDbPath,
-      readOnly: true,
-      singleInstance: false,
-    );
+    final sourceDb = await sourceDatabaseOpener.openReadOnly(chatDbPath);
 
     try {
       final rows = await sourceDb.rawQuery(
@@ -64,18 +61,18 @@ class MessageAttachmentJoinImporter {
         );
       }
 
-      final batchId = await importDatabase.insertImportBatch(
+      final batchId = await importLedger.insertImportBatch(
         sourceId: sourceId,
         startedAtUtc: DateTime.now().toUtc().toIso8601String(),
       );
 
       var insertedJoinCount = 0;
-      await importDatabase.database.transaction((txn) async {
+      await importLedger.writeTransaction((txn) async {
         for (final row in rows) {
           final sourceMessageRowId = _requiredInt(row, 'message_id');
           final sourceAttachmentRowId = _requiredInt(row, 'attachment_id');
           final insertedId = await txn
-              .insert('message_to_attachment', <String, Object?>{
+              .insertIgnore('message_to_attachment', <String, Object?>{
                 'message_source_id': sourceId,
                 'attachment_source_id': sourceId,
                 'source_message_rowid': sourceMessageRowId,
@@ -89,7 +86,7 @@ class MessageAttachmentJoinImporter {
                   sourceRowId: sourceAttachmentRowId,
                 ),
                 'batch_id': batchId,
-              }, conflictAlgorithm: ConflictAlgorithm.ignore);
+              });
 
           if (insertedId != 0) {
             insertedJoinCount += 1;

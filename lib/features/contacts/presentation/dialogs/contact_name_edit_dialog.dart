@@ -27,10 +27,7 @@ const int kMaxDisplayNameLength = 25;
 /// );
 /// if (result != null) {
 ///   // User saved a new name (or cleared to use auto-generated)
-///   await overlayDb.setParticipantDisplayNameOverride(
-///     contact.participantId,
-///     result.isEmpty ? null : result,
-///   );
+///   await contactDisplayNameOverrideActions.setDisplayNameOverride(...);
 /// }
 /// ```
 Future<String?> showContactNameEditDialog({

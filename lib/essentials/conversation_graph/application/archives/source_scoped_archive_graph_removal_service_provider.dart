@@ -1,8 +1,8 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../db/feature_level_providers.dart';
-import '../../../source_scoped_import/infrastructure/import_database_provider.dart';
+import '../../../source_scoped_import/feature_level_providers.dart';
+import '../../infrastructure/repositories/graph_projection_resetter_provider.dart';
 import '../attachments/attachment_projector_provider.dart';
 import '../chat_handle_joins/chat_to_handle_projector_provider.dart';
 import '../chat_message_joins/chat_to_message_projector_provider.dart';
@@ -18,9 +18,9 @@ part 'source_scoped_archive_graph_removal_service_provider.g.dart';
 @riverpod
 Future<SourceScopedArchiveGraphRemovalService>
 sourceScopedArchiveGraphRemovalService(Ref ref) async {
-  final importDatabase = await ref.watch(importDatabaseProvider.future);
-  final graphDatabase = await ref.watch(
-    driftConversationGraphDatabaseProvider.future,
+  final importLedger = await ref.watch(sourceScopedImportLedgerProvider.future);
+  final graphProjectionResetter = await ref.watch(
+    graphProjectionResetterProvider.future,
   );
   final handleProjector = await ref.watch(handleProjectorProvider.future);
   final contactProjector = await ref.watch(contactProjectorProvider.future);
@@ -40,8 +40,8 @@ sourceScopedArchiveGraphRemovalService(Ref ref) async {
   );
 
   return SourceScopedArchiveGraphRemovalService(
-    importDatabase: importDatabase,
-    graphDatabase: graphDatabase,
+    importLedger: importLedger,
+    graphProjectionResetter: graphProjectionResetter,
     handleProjector: handleProjector,
     contactProjector: contactProjector,
     chatToHandleProjector: chatToHandleProjector,

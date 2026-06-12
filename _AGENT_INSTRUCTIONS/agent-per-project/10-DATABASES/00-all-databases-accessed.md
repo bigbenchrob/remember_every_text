@@ -37,7 +37,7 @@ Use these aliases consistently across docs, code comments, and conversations.
 | `db-chat` | `chat.db` | macOS Messages source ledger | `PathsHelper.messagesDatabasePath` (import pipeline) | `~/Library/Messages/chat.db` |
 | `db-import-ss` | `macos_import_ss.db` | Production source-scoped import ledger for Messages + AddressBook facts | `importDatabaseProvider` | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/macos_import_ss.db` |
 | `db-graph-working` | `working_ss.db` | Production source-scoped conversation graph consumed by graph readers and Message Evidence Spine | `driftConversationGraphDatabaseProvider` | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/working_ss.db` |
-| `db-import` | `macos_import.db` | Retained archive-source metadata storage; old files may contain historical legacy ledger tables | `sqfliteImportDatabaseProvider` for archive-source metadata only | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/macos_import.db` |
+| `db-import` | `macos_import.db` | Retained archive-source metadata storage; old files may contain historical retained ledger tables | `retainedArchiveMetadataStoreProvider` for archive-source metadata | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/macos_import.db` |
 | `db-working` | `working.db` | Retained historical projection file/schema inventory | No central app provider; reset/diagnostics treat as retained file storage | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/working.db` |
 | `db-overlay` | `user_overlays.db` | Long-lived user overrides and preferences | `overlayDatabaseProvider` | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/user_overlays.db` |
 
@@ -66,7 +66,7 @@ macOS AddressBook (db-address-book)
 - `db-chat`: retrieved via `PathsHelper` inside import/monitor infrastructure; feature and presentation code must not open it directly.
 - `db-import-ss`: `importDatabaseProvider` from `lib/essentials/source_scoped_import/infrastructure/import_database_provider.dart`.
 - `db-graph-working`: `driftConversationGraphDatabaseProvider` from `lib/essentials/db/feature_level_providers.dart`.
-- `db-import`: `sqfliteImportDatabaseProvider` for retained archive-source metadata.
+- `db-import`: `retainedArchiveMetadataStoreProvider` for retained archive-source metadata. The central database provider constructs the concrete retained storage adapter; ordinary app behavior must not open retained `macos_import.db`.
 - `db-working`: no central app provider; retained file/schema storage only.
 - `db-overlay`: `overlayDatabaseProvider` (generated from `overlayDatabase`).
 
@@ -78,7 +78,7 @@ macOS AddressBook (db-address-book)
 | Inspect raw macOS Messages | `db-chat` | Read-only; consumed by import/monitor infrastructure. |
 | Verify production source-scoped import batches or schema diffs | `db-import-ss` | Treat as source-derived and importer-owned; agents must never mutate rows manually. |
 | Debug app-visible graph state | `db-graph-working` | Graph projection backing ordinary app reads. Manual edits are overwritten by graph rebuild. |
-| Inspect retained archive/recovery compatibility storage | `db-import` / `db-working` | Compatibility only; do not use as the authority for ordinary UI behavior. |
+| Inspect retained historical/reference storage | `db-import` / `db-working` | Compatibility only; do not use as the authority for ordinary UI behavior. |
 | Review manual overrides (handles, UI prefs) | `db-overlay` | Persistent user customizations. Follow overlay independence rules before editing. |
 
 ## Next References

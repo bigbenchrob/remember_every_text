@@ -9,17 +9,17 @@ import '../../../../essentials/conversation_graph/application/conversations/conv
 import '../../../../essentials/conversation_graph/application/conversations/conversation_reader_provider.dart';
 import '../../../../essentials/conversation_graph/application/messages/message_graph_reader_provider.dart';
 import '../../../../essentials/conversation_graph/domain/identity_key_bridge.dart';
-import '../../../../essentials/db/feature_level_providers.dart';
+import '../../../../essentials/db/feature_level_providers/message_data_version_provider.dart';
+import '../../../../essentials/search/application/graph_message_search.dart';
 import '../../../../essentials/search/application/search_service.dart';
 import '../../../../essentials/search/feature_level_providers.dart';
-import '../../../../essentials/search/infrastructure/repositories/graph_search_repository.dart';
 import '../../../contacts/feature_level_providers.dart';
 import '../../domain/message_evidence/message_evidence_row_data.dart';
 import '../../domain/message_evidence/message_evidence_scope.dart';
 import '../../domain/message_evidence/message_evidence_search_mode.dart';
 import '../../domain/message_evidence/message_evidence_skeleton.dart';
 import '../../domain/message_evidence/recovered_message_evidence.dart';
-import '../../infrastructure/repositories/recovered_unlinked_messages_provider.dart';
+import '../../feature_level_providers.dart';
 import 'message_attachment_evidence.dart';
 
 part 'message_evidence_spine_provider.g.dart';
@@ -596,7 +596,7 @@ Future<MessageEvidenceTimelineSkeleton> _contactAllMessagesTimelineSkeleton(
 }
 
 int _liveChatGraphId(int value) {
-  return graphMessageIdForLegacyMessageRowId(value) ?? value;
+  return graphMessageIdForRetainedOverlayMessageRowId(value) ?? value;
 }
 
 Future<MessageEvidenceTimelineSkeleton> _contactHandleMessagesTimelineSkeleton(

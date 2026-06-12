@@ -43,7 +43,7 @@ chat.db + AddressBook.sqlite
  overlay merge at read time
 ```
 
-The retained legacy `macos_import.db` -> `working.db` projection implementation
+The retained historical `macos_import.db` -> `working.db` projection implementation
 has been retired from active app code. Old files remain compatibility inventory:
 fresh `macos_import.db` stores historical archive-source metadata, old
 `working.db` files may be inspected read-only by diagnostics, and neither file
@@ -70,11 +70,11 @@ See `10-import-orchestrator.md` for retained importer mechanics and auto-polling
 archive/recovery source
         |
         v
- retained legacy import
+ retained historical import
    macos_import.db
         |
         v
- retained legacy projection
+ retained historical projection
      working.db
         |
         v
@@ -82,7 +82,7 @@ archive/recovery source
 ```
 
 - **Source-scoped import** pulls source facts into `macos_import_ss.db`; graph projection derives canonical `ss_id` rows and topology in `working_ss.db`.
-- **Retained legacy import/projection** is historical unless an explicit
+- **Retained historical import/projection** is historical unless an explicit
   recovery/archive compatibility task reintroduces a reviewed graph-era path.
   Keep old references named as retained compatibility, not production import.
 - **Archive coordination** belongs to the attachment feature, not to import/projection. The live graph path archives newly imported source ranges after graph build; retained full/manual archive workflows use explicit archive services.
@@ -103,7 +103,7 @@ archive/recovery source
 
 ## Audit Logs
 
-Historical retained legacy import/projection runs may have written filesystem
+Historical retained import/projection runs may have written filesystem
 audit reports alongside the runtime databases:
 
 - `~/Library/Application Support/com.bigbenchsoftware.MessageLens/import_log`
@@ -157,7 +157,7 @@ This is an app-side recovery heuristic, not a claim that the source database pro
   projection own derived data; overlay services own user intent.
 - **Run graph projection after source-scoped import.** Graph projection is disposable derived data; rebuilding is cheaper than debugging drift.
 - **Keep the Rust extractor available.** Without `extract_messages_limited` the majority of messages land without bodies, crippling search and UI rendering.
-- **Do not route live polling through retained legacy projection.** `ChatDbChangeMonitor` owns source-scoped graph build and graph data-version invalidation.
+- **Do not route live polling through retained historical projection.** `ChatDbChangeMonitor` owns source-scoped graph build and graph data-version invalidation.
 - **Do not invalidate graph database connections from live polling.** The monitor bumps graph/message data-version providers; active readers should refresh through typed graph/evidence providers.
 
 ## Runbook Snapshot

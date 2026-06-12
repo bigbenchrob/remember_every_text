@@ -124,7 +124,7 @@ OnboardingEnvironmentReport _report({
       readable: true,
       rowCount: 50,
     ),
-    importDatabase: const OnboardingDatabaseProbe(
+    sourceScopedImportDatabase: const OnboardingDatabaseProbe(
       path: 'macos_import_ss.db',
       exists: true,
       readable: true,

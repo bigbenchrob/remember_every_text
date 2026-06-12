@@ -97,7 +97,10 @@ The correct response is **always investigation, never concealment**:
 
 - **Source-scoped import DB**: `ref.watch(importDatabaseProvider.future)`
 - **Graph working DB**: `ref.watch(driftConversationGraphDatabaseProvider.future)`
-- **Retained import DB**: `ref.watch(sqfliteImportDatabaseProvider.future)` only for retained compatibility paths
+- **Retained archive metadata DB**:
+  `ref.watch(retainedArchiveMetadataStoreProvider.future)` for
+  archive-source metadata; only the central DB provider constructs the concrete
+  retained metadata adapter
 - **Retained working DB**: no central app provider remains; use explicit
   read-only diagnostic boundaries only when retained file inspection is
   deliberately required

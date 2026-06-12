@@ -69,7 +69,7 @@ Current projection code is source-scoped and graph-backed.
 
 ## When Adding Migrators
 
-Do not add retained legacy migrators for ordinary app behavior. New ordinary
+Do not add retained migrators for ordinary app behavior. New ordinary
 projection belongs in the source-scoped graph import/projector path. If an
 explicit archive/recovery compatibility task truly requires retained
 `working.db` projection behavior, write a reviewed graph-era plan first and

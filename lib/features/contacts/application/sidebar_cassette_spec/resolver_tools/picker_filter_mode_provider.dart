@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../../essentials/db/feature_level_providers.dart';
+import '../../../infrastructure/repositories/picker_filter_mode_store_provider.dart';
 
 part 'picker_filter_mode_provider.g.dart';
 
@@ -31,8 +31,6 @@ enum PickerFilterMode {
 
 @Riverpod(keepAlive: true)
 class PickerFilter extends _$PickerFilter {
-  static const String _settingKey = 'contact_picker_filter_mode';
-
   bool _restoreScheduled = false;
 
   @override
@@ -48,16 +46,13 @@ class PickerFilter extends _$PickerFilter {
   Future<void> setMode(PickerFilterMode mode) async {
     state = mode;
 
-    final overlayDb = await ref.read(overlayDatabaseProvider.future);
-    await overlayDb.writeOverlaySetting(
-      settingKey: _settingKey,
-      settingValue: mode.storageValue,
-    );
+    final store = await ref.read(pickerFilterModeStoreProvider.future);
+    await store.writeMode(mode.storageValue);
   }
 
   Future<void> _restorePersistedMode() async {
-    final overlayDb = await ref.read(overlayDatabaseProvider.future);
-    final rawValue = await overlayDb.readOverlaySetting(_settingKey);
+    final store = await ref.read(pickerFilterModeStoreProvider.future);
+    final rawValue = await store.readMode();
     state = PickerFilterMode.fromStorage(rawValue);
   }
 }

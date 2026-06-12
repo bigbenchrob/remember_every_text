@@ -1,8 +1,7 @@
-import 'package:sqflite/sqflite.dart';
-
 import '../../domain/known_sources.dart';
+import '../../domain/ports/import_ledger_port.dart';
+import '../../domain/ports/source_database_port.dart';
 import '../../domain/source_scoped_row_key.dart';
-import '../../infrastructure/import_database_provider.dart';
 
 class ChatMessageJoinImportResult {
   const ChatMessageJoinImportResult({
@@ -17,12 +16,14 @@ class ChatMessageJoinImportResult {
 class ChatMessageJoinImporter {
   const ChatMessageJoinImporter({
     required this.chatDbPath,
-    required this.importDatabase,
+    required this.importLedger,
+    required this.sourceDatabaseOpener,
     this.sourceId = liveChatDbSourceId,
   });
 
   final String chatDbPath;
-  final ImportDatabase importDatabase;
+  final ImportLedger importLedger;
+  final SourceDatabaseOpener sourceDatabaseOpener;
   final int sourceId;
 
   Future<ChatMessageJoinImportResult> importJoins() async {
@@ -42,11 +43,7 @@ class ChatMessageJoinImporter {
     required String? whereClause,
     required List<Object?> whereArgs,
   }) async {
-    final sourceDb = await openDatabase(
-      chatDbPath,
-      readOnly: true,
-      singleInstance: false,
-    );
+    final sourceDb = await sourceDatabaseOpener.openReadOnly(chatDbPath);
 
     try {
       final rows = await sourceDb.rawQuery(
@@ -58,13 +55,13 @@ class ChatMessageJoinImporter {
       );
 
       var insertedJoinCount = 0;
-      await importDatabase.database.transaction((txn) async {
+      await importLedger.writeTransaction((txn) async {
         for (final row in rows) {
           final sourceRowId = _requiredInt(row, 'source_rowid');
           final sourceChatRowId = _requiredInt(row, 'chat_id');
           final sourceMessageRowId = _requiredInt(row, 'message_id');
           final insertedId = await txn
-              .insert('chat_to_message', <String, Object?>{
+              .insertIgnore('chat_to_message', <String, Object?>{
                 'ss_id': SourceScopedRowKey.pack(
                   sourceId: sourceId,
                   sourceRowId: sourceRowId,
@@ -81,7 +78,7 @@ class ChatMessageJoinImporter {
                   sourceId: sourceId,
                   sourceRowId: sourceMessageRowId,
                 ),
-              }, conflictAlgorithm: ConflictAlgorithm.ignore);
+              });
 
           if (insertedId != 0) {
             insertedJoinCount += 1;

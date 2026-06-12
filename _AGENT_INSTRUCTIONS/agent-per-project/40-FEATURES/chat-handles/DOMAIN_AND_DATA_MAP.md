@@ -16,7 +16,7 @@ last_updated: 2026-06-05
 # Domain & Data Map - Chat Handles
 
 > Current conformance note (2026-06-05): handle identity is graph-backed and
-> source-scoped. Manual linking remains overlay-owned. The retained legacy
+> source-scoped. Manual linking remains overlay-owned. The retained historical
 > `handles_canonical` / alias scheme informed the graph model, but ordinary
 > reads should use `working_ss.db` handles, canonical handle aliases, and graph
 > topology.

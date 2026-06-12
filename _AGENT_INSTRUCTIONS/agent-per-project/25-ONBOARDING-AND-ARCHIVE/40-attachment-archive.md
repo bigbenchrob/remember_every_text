@@ -67,7 +67,7 @@ Table: `archived_attachments` in `user_overlays.db`
 **Unique constraint:** `(message_guid, import_attachment_id)`
 
 **Why overlay, not projection:** The decision to archive is user intent, not
-source data. `working_ss.db` is a derived graph projection, and retained legacy
+source data. `working_ss.db` is a derived graph projection, and retained
 `working.db` is historical compatibility/reference storage. Archive metadata
 must survive graph rebuilds and must not depend on retained compatibility
 files.
@@ -186,9 +186,9 @@ boundary unless current code introduces one.
 
 ## Invariants
 
-1. Archive metadata lives in overlay DB only — never in `working_ss.db` or legacy `working.db`.
+1. Archive metadata lives in overlay DB only — never in `working_ss.db` or retained `working.db`.
 2. Graph `attachments` rows remain source projections — not durable file-store records.
-3. Graph incremental sync uses source-range archiving plus periodic graph-working sweeps; retained legacy archive compatibility may still call `archiveAllAvailable()`.
+3. Graph incremental sync uses source-range archiving plus periodic graph-working sweeps; retained historical archive compatibility may still call `archiveAllAvailable()`.
 4. The Messages Attachments folder is never written to.
 5. Content-addressable naming provides natural deduplication.
 6. The archive is additive — entries survive re-import and graph rebuilds.

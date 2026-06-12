@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../../essentials/db/feature_level_providers.dart';
+import '../../../infrastructure/repositories/conversation_signature_preferences_store_provider.dart';
 import 'conversation_signature_display_provider.dart';
 
 part 'conversation_signature_preferences_provider.g.dart';
@@ -84,8 +84,6 @@ ConversationSignatureSort _sortFromStorage(String? rawValue) {
 @Riverpod(keepAlive: true)
 class ConversationSignaturePreferencesController
     extends _$ConversationSignaturePreferencesController {
-  static const String _settingKey = 'conversation_signature_preferences';
-
   bool _restoreScheduled = false;
   bool _hasLocalMutation = false;
 
@@ -112,16 +110,17 @@ class ConversationSignaturePreferencesController
   }
 
   Future<void> _persistPreferences() async {
-    final overlayDb = await ref.read(overlayDatabaseProvider.future);
-    await overlayDb.writeOverlaySetting(
-      settingKey: _settingKey,
-      settingValue: state.storageValue,
+    final store = await ref.read(
+      conversationSignaturePreferencesStoreProvider.future,
     );
+    await store.writePreferences(state.storageValue);
   }
 
   Future<void> _restorePersistedPreferences() async {
-    final overlayDb = await ref.read(overlayDatabaseProvider.future);
-    final rawValue = await overlayDb.readOverlaySetting(_settingKey);
+    final store = await ref.read(
+      conversationSignaturePreferencesStoreProvider.future,
+    );
+    final rawValue = await store.readPreferences();
     if (_hasLocalMutation) {
       return;
     }

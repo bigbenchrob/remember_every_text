@@ -1,4 +1,5 @@
-import '../../../db_importers/domain/ports/message_extractor_port.dart';
+import '../../domain/ports/message_extractor_port.dart';
+import '../../domain/ports/source_database_port.dart';
 import '../attachments/attachment_importer.dart';
 import '../chat_handle_joins/chat_handle_join_importer.dart';
 import '../chat_message_joins/chat_message_join_importer.dart';
@@ -50,10 +51,12 @@ class SourceScopedArchiveImportService {
   const SourceScopedArchiveImportService({
     required this.registrar,
     required this.richTextExtractor,
+    required this.sourceDatabaseOpener,
   });
 
   final HistoricalMessagesArchiveSourceRegistrar registrar;
   final MessageExtractorPort richTextExtractor;
+  final SourceDatabaseOpener sourceDatabaseOpener;
 
   Future<SourceScopedArchiveImportResult> importSourceFacts({
     required String folderPath,
@@ -65,46 +68,53 @@ class SourceScopedArchiveImportService {
     );
     final sourceId = registration.sourceId;
     final chatDbPath = registration.chatDbPath;
-    final importDatabase = registrar.importDatabase;
+    final importLedger = registrar.importLedger;
 
     final handles = await HandleImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importLedger,
+      sourceDatabaseOpener: sourceDatabaseOpener,
       sourceId: sourceId,
     ).importNewHandles();
     final chats = await ChatImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importLedger,
+      sourceDatabaseOpener: sourceDatabaseOpener,
       sourceId: sourceId,
     ).importChats();
     final messages = await MessageImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importLedger,
+      sourceDatabaseOpener: sourceDatabaseOpener,
       sourceId: sourceId,
     ).importNewMessages();
     final attachments = await AttachmentImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importLedger,
+      sourceDatabaseOpener: sourceDatabaseOpener,
       sourceId: sourceId,
     ).importAttachments();
     final chatHandleEdges = await ChatHandleJoinImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importLedger,
+      sourceDatabaseOpener: sourceDatabaseOpener,
       sourceId: sourceId,
     ).importJoins();
     final chatMessageEdges = await ChatMessageJoinImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importLedger,
+      sourceDatabaseOpener: sourceDatabaseOpener,
       sourceId: sourceId,
     ).importJoins();
     final messageAttachmentEdges = await MessageAttachmentJoinImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importLedger,
+      sourceDatabaseOpener: sourceDatabaseOpener,
       sourceId: sourceId,
     ).importJoins();
     final textEnrichment = await MessageRichTextEnricher(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importLedger,
       extractor: richTextExtractor,
     ).enrichMissingTextForSource(sourceId: sourceId);
 

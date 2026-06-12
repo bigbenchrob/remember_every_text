@@ -77,7 +77,10 @@ Included when available:
 - `import_log`
 - `migrate_log`
 
-These logs describe retained legacy import/projection runs when those compatibility paths are used. Source-scoped graph build health is represented in `database_health.json` and the conversation graph status surfaces, not in `migrate_log`.
+These logs may describe historical retained import/projection runs from
+older support bundles. Current source-scoped graph build health is represented
+in `database_health.json` and the conversation graph status surfaces, not in
+`migrate_log`.
 
 Included when audit succeeds:
 

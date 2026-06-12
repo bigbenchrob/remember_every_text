@@ -1,9 +1,11 @@
 import 'dart:io';
 
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import '../../application/attachment_archive_stats_reader.dart';
 import '../../domain/entities/attachment_archive_stats.dart';
 
-final class AttachmentArchiveStatsRepository {
+final class AttachmentArchiveStatsRepository
+    implements AttachmentArchiveStatsReader {
   const AttachmentArchiveStatsRepository({
     required String archiveDirectoryPath,
     required OverlayDatabase overlayDatabase,
@@ -13,6 +15,7 @@ final class AttachmentArchiveStatsRepository {
   final String _archiveDirectoryPath;
   final OverlayDatabase _overlayDatabase;
 
+  @override
   Future<AttachmentArchiveStats> readStats() async {
     var sizeBytes = 0;
     final dir = Directory(_archiveDirectoryPath);

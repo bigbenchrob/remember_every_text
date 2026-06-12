@@ -469,8 +469,8 @@ OnboardingEnvironmentReport _report({
       readable: true,
       rowCount: 10,
     ),
-    importDatabase: const OnboardingDatabaseProbe(
-      path: 'macos_import.db',
+    sourceScopedImportDatabase: const OnboardingDatabaseProbe(
+      path: retainedArchiveMetadataDatabaseFileName,
       exists: true,
       readable: true,
       rowCount: 100,

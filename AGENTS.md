@@ -52,7 +52,7 @@ This README contains the canonical index to all project documentation including:
 ### Imports & Dependencies
 
 - ✅ **Always use**: `hooks_riverpod` (never `flutter_riverpod`)
-- ✅ **Database access**: Use centralized providers only. Ordinary graph reads use `driftConversationGraphDatabaseProvider`; source-scoped import uses `importDatabaseProvider` from `lib/essentials/source_scoped_import/infrastructure/import_database_provider.dart`; overlay intent uses `overlayDatabaseProvider`. Retained import metadata compatibility may use `sqfliteImportDatabaseProvider`; retained `working.db` has no central app provider and should be treated as retained file/schema storage only.
+- ✅ **Database access**: Use centralized providers only. Ordinary graph reads use `driftConversationGraphDatabaseProvider`; source-scoped import uses `importDatabaseProvider` from `lib/essentials/source_scoped_import/infrastructure/import_database_provider.dart`; overlay intent uses `overlayDatabaseProvider`. Retained archive-source metadata uses `retainedArchiveMetadataStoreProvider`; retained `working.db` has no central app provider and should be treated as retained file/schema storage only.
 - ❌ **Never**: Create direct database instances (causes SQLite locking)
 
 ### 🔥 INVIOLABLE: Overlay / Working DB Separation

@@ -100,7 +100,7 @@ List<String> buildOnboardingFailureReportHeaderLines(
     ),
     _describeProbe(
       label: 'Source-scoped import ledger',
-      probe: report.importDatabase,
+      probe: report.sourceScopedImportDatabase,
     ),
     _describeProbe(
       label: 'Conversation graph',

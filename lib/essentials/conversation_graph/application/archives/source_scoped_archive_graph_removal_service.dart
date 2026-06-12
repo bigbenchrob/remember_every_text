@@ -2,9 +2,8 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 
-import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../source_scoped_import/application/archives/historical_messages_archive_source_registrar.dart';
-import '../../../source_scoped_import/infrastructure/import_database_provider.dart';
+import '../../../source_scoped_import/domain/ports/import_ledger_port.dart';
 import '../attachments/attachment_projector.dart';
 import '../chat_handle_joins/chat_to_handle_projector.dart';
 import '../chat_message_joins/chat_to_message_projector.dart';
@@ -13,6 +12,7 @@ import '../contacts/contact_projector.dart';
 import '../handles/handle_projector.dart';
 import '../message_attachment_joins/message_to_attachment_projector.dart';
 import '../messages/message_projector.dart';
+import 'graph_projection_resetter.dart';
 
 final class SourceScopedArchiveGraphRemovalResult {
   const SourceScopedArchiveGraphRemovalResult({
@@ -38,8 +38,8 @@ final class SourceScopedArchiveGraphRemovalResult {
 
 class SourceScopedArchiveGraphRemovalService {
   const SourceScopedArchiveGraphRemovalService({
-    required this.importDatabase,
-    required this.graphDatabase,
+    required this.importLedger,
+    required this.graphProjectionResetter,
     required this.handleProjector,
     required this.contactProjector,
     required this.chatToHandleProjector,
@@ -50,8 +50,8 @@ class SourceScopedArchiveGraphRemovalService {
     required this.messageToAttachmentProjector,
   });
 
-  final ImportDatabase importDatabase;
-  final ConversationGraphDatabase graphDatabase;
+  final ImportLedger importLedger;
+  final GraphProjectionResetter graphProjectionResetter;
   final HandleProjector handleProjector;
   final ContactProjector contactProjector;
   final ChatToHandleProjector chatToHandleProjector;
@@ -68,7 +68,7 @@ class SourceScopedArchiveGraphRemovalService {
     final sourceKey = HistoricalMessagesArchiveSourceRegistrar.buildSourceKey(
       chatDbPath: chatDbPath,
     );
-    final sourceId = await importDatabase.sourceIdForKey(sourceKey);
+    final sourceId = await importLedger.sourceIdForKey(sourceKey);
     if (sourceId == null) {
       return const SourceScopedArchiveGraphRemovalResult(
         sourceId: null,
@@ -77,7 +77,7 @@ class SourceScopedArchiveGraphRemovalService {
       );
     }
 
-    final deletionResult = await importDatabase.deleteRowsForSource(
+    final deletionResult = await importLedger.deleteRowsForSource(
       sourceId: sourceId,
     );
     if (deletionResult.deletedSourceFactCount == 0 &&
@@ -89,7 +89,7 @@ class SourceScopedArchiveGraphRemovalService {
       );
     }
 
-    await graphDatabase.clearProjectionRows();
+    await graphProjectionResetter.clearProjectionRows();
     await _projectRemainingImportFacts();
 
     return SourceScopedArchiveGraphRemovalResult(

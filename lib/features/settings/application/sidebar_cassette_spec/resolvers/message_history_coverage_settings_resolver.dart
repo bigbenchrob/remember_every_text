@@ -1,9 +1,8 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../../essentials/db/feature_level_providers.dart';
 import '../../../../../essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
-import '../../../infrastructure/repositories/message_history_coverage_repository.dart';
+import '../../../infrastructure/repositories/message_history_coverage_repository_provider.dart';
 import '../entities/message_history_coverage_report.dart';
 import '../entities/message_history_coverage_report_logic.dart';
 
@@ -44,7 +43,9 @@ Future<MessageHistoryCoverageReport> messageHistoryCoverageReport(
     );
   }
 
-  const repository = MessageHistoryCoverageRepository();
+  final repository = await ref.read(
+    messageHistoryCoverageRepositoryProvider.future,
+  );
   final sourceSummary = repository.readChatDbSummary(chatDbPath);
   if (sourceSummary == null) {
     return MessageHistoryCoverageReport(
@@ -61,10 +62,7 @@ Future<MessageHistoryCoverageReport> messageHistoryCoverageReport(
   }
 
   try {
-    final graphDb = await ref.read(
-      driftConversationGraphDatabaseProvider.future,
-    );
-    final graphSummary = await repository.readGraphSummary(graphDb);
+    final graphSummary = await repository.readGraphSummary();
     final status = classifyMessageHistoryCoverageReport(
       sourceCount: sourceSummary.totalCount,
       accountedCount: graphSummary.totalAccountedCount,
