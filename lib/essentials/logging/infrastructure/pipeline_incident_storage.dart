@@ -1,9 +1,10 @@
 import 'dart:convert';
 
 import '../../db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import '../application/pipeline_incident_store.dart';
 import '../domain/pipeline_incident_report.dart';
 
-class PipelineIncidentStorage {
+class PipelineIncidentStorage implements PipelineIncidentStore {
   PipelineIncidentStorage({required Future<OverlayDatabase> overlayDb})
     : _overlayDb = overlayDb;
 
@@ -12,6 +13,7 @@ class PipelineIncidentStorage {
 
   final Future<OverlayDatabase> _overlayDb;
 
+  @override
   Future<PipelineIncidentReport?> loadLatestReport() async {
     try {
       final overlayDb = await _overlayDb;
@@ -28,6 +30,7 @@ class PipelineIncidentStorage {
     }
   }
 
+  @override
   Future<void> saveLatestReport(PipelineIncidentReport report) async {
     final overlayDb = await _overlayDb;
     await overlayDb.writeOverlaySetting(
@@ -36,6 +39,7 @@ class PipelineIncidentStorage {
     );
   }
 
+  @override
   Future<void> dismissLatestReport() async {
     final existing = await loadLatestReport();
     if (existing == null) {
@@ -45,6 +49,7 @@ class PipelineIncidentStorage {
     await saveLatestReport(existing.copyWith(dismissed: true));
   }
 
+  @override
   Future<void> clearLatestReport() async {
     final overlayDb = await _overlayDb;
     await overlayDb.writeOverlaySetting(

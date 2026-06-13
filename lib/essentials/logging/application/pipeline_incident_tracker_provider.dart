@@ -2,20 +2,22 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../domain/pipeline_incident_report.dart';
-import '../infrastructure/pipeline_incident_storage.dart';
-import '../infrastructure/pipeline_incident_storage_provider.dart';
+import '../feature_level_providers.dart';
 import 'app_logger.dart';
 import 'pipeline_incident_log_writer.dart';
+import 'pipeline_incident_store.dart';
 
 part 'pipeline_incident_tracker_provider.g.dart';
 
 @Riverpod(keepAlive: true)
 class PipelineIncidentTracker extends _$PipelineIncidentTracker {
-  late PipelineIncidentStorage _storage;
+  late PipelineIncidentStore _storage;
+  late PipelineIncidentLogWriter _logWriter;
 
   @override
   Future<PipelineIncidentReport?> build() async {
-    _storage = ref.watch(pipelineIncidentStorageProvider);
+    _storage = ref.watch(pipelineIncidentStoreProvider);
+    _logWriter = ref.watch(pipelineIncidentLogWriterProvider);
     return _storage.loadLatestReport();
   }
 
@@ -44,7 +46,7 @@ class PipelineIncidentTracker extends _$PipelineIncidentTracker {
       }
 
       await _storage.saveLatestReport(report);
-      await const PipelineIncidentLogWriter().appendReport(report: report);
+      await _logWriter.appendReport(report: report);
       state = AsyncData(report);
     } catch (error, stackTrace) {
       _logTrackerFailure(

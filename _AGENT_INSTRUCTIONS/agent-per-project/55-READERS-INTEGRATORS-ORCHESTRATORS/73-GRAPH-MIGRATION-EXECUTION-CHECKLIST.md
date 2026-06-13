@@ -2025,6 +2025,12 @@ Remove legacy systems only after their blockers close.
   export; infrastructure owns support-bundle/export launch mechanics, and a
   tripwire prevents diagnostic action helpers from importing that
   infrastructure directly.
+- Moved pipeline incident storage and audit-log writing behind logging
+  application contracts. `PipelineIncidentTracker` now consumes
+  `PipelineIncidentStore` and `PipelineIncidentLogWriter` through the logging
+  feature boundary, while overlay persistence and file audit logging remain in
+  infrastructure. The old infrastructure storage provider was removed and the
+  tracker tripwire now blocks direct logging-infrastructure imports.
 - Split historical archive source inspection into an application
   `ArchiveSourceInspector` contract plus an infrastructure SQLite/filesystem
   implementation. The historical archives workflow now requests source

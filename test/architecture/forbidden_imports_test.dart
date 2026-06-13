@@ -964,8 +964,9 @@ void main() {
         isEmpty,
         reason:
             'PipelineIncidentTracker owns incident semantics and lifecycle, '
-            'not overlay storage construction. Overlay read/write mechanics '
-            'must stay behind logging infrastructure.\n'
+            'not overlay storage construction or audit-log file writing. '
+            'Overlay read/write and logging file mechanics must stay behind '
+            'logging infrastructure ports.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -2690,6 +2691,7 @@ Future<List<String>> _findPipelineIncidentTrackerStorageOffenders() async {
   final offenders = <String>[
     for (final importTarget in imports)
       if (importTarget.endsWith('essentials/db/feature_level_providers.dart') ||
+          importTarget.contains('/logging/infrastructure/') ||
           importTarget.endsWith(
             'essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart',
           ))
