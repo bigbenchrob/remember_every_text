@@ -86,6 +86,10 @@ class SqliteDisplayIdentityRepository implements DisplayIdentityRepository {
       }
     }
 
+    await _addContactIdentities(
+      participantOverrides: participantOverrides,
+      identitiesByContactId: identitiesByContactId,
+    );
     await _addAliasHandleIds(identitiesByHandleId);
 
     return DisplayIdentityResolver(
@@ -93,6 +97,57 @@ class SqliteDisplayIdentityRepository implements DisplayIdentityRepository {
       identitiesByHandleId: identitiesByHandleId,
       identitiesByContactId: identitiesByContactId,
     );
+  }
+
+  Future<void> _addContactIdentities({
+    required Map<int, ParticipantOverride> participantOverrides,
+    required Map<int, ParticipantDisplayIdentity> identitiesByContactId,
+  }) async {
+    final contactRows = await graphDatabase.selectRows('''
+      SELECT
+        contact_id,
+        display_name
+      FROM contacts
+      ORDER BY display_name ASC
+      ''');
+
+    for (final row in contactRows) {
+      final contactId = _readNullableInt(row['contact_id']);
+      final displayName = (row['display_name'] as String?)?.trim();
+      if (contactId == null ||
+          displayName == null ||
+          displayName.isEmpty ||
+          isPlaceholderDisplayName(displayName)) {
+        continue;
+      }
+
+      final override = participantOverrideForGraphContactId(
+        participantOverrides: participantOverrides,
+        contactId: contactId,
+      );
+      final overrideLabel = override?.displayNameOverride?.trim();
+      final identity = ParticipantDisplayIdentity(
+        primaryLabel: preferredParticipantPrimaryLabel(
+          displayNameOverride: overrideLabel,
+          participantDisplayName: displayName,
+        ),
+        source: overrideLabel != null && overrideLabel.isNotEmpty
+            ? DisplayIdentitySource.userOverride
+            : DisplayIdentitySource.graphContact,
+        isKnownContact: true,
+        contactId: contactId,
+      );
+
+      identitiesByContactId.putIfAbsent(contactId, () => identity);
+      final retainedOverlayContactId =
+          retainedOverlayContactIdForGraphContactId(contactId);
+      if (retainedOverlayContactId != null) {
+        identitiesByContactId.putIfAbsent(
+          retainedOverlayContactId,
+          () => identity,
+        );
+      }
+    }
   }
 
   Future<void> _addAliasHandleIds(

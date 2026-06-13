@@ -70,10 +70,14 @@ Future<ManualLinkingReadRepository> manualLinkingReadRepository(Ref ref) async {
   );
   final overlayDb = await ref.watch(overlayDatabaseProvider.future);
   final virtualContacts = await ref.watch(virtualParticipantsProvider.future);
+  final displayIdentityResolver = await ref.watch(
+    displayIdentityResolverProvider.future,
+  );
   return GraphManualLinkingReadRepository(
     graphDb: graphDb,
     overlayDb: overlayDb,
     virtualContacts: virtualContacts,
+    displayIdentityResolver: displayIdentityResolver,
   );
 }
 

@@ -1,8 +1,8 @@
 import '../../../../essentials/conversation_graph/domain/identity_key_bridge.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import '../../../contacts/domain/overlay_virtual_contact.dart';
-import '../../../contacts/infrastructure/repositories/participant_merge_utils.dart';
+import '../../../contacts/feature_level_providers.dart'
+    show DisplayIdentityResolver, OverlayVirtualContact;
 import '../../application/settings_cassette_spec/resolver_tools/manual_linking_read_repository.dart';
 
 class GraphManualLinkingReadRepository implements ManualLinkingReadRepository {
@@ -10,13 +10,16 @@ class GraphManualLinkingReadRepository implements ManualLinkingReadRepository {
     required ConversationGraphDatabase graphDb,
     required OverlayDatabase overlayDb,
     required List<OverlayVirtualContact> virtualContacts,
+    required DisplayIdentityResolver displayIdentityResolver,
   }) : _graphDb = graphDb,
        _overlayDb = overlayDb,
-       _virtualContacts = virtualContacts;
+       _virtualContacts = virtualContacts,
+       _displayIdentityResolver = displayIdentityResolver;
 
   final ConversationGraphDatabase _graphDb;
   final OverlayDatabase _overlayDb;
   final List<OverlayVirtualContact> _virtualContacts;
+  final DisplayIdentityResolver _displayIdentityResolver;
 
   @override
   Future<List<UnlinkedHandle>> readUnlinkedHandles() async {
@@ -108,7 +111,7 @@ class GraphManualLinkingReadRepository implements ManualLinkingReadRepository {
       _virtualAvailableParticipants(
         virtualContacts: _virtualContacts,
         overlayCountByVirtualParticipant:
-            await overlayHandleCountsByVirtualParticipant(_overlayDb),
+            await _overlayHandleCountsByVirtualParticipant(),
       ),
     );
     results.sort((a, b) => a.displayName.compareTo(b.displayName));
@@ -117,10 +120,7 @@ class GraphManualLinkingReadRepository implements ManualLinkingReadRepository {
   }
 
   Future<List<AvailableParticipant>> _readGraphAvailableParticipants() async {
-    final overrides = await participantOverridesById(_overlayDb);
-    final overlayCountByParticipant = await overlayHandleCountsByParticipant(
-      _overlayDb,
-    );
+    final overlayCountByParticipant = await _overlayHandleCountsByParticipant();
 
     final rows = await _graphDb.selectRows('''
       SELECT
@@ -142,24 +142,19 @@ class GraphManualLinkingReadRepository implements ManualLinkingReadRepository {
       final importedName = (row['display_name'] as String?)?.trim();
       if (importedName == null ||
           importedName.isEmpty ||
-          isPlaceholderDisplayName(importedName)) {
+          _isPlaceholderDisplayName(importedName)) {
         continue;
       }
 
+      final identity = _displayIdentityResolver.resolveContact(contactId);
       final retainedOverlayContactId =
           retainedOverlayContactIdForGraphContactId(contactId);
-      final overrideLabel =
-          overrides[contactId]?.displayNameOverride?.trim() ??
-          (retainedOverlayContactId == null
-              ? null
-              : overrides[retainedOverlayContactId]?.displayNameOverride
-                    ?.trim());
 
       results.add(
         AvailableParticipant(
           id: contactId,
-          displayName: overrideLabel != null && overrideLabel.isNotEmpty
-              ? overrideLabel
+          displayName: identity.isKnownContact
+              ? identity.primaryLabel
               : importedName,
           handleCount:
               _readInt(row['handle_count']) +
@@ -219,6 +214,16 @@ class GraphManualLinkingReadRepository implements ManualLinkingReadRepository {
     required int participantId,
     required String source,
   }) async {
+    final identity = _displayIdentityResolver.resolveContact(participantId);
+    if (identity.isKnownContact) {
+      return HandleLinkInfo(
+        participantId: participantId,
+        participantName: identity.primaryLabel,
+        confidence: 1.0,
+        source: source,
+      );
+    }
+
     final candidateIds = contactOverlayKeyVariants(participantId);
     final placeholders = List.filled(candidateIds.length, '?').join(', ');
     final rows = await _graphDb.selectRows(
@@ -238,25 +243,13 @@ class GraphManualLinkingReadRepository implements ManualLinkingReadRepository {
     final displayName = (row['display_name'] as String?)?.trim();
     if (displayName == null ||
         displayName.isEmpty ||
-        isPlaceholderDisplayName(displayName)) {
+        _isPlaceholderDisplayName(displayName)) {
       return null;
     }
 
-    final overrides = await participantOverridesById(_overlayDb);
-    final retainedOverlayContactId = retainedOverlayContactIdForGraphContactId(
-      participantId,
-    );
-    final overrideLabel =
-        overrides[participantId]?.displayNameOverride?.trim() ??
-        (retainedOverlayContactId == null
-            ? null
-            : overrides[retainedOverlayContactId]?.displayNameOverride?.trim());
-
     return HandleLinkInfo(
       participantId: participantId,
-      participantName: overrideLabel != null && overrideLabel.isNotEmpty
-          ? overrideLabel
-          : displayName,
+      participantName: displayName,
       confidence: 1.0,
       source: source,
     );
@@ -283,7 +276,7 @@ class GraphManualLinkingReadRepository implements ManualLinkingReadRepository {
     final displayName = (graphRow['display_name'] as String?)?.trim();
     if (displayName == null ||
         displayName.isEmpty ||
-        isPlaceholderDisplayName(displayName)) {
+        _isPlaceholderDisplayName(displayName)) {
       return null;
     }
 
@@ -291,6 +284,32 @@ class GraphManualLinkingReadRepository implements ManualLinkingReadRepository {
       participantId: _readInt(graphRow['participant_id']),
       source: 'graph_contact',
     );
+  }
+
+  Future<Map<int, int>> _overlayHandleCountsByParticipant() async {
+    final overrides = await _overlayDb.getAllHandleOverrides();
+    final counts = <int, int>{};
+    for (final override in overrides) {
+      final participantId = override.participantId;
+      if (participantId == null) {
+        continue;
+      }
+      counts[participantId] = (counts[participantId] ?? 0) + 1;
+    }
+    return counts;
+  }
+
+  Future<Map<int, int>> _overlayHandleCountsByVirtualParticipant() async {
+    final overrides = await _overlayDb.getAllHandleOverrides();
+    final counts = <int, int>{};
+    for (final override in overrides) {
+      final virtualParticipantId = override.virtualParticipantId;
+      if (virtualParticipantId == null) {
+        continue;
+      }
+      counts[virtualParticipantId] = (counts[virtualParticipantId] ?? 0) + 1;
+    }
+    return counts;
   }
 }
 
@@ -305,4 +324,12 @@ int _readInt(Object? value) {
     return value.toInt();
   }
   return int.parse(value.toString());
+}
+
+bool _isPlaceholderDisplayName(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) {
+    return true;
+  }
+  return trimmed.toLowerCase() == 'unknown contact';
 }
