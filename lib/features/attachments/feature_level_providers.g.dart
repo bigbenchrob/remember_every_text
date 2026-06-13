@@ -125,6 +125,24 @@ final attachmentArchiveStatsReaderProvider =
 // ignore: unused_element
 typedef AttachmentArchiveStatsReaderRef =
     AutoDisposeFutureProviderRef<AttachmentArchiveStatsReader>;
+String _$videoThumbnailCacheHash() =>
+    r'ff864689847789137143b41c6279ee6450236841';
+
+/// See also [videoThumbnailCache].
+@ProviderFor(videoThumbnailCache)
+final videoThumbnailCacheProvider = Provider<VideoThumbnailCache>.internal(
+  videoThumbnailCache,
+  name: r'videoThumbnailCacheProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$videoThumbnailCacheHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef VideoThumbnailCacheRef = ProviderRef<VideoThumbnailCache>;
 String _$graphAttachmentArchiveLookupHash() =>
     r'20dc3eddfc6b51900e14dbb430697bb4f952a341';
 

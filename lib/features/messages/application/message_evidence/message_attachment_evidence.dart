@@ -1,7 +1,8 @@
 import '../../../../essentials/conversation_graph/application/chat_summaries/chat_summary.dart';
-import '../../../attachments/application/attachment_file_access.dart';
 import '../../../attachments/domain/constants/attachment_provenance.dart';
 import '../../../attachments/domain/constants/resolved_attachment_availability.dart';
+import '../../../attachments/feature_level_providers.dart'
+    show AttachmentFileAccess;
 import '../../domain/entities/attachment_info.dart' as recovered_domain;
 
 class MessageAttachmentEvidence {

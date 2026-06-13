@@ -2,9 +2,9 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/chat_summaries/chat_summary.dart';
-import 'package:remember_this_text/features/attachments/application/attachment_file_access.dart';
 import 'package:remember_this_text/features/attachments/domain/constants/attachment_provenance.dart';
 import 'package:remember_this_text/features/attachments/domain/constants/resolved_attachment_availability.dart';
+import 'package:remember_this_text/features/attachments/feature_level_providers.dart';
 import 'package:remember_this_text/features/messages/application/message_evidence/message_attachment_evidence.dart';
 
 void main() {

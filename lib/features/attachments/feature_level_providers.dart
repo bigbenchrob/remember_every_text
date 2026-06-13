@@ -14,6 +14,7 @@ import 'application/current_messages_attachment_path_lookup.dart';
 import 'application/graph_attachment_archive_lookup.dart';
 import 'application/historical_snapshot_reader.dart';
 import 'application/recovered_attachment_archive_writer.dart';
+import 'application/video_thumbnail_cache.dart';
 import 'infrastructure/repositories/attachment_archive_stats_repository.dart';
 import 'infrastructure/repositories/filesystem_attachment_archive_file_operations.dart';
 import 'infrastructure/repositories/filesystem_attachment_archive_file_store.dart';
@@ -26,12 +27,15 @@ import 'infrastructure/repositories/overlay_recovered_attachment_archive_writer.
 import 'infrastructure/repositories/source_database_attachment_path_lookup.dart';
 import 'infrastructure/repositories/source_scoped_attachment_snapshot_lookup.dart';
 import 'infrastructure/repositories/sqlite_historical_snapshot_reader.dart';
+import 'infrastructure/services/video_thumbnail_cache_service.dart';
 
 export 'application/archive_settings_provider.dart';
 export 'application/attachment_archive_service_provider.dart';
+export 'application/attachment_file_access.dart';
 export 'application/attachment_resolver_provider.dart';
 export 'application/deterministic_recovery_provider.dart';
 export 'application/graph_attachment_archive_lookup.dart';
+export 'application/video_thumbnail_cache.dart';
 
 part 'feature_level_providers.g.dart';
 
@@ -82,6 +86,11 @@ Future<AttachmentArchiveStatsReader> attachmentArchiveStatsReader(
     archiveDirectoryPath: ref.watch(attachmentArchiveDirectoryProvider),
     overlayDatabase: overlayDb,
   );
+}
+
+@Riverpod(keepAlive: true)
+VideoThumbnailCache videoThumbnailCache(VideoThumbnailCacheRef ref) {
+  return VideoThumbnailCacheService();
 }
 
 @riverpod

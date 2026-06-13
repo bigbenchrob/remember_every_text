@@ -2363,6 +2363,9 @@ Future<List<String>> _findCrossSystemAttachmentProviderImportOffenders() async {
             'features/attachments/application/archive_settings_provider.dart',
           ) ||
           importTarget.endsWith(
+            'features/attachments/application/attachment_file_access.dart',
+          ) ||
+          importTarget.endsWith(
             'features/attachments/application/attachment_archive_service_provider.dart',
           ) ||
           importTarget.endsWith(
@@ -2378,7 +2381,13 @@ Future<List<String>> _findCrossSystemAttachmentProviderImportOffenders() async {
             'features/attachments/infrastructure/repositories/overlay_archive_compatibility_lookup.dart',
           ) ||
           importTarget.endsWith(
+            'features/attachments/infrastructure/services/video_thumbnail_cache_service.dart',
+          ) ||
+          importTarget.endsWith(
             'attachments/application/archive_settings_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'attachments/application/attachment_file_access.dart',
           ) ||
           importTarget.endsWith(
             'attachments/application/attachment_archive_service_provider.dart',
@@ -2394,6 +2403,9 @@ Future<List<String>> _findCrossSystemAttachmentProviderImportOffenders() async {
           ) ||
           importTarget.endsWith(
             'attachments/infrastructure/repositories/overlay_archive_compatibility_lookup.dart',
+          ) ||
+          importTarget.endsWith(
+            'attachments/infrastructure/services/video_thumbnail_cache_service.dart',
           )) {
         offenders.add('$filePath imports $importTarget');
       }
