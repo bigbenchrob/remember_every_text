@@ -7,8 +7,8 @@ import '../../../../essentials/db/feature_level_providers.dart';
 import '../../../../essentials/logging/application/app_logger.dart';
 import '../../../../essentials/logging/application/diagnostic_report_actions.dart';
 import '../../../../essentials/logging/application/pipeline_incident_tracker_provider.dart';
+import '../../../../essentials/logging/domain/diagnostic_report_presentation_result.dart';
 import '../../../../essentials/logging/domain/pipeline_incident_report.dart';
-import '../../../../essentials/logging/infrastructure/log_export_service.dart';
 import '../../../../essentials/onboarding/application/onboarding_gate_provider.dart';
 import '../../../../essentials/onboarding/domain/onboarding_status.dart';
 

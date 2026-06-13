@@ -2012,6 +2012,12 @@ Remove legacy systems only after their blockers close.
 - Removed the reset service's direct concrete graph-database import for
   filename access. Reset orchestration now uses the public database provider
   boundary for graph storage constants as well as provider invalidation.
+- Moved diagnostic report presentation results into the logging domain and
+  removed direct `LogExportService` imports from onboarding and environment
+  readiness presentation views. Presentation now triggers diagnostic report
+  export through application actions and renders a domain result; the concrete
+  export service remains infrastructure-owned and protected by an architecture
+  tripwire.
 
 ### Exit Criteria
 

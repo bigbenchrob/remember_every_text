@@ -8,7 +8,7 @@ import '../../conversation_graph/application/orchestrators/conversation_graph_bu
 import '../../db/feature_level_providers.dart';
 import '../../logging/application/app_logger.dart';
 import '../../logging/application/diagnostic_report_actions.dart';
-import '../../logging/infrastructure/log_export_service.dart';
+import '../../logging/domain/diagnostic_report_presentation_result.dart';
 import '../application/onboarding_environment_report_provider.dart';
 import '../application/onboarding_gate_provider.dart';
 import '../domain/onboarding_environment_report.dart';

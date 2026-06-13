@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../domain/diagnostic_report_presentation_result.dart';
 import 'support_bundle_export_service.dart';
 
 const _defaultDiagnosticRecipientEmail = 'messagelens@gmail.com';
@@ -17,16 +18,6 @@ const _defaultManualAttachmentEmailBodyLines = <String>[
   '',
   'Describe the issue here:',
 ];
-
-class DiagnosticReportPresentationResult {
-  const DiagnosticReportPresentationResult({
-    required this.exportPath,
-    required this.attachedToMailDraft,
-  });
-
-  final String? exportPath;
-  final bool attachedToMailDraft;
-}
 
 /// Collects log files, prepends a system info header, and presents the
 /// exported log to the user via email (mailto:) and Finder reveal.

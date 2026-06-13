@@ -1267,6 +1267,21 @@ void main() {
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
+
+    test('Diagnostic report presentation uses logging action boundary', () async {
+      final offenders =
+          await _findDiagnosticReportPresentationInfrastructureOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Presentation code may trigger diagnostic report actions and render '
+            'the domain result, but it must not import the LogExportService '
+            'implementation directly.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
   });
 }
 
@@ -1294,6 +1309,34 @@ Future<List<String>> _findSidebarPresentationImportOffenders() async {
         offenders.add(filePath);
         break;
       }
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>>
+_findDiagnosticReportPresentationInfrastructureOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/') && path.contains('/presentation/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    final importsLogExportService = imports.any(
+      (importTarget) => importTarget.endsWith(
+        'logging/infrastructure/log_export_service.dart',
+      ),
+    );
+
+    if (importsLogExportService) {
+      offenders.add(filePath);
     }
   }
 

@@ -1,5 +1,6 @@
 import '../../db/application/database_health_audit/database_health_audit_service.dart';
 import '../../onboarding/domain/onboarding_environment_report.dart';
+import '../domain/diagnostic_report_presentation_result.dart';
 import '../domain/pipeline_incident_report.dart';
 import '../infrastructure/log_export_service.dart';
 import '../infrastructure/log_file_writer.dart';
