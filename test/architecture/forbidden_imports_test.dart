@@ -2942,6 +2942,9 @@ Future<List<String>> _findCrossFeatureContactInfrastructureOffenders() async {
     final imports = _extractImports(uncommented);
     for (final importTarget in imports) {
       if (importTarget.endsWith(
+            'features/contacts/application/display_identity/display_identity.dart',
+          ) ||
+          importTarget.endsWith(
             'features/contacts/infrastructure/repositories/contacts_list_repository.dart',
           ) ||
           importTarget.endsWith(
@@ -2958,6 +2961,9 @@ Future<List<String>> _findCrossFeatureContactInfrastructureOffenders() async {
           ) ||
           importTarget.endsWith(
             'features/contacts/presentation/widgets/contact_picker_dialog.dart',
+          ) ||
+          importTarget.endsWith(
+            'contacts/application/display_identity/display_identity.dart',
           ) ||
           importTarget.endsWith(
             'contacts/infrastructure/repositories/contacts_list_repository.dart',

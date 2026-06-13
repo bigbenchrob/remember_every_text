@@ -1,6 +1,7 @@
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import '../../../contacts/application/display_identity/display_identity.dart';
+import '../../../contacts/feature_level_providers.dart'
+    show DisplayIdentityResolver;
 import '../../application/read_models/handle_display_name_reader.dart';
 
 class GraphHandleDisplayNameReader implements HandleDisplayNameReader {
