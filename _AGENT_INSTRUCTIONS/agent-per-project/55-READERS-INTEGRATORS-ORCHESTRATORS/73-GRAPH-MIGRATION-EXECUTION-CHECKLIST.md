@@ -2072,6 +2072,11 @@ Remove legacy systems only after their blockers close.
   settings application code, the native file-selector adapter remains
   infrastructure-owned, and the retired application/infrastructure provider
   locations are guarded by an architecture tripwire.
+- Moved developer-mode store provider composition to the debug feature-level
+  boundary. `DeveloperMode` still owns default/debug-mode semantics, while
+  overlay-backed setting storage remains infrastructure-owned behind the
+  `DeveloperModeStore` contract and the retired infrastructure provider wrapper
+  is guarded by a tripwire.
 
 ### Exit Criteria
 

@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../infrastructure/persistence/developer_mode_store_provider.dart';
+import '../feature_level_providers.dart';
 
 part 'developer_mode_provider.g.dart';
 

@@ -915,6 +915,20 @@ void main() {
       );
     });
 
+    test('Developer mode store provider stays feature-boundary owned', () {
+      const retiredInfrastructureProvider =
+          'lib/essentials/debug/infrastructure/persistence/developer_mode_store_provider.dart';
+
+      expect(
+        File(retiredInfrastructureProvider).existsSync(),
+        isFalse,
+        reason:
+            'DeveloperModeStore is an application contract, but provider '
+            'composition imports concrete overlay storage and belongs in the '
+            'debug feature-level provider boundary.',
+      );
+    });
+
     test('Manual linking actions use the manual-link service boundary', () async {
       final offenders = await _findManualLinkingActionStorageOffenders();
 

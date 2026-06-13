@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/essentials/debug/application/developer_mode_provider.dart';
 import 'package:remember_this_text/essentials/debug/application/developer_mode_store.dart';
-import 'package:remember_this_text/essentials/debug/infrastructure/persistence/developer_mode_store_provider.dart';
+import 'package:remember_this_text/essentials/debug/feature_level_providers.dart';
 
 void main() {
   test(

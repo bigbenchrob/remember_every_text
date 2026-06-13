@@ -1,13 +1,13 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'developer_mode_store_provider.dart';
+part of 'feature_level_providers.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
 String _$developerModeStoreHash() =>
-    r'cc4ef17440c581b9c48308b51a6765869828679e';
+    r'2d35d324c3079887bdf2b285290b8a479ee6ad50';
 
 /// See also [developerModeStore].
 @ProviderFor(developerModeStore)
