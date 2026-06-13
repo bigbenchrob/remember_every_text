@@ -44,10 +44,11 @@ import 'infrastructure/repositories/overlay_virtual_participants_reader.dart';
 // - Settings providers
 // - Repositories (for cross-feature data access)
 // - Public contact display identity read models/providers
+// - Public contact-selection dialog used by cross-feature linking flows
 //
 // Does NOT export:
 // - Resolvers
-// - Widget builders
+// - Internal widget builders
 // - Infrastructure details
 // =============================================================================
 
@@ -75,6 +76,7 @@ export './application/tooltips_spec/coordinators/contacts_tooltip_coordinator.da
 export './domain/overlay_virtual_contact.dart';
 export './domain/spec_classes/contacts_cassette_spec.dart';
 export './domain/spec_classes/contacts_tooltip_spec.dart';
+export './presentation/widgets/contact_picker_dialog.dart';
 
 part 'feature_level_providers.g.dart';
 

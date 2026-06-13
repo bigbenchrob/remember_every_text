@@ -2945,6 +2945,9 @@ Future<List<String>> _findCrossFeatureContactInfrastructureOffenders() async {
             'features/contacts/infrastructure/repositories/virtual_participants_provider.dart',
           ) ||
           importTarget.endsWith(
+            'features/contacts/presentation/widgets/contact_picker_dialog.dart',
+          ) ||
+          importTarget.endsWith(
             'contacts/infrastructure/repositories/contacts_list_repository.dart',
           ) ||
           importTarget.endsWith(
@@ -2958,6 +2961,9 @@ Future<List<String>> _findCrossFeatureContactInfrastructureOffenders() async {
           ) ||
           importTarget.endsWith(
             'contacts/infrastructure/repositories/virtual_participants_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'contacts/presentation/widgets/contact_picker_dialog.dart',
           )) {
         offenders.add('$filePath imports $importTarget');
       }
