@@ -112,6 +112,46 @@ final pickerFilterModeStoreProvider =
 // ignore: unused_element
 typedef PickerFilterModeStoreRef =
     AutoDisposeFutureProviderRef<PickerFilterModeStore>;
+String _$virtualParticipantsReaderHash() =>
+    r'c51c057f36df76793c15fc1c2334137028af20bd';
+
+/// See also [virtualParticipantsReader].
+@ProviderFor(virtualParticipantsReader)
+final virtualParticipantsReaderProvider =
+    AutoDisposeFutureProvider<VirtualParticipantsReader>.internal(
+      virtualParticipantsReader,
+      name: r'virtualParticipantsReaderProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$virtualParticipantsReaderHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef VirtualParticipantsReaderRef =
+    AutoDisposeFutureProviderRef<VirtualParticipantsReader>;
+String _$virtualParticipantsHash() =>
+    r'899b085e9bb811a1e012a8dd5cb09e4fcd4166a2';
+
+/// See also [virtualParticipants].
+@ProviderFor(virtualParticipants)
+final virtualParticipantsProvider =
+    AutoDisposeFutureProvider<List<OverlayVirtualContact>>.internal(
+      virtualParticipants,
+      name: r'virtualParticipantsProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$virtualParticipantsHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef VirtualParticipantsRef =
+    AutoDisposeFutureProviderRef<List<OverlayVirtualContact>>;
 String _$contactProfileReaderHash() =>
     r'8c5fe1e92baa43c37a673e02da609869e3caea02';
 

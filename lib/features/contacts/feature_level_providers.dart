@@ -9,8 +9,10 @@ import 'application/read_models/contact_profile_reader.dart';
 import 'application/read_models/contact_profile_summary.dart';
 import 'application/read_models/handles_for_contact_reader.dart';
 import 'application/read_models/linked_handle.dart';
+import 'application/read_models/virtual_participants_reader.dart';
 import 'application/services/manual_handle_link_store.dart';
 import 'application/sidebar_cassette_spec/resolver_tools/picker_filter_mode_store.dart';
+import 'domain/overlay_virtual_contact.dart';
 import 'infrastructure/repositories/display_identity_repository.dart';
 import 'infrastructure/repositories/favorite_contacts_repository.dart';
 import 'infrastructure/repositories/graph_contact_profile_reader.dart';
@@ -19,8 +21,8 @@ import 'infrastructure/repositories/overlay_contact_access_store.dart';
 import 'infrastructure/repositories/overlay_contact_display_name_override_store.dart';
 import 'infrastructure/repositories/overlay_manual_handle_link_store.dart';
 import 'infrastructure/repositories/overlay_picker_filter_mode_store.dart';
+import 'infrastructure/repositories/overlay_virtual_participants_reader.dart';
 import 'infrastructure/repositories/recent_contacts_repository.dart';
-import 'infrastructure/repositories/virtual_participants_provider.dart';
 
 // =============================================================================
 // CONTACTS FEATURE — PUBLIC API
@@ -48,6 +50,7 @@ export './application/read_models/contact_profile_reader.dart';
 export './application/read_models/contact_profile_summary.dart';
 export './application/read_models/handles_for_contact_reader.dart';
 export './application/read_models/linked_handle.dart';
+export './application/read_models/virtual_participants_reader.dart';
 export './application/services/manual_handle_link_service.dart';
 export './application/sidebar_cassette_spec/coordinators/cassette_coordinator.dart';
 export './application/sidebar_cassette_spec/coordinators/contact_chooser_cassette_state_provider.dart';
@@ -59,11 +62,11 @@ export './application/sidebar_cassette_spec/payloads/contact_selection_control_c
 export './application/sidebar_cassette_spec/payloads/handle_filter_cassette_payload.dart';
 export './application/sidebar_cassette_spec/rendering/contacts_cassette_body_builder.dart';
 export './application/tooltips_spec/coordinators/contacts_tooltip_coordinator.dart';
+export './domain/overlay_virtual_contact.dart';
 export './domain/spec_classes/contacts_cassette_spec.dart';
 export './domain/spec_classes/contacts_tooltip_spec.dart';
 export './infrastructure/repositories/contacts_list_repository.dart';
 export './infrastructure/repositories/recent_contacts_repository.dart';
-export './infrastructure/repositories/virtual_participants_provider.dart';
 
 part 'feature_level_providers.g.dart';
 
@@ -110,6 +113,18 @@ Future<ManualHandleLinkStore> manualHandleLinkStore(Ref ref) async {
 Future<PickerFilterModeStore> pickerFilterModeStore(Ref ref) async {
   final overlayDatabase = await ref.watch(overlayDatabaseProvider.future);
   return OverlayPickerFilterModeStore(overlayDatabase: overlayDatabase);
+}
+
+@riverpod
+Future<VirtualParticipantsReader> virtualParticipantsReader(Ref ref) async {
+  final overlayDb = await ref.watch(overlayDatabaseProvider.future);
+  return OverlayVirtualParticipantsReader(overlayDb: overlayDb);
+}
+
+@riverpod
+Future<List<OverlayVirtualContact>> virtualParticipants(Ref ref) async {
+  final reader = await ref.watch(virtualParticipantsReaderProvider.future);
+  return reader.readVirtualParticipants();
 }
 
 @riverpod

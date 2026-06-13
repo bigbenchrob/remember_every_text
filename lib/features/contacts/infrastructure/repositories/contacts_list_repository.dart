@@ -9,8 +9,8 @@ import '../../../../essentials/db/infrastructure/data_sources/local/conversation
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import '../../domain/overlay_virtual_contact.dart';
 import '../../domain/participant_origin.dart';
+import 'overlay_virtual_participants_reader.dart';
 import 'participant_merge_utils.dart';
-import 'virtual_participants_provider.dart';
 
 part 'contacts_list_repository.freezed.dart';
 part 'contacts_list_repository.g.dart';
@@ -63,7 +63,9 @@ Future<List<ContactSummary>> contactsListRepository(Ref ref) async {
     driftConversationGraphDatabaseProvider.future,
   );
   final overlayDb = await ref.watch(overlayDatabaseProvider.future);
-  final virtualContacts = await ref.watch(virtualParticipantsProvider.future);
+  final virtualContacts = await OverlayVirtualParticipantsReader(
+    overlayDb: overlayDb,
+  ).readVirtualParticipants();
 
   final graphSummaries = await _readGraphContactSummaries(
     graphDb: graphDb,

@@ -830,6 +830,7 @@ void main() {
         'lib/features/contacts/infrastructure/repositories/handles_for_contact_provider.dart',
         'lib/features/contacts/infrastructure/repositories/manual_handle_link_store_provider.dart',
         'lib/features/contacts/infrastructure/repositories/picker_filter_mode_store_provider.dart',
+        'lib/features/contacts/infrastructure/repositories/virtual_participants_provider.dart',
       ];
 
       for (final retiredPath in retiredProviderPaths) {

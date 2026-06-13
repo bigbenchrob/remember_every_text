@@ -249,6 +249,9 @@ Contact and handle reads should come from graph facts plus overlay intent.
 - `contactProfileProvider` and `handlesForContactProvider` are now composed at
   the contacts feature boundary; graph/overlay reads are behind typed
   application read contracts instead of exported infrastructure provider files.
+- `virtualParticipantsProvider` is now composed at the contacts feature
+  boundary; overlay virtual-contact reads are behind a typed
+  `VirtualParticipantsReader`.
 - `handleDisplayNameProvider` now resolves through graph display identity first
   so known contacts/user overrides win over raw handle labels in handle evidence
   views.
