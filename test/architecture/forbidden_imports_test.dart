@@ -824,12 +824,14 @@ void main() {
     test('Contact overlay stores stay feature-boundary owned', () {
       const retiredProviderPaths = <String>[
         'lib/features/contacts/application/sidebar_cassette_spec/resolver_tools/favorite_contacts_repository_provider.dart',
+        'lib/features/contacts/infrastructure/repositories/contacts_list_repository.dart',
         'lib/features/contacts/infrastructure/repositories/contact_display_name_override_store_provider.dart',
         'lib/features/contacts/infrastructure/repositories/contact_profile_provider.dart',
         'lib/features/contacts/infrastructure/repositories/favorite_contacts_repository_provider.dart',
         'lib/features/contacts/infrastructure/repositories/handles_for_contact_provider.dart',
         'lib/features/contacts/infrastructure/repositories/manual_handle_link_store_provider.dart',
         'lib/features/contacts/infrastructure/repositories/picker_filter_mode_store_provider.dart',
+        'lib/features/contacts/infrastructure/repositories/recent_contacts_repository.dart',
         'lib/features/contacts/infrastructure/repositories/virtual_participants_provider.dart',
       ];
 
@@ -2722,19 +2724,31 @@ Future<List<String>> _findCrossFeatureContactInfrastructureOffenders() async {
     final imports = _extractImports(uncommented);
     for (final importTarget in imports) {
       if (importTarget.endsWith(
+            'features/contacts/infrastructure/repositories/contacts_list_repository.dart',
+          ) ||
+          importTarget.endsWith(
             'features/contacts/infrastructure/repositories/contact_profile_provider.dart',
           ) ||
           importTarget.endsWith(
             'features/contacts/infrastructure/repositories/handles_for_contact_provider.dart',
           ) ||
           importTarget.endsWith(
+            'features/contacts/infrastructure/repositories/recent_contacts_repository.dart',
+          ) ||
+          importTarget.endsWith(
             'features/contacts/infrastructure/repositories/virtual_participants_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'contacts/infrastructure/repositories/contacts_list_repository.dart',
           ) ||
           importTarget.endsWith(
             'contacts/infrastructure/repositories/contact_profile_provider.dart',
           ) ||
           importTarget.endsWith(
             'contacts/infrastructure/repositories/handles_for_contact_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'contacts/infrastructure/repositories/recent_contacts_repository.dart',
           ) ||
           importTarget.endsWith(
             'contacts/infrastructure/repositories/virtual_participants_provider.dart',

@@ -49,7 +49,7 @@ $Res call({
 });
 
 
-$ContactSummaryCopyWith<$Res> get contact;
+
 
 }
 /// @nodoc
@@ -71,16 +71,7 @@ as DateTime?,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignor
 as DateTime,
   ));
 }
-/// Create a copy of FavoriteContactEntry
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$ContactSummaryCopyWith<$Res> get contact {
-  
-  return $ContactSummaryCopyWith<$Res>(_self.contact, (value) {
-    return _then(_self.copyWith(contact: value));
-  });
-}
+
 }
 
 
@@ -260,7 +251,7 @@ $Res call({
 });
 
 
-@override $ContactSummaryCopyWith<$Res> get contact;
+
 
 }
 /// @nodoc
@@ -283,16 +274,7 @@ as DateTime,
   ));
 }
 
-/// Create a copy of FavoriteContactEntry
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$ContactSummaryCopyWith<$Res> get contact {
-  
-  return $ContactSummaryCopyWith<$Res>(_self.contact, (value) {
-    return _then(_self.copyWith(contact: value));
-  });
-}
+
 }
 
 // dart format on

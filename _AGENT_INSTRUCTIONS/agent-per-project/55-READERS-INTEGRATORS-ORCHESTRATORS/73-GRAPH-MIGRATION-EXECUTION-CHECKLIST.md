@@ -233,6 +233,10 @@ Contact and handle reads should come from graph facts plus overlay intent.
 - `contactsListRepositoryProvider` no longer gates on or opens legacy
   `working.db`; ordinary contact picker summaries now come from graph facts
   plus overlay virtual contacts.
+- `contactsListRepositoryProvider` is now composed at the contacts feature
+  boundary; graph contact list reads are behind a typed `ContactsListReader`.
+- `recentContactsProvider` is now composed at the contacts feature boundary;
+  overlay recent-contact reads are behind a typed `RecentContactsReader`.
 - Contact picker/list summaries use graph contact ids when graph contact
   evidence exists.
 - Graph contact summaries still omit contacts with no chat/message

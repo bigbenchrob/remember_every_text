@@ -2,13 +2,18 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../essentials/db/feature_level_providers.dart';
+import '../../essentials/db/feature_level_providers/message_data_version_provider.dart';
 import 'application/contact_access/contact_access_store.dart';
 import 'application/display_identity/display_identity.dart';
 import 'application/display_name_overrides/contact_display_name_override_store.dart';
 import 'application/read_models/contact_profile_reader.dart';
 import 'application/read_models/contact_profile_summary.dart';
+import 'application/read_models/contact_summary.dart';
+import 'application/read_models/contacts_list_reader.dart';
 import 'application/read_models/handles_for_contact_reader.dart';
 import 'application/read_models/linked_handle.dart';
+import 'application/read_models/recent_contact_summary.dart';
+import 'application/read_models/recent_contacts_reader.dart';
 import 'application/read_models/virtual_participants_reader.dart';
 import 'application/services/manual_handle_link_store.dart';
 import 'application/sidebar_cassette_spec/resolver_tools/picker_filter_mode_store.dart';
@@ -16,13 +21,14 @@ import 'domain/overlay_virtual_contact.dart';
 import 'infrastructure/repositories/display_identity_repository.dart';
 import 'infrastructure/repositories/favorite_contacts_repository.dart';
 import 'infrastructure/repositories/graph_contact_profile_reader.dart';
+import 'infrastructure/repositories/graph_contacts_list_reader.dart';
 import 'infrastructure/repositories/graph_handles_for_contact_reader.dart';
 import 'infrastructure/repositories/overlay_contact_access_store.dart';
 import 'infrastructure/repositories/overlay_contact_display_name_override_store.dart';
 import 'infrastructure/repositories/overlay_manual_handle_link_store.dart';
 import 'infrastructure/repositories/overlay_picker_filter_mode_store.dart';
+import 'infrastructure/repositories/overlay_recent_contacts_reader.dart';
 import 'infrastructure/repositories/overlay_virtual_participants_reader.dart';
-import 'infrastructure/repositories/recent_contacts_repository.dart';
 
 // =============================================================================
 // CONTACTS FEATURE — PUBLIC API
@@ -48,8 +54,12 @@ import 'infrastructure/repositories/recent_contacts_repository.dart';
 export './application/display_identity/display_identity.dart';
 export './application/read_models/contact_profile_reader.dart';
 export './application/read_models/contact_profile_summary.dart';
+export './application/read_models/contact_summary.dart';
+export './application/read_models/contacts_list_reader.dart';
 export './application/read_models/handles_for_contact_reader.dart';
 export './application/read_models/linked_handle.dart';
+export './application/read_models/recent_contact_summary.dart';
+export './application/read_models/recent_contacts_reader.dart';
 export './application/read_models/virtual_participants_reader.dart';
 export './application/services/manual_handle_link_service.dart';
 export './application/sidebar_cassette_spec/coordinators/cassette_coordinator.dart';
@@ -65,8 +75,6 @@ export './application/tooltips_spec/coordinators/contacts_tooltip_coordinator.da
 export './domain/overlay_virtual_contact.dart';
 export './domain/spec_classes/contacts_cassette_spec.dart';
 export './domain/spec_classes/contacts_tooltip_spec.dart';
-export './infrastructure/repositories/contacts_list_repository.dart';
-export './infrastructure/repositories/recent_contacts_repository.dart';
 
 part 'feature_level_providers.g.dart';
 
@@ -125,6 +133,41 @@ Future<VirtualParticipantsReader> virtualParticipantsReader(Ref ref) async {
 Future<List<OverlayVirtualContact>> virtualParticipants(Ref ref) async {
   final reader = await ref.watch(virtualParticipantsReaderProvider.future);
   return reader.readVirtualParticipants();
+}
+
+@riverpod
+Future<ContactsListReader> contactsListReader(Ref ref) async {
+  final graphDb = await ref.watch(
+    driftConversationGraphDatabaseProvider.future,
+  );
+  final overlayDb = await ref.watch(overlayDatabaseProvider.future);
+  return GraphContactsListReader(graphDb: graphDb, overlayDb: overlayDb);
+}
+
+@riverpod
+Future<List<ContactSummary>> contactsListRepository(Ref ref) async {
+  final maintenanceLocked = ref.watch(dbMaintenanceLockProvider);
+  if (maintenanceLocked) {
+    return const <ContactSummary>[];
+  }
+
+  ref.watch(messageDataVersionProvider);
+
+  final reader = await ref.watch(contactsListReaderProvider.future);
+  return reader.readContacts();
+}
+
+@riverpod
+Future<RecentContactsReader> recentContactsReader(Ref ref) async {
+  final overlayDb = await ref.watch(overlayDatabaseProvider.future);
+  return OverlayRecentContactsReader(overlayDb: overlayDb);
+}
+
+@riverpod
+Future<List<RecentContactSummary>> recentContacts(Ref ref) async {
+  final reader = await ref.watch(recentContactsReaderProvider.future);
+  final contacts = await ref.watch(contactsListRepositoryProvider.future);
+  return reader.readRecentContacts(contacts: contacts);
 }
 
 @riverpod

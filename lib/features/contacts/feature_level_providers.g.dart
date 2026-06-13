@@ -152,6 +152,85 @@ final virtualParticipantsProvider =
 // ignore: unused_element
 typedef VirtualParticipantsRef =
     AutoDisposeFutureProviderRef<List<OverlayVirtualContact>>;
+String _$contactsListReaderHash() =>
+    r'd9c798ed719547fb093505bf807a17a7d537be75';
+
+/// See also [contactsListReader].
+@ProviderFor(contactsListReader)
+final contactsListReaderProvider =
+    AutoDisposeFutureProvider<ContactsListReader>.internal(
+      contactsListReader,
+      name: r'contactsListReaderProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$contactsListReaderHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef ContactsListReaderRef =
+    AutoDisposeFutureProviderRef<ContactsListReader>;
+String _$contactsListRepositoryHash() =>
+    r'918df9a7158fe9f2d99758a0d42d8db4be098744';
+
+/// See also [contactsListRepository].
+@ProviderFor(contactsListRepository)
+final contactsListRepositoryProvider =
+    AutoDisposeFutureProvider<List<ContactSummary>>.internal(
+      contactsListRepository,
+      name: r'contactsListRepositoryProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$contactsListRepositoryHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef ContactsListRepositoryRef =
+    AutoDisposeFutureProviderRef<List<ContactSummary>>;
+String _$recentContactsReaderHash() =>
+    r'638bf4fec97cd230f6d463bd1fd463b104e4132a';
+
+/// See also [recentContactsReader].
+@ProviderFor(recentContactsReader)
+final recentContactsReaderProvider =
+    AutoDisposeFutureProvider<RecentContactsReader>.internal(
+      recentContactsReader,
+      name: r'recentContactsReaderProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$recentContactsReaderHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef RecentContactsReaderRef =
+    AutoDisposeFutureProviderRef<RecentContactsReader>;
+String _$recentContactsHash() => r'165c51d4a128562dbc367481cf15f4a199b45c86';
+
+/// See also [recentContacts].
+@ProviderFor(recentContacts)
+final recentContactsProvider =
+    AutoDisposeFutureProvider<List<RecentContactSummary>>.internal(
+      recentContacts,
+      name: r'recentContactsProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$recentContactsHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef RecentContactsRef =
+    AutoDisposeFutureProviderRef<List<RecentContactSummary>>;
 String _$contactProfileReaderHash() =>
     r'8c5fe1e92baa43c37a673e02da609869e3caea02';
 
