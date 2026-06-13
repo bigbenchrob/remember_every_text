@@ -7,7 +7,7 @@ import '../../db/feature_level_providers.dart';
 import '../../logging/application/app_logger.dart';
 import '../../navigation/application/app_navigator_key.dart';
 import '../../source_scoped_import/feature_level_providers.dart';
-import '../infrastructure/persistence/derived_message_data_file_store_provider.dart';
+import '../feature_level_providers.dart';
 import 'onboarding_environment_report_provider.dart';
 import 'onboarding_gate_provider.dart';
 

@@ -13,9 +13,7 @@ import '../../db/feature_level_providers/conversation_graph_readiness_provider.d
 import '../../source_scoped_import/feature_level_providers.dart'
     show sourceScopedImportDatabaseFileName;
 import '../domain/onboarding_environment_report.dart';
-import '../infrastructure/persistence/onboarding_database_probe_reader_provider.dart';
-import '../infrastructure/persistence/onboarding_failure_storage_provider.dart';
-import '../infrastructure/system/full_disk_access_provider.dart';
+import '../feature_level_providers.dart';
 import 'onboarding_database_probe_reader.dart';
 
 part 'onboarding_environment_report_provider.g.dart';

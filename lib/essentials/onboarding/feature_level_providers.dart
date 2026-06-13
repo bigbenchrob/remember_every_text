@@ -1,0 +1,36 @@
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+import '../db/feature_level_providers.dart';
+import 'application/derived_message_data_file_store.dart';
+import 'application/full_disk_access.dart';
+import 'application/onboarding_database_probe_reader.dart';
+import 'application/onboarding_failure_store.dart';
+import 'infrastructure/persistence/filesystem_derived_message_data_file_store.dart';
+import 'infrastructure/persistence/overlay_onboarding_failure_storage.dart';
+import 'infrastructure/persistence/sqlite_onboarding_database_probe_reader.dart';
+import 'infrastructure/system/macos_full_disk_access.dart';
+
+part 'feature_level_providers.g.dart';
+
+@riverpod
+OnboardingDatabaseProbeReader onboardingDatabaseProbeReader(Ref ref) {
+  return const SqliteOnboardingDatabaseProbeReader();
+}
+
+@riverpod
+OnboardingFailureStore onboardingFailureStorage(Ref ref) {
+  return OverlayOnboardingFailureStorage(
+    overlayDb: ref.watch(overlayDatabaseProvider.future),
+  );
+}
+
+@riverpod
+FullDiskAccess fullDiskAccess(Ref ref) {
+  return const MacosFullDiskAccess();
+}
+
+@riverpod
+DerivedMessageDataFileStore derivedMessageDataFileStore(Ref ref) {
+  return const FilesystemDerivedMessageDataFileStore();
+}

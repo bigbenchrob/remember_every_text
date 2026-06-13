@@ -1194,6 +1194,30 @@ void main() {
       );
     });
 
+    test('Onboarding provider composition stays feature-boundary owned', () {
+      const retiredInfrastructureProviders = <String>[
+        'lib/essentials/onboarding/infrastructure/persistence/onboarding_database_probe_reader_provider.dart',
+        'lib/essentials/onboarding/infrastructure/persistence/onboarding_failure_storage_provider.dart',
+        'lib/essentials/onboarding/infrastructure/persistence/derived_message_data_file_store_provider.dart',
+        'lib/essentials/onboarding/infrastructure/system/full_disk_access_provider.dart',
+      ];
+
+      final existingProviders = retiredInfrastructureProviders
+          .where((path) => File(path).existsSync())
+          .toList();
+
+      expect(
+        existingProviders,
+        isEmpty,
+        reason:
+            'Onboarding application code should depend on application '
+            'contracts via the onboarding feature-level provider boundary. '
+            'Concrete FDA, probe, failure-store, and file-store provider '
+            'composition must not move back under infrastructure.\n'
+            'Existing retired providers:\n${existingProviders.join('\n')}',
+      );
+    });
+
     test('Full Disk Access uses access boundary', () async {
       final offenders = await _findFullDiskAccessBoundaryOffenders();
 

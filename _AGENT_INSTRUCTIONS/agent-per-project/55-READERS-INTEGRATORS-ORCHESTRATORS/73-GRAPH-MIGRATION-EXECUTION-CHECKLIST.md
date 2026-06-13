@@ -2040,6 +2040,12 @@ Remove legacy systems only after their blockers close.
   feature-level boundary. The inspection contract remains application-owned,
   the SQLite/filesystem implementation remains infrastructure-owned, and a
   tripwire prevents the retired application provider from returning.
+- Added an onboarding feature-level provider boundary for FDA access,
+  onboarding database probing, onboarding failure persistence, and derived-data
+  file operations. Onboarding application code now depends on application
+  contracts through that boundary, while concrete macOS, SQLite, overlay, and
+  filesystem implementations remain infrastructure-owned. A tripwire prevents
+  the retired infrastructure provider locations from returning.
 - Split historical archive source inspection into an application
   `ArchiveSourceInspector` contract plus an infrastructure SQLite/filesystem
   implementation. The historical archives workflow now requests source

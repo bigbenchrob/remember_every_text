@@ -1,29 +1,10 @@
 import 'dart:convert';
 
 import '../../../db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import '../../application/onboarding_failure_store.dart';
 import '../../domain/onboarding_environment_report.dart';
 
-class PersistedOnboardingImportResult {
-  const PersistedOnboardingImportResult({
-    required this.failure,
-    this.recordedAt,
-  });
-
-  final OnboardingPipelineFailure failure;
-  final DateTime? recordedAt;
-}
-
-class PersistedOnboardingGraphProjectionResult {
-  const PersistedOnboardingGraphProjectionResult({
-    required this.failure,
-    this.recordedAt,
-  });
-
-  final OnboardingPipelineFailure failure;
-  final DateTime? recordedAt;
-}
-
-class OverlayOnboardingFailureStorage {
+class OverlayOnboardingFailureStorage implements OnboardingFailureStore {
   OverlayOnboardingFailureStorage({required Future<OverlayDatabase> overlayDb})
     : _overlayDb = overlayDb;
 
@@ -36,10 +17,12 @@ class OverlayOnboardingFailureStorage {
 
   final Future<OverlayDatabase> _overlayDb;
 
+  @override
   Future<OnboardingPipelineFailure?> loadImportResult() async {
     return (await loadImportResultEntry())?.failure;
   }
 
+  @override
   Future<PersistedOnboardingImportResult?> loadImportResultEntry() async {
     try {
       final overlayDb = await _overlayDb;
@@ -75,6 +58,7 @@ class OverlayOnboardingFailureStorage {
     }
   }
 
+  @override
   Future<void> saveImportFailure({
     required String message,
     int batchId = -1,
@@ -91,14 +75,17 @@ class OverlayOnboardingFailureStorage {
     await _writeJsonSetting(_importFailureKey, summary);
   }
 
+  @override
   Future<void> clearImportResult() async {
     await _clearSetting(_importFailureKey);
   }
 
+  @override
   Future<OnboardingPipelineFailure?> loadGraphProjectionResult() async {
     return (await loadGraphProjectionResultEntry())?.failure;
   }
 
+  @override
   Future<PersistedOnboardingGraphProjectionResult?>
   loadGraphProjectionResultEntry() async {
     try {
@@ -137,6 +124,7 @@ class OverlayOnboardingFailureStorage {
     }
   }
 
+  @override
   Future<void> saveGraphProjectionFailure({
     required String message,
     int batchId = -1,
@@ -151,6 +139,7 @@ class OverlayOnboardingFailureStorage {
     await _writeJsonSetting(_graphProjectionFailureKey, summary);
   }
 
+  @override
   Future<void> clearGraphProjectionResult() async {
     await _clearSetting(_graphProjectionFailureKey);
   }
