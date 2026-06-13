@@ -3,7 +3,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../handles/feature_level_providers.dart';
 import '../../feature_level_providers.dart';
-import '../../infrastructure/repositories/virtual_participants_provider.dart';
 
 part 'manual_handle_link_service.g.dart';
 

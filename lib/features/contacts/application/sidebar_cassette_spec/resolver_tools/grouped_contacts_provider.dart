@@ -2,7 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../infrastructure/repositories/contacts_list_repository.dart';
+import '../../../feature_level_providers.dart';
 
 part 'grouped_contacts_provider.freezed.dart';
 part 'grouped_contacts_provider.g.dart';

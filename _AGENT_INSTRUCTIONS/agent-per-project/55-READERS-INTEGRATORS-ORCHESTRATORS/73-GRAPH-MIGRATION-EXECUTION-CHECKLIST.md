@@ -2125,6 +2125,11 @@ Remove legacy systems only after their blockers close.
   through the contacts feature-level public API instead of importing contacts
   infrastructure providers directly. Added a cross-feature import tripwire for
   contact profile/handle/virtual-participant provider access.
+- Routed contacts application resolver/widget builders through the contacts
+  feature-level public API for contact summaries, profile prewarm, handles,
+  recents, and virtual participants instead of importing contacts
+  infrastructure read-model files directly. Expanded the contact boundary
+  tripwire to cover application and presentation surfaces.
 
 ### Exit Criteria
 

@@ -7,8 +7,7 @@ import '../../../../../config/theme/widgets/theme_widgets.dart';
 import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart';
-import '../../../application/services/manual_handle_link_service.dart';
-import '../../../infrastructure/repositories/handles_for_contact_provider.dart';
+import '../../../feature_level_providers.dart';
 
 /// Widget builder for the handle-filter cassette.
 ///

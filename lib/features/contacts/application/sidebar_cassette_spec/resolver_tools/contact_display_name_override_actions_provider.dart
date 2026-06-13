@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../feature_level_providers.dart';
-import '../../../infrastructure/repositories/contacts_list_repository.dart';
 import '../../display_name_overrides/contact_display_name_override_controller.dart';
 import 'unified_picker_sections_provider.dart';
 

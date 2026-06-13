@@ -784,20 +784,24 @@ void main() {
       );
     });
 
-    test('Contact presentation uses the contacts feature boundary', () async {
-      final offenders =
-          await _findContactPresentationContactsListRepositoryOffenders();
+    test(
+      'Contact application/presentation uses the contacts feature boundary',
+      () async {
+        final offenders =
+            await _findContactPresentationContactsListRepositoryOffenders();
 
-      expect(
-        offenders,
-        isEmpty,
-        reason:
-            'Contact presentation may render contact summaries, but it should '
-            'consume them through the contacts feature-level public API rather '
-            'than importing the concrete contacts-list repository directly.\n'
-            'Actual offenders:\n${offenders.join('\n')}',
-      );
-    });
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'Contact application/presentation may render or compose contact '
+              'summaries, handles, and virtual contacts, but it should consume '
+              'them through the contacts feature-level public API rather than '
+              'importing concrete contact infrastructure read-model files.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
 
     test(
       'Contact display-name override actions stay storage agnostic',
@@ -3858,10 +3862,11 @@ Future<List<String>> _findContactHeroOverlayDatabaseOffenders() async {
 Future<List<String>>
 _findContactPresentationContactsListRepositoryOffenders() async {
   final files = await _collectDartFiles((path) {
-    if (path.endsWith('.g.dart')) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
       return false;
     }
-    return path.startsWith('lib/features/contacts/presentation/');
+    return path.startsWith('lib/features/contacts/application/') ||
+        path.startsWith('lib/features/contacts/presentation/');
   });
   final offenders = <String>[];
 
@@ -3871,7 +3876,11 @@ _findContactPresentationContactsListRepositoryOffenders() async {
     final imports = _extractImports(uncommented);
     offenders.addAll([
       for (final importTarget in imports)
-        if (importTarget.endsWith('contacts_list_repository.dart'))
+        if (importTarget.endsWith('contacts_list_repository.dart') ||
+            importTarget.endsWith('contact_profile_provider.dart') ||
+            importTarget.endsWith('handles_for_contact_provider.dart') ||
+            importTarget.endsWith('recent_contacts_repository.dart') ||
+            importTarget.endsWith('virtual_participants_provider.dart'))
           '$filePath imports $importTarget',
     ]);
   }

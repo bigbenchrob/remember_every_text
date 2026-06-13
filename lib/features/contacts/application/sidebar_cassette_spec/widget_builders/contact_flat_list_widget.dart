@@ -11,7 +11,7 @@ import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart';
 import '../../../../messages/feature_level_providers.dart' as messages_feature;
-import '../../../infrastructure/repositories/contact_profile_provider.dart';
+import '../../../feature_level_providers.dart';
 import '../../../presentation/widgets/contact_initial_badge.dart';
 import '../../../presentation/widgets/picker_filter_toggle.dart';
 import '../payloads/contact_chooser_cassette_payload.dart';

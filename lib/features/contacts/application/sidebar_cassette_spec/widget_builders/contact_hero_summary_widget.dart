@@ -3,7 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../../essentials/conversation_graph/domain/identity_key_bridge.dart';
-import '../../../infrastructure/repositories/contacts_list_repository.dart';
+import '../../../feature_level_providers.dart';
 import '../../../presentation/dialogs/contact_name_edit_dialog.dart';
 import '../../../presentation/widgets/contact_cassette_error.dart';
 import '../../../presentation/widgets/contact_highlight_row.dart';
