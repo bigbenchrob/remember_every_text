@@ -1369,19 +1369,30 @@ void main() {
     });
 
     test(
-      'Historical archives folder chooser provider stays application-owned',
+      'Historical archives folder chooser provider stays feature-boundary owned',
       () {
+        const retiredApplicationProvider =
+            'lib/features/settings/application/historical_archive_folder_chooser_provider.dart';
         const retiredInfrastructureProvider =
             'lib/features/settings/infrastructure/repositories/historical_archive_folder_chooser_provider.dart';
 
+        expect(
+          File(retiredApplicationProvider).existsSync(),
+          isFalse,
+          reason:
+              'The HistoricalArchiveFolderChooser contract belongs to settings '
+              'application code, but provider composition imports concrete '
+              'folder-picker infrastructure and belongs in the settings '
+              'feature-level provider boundary.',
+        );
         expect(
           File(retiredInfrastructureProvider).existsSync(),
           isFalse,
           reason:
               'The HistoricalArchiveFolderChooser contract belongs to settings '
               'application code. Native folder picker mechanics may remain in '
-              'infrastructure, but the public provider boundary should not move '
-              'back there.',
+              'infrastructure, but provider composition belongs in the settings '
+              'feature-level provider boundary, not infrastructure.',
         );
       },
     );

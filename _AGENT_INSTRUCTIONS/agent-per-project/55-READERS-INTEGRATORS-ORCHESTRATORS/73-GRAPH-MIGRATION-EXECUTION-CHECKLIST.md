@@ -2067,6 +2067,11 @@ Remove legacy systems only after their blockers close.
   list read-model implementation for now, but presentation no longer imports
   the concrete repository file directly, and a tripwire prevents that boundary
   regression.
+- Moved Historical Archives folder chooser provider composition to the
+  settings feature-level boundary. The application contract remains in
+  settings application code, the native file-selector adapter remains
+  infrastructure-owned, and the retired application/infrastructure provider
+  locations are guarded by an architecture tripwire.
 
 ### Exit Criteria
 

@@ -6,9 +6,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import './application/archive_source_inspection.dart';
+import './application/historical_archive_folder_chooser.dart';
 import './infrastructure/repositories/archive_source_inspection_repository.dart';
+import './infrastructure/repositories/file_selector_historical_archive_folder_chooser.dart';
 
-export './application/historical_archive_folder_chooser_provider.dart';
+export './application/historical_archive_folder_chooser.dart';
 export './application/historical_archive_sources_provider.dart';
 export './application/sidebar_cassette_spec/coordinators/settings_coordinator.dart';
 export './application/sidebar_cassette_spec/payloads/attachment_archive_settings_cassette_payload.dart';
@@ -27,4 +29,9 @@ part 'feature_level_providers.g.dart';
 @riverpod
 Future<ArchiveSourceInspector> archiveSourceInspector(Ref ref) {
   return ref.watch(archiveSourceInspectionRepositoryProvider.future);
+}
+
+@riverpod
+HistoricalArchiveFolderChooser historicalArchiveFolderChooser(Ref ref) {
+  return const FileSelectorHistoricalArchiveFolderChooser();
 }
