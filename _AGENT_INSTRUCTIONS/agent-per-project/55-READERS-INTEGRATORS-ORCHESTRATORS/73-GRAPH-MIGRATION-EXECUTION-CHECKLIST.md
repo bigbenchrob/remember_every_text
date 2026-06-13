@@ -2104,6 +2104,10 @@ Remove legacy systems only after their blockers close.
   conversation graph feature-level boundary. Projectors still own projection
   semantics and consume repository contracts; concrete import/graph database
   wiring is centralized at the boundary and protected by a tripwire.
+- Moved conversation graph favourites-store and status-snapshot provider
+  composition into the conversation graph feature-level boundary. Favourites
+  controller and status reader remain semantic/application-owned while
+  overlay/source/import/graph wiring is centralized at the boundary.
 
 ### Exit Criteria
 

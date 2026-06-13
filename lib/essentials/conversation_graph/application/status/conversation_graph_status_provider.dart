@@ -2,7 +2,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../domain/status/conversation_graph_status.dart';
-import '../../infrastructure/repositories/conversation_graph_status_repository_provider.dart';
+import '../../feature_level_providers.dart';
 
 export '../../domain/status/conversation_graph_status.dart';
 

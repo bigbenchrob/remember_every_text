@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../infrastructure/repositories/conversation_favourites_store_provider.dart';
+import '../../feature_level_providers.dart';
 
 part 'conversation_favourites_provider.g.dart';
 

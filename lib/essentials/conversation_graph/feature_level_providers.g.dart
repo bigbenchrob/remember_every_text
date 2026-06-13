@@ -146,6 +146,46 @@ final contactProjectionRepositoryProvider =
 // ignore: unused_element
 typedef ContactProjectionRepositoryRef =
     AutoDisposeFutureProviderRef<ContactProjectionRepository>;
+String _$conversationFavouritesStoreHash() =>
+    r'6d52aa23a20db42b2ed5053643da27c3739cd4d5';
+
+/// See also [conversationFavouritesStore].
+@ProviderFor(conversationFavouritesStore)
+final conversationFavouritesStoreProvider =
+    AutoDisposeFutureProvider<ConversationFavouritesStore>.internal(
+      conversationFavouritesStore,
+      name: r'conversationFavouritesStoreProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$conversationFavouritesStoreHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef ConversationFavouritesStoreRef =
+    AutoDisposeFutureProviderRef<ConversationFavouritesStore>;
+String _$conversationGraphStatusSnapshotHash() =>
+    r'56f0a2d20113c77e69ed1694f610d7d65bff053f';
+
+/// See also [conversationGraphStatusSnapshot].
+@ProviderFor(conversationGraphStatusSnapshot)
+final conversationGraphStatusSnapshotProvider =
+    AutoDisposeFutureProvider<ConversationGraphStatus>.internal(
+      conversationGraphStatusSnapshot,
+      name: r'conversationGraphStatusSnapshotProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$conversationGraphStatusSnapshotHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef ConversationGraphStatusSnapshotRef =
+    AutoDisposeFutureProviderRef<ConversationGraphStatus>;
 String _$conversationRepositoryHash() =>
     r'795eda961d4419a0250463a5473570a402e3dc52';
 

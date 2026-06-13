@@ -1221,6 +1221,25 @@ void main() {
       );
     });
 
+    test('Graph status and favourites stores stay feature-boundary owned', () {
+      const retiredProviderPaths = <String>[
+        'lib/essentials/conversation_graph/infrastructure/repositories/conversation_favourites_store_provider.dart',
+        'lib/essentials/conversation_graph/infrastructure/repositories/conversation_graph_status_repository_provider.dart',
+      ];
+
+      for (final retiredPath in retiredProviderPaths) {
+        expect(
+          File(retiredPath).existsSync(),
+          isFalse,
+          reason:
+              'Conversation graph favourites/status provider composition opens '
+              'overlay, source, import, or graph resources and belongs in the '
+              'conversation_graph feature-level provider boundary, not '
+              'infrastructure provider islands.',
+        );
+      }
+    });
+
     test('Archive graph removal uses resetter boundary', () async {
       final offenders =
           await _findArchiveGraphRemovalResetterBoundaryOffenders();
@@ -3140,18 +3159,21 @@ Future<List<String>> _findGraphStatusProviderBoundaryOffenders() async {
   final imports = _extractImports(uncommented);
   final offenders = <String>[
     for (final importTarget in imports)
-      if (importTarget.endsWith('providers.dart') ||
-          importTarget.endsWith('essentials/db/feature_level_providers.dart') ||
-          importTarget.endsWith(
-            'source_scoped_import/feature_level_providers.dart',
-          ) ||
-          importTarget.endsWith(
-            'source_scoped_import/domain/known_sources.dart',
-          ) ||
-          importTarget.endsWith(
-            'conversation_graph/infrastructure/repositories/conversation_graph_status_repository.dart',
-          ) ||
-          importTarget.endsWith('conversation_graph_database.dart'))
+      if (importTarget != '../../feature_level_providers.dart' &&
+          (importTarget.endsWith('providers.dart') ||
+              importTarget.endsWith(
+                'essentials/db/feature_level_providers.dart',
+              ) ||
+              importTarget.endsWith(
+                'source_scoped_import/feature_level_providers.dart',
+              ) ||
+              importTarget.endsWith(
+                'source_scoped_import/domain/known_sources.dart',
+              ) ||
+              importTarget.endsWith(
+                'conversation_graph/infrastructure/repositories/conversation_graph_status_repository.dart',
+              ) ||
+              importTarget.endsWith('conversation_graph_database.dart')))
         '$filePath imports $importTarget',
   ];
 
