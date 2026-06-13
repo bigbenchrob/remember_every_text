@@ -5,6 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../essentials/db/feature_level_providers.dart';
 import '../contacts/feature_level_providers.dart';
+import 'application/read_models/handle_display_name_reader.dart';
 import 'application/read_models/stray_handle_summary.dart';
 import 'application/read_models/stray_handles_read_repository.dart';
 import 'application/review/handle_review_controller.dart';
@@ -12,10 +13,10 @@ import 'application/review/handle_review_store.dart';
 import 'application/settings_cassette_spec/resolver_tools/handle_visibility_store.dart';
 import 'application/settings_cassette_spec/resolver_tools/manual_linking_read_repository.dart';
 import 'application/settings_cassette_spec/resolver_tools/spam_handles_repository.dart';
+import 'infrastructure/repositories/graph_handle_display_name_reader.dart';
 import 'infrastructure/repositories/graph_manual_linking_read_repository.dart';
 import 'infrastructure/repositories/graph_spam_handles_repository.dart';
 import 'infrastructure/repositories/graph_stray_handles_read_repository.dart';
-import 'infrastructure/repositories/handle_display_name_provider.dart';
 import 'infrastructure/repositories/overlay_handle_review_store.dart';
 import 'infrastructure/repositories/overlay_handle_visibility_store.dart';
 
@@ -37,6 +38,7 @@ import 'infrastructure/repositories/overlay_handle_visibility_store.dart';
 // =============================================================================
 
 export './application/info_cassette_spec/coordinators/info_cassette_coordinator.dart';
+export './application/read_models/handle_display_name_reader.dart';
 export './application/read_models/stray_handle_summary.dart';
 export './application/review/handle_review_controller.dart';
 export './application/review/handle_review_store.dart';
@@ -46,7 +48,6 @@ export './application/sidebar_cassette_spec/payloads/stray_handles_review_casset
 export './application/sidebar_cassette_spec/payloads/stray_handles_type_switcher_cassette_payload.dart';
 export './application/sidebar_cassette_spec/rendering/handles_cassette_body_builder.dart';
 export './application/state/stray_handle_mode_provider.dart';
-export './infrastructure/repositories/handle_display_name_provider.dart';
 
 part 'feature_level_providers.g.dart';
 
@@ -99,6 +100,28 @@ Future<StrayHandlesReadRepository> strayHandlesReadRepository(Ref ref) async {
     graphDb: graphDb,
     overlayDb: overlayDb,
   );
+}
+
+@riverpod
+Future<HandleDisplayNameReader> handleDisplayNameReader(Ref ref) async {
+  final graphDb = await ref.watch(
+    driftConversationGraphDatabaseProvider.future,
+  );
+  final overlayDb = await ref.watch(overlayDatabaseProvider.future);
+  final displayIdentityResolver = await ref.watch(
+    displayIdentityResolverProvider.future,
+  );
+  return GraphHandleDisplayNameReader(
+    graphDb: graphDb,
+    overlayDb: overlayDb,
+    displayIdentityResolver: displayIdentityResolver,
+  );
+}
+
+@riverpod
+Future<String> handleDisplayName(Ref ref, {required int handleId}) async {
+  final reader = await ref.watch(handleDisplayNameReaderProvider.future);
+  return reader.readHandleDisplayName(handleId: handleId);
 }
 
 /// Returns all handles that are truly "stray": no graph contact link and no

@@ -252,6 +252,9 @@ Contact and handle reads should come from graph facts plus overlay intent.
 - `handleDisplayNameProvider` no longer opens legacy `working.db`; it resolves
   user-visible handle labels from overlay intent, graph display identity, and
   graph handle facts only.
+- `handleDisplayNameProvider` is now composed at the handles feature boundary;
+  graph/overlay reads are quarantined behind a typed
+  `HandleDisplayNameReader` rather than exported as an infrastructure provider.
 - `strayHandlesProvider` and `dismissedHandlesProvider` now read graph
   canonical handle evidence only and respect overlay dismissal, visibility, and
   linking intent.
