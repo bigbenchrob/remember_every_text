@@ -2434,10 +2434,16 @@ Future<List<String>> _findCrossSystemChatProviderImportOffenders() async {
     final imports = _extractImports(uncommented);
     for (final importTarget in imports) {
       if (importTarget.endsWith(
+            'features/chats/presentation/view/conversation_browser_view.dart',
+          ) ||
+          importTarget.endsWith(
             'features/chats/presentation/view_model/chats_view_model_provider.dart',
           ) ||
           importTarget.endsWith(
             'features/chats/presentation/view_model/recent_chats_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'chats/presentation/view/conversation_browser_view.dart',
           ) ||
           importTarget.endsWith(
             'chats/presentation/view_model/chats_view_model_provider.dart',

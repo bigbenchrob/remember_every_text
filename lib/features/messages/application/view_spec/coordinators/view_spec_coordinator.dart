@@ -1,7 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../chats/presentation/view/conversation_browser_view.dart';
+import '../../../../chats/feature_level_providers.dart'
+    show ConversationBrowserView;
 import '../../../domain/spec_classes/messages_view_spec.dart';
 import '../../../presentation/view/conversation_messages_preview_view.dart';
 import '../resolvers/global_timeline_resolver.dart';
