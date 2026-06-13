@@ -946,6 +946,20 @@ void main() {
       }
     });
 
+    test('Other features use handles feature boundary', () async {
+      final offenders = await _findCrossFeatureHandleInfrastructureOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Features outside handles should consume handle display/stray '
+            'handle providers through features/handles/feature_level_providers.dart, '
+            'not by importing handles infrastructure files directly.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Developer mode stays overlay-storage agnostic', () async {
       final offenders = await _findDeveloperModeStorageOffenders();
 
@@ -2766,6 +2780,41 @@ Future<List<String>> _findSpamManagementStorageOffenders() async {
     offenders.add('$filePath handles overlay visibility storage directly');
   }
   return offenders..sort();
+}
+
+Future<List<String>> _findCrossFeatureHandleInfrastructureOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/features/') &&
+        !path.startsWith('lib/features/handles/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    for (final importTarget in imports) {
+      if (importTarget.endsWith(
+            'features/handles/infrastructure/repositories/handle_display_name_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'features/handles/infrastructure/repositories/stray_handles_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'handles/infrastructure/repositories/handle_display_name_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'handles/infrastructure/repositories/stray_handles_provider.dart',
+          )) {
+        offenders.add('$filePath imports $importTarget');
+      }
+    }
+  }
+
+  return offenders.toList()..sort();
 }
 
 Future<List<String>> _findDeveloperModeStorageOffenders() async {

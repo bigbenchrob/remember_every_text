@@ -2117,6 +2117,10 @@ Remove legacy systems only after their blockers close.
   the settings feature-level boundary. The coverage resolver and sidebar action
   dispatcher now consume the public settings API while graph database and
   filesystem exporter wiring stay centralized at the boundary.
+- Routed the contact manual-link service's stray-handle invalidation through
+  the handles feature-level public API instead of importing handle
+  infrastructure providers directly. Added a cross-feature import tripwire for
+  handle display/stray-handle provider access.
 
 ### Exit Criteria
 

@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../handles/infrastructure/repositories/stray_handles_provider.dart';
+import '../../../handles/feature_level_providers.dart';
 import '../../feature_level_providers.dart';
 import '../../infrastructure/repositories/virtual_participants_provider.dart';
 
