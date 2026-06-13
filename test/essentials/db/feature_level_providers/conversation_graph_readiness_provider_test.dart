@@ -1,11 +1,11 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:remember_this_text/essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart';
+import 'package:remember_this_text/essentials/db/infrastructure/repositories/sqlite_conversation_graph_readiness_checker.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 void main() {
-  group('ConversationGraphReadinessChecker', () {
+  group('SqliteConversationGraphReadinessChecker', () {
     late Directory tempDir;
 
     setUp(() async {
@@ -21,9 +21,8 @@ void main() {
     });
 
     test('reports missing graph database', () {
-      final readiness = const ConversationGraphReadinessChecker().checkPath(
-        '${tempDir.path}/working_ss.db',
-      );
+      final readiness = const SqliteConversationGraphReadinessChecker()
+          .checkPath('${tempDir.path}/working_ss.db');
 
       expect(readiness.isReady, isFalse);
       expect(readiness.reason, 'working_ss.db is missing');
@@ -36,9 +35,8 @@ void main() {
         ..execute('CREATE TABLE messages (ss_id INTEGER PRIMARY KEY)')
         ..dispose();
 
-      final readiness = const ConversationGraphReadinessChecker().checkPath(
-        dbPath,
-      );
+      final readiness = const SqliteConversationGraphReadinessChecker()
+          .checkPath(dbPath);
 
       expect(readiness.isReady, isFalse);
       expect(readiness.reason, contains('missing graph tables'));
@@ -49,9 +47,8 @@ void main() {
       final dbPath = '${tempDir.path}/working_ss.db';
       _createRequiredGraphTables(dbPath);
 
-      final readiness = const ConversationGraphReadinessChecker().checkPath(
-        dbPath,
-      );
+      final readiness = const SqliteConversationGraphReadinessChecker()
+          .checkPath(dbPath);
 
       expect(readiness.isReady, isFalse);
       expect(readiness.reason, 'working_ss.db has no messages');
@@ -70,9 +67,8 @@ void main() {
         )
         ..dispose();
 
-      final readiness = const ConversationGraphReadinessChecker().checkPath(
-        dbPath,
-      );
+      final readiness = const SqliteConversationGraphReadinessChecker()
+          .checkPath(dbPath);
 
       expect(readiness.isReady, isTrue);
       expect(readiness.messageCount, 1);

@@ -2005,6 +2005,10 @@ Remove legacy systems only after their blockers close.
   Infrastructure still performs file-existence checks, and presentation may
   create renderable `File` objects at the media edge, but the application port
   no longer exposes concrete file handles.
+- Moved conversation graph readiness file/SQLite probing out of the public
+  readiness provider and into `SqliteConversationGraphReadinessChecker`.
+  The provider now owns lifecycle invalidation and path selection only, while
+  infrastructure owns graph-storage inspection.
 
 ### Exit Criteria
 

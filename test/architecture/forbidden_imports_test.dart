@@ -396,6 +396,24 @@ void main() {
       );
     });
 
+    test(
+      'Conversation graph readiness provider uses checker boundary',
+      () async {
+        final offenders =
+            await _findConversationGraphReadinessProviderBoundaryOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'The public graph readiness provider should expose lifecycle '
+              'readiness semantics and delegate filesystem/SQLite probing to '
+              'infrastructure.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
     test('Database health audit service stays IO agnostic', () async {
       final offenders = await _findDatabaseHealthAuditServiceIoOffenders();
 
@@ -1542,6 +1560,35 @@ Future<List<String>> _findDatabaseHealthQueryLayerFileIoOffenders() async {
   if (RegExp(r'(^|[^\w.])File\(').hasMatch(uncommented) ||
       uncommented.contains('existsSync(')) {
     offenders.add('$filePath performs filesystem probing directly');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>>
+_findConversationGraphReadinessProviderBoundaryOffenders() async {
+  const filePath =
+      'lib/essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final source = await file.readAsString();
+  final uncommented = _stripComments(source);
+  final imports = _extractImports(uncommented);
+  final offenders = <String>[
+    for (final importTarget in imports)
+      if (importTarget == 'dart:io' ||
+          importTarget == 'package:sqlite3/sqlite3.dart')
+        '$filePath imports $importTarget',
+  ];
+
+  if (RegExp(r'(^|[^\w.])File\(').hasMatch(uncommented) ||
+      uncommented.contains('sqlite3.open(') ||
+      uncommented.contains('existsSync(') ||
+      uncommented.contains('lengthSync(')) {
+    offenders.add('$filePath performs readiness probing directly');
   }
 
   return offenders..sort();
