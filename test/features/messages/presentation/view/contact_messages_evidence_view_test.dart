@@ -5,9 +5,9 @@ import 'package:remember_this_text/essentials/conversation_graph/application/con
 import 'package:remember_this_text/essentials/conversation_graph/application/contacts/contact_graph_provider.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversations/conversation.dart';
 import 'package:remember_this_text/features/contacts/feature_level_providers.dart';
+import 'package:remember_this_text/features/messages/application/message_evidence/current_visible_month_provider.dart';
 import 'package:remember_this_text/features/messages/domain/message_evidence/message_evidence_scope.dart';
 import 'package:remember_this_text/features/messages/presentation/view/contact_messages_evidence_view.dart';
-import 'package:remember_this_text/features/messages/presentation/view_model/timeline/current_visible_month_provider.dart';
 
 void main() {
   testWidgets('opens contact message evidence timeline at latest message', (

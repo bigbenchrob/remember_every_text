@@ -1,6 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../domain/message_evidence/message_evidence_scope.dart';
+import '../../domain/message_evidence/message_evidence_scope.dart';
 
 part 'current_visible_month_provider.g.dart';
 

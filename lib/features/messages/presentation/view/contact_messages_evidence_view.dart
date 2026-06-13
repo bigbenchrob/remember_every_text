@@ -5,12 +5,12 @@ import 'package:intl/intl.dart';
 import '../../../../essentials/conversation_graph/application/contacts/contact_graph.dart';
 import '../../../../essentials/conversation_graph/application/contacts/contact_graph_provider.dart';
 import '../../../contacts/feature_level_providers.dart';
+import '../../application/message_evidence/current_visible_month_provider.dart';
 import '../../application/message_evidence/message_evidence_spine_provider.dart';
 import '../../domain/message_evidence/message_evidence_row_data.dart';
 import '../../domain/message_evidence/message_evidence_scope.dart';
 import '../../domain/message_evidence/message_evidence_search_mode.dart';
 import '../../domain/message_evidence/message_evidence_skeleton.dart';
-import '../view_model/timeline/current_visible_month_provider.dart';
 import '../widgets/message_evidence/message_evidence_header.dart';
 import '../widgets/message_evidence/message_evidence_timeline_view.dart';
 

@@ -1662,6 +1662,21 @@ void main() {
       );
     });
 
+    test('Current visible month provider stays application-owned', () {
+      const retiredPresentationProvider =
+          'lib/features/messages/presentation/view_model/timeline/current_visible_month_provider.dart';
+
+      expect(
+        File(retiredPresentationProvider).existsSync(),
+        isFalse,
+        reason:
+            'CurrentVisibleMonth coordinates shared message evidence timeline '
+            'state across heatmap and evidence surfaces. It belongs in the '
+            'messages application evidence layer, not presentation view-model '
+            'storage.',
+      );
+    });
+
     test('Message history coverage providers stay feature-boundary owned', () {
       const retiredProviderPaths = <String>[
         'lib/features/settings/infrastructure/repositories/message_history_coverage_repository_provider.dart',

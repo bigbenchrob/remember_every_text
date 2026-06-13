@@ -8,13 +8,13 @@ import '../../../../config/theme/theme_typography.dart';
 import '../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../../essentials/sidebar/feature_level_providers.dart';
+import '../../application/message_evidence/current_visible_month_provider.dart';
 import '../../application/sidebar_cassette_spec/widget_builders/messages_heatmap_widget.dart';
 import '../../application/view_spec/resolver_tools/recovered_messages_heatmap_data.dart';
 import '../../domain/calendar_heatmap_timeline_data.dart';
 import '../../domain/message_evidence/message_evidence_scope.dart';
 import '../../domain/message_evidence/recovered_message_evidence.dart';
 import '../../feature_level_providers.dart';
-import '../view_model/timeline/current_visible_month_provider.dart';
 
 class RecoveredMessagesHeatmapSidebar extends ConsumerWidget {
   const RecoveredMessagesHeatmapSidebar({

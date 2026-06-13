@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:remember_this_text/features/messages/application/message_evidence/current_visible_month_provider.dart';
 import 'package:remember_this_text/features/messages/domain/message_evidence/message_evidence_scope.dart';
-import 'package:remember_this_text/features/messages/presentation/view_model/timeline/current_visible_month_provider.dart';
 
 void main() {
   test('publishes visible month per timeline scope', () {
