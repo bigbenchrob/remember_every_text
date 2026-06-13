@@ -2018,6 +2018,12 @@ Remove legacy systems only after their blockers close.
   export through application actions and renders a domain result; the concrete
   export service remains infrastructure-owned and protected by an architecture
   tripwire.
+- Split historical archive source inspection into an application
+  `ArchiveSourceInspector` contract plus an infrastructure SQLite/filesystem
+  implementation. The historical archives workflow now requests source
+  preflight through the application boundary instead of importing the concrete
+  inspection repository directly, with a tripwire preventing presentation
+  regression.
 
 ### Exit Criteria
 

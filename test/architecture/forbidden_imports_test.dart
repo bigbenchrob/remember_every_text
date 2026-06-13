@@ -1282,6 +1282,22 @@ void main() {
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
+
+    test('Historical archives UI uses source inspection boundary', () async {
+      final offenders =
+          await _findHistoricalArchivesInspectionBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Historical Archives presentation/view-model code should request '
+            'archive source inspection through the ArchiveSourceInspector '
+            'application boundary. SQLite and filesystem inspection belong in '
+            'settings infrastructure.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
   });
 }
 
@@ -1336,6 +1352,35 @@ _findDiagnosticReportPresentationInfrastructureOffenders() async {
     );
 
     if (importsLogExportService) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>>
+_findHistoricalArchivesInspectionBoundaryOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/features/settings/') &&
+        (path.contains('/presentation/') || path.contains('/view_model/'));
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    final importsInspectionRepository = imports.any(
+      (importTarget) => importTarget.endsWith(
+        'settings/infrastructure/repositories/archive_source_inspection_repository.dart',
+      ),
+    );
+
+    if (importsInspectionRepository) {
       offenders.add(filePath);
     }
   }

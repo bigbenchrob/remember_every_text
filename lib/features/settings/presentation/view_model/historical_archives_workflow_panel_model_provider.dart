@@ -9,7 +9,8 @@ import '../../../../essentials/db/feature_level_providers/conversation_graph_rea
 import '../../../../essentials/db/feature_level_providers/db_maintenance_lock_provider.dart';
 import '../../../../essentials/db/feature_level_providers/message_data_version_provider.dart';
 import '../../../../essentials/onboarding/application/onboarding_environment_report_provider.dart';
-import '../../infrastructure/repositories/archive_source_inspection_repository.dart';
+import '../../application/archive_source_inspection.dart';
+import '../../application/archive_source_inspector_provider.dart';
 import '../../infrastructure/repositories/historical_archive_folder_chooser_provider.dart';
 import '../../infrastructure/repositories/historical_archive_sources_repository.dart';
 
@@ -355,11 +356,11 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       phases: _runningPreflightPhases(),
     );
 
-    ArchiveSourceInspectionRepository? archiveSourceInspectionRepository;
+    ArchiveSourceInspector? archiveSourceInspector;
     HistoricalArchiveSourcesRepository? archiveSourcesRepository;
     try {
-      archiveSourceInspectionRepository = await ref.read(
-        archiveSourceInspectionRepositoryProvider.future,
+      archiveSourceInspector = await ref.read(
+        archiveSourceInspectorProvider.future,
       );
     } catch (_) {}
     try {
@@ -370,7 +371,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
 
     final result = await preflightHistoricalArchivesFolder(
       folderPath: folderPath,
-      archiveSourceInspectionRepository: archiveSourceInspectionRepository,
+      archiveSourceInspector: archiveSourceInspector,
     );
 
     await _persistHistoricalArchiveSourceIfEligible(
@@ -592,16 +593,16 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       ref.invalidate(conversationGraphPopulatedProvider);
       ref.read(messageDataVersionProvider.notifier).bump();
 
-      ArchiveSourceInspectionRepository? archiveSourceInspectionRepository;
+      ArchiveSourceInspector? archiveSourceInspector;
       try {
-        archiveSourceInspectionRepository = await ref.read(
-          archiveSourceInspectionRepositoryProvider.future,
+        archiveSourceInspector = await ref.read(
+          archiveSourceInspectorProvider.future,
         );
       } catch (_) {}
 
       final refreshedResult = await preflightHistoricalArchivesFolder(
         folderPath: selectedFolderPath,
-        archiveSourceInspectionRepository: archiveSourceInspectionRepository,
+        archiveSourceInspector: archiveSourceInspector,
       );
       final importedMessageCount =
           archiveResult.importResult.messages.insertedMessageCount;
@@ -1074,11 +1075,11 @@ String _removeImportedArchiveDataDetail({
 Future<HistoricalArchivesFolderPreflightResult>
 preflightHistoricalArchivesFolder({
   required String folderPath,
-  ArchiveSourceInspectionRepository? archiveSourceInspectionRepository,
+  ArchiveSourceInspector? archiveSourceInspector,
 }) async {
   final inspection =
-      await (archiveSourceInspectionRepository ??
-              const ArchiveSourceInspectionRepository(graphDb: null))
+      await (archiveSourceInspector ??
+              const _UnavailableArchiveSourceInspector())
           .inspectFolder(folderPath: folderPath);
   if (!inspection.isReadable) {
     return _failedPreflightResult(
@@ -1198,6 +1199,30 @@ preflightHistoricalArchivesFolder({
       ),
     ],
   );
+}
+
+final class _UnavailableArchiveSourceInspector
+    implements ArchiveSourceInspector {
+  const _UnavailableArchiveSourceInspector();
+
+  @override
+  Future<ArchiveSourceInspection> inspectFolder({
+    required String folderPath,
+  }) async {
+    return ArchiveSourceInspection(
+      folderPath: folderPath,
+      sourceLabel: path.basename(folderPath),
+      chatDbPath: path.join(folderPath, 'chat.db'),
+      chatDbStatusLabel: 'Unavailable',
+      attachmentsStatusLabel: 'Unavailable',
+      isReadable: false,
+      detail:
+          'Archive source inspection is unavailable because the inspection service could not be constructed.',
+      dryRunEstimate: const ArchiveSourceDryRunEstimate.unavailable(
+        unavailableReason: 'archive source inspection service unavailable.',
+      ),
+    );
+  }
 }
 
 HistoricalArchivesWorkflowState _workflowStateFromPreflightResult(

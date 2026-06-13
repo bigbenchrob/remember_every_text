@@ -6,65 +6,9 @@ import 'package:sqlite3/sqlite3.dart';
 
 import '../../../../essentials/db/feature_level_providers.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
+import '../../application/archive_source_inspection.dart';
 
 part 'archive_source_inspection_repository.g.dart';
-
-final class ArchiveSourceInspection {
-  const ArchiveSourceInspection({
-    required this.folderPath,
-    required this.sourceLabel,
-    required this.chatDbPath,
-    required this.chatDbStatusLabel,
-    required this.attachmentsStatusLabel,
-    required this.isReadable,
-    required this.detail,
-    required this.dryRunEstimate,
-    this.totalMessages,
-    this.totalChats,
-    this.totalHandles,
-    this.missingGuids,
-    this.earliestMessageUtc,
-    this.latestMessageUtc,
-  });
-
-  final String folderPath;
-  final String sourceLabel;
-  final String chatDbPath;
-  final String chatDbStatusLabel;
-  final String attachmentsStatusLabel;
-  final bool isReadable;
-  final String detail;
-  final ArchiveSourceDryRunEstimate dryRunEstimate;
-  final int? totalMessages;
-  final int? totalChats;
-  final int? totalHandles;
-  final int? missingGuids;
-  final String? earliestMessageUtc;
-  final String? latestMessageUtc;
-}
-
-final class ArchiveSourceDryRunEstimate {
-  const ArchiveSourceDryRunEstimate.available({
-    required this.comparableGuidCount,
-    required this.duplicateGuidCount,
-    required this.newGuidCount,
-  }) : unavailableReason = null;
-
-  const ArchiveSourceDryRunEstimate.unavailable({
-    required this.unavailableReason,
-  }) : comparableGuidCount = 0,
-       duplicateGuidCount = 0,
-       newGuidCount = 0;
-
-  final int comparableGuidCount;
-  final int duplicateGuidCount;
-  final int newGuidCount;
-  final String? unavailableReason;
-
-  bool get isAvailable {
-    return unavailableReason == null;
-  }
-}
 
 final class ArchiveSourceDateRange {
   const ArchiveSourceDateRange({
@@ -76,13 +20,14 @@ final class ArchiveSourceDateRange {
   final String? latestMessageUtc;
 }
 
-class ArchiveSourceInspectionRepository {
+class ArchiveSourceInspectionRepository implements ArchiveSourceInspector {
   const ArchiveSourceInspectionRepository({
     required ConversationGraphDatabase? graphDb,
   }) : _graphDb = graphDb;
 
   final ConversationGraphDatabase? _graphDb;
 
+  @override
   Future<ArchiveSourceInspection> inspectFolder({
     required String folderPath,
   }) async {

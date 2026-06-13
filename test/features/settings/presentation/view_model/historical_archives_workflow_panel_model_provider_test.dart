@@ -185,7 +185,7 @@ void main() {
 
       final result = await preflightHistoricalArchivesFolder(
         folderPath: tempDirectory.path,
-        archiveSourceInspectionRepository: ArchiveSourceInspectionRepository(
+        archiveSourceInspector: ArchiveSourceInspectionRepository(
           graphDb: graphDb,
         ),
       );
@@ -240,7 +240,7 @@ void main() {
 
       final result = await preflightHistoricalArchivesFolder(
         folderPath: tempDirectory.path,
-        archiveSourceInspectionRepository: ArchiveSourceInspectionRepository(
+        archiveSourceInspector: ArchiveSourceInspectionRepository(
           graphDb: graphDb,
         ),
       );

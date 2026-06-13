@@ -27,7 +27,7 @@ final historicalArchivesWorkflowPanelModelProvider =
 typedef HistoricalArchivesWorkflowPanelModelRef =
     AutoDisposeProviderRef<HistoricalArchivesWorkflowPanelViewModel>;
 String _$historicalArchivesWorkflowHash() =>
-    r'abc91f1d5b6ff4e158436b8e5abef78b79c79a9f';
+    r'44e01f04d430af3fc35f83f0dfa4a849499e78fc';
 
 /// See also [HistoricalArchivesWorkflow].
 @ProviderFor(HistoricalArchivesWorkflow)
