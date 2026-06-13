@@ -25,6 +25,11 @@ import 'infrastructure/repositories/source_database_attachment_path_lookup.dart'
 import 'infrastructure/repositories/source_scoped_attachment_snapshot_lookup.dart';
 import 'infrastructure/repositories/sqlite_historical_snapshot_reader.dart';
 
+export 'application/archive_settings_provider.dart';
+export 'application/attachment_archive_service_provider.dart';
+export 'application/attachment_resolver_provider.dart';
+export 'application/deterministic_recovery_provider.dart';
+
 part 'feature_level_providers.g.dart';
 
 @riverpod

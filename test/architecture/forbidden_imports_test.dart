@@ -537,6 +537,22 @@ void main() {
       },
     );
 
+    test('Other systems use attachments feature boundary', () async {
+      final offenders =
+          await _findCrossSystemAttachmentProviderImportOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Systems outside attachments should consume attachment resolver, '
+            'archive service, archive settings, and recovery providers through '
+            'features/attachments/feature_level_providers.dart. Direct imports '
+            'of attachment application provider files create provider islands.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Archive settings uses stats reader port', () async {
       final offenders =
           await _findArchiveSettingsStatsRepositoryImportOffenders();
@@ -2262,6 +2278,56 @@ _findDeterministicRecoveryInfrastructureImportOffenders() async {
         '$filePath imports $importTarget',
   ];
   return offenders..sort();
+}
+
+Future<List<String>> _findCrossSystemAttachmentProviderImportOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path.startsWith('lib/features/attachments/')) {
+      return false;
+    }
+    return path.startsWith('lib/features/') ||
+        path.startsWith('lib/essentials/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    for (final importTarget in imports) {
+      if (importTarget.endsWith(
+            'features/attachments/application/archive_settings_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'features/attachments/application/attachment_archive_service_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'features/attachments/application/attachment_resolver_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'features/attachments/application/deterministic_recovery_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'attachments/application/archive_settings_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'attachments/application/attachment_archive_service_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'attachments/application/attachment_resolver_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'attachments/application/deterministic_recovery_provider.dart',
+          )) {
+        offenders.add('$filePath imports $importTarget');
+      }
+    }
+  }
+
+  return offenders.toList()..sort();
 }
 
 Future<List<String>>

@@ -11,7 +11,6 @@ import '../../../../config/theme/theme_typography.dart';
 import '../../../../essentials/navigation/domain/navigation_constants.dart';
 import '../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../essentials/navigation/feature_level_providers.dart';
-import '../../../attachments/application/attachment_resolver_provider.dart';
 import '../../../attachments/domain/constants/attachment_provenance.dart';
 import '../../../attachments/domain/constants/resolved_attachment_availability.dart';
 import '../../../attachments/domain/entities/resolved_attachment.dart';
