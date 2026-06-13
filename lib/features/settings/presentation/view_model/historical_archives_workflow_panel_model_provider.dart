@@ -11,7 +11,7 @@ import '../../../../essentials/db/feature_level_providers/message_data_version_p
 import '../../../../essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import '../../application/archive_source_inspection.dart';
 import '../../application/archive_source_inspector_provider.dart';
-import '../../infrastructure/repositories/historical_archive_folder_chooser_provider.dart';
+import '../../application/historical_archive_folder_chooser_provider.dart';
 import '../../infrastructure/repositories/historical_archive_sources_repository.dart';
 
 part 'historical_archives_workflow_panel_model_provider.g.dart';

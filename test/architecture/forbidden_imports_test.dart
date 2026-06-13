@@ -1298,6 +1298,24 @@ void main() {
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
+
+    test(
+      'Historical archives folder chooser provider stays application-owned',
+      () {
+        const retiredInfrastructureProvider =
+            'lib/features/settings/infrastructure/repositories/historical_archive_folder_chooser_provider.dart';
+
+        expect(
+          File(retiredInfrastructureProvider).existsSync(),
+          isFalse,
+          reason:
+              'The HistoricalArchiveFolderChooser contract belongs to settings '
+              'application code. Native folder picker mechanics may remain in '
+              'infrastructure, but the public provider boundary should not move '
+              'back there.',
+        );
+      },
+    );
   });
 }
 

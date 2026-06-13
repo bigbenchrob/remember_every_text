@@ -2024,6 +2024,11 @@ Remove legacy systems only after their blockers close.
   preflight through the application boundary instead of importing the concrete
   inspection repository directly, with a tripwire preventing presentation
   regression.
+- Moved the Historical Archives folder chooser provider into settings
+  application code. The file-selector adapter remains infrastructure-owned,
+  while the workflow consumes the application `HistoricalArchiveFolderChooser`
+  boundary; an architecture tripwire prevents the provider wrapper from moving
+  back into infrastructure.
 
 ### Exit Criteria
 
