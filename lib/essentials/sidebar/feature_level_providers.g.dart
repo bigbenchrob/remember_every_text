@@ -1,13 +1,13 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'sidebar_flow_preference_store_provider.dart';
+part of 'feature_level_providers.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
 String _$sidebarFlowPreferenceStoreHash() =>
-    r'61d23ddbd576c381634362b8204e238b33f59ebf';
+    r'32a07479931b851731ec9ae3d31921943525de52';
 
 /// See also [sidebarFlowPreferenceStore].
 @ProviderFor(sidebarFlowPreferenceStore)

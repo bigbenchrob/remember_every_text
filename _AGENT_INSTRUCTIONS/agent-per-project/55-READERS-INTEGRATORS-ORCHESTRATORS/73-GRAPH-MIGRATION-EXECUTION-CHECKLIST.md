@@ -2077,6 +2077,10 @@ Remove legacy systems only after their blockers close.
   overlay-backed setting storage remains infrastructure-owned behind the
   `DeveloperModeStore` contract and the retired infrastructure provider wrapper
   is guarded by a tripwire.
+- Moved sidebar flow preference-store provider composition to the sidebar
+  feature-level boundary. `SidebarFlow` still owns deterministic sidebar state
+  and persistence semantics, while overlay-backed setting storage remains
+  infrastructure-owned behind the `SidebarFlowPreferenceStore` contract.
 
 ### Exit Criteria
 

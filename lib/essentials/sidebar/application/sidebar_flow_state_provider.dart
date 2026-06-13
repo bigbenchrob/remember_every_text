@@ -13,7 +13,6 @@ import '../../logging/application/app_logger.dart';
 import '../../navigation/domain/entities/view_spec.dart';
 import '../../navigation/domain/sidebar_mode.dart';
 import '../feature_level_providers.dart';
-import '../infrastructure/persistence/sidebar_flow_preference_store_provider.dart';
 import 'sidebar_flow_preference_store.dart';
 
 part 'sidebar_flow_state_provider.freezed.dart';

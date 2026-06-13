@@ -971,6 +971,20 @@ void main() {
       );
     });
 
+    test('Sidebar flow preference provider stays feature-boundary owned', () {
+      const retiredInfrastructureProvider =
+          'lib/essentials/sidebar/infrastructure/persistence/sidebar_flow_preference_store_provider.dart';
+
+      expect(
+        File(retiredInfrastructureProvider).existsSync(),
+        isFalse,
+        reason:
+            'SidebarFlowPreferenceStore is an application contract, but '
+            'provider composition imports concrete overlay storage and belongs '
+            'in the sidebar feature-level provider boundary.',
+      );
+    });
+
     test('Sidebar action dispatcher stays storage agnostic', () async {
       final offenders = await _findSidebarActionDispatcherStorageOffenders();
 
