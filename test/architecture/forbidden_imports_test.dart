@@ -568,6 +568,22 @@ void main() {
       );
     });
 
+    test('Other systems use settings feature boundary', () async {
+      final offenders =
+          await _findCrossSystemSettingsApplicationImportOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Systems outside settings should consume settings application '
+            'providers, coordinators, and resolvers through '
+            'features/settings/feature_level_providers.dart. Direct imports '
+            'of settings application internals recreate provider islands.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Archive settings uses stats reader port', () async {
       final offenders =
           await _findArchiveSettingsStatsRepositoryImportOffenders();
@@ -2417,6 +2433,35 @@ Future<List<String>> _findCrossSystemChatProviderImportOffenders() async {
           importTarget.endsWith(
             'chats/presentation/view_model/recent_chats_provider.dart',
           )) {
+        offenders.add('$filePath imports $importTarget');
+      }
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>>
+_findCrossSystemSettingsApplicationImportOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path.startsWith('lib/features/settings/')) {
+      return false;
+    }
+    return path.startsWith('lib/features/') ||
+        path.startsWith('lib/essentials/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    for (final importTarget in imports) {
+      if (importTarget.contains('features/settings/application/') ||
+          importTarget.contains('settings/application/')) {
         offenders.add('$filePath imports $importTarget');
       }
     }

@@ -6,7 +6,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../features/contacts/feature_level_providers.dart';
 import '../../../features/handles/domain/spec_classes/handles_cassette_spec.dart';
 import '../../../features/handles/feature_level_providers.dart';
-import '../../../features/settings/application/sidebar_cassette_spec/resolvers/message_history_coverage_settings_resolver.dart';
 import '../../../features/settings/domain/spec_classes/settings_cassette_spec.dart';
 import '../../../features/settings/feature_level_providers.dart';
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
