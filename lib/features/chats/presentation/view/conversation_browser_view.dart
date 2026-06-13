@@ -9,6 +9,7 @@ import '../../../../essentials/conversation_graph/application/conversations/conv
 import '../../../../essentials/conversation_graph/presentation/widgets/conversation_favourite_button.dart';
 import '../../../../essentials/search/presentation/widgets/search_highlighted_text.dart';
 import '../../application/conversation_browser/conversation_browser_integrator.dart';
+import '../../application/read_models/recent_chat_summary.dart';
 import '../view_model/chats_view_model_provider.dart';
 import '../view_model/recent_chats_provider.dart';
 

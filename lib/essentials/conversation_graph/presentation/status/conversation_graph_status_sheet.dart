@@ -8,7 +8,7 @@ import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../config/theme/colors/theme_colors_annotated.dart';
 import '../../../../config/theme/theme_typography.dart';
-import '../../../../features/chats/presentation/view_model/chats_view_model_provider.dart';
+import '../../../../features/chats/feature_level_providers.dart';
 import '../../application/chat_summaries/chat_summary.dart';
 import '../../application/chat_summaries/chat_summary_provider.dart';
 import '../../application/conversation_graph_build_controller_provider.dart';

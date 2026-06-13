@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/features/chats/application/conversation_browser/conversation_browser_integrator.dart';
-import 'package:remember_this_text/features/chats/presentation/view_model/recent_chats_provider.dart';
+import 'package:remember_this_text/features/chats/application/read_models/recent_chat_summary.dart';
 
 void main() {
   test('derives counts and filters conversations', () {

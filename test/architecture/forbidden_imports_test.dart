@@ -553,6 +553,21 @@ void main() {
       );
     });
 
+    test('Other systems use chats feature boundary', () async {
+      final offenders = await _findCrossSystemChatProviderImportOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Systems outside chats should consume chat view-model providers '
+            'and read models through features/chats/feature_level_providers.dart. '
+            'Direct imports of chats presentation providers recreate provider '
+            'islands and leak feature internals.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Archive settings uses stats reader port', () async {
       final offenders =
           await _findArchiveSettingsStatsRepositoryImportOffenders();
@@ -2321,6 +2336,44 @@ Future<List<String>> _findCrossSystemAttachmentProviderImportOffenders() async {
           ) ||
           importTarget.endsWith(
             'attachments/application/deterministic_recovery_provider.dart',
+          )) {
+        offenders.add('$filePath imports $importTarget');
+      }
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findCrossSystemChatProviderImportOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path.startsWith('lib/features/chats/')) {
+      return false;
+    }
+    return path.startsWith('lib/features/') ||
+        path.startsWith('lib/essentials/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    for (final importTarget in imports) {
+      if (importTarget.endsWith(
+            'features/chats/presentation/view_model/chats_view_model_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'features/chats/presentation/view_model/recent_chats_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'chats/presentation/view_model/chats_view_model_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'chats/presentation/view_model/recent_chats_provider.dart',
           )) {
         offenders.add('$filePath imports $importTarget');
       }

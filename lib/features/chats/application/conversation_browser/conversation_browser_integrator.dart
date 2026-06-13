@@ -1,4 +1,4 @@
-import '../../presentation/view_model/recent_chats_provider.dart';
+import '../read_models/recent_chat_summary.dart';
 
 enum ConversationBrowserFilter { all, groups, singles, withAttachments }
 

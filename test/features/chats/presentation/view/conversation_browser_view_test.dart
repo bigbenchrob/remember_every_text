@@ -5,6 +5,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversation_favourites/conversation_favourites_provider.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversations/conversation.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversations/conversation_reader_provider.dart';
+import 'package:remember_this_text/features/chats/application/read_models/recent_chat_summary.dart';
 import 'package:remember_this_text/features/chats/presentation/view/conversation_browser_view.dart';
 import 'package:remember_this_text/features/chats/presentation/view_model/recent_chats_provider.dart';
 
