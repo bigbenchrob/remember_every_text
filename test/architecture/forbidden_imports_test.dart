@@ -965,6 +965,25 @@ void main() {
       }
     });
 
+    test(
+      'Handle application/presentation uses the handles feature boundary',
+      () async {
+        final offenders =
+            await _findHandleApplicationInfrastructureProviderOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'Handle application/presentation may render or compose handle '
+              'display and stray-handle read models, but it should consume '
+              'them through the handles feature-level public API rather than '
+              'importing concrete handle infrastructure provider files.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
     test('Other features use handles feature boundary', () async {
       final offenders = await _findCrossFeatureHandleInfrastructureOffenders();
 
@@ -2840,6 +2859,44 @@ Future<List<String>> _findSpamManagementStorageOffenders() async {
     offenders.add('$filePath handles overlay visibility storage directly');
   }
   return offenders..sort();
+}
+
+Future<List<String>>
+_findHandleApplicationInfrastructureProviderOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/features/handles/application/') ||
+        path.startsWith('lib/features/handles/presentation/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    for (final importTarget in imports) {
+      if (importTarget.endsWith(
+            'features/handles/infrastructure/repositories/handle_display_name_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'features/handles/infrastructure/repositories/stray_handles_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'handles/infrastructure/repositories/handle_display_name_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'handles/infrastructure/repositories/stray_handles_provider.dart',
+          ) ||
+          importTarget.endsWith('handle_display_name_provider.dart') ||
+          importTarget.endsWith('stray_handles_provider.dart')) {
+        offenders.add('$filePath imports $importTarget');
+      }
+    }
+  }
+
+  return offenders.toList()..sort();
 }
 
 Future<List<String>> _findCrossFeatureHandleInfrastructureOffenders() async {

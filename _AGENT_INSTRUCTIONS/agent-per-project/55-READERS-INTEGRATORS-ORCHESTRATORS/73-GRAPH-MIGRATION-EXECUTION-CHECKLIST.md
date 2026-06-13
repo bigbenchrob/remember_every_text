@@ -2130,6 +2130,10 @@ Remove legacy systems only after their blockers close.
   recents, and virtual participants instead of importing contacts
   infrastructure read-model files directly. Expanded the contact boundary
   tripwire to cover application and presentation surfaces.
+- Routed handles application presentation for stray-handle review through the
+  handles feature-level public API instead of importing handle infrastructure
+  provider files directly. Added a handles application/presentation tripwire
+  so same-feature UI composition does not bypass the public boundary.
 
 ### Exit Criteria
 
