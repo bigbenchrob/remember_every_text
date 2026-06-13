@@ -2139,6 +2139,10 @@ Remove legacy systems only after their blockers close.
   remains semantic, while retained `macos_import.db` metadata repository access
   is wired only at the settings public API boundary and guarded by the existing
   archive-source metadata tripwire.
+- Routed non-infrastructure contacts/handles tests through the public feature
+  APIs for contact summaries, contact list provider overrides, and stray-handle
+  provider overrides. Infrastructure tests still import concrete repositories
+  directly when they are testing those repositories themselves.
 
 ### Exit Criteria
 

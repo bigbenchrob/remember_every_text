@@ -3,7 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/resolver_tools/participants_for_picker_provider.dart';
 import 'package:remember_this_text/features/contacts/domain/participant_origin.dart';
-import 'package:remember_this_text/features/contacts/infrastructure/repositories/contacts_list_repository.dart';
+import 'package:remember_this_text/features/contacts/feature_level_providers.dart';
 
 void main() {
   group('participantsForPickerProvider', () {

@@ -9,7 +9,7 @@ import 'package:remember_this_text/essentials/navigation/domain/navigation_const
 import 'package:remember_this_text/essentials/navigation/domain/sidebar_mode.dart';
 import 'package:remember_this_text/features/handles/application/sidebar_cassette_spec/widget_builders/stray_handles_review_cassette.dart';
 import 'package:remember_this_text/features/handles/domain/spec_classes/handles_cassette_spec.dart';
-import 'package:remember_this_text/features/handles/infrastructure/repositories/stray_handles_provider.dart';
+import 'package:remember_this_text/features/handles/feature_level_providers.dart';
 import 'package:remember_this_text/features/messages/domain/spec_classes/messages_view_spec.dart';
 
 void main() {

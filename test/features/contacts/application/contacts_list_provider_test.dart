@@ -8,7 +8,7 @@ import 'package:remember_this_text/essentials/db/infrastructure/data_sources/loc
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/features/contacts/domain/participant_origin.dart';
-import 'package:remember_this_text/features/contacts/infrastructure/repositories/contacts_list_repository.dart';
+import 'package:remember_this_text/features/contacts/feature_level_providers.dart';
 
 import '../../../essentials/conversation_graph/conversation_graph_test_database.dart';
 

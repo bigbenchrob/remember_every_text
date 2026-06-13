@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/resolver_tools/grouped_contacts_provider.dart';
-import 'package:remember_this_text/features/contacts/infrastructure/repositories/contacts_list_repository.dart';
+import 'package:remember_this_text/features/contacts/feature_level_providers.dart';
 
 import '../../../test_utils/contact_summary_fixture.dart';
 

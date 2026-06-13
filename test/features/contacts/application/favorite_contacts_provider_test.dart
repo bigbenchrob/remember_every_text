@@ -8,7 +8,6 @@ import 'package:remember_this_text/essentials/source_scoped_import/domain/source
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/resolver_tools/contact_is_favorite_provider.dart';
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/resolver_tools/favorite_contacts_provider.dart';
 import 'package:remember_this_text/features/contacts/feature_level_providers.dart';
-import 'package:remember_this_text/features/contacts/infrastructure/repositories/contacts_list_repository.dart';
 import 'package:remember_this_text/features/contacts/infrastructure/repositories/favorite_contacts_repository.dart';
 
 import '../../../test_utils/contact_summary_fixture.dart';
