@@ -2,6 +2,12 @@
 // SETTINGS FEATURE — PUBLIC API
 // =============================================================================
 
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+import './application/archive_source_inspection.dart';
+import './infrastructure/repositories/archive_source_inspection_repository.dart';
+
 export './application/historical_archive_folder_chooser_provider.dart';
 export './application/historical_archive_sources_provider.dart';
 export './application/sidebar_cassette_spec/coordinators/settings_coordinator.dart';
@@ -15,3 +21,10 @@ export './application/view_spec/coordinators/view_spec_coordinator.dart';
 export './domain/spec_classes/settings_cassette_spec.dart';
 export './domain/spec_classes/settings_view_spec.dart';
 export './infrastructure/repositories/message_history_coverage_report_exporter_provider.dart';
+
+part 'feature_level_providers.g.dart';
+
+@riverpod
+Future<ArchiveSourceInspector> archiveSourceInspector(Ref ref) {
+  return ref.watch(archiveSourceInspectionRepositoryProvider.future);
+}

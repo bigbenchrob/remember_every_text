@@ -2036,6 +2036,10 @@ Remove legacy systems only after their blockers close.
   `appLoggerProvider.notifier.writer` for `LogFileWriter` internals; it consumes
   the named diagnostic log-directory provider, and the sidebar dispatcher
   tripwire now blocks direct writer reach-through.
+- Moved `ArchiveSourceInspector` provider composition to the settings
+  feature-level boundary. The inspection contract remains application-owned,
+  the SQLite/filesystem implementation remains infrastructure-owned, and a
+  tripwire prevents the retired application provider from returning.
 - Split historical archive source inspection into an application
   `ArchiveSourceInspector` contract plus an infrastructure SQLite/filesystem
   implementation. The historical archives workflow now requests source

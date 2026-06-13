@@ -1315,6 +1315,20 @@ void main() {
       );
     });
 
+    test('Archive source inspector provider stays feature-boundary owned', () {
+      const retiredApplicationProvider =
+          'lib/features/settings/application/archive_source_inspector_provider.dart';
+
+      expect(
+        File(retiredApplicationProvider).existsSync(),
+        isFalse,
+        reason:
+            'ArchiveSourceInspector is an application contract, but provider '
+            'composition imports concrete source-inspection infrastructure '
+            'and belongs in the settings feature-level provider boundary.',
+      );
+    });
+
     test(
       'Historical archives folder chooser provider stays application-owned',
       () {
