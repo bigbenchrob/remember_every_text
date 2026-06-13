@@ -2,7 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../handles/infrastructure/repositories/stray_handles_provider.dart';
-import '../../infrastructure/repositories/manual_handle_link_store_provider.dart';
+import '../../feature_level_providers.dart';
 import '../../infrastructure/repositories/virtual_participants_provider.dart';
 
 part 'manual_handle_link_service.g.dart';

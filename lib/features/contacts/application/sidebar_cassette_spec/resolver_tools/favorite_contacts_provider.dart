@@ -2,8 +2,8 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../essentials/conversation_graph/domain/identity_key_bridge.dart';
+import '../../../feature_level_providers.dart';
 import '../../../infrastructure/repositories/contacts_list_repository.dart';
-import '../../../infrastructure/repositories/favorite_contacts_repository_provider.dart';
 
 part 'favorite_contacts_provider.freezed.dart';
 part 'favorite_contacts_provider.g.dart';

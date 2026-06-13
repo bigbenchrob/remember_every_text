@@ -6,6 +6,26 @@ part of 'feature_level_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
+String _$contactDisplayNameOverrideStoreHash() =>
+    r'1f9481034af9b5921bd1226457a2b5b09159bab9';
+
+/// See also [contactDisplayNameOverrideStore].
+@ProviderFor(contactDisplayNameOverrideStore)
+final contactDisplayNameOverrideStoreProvider =
+    AutoDisposeFutureProvider<ContactDisplayNameOverrideStore>.internal(
+      contactDisplayNameOverrideStore,
+      name: r'contactDisplayNameOverrideStoreProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$contactDisplayNameOverrideStoreHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef ContactDisplayNameOverrideStoreRef =
+    AutoDisposeFutureProviderRef<ContactDisplayNameOverrideStore>;
 String _$displayIdentityResolverHash() =>
     r'100f9a3065d28c7804b0ac7e8c3aed56b542367e';
 
@@ -32,6 +52,66 @@ final displayIdentityResolverProvider =
 // ignore: unused_element
 typedef DisplayIdentityResolverRef =
     AutoDisposeFutureProviderRef<DisplayIdentityResolver>;
+String _$favoriteContactsRepositoryHash() =>
+    r'24be60859246ea526b8fcd5403d51c4f8ba6b37a';
+
+/// See also [favoriteContactsRepository].
+@ProviderFor(favoriteContactsRepository)
+final favoriteContactsRepositoryProvider =
+    AutoDisposeFutureProvider<FavoriteContactsRepository>.internal(
+      favoriteContactsRepository,
+      name: r'favoriteContactsRepositoryProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$favoriteContactsRepositoryHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef FavoriteContactsRepositoryRef =
+    AutoDisposeFutureProviderRef<FavoriteContactsRepository>;
+String _$manualHandleLinkStoreHash() =>
+    r'a72d90c110e628a491160ffe8d15a0c140dddf9b';
+
+/// See also [manualHandleLinkStore].
+@ProviderFor(manualHandleLinkStore)
+final manualHandleLinkStoreProvider =
+    AutoDisposeFutureProvider<ManualHandleLinkStore>.internal(
+      manualHandleLinkStore,
+      name: r'manualHandleLinkStoreProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$manualHandleLinkStoreHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef ManualHandleLinkStoreRef =
+    AutoDisposeFutureProviderRef<ManualHandleLinkStore>;
+String _$pickerFilterModeStoreHash() =>
+    r'8ad99ebc9d81477b8d5d93ccb3bae658302972fe';
+
+/// See also [pickerFilterModeStore].
+@ProviderFor(pickerFilterModeStore)
+final pickerFilterModeStoreProvider =
+    AutoDisposeFutureProvider<PickerFilterModeStore>.internal(
+      pickerFilterModeStore,
+      name: r'pickerFilterModeStoreProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$pickerFilterModeStoreHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef PickerFilterModeStoreRef =
+    AutoDisposeFutureProviderRef<PickerFilterModeStore>;
 String _$contactAccessStoreHash() =>
     r'1a4625bbca2fe58b754e703a5f5c979ef7a96868';
 

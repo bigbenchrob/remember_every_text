@@ -2086,6 +2086,11 @@ Remove legacy systems only after their blockers close.
   filter/sort semantics, while overlay-backed setting storage remains
   infrastructure-owned behind the `ConversationSignaturePreferencesStore`
   contract.
+- Moved contacts user-intent provider composition to the contacts feature-level
+  boundary for display-name overrides, favourite contacts, manual handle links,
+  and picker filter mode. Application controllers now consume feature-boundary
+  providers for their storage/repository contracts instead of importing
+  infrastructure provider islands.
 
 ### Exit Criteria
 

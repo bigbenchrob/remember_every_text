@@ -4,8 +4,15 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../essentials/db/feature_level_providers.dart';
 import 'application/contact_access/contact_access_store.dart';
 import 'application/display_identity/display_identity.dart';
+import 'application/display_name_overrides/contact_display_name_override_store.dart';
+import 'application/services/manual_handle_link_store.dart';
+import 'application/sidebar_cassette_spec/resolver_tools/picker_filter_mode_store.dart';
 import 'infrastructure/repositories/display_identity_repository.dart';
+import 'infrastructure/repositories/favorite_contacts_repository.dart';
 import 'infrastructure/repositories/overlay_contact_access_store.dart';
+import 'infrastructure/repositories/overlay_contact_display_name_override_store.dart';
+import 'infrastructure/repositories/overlay_manual_handle_link_store.dart';
+import 'infrastructure/repositories/overlay_picker_filter_mode_store.dart';
 import 'infrastructure/repositories/recent_contacts_repository.dart';
 
 // =============================================================================
@@ -50,6 +57,16 @@ export './infrastructure/repositories/recent_contacts_repository.dart';
 
 part 'feature_level_providers.g.dart';
 
+@riverpod
+Future<ContactDisplayNameOverrideStore> contactDisplayNameOverrideStore(
+  Ref ref,
+) async {
+  final overlayDatabase = await ref.watch(overlayDatabaseProvider.future);
+  return OverlayContactDisplayNameOverrideStore(
+    overlayDatabase: overlayDatabase,
+  );
+}
+
 /// Semantic display-identity boundary.
 ///
 /// This resolver answers "what should the user see?", not "which database row
@@ -65,6 +82,24 @@ Future<DisplayIdentityResolver> displayIdentityResolver(Ref ref) async {
     graphDatabase: graphDb,
     overlayDatabase: overlayDb,
   ).readResolver();
+}
+
+@riverpod
+Future<FavoriteContactsRepository> favoriteContactsRepository(Ref ref) async {
+  final overlayDatabase = await ref.watch(overlayDatabaseProvider.future);
+  return FavoriteContactsRepository(overlayDatabase);
+}
+
+@riverpod
+Future<ManualHandleLinkStore> manualHandleLinkStore(Ref ref) async {
+  final overlayDatabase = await ref.watch(overlayDatabaseProvider.future);
+  return OverlayManualHandleLinkStore(overlayDatabase: overlayDatabase);
+}
+
+@riverpod
+Future<PickerFilterModeStore> pickerFilterModeStore(Ref ref) async {
+  final overlayDatabase = await ref.watch(overlayDatabaseProvider.future);
+  return OverlayPickerFilterModeStore(overlayDatabase: overlayDatabase);
 }
 
 @riverpod

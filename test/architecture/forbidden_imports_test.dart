@@ -811,23 +811,31 @@ void main() {
           reason:
               'ContactDisplayNameOverrideActions owns user-intent action '
               'semantics and invalidation only. Overlay store construction '
-              'belongs in contacts infrastructure.\n'
+              'belongs in the contacts feature-level provider boundary.\n'
               'Actual offenders:\n${offenders.join('\n')}',
         );
       },
     );
 
-    test('Contact favourite repository provider stays infrastructure-owned', () {
-      const retiredPath =
-          'lib/features/contacts/application/sidebar_cassette_spec/resolver_tools/favorite_contacts_repository_provider.dart';
+    test('Contact overlay stores stay feature-boundary owned', () {
+      const retiredProviderPaths = <String>[
+        'lib/features/contacts/application/sidebar_cassette_spec/resolver_tools/favorite_contacts_repository_provider.dart',
+        'lib/features/contacts/infrastructure/repositories/contact_display_name_override_store_provider.dart',
+        'lib/features/contacts/infrastructure/repositories/favorite_contacts_repository_provider.dart',
+        'lib/features/contacts/infrastructure/repositories/manual_handle_link_store_provider.dart',
+        'lib/features/contacts/infrastructure/repositories/picker_filter_mode_store_provider.dart',
+      ];
 
-      expect(
-        File(retiredPath).existsSync(),
-        isFalse,
-        reason:
-            'FavoriteContactsRepository composition opens overlay storage and '
-            'belongs in contacts infrastructure, not sidebar resolver tools.',
-      );
+      for (final retiredPath in retiredProviderPaths) {
+        expect(
+          File(retiredPath).existsSync(),
+          isFalse,
+          reason:
+              'Contact user-intent store/repository composition opens overlay '
+              'storage and belongs in contacts feature_level_providers.dart, '
+              'not resolver tools or infrastructure provider islands.',
+        );
+      }
     });
 
     test('Manual handle-link service stays overlay-storage agnostic', () async {

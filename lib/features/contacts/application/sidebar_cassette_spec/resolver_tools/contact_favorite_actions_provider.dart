@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../essentials/conversation_graph/domain/identity_key_bridge.dart';
-import '../../../infrastructure/repositories/favorite_contacts_repository_provider.dart';
+import '../../../feature_level_providers.dart';
 import 'contact_is_favorite_provider.dart';
 import 'favorite_contacts_provider.dart';
 import 'unified_picker_sections_provider.dart';

@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../infrastructure/repositories/picker_filter_mode_store_provider.dart';
+import '../../../feature_level_providers.dart';
 
 part 'picker_filter_mode_provider.g.dart';
 
