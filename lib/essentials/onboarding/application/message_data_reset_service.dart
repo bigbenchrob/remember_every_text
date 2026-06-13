@@ -4,7 +4,6 @@ import 'package:macos_ui/macos_ui.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../db/feature_level_providers.dart';
-import '../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../logging/application/app_logger.dart';
 import '../../navigation/application/app_navigator_key.dart';
 import '../../source_scoped_import/feature_level_providers.dart';

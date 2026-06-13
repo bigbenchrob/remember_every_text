@@ -2009,6 +2009,9 @@ Remove legacy systems only after their blockers close.
   readiness provider and into `SqliteConversationGraphReadinessChecker`.
   The provider now owns lifecycle invalidation and path selection only, while
   infrastructure owns graph-storage inspection.
+- Removed the reset service's direct concrete graph-database import for
+  filename access. Reset orchestration now uses the public database provider
+  boundary for graph storage constants as well as provider invalidation.
 
 ### Exit Criteria
 
