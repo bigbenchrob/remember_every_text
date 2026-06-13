@@ -5,6 +5,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../essentials/db/feature_level_providers.dart';
 import '../contacts/feature_level_providers.dart';
+import 'application/read_models/stray_handle_summary.dart';
+import 'application/read_models/stray_handles_read_repository.dart';
 import 'application/review/handle_review_controller.dart';
 import 'application/review/handle_review_store.dart';
 import 'application/settings_cassette_spec/resolver_tools/handle_visibility_store.dart';
@@ -12,10 +14,10 @@ import 'application/settings_cassette_spec/resolver_tools/manual_linking_read_re
 import 'application/settings_cassette_spec/resolver_tools/spam_handles_repository.dart';
 import 'infrastructure/repositories/graph_manual_linking_read_repository.dart';
 import 'infrastructure/repositories/graph_spam_handles_repository.dart';
+import 'infrastructure/repositories/graph_stray_handles_read_repository.dart';
 import 'infrastructure/repositories/handle_display_name_provider.dart';
 import 'infrastructure/repositories/overlay_handle_review_store.dart';
 import 'infrastructure/repositories/overlay_handle_visibility_store.dart';
-import 'infrastructure/repositories/stray_handles_provider.dart';
 
 // =============================================================================
 // HANDLES FEATURE — PUBLIC API
@@ -35,6 +37,7 @@ import 'infrastructure/repositories/stray_handles_provider.dart';
 // =============================================================================
 
 export './application/info_cassette_spec/coordinators/info_cassette_coordinator.dart';
+export './application/read_models/stray_handle_summary.dart';
 export './application/review/handle_review_controller.dart';
 export './application/review/handle_review_store.dart';
 export './application/sidebar_cassette_spec/coordinators/cassette_coordinator.dart';
@@ -44,7 +47,6 @@ export './application/sidebar_cassette_spec/payloads/stray_handles_type_switcher
 export './application/sidebar_cassette_spec/rendering/handles_cassette_body_builder.dart';
 export './application/state/stray_handle_mode_provider.dart';
 export './infrastructure/repositories/handle_display_name_provider.dart';
-export './infrastructure/repositories/stray_handles_provider.dart';
 
 part 'feature_level_providers.g.dart';
 
@@ -85,6 +87,48 @@ Future<SpamHandlesRepository> spamHandlesRepository(Ref ref) async {
     graphDatabase: graphDatabase,
     visibilityStore: visibilityStore,
   );
+}
+
+@riverpod
+Future<StrayHandlesReadRepository> strayHandlesReadRepository(Ref ref) async {
+  final graphDb = await ref.watch(
+    driftConversationGraphDatabaseProvider.future,
+  );
+  final overlayDb = await ref.watch(overlayDatabaseProvider.future);
+  return GraphStrayHandlesReadRepository(
+    graphDb: graphDb,
+    overlayDb: overlayDb,
+  );
+}
+
+/// Returns all handles that are truly "stray": no graph contact link and no
+/// linked override (participant or virtual participant) in the overlay DB.
+///
+/// Handles with an overlay row that has only `reviewed_at` set (both
+/// participant IDs null) are still included — they are reviewed but unlinked.
+///
+/// Excludes dismissed handles; those are only visible in the Dismissed escape
+/// hatch view via [dismissedHandlesProvider].
+@riverpod
+Future<List<StrayHandleSummary>> strayHandles(Ref ref) async {
+  final repository = await ref.watch(strayHandlesReadRepositoryProvider.future);
+  return repository.readActiveStrayHandles();
+}
+
+/// Returns only stray handles that match junk-like heuristics.
+@riverpod
+Future<List<StrayHandleSummary>> spamCandidateHandles(Ref ref) async {
+  final allStrays = await ref.watch(strayHandlesProvider.future);
+  final candidates = allStrays.where((h) => h.junkScore >= 3).toList();
+  candidates.sort((a, b) => b.junkScore.compareTo(a.junkScore));
+  return candidates;
+}
+
+/// Returns only dismissed handles for the escape hatch view.
+@riverpod
+Future<List<StrayHandleSummary>> dismissedHandles(Ref ref) async {
+  final repository = await ref.watch(strayHandlesReadRepositoryProvider.future);
+  return repository.readDismissedStrayHandles();
 }
 
 @riverpod

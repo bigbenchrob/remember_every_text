@@ -951,6 +951,7 @@ void main() {
         'lib/features/handles/infrastructure/repositories/handle_visibility_store_provider.dart',
         'lib/features/handles/infrastructure/repositories/manual_linking_read_repository_provider.dart',
         'lib/features/handles/infrastructure/repositories/spam_handles_repository_provider.dart',
+        'lib/features/handles/infrastructure/repositories/stray_handles_provider.dart',
       ];
 
       for (final retiredPath in retiredProviderPaths) {

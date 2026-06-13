@@ -2143,6 +2143,11 @@ Remove legacy systems only after their blockers close.
   APIs for contact summaries, contact list provider overrides, and stray-handle
   provider overrides. Infrastructure tests still import concrete repositories
   directly when they are testing those repositories themselves.
+- Split stray-handle read models from graph storage implementation. Public
+  `StrayHandleSummary` and stray/spam/dismissed providers now live at the
+  handles feature boundary, while graph SQL and overlay filtering live behind a
+  `StrayHandlesReadRepository` implementation. The retired infrastructure
+  provider file is guarded from returning.
 
 ### Exit Criteria
 
