@@ -2018,6 +2018,13 @@ Remove legacy systems only after their blockers close.
   export through application actions and renders a domain result; the concrete
   export service remains infrastructure-owned and protected by an architecture
   tripwire.
+- Moved diagnostic report export mechanics behind a
+  `DiagnosticReportExporter` application contract and logging feature provider.
+  Startup, sidebar, onboarding, and environment-readiness callers no longer
+  fetch `LogFileWriter` plus database-health services for diagnostic bundle
+  export; infrastructure owns support-bundle/export launch mechanics, and a
+  tripwire prevents diagnostic action helpers from importing that
+  infrastructure directly.
 - Split historical archive source inspection into an application
   `ArchiveSourceInspector` contract plus an infrastructure SQLite/filesystem
   implementation. The historical archives workflow now requests source

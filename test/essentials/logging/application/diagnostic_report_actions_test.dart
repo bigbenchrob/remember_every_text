@@ -1,9 +1,28 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:remember_this_text/essentials/logging/application/diagnostic_report_actions.dart';
+import 'package:remember_this_text/essentials/logging/application/diagnostic_report_exporter.dart';
+import 'package:remember_this_text/essentials/logging/domain/diagnostic_report_presentation_result.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
 
 void main() {
+  test('exportDiagnosticReport delegates through exporter boundary', () async {
+    final exporter = _FakeDiagnosticReportExporter();
+
+    final result = await exportDiagnosticReport(exporter);
+
+    expect(result.exportPath, '/tmp/report');
+    expect(exporter.requests, hasLength(1));
+    expect(
+      exporter.requests.single.subjectPrefix,
+      'MessageLens Diagnostic Report',
+    );
+    expect(
+      exporter.requests.single.recipientEmail,
+      developerDiagnosticRecipientEmail,
+    );
+  });
+
   test('buildOnboardingFailureReportHeaderLines includes failure context', () {
     final report = OnboardingEnvironmentReport(
       state: OnboardingEnvironmentState.graphProjectionFailed,
@@ -69,4 +88,19 @@ void main() {
       ),
     );
   });
+}
+
+class _FakeDiagnosticReportExporter implements DiagnosticReportExporter {
+  final requests = <DiagnosticReportExportRequest>[];
+
+  @override
+  Future<DiagnosticReportPresentationResult> exportAndPresent(
+    DiagnosticReportExportRequest request,
+  ) async {
+    requests.add(request);
+    return const DiagnosticReportPresentationResult(
+      exportPath: '/tmp/report',
+      attachedToMailDraft: false,
+    );
+  }
 }

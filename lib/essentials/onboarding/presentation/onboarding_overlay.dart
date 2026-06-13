@@ -5,10 +5,9 @@ import '../../../config/theme/colors/theme_colors.dart';
 import '../../../config/theme/theme_typography.dart';
 import '../../conversation_graph/application/conversation_graph_build_controller_provider.dart';
 import '../../conversation_graph/application/orchestrators/conversation_graph_build_orchestrator.dart';
-import '../../db/feature_level_providers.dart';
-import '../../logging/application/app_logger.dart';
 import '../../logging/application/diagnostic_report_actions.dart';
 import '../../logging/domain/diagnostic_report_presentation_result.dart';
+import '../../logging/feature_level_providers.dart';
 import '../application/onboarding_environment_report_provider.dart';
 import '../application/onboarding_gate_provider.dart';
 import '../domain/onboarding_environment_report.dart';
@@ -371,16 +370,13 @@ class _WelcomeContent extends ConsumerWidget {
               if (presentation.canSendDiagnosticReport && report != null)
                 OutlinedButton(
                   onPressed: () async {
-                    final writer = ref.read(appLoggerProvider.notifier).writer;
-                    final databaseHealthAuditService = await ref.read(
-                      databaseHealthAuditServiceProvider.future,
+                    final diagnosticReportExporter = await ref.read(
+                      diagnosticReportExporterProvider.future,
                     );
                     final result =
                         await exportOnboardingFailureDiagnosticReport(
-                          writer,
+                          diagnosticReportExporter,
                           report: report!,
-                          databaseHealthAuditService:
-                              databaseHealthAuditService,
                         );
                     if (!context.mounted) {
                       return;

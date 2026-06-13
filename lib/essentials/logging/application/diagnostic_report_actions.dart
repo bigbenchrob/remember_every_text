@@ -1,87 +1,95 @@
-import '../../db/application/database_health_audit/database_health_audit_service.dart';
 import '../../onboarding/domain/onboarding_environment_report.dart';
 import '../domain/diagnostic_report_presentation_result.dart';
 import '../domain/pipeline_incident_report.dart';
-import '../infrastructure/log_export_service.dart';
-import '../infrastructure/log_file_writer.dart';
-import '../infrastructure/support_bundle_export_service.dart';
+import 'diagnostic_report_exporter.dart';
 
 const developerDiagnosticRecipientEmail = 'messagelens@gmail.com';
 
 Future<DiagnosticReportPresentationResult> exportDiagnosticReport(
-  LogFileWriter writer, {
-  required DatabaseHealthAuditService databaseHealthAuditService,
-}) {
-  return LogExportService(
-    SupportBundleExportService(writer, databaseHealthAuditService),
-  ).exportAndPresent(recipientEmail: developerDiagnosticRecipientEmail);
+  DiagnosticReportExporter exporter,
+) {
+  return exporter.exportAndPresent(
+    const DiagnosticReportExportRequest(
+      recipientEmail: developerDiagnosticRecipientEmail,
+      subjectPrefix: 'MessageLens Diagnostic Report',
+      attachedEmailBodyLines: [
+        'MessageLens attached the support bundle to this draft.',
+        '',
+        'Describe the issue here:',
+      ],
+      manualAttachmentEmailBodyLines: [
+        'MessageLens prepared a support bundle but could not attach it automatically.',
+        'It has been revealed in Finder so it can be attached manually.',
+        '',
+        'Describe the issue here:',
+      ],
+    ),
+  );
 }
 
 Future<DiagnosticReportPresentationResult>
 exportOnboardingFailureDiagnosticReport(
-  LogFileWriter writer, {
+  DiagnosticReportExporter exporter, {
   required OnboardingEnvironmentReport report,
-  required DatabaseHealthAuditService databaseHealthAuditService,
 }) {
-  return LogExportService(
-    SupportBundleExportService(writer, databaseHealthAuditService),
-  ).exportAndPresent(
-    recipientEmail: developerDiagnosticRecipientEmail,
-    subjectPrefix: 'MessageLens Onboarding Failure Report',
-    attachedEmailBodyLines: [
-      'MessageLens attached the support bundle to this draft.',
-      '',
-      'This report was prepared from the onboarding failure screen.',
-      'Observed state: ${report.state.name}',
-      'Blocker kind: ${report.blockerKind.name}',
-      '',
-      'Describe what happened just before setup failed:',
-    ],
-    manualAttachmentEmailBodyLines: [
-      'MessageLens prepared a support bundle but could not attach it automatically.',
-      'It has been revealed in Finder so it can be attached manually.',
-      '',
-      'This report was prepared from the onboarding failure screen.',
-      'Observed state: ${report.state.name}',
-      'Blocker kind: ${report.blockerKind.name}',
-      '',
-      'Describe what happened just before setup failed:',
-    ],
-    headerLines: buildOnboardingFailureReportHeaderLines(report),
+  return exporter.exportAndPresent(
+    DiagnosticReportExportRequest(
+      recipientEmail: developerDiagnosticRecipientEmail,
+      subjectPrefix: 'MessageLens Onboarding Failure Report',
+      attachedEmailBodyLines: [
+        'MessageLens attached the support bundle to this draft.',
+        '',
+        'This report was prepared from the onboarding failure screen.',
+        'Observed state: ${report.state.name}',
+        'Blocker kind: ${report.blockerKind.name}',
+        '',
+        'Describe what happened just before setup failed:',
+      ],
+      manualAttachmentEmailBodyLines: [
+        'MessageLens prepared a support bundle but could not attach it automatically.',
+        'It has been revealed in Finder so it can be attached manually.',
+        '',
+        'This report was prepared from the onboarding failure screen.',
+        'Observed state: ${report.state.name}',
+        'Blocker kind: ${report.blockerKind.name}',
+        '',
+        'Describe what happened just before setup failed:',
+      ],
+      headerLines: buildOnboardingFailureReportHeaderLines(report),
+    ),
   );
 }
 
 Future<DiagnosticReportPresentationResult>
 exportPipelineIncidentDiagnosticReport(
-  LogFileWriter writer, {
+  DiagnosticReportExporter exporter, {
   required PipelineIncidentReport report,
-  required DatabaseHealthAuditService databaseHealthAuditService,
 }) {
-  return LogExportService(
-    SupportBundleExportService(writer, databaseHealthAuditService),
-  ).exportAndPresent(
-    recipientEmail: developerDiagnosticRecipientEmail,
-    subjectPrefix: 'MessageLens Pipeline Incident Report',
-    attachedEmailBodyLines: [
-      'MessageLens attached the support bundle to this draft.',
-      '',
-      'This report was prepared from the pipeline incident screen.',
-      'Observed stage: ${report.stage.displayLabel}',
-      'Headline: ${report.headline}',
-      '',
-      'Describe what happened just before the failure appeared:',
-    ],
-    manualAttachmentEmailBodyLines: [
-      'MessageLens prepared a support bundle but could not attach it automatically.',
-      'It has been revealed in Finder so it can be attached manually.',
-      '',
-      'This report was prepared from the pipeline incident screen.',
-      'Observed stage: ${report.stage.displayLabel}',
-      'Headline: ${report.headline}',
-      '',
-      'Describe what happened just before the failure appeared:',
-    ],
-    headerLines: buildPipelineIncidentReportHeaderLines(report),
+  return exporter.exportAndPresent(
+    DiagnosticReportExportRequest(
+      recipientEmail: developerDiagnosticRecipientEmail,
+      subjectPrefix: 'MessageLens Pipeline Incident Report',
+      attachedEmailBodyLines: [
+        'MessageLens attached the support bundle to this draft.',
+        '',
+        'This report was prepared from the pipeline incident screen.',
+        'Observed stage: ${report.stage.displayLabel}',
+        'Headline: ${report.headline}',
+        '',
+        'Describe what happened just before the failure appeared:',
+      ],
+      manualAttachmentEmailBodyLines: [
+        'MessageLens prepared a support bundle but could not attach it automatically.',
+        'It has been revealed in Finder so it can be attached manually.',
+        '',
+        'This report was prepared from the pipeline incident screen.',
+        'Observed stage: ${report.stage.displayLabel}',
+        'Headline: ${report.headline}',
+        '',
+        'Describe what happened just before the failure appeared:',
+      ],
+      headerLines: buildPipelineIncidentReportHeaderLines(report),
+    ),
   );
 }
 

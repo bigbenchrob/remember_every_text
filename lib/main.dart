@@ -21,6 +21,7 @@ import 'essentials/conversation_graph/application/monitor/chat_db_change_monitor
 import 'essentials/db/feature_level_providers.dart';
 import 'essentials/logging/application/app_logger.dart';
 import 'essentials/logging/application/diagnostic_report_actions.dart';
+import 'essentials/logging/feature_level_providers.dart';
 import 'essentials/navigation/application/router.dart';
 import 'essentials/services/startup_flags_service.dart';
 import 'essentials/window_state/feature_level_providers.dart';
@@ -368,13 +369,10 @@ class _StartupResetConfirmationDialogState
 
     logger.info('Export Logs clicked', source: 'StartupDialog');
 
-    final databaseHealthAuditService = await ref.read(
-      databaseHealthAuditServiceProvider.future,
+    final diagnosticReportExporter = await ref.read(
+      diagnosticReportExporterProvider.future,
     );
-    final result = await exportDiagnosticReport(
-      logger.writer,
-      databaseHealthAuditService: databaseHealthAuditService,
-    );
+    final result = await exportDiagnosticReport(diagnosticReportExporter);
     if (!mounted) {
       return;
     }

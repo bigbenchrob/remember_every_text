@@ -1283,6 +1283,21 @@ void main() {
       );
     });
 
+    test('Diagnostic report actions use exporter boundary', () async {
+      final offenders =
+          await _findDiagnosticReportActionInfrastructureOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Diagnostic report action helpers should compose report semantics '
+            'through DiagnosticReportExporter. Concrete support bundle, log '
+            'writer, and launch mechanics belong in logging infrastructure.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Historical archives UI uses source inspection boundary', () async {
       final offenders =
           await _findHistoricalArchivesInspectionBoundaryOffenders();
@@ -1394,6 +1409,27 @@ _findDiagnosticReportPresentationInfrastructureOffenders() async {
   }
 
   return offenders.toList()..sort();
+}
+
+Future<List<String>>
+_findDiagnosticReportActionInfrastructureOffenders() async {
+  const filePath =
+      'lib/essentials/logging/application/diagnostic_report_actions.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final source = await file.readAsString();
+  final uncommented = _stripComments(source);
+  final imports = _extractImports(uncommented);
+  final offenders = <String>[
+    for (final importTarget in imports)
+      if (importTarget.contains('/infrastructure/'))
+        '$filePath imports $importTarget',
+  ];
+
+  return offenders..sort();
 }
 
 Future<List<String>>
