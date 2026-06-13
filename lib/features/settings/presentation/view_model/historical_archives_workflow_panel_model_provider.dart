@@ -12,7 +12,8 @@ import '../../../../essentials/onboarding/application/onboarding_environment_rep
 import '../../application/archive_source_inspection.dart';
 import '../../application/archive_source_inspector_provider.dart';
 import '../../application/historical_archive_folder_chooser_provider.dart';
-import '../../infrastructure/repositories/historical_archive_sources_repository.dart';
+import '../../application/historical_archive_sources.dart';
+import '../../application/historical_archive_sources_provider.dart';
 
 part 'historical_archives_workflow_panel_model_provider.g.dart';
 
@@ -357,16 +358,14 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     );
 
     ArchiveSourceInspector? archiveSourceInspector;
-    HistoricalArchiveSourcesRepository? archiveSourcesRepository;
+    HistoricalArchiveSources? archiveSources;
     try {
       archiveSourceInspector = await ref.read(
         archiveSourceInspectorProvider.future,
       );
     } catch (_) {}
     try {
-      archiveSourcesRepository = await ref.read(
-        historicalArchiveSourcesRepositoryProvider.future,
-      );
+      archiveSources = await ref.read(historicalArchiveSourcesProvider.future);
     } catch (_) {}
 
     final result = await preflightHistoricalArchivesFolder(
@@ -375,7 +374,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     );
 
     await _persistHistoricalArchiveSourceIfEligible(
-      archiveSourcesRepository: archiveSourcesRepository,
+      archiveSources: archiveSources,
       result: result,
     );
 
@@ -579,8 +578,8 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     );
 
     try {
-      final archiveSourcesRepository = await ref.read(
-        historicalArchiveSourcesRepositoryProvider.future,
+      final archiveSources = await ref.read(
+        historicalArchiveSourcesProvider.future,
       );
       final archiveGraphImportService = await ref.read(
         sourceScopedArchiveGraphImportServiceProvider.future,
@@ -608,7 +607,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
           archiveResult.importResult.messages.insertedMessageCount;
 
       final completedAtUtc = DateTime.now().toUtc().toIso8601String();
-      await archiveSourcesRepository.upsertSourceMetadata(
+      await archiveSources.upsertSourceMetadata(
         HistoricalArchiveSourceMetadataUpdate(
           sourceChatDb: selectedChatDbPath,
           folderPath: selectedFolderPath,
@@ -653,11 +652,11 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       );
     } catch (error) {
       final detail = 'Archive import failed: $error';
-      final archiveSourcesRepository = await ref.read(
-        historicalArchiveSourcesRepositoryProvider.future,
+      final archiveSources = await ref.read(
+        historicalArchiveSourcesProvider.future,
       );
       final failedAtUtc = DateTime.now().toUtc().toIso8601String();
-      await archiveSourcesRepository.upsertSourceMetadata(
+      await archiveSources.upsertSourceMetadata(
         HistoricalArchiveSourceMetadataUpdate(
           sourceChatDb: selectedChatDbPath,
           folderPath: selectedFolderPath,
@@ -726,17 +725,17 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
   }
 
   Future<void> _persistHistoricalArchiveSourceIfEligible({
-    required HistoricalArchiveSourcesRepository? archiveSourcesRepository,
+    required HistoricalArchiveSources? archiveSources,
     required HistoricalArchivesFolderPreflightResult result,
   }) async {
-    if (archiveSourcesRepository == null) {
+    if (archiveSources == null) {
       return;
     }
     if (result.chatDbStatusLabel != 'Found and readable') {
       return;
     }
 
-    await archiveSourcesRepository.upsertSourceMetadata(
+    await archiveSources.upsertSourceMetadata(
       HistoricalArchiveSourceMetadataUpdate(
         sourceChatDb: result.archiveRemovalTargetChatDbPath,
         folderPath: result.selectedFolderPath,

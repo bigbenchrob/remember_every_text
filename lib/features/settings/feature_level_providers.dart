@@ -3,6 +3,7 @@
 // =============================================================================
 
 export './application/historical_archive_folder_chooser_provider.dart';
+export './application/historical_archive_sources_provider.dart';
 export './application/sidebar_cassette_spec/coordinators/settings_coordinator.dart';
 export './application/sidebar_cassette_spec/payloads/attachment_archive_settings_cassette_payload.dart';
 export './application/sidebar_cassette_spec/payloads/historical_archives_settings_cassette_payload.dart';

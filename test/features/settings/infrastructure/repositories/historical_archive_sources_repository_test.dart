@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/db/application/retained_archive_metadata_store.dart';
+import 'package:remember_this_text/features/settings/application/historical_archive_sources.dart';
 import 'package:remember_this_text/features/settings/infrastructure/repositories/historical_archive_sources_repository.dart';
 
 void main() {

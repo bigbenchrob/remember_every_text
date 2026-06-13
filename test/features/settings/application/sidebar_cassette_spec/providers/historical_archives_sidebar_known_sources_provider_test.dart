@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:remember_this_text/features/settings/application/historical_archive_sources.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/providers/historical_archives_sidebar_known_sources_provider.dart';
-import 'package:remember_this_text/features/settings/infrastructure/repositories/historical_archive_sources_repository.dart';
 
 void main() {
   group('buildHistoricalArchiveSidebarKnownSources', () {

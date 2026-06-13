@@ -1316,6 +1316,25 @@ void main() {
         );
       },
     );
+
+    test(
+      'Historical archive source metadata consumers use application boundary',
+      () async {
+        final offenders =
+            await _findHistoricalArchiveSourcesRepositoryBoundaryOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'Historical archive source metadata is an application read/write '
+              'contract. Presentation and application consumers should use '
+              'HistoricalArchiveSources, while retained metadata persistence '
+              'stays behind settings infrastructure.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
   });
 }
 
@@ -1399,6 +1418,41 @@ _findHistoricalArchivesInspectionBoundaryOffenders() async {
     );
 
     if (importsInspectionRepository) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>>
+_findHistoricalArchiveSourcesRepositoryBoundaryOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart')) {
+      return false;
+    }
+    if (!path.startsWith('lib/features/settings/')) {
+      return false;
+    }
+    if (path.startsWith('lib/features/settings/infrastructure/')) {
+      return false;
+    }
+    return path !=
+        'lib/features/settings/application/historical_archive_sources_provider.dart';
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    final importsSourcesRepository = imports.any(
+      (importTarget) => importTarget.endsWith(
+        'settings/infrastructure/repositories/historical_archive_sources_repository.dart',
+      ),
+    );
+
+    if (importsSourcesRepository) {
       offenders.add(filePath);
     }
   }

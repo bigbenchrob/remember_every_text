@@ -2029,6 +2029,11 @@ Remove legacy systems only after their blockers close.
   while the workflow consumes the application `HistoricalArchiveFolderChooser`
   boundary; an architecture tripwire prevents the provider wrapper from moving
   back into infrastructure.
+- Split retained historical archive source metadata into an application
+  `HistoricalArchiveSources` contract plus an infrastructure retained-metadata
+  repository. Historical Archives workflow and sidebar summaries now consume
+  application source metadata providers instead of the concrete retained
+  repository, with a tripwire preventing regression.
 
 ### Exit Criteria
 
