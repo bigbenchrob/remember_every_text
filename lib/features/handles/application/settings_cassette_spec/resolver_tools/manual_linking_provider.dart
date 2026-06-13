@@ -2,7 +2,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../contacts/feature_level_providers.dart';
-import '../../../../contacts/infrastructure/repositories/virtual_participants_provider.dart';
 import '../../../feature_level_providers.dart';
 import 'manual_linking_read_repository.dart';
 

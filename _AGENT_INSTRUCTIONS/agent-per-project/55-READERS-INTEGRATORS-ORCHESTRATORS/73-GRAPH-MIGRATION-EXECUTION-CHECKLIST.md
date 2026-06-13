@@ -2121,6 +2121,10 @@ Remove legacy systems only after their blockers close.
   the handles feature-level public API instead of importing handle
   infrastructure providers directly. Added a cross-feature import tripwire for
   handle display/stray-handle provider access.
+- Routed the handles manual-linking provider's virtual-participant invalidation
+  through the contacts feature-level public API instead of importing contacts
+  infrastructure providers directly. Added a cross-feature import tripwire for
+  contact profile/handle/virtual-participant provider access.
 
 ### Exit Criteria
 

@@ -838,6 +838,21 @@ void main() {
       }
     });
 
+    test('Other features use contacts feature boundary', () async {
+      final offenders = await _findCrossFeatureContactInfrastructureOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Features outside contacts should consume contact profile, handle, '
+            'and virtual participant providers through '
+            'features/contacts/feature_level_providers.dart, not by importing '
+            'contacts infrastructure files directly.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Manual handle-link service stays overlay-storage agnostic', () async {
       final offenders = await _findManualHandleLinkServiceStorageOffenders();
 
@@ -2662,6 +2677,47 @@ Future<List<String>> _findManualHandleLinkServiceStorageOffenders() async {
     offenders.add('$filePath handles overlay table operations directly');
   }
   return offenders..sort();
+}
+
+Future<List<String>> _findCrossFeatureContactInfrastructureOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/features/') &&
+        !path.startsWith('lib/features/contacts/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    for (final importTarget in imports) {
+      if (importTarget.endsWith(
+            'features/contacts/infrastructure/repositories/contact_profile_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'features/contacts/infrastructure/repositories/handles_for_contact_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'features/contacts/infrastructure/repositories/virtual_participants_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'contacts/infrastructure/repositories/contact_profile_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'contacts/infrastructure/repositories/handles_for_contact_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'contacts/infrastructure/repositories/virtual_participants_provider.dart',
+          )) {
+        offenders.add('$filePath imports $importTarget');
+      }
+    }
+  }
+
+  return offenders.toList()..sort();
 }
 
 Future<List<String>>
