@@ -2,7 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
-import '../../../infrastructure/repositories/message_history_coverage_repository_provider.dart';
+import '../../../feature_level_providers.dart';
 import '../entities/message_history_coverage_report.dart';
 import '../entities/message_history_coverage_report_logic.dart';
 

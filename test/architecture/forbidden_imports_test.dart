@@ -1557,6 +1557,25 @@ void main() {
       },
     );
 
+    test('Message history coverage providers stay feature-boundary owned', () {
+      const retiredProviderPaths = <String>[
+        'lib/features/settings/infrastructure/repositories/message_history_coverage_repository_provider.dart',
+        'lib/features/settings/infrastructure/repositories/message_history_coverage_report_exporter_provider.dart',
+      ];
+
+      for (final retiredPath in retiredProviderPaths) {
+        expect(
+          File(retiredPath).existsSync(),
+          isFalse,
+          reason:
+              'Message history coverage provider composition belongs in the '
+              'settings feature-level provider boundary. Application code '
+              'should consume coverage/exporter contracts through the public '
+              'settings API, not infrastructure provider islands.',
+        );
+      }
+    });
+
     test(
       'Historical archive source metadata consumers use application boundary',
       () async {

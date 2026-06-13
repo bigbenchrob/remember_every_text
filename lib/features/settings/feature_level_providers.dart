@@ -5,10 +5,14 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../essentials/db/feature_level_providers.dart';
 import './application/archive_source_inspection.dart';
 import './application/historical_archive_folder_chooser.dart';
+import './application/sidebar_cassette_spec/actions/message_history_coverage_report_actions.dart';
 import './infrastructure/repositories/archive_source_inspection_repository.dart';
 import './infrastructure/repositories/file_selector_historical_archive_folder_chooser.dart';
+import './infrastructure/repositories/filesystem_message_history_coverage_report_exporter.dart';
+import './infrastructure/repositories/message_history_coverage_repository.dart';
 
 export './application/historical_archive_folder_chooser.dart';
 export './application/historical_archive_sources_provider.dart';
@@ -22,7 +26,6 @@ export './application/sidebar_cassette_spec/rendering/settings_cassette_body_bui
 export './application/view_spec/coordinators/view_spec_coordinator.dart';
 export './domain/spec_classes/settings_cassette_spec.dart';
 export './domain/spec_classes/settings_view_spec.dart';
-export './infrastructure/repositories/message_history_coverage_report_exporter_provider.dart';
 
 part 'feature_level_providers.g.dart';
 
@@ -34,4 +37,21 @@ Future<ArchiveSourceInspector> archiveSourceInspector(Ref ref) {
 @riverpod
 HistoricalArchiveFolderChooser historicalArchiveFolderChooser(Ref ref) {
   return const FileSelectorHistoricalArchiveFolderChooser();
+}
+
+@riverpod
+Future<MessageHistoryCoverageRepository> messageHistoryCoverageRepository(
+  Ref ref,
+) async {
+  final graphDb = await ref.watch(
+    driftConversationGraphDatabaseProvider.future,
+  );
+  return MessageHistoryCoverageRepository(graphDb: graphDb);
+}
+
+@riverpod
+MessageHistoryCoverageReportExporter messageHistoryCoverageReportExporter(
+  Ref ref,
+) {
+  return const FilesystemMessageHistoryCoverageReportExporter();
 }

@@ -2113,6 +2113,10 @@ Remove legacy systems only after their blockers close.
   decisions and consumes source/import/runtime probe ports; concrete SQLite,
   source-scoped import, and platform runtime wiring is centralized at the
   boundary.
+- Moved message history coverage repository/exporter provider composition into
+  the settings feature-level boundary. The coverage resolver and sidebar action
+  dispatcher now consume the public settings API while graph database and
+  filesystem exporter wiring stay centralized at the boundary.
 
 ### Exit Criteria
 
