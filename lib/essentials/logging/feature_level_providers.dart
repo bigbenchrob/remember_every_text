@@ -29,6 +29,11 @@ Future<DiagnosticReportExporter> diagnosticReportExporter(Ref ref) async {
 }
 
 @riverpod
+String diagnosticLogDirectoryPath(Ref ref) {
+  return ref.read(appLoggerProvider.notifier).writer.logDir.path;
+}
+
+@riverpod
 PipelineIncidentStore pipelineIncidentStore(Ref ref) {
   return PipelineIncidentStorage(
     overlayDb: ref.watch(overlayDatabaseProvider.future),

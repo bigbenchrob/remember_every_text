@@ -2031,6 +2031,11 @@ Remove legacy systems only after their blockers close.
   feature boundary, while overlay persistence and file audit logging remain in
   infrastructure. The old infrastructure storage provider was removed and the
   tracker tripwire now blocks direct logging-infrastructure imports.
+- Moved message-history coverage export destination lookup behind the logging
+  feature boundary. Sidebar action dispatch no longer reaches through
+  `appLoggerProvider.notifier.writer` for `LogFileWriter` internals; it consumes
+  the named diagnostic log-directory provider, and the sidebar dispatcher
+  tripwire now blocks direct writer reach-through.
 - Split historical archive source inspection into an application
   `ArchiveSourceInspector` contract plus an infrastructure SQLite/filesystem
   implementation. The historical archives workflow now requests source

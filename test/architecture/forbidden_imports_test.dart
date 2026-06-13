@@ -2671,7 +2671,8 @@ Future<List<String>> _findSidebarActionDispatcherStorageOffenders() async {
       uncommented.contains('writeOverlaySetting') ||
       uncommented.contains('.trackContactAccess(') ||
       uncommented.contains('.dismissHandle(') ||
-      uncommented.contains('.restoreHandle(')) {
+      uncommented.contains('.restoreHandle(') ||
+      uncommented.contains('.writer')) {
     offenders.add('$filePath handles storage-backed mutations directly');
   }
   return offenders..sort();

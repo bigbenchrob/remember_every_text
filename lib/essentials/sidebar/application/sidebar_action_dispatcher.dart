@@ -11,7 +11,6 @@ import '../../../features/settings/domain/spec_classes/settings_cassette_spec.da
 import '../../../features/settings/feature_level_providers.dart';
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
-import '../../logging/application/app_logger.dart';
 import '../../logging/application/diagnostic_report_actions.dart';
 import '../../logging/feature_level_providers.dart';
 import '../../navigation/domain/entities/view_spec.dart';
@@ -199,14 +198,16 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
         );
         await exportDiagnosticReport(diagnosticReportExporter);
       case ExportMessageHistoryCoverageReportRequested():
-        final writer = ref.read(appLoggerProvider.notifier).writer;
+        final exportDirectoryPath = ref.read(
+          diagnosticLogDirectoryPathProvider,
+        );
         final report = await ref.read(
           messageHistoryCoverageReportProvider.future,
         );
         final exporter = ref.read(messageHistoryCoverageReportExporterProvider);
         await exporter.export(
           report: report,
-          exportDirectoryPath: writer.logDir.path,
+          exportDirectoryPath: exportDirectoryPath,
         );
       case ResetMessageDataRequested():
         final resetService = ref.read(messageDataResetServiceProvider);
