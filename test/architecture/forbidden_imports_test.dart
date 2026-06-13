@@ -1131,6 +1131,28 @@ void main() {
       );
     });
 
+    test('Graph read repositories stay feature-boundary owned', () {
+      const retiredProviderPaths = <String>[
+        'lib/essentials/conversation_graph/infrastructure/repositories/chat_summary_repository_provider.dart',
+        'lib/essentials/conversation_graph/infrastructure/repositories/contact_graph_repository_provider.dart',
+        'lib/essentials/conversation_graph/infrastructure/repositories/conversation_repository_provider.dart',
+        'lib/essentials/conversation_graph/infrastructure/repositories/graph_health_repository_provider.dart',
+        'lib/essentials/conversation_graph/infrastructure/repositories/message_graph_repository_provider.dart',
+      ];
+
+      for (final retiredPath in retiredProviderPaths) {
+        expect(
+          File(retiredPath).existsSync(),
+          isFalse,
+          reason:
+              'Graph read repository composition opens graph, overlay, archive, '
+              'or retained recovery resources and belongs in the '
+              'conversation_graph feature-level provider boundary, not '
+              'infrastructure provider islands.',
+        );
+      }
+    });
+
     test('Message projector provider uses repository boundary', () async {
       final offenders = await _findMessageProjectorProviderBoundaryOffenders();
 

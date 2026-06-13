@@ -2095,6 +2095,11 @@ Remove legacy systems only after their blockers close.
   composition to the handles feature-level boundary. Handle application
   providers now consume named boundary providers while graph/overlay-backed
   implementations remain infrastructure-owned behind contracts.
+- Added a conversation graph feature-level provider boundary for read-side
+  graph repository composition. Chat summaries, contact graph reads,
+  conversation reads, graph health, and message graph reads now consume named
+  boundary providers; the retired infrastructure provider islands are guarded
+  by an architecture tripwire.
 
 ### Exit Criteria
 

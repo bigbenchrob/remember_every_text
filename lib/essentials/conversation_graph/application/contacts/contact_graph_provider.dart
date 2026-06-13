@@ -4,7 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../db/feature_level_providers/message_data_version_provider.dart';
 import '../../../source_scoped_import/domain/known_sources.dart';
 import '../../../source_scoped_import/domain/source_scoped_row_key.dart';
-import '../../infrastructure/repositories/contact_graph_repository_provider.dart';
+import '../../feature_level_providers.dart';
 import '../conversations/conversation.dart';
 import 'contact_graph.dart';
 import 'contact_graph_reader.dart';
