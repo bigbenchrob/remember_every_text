@@ -246,6 +246,9 @@ Contact and handle reads should come from graph facts plus overlay intent.
   contacts only; it no longer gates on or opens legacy `working.db`.
 - `handlesForContactProvider` now reads graph `contact_to_handle` handles plus
   overlay handle links only; it no longer gates on or opens legacy `working.db`.
+- `contactProfileProvider` and `handlesForContactProvider` are now composed at
+  the contacts feature boundary; graph/overlay reads are behind typed
+  application read contracts instead of exported infrastructure provider files.
 - `handleDisplayNameProvider` now resolves through graph display identity first
   so known contacts/user overrides win over raw handle labels in handle evidence
   views.

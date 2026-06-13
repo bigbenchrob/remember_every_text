@@ -825,7 +825,9 @@ void main() {
       const retiredProviderPaths = <String>[
         'lib/features/contacts/application/sidebar_cassette_spec/resolver_tools/favorite_contacts_repository_provider.dart',
         'lib/features/contacts/infrastructure/repositories/contact_display_name_override_store_provider.dart',
+        'lib/features/contacts/infrastructure/repositories/contact_profile_provider.dart',
         'lib/features/contacts/infrastructure/repositories/favorite_contacts_repository_provider.dart',
+        'lib/features/contacts/infrastructure/repositories/handles_for_contact_provider.dart',
         'lib/features/contacts/infrastructure/repositories/manual_handle_link_store_provider.dart',
         'lib/features/contacts/infrastructure/repositories/picker_filter_mode_store_provider.dart',
       ];

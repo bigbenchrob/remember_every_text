@@ -5,15 +5,22 @@ import '../../essentials/db/feature_level_providers.dart';
 import 'application/contact_access/contact_access_store.dart';
 import 'application/display_identity/display_identity.dart';
 import 'application/display_name_overrides/contact_display_name_override_store.dart';
+import 'application/read_models/contact_profile_reader.dart';
+import 'application/read_models/contact_profile_summary.dart';
+import 'application/read_models/handles_for_contact_reader.dart';
+import 'application/read_models/linked_handle.dart';
 import 'application/services/manual_handle_link_store.dart';
 import 'application/sidebar_cassette_spec/resolver_tools/picker_filter_mode_store.dart';
 import 'infrastructure/repositories/display_identity_repository.dart';
 import 'infrastructure/repositories/favorite_contacts_repository.dart';
+import 'infrastructure/repositories/graph_contact_profile_reader.dart';
+import 'infrastructure/repositories/graph_handles_for_contact_reader.dart';
 import 'infrastructure/repositories/overlay_contact_access_store.dart';
 import 'infrastructure/repositories/overlay_contact_display_name_override_store.dart';
 import 'infrastructure/repositories/overlay_manual_handle_link_store.dart';
 import 'infrastructure/repositories/overlay_picker_filter_mode_store.dart';
 import 'infrastructure/repositories/recent_contacts_repository.dart';
+import 'infrastructure/repositories/virtual_participants_provider.dart';
 
 // =============================================================================
 // CONTACTS FEATURE — PUBLIC API
@@ -37,6 +44,10 @@ import 'infrastructure/repositories/recent_contacts_repository.dart';
 // =============================================================================
 
 export './application/display_identity/display_identity.dart';
+export './application/read_models/contact_profile_reader.dart';
+export './application/read_models/contact_profile_summary.dart';
+export './application/read_models/handles_for_contact_reader.dart';
+export './application/read_models/linked_handle.dart';
 export './application/services/manual_handle_link_service.dart';
 export './application/sidebar_cassette_spec/coordinators/cassette_coordinator.dart';
 export './application/sidebar_cassette_spec/coordinators/contact_chooser_cassette_state_provider.dart';
@@ -50,9 +61,7 @@ export './application/sidebar_cassette_spec/rendering/contacts_cassette_body_bui
 export './application/tooltips_spec/coordinators/contacts_tooltip_coordinator.dart';
 export './domain/spec_classes/contacts_cassette_spec.dart';
 export './domain/spec_classes/contacts_tooltip_spec.dart';
-export './infrastructure/repositories/contact_profile_provider.dart';
 export './infrastructure/repositories/contacts_list_repository.dart';
-export './infrastructure/repositories/handles_for_contact_provider.dart';
 export './infrastructure/repositories/recent_contacts_repository.dart';
 export './infrastructure/repositories/virtual_participants_provider.dart';
 
@@ -101,6 +110,46 @@ Future<ManualHandleLinkStore> manualHandleLinkStore(Ref ref) async {
 Future<PickerFilterModeStore> pickerFilterModeStore(Ref ref) async {
   final overlayDatabase = await ref.watch(overlayDatabaseProvider.future);
   return OverlayPickerFilterModeStore(overlayDatabase: overlayDatabase);
+}
+
+@riverpod
+Future<ContactProfileReader> contactProfileReader(Ref ref) async {
+  final graphDb = await ref.watch(
+    driftConversationGraphDatabaseProvider.future,
+  );
+  final overlayDb = await ref.watch(overlayDatabaseProvider.future);
+  return GraphContactProfileReader(graphDb: graphDb, overlayDb: overlayDb);
+}
+
+@riverpod
+Future<ContactProfileSummary?> contactProfile(
+  Ref ref, {
+  required int contactId,
+}) async {
+  final reader = await ref.watch(contactProfileReaderProvider.future);
+  final virtualContacts = await ref.watch(virtualParticipantsProvider.future);
+  return reader.readContactProfile(
+    contactId: contactId,
+    virtualContacts: virtualContacts,
+  );
+}
+
+@riverpod
+Future<HandlesForContactReader> handlesForContactReader(Ref ref) async {
+  final graphDb = await ref.watch(
+    driftConversationGraphDatabaseProvider.future,
+  );
+  final overlayDb = await ref.watch(overlayDatabaseProvider.future);
+  return GraphHandlesForContactReader(graphDb: graphDb, overlayDb: overlayDb);
+}
+
+@riverpod
+Future<List<LinkedHandle>> handlesForContact(
+  Ref ref, {
+  required int contactId,
+}) async {
+  final reader = await ref.watch(handlesForContactReaderProvider.future);
+  return reader.readHandlesForContact(contactId: contactId);
 }
 
 @riverpod
