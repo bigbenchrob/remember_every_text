@@ -6,6 +6,46 @@ part of 'feature_level_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
+String _$attachmentProjectionRepositoryHash() =>
+    r'b9b48bccd42fb9ba78490c115765d9fc09e65f23';
+
+/// See also [attachmentProjectionRepository].
+@ProviderFor(attachmentProjectionRepository)
+final attachmentProjectionRepositoryProvider =
+    AutoDisposeFutureProvider<AttachmentProjectionRepository>.internal(
+      attachmentProjectionRepository,
+      name: r'attachmentProjectionRepositoryProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$attachmentProjectionRepositoryHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef AttachmentProjectionRepositoryRef =
+    AutoDisposeFutureProviderRef<AttachmentProjectionRepository>;
+String _$chatProjectionRepositoryHash() =>
+    r'edbaa329ad243f6a4af01bf944e2337646886a9d';
+
+/// See also [chatProjectionRepository].
+@ProviderFor(chatProjectionRepository)
+final chatProjectionRepositoryProvider =
+    AutoDisposeFutureProvider<ChatProjectionRepository>.internal(
+      chatProjectionRepository,
+      name: r'chatProjectionRepositoryProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$chatProjectionRepositoryHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef ChatProjectionRepositoryRef =
+    AutoDisposeFutureProviderRef<ChatProjectionRepository>;
 String _$chatSummaryRepositoryHash() =>
     r'7c100e6efde129e71b57052b92fe7d84b979cd5c';
 
@@ -26,6 +66,46 @@ final chatSummaryRepositoryProvider =
 // ignore: unused_element
 typedef ChatSummaryRepositoryRef =
     AutoDisposeFutureProviderRef<ChatSummaryRepository>;
+String _$chatToHandleProjectionRepositoryHash() =>
+    r'065226bf7fd8e52798357fc78bc447d027e9785e';
+
+/// See also [chatToHandleProjectionRepository].
+@ProviderFor(chatToHandleProjectionRepository)
+final chatToHandleProjectionRepositoryProvider =
+    AutoDisposeFutureProvider<ChatToHandleProjectionRepository>.internal(
+      chatToHandleProjectionRepository,
+      name: r'chatToHandleProjectionRepositoryProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$chatToHandleProjectionRepositoryHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef ChatToHandleProjectionRepositoryRef =
+    AutoDisposeFutureProviderRef<ChatToHandleProjectionRepository>;
+String _$chatToMessageProjectionRepositoryHash() =>
+    r'a4e890feee81647463980d585e67bfd6bc31dec7';
+
+/// See also [chatToMessageProjectionRepository].
+@ProviderFor(chatToMessageProjectionRepository)
+final chatToMessageProjectionRepositoryProvider =
+    AutoDisposeFutureProvider<ChatToMessageProjectionRepository>.internal(
+      chatToMessageProjectionRepository,
+      name: r'chatToMessageProjectionRepositoryProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$chatToMessageProjectionRepositoryHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef ChatToMessageProjectionRepositoryRef =
+    AutoDisposeFutureProviderRef<ChatToMessageProjectionRepository>;
 String _$contactGraphRepositoryHash() =>
     r'f9af5392debb37c3476daeb54cfc6df1823a3063';
 
@@ -46,6 +126,26 @@ final contactGraphRepositoryProvider =
 // ignore: unused_element
 typedef ContactGraphRepositoryRef =
     AutoDisposeFutureProviderRef<ContactGraphRepository>;
+String _$contactProjectionRepositoryHash() =>
+    r'ce63145416e2b058fd64da3b09ca5ffbfe1831d9';
+
+/// See also [contactProjectionRepository].
+@ProviderFor(contactProjectionRepository)
+final contactProjectionRepositoryProvider =
+    AutoDisposeFutureProvider<ContactProjectionRepository>.internal(
+      contactProjectionRepository,
+      name: r'contactProjectionRepositoryProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$contactProjectionRepositoryHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef ContactProjectionRepositoryRef =
+    AutoDisposeFutureProviderRef<ContactProjectionRepository>;
 String _$conversationRepositoryHash() =>
     r'795eda961d4419a0250463a5473570a402e3dc52';
 
@@ -66,6 +166,46 @@ final conversationRepositoryProvider =
 // ignore: unused_element
 typedef ConversationRepositoryRef =
     AutoDisposeFutureProviderRef<ConversationRepository>;
+String _$graphProjectionResetterHash() =>
+    r'9fa532b722787f82f4ba29d4220d74238bce1077';
+
+/// See also [graphProjectionResetter].
+@ProviderFor(graphProjectionResetter)
+final graphProjectionResetterProvider =
+    AutoDisposeFutureProvider<GraphProjectionResetter>.internal(
+      graphProjectionResetter,
+      name: r'graphProjectionResetterProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$graphProjectionResetterHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef GraphProjectionResetterRef =
+    AutoDisposeFutureProviderRef<GraphProjectionResetter>;
+String _$handleProjectionRepositoryHash() =>
+    r'cda0c7ccbbc5a9833e01f10f0f7b3c967813695f';
+
+/// See also [handleProjectionRepository].
+@ProviderFor(handleProjectionRepository)
+final handleProjectionRepositoryProvider =
+    AutoDisposeFutureProvider<HandleProjectionRepository>.internal(
+      handleProjectionRepository,
+      name: r'handleProjectionRepositoryProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$handleProjectionRepositoryHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef HandleProjectionRepositoryRef =
+    AutoDisposeFutureProviderRef<HandleProjectionRepository>;
 String _$graphHealthRepositoryHash() =>
     r'40f8c890023dba7c87cc24b08ecaf8d2c90b1b8a';
 
@@ -106,5 +246,45 @@ final messageGraphRepositoryProvider =
 // ignore: unused_element
 typedef MessageGraphRepositoryRef =
     AutoDisposeFutureProviderRef<MessageGraphRepository>;
+String _$messageProjectionRepositoryHash() =>
+    r'b7ce66827b6a9cccf7b39d51b307d78e3f3dfd2b';
+
+/// See also [messageProjectionRepository].
+@ProviderFor(messageProjectionRepository)
+final messageProjectionRepositoryProvider =
+    AutoDisposeFutureProvider<MessageProjectionRepository>.internal(
+      messageProjectionRepository,
+      name: r'messageProjectionRepositoryProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$messageProjectionRepositoryHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef MessageProjectionRepositoryRef =
+    AutoDisposeFutureProviderRef<MessageProjectionRepository>;
+String _$messageToAttachmentProjectionRepositoryHash() =>
+    r'5fa9dc1d88cef8febba8861f75a77a043d2a2984';
+
+/// See also [messageToAttachmentProjectionRepository].
+@ProviderFor(messageToAttachmentProjectionRepository)
+final messageToAttachmentProjectionRepositoryProvider =
+    AutoDisposeFutureProvider<MessageToAttachmentProjectionRepository>.internal(
+      messageToAttachmentProjectionRepository,
+      name: r'messageToAttachmentProjectionRepositoryProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$messageToAttachmentProjectionRepositoryHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef MessageToAttachmentProjectionRepositoryRef =
+    AutoDisposeFutureProviderRef<MessageToAttachmentProjectionRepository>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

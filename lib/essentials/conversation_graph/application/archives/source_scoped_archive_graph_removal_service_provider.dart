@@ -2,7 +2,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../source_scoped_import/feature_level_providers.dart';
-import '../../infrastructure/repositories/graph_projection_resetter_provider.dart';
+import '../../feature_level_providers.dart';
 import '../attachments/attachment_projector_provider.dart';
 import '../chat_handle_joins/chat_to_handle_projector_provider.dart';
 import '../chat_message_joins/chat_to_message_projector_provider.dart';

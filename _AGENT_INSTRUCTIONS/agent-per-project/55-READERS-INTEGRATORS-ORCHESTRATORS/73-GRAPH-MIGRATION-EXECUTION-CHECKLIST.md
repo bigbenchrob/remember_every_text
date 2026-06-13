@@ -2100,6 +2100,10 @@ Remove legacy systems only after their blockers close.
   conversation reads, graph health, and message graph reads now consume named
   boundary providers; the retired infrastructure provider islands are guarded
   by an architecture tripwire.
+- Moved graph projection repository and resetter provider composition into the
+  conversation graph feature-level boundary. Projectors still own projection
+  semantics and consume repository contracts; concrete import/graph database
+  wiring is centralized at the boundary and protected by a tripwire.
 
 ### Exit Criteria
 

@@ -1181,6 +1181,32 @@ void main() {
       );
     });
 
+    test('Graph projection repositories stay feature-boundary owned', () {
+      const retiredProviderPaths = <String>[
+        'lib/essentials/conversation_graph/infrastructure/repositories/attachment_projection_repository_provider.dart',
+        'lib/essentials/conversation_graph/infrastructure/repositories/chat_projection_repository_provider.dart',
+        'lib/essentials/conversation_graph/infrastructure/repositories/chat_to_handle_projection_repository_provider.dart',
+        'lib/essentials/conversation_graph/infrastructure/repositories/chat_to_message_projection_repository_provider.dart',
+        'lib/essentials/conversation_graph/infrastructure/repositories/contact_projection_repository_provider.dart',
+        'lib/essentials/conversation_graph/infrastructure/repositories/graph_projection_resetter_provider.dart',
+        'lib/essentials/conversation_graph/infrastructure/repositories/handle_projection_repository_provider.dart',
+        'lib/essentials/conversation_graph/infrastructure/repositories/message_projection_repository_provider.dart',
+        'lib/essentials/conversation_graph/infrastructure/repositories/message_to_attachment_projection_repository_provider.dart',
+      ];
+
+      for (final retiredPath in retiredProviderPaths) {
+        expect(
+          File(retiredPath).existsSync(),
+          isFalse,
+          reason:
+              'Graph projection repository/resetter composition opens import '
+              'or graph databases and belongs in the conversation_graph '
+              'feature-level provider boundary, not infrastructure provider '
+              'islands.',
+        );
+      }
+    });
+
     test('Graph status provider uses repository boundary', () async {
       final offenders = await _findGraphStatusProviderBoundaryOffenders();
 

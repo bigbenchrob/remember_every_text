@@ -1,7 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../infrastructure/repositories/contact_projection_repository_provider.dart';
+import '../../feature_level_providers.dart';
 import 'contact_projector.dart';
 
 part 'contact_projector_provider.g.dart';
