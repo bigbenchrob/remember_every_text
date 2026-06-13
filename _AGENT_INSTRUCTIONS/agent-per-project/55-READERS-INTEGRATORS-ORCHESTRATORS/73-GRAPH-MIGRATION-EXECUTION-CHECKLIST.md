@@ -2134,6 +2134,11 @@ Remove legacy systems only after their blockers close.
   handles feature-level public API instead of importing handle infrastructure
   provider files directly. Added a handles application/presentation tripwire
   so same-feature UI composition does not bypass the public boundary.
+- Moved historical archive source provider composition into the settings
+  feature-level boundary. The application `HistoricalArchiveSources` contract
+  remains semantic, while retained `macos_import.db` metadata repository access
+  is wired only at the settings public API boundary and guarded by the existing
+  archive-source metadata tripwire.
 
 ### Exit Criteria
 

@@ -1,7 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../feature_level_providers.dart';
 import '../../historical_archive_sources.dart';
-import '../../historical_archive_sources_provider.dart';
 import '../payloads/historical_archives_settings_cassette_payload.dart';
 
 part 'historical_archives_sidebar_known_sources_provider.g.dart';

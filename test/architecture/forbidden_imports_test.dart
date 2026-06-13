@@ -1769,8 +1769,7 @@ _findHistoricalArchiveSourcesRepositoryBoundaryOffenders() async {
     if (path.startsWith('lib/features/settings/infrastructure/')) {
       return false;
     }
-    return path !=
-        'lib/features/settings/application/historical_archive_sources_provider.dart';
+    return true;
   });
   final offenders = <String>{};
 
