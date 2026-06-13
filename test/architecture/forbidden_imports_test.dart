@@ -859,6 +859,24 @@ void main() {
       );
     });
 
+    test(
+      'Conversation signature preferences store stays feature-boundary owned',
+      () {
+        const retiredInfrastructureProvider =
+            'lib/features/messages/infrastructure/repositories/conversation_signature_preferences_store_provider.dart';
+
+        expect(
+          File(retiredInfrastructureProvider).existsSync(),
+          isFalse,
+          reason:
+              'ConversationSignaturePreferencesStore is an application '
+              'contract, but provider composition imports concrete overlay '
+              'storage and belongs in the messages feature-level provider '
+              'boundary.',
+        );
+      },
+    );
+
     test('Contact picker filter mode stays storage agnostic', () async {
       final offenders = await _findPickerFilterModeStorageOffenders();
 

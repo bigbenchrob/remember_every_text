@@ -2081,6 +2081,11 @@ Remove legacy systems only after their blockers close.
   feature-level boundary. `SidebarFlow` still owns deterministic sidebar state
   and persistence semantics, while overlay-backed setting storage remains
   infrastructure-owned behind the `SidebarFlowPreferenceStore` contract.
+- Moved conversation signature preference-store provider composition to the
+  messages feature-level boundary. The preferences controller still owns
+  filter/sort semantics, while overlay-backed setting storage remains
+  infrastructure-owned behind the `ConversationSignaturePreferencesStore`
+  contract.
 
 ### Exit Criteria
 

@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../infrastructure/repositories/conversation_signature_preferences_store_provider.dart';
+import '../../../feature_level_providers.dart';
 import 'conversation_signature_display_provider.dart';
 
 part 'conversation_signature_preferences_provider.g.dart';

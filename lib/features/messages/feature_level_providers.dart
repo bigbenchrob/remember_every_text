@@ -7,12 +7,14 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../essentials/db/feature_level_providers.dart';
 import '../contacts/feature_level_providers.dart';
+import 'application/sidebar_cassette_spec/resolver_tools/conversation_signature_preferences_store.dart';
 import 'application/user_metadata/message_overlay_controller.dart';
 import 'application/user_metadata/message_overlay_repository.dart';
 import 'domain/entities/message_overlay_state.dart';
 import 'domain/message_evidence/recovered_message_evidence.dart';
 import 'infrastructure/repositories/graph_recovered_message_evidence_repository.dart';
 import 'infrastructure/repositories/message_overlay_identity_bridge_repository.dart';
+import 'infrastructure/repositories/overlay_conversation_signature_preferences_store.dart';
 
 export './application/sidebar_cassette_spec/coordinators/cassette_coordinator.dart';
 export './application/sidebar_cassette_spec/coordinators/info_cassette_coordinator.dart';
@@ -29,6 +31,15 @@ export './application/view_spec/resolver_tools/recovered_messages_sidebar_provid
 export './domain/message_evidence/message_evidence_scope.dart';
 
 part 'feature_level_providers.g.dart';
+
+@riverpod
+Future<ConversationSignaturePreferencesStore>
+conversationSignaturePreferencesStore(Ref ref) async {
+  final overlayDatabase = await ref.watch(overlayDatabaseProvider.future);
+  return OverlayConversationSignaturePreferencesStore(
+    overlayDatabase: overlayDatabase,
+  );
+}
 
 @riverpod
 Future<MessageOverlayRepository> messageOverlayRepository(Ref ref) async {

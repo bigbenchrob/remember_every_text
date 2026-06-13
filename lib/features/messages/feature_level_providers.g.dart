@@ -6,6 +6,26 @@ part of 'feature_level_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
+String _$conversationSignaturePreferencesStoreHash() =>
+    r'694e15c7511d359dc17b41096233c4b8e3fb5b77';
+
+/// See also [conversationSignaturePreferencesStore].
+@ProviderFor(conversationSignaturePreferencesStore)
+final conversationSignaturePreferencesStoreProvider =
+    AutoDisposeFutureProvider<ConversationSignaturePreferencesStore>.internal(
+      conversationSignaturePreferencesStore,
+      name: r'conversationSignaturePreferencesStoreProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$conversationSignaturePreferencesStoreHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef ConversationSignaturePreferencesStoreRef =
+    AutoDisposeFutureProviderRef<ConversationSignaturePreferencesStore>;
 String _$messageOverlayRepositoryHash() =>
     r'5e2ca10ed905482768974d0d88c5207d2c364175';
 
