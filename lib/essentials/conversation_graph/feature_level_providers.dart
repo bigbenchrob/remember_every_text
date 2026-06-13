@@ -22,6 +22,9 @@ import 'application/health/graph_health_repository.dart';
 import 'application/message_attachment_joins/message_to_attachment_projection_repository.dart';
 import 'application/messages/message_graph_repository.dart';
 import 'application/messages/message_projection_repository.dart';
+import 'application/monitor/chat_db_monitor_runtime_environment.dart';
+import 'application/monitor/chat_db_source_probe_reader.dart';
+import 'application/monitor/import_ledger_probe_reader.dart';
 import 'domain/status/conversation_graph_status.dart';
 import 'infrastructure/repositories/attachment_projection_repository.dart';
 import 'infrastructure/repositories/chat_projection_repository.dart';
@@ -39,6 +42,9 @@ import 'infrastructure/repositories/message_graph_repository.dart';
 import 'infrastructure/repositories/message_projection_repository.dart';
 import 'infrastructure/repositories/message_to_attachment_projection_repository.dart';
 import 'infrastructure/repositories/overlay_conversation_favourites_store.dart';
+import 'infrastructure/repositories/source_scoped_import_ledger_probe_reader.dart';
+import 'infrastructure/repositories/sqlite_chat_db_source_probe_reader.dart';
+import 'infrastructure/system/local_chat_db_monitor_runtime_environment.dart';
 
 part 'feature_level_providers.g.dart';
 
@@ -123,6 +129,16 @@ Future<ChatToMessageProjectionRepository> chatToMessageProjectionRepository(
     importDatabase: importDatabase,
     graphDatabase: graphDatabase,
   );
+}
+
+@riverpod
+ChatDbMonitorRuntimeEnvironment chatDbMonitorRuntimeEnvironment(Ref ref) {
+  return const LocalChatDbMonitorRuntimeEnvironment();
+}
+
+@riverpod
+ChatDbSourceProbeReader chatDbSourceProbeReader(Ref ref) {
+  return const SqliteChatDbSourceProbeReader();
 }
 
 @riverpod
@@ -222,6 +238,12 @@ Future<GraphHealthRepository> graphHealthRepository(Ref ref) async {
     recoveredMessagesAttachmentsFolderName:
         recoveredMessagesAttachmentsFolderNameForGraphHealth,
   );
+}
+
+@riverpod
+Future<ImportLedgerProbeReader> importLedgerProbeReader(Ref ref) async {
+  final importDb = await ref.watch(sourceScopedImportDatabaseProvider.future);
+  return SourceScopedImportLedgerProbeReader(importDb: importDb);
 }
 
 @riverpod

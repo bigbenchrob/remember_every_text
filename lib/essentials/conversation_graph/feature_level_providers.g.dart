@@ -106,6 +106,46 @@ final chatToMessageProjectionRepositoryProvider =
 // ignore: unused_element
 typedef ChatToMessageProjectionRepositoryRef =
     AutoDisposeFutureProviderRef<ChatToMessageProjectionRepository>;
+String _$chatDbMonitorRuntimeEnvironmentHash() =>
+    r'2bb790a0f7e6831aca463fd79239f134e18b9771';
+
+/// See also [chatDbMonitorRuntimeEnvironment].
+@ProviderFor(chatDbMonitorRuntimeEnvironment)
+final chatDbMonitorRuntimeEnvironmentProvider =
+    AutoDisposeProvider<ChatDbMonitorRuntimeEnvironment>.internal(
+      chatDbMonitorRuntimeEnvironment,
+      name: r'chatDbMonitorRuntimeEnvironmentProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$chatDbMonitorRuntimeEnvironmentHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef ChatDbMonitorRuntimeEnvironmentRef =
+    AutoDisposeProviderRef<ChatDbMonitorRuntimeEnvironment>;
+String _$chatDbSourceProbeReaderHash() =>
+    r'2e3ee8ba3022db4374cff24b0881f2a3db222550';
+
+/// See also [chatDbSourceProbeReader].
+@ProviderFor(chatDbSourceProbeReader)
+final chatDbSourceProbeReaderProvider =
+    AutoDisposeProvider<ChatDbSourceProbeReader>.internal(
+      chatDbSourceProbeReader,
+      name: r'chatDbSourceProbeReaderProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$chatDbSourceProbeReaderHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef ChatDbSourceProbeReaderRef =
+    AutoDisposeProviderRef<ChatDbSourceProbeReader>;
 String _$contactGraphRepositoryHash() =>
     r'f9af5392debb37c3476daeb54cfc6df1823a3063';
 
@@ -266,6 +306,26 @@ final graphHealthRepositoryProvider =
 // ignore: unused_element
 typedef GraphHealthRepositoryRef =
     AutoDisposeFutureProviderRef<GraphHealthRepository>;
+String _$importLedgerProbeReaderHash() =>
+    r'11861e427f063af8464be5a9e72064f9de32b3a7';
+
+/// See also [importLedgerProbeReader].
+@ProviderFor(importLedgerProbeReader)
+final importLedgerProbeReaderProvider =
+    AutoDisposeFutureProvider<ImportLedgerProbeReader>.internal(
+      importLedgerProbeReader,
+      name: r'importLedgerProbeReaderProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$importLedgerProbeReaderHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef ImportLedgerProbeReaderRef =
+    AutoDisposeFutureProviderRef<ImportLedgerProbeReader>;
 String _$messageGraphRepositoryHash() =>
     r'8ba8b40d2a9e282b3c595fac9fa76ce0bcaa650e';
 

@@ -1283,6 +1283,26 @@ void main() {
       );
     });
 
+    test('Chat DB monitor probe providers stay feature-boundary owned', () {
+      const retiredProviderPaths = <String>[
+        'lib/essentials/conversation_graph/infrastructure/repositories/chat_db_source_probe_reader_provider.dart',
+        'lib/essentials/conversation_graph/infrastructure/repositories/import_ledger_probe_reader_provider.dart',
+        'lib/essentials/conversation_graph/infrastructure/system/chat_db_monitor_runtime_environment_provider.dart',
+      ];
+
+      for (final retiredPath in retiredProviderPaths) {
+        expect(
+          File(retiredPath).existsSync(),
+          isFalse,
+          reason:
+              'Chat DB monitor probe/runtime provider composition belongs in '
+              'the conversation_graph feature-level provider boundary. The '
+              'monitor should own lifecycle decisions and consume probe ports, '
+              'not import infrastructure provider islands.',
+        );
+      }
+    });
+
     test(
       'Graph refresh consumers avoid broad database provider import',
       () async {

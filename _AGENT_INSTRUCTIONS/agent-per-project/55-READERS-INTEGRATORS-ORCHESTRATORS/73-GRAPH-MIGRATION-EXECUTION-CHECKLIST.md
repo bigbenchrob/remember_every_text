@@ -2108,6 +2108,11 @@ Remove legacy systems only after their blockers close.
   composition into the conversation graph feature-level boundary. Favourites
   controller and status reader remain semantic/application-owned while
   overlay/source/import/graph wiring is centralized at the boundary.
+- Moved Chat DB monitor probe/runtime provider composition into the
+  conversation graph feature-level boundary. The monitor still owns lifecycle
+  decisions and consumes source/import/runtime probe ports; concrete SQLite,
+  source-scoped import, and platform runtime wiring is centralized at the
+  boundary.
 
 ### Exit Criteria
 
