@@ -784,6 +784,21 @@ void main() {
       );
     });
 
+    test('Contact presentation uses the contacts feature boundary', () async {
+      final offenders =
+          await _findContactPresentationContactsListRepositoryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Contact presentation may render contact summaries, but it should '
+            'consume them through the contacts feature-level public API rather '
+            'than importing the concrete contacts-list repository directly.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test(
       'Contact display-name override actions stay storage agnostic',
       () async {
@@ -3539,6 +3554,30 @@ Future<List<String>> _findContactHeroOverlayDatabaseOffenders() async {
       uncommented.contains('ref.invalidate(unifiedPickerSectionsProvider')) {
     offenders.add('$filePath handles contact overlay action details directly');
   }
+  return offenders..sort();
+}
+
+Future<List<String>>
+_findContactPresentationContactsListRepositoryOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/features/contacts/presentation/');
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    offenders.addAll([
+      for (final importTarget in imports)
+        if (importTarget.endsWith('contacts_list_repository.dart'))
+          '$filePath imports $importTarget',
+    ]);
+  }
+
   return offenders..sort();
 }
 

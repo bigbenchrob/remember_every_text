@@ -4,7 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
-import '../../infrastructure/repositories/contacts_list_repository.dart';
+import '../../feature_level_providers.dart' show ContactSummary;
 
 /// Maximum length for custom display names.
 const int kMaxDisplayNameLength = 25;

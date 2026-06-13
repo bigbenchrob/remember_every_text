@@ -2062,6 +2062,11 @@ Remove legacy systems only after their blockers close.
   repository. Historical Archives workflow and sidebar summaries now consume
   application source metadata providers instead of the concrete retained
   repository, with a tripwire preventing regression.
+- Routed contacts presentation contact-summary usage through the contacts
+  feature-level public API. `ContactSummary` remains in the current contact
+  list read-model implementation for now, but presentation no longer imports
+  the concrete repository file directly, and a tripwire prevents that boundary
+  regression.
 
 ### Exit Criteria
 

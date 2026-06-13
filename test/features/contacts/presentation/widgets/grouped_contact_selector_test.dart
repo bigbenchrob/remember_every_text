@@ -6,7 +6,7 @@ import 'package:remember_this_text/features/contacts/application/sidebar_cassett
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/resolver_tools/picker_filter_mode_provider.dart';
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/resolver_tools/unified_picker_sections_provider.dart';
 import 'package:remember_this_text/features/contacts/domain/participant_origin.dart';
-import 'package:remember_this_text/features/contacts/infrastructure/repositories/contacts_list_repository.dart';
+import 'package:remember_this_text/features/contacts/feature_level_providers.dart';
 import 'package:remember_this_text/features/contacts/presentation/widgets/grouped_contact_selector.dart';
 
 void main() {

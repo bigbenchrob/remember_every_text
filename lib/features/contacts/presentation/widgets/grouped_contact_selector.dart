@@ -13,8 +13,7 @@ import '../../../../config/theme/theme_typography.dart';
 import '../../application/sidebar_cassette_spec/resolver_tools/filtered_picker_sections_provider.dart';
 import '../../application/sidebar_cassette_spec/resolver_tools/picker_filter_mode_provider.dart';
 import '../../application/sidebar_cassette_spec/resolver_tools/unified_picker_sections_provider.dart';
-import '../../infrastructure/repositories/contacts_list_repository.dart'
-    show ContactSummary;
+import '../../feature_level_providers.dart' show ContactSummary;
 import 'contact_highlight_row.dart';
 import 'picker_filter_toggle.dart';
 

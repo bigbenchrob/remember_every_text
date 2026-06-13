@@ -44,6 +44,7 @@ export './application/tooltips_spec/coordinators/contacts_tooltip_coordinator.da
 export './domain/spec_classes/contacts_cassette_spec.dart';
 export './domain/spec_classes/contacts_tooltip_spec.dart';
 export './infrastructure/repositories/contact_profile_provider.dart';
+export './infrastructure/repositories/contacts_list_repository.dart';
 export './infrastructure/repositories/handles_for_contact_provider.dart';
 export './infrastructure/repositories/recent_contacts_repository.dart';
 
