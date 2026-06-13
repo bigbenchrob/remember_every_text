@@ -2091,6 +2091,10 @@ Remove legacy systems only after their blockers close.
   and picker filter mode. Application controllers now consume feature-boundary
   providers for their storage/repository contracts instead of importing
   infrastructure provider islands.
+- Moved handle visibility, spam-handle, and manual-linking read provider
+  composition to the handles feature-level boundary. Handle application
+  providers now consume named boundary providers while graph/overlay-backed
+  implementations remain infrastructure-owned behind contracts.
 
 ### Exit Criteria
 

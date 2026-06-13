@@ -54,6 +54,7 @@ export './infrastructure/repositories/contact_profile_provider.dart';
 export './infrastructure/repositories/contacts_list_repository.dart';
 export './infrastructure/repositories/handles_for_contact_provider.dart';
 export './infrastructure/repositories/recent_contacts_repository.dart';
+export './infrastructure/repositories/virtual_participants_provider.dart';
 
 part 'feature_level_providers.g.dart';
 

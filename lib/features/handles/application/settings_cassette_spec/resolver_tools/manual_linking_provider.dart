@@ -3,7 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../contacts/feature_level_providers.dart';
 import '../../../../contacts/infrastructure/repositories/virtual_participants_provider.dart';
-import '../../../infrastructure/repositories/manual_linking_read_repository_provider.dart';
+import '../../../feature_level_providers.dart';
 import 'manual_linking_read_repository.dart';
 
 export 'manual_linking_read_repository.dart';

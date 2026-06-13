@@ -1,8 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../infrastructure/repositories/handle_visibility_store_provider.dart';
-import '../../../infrastructure/repositories/spam_handles_repository_provider.dart';
+import '../../../feature_level_providers.dart';
 import 'spam_handles_repository.dart';
 
 export 'spam_handles_repository.dart';

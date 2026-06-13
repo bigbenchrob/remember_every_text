@@ -4,10 +4,17 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../essentials/db/feature_level_providers.dart';
+import '../contacts/feature_level_providers.dart';
 import 'application/review/handle_review_controller.dart';
 import 'application/review/handle_review_store.dart';
+import 'application/settings_cassette_spec/resolver_tools/handle_visibility_store.dart';
+import 'application/settings_cassette_spec/resolver_tools/manual_linking_read_repository.dart';
+import 'application/settings_cassette_spec/resolver_tools/spam_handles_repository.dart';
+import 'infrastructure/repositories/graph_manual_linking_read_repository.dart';
+import 'infrastructure/repositories/graph_spam_handles_repository.dart';
 import 'infrastructure/repositories/handle_display_name_provider.dart';
 import 'infrastructure/repositories/overlay_handle_review_store.dart';
+import 'infrastructure/repositories/overlay_handle_visibility_store.dart';
 import 'infrastructure/repositories/stray_handles_provider.dart';
 
 // =============================================================================
@@ -42,9 +49,42 @@ export './infrastructure/repositories/stray_handles_provider.dart';
 part 'feature_level_providers.g.dart';
 
 @riverpod
+Future<HandleVisibilityStore> handleVisibilityStore(Ref ref) async {
+  final overlayDatabase = await ref.watch(overlayDatabaseProvider.future);
+  return OverlayHandleVisibilityStore(overlayDatabase: overlayDatabase);
+}
+
+@riverpod
 Future<HandleReviewStore> handleReviewStore(Ref ref) async {
   final overlayDatabase = await ref.watch(overlayDatabaseProvider.future);
   return OverlayHandleReviewStore(overlayDatabase: overlayDatabase);
+}
+
+@riverpod
+Future<ManualLinkingReadRepository> manualLinkingReadRepository(Ref ref) async {
+  final graphDb = await ref.watch(
+    driftConversationGraphDatabaseProvider.future,
+  );
+  final overlayDb = await ref.watch(overlayDatabaseProvider.future);
+  final virtualContacts = await ref.watch(virtualParticipantsProvider.future);
+  return GraphManualLinkingReadRepository(
+    graphDb: graphDb,
+    overlayDb: overlayDb,
+    virtualContacts: virtualContacts,
+  );
+}
+
+@riverpod
+Future<SpamHandlesRepository> spamHandlesRepository(Ref ref) async {
+  final graphDatabase = await ref.watch(
+    driftConversationGraphDatabaseProvider.future,
+  );
+  final visibilityStore = await ref.watch(handleVisibilityStoreProvider.future);
+
+  return GraphSpamHandlesRepository(
+    graphDatabase: graphDatabase,
+    visibilityStore: visibilityStore,
+  );
 }
 
 @riverpod

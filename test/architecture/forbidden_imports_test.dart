@@ -927,6 +927,25 @@ void main() {
       );
     });
 
+    test('Handle overlay repositories stay feature-boundary owned', () {
+      const retiredProviderPaths = <String>[
+        'lib/features/handles/infrastructure/repositories/handle_visibility_store_provider.dart',
+        'lib/features/handles/infrastructure/repositories/manual_linking_read_repository_provider.dart',
+        'lib/features/handles/infrastructure/repositories/spam_handles_repository_provider.dart',
+      ];
+
+      for (final retiredPath in retiredProviderPaths) {
+        expect(
+          File(retiredPath).existsSync(),
+          isFalse,
+          reason:
+              'Handle overlay/repository composition opens graph or overlay '
+              'storage and belongs in handles feature_level_providers.dart, '
+              'not infrastructure provider islands.',
+        );
+      }
+    });
+
     test('Developer mode stays overlay-storage agnostic', () async {
       final offenders = await _findDeveloperModeStorageOffenders();
 
