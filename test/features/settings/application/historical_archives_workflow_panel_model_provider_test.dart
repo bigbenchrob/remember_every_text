@@ -4,8 +4,8 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/orchestration/graph_maintenance_execution_gate_provider.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
+import 'package:remember_this_text/features/settings/application/historical_archives_workflow_panel_model_provider.dart';
 import 'package:remember_this_text/features/settings/infrastructure/repositories/archive_source_inspection_repository.dart';
-import 'package:remember_this_text/features/settings/presentation/view_model/historical_archives_workflow_panel_model_provider.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 void main() {

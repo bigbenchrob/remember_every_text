@@ -1647,6 +1647,21 @@ void main() {
       },
     );
 
+    test('Historical archives workflow provider stays application-owned', () {
+      const retiredPresentationProvider =
+          'lib/features/settings/presentation/view_model/historical_archives_workflow_panel_model_provider.dart';
+
+      expect(
+        File(retiredPresentationProvider).existsSync(),
+        isFalse,
+        reason:
+            'HistoricalArchivesWorkflow coordinates archive workflow state and '
+            'is consumed by both settings presentation and sidebar application '
+            'widgets. It belongs in settings application, not presentation '
+            'view-model storage.',
+      );
+    });
+
     test('Message history coverage providers stay feature-boundary owned', () {
       const retiredProviderPaths = <String>[
         'lib/features/settings/infrastructure/repositories/message_history_coverage_repository_provider.dart',
@@ -3565,7 +3580,7 @@ Future<List<String>> _findArchiveGraphRemovalResetterBoundaryOffenders() async {
 Future<List<String>> _findSettingsGraphReadBoundaryOffenders() async {
   const files = <String>{
     'lib/features/settings/application/sidebar_cassette_spec/resolvers/message_history_coverage_settings_resolver.dart',
-    'lib/features/settings/presentation/view_model/historical_archives_workflow_panel_model_provider.dart',
+    'lib/features/settings/application/historical_archives_workflow_panel_model_provider.dart',
   };
   final offenders = <String>[];
 
@@ -3597,7 +3612,7 @@ Future<List<String>> _findSettingsGraphReadBoundaryOffenders() async {
 Future<List<String>>
 _findHistoricalArchivesFolderChooserBoundaryOffenders() async {
   const filePath =
-      'lib/features/settings/presentation/view_model/historical_archives_workflow_panel_model_provider.dart';
+      'lib/features/settings/application/historical_archives_workflow_panel_model_provider.dart';
   final file = File(filePath);
   if (!file.existsSync()) {
     return const <String>[];
@@ -3828,7 +3843,7 @@ Future<List<String>> _findFullDiskAccessBoundaryOffenders() async {
   const files = <String>{
     'lib/essentials/onboarding/application/onboarding_environment_report_provider.dart',
     'lib/essentials/onboarding/application/onboarding_gate_provider.dart',
-    'lib/features/settings/presentation/view_model/historical_archives_workflow_panel_model_provider.dart',
+    'lib/features/settings/application/historical_archives_workflow_panel_model_provider.dart',
   };
   final offenders = <String>[];
 

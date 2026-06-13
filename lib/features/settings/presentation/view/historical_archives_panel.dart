@@ -3,7 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
-import '../view_model/historical_archives_workflow_panel_model_provider.dart';
+import '../../application/historical_archives_workflow_panel_model_provider.dart';
 
 class HistoricalArchivesPanel extends ConsumerWidget {
   const HistoricalArchivesPanel({super.key});

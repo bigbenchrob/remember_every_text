@@ -2,16 +2,16 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../essentials/conversation_graph/application/archives/source_scoped_archive_graph_import_service_provider.dart';
-import '../../../../essentials/conversation_graph/application/archives/source_scoped_archive_graph_removal_service_provider.dart';
-import '../../../../essentials/conversation_graph/application/orchestration/graph_maintenance_execution_gate_provider.dart';
-import '../../../../essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart';
-import '../../../../essentials/db/feature_level_providers/db_maintenance_lock_provider.dart';
-import '../../../../essentials/db/feature_level_providers/message_data_version_provider.dart';
-import '../../../../essentials/onboarding/application/onboarding_environment_report_provider.dart';
-import '../../application/archive_source_inspection.dart';
-import '../../application/historical_archive_sources.dart';
-import '../../feature_level_providers.dart';
+import '../../../essentials/conversation_graph/application/archives/source_scoped_archive_graph_import_service_provider.dart';
+import '../../../essentials/conversation_graph/application/archives/source_scoped_archive_graph_removal_service_provider.dart';
+import '../../../essentials/conversation_graph/application/orchestration/graph_maintenance_execution_gate_provider.dart';
+import '../../../essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart';
+import '../../../essentials/db/feature_level_providers/db_maintenance_lock_provider.dart';
+import '../../../essentials/db/feature_level_providers/message_data_version_provider.dart';
+import '../../../essentials/onboarding/application/onboarding_environment_report_provider.dart';
+import '../feature_level_providers.dart';
+import 'archive_source_inspection.dart';
+import 'historical_archive_sources.dart';
 
 part 'historical_archives_workflow_panel_model_provider.g.dart';
 
