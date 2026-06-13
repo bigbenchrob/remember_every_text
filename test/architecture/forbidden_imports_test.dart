@@ -2356,6 +2356,12 @@ Future<List<String>> _findCrossSystemAttachmentProviderImportOffenders() async {
             'features/attachments/application/deterministic_recovery_provider.dart',
           ) ||
           importTarget.endsWith(
+            'features/attachments/application/graph_attachment_archive_lookup.dart',
+          ) ||
+          importTarget.endsWith(
+            'features/attachments/infrastructure/repositories/overlay_archive_compatibility_lookup.dart',
+          ) ||
+          importTarget.endsWith(
             'attachments/application/archive_settings_provider.dart',
           ) ||
           importTarget.endsWith(
@@ -2366,6 +2372,12 @@ Future<List<String>> _findCrossSystemAttachmentProviderImportOffenders() async {
           ) ||
           importTarget.endsWith(
             'attachments/application/deterministic_recovery_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'attachments/application/graph_attachment_archive_lookup.dart',
+          ) ||
+          importTarget.endsWith(
+            'attachments/infrastructure/repositories/overlay_archive_compatibility_lookup.dart',
           )) {
         offenders.add('$filePath imports $importTarget');
       }

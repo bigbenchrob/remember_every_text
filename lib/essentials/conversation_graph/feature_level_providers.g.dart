@@ -47,7 +47,7 @@ final chatProjectionRepositoryProvider =
 typedef ChatProjectionRepositoryRef =
     AutoDisposeFutureProviderRef<ChatProjectionRepository>;
 String _$chatSummaryRepositoryHash() =>
-    r'7c100e6efde129e71b57052b92fe7d84b979cd5c';
+    r'9a953360bfa7f66d402cb694d58ca768afb30c41';
 
 /// See also [chatSummaryRepository].
 @ProviderFor(chatSummaryRepository)

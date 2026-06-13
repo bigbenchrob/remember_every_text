@@ -1,7 +1,8 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../features/attachments/infrastructure/repositories/overlay_archive_compatibility_lookup.dart';
+import '../../features/attachments/feature_level_providers.dart'
+    as attachments_feature;
 import '../../providers.dart';
 import '../db/feature_level_providers.dart';
 import '../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
@@ -85,15 +86,12 @@ Future<ChatSummaryRepository> chatSummaryRepository(Ref ref) async {
   final graphDatabase = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
-  final overlayDatabase = await ref.watch(overlayDatabaseProvider.future);
-  final archiveDirectory = ref.watch(attachmentArchiveDirectoryProvider);
+  final archiveLookup = await ref.watch(
+    attachments_feature.graphAttachmentArchiveLookupProvider.future,
+  );
   return SqliteChatSummaryRepository(
     graphDatabase: graphDatabase,
-    archiveLookup: OverlayArchiveCompatibilityLookup(
-      graphDatabase: graphDatabase,
-      overlayDatabase: overlayDatabase,
-      archiveDirectory: archiveDirectory,
-    ),
+    archiveLookup: archiveLookup,
   );
 }
 

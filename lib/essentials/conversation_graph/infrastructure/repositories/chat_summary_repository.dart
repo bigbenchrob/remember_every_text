@@ -1,6 +1,7 @@
 import 'dart:io';
 
-import '../../../../features/attachments/application/graph_attachment_archive_lookup.dart';
+import '../../../../features/attachments/feature_level_providers.dart'
+    show GraphAttachmentArchiveLookup;
 import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../application/chat_summaries/chat_summary.dart';
 import '../../application/chat_summaries/chat_summary_repository.dart';

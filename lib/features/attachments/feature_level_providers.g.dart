@@ -125,6 +125,26 @@ final attachmentArchiveStatsReaderProvider =
 // ignore: unused_element
 typedef AttachmentArchiveStatsReaderRef =
     AutoDisposeFutureProviderRef<AttachmentArchiveStatsReader>;
+String _$graphAttachmentArchiveLookupHash() =>
+    r'20dc3eddfc6b51900e14dbb430697bb4f952a341';
+
+/// See also [graphAttachmentArchiveLookup].
+@ProviderFor(graphAttachmentArchiveLookup)
+final graphAttachmentArchiveLookupProvider =
+    AutoDisposeFutureProvider<GraphAttachmentArchiveLookup>.internal(
+      graphAttachmentArchiveLookup,
+      name: r'graphAttachmentArchiveLookupProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$graphAttachmentArchiveLookupHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef GraphAttachmentArchiveLookupRef =
+    AutoDisposeFutureProviderRef<GraphAttachmentArchiveLookup>;
 String _$crossSnapshotMapperHash() =>
     r'5900a069b5b1dec047e5ae8e724f974646a58c21';
 
