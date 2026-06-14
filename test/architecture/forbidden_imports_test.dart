@@ -192,6 +192,21 @@ void main() {
       );
     });
 
+    test('Active Dart code contains no TODO or FIXME markers', () async {
+      final offenders = await _findActiveTodoFixmeOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'TODO/FIXME markers in active Dart code defer ownership and '
+            'invite architectural drift. Resolve the issue, document it in '
+            'the appropriate planning file, or keep explanatory context in '
+            'comments outside executable code.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test(
       'Sidebar semantic/application imports do not grow beyond tracked temporary exceptions',
       () async {
@@ -4549,6 +4564,27 @@ Future<List<String>> _findAllCommentLibDartFiles() async {
   return offenders..sort();
 }
 
+Future<List<String>> _findActiveTodoFixmeOffenders() async {
+  final files = await _collectProjectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/') || path.startsWith('test/');
+  });
+  final markerPattern = RegExp(r'\b(?:TODO|FIXME)\b');
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (markerPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
 Future<List<String>> _collectSidebarPayloadFiles() async {
   return _collectDartFiles((path) {
     if (path.endsWith('.g.dart')) {
@@ -4579,6 +4615,40 @@ Future<List<String>> _collectDartFiles(
 
     if (include(normalizedPath)) {
       files.add(normalizedPath);
+    }
+  }
+
+  files.sort();
+  return files;
+}
+
+Future<List<String>> _collectProjectDartFiles(
+  bool Function(String path) include,
+) async {
+  final roots = <Directory>[Directory('lib'), Directory('test')];
+  final files = <String>[];
+
+  for (final root in roots) {
+    if (!root.existsSync()) {
+      continue;
+    }
+
+    await for (final entity in root.list(
+      recursive: true,
+      followLinks: false,
+    )) {
+      if (entity is! File) {
+        continue;
+      }
+
+      final normalizedPath = entity.path.replaceAll(r'\', '/');
+      if (!normalizedPath.endsWith('.dart')) {
+        continue;
+      }
+
+      if (include(normalizedPath)) {
+        files.add(normalizedPath);
+      }
     }
   }
 

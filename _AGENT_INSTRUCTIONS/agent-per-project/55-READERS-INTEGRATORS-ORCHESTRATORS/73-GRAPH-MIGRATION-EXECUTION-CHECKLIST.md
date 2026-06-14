@@ -2263,6 +2263,9 @@ Remove legacy systems only after their blockers close.
   scaffolding.
 - Reworded the date-conversion utility header so timestamp-format notes remain
   useful and professional without changing any conversion behavior.
+- Added an architecture tripwire that rejects active-code `TODO` / `FIXME`
+  markers in hand-written Dart files, forcing deferred work into explicit
+  planning docs rather than executable-code drift.
 
 ### Exit Criteria
 
