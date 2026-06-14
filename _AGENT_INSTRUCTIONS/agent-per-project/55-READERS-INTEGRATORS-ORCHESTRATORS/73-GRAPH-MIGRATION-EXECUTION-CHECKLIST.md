@@ -2234,6 +2234,9 @@ Remove legacy systems only after their blockers close.
   tests as schema storage only. User-facing contact identity continues to flow
   through `display_name` and the canonical display identity resolver, not a
   resurrected short-name path.
+- Removed the all-comment `lib/core/util/broadcast.dart` scratch utility after
+  confirming it had no active references. Retired diagnostics and experiments
+  should not remain under `lib/` as apparent application code.
 
 ### Exit Criteria
 
