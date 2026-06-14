@@ -2287,6 +2287,9 @@ Remove legacy systems only after their blockers close.
   `UnimplementedError`; bounded search-result context now intersects global
   graph text matches with the context skeleton so matches stay inside the
   selected evidence scope.
+- Replaced the remaining production `UnimplementedError` with an explicit
+  unsupported-state `StateError`, and added a tripwire to keep unfinished
+  runtime-path markers out of active `lib/` code.
 
 ### Exit Criteria
 

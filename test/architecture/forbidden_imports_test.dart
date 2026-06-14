@@ -239,6 +239,20 @@ void main() {
       );
     });
 
+    test('Active lib code contains no UnimplementedError markers', () async {
+      final offenders = await _findLibUnimplementedErrorOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'UnimplementedError in active lib/ code indicates an unfinished '
+            'runtime path. Use an explicit typed failure for unsupported '
+            'state, or complete the implementation.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Raw print usage stays behind approved diagnostic boundaries',
         () async {
       final offenders = await _findRawPrintOffenders();
@@ -4670,6 +4684,29 @@ Future<List<String>> _findGenericExceptionThrowOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (genericExceptionThrowPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findLibUnimplementedErrorOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') ||
+        path.endsWith('.freezed.dart') ||
+        path == 'lib/frb_generated.dart') {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final unimplementedErrorPattern = RegExp(r'\bUnimplementedError\(');
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (unimplementedErrorPattern.hasMatch(uncommented)) {
       offenders.add(filePath);
     }
   }

@@ -29,8 +29,8 @@ class SidebarBodyModelContent extends ConsumerWidget {
         sidebarMode: sidebarMode,
         cassetteIndex: cassetteIndex,
       ),
-      _ => throw UnimplementedError(
-        'SidebarBodyModelContent does not yet render ${bodyModel.runtimeType}.',
+      _ => throw StateError(
+        'Unsupported sidebar body model: ${bodyModel.runtimeType}.',
       ),
     };
   }
