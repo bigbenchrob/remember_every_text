@@ -931,26 +931,34 @@ class _FakeConversationRepository implements ConversationRepository {
     required int conversationId,
     int limit = 100,
   }) {
-    throw UnimplementedError();
+    throw UnsupportedError(
+      '_FakeConversationRepository.readMessages is not used by these tests.',
+    );
   }
 
   @override
   Future<List<ConversationOverview>> readOverviews({int limit = 100}) {
-    throw UnimplementedError();
+    throw UnsupportedError(
+      '_FakeConversationRepository.readOverviews is not used by these tests.',
+    );
   }
 
   @override
   Future<List<ConversationOverview>> readOverviewsByIds({
     required List<int> conversationIds,
   }) {
-    throw UnimplementedError();
+    throw UnsupportedError(
+      '_FakeConversationRepository.readOverviewsByIds is not used by these tests.',
+    );
   }
 
   @override
   Future<Map<int, ConversationActivityTrace>> readActivityTraces({
     required List<int> conversationIds,
   }) {
-    throw UnimplementedError();
+    throw UnsupportedError(
+      '_FakeConversationRepository.readActivityTraces is not used by these tests.',
+    );
   }
 
   @override
@@ -960,6 +968,8 @@ class _FakeConversationRepository implements ConversationRepository {
     int limit = 500,
     int snippetsPerConversation = 3,
   }) {
-    throw UnimplementedError();
+    throw UnsupportedError(
+      '_FakeConversationRepository.readConversationMessageTextMatches is not used by these tests.',
+    );
   }
 }

@@ -2292,6 +2292,9 @@ Remove legacy systems only after their blockers close.
   runtime-path markers out of active `lib/` code.
 - Updated current AddressBook database guidance snippets so they demonstrate
   typed `StateError` failures instead of generic `Exception` throws.
+- Replaced remaining test-fake `UnimplementedError` markers with explicit
+  unsupported-method failures, keeping unfinished-marker scans meaningful while
+  preserving fake repository behavior.
 
 ### Exit Criteria
 
