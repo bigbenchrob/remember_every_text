@@ -2357,6 +2357,17 @@ criteria.
 - Updated the roadmap risk register so the leading risk is now retained
   storage policy lagging behind graph ownership, not graph lifecycle work
   lagging behind UI work.
+- Reworded the roadmap and this checklist so retained `macos_import.db` /
+  `working.db` user data files are protected by retention-register criteria,
+  while retired execution/read code remains eligible for deletion after blocker
+  closure.
+- Clarified the retained storage register's first bucket: old archive
+  import/projection implementation files are completed execution retirement,
+  while remaining `macos_import.db` / `working.db` files are storage boundaries
+  with separate reduction criteria.
+- Verified `flutter test test/architecture/forbidden_imports_test.dart`
+  passes with 111 architecture tripwires, including retained database
+  quarantine and retired import/projection path guards.
 
 ### Exit Criteria
 
