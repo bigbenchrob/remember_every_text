@@ -2214,6 +2214,9 @@ Remove legacy systems only after their blockers close.
   confirming active code imports current spacing/widget/token files directly.
   Theme callers should continue using the concrete token/provider/widget
   boundaries rather than the retired `AppTheme`/`BbcColors` surface.
+- Routed the navigation panel-stack tab strip through `themeColorsProvider` and
+  `themeTypographyProvider` instead of local `Theme.of(context)` reads, keeping
+  navigation chrome on the shared app token vocabulary.
 
 ### Exit Criteria
 
