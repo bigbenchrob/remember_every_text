@@ -43,7 +43,7 @@ Use these documents in this order when working on the source-scoped graph archit
 3. [`20-ALLOWED-DEPENDENCIES.md`](20-ALLOWED-DEPENDENCIES.md) - permitted dependency direction between architecture layers.
 4. [`30-INVARIANTS.md`](30-INVARIANTS.md) - rules that must not be violated while extending the pipeline.
 5. [`49-IMPORT-STAGE-CONTROLLER-AND-PIPELINE-ORCHESTRATOR-STRATEGY.md`](49-IMPORT-STAGE-CONTROLLER-AND-PIPELINE-ORCHESTRATOR-STRATEGY.md) - validated StageController and PipelineOrchestrator pattern.
-6. [`50-INCREMENTAL-UPDATE-PILOT.md`](50-INCREMENTAL-UPDATE-PILOT.md) - current pilot behavior and validated runtime spine.
+6. [`50-INCREMENTAL-UPDATE-PILOT.md`](50-INCREMENTAL-UPDATE-PILOT.md) - historical pilot behavior and validated runtime spine that has since been absorbed into source-scoped graph lifecycle work.
 7. [`60-CANONICAL-TOPOLOGY-PROJECTION-DESIGN.md`](60-CANONICAL-TOPOLOGY-PROJECTION-DESIGN.md) - design options for projecting preserved source topology into working app truth.
 8. [`62-WORKING-CHAT-ENDPOINT-RESOLUTION-AUDIT.md`](62-WORKING-CHAT-ENDPOINT-RESOLUTION-AUDIT.md) - current audit of ledger-chat to working-chat endpoint resolution.
 9. [`64-SOURCE-SCOPED-ROW-KEY-STRATEGY.md`](64-SOURCE-SCOPED-ROW-KEY-STRATEGY.md) - source-scoped row identity strategy for multi-source-safe provenance and topology resolution.

@@ -2200,6 +2200,13 @@ Remove legacy systems only after their blockers close.
   ownership explicit: errors are logged without disrupting the panel projection
   path, and any user-visible incident surfacing must belong to a named
   diagnostics surface rather than an imperative repair inside panel rendering.
+- Clarified the new-feature workflow index so historical feature-planning
+  folders under `45-NEW-FEATURE-ADDITION/` are not mistaken for active graph-era
+  implementation guidance. Active work must be listed in the current-feature
+  table, linked from the current roadmap/checklist, or explicitly requested.
+- Corrected the R-I-O reading-flow index so the retired incremental-update
+  pilot is described as historical validation that has been absorbed into the
+  source-scoped graph lifecycle, not as current runtime behavior.
 
 ### Exit Criteria
 
