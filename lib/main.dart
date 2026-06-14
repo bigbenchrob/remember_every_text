@@ -155,7 +155,7 @@ void main() async {
 
   /// By default, enableWindowDelegate is set to false to ensure compatibility
   /// with other plugins. Set it to true if you wish to use NSWindowDelegate.
-  /// WindowManipulator.initialize(enableWindowDelegate: true);\
+  /// WindowManipulator.initialize(enableWindowDelegate: true);
   final delegate = _MyDelegate();
   // ignore: unused_local_variable
   final handle = WindowManipulator.addNSWindowDelegate(delegate);

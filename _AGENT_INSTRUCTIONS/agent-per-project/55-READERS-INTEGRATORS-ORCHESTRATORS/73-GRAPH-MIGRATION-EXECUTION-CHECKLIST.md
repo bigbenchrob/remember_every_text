@@ -2237,6 +2237,9 @@ Remove legacy systems only after their blockers close.
 - Removed the all-comment `lib/core/util/broadcast.dart` scratch utility after
   confirming it had no active references. Retired diagnostics and experiments
   should not remain under `lib/` as apparent application code.
+- Removed stale commented imports and a malformed window-delegate example
+  comment from active root utility/provider files. Active source should not
+  carry old dependency hints that can be mistaken for current architecture.
 
 ### Exit Criteria
 

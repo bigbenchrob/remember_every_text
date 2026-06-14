@@ -1,17 +1,11 @@
-// Unnecessary core/dart imports removed
-
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// import 'package:sqflite/sqflite.dart';
-
 import 'config/colors.dart';
 import 'core/util/paths_helper.dart';
-
-//import 'features/folders/domain/failures/folder_find_failure.dart';
 
 part 'providers.g.dart';
 
