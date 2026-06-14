@@ -2307,6 +2307,9 @@ Remove legacy systems only after their blockers close.
 - Refreshed the Rust FFI dylib bundling build note so its metadata and embedded
   Xcode shell script match the current project file, including the Big Bench
   framework bundle identifier and framework-directory reset.
+- Reworded the superseded onboarding/import debug handoff so its objective,
+  blocker, file list, and resume prompt are explicitly historical and cannot be
+  mistaken for current graph-era onboarding instructions.
 
 ### Exit Criteria
 
