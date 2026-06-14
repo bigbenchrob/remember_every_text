@@ -2258,6 +2258,9 @@ Remove legacy systems only after their blockers close.
 - Removed the unused `NotAuthenticatedError` DDD utility symbol after confirming
   no active code references it. The remaining error helper is the value-object
   `UnexpectedValueError` path used by current value objects.
+- Removed obsolete commented-out future tooltip/cassette variants so the active
+  spec files describe current cross-surface contracts instead of hypothetical
+  scaffolding.
 
 ### Exit Criteria
 

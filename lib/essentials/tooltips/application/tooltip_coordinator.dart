@@ -42,9 +42,6 @@ class TooltipCoordinator extends _$TooltipCoordinator {
         );
         return coordinator.resolve(contactsSpec);
       },
-      // Future handlers:
-      // messages: (messagesSpec) => ...
-      // handles: (handlesSpec) => ...
     );
   }
 }
