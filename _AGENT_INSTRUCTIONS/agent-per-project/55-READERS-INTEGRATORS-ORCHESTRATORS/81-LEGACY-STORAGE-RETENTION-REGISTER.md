@@ -66,7 +66,7 @@ tested, and prevented from becoming ordinary app authority again.
 
 ### 1. Retired Archive-Compatible Import/Projection Execution
 
-**Primary files**
+**Retired execution files**
 
 - `lib/essentials/db_importers/application/services/retained_legacy_archive_pipeline_provider.dart`
   (retired 2026-06-07)
@@ -78,9 +78,12 @@ tested, and prevented from becoming ordinary app authority again.
   (retired 2026-06-07)
 - `lib/essentials/db_migrate/application/migrators/**`
   (retired 2026-06-07)
+
+**Remaining retained storage boundaries**
+
 - `lib/essentials/db/infrastructure/data_sources/local/import/retained_archive_metadata_database.dart`
-- `lib/essentials/db/infrastructure/data_sources/local/working/working_database.dart`
-  (retired 2026-06-08)
+- retained user-data files: `macos_import.db`, `working.db`, and sidecar
+  WAL/SHM files in existing data folders
 
 **Current status**
 
@@ -89,10 +92,10 @@ the retained historical ledger/projection path. Forward import uses
 `SourceScopedArchiveGraphImportService`; removal uses
 `SourceScopedArchiveGraphRemovalService`.
 
-This bucket remains listed because retained historical code/files may still exist
-for storage-retirement cleanup, but it is no longer the Historical Archives
-execution path. The standalone import-control panel and `ViewSpec.import`
-route have been retired.
+This bucket remains listed because retained historical database files may still
+exist for storage-retirement cleanup, but it is no longer the Historical
+Archives execution path. The standalone import-control panel and
+`ViewSpec.import` route have been retired.
 
 **Current boundary**
 
@@ -103,12 +106,12 @@ import/removal now uses source-scoped graph services directly:
 - `SourceScopedArchiveGraphRemovalService`
 
 Retained database files may still exist for storage-retirement cleanup,
-diagnostics, backup interpretation, and historical reference, but no retained
+diagnostics, backup interpretation, and historical reference. No retained
 import/projection execution boundary remains current.
 
-**Reduction criteria**
+**Completed execution-retirement criteria**
 
-Done means:
+Done:
 
 - historical archive import can write source facts directly into
   `macos_import_ss.db`.
@@ -123,12 +126,26 @@ Done means:
 - existing historical archive UI either calls the new source-scoped archive
   path or is explicitly retired.
 
-These criteria are now satisfied for Historical Archives import/removal. The
-retained archive pipeline provider, old import progress/detail widgets,
-old ledger orchestrator, old table-importer stack, old retained projection
-orchestrator/migrator stack, and their tests have been removed. Broader deletion
-of retained database files, schemas, and diagnostic surfaces must still
-follow this retention register and the full-deletion criteria above.
+**Remaining storage-reduction criteria**
+
+Done means:
+
+- retained `macos_import.db` / `working.db` file purposes are reduced to the
+  storage buckets listed below.
+- backup/export/freeze policy is explicit for users who may still need old
+  recovery or audit data.
+- support diagnostics no longer require old schema assumptions except where
+  deliberately preserved as historical-file inspection.
+- reset cleanup can safely handle old files without recreating them as app
+  authority.
+
+The completed execution-retirement criteria are now satisfied for Historical
+Archives import/removal. The retained archive pipeline provider, old import
+progress/detail widgets, old ledger orchestrator, old table-importer stack,
+old retained projection orchestrator/migrator stack, and their tests have been
+removed. Broader deletion of retained database files, schemas, and diagnostic
+surfaces must still follow this retention register and the full-deletion
+criteria above.
 
 ### 2. Historical Archive Settings Metadata
 
