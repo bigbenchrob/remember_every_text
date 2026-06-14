@@ -2335,6 +2335,9 @@ Remove legacy systems only after their blockers close.
   active-status sections describe Historical Archives import/removal as
   source-scoped graph services, with remaining work limited to retained
   storage/reference retirement.
+- Reworded the source-scoped archive cutover plan's Stage 4 as completed for
+  execution code, leaving only the retained-file storage/reference policy as a
+  future decision.
 
 ### Exit Criteria
 

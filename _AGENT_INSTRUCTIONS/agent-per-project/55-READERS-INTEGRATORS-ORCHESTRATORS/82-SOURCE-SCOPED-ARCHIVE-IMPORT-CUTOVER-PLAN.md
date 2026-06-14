@@ -317,13 +317,12 @@ code; diagnostics now inspect retained files as historical/reference storage.
 
 ### Stage 4 - Retire Retained Legacy Bridge
 
-Only after archive import parity and attachment reachability are confirmed:
-
-- remove `RetainedLegacyArchivePipeline`
-- remove unused retained importers/migrators
-- retire retained schema tests
-- decide whether `macos_import.db` / `working.db` files remain historical
-  storage or are deleted by reset/cleanup
+Historical pre-cutover note: this stage is complete for execution code.
+`RetainedLegacyArchivePipeline`, unused retained importers/migrators, and their
+execution-path tests have been removed from production code. The remaining
+question is storage/reference policy: decide whether retained
+`macos_import.db` / `working.db` files remain historical storage or are deleted
+by reset/cleanup after the retention criteria are satisfied.
 
 ## Tests Needed
 
