@@ -223,7 +223,7 @@ final graphAttachmentArchiveCandidateReaderProvider =
 typedef GraphAttachmentArchiveCandidateReaderRef =
     AutoDisposeFutureProviderRef<GraphAttachmentArchiveCandidateReader>;
 String _$crossSnapshotMapperHash() =>
-    r'5900a069b5b1dec047e5ae8e724f974646a58c21';
+    r'd45c8b0c3d957a31481ced39708c713069bc6a01';
 
 /// See also [crossSnapshotMapper].
 @ProviderFor(crossSnapshotMapper)
@@ -242,6 +242,26 @@ final crossSnapshotMapperProvider =
 // ignore: unused_element
 typedef CrossSnapshotMapperRef =
     AutoDisposeFutureProviderRef<CrossSnapshotMapper>;
+String _$currentAttachmentSnapshotLookupHash() =>
+    r'33d9d51d2612028a5f0e851d20f6eb7f7088090e';
+
+/// See also [currentAttachmentSnapshotLookup].
+@ProviderFor(currentAttachmentSnapshotLookup)
+final currentAttachmentSnapshotLookupProvider =
+    AutoDisposeFutureProvider<CurrentAttachmentSnapshotLookup>.internal(
+      currentAttachmentSnapshotLookup,
+      name: r'currentAttachmentSnapshotLookupProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$currentAttachmentSnapshotLookupHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef CurrentAttachmentSnapshotLookupRef =
+    AutoDisposeFutureProviderRef<CurrentAttachmentSnapshotLookup>;
 String _$recoveredAttachmentArchiveWriterHash() =>
     r'ae407278caaf5d9fdf146266de39aca5f646c7bc';
 

@@ -11,6 +11,7 @@ import 'application/attachment_archive_stats_reader.dart';
 import 'application/attachment_archive_write_store.dart';
 import 'application/attachment_file_access.dart';
 import 'application/cross_snapshot_mapper.dart';
+import 'application/current_attachment_snapshot_lookup.dart';
 import 'application/current_messages_attachment_path_lookup.dart';
 import 'application/graph_attachment_archive_candidate_reader.dart';
 import 'application/graph_attachment_archive_lookup.dart';
@@ -146,14 +147,24 @@ graphAttachmentArchiveCandidateReader(
 Future<CrossSnapshotMapper> crossSnapshotMapper(
   CrossSnapshotMapperRef ref,
 ) async {
-  final importDb = await ref.watch(sourceScopedImportDatabaseProvider.future);
+  final attachmentLookup = await ref.watch(
+    currentAttachmentSnapshotLookupProvider.future,
+  );
   final graphDb = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
   return GraphCrossSnapshotMapper(
-    attachmentLookup: SourceScopedAttachmentSnapshotLookup(importDb: importDb),
+    attachmentLookup: attachmentLookup,
     graphDb: graphDb,
   );
+}
+
+@riverpod
+Future<CurrentAttachmentSnapshotLookup> currentAttachmentSnapshotLookup(
+  CurrentAttachmentSnapshotLookupRef ref,
+) async {
+  final importDb = await ref.watch(sourceScopedImportDatabaseProvider.future);
+  return SourceScopedAttachmentSnapshotLookup(importDb: importDb);
 }
 
 @riverpod

@@ -10,9 +10,9 @@ String _$attachmentArchiveServiceHash() =>
     r'8d0ed30765f6efe5783a9d1e883013b36aedbeee';
 
 /// Service that copies attachment files into the MessageLens archive and
-/// records them in the overlay database.
+/// records them through the attachment archive store.
 ///
-/// Archiving is idempotent: if an overlay record already exists for the
+/// Archiving is idempotent: if an archive record already exists for the
 /// given (messageGuid, importAttachmentId) pair, the file is not re-copied.
 ///
 /// Copied from [AttachmentArchiveService].
