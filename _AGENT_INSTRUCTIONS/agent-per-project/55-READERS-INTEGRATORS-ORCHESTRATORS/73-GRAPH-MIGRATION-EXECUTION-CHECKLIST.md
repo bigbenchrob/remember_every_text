@@ -2225,6 +2225,10 @@ Remove legacy systems only after their blockers close.
   commented examples.
 - Marked the completed UI sweep checklist's old `theme.dart` barrel export item
   as superseded by direct spacing/widget/token imports and theme provider usage.
+- Removed deprecated dropdown menu font-weight aliases after confirming callers
+  use typed leading-label and selected-value style slots. The shared dropdown
+  surface now exposes one current styling path instead of carrying stale
+  compatibility parameters.
 
 ### Exit Criteria
 

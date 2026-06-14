@@ -49,8 +49,6 @@ class AppDropdownMenu<T> extends HookConsumerWidget {
     required this.closedIcon,
     required this.openIcon,
     this.onMenuVisibilityChanged,
-    this.leadingLabelWeight,
-    this.selectedValueWeight,
     this.chevronColor,
     this.chevronBackgroundColor,
     this.leadingLabelStyle,
@@ -84,14 +82,6 @@ class AppDropdownMenu<T> extends HookConsumerWidget {
   final IconData openIcon;
   final ValueChanged<bool>? onMenuVisibilityChanged;
 
-  /// Font weight for the leading label (e.g., "Show:").
-  /// DEPRECATED: Use [leadingLabelStyle] instead.
-  final FontWeight? leadingLabelWeight;
-
-  /// Font weight for the selected value (e.g., "Contacts").
-  /// DEPRECATED: Use [selectedValueStyle] instead.
-  final FontWeight? selectedValueWeight;
-
   /// Custom color for the chevron icon. If null, uses default text color.
   final Color? chevronColor;
 
@@ -99,11 +89,9 @@ class AppDropdownMenu<T> extends HookConsumerWidget {
   final Color? chevronBackgroundColor;
 
   /// Full style for the leading label (e.g., "Show:").
-  /// If provided, this takes precedence over [leadingLabelWeight].
   final TextStyle? leadingLabelStyle;
 
   /// Full style for the selected value (e.g., "Contacts").
-  /// If provided, this takes precedence over [selectedValueWeight].
   final TextStyle? selectedValueStyle;
 
   @override
@@ -168,7 +156,7 @@ class AppDropdownMenu<T> extends HookConsumerWidget {
                         leadingLabelStyle ??
                         typography.callout.copyWith(
                           color: colors.content.textTertiary,
-                          fontWeight: leadingLabelWeight ?? FontWeight.w400,
+                          fontWeight: FontWeight.w400,
                         ),
                   ),
                   const SizedBox(width: 8),
@@ -180,7 +168,7 @@ class AppDropdownMenu<T> extends HookConsumerWidget {
                         selectedValueStyle ??
                         typography.callout.copyWith(
                           color: labelColor,
-                          fontWeight: selectedValueWeight ?? FontWeight.w400,
+                          fontWeight: FontWeight.w400,
                         ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
