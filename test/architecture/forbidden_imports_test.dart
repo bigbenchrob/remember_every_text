@@ -1460,6 +1460,25 @@ void main() {
       );
     });
 
+    test(
+      'Attachment archive application uses archive directory boundary',
+      () async {
+        final offenders =
+            await _findAttachmentArchiveDirectoryBoundaryOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'Attachment archive application providers should read the archive '
+              'directory through the attachments feature boundary. Direct use '
+              'of the central attachmentArchiveDirectoryProvider recreates a '
+              'database-provider dependency island.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
     test('Onboarding environment report uses probe reader boundary', () async {
       final offenders =
           await _findOnboardingEnvironmentProbeBoundaryOffenders();
@@ -3866,6 +3885,31 @@ Future<List<String>> _findAttachmentArchiveFileStoreBoundaryOffenders() async {
       uncommented.contains('Platform.environment') ||
       uncommented.contains('sha256.convert')) {
     offenders.add('$filePath performs archive file-store work directly');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findAttachmentArchiveDirectoryBoundaryOffenders() async {
+  const filePaths = <String>[
+    'lib/features/attachments/application/archive_settings_provider.dart',
+    'lib/features/attachments/application/attachment_archive_service_provider.dart',
+  ];
+  final offenders = <String>[];
+
+  for (final filePath in filePaths) {
+    final file = File(filePath);
+    if (!file.existsSync()) {
+      continue;
+    }
+
+    final source = await file.readAsString();
+    final uncommented = _stripComments(source);
+    if (uncommented.contains('attachmentArchiveDirectoryProvider')) {
+      offenders.add(
+        '$filePath reads central attachmentArchiveDirectoryProvider directly',
+      );
+    }
   }
 
   return offenders..sort();
