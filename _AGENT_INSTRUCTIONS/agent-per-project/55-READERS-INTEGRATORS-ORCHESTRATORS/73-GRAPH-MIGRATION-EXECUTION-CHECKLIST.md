@@ -2223,6 +2223,8 @@ Remove legacy systems only after their blockers close.
 - Removed stale all-comment theme-extension and contact-lozenge prototype code
   so theme scans report active architectural drift rather than historical
   commented examples.
+- Marked the completed UI sweep checklist's old `theme.dart` barrel export item
+  as superseded by direct spacing/widget/token imports and theme provider usage.
 
 ### Exit Criteria
 
