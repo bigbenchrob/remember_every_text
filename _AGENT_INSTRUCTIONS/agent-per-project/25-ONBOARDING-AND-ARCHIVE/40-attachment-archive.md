@@ -139,10 +139,10 @@ The record renders with an appropriate availability state. See
 ### Import-Time and Graph-Sync Archiving
 
 In the graph-era app path, `ChatDbChangeMonitor` archives newly imported live
-graph source ranges and runs bounded graph attachment sweeps. Retained legacy
-archive compatibility may still call `AttachmentArchiveService.archiveAllAvailable()`
-for explicit full/manual archive passes. It processes graph attachment facts
-with local paths when the archive is enabled.
+graph source ranges and runs bounded graph attachment sweeps. Explicit
+full/manual graph archive sweeps may still call
+`AttachmentArchiveService.archiveAllAvailable()`. It processes graph attachment
+facts with local paths when the archive is enabled.
 
 `AttachmentArchiveService` is an orchestration boundary. It may decide when to
 archive and report progress, but it should not own database queries or
@@ -198,7 +198,7 @@ boundary unless current code introduces one.
 
 1. Archive metadata lives in overlay DB only — never in `working_ss.db` or retained `working.db`.
 2. Graph `attachments` rows remain source projections — not durable file-store records.
-3. Graph incremental sync uses source-range archiving plus periodic graph attachment sweeps; retained historical archive compatibility may still call `archiveAllAvailable()`.
+3. Graph incremental sync uses source-range archiving plus periodic graph attachment sweeps; explicit full/manual graph archive sweeps may still call `archiveAllAvailable()`.
 4. The Messages Attachments folder is never written to.
 5. Content-addressable naming provides natural deduplication.
 6. The archive is additive — entries survive re-import and graph rebuilds.

@@ -2317,6 +2317,9 @@ Remove legacy systems only after their blockers close.
 - Aligned the extractor packaging instructions with the checked-in Xcode
   "Bundle Rust Message Extractor" phase, removing stale manual
   resource/post-build copy guidance.
+- Clarified current archive documentation so full archive sweeps are described
+  as explicit graph archive sweeps over graph candidates, not legacy archive
+  compatibility paths.
 
 ### Exit Criteria
 

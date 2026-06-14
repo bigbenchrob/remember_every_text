@@ -191,9 +191,9 @@ The onboarding pipeline today works as follows:
    source-scoped import/projection lifecycle, producing `macos_import_ss.db`
    and `working_ss.db`
 5. **Archive maintenance** → graph incremental sync archives newly imported
-   source ranges and runs periodic graph attachment sweeps; retained
-   legacy archive compatibility may still call `archiveAllAvailable()` after
-   explicit archive/recovery rebuilds
+   source ranges and runs periodic graph attachment sweeps; explicit
+   full/manual graph archive sweeps may still call `archiveAllAvailable()`
+   after archive/recovery rebuilds
 6. **Completion** → overlay shows summary, user clicks "Get Started"
 7. **Ongoing** → `ChatDbChangeMonitor` polls `chat.db` every 15 seconds by
    source `MAX(ROWID)`, running the source-scoped graph lifecycle for new
