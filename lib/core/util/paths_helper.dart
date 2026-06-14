@@ -84,14 +84,16 @@ class PathsHelper {
           break;
 
         default:
-          throw '$directoryKey is not a recognized key';
+          throw StateError('$directoryKey is not a recognized key');
       }
 
       if (directory == null) {
-        throw 'path providfer path not found';
+        throw StateError('Path provider directory not found');
       }
     } catch (e) {
-      throw "PathsHelper initialization error, getPathProviderDirectoryPath(): unspecified error with key '$directoryKey'";
+      throw StateError(
+        "PathsHelper initialization error for key '$directoryKey': $e",
+      );
     }
     return directory.path;
   }

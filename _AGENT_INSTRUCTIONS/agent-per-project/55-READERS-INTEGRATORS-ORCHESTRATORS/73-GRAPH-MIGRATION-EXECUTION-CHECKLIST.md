@@ -2269,6 +2269,9 @@ Remove legacy systems only after their blockers close.
 - Reworded stale root-provider comments so shared provider ownership and
   theme-mode behavior are described as current architecture rather than a
   temporary theming experiment.
+- Replaced raw string throws in `PathsHelper` with typed `StateError`s so path
+  initialization failures preserve diagnostic cause without throwing arbitrary
+  objects.
 
 ### Exit Criteria
 
