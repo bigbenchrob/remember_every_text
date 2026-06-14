@@ -2250,6 +2250,9 @@ Remove legacy systems only after their blockers close.
 - Reworded sidebar rack comments that still described the current default
   cascade as a tracer-bullet state. The initial messages sidebar cascade is now
   documented as current behavior rather than experimental scaffolding.
+- Removed unused duplicate DDD interface files after confirming active value
+  objects use `common_interfaces.dart` and no code imports the standalone
+  `i_entity.dart` / `i_validatable.dart` files.
 
 ### Exit Criteria
 
