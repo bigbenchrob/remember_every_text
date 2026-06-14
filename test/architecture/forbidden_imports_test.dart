@@ -38,10 +38,7 @@ const Set<String> _sourceScopedDatabaseFilenameLiteralAllowedFiles = {
 
 const Set<String> _legacyTerminologyAllowedFiles = <String>{};
 
-const Set<String> _rawPrintAllowedFiles = {
-  'lib/essentials/db/application/retained_database_debug_settings_provider.dart',
-  'lib/main.dart',
-};
+const Set<String> _rawPrintAllowedFiles = {'lib/main.dart'};
 
 const List<String> _retiredImportMigrationExecutionSymbols = <String>[
   'DbImportControl',
@@ -253,19 +250,21 @@ void main() {
       );
     });
 
-    test('Raw print usage stays behind approved diagnostic boundaries',
-        () async {
-      final offenders = await _findRawPrintOffenders();
+    test(
+      'Raw print usage stays behind approved diagnostic boundaries',
+      () async {
+        final offenders = await _findRawPrintOffenders();
 
-      expect(
-        offenders,
-        orderedEquals(_rawPrintAllowedFiles.toList()..sort()),
-        reason:
-            'Raw print calls should not spread through application code. Use '
-            'the app logger or an explicit diagnostic boundary instead.\n'
-            'Actual users:\n${offenders.join('\n')}',
-      );
-    });
+        expect(
+          offenders,
+          orderedEquals(_rawPrintAllowedFiles.toList()..sort()),
+          reason:
+              'Raw print calls should not spread through application code. Use '
+              'the app logger or an explicit diagnostic boundary instead.\n'
+              'Actual users:\n${offenders.join('\n')}',
+        );
+      },
+    );
 
     test(
       'Sidebar semantic/application imports do not grow beyond tracked temporary exceptions',
@@ -4783,10 +4782,7 @@ Future<List<String>> _collectProjectDartFiles(
       continue;
     }
 
-    await for (final entity in root.list(
-      recursive: true,
-      followLinks: false,
-    )) {
+    await for (final entity in root.list(recursive: true, followLinks: false)) {
       if (entity is! File) {
         continue;
       }

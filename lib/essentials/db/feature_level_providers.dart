@@ -16,7 +16,6 @@ import '../source_scoped_import/feature_level_providers.dart';
 import 'application/database_health_audit/database_health_audit_service.dart';
 import 'application/database_health_audit/database_health_query_layer.dart';
 import 'application/retained_archive_metadata_store.dart';
-import 'application/retained_database_debug_settings_provider.dart';
 import 'feature_level_providers/db_maintenance_lock_provider.dart';
 import 'infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import 'infrastructure/data_sources/local/import/retained_archive_metadata_database.dart';
@@ -67,7 +66,6 @@ Future<RetainedArchiveMetadataStore> retainedArchiveMetadataStore(
   final database = RetainedArchiveMetadataDatabase(
     databaseDirectory: databaseDirectoryPath,
     databaseName: retainedArchiveMetadataDatabaseFileName,
-    debugSettings: ref.watch(retainedDatabaseDebugSettingsProvider),
   );
 
   // Ensure the retained metadata file is created immediately so dependent

@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:remember_this_text/essentials/db/application/retained_database_debug_settings_provider.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/import/retained_archive_metadata_database.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -35,7 +34,6 @@ void main() {
         final metadataDb = RetainedArchiveMetadataDatabase(
           databaseDirectory: tempDir.path,
           databaseName: 'metadata_test.db',
-          debugSettings: const RetainedDatabaseDebugSettingsState(),
         );
 
         final db = await metadataDb.database;
@@ -69,7 +67,6 @@ void main() {
         final metadataDb = RetainedArchiveMetadataDatabase(
           databaseDirectory: tempDir.path,
           databaseName: 'metadata_test.db',
-          debugSettings: const RetainedDatabaseDebugSettingsState(),
         );
 
         final db = await metadataDb.database;
@@ -118,7 +115,6 @@ void main() {
         final upgradedDb = RetainedArchiveMetadataDatabase(
           databaseDirectory: tempDir.path,
           databaseName: 'metadata_test.db',
-          debugSettings: const RetainedDatabaseDebugSettingsState(),
         );
 
         final db = await upgradedDb.database;
@@ -174,7 +170,6 @@ void main() {
         final upgradedDb = RetainedArchiveMetadataDatabase(
           databaseDirectory: tempDir.path,
           databaseName: 'metadata_test.db',
-          debugSettings: const RetainedDatabaseDebugSettingsState(),
         );
 
         final db = await upgradedDb.database;
@@ -220,7 +215,6 @@ void main() {
       final upgradedDb = RetainedArchiveMetadataDatabase(
         databaseDirectory: tempDir.path,
         databaseName: 'metadata_test.db',
-        debugSettings: const RetainedDatabaseDebugSettingsState(),
       );
 
       final db = await upgradedDb.database;
@@ -265,7 +259,6 @@ void main() {
       final upgradedDb = RetainedArchiveMetadataDatabase(
         databaseDirectory: tempDir.path,
         databaseName: 'metadata_test.db',
-        debugSettings: const RetainedDatabaseDebugSettingsState(),
       );
 
       final db = await upgradedDb.database;
@@ -307,7 +300,6 @@ void main() {
       final upgradedDb = RetainedArchiveMetadataDatabase(
         databaseDirectory: tempDir.path,
         databaseName: 'metadata_test.db',
-        debugSettings: const RetainedDatabaseDebugSettingsState(),
       );
 
       final db = await upgradedDb.database;
@@ -361,7 +353,6 @@ void main() {
       final upgradedDb = RetainedArchiveMetadataDatabase(
         databaseDirectory: tempDir.path,
         databaseName: 'metadata_test.db',
-        debugSettings: const RetainedDatabaseDebugSettingsState(),
       );
 
       final db = await upgradedDb.database;
@@ -387,7 +378,6 @@ void main() {
         final metadataDb = RetainedArchiveMetadataDatabase(
           databaseDirectory: tempDir.path,
           databaseName: 'metadata_test.db',
-          debugSettings: const RetainedDatabaseDebugSettingsState(),
         );
 
         await metadataDb.database;

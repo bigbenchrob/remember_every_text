@@ -6,7 +6,6 @@ import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
 import '../../../../application/retained_archive_metadata_store.dart';
-import '../../../../application/retained_database_debug_settings_provider.dart';
 
 /// Retained `macos_import.db` compatibility wrapper.
 ///
@@ -17,16 +16,13 @@ class RetainedArchiveMetadataDatabase implements RetainedArchiveMetadataStore {
   RetainedArchiveMetadataDatabase({
     required String databaseDirectory,
     required String databaseName,
-    required RetainedDatabaseDebugSettingsState debugSettings,
   }) : _databaseDirectory = databaseDirectory,
-       _databaseName = databaseName,
-       _debugSettings = debugSettings;
+       _databaseName = databaseName;
 
   static const int _schemaVersion = 10;
 
   final String _databaseDirectory;
   final String _databaseName;
-  final RetainedDatabaseDebugSettingsState _debugSettings;
 
   Database? _database;
 
@@ -38,22 +34,13 @@ class RetainedArchiveMetadataDatabase implements RetainedArchiveMetadataStore {
     if (_database != null) {
       final fileExists = File(dbPath).existsSync();
       if (!fileExists) {
-        _debugSettings.logDatabase(
-          'RetainedArchiveMetadataDatabase.database: detected missing database file at $dbPath, reopening',
-        );
         await _database!.close();
         _database = null;
       } else {
-        _debugSettings.logDatabase(
-          'RetainedArchiveMetadataDatabase.database: returning existing instance for $_databaseName',
-        );
         return _database!;
       }
     }
 
-    _debugSettings.logDatabase(
-      'RetainedArchiveMetadataDatabase.database: opening database $_databaseName at $dbPath',
-    );
     _database = await _openDatabase();
     return _database!;
   }
@@ -61,9 +48,6 @@ class RetainedArchiveMetadataDatabase implements RetainedArchiveMetadataStore {
   Future<Database> _openDatabase() async {
     final directory = Directory(_databaseDirectory);
     if (!directory.existsSync()) {
-      _debugSettings.logDatabase(
-        'RetainedArchiveMetadataDatabase._openDatabase: creating directory $_databaseDirectory',
-      );
       await directory.create(recursive: true);
     }
 
@@ -81,50 +65,20 @@ class RetainedArchiveMetadataDatabase implements RetainedArchiveMetadataStore {
   }
 
   Future<void> _onCreate(Database db, int version) async {
-    _debugSettings.logDatabase(
-      'RetainedArchiveMetadataDatabase._onCreate: creating schema version $version',
-    );
+    final batch = db.batch();
 
-    try {
-      final batch = db.batch();
+    _schemaStatements.forEach(batch.execute);
 
-      _debugSettings.logDatabase(
-        'RetainedArchiveMetadataDatabase._onCreate: adding ${_schemaStatements.length} schema statements',
-      );
-      _schemaStatements.forEach(batch.execute);
-
-      if (_indexStatements.isNotEmpty) {
-        _debugSettings.logDatabase(
-          'RetainedArchiveMetadataDatabase._onCreate: adding ${_indexStatements.length} index statements',
-        );
-        _indexStatements.forEach(batch.execute);
-      }
-
-      _debugSettings.logDatabase(
-        'RetainedArchiveMetadataDatabase._onCreate: committing batch',
-      );
-      await batch.commit(noResult: true);
-
-      _debugSettings.logDatabase(
-        'RetainedArchiveMetadataDatabase._onCreate: inserting schema migration record',
-      );
-      await db.insert('schema_migrations', <String, Object?>{
-        'version': version,
-        'applied_at_utc': DateTime.now().toUtc().toIso8601String(),
-      }, conflictAlgorithm: ConflictAlgorithm.replace);
-
-      _debugSettings.logDatabase(
-        'RetainedArchiveMetadataDatabase._onCreate: schema creation completed successfully',
-      );
-    } catch (e, stackTrace) {
-      _debugSettings.logDatabase(
-        'RetainedArchiveMetadataDatabase._onCreate: ERROR creating schema: $e',
-      );
-      _debugSettings.logDatabase(
-        'RetainedArchiveMetadataDatabase._onCreate: Stack trace: $stackTrace',
-      );
-      rethrow;
+    if (_indexStatements.isNotEmpty) {
+      _indexStatements.forEach(batch.execute);
     }
+
+    await batch.commit(noResult: true);
+
+    await db.insert('schema_migrations', <String, Object?>{
+      'version': version,
+      'applied_at_utc': DateTime.now().toUtc().toIso8601String(),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -318,9 +272,6 @@ FROM handles_old
   @override
   Future<void> close() async {
     if (_database != null) {
-      _debugSettings.logDatabase(
-        'RetainedArchiveMetadataDatabase.close: closing database',
-      );
       await _database!.close();
       _database = null;
     }
