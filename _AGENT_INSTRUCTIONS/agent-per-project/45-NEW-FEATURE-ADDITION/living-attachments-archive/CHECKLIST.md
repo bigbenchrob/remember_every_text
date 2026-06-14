@@ -6,6 +6,20 @@ This checklist records the original living-archive implementation path. Current
 follow-up work should keep archive metadata overlay-owned while integrating
 through graph attachment evidence and shared message rendering.
 
+Current graph-era implementation has also split archive responsibilities behind
+named attachment-feature ports:
+
+- `AttachmentArchiveService` owns archive orchestration and policy flow only.
+- Graph candidate reads belong behind `GraphAttachmentArchiveCandidateReader`.
+- Archive record/recovery hint/integrity-row writes belong behind
+  `AttachmentArchiveWriteStore`.
+- Sweep cursor/status persistence belongs behind `AttachmentArchiveSettingsStore`.
+- Filesystem copy/hash/existence/integrity work belongs behind
+  `AttachmentArchiveFileStore`.
+
+Do not use this historical checklist to reintroduce direct graph DB, overlay DB,
+or filesystem work inside the archive service.
+
 ## Phase 0 — Planning
 
 - [x] Capture seed concept from developer notes
