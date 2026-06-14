@@ -166,7 +166,7 @@ Actions:
 
 The `ChatDbChangeMonitor` auto-sync cycle archives newly imported live graph
 source ranges by calling `archiveGraphMessageSourceRange(...)`. It also runs
-a bounded graph-working attachment sweep every 5 minutes via
+a bounded graph attachment sweep every 5 minutes via
 `archiveNextGraphSweepChunk()` so files that appear later can be ingested.
 
 The resolver can also trigger on-demand archive ingestion when archive mode is

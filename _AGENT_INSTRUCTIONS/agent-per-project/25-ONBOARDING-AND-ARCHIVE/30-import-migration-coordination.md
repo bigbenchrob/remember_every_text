@@ -110,8 +110,8 @@ After initial onboarding completes, `ChatDbChangeMonitor` keeps the app current:
 - On change: runs the source-scoped graph build lifecycle.
 - Archives newly imported live graph source ranges.
 - Bumps graph/message data version providers on success.
-- Runs a periodic working-attachment sweep every 5 minutes for attachments
-  that become locally available later.
+- Runs a periodic graph-attachment sweep every 5 minutes for attachments that
+  become locally available later.
 - No user interaction required
 
 See [`60-reimport-and-ongoing-sync.md`](60-reimport-and-ongoing-sync.md) for

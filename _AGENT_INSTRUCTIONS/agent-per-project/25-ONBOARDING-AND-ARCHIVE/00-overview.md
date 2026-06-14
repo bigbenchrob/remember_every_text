@@ -128,7 +128,7 @@ attachment_archive/
 
 The archive service runs after graph live updates for newly imported source
 ranges, on demand when a live file is seen by the resolver, and through a
-periodic graph-working attachment sweep. Retained archive-compatible workflows
+periodic graph attachment sweep. Retained archive-compatible workflows
 may invoke the same archive service explicitly, but retained projection is not
 an ordinary app update path.
 
@@ -191,7 +191,7 @@ The onboarding pipeline today works as follows:
    source-scoped import/projection lifecycle, producing `macos_import_ss.db`
    and `working_ss.db`
 5. **Archive maintenance** → graph incremental sync archives newly imported
-   source ranges and runs periodic graph-working attachment sweeps; retained
+   source ranges and runs periodic graph attachment sweeps; retained
    legacy archive compatibility may still call `archiveAllAvailable()` after
    explicit archive/recovery rebuilds
 6. **Completion** → overlay shows summary, user clicks "Get Started"
