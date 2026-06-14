@@ -2217,6 +2217,9 @@ Remove legacy systems only after their blockers close.
 - Routed the navigation panel-stack tab strip through `themeColorsProvider` and
   `themeTypographyProvider` instead of local `Theme.of(context)` reads, keeping
   navigation chrome on the shared app token vocabulary.
+- Added an architecture tripwire that rejects active `Theme.of(...)`,
+  `MacosTheme.of(...)`, and `CupertinoTheme.of(...)` usage in `lib/`. App UI
+  surfaces should use the shared theme provider/token vocabulary.
 
 ### Exit Criteria
 

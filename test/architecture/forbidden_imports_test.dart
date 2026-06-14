@@ -162,6 +162,23 @@ void main() {
     });
 
     test(
+      'Active code uses app theme providers instead of framework themes',
+      () async {
+        final offenders = await _findFrameworkThemeLookupOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'Active UI code should use themeColorsProvider and '
+              'themeTypographyProvider, not Theme.of(context), '
+              'MacosTheme.of(context), or CupertinoTheme.of(context).\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
+    test(
       'Sidebar semantic/application imports do not grow beyond tracked temporary exceptions',
       () async {
         final offenders = await _findSidebarPresentationImportOffenders();
@@ -4474,6 +4491,28 @@ Future<List<String>> _collectSidebarSemanticLayerFiles() async {
 
     return isSidebarApplicationArea && isSemanticSubfolder;
   });
+}
+
+Future<List<String>> _findFrameworkThemeLookupOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return true;
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (uncommented.contains('Theme.of(') ||
+        uncommented.contains('MacosTheme.of(') ||
+        uncommented.contains('CupertinoTheme.of(')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
 }
 
 Future<List<String>> _collectSidebarPayloadFiles() async {
