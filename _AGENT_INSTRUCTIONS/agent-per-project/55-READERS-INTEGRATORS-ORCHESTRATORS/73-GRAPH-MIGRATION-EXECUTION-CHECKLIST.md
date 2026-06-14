@@ -2165,6 +2165,14 @@ Remove legacy systems only after their blockers close.
   handles feature boundary, while graph SQL and overlay filtering live behind a
   `StrayHandlesReadRepository` implementation. The retired infrastructure
   provider file is guarded from returning.
+- Aligned graph archive documentation with the current attachment port
+  boundaries. `AttachmentArchiveService` is now documented as orchestration and
+  policy flow only; graph candidate reads, archive record writes, sweep state,
+  and filesystem operations belong to named attachment-feature ports.
+- Extracted current attachment snapshot lookup provider composition behind the
+  `CurrentAttachmentSnapshotLookup` application port. Cross-snapshot mapping
+  now consumes the typed lookup provider, while source-scoped import database
+  access stays localized to the attachments feature boundary.
 
 ### Exit Criteria
 
