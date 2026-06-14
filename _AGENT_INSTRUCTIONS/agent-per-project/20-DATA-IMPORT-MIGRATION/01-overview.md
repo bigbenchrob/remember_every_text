@@ -85,7 +85,12 @@ archive/recovery source
 - **Retained historical import/projection** is historical unless an explicit
   recovery/archive compatibility task reintroduces a reviewed graph-era path.
   Keep old references named as retained compatibility, not production import.
-- **Archive coordination** belongs to the attachment feature, not to import/projection. The live graph path archives newly imported source ranges after graph build; retained full/manual archive workflows use explicit archive services.
+- **Archive coordination** belongs to the attachment feature, not to
+  import/projection. The live graph path archives newly imported source ranges
+  after graph build; retained full/manual archive workflows use explicit archive
+  services. Periodic archive sweeps read graph/import facts and overlay archive
+  records through named attachment ports; they must not consult retained
+  `working.db` as an attachment authority.
 - **Search and message evidence** now select graph `message_ss_id` scopes. Legacy working indexes are not the ordinary search spine.
 - **Overlay providers** merge user overrides at runtime; they are documented in `../10-DATABASES/05-db-overlay.md` and operate strictly after graph/import projection.
 
