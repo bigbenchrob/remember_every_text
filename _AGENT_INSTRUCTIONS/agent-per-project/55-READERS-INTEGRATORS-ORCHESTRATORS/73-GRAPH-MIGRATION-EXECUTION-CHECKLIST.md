@@ -129,7 +129,8 @@ makes future failures harder to attribute.
 - One stale sidebar coordinator assertion was updated to match the existing
   settings-root resolver contract of nine settings top-menu rows.
 - Test harness updates now reflect current invariants: overlay schema version 4,
-  deprecated virtual-participant `short_name` remains empty, environment
+  retained virtual-participant `short_name` schema column remains empty,
+  environment
   readiness provider tests initialize Flutter binding, and legacy conversation
   browser tests use an in-memory favourites controller.
 - A Freezed chat aggregate constructor was made non-const so its runtime
@@ -2229,6 +2230,10 @@ Remove legacy systems only after their blockers close.
   use typed leading-label and selected-value style slots. The shared dropdown
   surface now exposes one current styling path instead of carrying stale
   compatibility parameters.
+- Clarified the retained virtual-participant `short_name` column in code and
+  tests as schema storage only. User-facing contact identity continues to flow
+  through `display_name` and the canonical display identity resolver, not a
+  resurrected short-name path.
 
 ### Exit Criteria
 

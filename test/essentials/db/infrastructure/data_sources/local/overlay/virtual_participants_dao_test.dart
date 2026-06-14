@@ -39,7 +39,7 @@ void main() {
     });
 
     test(
-      'deprecated short name remains empty for single token names',
+      'retained short-name schema column remains empty for single token names',
       () async {
         final participant = await db.createVirtualParticipant(
           displayName: 'Plato',
@@ -49,13 +49,16 @@ void main() {
       },
     );
 
-    test('deprecated short name remains empty for emoji names', () async {
-      final participant = await db.createVirtualParticipant(
-        displayName: '😀 Friend',
-      );
+    test(
+      'retained short-name schema column remains empty for emoji names',
+      () async {
+        final participant = await db.createVirtualParticipant(
+          displayName: '😀 Friend',
+        );
 
-      expect(participant.shortName, isEmpty);
-    });
+        expect(participant.shortName, isEmpty);
+      },
+    );
 
     test('created rows are returned alphabetically', () async {
       await db.createVirtualParticipant(displayName: 'Charlie');

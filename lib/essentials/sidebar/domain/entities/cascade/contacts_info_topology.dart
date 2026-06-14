@@ -15,9 +15,9 @@ CassetteSpec? resolveContactsInfoChild(ContactsInfoCassetteSpec spec) {
             ContactsCassetteSpec.contactChooser(),
           );
         case ContactsInfoKey.chosenContact:
-          // Compatibility path for any explicitly seeded selected-contact
-          // info cassette. The default selected-contact chain now goes
-          // directly from heroSummary to messageScopeToggle.
+          // Retained topology fallback for any explicitly seeded
+          // selected-contact info cassette. The default selected-contact chain
+          // now goes directly from heroSummary to messageScopeToggle.
           return CassetteSpec.contacts(
             ContactsCassetteSpec.messageScopeToggle(
               contactId: chosenContactId!,

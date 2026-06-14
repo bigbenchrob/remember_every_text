@@ -799,6 +799,7 @@ class OverlayDatabase extends _$OverlayDatabase {
         VirtualParticipantsCompanion.insert(
           id: Value(newId),
           displayName: trimmedName,
+          // Retained schema column only. User-facing identity uses displayName.
           shortName: '',
           notes: Value(notes),
           createdAtUtc: now,
@@ -1257,6 +1258,7 @@ class VirtualParticipants extends Table {
 
   TextColumn get displayName => text().named('display_name')();
 
+  /// Retained schema column only. Do not use as app-facing display identity.
   TextColumn get shortName => text().named('short_name')();
 
   TextColumn get notes => text().named('notes').nullable()();
