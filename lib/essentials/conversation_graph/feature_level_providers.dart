@@ -225,7 +225,9 @@ Future<GraphHealthRepository> graphHealthRepository(Ref ref) async {
     driftConversationGraphDatabaseProvider.future,
   );
   final overlayDatabase = await ref.watch(overlayDatabaseProvider.future);
-  final archiveDirectory = ref.watch(attachmentArchiveDirectoryProvider);
+  final archiveDirectory = ref.watch(
+    attachments_feature.attachmentArchiveDirectoryPathProvider,
+  );
   return SqliteGraphHealthRepository(
     graphDatabase: graphDatabase,
     overlayDatabase: overlayDatabase,

@@ -287,7 +287,7 @@ final handleProjectionRepositoryProvider =
 typedef HandleProjectionRepositoryRef =
     AutoDisposeFutureProviderRef<HandleProjectionRepository>;
 String _$graphHealthRepositoryHash() =>
-    r'40f8c890023dba7c87cc24b08ecaf8d2c90b1b8a';
+    r'715657e61b4393419719c3e5895cf5ee0c164c25';
 
 /// See also [graphHealthRepository].
 @ProviderFor(graphHealthRepository)
