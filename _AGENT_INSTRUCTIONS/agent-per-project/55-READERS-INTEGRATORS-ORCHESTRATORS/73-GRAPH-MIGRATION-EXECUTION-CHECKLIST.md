@@ -2253,6 +2253,8 @@ Remove legacy systems only after their blockers close.
 - Removed unused duplicate DDD interface files after confirming active value
   objects use `common_interfaces.dart` and no code imports the standalone
   `i_entity.dart` / `i_validatable.dart` files.
+- Reworded stale “NEW” contact-picker constant comments so active domain
+  constants describe current behavior instead of an old implementation phase.
 
 ### Exit Criteria
 
