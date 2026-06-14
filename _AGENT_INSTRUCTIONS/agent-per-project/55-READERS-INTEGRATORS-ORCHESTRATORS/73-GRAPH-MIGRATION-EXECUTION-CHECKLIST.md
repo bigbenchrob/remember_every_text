@@ -2261,6 +2261,8 @@ Remove legacy systems only after their blockers close.
 - Removed obsolete commented-out future tooltip/cassette variants so the active
   spec files describe current cross-surface contracts instead of hypothetical
   scaffolding.
+- Reworded the date-conversion utility header so timestamp-format notes remain
+  useful and professional without changing any conversion behavior.
 
 ### Exit Criteria
 
