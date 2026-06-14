@@ -1067,15 +1067,21 @@ The following early roadmap slices are now complete for ordinary app behavior:
 
 # Risk Register
 
-## Risk: Graph Feature Work Outruns Lifecycle Work
+## Risk: Retained Storage Policy Lags Behind Graph Ownership
 
-The UI already proves the graph is valuable. Continuing to add UI features
-without productionizing graph import/projection risks creating a polished graph
-viewer whose lifecycle is less mature than its UI.
+Ordinary app behavior now runs through the graph, but old `macos_import.db` and
+`working.db` files can still exist for retained metadata, diagnostics,
+historical interpretation, reset cleanup, or user-safe retention. If those
+roles stay vague, future work may accidentally treat retained files as
+authoritative again.
 
 Mitigation:
 
-- prioritize graph build lifecycle before more major feature work
+- keep retained file purposes registered and bounded.
+- move archive/recovery metadata toward graph/source-scoped identity where
+  practical.
+- do not delete retained files until backup/export/retention criteria are
+  explicit.
 
 ## Risk: Legacy Deletion Before Semantic Capture
 

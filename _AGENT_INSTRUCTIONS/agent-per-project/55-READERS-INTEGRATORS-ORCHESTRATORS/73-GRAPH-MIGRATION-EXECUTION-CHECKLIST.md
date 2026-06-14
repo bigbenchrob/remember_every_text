@@ -2349,6 +2349,9 @@ Remove legacy systems only after their blockers close.
 - Replaced stale roadmap "immediate next slices" with the current remaining
   work: retained storage/reference policy, archive overlay key evolution,
   historical/recovered source intake, and diagnostic hardening.
+- Updated the roadmap risk register so the leading risk is now retained
+  storage policy lagging behind graph ownership, not graph lifecycle work
+  lagging behind UI work.
 
 ### Exit Criteria
 
