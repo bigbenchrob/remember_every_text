@@ -26,20 +26,23 @@ This is the execution companion to the graph migration planning documents.
   and retirement blockers.
 - This document tracks concrete execution slices and their exit criteria.
 
-The purpose is to prevent opportunistic cleanup, accidental legacy deletion, or
-feature drift while completing the graph migration.
+The purpose is to prevent opportunistic cleanup, accidental retained-data
+deletion, or feature drift while completing the graph migration.
 
 ## Execution Rules
 
 1. Work from high-leverage choke points, not from isolated legacy references.
 2. Do not delete legacy code until its blocker row is closed.
-3. Do not promote a compatibility bridge into production architecture without
+3. Do not delete, overwrite, or reclassify retained `macos_import.db` /
+   `working.db` user data files until their retention-register criteria are
+   closed.
+4. Do not promote a compatibility bridge into production architecture without
    naming it and defining its removal condition.
-4. User intent remains overlay-only.
-5. Import and projection must not consult overlay state.
-6. Message-bearing surfaces must continue through the Message Evidence Spine.
-7. Pagination is not timeline navigation.
-8. Lifecycle work must be centralized through database/readiness/orchestration
+5. User intent remains overlay-only.
+6. Import and projection must not consult overlay state.
+7. Message-bearing surfaces must continue through the Message Evidence Spine.
+8. Pagination is not timeline navigation.
+9. Lifecycle work must be centralized through database/readiness/orchestration
    providers, not widget-triggered repair logic.
 
 ## Status Legend
@@ -63,7 +66,7 @@ feature drift while completing the graph migration.
 | 5. Graph lifecycle orchestration | Done | Make graph build/readiness/update flow production-owned. | graph build service; graph readiness; onboarding; reset; `ChatDbChangeMonitor`; invalidation | removes manual/dev-panel dependency | graph build idempotence; incremental update test; readiness state tests; reset/onboarding tests | graph build is first-class lifecycle path and failures are visible/actionable |
 | 6. Remaining ordinary read migration | Done | Retire leftover ordinary `working.db` reads. | global heatmap; old chat summaries; stray/spam handle lists; diagnostics vs product routes | proof-era recent chat legacy-vs-graph comparison removed from SS status sheet | provider tests; route smoke tests; dependency `rg` checks | no ordinary user-facing read depends on `working.db` except documented compatibility bridges |
 | 7. Archive/recovery identity plan | Done | Design source-scoped archive/recovery identity without disrupting archive integrity. | attachment archive; deterministic recovery; cross-snapshot mapper; recovered messages | prevents premature recovery rewrite | mapping audit; archive compatibility tests identified | recovery/archive path has graph identity plan and existing archive records remain usable |
-| 8. Legacy retirement | In progress | Delete legacy data/read/presentation systems only after blockers are closed. | legacy import/migration/read models; retired widgets; diagnostics | removes attractive nuisance code safely | dependency checks; analyzer; focused tests; smoke test | legacy systems are deleted, demoted to diagnostics, or explicitly preserved as recovery/lifecycle references |
+| 8. Legacy retirement and retained storage reduction | In progress | Delete retired execution/read/presentation code only after blockers are closed, while reducing retained DB storage under the retention register. | legacy import/migration/read models; retired widgets; diagnostics; retained `macos_import.db` / `working.db` files | removes attractive nuisance code safely without losing retained user data | dependency checks; analyzer; focused tests; smoke test; retention-register review | legacy systems are deleted, demoted to diagnostics, or explicitly preserved as recovery/lifecycle/compatibility references |
 
 ## Slice 0 - Checkpoint Current Graph Branch
 
@@ -793,11 +796,13 @@ Done means:
 - recovered-message repository ownership is named before recovered storage is
   migrated.
 
-## Slice 8 - Legacy Retirement
+## Slice 8 - Legacy Retirement And Retained Storage Reduction
 
 ### Goal
 
-Remove legacy systems only after their blockers close.
+Remove retired legacy execution/read systems only after their blockers close,
+and reduce retained compatibility storage only under explicit retention
+criteria.
 
 ### Current Checkpoint Evidence
 

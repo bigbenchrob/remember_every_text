@@ -522,14 +522,19 @@ The graph migration is complete when these are all true.
 - Legacy-vs-graph comparison reports are diagnostic only.
 - Critical graph health failures block unsafe graph promotion.
 
-## Deletion
+## Retirement And Retention
 
-- Retired legacy code is deleted, not left as attractive nuisance.
-- Remaining legacy code is explicitly classified as:
-  - active import/data-integrity dependency
+- Retired legacy execution code should be deleted when it no longer owns any
+  named behavior.
+- Retained `macos_import.db` / `working.db` files are compatibility storage,
+  not ordinary app authority.
+- Remaining retained code or storage is explicitly classified as:
+  - retained compatibility storage
   - recovery/archive dependency
   - diagnostic/reference path
-  - deletion candidate
+  - deletion/export/freeze candidate
+- Deletion is not the default for retained user data. Retained files are
+  reduced only after the retention register's user-safe criteria are met.
 
 ---
 
@@ -545,7 +550,8 @@ stabilize current graph branch
 → migrate remaining read/query surfaces
 → migrate search and identity fully
 → migrate archive/recovery flows
-→ retire legacy import/projection
+→ retire legacy import/projection execution
+→ reduce retained compatibility storage under explicit retention criteria
 ```
 
 The reason is simple:
@@ -570,7 +576,7 @@ The branch currently contains many intertwined changes:
 
 - graph import/projection work
 - message evidence spine work
-- legacy deletion work
+- retained legacy reduction work
 - identity display work
 - conversation topology UI work
 - header/presentation work
@@ -1083,7 +1089,7 @@ Mitigation:
 - do not delete retained files until backup/export/retention criteria are
   explicit.
 
-## Risk: Legacy Deletion Before Semantic Capture
+## Risk: Retained Storage Deletion Before Semantic Capture
 
 Some legacy systems encode hard-won behavior that is easy to miss.
 
@@ -1091,7 +1097,8 @@ Mitigation:
 
 - use the legacy parity audit
 - preserve semantics, not field shape
-- delete only after graph tests prove equivalent behavior
+- delete/export/freeze retained storage only after graph tests prove equivalent
+  behavior and user-safe retention criteria are met
 
 ## Risk: Reintroducing Pagination as Timeline Navigation
 
