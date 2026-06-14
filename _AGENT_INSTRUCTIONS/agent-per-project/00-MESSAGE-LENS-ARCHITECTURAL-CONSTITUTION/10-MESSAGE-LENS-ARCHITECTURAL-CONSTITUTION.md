@@ -75,6 +75,10 @@ Invalid states must be unrepresentable.
 
 Correct architecture prevents invalid semantic states from existing.
 
+When a bug appears, fix derivation, invalidation, ownership, or projection.
+
+Do NOT add imperative repair.
+
 The solution to invalid state is:
 
 - derivation correction

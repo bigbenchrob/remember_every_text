@@ -93,6 +93,10 @@ It reintroduces:
 
 ### Correct Architectural Response
 
+When a bug appears, fix derivation, invalidation, ownership, or projection.
+
+Do NOT add imperative repair.
+
 Identify:
 
 - authoritative semantic state
