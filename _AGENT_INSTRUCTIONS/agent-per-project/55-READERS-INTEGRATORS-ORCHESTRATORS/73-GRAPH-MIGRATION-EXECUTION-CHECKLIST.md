@@ -2173,6 +2173,11 @@ Remove legacy systems only after their blockers close.
   `CurrentAttachmentSnapshotLookup` application port. Cross-snapshot mapping
   now consumes the typed lookup provider, while source-scoped import database
   access stays localized to the attachments feature boundary.
+- Added an architecture tripwire that keeps concrete
+  `sourceScopedImportDatabaseProvider` access out of attachment code below the
+  feature-level provider boundary. Infrastructure adapters may query the import
+  ledger through typed constructor dependencies; provider composition remains
+  centralized.
 
 ### Exit Criteria
 

@@ -1515,6 +1515,25 @@ void main() {
       },
     );
 
+    test(
+      'Attachment source-scoped import provider access stays feature-boundary owned',
+      () async {
+        final offenders =
+            await _findAttachmentSourceScopedImportProviderBoundaryOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'Attachment code may define infrastructure adapters over the '
+              'source-scoped import ledger, but provider composition for the '
+              'concrete sourceScopedImportDatabaseProvider belongs in '
+              'features/attachments/feature_level_providers.dart.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
     test('Onboarding environment report uses probe reader boundary', () async {
       final offenders =
           await _findOnboardingEnvironmentProbeBoundaryOffenders();
@@ -4017,6 +4036,38 @@ Future<List<String>> _findAttachmentArchiveWriteStoreBoundaryOffenders() async {
       uncommented.contains('writeOverlaySetting') ||
       uncommented.contains('customSelect(')) {
     offenders.add('$filePath performs archive record storage directly');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>>
+_findAttachmentSourceScopedImportProviderBoundaryOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path == 'lib/features/attachments/feature_level_providers.dart') {
+      return false;
+    }
+    return path.startsWith('lib/features/attachments/');
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    for (final importTarget in imports) {
+      if (importTarget.endsWith(
+        'source_scoped_import/feature_level_providers.dart',
+      )) {
+        offenders.add('$filePath imports $importTarget');
+      }
+    }
+    if (uncommented.contains('sourceScopedImportDatabaseProvider')) {
+      offenders.add('$filePath watches sourceScopedImportDatabaseProvider');
+    }
   }
 
   return offenders..sort();
