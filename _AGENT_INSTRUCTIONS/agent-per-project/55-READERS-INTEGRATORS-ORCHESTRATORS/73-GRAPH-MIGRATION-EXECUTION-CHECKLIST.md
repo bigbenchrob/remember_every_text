@@ -2302,6 +2302,8 @@ Remove legacy systems only after their blockers close.
 - Updated current chats and search interaction/navigation docs so they describe
   the graph-era Conversations flow, Message Evidence Spine search behavior, and
   anti-regression guardrails instead of stale draft panel concepts.
+- Refreshed chats, chat-handles, search, and messages work logs with graph-era
+  entries and converted checkbox-style follow-ups into open stewardship notes.
 
 ### Exit Criteria
 
