@@ -1,14 +1,10 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sqlite3/sqlite3.dart';
 
-import '../../../../essentials/db/feature_level_providers.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../application/archive_source_inspection.dart';
-
-part 'archive_source_inspection_repository.g.dart';
 
 final class ArchiveSourceDateRange {
   const ArchiveSourceDateRange({
@@ -137,20 +133,6 @@ class ArchiveSourceInspectionRepository implements ArchiveSourceInspector {
       );
     }
   }
-}
-
-@riverpod
-Future<ArchiveSourceInspectionRepository> archiveSourceInspectionRepository(
-  ArchiveSourceInspectionRepositoryRef ref,
-) async {
-  ConversationGraphDatabase? graphDb;
-  try {
-    graphDb = await ref.watch(driftConversationGraphDatabaseProvider.future);
-  } catch (_) {
-    graphDb = null;
-  }
-
-  return ArchiveSourceInspectionRepository(graphDb: graphDb);
 }
 
 int _readCount(Database database, String sql) {

@@ -6,6 +6,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../essentials/db/feature_level_providers.dart';
+import '../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import './application/archive_source_inspection.dart';
 import './application/historical_archive_folder_chooser.dart';
 import './application/historical_archive_sources.dart';
@@ -33,8 +34,15 @@ export './domain/spec_classes/settings_view_spec.dart';
 part 'feature_level_providers.g.dart';
 
 @riverpod
-Future<ArchiveSourceInspector> archiveSourceInspector(Ref ref) {
-  return ref.watch(archiveSourceInspectionRepositoryProvider.future);
+Future<ArchiveSourceInspector> archiveSourceInspector(Ref ref) async {
+  ConversationGraphDatabase? graphDb;
+  try {
+    graphDb = await ref.watch(driftConversationGraphDatabaseProvider.future);
+  } catch (_) {
+    graphDb = null;
+  }
+
+  return ArchiveSourceInspectionRepository(graphDb: graphDb);
 }
 
 @riverpod
