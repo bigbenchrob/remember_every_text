@@ -2210,6 +2210,10 @@ Remove legacy systems only after their blockers close.
 - Added an explicit historical-status banner to
   `50-INCREMENTAL-UPDATE-PILOT.md` so its retained shadow-pilot details are not
   mistaken for current app architecture.
+- Removed the deprecated `lib/config/theme/theme.dart` reference barrel after
+  confirming active code imports current spacing/widget/token files directly.
+  Theme callers should continue using the concrete token/provider/widget
+  boundaries rather than the retired `AppTheme`/`BbcColors` surface.
 
 ### Exit Criteria
 
