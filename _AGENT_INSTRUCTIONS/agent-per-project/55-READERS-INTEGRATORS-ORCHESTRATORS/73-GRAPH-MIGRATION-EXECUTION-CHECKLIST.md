@@ -2192,6 +2192,10 @@ Remove legacy systems only after their blockers close.
   imports. The logger remains the same runtime provider, but other systems now
   depend on the public logging API and an architecture tripwire prevents direct
   application-logger imports from returning.
+- Replaced a database-health report `TODO` diagnostic note with an explicit
+  build-metadata limitation and aligned the fallback build name/number with
+  `pubspec.yaml`. Runtime Flutter build defines still take precedence when
+  provided.
 
 ### Exit Criteria
 

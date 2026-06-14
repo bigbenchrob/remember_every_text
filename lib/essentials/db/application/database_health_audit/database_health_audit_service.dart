@@ -13,11 +13,11 @@ const _messageLensName = 'MessageLens';
 const _messageLensBundleId = 'com.bigbenchsoftware.MessageLens';
 const _defaultBuildName = String.fromEnvironment(
   'FLUTTER_BUILD_NAME',
-  defaultValue: '0.1.3',
+  defaultValue: '0.1.16',
 );
 const _defaultBuildNumber = String.fromEnvironment(
   'FLUTTER_BUILD_NUMBER',
-  defaultValue: '4',
+  defaultValue: '17',
 );
 
 class DatabaseHealthAuditService {
@@ -116,7 +116,7 @@ class DatabaseHealthAuditService {
       },
       diagnosticNotes: const <String>[
         'Phase 1 audits aggregate structure only; no row-level samples are exported.',
-        'TODO: enrich build metadata from a dedicated runtime package-info source.',
+        'Build metadata uses Flutter build defines when available and checked-in fallback constants otherwise.',
         'Cross-database overlay relationship diagnostics are intentionally deferred to a later audit phase.',
       ],
     );
