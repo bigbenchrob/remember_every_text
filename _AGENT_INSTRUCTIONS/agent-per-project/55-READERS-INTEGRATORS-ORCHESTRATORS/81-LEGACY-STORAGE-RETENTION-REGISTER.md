@@ -134,6 +134,8 @@ follow this retention register and the full-deletion criteria above.
 **Primary files**
 
 - `lib/features/settings/infrastructure/repositories/historical_archive_sources_repository.dart`
+- `lib/features/settings/infrastructure/repositories/archive_source_inspection_repository.dart`
+- `lib/features/settings/feature_level_providers.dart`
 - `lib/features/settings/presentation/view_model/historical_archives_workflow_panel_model_provider.dart`
 
 **Why retained**
@@ -172,9 +174,13 @@ Historical Archives workflow presentation no longer imports the retained
 database wrapper or provider directly. Read/write access to
 `macos_import.db.historical_archive_sources` is quarantined behind
 `HistoricalArchiveSourcesRepository`, which depends on the typed
-`RetainedArchiveMetadataStore` contract. The central DB provider constructs the
-concrete retained archive metadata adapter; presentation state handles archive
-workflow semantics while infrastructure owns retained metadata persistence.
+`RetainedArchiveMetadataStore` contract. The settings feature public provider
+barrel owns repository composition for both historical archive sources and
+archive source inspection; infrastructure repositories no longer declare their
+own Riverpod providers or import broad database provider barrels. The central
+DB provider constructs the concrete retained archive metadata adapter;
+presentation state handles archive workflow semantics while infrastructure owns
+retained metadata persistence.
 Fresh retained archive metadata DB creation no longer recreates those old
 archive-source metadata columns.
 Database health also treats retained `macos_import.db` as archive-source
