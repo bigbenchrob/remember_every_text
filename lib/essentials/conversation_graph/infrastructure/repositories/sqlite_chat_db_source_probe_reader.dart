@@ -27,7 +27,7 @@ final class SqliteChatDbSourceProbeReader implements ChatDbSourceProbeReader {
         db.dispose();
       }
     } on SqliteException catch (error) {
-      throw Exception('SQLite error (${error.extendedResultCode}): $error');
+      throw StateError('SQLite error (${error.extendedResultCode}): $error');
     }
   }
 
@@ -57,7 +57,7 @@ WHERE guid IS NOT NULL AND LENGTH(TRIM(guid)) > 0;
         db.dispose();
       }
     } on SqliteException catch (error) {
-      throw Exception(
+      throw StateError(
         'SQLite error while counting importable messages '
         '(${error.extendedResultCode}): $error',
       );

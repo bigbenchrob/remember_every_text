@@ -109,7 +109,7 @@ class RustMessageExtractor implements MessageExtractorPort {
               : stdoutText,
         },
       );
-      throw Exception(
+      throw StateError(
         'Rust extractor failed: ${process.exitCode}\n$stderrText',
       );
     }

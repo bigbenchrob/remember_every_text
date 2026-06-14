@@ -2280,6 +2280,9 @@ Remove legacy systems only after their blockers close.
   helpers now that typed errors and explicit probe behavior cover diagnostics.
 - Added an architecture tripwire that keeps raw `print` usage limited to the
   existing root zone interceptor and retained-database diagnostic boundary.
+- Replaced remaining generic `throw Exception(...)` uses in hand-written
+  production code with typed `StateError`s, and added a tripwire to keep
+  generic exception throws out of active Dart.
 
 ### Exit Criteria
 

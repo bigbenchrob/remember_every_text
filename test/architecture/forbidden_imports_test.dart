@@ -226,6 +226,19 @@ void main() {
       );
     });
 
+    test('Active Dart code does not throw generic Exception', () async {
+      final offenders = await _findGenericExceptionThrowOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Use a typed error or domain failure instead of throwing generic '
+            'Exception from hand-written Dart code.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Raw print usage stays behind approved diagnostic boundaries',
         () async {
       final offenders = await _findRawPrintOffenders();
@@ -4599,7 +4612,9 @@ Future<List<String>> _findAllCommentLibDartFiles() async {
 
 Future<List<String>> _findActiveTodoFixmeOffenders() async {
   final files = await _collectProjectDartFiles((path) {
-    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+    if (path.endsWith('.g.dart') ||
+        path.endsWith('.freezed.dart') ||
+        path == 'lib/frb_generated.dart') {
       return false;
     }
     return path.startsWith('lib/') || path.startsWith('test/');
@@ -4632,6 +4647,29 @@ Future<List<String>> _findRawStringThrowOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (rawStringThrowPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findGenericExceptionThrowOffenders() async {
+  final files = await _collectProjectDartFiles((path) {
+    if (path.endsWith('.g.dart') ||
+        path.endsWith('.freezed.dart') ||
+        path == 'lib/frb_generated.dart') {
+      return false;
+    }
+    return path.startsWith('lib/') || path.startsWith('test/');
+  });
+  final genericExceptionThrowPattern = RegExp(r'\bthrow\s+Exception\(');
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (genericExceptionThrowPattern.hasMatch(uncommented)) {
       offenders.add(filePath);
     }
   }
