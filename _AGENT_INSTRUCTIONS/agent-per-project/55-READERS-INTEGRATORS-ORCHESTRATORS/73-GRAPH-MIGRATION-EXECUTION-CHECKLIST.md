@@ -389,9 +389,9 @@ than dev-panel-owned.
   gate.
 - The unused `LegacyProjectionStatusRepository` / Drift implementation has
   been retired. Graph readiness is now the only app-facing readiness gate for
-  whether message evidence can be shown. The retained archive pipeline keeps
-  its private legacy full-vs-incremental rebuild check inside the named archive
-  compatibility boundary.
+  whether message evidence can be shown. The later retained archive pipeline
+  and its private legacy full-vs-incremental rebuild check have also been
+  retired; graph readiness remains the app-facing readiness boundary.
 - Dead `db_migrate` scaffolding not used by the retained archive-compatible
   projection path has been retired: the unimplemented `AppSettingsMigrator`
   and empty `MigrationOrderPolicy` file.
@@ -2328,6 +2328,9 @@ Remove legacy systems only after their blockers close.
   historical retained-storage interpretation only.
 - Refreshed review metadata on the source `chat.db`, import overview, and
   import-monitor docs touched by the graph ownership clarification pass.
+- Corrected stale dependency-matrix/checklist wording that implied the retired
+  retained archive pipeline still owned a private legacy rebuild-readiness
+  check.
 
 ### Exit Criteria
 
