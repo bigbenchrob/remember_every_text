@@ -2346,6 +2346,9 @@ Remove legacy systems only after their blockers close.
   completed graph-native contact/handle identity slice: ordinary surfaces use
   graph plus overlay display identity, while remaining work is stewardship and
   old-field/bridge retirement.
+- Replaced stale roadmap "immediate next slices" with the current remaining
+  work: retained storage/reference policy, archive overlay key evolution,
+  historical/recovered source intake, and diagnostic hardening.
 
 ### Exit Criteria
 

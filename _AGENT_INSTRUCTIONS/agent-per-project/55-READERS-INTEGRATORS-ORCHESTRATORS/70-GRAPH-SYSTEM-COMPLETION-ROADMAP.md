@@ -978,25 +978,49 @@ Both import paths must be idempotent.
 Remove legacy data spines only after graph lifecycle and graph read surfaces
 are production-ready.
 
-## Do Not Retire Yet If
+## Current Status
 
-- onboarding still builds only `working.db`
-- live change monitor does not reliably build/invalidate the graph
-- search/contact/handle surfaces have regressed to legacy selectors
-- archive/recovery workflows lack bounded compatibility mapping
-- graph health lacks validation coverage
-- reset/maintenance does not understand graph DBs
+Legacy import/projection execution has been retired for ordinary app behavior:
+
+- onboarding and settings reimport build the source-scoped graph directly.
+- live change monitoring builds/invalidates the source-scoped graph.
+- search/contact/handle/message evidence surfaces use graph selectors.
+- Historical Archives import/removal uses source-scoped graph services.
+- retained `working.db` has no central app provider.
+
+The remaining retirement question is retained file/storage policy, not ordinary
+execution ownership. Old `macos_import.db` / `working.db` files may still exist
+for diagnostics, historical interpretation, reset cleanup, archive metadata, or
+user-safe retention.
+
+## Do Not Delete Retained Files Yet If
+
+- archive/recovery identity or archive lookup still requires retained metadata.
+- support diagnostics lack graph/source-scoped equivalents.
+- historical-reference value has not been migrated, exported, or explicitly
+  rejected.
+- no user-safe backup/retention path exists for users who may still need old
+  recovery data.
 
 ## Retirement Sequence
 
+Completed for execution code:
+
 1. Mark legacy user-facing read providers as diagnostic/reference only.
-2. Move remaining legacy imports behind compatibility gates.
-3. Convert archive/recovery workflows or explicitly isolate them.
-4. Stop creating `working.db` during normal onboarding only after graph parity is
-   proven.
-5. Remove old presentation code and providers first.
-6. Remove old read repositories second.
-7. Remove old migration code last.
+2. Move ordinary import/projection to source-scoped graph lifecycle.
+3. Convert Historical Archives import/removal to source-scoped graph services.
+4. Stop ordinary app flows from creating/updating `working.db`.
+5. Remove old presentation code and providers.
+6. Remove old read repositories.
+7. Remove old import/migration execution code.
+
+Remaining for retained storage/reference:
+
+1. Keep retained storage uses registered and bounded.
+2. Replace retained metadata keys with graph/source-scoped equivalents where
+   practical.
+3. Preserve or export historical-reference value before deletion.
+4. Define a user-safe backup/retention cleanup path.
 
 ## Important Constraint
 
@@ -1006,71 +1030,38 @@ semantics have been audited and either:
 - preserved in the graph pipeline, or
 - intentionally rejected with a documented reason.
 
+This constraint has been satisfied for the retired ordinary execution paths.
+Keep applying it to any future retained-storage deletion or archive/recovery
+rewrite.
+
 ---
 
-# Immediate Recommended Next Slices
+# Completed High-Leverage Slices
 
-## Slice 1 - Checkpoint the Current Branch
+The following early roadmap slices are now complete for ordinary app behavior:
 
-Before more product work:
+- branch checkpointing and dependency matrix
+- graph-native search/search identity
+- graph-native contact and handle identity
+- graph lifecycle integration
+- ordinary read migration
+- archive/recovery identity planning
+- retained import/projection execution retirement
 
-1. run code generation
-2. run analyzer
-3. run focused graph/evidence/contact/identity tests
-4. run app smoke tests
-5. update docs to match current code
-6. commit the current graph migration checkpoint
+## Remaining Recommended Slices
 
-This reduces the cost of future rollback.
-
-## Slice 2 - Legacy Dependency Matrix
-
-Create an explicit table of remaining `working.db` and `macos_import.db`
-consumers.
-
-For each consumer classify:
-
-- ordinary user-facing read
-- production import/projection lifecycle
-- recovery/archive workflow
-- settings/diagnostic workflow
-- deletion candidate
-
-This should be mechanical and evidence-based.
-
-## Slice 3 - Search Backend Migration
-
-Move Search All Messages and search result context selection from legacy
-working IDs to graph `ss_id` scopes.
-
-This is the most important remaining user-facing read migration because search
-is central to the legal/investigative product direction.
-
-## Slice 4 - Contact Read Model Migration
-
-Move contact picker/profile/sidebar read models to graph facts plus overlay
-intent.
-
-This should include app-wide display identity verification.
-
-## Slice 5 - Graph Build Lifecycle Integration
-
-Wire graph build into onboarding/incremental update as a first-class production
-path.
-
-Keep legacy import available until graph import/projection catches up reliably
-under live message arrival.
-
-## Slice 6 - Archive and Recovery Plan
-
-Design and implement source-scoped historical archive import in a way that can
-ingest:
-
-- historical MessageLens attachment archives
-- recovered Messages folders
-- live current Messages attachments
-
-without breaking base graph identity or ordinary message evidence.
+1. Retained storage/reference policy:
+   decide what to keep, export, or delete for old `macos_import.db` /
+   `working.db` files.
+2. Archive overlay key evolution:
+   continue moving archive lookup toward graph/source-scoped identity while
+   preserving existing archive records.
+3. Historical/recovered source intake:
+   keep recovered Messages folders as explicit source-scoped sources, not
+   ordinary legacy projection inputs.
+4. Diagnostic hardening:
+   keep graph health, support bundles, and retained-file reports accurate
+   without giving retained files app-authority semantics.
 
 ---
 
