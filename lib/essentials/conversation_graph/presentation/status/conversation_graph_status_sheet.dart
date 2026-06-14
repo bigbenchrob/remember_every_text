@@ -16,9 +16,11 @@ import '../../application/health/graph_health_provider.dart';
 import '../../application/health/graph_health_report.dart';
 import '../../application/monitor/chat_db_change_monitor_provider.dart';
 import '../../application/orchestrators/conversation_graph_build_orchestrator.dart';
-import '../../application/status/archived_attachment_file_opener_provider.dart';
-import '../../application/status/conversation_graph_status_log_writer_provider.dart';
 import '../../application/status/conversation_graph_status_provider.dart';
+import '../../feature_level_providers.dart'
+    show
+        archivedAttachmentFileOpenerProvider,
+        conversationGraphStatusLogWriterProvider;
 
 enum _StatusSheetTab { status, graphHealth, groupProfiles, messages }
 

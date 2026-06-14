@@ -26,6 +26,8 @@ import 'application/messages/message_projection_repository.dart';
 import 'application/monitor/chat_db_monitor_runtime_environment.dart';
 import 'application/monitor/chat_db_source_probe_reader.dart';
 import 'application/monitor/import_ledger_probe_reader.dart';
+import 'application/status/archived_attachment_file_opener.dart';
+import 'application/status/conversation_graph_status_log_writer.dart';
 import 'domain/status/conversation_graph_status.dart';
 import 'infrastructure/repositories/attachment_projection_repository.dart';
 import 'infrastructure/repositories/chat_projection_repository.dart';
@@ -37,6 +39,7 @@ import 'infrastructure/repositories/contact_projection_repository.dart';
 import 'infrastructure/repositories/conversation_graph_status_repository.dart';
 import 'infrastructure/repositories/conversation_repository.dart';
 import 'infrastructure/repositories/drift_graph_projection_resetter.dart';
+import 'infrastructure/repositories/filesystem_conversation_graph_status_log_writer.dart';
 import 'infrastructure/repositories/graph_health_repository.dart';
 import 'infrastructure/repositories/handle_projection_repository.dart';
 import 'infrastructure/repositories/message_graph_repository.dart';
@@ -45,9 +48,20 @@ import 'infrastructure/repositories/message_to_attachment_projection_repository.
 import 'infrastructure/repositories/overlay_conversation_favourites_store.dart';
 import 'infrastructure/repositories/source_scoped_import_ledger_probe_reader.dart';
 import 'infrastructure/repositories/sqlite_chat_db_source_probe_reader.dart';
+import 'infrastructure/repositories/url_launcher_archived_attachment_file_opener.dart';
 import 'infrastructure/system/local_chat_db_monitor_runtime_environment.dart';
 
 part 'feature_level_providers.g.dart';
+
+@riverpod
+ArchivedAttachmentFileOpener archivedAttachmentFileOpener(Ref ref) {
+  return const UrlLauncherArchivedAttachmentFileOpener();
+}
+
+@riverpod
+ConversationGraphStatusLogWriter conversationGraphStatusLogWriter(Ref ref) {
+  return const FilesystemConversationGraphStatusLogWriter();
+}
 
 @riverpod
 Future<AttachmentProjectionRepository> attachmentProjectionRepository(

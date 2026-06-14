@@ -4246,9 +4246,17 @@ _findHistoricalArchiveFolderResolverBoundaryOffenders() async {
 Future<List<String>> _findGraphStatusLoggingBoundaryOffenders() async {
   const applicationFilePath =
       'lib/essentials/conversation_graph/application/status/conversation_graph_status_log_writer.dart';
+  const retiredProviderPath =
+      'lib/essentials/conversation_graph/application/status/conversation_graph_status_log_writer_provider.dart';
   const presentationFilePath =
       'lib/essentials/conversation_graph/presentation/status/conversation_graph_status_sheet.dart';
   final offenders = <String>[];
+
+  if (File(retiredProviderPath).existsSync()) {
+    offenders.add(
+      '$retiredProviderPath exists; provider composition belongs in feature_level_providers.dart',
+    );
+  }
 
   final applicationFile = File(applicationFilePath);
   if (applicationFile.existsSync()) {
@@ -4295,9 +4303,17 @@ Future<List<String>>
 _findGraphStatusArchivedFileOpenerBoundaryOffenders() async {
   const applicationFilePath =
       'lib/essentials/conversation_graph/application/status/archived_attachment_file_opener.dart';
+  const retiredProviderPath =
+      'lib/essentials/conversation_graph/application/status/archived_attachment_file_opener_provider.dart';
   const presentationFilePath =
       'lib/essentials/conversation_graph/presentation/status/conversation_graph_status_sheet.dart';
   final offenders = <String>[];
+
+  if (File(retiredProviderPath).existsSync()) {
+    offenders.add(
+      '$retiredProviderPath exists; provider composition belongs in feature_level_providers.dart',
+    );
+  }
 
   final applicationFile = File(applicationFilePath);
   if (applicationFile.existsSync()) {

@@ -6,6 +6,46 @@ part of 'feature_level_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
+String _$archivedAttachmentFileOpenerHash() =>
+    r'34bdb457dd8c4aefa9d15de47fe5bede6d180e2f';
+
+/// See also [archivedAttachmentFileOpener].
+@ProviderFor(archivedAttachmentFileOpener)
+final archivedAttachmentFileOpenerProvider =
+    AutoDisposeProvider<ArchivedAttachmentFileOpener>.internal(
+      archivedAttachmentFileOpener,
+      name: r'archivedAttachmentFileOpenerProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$archivedAttachmentFileOpenerHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef ArchivedAttachmentFileOpenerRef =
+    AutoDisposeProviderRef<ArchivedAttachmentFileOpener>;
+String _$conversationGraphStatusLogWriterHash() =>
+    r'67be5950fe6c1eeed840c84f1500aa5addfbc916';
+
+/// See also [conversationGraphStatusLogWriter].
+@ProviderFor(conversationGraphStatusLogWriter)
+final conversationGraphStatusLogWriterProvider =
+    AutoDisposeProvider<ConversationGraphStatusLogWriter>.internal(
+      conversationGraphStatusLogWriter,
+      name: r'conversationGraphStatusLogWriterProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$conversationGraphStatusLogWriterHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef ConversationGraphStatusLogWriterRef =
+    AutoDisposeProviderRef<ConversationGraphStatusLogWriter>;
 String _$attachmentProjectionRepositoryHash() =>
     r'b9b48bccd42fb9ba78490c115765d9fc09e65f23';
 

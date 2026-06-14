@@ -2182,6 +2182,11 @@ Remove legacy systems only after their blockers close.
   after confirming it had no active references. Hover/mouse tracking diagnostics
   should not live as app entrypoints under `lib/` unless they are part of a
   named developer surface.
+- Moved graph-status archived-file opener and status-log writer provider
+  composition into the conversation graph feature-level boundary. The
+  application layer retains only the typed action contracts, infrastructure
+  retains the concrete opener/writer implementations, and architecture
+  tripwires prevent the retired application-provider islands from returning.
 
 ### Exit Criteria
 
