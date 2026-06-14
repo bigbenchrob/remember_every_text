@@ -376,9 +376,21 @@ Future<List<int>> messageEvidenceTextMatchIds(
         query: normalizedQuery,
         matchAnyTerm: matchAnyTerm,
       ),
-    SearchResultContextEvidenceScope() => throw UnimplementedError(
-      'Search result context text matches are not part of this slice.',
-    ),
+    SearchResultContextEvidenceScope(
+      :final messageId,
+      :final chatId,
+      :final beforeCount,
+      :final afterCount,
+    ) =>
+      _searchResultContextMessageIdsMatchingText(
+        ref,
+        messageId: messageId,
+        chatId: chatId,
+        beforeCount: beforeCount,
+        afterCount: afterCount,
+        query: normalizedQuery,
+        matchAnyTerm: matchAnyTerm,
+      ),
     RecoveredMessagesEvidenceScope(
       :final contactId,
       :final onlyNoHandleFromMe,
@@ -575,6 +587,40 @@ Future<MessageEvidenceTimelineSkeleton> _searchResultContextSkeleton(
     ],
     initialAnchorMessageId: _liveChatGraphId(messageId),
   );
+}
+
+Future<List<int>> _searchResultContextMessageIdsMatchingText(
+  Ref ref, {
+  required int messageId,
+  required int chatId,
+  required int beforeCount,
+  required int afterCount,
+  required String query,
+  required bool matchAnyTerm,
+}) async {
+  final skeleton = await _searchResultContextSkeleton(
+    ref,
+    messageId: messageId,
+    chatId: chatId,
+    beforeCount: beforeCount,
+    afterCount: afterCount,
+  );
+  if (skeleton.isEmpty) {
+    return const <int>[];
+  }
+
+  final matchingIds = await _globalMessageIdsMatchingText(
+    ref,
+    query: query,
+    matchAnyTerm: matchAnyTerm,
+  );
+  return skeleton
+      .filteredByMessageIds(matchingIds)
+      .entries
+      .map((entry) {
+        return entry.messageId;
+      })
+      .toList(growable: false);
 }
 
 Future<MessageEvidenceTimelineSkeleton> _contactAllMessagesTimelineSkeleton(

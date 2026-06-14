@@ -2283,6 +2283,10 @@ Remove legacy systems only after their blockers close.
 - Replaced remaining generic `throw Exception(...)` uses in hand-written
   production code with typed `StateError`s, and added a tripwire to keep
   generic exception throws out of active Dart.
+- Removed the stale `SearchResultContextEvidenceScope` intra-scope search
+  `UnimplementedError`; bounded search-result context now intersects global
+  graph text matches with the context skeleton so matches stay inside the
+  selected evidence scope.
 
 ### Exit Criteria
 

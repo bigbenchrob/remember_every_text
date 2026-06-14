@@ -509,6 +509,11 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           _displayIdentityResolverOverride(),
+          _graphSearchRepositoryOverride(
+            globalMatchesByQuery: const {
+              'context': [9, 11, 12],
+            },
+          ),
           messageGraphReaderProvider.overrideWith((ref) async {
             return const MessageGraphReader(repository: repository);
           }),
@@ -522,6 +527,12 @@ void main() {
       final message = await container.read(
         messageEvidenceRowProvider(scope: scope, messageId: 11).future,
       );
+      final matches = await container.read(
+        messageEvidenceTextMatchIdsProvider(
+          scope: scope,
+          query: 'context',
+        ).future,
+      );
 
       expect(skeleton.entries.map((entry) => entry.messageId), [10, 11]);
       expect(
@@ -529,6 +540,7 @@ void main() {
         SourceScopedRowKey.pack(sourceId: liveChatDbSourceId, sourceRowId: 11),
       );
       expect(message?.text, 'context row');
+      expect(matches, [11]);
     },
   );
 
