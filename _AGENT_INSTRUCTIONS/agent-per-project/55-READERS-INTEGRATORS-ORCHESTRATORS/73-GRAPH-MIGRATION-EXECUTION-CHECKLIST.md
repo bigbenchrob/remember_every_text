@@ -2178,6 +2178,10 @@ Remove legacy systems only after their blockers close.
   feature-level provider boundary. Infrastructure adapters may query the import
   ledger through typed constructor dependencies; provider composition remains
   centralized.
+- Removed the unused standalone `lib/test_mouse_tracking.dart` diagnostic app
+  after confirming it had no active references. Hover/mouse tracking diagnostics
+  should not live as app entrypoints under `lib/` unless they are part of a
+  named developer surface.
 
 ### Exit Criteria
 
