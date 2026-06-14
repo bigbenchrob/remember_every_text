@@ -93,29 +93,21 @@ Future<Map<int, String>> extractMessageTextsFromBlobs(
    cp target/release/extract_messages_limited ../../../target/release/
    ```
 4. Ensure the binary is executable (`chmod 755 target/release/extract_messages_limited`).
-5. For bundled macOS builds, place the binary next to the Flutter executable so `RustMessageExtractor.extractorPath` resolves it.
+5. For bundled macOS builds, the Xcode "Bundle Rust Message Extractor" phase
+   copies `target/release/extract_messages_limited` into
+   `MessageLens.app/Contents/MacOS/extract_messages_limited`.
 
 ### Production Packaging Playbook (macOS App Bundle)
-- Flutter copies everything under `macos/Runner/` when registered as a resource or Copy Files build phase. Keep the Rust binary under source control at `macos/Runner/Resources/extract_messages_limited`.
-- In Xcode, add the binary to the "Copy Files" build phase targeting `Contents/MacOS`. This ensures the release bundle contains `MessageLens.app/Contents/MacOS/extract_messages_limited`, the first lookup location used by `RustMessageExtractor`.
-- After `flutter build macos`, run a post-build script (e.g., `_scripts/package_rust_extractor.sh`) that copies the binary into the bundle and sets executable bits:
-  ```bash
-  #!/usr/bin/env bash
-  set -euo pipefail
-
-  APP_ROOT="build/macos/Build/Products/Release/MessageLens.app"
-  DEST="$APP_ROOT/Contents/MacOS/extract_messages_limited"
-  SRC="target/release/extract_messages_limited"
-
-  if [[ ! -f "$SRC" ]]; then
-    echo "Rust extractor missing at $SRC" >&2
-    exit 1
-  fi
-
-  cp "$SRC" "$DEST"
-  chmod 755 "$DEST"
-  echo "Packaged Rust extractor -> $DEST"
-  ```
+- The checked-in Xcode project contains a "Bundle Rust Message Extractor" shell
+  phase after the Rust FFI framework phase.
+- Input:
+  `${SRCROOT}/../target/release/extract_messages_limited`
+- Output:
+  `${BUILT_PRODUCTS_DIR}/${EXECUTABLE_FOLDER_PATH}/extract_messages_limited`
+- The phase copies the binary, sets mode `755`, and prints a warning if the
+  binary is missing.
+- Do not add a second manual post-build copy path unless the Xcode phase is
+  intentionally removed.
 - Codesign the binary alongside the app (`codesign --force --options runtime --sign "$IDENTITY" Contents/MacOS/extract_messages_limited`). Missing codesign causes Gatekeeper to quarantine the helper.
 - Rebuild whenever the extractor CLI schema changes to avoid protocol mismatches between Dart and Rust.
 

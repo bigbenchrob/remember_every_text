@@ -2314,6 +2314,9 @@ Remove legacy systems only after their blockers close.
   blob-based enrichment path, making explicit that live graph updates decode
   stored `attributed_body_blob` rows and must not rescan all of `chat.db` for a
   single new message.
+- Aligned the extractor packaging instructions with the checked-in Xcode
+  "Bundle Rust Message Extractor" phase, removing stale manual
+  resource/post-build copy guidance.
 
 ### Exit Criteria
 
