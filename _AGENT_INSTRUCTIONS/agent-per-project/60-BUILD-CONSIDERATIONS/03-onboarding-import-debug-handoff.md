@@ -24,8 +24,9 @@ tests: []
 > Current ordinary app setup and live update flow is source-scoped:
 > `chat.db` -> `macos_import_ss.db` -> `working_ss.db`, coordinated by the
 > onboarding/readiness surfaces, `ConversationGraphBuildController`, and
-> `ChatDbChangeMonitor`. Retained historical import/projection code exists only
-> for explicit archive/recovery compatibility or diagnostics.
+> `ChatDbChangeMonitor`. Retained historical database files and any remaining
+> references are compatibility storage or diagnostics only; they do not own
+> ordinary app import/projection behavior.
 
 Use this file only to understand the historical incident. For current work,
 start with:

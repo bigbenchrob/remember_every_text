@@ -2320,6 +2320,9 @@ Remove legacy systems only after their blockers close.
 - Clarified current archive documentation so full archive sweeps are described
   as explicit graph archive sweeps over graph candidates, not legacy archive
   compatibility paths.
+- Tightened source-database and historical handoff wording so retained
+  database files are documented as compatibility storage/diagnostics, while
+  live `chat.db` remains a read-only source for the source-scoped graph.
 
 ### Exit Criteria
 

@@ -16,7 +16,7 @@ tests: []
 
 # `db-chat` — macOS Messages Source (`chat.db`)
 
-`db-chat` is Apple Messages' live sqlite database. It provides chat, handle, attachment, and message source data that seeds the source-scoped import ledger and retained compatibility ledgers.
+`db-chat` is Apple Messages' live sqlite database. It provides chat, handle, attachment, and message source data that seeds the source-scoped import ledger and conversation graph.
 
 - **Alias**: `db-chat`
 - **Physical File**: `~/Library/Messages/chat.db`
@@ -30,7 +30,7 @@ tests: []
 | Access pattern | Resolved via `PathsHelper.messagesDatabasePath` inside the import infrastructure |
 | Permissions | Requires Full Disk Access |
 
-Feature and presentation code must not open `chat.db` directly. The import and monitoring infrastructure opens it read-only through `PathsHelper` to detect new rows and copy source data into `db-import-ss`, where graph projectors can safely project it forward. Retained historical import may also read it for explicit archive/recovery compatibility.
+Feature and presentation code must not open `chat.db` directly. The import and monitoring infrastructure opens it read-only through `PathsHelper` to detect new rows and copy source data into `db-import-ss`, where graph projectors can safely project it forward. Named archive/recovery workflows may also open selected historical `chat.db` snapshots read-only; that access must remain a recovery boundary, not an ordinary feature read.
 
 ## Important Reality Check
 
