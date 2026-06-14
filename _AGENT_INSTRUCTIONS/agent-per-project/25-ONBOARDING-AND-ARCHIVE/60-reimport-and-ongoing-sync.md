@@ -105,7 +105,7 @@ Each auto-sync cycle maintains the living archive:
 
 | Phase | Sync mechanism | Archive behavior |
 |-------|---------------|-----------------|
-| First run | OnboardingGate → source-scoped graph build | Graph source-range archive and graph-working sweeps |
+| First run | OnboardingGate → source-scoped graph build | Graph source-range archive and graph attachment sweeps |
 | Normal use | ChatDbChangeMonitor every 15 seconds plus 5-minute sweep | Graph source-range archive, on-demand archive, and rolling graph sweep |
 | Re-import | Manual trigger from Settings | Source-scoped graph rebuild + archive maintenance |
 | Historical recovery | User-initiated from Settings | Deterministic snapshot → archive |
