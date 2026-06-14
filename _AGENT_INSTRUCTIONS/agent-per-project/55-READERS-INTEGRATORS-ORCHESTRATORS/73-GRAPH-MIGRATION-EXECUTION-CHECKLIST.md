@@ -2255,6 +2255,9 @@ Remove legacy systems only after their blockers close.
   `i_entity.dart` / `i_validatable.dart` files.
 - Reworded stale “NEW” contact-picker constant comments so active domain
   constants describe current behavior instead of an old implementation phase.
+- Removed the unused `NotAuthenticatedError` DDD utility symbol after confirming
+  no active code references it. The remaining error helper is the value-object
+  `UnexpectedValueError` path used by current value objects.
 
 ### Exit Criteria
 
