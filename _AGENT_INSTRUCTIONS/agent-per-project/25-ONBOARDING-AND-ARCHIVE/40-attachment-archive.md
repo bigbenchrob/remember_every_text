@@ -144,6 +144,12 @@ archive compatibility may still call `AttachmentArchiveService.archiveAllAvailab
 after explicit archive/recovery rebuilds. It processes working attachments
 with local paths when the archive is enabled.
 
+`AttachmentArchiveService` is an orchestration boundary. It may decide when to
+archive and report progress, but it should not own database queries or
+filesystem mechanics directly. Graph candidate selection, archive record
+persistence, recovery hints, archive directory resolution, and file copying are
+behind named attachments feature ports.
+
 For each attachment where:
 - File exists at `localPath`
 - No overlay record exists for this `(message_guid, import_attachment_id)` pair
@@ -161,7 +167,7 @@ Actions:
 The `ChatDbChangeMonitor` auto-sync cycle archives newly imported live graph
 source ranges by calling `archiveGraphMessageSourceRange(...)`. It also runs
 a bounded graph-working attachment sweep every 5 minutes via
-`archiveNextWorkingSweepChunk()` so files that appear later can be ingested.
+`archiveNextGraphSweepChunk()` so files that appear later can be ingested.
 
 The resolver can also trigger on-demand archive ingestion when archive mode is
 enabled and it sees a live file that is not yet archived.
@@ -176,12 +182,16 @@ boundary unless current code introduces one.
 
 | File | Role |
 |------|------|
-| `lib/features/attachments/application/attachment_archive_service_provider.dart` | Archive copy, hash, overlay write |
+| `lib/features/attachments/application/attachment_archive_service_provider.dart` | Archive orchestration, progress, and policy flow |
+| `lib/features/attachments/application/attachment_archive_file_store.dart` | File-copy, hash, home-expansion, and archive integrity file boundary |
+| `lib/features/attachments/application/attachment_archive_write_store.dart` | Archive record, recovery hint, and integrity-row persistence boundary |
+| `lib/features/attachments/application/graph_attachment_archive_candidate_reader.dart` | Graph attachment candidate selection boundary |
 | `lib/features/attachments/application/attachment_resolver_provider.dart` | Multi-source resolution pipeline |
 | `lib/features/attachments/application/archive_settings_provider.dart` | Archive directory, retention config |
 | `lib/features/attachments/domain/entities/resolved_attachment.dart` | Resolution result with availability + provenance |
 | `lib/features/attachments/domain/constants/attachment_provenance.dart` | Provenance enum |
 | `lib/features/attachments/domain/constants/resolved_attachment_availability.dart` | Runtime display availability enum |
+| `lib/features/attachments/infrastructure/repositories/overlay_attachment_archive_write_store.dart` | Overlay-backed archive write-store implementation |
 | `lib/essentials/db/infrastructure/.../overlay_database.dart` | `archived_attachments` table schema |
 
 ## Invariants
@@ -193,3 +203,4 @@ boundary unless current code introduces one.
 5. Content-addressable naming provides natural deduplication.
 6. The archive is additive — entries survive re-import and graph rebuilds.
 7. Archive-enabled resolution displays from the archive and treats live Messages paths as ingestion sources.
+8. Archive service code must use feature ports for graph candidates, archive writes, settings, directory paths, and file work; Drift/overlay SQL belongs in infrastructure repositories.
