@@ -43,8 +43,11 @@ HistoricalArchiveFolderChooser historicalArchiveFolderChooser(Ref ref) {
 }
 
 @riverpod
-Future<HistoricalArchiveSources> historicalArchiveSources(Ref ref) {
-  return ref.watch(historicalArchiveSourcesRepositoryProvider.future);
+Future<HistoricalArchiveSources> historicalArchiveSources(Ref ref) async {
+  final metadataStore = await ref.watch(
+    retainedArchiveMetadataStoreProvider.future,
+  );
+  return HistoricalArchiveSourcesRepository(metadataStore: metadataStore);
 }
 
 @riverpod

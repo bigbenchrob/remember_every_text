@@ -47,7 +47,7 @@ final historicalArchiveFolderChooserProvider =
 typedef HistoricalArchiveFolderChooserRef =
     AutoDisposeProviderRef<HistoricalArchiveFolderChooser>;
 String _$historicalArchiveSourcesHash() =>
-    r'89bab5d75ae030ca52bc22451b2dfd7397431e3c';
+    r'bedbed256324ee09f40549ea2c1a18b86ab08b5f';
 
 /// See also [historicalArchiveSources].
 @ProviderFor(historicalArchiveSources)

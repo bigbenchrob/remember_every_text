@@ -1,10 +1,5 @@
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
 import '../../../../essentials/db/application/retained_archive_metadata_store.dart';
-import '../../../../essentials/db/feature_level_providers.dart';
 import '../../application/historical_archive_sources.dart';
-
-part 'historical_archive_sources_repository.g.dart';
 
 class HistoricalArchiveSourcesRepository implements HistoricalArchiveSources {
   const HistoricalArchiveSourcesRepository({
@@ -61,14 +56,4 @@ class HistoricalArchiveSourcesRepository implements HistoricalArchiveSources {
       updatedAtUtc: update.updatedAtUtc,
     );
   }
-}
-
-@riverpod
-Future<HistoricalArchiveSourcesRepository> historicalArchiveSourcesRepository(
-  HistoricalArchiveSourcesRepositoryRef ref,
-) async {
-  final metadataStore = await ref.watch(
-    retainedArchiveMetadataStoreProvider.future,
-  );
-  return HistoricalArchiveSourcesRepository(metadataStore: metadataStore);
 }
