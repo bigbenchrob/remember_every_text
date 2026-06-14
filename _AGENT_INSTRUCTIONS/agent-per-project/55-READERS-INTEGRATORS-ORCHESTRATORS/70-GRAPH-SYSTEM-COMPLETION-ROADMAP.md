@@ -632,9 +632,20 @@ project graph edges
 
 This is the right conceptual shape.
 
-The remaining issue is lifecycle ownership.
+Current status update:
 
-## Work
+- graph build/readiness/update flow is production-owned for ordinary app use.
+- onboarding and settings reimport call the graph build controller directly.
+- `ChatDbChangeMonitor` triggers source-scoped graph import/projection after
+  live `chat.db` changes.
+- reset/clear flows deliberately close and clear source-scoped graph stores.
+- evidence surfaces refresh through graph/message data-version invalidation.
+
+The remaining lifecycle work is not ordinary graph ownership. It is retained
+storage/reference policy for old `macos_import.db` / `working.db` files and
+continued hardening of diagnostics around the graph lifecycle.
+
+## Completed Work
 
 1. Define graph build state:
    - not built
@@ -789,11 +800,20 @@ What name should the user see?
 
 ## Current State
 
-A graph-aware display identity resolver exists.
+A graph-aware display identity resolver exists and ordinary product identity
+surfaces now resolve through graph facts plus overlay intent.
 
-The remaining work is app-wide adoption and old-field retirement.
+User override names win in contact picker, hero/profile, conversation
+signatures, conversation headers, sender labels, handle displays, and ordinary
+message evidence surfaces. Raw handles remain visible as explicit handle-scope
+controls, unfamiliar-source labels, developer diagnostics, or fallback
+metadata.
 
-## Work
+The remaining work is stewardship: keep future surfaces on the resolver,
+continue retiring old name-variant fields/bridges where safe, and prevent raw
+handle fallback from becoming the primary label for known contacts.
+
+## Completed Work / Guardrails
 
 1. Ensure every user-facing name path uses the resolver:
    - conversation signatures

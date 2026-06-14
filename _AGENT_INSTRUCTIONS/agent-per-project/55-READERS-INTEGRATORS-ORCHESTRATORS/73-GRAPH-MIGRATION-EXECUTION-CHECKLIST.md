@@ -2338,6 +2338,14 @@ Remove legacy systems only after their blockers close.
 - Reworded the source-scoped archive cutover plan's Stage 4 as completed for
   execution code, leaving only the retained-file storage/reference policy as a
   future decision.
+- Aligned the graph completion roadmap's lifecycle phase with the completed
+  graph lifecycle orchestration slice: ordinary build/readiness/update
+  ownership is done, while remaining work is retained storage/reference policy
+  and diagnostic hardening.
+- Aligned the graph completion roadmap's display-identity phase with the
+  completed graph-native contact/handle identity slice: ordinary surfaces use
+  graph plus overlay display identity, while remaining work is stewardship and
+  old-field/bridge retirement.
 
 ### Exit Criteria
 
