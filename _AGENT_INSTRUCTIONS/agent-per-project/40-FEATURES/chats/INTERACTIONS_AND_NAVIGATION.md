@@ -2,41 +2,58 @@
 tier: feature
 scope: interactions
 owner: agent-per-project
-last_reviewed: 2025-11-06
+last_reviewed: 2026-06-14
 links:
 	- ./CHARTER.md
 	- ../messages/INTERACTIONS_AND_NAVIGATION.md
 tests: []
 feature: chats
 doc_type: interactions
-status: draft
-last_updated: 2025-11-06
+status: current
+last_updated: 2026-06-14
 ---
 
 # Interactions & Navigation — Chats
 
-> Current conformance note (2026-04-21): there is no current `ViewSpec.chats` variant. Treat chat-list panel references below as draft/historical until code introduces a top-level chat ViewSpec or another canonical entry point.
+> Current conformance note (2026-06-14): user-facing chat navigation is now
+> conversation-first and graph-backed. The feature should not reintroduce a
+> separate legacy chat-list panel or a chat-specific message renderer.
 
 ## Primary Entry Points
-- Recent chat/timeline support through `lib/features/chats` providers and widgets.
-- Deep links from search and notifications to specific chat detail.
+- Conversations sidebar signatures built from `working_ss.db` topology.
+- Contact-derived conversation lists that reuse the same conversation signature
+  card and route into the shared message evidence surface.
+- Search/result-context routes that select graph message evidence scopes rather
+  than legacy chat/message ids.
 
 ## User Flows
-1. **Launch → Chat List** — loads pinned chats then recent chats ordered by last activity.
-2. **Select Chat** — updates panels to show chat detail and message timeline.
-3. **Pin/Archive Chat** — toggles overlay state, updates projections.
-4. **Mark All Read** — clears unread counters and propagates to message view.
+1. **Launch → Conversations** — restores the persisted top-menu/sidebar state
+   and shows graph conversation signatures.
+2. **Select Conversation** — updates sidebar flow/selected conversation state;
+   the center panel derives a `MessageEvidenceScope` for the conversation.
+3. **Toggle Favourite** — writes global conversation favourite intent to the
+   overlay database; graph projection remains source-derived.
+4. **Inspect Messages** — renders through the shared Message Evidence Spine,
+   including full-scope skeleton navigation and visible-row hydration.
 
 ## Cross-Feature Touchpoints
-- Messages feature listens for active `chatId` selection to fetch timeline.
-- Search feature links back into chats list by `chatId`.
-- Chat handles feature ensures participant roster is resolved before detail view renders.
+- Messages owns evidence scopes, headers, search-within-scope, and row
+  rendering.
+- Contacts can select conversations involving a contact, but still routes into
+  the same conversation signature and evidence rendering contracts.
+- Search links to graph evidence scopes and bounded result contexts.
+- Chat handles provide participant topology and sender identity through graph
+  readers and the display identity resolver.
 
 ## Navigation Guardrails
-- Use ViewSpec-driven navigation; ensure panel coordinators react to chat selection.
-- Maintain derived state (selected chat, filters) in providers, not ad-hoc widget state.
-- Provide consistent fallback panel when no chat is selected.
+- Sidebar/context state owns selection; widgets do not push or clear center
+  content imperatively.
+- Conversation signature facts are computed outside widgets; widgets render
+  typed data plus callbacks.
+- Message evidence presentation is shared. Do not create chat-specific message
+  rows, headers, attachment renderers, or pagination paths.
 
 ## Outstanding Decisions
-- Finalize chat list filtering (archived vs. active in separate panels?).
-- Determine policy for multi-window or split view scenarios on macOS.
+- Whether the diagnostic conversation browser remains useful after the sidebar
+  signature flow fully covers inspection needs.
+- Future multi-window/split-view policy for conversation selection.
