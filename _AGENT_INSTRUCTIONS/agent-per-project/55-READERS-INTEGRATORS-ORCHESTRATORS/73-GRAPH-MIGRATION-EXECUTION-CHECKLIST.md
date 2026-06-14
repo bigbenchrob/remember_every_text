@@ -2310,6 +2310,10 @@ Remove legacy systems only after their blockers close.
 - Reworded the superseded onboarding/import debug handoff so its objective,
   blocker, file list, and resume prompt are explicitly historical and cannot be
   mistaken for current graph-era onboarding instructions.
+- Updated the Rust message extractor handoff to document the current
+  blob-based enrichment path, making explicit that live graph updates decode
+  stored `attributed_body_blob` rows and must not rescan all of `chat.db` for a
+  single new message.
 
 ### Exit Criteria
 
