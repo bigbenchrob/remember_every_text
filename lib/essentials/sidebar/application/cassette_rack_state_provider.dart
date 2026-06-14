@@ -31,7 +31,7 @@ List<CassetteSpec> _cascadeFromSpec(
 /// It uses the `freezed` package to generate the immutable data class
 /// implementation along with copyWith, equality, and debugging utilities.  A
 /// convenience factory [CassetteRack.initial] is provided to generate the
-/// tracer‑bullet default containing a single top chat menu cassette.
+/// default top chat menu cascade.
 @freezed
 abstract class CassetteRack with _$CassetteRack {
   /// Creates a new [CassetteRack] with the given list of [cassettes].  The
@@ -46,7 +46,7 @@ abstract class CassetteRack with _$CassetteRack {
   const CassetteRack._();
 
   /// Returns a fresh [CassetteRack] containing a single top chat menu
-  /// cassette.  This is the initial tracer‑bullet state used by
+  /// cassette.  This is the initial messages sidebar state used by
   /// [CassetteRackState.build].
   factory CassetteRack.initial() {
     const topMenu = CassetteSpec.sidebarUtility(
@@ -87,7 +87,7 @@ class CassetteRackState extends _$CassetteRackState {
     }
   }
 
-  /// Reset to the simple single top‑menu tracer bullet state.
+  /// Reset to the current default sidebar cascade.
   void resetToInitial() {
     switch (mode) {
       case SidebarMode.messages:

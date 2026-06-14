@@ -2247,6 +2247,9 @@ Remove legacy systems only after their blockers close.
 - Added an architecture tripwire rejecting hand-written `lib/` Dart files that
   contain only comments. Retired experiments should be deleted or moved to
   documentation so active source scans continue to reflect executable systems.
+- Reworded sidebar rack comments that still described the current default
+  cascade as a tracer-bullet state. The initial messages sidebar cascade is now
+  documented as current behavior rather than experimental scaffolding.
 
 ### Exit Criteria
 
