@@ -18,8 +18,10 @@ links:
 > Current conformance note (2026-06-08): ordinary live sync is source-scoped
 > graph build, not retained historical import/migration. The old retained
 > `ImportOrchestrator` implementation has been removed from active app code.
-> This page preserves historical importer mechanics and the monitor context for
-> interpreting old logs and retained storage only.
+> This page combines the current `ChatDbChangeMonitor` runbook with historical
+> retained importer mechanics. Treat the monitor sections as current live-sync
+> guidance and the retained importer sections as old-log/retained-storage
+> interpretation only.
 
 ## 🔥 Automatic Polling (ChatDbChangeMonitor)
 

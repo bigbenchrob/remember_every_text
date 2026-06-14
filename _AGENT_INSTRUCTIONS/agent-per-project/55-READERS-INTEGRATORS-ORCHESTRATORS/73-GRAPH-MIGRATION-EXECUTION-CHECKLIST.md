@@ -2323,6 +2323,9 @@ Remove legacy systems only after their blockers close.
 - Tightened source-database and historical handoff wording so retained
   database files are documented as compatibility storage/diagnostics, while
   live `chat.db` remains a read-only source for the source-scoped graph.
+- Clarified the import-orchestrator docs split: current `ChatDbChangeMonitor`
+  runbook content is live guidance, while retained importer mechanics are
+  historical retained-storage interpretation only.
 
 ### Exit Criteria
 

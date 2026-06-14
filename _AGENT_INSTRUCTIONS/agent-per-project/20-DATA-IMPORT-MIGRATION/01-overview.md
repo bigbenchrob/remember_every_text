@@ -62,7 +62,9 @@ is the ordinary live-sync or user-facing read spine.
 
 **Result:** New messages appear in the UI within ~15-20 seconds of arrival without user action.
 
-See `10-import-orchestrator.md` for retained importer mechanics and auto-polling context.
+See `10-import-orchestrator.md` for the current `ChatDbChangeMonitor`
+runbook and historical retained importer mechanics. Do not use the historical
+retained importer sections as live-sync guidance.
 
 ## Historical Retained Compatibility Flow
 
