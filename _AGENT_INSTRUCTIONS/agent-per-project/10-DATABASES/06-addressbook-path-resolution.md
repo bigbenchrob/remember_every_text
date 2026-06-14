@@ -79,7 +79,9 @@ final aggregateEither = await ref.read(
 );
 
 final aggregate = aggregateEither.getOrElse(
-  (failure) => throw Exception('AddressBook folder resolution failed: ${failure.message}'),
+  (failure) => throw StateError(
+    'AddressBook folder resolution failed: ${failure.message}',
+  ),
 );
 
 final activeDbPath = aggregate.mostRecentFolderPath.value;

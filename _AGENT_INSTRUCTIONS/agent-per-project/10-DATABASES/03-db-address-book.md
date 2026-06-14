@@ -45,7 +45,9 @@ final aggregateEither = await ref.read(
 );
 
 final aggregate = aggregateEither.getOrElse(
-  (failure) => throw Exception('AddressBook resolution failed: ${failure.message}'),
+  (failure) => throw StateError(
+    'AddressBook resolution failed: ${failure.message}',
+  ),
 );
 
 final activePath = aggregate.mostRecentFolderPath.value;

@@ -2290,6 +2290,8 @@ Remove legacy systems only after their blockers close.
 - Replaced the remaining production `UnimplementedError` with an explicit
   unsupported-state `StateError`, and added a tripwire to keep unfinished
   runtime-path markers out of active `lib/` code.
+- Updated current AddressBook database guidance snippets so they demonstrate
+  typed `StateError` failures instead of generic `Exception` throws.
 
 ### Exit Criteria
 
