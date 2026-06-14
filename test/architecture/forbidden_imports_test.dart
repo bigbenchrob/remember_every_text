@@ -1479,6 +1479,24 @@ void main() {
       },
     );
 
+    test(
+      'Attachment archive service uses graph candidate reader boundary',
+      () async {
+        final offenders =
+            await _findAttachmentArchiveGraphCandidateBoundaryOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'AttachmentArchiveService may orchestrate archive policy, but '
+              'graph attachment candidate SQL and graph database selection '
+              'belong behind GraphAttachmentArchiveCandidateReader.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
     test('Onboarding environment report uses probe reader boundary', () async {
       final offenders =
           await _findOnboardingEnvironmentProbeBoundaryOffenders();
@@ -3910,6 +3928,44 @@ Future<List<String>> _findAttachmentArchiveDirectoryBoundaryOffenders() async {
         '$filePath reads central attachmentArchiveDirectoryProvider directly',
       );
     }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>>
+_findAttachmentArchiveGraphCandidateBoundaryOffenders() async {
+  const filePath =
+      'lib/features/attachments/application/attachment_archive_service_provider.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final source = await file.readAsString();
+  final uncommented = _stripComments(source);
+  final imports = _extractImports(uncommented);
+  final offenders = <String>[
+    for (final importTarget in imports)
+      if (importTarget.endsWith(
+            'essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart',
+          ) ||
+          importTarget.endsWith(
+            'essentials/source_scoped_import/domain/source_scoped_row_key.dart',
+          ) ||
+          importTarget.endsWith(
+            'essentials/source_scoped_import/domain/known_sources.dart',
+          ))
+        '$filePath imports $importTarget',
+  ];
+
+  if (uncommented.contains('driftConversationGraphDatabaseProvider') ||
+      uncommented.contains('ConversationGraphDatabase') ||
+      uncommented.contains('SourceScopedRowKey') ||
+      uncommented.contains('liveChatDbSourceId') ||
+      uncommented.contains('SELECT DISTINCT') ||
+      uncommented.contains('JOIN message_to_attachment')) {
+    offenders.add('$filePath performs graph attachment candidate reads');
   }
 
   return offenders..sort();

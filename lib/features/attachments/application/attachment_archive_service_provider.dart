@@ -5,17 +5,15 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../essentials/db/feature_level_providers.dart'
-    show driftConversationGraphDatabaseProvider, overlayDatabaseProvider;
-import '../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
+    show overlayDatabaseProvider;
 import '../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import '../../../essentials/logging/application/app_logger.dart';
-import '../../../essentials/source_scoped_import/domain/known_sources.dart';
-import '../../../essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import '../domain/entities/attachment_recovery_metadata.dart';
 import '../feature_level_providers.dart';
 import 'archive_settings_provider.dart';
 import 'attachment_archive_file_store.dart';
 import 'attachment_recovery_hint_storage.dart';
+import 'graph_attachment_archive_candidate_reader.dart';
 
 part 'attachment_archive_service_provider.g.dart';
 
@@ -209,42 +207,15 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       );
     }
 
-    final graphDb = await ref.read(
-      driftConversationGraphDatabaseProvider.future,
+    final candidateReader = await ref.read(
+      graphAttachmentArchiveCandidateReaderProvider.future,
     );
     final logger = ref.read(appLoggerProvider.notifier);
 
-    final rows = await graphDb.selectRows(
-      '''
-      SELECT DISTINCT
-        a.ss_id AS graph_attachment_id,
-        m.guid AS message_guid,
-        (a.ss_id & ?) AS import_attachment_id,
-        a.filename AS local_path,
-        a.mime_type,
-        NULL AS sha256_hex
-      FROM messages m
-      JOIN message_to_attachment mta ON mta.message_ss_id = m.ss_id
-      JOIN attachments a ON a.ss_id = mta.attachment_ss_id
-      WHERE (m.ss_id >> ?) = ?
-        AND (m.ss_id & ?) > ?
-        AND (m.ss_id & ?) <= ?
-        AND (a.ss_id >> ?) = ?
-        AND a.filename IS NOT NULL
-        AND LENGTH(TRIM(a.filename)) > 0
-      ORDER BY m.ss_id, a.ss_id
-      ''',
-      <Object?>[
-        SourceScopedRowKey.maxSourceRowId,
-        SourceScopedRowKey.sourceRowIdBits,
-        sourceId,
-        SourceScopedRowKey.maxSourceRowId,
-        startedAfterSourceRowId,
-        SourceScopedRowKey.maxSourceRowId,
-        lastSourceRowId,
-        SourceScopedRowKey.sourceRowIdBits,
-        sourceId,
-      ],
+    final rows = await candidateReader.readSourceRange(
+      sourceId: sourceId,
+      startedAfterSourceRowId: startedAfterSourceRowId,
+      lastSourceRowId: lastSourceRowId,
     );
 
     final archiveOutcome = await _archiveRows(
@@ -308,18 +279,17 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
 
     try {
       final overlayDb = await ref.read(overlayDatabaseProvider.future);
-      final graphDb = await ref.read(
-        driftConversationGraphDatabaseProvider.future,
+      final candidateReader = await ref.read(
+        graphAttachmentArchiveCandidateReaderProvider.future,
       );
       final logger = ref.read(appLoggerProvider.notifier);
       final startedAtUtc = DateTime.now().toUtc().toIso8601String();
 
       final cursor = await _readGraphSweepCursor(overlayDb);
-      final selection = await _selectGraphSweepRows(
-        overlayDb: overlayDb,
-        graphDb: graphDb,
+      final selection = await candidateReader.selectSweepCandidates(
         afterAttachmentId: cursor,
         limit: limit,
+        pageSize: _kGraphSweepSelectionPageSize,
       );
 
       final archiveOutcome = await _archiveRows(
@@ -399,8 +369,8 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
 
     try {
       final overlayDb = await ref.read(overlayDatabaseProvider.future);
-      final graphDb = await ref.read(
-        driftConversationGraphDatabaseProvider.future,
+      final candidateReader = await ref.read(
+        graphAttachmentArchiveCandidateReaderProvider.future,
       );
       final startedAtUtc = DateTime.now().toUtc().toIso8601String();
       var cursor = await _readGraphSweepCursor(overlayDb);
@@ -412,11 +382,10 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
 
       for (var index = 0; index < maxChunks; index++) {
         final previousCursor = cursor;
-        final selection = await _selectGraphSweepRows(
-          overlayDb: overlayDb,
-          graphDb: graphDb,
+        final selection = await candidateReader.selectSweepCandidates(
           afterAttachmentId: cursor,
           limit: chunkLimit,
+          pageSize: _kGraphSweepSelectionPageSize,
         );
         final archiveOutcome = await _archiveRows(
           rows: selection.rows,
@@ -492,8 +461,8 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       );
     }
 
-    final graphDb = await ref.read(
-      driftConversationGraphDatabaseProvider.future,
+    final candidateReader = await ref.read(
+      graphAttachmentArchiveCandidateReaderProvider.future,
     );
     final archiveDir = ref.read(attachmentArchiveDirectoryPathProvider);
     final fileStore = ref.read(attachmentArchiveFileStoreProvider);
@@ -502,29 +471,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     // Ensure archive directory exists.
     await fileStore.ensureArchiveDirectory(archiveDir);
 
-    // Query all graph attachments with a source path.
-    final rows = await graphDb.selectRows(
-      '''
-      SELECT
-        a.ss_id AS graph_attachment_id,
-        m.guid AS message_guid,
-        (a.ss_id & ?) AS import_attachment_id,
-        a.filename AS local_path,
-        a.mime_type,
-        NULL AS sha256_hex
-      FROM attachments a
-      JOIN message_to_attachment mta ON mta.attachment_ss_id = a.ss_id
-      JOIN messages m ON m.ss_id = mta.message_ss_id
-      WHERE (a.ss_id >> ?) = ?
-        AND a.filename IS NOT NULL
-        AND LENGTH(TRIM(a.filename)) > 0
-      ''',
-      <Object?>[
-        SourceScopedRowKey.maxSourceRowId,
-        SourceScopedRowKey.sourceRowIdBits,
-        liveChatDbSourceId,
-      ],
-    );
+    final rows = await candidateReader.readAllAvailableLive();
 
     final archiveOutcome = await _archiveRows(
       rows: rows,
@@ -552,7 +499,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
   }
 
   Future<_ArchiveRowsOutcome> _archiveRows({
-    required List<dynamic> rows,
+    required List<GraphAttachmentArchiveCandidate> rows,
     required bool updateProgressState,
     int skippedSampleLimit = 0,
   }) async {
@@ -595,9 +542,9 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
         state = state.copyWith(phase: BulkArchivePhase.running);
       }
 
-      final messageGuid = _readRequiredString(row, 'message_guid');
-      final importAttachmentId = _readNullableInt(row, 'import_attachment_id');
-      final localPath = _readNullableString(row, 'local_path');
+      final messageGuid = row.messageGuid;
+      final importAttachmentId = row.importAttachmentId;
+      final localPath = row.localPath;
 
       if (importAttachmentId == null || localPath == null) {
         skipped++;
@@ -636,8 +583,8 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
           messageGuid: messageGuid,
           importAttachmentId: importAttachmentId,
           resolvedLocalPath: archivablePath,
-          mimeType: _readNullableString(row, 'mime_type'),
-          sha256Hex: _readNullableString(row, 'sha256_hex'),
+          mimeType: row.mimeType,
+          sha256Hex: row.sha256Hex,
         );
 
         if (success) {
@@ -859,188 +806,6 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     return int.tryParse(rawValue) ?? 0;
   }
 
-  Future<_GraphSweepSelection> _selectGraphSweepRows({
-    required OverlayDatabase overlayDb,
-    required ConversationGraphDatabase graphDb,
-    required int afterAttachmentId,
-    required int limit,
-  }) async {
-    final selectedRows = <dynamic>[];
-    final selectedAttachmentIds = <int>{};
-    var cursor = afterAttachmentId;
-    var wrappedToStart = false;
-
-    while (selectedRows.length < limit) {
-      final rawRows = await _fetchGraphSweepRows(
-        graphDb,
-        afterAttachmentId: cursor,
-        limit: _kGraphSweepSelectionPageSize,
-      );
-
-      if (rawRows.isEmpty) {
-        if (!wrappedToStart && afterAttachmentId > 0) {
-          wrappedToStart = true;
-          cursor = 0;
-          continue;
-        }
-
-        return _GraphSweepSelection(rows: selectedRows, nextCursor: 0);
-      }
-
-      final archivedKeys = await _loadArchivedKeysForRows(
-        overlayDb,
-        rows: rawRows,
-      );
-      var lastProcessedAttachmentId = cursor;
-
-      for (final row in rawRows) {
-        final graphAttachmentId = _readNullableInt(row, 'graph_attachment_id');
-        lastProcessedAttachmentId =
-            graphAttachmentId ?? lastProcessedAttachmentId;
-        final archiveKey = _buildArchiveIdentityKeyForRow(row);
-        if (archiveKey == null || archivedKeys.contains(archiveKey)) {
-          continue;
-        }
-
-        if (graphAttachmentId != null &&
-            selectedAttachmentIds.contains(graphAttachmentId)) {
-          continue;
-        }
-
-        selectedRows.add(row);
-        if (graphAttachmentId != null) {
-          selectedAttachmentIds.add(graphAttachmentId);
-        }
-        if (selectedRows.length == limit) {
-          break;
-        }
-      }
-
-      cursor = lastProcessedAttachmentId;
-      if (rawRows.length < _kGraphSweepSelectionPageSize) {
-        if (selectedRows.length < limit &&
-            !wrappedToStart &&
-            afterAttachmentId > 0) {
-          wrappedToStart = true;
-          cursor = 0;
-          continue;
-        }
-
-        return _GraphSweepSelection(
-          rows: selectedRows,
-          nextCursor: selectedRows.length < limit ? 0 : cursor,
-        );
-      }
-    }
-
-    return _GraphSweepSelection(rows: selectedRows, nextCursor: cursor);
-  }
-
-  Future<List<dynamic>> _fetchGraphSweepRows(
-    ConversationGraphDatabase graphDb, {
-    required int afterAttachmentId,
-    required int limit,
-  }) async {
-    return graphDb.selectRows(
-      '''
-          SELECT
-            a.ss_id AS graph_attachment_id,
-            m.guid AS message_guid,
-            (a.ss_id & ?) AS import_attachment_id,
-            a.filename AS local_path,
-            a.mime_type,
-            NULL AS sha256_hex
-          FROM attachments a
-          JOIN message_to_attachment mta ON mta.attachment_ss_id = a.ss_id
-          JOIN messages m ON m.ss_id = mta.message_ss_id
-          WHERE a.ss_id > ?
-            AND (a.ss_id >> ?) = ?
-            AND a.filename IS NOT NULL
-            AND LENGTH(TRIM(a.filename)) > 0
-            AND a.mime_type LIKE 'image/%'
-          ORDER BY a.ss_id
-          LIMIT ?
-          ''',
-      <Object?>[
-        SourceScopedRowKey.maxSourceRowId,
-        afterAttachmentId,
-        SourceScopedRowKey.sourceRowIdBits,
-        liveChatDbSourceId,
-        limit,
-      ],
-    );
-  }
-
-  Future<Set<String>> _loadArchivedKeysForRows(
-    OverlayDatabase overlayDb, {
-    required List<dynamic> rows,
-  }) async {
-    final keyedRows = rows
-        .map((row) {
-          final messageGuid = _readNullableString(row, 'message_guid');
-          final importAttachmentId = _readNullableInt(
-            row,
-            'import_attachment_id',
-          );
-          if (messageGuid == null || importAttachmentId == null) {
-            return null;
-          }
-          return (messageGuid, importAttachmentId);
-        })
-        .whereType<(String, int)>()
-        .toList(growable: false);
-
-    if (keyedRows.isEmpty) {
-      return <String>{};
-    }
-
-    final predicates = <String>[];
-    final variables = <Variable<Object>>[];
-    for (final (messageGuid, importAttachmentId) in keyedRows) {
-      predicates.add('(message_guid = ? AND import_attachment_id = ?)');
-      variables.add(Variable<String>(messageGuid));
-      variables.add(Variable<int>(importAttachmentId));
-    }
-
-    final rowsResult = await overlayDb
-        .customSelect(
-          'SELECT message_guid, import_attachment_id '
-          'FROM archived_attachments '
-          'WHERE ${predicates.join(' OR ')}',
-          variables: variables,
-        )
-        .get();
-
-    return rowsResult
-        .map(
-          (row) => _buildArchiveIdentityKey(
-            messageGuid: row.read<String>('message_guid'),
-            importAttachmentId: row.read<int>('import_attachment_id'),
-          ),
-        )
-        .toSet();
-  }
-
-  String? _buildArchiveIdentityKeyForRow(dynamic row) {
-    final messageGuid = _readNullableString(row, 'message_guid');
-    final importAttachmentId = _readNullableInt(row, 'import_attachment_id');
-    if (messageGuid == null || importAttachmentId == null) {
-      return null;
-    }
-
-    return _buildArchiveIdentityKey(
-      messageGuid: messageGuid,
-      importAttachmentId: importAttachmentId,
-    );
-  }
-
-  String _buildArchiveIdentityKey({
-    required String messageGuid,
-    required int importAttachmentId,
-  }) {
-    return '$messageGuid::$importAttachmentId';
-  }
-
   Future<void> _writeGraphSweepStatus(
     OverlayDatabase overlayDb, {
     required String startedAtUtc,
@@ -1122,47 +887,6 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     );
   }
 
-  String _readRequiredString(Object? row, String key) {
-    final value = _readNullableString(row, key);
-    if (value == null) {
-      throw StateError('Missing required string column $key');
-    }
-    return value;
-  }
-
-  String? _readNullableString(Object? row, String key) {
-    if (row is Map<String, Object?>) {
-      final value = row[key];
-      return value == null ? null : '$value';
-    }
-    if (row is QueryRow) {
-      return row.readNullable<String>(key);
-    }
-
-    throw StateError('Unsupported row type for string column $key: $row');
-  }
-
-  int? _readNullableInt(Object? row, String key) {
-    if (row is Map<String, Object?>) {
-      final value = row[key];
-      if (value == null) {
-        return null;
-      }
-      if (value is int) {
-        return value;
-      }
-      if (value is num) {
-        return value.toInt();
-      }
-      return int.tryParse('$value');
-    }
-    if (row is QueryRow) {
-      return row.readNullable<int>(key);
-    }
-
-    throw StateError('Unsupported row type for int column $key: $row');
-  }
-
   Future<void> _clearRecoveryHint(
     OverlayDatabase overlayDb, {
     required String messageGuid,
@@ -1191,13 +915,6 @@ class AttachmentArchiveResult {
   final int newlyArchived;
   final int skipped;
   final int failed;
-}
-
-class _GraphSweepSelection {
-  const _GraphSweepSelection({required this.rows, required this.nextCursor});
-
-  final List<dynamic> rows;
-  final int nextCursor;
 }
 
 class _ArchiveRowsOutcome {
