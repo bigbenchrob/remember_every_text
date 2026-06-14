@@ -2,7 +2,7 @@
 tier: project
 scope: data-import-migration
 owner: agent-per-project
-last_reviewed: 2026-06-08
+last_reviewed: 2026-06-14
 source_of_truth: doc
 links:
       - ./02-import-migration-schema-reference.md

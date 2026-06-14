@@ -2,7 +2,7 @@
 tier: project
 scope: databases
 owner: agent-per-project
-last_reviewed: 2026-06-05
+last_reviewed: 2026-06-14
 source_of_truth: doc
 links:
   - ./00-all-databases-accessed.md

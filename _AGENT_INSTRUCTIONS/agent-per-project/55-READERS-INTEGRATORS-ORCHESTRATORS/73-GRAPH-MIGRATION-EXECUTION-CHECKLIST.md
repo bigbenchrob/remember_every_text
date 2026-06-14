@@ -2326,6 +2326,8 @@ Remove legacy systems only after their blockers close.
 - Clarified the import-orchestrator docs split: current `ChatDbChangeMonitor`
   runbook content is live guidance, while retained importer mechanics are
   historical retained-storage interpretation only.
+- Refreshed review metadata on the source `chat.db`, import overview, and
+  import-monitor docs touched by the graph ownership clarification pass.
 
 ### Exit Criteria
 
