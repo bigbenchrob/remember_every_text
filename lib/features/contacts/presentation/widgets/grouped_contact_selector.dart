@@ -254,65 +254,6 @@ class ContactLozenge extends ConsumerWidget {
   }
 }
 
-// /// Compact lozenge shown when the header is collapsed (Phase 4).
-// class ContactLozenge extends StatelessWidget {
-//   const ContactLozenge({
-//     super.key,
-//     required this.label,
-//     this.onTap,
-//   });
-
-//   final String label;
-//   final VoidCallback? onTap;
-
-//   @override
-//   Widget build(BuildContext context) {
-//     final theme = MacosTheme.of(context);
-//     return GestureDetector(
-//       onTap: onTap,
-//       behavior: HitTestBehavior.opaque,
-//       child: Container(
-//         margin: const EdgeInsets.symmetric(horizontal: 12),
-//         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-//         decoration: BoxDecoration(
-//           color: theme.canvasColor,
-//           borderRadius: BorderRadius.circular(12),
-//           border: Border.all(
-//             color: theme.dividerColor.withValues(alpha: 0.6),
-//           ),
-//           boxShadow: const [
-//             BoxShadow(
-//               color: Color(0x26000000),
-//               offset: Offset(0, 2),
-//               blurRadius: 6,
-//             ),
-//           ],
-//         ),
-//         child: Row(
-//           children: [
-//             const MacosIcon(
-//               CupertinoIcons.person_crop_circle,
-//               size: 16,
-//               color: CupertinoColors.secondaryLabel,
-//             ),
-//             const SizedBox(width: 8),
-//             Expanded(
-//               child: Text(
-//                 label,
-//                 maxLines: 1,
-//                 overflow: TextOverflow.ellipsis,
-//                 style: theme.typography.body.copyWith(
-//                   fontWeight: FontWeight.w600,
-//                 ),
-//               ),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }
-
 const double _kLetterSlotHeight = 18;
 const double _kPickerMinHeight = 160;
 const double _kPickerMaxHeight = 360;

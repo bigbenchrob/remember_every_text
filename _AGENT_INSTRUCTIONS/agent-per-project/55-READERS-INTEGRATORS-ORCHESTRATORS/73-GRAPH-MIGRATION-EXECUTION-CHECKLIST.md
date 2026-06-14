@@ -2220,6 +2220,9 @@ Remove legacy systems only after their blockers close.
 - Added an architecture tripwire that rejects active `Theme.of(...)`,
   `MacosTheme.of(...)`, and `CupertinoTheme.of(...)` usage in `lib/`. App UI
   surfaces should use the shared theme provider/token vocabulary.
+- Removed stale all-comment theme-extension and contact-lozenge prototype code
+  so theme scans report active architectural drift rather than historical
+  commented examples.
 
 ### Exit Criteria
 
