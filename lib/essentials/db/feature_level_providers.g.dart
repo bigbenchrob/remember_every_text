@@ -7,7 +7,7 @@ part of 'feature_level_providers.dart';
 // **************************************************************************
 
 String _$retainedArchiveMetadataStoreHash() =>
-    r'21d36db7df5097e110e967d00c7796f43e1ef0b3';
+    r'1ec2902256e0ad9e46c715b2fb4b6bdaef1d8eec';
 
 /// Provides access to retained archive-source metadata in `macos_import.db`.
 ///

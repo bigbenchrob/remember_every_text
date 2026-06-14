@@ -9,14 +9,7 @@ part of 'providers.dart';
 String _$platformBrightnessHash() =>
     r'10acf764fbcc7d0e82e155478ef189c0127e851a';
 
-///***************************************************************** */
-///*
-///*       Define providers that are:
-///*
-///*            (1) initialized asynchronously or
-///*            (2) used by multiple features.
-///*
-///***************************************************************** */
+/// Root providers shared by multiple features or initialized asynchronously.
 ///
 /// Copied from [platformBrightness].
 @ProviderFor(platformBrightness)
@@ -130,9 +123,9 @@ typedef _$IsDarkMode = AutoDisposeNotifier<bool>;
 String _$switchableDarkModeHash() =>
     r'a6a6949ba4e7cfc5d9aaf03151601a351b7373c8';
 
-/// Temporary override for app theme mode while iterating on theming.
+/// App theme-mode override.
 ///
-/// Defaults to `ThemeMode.system`, and can be toggled by UI (toolbar button).
+/// Defaults to `ThemeMode.system` and can be cycled from the toolbar.
 ///
 /// Copied from [SwitchableDarkMode].
 @ProviderFor(SwitchableDarkMode)

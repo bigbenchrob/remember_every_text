@@ -2823,6 +2823,8 @@ class VirtualParticipant extends DataClass
     implements Insertable<VirtualParticipant> {
   final int id;
   final String displayName;
+
+  /// Retained schema column only. Do not use as app-facing display identity.
   final String shortName;
   final String? notes;
   final String createdAtUtc;
