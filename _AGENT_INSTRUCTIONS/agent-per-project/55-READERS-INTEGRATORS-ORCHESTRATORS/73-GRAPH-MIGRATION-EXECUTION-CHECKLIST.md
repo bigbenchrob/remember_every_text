@@ -2278,6 +2278,8 @@ Remove legacy systems only after their blockers close.
   hand-written Dart files.
 - Removed stale commented debug `print` calls from path and AddressBook folder
   helpers now that typed errors and explicit probe behavior cover diagnostics.
+- Added an architecture tripwire that keeps raw `print` usage limited to the
+  existing root zone interceptor and retained-database diagnostic boundary.
 
 ### Exit Criteria
 

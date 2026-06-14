@@ -38,6 +38,11 @@ const Set<String> _sourceScopedDatabaseFilenameLiteralAllowedFiles = {
 
 const Set<String> _legacyTerminologyAllowedFiles = <String>{};
 
+const Set<String> _rawPrintAllowedFiles = {
+  'lib/essentials/db/application/retained_database_debug_settings_provider.dart',
+  'lib/main.dart',
+};
+
 const List<String> _retiredImportMigrationExecutionSymbols = <String>[
   'DbImportControl',
   'HandlesMigrationService',
@@ -218,6 +223,20 @@ void main() {
             'throws lose type information and make failure boundaries harder '
             'to reason about.\n'
             'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Raw print usage stays behind approved diagnostic boundaries',
+        () async {
+      final offenders = await _findRawPrintOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_rawPrintAllowedFiles.toList()..sort()),
+        reason:
+            'Raw print calls should not spread through application code. Use '
+            'the app logger or an explicit diagnostic boundary instead.\n'
+            'Actual users:\n${offenders.join('\n')}',
       );
     });
 
@@ -4613,6 +4632,27 @@ Future<List<String>> _findRawStringThrowOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (rawStringThrowPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findRawPrintOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final rawPrintPattern = RegExp(r'\bprint\(');
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (rawPrintPattern.hasMatch(uncommented)) {
       offenders.add(filePath);
     }
   }
