@@ -16,16 +16,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: 'home',
         builder: (context, state) => const MacosAppShell(),
       ),
-
-      // Optional: Add future special routes here if needed
-      // GoRoute(
-      //   path: '/special-feature',
-      //   name: 'special-feature',
-      //   builder: (context, state) {
-      //     // Could trigger specific orchestrator configuration
-      //     return const AppShell();
-      //   },
-      // ),
     ],
   );
 });

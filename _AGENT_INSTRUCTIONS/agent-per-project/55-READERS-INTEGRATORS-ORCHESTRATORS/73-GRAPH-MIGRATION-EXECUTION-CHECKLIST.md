@@ -2240,6 +2240,10 @@ Remove legacy systems only after their blockers close.
 - Removed stale commented imports and a malformed window-delegate example
   comment from active root utility/provider files. Active source should not
   carry old dependency hints that can be mistaken for current architecture.
+- Removed commented-out router and cassette-rack tracer-bullet code while
+  preserving the explicit topology contract comments. Future route or sidebar
+  behavior should be introduced through current spec/coordinator patterns, not
+  resurrected from commented skeletons.
 
 ### Exit Criteria
 

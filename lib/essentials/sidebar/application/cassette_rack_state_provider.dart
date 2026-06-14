@@ -122,21 +122,6 @@ class CassetteRackState extends _$CassetteRackState {
     return _cascadeFromSpec(root, topologyContext: _stableTopologyContext());
   }
 
-  /// Convenience for just updating the top chat menu cassette.  The
-  /// [chosenMenuIndex] parameter determines which option is selected; if null
-  /// it defaults to whatever the factory uses by default.  This is used by
-  /// UI interactions in the tracer‑bullet phase.
-  // void setTopChatMenu({TopChatMenuChoice chosenTopMenuChoice}) {
-  //   final topMenu = const CassetteSpec.sidebarUtility(
-  //     SidebarUtilityCassetteSpec.topChatMenu(
-  //       selectedChoice:
-  //           selectedChoice ??
-  //           SidebarUtilityCassetteSpec.topChatMenu().chosenMenuIndex,
-  //     ),
-  //   );
-  //   state = state.copyWith(cassettes: _cascadeFromSpec(topMenu));
-  // }
-
   /// Replace the cassette at [index] with [newSpec] and re-cascade children.
   ///
   /// This is the preferred method for widgets to update their cassette spec
