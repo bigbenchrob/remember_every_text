@@ -1986,10 +1986,14 @@ Remove legacy systems only after their blockers close.
   `DatabaseHealthAuditService` now owns report construction semantics only,
   while infrastructure owns JSON file output and OS/timezone inspection.
 - Moved attachment archive file-store mechanics behind
-  `AttachmentArchiveFileStore`. `AttachmentArchiveService` still owns archive
-  policy, graph/overlay coordination, recovery hints, and progress state, while
-  infrastructure owns home-path expansion, source-file existence checks,
-  hashing, archive file writes, and integrity file reads.
+  `AttachmentArchiveFileStore`, then split archive graph reads, overlay writes,
+  and sweep cursor/status persistence into named attachment-feature ports.
+  `AttachmentArchiveService` now owns archive orchestration and policy flow
+  only. `GraphAttachmentArchiveCandidateReader` owns graph candidate SQL,
+  `AttachmentArchiveWriteStore` owns archive record/recovery hint/integrity-row
+  persistence, `AttachmentArchiveSettingsStore` owns sweep state, and
+  `AttachmentArchiveFileStore` owns home-path expansion, source-file existence
+  checks, hashing, archive file writes, and integrity file reads.
 - Moved historical archive folder selection behind
   `HistoricalArchiveFolderChooser`. The historical archive workflow still owns
   selected-source/preflight/import semantics, while settings infrastructure owns

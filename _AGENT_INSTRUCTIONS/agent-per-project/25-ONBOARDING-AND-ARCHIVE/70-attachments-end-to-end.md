@@ -194,7 +194,7 @@ The incremental path treats `working_ss.db` as app truth for ordinary message
 evidence. Graph Drift connection lifetime is preserved; UI refresh is signaled
 through graph/message data version providers.
 
-The monitor also runs a bounded working-attachment sweep every 5 minutes via `archiveNextWorkingSweepChunk()` so files that appear later can be ingested.
+The monitor also runs a bounded graph-attachment sweep every 5 minutes via `archiveNextGraphSweepChunk()` so files that appear later can be ingested.
 
 ## 7. Rendering Model
 

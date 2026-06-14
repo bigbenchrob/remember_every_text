@@ -58,7 +58,7 @@ is the ordinary live-sync or user-facing read spine.
 | `ChatDbChangeMonitor` | Polls `MAX(ROWID)` from `chat.db`; triggers source-scoped graph build on change |
 | Source-scoped graph build lifecycle | Imports source facts into `macos_import_ss.db` and projects canonical graph rows into `working_ss.db` |
 | Graph/message data version providers | Bumped after successful graph import/projection so UI providers refresh without closing Drift connections |
-| `AttachmentArchiveService` | Archives newly imported live graph source ranges and performs periodic maintenance sweeps |
+| `AttachmentArchiveService` | Orchestrates live graph archive runs and periodic graph sweeps; graph reads, overlay writes, archive settings, and filesystem work remain behind named attachment-feature ports |
 
 **Result:** New messages appear in the UI within ~15-20 seconds of arrival without user action.
 
