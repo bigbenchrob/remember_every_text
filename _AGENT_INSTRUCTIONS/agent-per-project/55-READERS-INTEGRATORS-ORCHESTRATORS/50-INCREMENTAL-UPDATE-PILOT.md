@@ -1,5 +1,11 @@
 # 50-INCREMENTAL-UPDATE-PILOT
 
+> Historical status, 2026-06: this pilot has been retired as runtime code. Its
+> validated responsibility model has been absorbed into source-scoped import,
+> conversation graph projection, graph lifecycle orchestration, and the message
+> evidence spine. Treat the implementation details below as historical design
+> evidence, not current app guidance.
+
 ## Purpose
 
 This document defines the shadow incremental-update pilot for the Readers → Integrators → Orchestrators architectural responsibility model.

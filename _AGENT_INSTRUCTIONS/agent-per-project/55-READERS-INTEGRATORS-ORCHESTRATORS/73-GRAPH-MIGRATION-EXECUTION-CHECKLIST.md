@@ -2207,6 +2207,9 @@ Remove legacy systems only after their blockers close.
 - Corrected the R-I-O reading-flow index so the retired incremental-update
   pilot is described as historical validation that has been absorbed into the
   source-scoped graph lifecycle, not as current runtime behavior.
+- Added an explicit historical-status banner to
+  `50-INCREMENTAL-UPDATE-PILOT.md` so its retained shadow-pilot details are not
+  mistaken for current app architecture.
 
 ### Exit Criteria
 
