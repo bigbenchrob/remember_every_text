@@ -2,8 +2,8 @@ import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../features/environment_readiness/domain/spec_classes/environment_readiness_view_spec.dart';
-import '../../../logging/application/app_logger.dart';
 import '../../../logging/application/pipeline_incident_tracker_provider.dart';
+import '../../../logging/feature_level_providers.dart';
 import '../../../onboarding/application/onboarding_gate_provider.dart';
 import '../../../onboarding/domain/onboarding_status.dart';
 import '../../application/panel_widget_providers.dart';

@@ -1165,6 +1165,20 @@ void main() {
       );
     });
 
+    test('App logger consumers use logging feature boundary', () async {
+      final offenders = await _findAppLoggerFeatureBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'AppLogger is exposed through the logging feature-level API. '
+            'Other systems should not import the application logger file '
+            'directly.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Graph health provider uses repository boundary', () async {
       final offenders = await _findGraphHealthProviderBoundaryOffenders();
 
@@ -2165,6 +2179,32 @@ Future<List<String>> _findRetainedImportWrapperImportOffenders() async {
   }
 
   return offenders.toList()..sort();
+}
+
+Future<List<String>> _findAppLoggerFeatureBoundaryOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path == 'lib/essentials/logging/feature_level_providers.dart') {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    offenders.addAll([
+      for (final importTarget in imports)
+        if (importTarget.endsWith('logging/application/app_logger.dart'))
+          '$filePath imports $importTarget',
+    ]);
+  }
+
+  return offenders..sort();
 }
 
 Future<List<String>> _findDatabaseConstructionOffenders() async {

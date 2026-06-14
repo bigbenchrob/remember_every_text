@@ -6,7 +6,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../features/attachments/feature_level_providers.dart';
 import '../../../../providers.dart';
 import '../../../db/feature_level_providers/conversation_graph_readiness_provider.dart';
-import '../../../logging/application/app_logger.dart';
+import '../../../logging/feature_level_providers.dart';
 import '../../../source_scoped_import/domain/known_sources.dart';
 import '../../feature_level_providers.dart';
 import '../conversation_graph_build_controller_provider.dart';

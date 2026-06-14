@@ -9,7 +9,7 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../logging/application/app_logger.dart';
+import '../logging/feature_level_providers.dart';
 import '../onboarding/application/onboarding_environment_report_provider.dart';
 import '../source_scoped_import/feature_level_providers.dart';
 

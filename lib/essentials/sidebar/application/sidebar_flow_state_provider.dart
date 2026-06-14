@@ -9,7 +9,7 @@ import '../../../features/messages/domain/spec_classes/messages_view_spec.dart';
 import '../../../features/settings/domain/spec_classes/settings_view_spec.dart';
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../features/sidebar_utilities/feature_level_providers.dart';
-import '../../logging/application/app_logger.dart';
+import '../../logging/feature_level_providers.dart';
 import '../../navigation/domain/entities/view_spec.dart';
 import '../../navigation/domain/sidebar_mode.dart';
 import '../feature_level_providers.dart';

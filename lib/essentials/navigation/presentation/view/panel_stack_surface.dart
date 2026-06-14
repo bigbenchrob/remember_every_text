@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../../../logging/application/app_logger.dart';
+import '../../../logging/feature_level_providers.dart';
 import '../../application/sidebar_mode_provider.dart';
 import '../../domain/entities/panel_stack.dart';
 import '../../domain/navigation_constants.dart';

@@ -19,7 +19,6 @@ import 'config/theme/colors/theme_colors.dart';
 import 'config/theme/theme_typography.dart';
 import 'essentials/conversation_graph/application/monitor/chat_db_change_monitor_provider.dart';
 import 'essentials/db/feature_level_providers.dart';
-import 'essentials/logging/application/app_logger.dart';
 import 'essentials/logging/application/diagnostic_report_actions.dart';
 import 'essentials/logging/feature_level_providers.dart';
 import 'essentials/navigation/application/router.dart';

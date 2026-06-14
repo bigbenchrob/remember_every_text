@@ -6,7 +6,7 @@ import '../../../features/messages/feature_level_providers.dart'
     as messages_feature;
 import '../../../features/settings/domain/spec_classes/settings_view_spec.dart';
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
-import '../../logging/application/app_logger.dart';
+import '../../logging/feature_level_providers.dart';
 import '../../sidebar/application/sidebar_cassette_sectioning.dart';
 import '../../sidebar/feature_level_providers.dart';
 import '../../sidebar/presentation/view/sidebar_grouped_control_section_surface.dart';

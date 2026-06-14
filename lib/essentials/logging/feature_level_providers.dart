@@ -12,6 +12,8 @@ import 'infrastructure/pipeline_incident_storage.dart';
 import 'infrastructure/support_bundle_diagnostic_report_exporter.dart';
 import 'infrastructure/support_bundle_export_service.dart';
 
+export 'application/app_logger.dart';
+
 part 'feature_level_providers.g.dart';
 
 @riverpod

@@ -6,7 +6,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../conversation_graph/application/conversation_graph_build_controller_provider.dart';
 import '../../db/feature_level_providers.dart' show databaseDirectoryPath;
-import '../../logging/application/app_logger.dart';
+import '../../logging/feature_level_providers.dart';
 import '../../navigation/application/sidebar_mode_provider.dart';
 import '../../navigation/domain/sidebar_mode.dart';
 import '../domain/onboarding_environment_report.dart';

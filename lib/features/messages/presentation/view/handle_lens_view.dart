@@ -6,7 +6,7 @@ import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../config/theme/theme_typography.dart';
 import '../../../../config/theme/widgets/buttons/buttons.dart';
-import '../../../../essentials/logging/application/app_logger.dart';
+import '../../../../essentials/logging/feature_level_providers.dart';
 import '../../../contacts/feature_level_providers.dart';
 import '../../../handles/feature_level_providers.dart';
 import '../../application/message_evidence/message_evidence_spine_provider.dart';

@@ -1,6 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../essentials/logging/application/app_logger.dart';
+import '../../../essentials/logging/feature_level_providers.dart';
 import '../feature_level_providers.dart';
 
 part 'deterministic_recovery_provider.g.dart';

@@ -2187,6 +2187,11 @@ Remove legacy systems only after their blockers close.
   application layer retains only the typed action contracts, infrastructure
   retains the concrete opener/writer implementations, and architecture
   tripwires prevent the retired application-provider islands from returning.
+- Exposed `AppLogger` through the logging feature-level boundary and routed
+  app consumers away from direct `logging/application/app_logger.dart`
+  imports. The logger remains the same runtime provider, but other systems now
+  depend on the public logging API and an architecture tripwire prevents direct
+  application-logger imports from returning.
 
 ### Exit Criteria
 
