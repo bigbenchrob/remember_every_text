@@ -207,6 +207,20 @@ void main() {
       );
     });
 
+    test('Active Dart code does not throw raw strings', () async {
+      final offenders = await _findRawStringThrowOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Throw typed exceptions or errors, not raw strings. Raw string '
+            'throws lose type information and make failure boundaries harder '
+            'to reason about.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test(
       'Sidebar semantic/application imports do not grow beyond tracked temporary exceptions',
       () async {
@@ -4578,6 +4592,27 @@ Future<List<String>> _findActiveTodoFixmeOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (markerPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findRawStringThrowOffenders() async {
+  final files = await _collectProjectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/') || path.startsWith('test/');
+  });
+  final rawStringThrowPattern = RegExp(r'''throw\s+['"]''');
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (rawStringThrowPattern.hasMatch(uncommented)) {
       offenders.add(filePath);
     }
   }

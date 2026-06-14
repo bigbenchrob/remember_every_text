@@ -23,7 +23,9 @@ class AddressBookDbHelperMultiInstance {
     try {
       db = await openReadOnlyDatabase(_path);
     } catch (e) {
-      throw "A dang database couldn't be found at the path: $_path";
+      throw StateError(
+        "AddressBook database couldn't be opened at path '$_path': $e",
+      );
     }
     return db;
   }

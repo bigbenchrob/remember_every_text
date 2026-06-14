@@ -2272,6 +2272,10 @@ Remove legacy systems only after their blockers close.
 - Replaced raw string throws in `PathsHelper` with typed `StateError`s so path
   initialization failures preserve diagnostic cause without throwing arbitrary
   objects.
+- Replaced the AddressBook folder probe's raw string throw with a typed
+  `StateError` that preserves the path and underlying open failure.
+- Added an architecture tripwire that rejects raw string throws in active
+  hand-written Dart files.
 
 ### Exit Criteria
 
