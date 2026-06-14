@@ -2244,6 +2244,9 @@ Remove legacy systems only after their blockers close.
   preserving the explicit topology contract comments. Future route or sidebar
   behavior should be introduced through current spec/coordinator patterns, not
   resurrected from commented skeletons.
+- Added an architecture tripwire rejecting hand-written `lib/` Dart files that
+  contain only comments. Retired experiments should be deleted or moved to
+  documentation so active source scans continue to reflect executable systems.
 
 ### Exit Criteria
 

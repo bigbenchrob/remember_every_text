@@ -178,6 +178,20 @@ void main() {
       },
     );
 
+    test('Hand-written lib Dart files contain active code', () async {
+      final offenders = await _findAllCommentLibDartFiles();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Hand-written Dart files under lib/ must not be all-comment '
+            'scratch files. Move retained notes to documentation, or delete '
+            'retired experiments.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test(
       'Sidebar semantic/application imports do not grow beyond tracked temporary exceptions',
       () async {
@@ -4508,6 +4522,26 @@ Future<List<String>> _findFrameworkThemeLookupOffenders() async {
     if (uncommented.contains('Theme.of(') ||
         uncommented.contains('MacosTheme.of(') ||
         uncommented.contains('CupertinoTheme.of(')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findAllCommentLibDartFiles() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source).trim();
+    if (uncommented.isEmpty) {
       offenders.add(filePath);
     }
   }
