@@ -58,8 +58,8 @@ class AddressBookFolderPathsFinder {
           }
         }
       }
-    } catch (e) {
-      // print(e);
+    } catch (_) {
+      return false;
     }
 
     return hasDB;

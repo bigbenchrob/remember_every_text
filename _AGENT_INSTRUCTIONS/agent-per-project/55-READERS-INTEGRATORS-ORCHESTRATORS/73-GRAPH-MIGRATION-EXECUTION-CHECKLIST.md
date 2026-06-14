@@ -2276,6 +2276,8 @@ Remove legacy systems only after their blockers close.
   `StateError` that preserves the path and underlying open failure.
 - Added an architecture tripwire that rejects raw string throws in active
   hand-written Dart files.
+- Removed stale commented debug `print` calls from path and AddressBook folder
+  helpers now that typed errors and explicit probe behavior cover diagnostics.
 
 ### Exit Criteria
 

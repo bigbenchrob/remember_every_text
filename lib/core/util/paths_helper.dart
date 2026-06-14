@@ -28,15 +28,11 @@ class PathsHelper {
 
   static Future<PathsHelper> _createInstance() async {
     final appDocsDirPath = await getPathProviderDirectoryPath('appDocs');
-    // print('appdocs: $appDocsDirPath');
     final downloadsDirPath = Platform.isIOS
         ? null
         : await getPathProviderDirectoryPath('downloads');
-    // print('downloadsDirPath: $downloadsDirPath');
     final libDirPath = await getPathProviderDirectoryPath('library');
-    // print('libDirPath: $libDirPath');
     final tempDirPath = await getPathProviderDirectoryPath('temp');
-    // print('tempDirPath: $tempDirPath');
 
     final userStub = downloadsDirPath
         ?.split(context.separator)
