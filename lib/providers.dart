@@ -9,14 +9,7 @@ import 'core/util/paths_helper.dart';
 
 part 'providers.g.dart';
 
-///***************************************************************** */
-///*
-///*       Define providers that are:
-///*
-///*            (1) initialized asynchronously or
-///*            (2) used by multiple features.
-///*
-///***************************************************************** */
+/// Root providers shared by multiple features or initialized asynchronously.
 
 // Platform brightness provider for initializing dark mode
 @riverpod
@@ -82,9 +75,9 @@ class IsDarkMode extends _$IsDarkMode {
   }
 }
 
-/// Temporary override for app theme mode while iterating on theming.
+/// App theme-mode override.
 ///
-/// Defaults to `ThemeMode.system`, and can be toggled by UI (toolbar button).
+/// Defaults to `ThemeMode.system` and can be cycled from the toolbar.
 @riverpod
 class SwitchableDarkMode extends _$SwitchableDarkMode {
   @override

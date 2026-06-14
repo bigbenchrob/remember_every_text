@@ -2266,6 +2266,9 @@ Remove legacy systems only after their blockers close.
 - Added an architecture tripwire that rejects active-code `TODO` / `FIXME`
   markers in hand-written Dart files, forcing deferred work into explicit
   planning docs rather than executable-code drift.
+- Reworded stale root-provider comments so shared provider ownership and
+  theme-mode behavior are described as current architecture rather than a
+  temporary theming experiment.
 
 ### Exit Criteria
 
