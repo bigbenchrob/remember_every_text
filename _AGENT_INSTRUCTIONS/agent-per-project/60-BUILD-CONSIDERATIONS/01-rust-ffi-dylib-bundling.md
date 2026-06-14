@@ -2,7 +2,7 @@
 tier: project
 scope: build
 owner: agent-per-project
-last_reviewed: 2025-07-27
+last_reviewed: 2026-06-14
 source_of_truth: doc
 links:
   - ../../lib/main.dart
@@ -12,6 +12,12 @@ tests: []
 ---
 
 # Rust FFI Dylib Bundling for macOS Release Builds
+
+> Current conformance note (2026-06-14): the checked-in Xcode project still
+> uses the bundle-aware Dart loader and the "Bundle Rust FFI Library" build
+> phase described here. The adjacent "Bundle Rust Message Extractor" build
+> phase separately copies the command-line extractor used for attributed-body
+> decoding.
 
 ## TL;DR
 
@@ -132,6 +138,7 @@ attributed_string_decoder.framework/
 DYLIB="${SRCROOT}/../rust/rust/attributed-string-decoder/target/release/libattributed_string_decoder.dylib"
 FW_DIR="${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}/attributed_string_decoder.framework"
 if [ -f "$DYLIB" ]; then
+  rm -rf "$FW_DIR"
   mkdir -p "$FW_DIR/Versions/A/Resources"
   cp "$DYLIB" "$FW_DIR/Versions/A/attributed_string_decoder"
   ln -sf A "$FW_DIR/Versions/Current"
@@ -144,7 +151,7 @@ if [ -f "$DYLIB" ]; then
 <plist version="1.0">
 <dict>
   <key>CFBundleIdentifier</key>
-  <string>com.remember-this-text.attributed-string-decoder</string>
+  <string>com.bigbenchsoftware.attributed-string-decoder</string>
   <key>CFBundleName</key>
   <string>attributed_string_decoder</string>
   <key>CFBundleExecutable</key>
@@ -224,7 +231,7 @@ This section documents the debugging journey that led to the root cause discover
 - **Affected**: Any macOS release build launched via Finder, Dock, `open` command, or LaunchServices
 - **Not affected**: Development builds (`flutter run -d macos`), terminal-launched release builds
 - **FRB version**: v2.11.1 (may be fixed in future versions — check `ExternalLibraryLoaderConfig` behavior)
-- **Risk**: If the Rust crate is not pre-built, the dylib won't be bundled and Rust-dependent features (URL preview parsing, `attributedBody` decode) will be unavailable — but the app will launch normally
+- **Risk**: If the Rust crate is not pre-built, the dylib won't be bundled and dylib-backed Rust features such as URL preview parsing will be unavailable — but the app will launch normally
 
 ---
 

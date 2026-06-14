@@ -2304,6 +2304,9 @@ Remove legacy systems only after their blockers close.
   anti-regression guardrails instead of stale draft panel concepts.
 - Refreshed chats, chat-handles, search, and messages work logs with graph-era
   entries and converted checkbox-style follow-ups into open stewardship notes.
+- Refreshed the Rust FFI dylib bundling build note so its metadata and embedded
+  Xcode shell script match the current project file, including the Big Bench
+  framework bundle identifier and framework-directory reset.
 
 ### Exit Criteria
 
