@@ -395,12 +395,13 @@ Current status update:
 - onboarding and settings reimport build the source-scoped graph directly
 - live `chat.db` polling imports/projects the graph directly
 - retained legacy import/migration no longer runs as the live-update tail
-- historical archive workflows use `RetainedLegacyArchivePipeline` as an
-  explicit archive/recovery compatibility bridge
+- Historical Archives import/removal now uses source-scoped graph services
+  directly; the retained archive pipeline bridge has been retired
 
-The remaining issue is sole production ownership: source-scoped import and
-graph projection must eventually replace legacy import/projection rather than
-coexisting with them for compatibility.
+The remaining issue is retained storage/reference retirement: old
+`macos_import.db` / `working.db` files may still exist for diagnostics,
+historical interpretation, or user-safe retention, but ordinary production
+ownership now belongs to source-scoped import and graph projection.
 
 ## Search
 

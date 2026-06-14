@@ -96,14 +96,15 @@ route have been retired.
 
 **Current boundary**
 
-The superseded bridge was explicitly named:
+The superseded retained archive pipeline is retired. Historical Archives
+import/removal now uses source-scoped graph services directly:
 
-```text
-RetainedLegacyArchivePipeline.rebuildLegacyProjectionAndGraph(...)
-```
+- `SourceScopedArchiveGraphImportService`
+- `SourceScopedArchiveGraphRemovalService`
 
-It is not the live-update path, not the ordinary app-facing projection path, and
-no longer the Historical Archives import/removal path.
+Retained database files may still exist for storage-retirement cleanup,
+diagnostics, backup interpretation, and historical reference, but no retained
+import/projection execution boundary remains current.
 
 **Reduction criteria**
 

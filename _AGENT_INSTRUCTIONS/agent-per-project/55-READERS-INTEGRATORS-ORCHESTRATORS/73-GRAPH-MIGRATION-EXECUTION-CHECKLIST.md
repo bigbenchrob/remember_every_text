@@ -2331,6 +2331,10 @@ Remove legacy systems only after their blockers close.
 - Corrected stale dependency-matrix/checklist wording that implied the retired
   retained archive pipeline still owned a private legacy rebuild-readiness
   check.
+- Updated the graph completion roadmap and retained storage register so their
+  active-status sections describe Historical Archives import/removal as
+  source-scoped graph services, with remaining work limited to retained
+  storage/reference retirement.
 
 ### Exit Criteria
 
