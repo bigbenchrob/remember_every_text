@@ -12,6 +12,7 @@ import '../domain/entities/attachment_recovery_metadata.dart';
 import '../feature_level_providers.dart';
 import 'archive_settings_provider.dart';
 import 'attachment_archive_file_store.dart';
+import 'attachment_archive_settings_store.dart';
 import 'attachment_recovery_hint_storage.dart';
 import 'graph_attachment_archive_candidate_reader.dart';
 
@@ -278,14 +279,16 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     _graphSweepInFlight = true;
 
     try {
-      final overlayDb = await ref.read(overlayDatabaseProvider.future);
+      final settingsStore = await ref.read(
+        attachmentArchiveSettingsStoreProvider.future,
+      );
       final candidateReader = await ref.read(
         graphAttachmentArchiveCandidateReaderProvider.future,
       );
       final logger = ref.read(appLoggerProvider.notifier);
       final startedAtUtc = DateTime.now().toUtc().toIso8601String();
 
-      final cursor = await _readGraphSweepCursor(overlayDb);
+      final cursor = await _readGraphSweepCursor(settingsStore);
       final selection = await candidateReader.selectSweepCandidates(
         afterAttachmentId: cursor,
         limit: limit,
@@ -300,7 +303,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       if (updateSweepDebugState) {
         final completedAtUtc = DateTime.now().toUtc().toIso8601String();
         await _writeGraphSweepStatus(
-          overlayDb,
+          settingsStore,
           startedAtUtc: startedAtUtc,
           completedAtUtc: completedAtUtc,
           nextCursor: selection.nextCursor,
@@ -308,7 +311,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
         );
       } else {
         await _writeGraphSweepCursor(
-          overlayDb,
+          settingsStore,
           nextCursor: selection.nextCursor,
         );
       }
@@ -368,12 +371,14 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     _graphSweepInFlight = true;
 
     try {
-      final overlayDb = await ref.read(overlayDatabaseProvider.future);
+      final settingsStore = await ref.read(
+        attachmentArchiveSettingsStoreProvider.future,
+      );
       final candidateReader = await ref.read(
         graphAttachmentArchiveCandidateReaderProvider.future,
       );
       final startedAtUtc = DateTime.now().toUtc().toIso8601String();
-      var cursor = await _readGraphSweepCursor(overlayDb);
+      var cursor = await _readGraphSweepCursor(settingsStore);
       var totalScanned = 0;
       var newlyArchived = 0;
       var skipped = 0;
@@ -401,7 +406,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
         skippedSamples.addAll(archiveOutcome.skippedSamples);
 
         cursor = selection.nextCursor;
-        await _writeGraphSweepCursor(overlayDb, nextCursor: cursor);
+        await _writeGraphSweepCursor(settingsStore, nextCursor: cursor);
 
         if (result.totalScanned == 0) {
           break;
@@ -425,7 +430,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
 
       final completedAtUtc = DateTime.now().toUtc().toIso8601String();
       await _writeManualSweepBurstStatus(
-        overlayDb,
+        settingsStore,
         startedAtUtc: startedAtUtc,
         completedAtUtc: completedAtUtc,
         result: burstResult,
@@ -797,8 +802,10 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     }
   }
 
-  Future<int> _readGraphSweepCursor(OverlayDatabase overlayDb) async {
-    final rawValue = await overlayDb.readOverlaySetting(kArchiveSweepCursorKey);
+  Future<int> _readGraphSweepCursor(
+    AttachmentArchiveSettingsStore settingsStore,
+  ) async {
+    final rawValue = await settingsStore.readSetting(kArchiveSweepCursorKey);
     if (rawValue == null || rawValue.isEmpty) {
       return 0;
     }
@@ -807,83 +814,83 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
   }
 
   Future<void> _writeGraphSweepStatus(
-    OverlayDatabase overlayDb, {
+    AttachmentArchiveSettingsStore settingsStore, {
     required String startedAtUtc,
     required String completedAtUtc,
     required int nextCursor,
     required AttachmentArchiveResult result,
   }) async {
-    await _writeGraphSweepCursor(overlayDb, nextCursor: nextCursor);
-    await overlayDb.writeOverlaySetting(
-      settingKey: kArchiveSweepLastStartedAtUtcKey,
-      settingValue: startedAtUtc,
+    await _writeGraphSweepCursor(settingsStore, nextCursor: nextCursor);
+    await settingsStore.writeSetting(
+      key: kArchiveSweepLastStartedAtUtcKey,
+      value: startedAtUtc,
     );
-    await overlayDb.writeOverlaySetting(
-      settingKey: kArchiveSweepLastCompletedAtUtcKey,
-      settingValue: completedAtUtc,
+    await settingsStore.writeSetting(
+      key: kArchiveSweepLastCompletedAtUtcKey,
+      value: completedAtUtc,
     );
-    await overlayDb.writeOverlaySetting(
-      settingKey: kArchiveSweepLastTotalScannedKey,
-      settingValue: '${result.totalScanned}',
+    await settingsStore.writeSetting(
+      key: kArchiveSweepLastTotalScannedKey,
+      value: '${result.totalScanned}',
     );
-    await overlayDb.writeOverlaySetting(
-      settingKey: kArchiveSweepLastNewlyArchivedKey,
-      settingValue: '${result.newlyArchived}',
+    await settingsStore.writeSetting(
+      key: kArchiveSweepLastNewlyArchivedKey,
+      value: '${result.newlyArchived}',
     );
-    await overlayDb.writeOverlaySetting(
-      settingKey: kArchiveSweepLastSkippedKey,
-      settingValue: '${result.skipped}',
+    await settingsStore.writeSetting(
+      key: kArchiveSweepLastSkippedKey,
+      value: '${result.skipped}',
     );
-    await overlayDb.writeOverlaySetting(
-      settingKey: kArchiveSweepLastFailedKey,
-      settingValue: '${result.failed}',
+    await settingsStore.writeSetting(
+      key: kArchiveSweepLastFailedKey,
+      value: '${result.failed}',
     );
   }
 
   Future<void> _writeGraphSweepCursor(
-    OverlayDatabase overlayDb, {
+    AttachmentArchiveSettingsStore settingsStore, {
     required int nextCursor,
   }) async {
-    await overlayDb.writeOverlaySetting(
-      settingKey: kArchiveSweepCursorKey,
-      settingValue: '$nextCursor',
+    await settingsStore.writeSetting(
+      key: kArchiveSweepCursorKey,
+      value: '$nextCursor',
     );
   }
 
   Future<void> _writeManualSweepBurstStatus(
-    OverlayDatabase overlayDb, {
+    AttachmentArchiveSettingsStore settingsStore, {
     required String startedAtUtc,
     required String completedAtUtc,
     required AttachmentArchiveResult result,
     List<String> skippedSamples = const [],
   }) async {
-    await overlayDb.writeOverlaySetting(
-      settingKey: kArchiveManualSweepLastStartedAtUtcKey,
-      settingValue: startedAtUtc,
+    await settingsStore.writeSetting(
+      key: kArchiveManualSweepLastStartedAtUtcKey,
+      value: startedAtUtc,
     );
-    await overlayDb.writeOverlaySetting(
-      settingKey: kArchiveManualSweepLastCompletedAtUtcKey,
-      settingValue: completedAtUtc,
+    await settingsStore.writeSetting(
+      key: kArchiveManualSweepLastCompletedAtUtcKey,
+      value: completedAtUtc,
     );
-    await overlayDb.writeOverlaySetting(
-      settingKey: kArchiveManualSweepLastTotalScannedKey,
-      settingValue: '${result.totalScanned}',
+    await settingsStore.writeSetting(
+      key: kArchiveManualSweepLastTotalScannedKey,
+      value: '${result.totalScanned}',
     );
-    await overlayDb.writeOverlaySetting(
-      settingKey: kArchiveManualSweepLastNewlyArchivedKey,
-      settingValue: '${result.newlyArchived}',
+    await settingsStore.writeSetting(
+      key: kArchiveManualSweepLastNewlyArchivedKey,
+      value: '${result.newlyArchived}',
     );
-    await overlayDb.writeOverlaySetting(
-      settingKey: kArchiveManualSweepLastSkippedKey,
-      settingValue: '${result.skipped}',
+    await settingsStore.writeSetting(
+      key: kArchiveManualSweepLastSkippedKey,
+      value: '${result.skipped}',
     );
-    await overlayDb.writeOverlaySetting(
-      settingKey: kArchiveManualSweepLastFailedKey,
-      settingValue: '${result.failed}',
+    await settingsStore.writeSetting(
+      key: kArchiveManualSweepLastFailedKey,
+      value: '${result.failed}',
     );
-    await overlayDb.writeOverlaySetting(
-      settingKey: kArchiveManualSweepLastSkippedSamplesKey,
-      settingValue: skippedSamples.join('\n'),
+    await settingsStore.writeSetting(
+      key: kArchiveManualSweepLastSkippedSamplesKey,
+      value: skippedSamples.join('\n'),
     );
   }
 
