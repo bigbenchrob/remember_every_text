@@ -2,7 +2,7 @@
 tier: feature
 scope: state-provider-inventory
 owner: agent-per-project
-last_reviewed: 2026-06-05
+last_reviewed: 2026-06-14
 links:
   - ./CHARTER.md
   - ./DOMAIN_AND_DATA_MAP.md
@@ -10,7 +10,7 @@ tests: []
 feature: messages
 doc_type: state-provider-inventory
 status: current
-last_updated: 2026-06-05
+last_updated: 2026-06-14
 ---
 
 # State & Provider Inventory - Messages
@@ -49,7 +49,7 @@ timeline provider folders were retired by the graph migration.
 - Search/header controls update evidence-scope search state; matching remains
   in the evidence spine, not the header widget.
 
-## TODO
+## Open Stewardship Items
 
 - Continue retiring dead ordinal/timeline docs and tests only after reference
   scans prove no active graph evidence dependency.

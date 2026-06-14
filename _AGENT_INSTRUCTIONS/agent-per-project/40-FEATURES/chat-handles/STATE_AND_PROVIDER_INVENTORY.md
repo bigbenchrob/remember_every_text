@@ -2,7 +2,7 @@
 tier: feature
 scope: state-provider-inventory
 owner: agent-per-project
-last_reviewed: 2026-06-05
+last_reviewed: 2026-06-14
 links:
 	- ./CHARTER.md
 	- ./DOMAIN_AND_DATA_MAP.md
@@ -10,7 +10,7 @@ tests: []
 feature: chat-handles
 doc_type: state-provider-inventory
 status: current
-last_updated: 2026-06-05
+last_updated: 2026-06-14
 ---
 
 # State & Provider Inventory — Chat Handles
@@ -33,6 +33,6 @@ last_updated: 2026-06-05
 - Graph import/projection refresh should invalidate graph handle topology readers.
 - Widgets should consume typed read models; they should not inspect overlay/graph tables directly.
 
-## TODO
+## Open Stewardship Items
 - Keep active provider names documented here when handle review or linking surfaces change.
 - Retire retained historical handle terminology from docs as remaining recovery/archive bridges are removed.

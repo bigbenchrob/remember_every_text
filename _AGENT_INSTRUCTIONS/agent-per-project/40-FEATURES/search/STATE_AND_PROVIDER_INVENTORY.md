@@ -2,7 +2,7 @@
 tier: feature
 scope: state-provider-inventory
 owner: agent-per-project
-last_reviewed: 2026-06-06
+last_reviewed: 2026-06-14
 links:
 	- ./CHARTER.md
 	- ./DOMAIN_AND_DATA_MAP.md
@@ -10,7 +10,7 @@ tests: []
 feature: search
 doc_type: state-provider-inventory
 status: current
-last_updated: 2026-06-06
+last_updated: 2026-06-14
 ---
 
 # State & Provider Inventory — Search
@@ -32,6 +32,6 @@ last_updated: 2026-06-06
 - Overlay saved/tag/manual-link changes invalidate relevant evidence/search readers.
 - Query state changes recompute graph repository searches for the selected logical scope.
 
-## TODO
+## Open Stewardship Items
 - Do not add new search providers under `features/search/application` without first deciding to move search out of `essentials/search`.
 - Investigate graph-native acceleration only behind `GraphSearchRepository`, not as a parallel search spine.

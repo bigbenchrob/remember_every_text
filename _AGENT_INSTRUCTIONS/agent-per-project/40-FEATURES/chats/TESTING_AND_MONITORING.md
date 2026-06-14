@@ -2,15 +2,15 @@
 tier: feature
 scope: testing-monitoring
 owner: agent-per-project
-last_reviewed: 2025-11-06
+last_reviewed: 2026-06-14
 links:
 	- ./STATE_AND_PROVIDER_INVENTORY.md
 	- ./WORK_LOG.md
 tests: []
 feature: chats
 doc_type: testing-monitoring
-status: draft
-last_updated: 2025-11-06
+status: current
+last_updated: 2026-06-14
 ---
 
 # Testing & Monitoring — Chats
@@ -34,6 +34,6 @@ last_updated: 2025-11-06
 - Pin/archive toggles persist across app restarts.
 - Participant roster updates correctly after handle overrides.
 
-## TODO
+## Open Stewardship Items
 - Define thresholds for slow chat list queries.
 - Add scenario tests for re-import causing chat merges/splits.

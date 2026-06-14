@@ -2,15 +2,15 @@
 tier: feature
 scope: testing-monitoring
 owner: agent-per-project
-last_reviewed: 2025-11-06
+last_reviewed: 2026-06-14
 links:
 	- ./STATE_AND_PROVIDER_INVENTORY.md
 	- ./WORK_LOG.md
 tests: []
 feature: chat-handles
 doc_type: testing-monitoring
-status: draft
-last_updated: 2025-11-06
+status: current
+last_updated: 2026-06-14
 ---
 
 # Testing & Monitoring — Chat Handles
@@ -33,6 +33,6 @@ last_updated: 2025-11-06
 - Manual link round-trip (create, update, remove) reflects in UI.
 - Search by handle identifier returns expected chat/message rows.
 
-## TODO
+## Open Stewardship Items
 - Decide on alerting thresholds for normalization failures.
 - Add coverage for handle merge scenarios when contacts consolidate.

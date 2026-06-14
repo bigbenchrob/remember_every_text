@@ -2,7 +2,7 @@
 tier: feature
 scope: state-provider-inventory
 owner: agent-per-project
-last_reviewed: 2026-06-05
+last_reviewed: 2026-06-14
 links:
 	- ./CHARTER.md
 	- ./DOMAIN_AND_DATA_MAP.md
@@ -10,7 +10,7 @@ tests: []
 feature: chats
 doc_type: state-provider-inventory
 status: current
-last_updated: 2026-06-05
+last_updated: 2026-06-14
 ---
 
 # State & Provider Inventory - Chats
@@ -44,7 +44,7 @@ last_updated: 2026-06-05
 - Live `chat.db` polling appends graph rows and then invalidates graph-backed
   message/conversation evidence surfaces.
 
-## TODO
+## Open Stewardship Items
 - Retire or demote the diagnostic center-panel conversation browser once the
   sidebar signature flow fully covers its inspection role.
 - Keep conversation presentation unified through shared signature cards and the

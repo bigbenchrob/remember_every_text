@@ -2,7 +2,7 @@
 tier: feature
 scope: testing-monitoring
 owner: agent-per-project
-last_reviewed: 2026-06-06
+last_reviewed: 2026-06-14
 links:
 	- ./STATE_AND_PROVIDER_INVENTORY.md
 	- ./WORK_LOG.md
@@ -10,7 +10,7 @@ tests: []
 feature: search
 doc_type: testing-monitoring
 status: current
-last_updated: 2026-06-06
+last_updated: 2026-06-14
 ---
 
 # Testing & Monitoring — Search
@@ -37,6 +37,6 @@ last_updated: 2026-06-06
 - Filters (date range, participant) produce consistent subsets.
 - Navigation to chat/message from search maintains user context.
 
-## TODO
+## Open Stewardship Items
 - Establish baseline performance targets for macOS release hardware.
 - Integrate telemetry dashboards once indexing backend is chosen.

@@ -2295,6 +2295,10 @@ Remove legacy systems only after their blockers close.
 - Replaced remaining test-fake `UnimplementedError` markers with explicit
   unsupported-method failures, keeping unfinished-marker scans meaningful while
   preserving fake repository behavior.
+- Reclassified current feature-doc `TODO` buckets for chats, chat-handles,
+  search, and messages as explicit open stewardship items, and refreshed their
+  review metadata so deferred work is documented rather than normalized as
+  executable-code-style TODO debt.
 
 ### Exit Criteria
 
