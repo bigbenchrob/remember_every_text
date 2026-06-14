@@ -1497,6 +1497,24 @@ void main() {
       },
     );
 
+    test(
+      'Attachment archive service uses archive write-store boundary',
+      () async {
+        final offenders =
+            await _findAttachmentArchiveWriteStoreBoundaryOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'AttachmentArchiveService may orchestrate archive policy, but '
+              'archive record persistence, recovery hints, and integrity rows '
+              'belong behind AttachmentArchiveWriteStore.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
     test('Onboarding environment report uses probe reader boundary', () async {
       final offenders =
           await _findOnboardingEnvironmentProbeBoundaryOffenders();
@@ -3966,6 +3984,39 @@ _findAttachmentArchiveGraphCandidateBoundaryOffenders() async {
       uncommented.contains('SELECT DISTINCT') ||
       uncommented.contains('JOIN message_to_attachment')) {
     offenders.add('$filePath performs graph attachment candidate reads');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findAttachmentArchiveWriteStoreBoundaryOffenders() async {
+  const filePath =
+      'lib/features/attachments/application/attachment_archive_service_provider.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final source = await file.readAsString();
+  final uncommented = _stripComments(source);
+  final imports = _extractImports(uncommented);
+  final offenders = <String>[
+    for (final importTarget in imports)
+      if (importTarget == 'package:drift/drift.dart' ||
+          importTarget.endsWith(
+            'essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart',
+          ))
+        '$filePath imports $importTarget',
+  ];
+
+  if (uncommented.contains('overlayDatabaseProvider') ||
+      uncommented.contains('OverlayDatabase') ||
+      uncommented.contains('ArchivedAttachmentsCompanion') ||
+      uncommented.contains('archivedAttachments') ||
+      uncommented.contains('readOverlaySetting') ||
+      uncommented.contains('writeOverlaySetting') ||
+      uncommented.contains('customSelect(')) {
+    offenders.add('$filePath performs archive record storage directly');
   }
 
   return offenders..sort();

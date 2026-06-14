@@ -1,19 +1,15 @@
 import 'dart:async';
 
-import 'package:drift/drift.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../essentials/db/feature_level_providers.dart'
-    show overlayDatabaseProvider;
-import '../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import '../../../essentials/logging/application/app_logger.dart';
 import '../domain/entities/attachment_recovery_metadata.dart';
 import '../feature_level_providers.dart';
 import 'archive_settings_provider.dart';
 import 'attachment_archive_file_store.dart';
 import 'attachment_archive_settings_store.dart';
-import 'attachment_recovery_hint_storage.dart';
+import 'attachment_archive_write_store.dart';
 import 'graph_attachment_archive_candidate_reader.dart';
 
 part 'attachment_archive_service_provider.g.dart';
@@ -24,9 +20,9 @@ const _kManualSweepBurstChunkCount = 25;
 const _kManualSweepSkippedSampleLimit = 3;
 
 /// Service that copies attachment files into the MessageLens archive and
-/// records them in the overlay database.
+/// records them through the attachment archive store.
 ///
-/// Archiving is idempotent: if an overlay record already exists for the
+/// Archiving is idempotent: if an archive record already exists for the
 /// given (messageGuid, importAttachmentId) pair, the file is not re-copied.
 @Riverpod(keepAlive: true)
 class AttachmentArchiveService extends _$AttachmentArchiveService {
@@ -50,22 +46,20 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     required String? mimeType,
     required String? sha256Hex,
   }) async {
-    final overlayDb = await ref.read(overlayDatabaseProvider.future);
+    final archiveStore = await ref.read(
+      attachmentArchiveWriteStoreProvider.future,
+    );
     final archiveDir = ref.read(attachmentArchiveDirectoryPathProvider);
     final fileStore = ref.read(attachmentArchiveFileStoreProvider);
 
     // Idempotency check: skip if already archived.
-    final existing =
-        await (overlayDb.select(overlayDb.archivedAttachments)..where(
-              (t) =>
-                  t.messageGuid.equals(messageGuid) &
-                  t.importAttachmentId.equals(importAttachmentId),
-            ))
-            .getSingleOrNull();
+    final alreadyArchived = await archiveStore.hasArchiveRecord(
+      messageGuid: messageGuid,
+      importAttachmentId: importAttachmentId,
+    );
 
-    if (existing != null) {
-      await _clearRecoveryHint(
-        overlayDb,
+    if (alreadyArchived) {
+      await archiveStore.clearRecoveryHint(
         messageGuid: messageGuid,
         importAttachmentId: importAttachmentId,
       );
@@ -102,23 +96,19 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       return false;
     }
 
-    // Record in overlay DB.
-    await overlayDb
-        .into(overlayDb.archivedAttachments)
-        .insert(
-          ArchivedAttachmentsCompanion.insert(
-            messageGuid: messageGuid,
-            importAttachmentId: importAttachmentId,
-            archiveRelativePath: archiveWrite.relativePath,
-            archivedAtUtc: DateTime.now().toUtc().toIso8601String(),
-            fileSizeBytes: archiveWrite.fileSizeBytes,
-            contentHash: Value(archiveWrite.contentHash),
-            originalLocalPath: Value(archiveWrite.sourcePath),
-          ),
-        );
+    await archiveStore.writeArchiveRecord(
+      ArchivedAttachmentWrite(
+        messageGuid: messageGuid,
+        importAttachmentId: importAttachmentId,
+        archiveRelativePath: archiveWrite.relativePath,
+        archivedAtUtc: DateTime.now().toUtc().toIso8601String(),
+        fileSizeBytes: archiveWrite.fileSizeBytes,
+        contentHash: archiveWrite.contentHash,
+        originalLocalPath: archiveWrite.sourcePath,
+      ),
+    );
 
-    await _clearRecoveryHint(
-      overlayDb,
+    await archiveStore.clearRecoveryHint(
       messageGuid: messageGuid,
       importAttachmentId: importAttachmentId,
     );
@@ -137,13 +127,12 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       return;
     }
 
-    final overlayDb = await ref.read(overlayDatabaseProvider.future);
-    final hintKey = attachmentRecoveryHintSettingKey(
+    final archiveStore = await ref.read(
+      attachmentArchiveWriteStoreProvider.future,
+    );
+    final existingHint = await archiveStore.readRecoveryHint(
       messageGuid: messageGuid,
       importAttachmentId: importAttachmentId,
-    );
-    final existingHint = decodeAttachmentRecoveryHint(
-      await overlayDb.readOverlaySetting(hintKey),
     );
     final now = DateTime.now().toUtc();
     final currentPriority = existingHint?.recoveryPriority ?? 0;
@@ -158,9 +147,10 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       isNonRecoverable: existingHint?.isNonRecoverable ?? false,
     );
 
-    await overlayDb.writeOverlaySetting(
-      settingKey: hintKey,
-      settingValue: encodeAttachmentRecoveryHint(prioritizedHint),
+    await archiveStore.writeRecoveryHint(
+      messageGuid: messageGuid,
+      importAttachmentId: importAttachmentId,
+      metadata: prioritizedHint,
     );
 
     if (resolvedLocalPath == null || resolvedLocalPath.isEmpty) {
@@ -684,17 +674,14 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
   /// content hashes. Returns a result describing how many passed, failed,
   /// or were missing.
   Future<ArchiveIntegrityResult> verifyIntegrity() async {
-    final overlayDb = await ref.read(overlayDatabaseProvider.future);
+    final archiveStore = await ref.read(
+      attachmentArchiveWriteStoreProvider.future,
+    );
     final archiveDir = ref.read(attachmentArchiveDirectoryPathProvider);
     final logger = ref.read(appLoggerProvider.notifier);
     final fileStore = ref.read(attachmentArchiveFileStoreProvider);
 
-    final rows = await overlayDb
-        .customSelect(
-          'SELECT id, archive_relative_path, content_hash '
-          'FROM archived_attachments',
-        )
-        .get();
+    final rows = await archiveStore.readIntegrityEntries();
 
     var verified = 0;
     var hashMismatch = 0;
@@ -702,12 +689,10 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     var noHash = 0;
 
     for (final row in rows) {
-      final relativePath = row.read<String>('archive_relative_path');
-      final storedHash = row.readNullable<String>('content_hash');
       final integrityCheck = await fileStore.checkIntegrity(
         archiveDirectoryPath: archiveDir,
-        relativePath: relativePath,
-        storedHash: storedHash,
+        relativePath: row.relativePath,
+        storedHash: row.contentHash,
       );
 
       if (!integrityCheck.fileExists) {
@@ -715,7 +700,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
         continue;
       }
 
-      if (storedHash == null || storedHash.isEmpty) {
+      if (row.contentHash == null || row.contentHash!.isEmpty) {
         noHash++;
         continue;
       }
@@ -725,8 +710,9 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       } else {
         hashMismatch++;
         logger.warn(
-          'Archive integrity: hash mismatch for $relativePath '
-          '(stored: $storedHash, actual: ${integrityCheck.actualHash})',
+          'Archive integrity: hash mismatch for ${row.relativePath} '
+          '(stored: ${row.contentHash}, '
+          'actual: ${integrityCheck.actualHash})',
           source: 'AttachmentArchiveService',
         );
       }
@@ -892,20 +878,6 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       key: kArchiveManualSweepLastSkippedSamplesKey,
       value: skippedSamples.join('\n'),
     );
-  }
-
-  Future<void> _clearRecoveryHint(
-    OverlayDatabase overlayDb, {
-    required String messageGuid,
-    required int importAttachmentId,
-  }) async {
-    final hintKey = attachmentRecoveryHintSettingKey(
-      messageGuid: messageGuid,
-      importAttachmentId: importAttachmentId,
-    );
-    await (overlayDb.delete(
-      overlayDb.overlaySettings,
-    )..where((tbl) => tbl.key.equals(hintKey))).go();
   }
 }
 

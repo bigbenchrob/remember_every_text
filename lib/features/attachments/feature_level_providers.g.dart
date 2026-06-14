@@ -124,6 +124,26 @@ final attachmentArchiveReadStoreProvider =
 // ignore: unused_element
 typedef AttachmentArchiveReadStoreRef =
     AutoDisposeFutureProviderRef<AttachmentArchiveReadStore>;
+String _$attachmentArchiveWriteStoreHash() =>
+    r'88cb0a73dc7cfe31cd8eb051c1f048eca7053943';
+
+/// See also [attachmentArchiveWriteStore].
+@ProviderFor(attachmentArchiveWriteStore)
+final attachmentArchiveWriteStoreProvider =
+    AutoDisposeFutureProvider<AttachmentArchiveWriteStore>.internal(
+      attachmentArchiveWriteStore,
+      name: r'attachmentArchiveWriteStoreProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$attachmentArchiveWriteStoreHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef AttachmentArchiveWriteStoreRef =
+    AutoDisposeFutureProviderRef<AttachmentArchiveWriteStore>;
 String _$attachmentArchiveStatsReaderHash() =>
     r'bcd641834db175784c3609ff513535de0874ddff';
 
