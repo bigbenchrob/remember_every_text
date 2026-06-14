@@ -2196,6 +2196,10 @@ Remove legacy systems only after their blockers close.
   build-metadata limitation and aligned the fallback build name/number with
   `pubspec.yaml`. Runtime Flutter build defines still take precedence when
   provided.
+- Reworded sidebar panel resolution error handling to make the current
+  ownership explicit: errors are logged without disrupting the panel projection
+  path, and any user-visible incident surfacing must belong to a named
+  diagnostics surface rather than an imperative repair inside panel rendering.
 
 ### Exit Criteria
 

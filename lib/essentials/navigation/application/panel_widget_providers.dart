@@ -517,13 +517,10 @@ Widget _buildLeftPanelSurface({
           ),
       ];
 
-  // Log errors for debugging but don't disrupt the UI.
-  //
-  // Future enhancement: Consider surfacing errors via a toast, badge, or
-
-  // subtle inline indicator rather than silently swallowing them.
+  // Log sidebar resolution errors without disrupting the currently rendered
+  // panel. User-visible incident surfacing belongs to a named diagnostics
+  // surface, not imperative repair inside the panel projection path.
   for (final error in resolutionState.errors) {
-    // TODO(sidebar): Add user-visible error indicator or recovery UI.
     logError(error.error, error.stackTrace);
   }
 
