@@ -1,7 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../essentials/db/feature_level_providers.dart'
-    show attachmentArchiveDirectoryProvider;
 import '../feature_level_providers.dart';
 import 'attachment_archive_settings_store.dart';
 
@@ -78,7 +76,7 @@ class ArchiveSettings extends _$ArchiveSettings {
   }
 
   Future<void> clearArchive() async {
-    final archiveDir = ref.read(attachmentArchiveDirectoryProvider);
+    final archiveDir = ref.read(attachmentArchiveDirectoryPathProvider);
     final archiveFileOperations = ref.read(
       attachmentArchiveFileOperationsProvider,
     );
@@ -94,7 +92,7 @@ class ArchiveSettings extends _$ArchiveSettings {
 
   /// Returns the number of files copied, or `null` if the user cancelled.
   Future<int?> exportArchive() async {
-    final archiveDir = ref.read(attachmentArchiveDirectoryProvider);
+    final archiveDir = ref.read(attachmentArchiveDirectoryPathProvider);
     final archiveFileOperations = ref.read(
       attachmentArchiveFileOperationsProvider,
     );

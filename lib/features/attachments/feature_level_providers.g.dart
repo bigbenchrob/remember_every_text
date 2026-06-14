@@ -6,6 +6,25 @@ part of 'feature_level_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
+String _$attachmentArchiveDirectoryPathHash() =>
+    r'0fb33e8a63a8be59c43de9f24f7b293ea09d6eaf';
+
+/// See also [attachmentArchiveDirectoryPath].
+@ProviderFor(attachmentArchiveDirectoryPath)
+final attachmentArchiveDirectoryPathProvider =
+    AutoDisposeProvider<String>.internal(
+      attachmentArchiveDirectoryPath,
+      name: r'attachmentArchiveDirectoryPathProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$attachmentArchiveDirectoryPathHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef AttachmentArchiveDirectoryPathRef = AutoDisposeProviderRef<String>;
 String _$attachmentFileAccessHash() =>
     r'08e7fc2dfd8d8b5269373b691e68df9d2709d3a6';
 

@@ -40,6 +40,11 @@ export 'application/video_thumbnail_cache.dart';
 part 'feature_level_providers.g.dart';
 
 @riverpod
+String attachmentArchiveDirectoryPath(AttachmentArchiveDirectoryPathRef ref) {
+  return ref.watch(attachmentArchiveDirectoryProvider);
+}
+
+@riverpod
 AttachmentFileAccess attachmentFileAccess(AttachmentFileAccessRef ref) {
   return const LocalAttachmentFileAccess();
 }

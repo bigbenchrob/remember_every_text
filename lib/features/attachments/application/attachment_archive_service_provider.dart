@@ -4,7 +4,8 @@ import 'package:drift/drift.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../essentials/db/feature_level_providers.dart';
+import '../../../essentials/db/feature_level_providers.dart'
+    show driftConversationGraphDatabaseProvider, overlayDatabaseProvider;
 import '../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import '../../../essentials/logging/application/app_logger.dart';
@@ -51,7 +52,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     required String? sha256Hex,
   }) async {
     final overlayDb = await ref.read(overlayDatabaseProvider.future);
-    final archiveDir = ref.read(attachmentArchiveDirectoryProvider);
+    final archiveDir = ref.read(attachmentArchiveDirectoryPathProvider);
     final fileStore = ref.read(attachmentArchiveFileStoreProvider);
 
     // Idempotency check: skip if already archived.
@@ -494,7 +495,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     final graphDb = await ref.read(
       driftConversationGraphDatabaseProvider.future,
     );
-    final archiveDir = ref.read(attachmentArchiveDirectoryProvider);
+    final archiveDir = ref.read(attachmentArchiveDirectoryPathProvider);
     final fileStore = ref.read(attachmentArchiveFileStoreProvider);
     final logger = ref.read(appLoggerProvider.notifier);
 
@@ -732,7 +733,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
   /// or were missing.
   Future<ArchiveIntegrityResult> verifyIntegrity() async {
     final overlayDb = await ref.read(overlayDatabaseProvider.future);
-    final archiveDir = ref.read(attachmentArchiveDirectoryProvider);
+    final archiveDir = ref.read(attachmentArchiveDirectoryPathProvider);
     final logger = ref.read(appLoggerProvider.notifier);
     final fileStore = ref.read(attachmentArchiveFileStoreProvider);
 
