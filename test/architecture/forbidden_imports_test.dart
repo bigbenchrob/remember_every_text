@@ -1792,6 +1792,24 @@ void main() {
     );
 
     test(
+      'Graph archive lookup contract uses compatibility-key language',
+      () async {
+        final offenders =
+            await _findGraphArchiveLookupContractIdentityLanguageOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'GraphAttachmentArchiveLookup is a graph-facing application '
+              'contract. It may expose archive compatibility keys, but should '
+              'not name those values as retained import identity.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
+    test(
       'Attachment source-scoped import provider access stays feature-boundary owned',
       () async {
         final offenders =
@@ -4576,6 +4594,25 @@ Future<List<String>> _findAttachmentArchiveWriteStoreBoundaryOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>>
+_findGraphArchiveLookupContractIdentityLanguageOffenders() async {
+  const filePath =
+      'lib/features/attachments/application/graph_attachment_archive_lookup.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final offenders = <String>[];
+  if (uncommented.contains('retainedImportAttachmentId') ||
+      uncommented.contains('retained import attachment')) {
+    offenders.add('$filePath exposes retained import attachment identity');
+  }
+
+  return offenders;
 }
 
 Future<List<String>>

@@ -2403,6 +2403,9 @@ criteria.
     archive overlay still uses `(message_guid, import_attachment_id)`, but the
     graph contract now presents that value as an archive compatibility key
     rather than canonical attachment identity.
+  - Added an architecture tripwire that keeps retained import identity language
+    out of the graph-facing archive lookup contract while preserving the
+    infrastructure compatibility bridge to the current archive table.
 
 ### Exit Criteria
 
