@@ -3,6 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
+import 'package:remember_this_text/features/contacts/feature_level_providers.dart'
+    show
+        DisplayIdentityResolver,
+        DisplayIdentitySource,
+        ParticipantDisplayIdentity;
 import 'package:remember_this_text/features/messages/infrastructure/repositories/graph_recovered_message_evidence_repository.dart';
 
 void main() {
@@ -13,7 +18,12 @@ void main() {
     setUp(() async {
       graphDb = ConversationGraphDatabase(NativeDatabase.memory());
       await graphDb.selectRows('SELECT COUNT(*) AS c FROM messages');
-      repository = GraphRecoveredMessageEvidenceRepository(graphDb: graphDb);
+      repository = GraphRecoveredMessageEvidenceRepository(
+        graphDb: graphDb,
+        displayIdentityResolver: const DisplayIdentityResolver(
+          identitiesByHandleKey: <String, ParticipantDisplayIdentity>{},
+        ),
+      );
     });
 
     tearDown(() async {
@@ -172,6 +182,65 @@ void main() {
         expect(messages.first.senderLabel, '1 (604) 555-0101');
         expect(messages.first.isInferred, isFalse);
         expect(messages.last.isInferred, isTrue);
+      },
+    );
+
+    test(
+      'uses display identity resolver for recovered contact labels',
+      () async {
+        const contactId = 24;
+        final canonicalHandleId = SourceScopedRowKey.pack(
+          sourceId: liveChatDbSourceId,
+          sourceRowId: 5,
+        );
+        final rawHandleId = SourceScopedRowKey.pack(
+          sourceId: liveChatDbSourceId,
+          sourceRowId: 42,
+        );
+        repository = GraphRecoveredMessageEvidenceRepository(
+          graphDb: graphDb,
+          displayIdentityResolver: const DisplayIdentityResolver(
+            identitiesByHandleKey: <String, ParticipantDisplayIdentity>{},
+            identitiesByContactId: <int, ParticipantDisplayIdentity>{
+              contactId: ParticipantDisplayIdentity(
+                primaryLabel: 'Claire',
+                source: DisplayIdentitySource.userOverride,
+                isKnownContact: true,
+                contactId: contactId,
+              ),
+            },
+          ),
+        );
+        await _insertHandle(
+          graphDb,
+          handleId: rawHandleId,
+          canonicalHandleId: canonicalHandleId,
+          rawIdentifier: '+17789908506',
+          displayHandle: '1 (778) 990-8506',
+        );
+        await _insertContactHandle(
+          graphDb,
+          contactId: contactId,
+          handleId: canonicalHandleId,
+          displayName: 'Claire Merriman Campbell',
+          handleValue: '1 (778) 990-8506',
+        );
+        await _insertMessage(
+          graphDb,
+          messageId: SourceScopedRowKey.pack(
+            sourceId: liveChatDbSourceId,
+            sourceRowId: 60,
+          ),
+          guid: 'display-name',
+          senderHandleId: rawHandleId,
+          senderCanonicalHandleId: canonicalHandleId,
+          text: 'recovered text',
+          isFromMe: false,
+        );
+
+        final messages = await repository.watchMessages().first;
+
+        expect(messages.single.contactName, 'Claire');
       },
     );
 

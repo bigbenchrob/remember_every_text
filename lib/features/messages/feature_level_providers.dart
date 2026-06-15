@@ -122,7 +122,13 @@ Future<RecoveredMessageEvidenceRepository> recoveredMessageEvidenceRepository(
   final graphDb = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
-  return GraphRecoveredMessageEvidenceRepository(graphDb: graphDb);
+  final displayIdentityResolver = await ref.watch(
+    displayIdentityResolverProvider.future,
+  );
+  return GraphRecoveredMessageEvidenceRepository(
+    graphDb: graphDb,
+    displayIdentityResolver: displayIdentityResolver,
+  );
 }
 
 @riverpod

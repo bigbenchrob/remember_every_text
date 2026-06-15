@@ -47,7 +47,7 @@ final messageOverlayRepositoryProvider =
 typedef MessageOverlayRepositoryRef =
     AutoDisposeFutureProviderRef<MessageOverlayRepository>;
 String _$recoveredMessageEvidenceRepositoryHash() =>
-    r'0ad810a8b1869753ee74f7c9b7146d5d975e8d44';
+    r'8ad8a79c3c02d098884e2d6bea2070527533c2a4';
 
 /// See also [recoveredMessageEvidenceRepository].
 @ProviderFor(recoveredMessageEvidenceRepository)

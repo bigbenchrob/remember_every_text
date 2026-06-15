@@ -1,5 +1,7 @@
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../essentials/db/shared/handle_identifier_utils.dart';
+import '../../../contacts/feature_level_providers.dart'
+    show DisplayIdentityResolver;
 import '../../domain/entities/attachment_info.dart';
 import '../../domain/message_evidence/recovered_message_evidence.dart';
 
@@ -11,9 +13,13 @@ import '../../domain/message_evidence/recovered_message_evidence.dart';
 /// `chat_to_message` topology edge.
 class GraphRecoveredMessageEvidenceRepository
     implements RecoveredMessageEvidenceRepository {
-  const GraphRecoveredMessageEvidenceRepository({required this.graphDb});
+  const GraphRecoveredMessageEvidenceRepository({
+    required this.graphDb,
+    required DisplayIdentityResolver displayIdentityResolver,
+  }) : _displayIdentityResolver = displayIdentityResolver;
 
   final ConversationGraphDatabase graphDb;
+  final DisplayIdentityResolver _displayIdentityResolver;
 
   @override
   Stream<List<RecoveredUnlinkedMessageItem>> watchMessages({
@@ -56,6 +62,7 @@ class GraphRecoveredMessageEvidenceRepository
           AS sender_display_handle,
         COALESCE(sender_canonical.service, sender_handle.service, '')
           AS service,
+        contact.contact_id AS contact_id,
         contact.display_name AS contact_name,
         (
           SELECT COUNT(*)
@@ -98,7 +105,7 @@ class GraphRecoveredMessageEvidenceRepository
       final rawSenderLabel =
           (row['sender_display_handle'] as String?)?.trim() ?? '';
       final isFromMe = _readBool(row['is_from_me']);
-      final contactName = (row['contact_name'] as String?)?.trim();
+      final contactName = _contactDisplayName(row);
 
       candidates.add(
         _RecoveredGraphCandidate(
@@ -205,6 +212,22 @@ class GraphRecoveredMessageEvidenceRepository
         ))
           candidate,
     ];
+  }
+
+  String? _contactDisplayName(Map<String, Object?> row) {
+    final contactId = _readNullableInt(row['contact_id']);
+    if (contactId != null) {
+      final identity = _displayIdentityResolver.resolveContact(contactId);
+      if (identity.isKnownContact && identity.primaryLabel.trim().isNotEmpty) {
+        return identity.primaryLabel.trim();
+      }
+    }
+
+    final importedName = (row['contact_name'] as String?)?.trim();
+    if (importedName == null || importedName.isEmpty) {
+      return null;
+    }
+    return importedName;
   }
 }
 
