@@ -802,7 +802,7 @@ class _MissingAttachmentSampleCard extends ConsumerWidget {
           ),
           _AttachmentSampleDetail(
             label: 'source rowid',
-            value: '${sample.importAttachmentId}',
+            value: '${sample.archiveCompatibilityAttachmentId}',
           ),
           _AttachmentSampleDetail(
             label: 'type',
@@ -810,7 +810,7 @@ class _MissingAttachmentSampleCard extends ConsumerWidget {
           ),
           _AttachmentSampleDetail(
             label: 'message guid',
-            value: sample.messageGuid,
+            value: sample.archiveMessageGuid,
             monospace: true,
           ),
           _AttachmentSampleDetail(

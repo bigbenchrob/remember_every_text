@@ -482,8 +482,8 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
       samples.add(
         MissingAttachmentRecoverySample(
           attachmentSsId: attachmentSsId,
-          messageGuid: messageGuid,
-          importAttachmentId: importAttachmentId,
+          archiveMessageGuid: messageGuid,
+          archiveCompatibilityAttachmentId: importAttachmentId,
           filename: filename,
           mimeType: row['mime_type'] as String?,
           uti: row['uti'] as String?,

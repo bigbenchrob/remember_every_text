@@ -2417,6 +2417,10 @@ criteria.
     comments so their `messageGuid` / `importAttachmentId` parameters are
     explicitly treated as the current archive compatibility key, not canonical
     graph identity.
+  - Renamed graph health missing-attachment recovery sample fields to
+    `archiveMessageGuid` and `archiveCompatibilityAttachmentId`, keeping
+    retained archive table column names inside repository/query code rather
+    than exposing them through the diagnostic application model.
 
 ### Exit Criteria
 

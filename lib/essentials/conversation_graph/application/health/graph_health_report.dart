@@ -132,8 +132,8 @@ class GraphHealthReport {
 class MissingAttachmentRecoverySample {
   const MissingAttachmentRecoverySample({
     required this.attachmentSsId,
-    required this.messageGuid,
-    required this.importAttachmentId,
+    required this.archiveMessageGuid,
+    required this.archiveCompatibilityAttachmentId,
     required this.filename,
     required this.mimeType,
     required this.uti,
@@ -144,8 +144,8 @@ class MissingAttachmentRecoverySample {
   });
 
   final int attachmentSsId;
-  final String messageGuid;
-  final int importAttachmentId;
+  final String archiveMessageGuid;
+  final int archiveCompatibilityAttachmentId;
   final String? filename;
   final String? mimeType;
   final String? uti;
