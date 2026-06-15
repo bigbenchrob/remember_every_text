@@ -922,6 +922,22 @@ void main() {
       );
     });
 
+    test('Contact conversation section uses display boundary', () async {
+      final offenders =
+          await _findContactConversationSectionDisplayBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'ContactGraphConversationSection renders conversation signature '
+            'cards. It should consume display-ready contact conversation '
+            'signatures instead of opening raw contact graph snapshots inside '
+            'presentation.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Message user metadata application stays semantic', () async {
       final offenders =
           await _findMessageUserMetadataApplicationInfrastructureOffenders();
@@ -3149,6 +3165,24 @@ Future<List<String>> _findContactMessageHeaderContextBoundaryOffenders() async {
     '../../../../essentials/conversation_graph/application/contacts/contact_graph.dart',
     '../../../../essentials/conversation_graph/application/contacts/contact_graph_provider.dart',
     '../../../contacts/feature_level_providers.dart',
+  };
+
+  return [
+    for (final importTarget in imports)
+      if (forbiddenImports.contains(importTarget)) '$filePath -> $importTarget',
+  ]..sort();
+}
+
+Future<List<String>>
+_findContactConversationSectionDisplayBoundaryOffenders() async {
+  const filePath =
+      'lib/features/messages/presentation/widgets/contact_graph_conversation_section.dart';
+  final source = await File(filePath).readAsString();
+  final uncommented = _stripComments(source);
+  final imports = _extractImports(uncommented);
+  const forbiddenImports = <String>{
+    '../../../../essentials/conversation_graph/application/contacts/contact_graph.dart',
+    '../../../../essentials/conversation_graph/application/contacts/contact_graph_provider.dart',
   };
 
   return [

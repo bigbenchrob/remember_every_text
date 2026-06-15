@@ -3,14 +3,13 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
-import '../../../../essentials/conversation_graph/application/contacts/contact_graph.dart';
-import '../../../../essentials/conversation_graph/application/contacts/contact_graph_provider.dart';
 import '../../../../essentials/conversation_graph/presentation/widgets/conversation_favourite_button.dart';
 import '../../../../essentials/conversation_graph/presentation/widgets/conversation_signature_card.dart';
 import '../../../../essentials/navigation/domain/entities/view_spec.dart';
 import '../../../../essentials/navigation/domain/navigation_constants.dart';
 import '../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../essentials/navigation/feature_level_providers.dart';
+import '../../application/sidebar_cassette_spec/resolver_tools/contact_conversation_signatures_provider.dart';
 import '../../application/sidebar_cassette_spec/resolver_tools/conversation_signature_display_provider.dart';
 import '../../domain/calendar_heatmap_timeline_data.dart';
 import '../../domain/spec_classes/messages_view_spec.dart';
@@ -30,13 +29,13 @@ class ContactGraphConversationSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final snapshotAsync = ref.watch(
-      contactPageGraphSnapshotProvider(contactId: contactId),
+    final signaturesAsync = ref.watch(
+      contactConversationSignaturesProvider(contactId: contactId),
     );
 
-    return snapshotAsync.when(
-      data: (snapshot) {
-        if (snapshot.conversations.isEmpty) {
+    return signaturesAsync.when(
+      data: (signatureDisplays) {
+        if (signatureDisplays.isEmpty) {
           return _ContactGraphConversationNotice(
             padding: padding,
             title: 'No conversations found',
@@ -46,7 +45,7 @@ class ContactGraphConversationSection extends ConsumerWidget {
         }
 
         return _ContactGraphConversationContent(
-          snapshot: snapshot,
+          signatureDisplays: signatureDisplays,
           padding: padding,
           maxHeight: maxHeight,
         );
@@ -108,12 +107,12 @@ class _ContactGraphConversationNotice extends ConsumerWidget {
 
 class _ContactGraphConversationContent extends ConsumerStatefulWidget {
   const _ContactGraphConversationContent({
-    required this.snapshot,
+    required this.signatureDisplays,
     required this.padding,
     required this.maxHeight,
   });
 
-  final ContactGraphSnapshot snapshot;
+  final List<ConversationSignatureDisplayModel> signatureDisplays;
   final EdgeInsetsGeometry padding;
   final double maxHeight;
 
@@ -130,17 +129,7 @@ class _ContactGraphConversationContentState
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
     final cardStyle = _conversationSignatureCardStyle(colors, typography);
-    final conversations = widget.snapshot.conversations;
-    final conversationIds = [
-      for (final conversation in conversations) conversation.conversationId,
-    ];
-    final signatureDisplaysAsync = ref.watch(
-      conversationSignatureDisplayByIdsProvider(
-        request: ConversationSignatureDisplayByIdsRequest(
-          conversationIds: conversationIds,
-        ),
-      ),
-    );
+    final signatureDisplays = widget.signatureDisplays;
 
     return Padding(
       padding: widget.padding,
@@ -148,34 +137,25 @@ class _ContactGraphConversationContentState
         width: double.infinity,
         child: ConstrainedBox(
           constraints: BoxConstraints(maxHeight: widget.maxHeight),
-          child: signatureDisplaysAsync.when(
-            data: (signatureDisplays) {
-              return ListView.separated(
-                shrinkWrap: true,
-                itemCount: signatureDisplays.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  final signature = signatureDisplays[index];
-                  return ConversationSignatureCard(
-                    signature: _toCardData(signature),
-                    style: cardStyle,
-                    monthColorForMessageCount:
-                        _conversationMonthColorForMessageCount,
-                    trailing: ConversationFavouriteButton(
-                      conversationId: signature.conversationId,
-                    ),
-                    onPressed: () {
-                      _showConversation(ref, signature.conversationId);
-                    },
-                  );
+          child: ListView.separated(
+            shrinkWrap: true,
+            itemCount: signatureDisplays.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final signature = signatureDisplays[index];
+              return ConversationSignatureCard(
+                signature: _toCardData(signature),
+                style: cardStyle,
+                monthColorForMessageCount:
+                    _conversationMonthColorForMessageCount,
+                trailing: ConversationFavouriteButton(
+                  conversationId: signature.conversationId,
+                ),
+                onPressed: () {
+                  _showConversation(ref, signature.conversationId);
                 },
               );
             },
-            loading: () =>
-                const Center(child: Text('Loading conversation signatures...')),
-            error: (error, _) => Center(
-              child: Text('Unable to load conversation signatures. $error'),
-            ),
           ),
         ),
       ),
