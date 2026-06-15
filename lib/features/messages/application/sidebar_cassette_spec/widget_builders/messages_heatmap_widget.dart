@@ -6,7 +6,6 @@ import 'package:macos_ui/macos_ui.dart';
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
-import '../../../../../essentials/conversation_graph/application/contacts/contact_graph_provider.dart';
 import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../../essentials/sidebar/application/sidebar_cassette_sectioning.dart';
 import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
@@ -17,6 +16,7 @@ import '../../../domain/calendar_heatmap_timeline_data.dart';
 import '../../../domain/message_evidence/message_evidence_scope.dart';
 import '../../../presentation/widgets/calendar_heatmap_timeline_widget.dart';
 import '../../../presentation/widgets/contact_graph_conversation_section.dart';
+import '../resolver_tools/contact_context_identity.dart';
 import '../resolver_tools/contact_timeline_provider.dart';
 import '../resolver_tools/global_messages_heatmap_provider.dart';
 
@@ -121,7 +121,7 @@ class _ContactEvidenceContent extends ConsumerWidget {
     final flowState = ref.watch(sidebarFlowProvider);
     final mode =
         flowState.topMenuChoice == TopChatMenuChoice.contacts &&
-            _isSameContactContext(flowState.chosenContactId, contactId) &&
+            isSameContactContext(flowState.chosenContactId, contactId) &&
             flowState.contactProjection ==
                 SidebarFlowContactProjection.conversations
         ? _ContactEvidenceMode.conversations
@@ -160,17 +160,6 @@ class _ContactEvidenceContent extends ConsumerWidget {
       ],
     );
   }
-}
-
-bool _isSameContactContext(int? selectedContactId, int cassetteContactId) {
-  if (selectedContactId == null) {
-    return false;
-  }
-  return selectedContactId == cassetteContactId ||
-      graphContactIdForContactPage(selectedContactId) == cassetteContactId ||
-      graphContactIdForContactPage(cassetteContactId) == selectedContactId ||
-      graphContactIdForContactPage(selectedContactId) ==
-          graphContactIdForContactPage(cassetteContactId);
 }
 
 class _ContactAllMessagesEvidence extends ConsumerWidget {

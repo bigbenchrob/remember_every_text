@@ -938,6 +938,24 @@ void main() {
       );
     });
 
+    test(
+      'Messages heatmap widget uses contact context identity boundary',
+      () async {
+        final offenders =
+            await _findMessagesHeatmapWidgetContactContextBoundaryOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'MessagesHeatmapWidget renders the heatmap/contact conversation '
+              'toggle. It should use a named contact context identity boundary '
+              'instead of importing raw graph contact providers directly.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
     test('Message user metadata application stays semantic', () async {
       final offenders =
           await _findMessageUserMetadataApplicationInfrastructureOffenders();
@@ -3183,6 +3201,23 @@ _findContactConversationSectionDisplayBoundaryOffenders() async {
   const forbiddenImports = <String>{
     '../../../../essentials/conversation_graph/application/contacts/contact_graph.dart',
     '../../../../essentials/conversation_graph/application/contacts/contact_graph_provider.dart',
+  };
+
+  return [
+    for (final importTarget in imports)
+      if (forbiddenImports.contains(importTarget)) '$filePath -> $importTarget',
+  ]..sort();
+}
+
+Future<List<String>>
+_findMessagesHeatmapWidgetContactContextBoundaryOffenders() async {
+  const filePath =
+      'lib/features/messages/application/sidebar_cassette_spec/widget_builders/messages_heatmap_widget.dart';
+  final source = await File(filePath).readAsString();
+  final uncommented = _stripComments(source);
+  final imports = _extractImports(uncommented);
+  const forbiddenImports = <String>{
+    '../../../../../essentials/conversation_graph/application/contacts/contact_graph_provider.dart',
   };
 
   return [
