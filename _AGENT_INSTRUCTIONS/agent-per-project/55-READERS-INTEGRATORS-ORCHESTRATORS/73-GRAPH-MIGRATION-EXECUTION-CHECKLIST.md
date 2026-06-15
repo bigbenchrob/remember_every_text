@@ -2421,6 +2421,10 @@ criteria.
     `archiveMessageGuid` and `archiveCompatibilityAttachmentId`, keeping
     retained archive table column names inside repository/query code rather
     than exposing them through the diagnostic application model.
+  - Documented the remaining message/media evidence DTO archive keys as
+    current archive compatibility keys and added an architecture guard so
+    `AttachmentInfo` / `MediaTileAttachment` cannot silently turn
+    `messageGuid` / `importAttachmentId` into canonical graph identity.
 
 ### Exit Criteria
 

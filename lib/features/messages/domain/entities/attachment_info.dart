@@ -14,6 +14,9 @@ class AttachmentInfo {
   final String? localPath;
   final String? mimeType;
   final String? transferName;
+  // Current archive compatibility key. These values are retained so the
+  // shared evidence spine can resolve existing archive records; they are not
+  // canonical graph attachment identity.
   final int? importAttachmentId;
   final String? messageGuid;
   final double? mediaWidth;

@@ -3143,6 +3143,13 @@ Future<List<String>> _findAttachmentInfoDataOnlyOffenders() async {
       uncommented.contains('resolvedLocalPath')) {
     offenders.add('$filePath performs attachment file/path access directly');
   }
+  if ((uncommented.contains('messageGuid') ||
+          uncommented.contains('importAttachmentId')) &&
+      !source.contains('archive compatibility key')) {
+    offenders.add(
+      '$filePath exposes archive compatibility keys without documenting them',
+    );
+  }
 
   return offenders..sort();
 }
@@ -3173,6 +3180,13 @@ Future<List<String>> _findMediaTileAttachmentDataOnlyOffenders() async {
       uncommented.contains('displayableFile') ||
       uncommented.contains('resolvedLocalPath')) {
     offenders.add('$filePath performs attachment file/path access directly');
+  }
+  if ((uncommented.contains('messageGuid') ||
+          uncommented.contains('importAttachmentId')) &&
+      !source.contains('archive compatibility key')) {
+    offenders.add(
+      '$filePath exposes archive compatibility keys without documenting them',
+    );
   }
 
   return offenders..sort();

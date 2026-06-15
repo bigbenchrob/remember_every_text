@@ -27,6 +27,8 @@ class MediaTileAttachment {
   final String? localPath;
   final String? mimeType;
   final String? transferName;
+  // Current archive compatibility key passed through from evidence rows to
+  // media actions. The tile must not treat these as canonical graph identity.
   final int? importAttachmentId;
   final String? messageGuid;
   final String? resolvedDisplayPath;
