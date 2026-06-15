@@ -970,6 +970,25 @@ void main() {
       },
     );
 
+    test(
+      'Conversation browser spec is retained, not newly projected',
+      () async {
+        final offenders =
+            await _findConversationBrowserSpecConstructionOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'Conversations navigation should derive selected conversation '
+              'evidence from sidebar flow. Do not construct '
+              'MessagesSpec.conversationBrowser() in active app code as a '
+              'default center-panel route.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
     test('Message user metadata application stays semantic', () async {
       final offenders =
           await _findMessageUserMetadataApplicationInfrastructureOffenders();
@@ -3237,6 +3256,30 @@ _findMessagesHeatmapWidgetContactContextBoundaryOffenders() async {
   return [
     for (final importTarget in imports)
       if (forbiddenImports.contains(importTarget)) '$filePath -> $importTarget',
+  ]..sort();
+}
+
+Future<List<String>> _findConversationBrowserSpecConstructionOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path ==
+        'lib/features/messages/domain/spec_classes/messages_view_spec.dart') {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final constructionPattern = RegExp(
+    r'\bMessagesSpec\.conversationBrowser\s*\(',
+  );
+
+  return [
+    for (final filePath in files)
+      if (constructionPattern.hasMatch(
+        _stripComments(await File(filePath).readAsString()),
+      ))
+        filePath,
   ]..sort();
 }
 

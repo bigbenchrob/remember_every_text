@@ -2368,6 +2368,21 @@ criteria.
 - Verified `flutter test test/architecture/forbidden_imports_test.dart`
   passes with 111 architecture tripwires, including retained database
   quarantine and retired import/projection path guards.
+- 2026-06-15 boundary hardening checkpoint:
+  - Moved contact conversation signature display derivation into the messages
+    application resolver layer. `ContactGraphConversationSection` now receives
+    display-ready `ConversationSignatureDisplayModel` values instead of
+    reading raw contact graph snapshots in presentation.
+  - Moved contact-context identity equivalence out of the heatmap widget into a
+    named resolver utility, keeping graph contact-id normalization out of the
+    widget builder.
+  - Converted the remaining hand-written core Riverpod provider declarations
+    for router/window-state wiring to generated providers and added a tripwire
+    preventing new manual provider declarations in active `lib/` code.
+  - Confirmed the Conversations top-menu projection remains sidebar-derived:
+    no center conversation evidence is projected until a conversation signature
+    is selected; the retained `conversationBrowser` spec is not the normal
+    Conversations branch projection.
 
 ### Exit Criteria
 
