@@ -1016,6 +1016,22 @@ void main() {
       );
     });
 
+    test('Retained conversation browser internals stay private', () async {
+      final offenders =
+          await _findRetainedConversationBrowserInternalImportOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'The retained conversation browser integrator is allowed only as '
+            'the backing model for the retained diagnostic view. Ordinary app '
+            'code must use graph/evidence-spine read models instead of '
+            'importing this retained browser internals path.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Message user metadata application stays semantic', () async {
       final offenders =
           await _findMessageUserMetadataApplicationInfrastructureOffenders();
@@ -3380,6 +3396,46 @@ _findRetainedConversationBrowserPublicExportOffenders() async {
   }
 
   return const ['$exportFile exports retained conversation_browser_view.dart'];
+}
+
+Future<List<String>>
+_findRetainedConversationBrowserInternalImportOffenders() async {
+  const retainedViewPath =
+      'lib/features/chats/presentation/view/conversation_browser_view.dart';
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path == retainedViewPath) {
+      return false;
+    }
+    if (path.startsWith(
+      'lib/features/chats/application/conversation_browser/',
+    )) {
+      return false;
+    }
+    return path.startsWith('lib/features/') ||
+        path.startsWith('lib/essentials/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    for (final importTarget in imports) {
+      if (importTarget.endsWith(
+            'features/chats/application/conversation_browser/conversation_browser_integrator.dart',
+          ) ||
+          importTarget.endsWith(
+            'chats/application/conversation_browser/conversation_browser_integrator.dart',
+          )) {
+        offenders.add('$filePath imports $importTarget');
+      }
+    }
+  }
+
+  return offenders.toList()..sort();
 }
 
 Future<List<String>>

@@ -2395,6 +2395,9 @@ criteria.
   - Added an architecture tripwire that keeps the retained conversation browser
     out of the chats public export surface, complementing the existing route
     guard that prevents it from returning as normal message evidence.
+  - Added a companion tripwire that keeps retained conversation browser
+    internals private to the retained diagnostic view, preventing ordinary code
+    from importing its integrator as a backdoor conversation read path.
 
 ### Exit Criteria
 
