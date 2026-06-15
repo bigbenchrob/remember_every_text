@@ -501,16 +501,17 @@ void main() {
       );
     });
 
-    test('Presentation code does not own database access', () async {
-      final offenders = await _findPresentationDatabaseAccessOffenders();
+    test('UI rendering code does not own database access', () async {
+      final offenders = await _findUiRenderingDatabaseAccessOffenders();
 
       expect(
         offenders,
         isEmpty,
         reason:
-            'Presentation widgets should render typed models and callbacks. '
+            'UI rendering code should render typed models and callbacks. '
             'Database providers, concrete database adapters, and SQL calls '
-            'belong behind application/infrastructure boundaries.\n'
+            'belong behind application/infrastructure boundaries, including '
+            'when widgets live under spec/cassette builder folders.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -2463,13 +2464,15 @@ Future<List<String>> _findDatabaseConstructionOffenders() async {
   return offenders.toList()..sort();
 }
 
-Future<List<String>> _findPresentationDatabaseAccessOffenders() async {
+Future<List<String>> _findUiRenderingDatabaseAccessOffenders() async {
   final files = await _collectDartFiles((path) {
     if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
       return false;
     }
 
-    return path.contains('/presentation/');
+    return path.contains('/presentation/') ||
+        path.contains('/widget_builders/') ||
+        path.contains('/widgets/');
   });
   final offenders = <String>{};
 
