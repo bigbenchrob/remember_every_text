@@ -890,6 +890,22 @@ void main() {
       );
     });
 
+    test('Conversation message header uses context boundary', () async {
+      final offenders =
+          await _findConversationMessageHeaderContextBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'ConversationMessagesPreviewView renders message evidence. '
+            'Conversation title/date/count composition should stay behind the '
+            'ConversationEvidenceHeaderContext provider so raw graph '
+            'participant facts do not become user-facing labels in widgets.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Message user metadata application stays semantic', () async {
       final offenders =
           await _findMessageUserMetadataApplicationInfrastructureOffenders();
@@ -3086,6 +3102,25 @@ _findConversationSignaturePresentationRawProviderOffenders() async {
   }
 
   return offenders.toList()..sort();
+}
+
+Future<List<String>>
+_findConversationMessageHeaderContextBoundaryOffenders() async {
+  const filePath =
+      'lib/features/messages/presentation/view/conversation_messages_preview_view.dart';
+  final source = await File(filePath).readAsString();
+  final uncommented = _stripComments(source);
+  final imports = _extractImports(uncommented);
+  const forbiddenImports = <String>{
+    '../../../../essentials/conversation_graph/application/conversations/conversation.dart',
+    '../../../../essentials/conversation_graph/application/conversations/conversation_reader_provider.dart',
+    '../../../contacts/feature_level_providers.dart',
+  };
+
+  return [
+    for (final importTarget in imports)
+      if (forbiddenImports.contains(importTarget)) '$filePath -> $importTarget',
+  ]..sort();
 }
 
 Future<List<String>>
