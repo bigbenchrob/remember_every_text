@@ -1810,6 +1810,25 @@ void main() {
     );
 
     test(
+      'Graph archive candidate contract uses compatibility-key language',
+      () async {
+        final offenders =
+            await _findGraphArchiveCandidateContractIdentityLanguageOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'GraphAttachmentArchiveCandidate is an application read model '
+              'derived from graph rows. It may carry archive compatibility '
+              'keys, but should not expose retained overlay column names as '
+              'its public contract.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
+    test(
       'Attachment source-scoped import provider access stays feature-boundary owned',
       () async {
         final offenders =
@@ -4610,6 +4629,25 @@ _findGraphArchiveLookupContractIdentityLanguageOffenders() async {
   if (uncommented.contains('retainedImportAttachmentId') ||
       uncommented.contains('retained import attachment')) {
     offenders.add('$filePath exposes retained import attachment identity');
+  }
+
+  return offenders;
+}
+
+Future<List<String>>
+_findGraphArchiveCandidateContractIdentityLanguageOffenders() async {
+  const filePath =
+      'lib/features/attachments/application/graph_attachment_archive_candidate_reader.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final offenders = <String>[];
+  if (uncommented.contains('messageGuid') ||
+      uncommented.contains('importAttachmentId')) {
+    offenders.add('$filePath exposes retained archive column names');
   }
 
   return offenders;

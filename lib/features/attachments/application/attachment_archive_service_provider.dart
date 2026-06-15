@@ -537,8 +537,8 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
         state = state.copyWith(phase: BulkArchivePhase.running);
       }
 
-      final messageGuid = row.messageGuid;
-      final importAttachmentId = row.importAttachmentId;
+      final messageGuid = row.archiveMessageGuid;
+      final importAttachmentId = row.archiveCompatibilityAttachmentId;
       final localPath = row.localPath;
 
       if (importAttachmentId == null || localPath == null) {

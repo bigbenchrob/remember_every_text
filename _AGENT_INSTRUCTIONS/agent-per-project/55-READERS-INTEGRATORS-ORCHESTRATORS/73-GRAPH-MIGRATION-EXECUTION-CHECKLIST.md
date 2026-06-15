@@ -2407,6 +2407,12 @@ criteria.
   - Added an architecture tripwire that keeps retained import identity language
     out of the graph-facing archive lookup contract while preserving the
     infrastructure compatibility bridge to the current archive table.
+  - Renamed graph archive candidate read-model fields from retained overlay
+    column language to `archiveMessageGuid` and
+    `archiveCompatibilityAttachmentId`. The archive service now explicitly maps
+    those compatibility keys into the existing overlay write-store API.
+  - Added an architecture tripwire that keeps retained archive column names out
+    of the graph archive candidate contract.
 
 ### Exit Criteria
 

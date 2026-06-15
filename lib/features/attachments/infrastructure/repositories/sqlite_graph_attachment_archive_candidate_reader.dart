@@ -203,11 +203,12 @@ class SqliteGraphAttachmentArchiveCandidateReader
   ) async {
     final keyedRows = rows
         .map((row) {
-          final importAttachmentId = row.importAttachmentId;
-          if (importAttachmentId == null) {
+          final archiveCompatibilityAttachmentId =
+              row.archiveCompatibilityAttachmentId;
+          if (archiveCompatibilityAttachmentId == null) {
             return null;
           }
-          return (row.messageGuid, importAttachmentId);
+          return (row.archiveMessageGuid, archiveCompatibilityAttachmentId);
         })
         .whereType<(String, int)>()
         .toList(growable: false);
@@ -218,10 +219,11 @@ class SqliteGraphAttachmentArchiveCandidateReader
 
     final predicates = <String>[];
     final variables = <Variable<Object>>[];
-    for (final (messageGuid, importAttachmentId) in keyedRows) {
+    for (final (archiveMessageGuid, archiveCompatibilityAttachmentId)
+        in keyedRows) {
       predicates.add('(message_guid = ? AND import_attachment_id = ?)');
-      variables.add(Variable<String>(messageGuid));
-      variables.add(Variable<int>(importAttachmentId));
+      variables.add(Variable<String>(archiveMessageGuid));
+      variables.add(Variable<int>(archiveCompatibilityAttachmentId));
     }
 
     final rowsResult = await _overlayDatabase
@@ -236,8 +238,10 @@ class SqliteGraphAttachmentArchiveCandidateReader
     return rowsResult
         .map(
           (row) => _buildArchiveIdentityKey(
-            messageGuid: row.read<String>('message_guid'),
-            importAttachmentId: row.read<int>('import_attachment_id'),
+            archiveMessageGuid: row.read<String>('message_guid'),
+            archiveCompatibilityAttachmentId: row.read<int>(
+              'import_attachment_id',
+            ),
           ),
         )
         .toSet();
@@ -246,8 +250,11 @@ class SqliteGraphAttachmentArchiveCandidateReader
   GraphAttachmentArchiveCandidate _candidateFromRow(Map<String, Object?> row) {
     return GraphAttachmentArchiveCandidate(
       graphAttachmentId: _readNullableInt(row, 'graph_attachment_id'),
-      messageGuid: _readRequiredString(row, 'message_guid'),
-      importAttachmentId: _readNullableInt(row, 'import_attachment_id'),
+      archiveMessageGuid: _readRequiredString(row, 'message_guid'),
+      archiveCompatibilityAttachmentId: _readNullableInt(
+        row,
+        'import_attachment_id',
+      ),
       localPath: _readNullableString(row, 'local_path'),
       mimeType: _readNullableString(row, 'mime_type'),
       sha256Hex: _readNullableString(row, 'sha256_hex'),
@@ -255,22 +262,23 @@ class SqliteGraphAttachmentArchiveCandidateReader
   }
 
   String? _buildArchiveIdentityKeyForRow(GraphAttachmentArchiveCandidate row) {
-    final importAttachmentId = row.importAttachmentId;
-    if (importAttachmentId == null) {
+    final archiveCompatibilityAttachmentId =
+        row.archiveCompatibilityAttachmentId;
+    if (archiveCompatibilityAttachmentId == null) {
       return null;
     }
 
     return _buildArchiveIdentityKey(
-      messageGuid: row.messageGuid,
-      importAttachmentId: importAttachmentId,
+      archiveMessageGuid: row.archiveMessageGuid,
+      archiveCompatibilityAttachmentId: archiveCompatibilityAttachmentId,
     );
   }
 
   String _buildArchiveIdentityKey({
-    required String messageGuid,
-    required int importAttachmentId,
+    required String archiveMessageGuid,
+    required int archiveCompatibilityAttachmentId,
   }) {
-    return '$messageGuid::$importAttachmentId';
+    return '$archiveMessageGuid::$archiveCompatibilityAttachmentId';
   }
 
   String _readRequiredString(Map<String, Object?> row, String key) {

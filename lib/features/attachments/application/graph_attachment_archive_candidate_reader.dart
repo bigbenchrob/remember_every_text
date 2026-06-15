@@ -1,16 +1,16 @@
 class GraphAttachmentArchiveCandidate {
   const GraphAttachmentArchiveCandidate({
     required this.graphAttachmentId,
-    required this.messageGuid,
-    required this.importAttachmentId,
+    required this.archiveMessageGuid,
+    required this.archiveCompatibilityAttachmentId,
     required this.localPath,
     required this.mimeType,
     required this.sha256Hex,
   });
 
   final int? graphAttachmentId;
-  final String messageGuid;
-  final int? importAttachmentId;
+  final String archiveMessageGuid;
+  final int? archiveCompatibilityAttachmentId;
   final String? localPath;
   final String? mimeType;
   final String? sha256Hex;
