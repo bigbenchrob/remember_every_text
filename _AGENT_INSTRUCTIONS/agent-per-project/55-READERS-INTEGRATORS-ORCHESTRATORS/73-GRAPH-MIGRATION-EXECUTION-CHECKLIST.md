@@ -2432,6 +2432,8 @@ criteria.
     for retained `(message_guid, import_attachment_id)` archive storage and
     replaced ad hoc graph candidate de-duplication string keys with the typed
     compatibility key.
+  - Added an architecture tripwire preventing graph archive candidate
+    de-duplication from reintroducing ad hoc string tuple archive keys.
 
 ### Exit Criteria
 
