@@ -122,6 +122,20 @@ void main() {
       );
     });
 
+    test('Hand-written providers use Riverpod code generation', () async {
+      final offenders = await _findManualProviderDeclarationOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Use @riverpod / @Riverpod code generation for provider '
+            'declarations. Manual Provider/FutureProvider/etc declarations '
+            'drift from the documented app pattern.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Discourage withOpacity usage', () async {
       final libDir = Directory('lib');
       final offenders = <String>[];
@@ -4781,6 +4795,23 @@ Future<List<String>> _findFrameworkThemeLookupOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>> _findManualProviderDeclarationOffenders() async {
+  final files = await _collectDartFiles((path) {
+    return path.startsWith('lib/') && !path.endsWith('.g.dart');
+  });
+  final manualProviderPattern = RegExp(
+    r'\b(?:StateNotifierProvider|FutureProvider|StreamProvider|ChangeNotifierProvider|Provider)\s*(?:<|\()',
+  );
+
+  return [
+    for (final filePath in files)
+      if (manualProviderPattern.hasMatch(
+        _stripComments(await File(filePath).readAsString()),
+      ))
+        filePath,
+  ]..sort();
 }
 
 Future<List<String>> _findAllCommentLibDartFiles() async {
