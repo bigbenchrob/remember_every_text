@@ -62,11 +62,24 @@ int? graphHandleIdForRetainedOverlayHandleId(int handleId) {
   );
 }
 
+int? retainedOverlayHandleIdForGraphHandleId(int handleId) {
+  if (SourceScopedRowKey.unpackSourceId(handleId) != liveChatDbSourceId) {
+    return null;
+  }
+  return SourceScopedRowKey.unpackSourceRowId(handleId);
+}
+
 Set<int> handleOverlayKeyVariants(int handleId) {
   final ids = <int>{handleId};
   final graphHandleId = graphHandleIdForRetainedOverlayHandleId(handleId);
   if (graphHandleId != null) {
     ids.add(graphHandleId);
+  }
+  final retainedOverlayHandleId = retainedOverlayHandleIdForGraphHandleId(
+    handleId,
+  );
+  if (retainedOverlayHandleId != null) {
+    ids.add(retainedOverlayHandleId);
   }
   return ids;
 }

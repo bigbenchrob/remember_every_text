@@ -4,6 +4,35 @@ import 'package:remember_this_text/essentials/source_scoped_import/domain/known_
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 
 void main() {
+  group('handleOverlayKeyVariants', () {
+    test('includes graph handle id for retained live handle ids', () {
+      final graphHandleId = SourceScopedRowKey.pack(
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 42,
+      );
+
+      expect(handleOverlayKeyVariants(42), {42, graphHandleId});
+    });
+
+    test('includes retained handle id for graph live handle ids', () {
+      final graphHandleId = SourceScopedRowKey.pack(
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 42,
+      );
+
+      expect(handleOverlayKeyVariants(graphHandleId), {graphHandleId, 42});
+    });
+
+    test('does not invent retained handle id for non-live graph ids', () {
+      final archiveHandleId = SourceScopedRowKey.pack(
+        sourceId: 99,
+        sourceRowId: 42,
+      );
+
+      expect(handleOverlayKeyVariants(archiveHandleId), {archiveHandleId});
+    });
+  });
+
   group('retainedOverlayMessageRowIdForGraphMessageId', () {
     test('returns source rowid for live chat-db message ids', () {
       final messageSsId = SourceScopedRowKey.pack(

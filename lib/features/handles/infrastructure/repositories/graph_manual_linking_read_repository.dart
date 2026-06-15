@@ -186,7 +186,7 @@ class GraphManualLinkingReadRepository implements ManualLinkingReadRepository {
 
   @override
   Future<HandleLinkInfo?> readHandleLinkInfo(int handleId) async {
-    final overlayRow = await _overlayDb.getHandleOverride(handleId);
+    final overlayRow = await _readHandleOverride(handleId);
     if (overlayRow != null && overlayRow.participantId != null) {
       return _readGraphParticipantLinkInfo(
         participantId: overlayRow.participantId!,
@@ -208,6 +208,16 @@ class GraphManualLinkingReadRepository implements ManualLinkingReadRepository {
     }
 
     return _readGraphHandleLinkInfo(handleId);
+  }
+
+  Future<HandleToParticipantOverride?> _readHandleOverride(int handleId) async {
+    for (final candidateId in handleOverlayKeyVariants(handleId)) {
+      final overlayRow = await _overlayDb.getHandleOverride(candidateId);
+      if (overlayRow != null) {
+        return overlayRow;
+      }
+    }
+    return null;
   }
 
   Future<HandleLinkInfo?> _readGraphParticipantLinkInfo({
