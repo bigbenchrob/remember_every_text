@@ -147,8 +147,6 @@ class GraphManualLinkingReadRepository implements ManualLinkingReadRepository {
       }
 
       final identity = _displayIdentityResolver.resolveContact(contactId);
-      final retainedOverlayContactId =
-          retainedOverlayContactIdForGraphContactId(contactId);
 
       results.add(
         AvailableParticipant(
@@ -158,10 +156,7 @@ class GraphManualLinkingReadRepository implements ManualLinkingReadRepository {
               : importedName,
           handleCount:
               _readInt(row['handle_count']) +
-              (overlayCountByParticipant[contactId] ?? 0) +
-              (retainedOverlayContactId == null
-                  ? 0
-                  : (overlayCountByParticipant[retainedOverlayContactId] ?? 0)),
+              _overlayCountForParticipant(overlayCountByParticipant, contactId),
         ),
       );
     }
@@ -334,6 +329,14 @@ int _readInt(Object? value) {
     return value.toInt();
   }
   return int.parse(value.toString());
+}
+
+int _overlayCountForParticipant(Map<int, int> countsByParticipant, int id) {
+  var count = 0;
+  for (final key in contactOverlayKeyVariants(id)) {
+    count += countsByParticipant[key] ?? 0;
+  }
+  return count;
 }
 
 bool _isPlaceholderDisplayName(String value) {

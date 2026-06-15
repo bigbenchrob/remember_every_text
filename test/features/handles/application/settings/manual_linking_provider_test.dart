@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/features/handles/application/settings_cassette_spec/resolver_tools/manual_linking_provider.dart';
 
 import '../../../../essentials/conversation_graph/conversation_graph_test_database.dart';
@@ -78,6 +80,35 @@ void main() {
         expect(participants, hasLength(1));
         expect(participants.single.id, 9002);
         expect(participants.single.displayName, 'Claire');
+      },
+    );
+
+    test(
+      'available participant handle count includes retained-key overlay links',
+      () async {
+        const retainedContactId = 17;
+        final graphContactId = SourceScopedRowKey.pack(
+          sourceId: liveAddressBookSourceId,
+          sourceRowId: retainedContactId,
+        );
+        await graphDb.database.insert('contacts', <String, Object?>{
+          'contact_id': graphContactId,
+          'display_name': 'Claire Merriman Campbell',
+        });
+        await overlayDb.setParticipantDisplayNameOverride(
+          retainedContactId,
+          'Claire',
+        );
+        await overlayDb.setHandleOverride(42, retainedContactId);
+
+        final participants = await container.read(
+          availableParticipantsProvider.future,
+        );
+
+        expect(participants, hasLength(1));
+        expect(participants.single.id, graphContactId);
+        expect(participants.single.displayName, 'Claire');
+        expect(participants.single.handleCount, 1);
       },
     );
 
