@@ -2388,6 +2388,10 @@ criteria.
     log variant. The standalone `ConversationBrowserView` remains only as
     retained reference/diagnostic UI, and an architecture tripwire prevents the
     old browser from returning as a message evidence spec route.
+  - Removed the retained `ConversationBrowserView` from the chats public
+    feature-level export surface. It remains directly testable as diagnostic
+    reference UI, but ordinary feature consumers can no longer discover it
+    through `features/chats/feature_level_providers.dart`.
 
 ### Exit Criteria
 
