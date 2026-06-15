@@ -2428,6 +2428,10 @@ criteria.
   - Clarified the archive write-store, archive file-store, and recovery-hint
     key contracts so retained archive key names remain explicitly bounded to
     compatibility storage instead of becoming graph identity vocabulary.
+  - Added `ArchiveCompatibilityKey` as a named application-layer bridge type
+    for retained `(message_guid, import_attachment_id)` archive storage and
+    replaced ad hoc graph candidate de-duplication string keys with the typed
+    compatibility key.
 
 ### Exit Criteria
 

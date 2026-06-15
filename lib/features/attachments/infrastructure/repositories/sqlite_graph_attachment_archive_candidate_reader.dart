@@ -4,6 +4,7 @@ import '../../../../essentials/db/infrastructure/data_sources/local/conversation
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import '../../../../essentials/source_scoped_import/domain/known_sources.dart';
 import '../../../../essentials/source_scoped_import/domain/source_scoped_row_key.dart';
+import '../../application/archive_compatibility_key.dart';
 import '../../application/graph_attachment_archive_candidate_reader.dart';
 
 class SqliteGraphAttachmentArchiveCandidateReader
@@ -94,7 +95,7 @@ class SqliteGraphAttachmentArchiveCandidateReader
         final graphAttachmentId = candidate.graphAttachmentId;
         lastProcessedAttachmentId =
             graphAttachmentId ?? lastProcessedAttachmentId;
-        final archiveKey = _buildArchiveIdentityKeyForRow(candidate);
+        final archiveKey = _archiveCompatibilityKeyForRow(candidate);
         if (archiveKey == null || archivedKeys.contains(archiveKey)) {
           continue;
         }
@@ -198,32 +199,24 @@ class SqliteGraphAttachmentArchiveCandidateReader
     );
   }
 
-  Future<Set<String>> _loadArchivedKeysForRows(
+  Future<Set<ArchiveCompatibilityKey>> _loadArchivedKeysForRows(
     List<GraphAttachmentArchiveCandidate> rows,
   ) async {
     final keyedRows = rows
-        .map((row) {
-          final archiveCompatibilityAttachmentId =
-              row.archiveCompatibilityAttachmentId;
-          if (archiveCompatibilityAttachmentId == null) {
-            return null;
-          }
-          return (row.archiveMessageGuid, archiveCompatibilityAttachmentId);
-        })
-        .whereType<(String, int)>()
+        .map(_archiveCompatibilityKeyForRow)
+        .whereType<ArchiveCompatibilityKey>()
         .toList(growable: false);
 
     if (keyedRows.isEmpty) {
-      return <String>{};
+      return <ArchiveCompatibilityKey>{};
     }
 
     final predicates = <String>[];
     final variables = <Variable<Object>>[];
-    for (final (archiveMessageGuid, archiveCompatibilityAttachmentId)
-        in keyedRows) {
+    for (final archiveKey in keyedRows) {
       predicates.add('(message_guid = ? AND import_attachment_id = ?)');
-      variables.add(Variable<String>(archiveMessageGuid));
-      variables.add(Variable<int>(archiveCompatibilityAttachmentId));
+      variables.add(Variable<String>(archiveKey.messageGuid));
+      variables.add(Variable<int>(archiveKey.importAttachmentId));
     }
 
     final rowsResult = await _overlayDatabase
@@ -237,11 +230,9 @@ class SqliteGraphAttachmentArchiveCandidateReader
 
     return rowsResult
         .map(
-          (row) => _buildArchiveIdentityKey(
-            archiveMessageGuid: row.read<String>('message_guid'),
-            archiveCompatibilityAttachmentId: row.read<int>(
-              'import_attachment_id',
-            ),
+          (row) => ArchiveCompatibilityKey(
+            messageGuid: row.read<String>('message_guid'),
+            importAttachmentId: row.read<int>('import_attachment_id'),
           ),
         )
         .toSet();
@@ -261,24 +252,19 @@ class SqliteGraphAttachmentArchiveCandidateReader
     );
   }
 
-  String? _buildArchiveIdentityKeyForRow(GraphAttachmentArchiveCandidate row) {
+  ArchiveCompatibilityKey? _archiveCompatibilityKeyForRow(
+    GraphAttachmentArchiveCandidate row,
+  ) {
     final archiveCompatibilityAttachmentId =
         row.archiveCompatibilityAttachmentId;
     if (archiveCompatibilityAttachmentId == null) {
       return null;
     }
 
-    return _buildArchiveIdentityKey(
-      archiveMessageGuid: row.archiveMessageGuid,
-      archiveCompatibilityAttachmentId: archiveCompatibilityAttachmentId,
+    return ArchiveCompatibilityKey(
+      messageGuid: row.archiveMessageGuid,
+      importAttachmentId: archiveCompatibilityAttachmentId,
     );
-  }
-
-  String _buildArchiveIdentityKey({
-    required String archiveMessageGuid,
-    required int archiveCompatibilityAttachmentId,
-  }) {
-    return '$archiveMessageGuid::$archiveCompatibilityAttachmentId';
   }
 
   String _readRequiredString(Map<String, Object?> row, String key) {

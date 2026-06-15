@@ -34,6 +34,7 @@ import 'infrastructure/repositories/sqlite_graph_attachment_archive_candidate_re
 import 'infrastructure/repositories/sqlite_historical_snapshot_reader.dart';
 import 'infrastructure/services/video_thumbnail_cache_service.dart';
 
+export 'application/archive_compatibility_key.dart';
 export 'application/archive_settings_provider.dart';
 export 'application/attachment_archive_service_provider.dart';
 export 'application/attachment_archive_write_store.dart';
