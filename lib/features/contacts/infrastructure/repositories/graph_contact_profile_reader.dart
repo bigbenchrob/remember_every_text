@@ -69,14 +69,8 @@ class GraphContactProfileReader implements ContactProfileReader {
       }
 
       final overrides = await participantOverridesById(_overlayDb);
-      final directOverride = overrides[graphContactId];
-      final retainedKeyOverride = _overlayOverrideForEquivalentContactId(
-        overrides,
-        graphContactId,
-      );
-      final overrideLabel =
-          directOverride?.displayNameOverride?.trim() ??
-          retainedKeyOverride?.displayNameOverride?.trim();
+      final override = overlayValueForContactId(overrides, graphContactId);
+      final overrideLabel = override?.displayNameOverride?.trim();
 
       return ContactProfileSummary(
         contactId: graphContactId,
@@ -104,16 +98,4 @@ class GraphContactProfileReader implements ContactProfileReader {
           if (contactIdsRepresentSamePerson(id, contactId)) id,
     ];
   }
-}
-
-ParticipantOverride? _overlayOverrideForEquivalentContactId(
-  Map<int, ParticipantOverride> overrides,
-  int contactId,
-) {
-  for (final entry in overrides.entries) {
-    if (contactIdsRepresentSamePerson(entry.key, contactId)) {
-      return entry.value;
-    }
-  }
-  return null;
 }

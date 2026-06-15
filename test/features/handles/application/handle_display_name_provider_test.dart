@@ -4,6 +4,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/features/handles/feature_level_providers.dart';
 
 import '../../../essentials/conversation_graph/conversation_graph_test_database.dart';
@@ -57,6 +59,34 @@ void main() {
 
     expect(label, 'Claire');
   });
+
+  test(
+    'retained-key handle override wins over raw graph handle label',
+    () async {
+      const retainedHandleId = 42;
+      final graphHandleId = SourceScopedRowKey.pack(
+        sourceId: liveChatDbSourceId,
+        sourceRowId: retainedHandleId,
+      );
+      await graphDb.database.insert('contacts', <String, Object?>{
+        'contact_id': 9001,
+        'display_name': 'Claire Merriman Campbell',
+      });
+      await graphDb.database.insert('handles', <String, Object?>{
+        'ss_id': graphHandleId,
+        'id': '+17789908506',
+        'service': 'iMessage',
+      });
+      await overlayDb.setParticipantDisplayNameOverride(9001, 'Claire');
+      await overlayDb.setHandleOverride(retainedHandleId, 9001);
+
+      final label = await container.read(
+        handleDisplayNameProvider(handleId: graphHandleId).future,
+      );
+
+      expect(label, 'Claire');
+    },
+  );
 
   test(
     'falls back to graph handle display when no contact identity exists',

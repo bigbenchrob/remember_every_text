@@ -1,3 +1,4 @@
+import '../../../../essentials/conversation_graph/domain/identity_key_bridge.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import '../../../contacts/feature_level_providers.dart'
@@ -19,7 +20,7 @@ class GraphHandleDisplayNameReader implements HandleDisplayNameReader {
 
   @override
   Future<String> readHandleDisplayName({required int handleId}) async {
-    final override = await _overlayDb.getHandleOverride(handleId);
+    final override = await _readHandleOverride(handleId);
     if (override != null) {
       final virtualParticipantId = override.virtualParticipantId;
       if (virtualParticipantId != null) {
@@ -72,5 +73,15 @@ class GraphHandleDisplayNameReader implements HandleDisplayNameReader {
     }
 
     return 'Handle #$handleId';
+  }
+
+  Future<HandleToParticipantOverride?> _readHandleOverride(int handleId) async {
+    for (final candidateId in handleOverlayKeyVariants(handleId)) {
+      final override = await _overlayDb.getHandleOverride(candidateId);
+      if (override != null) {
+        return override;
+      }
+    }
+    return null;
   }
 }
