@@ -875,6 +875,21 @@ void main() {
       );
     });
 
+    test('Conversation signature presentation uses display models', () async {
+      final offenders =
+          await _findConversationSignaturePresentationRawProviderOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'ConversationSignature is a graph-fact read model. Presentation '
+            'and widget-builder code must consume resolved display models so '
+            'user display-name overrides can win before rendering.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Message user metadata application stays semantic', () async {
       final offenders =
           await _findMessageUserMetadataApplicationInfrastructureOffenders();
@@ -3038,6 +3053,33 @@ _findDisplayIdentityApplicationInfrastructureOffenders() async {
       (importTarget) =>
           importTarget.contains('/infrastructure/') ||
           importTarget.contains('/essentials/db/feature_level_providers.dart'),
+    )) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>>
+_findConversationSignaturePresentationRawProviderOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.contains('/presentation/') ||
+        path.contains('/widget_builders/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    if (imports.any(
+      (importTarget) => importTarget.endsWith(
+        'essentials/conversation_graph/application/conversation_signatures/conversation_signature_provider.dart',
+      ),
     )) {
       offenders.add(filePath);
     }
