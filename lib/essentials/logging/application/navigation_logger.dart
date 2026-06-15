@@ -47,7 +47,6 @@ class NavigationLogEntry {
       messages: (messagesSpec) => {
         'type': 'messages',
         'spec': messagesSpec.when(
-          conversationBrowser: () => {'variant': 'conversationBrowser'},
           forConversation: (conversationId, anchorMessageId, searchQuery) => {
             'variant': 'forConversation',
             'conversationId': conversationId,

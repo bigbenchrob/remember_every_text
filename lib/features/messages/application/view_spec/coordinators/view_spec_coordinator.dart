@@ -1,8 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../chats/feature_level_providers.dart'
-    show ConversationBrowserView;
 import '../../../domain/spec_classes/messages_view_spec.dart';
 import '../../../presentation/view/conversation_messages_preview_view.dart';
 import '../resolvers/global_timeline_resolver.dart';
@@ -29,7 +27,6 @@ class ViewSpecCoordinator extends _$ViewSpecCoordinator {
   /// Build a center-panel widget for the given [MessagesSpec].
   Widget buildForSpec(MessagesSpec spec) {
     return spec.when(
-      conversationBrowser: () => const ConversationBrowserView(),
       forConversation: (conversationId, anchorMessageId, searchQuery) =>
           ConversationMessagesPreviewView(
             conversationId: conversationId,

@@ -985,24 +985,20 @@ void main() {
       },
     );
 
-    test(
-      'Conversation browser spec is retained, not newly projected',
-      () async {
-        final offenders =
-            await _findConversationBrowserSpecConstructionOffenders();
+    test('Conversation browser is not a message evidence spec route', () async {
+      final offenders = await _findConversationBrowserSpecRouteOffenders();
 
-        expect(
-          offenders,
-          isEmpty,
-          reason:
-              'Conversations navigation should derive selected conversation '
-              'evidence from sidebar flow. Do not construct '
-              'MessagesSpec.conversationBrowser() in active app code as a '
-              'default center-panel route.\n'
-              'Actual offenders:\n${offenders.join('\n')}',
-        );
-      },
-    );
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Conversations navigation derives selected conversation '
+            'evidence from sidebar flow. The old center-panel conversation '
+            'browser must not return as a MessagesSpec route, coordinator '
+            'branch, panel compatibility branch, or navigation-log variant.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
 
     test('Message user metadata application stays semantic', () async {
       final offenders =
@@ -3330,28 +3326,28 @@ _findMessagesHeatmapWidgetContactContextBoundaryOffenders() async {
   ]..sort();
 }
 
-Future<List<String>> _findConversationBrowserSpecConstructionOffenders() async {
-  final files = await _collectDartFiles((path) {
-    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
-      return false;
-    }
-    if (path ==
-        'lib/features/messages/domain/spec_classes/messages_view_spec.dart') {
-      return false;
-    }
-    return path.startsWith('lib/');
-  });
-  final constructionPattern = RegExp(
-    r'\bMessagesSpec\.conversationBrowser\s*\(',
-  );
+Future<List<String>> _findConversationBrowserSpecRouteOffenders() async {
+  const routeFiles = <String>{
+    'lib/features/messages/domain/spec_classes/messages_view_spec.dart',
+    'lib/features/messages/application/view_spec/coordinators/view_spec_coordinator.dart',
+    'lib/essentials/navigation/application/panel_widget_providers.dart',
+    'lib/essentials/logging/application/navigation_logger.dart',
+  };
+  final offenders = <String>[];
 
-  return [
-    for (final filePath in files)
-      if (constructionPattern.hasMatch(
-        _stripComments(await File(filePath).readAsString()),
-      ))
-        filePath,
-  ]..sort();
+  for (final filePath in routeFiles) {
+    final file = File(filePath);
+    if (!file.existsSync()) {
+      continue;
+    }
+
+    final uncommented = _stripComments(await file.readAsString());
+    if (uncommented.contains('conversationBrowser')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
 }
 
 Future<List<String>>

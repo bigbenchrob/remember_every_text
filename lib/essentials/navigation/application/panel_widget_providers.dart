@@ -193,7 +193,6 @@ bool _supportsRecoveredAttachmentSidebar(ViewSpec? spec) {
     messages: (messagesSpec) {
       return messagesSpec.maybeWhen(
         forContact: (_, __, ___) => true,
-        conversationBrowser: () => true,
         globalTimeline: (_) => true,
         recoveredUnlinkedMessages: (_, __) => true,
         recoveredNoHandleFromMeMessages: (_) => true,
@@ -346,7 +345,6 @@ bool _isFlowManagedCenterSpec(ViewSpec spec) {
   return spec.maybeWhen(
     messages: (messagesSpec) {
       return messagesSpec.maybeWhen(
-        conversationBrowser: () => true,
         forContact: (_, __, ___) => true,
         globalTimeline: (_) => true,
         recoveredUnlinkedMessages: (_, __) => true,
@@ -376,9 +374,6 @@ bool _isCenterSpecCompatibleWithSidebar({
   return centerSpec.when(
     messages: (messagesSpec) {
       return messagesSpec.when(
-        conversationBrowser: () {
-          return flowState.topMenuChoice == TopChatMenuChoice.conversations;
-        },
         forConversation: (conversationId, _, _) {
           return (flowState.topMenuChoice == TopChatMenuChoice.conversations &&
                   flowState.selectedConversationId == conversationId) ||

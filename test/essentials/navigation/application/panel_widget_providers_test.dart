@@ -1363,7 +1363,6 @@ class _FakeMessagesViewSpecCoordinator
   @override
   Widget buildForSpec(MessagesSpec spec) {
     return spec.when(
-      conversationBrowser: () => const Text('conversation-browser'),
       forConversation: (conversationId, anchorMessageId, searchQuery) =>
           Text('conversation:$conversationId'),
       forContact: (contactId, scrollToDate, filterHandleId) =>

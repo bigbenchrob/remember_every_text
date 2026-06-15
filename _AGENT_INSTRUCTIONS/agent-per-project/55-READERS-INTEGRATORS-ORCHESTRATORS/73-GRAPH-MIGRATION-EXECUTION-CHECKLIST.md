@@ -2383,6 +2383,11 @@ criteria.
     no center conversation evidence is projected until a conversation signature
     is selected; the retained `conversationBrowser` spec is not the normal
     Conversations branch projection.
+  - Removed the obsolete `MessagesSpec.conversationBrowser` route, its
+    view-spec coordinator branch, panel compatibility branches, and navigation
+    log variant. The standalone `ConversationBrowserView` remains only as
+    retained reference/diagnostic UI, and an architecture tripwire prevents the
+    old browser from returning as a message evidence spec route.
 
 ### Exit Criteria
 

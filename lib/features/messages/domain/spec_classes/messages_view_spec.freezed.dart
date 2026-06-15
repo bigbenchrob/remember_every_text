@@ -55,11 +55,10 @@ extension MessagesSpecPatterns on MessagesSpec {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _ConversationBrowser value)?  conversationBrowser,TResult Function( _MessagesForConversation value)?  forConversation,TResult Function( _MessagesForContact value)?  forContact,TResult Function( _MessagesGlobalTimeline value)?  globalTimeline,TResult Function( _MessagesForHandle value)?  forHandle,TResult Function( _RecoveredUnlinkedMessages value)?  recoveredUnlinkedMessages,TResult Function( _RecoveredNoHandleFromMeMessages value)?  recoveredNoHandleFromMeMessages,TResult Function( _RecoveredAttachmentViewer value)?  recoveredAttachmentViewer,TResult Function( _MessagesSearchResultContext value)?  searchResultContext,TResult Function( _MessagesHandleLens value)?  handleLens,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _MessagesForConversation value)?  forConversation,TResult Function( _MessagesForContact value)?  forContact,TResult Function( _MessagesGlobalTimeline value)?  globalTimeline,TResult Function( _MessagesForHandle value)?  forHandle,TResult Function( _RecoveredUnlinkedMessages value)?  recoveredUnlinkedMessages,TResult Function( _RecoveredNoHandleFromMeMessages value)?  recoveredNoHandleFromMeMessages,TResult Function( _RecoveredAttachmentViewer value)?  recoveredAttachmentViewer,TResult Function( _MessagesSearchResultContext value)?  searchResultContext,TResult Function( _MessagesHandleLens value)?  handleLens,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _ConversationBrowser() when conversationBrowser != null:
-return conversationBrowser(_that);case _MessagesForConversation() when forConversation != null:
+case _MessagesForConversation() when forConversation != null:
 return forConversation(_that);case _MessagesForContact() when forContact != null:
 return forContact(_that);case _MessagesGlobalTimeline() when globalTimeline != null:
 return globalTimeline(_that);case _MessagesForHandle() when forHandle != null:
@@ -86,11 +85,10 @@ return handleLens(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _ConversationBrowser value)  conversationBrowser,required TResult Function( _MessagesForConversation value)  forConversation,required TResult Function( _MessagesForContact value)  forContact,required TResult Function( _MessagesGlobalTimeline value)  globalTimeline,required TResult Function( _MessagesForHandle value)  forHandle,required TResult Function( _RecoveredUnlinkedMessages value)  recoveredUnlinkedMessages,required TResult Function( _RecoveredNoHandleFromMeMessages value)  recoveredNoHandleFromMeMessages,required TResult Function( _RecoveredAttachmentViewer value)  recoveredAttachmentViewer,required TResult Function( _MessagesSearchResultContext value)  searchResultContext,required TResult Function( _MessagesHandleLens value)  handleLens,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _MessagesForConversation value)  forConversation,required TResult Function( _MessagesForContact value)  forContact,required TResult Function( _MessagesGlobalTimeline value)  globalTimeline,required TResult Function( _MessagesForHandle value)  forHandle,required TResult Function( _RecoveredUnlinkedMessages value)  recoveredUnlinkedMessages,required TResult Function( _RecoveredNoHandleFromMeMessages value)  recoveredNoHandleFromMeMessages,required TResult Function( _RecoveredAttachmentViewer value)  recoveredAttachmentViewer,required TResult Function( _MessagesSearchResultContext value)  searchResultContext,required TResult Function( _MessagesHandleLens value)  handleLens,}){
 final _that = this;
 switch (_that) {
-case _ConversationBrowser():
-return conversationBrowser(_that);case _MessagesForConversation():
+case _MessagesForConversation():
 return forConversation(_that);case _MessagesForContact():
 return forContact(_that);case _MessagesGlobalTimeline():
 return globalTimeline(_that);case _MessagesForHandle():
@@ -116,11 +114,10 @@ return handleLens(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _ConversationBrowser value)?  conversationBrowser,TResult? Function( _MessagesForConversation value)?  forConversation,TResult? Function( _MessagesForContact value)?  forContact,TResult? Function( _MessagesGlobalTimeline value)?  globalTimeline,TResult? Function( _MessagesForHandle value)?  forHandle,TResult? Function( _RecoveredUnlinkedMessages value)?  recoveredUnlinkedMessages,TResult? Function( _RecoveredNoHandleFromMeMessages value)?  recoveredNoHandleFromMeMessages,TResult? Function( _RecoveredAttachmentViewer value)?  recoveredAttachmentViewer,TResult? Function( _MessagesSearchResultContext value)?  searchResultContext,TResult? Function( _MessagesHandleLens value)?  handleLens,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _MessagesForConversation value)?  forConversation,TResult? Function( _MessagesForContact value)?  forContact,TResult? Function( _MessagesGlobalTimeline value)?  globalTimeline,TResult? Function( _MessagesForHandle value)?  forHandle,TResult? Function( _RecoveredUnlinkedMessages value)?  recoveredUnlinkedMessages,TResult? Function( _RecoveredNoHandleFromMeMessages value)?  recoveredNoHandleFromMeMessages,TResult? Function( _RecoveredAttachmentViewer value)?  recoveredAttachmentViewer,TResult? Function( _MessagesSearchResultContext value)?  searchResultContext,TResult? Function( _MessagesHandleLens value)?  handleLens,}){
 final _that = this;
 switch (_that) {
-case _ConversationBrowser() when conversationBrowser != null:
-return conversationBrowser(_that);case _MessagesForConversation() when forConversation != null:
+case _MessagesForConversation() when forConversation != null:
 return forConversation(_that);case _MessagesForContact() when forContact != null:
 return forContact(_that);case _MessagesGlobalTimeline() when globalTimeline != null:
 return globalTimeline(_that);case _MessagesForHandle() when forHandle != null:
@@ -146,10 +143,9 @@ return handleLens(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  conversationBrowser,TResult Function( int conversationId,  int? anchorMessageId,  String? searchQuery)?  forConversation,TResult Function( int contactId,  DateTime? scrollToDate,  int? filterHandleId)?  forContact,TResult Function( DateTime? scrollToDate)?  globalTimeline,TResult Function( int handleId)?  forHandle,TResult Function( int? contactId,  DateTime? scrollToDate)?  recoveredUnlinkedMessages,TResult Function( DateTime? scrollToDate)?  recoveredNoHandleFromMeMessages,TResult Function( int messageId,  AttachmentInfo attachment)?  recoveredAttachmentViewer,TResult Function( int messageId,  int chatId,  int beforeCount,  int afterCount)?  searchResultContext,TResult Function( int handleId)?  handleLens,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( int conversationId,  int? anchorMessageId,  String? searchQuery)?  forConversation,TResult Function( int contactId,  DateTime? scrollToDate,  int? filterHandleId)?  forContact,TResult Function( DateTime? scrollToDate)?  globalTimeline,TResult Function( int handleId)?  forHandle,TResult Function( int? contactId,  DateTime? scrollToDate)?  recoveredUnlinkedMessages,TResult Function( DateTime? scrollToDate)?  recoveredNoHandleFromMeMessages,TResult Function( int messageId,  AttachmentInfo attachment)?  recoveredAttachmentViewer,TResult Function( int messageId,  int chatId,  int beforeCount,  int afterCount)?  searchResultContext,TResult Function( int handleId)?  handleLens,required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _ConversationBrowser() when conversationBrowser != null:
-return conversationBrowser();case _MessagesForConversation() when forConversation != null:
+case _MessagesForConversation() when forConversation != null:
 return forConversation(_that.conversationId,_that.anchorMessageId,_that.searchQuery);case _MessagesForContact() when forContact != null:
 return forContact(_that.contactId,_that.scrollToDate,_that.filterHandleId);case _MessagesGlobalTimeline() when globalTimeline != null:
 return globalTimeline(_that.scrollToDate);case _MessagesForHandle() when forHandle != null:
@@ -176,10 +172,9 @@ return handleLens(_that.handleId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  conversationBrowser,required TResult Function( int conversationId,  int? anchorMessageId,  String? searchQuery)  forConversation,required TResult Function( int contactId,  DateTime? scrollToDate,  int? filterHandleId)  forContact,required TResult Function( DateTime? scrollToDate)  globalTimeline,required TResult Function( int handleId)  forHandle,required TResult Function( int? contactId,  DateTime? scrollToDate)  recoveredUnlinkedMessages,required TResult Function( DateTime? scrollToDate)  recoveredNoHandleFromMeMessages,required TResult Function( int messageId,  AttachmentInfo attachment)  recoveredAttachmentViewer,required TResult Function( int messageId,  int chatId,  int beforeCount,  int afterCount)  searchResultContext,required TResult Function( int handleId)  handleLens,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( int conversationId,  int? anchorMessageId,  String? searchQuery)  forConversation,required TResult Function( int contactId,  DateTime? scrollToDate,  int? filterHandleId)  forContact,required TResult Function( DateTime? scrollToDate)  globalTimeline,required TResult Function( int handleId)  forHandle,required TResult Function( int? contactId,  DateTime? scrollToDate)  recoveredUnlinkedMessages,required TResult Function( DateTime? scrollToDate)  recoveredNoHandleFromMeMessages,required TResult Function( int messageId,  AttachmentInfo attachment)  recoveredAttachmentViewer,required TResult Function( int messageId,  int chatId,  int beforeCount,  int afterCount)  searchResultContext,required TResult Function( int handleId)  handleLens,}) {final _that = this;
 switch (_that) {
-case _ConversationBrowser():
-return conversationBrowser();case _MessagesForConversation():
+case _MessagesForConversation():
 return forConversation(_that.conversationId,_that.anchorMessageId,_that.searchQuery);case _MessagesForContact():
 return forContact(_that.contactId,_that.scrollToDate,_that.filterHandleId);case _MessagesGlobalTimeline():
 return globalTimeline(_that.scrollToDate);case _MessagesForHandle():
@@ -205,10 +200,9 @@ return handleLens(_that.handleId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  conversationBrowser,TResult? Function( int conversationId,  int? anchorMessageId,  String? searchQuery)?  forConversation,TResult? Function( int contactId,  DateTime? scrollToDate,  int? filterHandleId)?  forContact,TResult? Function( DateTime? scrollToDate)?  globalTimeline,TResult? Function( int handleId)?  forHandle,TResult? Function( int? contactId,  DateTime? scrollToDate)?  recoveredUnlinkedMessages,TResult? Function( DateTime? scrollToDate)?  recoveredNoHandleFromMeMessages,TResult? Function( int messageId,  AttachmentInfo attachment)?  recoveredAttachmentViewer,TResult? Function( int messageId,  int chatId,  int beforeCount,  int afterCount)?  searchResultContext,TResult? Function( int handleId)?  handleLens,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( int conversationId,  int? anchorMessageId,  String? searchQuery)?  forConversation,TResult? Function( int contactId,  DateTime? scrollToDate,  int? filterHandleId)?  forContact,TResult? Function( DateTime? scrollToDate)?  globalTimeline,TResult? Function( int handleId)?  forHandle,TResult? Function( int? contactId,  DateTime? scrollToDate)?  recoveredUnlinkedMessages,TResult? Function( DateTime? scrollToDate)?  recoveredNoHandleFromMeMessages,TResult? Function( int messageId,  AttachmentInfo attachment)?  recoveredAttachmentViewer,TResult? Function( int messageId,  int chatId,  int beforeCount,  int afterCount)?  searchResultContext,TResult? Function( int handleId)?  handleLens,}) {final _that = this;
 switch (_that) {
-case _ConversationBrowser() when conversationBrowser != null:
-return conversationBrowser();case _MessagesForConversation() when forConversation != null:
+case _MessagesForConversation() when forConversation != null:
 return forConversation(_that.conversationId,_that.anchorMessageId,_that.searchQuery);case _MessagesForContact() when forContact != null:
 return forContact(_that.contactId,_that.scrollToDate,_that.filterHandleId);case _MessagesGlobalTimeline() when globalTimeline != null:
 return globalTimeline(_that.scrollToDate);case _MessagesForHandle() when forHandle != null:
@@ -224,38 +218,6 @@ return handleLens(_that.handleId);case _:
 }
 
 }
-
-/// @nodoc
-
-
-class _ConversationBrowser implements MessagesSpec {
-  const _ConversationBrowser();
-  
-
-
-
-
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ConversationBrowser);
-}
-
-
-@override
-int get hashCode => runtimeType.hashCode;
-
-@override
-String toString() {
-  return 'MessagesSpec.conversationBrowser()';
-}
-
-
-}
-
-
-
 
 /// @nodoc
 
