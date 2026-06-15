@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
@@ -75,6 +77,65 @@ void main() {
     expect(find.text('Link to Existing'), findsOneWidget);
     expect(find.text('Dismiss'), findsOneWidget);
     expect(find.text('Please forward the information.'), findsOneWidget);
+  });
+
+  testWidgets('uses raw handle while semantic display name is loading', (
+    tester,
+  ) async {
+    const handleId = 12;
+    const handleValue = '1 (604) 307-8325';
+    final displayNameCompleter = Completer<String>();
+    const repository = _FakeMessageGraphRepository(
+      timeline: [
+        ConversationMessageTimelineEntry(
+          messageId: 1,
+          dateUtc: '2020-06-22T17:04:00.000Z',
+          monthKey: '2020-06',
+        ),
+      ],
+      hydratedMessage: ConversationMessage(
+        messageId: 1,
+        dateUtc: '2020-06-22T17:04:00.000Z',
+        isFromMe: true,
+        text: 'Please forward the information.',
+        associatedMessageId: null,
+        attachmentCount: 0,
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          strayHandlesProvider.overrideWith((ref) async {
+            return [
+              StrayHandleSummary(
+                handleId: handleId,
+                handleValue: handleValue,
+                serviceType: 'SMS',
+                totalMessages: 243,
+                lastMessageDate: DateTime.utc(2020, 6, 22),
+              ),
+            ];
+          }),
+          handleDisplayNameProvider(handleId: handleId).overrideWith((ref) {
+            return displayNameCompleter.future;
+          }),
+          messageGraphReaderProvider.overrideWith((ref) async {
+            return const MessageGraphReader(repository: repository);
+          }),
+          displayIdentityResolverProvider.overrideWith((ref) async {
+            return const DisplayIdentityResolver(identitiesByHandleKey: {});
+          }),
+        ],
+        child: const MacosApp(home: HandleLensView(handleId: handleId)),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.text(handleValue), findsOneWidget);
+    expect(find.text('Handle #$handleId'), findsNothing);
   });
 }
 

@@ -60,7 +60,12 @@ class HandleLensView extends HookConsumerWidget {
     );
 
     // Use resolved display name (virtual contact > real contact > raw handle).
-    final handleValue = asyncDisplayName.valueOrNull ?? 'Handle #$handleId';
+    // While identity resolution is loading, prefer the raw handle fact already
+    // present in the selected stray-handle summary over an internal id label.
+    final handleValue =
+        asyncDisplayName.valueOrNull ??
+        handleSummary?.handleValue ??
+        'Handle #$handleId';
 
     return MacosScaffold(
       children: [
