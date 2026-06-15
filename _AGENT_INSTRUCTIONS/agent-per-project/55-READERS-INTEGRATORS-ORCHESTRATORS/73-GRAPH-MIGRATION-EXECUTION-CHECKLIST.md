@@ -2398,6 +2398,11 @@ criteria.
   - Added a companion tripwire that keeps retained conversation browser
     internals private to the retained diagnostic view, preventing ordinary code
     from importing its integrator as a backdoor conversation read path.
+  - Renamed the graph-facing archive lookup record field from retained import
+    identity language to `archiveCompatibilityAttachmentId`. The retained
+    archive overlay still uses `(message_guid, import_attachment_id)`, but the
+    graph contract now presents that value as an archive compatibility key
+    rather than canonical attachment identity.
 
 ### Exit Criteria
 

@@ -65,9 +65,8 @@ class OverlayArchiveCompatibilityLookup
       return null;
     }
 
-    final retainedImportAttachmentId = SourceScopedRowKey.unpackSourceRowId(
-      attachmentSsId,
-    );
+    final archiveCompatibilityAttachmentId =
+        SourceScopedRowKey.unpackSourceRowId(attachmentSsId);
     final archiveRows = await overlayDatabase
         .customSelect(
           '''
@@ -78,7 +77,7 @@ class OverlayArchiveCompatibilityLookup
           ''',
           variables: [
             Variable<String>(messageGuid),
-            Variable<int>(retainedImportAttachmentId),
+            Variable<int>(archiveCompatibilityAttachmentId),
           ],
         )
         .get();
@@ -94,7 +93,7 @@ class OverlayArchiveCompatibilityLookup
       archiveRelativePath: relativePath,
       archiveAbsolutePath: absolutePath,
       archiveFileExists: File(absolutePath).existsSync(),
-      retainedImportAttachmentId: retainedImportAttachmentId,
+      archiveCompatibilityAttachmentId: archiveCompatibilityAttachmentId,
     );
   }
 }
