@@ -1609,9 +1609,10 @@ criteria.
   production code should use graph, retained metadata, retained reference, or
   source-scoped terminology instead of introducing new legacy-named concepts.
 - Attachment archive compatibility read models now use
-  `retainedImportAttachmentId` wording at the graph boundary. The persisted
-  overlay column remains `import_attachment_id`, but active typed code no
-  longer describes this as a legacy import attachment identity.
+  `archiveCompatibilityAttachmentId` wording at the graph boundary. The
+  persisted overlay column remains `import_attachment_id`, but active typed
+  graph-facing code no longer describes this as retained import attachment
+  identity.
 - Focused architecture and attachment-archive bridge tests confirm the
   retained/source-scoped filename guards and archive compatibility read model
   remain intact after the terminology hardening pass.
