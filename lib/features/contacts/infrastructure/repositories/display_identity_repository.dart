@@ -69,15 +69,7 @@ class SqliteDisplayIdentityRepository implements DisplayIdentityRepository {
         contactId: contactId,
       );
       _putIdentity(identities, handleValue, identity);
-      identitiesByContactId.putIfAbsent(contactId, () => identity);
-      final retainedOverlayContactId =
-          retainedOverlayContactIdForGraphContactId(contactId);
-      if (retainedOverlayContactId != null) {
-        identitiesByContactId.putIfAbsent(
-          retainedOverlayContactId,
-          () => identity,
-        );
-      }
+      _putContactIdentity(identitiesByContactId, contactId, identity);
       if (handleSsId != null) {
         identitiesByHandleId.putIfAbsent(handleSsId, () => identity);
       }
@@ -138,15 +130,7 @@ class SqliteDisplayIdentityRepository implements DisplayIdentityRepository {
         contactId: contactId,
       );
 
-      identitiesByContactId.putIfAbsent(contactId, () => identity);
-      final retainedOverlayContactId =
-          retainedOverlayContactIdForGraphContactId(contactId);
-      if (retainedOverlayContactId != null) {
-        identitiesByContactId.putIfAbsent(
-          retainedOverlayContactId,
-          () => identity,
-        );
-      }
+      _putContactIdentity(identitiesByContactId, contactId, identity);
     }
   }
 
@@ -183,6 +167,16 @@ ParticipantOverride? participantOverrideForGraphContactId({
   required int contactId,
 }) {
   return overlayValueForContactId(participantOverrides, contactId);
+}
+
+void _putContactIdentity(
+  Map<int, ParticipantDisplayIdentity> identitiesByContactId,
+  int contactId,
+  ParticipantDisplayIdentity identity,
+) {
+  for (final key in contactOverlayKeyVariants(contactId)) {
+    identitiesByContactId.putIfAbsent(key, () => identity);
+  }
 }
 
 void _putIdentity(
