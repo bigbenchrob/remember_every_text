@@ -27,6 +27,8 @@ part 'attachment_resolver_provider.g.dart';
 Future<ResolvedAttachment> attachmentResolver(
   AttachmentResolverRef ref,
   AttachmentInfo attachmentInfo, {
+  // Current archive compatibility key. These values mirror the overlay archive
+  // table, not canonical graph attachment identity.
   required String messageGuid,
   required int? importAttachmentId,
 }) async {

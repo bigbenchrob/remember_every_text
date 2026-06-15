@@ -2413,6 +2413,10 @@ criteria.
     those compatibility keys into the existing overlay write-store API.
   - Added an architecture tripwire that keeps retained archive column names out
     of the graph archive candidate contract.
+  - Clarified `AttachmentArchiveReadStore` and `attachmentResolverProvider`
+    comments so their `messageGuid` / `importAttachmentId` parameters are
+    explicitly treated as the current archive compatibility key, not canonical
+    graph identity.
 
 ### Exit Criteria
 
