@@ -2,9 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../essentials/conversation_graph/application/conversations/conversation.dart';
-import '../../../../essentials/conversation_graph/application/conversations/conversation_reader_provider.dart';
-import '../../../contacts/feature_level_providers.dart';
+import '../../application/message_evidence/conversation_evidence_header_context_provider.dart';
 import '../../application/message_evidence/message_evidence_spine_provider.dart';
 import '../../domain/message_evidence/message_evidence_scope.dart';
 import '../../domain/message_evidence/message_evidence_search_mode.dart';
@@ -75,19 +73,17 @@ class _ConversationMessagesPreviewViewState
               mode: _searchMode,
             ),
           );
-    final overviewsAsync = ref.watch(
-      conversationOverviewsProvider(limit: 1000),
+    final headerContextAsync = ref.watch(
+      conversationEvidenceHeaderContextProvider(
+        conversationId: widget.conversationId,
+      ),
     );
-    final identityResolverAsync = ref.watch(displayIdentityResolverProvider);
 
     return skeletonAsync.when(
       skipLoadingOnReload: true,
       skipLoadingOnRefresh: true,
       data: (skeleton) {
-        final overview = _overviewForConversation(
-          overviewsAsync.valueOrNull,
-          widget.conversationId,
-        );
+        final headerContext = headerContextAsync.valueOrNull;
         final matchingIds = matchingIdsAsync?.valueOrNull;
         final isMatchingLoaded = matchingIdsAsync?.hasValue ?? false;
         final visibleSkeleton = _visibleSkeleton(
@@ -101,10 +97,10 @@ class _ConversationMessagesPreviewViewState
           skeleton: visibleSkeleton,
           headerData: MessageEvidenceHeaderModel(
             title:
-                'Conversation with ${_conversationTitle(overview, identityResolverAsync.valueOrNull)}',
-            dateRangeLabel: _dateRangeLabel(overview),
+                'Conversation with ${headerContext?.title ?? 'Unknown participants'}',
+            dateRangeLabel: _dateRangeLabel(headerContext),
             countLabel: _countLabel(
-              overview,
+              headerContext,
               skeleton.totalCount,
               normalizedQuery,
               matchingIds,
@@ -138,23 +134,8 @@ class _ConversationMessagesPreviewViewState
     );
   }
 
-  ConversationOverview? _overviewForConversation(
-    List<ConversationOverview>? overviews,
-    int conversationId,
-  ) {
-    if (overviews == null) {
-      return null;
-    }
-    for (final overview in overviews) {
-      if (overview.conversationId == conversationId) {
-        return overview;
-      }
-    }
-    return null;
-  }
-
-  String? _dateRangeLabel(ConversationOverview? overview) {
-    final dateSpan = _conversationDateSpan(overview);
+  String? _dateRangeLabel(ConversationEvidenceHeaderContext? headerContext) {
+    final dateSpan = _conversationDateSpan(headerContext);
     if (dateSpan.isEmpty) {
       return null;
     }
@@ -162,13 +143,13 @@ class _ConversationMessagesPreviewViewState
   }
 
   String _countLabel(
-    ConversationOverview? overview,
+    ConversationEvidenceHeaderContext? headerContext,
     int skeletonCount,
     String query,
     List<int>? matchingIds,
     bool isMatchingLoaded,
   ) {
-    final messageCount = overview?.messageCount ?? skeletonCount;
+    final messageCount = headerContext?.messageCount ?? skeletonCount;
     if (query.isNotEmpty) {
       if (isMatchingLoaded) {
         return '${_formatCount(matchingIds?.length ?? 0)} of '
@@ -234,24 +215,9 @@ String _emptyMessage({required String query, required bool isMatchingLoaded}) {
   return 'No conversation messages match "$query".';
 }
 
-String _conversationTitle(
-  ConversationOverview? overview,
-  DisplayIdentityResolver? identityResolver,
-) {
-  if (overview == null || identityResolver == null) {
-    return 'Unknown participants';
-  }
-  return identityResolver
-      .resolveConversationFromHandles(
-        conversationId: overview.conversationId,
-        handles: overview.participantHandles,
-      )
-      .title;
-}
-
-String _conversationDateSpan(ConversationOverview? overview) {
-  final first = _formatDateLabel(overview?.firstMessageAtUtc);
-  final last = _formatDateLabel(overview?.lastMessageAtUtc);
+String _conversationDateSpan(ConversationEvidenceHeaderContext? headerContext) {
+  final first = _formatDateLabel(headerContext?.firstMessageAtUtc);
+  final last = _formatDateLabel(headerContext?.lastMessageAtUtc);
   if (first == null && last == null) {
     return '';
   }
