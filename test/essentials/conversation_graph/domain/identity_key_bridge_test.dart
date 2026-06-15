@@ -4,6 +4,38 @@ import 'package:remember_this_text/essentials/source_scoped_import/domain/known_
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 
 void main() {
+  group('contactOverlayKeyVariants', () {
+    test('includes graph contact id for retained live AddressBook ids', () {
+      final graphContactId = SourceScopedRowKey.pack(
+        sourceId: liveAddressBookSourceId,
+        sourceRowId: 17,
+      );
+
+      expect(contactOverlayKeyVariants(17), {17, graphContactId});
+    });
+
+    test('includes retained contact id for graph live AddressBook ids', () {
+      final graphContactId = SourceScopedRowKey.pack(
+        sourceId: liveAddressBookSourceId,
+        sourceRowId: 17,
+      );
+
+      expect(contactOverlayKeyVariants(graphContactId), {graphContactId, 17});
+    });
+
+    test(
+      'does not invent retained contact id for non-AddressBook graph ids',
+      () {
+        final chatDbId = SourceScopedRowKey.pack(
+          sourceId: liveChatDbSourceId,
+          sourceRowId: 17,
+        );
+
+        expect(contactOverlayKeyVariants(chatDbId), {chatDbId});
+      },
+    );
+  });
+
   group('handleOverlayKeyVariants', () {
     test('includes graph handle id for retained live handle ids', () {
       final graphHandleId = SourceScopedRowKey.pack(
