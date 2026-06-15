@@ -4,6 +4,10 @@ import '../domain/entities/attachment_recovery_metadata.dart';
 
 const _kAttachmentRecoveryHintSettingPrefix = 'attachment_recovery_hint';
 
+/// Builds a recovery-hint key using the current archive compatibility key.
+///
+/// The pair mirrors retained archive storage and is not canonical graph
+/// identity.
 String attachmentRecoveryHintSettingKey({
   required String messageGuid,
   required int importAttachmentId,

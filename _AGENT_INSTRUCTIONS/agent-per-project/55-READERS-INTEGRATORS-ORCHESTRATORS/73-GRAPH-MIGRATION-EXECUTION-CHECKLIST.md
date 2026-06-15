@@ -2425,6 +2425,9 @@ criteria.
     current archive compatibility keys and added an architecture guard so
     `AttachmentInfo` / `MediaTileAttachment` cannot silently turn
     `messageGuid` / `importAttachmentId` into canonical graph identity.
+  - Clarified the archive write-store, archive file-store, and recovery-hint
+    key contracts so retained archive key names remain explicitly bounded to
+    compatibility storage instead of becoming graph identity vocabulary.
 
 ### Exit Criteria
 

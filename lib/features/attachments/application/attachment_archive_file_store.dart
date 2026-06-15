@@ -31,6 +31,10 @@ abstract interface class AttachmentArchiveFileStore {
 
   Future<void> ensureArchiveDirectory(String archiveDirectoryPath);
 
+  /// Writes an archive file under the current archive compatibility key.
+  ///
+  /// `importAttachmentId` is retained for deterministic archive filenames and
+  /// must not be treated as canonical graph attachment identity.
   Future<ArchivedAttachmentFileWrite?> writeArchiveEntry({
     required String archiveDirectoryPath,
     required String sourcePath,

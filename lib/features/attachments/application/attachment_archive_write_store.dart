@@ -11,6 +11,10 @@ class ArchivedAttachmentWrite {
     required this.originalLocalPath,
   });
 
+  /// Current archive compatibility key for existing overlay archive records.
+  ///
+  /// These names mirror the retained archive table, but callers must not treat
+  /// them as canonical graph identity.
   final String messageGuid;
   final int importAttachmentId;
   final String archiveRelativePath;
@@ -33,6 +37,7 @@ class ArchiveIntegrityEntry {
 }
 
 abstract interface class AttachmentArchiveWriteStore {
+  /// Reads archive storage by the current overlay archive compatibility key.
   Future<bool> hasArchiveRecord({
     required String messageGuid,
     required int importAttachmentId,
@@ -42,17 +47,20 @@ abstract interface class AttachmentArchiveWriteStore {
 
   Future<List<ArchiveIntegrityEntry>> readIntegrityEntries();
 
+  /// Reads recovery metadata by the current overlay archive compatibility key.
   Future<AttachmentRecoveryMetadata?> readRecoveryHint({
     required String messageGuid,
     required int importAttachmentId,
   });
 
+  /// Writes recovery metadata by the current overlay archive compatibility key.
   Future<void> writeRecoveryHint({
     required String messageGuid,
     required int importAttachmentId,
     required AttachmentRecoveryMetadata metadata,
   });
 
+  /// Clears recovery metadata by the current overlay archive compatibility key.
   Future<void> clearRecoveryHint({
     required String messageGuid,
     required int importAttachmentId,
