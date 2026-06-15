@@ -2,9 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../essentials/conversation_graph/application/contacts/contact_graph.dart';
-import '../../../../essentials/conversation_graph/application/contacts/contact_graph_provider.dart';
-import '../../../contacts/feature_level_providers.dart';
+import '../../application/message_evidence/contact_evidence_header_context_provider.dart';
 import '../../application/message_evidence/current_visible_month_provider.dart';
 import '../../application/message_evidence/message_evidence_spine_provider.dart';
 import '../../domain/message_evidence/message_evidence_row_data.dart';
@@ -74,13 +72,12 @@ class _ContactMessagesEvidenceViewState
         limit: widget.monthAnchor == null ? 80 : 500,
       ),
     );
-    final snapshotAsync = ref.watch(
-      contactPageGraphSnapshotProvider(contactId: widget.contactId),
+    final headerContextAsync = ref.watch(
+      contactEvidenceHeaderContextProvider(
+        contactId: widget.contactId,
+        filterHandleId: widget.filterHandleId,
+      ),
     );
-    final identityResolverAsync = ref.watch(displayIdentityResolverProvider);
-    final handlesAsync = widget.filterHandleId == null
-        ? null
-        : ref.watch(handlesForContactProvider(contactId: widget.contactId));
     final normalizedQuery = _query.trim();
     final matchingIdsAsync = normalizedQuery.isEmpty
         ? null
@@ -96,8 +93,7 @@ class _ContactMessagesEvidenceViewState
       skipLoadingOnReload: true,
       skipLoadingOnRefresh: true,
       data: (skeleton) {
-        if (identityResolverAsync.isLoading &&
-            !identityResolverAsync.hasValue) {
+        if (headerContextAsync.isLoading && !headerContextAsync.hasValue) {
           return MessageEvidenceTimelineView(
             evidenceScope: evidenceScope,
             skeleton: skeleton,
@@ -113,22 +109,14 @@ class _ContactMessagesEvidenceViewState
 
         return _ContactMessagesEvidenceTimeline(
           contactId: widget.contactId,
-          contactName: _contactLabelForId(
-            identityResolverAsync.valueOrNull,
-            widget.contactId,
-          ),
+          headerContext: headerContextAsync.valueOrNull,
           evidenceScope: evidenceScope,
-          snapshot: snapshotAsync.valueOrNull,
           skeleton: skeleton,
           initialRows: initialRowsAsync.valueOrNull ?? const {},
           isInitialRowsLoading:
               initialRowsAsync.isLoading && !initialRowsAsync.hasValue,
           monthAnchor: widget.monthAnchor,
           filterHandleId: widget.filterHandleId,
-          selectedHandleLabel: _selectedHandleLabel(
-            handlesAsync?.valueOrNull,
-            widget.filterHandleId,
-          ),
           searchQuery: normalizedQuery,
           matchingMessageIds: matchingIdsAsync?.valueOrNull,
           isMatchingLoaded: matchingIdsAsync?.hasValue ?? false,
@@ -148,25 +136,16 @@ class _ContactMessagesEvidenceViewState
   }
 }
 
-String? _contactLabelForId(
-  DisplayIdentityResolver? identityResolver,
-  int contactId,
-) {
-  return identityResolver?.resolveContact(contactId).primaryLabel;
-}
-
 class _ContactMessagesEvidenceTimeline extends ConsumerWidget {
   const _ContactMessagesEvidenceTimeline({
     required this.contactId,
-    required this.contactName,
+    required this.headerContext,
     required this.evidenceScope,
-    required this.snapshot,
     required this.skeleton,
     required this.initialRows,
     required this.isInitialRowsLoading,
     required this.monthAnchor,
     required this.filterHandleId,
-    required this.selectedHandleLabel,
     required this.searchQuery,
     required this.matchingMessageIds,
     required this.isMatchingLoaded,
@@ -176,15 +155,13 @@ class _ContactMessagesEvidenceTimeline extends ConsumerWidget {
   });
 
   final int contactId;
-  final String? contactName;
+  final ContactEvidenceHeaderContext? headerContext;
   final MessageEvidenceScope evidenceScope;
-  final ContactGraphSnapshot? snapshot;
   final MessageEvidenceTimelineSkeleton skeleton;
   final Map<int, MessageEvidenceRowData> initialRows;
   final bool isInitialRowsLoading;
   final DateTime? monthAnchor;
   final int? filterHandleId;
-  final String? selectedHandleLabel;
   final String searchQuery;
   final List<int>? matchingMessageIds;
   final bool isMatchingLoaded;
@@ -242,12 +219,15 @@ class _ContactMessagesEvidenceTimeline extends ConsumerWidget {
       return _dateSpanForSkeleton();
     }
 
-    final activity = snapshot?.messageActivity;
-    if (activity == null) {
+    if (headerContext?.firstMessageAtUtc == null &&
+        headerContext?.lastMessageAtUtc == null) {
       return null;
     }
 
-    return _dateSpan(activity.firstMessageAtUtc, activity.lastMessageAtUtc);
+    return _dateSpan(
+      headerContext?.firstMessageAtUtc,
+      headerContext?.lastMessageAtUtc,
+    );
   }
 
   String _countLabel() {
@@ -268,12 +248,12 @@ class _ContactMessagesEvidenceTimeline extends ConsumerWidget {
       return '${_formatCount(skeleton.totalCount)} messages';
     }
 
-    final activity = snapshot?.messageActivity;
-    if (activity == null) {
+    final totalMessageCount = headerContext?.totalMessageCount;
+    if (totalMessageCount == null) {
       return '${_formatCount(skeleton.totalCount)} messages';
     }
 
-    return '${_formatCount(activity.totalMessageCount)} messages';
+    return '${_formatCount(totalMessageCount)} messages';
   }
 
   String? _activeScopeLabel() {
@@ -310,7 +290,7 @@ class _ContactMessagesEvidenceTimeline extends ConsumerWidget {
   }
 
   String _contactLabel() {
-    final label = contactName?.trim();
+    final label = headerContext?.contactName.trim();
     if (label != null && label.isNotEmpty) {
       return label;
     }
@@ -328,7 +308,7 @@ class _ContactMessagesEvidenceTimeline extends ConsumerWidget {
     if (filterHandleId == null) {
       return null;
     }
-    return 'Selected handle: ${selectedHandleLabel ?? 'handle $filterHandleId'}';
+    return 'Selected handle: ${headerContext?.selectedHandleLabel ?? 'handle $filterHandleId'}';
   }
 
   int _monthMessageCount(String monthKey) {
@@ -388,17 +368,4 @@ String? _dateLabel(String? value) {
 
 String _formatCount(int count) {
   return NumberFormat.decimalPattern().format(count);
-}
-
-String? _selectedHandleLabel(List<LinkedHandle>? handles, int? handleId) {
-  if (handleId == null || handles == null) {
-    return null;
-  }
-
-  for (final handle in handles) {
-    if (handle.handleId == handleId) {
-      return '${handle.displayValue} (${handle.service})';
-    }
-  }
-  return null;
 }

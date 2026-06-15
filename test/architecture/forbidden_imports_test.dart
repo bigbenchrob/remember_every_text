@@ -906,6 +906,22 @@ void main() {
       );
     });
 
+    test('Contact message header uses context boundary', () async {
+      final offenders =
+          await _findContactMessageHeaderContextBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'ContactMessagesEvidenceView renders message evidence. Contact '
+            'title/date/count/selected-handle composition should stay behind '
+            'the ContactEvidenceHeaderContext provider so raw graph and '
+            'identity facts do not become widget-owned semantics.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Message user metadata application stays semantic', () async {
       final offenders =
           await _findMessageUserMetadataApplicationInfrastructureOffenders();
@@ -3114,6 +3130,24 @@ _findConversationMessageHeaderContextBoundaryOffenders() async {
   const forbiddenImports = <String>{
     '../../../../essentials/conversation_graph/application/conversations/conversation.dart',
     '../../../../essentials/conversation_graph/application/conversations/conversation_reader_provider.dart',
+    '../../../contacts/feature_level_providers.dart',
+  };
+
+  return [
+    for (final importTarget in imports)
+      if (forbiddenImports.contains(importTarget)) '$filePath -> $importTarget',
+  ]..sort();
+}
+
+Future<List<String>> _findContactMessageHeaderContextBoundaryOffenders() async {
+  const filePath =
+      'lib/features/messages/presentation/view/contact_messages_evidence_view.dart';
+  final source = await File(filePath).readAsString();
+  final uncommented = _stripComments(source);
+  final imports = _extractImports(uncommented);
+  const forbiddenImports = <String>{
+    '../../../../essentials/conversation_graph/application/contacts/contact_graph.dart',
+    '../../../../essentials/conversation_graph/application/contacts/contact_graph_provider.dart',
     '../../../contacts/feature_level_providers.dart',
   };
 
