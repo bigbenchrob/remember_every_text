@@ -35,16 +35,16 @@ class SearchService {
 
 ({String query, bool filterSaved}) _parseSearchQuery(String query) {
   final tokens = query.split(RegExp(r'\s+'));
-  final retained = <String>[];
+  final queryTokens = <String>[];
   var filterSaved = false;
   for (final token in tokens) {
     if (token.trim().toLowerCase() == 'is:saved') {
       filterSaved = true;
       continue;
     }
-    retained.add(token);
+    queryTokens.add(token);
   }
-  return (query: retained.join(' ').trim(), filterSaved: filterSaved);
+  return (query: queryTokens.join(' ').trim(), filterSaved: filterSaved);
 }
 
 /// Whether [input] ends with whitespace, signaling the last word is complete.
