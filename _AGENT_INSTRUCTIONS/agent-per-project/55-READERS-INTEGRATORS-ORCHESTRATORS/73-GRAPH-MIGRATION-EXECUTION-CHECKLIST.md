@@ -2392,6 +2392,9 @@ criteria.
     feature-level export surface. It remains directly testable as diagnostic
     reference UI, but ordinary feature consumers can no longer discover it
     through `features/chats/feature_level_providers.dart`.
+  - Added an architecture tripwire that keeps the retained conversation browser
+    out of the chats public export surface, complementing the existing route
+    guard that prevents it from returning as normal message evidence.
 
 ### Exit Criteria
 

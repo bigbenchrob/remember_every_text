@@ -1000,6 +1000,22 @@ void main() {
       );
     });
 
+    test('Retained conversation browser is not publicly exported', () async {
+      final offenders =
+          await _findRetainedConversationBrowserPublicExportOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'ConversationBrowserView is retained as direct diagnostic/reference '
+            'UI only. It must not be exported from feature_level_providers.dart '
+            'where ordinary feature consumers can rediscover it as a normal '
+            'public chats surface.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Message user metadata application stays semantic', () async {
       final offenders =
           await _findMessageUserMetadataApplicationInfrastructureOffenders();
@@ -3348,6 +3364,22 @@ Future<List<String>> _findConversationBrowserSpecRouteOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>>
+_findRetainedConversationBrowserPublicExportOffenders() async {
+  const exportFile = 'lib/features/chats/feature_level_providers.dart';
+  final file = File(exportFile);
+  if (!file.existsSync()) {
+    return const [];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  if (!uncommented.contains('conversation_browser_view.dart')) {
+    return const [];
+  }
+
+  return const ['$exportFile exports retained conversation_browser_view.dart'];
 }
 
 Future<List<String>>
