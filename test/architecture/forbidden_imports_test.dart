@@ -501,6 +501,20 @@ void main() {
       );
     });
 
+    test('Presentation code does not own database access', () async {
+      final offenders = await _findPresentationDatabaseAccessOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Presentation widgets should render typed models and callbacks. '
+            'Database providers, concrete database adapters, and SQL calls '
+            'belong behind application/infrastructure boundaries.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Database health query contract stays file-system agnostic', () async {
       final offenders = await _findDatabaseHealthQueryLayerFileIoOffenders();
 
@@ -2443,6 +2457,60 @@ Future<List<String>> _findDatabaseConstructionOffenders() async {
     final uncommented = _stripComments(source);
     if (constructionPattern.hasMatch(uncommented)) {
       offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findPresentationDatabaseAccessOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+
+    return path.contains('/presentation/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+
+    for (final importTarget in imports) {
+      if (importTarget == 'package:sqlite3/sqlite3.dart' ||
+          importTarget.startsWith('package:sqflite') ||
+          importTarget.endsWith('essentials/db/feature_level_providers.dart') ||
+          importTarget.endsWith(
+            'source_scoped_import/infrastructure/import_database_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart',
+          ) ||
+          importTarget.endsWith(
+            'essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart',
+          )) {
+        offenders.add('$filePath imports $importTarget');
+      }
+    }
+
+    const forbiddenTokens = <String>[
+      'overlayDatabaseProvider',
+      'driftConversationGraphDatabaseProvider',
+      'importDatabaseProvider',
+      'retainedArchiveMetadataStoreProvider',
+      'sqlite3.open',
+      'openDatabase(',
+      '.rawQuery(',
+      '.customSelect(',
+      '.selectRows(',
+      '.executeSql(',
+    ];
+    for (final token in forbiddenTokens) {
+      if (uncommented.contains(token)) {
+        offenders.add('$filePath uses $token');
+      }
     }
   }
 
