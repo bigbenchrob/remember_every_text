@@ -203,8 +203,10 @@ void _triggerOnDemandArchive(
   ref
       .read(attachmentArchiveServiceProvider.notifier)
       .archiveAttachment(
-        messageGuid: messageGuid,
-        importAttachmentId: importAttachmentId,
+        archiveKey: ArchiveCompatibilityKey(
+          messageGuid: messageGuid,
+          importAttachmentId: importAttachmentId,
+        ),
         resolvedLocalPath: resolvedLocalPath,
         mimeType: mimeType,
         sha256Hex: null,

@@ -40,8 +40,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
   /// Returns `true` if the file was newly archived, `false` if skipped
   /// (already archived or source missing).
   Future<bool> archiveAttachment({
-    required String messageGuid,
-    required int importAttachmentId,
+    required ArchiveCompatibilityKey archiveKey,
     required String resolvedLocalPath,
     required String? mimeType,
     required String? sha256Hex,
@@ -51,10 +50,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     );
     final archiveDir = ref.read(attachmentArchiveDirectoryPathProvider);
     final fileStore = ref.read(attachmentArchiveFileStoreProvider);
-    final archiveKey = ArchiveCompatibilityKey(
-      messageGuid: messageGuid,
-      importAttachmentId: importAttachmentId,
-    );
+    final importAttachmentId = archiveKey.importAttachmentId;
 
     // Idempotency check: skip if already archived.
     final alreadyArchived = await archiveStore.hasArchiveRecord(archiveKey);
@@ -111,8 +107,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
   }
 
   Future<void> prioritizeRecovery({
-    required String messageGuid,
-    required int importAttachmentId,
+    required ArchiveCompatibilityKey archiveKey,
     required String? resolvedLocalPath,
     required String? mimeType,
   }) async {
@@ -123,10 +118,6 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
 
     final archiveStore = await ref.read(
       attachmentArchiveWriteStoreProvider.future,
-    );
-    final archiveKey = ArchiveCompatibilityKey(
-      messageGuid: messageGuid,
-      importAttachmentId: importAttachmentId,
     );
     final existingHint = await archiveStore.readRecoveryHint(archiveKey);
     final now = DateTime.now().toUtc();
@@ -158,8 +149,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
 
     unawaited(
       archiveAttachment(
-        messageGuid: messageGuid,
-        importAttachmentId: importAttachmentId,
+        archiveKey: archiveKey,
         resolvedLocalPath: resolvedLocalPath,
         mimeType: mimeType,
         sha256Hex: null,
@@ -569,8 +559,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
 
       try {
         final success = await archiveAttachment(
-          messageGuid: archiveKey.messageGuid,
-          importAttachmentId: importAttachmentId,
+          archiveKey: archiveKey,
           resolvedLocalPath: archivablePath,
           mimeType: row.mimeType,
           sha256Hex: row.sha256Hex,

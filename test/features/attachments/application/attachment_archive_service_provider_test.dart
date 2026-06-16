@@ -106,8 +106,10 @@ void main() {
         await container
             .read(attachmentArchiveServiceProvider.notifier)
             .prioritizeRecovery(
-              messageGuid: 'm-recover-now',
-              importAttachmentId: 99,
+              archiveKey: const ArchiveCompatibilityKey(
+                messageGuid: 'm-recover-now',
+                importAttachmentId: 99,
+              ),
               resolvedLocalPath: sourceFile.path,
               mimeType: 'image/jpeg',
             );

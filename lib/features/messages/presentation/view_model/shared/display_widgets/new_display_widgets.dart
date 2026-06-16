@@ -923,9 +923,11 @@ class ImageMessageTile extends ConsumerWidget {
                             ref
                                 .read(attachmentArchiveServiceProvider.notifier)
                                 .prioritizeRecovery(
-                                  messageGuid: attachment.messageGuid!,
-                                  importAttachmentId:
-                                      attachment.importAttachmentId!,
+                                  archiveKey: ArchiveCompatibilityKey(
+                                    messageGuid: attachment.messageGuid!,
+                                    importAttachmentId:
+                                        attachment.importAttachmentId!,
+                                  ),
                                   resolvedLocalPath: fileAccess.expandPath(
                                     attachment.localPath,
                                   ),
@@ -1306,9 +1308,11 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
                             ref
                                 .read(attachmentArchiveServiceProvider.notifier)
                                 .prioritizeRecovery(
-                                  messageGuid: widget.attachment.messageGuid!,
-                                  importAttachmentId:
-                                      widget.attachment.importAttachmentId!,
+                                  archiveKey: ArchiveCompatibilityKey(
+                                    messageGuid: widget.attachment.messageGuid!,
+                                    importAttachmentId:
+                                        widget.attachment.importAttachmentId!,
+                                  ),
                                   resolvedLocalPath: fileAccess.expandPath(
                                     widget.attachment.localPath,
                                   ),
