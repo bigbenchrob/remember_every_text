@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../../essentials/conversation_graph/domain/identity_key_bridge.dart';
 import '../../../feature_level_providers.dart';
+import '../../read_models/contact_summary_identity.dart';
 import 'contact_is_favorite_provider.dart';
 import 'favorite_contacts_provider.dart';
 import 'unified_picker_sections_provider.dart';
@@ -29,7 +29,7 @@ class ContactFavoriteActions extends _$ContactFavoriteActions {
       await repository.removeFavorite(contactId);
     }
 
-    for (final key in contactOverlayKeyVariants(contactId)) {
+    for (final key in contactIdentityKeyVariants(contactId)) {
       ref.invalidate(contactIsFavoriteProvider(participantId: key));
     }
     ref.invalidate(favoriteContactsProvider);

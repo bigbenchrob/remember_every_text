@@ -1,8 +1,8 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../../essentials/conversation_graph/domain/identity_key_bridge.dart';
 import '../../../feature_level_providers.dart';
+import '../../read_models/contact_summary_identity.dart';
 
 part 'favorite_contacts_provider.freezed.dart';
 part 'favorite_contacts_provider.g.dart';
@@ -33,7 +33,7 @@ Future<List<FavoriteContactEntry>> favoriteContacts(
 
   final resolved = <FavoriteContactEntry>[];
   for (final favorite in favorites) {
-    final contact = _findContactForFavorite(contacts, favorite.participantId);
+    final contact = findContactSummaryById(contacts, favorite.participantId);
     if (contact == null) {
       continue;
     }
@@ -49,19 +49,4 @@ Future<List<FavoriteContactEntry>> favoriteContacts(
   }
 
   return resolved;
-}
-
-ContactSummary? _findContactForFavorite(
-  List<ContactSummary> contacts,
-  int favoriteParticipantId,
-) {
-  for (final contact in contacts) {
-    if (contactIdsRepresentSamePerson(
-      contact.participantId,
-      favoriteParticipantId,
-    )) {
-      return contact;
-    }
-  }
-  return null;
 }

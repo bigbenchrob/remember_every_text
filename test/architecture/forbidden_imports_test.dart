@@ -39,10 +39,7 @@ const Set<String> _sourceScopedDatabaseFilenameLiteralAllowedFiles = {
 const Set<String> _legacyTerminologyAllowedFiles = <String>{};
 
 const Set<String> _identityKeyBridgeAllowedFiles = {
-  'lib/features/contacts/application/sidebar_cassette_spec/resolver_tools/contact_favorite_actions_provider.dart',
-  'lib/features/contacts/application/sidebar_cassette_spec/resolver_tools/contact_is_favorite_provider.dart',
-  'lib/features/contacts/application/sidebar_cassette_spec/resolver_tools/favorite_contacts_provider.dart',
-  'lib/features/contacts/application/sidebar_cassette_spec/widget_builders/contact_hero_summary_widget.dart',
+  'lib/features/contacts/application/read_models/contact_summary_identity.dart',
   'lib/features/contacts/infrastructure/repositories/display_identity_repository.dart',
   'lib/features/contacts/infrastructure/repositories/graph_contact_profile_reader.dart',
   'lib/features/contacts/infrastructure/repositories/graph_contacts_list_reader.dart',

@@ -2483,6 +2483,9 @@ criteria.
   - Added an architecture tripwire that freezes the current
     `identity_key_bridge.dart` import surface, keeping retained-overlay graph
     key conversion from spreading without explicit review.
+  - Moved contact-side retained/graph identity matching into a contacts
+    application read-model helper, removing direct identity-bridge imports from
+    the contact hero widget and favorite contact providers.
 
 ### Exit Criteria
 

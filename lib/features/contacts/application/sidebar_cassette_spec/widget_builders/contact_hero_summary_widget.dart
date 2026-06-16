@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 
-import '../../../../../essentials/conversation_graph/domain/identity_key_bridge.dart';
 import '../../../feature_level_providers.dart';
 import '../../../presentation/dialogs/contact_name_edit_dialog.dart';
 import '../../../presentation/widgets/contact_cassette_error.dart';
 import '../../../presentation/widgets/contact_highlight_row.dart';
+import '../../read_models/contact_summary_identity.dart';
 import '../resolver_tools/contact_display_name_override_actions_provider.dart';
 import '../resolver_tools/contact_favorite_actions_provider.dart';
 import '../resolver_tools/contact_is_favorite_provider.dart';
@@ -128,10 +128,7 @@ class _ContactHeroSummaryWidgetState
   ContactSummary? _resolveDisplayedContact(ContactSummary? selectedContact) {
     final displayedContact = _displayedContact;
     if (displayedContact != null &&
-        contactIdsRepresentSamePerson(
-          displayedContact.participantId,
-          widget.contactId,
-        )) {
+        contactSummaryMatchesId(displayedContact, widget.contactId)) {
       return displayedContact;
     }
 
@@ -139,12 +136,7 @@ class _ContactHeroSummaryWidgetState
   }
 
   ContactSummary? _findContactById(List<ContactSummary> contacts, int id) {
-    for (final contact in contacts) {
-      if (contactIdsRepresentSamePerson(contact.participantId, id)) {
-        return contact;
-      }
-    }
-    return null;
+    return findContactSummaryById(contacts, id);
   }
 
   Future<void> _handleEdit(
