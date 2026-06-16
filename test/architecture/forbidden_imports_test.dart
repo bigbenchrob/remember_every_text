@@ -1791,6 +1791,20 @@ void main() {
       },
     );
 
+    test('Attachment archive stores use typed compatibility key', () async {
+      final offenders = await _findAttachmentArchiveStoreTypedKeyOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Attachment archive read/write stores should accept '
+            'ArchiveCompatibilityKey for archive record lookup, idempotency, '
+            'and recovery hints instead of primitive key pairs.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test(
       'Graph archive lookup contract uses compatibility-key language',
       () async {
@@ -4640,6 +4654,40 @@ Future<List<String>> _findAttachmentArchiveWriteStoreBoundaryOffenders() async {
       uncommented.contains('writeOverlaySetting') ||
       uncommented.contains('customSelect(')) {
     offenders.add('$filePath performs archive record storage directly');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findAttachmentArchiveStoreTypedKeyOffenders() async {
+  const filePaths = <String>[
+    'lib/features/attachments/application/attachment_archive_read_store.dart',
+    'lib/features/attachments/application/attachment_archive_write_store.dart',
+  ];
+  final offenders = <String>[];
+
+  for (final filePath in filePaths) {
+    final file = File(filePath);
+    if (!file.existsSync()) {
+      continue;
+    }
+
+    final uncommented = _stripComments(await file.readAsString());
+    if (!uncommented.contains('ArchiveCompatibilityKey')) {
+      offenders.add('$filePath does not use ArchiveCompatibilityKey');
+    }
+    final methodBlocks = RegExp(
+      r'(readArchiveRecord|hasArchiveRecord|readRecoveryHint|writeRecoveryHint|clearRecoveryHint)\s*\([^;{]*[;{]',
+      multiLine: true,
+      dotAll: true,
+    ).allMatches(uncommented);
+    for (final match in methodBlocks) {
+      final block = match.group(0) ?? '';
+      if (block.contains('messageGuid') ||
+          block.contains('importAttachmentId')) {
+        offenders.add('$filePath exposes primitive archive key method: $block');
+      }
+    }
   }
 
   return offenders..sort();

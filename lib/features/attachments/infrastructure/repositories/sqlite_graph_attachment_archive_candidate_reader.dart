@@ -241,14 +241,23 @@ class SqliteGraphAttachmentArchiveCandidateReader
   GraphAttachmentArchiveCandidate _candidateFromRow(Map<String, Object?> row) {
     return GraphAttachmentArchiveCandidate(
       graphAttachmentId: _readNullableInt(row, 'graph_attachment_id'),
-      archiveMessageGuid: _readRequiredString(row, 'message_guid'),
-      archiveCompatibilityAttachmentId: _readNullableInt(
-        row,
-        'import_attachment_id',
-      ),
+      archiveCompatibilityKey: _archiveCompatibilityKeyFromRow(row),
       localPath: _readNullableString(row, 'local_path'),
       mimeType: _readNullableString(row, 'mime_type'),
       sha256Hex: _readNullableString(row, 'sha256_hex'),
+    );
+  }
+
+  ArchiveCompatibilityKey? _archiveCompatibilityKeyFromRow(
+    Map<String, Object?> row,
+  ) {
+    final importAttachmentId = _readNullableInt(row, 'import_attachment_id');
+    if (importAttachmentId == null) {
+      return null;
+    }
+    return ArchiveCompatibilityKey(
+      messageGuid: _readRequiredString(row, 'message_guid'),
+      importAttachmentId: importAttachmentId,
     );
   }
 

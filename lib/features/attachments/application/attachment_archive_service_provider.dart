@@ -23,7 +23,7 @@ const _kManualSweepSkippedSampleLimit = 3;
 /// records them through the attachment archive store.
 ///
 /// Archiving is idempotent: if an archive record already exists for the
-/// given (messageGuid, importAttachmentId) pair, the file is not re-copied.
+/// derived archive compatibility key, the file is not re-copied.
 @Riverpod(keepAlive: true)
 class AttachmentArchiveService extends _$AttachmentArchiveService {
   bool _pauseRequested = false;
@@ -532,16 +532,14 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       }
 
       final archiveKey = row.archiveCompatibilityKey;
-      final messageGuid = row.archiveMessageGuid;
-      final importAttachmentId = archiveKey?.importAttachmentId;
       final localPath = row.localPath;
 
-      if (importAttachmentId == null || localPath == null) {
+      if (archiveKey == null || localPath == null) {
         skipped++;
         _recordSkippedSample(
           skippedSamples,
-          messageGuid: messageGuid,
-          importAttachmentId: importAttachmentId,
+          messageGuid: archiveKey?.messageGuid ?? 'unknown-message',
+          importAttachmentId: archiveKey?.importAttachmentId,
           localPath: localPath,
           reason: 'missing metadata',
           sampleLimit: skippedSampleLimit,
@@ -549,6 +547,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
         continue;
       }
 
+      final importAttachmentId = archiveKey.importAttachmentId;
       final resolvedPath = fileStore.expandHomePath(localPath);
 
       final archivablePath = await _resolveArchivableSourcePath(
@@ -559,7 +558,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
         skipped++;
         _recordSkippedSample(
           skippedSamples,
-          messageGuid: messageGuid,
+          messageGuid: archiveKey.messageGuid,
           importAttachmentId: importAttachmentId,
           localPath: resolvedPath,
           reason: 'source missing',
@@ -570,7 +569,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
 
       try {
         final success = await archiveAttachment(
-          messageGuid: messageGuid,
+          messageGuid: archiveKey.messageGuid,
           importAttachmentId: importAttachmentId,
           resolvedLocalPath: archivablePath,
           mimeType: row.mimeType,
@@ -583,7 +582,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
           skipped++;
           _recordSkippedSample(
             skippedSamples,
-            messageGuid: messageGuid,
+            messageGuid: archiveKey.messageGuid,
             importAttachmentId: importAttachmentId,
             localPath: resolvedPath,
             reason: 'not archived',

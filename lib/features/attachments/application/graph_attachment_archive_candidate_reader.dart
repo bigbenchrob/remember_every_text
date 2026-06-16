@@ -3,30 +3,17 @@ import 'archive_compatibility_key.dart';
 class GraphAttachmentArchiveCandidate {
   const GraphAttachmentArchiveCandidate({
     required this.graphAttachmentId,
-    required this.archiveMessageGuid,
-    required this.archiveCompatibilityAttachmentId,
+    required this.archiveCompatibilityKey,
     required this.localPath,
     required this.mimeType,
     required this.sha256Hex,
   });
 
   final int? graphAttachmentId;
-  final String archiveMessageGuid;
-  final int? archiveCompatibilityAttachmentId;
+  final ArchiveCompatibilityKey? archiveCompatibilityKey;
   final String? localPath;
   final String? mimeType;
   final String? sha256Hex;
-
-  ArchiveCompatibilityKey? get archiveCompatibilityKey {
-    final compatibilityAttachmentId = archiveCompatibilityAttachmentId;
-    if (compatibilityAttachmentId == null) {
-      return null;
-    }
-    return ArchiveCompatibilityKey(
-      messageGuid: archiveMessageGuid,
-      importAttachmentId: compatibilityAttachmentId,
-    );
-  }
 }
 
 class GraphAttachmentSweepSelection {

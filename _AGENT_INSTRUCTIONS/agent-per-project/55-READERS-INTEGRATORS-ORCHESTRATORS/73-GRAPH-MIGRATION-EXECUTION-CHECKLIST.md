@@ -2454,6 +2454,9 @@ criteria.
   - Centralized media-tile archive compatibility key completeness checks on
     `MediaTileAttachment.hasArchiveCompatibilityKey`, keeping widgets from
     duplicating primitive pair checks.
+  - Added an architecture tripwire requiring archive read/write-store lookup,
+    idempotency, and recovery-hint contracts to use `ArchiveCompatibilityKey`
+    rather than primitive retained archive key pairs.
 
 ### Exit Criteria
 
