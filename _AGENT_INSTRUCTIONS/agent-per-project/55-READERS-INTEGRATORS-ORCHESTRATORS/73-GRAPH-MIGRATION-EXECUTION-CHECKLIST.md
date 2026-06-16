@@ -2486,6 +2486,9 @@ criteria.
   - Moved contact-side retained/graph identity matching into a contacts
     application read-model helper, removing direct identity-bridge imports from
     the contact hero widget and favorite contact providers.
+  - Moved message evidence context-anchor id compatibility into a named message
+    evidence identity helper, removing direct identity-bridge imports from the
+    message evidence spine provider.
 
 ### Exit Criteria
 

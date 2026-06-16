@@ -8,7 +8,6 @@ import '../../../../essentials/conversation_graph/application/contacts/contact_g
 import '../../../../essentials/conversation_graph/application/conversations/conversation.dart';
 import '../../../../essentials/conversation_graph/application/conversations/conversation_reader_provider.dart';
 import '../../../../essentials/conversation_graph/application/messages/message_graph_reader_provider.dart';
-import '../../../../essentials/conversation_graph/domain/identity_key_bridge.dart';
 import '../../../../essentials/db/feature_level_providers/message_data_version_provider.dart';
 import '../../../../essentials/search/application/graph_message_search.dart';
 import '../../../../essentials/search/application/search_service.dart';
@@ -22,6 +21,7 @@ import '../../domain/message_evidence/message_evidence_skeleton.dart';
 import '../../domain/message_evidence/recovered_message_evidence.dart';
 import '../../feature_level_providers.dart';
 import 'message_attachment_evidence.dart';
+import 'message_evidence_identity.dart';
 
 part 'message_evidence_spine_provider.g.dart';
 
@@ -585,7 +585,7 @@ Future<MessageEvidenceTimelineSkeleton> _searchResultContextSkeleton(
           monthKey: entry.monthKey,
         ),
     ],
-    initialAnchorMessageId: _liveChatGraphId(messageId),
+    initialAnchorMessageId: canonicalMessageEvidenceId(messageId),
   );
 }
 
@@ -640,10 +640,6 @@ Future<MessageEvidenceTimelineSkeleton> _contactAllMessagesTimelineSkeleton(
         ),
     ],
   );
-}
-
-int _liveChatGraphId(int value) {
-  return graphMessageIdForRetainedOverlayMessageRowId(value) ?? value;
 }
 
 Future<MessageEvidenceTimelineSkeleton> _contactHandleMessagesTimelineSkeleton(
