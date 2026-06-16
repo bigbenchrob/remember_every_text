@@ -920,6 +920,25 @@ void main() {
       );
     });
 
+    test(
+      'Message display widgets use typed media archive compatibility keys',
+      () async {
+        final offenders =
+            await _findMessageDisplayArchiveCompatibilityKeyOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'Message display widgets should consume '
+              'MediaTileAttachment.archiveCompatibilityKey instead of '
+              'reconstructing archive compatibility keys from primitive '
+              'messageGuid/importAttachmentId fields.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
     test('Message URL previews use external URI opener boundary', () async {
       final offenders = await _findMessageUrlPreviewOpenerBoundaryOffenders();
 
@@ -3409,6 +3428,30 @@ Future<List<String>> _findMediaTileAttachmentDataOnlyOffenders() async {
     offenders.add(
       '$filePath exposes archive compatibility keys without documenting them',
     );
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>>
+_findMessageDisplayArchiveCompatibilityKeyOffenders() async {
+  const filePath =
+      'lib/features/messages/presentation/view_model/shared/display_widgets/new_display_widgets.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final source = await file.readAsString();
+  final uncommented = _stripComments(source);
+  final offenders = <String>[];
+
+  if (uncommented.contains('ArchiveCompatibilityKey(')) {
+    offenders.add('$filePath constructs ArchiveCompatibilityKey directly');
+  }
+  if (uncommented.contains('.messageGuid') ||
+      uncommented.contains('.importAttachmentId')) {
+    offenders.add('$filePath reads primitive archive compatibility fields');
   }
 
   return offenders..sort();

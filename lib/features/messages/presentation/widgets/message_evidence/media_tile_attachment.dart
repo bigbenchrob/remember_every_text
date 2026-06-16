@@ -1,3 +1,4 @@
+import '../../../../attachments/application/archive_compatibility_key.dart';
 import '../../../../attachments/domain/constants/attachment_provenance.dart';
 import '../../../../attachments/domain/constants/resolved_attachment_availability.dart';
 import '../../../../attachments/domain/entities/attachment_recovery_metadata.dart';
@@ -75,6 +76,16 @@ class MediaTileAttachment {
       messageGuid != null &&
       messageGuid!.isNotEmpty &&
       importAttachmentId != null;
+
+  ArchiveCompatibilityKey? get archiveCompatibilityKey {
+    if (!hasArchiveCompatibilityKey) {
+      return null;
+    }
+    return ArchiveCompatibilityKey(
+      messageGuid: messageGuid!,
+      importAttachmentId: importAttachmentId!,
+    );
+  }
 
   bool get hasDimensions =>
       mediaWidth != null &&

@@ -2510,6 +2510,11 @@ criteria.
     lookup local database handles from generic `importDb` to `importLedgerDb`,
     keeping active graph/archive code terminology distinct from retained import
     storage.
+  - Moved media-tile archive compatibility key derivation onto
+    `MediaTileAttachment.archiveCompatibilityKey`, so shared message display
+    widgets consume typed media evidence instead of reconstructing compatibility
+    identity from primitive `messageGuid` / `importAttachmentId` fields.
+    Added an architecture tripwire to keep that boundary from regressing.
 
 ### Exit Criteria
 

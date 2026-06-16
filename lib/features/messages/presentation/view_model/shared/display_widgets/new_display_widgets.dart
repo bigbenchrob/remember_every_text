@@ -833,18 +833,6 @@ File? _displayableMediaFile(
   return existingPath == null ? null : File(existingPath);
 }
 
-ArchiveCompatibilityKey? _archiveCompatibilityKeyFor(
-  MediaTileAttachment attachment,
-) {
-  if (!attachment.hasArchiveCompatibilityKey) {
-    return null;
-  }
-  return ArchiveCompatibilityKey(
-    messageGuid: attachment.messageGuid!,
-    importAttachmentId: attachment.importAttachmentId!,
-  );
-}
-
 class ImageMessageTile extends ConsumerWidget {
   const ImageMessageTile({
     super.key,
@@ -874,7 +862,7 @@ class ImageMessageTile extends ConsumerWidget {
     final fileAccess = ref.watch(attachmentFileAccessProvider);
     final file = _displayableMediaFile(attachment, fileAccess);
     final aspectRatio = attachment.aspectRatio ?? 4 / 3;
-    final archiveKey = _archiveCompatibilityKeyFor(attachment);
+    final archiveKey = attachment.archiveCompatibilityKey;
     final canPrioritizeRecovery =
         archiveKey != null &&
         attachment.availability !=
@@ -1255,7 +1243,7 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
     final file = _displayableMediaFile(widget.attachment, fileAccess);
     final hasPlayableVideo = file != null;
     final hasVideoController = _controller != null;
-    final archiveKey = _archiveCompatibilityKeyFor(widget.attachment);
+    final archiveKey = widget.attachment.archiveCompatibilityKey;
     final canPrioritizeRecovery =
         archiveKey != null &&
         widget.attachment.availability !=
