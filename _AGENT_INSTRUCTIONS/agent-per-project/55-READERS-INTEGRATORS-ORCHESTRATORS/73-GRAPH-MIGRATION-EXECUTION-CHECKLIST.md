@@ -2502,6 +2502,10 @@ criteria.
     retention boundaries: archive-source metadata storage, reset cleanup,
     read-only diagnostics/health, overlay/archive compatibility keys, and
     explicit retained-overlay identity bridges guarded by architecture tests.
+  - Added a companion architecture tripwire for the retained
+    `macos_import.db` filename constant so production code can only reference
+    retained archive metadata storage through central DB ownership or reset
+    cleanup. This mirrors the existing retained `working.db` reference guard.
 
 ### Exit Criteria
 

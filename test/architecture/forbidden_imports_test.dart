@@ -18,6 +18,11 @@ const Set<String> _retainedArchiveMetadataStoreProviderAllowedFiles = {
   'lib/features/settings/feature_level_providers.dart',
 };
 
+const Set<String> _retainedArchiveMetadataFileAllowedFiles = {
+  'lib/essentials/db/feature_level_providers.dart',
+  'lib/essentials/onboarding/application/message_data_reset_service.dart',
+};
+
 const Set<String> _retainedHistoricalWorkingFileAllowedFiles = {
   'lib/essentials/db/feature_level_providers.dart',
   'lib/essentials/onboarding/application/message_data_reset_service.dart',
@@ -357,6 +362,24 @@ void main() {
               'compatibility storage for archive-source metadata, reset, and '
               'central DB ownership only. Ordinary app behavior must not read '
               'or write retained macos_import.db through this provider.\n'
+              'Actual users:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
+    test(
+      'Retained import metadata file stays behind metadata boundaries',
+      () async {
+        final offenders = await _findRetainedArchiveMetadataFileOffenders();
+
+        expect(
+          offenders,
+          orderedEquals(
+            _retainedArchiveMetadataFileAllowedFiles.toList()..sort(),
+          ),
+          reason:
+              'Retained macos_import.db is archive-source metadata storage. '
+              'Ordinary code must not add new retained import file access.\n'
               'Actual users:\n${offenders.join('\n')}',
         );
       },
@@ -2454,6 +2477,21 @@ Future<List<String>> _findRetainedArchiveMetadataProviderOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (uncommented.contains('retainedArchiveMetadataStoreProvider')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findRetainedArchiveMetadataFileOffenders() async {
+  final files = await _collectDartFiles((path) => !path.endsWith('.g.dart'));
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (uncommented.contains('retainedArchiveMetadataDatabaseFileName')) {
       offenders.add(filePath);
     }
   }
