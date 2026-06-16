@@ -38,6 +38,24 @@ const Set<String> _sourceScopedDatabaseFilenameLiteralAllowedFiles = {
 
 const Set<String> _legacyTerminologyAllowedFiles = <String>{};
 
+const Set<String> _identityKeyBridgeAllowedFiles = {
+  'lib/features/contacts/application/sidebar_cassette_spec/resolver_tools/contact_favorite_actions_provider.dart',
+  'lib/features/contacts/application/sidebar_cassette_spec/resolver_tools/contact_is_favorite_provider.dart',
+  'lib/features/contacts/application/sidebar_cassette_spec/resolver_tools/favorite_contacts_provider.dart',
+  'lib/features/contacts/application/sidebar_cassette_spec/widget_builders/contact_hero_summary_widget.dart',
+  'lib/features/contacts/infrastructure/repositories/display_identity_repository.dart',
+  'lib/features/contacts/infrastructure/repositories/graph_contact_profile_reader.dart',
+  'lib/features/contacts/infrastructure/repositories/graph_contacts_list_reader.dart',
+  'lib/features/contacts/infrastructure/repositories/graph_handles_for_contact_reader.dart',
+  'lib/features/contacts/infrastructure/repositories/overlay_recent_contacts_reader.dart',
+  'lib/features/handles/infrastructure/repositories/graph_handle_display_name_reader.dart',
+  'lib/features/handles/infrastructure/repositories/graph_manual_linking_read_repository.dart',
+  'lib/features/handles/infrastructure/repositories/graph_spam_handles_repository.dart',
+  'lib/features/handles/infrastructure/repositories/graph_stray_handles_read_repository.dart',
+  'lib/features/messages/application/message_evidence/message_evidence_spine_provider.dart',
+  'lib/features/messages/infrastructure/repositories/message_overlay_identity_bridge_repository.dart',
+};
+
 const Set<String> _rawPrintAllowedFiles = {'lib/main.dart'};
 
 const List<String> _retiredImportMigrationExecutionSymbols = <String>[
@@ -391,6 +409,20 @@ void main() {
             'Active lib/ code should not grow legacy-named concepts. '
             'Retained storage and compatibility bridges must be named for '
             'their current architectural role.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Retained overlay identity bridge usage stays tracked', () async {
+      final offenders = await _findIdentityKeyBridgeImportOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_identityKeyBridgeAllowedFiles.toList()..sort()),
+        reason:
+            'identity_key_bridge.dart is a temporary retained-overlay '
+            'compatibility bridge. Its active import surface should not grow '
+            'without architectural review.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -2446,6 +2478,31 @@ Future<List<String>> _findLegacyTerminologyOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (legacyTerminologyPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findIdentityKeyBridgeImportOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    final importsIdentityBridge = imports.any(
+      (importTarget) => importTarget.endsWith('identity_key_bridge.dart'),
+    );
+
+    if (importsIdentityBridge) {
       offenders.add(filePath);
     }
   }

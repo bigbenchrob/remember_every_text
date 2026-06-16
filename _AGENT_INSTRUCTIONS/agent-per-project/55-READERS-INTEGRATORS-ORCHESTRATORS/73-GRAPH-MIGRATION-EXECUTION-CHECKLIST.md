@@ -2480,6 +2480,9 @@ criteria.
   - Updated `AttachmentArchiveFileStore.writeArchiveEntry(...)` to accept
     `ArchiveCompatibilityKey`; only the filesystem adapter unwraps the key
     when it needs the retained id for deterministic fallback filenames.
+  - Added an architecture tripwire that freezes the current
+    `identity_key_bridge.dart` import surface, keeping retained-overlay graph
+    key conversion from spreading without explicit review.
 
 ### Exit Criteria
 
