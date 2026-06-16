@@ -63,13 +63,14 @@ Future<ResolvedAttachment> _resolveForArchiveEnabledMode(
   AttachmentRecoveryMetadata? persistedRecoveryHint;
 
   if (importAttachmentId != null) {
-    final archiveReadStore = await ref.watch(
-      attachmentArchiveReadStoreProvider.future,
-    );
-    persistedRecoveryHint = await archiveReadStore.readRecoveryHint(
+    final archiveKey = ArchiveCompatibilityKey(
       messageGuid: messageGuid,
       importAttachmentId: importAttachmentId,
     );
+    final archiveReadStore = await ref.watch(
+      attachmentArchiveReadStoreProvider.future,
+    );
+    persistedRecoveryHint = await archiveReadStore.readRecoveryHint(archiveKey);
 
     final archiveRecord = await archiveReadStore.readArchiveRecord(
       messageGuid: messageGuid,

@@ -2434,6 +2434,10 @@ criteria.
     compatibility key.
   - Added an architecture tripwire preventing graph archive candidate
     de-duplication from reintroducing ad hoc string tuple archive keys.
+  - Threaded `ArchiveCompatibilityKey` through archive read/write-store
+    recovery-hint and idempotency methods, keeping primitive
+    `messageGuid` / `importAttachmentId` parameters at the outer archive
+    service/media resolver bridge only.
 
 ### Exit Criteria
 

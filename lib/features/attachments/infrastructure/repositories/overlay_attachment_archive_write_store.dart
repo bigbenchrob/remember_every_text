@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import '../../application/archive_compatibility_key.dart';
 import '../../application/attachment_archive_write_store.dart';
 import '../../application/attachment_recovery_hint_storage.dart';
 import '../../domain/entities/attachment_recovery_metadata.dart';
@@ -14,16 +15,13 @@ class OverlayAttachmentArchiveWriteStore
   final OverlayDatabase _overlayDatabase;
 
   @override
-  Future<bool> hasArchiveRecord({
-    required String messageGuid,
-    required int importAttachmentId,
-  }) async {
+  Future<bool> hasArchiveRecord(ArchiveCompatibilityKey archiveKey) async {
     final existing =
         await (_overlayDatabase.select(_overlayDatabase.archivedAttachments)
               ..where(
                 (t) =>
-                    t.messageGuid.equals(messageGuid) &
-                    t.importAttachmentId.equals(importAttachmentId),
+                    t.messageGuid.equals(archiveKey.messageGuid) &
+                    t.importAttachmentId.equals(archiveKey.importAttachmentId),
               ))
             .getSingleOrNull();
     return existing != null;
@@ -66,14 +64,10 @@ class OverlayAttachmentArchiveWriteStore
   }
 
   @override
-  Future<AttachmentRecoveryMetadata?> readRecoveryHint({
-    required String messageGuid,
-    required int importAttachmentId,
-  }) async {
-    final hintKey = attachmentRecoveryHintSettingKey(
-      messageGuid: messageGuid,
-      importAttachmentId: importAttachmentId,
-    );
+  Future<AttachmentRecoveryMetadata?> readRecoveryHint(
+    ArchiveCompatibilityKey archiveKey,
+  ) async {
+    final hintKey = attachmentRecoveryHintSettingKey(archiveKey: archiveKey);
     return decodeAttachmentRecoveryHint(
       await _overlayDatabase.readOverlaySetting(hintKey),
     );
@@ -81,14 +75,10 @@ class OverlayAttachmentArchiveWriteStore
 
   @override
   Future<void> writeRecoveryHint({
-    required String messageGuid,
-    required int importAttachmentId,
+    required ArchiveCompatibilityKey archiveKey,
     required AttachmentRecoveryMetadata metadata,
   }) {
-    final hintKey = attachmentRecoveryHintSettingKey(
-      messageGuid: messageGuid,
-      importAttachmentId: importAttachmentId,
-    );
+    final hintKey = attachmentRecoveryHintSettingKey(archiveKey: archiveKey);
     return _overlayDatabase.writeOverlaySetting(
       settingKey: hintKey,
       settingValue: encodeAttachmentRecoveryHint(metadata),
@@ -96,14 +86,8 @@ class OverlayAttachmentArchiveWriteStore
   }
 
   @override
-  Future<void> clearRecoveryHint({
-    required String messageGuid,
-    required int importAttachmentId,
-  }) {
-    final hintKey = attachmentRecoveryHintSettingKey(
-      messageGuid: messageGuid,
-      importAttachmentId: importAttachmentId,
-    );
+  Future<void> clearRecoveryHint(ArchiveCompatibilityKey archiveKey) {
+    final hintKey = attachmentRecoveryHintSettingKey(archiveKey: archiveKey);
     return (_overlayDatabase.delete(
       _overlayDatabase.overlaySettings,
     )..where((tbl) => tbl.key.equals(hintKey))).go();

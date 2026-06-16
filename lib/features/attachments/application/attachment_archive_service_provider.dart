@@ -51,18 +51,16 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     );
     final archiveDir = ref.read(attachmentArchiveDirectoryPathProvider);
     final fileStore = ref.read(attachmentArchiveFileStoreProvider);
-
-    // Idempotency check: skip if already archived.
-    final alreadyArchived = await archiveStore.hasArchiveRecord(
+    final archiveKey = ArchiveCompatibilityKey(
       messageGuid: messageGuid,
       importAttachmentId: importAttachmentId,
     );
 
+    // Idempotency check: skip if already archived.
+    final alreadyArchived = await archiveStore.hasArchiveRecord(archiveKey);
+
     if (alreadyArchived) {
-      await archiveStore.clearRecoveryHint(
-        messageGuid: messageGuid,
-        importAttachmentId: importAttachmentId,
-      );
+      await archiveStore.clearRecoveryHint(archiveKey);
       return false;
     }
 
@@ -108,10 +106,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       ),
     );
 
-    await archiveStore.clearRecoveryHint(
-      messageGuid: messageGuid,
-      importAttachmentId: importAttachmentId,
-    );
+    await archiveStore.clearRecoveryHint(archiveKey);
 
     return true;
   }
@@ -130,10 +125,11 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     final archiveStore = await ref.read(
       attachmentArchiveWriteStoreProvider.future,
     );
-    final existingHint = await archiveStore.readRecoveryHint(
+    final archiveKey = ArchiveCompatibilityKey(
       messageGuid: messageGuid,
       importAttachmentId: importAttachmentId,
     );
+    final existingHint = await archiveStore.readRecoveryHint(archiveKey);
     final now = DateTime.now().toUtc();
     final currentPriority = existingHint?.recoveryPriority ?? 0;
 
@@ -148,8 +144,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     );
 
     await archiveStore.writeRecoveryHint(
-      messageGuid: messageGuid,
-      importAttachmentId: importAttachmentId,
+      archiveKey: archiveKey,
       metadata: prioritizedHint,
     );
 

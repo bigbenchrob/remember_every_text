@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:drift/drift.dart';
 
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import '../../application/archive_compatibility_key.dart';
 import '../../application/attachment_archive_read_store.dart';
 import '../../application/attachment_recovery_hint_storage.dart';
 import '../../domain/entities/attachment_recovery_metadata.dart';
@@ -53,16 +54,12 @@ class OverlayAttachmentArchiveReadStore implements AttachmentArchiveReadStore {
   }
 
   @override
-  Future<AttachmentRecoveryMetadata?> readRecoveryHint({
-    required String messageGuid,
-    required int importAttachmentId,
-  }) async {
+  Future<AttachmentRecoveryMetadata?> readRecoveryHint(
+    ArchiveCompatibilityKey archiveKey,
+  ) async {
     return decodeAttachmentRecoveryHint(
       await _overlayDb.readOverlaySetting(
-        attachmentRecoveryHintSettingKey(
-          messageGuid: messageGuid,
-          importAttachmentId: importAttachmentId,
-        ),
+        attachmentRecoveryHintSettingKey(archiveKey: archiveKey),
       ),
     );
   }

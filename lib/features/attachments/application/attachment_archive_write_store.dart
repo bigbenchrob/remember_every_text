@@ -1,4 +1,5 @@
 import '../domain/entities/attachment_recovery_metadata.dart';
+import 'archive_compatibility_key.dart';
 
 class ArchivedAttachmentWrite {
   const ArchivedAttachmentWrite({
@@ -38,31 +39,23 @@ class ArchiveIntegrityEntry {
 
 abstract interface class AttachmentArchiveWriteStore {
   /// Reads archive storage by the current overlay archive compatibility key.
-  Future<bool> hasArchiveRecord({
-    required String messageGuid,
-    required int importAttachmentId,
-  });
+  Future<bool> hasArchiveRecord(ArchiveCompatibilityKey archiveKey);
 
   Future<void> writeArchiveRecord(ArchivedAttachmentWrite record);
 
   Future<List<ArchiveIntegrityEntry>> readIntegrityEntries();
 
   /// Reads recovery metadata by the current overlay archive compatibility key.
-  Future<AttachmentRecoveryMetadata?> readRecoveryHint({
-    required String messageGuid,
-    required int importAttachmentId,
-  });
+  Future<AttachmentRecoveryMetadata?> readRecoveryHint(
+    ArchiveCompatibilityKey archiveKey,
+  );
 
   /// Writes recovery metadata by the current overlay archive compatibility key.
   Future<void> writeRecoveryHint({
-    required String messageGuid,
-    required int importAttachmentId,
+    required ArchiveCompatibilityKey archiveKey,
     required AttachmentRecoveryMetadata metadata,
   });
 
   /// Clears recovery metadata by the current overlay archive compatibility key.
-  Future<void> clearRecoveryHint({
-    required String messageGuid,
-    required int importAttachmentId,
-  });
+  Future<void> clearRecoveryHint(ArchiveCompatibilityKey archiveKey);
 }

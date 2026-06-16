@@ -135,8 +135,10 @@ void main() {
         expect(
           await overlayDb.readOverlaySetting(
             attachmentRecoveryHintSettingKey(
-              messageGuid: 'm-recover-now',
-              importAttachmentId: 99,
+              archiveKey: const ArchiveCompatibilityKey(
+                messageGuid: 'm-recover-now',
+                importAttachmentId: 99,
+              ),
             ),
           ),
           isNull,

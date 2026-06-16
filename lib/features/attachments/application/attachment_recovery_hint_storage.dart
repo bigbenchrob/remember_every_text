@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../domain/entities/attachment_recovery_metadata.dart';
+import 'archive_compatibility_key.dart';
 
 const _kAttachmentRecoveryHintSettingPrefix = 'attachment_recovery_hint';
 
@@ -9,10 +10,10 @@ const _kAttachmentRecoveryHintSettingPrefix = 'attachment_recovery_hint';
 /// The pair mirrors retained archive storage and is not canonical graph
 /// identity.
 String attachmentRecoveryHintSettingKey({
-  required String messageGuid,
-  required int importAttachmentId,
+  required ArchiveCompatibilityKey archiveKey,
 }) {
-  return '$_kAttachmentRecoveryHintSettingPrefix::$messageGuid::$importAttachmentId';
+  return '$_kAttachmentRecoveryHintSettingPrefix::'
+      '${archiveKey.messageGuid}::${archiveKey.importAttachmentId}';
 }
 
 AttachmentRecoveryMetadata? decodeAttachmentRecoveryHint(String? rawValue) {

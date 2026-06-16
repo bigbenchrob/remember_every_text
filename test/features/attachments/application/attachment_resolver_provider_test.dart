@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import 'package:remember_this_text/features/attachments/application/archive_compatibility_key.dart';
 import 'package:remember_this_text/features/attachments/application/attachment_recovery_hint_storage.dart';
 import 'package:remember_this_text/features/attachments/application/attachment_resolver_provider.dart';
 import 'package:remember_this_text/features/attachments/domain/constants/attachment_provenance.dart';
@@ -202,8 +203,10 @@ void main() {
 
         await overlayDb.writeOverlaySetting(
           settingKey: attachmentRecoveryHintSettingKey(
-            messageGuid: 'm-priority',
-            importAttachmentId: 55,
+            archiveKey: const ArchiveCompatibilityKey(
+              messageGuid: 'm-priority',
+              importAttachmentId: 55,
+            ),
           ),
           settingValue: encodeAttachmentRecoveryHint(
             AttachmentRecoveryMetadata(

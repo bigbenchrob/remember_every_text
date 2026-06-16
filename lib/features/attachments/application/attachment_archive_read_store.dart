@@ -1,4 +1,5 @@
 import '../domain/entities/attachment_recovery_metadata.dart';
+import 'archive_compatibility_key.dart';
 
 class AttachmentArchiveLookupRecord {
   const AttachmentArchiveLookupRecord({
@@ -27,8 +28,7 @@ abstract interface class AttachmentArchiveReadStore {
   });
 
   /// Reads recovery metadata by the current overlay archive compatibility key.
-  Future<AttachmentRecoveryMetadata?> readRecoveryHint({
-    required String messageGuid,
-    required int importAttachmentId,
-  });
+  Future<AttachmentRecoveryMetadata?> readRecoveryHint(
+    ArchiveCompatibilityKey archiveKey,
+  );
 }
