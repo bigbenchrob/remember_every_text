@@ -72,10 +72,7 @@ Future<ResolvedAttachment> _resolveForArchiveEnabledMode(
     );
     persistedRecoveryHint = await archiveReadStore.readRecoveryHint(archiveKey);
 
-    final archiveRecord = await archiveReadStore.readArchiveRecord(
-      messageGuid: messageGuid,
-      importAttachmentId: importAttachmentId,
-    );
+    final archiveRecord = await archiveReadStore.readArchiveRecord(archiveKey);
 
     if (archiveRecord != null && archiveRecord.archiveFileExists) {
       final provenance = switch (archiveRecord.provenance) {

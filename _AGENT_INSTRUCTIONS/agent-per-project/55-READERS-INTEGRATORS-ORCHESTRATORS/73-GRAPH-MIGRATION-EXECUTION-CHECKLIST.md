@@ -2445,6 +2445,9 @@ criteria.
   - Added typed archive compatibility key derivation to recovered
     cross-snapshot mapped attachment records and used it in the recovered
     archive writer.
+  - Aligned `AttachmentArchiveReadStore.readArchiveRecord` with
+    `ArchiveCompatibilityKey`, so archive read-store lookup and recovery-hint
+    lookup now share the same typed compatibility boundary.
 
 ### Exit Criteria
 

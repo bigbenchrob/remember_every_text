@@ -19,10 +19,9 @@ class OverlayAttachmentArchiveReadStore implements AttachmentArchiveReadStore {
   final String _archiveDirectory;
 
   @override
-  Future<AttachmentArchiveLookupRecord?> readArchiveRecord({
-    required String messageGuid,
-    required int importAttachmentId,
-  }) async {
+  Future<AttachmentArchiveLookupRecord?> readArchiveRecord(
+    ArchiveCompatibilityKey archiveKey,
+  ) async {
     final archiveRows = await _overlayDb
         .customSelect(
           '''
@@ -32,8 +31,8 @@ class OverlayAttachmentArchiveReadStore implements AttachmentArchiveReadStore {
           LIMIT 1
           ''',
           variables: [
-            Variable<String>(messageGuid),
-            Variable<int>(importAttachmentId),
+            Variable<String>(archiveKey.messageGuid),
+            Variable<int>(archiveKey.importAttachmentId),
           ],
         )
         .get();
