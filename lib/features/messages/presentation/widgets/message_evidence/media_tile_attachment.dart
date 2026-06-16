@@ -71,6 +71,9 @@ class MediaTileAttachment {
 
   bool get hasLocalFile => localPath != null && localPath!.isNotEmpty;
 
+  bool get hasArchiveCompatibilityKey =>
+      messageGuid != null && importAttachmentId != null;
+
   bool get hasDimensions =>
       mediaWidth != null &&
       mediaWidth! > 0 &&

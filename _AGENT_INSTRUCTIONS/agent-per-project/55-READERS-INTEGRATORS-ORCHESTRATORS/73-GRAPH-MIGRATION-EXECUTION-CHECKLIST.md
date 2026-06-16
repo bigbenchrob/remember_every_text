@@ -2451,6 +2451,9 @@ criteria.
   - Updated `ArchivedAttachmentWrite` to carry `ArchiveCompatibilityKey`
     directly; only the retained overlay writer unwraps it into
     `(message_guid, import_attachment_id)` table columns.
+  - Centralized media-tile archive compatibility key completeness checks on
+    `MediaTileAttachment.hasArchiveCompatibilityKey`, keeping widgets from
+    duplicating primitive pair checks.
 
 ### Exit Criteria
 

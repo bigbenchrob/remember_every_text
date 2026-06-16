@@ -863,8 +863,7 @@ class ImageMessageTile extends ConsumerWidget {
     final file = _displayableMediaFile(attachment, fileAccess);
     final aspectRatio = attachment.aspectRatio ?? 4 / 3;
     final canPrioritizeRecovery =
-        attachment.messageGuid != null &&
-        attachment.importAttachmentId != null &&
+        attachment.hasArchiveCompatibilityKey &&
         attachment.availability !=
             ResolvedAttachmentAvailability.pendingArchive;
     final provenance = attachment.provenance;
@@ -1246,8 +1245,7 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
     final hasPlayableVideo = file != null;
     final hasVideoController = _controller != null;
     final canPrioritizeRecovery =
-        widget.attachment.messageGuid != null &&
-        widget.attachment.importAttachmentId != null &&
+        widget.attachment.hasArchiveCompatibilityKey &&
         widget.attachment.availability !=
             ResolvedAttachmentAvailability.pendingArchive;
     final provenance = widget.attachment.provenance;
