@@ -1887,6 +1887,20 @@ void main() {
       },
     );
 
+    test('Graph health diagnostics use typed archive keys', () async {
+      final offenders = await _findGraphHealthAdHocArchiveKeyOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Graph health diagnostics compare archive/recovery evidence, but '
+            'should use ArchiveCompatibilityKey rather than ad hoc string tuple '
+            'keys.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test(
       'Attachment source-scoped import provider access stays feature-boundary owned',
       () async {
@@ -4822,6 +4836,26 @@ _findGraphArchiveCandidateContractIdentityLanguageOffenders() async {
 Future<List<String>> _findGraphArchiveCandidateAdHocKeyOffenders() async {
   const filePath =
       'lib/features/attachments/infrastructure/repositories/sqlite_graph_attachment_archive_candidate_reader.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final offenders = <String>[];
+  if (uncommented.contains('::')) {
+    offenders.add('$filePath builds archive compatibility keys as strings');
+  }
+  if (!uncommented.contains('ArchiveCompatibilityKey')) {
+    offenders.add('$filePath does not use ArchiveCompatibilityKey');
+  }
+
+  return offenders;
+}
+
+Future<List<String>> _findGraphHealthAdHocArchiveKeyOffenders() async {
+  const filePath =
+      'lib/essentials/conversation_graph/infrastructure/repositories/graph_health_repository.dart';
   final file = File(filePath);
   if (!file.existsSync()) {
     return const <String>[];

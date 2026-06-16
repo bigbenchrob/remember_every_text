@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:sqlite3/sqlite3.dart' as sqlite3;
 
+import '../../../../features/attachments/application/archive_compatibility_key.dart';
 import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import '../../../source_scoped_import/domain/source_scoped_row_key.dart';
@@ -225,12 +226,16 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
       SELECT message_guid, import_attachment_id, archive_relative_path
       FROM archived_attachments
       ''').get();
-    final archiveByKey = <String, String>{};
+    final archiveByKey = <ArchiveCompatibilityKey, String>{};
     for (final row in archiveRows) {
       final messageGuid = row.read<String>('message_guid');
       final importAttachmentId = row.read<int>('import_attachment_id');
       final archiveRelativePath = row.read<String>('archive_relative_path');
-      archiveByKey['$messageGuid::$importAttachmentId'] = archiveRelativePath;
+      archiveByKey[ArchiveCompatibilityKey(
+            messageGuid: messageGuid,
+            importAttachmentId: importAttachmentId,
+          )] =
+          archiveRelativePath;
     }
 
     final attachmentRows = await graphDatabase.selectRows('''
@@ -242,7 +247,7 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
       LEFT JOIN messages m ON m.ss_id = mta.message_ss_id
       ''');
 
-    final matchedArchiveKeys = <String>{};
+    final matchedArchiveKeys = <ArchiveCompatibilityKey>{};
     final attachmentsWithArchiveRecord = <int>{};
     var attachmentsMissingArchiveRecordCount = 0;
 
@@ -256,7 +261,10 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
       final importAttachmentId = SourceScopedRowKey.unpackSourceRowId(
         attachmentSsId,
       );
-      final key = '$messageGuid::$importAttachmentId';
+      final key = ArchiveCompatibilityKey(
+        messageGuid: messageGuid,
+        importAttachmentId: importAttachmentId,
+      );
       if (archiveByKey.containsKey(key)) {
         matchedArchiveKeys.add(key);
         attachmentsWithArchiveRecord.add(attachmentSsId);
@@ -267,7 +275,7 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
 
     var archiveFilesAvailableCount = 0;
     var archiveFilesMissingCount = 0;
-    final currentAvailableArchiveKeys = <String>{};
+    final currentAvailableArchiveKeys = <ArchiveCompatibilityKey>{};
     final archiveDirectory = attachmentArchiveDirectory;
     if (includeFileAudits &&
         archiveDirectory != null &&
@@ -300,7 +308,7 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
   }
 
   Future<_AttachmentRecoveryAudit> _readAttachmentRecoveryAudit({
-    required Set<String> currentAvailableArchiveKeys,
+    required Set<ArchiveCompatibilityKey> currentAvailableArchiveKeys,
   }) async {
     final workingAttachmentKeys = await _readWorkingAttachmentKeys();
     final currentSource = await _readCurrentSourceAttachmentKeys();
@@ -319,7 +327,7 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
     final bothRecoverable = historicalRecoverable.intersection(
       recoveredMessagesRecoverable,
     );
-    final anyRecoverable = <String>{
+    final anyRecoverable = <ArchiveCompatibilityKey>{
       ...historicalRecoverable,
       ...recoveredMessagesRecoverable,
     };
@@ -391,8 +399,8 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
       WHERE m.guid IS NOT NULL
         AND m.guid != ''
       ''');
-    final availableKeys = <String>{};
-    final pluginPayloadKeys = <String>{};
+    final availableKeys = <ArchiveCompatibilityKey>{};
+    final pluginPayloadKeys = <ArchiveCompatibilityKey>{};
     for (final row in rows) {
       final messageGuid = row['message_guid'];
       if (messageGuid is! String || messageGuid.isEmpty) {
@@ -402,7 +410,10 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
       final importAttachmentId = SourceScopedRowKey.unpackSourceRowId(
         attachmentSsId,
       );
-      final key = '$messageGuid::$importAttachmentId';
+      final key = ArchiveCompatibilityKey(
+        messageGuid: messageGuid,
+        importAttachmentId: importAttachmentId,
+      );
       final filename = row['filename'] as String?;
       if (_localFileExists(filename)) {
         availableKeys.add(key);
@@ -421,10 +432,10 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
     );
   }
 
-  Future<Set<String>> _readCurrentArchiveRecordKeys() async {
+  Future<Set<ArchiveCompatibilityKey>> _readCurrentArchiveRecordKeys() async {
     final overlayDb = overlayDatabase;
     if (overlayDb == null) {
-      return const <String>{};
+      return const <ArchiveCompatibilityKey>{};
     }
     final rows = await overlayDb.customSelect('''
       SELECT message_guid, import_attachment_id
@@ -432,15 +443,18 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
       ''').get();
     return {
       for (final row in rows)
-        '${row.read<String>('message_guid')}::${row.read<int>('import_attachment_id')}',
+        ArchiveCompatibilityKey(
+          messageGuid: row.read<String>('message_guid'),
+          importAttachmentId: row.read<int>('import_attachment_id'),
+        ),
     };
   }
 
   Future<List<MissingAttachmentRecoverySample>> _readMissingAttachmentSamples({
-    required Set<String> missingKeys,
-    required Set<String> historicalArchiveKeys,
-    required Set<String> recoveredMessagesKeys,
-    required Set<String> currentArchiveRecordKeys,
+    required Set<ArchiveCompatibilityKey> missingKeys,
+    required Set<ArchiveCompatibilityKey> historicalArchiveKeys,
+    required Set<ArchiveCompatibilityKey> recoveredMessagesKeys,
+    required Set<ArchiveCompatibilityKey> currentArchiveRecordKeys,
   }) async {
     if (missingKeys.isEmpty) {
       return const <MissingAttachmentRecoverySample>[];
@@ -474,7 +488,10 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
       final importAttachmentId = SourceScopedRowKey.unpackSourceRowId(
         attachmentSsId,
       );
-      final key = '$messageGuid::$importAttachmentId';
+      final key = ArchiveCompatibilityKey(
+        messageGuid: messageGuid,
+        importAttachmentId: importAttachmentId,
+      );
       if (!missingKeys.contains(key)) {
         continue;
       }
@@ -503,7 +520,7 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
     return samples;
   }
 
-  Future<Set<String>> _readWorkingAttachmentKeys() async {
+  Future<Set<ArchiveCompatibilityKey>> _readWorkingAttachmentKeys() async {
     final rows = await graphDatabase.selectRows('''
       SELECT DISTINCT
         a.ss_id AS attachment_ss_id,
@@ -516,7 +533,13 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
       ''');
     return {
       for (final row in rows)
-        '${row['message_guid']}::${SourceScopedRowKey.unpackSourceRowId(_readInt(row['attachment_ss_id']))}',
+        if (row['message_guid'] case final String messageGuid)
+          ArchiveCompatibilityKey(
+            messageGuid: messageGuid,
+            importAttachmentId: SourceScopedRowKey.unpackSourceRowId(
+              _readInt(row['attachment_ss_id']),
+            ),
+          ),
     };
   }
 
@@ -541,8 +564,8 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
         SELECT message_guid, import_attachment_id, archive_relative_path
         FROM archived_attachments
         ''');
-      final availableKeys = <String>{};
-      final allKeys = <String>{};
+      final availableKeys = <ArchiveCompatibilityKey>{};
+      final allKeys = <ArchiveCompatibilityKey>{};
       var filesMissingCount = 0;
       for (final row in rows) {
         final messageGuid = row['message_guid'];
@@ -553,7 +576,10 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
             relativePath is! String) {
           continue;
         }
-        final key = '$messageGuid::$importAttachmentId';
+        final key = ArchiveCompatibilityKey(
+          messageGuid: messageGuid,
+          importAttachmentId: importAttachmentId,
+        );
         allKeys.add(key);
         if (File('${archiveDirectory.path}/$relativePath').existsSync()) {
           availableKeys.add(key);
@@ -604,8 +630,8 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
         WHERE m.guid IS NOT NULL
           AND m.guid != ''
       ''');
-      final availableKeys = <String>{};
-      final allKeys = <String>{};
+      final availableKeys = <ArchiveCompatibilityKey>{};
+      final allKeys = <ArchiveCompatibilityKey>{};
       for (final row in resultSet) {
         final messageGuid = row['message_guid'];
         final importAttachmentId = row['import_attachment_id'];
@@ -613,7 +639,10 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
         if (messageGuid is! String || importAttachmentId is! int) {
           continue;
         }
-        final key = '$messageGuid::$importAttachmentId';
+        final key = ArchiveCompatibilityKey(
+          messageGuid: messageGuid,
+          importAttachmentId: importAttachmentId,
+        );
         allKeys.add(key);
         if (_recoveredAttachmentFileExists(
           messagesFolderPath: messagesFolderPath,
@@ -720,8 +749,8 @@ class _ArchiveHealth {
 
   const _ArchiveHealth.empty()
     : archiveRecordCount = 0,
-      currentArchiveKeys = const <String>{},
-      currentAvailableArchiveKeys = const <String>{},
+      currentArchiveKeys = const <ArchiveCompatibilityKey>{},
+      currentAvailableArchiveKeys = const <ArchiveCompatibilityKey>{},
       attachmentsWithArchiveRecordCount = 0,
       attachmentsMissingArchiveRecordCount = 0,
       archiveFilesAvailableCount = 0,
@@ -729,8 +758,8 @@ class _ArchiveHealth {
       archiveRecordsWithoutWorkingAttachmentCount = 0;
 
   final int archiveRecordCount;
-  final Set<String> currentArchiveKeys;
-  final Set<String> currentAvailableArchiveKeys;
+  final Set<ArchiveCompatibilityKey> currentArchiveKeys;
+  final Set<ArchiveCompatibilityKey> currentAvailableArchiveKeys;
   final int attachmentsWithArchiveRecordCount;
   final int attachmentsMissingArchiveRecordCount;
   final int archiveFilesAvailableCount;
@@ -751,15 +780,15 @@ class _ExternalArchiveKeys {
   const _ExternalArchiveKeys.unavailable()
     : available = false,
       recordCount = 0,
-      allKeys = const <String>{},
-      availableKeys = const <String>{},
+      allKeys = const <ArchiveCompatibilityKey>{},
+      availableKeys = const <ArchiveCompatibilityKey>{},
       filesAvailableCount = 0,
       filesMissingCount = 0;
 
   final bool available;
   final int recordCount;
-  final Set<String> allKeys;
-  final Set<String> availableKeys;
+  final Set<ArchiveCompatibilityKey> allKeys;
+  final Set<ArchiveCompatibilityKey> availableKeys;
   final int filesAvailableCount;
   final int filesMissingCount;
 }
@@ -775,13 +804,13 @@ class _RecoveredMessagesKeys {
   const _RecoveredMessagesKeys.unavailable()
     : available = false,
       recordCount = 0,
-      allKeys = const <String>{},
-      availableKeys = const <String>{};
+      allKeys = const <ArchiveCompatibilityKey>{},
+      availableKeys = const <ArchiveCompatibilityKey>{};
 
   final bool available;
   final int recordCount;
-  final Set<String> allKeys;
-  final Set<String> availableKeys;
+  final Set<ArchiveCompatibilityKey> allKeys;
+  final Set<ArchiveCompatibilityKey> availableKeys;
 }
 
 class _CurrentSourceAttachmentKeys {
@@ -790,8 +819,8 @@ class _CurrentSourceAttachmentKeys {
     required this.pluginPayloadKeys,
   });
 
-  final Set<String> availableKeys;
-  final Set<String> pluginPayloadKeys;
+  final Set<ArchiveCompatibilityKey> availableKeys;
+  final Set<ArchiveCompatibilityKey> pluginPayloadKeys;
 }
 
 class _AttachmentRecoveryAudit {

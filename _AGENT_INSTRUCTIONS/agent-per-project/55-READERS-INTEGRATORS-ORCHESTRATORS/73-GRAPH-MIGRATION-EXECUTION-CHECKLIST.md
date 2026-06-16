@@ -2465,6 +2465,11 @@ criteria.
     evidence only; the resolver derives the optional
     `ArchiveCompatibilityKey` internally instead of exposing retained
     `messageGuid` / `importAttachmentId` as provider-family identity.
+  - Converted graph health archive/recovery diagnostics to compare typed
+    `ArchiveCompatibilityKey` values instead of ad hoc
+    `messageGuid::importAttachmentId` strings, and added an architecture
+    tripwire preventing raw string tuple archive keys from returning to graph
+    health.
 
 ### Exit Criteria
 
