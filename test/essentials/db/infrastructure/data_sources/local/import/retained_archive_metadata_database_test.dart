@@ -93,24 +93,24 @@ void main() {
       'upgrades a v5 database with nullable message source provenance columns',
       () async {
         final dbPath = '${tempDir.path}/metadata_test.db';
-        final legacyDb = await openDatabase(dbPath);
-        await legacyDb.execute(
+        final existingDb = await openDatabase(dbPath);
+        await existingDb.execute(
           'CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, applied_at_utc TEXT NOT NULL)',
         );
-        await legacyDb.execute(
+        await existingDb.execute(
           'CREATE TABLE import_batches (id INTEGER PRIMARY KEY, started_at_utc TEXT NOT NULL)',
         );
-        await legacyDb.execute(
+        await existingDb.execute(
           'CREATE TABLE chats (id INTEGER PRIMARY KEY, guid TEXT NOT NULL, batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT)',
         );
-        await legacyDb.execute(
+        await existingDb.execute(
           'CREATE TABLE messages (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT NOT NULL, chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE, is_from_me INTEGER NOT NULL CHECK(is_from_me IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(guid))',
         );
-        await legacyDb.execute(
+        await existingDb.execute(
           "INSERT INTO schema_migrations (version, applied_at_utc) VALUES (5, '2026-05-09T00:00:00.000Z')",
         );
-        await legacyDb.execute('PRAGMA user_version = 5');
-        await legacyDb.close();
+        await existingDb.execute('PRAGMA user_version = 5');
+        await existingDb.close();
 
         final upgradedDb = RetainedArchiveMetadataDatabase(
           databaseDirectory: tempDir.path,
@@ -148,24 +148,24 @@ void main() {
       'upgrades a v6 database with nullable message source relationship columns',
       () async {
         final dbPath = '${tempDir.path}/metadata_test.db';
-        final legacyDb = await openDatabase(dbPath);
-        await legacyDb.execute(
+        final existingDb = await openDatabase(dbPath);
+        await existingDb.execute(
           'CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, applied_at_utc TEXT NOT NULL)',
         );
-        await legacyDb.execute(
+        await existingDb.execute(
           'CREATE TABLE import_batches (id INTEGER PRIMARY KEY, started_at_utc TEXT NOT NULL)',
         );
-        await legacyDb.execute(
+        await existingDb.execute(
           'CREATE TABLE chats (id INTEGER PRIMARY KEY, guid TEXT NOT NULL, batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT)',
         );
-        await legacyDb.execute(
+        await existingDb.execute(
           'CREATE TABLE messages (id INTEGER PRIMARY KEY, source_rowid INTEGER, source_id TEXT, source_kind TEXT, guid TEXT NOT NULL, chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE, is_from_me INTEGER NOT NULL CHECK(is_from_me IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(guid))',
         );
-        await legacyDb.execute(
+        await existingDb.execute(
           "INSERT INTO schema_migrations (version, applied_at_utc) VALUES (6, '2026-05-09T00:00:00.000Z')",
         );
-        await legacyDb.execute('PRAGMA user_version = 6');
-        await legacyDb.close();
+        await existingDb.execute('PRAGMA user_version = 6');
+        await existingDb.close();
 
         final upgradedDb = RetainedArchiveMetadataDatabase(
           databaseDirectory: tempDir.path,
@@ -196,21 +196,21 @@ void main() {
 
     test('upgrades a v7 database with nullable handle provenance columns', () async {
       final dbPath = '${tempDir.path}/metadata_test.db';
-      final legacyDb = await openDatabase(dbPath);
-      await legacyDb.execute(
+      final existingDb = await openDatabase(dbPath);
+      await existingDb.execute(
         'CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, applied_at_utc TEXT NOT NULL)',
       );
-      await legacyDb.execute(
+      await existingDb.execute(
         'CREATE TABLE import_batches (id INTEGER PRIMARY KEY, started_at_utc TEXT NOT NULL)',
       );
-      await legacyDb.execute(
+      await existingDb.execute(
         "CREATE TABLE handles (id INTEGER PRIMARY KEY, source_rowid INTEGER, service TEXT NOT NULL, raw_identifier TEXT NOT NULL, normalized_identifier TEXT, compound_identifier TEXT NOT NULL DEFAULT '', country TEXT, last_seen_utc TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT)",
       );
-      await legacyDb.execute(
+      await existingDb.execute(
         "INSERT INTO schema_migrations (version, applied_at_utc) VALUES (7, '2026-05-09T00:00:00.000Z')",
       );
-      await legacyDb.execute('PRAGMA user_version = 7');
-      await legacyDb.close();
+      await existingDb.execute('PRAGMA user_version = 7');
+      await existingDb.close();
 
       final upgradedDb = RetainedArchiveMetadataDatabase(
         databaseDirectory: tempDir.path,
@@ -240,21 +240,21 @@ void main() {
 
     test('upgrades a v8 database with nullable chat provenance columns', () async {
       final dbPath = '${tempDir.path}/metadata_test.db';
-      final legacyDb = await openDatabase(dbPath);
-      await legacyDb.execute(
+      final existingDb = await openDatabase(dbPath);
+      await existingDb.execute(
         'CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, applied_at_utc TEXT NOT NULL)',
       );
-      await legacyDb.execute(
+      await existingDb.execute(
         'CREATE TABLE import_batches (id INTEGER PRIMARY KEY, started_at_utc TEXT NOT NULL)',
       );
-      await legacyDb.execute(
+      await existingDb.execute(
         'CREATE TABLE chats (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT NOT NULL, service TEXT, display_name TEXT, is_group INTEGER NOT NULL DEFAULT 0 CHECK(is_group IN (0,1)), created_at_utc TEXT, updated_at_utc TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(guid))',
       );
-      await legacyDb.execute(
+      await existingDb.execute(
         "INSERT INTO schema_migrations (version, applied_at_utc) VALUES (8, '2026-05-09T00:00:00.000Z')",
       );
-      await legacyDb.execute('PRAGMA user_version = 8');
-      await legacyDb.close();
+      await existingDb.execute('PRAGMA user_version = 8');
+      await existingDb.close();
 
       final upgradedDb = RetainedArchiveMetadataDatabase(
         databaseDirectory: tempDir.path,
@@ -284,18 +284,18 @@ void main() {
 
     test('upgrades a v9 database with chat message join ledger table', () async {
       final dbPath = '${tempDir.path}/metadata_test.db';
-      final legacyDb = await openDatabase(dbPath);
-      await legacyDb.execute(
+      final existingDb = await openDatabase(dbPath);
+      await existingDb.execute(
         'CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, applied_at_utc TEXT NOT NULL)',
       );
-      await legacyDb.execute(
+      await existingDb.execute(
         'CREATE TABLE import_batches (id INTEGER PRIMARY KEY, started_at_utc TEXT NOT NULL)',
       );
-      await legacyDb.execute(
+      await existingDb.execute(
         "INSERT INTO schema_migrations (version, applied_at_utc) VALUES (9, '2026-05-09T00:00:00.000Z')",
       );
-      await legacyDb.execute('PRAGMA user_version = 9');
-      await legacyDb.close();
+      await existingDb.execute('PRAGMA user_version = 9');
+      await existingDb.close();
 
       final upgradedDb = RetainedArchiveMetadataDatabase(
         databaseDirectory: tempDir.path,
@@ -325,30 +325,30 @@ void main() {
 
     test('upgrades a v3 database to preserve multiple source rows', () async {
       final dbPath = '${tempDir.path}/metadata_test.db';
-      final legacyDb = await openDatabase(dbPath);
-      await legacyDb.execute(
+      final existingDb = await openDatabase(dbPath);
+      await existingDb.execute(
         'CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, applied_at_utc TEXT NOT NULL)',
       );
-      await legacyDb.execute(
+      await existingDb.execute(
         'CREATE TABLE import_batches (id INTEGER PRIMARY KEY, started_at_utc TEXT NOT NULL, finished_at_utc TEXT, source_chat_db TEXT, source_addressbook TEXT, host_info_json TEXT, notes TEXT)',
       );
-      await legacyDb.execute(
+      await existingDb.execute(
         "CREATE TABLE handles (id INTEGER PRIMARY KEY, source_rowid INTEGER, service TEXT NOT NULL, raw_identifier TEXT NOT NULL, normalized_identifier TEXT, compound_identifier TEXT NOT NULL DEFAULT '', country TEXT, last_seen_utc TEXT, is_ignored INTEGER NOT NULL DEFAULT 0 CHECK(is_ignored IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(service, raw_identifier))",
       );
-      await legacyDb.execute(
+      await existingDb.execute(
         'CREATE TABLE messages (id INTEGER PRIMARY KEY, source_rowid INTEGER, guid TEXT NOT NULL, chat_id INTEGER NOT NULL, is_from_me INTEGER NOT NULL CHECK(is_from_me IN (0,1)), batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT, UNIQUE(guid))',
       );
-      await legacyDb.execute(
+      await existingDb.execute(
         'CREATE INDEX idx_handles_compound ON handles(compound_identifier)',
       );
-      await legacyDb.execute(
+      await existingDb.execute(
         'CREATE INDEX idx_handles_norm ON handles(normalized_identifier)',
       );
-      await legacyDb.execute(
+      await existingDb.execute(
         'CREATE INDEX idx_handles_ignore ON handles(is_ignored)',
       );
-      await legacyDb.execute('PRAGMA user_version = 3');
-      await legacyDb.close();
+      await existingDb.execute('PRAGMA user_version = 3');
+      await existingDb.close();
 
       final upgradedDb = RetainedArchiveMetadataDatabase(
         databaseDirectory: tempDir.path,
