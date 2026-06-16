@@ -476,10 +476,13 @@ void main() {
         'lib/essentials/db_migrate',
         'lib/essentials/incremental_update_ss',
         'lib/essentials/db/infrastructure/data_sources/local/working',
+        'lib/features/chats/application/conversation_browser',
+        'lib/features/chats/presentation/view/conversation_browser_view.dart',
         'test/essentials/db_importers',
         'test/essentials/db_migrate',
         'test/essentials/incremental_update_ss',
         'test/essentials/db/infrastructure/data_sources/local/working',
+        'test/features/chats/application/conversation_browser',
       ];
       final existingPaths = retiredPaths
           .where((path) => Directory(path).existsSync())
@@ -490,10 +493,12 @@ void main() {
         isEmpty,
         reason:
             'The old db_importers, db_migrate, incremental_update_ss, and '
-            'retained Drift working-schema folders have been retired. Live '
-            'source monitoring belongs to conversation_graph lifecycle code, '
-            'source fact importers belong to source_scoped_import, and '
-            'retained DB diagnostics belong to essentials/db.\n'
+            'retained Drift working-schema folders have been retired. The old '
+            'conversation browser has also been retired. Live source monitoring '
+            'belongs to conversation_graph lifecycle code, source fact importers '
+            'belong to source_scoped_import, ordinary conversation browsing '
+            'belongs to the conversation signature/evidence spine, and retained '
+            'DB diagnostics belong to essentials/db.\n'
             'Existing retired paths:\n${existingPaths.join('\n')}',
       );
     });
