@@ -2488,6 +2488,20 @@ criteria.
     integrator, and tests after scans confirmed no production route/export
     depended on them. Kept architecture tripwires preventing the old
     conversation-browser route/export/internal path from returning.
+  - Cleaned active test terminology so retained-storage tests use current
+    `retained` / `existing` / `source` vocabulary rather than implying that
+    old legacy execution paths remain active.
+  - Re-ran active source/test scans after the retained terminology cleanup.
+    Active `lib/` / `test/` code now contains no `legacy` terminology except
+    the intentional architecture tripwire that prevents new active
+    legacy-named concepts.
+  - Confirmed the retired `db_importers`, `db_migrate`, `incremental_update_ss`,
+    retained Drift `working` schema, and old conversation browser roots remain
+    physically absent from active source/test trees.
+  - Confirmed the only active retained database access surfaces are the named
+    retention boundaries: archive-source metadata storage, reset cleanup,
+    read-only diagnostics/health, overlay/archive compatibility keys, and
+    explicit retained-overlay identity bridges guarded by architecture tests.
 
 ### Exit Criteria
 
