@@ -78,12 +78,12 @@ void main() {
     );
 
     test(
-      'applies legacy-keyed overlay override to graph contact summaries',
+      'applies retained-keyed overlay override to graph contact summaries',
       () async {
-        const legacyContactId = 24;
+        const retainedContactId = 24;
         final graphContactId = SourceScopedRowKey.pack(
           sourceId: liveAddressBookSourceId,
-          sourceRowId: legacyContactId,
+          sourceRowId: retainedContactId,
         );
         await _insertGraphContact(
           graphDb,
@@ -94,7 +94,7 @@ void main() {
           messageId: 8001,
         );
         await overlayDb.setParticipantDisplayNameOverride(
-          legacyContactId,
+          retainedContactId,
           'Claire',
         );
 

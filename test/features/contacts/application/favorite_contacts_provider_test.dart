@@ -77,13 +77,13 @@ void main() {
       expect(results, isEmpty);
     });
 
-    test('resolves legacy-keyed favorite to graph contact summary', () async {
-      const legacyContactId = 24;
+    test('resolves retained-keyed favorite to graph contact summary', () async {
+      const retainedContactId = 24;
       final graphContactId = SourceScopedRowKey.pack(
         sourceId: liveAddressBookSourceId,
-        sourceRowId: legacyContactId,
+        sourceRowId: retainedContactId,
       );
-      await overlayDb.addFavorite(legacyContactId, DateTime.utc(2024, 12, 1));
+      await overlayDb.addFavorite(retainedContactId, DateTime.utc(2024, 12, 1));
 
       container = ProviderContainer(
         overrides: [

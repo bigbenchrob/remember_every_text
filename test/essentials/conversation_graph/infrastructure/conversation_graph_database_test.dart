@@ -15,7 +15,9 @@ void main() {
   });
 
   setUp(() async {
-    tempDir = await Directory.systemTemp.createTemp('conversation_graph_db_test_');
+    tempDir = await Directory.systemTemp.createTemp(
+      'conversation_graph_db_test_',
+    );
     graphDatabase = await openConversationGraphTestDatabase();
   });
 
@@ -187,15 +189,15 @@ void main() {
     'opens existing pre-Drift graph database with upgrade strategy',
     () async {
       final dbPath = '${tempDir.path}/working_ss.db';
-      final legacyDatabase = await databaseFactoryFfi.openDatabase(dbPath);
-      await legacyDatabase.execute('''
+      final existingDatabase = await databaseFactoryFfi.openDatabase(dbPath);
+      await existingDatabase.execute('''
       CREATE TABLE messages (
         ss_id INTEGER PRIMARY KEY,
         guid TEXT
       )
     ''');
-      await legacyDatabase.execute('PRAGMA user_version = 0');
-      await legacyDatabase.close();
+      await existingDatabase.execute('PRAGMA user_version = 0');
+      await existingDatabase.close();
 
       await graphDatabase.close();
       graphDatabase = ConversationGraphDatabase(NativeDatabase(File(dbPath)));

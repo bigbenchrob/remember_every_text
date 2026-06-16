@@ -245,13 +245,13 @@ void main() {
   });
 
   test(
-    'reads bounded search context around legacy message and chat ids',
+    'reads bounded search context around live source message and chat row ids',
     () async {
-      const legacyChatId = 301;
-      const legacyMessageId = 202;
-      final chatId = _id(legacyChatId);
+      const sourceChatRowId = 301;
+      const sourceMessageRowId = 202;
+      final chatId = _id(sourceChatRowId);
       final beforeMessageId = _id(201);
-      final selectedMessageId = _id(legacyMessageId);
+      final selectedMessageId = _id(sourceMessageRowId);
       final afterMessageId = _id(203);
       final otherChatMessageId = _id(204);
 
@@ -301,13 +301,13 @@ void main() {
       );
 
       final timeline = await _reader(graphDatabase).readMessageContextTimeline(
-        messageId: legacyMessageId,
-        chatId: legacyChatId,
+        messageId: sourceMessageRowId,
+        chatId: sourceChatRowId,
         beforeCount: 1,
         afterCount: 1,
       );
       final missing = await _reader(graphDatabase).readMessageContextTimeline(
-        messageId: legacyMessageId,
+        messageId: sourceMessageRowId,
         chatId: 999,
         beforeCount: 1,
         afterCount: 1,

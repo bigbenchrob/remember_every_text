@@ -506,7 +506,7 @@ void main() {
     expect(matches, [selectedMessageId]);
   });
 
-  test('maps legacy AddressBook contact ids to graph contact ids', () {
+  test('maps live AddressBook source row ids to graph contact ids', () {
     expect(
       graphContactIdForContactPage(24),
       SourceScopedRowKey.pack(

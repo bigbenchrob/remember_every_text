@@ -28,7 +28,7 @@ void main() {
     });
 
     test(
-      'settings menu ignores injected legacy expanded action during fromJson',
+      'settings menu ignores injected obsolete expanded action during fromJson',
       () {
         final restored = SidebarUtilityCassetteSpec.fromJson({
           'runtimeType': 'settingsMenu',

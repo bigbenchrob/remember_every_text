@@ -4,16 +4,19 @@ import 'package:remember_this_text/essentials/source_scoped_import/domain/known_
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 
 void main() {
-  test('legacy contact id is recoverable from live address book graph id', () {
-    final graphContactId = SourceScopedRowKey.pack(
-      sourceId: liveAddressBookSourceId,
-      sourceRowId: 17,
-    );
+  test(
+    'retained contact id is recoverable from live address book graph id',
+    () {
+      final graphContactId = SourceScopedRowKey.pack(
+        sourceId: liveAddressBookSourceId,
+        sourceRowId: 17,
+      );
 
-    expect(retainedOverlayContactIdForGraphContactId(graphContactId), 17);
-  });
+      expect(retainedOverlayContactIdForGraphContactId(graphContactId), 17);
+    },
+  );
 
-  test('non-address-book graph id does not produce a legacy contact id', () {
+  test('non-address-book graph id does not produce a retained contact id', () {
     final graphContactId = SourceScopedRowKey.pack(
       sourceId: 1,
       sourceRowId: 17,
