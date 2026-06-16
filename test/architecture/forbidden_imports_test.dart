@@ -97,6 +97,15 @@ const Set<String> _databaseConstructionAllowedFiles = {
   'lib/essentials/source_scoped_import/infrastructure/import_database_provider.dart',
 };
 
+const Set<String> _archiveCompatibilityKeyConstructionAllowedFiles = {
+  'lib/essentials/conversation_graph/infrastructure/repositories/graph_health_repository.dart',
+  'lib/features/attachments/application/archive_compatibility_key.dart',
+  'lib/features/attachments/application/attachment_resolver_provider.dart',
+  'lib/features/attachments/application/cross_snapshot_mapping.dart',
+  'lib/features/attachments/infrastructure/repositories/sqlite_graph_attachment_archive_candidate_reader.dart',
+  'lib/features/messages/presentation/widgets/message_evidence/media_tile_attachment.dart',
+};
+
 void main() {
   group('Architecture tripwires', () {
     test('Do not import flutter_riverpod', () async {
@@ -2004,6 +2013,26 @@ void main() {
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
+
+    test(
+      'Archive compatibility key construction stays in named boundaries',
+      () async {
+        final offenders =
+            await _findArchiveCompatibilityKeyConstructionOffenders();
+
+        expect(
+          offenders,
+          orderedEquals(
+            _archiveCompatibilityKeyConstructionAllowedFiles.toList()..sort(),
+          ),
+          reason:
+              'ArchiveCompatibilityKey construction should remain limited to '
+              'named evidence/resolver/diagnostic derivation boundaries. '
+              'Other code should pass typed keys rather than rebuilding them.\n'
+              'Actual users:\n${offenders.join('\n')}',
+        );
+      },
+    );
 
     test(
       'Attachment source-scoped import provider access stays feature-boundary owned',
@@ -5076,6 +5105,26 @@ _findArchiveCompatibilityTupleSerializationOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>> _findArchiveCompatibilityKeyConstructionOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (uncommented.contains('ArchiveCompatibilityKey(')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
 }
 
 Future<List<String>>

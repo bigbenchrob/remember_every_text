@@ -2518,6 +2518,10 @@ criteria.
   - Aligned cross-snapshot mapper test fixture naming with the active
     source-scoped import-ledger terminology by renaming generic `importDb`
     handles to `importLedgerDb`.
+  - Added an architecture tripwire that allow-lists production
+    `ArchiveCompatibilityKey` construction sites. New code must pass typed keys
+    through existing evidence/resolver/diagnostic boundaries instead of
+    rebuilding retained archive compatibility identity ad hoc.
 
 ### Exit Criteria
 
