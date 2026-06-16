@@ -200,15 +200,12 @@ void _triggerOnDemandArchive(
 ArchiveCompatibilityKey? _archiveCompatibilityKeyFor(
   AttachmentInfo attachmentInfo,
 ) {
-  final messageGuid = attachmentInfo.messageGuid;
-  final importAttachmentId = attachmentInfo.importAttachmentId;
-  if (messageGuid == null ||
-      messageGuid.isEmpty ||
-      importAttachmentId == null) {
+  if (!attachmentInfo.hasArchiveCompatibilityKey) {
     return null;
   }
+
   return ArchiveCompatibilityKey(
-    messageGuid: messageGuid,
-    importAttachmentId: importAttachmentId,
+    messageGuid: attachmentInfo.messageGuid!,
+    importAttachmentId: attachmentInfo.importAttachmentId!,
   );
 }

@@ -24,6 +24,11 @@ class AttachmentInfo {
 
   bool get hasLocalFile => localPath != null && localPath!.isNotEmpty;
 
+  bool get hasArchiveCompatibilityKey =>
+      messageGuid != null &&
+      messageGuid!.isNotEmpty &&
+      importAttachmentId != null;
+
   bool get hasDimensions =>
       mediaWidth != null &&
       mediaWidth! > 0 &&
