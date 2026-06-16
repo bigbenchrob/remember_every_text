@@ -12,8 +12,7 @@ const _kAttachmentRecoveryHintSettingPrefix = 'attachment_recovery_hint';
 String attachmentRecoveryHintSettingKey({
   required ArchiveCompatibilityKey archiveKey,
 }) {
-  return '$_kAttachmentRecoveryHintSettingPrefix::'
-      '${archiveKey.messageGuid}::${archiveKey.importAttachmentId}';
+  return '$_kAttachmentRecoveryHintSettingPrefix::${archiveKey.storageKeySegment}';
 }
 
 AttachmentRecoveryMetadata? decodeAttachmentRecoveryHint(String? rawValue) {

@@ -15,6 +15,8 @@ class ArchiveCompatibilityKey {
   final String messageGuid;
   final int importAttachmentId;
 
+  String get storageKeySegment => '$messageGuid::$importAttachmentId';
+
   @override
   bool operator ==(Object other) {
     return other is ArchiveCompatibilityKey &&
