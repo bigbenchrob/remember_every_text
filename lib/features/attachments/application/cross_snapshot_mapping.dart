@@ -1,3 +1,5 @@
+import 'archive_compatibility_key.dart';
+
 /// How a historical record was matched to a current attachment identity.
 enum MatchMethod {
   /// Attachment GUID matched the current graph attachment topology.
@@ -49,10 +51,18 @@ class MappedAttachmentRecord {
 
   final String histMessageGuid;
   final String currentMessageGuid;
+
   /// Compatibility row id used by existing overlay archive keys.
   ///
   /// Canonical graph attachment identity is [currentAttachmentSsId].
   final int currentImportAttachmentId;
+  ArchiveCompatibilityKey get currentArchiveCompatibilityKey {
+    return ArchiveCompatibilityKey(
+      messageGuid: currentMessageGuid,
+      importAttachmentId: currentImportAttachmentId,
+    );
+  }
+
   final String resolvedFilePath;
   final MatchMethod matchMethod;
   final String? histAttachmentGuid;

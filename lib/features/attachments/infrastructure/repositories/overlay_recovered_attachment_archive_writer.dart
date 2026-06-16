@@ -21,11 +21,12 @@ class OverlayRecoveredAttachmentArchiveWriter
 
   @override
   Future<int?> archive(MappedAttachmentRecord record) async {
+    final archiveKey = record.currentArchiveCompatibilityKey;
     final existing =
         await (_overlayDb.select(_overlayDb.archivedAttachments)..where(
               (t) =>
-                  t.messageGuid.equals(record.currentMessageGuid) &
-                  t.importAttachmentId.equals(record.currentImportAttachmentId),
+                  t.messageGuid.equals(archiveKey.messageGuid) &
+                  t.importAttachmentId.equals(archiveKey.importAttachmentId),
             ))
             .getSingleOrNull();
 
@@ -62,8 +63,8 @@ class OverlayRecoveredAttachmentArchiveWriter
         .into(_overlayDb.archivedAttachments)
         .insert(
           ArchivedAttachmentsCompanion.insert(
-            messageGuid: record.currentMessageGuid,
-            importAttachmentId: record.currentImportAttachmentId,
+            messageGuid: archiveKey.messageGuid,
+            importAttachmentId: archiveKey.importAttachmentId,
             archiveRelativePath: relativePath,
             archivedAtUtc: DateTime.now().toUtc().toIso8601String(),
             fileSizeBytes: fileSize,

@@ -2442,6 +2442,9 @@ criteria.
     `GraphAttachmentArchiveCandidate`, so graph archive repositories and
     archive services consume typed compatibility intent instead of rebuilding
     the retained key pair locally.
+  - Added typed archive compatibility key derivation to recovered
+    cross-snapshot mapped attachment records and used it in the recovered
+    archive writer.
 
 ### Exit Criteria
 
