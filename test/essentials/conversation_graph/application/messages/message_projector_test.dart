@@ -13,7 +13,7 @@ import '../../conversation_graph_test_database.dart';
 
 void main() {
   late Directory tempDir;
-  late ImportDatabase importDatabase;
+  late ImportDatabase importLedgerDatabase;
   late ConversationGraphDatabase graphDatabase;
 
   setUpAll(() {
@@ -23,7 +23,7 @@ void main() {
 
   setUp(() async {
     tempDir = await Directory.systemTemp.createTemp('message_projector_test_');
-    importDatabase = await ImportDatabase.open(
+    importLedgerDatabase = await ImportDatabase.open(
       databaseDirectory: tempDir.path,
       databaseName: 'macos_import_ss_test.db',
     );
@@ -32,7 +32,7 @@ void main() {
 
   tearDown(() async {
     await graphDatabase.close();
-    await importDatabase.close();
+    await importLedgerDatabase.close();
     if (tempDir.existsSync()) {
       await tempDir.delete(recursive: true);
     }
@@ -44,7 +44,7 @@ void main() {
       sourceRowId: 100,
     );
     await _insertImportMessage(
-      importDatabase,
+      importLedgerDatabase,
       sourceId: liveChatDbSourceId,
       sourceRowId: 100,
       guid: 'message-100',
@@ -53,7 +53,7 @@ void main() {
 
     final result = await MessageProjector(
       repository: SqliteMessageProjectionRepository(
-        importDatabase: importDatabase,
+        importLedgerDatabase: importLedgerDatabase,
         graphDatabase: graphDatabase,
       ),
     ).projectMessages();
@@ -70,7 +70,7 @@ void main() {
 
   test('is idempotent', () async {
     await _insertImportMessage(
-      importDatabase,
+      importLedgerDatabase,
       sourceId: liveChatDbSourceId,
       sourceRowId: 101,
       guid: 'message-101',
@@ -78,7 +78,7 @@ void main() {
 
     final projector = MessageProjector(
       repository: SqliteMessageProjectionRepository(
-        importDatabase: importDatabase,
+        importLedgerDatabase: importLedgerDatabase,
         graphDatabase: graphDatabase,
       ),
     );
@@ -96,14 +96,14 @@ void main() {
     'projects only messages after source rowid for incremental builds',
     () async {
       await _insertImportMessage(
-        importDatabase,
+        importLedgerDatabase,
         sourceId: liveChatDbSourceId,
         sourceRowId: 100,
         guid: 'already-projected',
         text: 'old',
       );
       await _insertImportMessage(
-        importDatabase,
+        importLedgerDatabase,
         sourceId: liveChatDbSourceId,
         sourceRowId: 101,
         guid: 'newly-imported',
@@ -113,7 +113,7 @@ void main() {
       final result =
           await MessageProjector(
             repository: SqliteMessageProjectionRepository(
-              importDatabase: importDatabase,
+              importLedgerDatabase: importLedgerDatabase,
               graphDatabase: graphDatabase,
             ),
           ).projectMessagesAfterSourceRowId(
@@ -133,7 +133,7 @@ void main() {
     'refreshes existing working text after import ledger enrichment',
     () async {
       await _insertImportMessage(
-        importDatabase,
+        importLedgerDatabase,
         sourceId: liveChatDbSourceId,
         sourceRowId: 101,
         guid: 'message-101',
@@ -142,12 +142,12 @@ void main() {
 
       final projector = MessageProjector(
         repository: SqliteMessageProjectionRepository(
-          importDatabase: importDatabase,
+          importLedgerDatabase: importLedgerDatabase,
           graphDatabase: graphDatabase,
         ),
       );
       await projector.projectMessages();
-      await importDatabase.database.update(
+      await importLedgerDatabase.database.update(
         'messages',
         <String, Object?>{'text': 'decoded text'},
         where: 'source_id = ? AND source_rowid = ?',
@@ -164,15 +164,15 @@ void main() {
   test(
     'duplicate guid values do not block projection when ss_id differs',
     () async {
-      await _insertSource(importDatabase, sourceId: 3);
+      await _insertSource(importLedgerDatabase, sourceId: 3);
       await _insertImportMessage(
-        importDatabase,
+        importLedgerDatabase,
         sourceId: liveChatDbSourceId,
         sourceRowId: 102,
         guid: 'same-guid',
       );
       await _insertImportMessage(
-        importDatabase,
+        importLedgerDatabase,
         sourceId: 3,
         sourceRowId: 102,
         guid: 'same-guid',
@@ -180,7 +180,7 @@ void main() {
 
       final result = await MessageProjector(
         repository: SqliteMessageProjectionRepository(
-          importDatabase: importDatabase,
+          importLedgerDatabase: importLedgerDatabase,
           graphDatabase: graphDatabase,
         ),
       ).projectMessages();
@@ -203,13 +203,13 @@ void main() {
         sourceRowId: 200,
       );
       await _insertImportMessage(
-        importDatabase,
+        importLedgerDatabase,
         sourceId: liveChatDbSourceId,
         sourceRowId: 200,
         guid: 'target-guid',
       );
       await _insertImportMessage(
-        importDatabase,
+        importLedgerDatabase,
         sourceId: liveChatDbSourceId,
         sourceRowId: 201,
         guid: 'reaction-guid',
@@ -218,7 +218,7 @@ void main() {
 
       await MessageProjector(
         repository: SqliteMessageProjectionRepository(
-          importDatabase: importDatabase,
+          importLedgerDatabase: importLedgerDatabase,
           graphDatabase: graphDatabase,
         ),
       ).projectMessages();
@@ -233,7 +233,7 @@ void main() {
   );
 
   test('associated message lookup remains source scoped', () async {
-    await _insertSource(importDatabase, sourceId: 3);
+    await _insertSource(importLedgerDatabase, sourceId: 3);
     final liveTargetSsId = SourceScopedRowKey.pack(
       sourceId: liveChatDbSourceId,
       sourceRowId: 300,
@@ -243,19 +243,19 @@ void main() {
       sourceRowId: 300,
     );
     await _insertImportMessage(
-      importDatabase,
+      importLedgerDatabase,
       sourceId: liveChatDbSourceId,
       sourceRowId: 300,
       guid: 'shared-target-guid',
     );
     await _insertImportMessage(
-      importDatabase,
+      importLedgerDatabase,
       sourceId: 3,
       sourceRowId: 300,
       guid: 'shared-target-guid',
     );
     await _insertImportMessage(
-      importDatabase,
+      importLedgerDatabase,
       sourceId: 3,
       sourceRowId: 301,
       guid: 'archive-reaction-guid',
@@ -264,7 +264,7 @@ void main() {
 
     await MessageProjector(
       repository: SqliteMessageProjectionRepository(
-        importDatabase: importDatabase,
+        importLedgerDatabase: importLedgerDatabase,
         graphDatabase: graphDatabase,
       ),
     ).projectMessages();
@@ -282,7 +282,7 @@ void main() {
     'missing associated guid projects null associated message ss_id',
     () async {
       await _insertImportMessage(
-        importDatabase,
+        importLedgerDatabase,
         sourceId: liveChatDbSourceId,
         sourceRowId: 400,
         guid: 'missing-target-reaction',
@@ -291,7 +291,7 @@ void main() {
 
       await MessageProjector(
         repository: SqliteMessageProjectionRepository(
-          importDatabase: importDatabase,
+          importLedgerDatabase: importLedgerDatabase,
           graphDatabase: graphDatabase,
         ),
       ).projectMessages();
@@ -307,7 +307,7 @@ void main() {
 
   test('projects lightweight message semantic fields', () async {
     await _insertImportMessage(
-      importDatabase,
+      importLedgerDatabase,
       sourceId: liveChatDbSourceId,
       sourceRowId: 500,
       guid: 'rich-text-message',
@@ -320,7 +320,7 @@ void main() {
 
     await MessageProjector(
       repository: SqliteMessageProjectionRepository(
-        importDatabase: importDatabase,
+        importLedgerDatabase: importLedgerDatabase,
         graphDatabase: graphDatabase,
       ),
     ).projectMessages();
@@ -344,28 +344,28 @@ void main() {
     'classifies associated, system, text, and sparse message shapes',
     () async {
       await _insertImportMessage(
-        importDatabase,
+        importLedgerDatabase,
         sourceId: liveChatDbSourceId,
         sourceRowId: 600,
         guid: 'associated-message',
         associatedMessageType: 2000,
       );
       await _insertImportMessage(
-        importDatabase,
+        importLedgerDatabase,
         sourceId: liveChatDbSourceId,
         sourceRowId: 601,
         guid: 'system-message',
         isSystemMessage: 1,
       );
       await _insertImportMessage(
-        importDatabase,
+        importLedgerDatabase,
         sourceId: liveChatDbSourceId,
         sourceRowId: 602,
         guid: 'plain-text-message',
         text: 'plain',
       );
       await _insertImportMessage(
-        importDatabase,
+        importLedgerDatabase,
         sourceId: liveChatDbSourceId,
         sourceRowId: 603,
         guid: 'sparse-message',
@@ -373,7 +373,7 @@ void main() {
 
       await MessageProjector(
         repository: SqliteMessageProjectionRepository(
-          importDatabase: importDatabase,
+          importLedgerDatabase: importLedgerDatabase,
           graphDatabase: graphDatabase,
         ),
       ).projectMessages();
@@ -407,7 +407,7 @@ void main() {
       'alias_kind': 'phone',
     });
     await _insertImportMessage(
-      importDatabase,
+      importLedgerDatabase,
       sourceId: liveChatDbSourceId,
       sourceRowId: 700,
       guid: 'sender-alias-message',
@@ -415,7 +415,7 @@ void main() {
 
     await MessageProjector(
       repository: SqliteMessageProjectionRepository(
-        importDatabase: importDatabase,
+        importLedgerDatabase: importLedgerDatabase,
         graphDatabase: graphDatabase,
       ),
     ).projectMessages();
@@ -431,19 +431,20 @@ void main() {
 }
 
 Future<void> _insertSource(
-  ImportDatabase importDatabase, {
+  ImportDatabase importLedgerDatabase, {
   required int sourceId,
 }) async {
-  await importDatabase.database.insert('source_registry', <String, Object?>{
-    'source_id': sourceId,
-    'source_key': 'source-$sourceId',
-    'source_kind': 'archive_chat_db',
-    'created_at_utc': DateTime.now().toUtc().toIso8601String(),
-  });
+  await importLedgerDatabase.database
+      .insert('source_registry', <String, Object?>{
+        'source_id': sourceId,
+        'source_key': 'source-$sourceId',
+        'source_kind': 'archive_chat_db',
+        'created_at_utc': DateTime.now().toUtc().toIso8601String(),
+      });
 }
 
 Future<void> _insertImportMessage(
-  ImportDatabase importDatabase, {
+  ImportDatabase importLedgerDatabase, {
   required int sourceId,
   required int sourceRowId,
   required String guid,
@@ -456,12 +457,12 @@ Future<void> _insertImportMessage(
   int? hasPayloadDataSource,
   int? errorCode,
 }) async {
-  final batchId = await importDatabase.insertImportBatch(
+  final batchId = await importLedgerDatabase.insertImportBatch(
     sourceId: sourceId,
     startedAtUtc: DateTime.now().toUtc().toIso8601String(),
   );
 
-  await importDatabase.database.insert('messages', <String, Object?>{
+  await importLedgerDatabase.database.insert('messages', <String, Object?>{
     'ss_id': SourceScopedRowKey.pack(
       sourceId: sourceId,
       sourceRowId: sourceRowId,

@@ -13,7 +13,7 @@ import '../../conversation_graph_test_database.dart';
 
 void main() {
   late Directory tempDir;
-  late ImportDatabase importDatabase;
+  late ImportDatabase importLedgerDatabase;
   late ConversationGraphDatabase graphDatabase;
 
   setUpAll(() {
@@ -61,7 +61,7 @@ void main() {
     tempDir = await Directory.systemTemp.createTemp(
       'message_to_attachment_projector_test_',
     );
-    importDatabase = await ImportDatabase.open(
+    importLedgerDatabase = await ImportDatabase.open(
       databaseDirectory: tempDir.path,
       databaseName: 'macos_import_ss_test.db',
     );
@@ -70,7 +70,7 @@ void main() {
 
   tearDown(() async {
     await graphDatabase.close();
-    await importDatabase.close();
+    await importLedgerDatabase.close();
     if (tempDir.existsSync()) {
       await tempDir.delete(recursive: true);
     }
@@ -86,14 +86,14 @@ void main() {
       sourceRowId: 22,
     );
     await _insertImportEdge(
-      importDatabase,
+      importLedgerDatabase,
       sourceMessageRowId: 11,
       sourceAttachmentRowId: 22,
     );
 
     final result = await MessageToAttachmentProjector(
       repository: SqliteMessageToAttachmentProjectionRepository(
-        importDatabase: importDatabase,
+        importLedgerDatabase: importLedgerDatabase,
         graphDatabase: graphDatabase,
       ),
     ).projectEdges();
@@ -107,14 +107,14 @@ void main() {
 
   test('is idempotent', () async {
     await _insertImportEdge(
-      importDatabase,
+      importLedgerDatabase,
       sourceMessageRowId: 11,
       sourceAttachmentRowId: 22,
     );
 
     final projector = MessageToAttachmentProjector(
       repository: SqliteMessageToAttachmentProjectionRepository(
-        importDatabase: importDatabase,
+        importLedgerDatabase: importLedgerDatabase,
         graphDatabase: graphDatabase,
       ),
     );
@@ -131,12 +131,12 @@ void main() {
     'projects message-to-attachment edges after source message rowid',
     () async {
       await _insertImportEdge(
-        importDatabase,
+        importLedgerDatabase,
         sourceMessageRowId: 40,
         sourceAttachmentRowId: 21,
       );
       await _insertImportEdge(
-        importDatabase,
+        importLedgerDatabase,
         sourceMessageRowId: 42,
         sourceAttachmentRowId: 22,
       );
@@ -144,7 +144,7 @@ void main() {
       final result =
           await MessageToAttachmentProjector(
             repository: SqliteMessageToAttachmentProjectionRepository(
-              importDatabase: importDatabase,
+              importLedgerDatabase: importLedgerDatabase,
               graphDatabase: graphDatabase,
             ),
           ).projectEdgesAfterSourceMessageRowId(
@@ -194,15 +194,15 @@ class _FakeMessageToAttachmentProjectionRepository
 }
 
 Future<void> _insertImportEdge(
-  ImportDatabase importDatabase, {
+  ImportDatabase importLedgerDatabase, {
   required int sourceMessageRowId,
   required int sourceAttachmentRowId,
 }) async {
-  final batchId = await importDatabase.insertImportBatch(
+  final batchId = await importLedgerDatabase.insertImportBatch(
     sourceId: liveChatDbSourceId,
     startedAtUtc: DateTime.now().toUtc().toIso8601String(),
   );
-  await importDatabase.database
+  await importLedgerDatabase.database
       .insert('message_to_attachment', <String, Object?>{
         'message_source_id': liveChatDbSourceId,
         'attachment_source_id': liveChatDbSourceId,

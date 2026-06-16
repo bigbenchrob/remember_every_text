@@ -5,16 +5,16 @@ import '../../application/chat_handle_joins/chat_to_handle_projection_repository
 class SqliteChatToHandleProjectionRepository
     implements ChatToHandleProjectionRepository {
   const SqliteChatToHandleProjectionRepository({
-    required this.importDatabase,
+    required this.importLedgerDatabase,
     required this.graphDatabase,
   });
 
-  final ImportDatabase importDatabase;
+  final ImportDatabase importLedgerDatabase;
   final ConversationGraphDatabase graphDatabase;
 
   @override
   Future<ChatToHandleProjectionResult> projectEdges() async {
-    final rows = await importDatabase.database.query(
+    final rows = await importLedgerDatabase.database.query(
       'chat_to_handle',
       columns: <String>['chat_ss_id', 'handle_ss_id'],
       orderBy: 'chat_ss_id ASC, handle_ss_id ASC',

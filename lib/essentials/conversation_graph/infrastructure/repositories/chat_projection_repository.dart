@@ -4,16 +4,16 @@ import '../../application/chats/chat_projection_repository.dart';
 
 class SqliteChatProjectionRepository implements ChatProjectionRepository {
   const SqliteChatProjectionRepository({
-    required this.importDatabase,
+    required this.importLedgerDatabase,
     required this.graphDatabase,
   });
 
-  final ImportDatabase importDatabase;
+  final ImportDatabase importLedgerDatabase;
   final ConversationGraphDatabase graphDatabase;
 
   @override
   Future<ChatProjectionResult> projectChats() async {
-    final rows = await importDatabase.database.query(
+    final rows = await importLedgerDatabase.database.query(
       'chats',
       columns: <String>['ss_id', 'guid', 'service', 'last_read_message_at_utc'],
       orderBy: 'ss_id ASC',

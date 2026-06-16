@@ -5,11 +5,11 @@ import '../../application/attachments/attachment_projection_repository.dart';
 class SqliteAttachmentProjectionRepository
     implements AttachmentProjectionRepository {
   const SqliteAttachmentProjectionRepository({
-    required this.importDatabase,
+    required this.importLedgerDatabase,
     required this.graphDatabase,
   });
 
-  final ImportDatabase importDatabase;
+  final ImportDatabase importLedgerDatabase;
   final ConversationGraphDatabase graphDatabase;
 
   @override
@@ -35,7 +35,7 @@ class SqliteAttachmentProjectionRepository
     required String? whereClause,
     required List<Object?> whereArgs,
   }) async {
-    final rows = await importDatabase.database.query(
+    final rows = await importLedgerDatabase.database.query(
       'attachments',
       columns: <String>[
         'ss_id',

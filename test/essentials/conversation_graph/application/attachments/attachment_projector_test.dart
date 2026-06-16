@@ -13,7 +13,7 @@ import '../../conversation_graph_test_database.dart';
 
 void main() {
   late Directory tempDir;
-  late ImportDatabase importDatabase;
+  late ImportDatabase importLedgerDatabase;
   late ConversationGraphDatabase graphDatabase;
 
   setUpAll(() {
@@ -61,7 +61,7 @@ void main() {
     tempDir = await Directory.systemTemp.createTemp(
       'attachment_projector_test_',
     );
-    importDatabase = await ImportDatabase.open(
+    importLedgerDatabase = await ImportDatabase.open(
       databaseDirectory: tempDir.path,
       databaseName: 'macos_import_ss_test.db',
     );
@@ -70,7 +70,7 @@ void main() {
 
   tearDown(() async {
     await graphDatabase.close();
-    await importDatabase.close();
+    await importLedgerDatabase.close();
     if (tempDir.existsSync()) {
       await tempDir.delete(recursive: true);
     }
@@ -82,7 +82,7 @@ void main() {
       sourceRowId: 10,
     );
     await _insertImportAttachment(
-      importDatabase,
+      importLedgerDatabase,
       sourceRowId: 10,
       guid: 'attachment-guid',
       filename: '/source/photo.jpg',
@@ -90,7 +90,7 @@ void main() {
 
     final result = await AttachmentProjector(
       repository: SqliteAttachmentProjectionRepository(
-        importDatabase: importDatabase,
+        importLedgerDatabase: importLedgerDatabase,
         graphDatabase: graphDatabase,
       ),
     ).projectAttachments();
@@ -106,20 +106,20 @@ void main() {
 
   test('is idempotent and refreshes metadata', () async {
     await _insertImportAttachment(
-      importDatabase,
+      importLedgerDatabase,
       sourceRowId: 10,
       guid: 'attachment-guid',
       filename: '/source/photo.jpg',
     );
     final projector = AttachmentProjector(
       repository: SqliteAttachmentProjectionRepository(
-        importDatabase: importDatabase,
+        importLedgerDatabase: importLedgerDatabase,
         graphDatabase: graphDatabase,
       ),
     );
 
     final firstResult = await projector.projectAttachments();
-    await importDatabase.database.update(
+    await importLedgerDatabase.database.update(
       'attachments',
       <String, Object?>{'filename': '/source/updated.jpg'},
       where: 'source_id = ? AND source_rowid = ?',
@@ -135,13 +135,13 @@ void main() {
 
   test('projects attachments after source rowid', () async {
     await _insertImportAttachment(
-      importDatabase,
+      importLedgerDatabase,
       sourceRowId: 40,
       guid: 'old-attachment',
       filename: '/source/old.jpg',
     );
     await _insertImportAttachment(
-      importDatabase,
+      importLedgerDatabase,
       sourceRowId: 42,
       guid: 'new-attachment',
       filename: '/source/new.jpg',
@@ -150,7 +150,7 @@ void main() {
     final result =
         await AttachmentProjector(
           repository: SqliteAttachmentProjectionRepository(
-            importDatabase: importDatabase,
+            importLedgerDatabase: importLedgerDatabase,
             graphDatabase: graphDatabase,
           ),
         ).projectAttachmentsAfterSourceRowId(
@@ -195,16 +195,16 @@ class _FakeAttachmentProjectionRepository
 }
 
 Future<void> _insertImportAttachment(
-  ImportDatabase importDatabase, {
+  ImportDatabase importLedgerDatabase, {
   required int sourceRowId,
   required String guid,
   String? filename,
 }) async {
-  final batchId = await importDatabase.insertImportBatch(
+  final batchId = await importLedgerDatabase.insertImportBatch(
     sourceId: liveChatDbSourceId,
     startedAtUtc: DateTime.now().toUtc().toIso8601String(),
   );
-  await importDatabase.database.insert('attachments', <String, Object?>{
+  await importLedgerDatabase.database.insert('attachments', <String, Object?>{
     'ss_id': SourceScopedRowKey.pack(
       sourceId: liveChatDbSourceId,
       sourceRowId: sourceRowId,

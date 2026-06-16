@@ -5,11 +5,11 @@ import '../../application/chat_message_joins/chat_to_message_projection_reposito
 class SqliteChatToMessageProjectionRepository
     implements ChatToMessageProjectionRepository {
   const SqliteChatToMessageProjectionRepository({
-    required this.importDatabase,
+    required this.importLedgerDatabase,
     required this.graphDatabase,
   });
 
-  final ImportDatabase importDatabase;
+  final ImportDatabase importLedgerDatabase;
   final ConversationGraphDatabase graphDatabase;
 
   @override
@@ -32,7 +32,7 @@ class SqliteChatToMessageProjectionRepository
     required String? whereClause,
     required List<Object?> whereArgs,
   }) async {
-    final rows = await importDatabase.database.query(
+    final rows = await importLedgerDatabase.database.query(
       'chat_to_message',
       columns: <String>['chat_ss_id', 'message_ss_id'],
       where: whereClause,

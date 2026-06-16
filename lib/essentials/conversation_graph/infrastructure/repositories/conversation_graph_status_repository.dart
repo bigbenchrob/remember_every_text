@@ -9,9 +9,9 @@ final class ConversationGraphStatusRepository {
 
   Future<ConversationGraphStatus> readStatus({
     required String chatDbPath,
-    required ImportDatabase importDatabase,
+    required ImportDatabase importLedgerDatabase,
     required ConversationGraphDatabase graphDatabase,
-    required String importDatabaseName,
+    required String importLedgerDatabaseName,
     required String graphDatabaseName,
     required int sourceId,
   }) async {
@@ -32,18 +32,18 @@ final class ConversationGraphStatusRepository {
       alias: 'attachment_count',
     );
     final ledgerSnapshot = await _readLedgerMessageSnapshot(
-      importDatabase,
+      importLedgerDatabase,
       sourceId,
     );
     final graphMessageSnapshot = await _readGraphMessageSnapshot(graphDatabase);
     final graphSnapshot = await _readGraphSnapshot(
-      importDatabase,
+      importLedgerDatabase,
       graphDatabase,
     );
 
     return ConversationGraphStatus(
       chatDbPath: chatDbPath,
-      importDatabaseName: importDatabaseName,
+      importDatabaseName: importLedgerDatabaseName,
       graphDatabaseName: graphDatabaseName,
       sourceId: sourceId,
       sourceMessageCount: sourceSnapshot.count,
@@ -128,10 +128,10 @@ final class ConversationGraphStatusRepository {
   }
 
   Future<_MessageSnapshot> _readLedgerMessageSnapshot(
-    ImportDatabase importDatabase,
+    ImportDatabase importLedgerDatabase,
     int sourceId,
   ) async {
-    final rows = await importDatabase.database.rawQuery(
+    final rows = await importLedgerDatabase.database.rawQuery(
       '''
       SELECT
         COUNT(*) AS message_count,
@@ -174,22 +174,22 @@ final class ConversationGraphStatusRepository {
   }
 
   Future<_GraphSnapshot> _readGraphSnapshot(
-    ImportDatabase importDatabase,
+    ImportDatabase importLedgerDatabase,
     ConversationGraphDatabase graphDatabase,
   ) async {
-    final importChatRows = await importDatabase.database.rawQuery(
+    final importChatRows = await importLedgerDatabase.database.rawQuery(
       'SELECT COUNT(*) AS chat_count FROM chats',
     );
     final graphChatRows = await graphDatabase.selectRows(
       'SELECT COUNT(*) AS chat_count FROM chats',
     );
-    final importHandleRows = await importDatabase.database.rawQuery(
+    final importHandleRows = await importLedgerDatabase.database.rawQuery(
       'SELECT COUNT(*) AS handle_count FROM handles',
     );
     final graphHandleRows = await graphDatabase.selectRows(
       'SELECT COUNT(*) AS handle_count FROM handles',
     );
-    final importEdgeRows = await importDatabase.database.rawQuery(
+    final importEdgeRows = await importLedgerDatabase.database.rawQuery(
       'SELECT COUNT(*) AS edge_count FROM chat_to_message',
     );
     final graphEdgeRows = await graphDatabase.selectRows(
@@ -204,7 +204,7 @@ final class ConversationGraphStatusRepository {
         HAVING COUNT(*) > 1
       )
     ''');
-    final importChatToHandleRows = await importDatabase.database.rawQuery(
+    final importChatToHandleRows = await importLedgerDatabase.database.rawQuery(
       'SELECT COUNT(*) AS edge_count FROM chat_to_handle',
     );
     final graphChatToHandleRows = await graphDatabase.selectRows(
@@ -219,13 +219,13 @@ final class ConversationGraphStatusRepository {
         HAVING COUNT(*) > 1
       )
     ''');
-    final importAttachmentRows = await importDatabase.database.rawQuery(
+    final importAttachmentRows = await importLedgerDatabase.database.rawQuery(
       'SELECT COUNT(*) AS attachment_count FROM attachments',
     );
     final graphAttachmentRows = await graphDatabase.selectRows(
       'SELECT COUNT(*) AS attachment_count FROM attachments',
     );
-    final importMessageToAttachmentRows = await importDatabase.database
+    final importMessageToAttachmentRows = await importLedgerDatabase.database
         .rawQuery('SELECT COUNT(*) AS edge_count FROM message_to_attachment');
     final graphMessageToAttachmentRows = await graphDatabase.selectRows(
       'SELECT COUNT(*) AS edge_count FROM message_to_attachment',

@@ -2522,6 +2522,10 @@ criteria.
     `ArchiveCompatibilityKey` construction sites. New code must pass typed keys
     through existing evidence/resolver/diagnostic boundaries instead of
     rebuilding retained archive compatibility identity ad hoc.
+  - Renamed conversation graph projection/status repository constructor fields
+    and tests from generic `importDatabase` to `importLedgerDatabase`. The only
+    remaining conversation-graph `importDatabase` wording is the physical
+    diagnostic database-name field shown in the graph status panel.
 
 ### Exit Criteria
 

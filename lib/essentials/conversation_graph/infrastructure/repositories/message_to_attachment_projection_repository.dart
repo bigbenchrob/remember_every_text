@@ -5,11 +5,11 @@ import '../../application/message_attachment_joins/message_to_attachment_project
 class SqliteMessageToAttachmentProjectionRepository
     implements MessageToAttachmentProjectionRepository {
   const SqliteMessageToAttachmentProjectionRepository({
-    required this.importDatabase,
+    required this.importLedgerDatabase,
     required this.graphDatabase,
   });
 
-  final ImportDatabase importDatabase;
+  final ImportDatabase importLedgerDatabase;
   final ConversationGraphDatabase graphDatabase;
 
   @override
@@ -33,7 +33,7 @@ class SqliteMessageToAttachmentProjectionRepository
     required String? whereClause,
     required List<Object?> whereArgs,
   }) async {
-    final rows = await importDatabase.database.query(
+    final rows = await importLedgerDatabase.database.query(
       'message_to_attachment',
       columns: <String>['message_ss_id', 'attachment_ss_id'],
       where: whereClause,

@@ -38,7 +38,7 @@ void main() {
   late Directory tempDir;
   late Directory archiveFolder;
   late String chatDbPath;
-  late ImportDatabase importDatabase;
+  late ImportDatabase importLedgerDatabase;
   late ConversationGraphDatabase graphDatabase;
   late SourceScopedArchiveGraphImportService service;
   late SourceScopedArchiveGraphRemovalService removalService;
@@ -58,14 +58,14 @@ void main() {
     await _createArchiveChatDb(chatDbPath);
     await _insertArchiveRows(chatDbPath);
 
-    importDatabase = await ImportDatabase.open(
+    importLedgerDatabase = await ImportDatabase.open(
       databaseDirectory: tempDir.path,
       databaseName: 'macos_import_ss_test.db',
     );
     graphDatabase = await openConversationGraphTestDatabase();
     final importService = SourceScopedArchiveImportService(
       registrar: HistoricalMessagesArchiveSourceRegistrar(
-        importLedger: importDatabase,
+        importLedger: importLedgerDatabase,
         folderResolver:
             const FilesystemHistoricalMessagesArchiveSourceFolderResolver(),
       ),
@@ -78,97 +78,97 @@ void main() {
       importService: importService,
       handleProjector: HandleProjector(
         repository: SqliteHandleProjectionRepository(
-          importDatabase: importDatabase,
+          importLedgerDatabase: importLedgerDatabase,
           graphDatabase: graphDatabase,
         ),
       ),
       chatToHandleProjector: ChatToHandleProjector(
         repository: SqliteChatToHandleProjectionRepository(
-          importDatabase: importDatabase,
+          importLedgerDatabase: importLedgerDatabase,
           graphDatabase: graphDatabase,
         ),
       ),
       chatProjector: ChatProjector(
         repository: SqliteChatProjectionRepository(
-          importDatabase: importDatabase,
+          importLedgerDatabase: importLedgerDatabase,
           graphDatabase: graphDatabase,
         ),
       ),
       messageProjector: MessageProjector(
         repository: SqliteMessageProjectionRepository(
-          importDatabase: importDatabase,
+          importLedgerDatabase: importLedgerDatabase,
           graphDatabase: graphDatabase,
         ),
       ),
       attachmentProjector: AttachmentProjector(
         repository: SqliteAttachmentProjectionRepository(
-          importDatabase: importDatabase,
+          importLedgerDatabase: importLedgerDatabase,
           graphDatabase: graphDatabase,
         ),
       ),
       chatToMessageProjector: ChatToMessageProjector(
         repository: SqliteChatToMessageProjectionRepository(
-          importDatabase: importDatabase,
+          importLedgerDatabase: importLedgerDatabase,
           graphDatabase: graphDatabase,
         ),
       ),
       messageToAttachmentProjector: MessageToAttachmentProjector(
         repository: SqliteMessageToAttachmentProjectionRepository(
-          importDatabase: importDatabase,
+          importLedgerDatabase: importLedgerDatabase,
           graphDatabase: graphDatabase,
         ),
       ),
     );
     removalService = SourceScopedArchiveGraphRemovalService(
-      importLedger: importDatabase,
+      importLedger: importLedgerDatabase,
       graphProjectionResetter: DriftGraphProjectionResetter(
         graphDatabase: graphDatabase,
       ),
       handleProjector: HandleProjector(
         repository: SqliteHandleProjectionRepository(
-          importDatabase: importDatabase,
+          importLedgerDatabase: importLedgerDatabase,
           graphDatabase: graphDatabase,
         ),
       ),
       contactProjector: ContactProjector(
         repository: SqliteContactProjectionRepository(
-          importDatabase: importDatabase,
+          importLedgerDatabase: importLedgerDatabase,
           graphDatabase: graphDatabase,
         ),
       ),
       chatToHandleProjector: ChatToHandleProjector(
         repository: SqliteChatToHandleProjectionRepository(
-          importDatabase: importDatabase,
+          importLedgerDatabase: importLedgerDatabase,
           graphDatabase: graphDatabase,
         ),
       ),
       chatProjector: ChatProjector(
         repository: SqliteChatProjectionRepository(
-          importDatabase: importDatabase,
+          importLedgerDatabase: importLedgerDatabase,
           graphDatabase: graphDatabase,
         ),
       ),
       messageProjector: MessageProjector(
         repository: SqliteMessageProjectionRepository(
-          importDatabase: importDatabase,
+          importLedgerDatabase: importLedgerDatabase,
           graphDatabase: graphDatabase,
         ),
       ),
       attachmentProjector: AttachmentProjector(
         repository: SqliteAttachmentProjectionRepository(
-          importDatabase: importDatabase,
+          importLedgerDatabase: importLedgerDatabase,
           graphDatabase: graphDatabase,
         ),
       ),
       chatToMessageProjector: ChatToMessageProjector(
         repository: SqliteChatToMessageProjectionRepository(
-          importDatabase: importDatabase,
+          importLedgerDatabase: importLedgerDatabase,
           graphDatabase: graphDatabase,
         ),
       ),
       messageToAttachmentProjector: MessageToAttachmentProjector(
         repository: SqliteMessageToAttachmentProjectionRepository(
-          importDatabase: importDatabase,
+          importLedgerDatabase: importLedgerDatabase,
           graphDatabase: graphDatabase,
         ),
       ),
@@ -179,7 +179,7 @@ void main() {
 
   tearDown(() async {
     await graphDatabase.close();
-    await importDatabase.close();
+    await importLedgerDatabase.close();
     if (tempDir.existsSync()) {
       await tempDir.delete(recursive: true);
     }
@@ -257,7 +257,7 @@ void main() {
       final sourceId = importResult.importResult.registration.sourceId;
 
       expect(await _countGraphRows(graphDatabase, 'messages'), 1);
-      expect(await _countImportRows(importDatabase, 'messages'), 1);
+      expect(await _countImportRows(importLedgerDatabase, 'messages'), 1);
 
       final removalResult = await removalService.removeArchiveSource(
         folderPath: archiveFolder.path,
@@ -279,10 +279,10 @@ void main() {
         'message_to_attachment',
       ]) {
         expect(await _countGraphRows(graphDatabase, tableName), 0);
-        expect(await _countImportRows(importDatabase, tableName), 0);
+        expect(await _countImportRows(importLedgerDatabase, tableName), 0);
       }
 
-      final registryRows = await importDatabase.database.query(
+      final registryRows = await importLedgerDatabase.database.query(
         'source_registry',
         where: 'source_id = ?',
         whereArgs: <Object?>[sourceId],
@@ -465,10 +465,10 @@ Future<int> _countGraphRows(
 }
 
 Future<int> _countImportRows(
-  ImportDatabase importDatabase,
+  ImportDatabase importLedgerDatabase,
   String tableName,
 ) async {
-  final rows = await importDatabase.database.rawQuery(
+  final rows = await importLedgerDatabase.database.rawQuery(
     'SELECT COUNT(*) AS row_count FROM $tableName',
   );
   return rows.single['row_count'] as int? ?? 0;

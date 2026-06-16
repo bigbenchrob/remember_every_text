@@ -4,16 +4,16 @@ import '../../application/contacts/contact_projection_repository.dart';
 
 class SqliteContactProjectionRepository implements ContactProjectionRepository {
   const SqliteContactProjectionRepository({
-    required this.importDatabase,
+    required this.importLedgerDatabase,
     required this.graphDatabase,
   });
 
-  final ImportDatabase importDatabase;
+  final ImportDatabase importLedgerDatabase;
   final ConversationGraphDatabase graphDatabase;
 
   @override
   Future<ContactProjectionResult> projectContacts() async {
-    final contactRows = await importDatabase.database.query(
+    final contactRows = await importLedgerDatabase.database.query(
       'contacts',
       columns: <String>[
         'ss_id',
@@ -24,7 +24,7 @@ class SqliteContactProjectionRepository implements ContactProjectionRepository {
       ],
       orderBy: 'ss_id ASC',
     );
-    final channelRows = await importDatabase.database.query(
+    final channelRows = await importLedgerDatabase.database.query(
       'contact_channels',
       columns: <String>['contact_ss_id', 'value'],
       orderBy: 'contact_ss_id ASC, value ASC',

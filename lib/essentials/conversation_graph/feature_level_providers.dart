@@ -67,7 +67,7 @@ ConversationGraphStatusLogWriter conversationGraphStatusLogWriter(Ref ref) {
 Future<AttachmentProjectionRepository> attachmentProjectionRepository(
   Ref ref,
 ) async {
-  final importDatabase = await ref.watch(
+  final importLedgerDatabase = await ref.watch(
     sourceScopedImportDatabaseProvider.future,
   );
   final graphDatabase = await ref.watch(
@@ -75,14 +75,14 @@ Future<AttachmentProjectionRepository> attachmentProjectionRepository(
   );
 
   return SqliteAttachmentProjectionRepository(
-    importDatabase: importDatabase,
+    importLedgerDatabase: importLedgerDatabase,
     graphDatabase: graphDatabase,
   );
 }
 
 @riverpod
 Future<ChatProjectionRepository> chatProjectionRepository(Ref ref) async {
-  final importDatabase = await ref.watch(
+  final importLedgerDatabase = await ref.watch(
     sourceScopedImportDatabaseProvider.future,
   );
   final graphDatabase = await ref.watch(
@@ -90,7 +90,7 @@ Future<ChatProjectionRepository> chatProjectionRepository(Ref ref) async {
   );
 
   return SqliteChatProjectionRepository(
-    importDatabase: importDatabase,
+    importLedgerDatabase: importLedgerDatabase,
     graphDatabase: graphDatabase,
   );
 }
@@ -113,7 +113,7 @@ Future<ChatSummaryRepository> chatSummaryRepository(Ref ref) async {
 Future<ChatToHandleProjectionRepository> chatToHandleProjectionRepository(
   Ref ref,
 ) async {
-  final importDatabase = await ref.watch(
+  final importLedgerDatabase = await ref.watch(
     sourceScopedImportDatabaseProvider.future,
   );
   final graphDatabase = await ref.watch(
@@ -121,7 +121,7 @@ Future<ChatToHandleProjectionRepository> chatToHandleProjectionRepository(
   );
 
   return SqliteChatToHandleProjectionRepository(
-    importDatabase: importDatabase,
+    importLedgerDatabase: importLedgerDatabase,
     graphDatabase: graphDatabase,
   );
 }
@@ -130,7 +130,7 @@ Future<ChatToHandleProjectionRepository> chatToHandleProjectionRepository(
 Future<ChatToMessageProjectionRepository> chatToMessageProjectionRepository(
   Ref ref,
 ) async {
-  final importDatabase = await ref.watch(
+  final importLedgerDatabase = await ref.watch(
     sourceScopedImportDatabaseProvider.future,
   );
   final graphDatabase = await ref.watch(
@@ -138,7 +138,7 @@ Future<ChatToMessageProjectionRepository> chatToMessageProjectionRepository(
   );
 
   return SqliteChatToMessageProjectionRepository(
-    importDatabase: importDatabase,
+    importLedgerDatabase: importLedgerDatabase,
     graphDatabase: graphDatabase,
   );
 }
@@ -163,7 +163,7 @@ Future<ContactGraphRepository> contactGraphRepository(Ref ref) async {
 
 @riverpod
 Future<ContactProjectionRepository> contactProjectionRepository(Ref ref) async {
-  final importDatabase = await ref.watch(
+  final importLedgerDatabase = await ref.watch(
     sourceScopedImportDatabaseProvider.future,
   );
   final graphDatabase = await ref.watch(
@@ -171,7 +171,7 @@ Future<ContactProjectionRepository> contactProjectionRepository(Ref ref) async {
   );
 
   return SqliteContactProjectionRepository(
-    importDatabase: importDatabase,
+    importLedgerDatabase: importLedgerDatabase,
     graphDatabase: graphDatabase,
   );
 }
@@ -185,7 +185,7 @@ Future<ConversationFavouritesStore> conversationFavouritesStore(Ref ref) async {
 @riverpod
 Future<ConversationGraphStatus> conversationGraphStatusSnapshot(Ref ref) async {
   final pathsHelper = await ref.watch(pathsHelperProvider.future);
-  final importDatabase = await ref.watch(
+  final importLedgerDatabase = await ref.watch(
     sourceScopedImportDatabaseProvider.future,
   );
   final graphDatabase = await ref.watch(
@@ -194,9 +194,9 @@ Future<ConversationGraphStatus> conversationGraphStatusSnapshot(Ref ref) async {
 
   return const ConversationGraphStatusRepository().readStatus(
     chatDbPath: pathsHelper.chatDBPath,
-    importDatabase: importDatabase,
+    importLedgerDatabase: importLedgerDatabase,
     graphDatabase: graphDatabase,
-    importDatabaseName: sourceScopedImportDatabaseFileName,
+    importLedgerDatabaseName: sourceScopedImportDatabaseFileName,
     graphDatabaseName: conversationGraphDatabaseFileName,
     sourceId: liveChatDbSourceId,
   );
@@ -220,7 +220,7 @@ Future<GraphProjectionResetter> graphProjectionResetter(Ref ref) async {
 
 @riverpod
 Future<HandleProjectionRepository> handleProjectionRepository(Ref ref) async {
-  final importDatabase = await ref.watch(
+  final importLedgerDatabase = await ref.watch(
     sourceScopedImportDatabaseProvider.future,
   );
   final graphDatabase = await ref.watch(
@@ -228,7 +228,7 @@ Future<HandleProjectionRepository> handleProjectionRepository(Ref ref) async {
   );
 
   return SqliteHandleProjectionRepository(
-    importDatabase: importDatabase,
+    importLedgerDatabase: importLedgerDatabase,
     graphDatabase: graphDatabase,
   );
 }
@@ -272,7 +272,7 @@ Future<MessageGraphRepository> messageGraphRepository(Ref ref) async {
 
 @riverpod
 Future<MessageProjectionRepository> messageProjectionRepository(Ref ref) async {
-  final importDatabase = await ref.watch(
+  final importLedgerDatabase = await ref.watch(
     sourceScopedImportDatabaseProvider.future,
   );
   final graphDatabase = await ref.watch(
@@ -280,7 +280,7 @@ Future<MessageProjectionRepository> messageProjectionRepository(Ref ref) async {
   );
 
   return SqliteMessageProjectionRepository(
-    importDatabase: importDatabase,
+    importLedgerDatabase: importLedgerDatabase,
     graphDatabase: graphDatabase,
   );
 }
@@ -288,7 +288,7 @@ Future<MessageProjectionRepository> messageProjectionRepository(Ref ref) async {
 @riverpod
 Future<MessageToAttachmentProjectionRepository>
 messageToAttachmentProjectionRepository(Ref ref) async {
-  final importDatabase = await ref.watch(
+  final importLedgerDatabase = await ref.watch(
     sourceScopedImportDatabaseProvider.future,
   );
   final graphDatabase = await ref.watch(
@@ -296,7 +296,7 @@ messageToAttachmentProjectionRepository(Ref ref) async {
   );
 
   return SqliteMessageToAttachmentProjectionRepository(
-    importDatabase: importDatabase,
+    importLedgerDatabase: importLedgerDatabase,
     graphDatabase: graphDatabase,
   );
 }

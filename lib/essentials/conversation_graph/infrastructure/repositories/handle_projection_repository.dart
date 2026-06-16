@@ -5,16 +5,16 @@ import '../../application/handles/handle_projection_repository.dart';
 
 class SqliteHandleProjectionRepository implements HandleProjectionRepository {
   const SqliteHandleProjectionRepository({
-    required this.importDatabase,
+    required this.importLedgerDatabase,
     required this.graphDatabase,
   });
 
-  final ImportDatabase importDatabase;
+  final ImportDatabase importLedgerDatabase;
   final ConversationGraphDatabase graphDatabase;
 
   @override
   Future<HandleProjectionResult> projectHandles() async {
-    final rows = await importDatabase.database.query(
+    final rows = await importLedgerDatabase.database.query(
       'handles',
       columns: <String>['ss_id', 'id', 'service'],
       orderBy: 'ss_id ASC',
