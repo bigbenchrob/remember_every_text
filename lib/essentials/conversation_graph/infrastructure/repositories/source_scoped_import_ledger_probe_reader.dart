@@ -3,17 +3,18 @@ import '../../application/monitor/import_ledger_probe_reader.dart';
 
 final class SourceScopedImportLedgerProbeReader
     implements ImportLedgerProbeReader {
-  const SourceScopedImportLedgerProbeReader({required ImportDatabase importDb})
-    : _importDb = importDb;
+  const SourceScopedImportLedgerProbeReader({
+    required ImportDatabase importLedgerDb,
+  }) : _importLedgerDb = importLedgerDb;
 
-  final ImportDatabase _importDb;
+  final ImportDatabase _importLedgerDb;
 
   @override
   Future<ImportLedgerProbeSnapshot> readForSource(int sourceId) async {
-    final maxSourceRowId = await _importDb.maxMessageSourceRowIdForSource(
+    final maxSourceRowId = await _importLedgerDb.maxMessageSourceRowIdForSource(
       sourceId,
     );
-    final messageCount = await _importDb.messageCountForSource(sourceId);
+    final messageCount = await _importLedgerDb.messageCountForSource(sourceId);
 
     return ImportLedgerProbeSnapshot(
       maxSourceRowId: maxSourceRowId,

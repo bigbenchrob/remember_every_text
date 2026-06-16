@@ -164,8 +164,10 @@ Future<CrossSnapshotMapper> crossSnapshotMapper(
 Future<CurrentAttachmentSnapshotLookup> currentAttachmentSnapshotLookup(
   CurrentAttachmentSnapshotLookupRef ref,
 ) async {
-  final importDb = await ref.watch(sourceScopedImportDatabaseProvider.future);
-  return SourceScopedAttachmentSnapshotLookup(importDb: importDb);
+  final importLedgerDb = await ref.watch(
+    sourceScopedImportDatabaseProvider.future,
+  );
+  return SourceScopedAttachmentSnapshotLookup(importLedgerDb: importLedgerDb);
 }
 
 @riverpod

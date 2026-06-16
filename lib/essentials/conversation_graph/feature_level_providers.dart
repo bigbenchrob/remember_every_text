@@ -256,8 +256,10 @@ Future<GraphHealthRepository> graphHealthRepository(Ref ref) async {
 
 @riverpod
 Future<ImportLedgerProbeReader> importLedgerProbeReader(Ref ref) async {
-  final importDb = await ref.watch(sourceScopedImportDatabaseProvider.future);
-  return SourceScopedImportLedgerProbeReader(importDb: importDb);
+  final importLedgerDb = await ref.watch(
+    sourceScopedImportDatabaseProvider.future,
+  );
+  return SourceScopedImportLedgerProbeReader(importLedgerDb: importLedgerDb);
 }
 
 @riverpod

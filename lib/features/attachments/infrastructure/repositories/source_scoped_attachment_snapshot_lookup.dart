@@ -3,14 +3,15 @@ import '../../application/current_attachment_snapshot_lookup.dart';
 
 class SourceScopedAttachmentSnapshotLookup
     implements CurrentAttachmentSnapshotLookup {
-  const SourceScopedAttachmentSnapshotLookup({required ImportDatabase importDb})
-    : _importDb = importDb;
+  const SourceScopedAttachmentSnapshotLookup({
+    required ImportDatabase importLedgerDb,
+  }) : _importLedgerDb = importLedgerDb;
 
-  final ImportDatabase _importDb;
+  final ImportDatabase _importLedgerDb;
 
   @override
   Future<bool> hasAttachmentsForSource(int sourceId) async {
-    final rows = await _importDb.database.rawQuery(
+    final rows = await _importLedgerDb.database.rawQuery(
       'SELECT COUNT(*) AS c FROM attachments WHERE source_id = ?',
       <Object?>[sourceId],
     );
@@ -23,7 +24,7 @@ class SourceScopedAttachmentSnapshotLookup
     required int sourceId,
     required String guid,
   }) async {
-    final rows = await _importDb.database.rawQuery(
+    final rows = await _importLedgerDb.database.rawQuery(
       '''
       SELECT ss_id
       FROM attachments

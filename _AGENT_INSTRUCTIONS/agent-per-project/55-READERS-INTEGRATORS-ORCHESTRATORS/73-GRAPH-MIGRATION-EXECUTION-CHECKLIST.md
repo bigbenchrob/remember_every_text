@@ -2506,6 +2506,10 @@ criteria.
     `macos_import.db` filename constant so production code can only reference
     retained archive metadata storage through central DB ownership or reset
     cleanup. This mirrors the existing retained `working.db` reference guard.
+  - Renamed the source-scoped import-ledger reader and attachment snapshot
+    lookup local database handles from generic `importDb` to `importLedgerDb`,
+    keeping active graph/archive code terminology distinct from retained import
+    storage.
 
 ### Exit Criteria
 
