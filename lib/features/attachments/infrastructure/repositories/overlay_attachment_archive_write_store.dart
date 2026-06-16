@@ -33,8 +33,8 @@ class OverlayAttachmentArchiveWriteStore
         .into(_overlayDatabase.archivedAttachments)
         .insert(
           ArchivedAttachmentsCompanion.insert(
-            messageGuid: record.messageGuid,
-            importAttachmentId: record.importAttachmentId,
+            messageGuid: record.archiveKey.messageGuid,
+            importAttachmentId: record.archiveKey.importAttachmentId,
             archiveRelativePath: record.archiveRelativePath,
             archivedAtUtc: record.archivedAtUtc,
             fileSizeBytes: record.fileSizeBytes,

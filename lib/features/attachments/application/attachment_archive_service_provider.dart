@@ -96,8 +96,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
 
     await archiveStore.writeArchiveRecord(
       ArchivedAttachmentWrite(
-        messageGuid: messageGuid,
-        importAttachmentId: importAttachmentId,
+        archiveKey: archiveKey,
         archiveRelativePath: archiveWrite.relativePath,
         archivedAtUtc: DateTime.now().toUtc().toIso8601String(),
         fileSizeBytes: archiveWrite.fileSizeBytes,

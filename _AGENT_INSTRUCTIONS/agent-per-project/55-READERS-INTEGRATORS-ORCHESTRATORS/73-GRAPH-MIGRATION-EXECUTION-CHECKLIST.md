@@ -2448,6 +2448,9 @@ criteria.
   - Aligned `AttachmentArchiveReadStore.readArchiveRecord` with
     `ArchiveCompatibilityKey`, so archive read-store lookup and recovery-hint
     lookup now share the same typed compatibility boundary.
+  - Updated `ArchivedAttachmentWrite` to carry `ArchiveCompatibilityKey`
+    directly; only the retained overlay writer unwraps it into
+    `(message_guid, import_attachment_id)` table columns.
 
 ### Exit Criteria
 

@@ -3,8 +3,7 @@ import 'archive_compatibility_key.dart';
 
 class ArchivedAttachmentWrite {
   const ArchivedAttachmentWrite({
-    required this.messageGuid,
-    required this.importAttachmentId,
+    required this.archiveKey,
     required this.archiveRelativePath,
     required this.archivedAtUtc,
     required this.fileSizeBytes,
@@ -13,11 +12,7 @@ class ArchivedAttachmentWrite {
   });
 
   /// Current archive compatibility key for existing overlay archive records.
-  ///
-  /// These names mirror the retained archive table, but callers must not treat
-  /// them as canonical graph identity.
-  final String messageGuid;
-  final int importAttachmentId;
+  final ArchiveCompatibilityKey archiveKey;
   final String archiveRelativePath;
   final String archivedAtUtc;
   final int fileSizeBytes;
