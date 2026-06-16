@@ -1046,7 +1046,7 @@ void main() {
 
     test('Retired conversation browser is not publicly exported', () async {
       final offenders =
-          await _findRetainedConversationBrowserPublicExportOffenders();
+          await _findRetiredConversationBrowserPublicExportOffenders();
 
       expect(
         offenders,
@@ -1059,9 +1059,23 @@ void main() {
       );
     });
 
+    test('Retired conversation browser files do not return', () async {
+      final offenders = await _findRetiredConversationBrowserFileOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'The old conversation browser view and integrator are retired. '
+            'Conversation browsing belongs to the graph sidebar/evidence spine, '
+            'not a restored center-panel browser path.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Retired conversation browser internals do not return', () async {
       final offenders =
-          await _findRetainedConversationBrowserInternalImportOffenders();
+          await _findRetiredConversationBrowserInternalImportOffenders();
 
       expect(
         offenders,
@@ -3028,16 +3042,10 @@ Future<List<String>> _findCrossSystemChatProviderImportOffenders() async {
     final imports = _extractImports(uncommented);
     for (final importTarget in imports) {
       if (importTarget.endsWith(
-            'features/chats/presentation/view/conversation_browser_view.dart',
-          ) ||
-          importTarget.endsWith(
             'features/chats/presentation/view_model/chats_view_model_provider.dart',
           ) ||
           importTarget.endsWith(
             'features/chats/presentation/view_model/recent_chats_provider.dart',
-          ) ||
-          importTarget.endsWith(
-            'chats/presentation/view/conversation_browser_view.dart',
           ) ||
           importTarget.endsWith(
             'chats/presentation/view_model/chats_view_model_provider.dart',
@@ -3589,7 +3597,7 @@ Future<List<String>> _findConversationBrowserSpecRouteOffenders() async {
 }
 
 Future<List<String>>
-_findRetainedConversationBrowserPublicExportOffenders() async {
+_findRetiredConversationBrowserPublicExportOffenders() async {
   const exportFile = 'lib/features/chats/feature_level_providers.dart';
   final file = File(exportFile);
   if (!file.existsSync()) {
@@ -3604,8 +3612,20 @@ _findRetainedConversationBrowserPublicExportOffenders() async {
   return const ['$exportFile exports retained conversation_browser_view.dart'];
 }
 
+Future<List<String>> _findRetiredConversationBrowserFileOffenders() async {
+  const retiredFiles = <String>[
+    'lib/features/chats/application/conversation_browser/conversation_browser_integrator.dart',
+    'lib/features/chats/presentation/view/conversation_browser_view.dart',
+  ];
+
+  return [
+    for (final filePath in retiredFiles)
+      if (File(filePath).existsSync()) filePath,
+  ];
+}
+
 Future<List<String>>
-_findRetainedConversationBrowserInternalImportOffenders() async {
+_findRetiredConversationBrowserInternalImportOffenders() async {
   const retainedViewPath =
       'lib/features/chats/presentation/view/conversation_browser_view.dart';
   final files = await _collectDartFiles((path) {
