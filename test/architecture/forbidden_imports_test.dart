@@ -2034,6 +2034,22 @@ void main() {
       },
     );
 
+    test('Conversation graph repositories use import-ledger naming', () async {
+      final offenders =
+          await _findConversationGraphImportLedgerNamingOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Conversation graph projection/status repositories should name '
+            'the source-scoped import database as an import ledger. Generic '
+            'importDatabase identifiers blur active source-scoped ledger '
+            'ownership with retained import compatibility storage.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test(
       'Attachment source-scoped import provider access stays feature-boundary owned',
       () async {
@@ -5125,6 +5141,29 @@ Future<List<String>> _findArchiveCompatibilityKeyConstructionOffenders() async {
   }
 
   return offenders.toList()..sort();
+}
+
+Future<List<String>> _findConversationGraphImportLedgerNamingOffenders() async {
+  final files = await _collectProjectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith(
+          'lib/essentials/conversation_graph/infrastructure/repositories/',
+        ) ||
+        path.startsWith('test/essentials/conversation_graph/application/');
+  });
+  final offenders = <String>[];
+  final genericImportDatabaseIdentifier = RegExp(r'\bimportDatabase\b');
+
+  for (final filePath in files) {
+    final uncommented = _stripComments(await File(filePath).readAsString());
+    if (genericImportDatabaseIdentifier.hasMatch(uncommented)) {
+      offenders.add('$filePath uses generic importDatabase naming');
+    }
+  }
+
+  return offenders..sort();
 }
 
 Future<List<String>>

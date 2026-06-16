@@ -2526,6 +2526,10 @@ criteria.
     and tests from generic `importDatabase` to `importLedgerDatabase`. The only
     remaining conversation-graph `importDatabase` wording is the physical
     diagnostic database-name field shown in the graph status panel.
+  - Added an architecture tripwire requiring conversation graph repository and
+    projection tests to use import-ledger naming for the source-scoped import
+    database. This keeps active graph projection terminology separate from
+    retained import compatibility storage.
 
 ### Exit Criteria
 
