@@ -7,13 +7,13 @@ part of 'attachment_archive_service_provider.dart';
 // **************************************************************************
 
 String _$attachmentArchiveServiceHash() =>
-    r'8d0ed30765f6efe5783a9d1e883013b36aedbeee';
+    r'd17f907315653bfcc9d3e15f2e675c2698e70944';
 
 /// Service that copies attachment files into the MessageLens archive and
 /// records them through the attachment archive store.
 ///
 /// Archiving is idempotent: if an archive record already exists for the
-/// given (messageGuid, importAttachmentId) pair, the file is not re-copied.
+/// derived archive compatibility key, the file is not re-copied.
 ///
 /// Copied from [AttachmentArchiveService].
 @ProviderFor(AttachmentArchiveService)
