@@ -95,7 +95,7 @@ class SqliteGraphAttachmentArchiveCandidateReader
         final graphAttachmentId = candidate.graphAttachmentId;
         lastProcessedAttachmentId =
             graphAttachmentId ?? lastProcessedAttachmentId;
-        final archiveKey = _archiveCompatibilityKeyForRow(candidate);
+        final archiveKey = candidate.archiveCompatibilityKey;
         if (archiveKey == null || archivedKeys.contains(archiveKey)) {
           continue;
         }
@@ -203,7 +203,7 @@ class SqliteGraphAttachmentArchiveCandidateReader
     List<GraphAttachmentArchiveCandidate> rows,
   ) async {
     final keyedRows = rows
-        .map(_archiveCompatibilityKeyForRow)
+        .map((row) => row.archiveCompatibilityKey)
         .whereType<ArchiveCompatibilityKey>()
         .toList(growable: false);
 
@@ -249,21 +249,6 @@ class SqliteGraphAttachmentArchiveCandidateReader
       localPath: _readNullableString(row, 'local_path'),
       mimeType: _readNullableString(row, 'mime_type'),
       sha256Hex: _readNullableString(row, 'sha256_hex'),
-    );
-  }
-
-  ArchiveCompatibilityKey? _archiveCompatibilityKeyForRow(
-    GraphAttachmentArchiveCandidate row,
-  ) {
-    final archiveCompatibilityAttachmentId =
-        row.archiveCompatibilityAttachmentId;
-    if (archiveCompatibilityAttachmentId == null) {
-      return null;
-    }
-
-    return ArchiveCompatibilityKey(
-      messageGuid: row.archiveMessageGuid,
-      importAttachmentId: archiveCompatibilityAttachmentId,
     );
   }
 

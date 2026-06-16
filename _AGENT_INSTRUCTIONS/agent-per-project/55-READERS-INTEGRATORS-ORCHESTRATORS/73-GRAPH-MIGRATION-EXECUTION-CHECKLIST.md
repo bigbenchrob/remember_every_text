@@ -2438,6 +2438,10 @@ criteria.
     recovery-hint and idempotency methods, keeping primitive
     `messageGuid` / `importAttachmentId` parameters at the outer archive
     service/media resolver bridge only.
+  - Moved optional archive compatibility key derivation onto
+    `GraphAttachmentArchiveCandidate`, so graph archive repositories and
+    archive services consume typed compatibility intent instead of rebuilding
+    the retained key pair locally.
 
 ### Exit Criteria
 
