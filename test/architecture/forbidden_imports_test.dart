@@ -1805,6 +1805,20 @@ void main() {
       );
     });
 
+    test('Attachment archive service uses typed compatibility key', () async {
+      final offenders = await _findAttachmentArchiveServiceTypedKeyOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'AttachmentArchiveService archive/recovery entry points should '
+            'accept ArchiveCompatibilityKey instead of primitive retained '
+            'archive key pairs.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test(
       'Graph archive lookup contract uses compatibility-key language',
       () async {
@@ -4687,6 +4701,35 @@ Future<List<String>> _findAttachmentArchiveStoreTypedKeyOffenders() async {
           block.contains('importAttachmentId')) {
         offenders.add('$filePath exposes primitive archive key method: $block');
       }
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findAttachmentArchiveServiceTypedKeyOffenders() async {
+  const filePath =
+      'lib/features/attachments/application/attachment_archive_service_provider.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final methodBlocks = RegExp(
+    r'Future<[^>]+>\s+(archiveAttachment|prioritizeRecovery)\s*\(\{[^}]*\}\)\s*async\s*\{',
+    multiLine: true,
+    dotAll: true,
+  ).allMatches(uncommented);
+  final offenders = <String>[];
+
+  for (final match in methodBlocks) {
+    final block = match.group(0) ?? '';
+    if (!block.contains('ArchiveCompatibilityKey')) {
+      offenders.add('$filePath entry point lacks ArchiveCompatibilityKey');
+    }
+    if (block.contains('messageGuid') || block.contains('importAttachmentId')) {
+      offenders.add('$filePath exposes primitive archive key method: $block');
     }
   }
 

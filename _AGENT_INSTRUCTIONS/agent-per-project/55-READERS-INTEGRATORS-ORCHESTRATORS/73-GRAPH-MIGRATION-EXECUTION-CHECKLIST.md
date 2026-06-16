@@ -2435,9 +2435,9 @@ criteria.
   - Added an architecture tripwire preventing graph archive candidate
     de-duplication from reintroducing ad hoc string tuple archive keys.
   - Threaded `ArchiveCompatibilityKey` through archive read/write-store
-    recovery-hint and idempotency methods, keeping primitive
-    `messageGuid` / `importAttachmentId` parameters at the outer archive
-    service/media resolver bridge only.
+    recovery-hint and idempotency methods, reducing primitive
+    `messageGuid` / `importAttachmentId` parameters to evidence/media resolver
+    compatibility edges.
   - Moved optional archive compatibility key derivation onto
     `GraphAttachmentArchiveCandidate`, so graph archive repositories and
     archive services consume typed compatibility intent instead of rebuilding
@@ -2457,6 +2457,10 @@ criteria.
   - Added an architecture tripwire requiring archive read/write-store lookup,
     idempotency, and recovery-hint contracts to use `ArchiveCompatibilityKey`
     rather than primitive retained archive key pairs.
+  - Updated `AttachmentArchiveService.archiveAttachment` and
+    `prioritizeRecovery` to accept `ArchiveCompatibilityKey` directly, added a
+    matching architecture tripwire, and centralized media-tile recovery action
+    key derivation behind a single helper.
 
 ### Exit Criteria
 
