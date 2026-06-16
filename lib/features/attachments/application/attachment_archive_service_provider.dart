@@ -50,7 +50,6 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     );
     final archiveDir = ref.read(attachmentArchiveDirectoryPathProvider);
     final fileStore = ref.read(attachmentArchiveFileStoreProvider);
-    final importAttachmentId = archiveKey.importAttachmentId;
 
     // Idempotency check: skip if already archived.
     final alreadyArchived = await archiveStore.hasArchiveRecord(archiveKey);
@@ -62,7 +61,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
 
     final sourcePath = await _resolveArchivableSourcePath(
       preferredLocalPath: resolvedLocalPath,
-      importAttachmentId: importAttachmentId,
+      archiveKey: archiveKey,
     );
     if (sourcePath == null) {
       return false;
@@ -73,7 +72,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       final writeResult = await fileStore.writeArchiveEntry(
         archiveDirectoryPath: archiveDir,
         sourcePath: sourcePath,
-        importAttachmentId: importAttachmentId,
+        importAttachmentId: archiveKey.importAttachmentId,
         sha256Hex: sha256Hex,
       );
       if (writeResult == null) {
@@ -84,7 +83,8 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       ref
           .read(appLoggerProvider.notifier)
           .warn(
-            'Failed to archive attachment $importAttachmentId: $e',
+            'Failed to archive attachment '
+            '${archiveKey.importAttachmentId}: $e',
             source: 'AttachmentArchiveService',
           );
       return false;
@@ -528,8 +528,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
         skipped++;
         _recordSkippedSample(
           skippedSamples,
-          messageGuid: archiveKey?.messageGuid ?? 'unknown-message',
-          importAttachmentId: archiveKey?.importAttachmentId,
+          archiveKey: archiveKey,
           localPath: localPath,
           reason: 'missing metadata',
           sampleLimit: skippedSampleLimit,
@@ -537,19 +536,17 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
         continue;
       }
 
-      final importAttachmentId = archiveKey.importAttachmentId;
       final resolvedPath = fileStore.expandHomePath(localPath);
 
       final archivablePath = await _resolveArchivableSourcePath(
         preferredLocalPath: resolvedPath,
-        importAttachmentId: importAttachmentId,
+        archiveKey: archiveKey,
       );
       if (archivablePath == null) {
         skipped++;
         _recordSkippedSample(
           skippedSamples,
-          messageGuid: archiveKey.messageGuid,
-          importAttachmentId: importAttachmentId,
+          archiveKey: archiveKey,
           localPath: resolvedPath,
           reason: 'source missing',
           sampleLimit: skippedSampleLimit,
@@ -571,8 +568,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
           skipped++;
           _recordSkippedSample(
             skippedSamples,
-            messageGuid: archiveKey.messageGuid,
-            importAttachmentId: importAttachmentId,
+            archiveKey: archiveKey,
             localPath: resolvedPath,
             reason: 'not archived',
             sampleLimit: skippedSampleLimit,
@@ -608,8 +604,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
 
   void _recordSkippedSample(
     List<String> skippedSamples, {
-    required String messageGuid,
-    required int? importAttachmentId,
+    required ArchiveCompatibilityKey? archiveKey,
     required String? localPath,
     required String reason,
     required int sampleLimit,
@@ -618,9 +613,10 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       return;
     }
 
-    final attachmentLabel = importAttachmentId == null
+    final archiveCompatibilityAttachmentId = archiveKey?.importAttachmentId;
+    final attachmentLabel = archiveCompatibilityAttachmentId == null
         ? 'unknown-id'
-        : '$importAttachmentId';
+        : '$archiveCompatibilityAttachmentId';
     final pathLabel = localPath == null || localPath.isEmpty
         ? 'no-path'
         : localPath;
@@ -719,7 +715,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
 
   Future<String?> _resolveArchivableSourcePath({
     required String preferredLocalPath,
-    required int importAttachmentId,
+    required ArchiveCompatibilityKey archiveKey,
   }) async {
     final fileStore = ref.read(attachmentArchiveFileStoreProvider);
     final expandedPreferredPath = fileStore.expandHomePath(preferredLocalPath);
@@ -728,7 +724,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     }
 
     final refreshedPath = await _lookupCurrentMessagesAttachmentPath(
-      importAttachmentId,
+      archiveKey,
     );
     if (refreshedPath == null) {
       return null;
@@ -743,7 +739,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       ref
           .read(appLoggerProvider.notifier)
           .debug(
-            'Attachment $importAttachmentId resolved via refreshed chat.db '
+            'Attachment ${archiveKey.importAttachmentId} resolved via refreshed chat.db '
             'path $expandedRefreshedPath',
             source: 'AttachmentArchiveService',
           );
@@ -753,18 +749,19 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
   }
 
   Future<String?> _lookupCurrentMessagesAttachmentPath(
-    int importAttachmentId,
+    ArchiveCompatibilityKey archiveKey,
   ) async {
     try {
       final lookup = await ref.read(
         currentMessagesAttachmentPathLookupProvider.future,
       );
-      return lookup.attachmentPathForSourceRowId(importAttachmentId);
+      return lookup.attachmentPathForSourceRowId(archiveKey.importAttachmentId);
     } on Object catch (error) {
       ref
           .read(appLoggerProvider.notifier)
           .warn(
-            'Failed to refresh attachment path for $importAttachmentId: $error',
+            'Failed to refresh attachment path for '
+            '${archiveKey.importAttachmentId}: $error',
             source: 'AttachmentArchiveService',
           );
       return null;

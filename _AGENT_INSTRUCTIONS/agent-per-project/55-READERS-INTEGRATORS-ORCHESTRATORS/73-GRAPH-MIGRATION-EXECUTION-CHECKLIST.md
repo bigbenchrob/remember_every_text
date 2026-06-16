@@ -2474,6 +2474,9 @@ criteria.
     `GraphAttachmentArchiveRecord`; archive lookup callers now receive only
     archive record facts, while the retained compatibility key remains inside
     the lookup implementation.
+  - Kept `ArchiveCompatibilityKey` intact through
+    `AttachmentArchiveService` source-path refresh helpers, reducing internal
+    propagation of primitive retained attachment ids.
 
 ### Exit Criteria
 
