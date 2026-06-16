@@ -2470,6 +2470,10 @@ criteria.
     `messageGuid::importAttachmentId` strings, and added an architecture
     tripwire preventing raw string tuple archive keys from returning to graph
     health.
+  - Removed the retained attachment-key half from the graph-facing
+    `GraphAttachmentArchiveRecord`; archive lookup callers now receive only
+    archive record facts, while the retained compatibility key remains inside
+    the lookup implementation.
 
 ### Exit Criteria
 

@@ -69,7 +69,6 @@ void main() {
       expect(record!.archiveRelativePath, 'ab/archived.jpg');
       expect(record.archiveAbsolutePath, archivedFile.path);
       expect(record.archiveFileExists, isTrue);
-      expect(record.archiveCompatibilityAttachmentId, 200);
     },
   );
 

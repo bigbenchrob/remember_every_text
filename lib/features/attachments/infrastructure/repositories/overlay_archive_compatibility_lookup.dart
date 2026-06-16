@@ -93,7 +93,6 @@ class OverlayArchiveCompatibilityLookup
       archiveRelativePath: relativePath,
       archiveAbsolutePath: absolutePath,
       archiveFileExists: File(absolutePath).existsSync(),
-      archiveCompatibilityAttachmentId: archiveCompatibilityAttachmentId,
     );
   }
 }

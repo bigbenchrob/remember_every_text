@@ -4807,7 +4807,8 @@ _findGraphArchiveLookupContractIdentityLanguageOffenders() async {
   final uncommented = _stripComments(await file.readAsString());
   final offenders = <String>[];
   if (uncommented.contains('retainedImportAttachmentId') ||
-      uncommented.contains('retained import attachment')) {
+      uncommented.contains('retained import attachment') ||
+      uncommented.contains('archiveCompatibilityAttachmentId')) {
     offenders.add('$filePath exposes retained import attachment identity');
   }
 
