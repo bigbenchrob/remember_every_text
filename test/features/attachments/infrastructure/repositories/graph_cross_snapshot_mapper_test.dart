@@ -14,7 +14,7 @@ import '../../../../essentials/conversation_graph/conversation_graph_test_databa
 
 void main() {
   late Directory tempDir;
-  late ImportDatabase importDb;
+  late ImportDatabase importLedgerDb;
   late ConversationGraphDatabase graphDb;
   late GraphCrossSnapshotMapper mapper;
 
@@ -27,14 +27,14 @@ void main() {
     tempDir = await Directory.systemTemp.createTemp(
       'graph_cross_snapshot_mapper_test_',
     );
-    importDb = await ImportDatabase.open(
+    importLedgerDb = await ImportDatabase.open(
       databaseDirectory: tempDir.path,
       databaseName: 'macos_import_ss_test.db',
     );
     graphDb = await openConversationGraphTestDatabase();
     mapper = GraphCrossSnapshotMapper(
       attachmentLookup: SourceScopedAttachmentSnapshotLookup(
-        importLedgerDb: importDb,
+        importLedgerDb: importLedgerDb,
       ),
       graphDb: graphDb,
     );
@@ -42,7 +42,7 @@ void main() {
 
   tearDown(() async {
     await graphDb.close();
-    await importDb.close();
+    await importLedgerDb.close();
     if (tempDir.existsSync()) {
       await tempDir.delete(recursive: true);
     }
@@ -56,7 +56,7 @@ void main() {
     final messageSsId = _ss(101);
     final attachmentSsId = _ss(201);
     await _insertImportAttachment(
-      importDb,
+      importLedgerDb,
       attachmentSsId: attachmentSsId,
       sourceRowId: 201,
       guid: 'attachment-guid-201',
@@ -92,7 +92,7 @@ void main() {
       final messageSsId = _ss(102);
       final attachmentSsId = _ss(202);
       await _insertImportAttachment(
-        importDb,
+        importLedgerDb,
         attachmentSsId: attachmentSsId,
         sourceRowId: 202,
         guid: null,
@@ -128,7 +128,7 @@ void main() {
     'reports message missing when historical GUID is not in graph',
     () async {
       await _insertImportAttachment(
-        importDb,
+        importLedgerDb,
         attachmentSsId: _ss(203),
         sourceRowId: 203,
         guid: 'attachment-guid-203',
@@ -170,16 +170,16 @@ HistoricalAttachmentRecord _record({
 }
 
 Future<void> _insertImportAttachment(
-  ImportDatabase importDb, {
+  ImportDatabase importLedgerDb, {
   required int attachmentSsId,
   required int sourceRowId,
   required String? guid,
 }) async {
-  final batchId = await importDb.insertImportBatch(
+  final batchId = await importLedgerDb.insertImportBatch(
     sourceId: liveChatDbSourceId,
     startedAtUtc: '2026-05-31T10:00:00.000Z',
   );
-  await importDb.database.insert('attachments', <String, Object?>{
+  await importLedgerDb.database.insert('attachments', <String, Object?>{
     'ss_id': attachmentSsId,
     'source_id': liveChatDbSourceId,
     'source_rowid': sourceRowId,

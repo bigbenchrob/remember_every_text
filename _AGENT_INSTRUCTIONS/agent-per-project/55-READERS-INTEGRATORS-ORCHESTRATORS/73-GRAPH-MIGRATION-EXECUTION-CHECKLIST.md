@@ -2515,6 +2515,9 @@ criteria.
     widgets consume typed media evidence instead of reconstructing compatibility
     identity from primitive `messageGuid` / `importAttachmentId` fields.
     Added an architecture tripwire to keep that boundary from regressing.
+  - Aligned cross-snapshot mapper test fixture naming with the active
+    source-scoped import-ledger terminology by renaming generic `importDb`
+    handles to `importLedgerDb`.
 
 ### Exit Criteria
 
