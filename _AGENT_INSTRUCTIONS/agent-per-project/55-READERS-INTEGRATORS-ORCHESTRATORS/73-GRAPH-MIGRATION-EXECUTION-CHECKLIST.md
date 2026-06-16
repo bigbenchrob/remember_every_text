@@ -2382,23 +2382,18 @@ criteria.
     preventing new manual provider declarations in active `lib/` code.
   - Confirmed the Conversations top-menu projection remains sidebar-derived:
     no center conversation evidence is projected until a conversation signature
-    is selected; the retained `conversationBrowser` spec is not the normal
+    is selected; the old `conversationBrowser` spec is not the normal
     Conversations branch projection.
   - Removed the obsolete `MessagesSpec.conversationBrowser` route, its
     view-spec coordinator branch, panel compatibility branches, and navigation
-    log variant. The standalone `ConversationBrowserView` remains only as
-    retained reference/diagnostic UI, and an architecture tripwire prevents the
-    old browser from returning as a message evidence spec route.
-  - Removed the retained `ConversationBrowserView` from the chats public
-    feature-level export surface. It remains directly testable as diagnostic
-    reference UI, but ordinary feature consumers can no longer discover it
-    through `features/chats/feature_level_providers.dart`.
-  - Added an architecture tripwire that keeps the retained conversation browser
-    out of the chats public export surface, complementing the existing route
-    guard that prevents it from returning as normal message evidence.
-  - Added a companion tripwire that keeps retained conversation browser
-    internals private to the retained diagnostic view, preventing ordinary code
-    from importing its integrator as a backdoor conversation read path.
+    log variant. Later cleanup retired the standalone
+    `ConversationBrowserView`, its integrator, and their tests entirely.
+  - Removed the old `ConversationBrowserView` from the chats public
+    feature-level export surface, then retired the underlying reference UI once
+    scans confirmed it had no production route/export.
+  - Added architecture tripwires that keep the retired conversation browser out
+    of the chats public export surface and prevent its route/internal paths
+    from returning as a backdoor conversation read path.
   - Renamed the graph-facing archive lookup record field from retained import
     identity language to `archiveCompatibilityAttachmentId`. The retained
     archive overlay still uses `(message_guid, import_attachment_id)`, but the
@@ -2489,6 +2484,10 @@ criteria.
   - Moved message evidence context-anchor id compatibility into a named message
     evidence identity helper, removing direct identity-bridge imports from the
     message evidence spine provider.
+  - Retired the old standalone conversation browser diagnostic view,
+    integrator, and tests after scans confirmed no production route/export
+    depended on them. Kept architecture tripwires preventing the old
+    conversation-browser route/export/internal path from returning.
 
 ### Exit Criteria
 

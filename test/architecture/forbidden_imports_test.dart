@@ -1044,7 +1044,7 @@ void main() {
       );
     });
 
-    test('Retained conversation browser is not publicly exported', () async {
+    test('Retired conversation browser is not publicly exported', () async {
       final offenders =
           await _findRetainedConversationBrowserPublicExportOffenders();
 
@@ -1052,15 +1052,14 @@ void main() {
         offenders,
         isEmpty,
         reason:
-            'ConversationBrowserView is retained as direct diagnostic/reference '
-            'UI only. It must not be exported from feature_level_providers.dart '
-            'where ordinary feature consumers can rediscover it as a normal '
-            'public chats surface.\n'
+            'The old ConversationBrowserView has been retired. It must not be '
+            'exported from feature_level_providers.dart where ordinary feature '
+            'consumers can rediscover it as a normal public chats surface.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
 
-    test('Retained conversation browser internals stay private', () async {
+    test('Retired conversation browser internals do not return', () async {
       final offenders =
           await _findRetainedConversationBrowserInternalImportOffenders();
 
@@ -1068,10 +1067,9 @@ void main() {
         offenders,
         isEmpty,
         reason:
-            'The retained conversation browser integrator is allowed only as '
-            'the backing model for the retained diagnostic view. Ordinary app '
-            'code must use graph/evidence-spine read models instead of '
-            'importing this retained browser internals path.\n'
+            'The old conversation browser integrator/view have been retired. '
+            'Ordinary app code must use graph/evidence-spine read models '
+            'instead of importing this retired browser internals path.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
