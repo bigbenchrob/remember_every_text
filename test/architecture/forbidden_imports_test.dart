@@ -792,6 +792,21 @@ void main() {
       );
     });
 
+    test('Attachment resolver derives archive key from evidence', () async {
+      final offenders =
+          await _findAttachmentResolverPrimitiveKeyParameterOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'attachmentResolverProvider should accept AttachmentInfo evidence '
+            'only. Current archive compatibility keys should be derived inside '
+            'the resolver, not exposed as provider-family parameters.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Message attachment evidence uses file-access boundary', () async {
       final offenders =
           await _findMessageAttachmentEvidenceFileAccessBoundaryOffenders();
@@ -3101,6 +3116,36 @@ _findAttachmentResolverArchiveStorageImportOffenders() async {
 
   if (uncommented.contains('File(') || uncommented.contains('existsSync(')) {
     offenders.add('$filePath performs attachment filesystem access directly');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>>
+_findAttachmentResolverPrimitiveKeyParameterOffenders() async {
+  const filePath =
+      'lib/features/attachments/application/attachment_resolver_provider.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final providerDeclaration = RegExp(
+    r'Future<ResolvedAttachment>\s+attachmentResolver\s*\([^)]*\)',
+    multiLine: true,
+    dotAll: true,
+  ).firstMatch(uncommented);
+
+  if (providerDeclaration == null) {
+    return <String>['$filePath missing attachmentResolver declaration'];
+  }
+
+  final declaration = providerDeclaration.group(0) ?? '';
+  final offenders = <String>[];
+  if (declaration.contains('messageGuid') ||
+      declaration.contains('importAttachmentId')) {
+    offenders.add('$filePath exposes primitive archive key provider parameter');
   }
 
   return offenders..sort();

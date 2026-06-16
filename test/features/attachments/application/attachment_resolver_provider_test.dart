@@ -64,12 +64,12 @@ void main() {
         attachmentResolverProvider(
           AttachmentInfo(
             id: 1,
+            importAttachmentId: 11,
             localPath: liveFile.path,
+            messageGuid: 'm1',
             mimeType: 'image/jpeg',
             transferName: 'photo.jpg',
           ),
-          messageGuid: 'm1',
-          importAttachmentId: 11,
         ).future,
       );
 
@@ -103,12 +103,12 @@ void main() {
         attachmentResolverProvider(
           const AttachmentInfo(
             id: 2,
+            importAttachmentId: 22,
             localPath: '/tmp/does-not-exist.jpg',
+            messageGuid: 'm2',
             mimeType: 'image/jpeg',
             transferName: 'archived.jpg',
           ),
-          messageGuid: 'm2',
-          importAttachmentId: 22,
         ).future,
       );
 
@@ -130,12 +130,12 @@ void main() {
           attachmentResolverProvider(
             AttachmentInfo(
               id: 3,
+              importAttachmentId: 33,
               localPath: liveFile.path,
+              messageGuid: 'm3',
               mimeType: 'image/png',
               transferName: 'pending.png',
             ),
-            messageGuid: 'm3',
-            importAttachmentId: 33,
           ).future,
         );
 
@@ -175,12 +175,12 @@ void main() {
           attachmentResolverProvider(
             const AttachmentInfo(
               id: 4,
+              importAttachmentId: 44,
               localPath: '/tmp/evicted.mov',
+              messageGuid: 'm4',
               mimeType: 'video/quicktime',
               transferName: 'evicted.mov',
             ),
-            messageGuid: 'm4',
-            importAttachmentId: 44,
           ).future,
         );
 
@@ -222,12 +222,12 @@ void main() {
           attachmentResolverProvider(
             const AttachmentInfo(
               id: 6,
+              importAttachmentId: 55,
               localPath: '/tmp/missing-priority.jpg',
+              messageGuid: 'm-priority',
               mimeType: 'image/jpeg',
               transferName: 'missing-priority.jpg',
             ),
-            messageGuid: 'm-priority',
-            importAttachmentId: 55,
           ).future,
         );
 
@@ -256,8 +256,6 @@ void main() {
               mimeType: 'application/octet-stream',
               transferName: 'unknown.bin',
             ),
-            messageGuid: 'm5',
-            importAttachmentId: null,
           ).future,
         );
 

@@ -161,18 +161,7 @@ class RecoveredAttachmentSidebarView extends ConsumerWidget {
   }
 
   AsyncValue<ResolvedAttachment>? _watchResolvedAttachment(WidgetRef ref) {
-    final messageGuid = attachment.messageGuid;
-    if (messageGuid == null || messageGuid.isEmpty) {
-      return null;
-    }
-
-    return ref.watch(
-      attachmentResolverProvider(
-        attachment,
-        messageGuid: messageGuid,
-        importAttachmentId: attachment.importAttachmentId,
-      ),
-    );
+    return ref.watch(attachmentResolverProvider(attachment));
   }
 }
 

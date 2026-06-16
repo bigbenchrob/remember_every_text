@@ -26,12 +26,8 @@ part 'attachment_resolver_provider.g.dart';
 @riverpod
 Future<ResolvedAttachment> attachmentResolver(
   AttachmentResolverRef ref,
-  AttachmentInfo attachmentInfo, {
-  // Current archive compatibility key. These values mirror the overlay archive
-  // table, not canonical graph attachment identity.
-  required String messageGuid,
-  required int? importAttachmentId,
-}) async {
+  AttachmentInfo attachmentInfo,
+) async {
   final settings = await ref.watch(archiveSettingsProvider.future);
   final fileAccess = ref.watch(attachmentFileAccessProvider);
 
@@ -45,8 +41,7 @@ Future<ResolvedAttachment> attachmentResolver(
   return _resolveForArchiveEnabledMode(
     ref,
     attachmentInfo: attachmentInfo,
-    messageGuid: messageGuid,
-    importAttachmentId: importAttachmentId,
+    archiveKey: _archiveCompatibilityKeyFor(attachmentInfo),
     fileAccess: fileAccess,
   );
 }
@@ -54,19 +49,14 @@ Future<ResolvedAttachment> attachmentResolver(
 Future<ResolvedAttachment> _resolveForArchiveEnabledMode(
   AttachmentResolverRef ref, {
   required AttachmentInfo attachmentInfo,
-  required String messageGuid,
-  required int? importAttachmentId,
+  required ArchiveCompatibilityKey? archiveKey,
   required AttachmentFileAccess fileAccess,
 }) async {
   final resolvedPath = fileAccess.expandPath(attachmentInfo.localPath);
   final liveFileExists = fileAccess.existingExpandedPath(resolvedPath) != null;
   AttachmentRecoveryMetadata? persistedRecoveryHint;
 
-  if (importAttachmentId != null) {
-    final archiveKey = ArchiveCompatibilityKey(
-      messageGuid: messageGuid,
-      importAttachmentId: importAttachmentId,
-    );
+  if (archiveKey != null) {
     final archiveReadStore = await ref.watch(
       attachmentArchiveReadStoreProvider.future,
     );
@@ -89,11 +79,10 @@ Future<ResolvedAttachment> _resolveForArchiveEnabledMode(
     }
   }
 
-  if (liveFileExists && resolvedPath != null && importAttachmentId != null) {
+  if (liveFileExists && resolvedPath != null && archiveKey != null) {
     _triggerOnDemandArchive(
       ref,
-      messageGuid: messageGuid,
-      importAttachmentId: importAttachmentId,
+      archiveKey: archiveKey,
       resolvedLocalPath: resolvedPath,
       mimeType: attachmentInfo.mimeType,
     );
@@ -126,8 +115,7 @@ Future<ResolvedAttachment> _resolveForArchiveEnabledMode(
     );
   }
 
-  final isRecoverable =
-      attachmentInfo.hasLocalFile || importAttachmentId != null;
+  final isRecoverable = attachmentInfo.hasLocalFile || archiveKey != null;
 
   return ResolvedAttachment(
     attachmentInfo: attachmentInfo,
@@ -187,8 +175,7 @@ ResolvedAttachment _resolveForLiveOnlyMode({
 /// in the archive. Checks settings to respect the user's preference.
 void _triggerOnDemandArchive(
   AttachmentResolverRef ref, {
-  required String messageGuid,
-  required int importAttachmentId,
+  required ArchiveCompatibilityKey archiveKey,
   required String resolvedLocalPath,
   required String? mimeType,
 }) {
@@ -203,12 +190,25 @@ void _triggerOnDemandArchive(
   ref
       .read(attachmentArchiveServiceProvider.notifier)
       .archiveAttachment(
-        archiveKey: ArchiveCompatibilityKey(
-          messageGuid: messageGuid,
-          importAttachmentId: importAttachmentId,
-        ),
+        archiveKey: archiveKey,
         resolvedLocalPath: resolvedLocalPath,
         mimeType: mimeType,
         sha256Hex: null,
       );
+}
+
+ArchiveCompatibilityKey? _archiveCompatibilityKeyFor(
+  AttachmentInfo attachmentInfo,
+) {
+  final messageGuid = attachmentInfo.messageGuid;
+  final importAttachmentId = attachmentInfo.importAttachmentId;
+  if (messageGuid == null ||
+      messageGuid.isEmpty ||
+      importAttachmentId == null) {
+    return null;
+  }
+  return ArchiveCompatibilityKey(
+    messageGuid: messageGuid,
+    importAttachmentId: importAttachmentId,
+  );
 }

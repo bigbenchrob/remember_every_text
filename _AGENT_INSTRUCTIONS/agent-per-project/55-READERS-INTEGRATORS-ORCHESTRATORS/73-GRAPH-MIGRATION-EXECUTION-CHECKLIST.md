@@ -2461,6 +2461,10 @@ criteria.
     `prioritizeRecovery` to accept `ArchiveCompatibilityKey` directly, added a
     matching architecture tripwire, and centralized media-tile recovery action
     key derivation behind a single helper.
+  - Simplified `attachmentResolverProvider` so callers pass `AttachmentInfo`
+    evidence only; the resolver derives the optional
+    `ArchiveCompatibilityKey` internally instead of exposing retained
+    `messageGuid` / `importAttachmentId` as provider-family identity.
 
 ### Exit Criteria
 

@@ -7,7 +7,7 @@ part of 'attachment_resolver_provider.dart';
 // **************************************************************************
 
 String _$attachmentResolverHash() =>
-    r'6bed2d5aefc33336610727d66fc560ed077c8441';
+    r'12797ff17f1fc29818833997d79681bba4f6b88a';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -84,27 +84,15 @@ class AttachmentResolverFamily extends Family<AsyncValue<ResolvedAttachment>> {
   ///   and report a pending archive state
   ///
   /// Copied from [attachmentResolver].
-  AttachmentResolverProvider call(
-    AttachmentInfo attachmentInfo, {
-    required String messageGuid,
-    required int? importAttachmentId,
-  }) {
-    return AttachmentResolverProvider(
-      attachmentInfo,
-      messageGuid: messageGuid,
-      importAttachmentId: importAttachmentId,
-    );
+  AttachmentResolverProvider call(AttachmentInfo attachmentInfo) {
+    return AttachmentResolverProvider(attachmentInfo);
   }
 
   @override
   AttachmentResolverProvider getProviderOverride(
     covariant AttachmentResolverProvider provider,
   ) {
-    return call(
-      provider.attachmentInfo,
-      messageGuid: provider.messageGuid,
-      importAttachmentId: provider.importAttachmentId,
-    );
+    return call(provider.attachmentInfo);
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -148,29 +136,20 @@ class AttachmentResolverProvider
   ///   and report a pending archive state
   ///
   /// Copied from [attachmentResolver].
-  AttachmentResolverProvider(
-    AttachmentInfo attachmentInfo, {
-    required String messageGuid,
-    required int? importAttachmentId,
-  }) : this._internal(
-         (ref) => attachmentResolver(
-           ref as AttachmentResolverRef,
-           attachmentInfo,
-           messageGuid: messageGuid,
-           importAttachmentId: importAttachmentId,
-         ),
-         from: attachmentResolverProvider,
-         name: r'attachmentResolverProvider',
-         debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-             ? null
-             : _$attachmentResolverHash,
-         dependencies: AttachmentResolverFamily._dependencies,
-         allTransitiveDependencies:
-             AttachmentResolverFamily._allTransitiveDependencies,
-         attachmentInfo: attachmentInfo,
-         messageGuid: messageGuid,
-         importAttachmentId: importAttachmentId,
-       );
+  AttachmentResolverProvider(AttachmentInfo attachmentInfo)
+    : this._internal(
+        (ref) =>
+            attachmentResolver(ref as AttachmentResolverRef, attachmentInfo),
+        from: attachmentResolverProvider,
+        name: r'attachmentResolverProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$attachmentResolverHash,
+        dependencies: AttachmentResolverFamily._dependencies,
+        allTransitiveDependencies:
+            AttachmentResolverFamily._allTransitiveDependencies,
+        attachmentInfo: attachmentInfo,
+      );
 
   AttachmentResolverProvider._internal(
     super._createNotifier, {
@@ -180,13 +159,9 @@ class AttachmentResolverProvider
     required super.debugGetCreateSourceHash,
     required super.from,
     required this.attachmentInfo,
-    required this.messageGuid,
-    required this.importAttachmentId,
   }) : super.internal();
 
   final AttachmentInfo attachmentInfo;
-  final String messageGuid;
-  final int? importAttachmentId;
 
   @override
   Override overrideWith(
@@ -203,8 +178,6 @@ class AttachmentResolverProvider
         allTransitiveDependencies: null,
         debugGetCreateSourceHash: null,
         attachmentInfo: attachmentInfo,
-        messageGuid: messageGuid,
-        importAttachmentId: importAttachmentId,
       ),
     );
   }
@@ -217,17 +190,13 @@ class AttachmentResolverProvider
   @override
   bool operator ==(Object other) {
     return other is AttachmentResolverProvider &&
-        other.attachmentInfo == attachmentInfo &&
-        other.messageGuid == messageGuid &&
-        other.importAttachmentId == importAttachmentId;
+        other.attachmentInfo == attachmentInfo;
   }
 
   @override
   int get hashCode {
     var hash = _SystemHash.combine(0, runtimeType.hashCode);
     hash = _SystemHash.combine(hash, attachmentInfo.hashCode);
-    hash = _SystemHash.combine(hash, messageGuid.hashCode);
-    hash = _SystemHash.combine(hash, importAttachmentId.hashCode);
 
     return _SystemHash.finish(hash);
   }
@@ -239,12 +208,6 @@ mixin AttachmentResolverRef
     on AutoDisposeFutureProviderRef<ResolvedAttachment> {
   /// The parameter `attachmentInfo` of this provider.
   AttachmentInfo get attachmentInfo;
-
-  /// The parameter `messageGuid` of this provider.
-  String get messageGuid;
-
-  /// The parameter `importAttachmentId` of this provider.
-  int? get importAttachmentId;
 }
 
 class _AttachmentResolverProviderElement
@@ -255,11 +218,6 @@ class _AttachmentResolverProviderElement
   @override
   AttachmentInfo get attachmentInfo =>
       (origin as AttachmentResolverProvider).attachmentInfo;
-  @override
-  String get messageGuid => (origin as AttachmentResolverProvider).messageGuid;
-  @override
-  int? get importAttachmentId =>
-      (origin as AttachmentResolverProvider).importAttachmentId;
 }
 
 // ignore_for_file: type=lint

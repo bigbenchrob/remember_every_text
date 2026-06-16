@@ -103,11 +103,7 @@ void main() {
         tester,
         attachment: attachment,
         overrides: <Override>[
-          attachmentResolverProvider(
-            attachment,
-            messageGuid: 'guid-3',
-            importAttachmentId: 88,
-          ).overrideWith((ref) async {
+          attachmentResolverProvider(attachment).overrideWith((ref) async {
             return const ResolvedAttachment(
               attachmentInfo: attachment,
               availability:
@@ -152,11 +148,7 @@ void main() {
         tester,
         attachment: attachment,
         overrides: <Override>[
-          attachmentResolverProvider(
-            attachment,
-            messageGuid: 'guid-4',
-            importAttachmentId: 99,
-          ).overrideWith((ref) async {
+          attachmentResolverProvider(attachment).overrideWith((ref) async {
             return ResolvedAttachment(
               attachmentInfo: attachment,
               availability: ResolvedAttachmentAvailability.available,
