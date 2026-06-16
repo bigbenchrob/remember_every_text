@@ -1942,6 +1942,22 @@ void main() {
       );
     });
 
+    test('Archive compatibility tuple serialization stays centralized', () async {
+      final offenders =
+          await _findArchiveCompatibilityTupleSerializationOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Archive compatibility tuple serialization should stay centralized '
+            'on ArchiveCompatibilityKey and the recovery-hint setting wrapper. '
+            'Other code should pass typed ArchiveCompatibilityKey values rather '
+            'than constructing string tuples.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test(
       'Attachment source-scoped import provider access stays feature-boundary owned',
       () async {
@@ -4945,6 +4961,35 @@ Future<List<String>> _findGraphHealthAdHocArchiveKeyOffenders() async {
   }
 
   return offenders;
+}
+
+Future<List<String>>
+_findArchiveCompatibilityTupleSerializationOffenders() async {
+  const allowedFiles = <String>{
+    'lib/features/attachments/application/archive_compatibility_key.dart',
+    'lib/features/attachments/application/attachment_recovery_hint_storage.dart',
+  };
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/features/attachments/') ||
+        path.startsWith('lib/features/messages/') ||
+        path.startsWith('lib/essentials/conversation_graph/');
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    if (allowedFiles.contains(filePath)) {
+      continue;
+    }
+    final uncommented = _stripComments(await File(filePath).readAsString());
+    if (uncommented.contains('::')) {
+      offenders.add('$filePath builds archive compatibility tuples as strings');
+    }
+  }
+
+  return offenders..sort();
 }
 
 Future<List<String>>
