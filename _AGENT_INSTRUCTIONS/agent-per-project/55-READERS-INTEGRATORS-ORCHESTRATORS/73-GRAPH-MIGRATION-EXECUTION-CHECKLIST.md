@@ -2477,6 +2477,9 @@ criteria.
   - Kept `ArchiveCompatibilityKey` intact through
     `AttachmentArchiveService` source-path refresh helpers, reducing internal
     propagation of primitive retained attachment ids.
+  - Updated `AttachmentArchiveFileStore.writeArchiveEntry(...)` to accept
+    `ArchiveCompatibilityKey`; only the filesystem adapter unwraps the key
+    when it needs the retained id for deterministic fallback filenames.
 
 ### Exit Criteria
 

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as path;
 
+import '../../application/archive_compatibility_key.dart';
 import '../../application/attachment_archive_file_store.dart';
 
 class FilesystemAttachmentArchiveFileStore
@@ -34,7 +35,7 @@ class FilesystemAttachmentArchiveFileStore
   Future<ArchivedAttachmentFileWrite?> writeArchiveEntry({
     required String archiveDirectoryPath,
     required String sourcePath,
-    required int importAttachmentId,
+    required ArchiveCompatibilityKey archiveKey,
     required String? sha256Hex,
   }) async {
     final sourceFile = File(sourcePath);
@@ -49,7 +50,7 @@ class FilesystemAttachmentArchiveFileStore
       final prefix = contentHash.substring(0, 2);
       relativePath = '$prefix/$contentHash$extension';
     } else {
-      relativePath = '_by_id/$importAttachmentId$extension';
+      relativePath = '_by_id/${archiveKey.importAttachmentId}$extension';
     }
 
     final destinationFile = File(path.join(archiveDirectoryPath, relativePath));

@@ -4734,6 +4734,7 @@ Future<List<String>> _findAttachmentArchiveWriteStoreBoundaryOffenders() async {
 
 Future<List<String>> _findAttachmentArchiveStoreTypedKeyOffenders() async {
   const filePaths = <String>[
+    'lib/features/attachments/application/attachment_archive_file_store.dart',
     'lib/features/attachments/application/attachment_archive_read_store.dart',
     'lib/features/attachments/application/attachment_archive_write_store.dart',
   ];
@@ -4750,7 +4751,7 @@ Future<List<String>> _findAttachmentArchiveStoreTypedKeyOffenders() async {
       offenders.add('$filePath does not use ArchiveCompatibilityKey');
     }
     final methodBlocks = RegExp(
-      r'(readArchiveRecord|hasArchiveRecord|readRecoveryHint|writeRecoveryHint|clearRecoveryHint)\s*\([^;{]*[;{]',
+      r'(writeArchiveEntry|readArchiveRecord|hasArchiveRecord|readRecoveryHint|writeRecoveryHint|clearRecoveryHint)\s*\([^;{]*[;{]',
       multiLine: true,
       dotAll: true,
     ).allMatches(uncommented);

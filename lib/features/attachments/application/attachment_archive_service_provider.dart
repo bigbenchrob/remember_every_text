@@ -72,7 +72,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       final writeResult = await fileStore.writeArchiveEntry(
         archiveDirectoryPath: archiveDir,
         sourcePath: sourcePath,
-        importAttachmentId: archiveKey.importAttachmentId,
+        archiveKey: archiveKey,
         sha256Hex: sha256Hex,
       );
       if (writeResult == null) {
