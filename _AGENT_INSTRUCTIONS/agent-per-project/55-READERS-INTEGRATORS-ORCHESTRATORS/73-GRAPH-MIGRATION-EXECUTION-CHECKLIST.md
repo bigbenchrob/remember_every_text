@@ -2637,6 +2637,10 @@ criteria.
     `SidebarActionDispatcher` no longer constructs `MessagesSpec` or pushes
     message evidence panels directly. Architecture tests now guard that
     dispatcher boundary.
+  - Updated the stray-handles review cassette to derive selected-row state from
+    `SidebarFlowState.selectedHandleEvidenceId` instead of inspecting the
+    effective center panel spec. This keeps presentation selection aligned with
+    the same semantic source that derives the center evidence panel.
 
 ### Exit Criteria
 

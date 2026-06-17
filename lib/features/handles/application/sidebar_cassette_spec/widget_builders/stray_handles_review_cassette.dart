@@ -5,12 +5,11 @@ import 'package:intl/intl.dart';
 
 import '../../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../../config/theme/theme_typography.dart';
-import '../../../../../../essentials/navigation/application/panel_widget_providers.dart';
-import '../../../../../../essentials/navigation/domain/entities/view_spec.dart';
 import '../../../../../../essentials/navigation/domain/sidebar_mode.dart';
-import '../../../../../../essentials/navigation/feature_level_providers.dart';
 import '../../../../../../essentials/sidebar/application/sidebar_action_dispatcher.dart';
 import '../../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
+import '../../../../../../essentials/sidebar/feature_level_providers.dart';
+import '../../../../sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../domain/spec_classes/handles_cassette_spec.dart';
 import '../../../domain/utilities/handle_normalizer.dart';
 import '../../../feature_level_providers.dart';
@@ -20,7 +19,8 @@ import '../../../feature_level_providers.dart';
 ///
 /// Each row shows the handle value, message count, and last message date.
 /// Reviewed-but-unlinked handles are visually muted. Tapping a row
-/// dispatches [MessagesSpec.handleLens] to the center panel.
+/// dispatches a semantic sidebar action; center evidence derives from
+/// SidebarFlowState.
 ///
 /// Mode support:
 /// - [StrayHandleMode.allStrays]: Shows all stray handles (default)
@@ -60,19 +60,13 @@ class StrayHandlesReviewCassette extends HookConsumerWidget {
       data: (handles) {
         final filtered = _applyFilter(handles);
 
-        // Determine which handle is currently displayed in the center panel.
-        final centerSpec = ref.watch(
-          effectiveCenterPanelSpecProvider(SidebarMode.messages),
-        );
-        final activeHandleId = centerSpec?.map(
-          messages: (m) => m.spec.maybeMap(
-            handleLens: (hl) => hl.handleId,
-            forHandle: (fh) => fh.handleId,
-            orElse: () => null,
-          ),
-          settings: (_) => null,
-          onboarding: (_) => null,
-          environmentReadiness: (_) => null,
+        final activeHandleId = ref.watch(
+          sidebarFlowProvider.select((state) {
+            if (state.topMenuChoice != TopChatMenuChoice.strayHandles) {
+              return null;
+            }
+            return state.selectedHandleEvidenceId;
+          }),
         );
 
         if (filtered.isEmpty) {
