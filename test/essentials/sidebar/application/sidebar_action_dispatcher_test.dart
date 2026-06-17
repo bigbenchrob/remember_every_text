@@ -862,6 +862,63 @@ void main() {
         );
       },
     );
+
+    testWidgets('dispatches contact projection changes through sidebar flow', (
+      tester,
+    ) async {
+      await _mountMessagesPanelReconciliation(tester, container);
+
+      container
+          .read(sidebarFlowProvider.notifier)
+          .selectContactConversation(contactId: 42, conversationId: 9001);
+
+      await dispatcher.dispatch(
+        intent: const ContactProjectionChanged(
+          contactId: 42,
+          projection: SidebarContactProjection.allMessages,
+        ),
+        context: const SidebarActionDispatchContext(
+          sidebarMode: SidebarMode.messages,
+        ),
+      );
+
+      await _flushMessagesPanelReconciliation(tester);
+
+      var flowState = container.read(sidebarFlowProvider);
+      expect(flowState.topMenuChoice, TopChatMenuChoice.contacts);
+      expect(flowState.chosenContactId, 42);
+      expect(
+        flowState.contactProjection,
+        SidebarFlowContactProjection.allMessages,
+      );
+      expect(flowState.selectedConversationId, isNull);
+      expect(
+        _activeSpec(container, WindowPanel.center),
+        equals(const ViewSpec.messages(MessagesSpec.forContact(contactId: 42))),
+      );
+
+      await dispatcher.dispatch(
+        intent: const ContactProjectionChanged(
+          contactId: 42,
+          projection: SidebarContactProjection.conversations,
+        ),
+        context: const SidebarActionDispatchContext(
+          sidebarMode: SidebarMode.messages,
+        ),
+      );
+
+      await _flushMessagesPanelReconciliation(tester);
+
+      flowState = container.read(sidebarFlowProvider);
+      expect(flowState.topMenuChoice, TopChatMenuChoice.contacts);
+      expect(flowState.chosenContactId, 42);
+      expect(
+        flowState.contactProjection,
+        SidebarFlowContactProjection.conversations,
+      );
+      expect(flowState.selectedConversationId, isNull);
+      expect(_activeSpec(container, WindowPanel.center), isNull);
+    });
   });
 }
 

@@ -144,15 +144,24 @@ class _ContactEvidenceContent extends ConsumerWidget {
         _ContactEvidenceModeToggle(
           mode: mode,
           onChanged: (mode) {
-            if (mode == _ContactEvidenceMode.allMessages) {
-              ref
-                  .read(sidebarFlowProvider.notifier)
-                  .showContactTimelineAt(contactId: contactId);
-            } else {
-              ref
-                  .read(sidebarFlowProvider.notifier)
-                  .showContactConversationNavigator(contactId: contactId);
-            }
+            final projection = switch (mode) {
+              _ContactEvidenceMode.allMessages =>
+                SidebarContactProjection.allMessages,
+              _ContactEvidenceMode.conversations =>
+                SidebarContactProjection.conversations,
+            };
+
+            ref
+                .read(sidebarActionDispatcherProvider.notifier)
+                .dispatch(
+                  intent: ContactProjectionChanged(
+                    contactId: contactId,
+                    projection: projection,
+                  ),
+                  context: const SidebarActionDispatchContext(
+                    sidebarMode: SidebarMode.messages,
+                  ),
+                );
           },
         ),
         const SizedBox(height: AppSpacing.md),

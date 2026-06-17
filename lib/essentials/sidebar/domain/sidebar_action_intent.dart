@@ -11,6 +11,8 @@ enum SidebarTopMenuChoice {
 
 enum SidebarMessageScope { regular, recoveredDeleted }
 
+enum SidebarContactProjection { allMessages, conversations }
+
 enum SidebarStrayHandleFilter { phones, emails, businessUrns }
 
 enum SidebarStrayHandleMode { allStrays, spamCandidates, dismissed }
@@ -94,6 +96,16 @@ final class ContactMessageScopeChanged extends SidebarPersistentIntent {
 
   final int contactId;
   final SidebarMessageScope scope;
+}
+
+final class ContactProjectionChanged extends SidebarPersistentIntent {
+  const ContactProjectionChanged({
+    required this.contactId,
+    required this.projection,
+  });
+
+  final int contactId;
+  final SidebarContactProjection projection;
 }
 
 final class HeatMapMonthFocused extends SidebarPersistentIntent {

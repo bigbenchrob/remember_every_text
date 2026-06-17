@@ -2617,6 +2617,11 @@ criteria.
     conversation signature widget now dispatches a semantic action instead of
     mutating `SidebarFlow` directly; the dispatcher owns the call to
     `selectContactConversation`, and tests cover the contact-scoped projection.
+  - Routed the Contact sidebar All messages / By conversation toggle through a
+    `ContactProjectionChanged` sidebar action intent. The heatmap widget now
+    reports the user's projection choice, while `SidebarActionDispatcher` owns
+    the translation into `showContactTimelineAt` or
+    `showContactConversationNavigator`.
 
 ### Exit Criteria
 

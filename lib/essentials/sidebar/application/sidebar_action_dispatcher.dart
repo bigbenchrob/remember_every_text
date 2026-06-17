@@ -130,6 +130,17 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
               messageScope: _mapMessageScope(scope),
               cassetteIndex: _requireCassetteIndex(context),
             );
+      case ContactProjectionChanged(:final contactId, :final projection):
+        switch (projection) {
+          case SidebarContactProjection.allMessages:
+            ref
+                .read(sidebarFlowProvider.notifier)
+                .showContactTimelineAt(contactId: contactId);
+          case SidebarContactProjection.conversations:
+            ref
+                .read(sidebarFlowProvider.notifier)
+                .showContactConversationNavigator(contactId: contactId);
+        }
       case HeatMapMonthFocused(:final monthAnchor, :final contactId):
         _dispatchHeatMapFocus(contactId: contactId, monthAnchor: monthAnchor);
       case ConversationSelected(:final conversationId):
