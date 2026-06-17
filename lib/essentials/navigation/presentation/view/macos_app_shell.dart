@@ -13,6 +13,7 @@ import '../../../onboarding/application/onboarding_gate_provider.dart';
 import '../../../onboarding/domain/onboarding_status.dart';
 import '../../../onboarding/presentation/onboarding_overlay.dart';
 import '../../../window_state/feature_level_providers.dart';
+import '../../application/app_shell_actions_provider.dart';
 import '../../application/panel_widget_providers.dart';
 import '../../application/sidebar_mode_provider.dart';
 import '../../domain/sidebar_mode.dart';
@@ -149,7 +150,9 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
                       ),
                       onPressed: () {
                         unawaited(
-                          ref.read(developerModeProvider.notifier).toggleMode(),
+                          ref
+                              .read(appShellActionsProvider.notifier)
+                              .toggleDeveloperMode(),
                         );
                       },
                       showLabel: false,
@@ -175,7 +178,9 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
                     label: tooltip,
                     icon: MacosIcon(icon),
                     onPressed: () {
-                      ref.read(switchableDarkModeProvider.notifier).cycle();
+                      ref
+                          .read(appShellActionsProvider.notifier)
+                          .cycleThemeMode();
                     },
                     showLabel: false,
                   );

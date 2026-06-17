@@ -466,6 +466,20 @@ void main() {
       },
     );
 
+    test('Mac app shell toolbar controls use action boundary', () async {
+      final offenders = await _findMacosAppShellActionBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'MacosAppShell may render toolbar controls and observe toolbar '
+            'state, but developer-mode and theme mutations should cross '
+            'AppShellActions.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test(
       'Feature presentation does not construct panel navigation specs',
       () async {
@@ -6307,6 +6321,26 @@ Future<List<String>> _findAppModeToggleActionBoundaryOffenders() async {
   final offenders = <String>[];
   if (uncommented.contains('activeSidebarModeProvider.notifier')) {
     offenders.add('$filePath mutates active sidebar mode directly');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findMacosAppShellActionBoundaryOffenders() async {
+  const filePath =
+      'lib/essentials/navigation/presentation/view/macos_app_shell.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final offenders = <String>[];
+  if (uncommented.contains('developerModeProvider.notifier')) {
+    offenders.add('$filePath mutates developer mode directly');
+  }
+  if (uncommented.contains('switchableDarkModeProvider.notifier')) {
+    offenders.add('$filePath mutates theme mode directly');
   }
 
   return offenders..sort();

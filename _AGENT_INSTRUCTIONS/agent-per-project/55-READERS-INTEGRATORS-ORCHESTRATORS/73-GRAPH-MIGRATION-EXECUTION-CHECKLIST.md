@@ -2715,6 +2715,11 @@ criteria.
     filter selection now crosses a contact application action boundary. Added a
     tripwire preventing direct picker-filter notifier mutation from returning
     to the presentation widget.
+  - Moved app-shell toolbar mutations behind `AppShellActions`. `MacosAppShell`
+    still renders developer-mode and theme controls from observed state, but
+    developer-mode toggling and theme cycling now cross a navigation action
+    boundary. Added a tripwire preventing direct toolbar provider mutation from
+    returning.
 
 ### Exit Criteria
 
