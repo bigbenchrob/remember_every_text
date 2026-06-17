@@ -2690,6 +2690,11 @@ criteria.
     refreshing the onboarding environment now live in
     `OnboardingReadinessActions`. Added a tripwire preventing that repair logic
     from returning to the overlay.
+  - Routed the onboarding dev panel's Refresh Diagnostics button through the
+    same `OnboardingReadinessActions` boundary. The panel still renders
+    diagnostics state, but environment refresh ownership now stays in the
+    onboarding application layer. Extended the existing dev-panel tripwire to
+    catch direct refresh calls.
 
 ### Exit Criteria
 

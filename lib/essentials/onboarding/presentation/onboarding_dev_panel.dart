@@ -9,6 +9,7 @@ import '../../conversation_graph/application/orchestrators/conversation_graph_bu
 import '../application/onboarding_dev_panel_actions_provider.dart';
 import '../application/onboarding_environment_report_provider.dart';
 import '../application/onboarding_gate_provider.dart';
+import '../application/onboarding_readiness_actions_provider.dart';
 import '../domain/onboarding_environment_report.dart';
 import '../domain/onboarding_status.dart';
 
@@ -76,8 +77,8 @@ class OnboardingDevPanel extends ConsumerWidget {
                   color: colors.buttons.secondaryBackground,
                   onPressed: () {
                     ref
-                        .read(onboardingGateProvider.notifier)
-                        .refreshEnvironment();
+                        .read(onboardingReadinessActionsProvider.notifier)
+                        .recheckReadiness(clearSimulationOverride: false);
                   },
                   child: Text(
                     'Refresh Diagnostics',

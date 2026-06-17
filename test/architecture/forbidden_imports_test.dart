@@ -5779,6 +5779,7 @@ Future<List<String>> _findOnboardingDevPanelActionBoundaryOffenders() async {
   final offenders = <String>[];
   if (uncommented.contains('ref.invalidate(') ||
       uncommented.contains('widget.ref.invalidate(') ||
+      uncommented.contains('refreshEnvironment()') ||
       uncommented.contains('resetDerivedData()')) {
     offenders.add('$filePath owns reset refresh details directly');
   }
