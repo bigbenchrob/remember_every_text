@@ -77,6 +77,18 @@ const List<String> _retiredSourceSpecificMessageRendererPathFragments =
       'recovered_message_renderer.dart',
     ];
 
+const List<String> _retiredMessageTimelineSymbols = <String>[
+  'MessageTimelineScope',
+  'MessagesTimelineView',
+];
+
+const List<String> _retiredMessageTimelinePathFragments = <String>[
+  'messages_timeline_view.dart',
+  'message_timeline_scope.dart',
+  '/presentation/view_model/timeline/',
+  '/application/strategies/',
+];
+
 const Set<String> _rawPrintAllowedFiles = {'lib/main.dart'};
 
 const List<String> _retiredImportMigrationExecutionSymbols = <String>[
@@ -1228,6 +1240,21 @@ void main() {
             'presentation must converge through the shared evidence spine. '
             'Do not restore source-specific message renderer classes or '
             'files.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Retired message timeline path does not return', () async {
+      final offenders = await _findRetiredMessageTimelineOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'The old ordinal MessageTimelineScope / MessagesTimelineView path '
+            'has been retired. Message evidence must use typed '
+            'MessageEvidenceScope skeletons, visible-row hydration, and the '
+            'shared MessageEvidenceTimelineView.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -3958,6 +3985,33 @@ Future<List<String>> _findSourceSpecificMessageRendererOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     for (final symbol in _retiredSourceSpecificMessageRendererSymbols) {
+      if (RegExp('\\b$symbol\\b').hasMatch(uncommented)) {
+        offenders.add('$filePath uses $symbol');
+      }
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findRetiredMessageTimelineOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    if (_retiredMessageTimelinePathFragments.any(filePath.contains)) {
+      offenders.add(filePath);
+      continue;
+    }
+
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    for (final symbol in _retiredMessageTimelineSymbols) {
       if (RegExp('\\b$symbol\\b').hasMatch(uncommented)) {
         offenders.add('$filePath uses $symbol');
       }

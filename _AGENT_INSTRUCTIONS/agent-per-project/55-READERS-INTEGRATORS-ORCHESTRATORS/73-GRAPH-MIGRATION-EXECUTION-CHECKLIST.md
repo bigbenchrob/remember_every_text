@@ -2572,6 +2572,11 @@ criteria.
     `SearchResultMessageRenderer`, `RecoveredMessageRenderer`) from returning.
     Source-specific message scopes remain allowed; source-specific evidence
     presentation remains blocked by test.
+  - Added an architecture tripwire preventing the retired ordinal
+    `MessageTimelineScope` / `MessagesTimelineView` path and its old timeline
+    strategy folders from returning. Active evidence must continue through
+    `MessageEvidenceScope`, full-scope skeletons, visible-row hydration, and
+    `MessageEvidenceTimelineView`.
 
 ### Exit Criteria
 
