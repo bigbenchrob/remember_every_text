@@ -2767,6 +2767,11 @@ criteria.
   `ContactMessageScopeActions`. The segmented control now renders current vs
   recovered scope state and reports the selected scope; cassette-indexed
   sidebar intent construction stays in the contacts application boundary.
+- Moved contact-picker selection, change-contact navigation, and prewarm
+  behavior behind `ContactPickerActions`. Flat, grouped, recents, and change
+  controls now render choices and forward user intent; contact prewarm and
+  cassette-indexed sidebar intent construction stay in the contacts
+  application boundary.
 
 ### Exit Criteria
 

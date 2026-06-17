@@ -1755,6 +1755,21 @@ void main() {
       );
     });
 
+    test('Contact picker selection uses action boundary', () async {
+      final offenders = await _findContactPickerSelectionActionOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Contact picker widgets may render contact choices and forward '
+            'selection/hover intents, but sidebar contact-selection dispatch '
+            'and contact evidence prewarming belong behind '
+            'ContactPickerActions.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Contact handle filter uses action boundary', () async {
       final offenders = await _findHandleFilterActionBoundaryOffenders();
 
@@ -4794,6 +4809,40 @@ Future<List<String>> _findPickerFilterToggleActionBoundaryOffenders() async {
   final offenders = <String>[];
   if (uncommented.contains('pickerFilterProvider.notifier')) {
     offenders.add('$filePath mutates picker filter state directly');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findContactPickerSelectionActionOffenders() async {
+  const filePaths = <String>[
+    'lib/features/contacts/application/sidebar_cassette_spec/widget_builders/contact_selection_control_widget.dart',
+    'lib/features/contacts/application/sidebar_cassette_spec/widget_builders/contact_flat_list_widget.dart',
+    'lib/features/contacts/application/sidebar_cassette_spec/widget_builders/contact_grouped_picker_widget.dart',
+    'lib/features/contacts/application/sidebar_cassette_spec/widget_builders/recent_contacts_section.dart',
+  ];
+  final offenders = <String>[];
+  const forbiddenTokens = <String>[
+    'sidebarActionDispatcherProvider',
+    'SidebarActionDispatchContext',
+    'ContactChosen',
+    'ChooseAnotherContact',
+    'contactProfileProvider',
+    'prewarmContactMessagesProvider',
+  ];
+
+  for (final filePath in filePaths) {
+    final file = File(filePath);
+    if (!file.existsSync()) {
+      continue;
+    }
+
+    final uncommented = _stripComments(await file.readAsString());
+    for (final token in forbiddenTokens) {
+      if (uncommented.contains(token)) {
+        offenders.add('$filePath uses $token');
+      }
+    }
   }
 
   return offenders..sort();

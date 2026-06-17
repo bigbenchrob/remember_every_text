@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -7,12 +5,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
-import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
-import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
-import '../../../../../essentials/sidebar/feature_level_providers.dart';
-import '../../../../messages/feature_level_providers.dart' as messages_feature;
 import '../../../feature_level_providers.dart';
 import '../../../presentation/widgets/contact_initial_badge.dart';
+import '../resolver_tools/contact_picker_actions_provider.dart';
 
 /// Section displaying recent contacts at the top of the contact picker.
 ///
@@ -151,27 +146,18 @@ class _RecentContactRowState extends ConsumerState<_RecentContactRow> {
   bool _isHovered = false;
 
   Future<void> _handleTap() async {
-    _prewarmContactInvestigation(widget.participantId);
     await ref
-        .read(sidebarActionDispatcherProvider.notifier)
-        .dispatch(
-          intent: ContactChosen(contactId: widget.participantId),
-          context: SidebarActionDispatchContext(
-            sidebarMode: SidebarMode.messages,
-            cassetteIndex: widget.cassetteIndex,
-          ),
+        .read(contactPickerActionsProvider.notifier)
+        .chooseContact(
+          contactId: widget.participantId,
+          cassetteIndex: widget.cassetteIndex,
         );
   }
 
-  void _prewarmContactInvestigation(int contactId) {
-    unawaited(ref.read(contactProfileProvider(contactId: contactId).future));
-    unawaited(
-      ref.read(
-        messages_feature
-            .prewarmContactMessagesProvider(contactId: contactId)
-            .future,
-      ),
-    );
+  void _prewarmContact(int contactId) {
+    ref
+        .read(contactPickerActionsProvider.notifier)
+        .prewarmContact(contactId: contactId);
   }
 
   @override
@@ -185,7 +171,7 @@ class _RecentContactRowState extends ConsumerState<_RecentContactRow> {
 
     return MouseRegion(
       onEnter: (_) {
-        _prewarmContactInvestigation(widget.participantId);
+        _prewarmContact(widget.participantId);
         setState(() => _isHovered = true);
       },
       onExit: (_) => setState(() => _isHovered = false),

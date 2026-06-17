@@ -3,10 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
-import '../../../../../essentials/logging/feature_level_providers.dart';
-import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
-import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
-import '../../../../../essentials/sidebar/feature_level_providers.dart';
+import '../resolver_tools/contact_picker_actions_provider.dart';
 
 /// Minimal text-link control that navigates back to the contact picker.
 ///
@@ -44,24 +41,10 @@ class _ContactSelectionControlWidgetState
 
   Future<void> _handleTap() async {
     ref
-        .read(appLoggerProvider.notifier)
-        .debug(
-          'Change contact tapped',
-          source: 'ContactSelectionControl',
-          context: {
-            'contactId': widget.contactId,
-            'cassetteIndex': widget.cassetteIndex,
-          },
-        );
-
-    await ref
-        .read(sidebarActionDispatcherProvider.notifier)
-        .dispatch(
-          intent: const ChooseAnotherContact(),
-          context: SidebarActionDispatchContext(
-            sidebarMode: SidebarMode.messages,
-            cassetteIndex: widget.cassetteIndex,
-          ),
+        .read(contactPickerActionsProvider.notifier)
+        .chooseAnotherContact(
+          contactId: widget.contactId,
+          cassetteIndex: widget.cassetteIndex,
         );
   }
 
