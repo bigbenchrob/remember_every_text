@@ -424,6 +424,20 @@ void main() {
       },
     );
 
+    test('Chats view model dispatches sidebar actions', () async {
+      final offenders = await _findChatsViewModelFlowMutationOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'The chats selection controller may translate chat selections into '
+            'semantic sidebar actions, but SidebarFlow mutation belongs to '
+            'SidebarActionDispatcher.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test(
       'Retained archive metadata provider stays behind retention boundaries',
       () async {
@@ -5861,6 +5875,22 @@ Future<List<String>> _findFeaturePresentationNavigationSpecOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>> _findChatsViewModelFlowMutationOffenders() async {
+  const filePath =
+      'lib/features/chats/presentation/view_model/chats_view_model_provider.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  if (uncommented.contains('sidebarFlowProvider')) {
+    return const ['$filePath imports or mutates sidebarFlowProvider'];
+  }
+
+  return const <String>[];
 }
 
 Future<List<String>>

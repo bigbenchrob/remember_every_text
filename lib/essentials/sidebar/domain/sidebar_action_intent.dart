@@ -116,9 +116,15 @@ final class HeatMapMonthFocused extends SidebarPersistentIntent {
 }
 
 final class ConversationSelected extends SidebarPersistentIntent {
-  const ConversationSelected({required this.conversationId});
+  const ConversationSelected({
+    required this.conversationId,
+    this.anchorMessageId,
+    this.searchQuery,
+  });
 
   final int conversationId;
+  final int? anchorMessageId;
+  final String? searchQuery;
 }
 
 final class ContactConversationSelected extends SidebarPersistentIntent {

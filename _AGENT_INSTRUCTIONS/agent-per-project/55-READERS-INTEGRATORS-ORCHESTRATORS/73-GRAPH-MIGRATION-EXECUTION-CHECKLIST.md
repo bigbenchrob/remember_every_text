@@ -2626,6 +2626,11 @@ criteria.
     `RecoveredNoHandleFromMeOpened` sidebar action intent. The cassette widget
     now reports navigation intent only; `SidebarActionDispatcher` owns the
     recovered no-handle flow mutation and projected center-panel state.
+  - Routed the chats feature selection controller through
+    `SidebarActionDispatcher` by extending `ConversationSelected` with optional
+    anchor/search context. `ChatsViewModel` now translates chat selections into
+    semantic sidebar actions rather than mutating `SidebarFlow` directly, with
+    an architecture tripwire guarding the boundary.
 
 ### Exit Criteria
 

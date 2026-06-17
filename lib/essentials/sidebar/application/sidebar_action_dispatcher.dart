@@ -143,10 +143,18 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
         }
       case HeatMapMonthFocused(:final monthAnchor, :final contactId):
         _dispatchHeatMapFocus(contactId: contactId, monthAnchor: monthAnchor);
-      case ConversationSelected(:final conversationId):
+      case ConversationSelected(
+        :final conversationId,
+        :final anchorMessageId,
+        :final searchQuery,
+      ):
         ref
             .read(sidebarFlowProvider.notifier)
-            .selectConversation(conversationId: conversationId);
+            .selectConversation(
+              conversationId: conversationId,
+              anchorMessageId: anchorMessageId,
+              searchQuery: searchQuery,
+            );
       case ContactConversationSelected(:final contactId, :final conversationId):
         ref
             .read(sidebarFlowProvider.notifier)
