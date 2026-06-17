@@ -1931,6 +1931,20 @@ void main() {
       );
     });
 
+    test('Graph status sheet controls use action boundary', () async {
+      final offenders = await _findGraphStatusSheetControlBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Conversation graph status sheet controls may render refresh/build '
+            'buttons, but provider invalidation, graph build execution, and '
+            'status run logging belong in the application action boundary.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Graph status and favourites stores stay feature-boundary owned', () {
       const retiredProviderPaths = <String>[
         'lib/essentials/conversation_graph/infrastructure/repositories/conversation_favourites_store_provider.dart',
@@ -4979,6 +4993,34 @@ Future<List<String>> _findGraphStatusProviderBoundaryOffenders() async {
       uncommented.contains('liveChatDbSourceId')) {
     offenders.add('$filePath constructs graph-status infrastructure directly');
   }
+  return offenders..sort();
+}
+
+Future<List<String>> _findGraphStatusSheetControlBoundaryOffenders() async {
+  const filePath =
+      'lib/essentials/conversation_graph/presentation/status/conversation_graph_status_sheet.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final source = await file.readAsString();
+  final uncommented = _stripComments(source);
+  final imports = _extractImports(uncommented);
+  final offenders = <String>[
+    for (final importTarget in imports)
+      if (importTarget.endsWith('conversation_graph_status_log_writer.dart') ||
+          importTarget.endsWith('conversation_graph_build_orchestrator.dart'))
+        '$filePath imports $importTarget',
+  ];
+
+  if (uncommented.contains('ref.invalidate(') ||
+      uncommented.contains('widget.ref.invalidate(') ||
+      uncommented.contains('writeRun(') ||
+      uncommented.contains('.runOnce(owner:')) {
+    offenders.add('$filePath owns graph status refresh/build action details');
+  }
+
   return offenders..sort();
 }
 

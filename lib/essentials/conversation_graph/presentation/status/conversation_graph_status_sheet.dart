@@ -15,12 +15,10 @@ import '../../application/conversation_graph_build_controller_provider.dart';
 import '../../application/health/graph_health_provider.dart';
 import '../../application/health/graph_health_report.dart';
 import '../../application/monitor/chat_db_change_monitor_provider.dart';
-import '../../application/orchestrators/conversation_graph_build_orchestrator.dart';
 import '../../application/status/conversation_graph_status_provider.dart';
+import '../../application/status/conversation_graph_status_sheet_actions_provider.dart';
 import '../../feature_level_providers.dart'
-    show
-        archivedAttachmentFileOpenerProvider,
-        conversationGraphStatusLogWriterProvider;
+    show archivedAttachmentFileOpenerProvider;
 
 enum _StatusSheetTab { status, graphHealth, groupProfiles, messages }
 
@@ -386,7 +384,14 @@ class _LifecycleStatusSection extends StatelessWidget {
           if (report.stageTimings.isNotEmpty)
             _StatusRow(
               'slowest build stage',
-              _formatSlowestStage(report.stageTimings),
+              _formatSlowestStage(
+                report.stageTimings.map(
+                  (timing) => (
+                    stageName: timing.stageName,
+                    durationMs: timing.durationMs,
+                  ),
+                ),
+              ),
             ),
           for (final timing in report.stageTimings)
             _StatusRow('stage ${timing.stageName}', '${timing.durationMs} ms'),
@@ -2027,8 +2032,9 @@ class _StatusControlsState extends State<_StatusControls> {
               controlSize: ControlSize.regular,
               secondary: true,
               onPressed: () {
-                widget.ref.invalidate(conversationGraphStatusProvider);
-                widget.ref.invalidate(graphHealthReportProvider);
+                widget.ref
+                    .read(conversationGraphStatusSheetActionsProvider.notifier)
+                    .refreshPrimaryStatus();
               },
               child: const Text('Refresh'),
             ),
@@ -2097,47 +2103,27 @@ class _StatusControlsState extends State<_StatusControls> {
     setState(() {
       _isImporting = true;
     });
-    widget.ref.invalidate(conversationGraphStatusProvider);
-    widget.ref.invalidate(graphHealthReportProvider);
+    final actions = widget.ref.read(
+      conversationGraphStatusSheetActionsProvider.notifier,
+    );
+    actions.refreshPrimaryStatus();
     _statusRefreshTimer?.cancel();
     _statusRefreshTimer = Timer.periodic(const Duration(milliseconds: 750), (
       _,
     ) {
-      widget.ref.invalidate(conversationGraphStatusProvider);
+      actions.refreshStatusOnly();
     });
     try {
-      await _importAndProjectOnce(widget.ref);
+      await actions.runManualBuild();
     } finally {
       _statusRefreshTimer?.cancel();
       _statusRefreshTimer = null;
-      widget.ref.invalidate(conversationGraphStatusProvider);
+      actions.refreshStatusOnly();
       if (mounted) {
         setState(() {
           _isImporting = false;
         });
       }
-    }
-  }
-
-  Future<void> _importAndProjectOnce(WidgetRef ref) async {
-    final before = await ref.read(conversationGraphStatusProvider.future);
-    try {
-      final buildReport = await ref
-          .read(conversationGraphBuildControllerProvider.notifier)
-          .runOnce(owner: 'source-scoped-dev-panel');
-      ref.invalidate(conversationGraphStatusProvider);
-      ref.invalidate(graphHealthReportProvider);
-      ref.invalidate(chatSummariesProvider);
-      ref.invalidate(chatSummarySanityCountsProvider);
-      final after = await ref.read(conversationGraphStatusProvider.future);
-      await ref
-          .read(conversationGraphStatusLogWriterProvider)
-          .writeRun(before: before, after: after, buildReport: buildReport);
-    } catch (error, stackTrace) {
-      await ref
-          .read(conversationGraphStatusLogWriterProvider)
-          .writeRun(before: before, error: error, stackTrace: stackTrace);
-      rethrow;
     }
   }
 }
@@ -2229,7 +2215,7 @@ String _formatStatusDateTime(DateTime? value) {
 }
 
 String _formatSlowestStage(
-  List<ConversationGraphBuildStageTiming> stageTimings,
+  Iterable<({int durationMs, String stageName})> stageTimings,
 ) {
   final slowest = stageTimings.reduce((left, right) {
     return left.durationMs >= right.durationMs ? left : right;

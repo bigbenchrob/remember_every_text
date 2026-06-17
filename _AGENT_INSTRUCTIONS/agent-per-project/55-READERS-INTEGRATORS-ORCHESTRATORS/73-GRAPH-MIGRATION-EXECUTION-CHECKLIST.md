@@ -2650,6 +2650,12 @@ criteria.
     now observes onboarding/incident inputs only; panel-stack mutation and
     readiness/incident routing decisions live behind the controller boundary.
     Added a tripwire preventing that policy from returning to the observer.
+  - Moved conversation graph status sheet refresh/build/logging actions into a
+    conversation-graph application action controller. The status sheet now
+    renders buttons and local spinner/hover state only; provider invalidation,
+    manual graph build execution, summary/health refresh, and status run
+    logging live behind the action boundary. Added a tripwire preventing those
+    details from returning to the presentation sheet.
 
 ### Exit Criteria
 
