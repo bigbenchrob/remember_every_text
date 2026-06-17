@@ -2641,6 +2641,10 @@ criteria.
     `SidebarFlowState.selectedHandleEvidenceId` instead of inspecting the
     effective center panel spec. This keeps presentation selection aligned with
     the same semantic source that derives the center evidence panel.
+  - Cleaned stale sidebar widget-builder comments that still described widgets
+    as constructing panel specs on user interaction. Added an architecture
+    tripwire requiring sidebar widget guidance to use the current semantic
+    action / derived flow wording.
 
 ### Exit Criteria
 

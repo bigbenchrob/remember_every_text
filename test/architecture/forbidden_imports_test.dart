@@ -424,6 +424,21 @@ void main() {
       },
     );
 
+    test('Sidebar widget contract uses semantic action wording', () async {
+      final offenders = await _findStaleSidebarWidgetContractOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Sidebar widget comments should not preserve the retired guidance '
+            'that widgets construct panel specs on interaction. Widgets render '
+            'typed inputs and dispatch semantic actions; sidebar flow or '
+            'navigation action boundaries own panel spec derivation.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Chats view model dispatches sidebar actions', () async {
       final offenders = await _findChatsViewModelFlowMutationOffenders();
 
@@ -5910,6 +5925,27 @@ Future<List<String>> _findFeaturePresentationNavigationSpecOffenders() async {
         content.contains('MessagesSpec.') ||
         content.contains('WindowPanel.') ||
         content.contains('panelsViewStateProvider')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findStaleSidebarWidgetContractOffenders() async {
+  final files = await _collectDartFiles((path) {
+    return path.startsWith('lib/features/') &&
+        path.contains('/sidebar_cassette_spec/widget_builders/') &&
+        !path.endsWith('.g.dart') &&
+        !path.endsWith('.freezed.dart');
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final content = await File(filePath).readAsString();
+    if (content.contains('Construct specs only on user interaction') ||
+        content.contains('narrows the center panel') ||
+        content.contains('dispatches [MessagesSpec')) {
       offenders.add(filePath);
     }
   }
