@@ -5,6 +5,7 @@ import 'package:flutter/material.dart' show Tooltip;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
+import '../../application/conversation_favourites/conversation_favourite_actions_provider.dart';
 import '../../application/conversation_favourites/conversation_favourites_provider.dart';
 
 class ConversationFavouriteButton extends ConsumerStatefulWidget {
@@ -63,7 +64,7 @@ class _ConversationFavouriteButtonState
           onTap: () {
             unawaited(
               ref
-                  .read(conversationFavouritesControllerProvider.notifier)
+                  .read(conversationFavouriteActionsProvider.notifier)
                   .toggleCoreFavourite(widget.conversationId),
             );
           },

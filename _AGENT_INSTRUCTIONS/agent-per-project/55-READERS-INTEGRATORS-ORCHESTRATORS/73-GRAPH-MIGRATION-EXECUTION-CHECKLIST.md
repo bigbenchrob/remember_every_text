@@ -2726,6 +2726,11 @@ criteria.
   developer simulation cleanup, retry, and dismiss intents no longer call the
   underlying onboarding or incident notifiers directly. Added tripwires for
   both panels.
+- Moved conversation favourite toggle writes behind
+  `ConversationFavouriteActions`. The reusable favourite button still renders
+  current favourite state, but the user-intent mutation now crosses an explicit
+  action boundary. Added a tripwire preventing direct controller mutation from
+  returning to the widget.
 
 ### Exit Criteria
 

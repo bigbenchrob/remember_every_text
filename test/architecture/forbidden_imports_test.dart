@@ -1694,6 +1694,20 @@ void main() {
       );
     });
 
+    test('Conversation favourite button uses action boundary', () async {
+      final offenders =
+          await _findConversationFavouriteButtonActionBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'ConversationFavouriteButton may render favourite state, but '
+            'toggle writes should cross ConversationFavouriteActions.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Handle spam management stays visibility-storage agnostic', () async {
       final offenders = await _findSpamManagementStorageOffenders();
 
@@ -4623,6 +4637,26 @@ Future<List<String>> _findConversationFavouritesStorageOffenders() async {
       uncommented.contains('writeOverlaySetting')) {
     offenders.add('$filePath handles overlay settings storage directly');
   }
+  return offenders..sort();
+}
+
+Future<List<String>>
+_findConversationFavouriteButtonActionBoundaryOffenders() async {
+  const filePath =
+      'lib/essentials/conversation_graph/presentation/widgets/conversation_favourite_button.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final offenders = <String>[];
+  if (uncommented.contains(
+    'conversationFavouritesControllerProvider.notifier',
+  )) {
+    offenders.add('$filePath mutates conversation favourites directly');
+  }
+
   return offenders..sort();
 }
 
