@@ -8,8 +8,6 @@ import 'package:macos_ui/macos_ui.dart';
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
-import '../../../../essentials/navigation/domain/navigation_constants.dart';
-import '../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../essentials/navigation/feature_level_providers.dart';
 import '../../../attachments/domain/constants/attachment_provenance.dart';
 import '../../../attachments/domain/constants/resolved_attachment_availability.dart';
@@ -71,12 +69,6 @@ class RecoveredAttachmentSidebarView extends ConsumerWidget {
       recordedPath: fileAccess.expandPath(attachment.localPath),
       resolvedAttachmentAsync: _watchResolvedAttachment(ref),
     );
-
-    Future<void> closeSidebar() async {
-      ref
-          .read(panelsViewStateProvider(SidebarMode.messages).notifier)
-          .clear(panel: WindowPanel.right);
-    }
 
     return ColoredBox(
       color: colors.surfaces.canvas,
@@ -150,7 +142,11 @@ class RecoveredAttachmentSidebarView extends ConsumerWidget {
               child: PushButton(
                 controlSize: ControlSize.large,
                 secondary: true,
-                onPressed: closeSidebar,
+                onPressed: () {
+                  ref
+                      .read(panelActionsProvider.notifier)
+                      .closeActiveRightPanel();
+                },
                 child: const Text('Close sidebar'),
               ),
             ),

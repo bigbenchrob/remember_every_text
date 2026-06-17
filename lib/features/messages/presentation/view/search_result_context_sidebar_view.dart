@@ -6,8 +6,6 @@ import 'package:macos_ui/macos_ui.dart';
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
-import '../../../../essentials/navigation/domain/navigation_constants.dart';
-import '../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../essentials/navigation/feature_level_providers.dart';
 import '../../application/message_evidence/message_evidence_spine_provider.dart';
 import '../../domain/message_evidence/message_evidence_scope.dart';
@@ -43,12 +41,6 @@ class SearchResultContextSidebarView extends ConsumerWidget {
     final skeletonAsync = ref.watch(
       messageEvidenceTimelineSkeletonProvider(scope: evidenceScope),
     );
-
-    Future<void> closeSidebar() async {
-      ref
-          .read(panelsViewStateProvider(SidebarMode.messages).notifier)
-          .clear(panel: WindowPanel.right);
-    }
 
     return ColoredBox(
       color: colors.surfaces.canvas,
@@ -126,7 +118,9 @@ class SearchResultContextSidebarView extends ConsumerWidget {
             child: PushButton(
               controlSize: ControlSize.large,
               secondary: true,
-              onPressed: closeSidebar,
+              onPressed: () {
+                ref.read(panelActionsProvider.notifier).closeActiveRightPanel();
+              },
               child: const Text('Close sidebar'),
             ),
           ),

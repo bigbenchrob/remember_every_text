@@ -388,6 +388,24 @@ void main() {
     });
 
     test(
+      'Message presentation invokes panel actions instead of panel stack state',
+      () async {
+        final offenders = await _findMessagePresentationPanelStateOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'Message presentation widgets may render local close controls, '
+              'but panel-stack mutation belongs to the navigation action '
+              'boundary. Use panelActionsProvider instead of '
+              'panelsViewStateProvider or WindowPanel in message presentation.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
+    test(
       'Retained archive metadata provider stays behind retention boundaries',
       () async {
         final offenders = await _findRetainedArchiveMetadataProviderOffenders();
@@ -5749,6 +5767,25 @@ Future<List<String>> _findContactHeroOverlayDatabaseOffenders() async {
       uncommented.contains('ref.invalidate(unifiedPickerSectionsProvider')) {
     offenders.add('$filePath handles contact overlay action details directly');
   }
+  return offenders..sort();
+}
+
+Future<List<String>> _findMessagePresentationPanelStateOffenders() async {
+  final files = await _collectDartFiles((path) {
+    return path.startsWith('lib/features/messages/presentation/') &&
+        !path.endsWith('.g.dart') &&
+        !path.endsWith('.freezed.dart');
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final content = await File(filePath).readAsString();
+    if (content.contains('panelsViewStateProvider') ||
+        content.contains('WindowPanel.')) {
+      offenders.add(filePath);
+    }
+  }
+
   return offenders..sort();
 }
 

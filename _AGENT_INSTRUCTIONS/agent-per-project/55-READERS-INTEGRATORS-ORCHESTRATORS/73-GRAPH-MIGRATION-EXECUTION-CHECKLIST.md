@@ -2592,6 +2592,12 @@ criteria.
     tripwire for the contact conversation section now also blocks direct
     center-panel navigation imports and `MessagesSpec.forConversation`
     construction inside the widget.
+  - Moved message right-panel close controls behind the navigation-owned
+    `panelActionsProvider`. Search-result context and recovered-attachment
+    message presentation views no longer mutate `panelsViewStateProvider`
+    directly; they render the local close control and invoke a typed navigation
+    action. Added an architecture tripwire preventing message presentation code
+    from directly naming `panelsViewStateProvider` or `WindowPanel`.
 
 ### Exit Criteria
 
