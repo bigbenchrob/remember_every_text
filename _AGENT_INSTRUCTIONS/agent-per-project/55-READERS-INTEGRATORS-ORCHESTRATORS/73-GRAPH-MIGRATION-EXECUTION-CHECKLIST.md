@@ -2557,6 +2557,12 @@ criteria.
     verifier in this environment because the custom_lint analyzer plugin fails
     to start with a local dynamic-library/AOT snapshot error before reporting
     project diagnostics.
+  - Added an architecture tripwire preventing retired contact name variants
+    (`shortName`, `short_name`, `nickname`, `nameMode`, `name_mode`) from
+    re-entering active app-facing identity code. The retained overlay
+    `virtual_participants.short_name` schema column remains the only allowed
+    active reference, and the single user-authored display-name path remains
+    `participant_overrides.display_name_override`.
 
 ### Exit Criteria
 

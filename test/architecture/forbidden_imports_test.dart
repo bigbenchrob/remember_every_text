@@ -58,6 +58,10 @@ const Set<String> _retainedOverlayIdentityBridgeAllowedFiles = {
   'lib/features/messages/infrastructure/repositories/message_overlay_identity_bridge_repository.dart',
 };
 
+const Set<String> _retiredContactNameVariantAllowedFiles = {
+  'lib/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart',
+};
+
 const Set<String> _rawPrintAllowedFiles = {'lib/main.dart'};
 
 const List<String> _retiredImportMigrationExecutionSymbols = <String>[
@@ -1264,6 +1268,22 @@ void main() {
         );
       },
     );
+
+    test('Retired contact name variants stay out of active identity', () async {
+      final offenders = await _findRetiredContactNameVariantOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_retiredContactNameVariantAllowedFiles.toList()..sort()),
+        reason:
+            'Short-name, nickname, and name-mode identity variants are retired '
+            'as app-facing display identity concepts. The only user-authored '
+            'contact name override is participant_overrides.display_name_override. '
+            'Physical retained schema compatibility may remain in the overlay '
+            'database only.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
 
     test('Contact overlay stores stay feature-boundary owned', () {
       const retiredProviderPaths = <String>[
@@ -5288,6 +5308,29 @@ _findContactDisplayNameOverrideActionStorageOffenders() async {
     offenders.add('$filePath constructs overlay display-name storage directly');
   }
   return offenders..sort();
+}
+
+Future<List<String>> _findRetiredContactNameVariantOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final retiredNameVariantPattern = RegExp(
+    r'\b(shortName|short_name|nickname|nameMode|name_mode)\b',
+  );
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (retiredNameVariantPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
 }
 
 Future<List<String>> _findFullDiskAccessBoundaryOffenders() async {
