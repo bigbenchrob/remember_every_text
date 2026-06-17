@@ -9,6 +9,7 @@ import '../../conversation_graph/application/orchestrators/conversation_graph_bu
 import '../application/onboarding_dev_panel_actions_provider.dart';
 import '../application/onboarding_environment_report_provider.dart';
 import '../application/onboarding_gate_provider.dart';
+import '../application/onboarding_overlay_actions_provider.dart';
 import '../application/onboarding_readiness_actions_provider.dart';
 import '../domain/onboarding_environment_report.dart';
 import '../domain/onboarding_status.dart';
@@ -489,8 +490,10 @@ class _DevFdaContent extends ConsumerWidget {
         ),
         const SizedBox(height: 24),
         FilledButton(
-          onPressed: () {
-            ref.read(onboardingGateProvider.notifier).openFdaSettings();
+          onPressed: () async {
+            await ref
+                .read(onboardingOverlayActionsProvider.notifier)
+                .openFullDiskAccessSettings();
           },
           style: FilledButton.styleFrom(
             backgroundColor: colors.buttons.primaryBackground,
@@ -536,9 +539,9 @@ class _DevWelcomeContent extends ConsumerWidget {
         ),
         const SizedBox(height: 32),
         FilledButton(
-          onPressed: () {
-            ref
-                .read(onboardingGateProvider.notifier)
+          onPressed: () async {
+            await ref
+                .read(onboardingOverlayActionsProvider.notifier)
                 .startImportAndGraphBuild();
           },
           style: FilledButton.styleFrom(
@@ -711,7 +714,7 @@ class _DevCompleteContent extends ConsumerWidget {
         ],
         FilledButton(
           onPressed: () {
-            ref.read(onboardingGateProvider.notifier).dismiss();
+            ref.read(onboardingOverlayActionsProvider.notifier).dismiss();
           },
           style: FilledButton.styleFrom(
             backgroundColor: colors.buttons.primaryBackground,

@@ -2700,6 +2700,11 @@ criteria.
     for rendering, but Full Disk Access, re-check, import, abort, and dismiss
     intents now cross an application action boundary. Added a tripwire
     preventing direct gate-notifier calls from returning to the overlay.
+  - Routed onboarding dev-panel gate lifecycle buttons through
+    `OnboardingOverlayActions` as well. The dev panel still observes gate state
+    for diagnostic rendering, but Open Settings, start import, and dismiss
+    callbacks no longer call the gate notifier directly. Extended the dev-panel
+    tripwire to guard that boundary.
 
 ### Exit Criteria
 
