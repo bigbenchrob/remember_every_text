@@ -1769,6 +1769,21 @@ void main() {
       );
     });
 
+    test('Contact message scope toggle uses action boundary', () async {
+      final offenders =
+          await _findContactMessageScopeToggleActionBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'ContactMessageScopeToggleWidget may render current/recovered '
+            'scope controls, but cassette-indexed sidebar intent construction '
+            'and dispatch belong behind ContactMessageScopeActions.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Conversation favourites stay storage agnostic', () async {
       final offenders = await _findConversationFavouritesStorageOffenders();
 
@@ -4799,6 +4814,32 @@ Future<List<String>> _findHandleFilterActionBoundaryOffenders() async {
   }
   if (uncommented.contains('sidebarActionDispatcherProvider.notifier')) {
     offenders.add('$filePath dispatches sidebar follow-up actions directly');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>>
+_findContactMessageScopeToggleActionBoundaryOffenders() async {
+  const filePath =
+      'lib/features/contacts/application/sidebar_cassette_spec/widget_builders/contact_message_scope_toggle_widget.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final offenders = <String>[];
+  const forbiddenTokens = <String>[
+    'sidebarActionDispatcherProvider',
+    'SidebarActionDispatchContext',
+    'ContactMessageScopeChanged',
+  ];
+
+  for (final token in forbiddenTokens) {
+    if (uncommented.contains(token)) {
+      offenders.add('$filePath uses $token');
+    }
   }
 
   return offenders..sort();

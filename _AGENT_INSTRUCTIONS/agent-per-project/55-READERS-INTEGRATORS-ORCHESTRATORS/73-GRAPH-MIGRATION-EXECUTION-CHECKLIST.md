@@ -2763,6 +2763,10 @@ criteria.
   `MessageHeatmapNavigationActions`. The heatmap widget now renders global and
   contact heatmaps, while month-focus and all-messages/by-conversation sidebar
   intent construction live in the messages application boundary.
+- Moved contact message-scope toggle navigation behind
+  `ContactMessageScopeActions`. The segmented control now renders current vs
+  recovered scope state and reports the selected scope; cassette-indexed
+  sidebar intent construction stays in the contacts application boundary.
 
 ### Exit Criteria
 
