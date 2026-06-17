@@ -2667,6 +2667,10 @@ criteria.
     invokes a typed action; reset-service calls and environment recheck
     sequencing no longer live in presentation. Added a tripwire preventing
     those details from returning to the dev panel.
+  - Routed grouped contact picker retry refresh through the existing contact
+    sidebar refresh action provider. The picker continues to watch its typed
+    view model and render retry UI, but provider invalidation is no longer
+    owned by presentation. Added a focused tripwire for this picker boundary.
 
 ### Exit Criteria
 

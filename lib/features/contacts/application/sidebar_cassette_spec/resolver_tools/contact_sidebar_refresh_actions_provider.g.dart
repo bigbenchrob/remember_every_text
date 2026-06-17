@@ -7,7 +7,7 @@ part of 'contact_sidebar_refresh_actions_provider.dart';
 // **************************************************************************
 
 String _$contactSidebarRefreshActionsHash() =>
-    r'6d8a4abccb305eb92baad1de611b0ef622710ea4';
+    r'6ad2566765842548717fe4b3ce0ba097c426d516';
 
 /// See also [ContactSidebarRefreshActions].
 @ProviderFor(ContactSidebarRefreshActions)

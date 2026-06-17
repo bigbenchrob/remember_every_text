@@ -456,6 +456,20 @@ void main() {
       },
     );
 
+    test('Grouped contact selector uses refresh action boundary', () async {
+      final offenders = await _findGroupedContactSelectorRefreshOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Grouped contact selector may render retry controls and watch '
+            'picker view models, but refresh invalidation belongs behind the '
+            'contact sidebar refresh action boundary.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Chats view model dispatches sidebar actions', () async {
       final offenders = await _findChatsViewModelFlowMutationOffenders();
 
@@ -6104,6 +6118,24 @@ Future<List<String>> _findSidebarWidgetInvalidationOffenders() async {
         uncommented.contains('widget.ref.invalidate(')) {
       offenders.add(filePath);
     }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findGroupedContactSelectorRefreshOffenders() async {
+  const filePath =
+      'lib/features/contacts/presentation/widgets/grouped_contact_selector.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final offenders = <String>[];
+  if (uncommented.contains('ref.invalidate(') ||
+      uncommented.contains('widget.ref.invalidate(')) {
+    offenders.add('$filePath owns picker refresh invalidation directly');
   }
 
   return offenders..sort();

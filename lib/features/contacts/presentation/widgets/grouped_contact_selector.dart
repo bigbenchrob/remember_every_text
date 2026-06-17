@@ -10,6 +10,7 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
 
+import '../../application/sidebar_cassette_spec/resolver_tools/contact_sidebar_refresh_actions_provider.dart';
 import '../../application/sidebar_cassette_spec/resolver_tools/filtered_picker_sections_provider.dart';
 import '../../application/sidebar_cassette_spec/resolver_tools/picker_filter_mode_provider.dart';
 import '../../application/sidebar_cassette_spec/resolver_tools/unified_picker_sections_provider.dart';
@@ -114,7 +115,9 @@ class FullContactPicker extends ConsumerWidget {
           error: (error, _) => _GroupedSelectorError(
             message: '$error',
             onRetry: () {
-              ref.invalidate(filteredPickerSectionsProvider);
+              ref
+                  .read(contactSidebarRefreshActionsProvider.notifier)
+                  .refreshFilteredPickerSections();
             },
           ),
         );
