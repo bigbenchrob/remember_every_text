@@ -2581,6 +2581,10 @@ criteria.
     `limit` to `hydrationLimit`. This preserves the full selected logical scope
     invariant by making the bounded value explicitly local to visible-row
     hydration, including larger month-jump hydration windows.
+  - Added an architecture tripwire that scans the message evidence spine for
+    selected-scope cap regressions such as generic `limit` parameters,
+    `LIMIT 500`, or `take(500)`. Bounded values in the spine must remain
+    explicit hydration windows.
 
 ### Exit Criteria
 

@@ -1259,6 +1259,21 @@ void main() {
       );
     });
 
+    test('Message evidence spine keeps limits scoped to hydration', () async {
+      final offenders = await _findMessageEvidenceScopeLimitOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Timeline-like message evidence scopes must preserve the full '
+            'logical selected message universe. Bounded values in the message '
+            'evidence spine must be explicit hydration windows, not selected '
+            'scope limits.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Handle lens review actions use handles feature boundary', () async {
       final offenders = await _findHandleLensOverlayDatabaseOffenders();
 
@@ -4019,6 +4034,33 @@ Future<List<String>> _findRetiredMessageTimelineOffenders() async {
   }
 
   return offenders.toList()..sort();
+}
+
+Future<List<String>> _findMessageEvidenceScopeLimitOffenders() async {
+  const filePath =
+      'lib/features/messages/application/message_evidence/message_evidence_spine_provider.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final source = await file.readAsString();
+  final uncommented = _stripComments(source);
+  final offenders = <String>[];
+  const disallowedPatterns = <String>[
+    r'\bint\s+limit\s*=',
+    r'\blimit\s*:\s*500\b',
+    r'\bLIMIT\s+500\b',
+    r'\btake\s*\(\s*500\s*\)',
+  ];
+
+  for (final pattern in disallowedPatterns) {
+    if (RegExp(pattern, caseSensitive: false).hasMatch(uncommented)) {
+      offenders.add('$filePath matches /$pattern/');
+    }
+  }
+
+  return offenders..sort();
 }
 
 Future<List<String>> _findHandleLensOverlayDatabaseOffenders() async {
