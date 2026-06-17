@@ -2749,6 +2749,11 @@ criteria.
   `RecoveredMessageNavigationActions`. Recovered heatmaps and no-handle
   sidebar buttons now render controls only; sidebar intent construction and
   dispatch live in the messages application boundary.
+- Moved contact-derived conversation-card selection behind
+  `ContactConversationNavigationActions`. The contact conversation section now
+  renders display-ready signature cards and reports selected conversation ids;
+  sidebar intent construction and dispatch stay in the messages application
+  boundary.
 
 ### Exit Criteria
 

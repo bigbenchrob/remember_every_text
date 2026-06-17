@@ -1311,6 +1311,21 @@ void main() {
       );
     });
 
+    test('Contact conversation section uses action boundary', () async {
+      final offenders =
+          await _findContactConversationSectionActionBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'ContactGraphConversationSection may render conversation signature '
+            'cards and report selected ids, but sidebar intent construction '
+            'and dispatch belong behind ContactConversationNavigationActions.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test(
       'Messages heatmap widget uses contact context identity boundary',
       () async {
@@ -4248,6 +4263,28 @@ _findContactConversationSectionDisplayBoundaryOffenders() async {
     'MessagesSpec.forConversation',
     'sidebarFlowProvider',
   ];
+  for (final token in forbiddenTokens) {
+    if (uncommented.contains(token)) {
+      offenders.add('$filePath uses $token');
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>>
+_findContactConversationSectionActionBoundaryOffenders() async {
+  const filePath =
+      'lib/features/messages/presentation/widgets/contact_graph_conversation_section.dart';
+  final source = await File(filePath).readAsString();
+  final uncommented = _stripComments(source);
+  final offenders = <String>[];
+  const forbiddenTokens = <String>[
+    'sidebarActionDispatcherProvider',
+    'SidebarActionDispatchContext',
+    'ContactConversationSelected',
+  ];
+
   for (final token in forbiddenTokens) {
     if (uncommented.contains(token)) {
       offenders.add('$filePath uses $token');
