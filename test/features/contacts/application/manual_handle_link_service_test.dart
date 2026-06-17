@@ -5,6 +5,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'package:remember_this_text/features/contacts/application/services/manual_handle_link_service.dart';
+import 'package:remember_this_text/features/contacts/feature_level_providers.dart';
+import 'package:remember_this_text/features/handles/feature_level_providers.dart';
 
 void main() {
   group('ManualHandleLinkService', () {
@@ -43,6 +45,61 @@ void main() {
       expect(overlayLink!.handleId, handleId);
       expect(overlayLink.participantId, participantId);
     });
+
+    test(
+      'linkHandleToParticipant invalidates affected contact and handle reads',
+      () async {
+        const handleId = 8796093022212;
+        const participantId = 42;
+        var handlesReadCount = 0;
+        var displayNameReadCount = 0;
+
+        final container = ProviderContainer(
+          overrides: [
+            overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
+            handlesForContactProvider(contactId: participantId).overrideWith((
+              ref,
+            ) async {
+              handlesReadCount += 1;
+              return const [];
+            }),
+            handleDisplayNameProvider(handleId: handleId).overrideWith((
+              ref,
+            ) async {
+              displayNameReadCount += 1;
+              return 'Before';
+            }),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(
+          handlesForContactProvider(contactId: participantId).future,
+        );
+        await container.read(
+          handleDisplayNameProvider(handleId: handleId).future,
+        );
+
+        final service = container.read(
+          manualHandleLinkServiceProvider.notifier,
+        );
+        final result = await service.linkHandleToParticipant(
+          handleId: handleId,
+          participantId: participantId,
+        );
+        expect(result.isRight(), isTrue);
+
+        await container.read(
+          handlesForContactProvider(contactId: participantId).future,
+        );
+        await container.read(
+          handleDisplayNameProvider(handleId: handleId).future,
+        );
+
+        expect(handlesReadCount, 2);
+        expect(displayNameReadCount, 2);
+      },
+    );
 
     test(
       'linkHandleToParticipant preserves different existing manual link',
@@ -140,6 +197,41 @@ void main() {
 
       final overlayLink = await overlayDb.getHandleOverride(handleId);
       expect(overlayLink, isNull);
+    });
+
+    test('unlinkHandle invalidates previous contact handle reads', () async {
+      const handleId = 8796093022212;
+      const participantId = 42;
+      var handlesReadCount = 0;
+
+      await overlayDb.setHandleOverride(handleId, participantId);
+
+      final container = ProviderContainer(
+        overrides: [
+          overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
+          handlesForContactProvider(contactId: participantId).overrideWith((
+            ref,
+          ) async {
+            handlesReadCount += 1;
+            return const [];
+          }),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(
+        handlesForContactProvider(contactId: participantId).future,
+      );
+
+      final service = container.read(manualHandleLinkServiceProvider.notifier);
+      final result = await service.unlinkHandle(handleId: handleId);
+      expect(result.isRight(), isTrue);
+
+      await container.read(
+        handlesForContactProvider(contactId: participantId).future,
+      );
+
+      expect(handlesReadCount, 2);
     });
 
     test('unlinkHandle returns error when no manual link exists', () async {
