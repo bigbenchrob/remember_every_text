@@ -2675,6 +2675,10 @@ criteria.
     panel action boundary. The overlay now renders the parked/cancel affordance
     and invokes `PanelActions`; direct panel-stack mutation remains in
     navigation application state. Added a focused tripwire for the overlay.
+  - Tightened the contact favourite read-provider contract so it names
+    `ContactFavoriteActions` as the owner of favourite mutation invalidation,
+    rather than preserving generic caller-owned invalidation wording. Added a
+    tripwire preventing that stale contract language from returning.
 
 ### Exit Criteria
 

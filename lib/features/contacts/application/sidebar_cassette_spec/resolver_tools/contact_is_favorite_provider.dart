@@ -9,7 +9,8 @@ part 'contact_is_favorite_provider.g.dart';
 /// Whether [participantId] is currently in the user's favorites.
 ///
 /// Reactivity is driven by explicit invalidation: after add/remove mutations
-/// the caller must `ref.invalidate(contactIsFavoriteProvider(participantId))`.
+/// `ContactFavoriteActions` invalidates this provider and dependent picker
+/// projections.
 @riverpod
 Future<bool> contactIsFavorite(Ref ref, {required int participantId}) async {
   final repository = await ref.watch(favoriteContactsRepositoryProvider.future);

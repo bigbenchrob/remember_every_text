@@ -1467,6 +1467,24 @@ void main() {
       },
     );
 
+    test(
+      'Contact favourite invalidation contract names action owner',
+      () async {
+        final offenders =
+            await _findContactFavoriteInvalidationContractOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'Contact favourite read providers should not document generic '
+              'caller-owned invalidation. Mutations and dependent read refresh '
+              'belong to ContactFavoriteActions.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
     test('Retired contact name variants stay out of active identity', () async {
       final offenders = await _findRetiredContactNameVariantOffenders();
 
@@ -5765,6 +5783,24 @@ _findContactDisplayNameOverrideActionStorageOffenders() async {
     offenders.add('$filePath constructs overlay display-name storage directly');
   }
   return offenders..sort();
+}
+
+Future<List<String>> _findContactFavoriteInvalidationContractOffenders() async {
+  const filePath =
+      'lib/features/contacts/application/sidebar_cassette_spec/resolver_tools/contact_is_favorite_provider.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final source = await file.readAsString();
+  if (source.contains('caller must `ref.invalidate') ||
+      source.contains('caller must ref.invalidate') ||
+      source.contains('caller-owned invalidation')) {
+    return <String>['$filePath documents caller-owned favourite invalidation'];
+  }
+
+  return const <String>[];
 }
 
 Future<List<String>> _findRetiredContactNameVariantOffenders() async {
