@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
+import '../../application/sidebar_cassette_spec/resolver_tools/picker_filter_actions_provider.dart';
 import '../../application/sidebar_cassette_spec/resolver_tools/picker_filter_mode_provider.dart';
 
 /// Segmented control that toggles the contact picker between
@@ -39,7 +40,7 @@ class PickerFilterToggle extends ConsumerWidget {
           },
           onValueChanged: (value) {
             if (value != null) {
-              ref.read(pickerFilterProvider.notifier).setMode(value);
+              ref.read(pickerFilterActionsProvider.notifier).selectMode(value);
             }
           },
         ),

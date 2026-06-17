@@ -2710,6 +2710,11 @@ criteria.
     mode mutation and associated cleanup now cross a navigation action
     boundary. Added a tripwire preventing direct active-mode mutation from
     returning to the toolbar widget.
+  - Moved contact picker filter mutation behind `PickerFilterActions`. The
+    segmented control still renders the selected filter mode, but persisted
+    filter selection now crosses a contact application action boundary. Added a
+    tripwire preventing direct picker-filter notifier mutation from returning
+    to the presentation widget.
 
 ### Exit Criteria
 

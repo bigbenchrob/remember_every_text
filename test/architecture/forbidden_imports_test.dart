@@ -1651,6 +1651,21 @@ void main() {
       );
     });
 
+    test('Contact picker filter toggle uses action boundary', () async {
+      final offenders = await _findPickerFilterToggleActionBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'PickerFilterToggle may render the current filter mode, but '
+            'persisted picker-filter mutation should cross '
+            'PickerFilterActions rather than calling the state provider '
+            'notifier directly.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Conversation favourites stay storage agnostic', () async {
       final offenders = await _findConversationFavouritesStorageOffenders();
 
@@ -4518,6 +4533,23 @@ Future<List<String>> _findPickerFilterModeStorageOffenders() async {
       uncommented.contains('writeOverlaySetting')) {
     offenders.add('$filePath handles overlay settings storage directly');
   }
+  return offenders..sort();
+}
+
+Future<List<String>> _findPickerFilterToggleActionBoundaryOffenders() async {
+  const filePath =
+      'lib/features/contacts/presentation/widgets/picker_filter_toggle.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final offenders = <String>[];
+  if (uncommented.contains('pickerFilterProvider.notifier')) {
+    offenders.add('$filePath mutates picker filter state directly');
+  }
+
   return offenders..sort();
 }
 
