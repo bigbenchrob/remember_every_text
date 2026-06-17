@@ -1,0 +1,30 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'message_heatmap_navigation_actions_provider.dart';
+
+// **************************************************************************
+// RiverpodGenerator
+// **************************************************************************
+
+String _$messageHeatmapNavigationActionsHash() =>
+    r'6670d89c472517d9e512f71b869f7c65b658ceb8';
+
+/// See also [MessageHeatmapNavigationActions].
+@ProviderFor(MessageHeatmapNavigationActions)
+final messageHeatmapNavigationActionsProvider =
+    AutoDisposeAsyncNotifierProvider<
+      MessageHeatmapNavigationActions,
+      void
+    >.internal(
+      MessageHeatmapNavigationActions.new,
+      name: r'messageHeatmapNavigationActionsProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$messageHeatmapNavigationActionsHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+typedef _$MessageHeatmapNavigationActions = AutoDisposeAsyncNotifier<void>;
+// ignore_for_file: type=lint
+// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

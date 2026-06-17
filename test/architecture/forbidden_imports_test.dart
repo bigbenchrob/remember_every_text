@@ -4345,11 +4345,24 @@ _findMessagesHeatmapWidgetContactContextBoundaryOffenders() async {
   const forbiddenImports = <String>{
     '../../../../../essentials/conversation_graph/application/contacts/contact_graph_provider.dart',
   };
-
-  return [
+  final offenders = <String>[
     for (final importTarget in imports)
       if (forbiddenImports.contains(importTarget)) '$filePath -> $importTarget',
-  ]..sort();
+  ];
+  const forbiddenTokens = <String>[
+    'sidebarActionDispatcherProvider',
+    'SidebarActionDispatchContext',
+    'HeatMapMonthFocused',
+    'ContactProjectionChanged',
+  ];
+
+  for (final token in forbiddenTokens) {
+    if (uncommented.contains(token)) {
+      offenders.add('$filePath uses $token');
+    }
+  }
+
+  return offenders..sort();
 }
 
 Future<List<String>> _findConversationBrowserSpecRouteOffenders() async {

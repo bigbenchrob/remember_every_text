@@ -25,6 +25,7 @@ export './application/sidebar_cassette_spec/payloads/recovered_unlinked_navigato
 export './application/sidebar_cassette_spec/rendering/messages_cassette_body_builder.dart';
 export './application/sidebar_cassette_spec/resolver_tools/contact_conversation_navigation_actions_provider.dart';
 export './application/sidebar_cassette_spec/resolver_tools/conversation_navigation_actions_provider.dart';
+export './application/sidebar_cassette_spec/resolver_tools/message_heatmap_navigation_actions_provider.dart';
 export './application/sidebar_cassette_spec/resolver_tools/prewarm_contact_messages_provider.dart';
 export './application/sidebar_cassette_spec/resolver_tools/recovered_message_navigation_actions_provider.dart';
 export './application/user_metadata/message_overlay_controller.dart';

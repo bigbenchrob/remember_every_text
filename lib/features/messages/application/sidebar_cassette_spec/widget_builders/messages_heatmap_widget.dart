@@ -6,7 +6,6 @@ import 'package:macos_ui/macos_ui.dart';
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
-import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../../essentials/sidebar/application/sidebar_cassette_sectioning.dart';
 import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart';
@@ -19,6 +18,7 @@ import '../../../presentation/widgets/contact_graph_conversation_section.dart';
 import '../resolver_tools/contact_context_identity.dart';
 import '../resolver_tools/contact_timeline_provider.dart';
 import '../resolver_tools/global_messages_heatmap_provider.dart';
+import '../resolver_tools/message_heatmap_navigation_actions_provider.dart';
 import '../resolver_tools/message_heatmap_refresh_actions_provider.dart';
 
 /// Widget builder for the messages heatmap cassette.
@@ -97,15 +97,10 @@ class _GlobalHeatmapContent extends ConsumerWidget {
         final isLastMonth =
             year == timeline.lastMessageDate.year &&
             month == timeline.lastMessageDate.month;
-        final monthAnchor = isLastMonth ? null : DateTime(year, month, 1);
-
         ref
-            .read(sidebarActionDispatcherProvider.notifier)
-            .dispatch(
-              intent: HeatMapMonthFocused(monthAnchor: monthAnchor),
-              context: const SidebarActionDispatchContext(
-                sidebarMode: SidebarMode.messages,
-              ),
+            .read(messageHeatmapNavigationActionsProvider.notifier)
+            .focusMonth(
+              monthAnchor: isLastMonth ? null : DateTime(year, month, 1),
             );
       },
     );
@@ -155,15 +150,10 @@ class _ContactEvidenceContent extends ConsumerWidget {
             };
 
             ref
-                .read(sidebarActionDispatcherProvider.notifier)
-                .dispatch(
-                  intent: ContactProjectionChanged(
-                    contactId: contactId,
-                    projection: projection,
-                  ),
-                  context: const SidebarActionDispatchContext(
-                    sidebarMode: SidebarMode.messages,
-                  ),
+                .read(messageHeatmapNavigationActionsProvider.notifier)
+                .selectContactProjection(
+                  contactId: contactId,
+                  projection: projection,
                 );
           },
         ),
@@ -261,15 +251,10 @@ class _ContactAllMessagesHeatmap extends ConsumerWidget {
             month == timeline.lastMessageDate.month;
 
         ref
-            .read(sidebarActionDispatcherProvider.notifier)
-            .dispatch(
-              intent: HeatMapMonthFocused(
-                contactId: contactId,
-                monthAnchor: isLastMonth ? null : DateTime(year, month, 1),
-              ),
-              context: const SidebarActionDispatchContext(
-                sidebarMode: SidebarMode.messages,
-              ),
+            .read(messageHeatmapNavigationActionsProvider.notifier)
+            .focusMonth(
+              contactId: contactId,
+              monthAnchor: isLastMonth ? null : DateTime(year, month, 1),
             );
       },
     );

@@ -2759,6 +2759,10 @@ criteria.
   renders favourite/normal signature rows and reports selected conversation ids;
   sidebar intent construction and dispatch stay in the messages application
   boundary.
+- Moved message heatmap month/projection navigation behind
+  `MessageHeatmapNavigationActions`. The heatmap widget now renders global and
+  contact heatmaps, while month-focus and all-messages/by-conversation sidebar
+  intent construction live in the messages application boundary.
 
 ### Exit Criteria
 
