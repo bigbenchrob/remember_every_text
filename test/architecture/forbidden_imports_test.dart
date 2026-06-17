@@ -1508,6 +1508,20 @@ void main() {
       );
     });
 
+    test('Stray handle cassettes use handles action boundary', () async {
+      final offenders = await _findStrayHandleCassetteActionBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Stray handle sidebar cassettes may render open/filter/review '
+            'controls, but sidebar intent construction, dispatch, and handle '
+            'normalization belong behind StrayHandleSidebarActions.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test(
       'Contact application/presentation uses the contacts feature boundary',
       () async {
@@ -6393,6 +6407,42 @@ Future<List<String>> _findHandleFilterManualLinkBoundaryOffenders() async {
   final offenders = <String>[];
   if (uncommented.contains('ref.invalidate(')) {
     offenders.add('$filePath invalidates provider reads after unlink');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findStrayHandleCassetteActionBoundaryOffenders() async {
+  const filePaths = <String>[
+    'lib/features/handles/application/sidebar_cassette_spec/widget_builders/stray_handles_review_cassette.dart',
+    'lib/features/handles/application/sidebar_cassette_spec/widget_builders/stray_handles_mode_switcher_cassette.dart',
+    'lib/features/handles/application/sidebar_cassette_spec/widget_builders/stray_handles_type_switcher_cassette.dart',
+  ];
+  const forbiddenTokens = <String>[
+    'sidebarActionDispatcherProvider',
+    'SidebarActionDispatcher',
+    'SidebarActionIntent',
+    'StrayHandleOpened',
+    'StrayHandleDismissed',
+    'StrayHandleRestored',
+    'StrayHandleModeChanged',
+    'StrayHandleFilterChanged',
+    'normalizeHandleIdentifier',
+  ];
+
+  final offenders = <String>[];
+  for (final filePath in filePaths) {
+    final file = File(filePath);
+    if (!file.existsSync()) {
+      continue;
+    }
+
+    final uncommented = _stripComments(await file.readAsString());
+    for (final token in forbiddenTokens) {
+      if (uncommented.contains(token)) {
+        offenders.add('$filePath uses $token');
+      }
+    }
   }
 
   return offenders..sort();

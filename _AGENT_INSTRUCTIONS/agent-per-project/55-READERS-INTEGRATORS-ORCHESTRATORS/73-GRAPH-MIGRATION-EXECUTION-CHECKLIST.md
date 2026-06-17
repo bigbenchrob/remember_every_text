@@ -2741,6 +2741,10 @@ criteria.
   unavailable attachment controls, but user recovery-priority writes now cross
   the attachments feature action boundary rather than invoking the archive
   service directly from presentation.
+- Moved stray-handle sidebar open/filter/mode/dismiss/restore intents behind
+  `StrayHandleSidebarActions`. The handle sidebar cassettes now render review
+  controls and report typed UI events; sidebar dispatch, intent construction,
+  and handle normalization are owned by the handles application boundary.
 
 ### Exit Criteria
 

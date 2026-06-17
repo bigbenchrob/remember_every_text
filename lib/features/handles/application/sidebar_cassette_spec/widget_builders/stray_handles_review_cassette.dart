@@ -5,14 +5,11 @@ import 'package:intl/intl.dart';
 
 import '../../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../../config/theme/theme_typography.dart';
-import '../../../../../../essentials/navigation/domain/sidebar_mode.dart';
-import '../../../../../../essentials/sidebar/application/sidebar_action_dispatcher.dart';
-import '../../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../../../../essentials/sidebar/feature_level_providers.dart';
 import '../../../../sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../domain/spec_classes/handles_cassette_spec.dart';
-import '../../../domain/utilities/handle_normalizer.dart';
 import '../../../feature_level_providers.dart';
+import '../resolver_tools/stray_handle_sidebar_actions_provider.dart';
 
 /// Sidebar cassette that displays a scrollable list of stray handles,
 /// filtered by phone numbers or email addresses.
@@ -47,7 +44,7 @@ class StrayHandlesReviewCassette extends HookConsumerWidget {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
-    final dispatcher = ref.read(sidebarActionDispatcherProvider.notifier);
+    final actions = ref.read(strayHandleSidebarActionsProvider.notifier);
 
     // Select provider based on mode
     final asyncHandles = switch (mode) {
@@ -101,12 +98,12 @@ class StrayHandlesReviewCassette extends HookConsumerWidget {
               handle: handle,
               mode: mode,
               isSelected: handle.handleId == activeHandleId,
-              onTap: () => _openHandleLens(dispatcher, handle.handleId),
+              onTap: () => actions.openHandleLens(handleId: handle.handleId),
               onDismiss: mode != StrayHandleMode.dismissed
-                  ? () => _dismissHandle(dispatcher, handle)
+                  ? () => actions.dismissHandle(handle)
                   : null,
               onRestore: mode == StrayHandleMode.dismissed
-                  ? () => _restoreHandle(dispatcher, handle)
+                  ? () => actions.restoreHandle(handle)
                   : null,
             );
           },
@@ -166,44 +163,6 @@ class StrayHandlesReviewCassette extends HookConsumerWidget {
     StrayHandleMode.dismissed =>
       'No dismissed items.\nItems you dismiss will appear here.',
   };
-
-  Future<void> _openHandleLens(
-    SidebarActionDispatcher dispatcher,
-    int handleId,
-  ) async {
-    await dispatcher.dispatch(
-      intent: StrayHandleOpened(handleId: handleId),
-      context: const SidebarActionDispatchContext(
-        sidebarMode: SidebarMode.messages,
-      ),
-    );
-  }
-
-  Future<void> _dismissHandle(
-    SidebarActionDispatcher dispatcher,
-    StrayHandleSummary handle,
-  ) async {
-    final normalizedHandle = normalizeHandleIdentifier(handle.handleValue);
-    await dispatcher.dispatch(
-      intent: StrayHandleDismissed(normalizedHandle: normalizedHandle),
-      context: const SidebarActionDispatchContext(
-        sidebarMode: SidebarMode.messages,
-      ),
-    );
-  }
-
-  Future<void> _restoreHandle(
-    SidebarActionDispatcher dispatcher,
-    StrayHandleSummary handle,
-  ) async {
-    final normalizedHandle = normalizeHandleIdentifier(handle.handleValue);
-    await dispatcher.dispatch(
-      intent: StrayHandleRestored(normalizedHandle: normalizedHandle),
-      context: const SidebarActionDispatchContext(
-        sidebarMode: SidebarMode.messages,
-      ),
-    );
-  }
 }
 
 class _StrayHandleRow extends ConsumerWidget {
