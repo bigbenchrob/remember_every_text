@@ -6,7 +6,7 @@ import '../../../config/theme/colors/theme_colors.dart';
 import '../../../config/theme/theme_typography.dart';
 import '../../conversation_graph/application/conversation_graph_build_controller_provider.dart';
 import '../../conversation_graph/application/orchestrators/conversation_graph_build_orchestrator.dart';
-import '../application/message_data_reset_service.dart';
+import '../application/onboarding_dev_panel_actions_provider.dart';
 import '../application/onboarding_environment_report_provider.dart';
 import '../application/onboarding_gate_provider.dart';
 import '../domain/onboarding_environment_report.dart';
@@ -97,11 +97,8 @@ class OnboardingDevPanel extends ConsumerWidget {
                       ? null
                       : () async {
                           await ref
-                              .read(messageDataResetServiceProvider)
-                              .resetDerivedData();
-                          // Re-evaluate the onboarding gate after DBs are deleted.
-                          ref.invalidate(onboardingGateProvider);
-                          ref.invalidate(onboardingEnvironmentReportProvider);
+                              .read(onboardingDevPanelActionsProvider.notifier)
+                              .resetDerivedDataAndRefreshEnvironment();
                         },
                   child: Text(
                     'Reset DBs & Re-trigger',

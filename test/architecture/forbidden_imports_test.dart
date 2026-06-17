@@ -2369,6 +2369,20 @@ void main() {
       );
     });
 
+    test('Onboarding dev panel reset uses action boundary', () async {
+      final offenders = await _findOnboardingDevPanelActionBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Onboarding dev panel may render reset/refresh controls, but reset '
+            'sequencing and provider refresh ownership belong behind an '
+            'application action boundary.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Full Disk Access uses access boundary', () async {
       final offenders = await _findFullDiskAccessBoundaryOffenders();
 
@@ -5671,6 +5685,25 @@ Future<List<String>> _findOnboardingCenterSyncObserverOffenders() async {
       uncommented.contains('ViewSpec.environmentReadiness') ||
       uncommented.contains('EnvironmentReadinessSpec.')) {
     offenders.add('$filePath owns onboarding center-panel sync policy');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findOnboardingDevPanelActionBoundaryOffenders() async {
+  const filePath =
+      'lib/essentials/onboarding/presentation/onboarding_dev_panel.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final offenders = <String>[];
+  if (uncommented.contains('ref.invalidate(') ||
+      uncommented.contains('widget.ref.invalidate(') ||
+      uncommented.contains('resetDerivedData()')) {
+    offenders.add('$filePath owns reset refresh details directly');
   }
 
   return offenders..sort();

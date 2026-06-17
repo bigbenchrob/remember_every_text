@@ -2662,6 +2662,11 @@ criteria.
     provider invalidation remains behind resolver/action boundaries. Added a
     tripwire preventing direct provider invalidation from returning to sidebar
     widget builders.
+  - Moved onboarding dev-panel reset/recheck sequencing into an onboarding
+    application action provider. The dev panel now renders its reset button and
+    invokes a typed action; reset-service calls and environment recheck
+    sequencing no longer live in presentation. Added a tripwire preventing
+    those details from returning to the dev panel.
 
 ### Exit Criteria
 
