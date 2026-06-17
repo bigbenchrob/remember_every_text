@@ -164,6 +164,8 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
           monthAnchor: monthAnchor,
           onlyNoHandleFromMe: onlyNoHandleFromMe,
         );
+      case RecoveredNoHandleFromMeOpened():
+        ref.read(sidebarFlowProvider.notifier).showRecoveredNoHandleFromMe();
       case StrayHandleFilterChanged(:final filter):
         _replaceCassetteAtContext(
           context: context,

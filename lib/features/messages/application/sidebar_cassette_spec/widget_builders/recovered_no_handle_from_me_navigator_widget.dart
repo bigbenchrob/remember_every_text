@@ -4,6 +4,8 @@ import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
+import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
+import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart';
 
 /// Sidebar cassette content for the no-handle/from-me recovered bucket.
@@ -31,8 +33,13 @@ class RecoveredNoHandleFromMeNavigatorWidget extends ConsumerWidget {
           controlSize: ControlSize.small,
           onPressed: () {
             ref
-                .read(sidebarFlowProvider.notifier)
-                .showRecoveredNoHandleFromMe();
+                .read(sidebarActionDispatcherProvider.notifier)
+                .dispatch(
+                  intent: const RecoveredNoHandleFromMeOpened(),
+                  context: const SidebarActionDispatchContext(
+                    sidebarMode: SidebarMode.messages,
+                  ),
+                );
           },
           child: Text(
             'Open Recovered No-Handle Messages',

@@ -2622,6 +2622,10 @@ criteria.
     reports the user's projection choice, while `SidebarActionDispatcher` owns
     the translation into `showContactTimelineAt` or
     `showContactConversationNavigator`.
+  - Routed the recovered no-handle navigator button through a
+    `RecoveredNoHandleFromMeOpened` sidebar action intent. The cassette widget
+    now reports navigation intent only; `SidebarActionDispatcher` owns the
+    recovered no-handle flow mutation and projected center-panel state.
 
 ### Exit Criteria
 

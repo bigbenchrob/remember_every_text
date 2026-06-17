@@ -143,6 +143,10 @@ final class RecoveredMonthFocused extends SidebarPersistentIntent {
   final bool onlyNoHandleFromMe;
 }
 
+final class RecoveredNoHandleFromMeOpened extends SidebarPersistentIntent {
+  const RecoveredNoHandleFromMeOpened();
+}
+
 final class StrayHandleFilterChanged extends SidebarPersistentIntent {
   const StrayHandleFilterChanged({required this.filter});
 

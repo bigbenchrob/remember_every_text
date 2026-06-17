@@ -919,6 +919,37 @@ void main() {
       expect(flowState.selectedConversationId, isNull);
       expect(_activeSpec(container, WindowPanel.center), isNull);
     });
+
+    testWidgets('dispatches recovered no-handle opening through sidebar flow', (
+      tester,
+    ) async {
+      await _mountMessagesPanelReconciliation(tester, container);
+
+      await dispatcher.dispatch(
+        intent: const RecoveredNoHandleFromMeOpened(),
+        context: const SidebarActionDispatchContext(
+          sidebarMode: SidebarMode.messages,
+        ),
+      );
+
+      await _flushMessagesPanelReconciliation(tester);
+
+      final flowState = container.read(sidebarFlowProvider);
+      expect(
+        flowState.topMenuChoice,
+        TopChatMenuChoice.recoveredNoHandleFromMeMessages,
+      );
+      expect(flowState.chosenContactId, isNull);
+      expect(flowState.selectedHandleId, isNull);
+      expect(
+        _activeSpec(container, WindowPanel.center),
+        equals(
+          const ViewSpec.messages(
+            MessagesSpec.recoveredNoHandleFromMeMessages(),
+          ),
+        ),
+      );
+    });
   });
 }
 
