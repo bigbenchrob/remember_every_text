@@ -2645,6 +2645,11 @@ criteria.
     as constructing panel specs on user interaction. Added an architecture
     tripwire requiring sidebar widget guidance to use the current semantic
     action / derived flow wording.
+  - Moved onboarding/readiness center-panel synchronization policy out of the
+    presentation observer into a navigation application controller. The widget
+    now observes onboarding/incident inputs only; panel-stack mutation and
+    readiness/incident routing decisions live behind the controller boundary.
+    Added a tripwire preventing that policy from returning to the observer.
 
 ### Exit Criteria
 

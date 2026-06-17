@@ -2324,6 +2324,20 @@ void main() {
       );
     });
 
+    test('Onboarding center sync observer delegates panel policy', () async {
+      final offenders = await _findOnboardingCenterSyncObserverOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'OnboardingCenterPanelSyncObserver is a presentation observer. '
+            'Readiness/incident panel policy and panel-stack mutation belong '
+            'in the navigation application sync controller.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Full Disk Access uses access boundary', () async {
       final offenders = await _findFullDiskAccessBoundaryOffenders();
 
@@ -5568,6 +5582,36 @@ Future<List<String>> _findOnboardingEnvironmentProbeBoundaryOffenders() async {
         uncommented.contains('ConversationGraphReadinessChecker')) {
       offenders.add('$filePath performs onboarding database probing directly');
     }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findOnboardingCenterSyncObserverOffenders() async {
+  const filePath =
+      'lib/essentials/navigation/presentation/widgets/onboarding_center_panel_sync_observer.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final source = await file.readAsString();
+  final uncommented = _stripComments(source);
+  final imports = _extractImports(uncommented);
+  final offenders = <String>[
+    for (final importTarget in imports)
+      if (importTarget.endsWith('panels_view_state_provider.dart') ||
+          importTarget.endsWith('sidebar_mode_provider.dart') ||
+          importTarget.endsWith('environment_readiness_view_spec.dart') ||
+          importTarget.endsWith('navigation_constants.dart'))
+        '$filePath imports $importTarget',
+  ];
+
+  if (uncommented.contains('panelsViewStateProvider') ||
+      uncommented.contains('WindowPanel.') ||
+      uncommented.contains('ViewSpec.environmentReadiness') ||
+      uncommented.contains('EnvironmentReadinessSpec.')) {
+    offenders.add('$filePath owns onboarding center-panel sync policy');
   }
 
   return offenders..sort();
