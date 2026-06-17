@@ -6,10 +6,9 @@ import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
 import '../../../onboarding/application/onboarding_environment_report_provider.dart';
 import '../../../onboarding/application/onboarding_gate_provider.dart';
+import '../../application/panel_actions_provider.dart';
 import '../../application/panel_widget_providers.dart';
-import '../../application/panels_view_state_provider.dart';
 import '../../domain/entities/view_spec.dart';
-import '../../domain/navigation_constants.dart';
 import '../../domain/sidebar_mode.dart';
 import '../../feature_level_providers.dart';
 
@@ -121,9 +120,7 @@ class SidebarParkedOverlay extends ConsumerWidget {
       return;
     }
 
-    ref
-        .read(panelsViewStateProvider(mode).notifier)
-        .clear(panel: WindowPanel.center);
+    ref.read(panelActionsProvider.notifier).clearCenterPanel(mode: mode);
   }
 
   static String _labelForSpec(ViewSpec? spec) {

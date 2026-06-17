@@ -6,7 +6,7 @@ part of 'panel_actions_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$panelActionsHash() => r'5ccc2c86d839349771de3b4c89ce51b992923c89';
+String _$panelActionsHash() => r'613b9f120fa2d6f15741ca7fe00318b6b9f207b5';
 
 /// See also [PanelActions].
 @ProviderFor(PanelActions)

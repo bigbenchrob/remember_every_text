@@ -405,6 +405,19 @@ void main() {
       },
     );
 
+    test('Sidebar parked overlay invokes panel actions', () async {
+      final offenders = await _findSidebarParkedOverlayPanelStateOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Sidebar parked overlay may render cancel/recheck controls, but '
+            'panel-stack mutation belongs to the navigation action boundary.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test(
       'Feature presentation does not construct panel navigation specs',
       () async {
@@ -6055,6 +6068,30 @@ Future<List<String>> _findMessagePresentationPanelStateOffenders() async {
         content.contains('WindowPanel.')) {
       offenders.add(filePath);
     }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findSidebarParkedOverlayPanelStateOffenders() async {
+  const filePath =
+      'lib/essentials/navigation/presentation/view/sidebar_parked_overlay.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final imports = _extractImports(uncommented);
+  final offenders = <String>[
+    for (final importTarget in imports)
+      if (importTarget.endsWith('panels_view_state_provider.dart') ||
+          importTarget.endsWith('navigation_constants.dart'))
+        '$filePath imports $importTarget',
+  ];
+  if (uncommented.contains('panelsViewStateProvider') ||
+      uncommented.contains('WindowPanel.')) {
+    offenders.add('$filePath mutates panel stack directly');
   }
 
   return offenders..sort();

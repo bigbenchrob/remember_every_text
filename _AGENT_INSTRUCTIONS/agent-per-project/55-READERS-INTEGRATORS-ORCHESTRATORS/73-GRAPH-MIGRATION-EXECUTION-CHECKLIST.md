@@ -2671,6 +2671,10 @@ criteria.
     sidebar refresh action provider. The picker continues to watch its typed
     view model and render retry UI, but provider invalidation is no longer
     owned by presentation. Added a focused tripwire for this picker boundary.
+  - Moved sidebar parked overlay center-panel cancellation onto the navigation
+    panel action boundary. The overlay now renders the parked/cancel affordance
+    and invokes `PanelActions`; direct panel-stack mutation remains in
+    navigation application state. Added a focused tripwire for the overlay.
 
 ### Exit Criteria
 
