@@ -2603,6 +2603,10 @@ criteria.
     `WindowPanel` state directly. Feature presentation should render typed
     data and dispatch semantic actions; sidebar flow, sidebar action
     dispatchers, and navigation action boundaries own panel routing.
+  - Moved handle display-name cache invalidation for manual handle links into
+    `ManualHandleLinkService`. `HandleLensView` now invokes the service and
+    updates only its local form state; it no longer performs provider
+    invalidation as an imperative repair after successful link actions.
 
 ### Exit Criteria
 

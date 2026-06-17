@@ -179,18 +179,12 @@ class _ActionBar extends HookConsumerWidget {
             participantId: participantId,
           );
 
-      result.fold(
-        (failure) {
-          // Show error — kept simple for Phase 2.
-          ref
-              .read(appLoggerProvider.notifier)
-              .warn('Link failed: ${failure.message}', source: 'HandleLens');
-        },
-        (_) {
-          ref.invalidate(strayHandlesProvider);
-          ref.invalidate(handleDisplayNameProvider(handleId: handleId));
-        },
-      );
+      result.fold((failure) {
+        // Show error — kept simple for Phase 2.
+        ref
+            .read(appLoggerProvider.notifier)
+            .warn('Link failed: ${failure.message}', source: 'HandleLens');
+      }, (_) {});
     } finally {
       isBusy.value = false;
     }
@@ -309,8 +303,6 @@ class _CreateContactForm extends HookConsumerWidget {
                   );
             },
             (_) {
-              ref.invalidate(strayHandlesProvider);
-              ref.invalidate(handleDisplayNameProvider(handleId: handleId));
               isCreating.value = false;
               nameController.clear();
             },

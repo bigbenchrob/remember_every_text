@@ -111,6 +111,7 @@ class ManualHandleLinkService extends _$ManualHandleLinkService {
 
       // Invalidate cached providers
       ref.invalidate(strayHandlesProvider);
+      ref.invalidate(handleDisplayNameProvider(handleId: handleId));
 
       return const Right(unit);
     } catch (e, stackTrace) {
@@ -138,6 +139,7 @@ class ManualHandleLinkService extends _$ManualHandleLinkService {
 
       // Invalidate cached providers
       ref.invalidate(strayHandlesProvider);
+      ref.invalidate(handleDisplayNameProvider(handleId: handleId));
       ref.invalidate(virtualParticipantsProvider);
 
       return const Right(unit);
@@ -193,6 +195,7 @@ class ManualHandleLinkService extends _$ManualHandleLinkService {
 
       // Invalidate cached providers
       ref.invalidate(strayHandlesProvider);
+      ref.invalidate(handleDisplayNameProvider(handleId: handleId));
 
       return Right(contactDeleted);
     } catch (e, stackTrace) {
