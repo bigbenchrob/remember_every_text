@@ -2540,6 +2540,23 @@ criteria.
     `conversation_graph/domain/identity_key_bridge.dart` path and test from
     returning. Retained-overlay id conversion must stay in the named
     application compatibility boundary.
+  - Rechecked active source/test roots after the retained-overlay bridge move.
+    No retired `db_importers`, `db_migrate`, `incremental_update_ss`,
+    retained Drift `working` schema, old conversation browser, old
+    `MessageTimelineScope`, or old `MessagesTimelineView` source/test paths
+    were present.
+  - Rechecked the explicit retained-overlay identity bridge surface. The
+    remaining imports are the bounded contact, handle, and message
+    compatibility readers already allow-listed by the architecture tripwire;
+    no presentation widget or graph domain file imports the bridge.
+  - Rechecked graph/archive compatibility surfaces. Archive key construction
+    remains limited to typed `ArchiveCompatibilityKey` boundaries, and graph
+    archive lookup contracts expose archive facts rather than retained archive
+    table identity.
+  - `flutter analyze` passed cleanly. `dart analyze` is currently not a useful
+    verifier in this environment because the custom_lint analyzer plugin fails
+    to start with a local dynamic-library/AOT snapshot error before reporting
+    project diagnostics.
 
 ### Exit Criteria
 
