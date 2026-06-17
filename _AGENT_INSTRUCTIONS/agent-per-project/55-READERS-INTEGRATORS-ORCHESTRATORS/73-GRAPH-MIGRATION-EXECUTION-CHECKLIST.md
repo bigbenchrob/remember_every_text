@@ -2684,6 +2684,12 @@ criteria.
     the semantic user intent, while navigation application state still owns the
     panel-stack mutation. Added a tripwire preventing the old clear-panel
     vocabulary from returning to this boundary.
+  - Moved parked-overlay onboarding readiness re-check behavior behind an
+    onboarding application action boundary. The parked overlay still renders
+    readiness copy from typed state, but clearing developer simulations and
+    refreshing the onboarding environment now live in
+    `OnboardingReadinessActions`. Added a tripwire preventing that repair logic
+    from returning to the overlay.
 
 ### Exit Criteria
 

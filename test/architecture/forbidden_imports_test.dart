@@ -433,6 +433,24 @@ void main() {
     });
 
     test(
+      'Sidebar parked overlay delegates onboarding readiness actions',
+      () async {
+        final offenders =
+            await _findSidebarParkedOverlayOnboardingActionOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'Sidebar parked overlay may render readiness re-check controls, '
+              'but clearing developer simulations and refreshing onboarding '
+              'environment state belongs to the onboarding action boundary.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
+    test(
       'Feature presentation does not construct panel navigation specs',
       () async {
         final offenders =
@@ -6164,6 +6182,33 @@ Future<List<String>> _findParkedCenterActionNamingOffenders() async {
     if (uncommented.contains('clearCenterPanel')) {
       offenders.add('$filePath uses clearCenterPanel vocabulary');
     }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>>
+_findSidebarParkedOverlayOnboardingActionOffenders() async {
+  const filePath =
+      'lib/essentials/navigation/presentation/view/sidebar_parked_overlay.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final imports = _extractImports(uncommented);
+  final offenders = <String>[
+    for (final importTarget in imports)
+      if (importTarget.endsWith('onboarding_gate_provider.dart'))
+        '$filePath imports $importTarget',
+  ];
+
+  if (uncommented.contains('refreshEnvironment()')) {
+    offenders.add('$filePath refreshes onboarding environment directly');
+  }
+  if (uncommented.contains('.clearAll()')) {
+    offenders.add('$filePath clears onboarding simulation overrides directly');
   }
 
   return offenders..sort();

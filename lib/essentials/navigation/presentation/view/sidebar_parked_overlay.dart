@@ -5,7 +5,7 @@ import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
 import '../../../onboarding/application/onboarding_environment_report_provider.dart';
-import '../../../onboarding/application/onboarding_gate_provider.dart';
+import '../../../onboarding/application/onboarding_readiness_actions_provider.dart';
 import '../../application/panel_actions_provider.dart';
 import '../../application/panel_widget_providers.dart';
 import '../../domain/entities/view_spec.dart';
@@ -113,10 +113,11 @@ class SidebarParkedOverlay extends ConsumerWidget {
         false;
 
     if (isReadinessSpec) {
-      if (hasSimulatedOnboardingOverride) {
-        ref.read(onboardingDevOverridesProvider.notifier).clearAll();
-      }
-      ref.read(onboardingGateProvider.notifier).refreshEnvironment();
+      ref
+          .read(onboardingReadinessActionsProvider.notifier)
+          .recheckReadiness(
+            clearSimulationOverride: hasSimulatedOnboardingOverride,
+          );
       return;
     }
 
