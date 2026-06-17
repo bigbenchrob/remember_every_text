@@ -120,7 +120,9 @@ class SidebarParkedOverlay extends ConsumerWidget {
       return;
     }
 
-    ref.read(panelActionsProvider.notifier).clearCenterPanel(mode: mode);
+    ref
+        .read(panelActionsProvider.notifier)
+        .cancelParkedCenterOperation(mode: mode);
   }
 
   static String _labelForSpec(ViewSpec? spec) {

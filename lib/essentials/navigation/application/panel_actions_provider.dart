@@ -21,7 +21,7 @@ class PanelActions extends _$PanelActions {
         .clear(panel: WindowPanel.right);
   }
 
-  void clearCenterPanel({required SidebarMode mode}) {
+  void cancelParkedCenterOperation({required SidebarMode mode}) {
     ref
         .read(panelsViewStateProvider(mode).notifier)
         .clear(panel: WindowPanel.center);

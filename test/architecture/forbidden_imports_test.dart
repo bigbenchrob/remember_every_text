@@ -418,6 +418,20 @@ void main() {
       );
     });
 
+    test('Parked center actions use semantic cancellation naming', () async {
+      final offenders = await _findParkedCenterActionNamingOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Parked center-panel actions should describe the user intent '
+            '(canceling a parked operation), not preserve generic clear-panel '
+            'repair vocabulary.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test(
       'Feature presentation does not construct panel navigation specs',
       () async {
@@ -6128,6 +6142,28 @@ Future<List<String>> _findSidebarParkedOverlayPanelStateOffenders() async {
   if (uncommented.contains('panelsViewStateProvider') ||
       uncommented.contains('WindowPanel.')) {
     offenders.add('$filePath mutates panel stack directly');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findParkedCenterActionNamingOffenders() async {
+  const files = <String>[
+    'lib/essentials/navigation/application/panel_actions_provider.dart',
+    'lib/essentials/navigation/presentation/view/sidebar_parked_overlay.dart',
+  ];
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final file = File(filePath);
+    if (!file.existsSync()) {
+      continue;
+    }
+
+    final uncommented = _stripComments(await file.readAsString());
+    if (uncommented.contains('clearCenterPanel')) {
+      offenders.add('$filePath uses clearCenterPanel vocabulary');
+    }
   }
 
   return offenders..sort();

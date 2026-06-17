@@ -2679,6 +2679,11 @@ criteria.
     `ContactFavoriteActions` as the owner of favourite mutation invalidation,
     rather than preserving generic caller-owned invalidation wording. Added a
     tripwire preventing that stale contract language from returning.
+  - Renamed the parked center-panel action boundary from generic clear-panel
+    vocabulary to `cancelParkedCenterOperation`. The parked overlay now reports
+    the semantic user intent, while navigation application state still owns the
+    panel-stack mutation. Added a tripwire preventing the old clear-panel
+    vocabulary from returning to this boundary.
 
 ### Exit Criteria
 
