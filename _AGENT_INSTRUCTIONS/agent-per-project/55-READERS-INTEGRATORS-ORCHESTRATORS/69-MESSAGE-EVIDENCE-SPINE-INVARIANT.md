@@ -116,12 +116,16 @@ Name precedence is:
 
 ```text
 user display-name override
-→ app-derived short name
+→ app-known contact/display identity
 → imported AddressBook display name
 → raw handle only when no known contact identity exists
 ```
 
 Imported AddressBook names are source facts, not final user-facing identity when the user has assigned a different name.
+
+Short-name, nickname, and name-mode variants are retired as app-facing identity
+concepts. If a physical compatibility column remains in storage, it is not part
+of message evidence naming precedence.
 
 Raw handles must not be used as the primary label for a known contact in:
 

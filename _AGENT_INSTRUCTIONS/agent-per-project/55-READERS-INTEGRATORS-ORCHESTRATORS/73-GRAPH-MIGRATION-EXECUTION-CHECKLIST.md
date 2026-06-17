@@ -2563,6 +2563,10 @@ criteria.
     `virtual_participants.short_name` schema column remains the only allowed
     active reference, and the single user-authored display-name path remains
     `participant_overrides.display_name_override`.
+  - Corrected the Message Evidence Spine naming invariant so contact display
+    precedence no longer includes an app-derived short-name step. Short-name,
+    nickname, and name-mode variants are now documented as retired
+    compatibility artifacts rather than evidence naming inputs.
 
 ### Exit Criteria
 
