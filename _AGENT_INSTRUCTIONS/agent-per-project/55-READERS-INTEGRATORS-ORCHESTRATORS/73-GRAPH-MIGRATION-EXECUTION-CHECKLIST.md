@@ -2612,6 +2612,11 @@ criteria.
     performs only sidebar selection flow updates. Added a narrow architecture
     tripwire preventing widget-level provider invalidation from returning to
     that unlink path.
+  - Routed contact-scoped conversation selection through a new
+    `ContactConversationSelected` sidebar action intent. The contact
+    conversation signature widget now dispatches a semantic action instead of
+    mutating `SidebarFlow` directly; the dispatcher owns the call to
+    `selectContactConversation`, and tests cover the contact-scoped projection.
 
 ### Exit Criteria
 

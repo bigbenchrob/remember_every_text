@@ -1153,8 +1153,9 @@ void main() {
             'ContactGraphConversationSection renders conversation signature '
             'cards. It should consume display-ready contact conversation '
             'signatures instead of opening raw contact graph snapshots inside '
-            'presentation. Conversation selection should update SidebarFlow, '
-            'not push center-panel content imperatively.\n'
+            'presentation. Conversation selection should dispatch a typed '
+            'sidebar action, not mutate SidebarFlow or push center-panel '
+            'content imperatively.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -3876,6 +3877,7 @@ _findContactConversationSectionDisplayBoundaryOffenders() async {
     'WindowPanel.center',
     'ViewSpec.messages',
     'MessagesSpec.forConversation',
+    'sidebarFlowProvider',
   ];
   for (final token in forbiddenTokens) {
     if (uncommented.contains(token)) {

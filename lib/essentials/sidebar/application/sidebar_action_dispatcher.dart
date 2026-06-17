@@ -136,6 +136,13 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
         ref
             .read(sidebarFlowProvider.notifier)
             .selectConversation(conversationId: conversationId);
+      case ContactConversationSelected(:final contactId, :final conversationId):
+        ref
+            .read(sidebarFlowProvider.notifier)
+            .selectContactConversation(
+              contactId: contactId,
+              conversationId: conversationId,
+            );
       case RecoveredMonthFocused(
         :final monthAnchor,
         :final contactId,

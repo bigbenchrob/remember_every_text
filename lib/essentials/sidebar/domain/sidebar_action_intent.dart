@@ -109,6 +109,16 @@ final class ConversationSelected extends SidebarPersistentIntent {
   final int conversationId;
 }
 
+final class ContactConversationSelected extends SidebarPersistentIntent {
+  const ContactConversationSelected({
+    required this.contactId,
+    required this.conversationId,
+  });
+
+  final int contactId;
+  final int conversationId;
+}
+
 final class RecoveredMonthFocused extends SidebarPersistentIntent {
   const RecoveredMonthFocused({
     required this.monthAnchor,

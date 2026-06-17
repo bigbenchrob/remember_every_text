@@ -111,6 +111,38 @@ void main() {
       );
     });
 
+    testWidgets(
+      'dispatches contact conversation selection through sidebar flow',
+      (tester) async {
+        await _mountMessagesPanelReconciliation(tester, container);
+
+        await dispatcher.dispatch(
+          intent: const ContactConversationSelected(
+            contactId: 24,
+            conversationId: 8796093022216,
+          ),
+          context: const SidebarActionDispatchContext(
+            sidebarMode: SidebarMode.messages,
+          ),
+        );
+
+        await _flushMessagesPanelReconciliation(tester);
+
+        final flowState = container.read(sidebarFlowProvider);
+        expect(flowState.topMenuChoice, TopChatMenuChoice.contacts);
+        expect(flowState.chosenContactId, 24);
+        expect(flowState.selectedConversationId, 8796093022216);
+        expect(
+          _activeSpec(container, WindowPanel.center),
+          equals(
+            const ViewSpec.messages(
+              MessagesSpec.forConversation(conversationId: 8796093022216),
+            ),
+          ),
+        );
+      },
+    );
+
     test(
       'dispatches stray handle filter changes via cassette replacement',
       () async {
