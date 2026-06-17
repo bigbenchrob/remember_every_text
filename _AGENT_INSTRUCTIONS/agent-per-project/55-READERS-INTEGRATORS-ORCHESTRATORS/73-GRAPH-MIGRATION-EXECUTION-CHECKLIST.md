@@ -2715,11 +2715,17 @@ criteria.
     filter selection now crosses a contact application action boundary. Added a
     tripwire preventing direct picker-filter notifier mutation from returning
     to the presentation widget.
-  - Moved app-shell toolbar mutations behind `AppShellActions`. `MacosAppShell`
-    still renders developer-mode and theme controls from observed state, but
-    developer-mode toggling and theme cycling now cross a navigation action
-    boundary. Added a tripwire preventing direct toolbar provider mutation from
-    returning.
+- Moved app-shell toolbar mutations behind `AppShellActions`. `MacosAppShell`
+  still renders developer-mode and theme controls from observed state, but
+  developer-mode toggling and theme cycling now cross a navigation action
+  boundary. Added a tripwire preventing direct toolbar provider mutation from
+  returning.
+- Moved environment-readiness and pipeline-incident panel lifecycle mutations
+  behind feature-owned action boundaries. The panels still render readiness,
+  incident, and diagnostic export state, but re-check/import/open-settings,
+  developer simulation cleanup, retry, and dismiss intents no longer call the
+  underlying onboarding or incident notifiers directly. Added tripwires for
+  both panels.
 
 ### Exit Criteria
 

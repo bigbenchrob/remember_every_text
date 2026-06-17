@@ -2519,6 +2519,37 @@ void main() {
       );
     });
 
+    test('Environment readiness panel uses action boundary', () async {
+      final offenders =
+          await _findEnvironmentReadinessPanelActionBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'EnvironmentReadinessPanelView may render readiness state and '
+            'diagnostic report actions, but onboarding lifecycle mutations '
+            'and developer simulation cleanup should cross the feature action '
+            'boundary.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Pipeline incident panel uses action boundary', () async {
+      final offenders =
+          await _findPipelineIncidentPanelActionBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'PipelineIncidentPanelView may render incident state and export '
+            'reports, but retry/dismiss lifecycle mutations should cross the '
+            'feature action boundary.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Full Disk Access uses access boundary', () async {
       final offenders = await _findFullDiskAccessBoundaryOffenders();
 
@@ -5876,6 +5907,50 @@ Future<List<String>> _findOnboardingOverlayActionBoundaryOffenders() async {
   final offenders = <String>[];
   if (uncommented.contains('onboardingGateProvider.notifier')) {
     offenders.add('$filePath calls onboarding gate notifier directly');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>>
+_findEnvironmentReadinessPanelActionBoundaryOffenders() async {
+  const filePath =
+      'lib/features/environment_readiness/presentation/view/environment_readiness_panel_view.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final offenders = <String>[];
+  if (uncommented.contains('onboardingGateProvider.notifier')) {
+    offenders.add('$filePath calls onboarding gate notifier directly');
+  }
+  if (uncommented.contains('onboardingDevOverridesProvider.notifier')) {
+    offenders.add('$filePath mutates onboarding dev overrides directly');
+  }
+  if (uncommented.contains('onboardingReadinessActionsProvider.notifier')) {
+    offenders.add('$filePath bypasses environment readiness actions');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findPipelineIncidentPanelActionBoundaryOffenders() async {
+  const filePath =
+      'lib/features/environment_readiness/presentation/view/pipeline_incident_panel_view.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final offenders = <String>[];
+  if (uncommented.contains('onboardingGateProvider.notifier')) {
+    offenders.add('$filePath calls onboarding gate notifier directly');
+  }
+  if (uncommented.contains('pipelineIncidentTrackerProvider.notifier')) {
+    offenders.add('$filePath mutates pipeline incident tracker directly');
   }
 
   return offenders..sort();

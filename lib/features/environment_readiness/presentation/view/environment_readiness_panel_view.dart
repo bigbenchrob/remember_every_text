@@ -8,8 +8,8 @@ import '../../../../essentials/logging/application/diagnostic_report_actions.dar
 import '../../../../essentials/logging/domain/diagnostic_report_presentation_result.dart';
 import '../../../../essentials/logging/feature_level_providers.dart';
 import '../../../../essentials/onboarding/application/onboarding_environment_report_provider.dart';
-import '../../../../essentials/onboarding/application/onboarding_gate_provider.dart';
 import '../../../../essentials/onboarding/domain/onboarding_environment_report.dart';
+import '../../application/environment_readiness_actions_provider.dart';
 import '../../application/view_spec/resolver_tools/environment_readiness_surface_provider.dart';
 import '../../domain/entities/environment_readiness_surface_view_model.dart';
 
@@ -304,7 +304,6 @@ class _DetailPane extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final devOverrides = ref.watch(onboardingDevOverridesProvider);
-    final overridesNotifier = ref.read(onboardingDevOverridesProvider.notifier);
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -438,10 +437,9 @@ class _DetailPane extends ConsumerWidget {
                     const SizedBox(height: 12),
                     OutlinedButton(
                       onPressed: () {
-                        overridesNotifier.clearAll();
                         ref
-                            .read(onboardingGateProvider.notifier)
-                            .refreshEnvironment();
+                            .read(environmentReadinessActionsProvider.notifier)
+                            .clearSimulationsAndRefresh();
                       },
                       style: OutlinedButton.styleFrom(
                         foregroundColor: colors.content.textPrimary,
@@ -463,7 +461,7 @@ class _DetailPane extends ConsumerWidget {
                     EnvironmentReadinessActionKind.openSettings => FilledButton(
                       onPressed: () {
                         ref
-                            .read(onboardingGateProvider.notifier)
+                            .read(environmentReadinessActionsProvider.notifier)
                             .openFdaSettings();
                       },
                       style: FilledButton.styleFrom(
@@ -475,7 +473,7 @@ class _DetailPane extends ConsumerWidget {
                     EnvironmentReadinessActionKind.recheck => OutlinedButton(
                       onPressed: () {
                         ref
-                            .read(onboardingGateProvider.notifier)
+                            .read(environmentReadinessActionsProvider.notifier)
                             .refreshEnvironment();
                       },
                       style: OutlinedButton.styleFrom(
@@ -487,7 +485,7 @@ class _DetailPane extends ConsumerWidget {
                     EnvironmentReadinessActionKind.startImport => FilledButton(
                       onPressed: () {
                         ref
-                            .read(onboardingGateProvider.notifier)
+                            .read(environmentReadinessActionsProvider.notifier)
                             .startImportAndGraphBuild();
                       },
                       style: FilledButton.styleFrom(

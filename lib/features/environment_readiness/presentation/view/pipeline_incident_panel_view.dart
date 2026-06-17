@@ -10,6 +10,7 @@ import '../../../../essentials/logging/domain/pipeline_incident_report.dart';
 import '../../../../essentials/logging/feature_level_providers.dart';
 import '../../../../essentials/onboarding/application/onboarding_gate_provider.dart';
 import '../../../../essentials/onboarding/domain/onboarding_status.dart';
+import '../../application/pipeline_incident_actions_provider.dart';
 
 const _kIncidentError = Color(0xFFFF3B30);
 const _kIncidentWarning = Color(0xFFFF9500);
@@ -181,8 +182,8 @@ class _PipelineIncidentBody extends ConsumerWidget {
                 FilledButton(
                   onPressed: () {
                     ref
-                        .read(onboardingGateProvider.notifier)
-                        .startImportAndGraphBuild();
+                        .read(pipelineIncidentActionsProvider.notifier)
+                        .retryImportAndGraphBuild();
                   },
                   style: FilledButton.styleFrom(
                     backgroundColor: colors.buttons.primaryBackground,
@@ -214,7 +215,7 @@ class _PipelineIncidentBody extends ConsumerWidget {
                 OutlinedButton(
                   onPressed: () {
                     ref
-                        .read(pipelineIncidentTrackerProvider.notifier)
+                        .read(pipelineIncidentActionsProvider.notifier)
                         .dismissActiveReport();
                   },
                   style: OutlinedButton.styleFrom(
