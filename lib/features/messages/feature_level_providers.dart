@@ -24,6 +24,7 @@ export './application/sidebar_cassette_spec/payloads/recovered_no_handle_from_me
 export './application/sidebar_cassette_spec/payloads/recovered_unlinked_navigator_cassette_payload.dart';
 export './application/sidebar_cassette_spec/rendering/messages_cassette_body_builder.dart';
 export './application/sidebar_cassette_spec/resolver_tools/prewarm_contact_messages_provider.dart';
+export './application/sidebar_cassette_spec/resolver_tools/recovered_message_navigation_actions_provider.dart';
 export './application/user_metadata/message_overlay_controller.dart';
 export './application/user_metadata/message_overlay_repository.dart';
 export './application/view_spec/coordinators/view_spec_coordinator.dart';

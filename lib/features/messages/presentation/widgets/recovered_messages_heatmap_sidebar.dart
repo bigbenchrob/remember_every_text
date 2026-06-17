@@ -5,8 +5,6 @@ import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
-import '../../../../essentials/navigation/domain/sidebar_mode.dart';
-import '../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../../essentials/sidebar/feature_level_providers.dart';
 import '../../application/message_evidence/current_visible_month_provider.dart';
 import '../../application/sidebar_cassette_spec/widget_builders/messages_heatmap_widget.dart';
@@ -84,31 +82,12 @@ class RecoveredMessagesHeatmapSidebar extends ConsumerWidget {
               }
 
               final startDate = DateTime(year, month, 1);
-              if (onlyNoHandleFromMe) {
-                ref
-                    .read(sidebarActionDispatcherProvider.notifier)
-                    .dispatch(
-                      intent: RecoveredMonthFocused(
-                        monthAnchor: startDate,
-                        onlyNoHandleFromMe: true,
-                      ),
-                      context: const SidebarActionDispatchContext(
-                        sidebarMode: SidebarMode.messages,
-                      ),
-                    );
-                return;
-              }
-
               ref
-                  .read(sidebarActionDispatcherProvider.notifier)
-                  .dispatch(
-                    intent: RecoveredMonthFocused(
-                      contactId: contactId,
-                      monthAnchor: startDate,
-                    ),
-                    context: const SidebarActionDispatchContext(
-                      sidebarMode: SidebarMode.messages,
-                    ),
+                  .read(recoveredMessageNavigationActionsProvider.notifier)
+                  .focusMonth(
+                    contactId: onlyNoHandleFromMe ? null : contactId,
+                    monthAnchor: startDate,
+                    onlyNoHandleFromMe: onlyNoHandleFromMe,
                   );
             },
           );

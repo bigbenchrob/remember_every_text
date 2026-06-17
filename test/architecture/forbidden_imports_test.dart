@@ -1522,6 +1522,21 @@ void main() {
       );
     });
 
+    test('Recovered message sidebar uses navigation action boundary', () async {
+      final offenders =
+          await _findRecoveredMessageSidebarNavigationBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Recovered message sidebar widgets may render heatmaps/buttons, '
+            'but recovered sidebar intent construction and dispatch belong '
+            'behind RecoveredMessageNavigationActions.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test(
       'Contact application/presentation uses the contacts feature boundary',
       () async {
@@ -6428,6 +6443,37 @@ Future<List<String>> _findStrayHandleCassetteActionBoundaryOffenders() async {
     'StrayHandleModeChanged',
     'StrayHandleFilterChanged',
     'normalizeHandleIdentifier',
+  ];
+
+  final offenders = <String>[];
+  for (final filePath in filePaths) {
+    final file = File(filePath);
+    if (!file.existsSync()) {
+      continue;
+    }
+
+    final uncommented = _stripComments(await file.readAsString());
+    for (final token in forbiddenTokens) {
+      if (uncommented.contains(token)) {
+        offenders.add('$filePath uses $token');
+      }
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>>
+_findRecoveredMessageSidebarNavigationBoundaryOffenders() async {
+  const filePaths = <String>[
+    'lib/features/messages/presentation/widgets/recovered_messages_heatmap_sidebar.dart',
+    'lib/features/messages/application/sidebar_cassette_spec/widget_builders/recovered_no_handle_from_me_navigator_widget.dart',
+  ];
+  const forbiddenTokens = <String>[
+    'sidebarActionDispatcherProvider',
+    'SidebarActionDispatchContext',
+    'RecoveredMonthFocused',
+    'RecoveredNoHandleFromMeOpened',
   ];
 
   final offenders = <String>[];
