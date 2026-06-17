@@ -2460,6 +2460,20 @@ void main() {
       );
     });
 
+    test('Onboarding overlay controls use action boundary', () async {
+      final offenders = await _findOnboardingOverlayActionBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Onboarding overlay may watch gate state, but button callbacks '
+            'should report onboarding intents through OnboardingOverlayActions '
+            'instead of calling the gate notifier directly.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Full Disk Access uses access boundary', () async {
       final offenders = await _findFullDiskAccessBoundaryOffenders();
 
@@ -5782,6 +5796,23 @@ Future<List<String>> _findOnboardingDevPanelActionBoundaryOffenders() async {
       uncommented.contains('refreshEnvironment()') ||
       uncommented.contains('resetDerivedData()')) {
     offenders.add('$filePath owns reset refresh details directly');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findOnboardingOverlayActionBoundaryOffenders() async {
+  const filePath =
+      'lib/essentials/onboarding/presentation/onboarding_overlay.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final offenders = <String>[];
+  if (uncommented.contains('onboardingGateProvider.notifier')) {
+    offenders.add('$filePath calls onboarding gate notifier directly');
   }
 
   return offenders..sort();

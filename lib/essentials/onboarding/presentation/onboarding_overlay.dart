@@ -10,6 +10,7 @@ import '../../logging/domain/diagnostic_report_presentation_result.dart';
 import '../../logging/feature_level_providers.dart';
 import '../application/onboarding_environment_report_provider.dart';
 import '../application/onboarding_gate_provider.dart';
+import '../application/onboarding_overlay_actions_provider.dart';
 import '../domain/onboarding_environment_report.dart';
 import '../domain/onboarding_status.dart';
 
@@ -206,8 +207,10 @@ class _FdaContent extends ConsumerWidget {
         ),
         const SizedBox(height: 24),
         FilledButton(
-          onPressed: () {
-            ref.read(onboardingGateProvider.notifier).openFdaSettings();
+          onPressed: () async {
+            await ref
+                .read(onboardingOverlayActionsProvider.notifier)
+                .openFullDiskAccessSettings();
           },
           style: FilledButton.styleFrom(
             backgroundColor: colors.buttons.primaryBackground,
@@ -222,7 +225,9 @@ class _FdaContent extends ConsumerWidget {
         const SizedBox(height: 12),
         TextButton(
           onPressed: () {
-            ref.read(onboardingGateProvider.notifier).refreshEnvironment();
+            ref
+                .read(onboardingOverlayActionsProvider.notifier)
+                .recheckEnvironment();
           },
           child: Text(
             'Re-check environment',
@@ -349,9 +354,9 @@ class _WelcomeContent extends ConsumerWidget {
             runSpacing: 12,
             children: [
               FilledButton(
-                onPressed: () {
-                  ref
-                      .read(onboardingGateProvider.notifier)
+                onPressed: () async {
+                  await ref
+                      .read(onboardingOverlayActionsProvider.notifier)
                       .startImportAndGraphBuild();
                 },
                 style: FilledButton.styleFrom(
@@ -401,7 +406,9 @@ class _WelcomeContent extends ConsumerWidget {
         else ...[
           FilledButton(
             onPressed: () {
-              ref.read(onboardingGateProvider.notifier).refreshEnvironment();
+              ref
+                  .read(onboardingOverlayActionsProvider.notifier)
+                  .recheckEnvironment();
             },
             style: FilledButton.styleFrom(
               backgroundColor: colors.buttons.primaryBackground,
@@ -416,9 +423,9 @@ class _WelcomeContent extends ConsumerWidget {
           if (presentation.allowsManualImport) ...[
             const SizedBox(height: 12),
             OutlinedButton(
-              onPressed: () {
-                ref
-                    .read(onboardingGateProvider.notifier)
+              onPressed: () async {
+                await ref
+                    .read(onboardingOverlayActionsProvider.notifier)
                     .startImportAndGraphBuild();
               },
               style: OutlinedButton.styleFrom(
@@ -1100,7 +1107,9 @@ class _ProgressContent extends ConsumerWidget {
             alignment: Alignment.centerRight,
             child: TextButton(
               onPressed: () {
-                ref.read(onboardingGateProvider.notifier).abortImport();
+                ref
+                    .read(onboardingOverlayActionsProvider.notifier)
+                    .abortImport();
               },
               child: Text(
                 'Abort Import',
@@ -1179,7 +1188,7 @@ class _CompleteContent extends ConsumerWidget {
         ],
         FilledButton(
           onPressed: () {
-            ref.read(onboardingGateProvider.notifier).dismiss();
+            ref.read(onboardingOverlayActionsProvider.notifier).dismiss();
           },
           style: FilledButton.styleFrom(
             backgroundColor: colors.buttons.primaryBackground,

@@ -2695,6 +2695,11 @@ criteria.
     diagnostics state, but environment refresh ownership now stays in the
     onboarding application layer. Extended the existing dev-panel tripwire to
     catch direct refresh calls.
+  - Moved production onboarding overlay button callbacks behind
+    `OnboardingOverlayActions`. The overlay still watches onboarding gate state
+    for rendering, but Full Disk Access, re-check, import, abort, and dismiss
+    intents now cross an application action boundary. Added a tripwire
+    preventing direct gate-notifier calls from returning to the overlay.
 
 ### Exit Criteria
 
