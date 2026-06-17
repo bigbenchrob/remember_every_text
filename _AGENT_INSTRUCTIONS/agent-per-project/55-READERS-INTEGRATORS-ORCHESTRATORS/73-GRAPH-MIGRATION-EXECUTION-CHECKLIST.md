@@ -2598,6 +2598,11 @@ criteria.
     directly; they render the local close control and invoke a typed navigation
     action. Added an architecture tripwire preventing message presentation code
     from directly naming `panelsViewStateProvider` or `WindowPanel`.
+  - Added a broader architecture tripwire preventing feature presentation
+    widgets from constructing `ViewSpec` / `MessagesSpec` or mutating
+    `WindowPanel` state directly. Feature presentation should render typed
+    data and dispatch semantic actions; sidebar flow, sidebar action
+    dispatchers, and navigation action boundaries own panel routing.
 
 ### Exit Criteria
 

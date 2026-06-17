@@ -406,6 +406,24 @@ void main() {
     );
 
     test(
+      'Feature presentation does not construct panel navigation specs',
+      () async {
+        final offenders = await _findFeaturePresentationNavigationSpecOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'Feature presentation should render typed view data and dispatch '
+              'semantic actions. It must not construct ViewSpec/MessagesSpec '
+              'or mutate WindowPanel state directly; route through the sidebar '
+              'flow, sidebar action dispatcher, or navigation action boundary.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
+    test(
       'Retained archive metadata provider stays behind retention boundaries',
       () async {
         final offenders = await _findRetainedArchiveMetadataProviderOffenders();
@@ -5782,6 +5800,28 @@ Future<List<String>> _findMessagePresentationPanelStateOffenders() async {
     final content = await File(filePath).readAsString();
     if (content.contains('panelsViewStateProvider') ||
         content.contains('WindowPanel.')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findFeaturePresentationNavigationSpecOffenders() async {
+  final files = await _collectDartFiles((path) {
+    return path.startsWith('lib/features/') &&
+        path.contains('/presentation/') &&
+        !path.endsWith('.g.dart') &&
+        !path.endsWith('.freezed.dart');
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final content = await File(filePath).readAsString();
+    if (content.contains('ViewSpec.') ||
+        content.contains('MessagesSpec.') ||
+        content.contains('WindowPanel.') ||
+        content.contains('panelsViewStateProvider')) {
       offenders.add(filePath);
     }
   }
