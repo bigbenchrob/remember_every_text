@@ -37,7 +37,7 @@ import '../../../presentation/widgets/contact_initial_badge.dart';
 /// Widget builders:
 /// - Accept fully-decided inputs (not specs)
 /// - May use `ref.watch()` for reactive updates
-/// - Construct specs only on user interaction (output, not interpretation)
+/// - Dispatch semantic actions on user interaction; do not construct panel specs
 class RecentContactsSection extends ConsumerWidget {
   const RecentContactsSection({
     super.key,

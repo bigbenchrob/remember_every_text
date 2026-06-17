@@ -21,7 +21,7 @@ import '../resolver_tools/contact_is_favorite_provider.dart';
 /// Widget builders:
 /// - Accept fully-decided inputs (not specs)
 /// - May use `ref.watch()` for reactive updates
-/// - Construct specs only on user interaction (output, not interpretation)
+/// - Dispatch semantic actions on user interaction; do not construct panel specs
 class ContactHeroSummaryWidget extends ConsumerStatefulWidget {
   const ContactHeroSummaryWidget({super.key, required this.contactId});
 

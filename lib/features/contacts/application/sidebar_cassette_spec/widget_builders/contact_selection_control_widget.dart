@@ -19,7 +19,7 @@ import '../../../../../essentials/sidebar/feature_level_providers.dart';
 /// Widget builders:
 /// - Accept fully-decided inputs (not specs)
 /// - May use `ref.watch()` for reactive updates
-/// - Construct specs only on user interaction (output, not interpretation)
+/// - Dispatch semantic actions on user interaction; do not construct panel specs
 class ContactSelectionControlWidget extends ConsumerStatefulWidget {
   const ContactSelectionControlWidget({
     super.key,

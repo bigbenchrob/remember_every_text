@@ -30,7 +30,7 @@ import '../resolver_tools/global_messages_heatmap_provider.dart';
 /// Widget builders:
 /// - Accept fully-decided inputs (not specs)
 /// - May use `ref.watch()` for reactive updates
-/// - Construct specs only on user interaction (output, not interpretation)
+/// - Dispatch semantic actions on user interaction; do not construct panel specs
 /// - Never make branching decisions about which UI to show
 class MessagesHeatmapWidget extends ConsumerWidget {
   const MessagesHeatmapWidget({this.contactId, super.key});

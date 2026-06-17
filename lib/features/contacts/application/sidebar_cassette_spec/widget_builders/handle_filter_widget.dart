@@ -13,8 +13,8 @@ import '../../../feature_level_providers.dart';
 ///
 /// Displays a "From phone # / email:" dropdown listing every handle linked
 /// to the given contact. The default "All" selection shows messages for the
-/// full contact; selecting a specific handle narrows the center panel to that
-/// handle's messages and exposes an "Unlink" action.
+/// full contact; selecting a specific handle dispatches a sidebar action that
+/// narrows the derived evidence scope and exposes an "Unlink" action.
 class HandleFilterWidget extends ConsumerWidget {
   const HandleFilterWidget({
     super.key,

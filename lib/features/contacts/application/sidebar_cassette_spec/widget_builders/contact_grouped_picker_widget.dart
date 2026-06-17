@@ -21,7 +21,7 @@ import '../payloads/contact_chooser_cassette_payload.dart';
 /// Widget builders:
 /// - Accept fully-decided inputs (not specs)
 /// - May use `ref.watch()` for reactive updates
-/// - Construct specs only on user interaction (output, not interpretation)
+/// - Dispatch semantic actions on user interaction; do not construct panel specs
 /// - Never make branching decisions about which UI to show
 class ContactGroupedPickerWidget extends HookConsumerWidget {
   const ContactGroupedPickerWidget({super.key, required this.payload});
