@@ -4,10 +4,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../config/theme/widgets/theme_widgets.dart';
-import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
-import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
-import '../../../../../essentials/sidebar/feature_level_providers.dart';
 import '../../../feature_level_providers.dart';
+import '../resolver_tools/handle_filter_actions_provider.dart';
 
 /// Widget builder for the handle-filter cassette.
 ///
@@ -75,53 +73,6 @@ class _HandleFilterDropdown extends ConsumerWidget {
   final ThemeColors colors;
   final ThemeTypography typography;
 
-  Future<void> _onHandleSelected(WidgetRef ref, int? handleId) async {
-    await ref
-        .read(sidebarActionDispatcherProvider.notifier)
-        .dispatch(
-          intent: ContactHandleSelected(
-            contactId: contactId,
-            handleId: handleId,
-          ),
-          context: SidebarActionDispatchContext(
-            sidebarMode: SidebarMode.messages,
-            cassetteIndex: cassetteIndex,
-          ),
-        );
-  }
-
-  Future<void> _onUnlink(WidgetRef ref) async {
-    if (selectedHandleId == null) {
-      return;
-    }
-
-    final result = await ref
-        .read(manualHandleLinkServiceProvider.notifier)
-        .unlinkHandle(handleId: selectedHandleId!);
-
-    result.fold(
-      (failure) {
-        // Failures are unlikely here; silently ignore.
-      },
-      (contactDeleted) {
-        if (contactDeleted) {
-          ref
-              .read(sidebarActionDispatcherProvider.notifier)
-              .dispatch(
-                intent: const ChooseAnotherContact(),
-                context: SidebarActionDispatchContext(
-                  sidebarMode: SidebarMode.messages,
-                  cassetteIndex: cassetteIndex,
-                ),
-              );
-        } else {
-          // Still has other handles — reset to "All".
-          _onHandleSelected(ref, null);
-        }
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final options = [
@@ -155,9 +106,6 @@ class _HandleFilterDropdown extends ConsumerWidget {
           AppThemeWidgets.dropdownMenu<_HandleMenuOption>(
             options: options,
             selectedOption: selectedOption,
-            onSelected: (option) async {
-              await _onHandleSelected(ref, option.handleId);
-            },
             optionLabelBuilder: (option) => option.label,
             equals: (a, b) => a.handleId == b.handleId,
             outerPadding: EdgeInsets.zero,
@@ -170,12 +118,27 @@ class _HandleFilterDropdown extends ConsumerWidget {
             selectedValueStyle: typography.controlValue,
             chevronColor: colors.dropdownMenu(DropdownMenu.chevronIcon),
             chevronBackgroundColor: colors.dropdownMenu(DropdownMenu.chevronBg),
+            onSelected: (option) async {
+              await ref
+                  .read(handleFilterActionsProvider.notifier)
+                  .selectHandle(
+                    contactId: contactId,
+                    handleId: option.handleId,
+                    cassetteIndex: cassetteIndex,
+                  );
+            },
           ),
           if (canUnlink) ...[
             const SizedBox(height: 6),
             GestureDetector(
               onTap: () async {
-                await _onUnlink(ref);
+                await ref
+                    .read(handleFilterActionsProvider.notifier)
+                    .unlinkSelectedHandle(
+                      contactId: contactId,
+                      selectedHandleId: selectedHandleId!,
+                      cassetteIndex: cassetteIndex,
+                    );
               },
               child: Text(
                 'Unlink this number from contact',

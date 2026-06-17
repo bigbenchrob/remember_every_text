@@ -2731,6 +2731,11 @@ criteria.
   current favourite state, but the user-intent mutation now crosses an explicit
   action boundary. Added a tripwire preventing direct controller mutation from
   returning to the widget.
+- Moved contact handle-filter selection/unlinking behind `HandleFilterActions`.
+  The handle-filter widget now renders menu controls only; handle selection,
+  overlay unlinking, and the follow-up sidebar route decision are owned by the
+  contact feature action boundary. Added a tripwire preventing direct manual
+  link or sidebar-dispatch mutation from returning to the widget.
 
 ### Exit Criteria
 

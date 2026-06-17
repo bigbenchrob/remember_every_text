@@ -1680,6 +1680,20 @@ void main() {
       );
     });
 
+    test('Contact handle filter uses action boundary', () async {
+      final offenders = await _findHandleFilterActionBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'HandleFilterWidget may render handle-filter controls, but handle '
+            'selection, unlinking, and follow-up navigation should cross '
+            'HandleFilterActions.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Conversation favourites stay storage agnostic', () async {
       final offenders = await _findConversationFavouritesStorageOffenders();
 
@@ -4607,6 +4621,26 @@ Future<List<String>> _findPickerFilterToggleActionBoundaryOffenders() async {
   final offenders = <String>[];
   if (uncommented.contains('pickerFilterProvider.notifier')) {
     offenders.add('$filePath mutates picker filter state directly');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findHandleFilterActionBoundaryOffenders() async {
+  const filePath =
+      'lib/features/contacts/application/sidebar_cassette_spec/widget_builders/handle_filter_widget.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final offenders = <String>[];
+  if (uncommented.contains('manualHandleLinkServiceProvider.notifier')) {
+    offenders.add('$filePath mutates manual handle links directly');
+  }
+  if (uncommented.contains('sidebarActionDispatcherProvider.notifier')) {
+    offenders.add('$filePath dispatches sidebar follow-up actions directly');
   }
 
   return offenders..sort();
