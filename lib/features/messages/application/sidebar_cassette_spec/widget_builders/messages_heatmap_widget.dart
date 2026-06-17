@@ -19,6 +19,7 @@ import '../../../presentation/widgets/contact_graph_conversation_section.dart';
 import '../resolver_tools/contact_context_identity.dart';
 import '../resolver_tools/contact_timeline_provider.dart';
 import '../resolver_tools/global_messages_heatmap_provider.dart';
+import '../resolver_tools/message_heatmap_refresh_actions_provider.dart';
 
 /// Widget builder for the messages heatmap cassette.
 ///
@@ -55,7 +56,9 @@ class MessagesHeatmapWidget extends ConsumerWidget {
       error: (error, _) => _HeatmapErrorCard(
         message: 'Unable to load heatmap data. $error',
         onRetry: () {
-          ref.invalidate(globalMessagesHeatmapProvider);
+          ref
+              .read(messageHeatmapRefreshActionsProvider.notifier)
+              .refreshGlobalHeatmap();
         },
       ),
     );
@@ -209,12 +212,12 @@ class _ContactAllMessagesEvidence extends ConsumerWidget {
       error: (error, _) => _HeatmapErrorCard(
         message: 'Unable to load heatmap data. $error',
         onRetry: () {
-          ref.invalidate(
-            contactTimelineProvider(
-              contactId: contactId,
-              filterHandleId: selectedHandleId,
-            ),
-          );
+          ref
+              .read(messageHeatmapRefreshActionsProvider.notifier)
+              .refreshContactTimeline(
+                contactId: contactId,
+                filterHandleId: selectedHandleId,
+              );
         },
       ),
     );

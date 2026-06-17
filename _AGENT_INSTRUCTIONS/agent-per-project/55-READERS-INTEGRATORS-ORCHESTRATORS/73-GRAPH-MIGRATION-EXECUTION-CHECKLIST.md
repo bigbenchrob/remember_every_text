@@ -2656,6 +2656,12 @@ criteria.
     manual graph build execution, summary/health refresh, and status run
     logging live behind the action boundary. Added a tripwire preventing those
     details from returning to the presentation sheet.
+  - Moved sidebar retry refresh invalidation out of contact hero and message
+    heatmap widget builders into feature-local application action providers.
+    Sidebar widgets now render retry controls and invoke typed refresh actions;
+    provider invalidation remains behind resolver/action boundaries. Added a
+    tripwire preventing direct provider invalidation from returning to sidebar
+    widget builders.
 
 ### Exit Criteria
 

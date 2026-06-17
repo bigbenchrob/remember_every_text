@@ -10,6 +10,7 @@ import '../../read_models/contact_summary_identity.dart';
 import '../resolver_tools/contact_display_name_override_actions_provider.dart';
 import '../resolver_tools/contact_favorite_actions_provider.dart';
 import '../resolver_tools/contact_is_favorite_provider.dart';
+import '../resolver_tools/contact_sidebar_refresh_actions_provider.dart';
 
 /// Widget builder for the contact hero summary cassette.
 ///
@@ -90,7 +91,9 @@ class _ContactHeroSummaryWidgetState
       loading: () => const Center(child: ProgressCircle()),
       error: (error, _) => ContactCassetteError(
         onRetry: () {
-          ref.invalidate(contactsListRepositoryProvider);
+          ref
+              .read(contactSidebarRefreshActionsProvider.notifier)
+              .refreshContactList();
         },
         message: '$error',
       ),

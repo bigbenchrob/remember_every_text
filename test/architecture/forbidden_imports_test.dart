@@ -439,6 +439,23 @@ void main() {
       );
     });
 
+    test(
+      'Sidebar widget builders do not invalidate providers directly',
+      () async {
+        final offenders = await _findSidebarWidgetInvalidationOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'Sidebar widget builders may render retry/refresh controls, but '
+              'provider invalidation belongs behind resolver/action boundaries. '
+              'Direct widget invalidation is an imperative repair pattern.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
     test('Chats view model dispatches sidebar actions', () async {
       final offenders = await _findChatsViewModelFlowMutationOffenders();
 
@@ -6032,6 +6049,26 @@ Future<List<String>> _findStaleSidebarWidgetContractOffenders() async {
     if (content.contains('Construct specs only on user interaction') ||
         content.contains('narrows the center panel') ||
         content.contains('dispatches [MessagesSpec')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findSidebarWidgetInvalidationOffenders() async {
+  final files = await _collectDartFiles((path) {
+    return path.startsWith('lib/features/') &&
+        path.contains('/sidebar_cassette_spec/widget_builders/') &&
+        !path.endsWith('.g.dart') &&
+        !path.endsWith('.freezed.dart');
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final uncommented = _stripComments(await File(filePath).readAsString());
+    if (uncommented.contains('ref.invalidate(') ||
+        uncommented.contains('widget.ref.invalidate(')) {
       offenders.add(filePath);
     }
   }
