@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../../../core/util/message_tag_normalizer.dart';
-import '../../../../essentials/conversation_graph/domain/identity_key_bridge.dart';
+import '../../../../essentials/conversation_graph/application/identity/retained_overlay_identity_bridge.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import '../../application/user_metadata/message_overlay_repository.dart';

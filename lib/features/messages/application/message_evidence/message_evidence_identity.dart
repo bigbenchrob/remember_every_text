@@ -1,4 +1,4 @@
-import '../../../../essentials/conversation_graph/domain/identity_key_bridge.dart';
+import '../../../../essentials/conversation_graph/application/identity/retained_overlay_identity_bridge.dart';
 
 /// Resolves a message selection id to the canonical graph id used by evidence.
 ///

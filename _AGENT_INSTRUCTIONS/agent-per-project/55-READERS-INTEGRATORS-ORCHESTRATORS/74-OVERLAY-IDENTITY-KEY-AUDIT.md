@@ -32,7 +32,7 @@ remain compatibility boundaries, not retained database authority.
 
 Intentional bridge locations:
 
-- `lib/essentials/conversation_graph/domain/identity_key_bridge.dart`
+- `lib/essentials/conversation_graph/application/identity/retained_overlay_identity_bridge.dart`
   translates retained overlay/contact/handle/message integer keys to
   source-scoped graph ids and back where necessary.
 - `lib/features/messages/infrastructure/repositories/message_overlay_identity_bridge_repository.dart`

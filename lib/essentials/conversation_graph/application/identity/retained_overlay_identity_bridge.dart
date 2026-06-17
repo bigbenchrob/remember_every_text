@@ -1,5 +1,5 @@
-import '../../source_scoped_import/domain/known_sources.dart';
-import '../../source_scoped_import/domain/source_scoped_row_key.dart';
+import '../../../source_scoped_import/domain/known_sources.dart';
+import '../../../source_scoped_import/domain/source_scoped_row_key.dart';
 
 /// Temporary compatibility helpers for graph ids and retained overlay ids.
 ///

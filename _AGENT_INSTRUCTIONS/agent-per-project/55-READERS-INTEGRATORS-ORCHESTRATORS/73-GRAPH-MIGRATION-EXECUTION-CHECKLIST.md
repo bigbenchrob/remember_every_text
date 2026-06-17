@@ -860,12 +860,12 @@ criteria.
   remains backwards-compatible with legacy diagnostic writers and maps those
   rows into onboarding failure summaries at the read boundary.
 - Contact/handle/message overlay key compatibility is now centralized in
-  `identity_key_bridge.dart`. Contact lists, display identity, contact profile,
-  handle menus, manual linking, spam management, and stray-handle settings use
-  that bridge instead of duplicating graph-id/legacy-id pack/unpack logic inside
-  feature-local repositories. Message overlay fallback and bounded-search
-  context anchoring also use the same bridge for live `chat.db` rowid to graph
-  `message_ss_id` translation.
+  `retained_overlay_identity_bridge.dart`. Contact lists, display identity,
+  contact profile, handle menus, manual linking, spam management, and
+  stray-handle settings use that bridge instead of duplicating
+  graph-id/legacy-id pack/unpack logic inside feature-local repositories.
+  Message overlay fallback and bounded-search context anchoring also use the
+  same bridge for live `chat.db` rowid to graph `message_ss_id` translation.
 - The obsolete live import status precheck was removed from the retained
   `DbImportControlViewModel.startMigration()` path. Historical archive
   workflows already run archive import explicitly before retained migration, so
@@ -2476,8 +2476,9 @@ criteria.
     `ArchiveCompatibilityKey`; only the filesystem adapter unwraps the key
     when it needs the retained id for deterministic fallback filenames.
   - Added an architecture tripwire that freezes the current
-    `identity_key_bridge.dart` import surface, keeping retained-overlay graph
-    key conversion from spreading without explicit review.
+    `retained_overlay_identity_bridge.dart` import surface, keeping
+    retained-overlay graph key conversion from spreading without explicit
+    review.
   - Moved contact-side retained/graph identity matching into a contacts
     application read-model helper, removing direct identity-bridge imports from
     the contact hero widget and favorite contact providers.
@@ -2530,6 +2531,11 @@ criteria.
     projection tests to use import-ledger naming for the source-scoped import
     database. This keeps active graph projection terminology separate from
     retained import compatibility storage.
+  - Moved retained-overlay id conversion out of the conversation graph domain
+    folder into
+    `application/identity/retained_overlay_identity_bridge.dart`, and updated
+    the import-surface tripwire. The bridge remains transitional compatibility
+    logic, not graph domain identity semantics.
 
 ### Exit Criteria
 

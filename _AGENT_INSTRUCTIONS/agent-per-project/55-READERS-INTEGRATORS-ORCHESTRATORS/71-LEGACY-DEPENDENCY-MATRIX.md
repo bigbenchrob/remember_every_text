@@ -50,11 +50,11 @@ Compatibility bridges are recorded inside the closest category. For example,
 a graph repository that reads legacy handle aliases to support a graph-facing
 view is an ordinary user-facing read dependency with bridge semantics.
 Graph/legacy overlay key translation is centralized in
-`lib/essentials/conversation_graph/domain/identity_key_bridge.dart`; feature
-repositories should consume those typed key variants rather than duplicating
-source-scoped pack/unpack compatibility math. The bridge currently covers
-contact ids, handle ids, and live `chat.db` message rowids used by message
-overlay fallback and bounded-search context anchoring.
+`lib/essentials/conversation_graph/application/identity/retained_overlay_identity_bridge.dart`;
+feature repositories should consume those typed key variants rather than
+duplicating source-scoped pack/unpack compatibility math. The bridge currently
+covers contact ids, handle ids, and live `chat.db` message rowids used by
+message overlay fallback and bounded-search context anchoring.
 
 ## Current Findings - 2026-06-06
 

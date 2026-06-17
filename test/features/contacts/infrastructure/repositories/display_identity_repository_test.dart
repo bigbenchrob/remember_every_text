@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:remember_this_text/essentials/conversation_graph/domain/identity_key_bridge.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/identity/retained_overlay_identity_bridge.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 

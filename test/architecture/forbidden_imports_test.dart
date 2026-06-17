@@ -43,7 +43,7 @@ const Set<String> _sourceScopedDatabaseFilenameLiteralAllowedFiles = {
 
 const Set<String> _legacyTerminologyAllowedFiles = <String>{};
 
-const Set<String> _identityKeyBridgeAllowedFiles = {
+const Set<String> _retainedOverlayIdentityBridgeAllowedFiles = {
   'lib/features/contacts/application/read_models/contact_summary_identity.dart',
   'lib/features/contacts/infrastructure/repositories/display_identity_repository.dart',
   'lib/features/contacts/infrastructure/repositories/graph_contact_profile_reader.dart',
@@ -443,15 +443,18 @@ void main() {
     });
 
     test('Retained overlay identity bridge usage stays tracked', () async {
-      final offenders = await _findIdentityKeyBridgeImportOffenders();
+      final offenders =
+          await _findRetainedOverlayIdentityBridgeImportOffenders();
 
       expect(
         offenders,
-        orderedEquals(_identityKeyBridgeAllowedFiles.toList()..sort()),
+        orderedEquals(
+          _retainedOverlayIdentityBridgeAllowedFiles.toList()..sort(),
+        ),
         reason:
-            'identity_key_bridge.dart is a temporary retained-overlay '
-            'compatibility bridge. Its active import surface should not grow '
-            'without architectural review.\n'
+            'retained_overlay_identity_bridge.dart is a transitional '
+            'retained-overlay compatibility boundary. Its active import '
+            'surface should not grow without architectural review.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -2617,7 +2620,7 @@ Future<List<String>> _findLegacyTerminologyOffenders() async {
   return offenders.toList()..sort();
 }
 
-Future<List<String>> _findIdentityKeyBridgeImportOffenders() async {
+Future<List<String>> _findRetainedOverlayIdentityBridgeImportOffenders() async {
   final files = await _collectDartFiles((path) {
     if (path.endsWith('.g.dart')) {
       return false;
@@ -2630,11 +2633,12 @@ Future<List<String>> _findIdentityKeyBridgeImportOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     final imports = _extractImports(uncommented);
-    final importsIdentityBridge = imports.any(
-      (importTarget) => importTarget.endsWith('identity_key_bridge.dart'),
+    final importsRetainedOverlayIdentityBridge = imports.any(
+      (importTarget) =>
+          importTarget.endsWith('retained_overlay_identity_bridge.dart'),
     );
 
-    if (importsIdentityBridge) {
+    if (importsRetainedOverlayIdentityBridge) {
       offenders.add(filePath);
     }
   }
