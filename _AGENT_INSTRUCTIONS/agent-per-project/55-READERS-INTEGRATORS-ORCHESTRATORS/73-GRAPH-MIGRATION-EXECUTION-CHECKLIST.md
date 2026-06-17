@@ -2705,6 +2705,11 @@ criteria.
     for diagnostic rendering, but Open Settings, start import, and dismiss
     callbacks no longer call the gate notifier directly. Extended the dev-panel
     tripwire to guard that boundary.
+  - Moved top-level Messages/Settings mode selection behind
+    `AppModeActions`. The toggle still renders the active mode, but selected
+    mode mutation and associated cleanup now cross a navigation action
+    boundary. Added a tripwire preventing direct active-mode mutation from
+    returning to the toolbar widget.
 
 ### Exit Criteria
 

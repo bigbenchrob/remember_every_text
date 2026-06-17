@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart' show MacosTooltip;
 
 import '../../../../config/theme/colors/theme_colors.dart';
+import '../../application/app_mode_actions_provider.dart';
 import '../../application/sidebar_mode_provider.dart';
 import '../../domain/sidebar_mode.dart';
 
@@ -38,7 +39,7 @@ class AppModeToggle extends ConsumerWidget {
           final newMode = index == 0
               ? SidebarMode.messages
               : SidebarMode.settings;
-          ref.read(activeSidebarModeProvider.notifier).setMode(newMode);
+          ref.read(appModeActionsProvider.notifier).selectMode(newMode);
         },
       ),
     );

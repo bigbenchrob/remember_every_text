@@ -451,6 +451,22 @@ void main() {
     );
 
     test(
+      'App mode toggle delegates mode mutation to action boundary',
+      () async {
+        final offenders = await _findAppModeToggleActionBoundaryOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'AppModeToggle may render the selected sidebar mode, but mode '
+              'mutation and cleanup side effects should cross AppModeActions.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
+    test(
       'Feature presentation does not construct panel navigation specs',
       () async {
         final offenders =
@@ -6242,6 +6258,23 @@ _findSidebarParkedOverlayOnboardingActionOffenders() async {
   }
   if (uncommented.contains('.clearAll()')) {
     offenders.add('$filePath clears onboarding simulation overrides directly');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findAppModeToggleActionBoundaryOffenders() async {
+  const filePath =
+      'lib/essentials/navigation/presentation/widgets/app_mode_toggle.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final offenders = <String>[];
+  if (uncommented.contains('activeSidebarModeProvider.notifier')) {
+    offenders.add('$filePath mutates active sidebar mode directly');
   }
 
   return offenders..sort();
