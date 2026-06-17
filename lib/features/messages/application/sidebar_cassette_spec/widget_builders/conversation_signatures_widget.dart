@@ -10,12 +10,10 @@ import '../../../../../config/theme/widgets/theme_widgets.dart';
 import '../../../../../essentials/conversation_graph/application/conversation_favourites/conversation_favourites_provider.dart';
 import '../../../../../essentials/conversation_graph/presentation/widgets/conversation_favourite_button.dart';
 import '../../../../../essentials/conversation_graph/presentation/widgets/conversation_signature_card.dart';
-import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
-import '../../../../../essentials/sidebar/application/sidebar_action_dispatcher.dart';
-import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart';
 import '../../../../../essentials/sidebar/presentation/view/sidebar_grouped_control_section_surface.dart';
 import '../../../domain/calendar_heatmap_timeline_data.dart';
+import '../../../feature_level_providers.dart';
 import '../../../presentation/widgets/calendar_heatmap_timeline_widget.dart';
 import '../resolver_tools/conversation_signature_display_provider.dart';
 import '../resolver_tools/conversation_signature_preferences_provider.dart';
@@ -153,7 +151,13 @@ class _ConversationSignaturesWidgetState
                         conversationId: signature.conversationId,
                       ),
                       onPressed: () {
-                        _selectConversation(ref, signature.conversationId);
+                        ref
+                            .read(
+                              conversationNavigationActionsProvider.notifier,
+                            )
+                            .selectConversation(
+                              conversationId: signature.conversationId,
+                            );
                       },
                     );
                   },
@@ -234,7 +238,11 @@ class _FavouriteConversationSection extends ConsumerWidget {
                 conversationId: signatures[index].conversationId,
               ),
               onPressed: () {
-                _selectConversation(ref, signatures[index].conversationId);
+                ref
+                    .read(conversationNavigationActionsProvider.notifier)
+                    .selectConversation(
+                      conversationId: signatures[index].conversationId,
+                    );
               },
             ),
           ],
@@ -365,17 +373,6 @@ class _ConversationSignatureControls extends ConsumerWidget {
       ],
     );
   }
-}
-
-void _selectConversation(WidgetRef ref, int conversationId) {
-  ref
-      .read(sidebarActionDispatcherProvider.notifier)
-      .dispatch(
-        intent: ConversationSelected(conversationId: conversationId),
-        context: const SidebarActionDispatchContext(
-          sidebarMode: SidebarMode.messages,
-        ),
-      );
 }
 
 ConversationSignatureCardData _toCardData(

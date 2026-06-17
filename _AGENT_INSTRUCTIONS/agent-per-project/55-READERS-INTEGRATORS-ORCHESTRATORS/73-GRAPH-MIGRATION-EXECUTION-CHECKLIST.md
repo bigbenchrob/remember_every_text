@@ -2754,6 +2754,11 @@ criteria.
   renders display-ready signature cards and reports selected conversation ids;
   sidebar intent construction and dispatch stay in the messages application
   boundary.
+- Moved conversation-signature row selection behind
+  `ConversationNavigationActions`. The conversation signature sidebar now
+  renders favourite/normal signature rows and reports selected conversation ids;
+  sidebar intent construction and dispatch stay in the messages application
+  boundary.
 
 ### Exit Criteria
 

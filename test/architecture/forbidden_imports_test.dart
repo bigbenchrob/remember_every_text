@@ -1261,6 +1261,21 @@ void main() {
       );
     });
 
+    test('Conversation signature selection uses action boundary', () async {
+      final offenders =
+          await _findConversationSignatureSelectionActionBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'ConversationSignaturesWidget may render signature rows and '
+            'report selected ids, but sidebar intent construction and dispatch '
+            'belong behind ConversationNavigationActions.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Conversation message header uses context boundary', () async {
       final offenders =
           await _findConversationMessageHeaderContextBoundaryOffenders();
@@ -4198,6 +4213,32 @@ _findConversationSignaturePresentationRawProviderOffenders() async {
   }
 
   return offenders.toList()..sort();
+}
+
+Future<List<String>>
+_findConversationSignatureSelectionActionBoundaryOffenders() async {
+  const filePath =
+      'lib/features/messages/application/sidebar_cassette_spec/widget_builders/conversation_signatures_widget.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final offenders = <String>[];
+  const forbiddenTokens = <String>[
+    'sidebarActionDispatcherProvider',
+    'SidebarActionDispatchContext',
+    'ConversationSelected',
+  ];
+
+  for (final token in forbiddenTokens) {
+    if (uncommented.contains(token)) {
+      offenders.add('$filePath uses $token');
+    }
+  }
+
+  return offenders..sort();
 }
 
 Future<List<String>>
