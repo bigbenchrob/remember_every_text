@@ -8,10 +8,8 @@ import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../config/theme/widgets/theme_widgets.dart';
 import '../../../../../essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart';
 import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
-import '../../../../../essentials/sidebar/application/sidebar_action_dispatcher.dart';
-import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
-import '../../../../../essentials/sidebar/feature_level_providers.dart';
 import '../../../domain/sidebar_utilities_constants.dart';
+import '../resolver_tools/sidebar_top_menu_actions_provider.dart';
 
 /// Top Chat Menu Widget Builder
 ///
@@ -57,16 +55,15 @@ class TopChatMenuWidget extends ConsumerWidget {
     final isPopulated = ref.watch(conversationGraphPopulatedProvider);
     final showPrompt =
         currentChoice == TopChatMenuChoice.contacts && !isPopulated;
-    final dispatcher = ref.read(sidebarActionDispatcherProvider.notifier);
 
     Future<void> handleSelectionChange(TopChatMenuChoice newChoice) async {
-      await dispatcher.dispatch(
-        intent: TopMenuChanged(choice: _mapTopMenuChoice(newChoice)),
-        context: SidebarActionDispatchContext(
-          sidebarMode: sidebarMode,
-          cassetteIndex: cassetteIndex,
-        ),
-      );
+      await ref
+          .read(sidebarTopMenuActionsProvider.notifier)
+          .selectMessageMenuChoice(
+            choice: newChoice,
+            sidebarMode: sidebarMode,
+            cassetteIndex: cassetteIndex,
+          );
     }
 
     return AppThemeWidgets.dropdownMenu<TopChatMenuChoice>(
@@ -168,18 +165,4 @@ class TopChatMenuWidget extends ConsumerWidget {
 bool _isSecondaryTopMenuChoice(TopChatMenuChoice choice) {
   return choice == TopChatMenuChoice.recoveredUnlinkedMessages ||
       choice == TopChatMenuChoice.recoveredNoHandleFromMeMessages;
-}
-
-SidebarTopMenuChoice _mapTopMenuChoice(TopChatMenuChoice choice) {
-  return switch (choice) {
-    TopChatMenuChoice.conversations => SidebarTopMenuChoice.conversations,
-    TopChatMenuChoice.contacts => SidebarTopMenuChoice.contacts,
-    TopChatMenuChoice.strayHandles => SidebarTopMenuChoice.strayHandles,
-    TopChatMenuChoice.searchAllMessages =>
-      SidebarTopMenuChoice.searchAllMessages,
-    TopChatMenuChoice.recoveredUnlinkedMessages =>
-      SidebarTopMenuChoice.recoveredUnlinkedMessages,
-    TopChatMenuChoice.recoveredNoHandleFromMeMessages =>
-      SidebarTopMenuChoice.recoveredNoHandleFromMeMessages,
-  };
 }

@@ -2772,6 +2772,10 @@ criteria.
   controls now render choices and forward user intent; contact prewarm and
   cassette-indexed sidebar intent construction stay in the contacts
   application boundary.
+- Moved message/settings top-menu selection behind `SidebarTopMenuActions`.
+  The reusable sidebar utility menu widgets still render current choices and
+  graph-readiness prompt state, but top-menu intent mapping and sidebar
+  dispatch now live behind a sidebar-utilities application boundary.
 
 ### Exit Criteria
 

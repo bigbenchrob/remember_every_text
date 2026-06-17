@@ -480,6 +480,20 @@ void main() {
       );
     });
 
+    test('Sidebar utility top menus use action boundary', () async {
+      final offenders = await _findSidebarUtilityTopMenuActionOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Sidebar utility top-menu widgets may render menu choices and '
+            'forward selections, but top-menu sidebar intent construction '
+            'belongs behind SidebarTopMenuActions.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test(
       'Feature presentation does not construct panel navigation specs',
       () async {
@@ -6799,6 +6813,36 @@ Future<List<String>> _findMacosAppShellActionBoundaryOffenders() async {
   }
   if (uncommented.contains('switchableDarkModeProvider.notifier')) {
     offenders.add('$filePath mutates theme mode directly');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findSidebarUtilityTopMenuActionOffenders() async {
+  const filePaths = <String>[
+    'lib/features/sidebar_utilities/application/sidebar_cassette_spec/widget_builders/settings_top_menu_widget.dart',
+    'lib/features/sidebar_utilities/application/sidebar_cassette_spec/widget_builders/top_chat_menu_widget.dart',
+  ];
+  final offenders = <String>[];
+  const forbiddenTokens = <String>[
+    'sidebarActionDispatcherProvider',
+    'SidebarActionDispatchContext',
+    'TopMenuChanged',
+    '_mapTopMenuChoice',
+  ];
+
+  for (final filePath in filePaths) {
+    final file = File(filePath);
+    if (!file.existsSync()) {
+      continue;
+    }
+
+    final uncommented = _stripComments(await file.readAsString());
+    for (final token in forbiddenTokens) {
+      if (uncommented.contains(token)) {
+        offenders.add('$filePath uses $token');
+      }
+    }
   }
 
   return offenders..sort();
