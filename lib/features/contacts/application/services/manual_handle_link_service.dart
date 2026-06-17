@@ -109,9 +109,10 @@ class ManualHandleLinkService extends _$ManualHandleLinkService {
         participantId: participantId,
       );
 
-      // Invalidate cached providers
-      ref.invalidate(strayHandlesProvider);
-      ref.invalidate(handleDisplayNameProvider(handleId: handleId));
+      _invalidateManualLinkReads(
+        handleId: handleId,
+        participantId: participantId,
+      );
 
       return const Right(unit);
     } catch (e, stackTrace) {
@@ -137,10 +138,11 @@ class ManualHandleLinkService extends _$ManualHandleLinkService {
         virtualParticipantId: virtualParticipantId,
       );
 
-      // Invalidate cached providers
-      ref.invalidate(strayHandlesProvider);
-      ref.invalidate(handleDisplayNameProvider(handleId: handleId));
-      ref.invalidate(virtualParticipantsProvider);
+      _invalidateManualLinkReads(
+        handleId: handleId,
+        virtualParticipantId: virtualParticipantId,
+        includeVirtualParticipants: true,
+      );
 
       return const Right(unit);
     } catch (e, stackTrace) {
@@ -194,14 +196,38 @@ class ManualHandleLinkService extends _$ManualHandleLinkService {
       }
 
       // Invalidate cached providers
-      ref.invalidate(strayHandlesProvider);
-      ref.invalidate(handleDisplayNameProvider(handleId: handleId));
+      _invalidateManualLinkReads(
+        handleId: handleId,
+        participantId: existingOverride.participantId,
+        virtualParticipantId: existingOverride.virtualParticipantId,
+      );
 
       return Right(contactDeleted);
     } catch (e, stackTrace) {
       return Left(
         Failure('Failed to unlink handle: $e', stackTrace: stackTrace),
       );
+    }
+  }
+
+  void _invalidateManualLinkReads({
+    required int handleId,
+    int? participantId,
+    int? virtualParticipantId,
+    bool includeVirtualParticipants = false,
+  }) {
+    ref.invalidate(strayHandlesProvider);
+    ref.invalidate(handleDisplayNameProvider(handleId: handleId));
+    if (participantId != null) {
+      ref.invalidate(handlesForContactProvider(contactId: participantId));
+    }
+    if (virtualParticipantId != null) {
+      ref.invalidate(
+        handlesForContactProvider(contactId: virtualParticipantId),
+      );
+    }
+    if (includeVirtualParticipants) {
+      ref.invalidate(virtualParticipantsProvider);
     }
   }
 }

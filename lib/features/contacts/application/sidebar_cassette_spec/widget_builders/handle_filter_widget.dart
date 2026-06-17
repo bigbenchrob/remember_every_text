@@ -104,9 +104,6 @@ class _HandleFilterDropdown extends ConsumerWidget {
         // Failures are unlikely here; silently ignore.
       },
       (contactDeleted) {
-        // Invalidate handles list so the dropdown rebuilds.
-        ref.invalidate(handlesForContactProvider(contactId: contactId));
-
         if (contactDeleted) {
           ref
               .read(sidebarActionDispatcherProvider.notifier)

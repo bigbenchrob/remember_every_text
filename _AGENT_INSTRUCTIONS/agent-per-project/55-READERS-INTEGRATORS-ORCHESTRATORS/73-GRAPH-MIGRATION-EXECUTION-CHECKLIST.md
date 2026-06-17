@@ -2607,6 +2607,11 @@ criteria.
     `ManualHandleLinkService`. `HandleLensView` now invokes the service and
     updates only its local form state; it no longer performs provider
     invalidation as an imperative repair after successful link actions.
+  - Moved handle-filter unlink read invalidation into `ManualHandleLinkService`.
+    The handle-filter widget now invokes the manual-link action boundary and
+    performs only sidebar selection flow updates. Added a narrow architecture
+    tripwire preventing widget-level provider invalidation from returning to
+    that unlink path.
 
 ### Exit Criteria
 

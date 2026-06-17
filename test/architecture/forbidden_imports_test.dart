@@ -408,7 +408,8 @@ void main() {
     test(
       'Feature presentation does not construct panel navigation specs',
       () async {
-        final offenders = await _findFeaturePresentationNavigationSpecOffenders();
+        final offenders =
+            await _findFeaturePresentationNavigationSpecOffenders();
 
         expect(
           offenders,
@@ -1337,6 +1338,20 @@ void main() {
             'display-name action boundary. Favourite mutations should also '
             'flow through contact action providers rather than local '
             'repository/invalidation plumbing.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Handle filter unlink uses manual-link action boundary', () async {
+      final offenders = await _findHandleFilterManualLinkBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'HandleFilterWidget may request a manual unlink, but affected '
+            'contact/handle read invalidation belongs inside '
+            'ManualHandleLinkService rather than widget-level repair logic.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -5785,6 +5800,23 @@ Future<List<String>> _findContactHeroOverlayDatabaseOffenders() async {
       uncommented.contains('ref.invalidate(unifiedPickerSectionsProvider')) {
     offenders.add('$filePath handles contact overlay action details directly');
   }
+  return offenders..sort();
+}
+
+Future<List<String>> _findHandleFilterManualLinkBoundaryOffenders() async {
+  const filePath =
+      'lib/features/contacts/application/sidebar_cassette_spec/widget_builders/handle_filter_widget.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final offenders = <String>[];
+  if (uncommented.contains('ref.invalidate(')) {
+    offenders.add('$filePath invalidates provider reads after unlink');
+  }
+
   return offenders..sort();
 }
 
