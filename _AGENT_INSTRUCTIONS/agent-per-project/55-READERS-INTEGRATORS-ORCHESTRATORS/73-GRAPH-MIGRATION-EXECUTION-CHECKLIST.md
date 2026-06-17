@@ -2567,6 +2567,11 @@ criteria.
     precedence no longer includes an app-derived short-name step. Short-name,
     nickname, and name-mode variants are now documented as retired
     compatibility artifacts rather than evidence naming inputs.
+  - Added an architecture tripwire preventing source-specific message renderer
+    classes/files (`ContactMessageRenderer`, `ConversationMessageRenderer`,
+    `SearchResultMessageRenderer`, `RecoveredMessageRenderer`) from returning.
+    Source-specific message scopes remain allowed; source-specific evidence
+    presentation remains blocked by test.
 
 ### Exit Criteria
 

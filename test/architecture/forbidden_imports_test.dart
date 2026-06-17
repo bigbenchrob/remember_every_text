@@ -62,6 +62,21 @@ const Set<String> _retiredContactNameVariantAllowedFiles = {
   'lib/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart',
 };
 
+const List<String> _retiredSourceSpecificMessageRendererSymbols = <String>[
+  'ContactMessageRenderer',
+  'ConversationMessageRenderer',
+  'SearchResultMessageRenderer',
+  'RecoveredMessageRenderer',
+];
+
+const List<String> _retiredSourceSpecificMessageRendererPathFragments =
+    <String>[
+      'contact_message_renderer.dart',
+      'conversation_message_renderer.dart',
+      'search_result_message_renderer.dart',
+      'recovered_message_renderer.dart',
+    ];
+
 const Set<String> _rawPrintAllowedFiles = {'lib/main.dart'};
 
 const List<String> _retiredImportMigrationExecutionSymbols = <String>[
@@ -1198,6 +1213,21 @@ void main() {
             'Recovered message evidence consumers should use the messages '
             'feature-level provider boundary, not a concrete infrastructure '
             'provider file.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Source-specific message renderers do not return', () async {
+      final offenders = await _findSourceSpecificMessageRendererOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Message evidence scopes may differ by source, but evidence '
+            'presentation must converge through the shared evidence spine. '
+            'Do not restore source-specific message renderer classes or '
+            'files.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -3902,6 +3932,35 @@ _findRecoveredMessageEvidenceInfrastructureProviderOffenders() async {
       ),
     )) {
       offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findSourceSpecificMessageRendererOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    if (_retiredSourceSpecificMessageRendererPathFragments.any(
+      filePath.endsWith,
+    )) {
+      offenders.add(filePath);
+      continue;
+    }
+
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    for (final symbol in _retiredSourceSpecificMessageRendererSymbols) {
+      if (RegExp('\\b$symbol\\b').hasMatch(uncommented)) {
+        offenders.add('$filePath uses $symbol');
+      }
     }
   }
 
