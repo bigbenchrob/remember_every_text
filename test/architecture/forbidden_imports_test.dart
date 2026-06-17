@@ -1116,7 +1116,8 @@ void main() {
             'ContactGraphConversationSection renders conversation signature '
             'cards. It should consume display-ready contact conversation '
             'signatures instead of opening raw contact graph snapshots inside '
-            'presentation.\n'
+            'presentation. Conversation selection should update SidebarFlow, '
+            'not push center-panel content imperatively.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -3810,12 +3811,28 @@ _findContactConversationSectionDisplayBoundaryOffenders() async {
   const forbiddenImports = <String>{
     '../../../../essentials/conversation_graph/application/contacts/contact_graph.dart',
     '../../../../essentials/conversation_graph/application/contacts/contact_graph_provider.dart',
+    '../../../../essentials/navigation/feature_level_providers.dart',
+    '../../../../essentials/navigation/domain/entities/view_spec.dart',
+    '../../../../essentials/navigation/domain/navigation_constants.dart',
   };
-
-  return [
+  final offenders = <String>[
     for (final importTarget in imports)
       if (forbiddenImports.contains(importTarget)) '$filePath -> $importTarget',
-  ]..sort();
+  ];
+
+  const forbiddenTokens = <String>[
+    'panelsViewStateProvider',
+    'WindowPanel.center',
+    'ViewSpec.messages',
+    'MessagesSpec.forConversation',
+  ];
+  for (final token in forbiddenTokens) {
+    if (uncommented.contains(token)) {
+      offenders.add('$filePath uses $token');
+    }
+  }
+
+  return offenders..sort();
 }
 
 Future<List<String>>

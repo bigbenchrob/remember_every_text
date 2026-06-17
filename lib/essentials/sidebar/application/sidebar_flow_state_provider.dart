@@ -232,9 +232,16 @@ void debugAssertValidSidebarFlowState(SidebarFlowState state) {
       }
 
     case TopChatMenuChoice.contacts:
-      if (state.selectedConversationId != null) {
+      final contactConversationSelected =
+          state.selectedConversationId != null &&
+          state.chosenContactId != null &&
+          state.messageScope == SidebarFlowMessageScope.regular &&
+          state.contactProjection == SidebarFlowContactProjection.conversations;
+      if (state.selectedConversationId != null &&
+          !contactConversationSelected) {
         throw StateError(
-          'Contacts branch cannot retain global conversation selection state.',
+          'Contacts branch can retain conversation selection only in '
+          'conversation projection mode.',
         );
       }
 
@@ -264,6 +271,15 @@ void debugAssertValidSidebarFlowState(SidebarFlowState state) {
           state.contactProjection != SidebarFlowContactProjection.allMessages) {
         throw StateError(
           'Recovered contact scope cannot use conversation projection mode.',
+        );
+      }
+
+      if (state.contactProjection ==
+              SidebarFlowContactProjection.conversations &&
+          state.selectedHandleId != null) {
+        throw StateError(
+          'Contact conversation projection cannot retain a selected handle '
+          'filter.',
         );
       }
 
@@ -409,6 +425,16 @@ abstract class SidebarFlowState with _$SidebarFlowState {
           case SidebarFlowMessageScope.regular:
             if (contactProjection ==
                 SidebarFlowContactProjection.conversations) {
+              final conversationId = selectedConversationId;
+              if (conversationId != null) {
+                return ViewSpec.messages(
+                  MessagesSpec.forConversation(
+                    conversationId: conversationId,
+                    anchorMessageId: selectedConversationAnchorMessageId,
+                    searchQuery: selectedConversationSearchQuery,
+                  ),
+                );
+              }
               return null;
             }
             return ViewSpec.messages(
@@ -823,6 +849,33 @@ class SidebarFlow extends _$SidebarFlow {
         selectedConversationId: null,
         selectedConversationAnchorMessageId: null,
         selectedConversationSearchQuery: null,
+        scrollToDate: null,
+        messageScope: SidebarFlowMessageScope.regular,
+        contactProjection: SidebarFlowContactProjection.conversations,
+      ),
+    );
+    _scheduleContactContextPreferencePersist(
+      SidebarContactContextPreference(
+        contactId: contactId,
+        projection: SidebarFlowContactProjection.conversations,
+      ),
+    );
+  }
+
+  void selectContactConversation({
+    required int contactId,
+    required int conversationId,
+    int? anchorMessageId,
+    String? searchQuery,
+  }) {
+    _setState(
+      state.copyWith(
+        topMenuChoice: TopChatMenuChoice.contacts,
+        chosenContactId: contactId,
+        selectedHandleId: null,
+        selectedConversationId: conversationId,
+        selectedConversationAnchorMessageId: anchorMessageId,
+        selectedConversationSearchQuery: searchQuery,
         scrollToDate: null,
         messageScope: SidebarFlowMessageScope.regular,
         contactProjection: SidebarFlowContactProjection.conversations,

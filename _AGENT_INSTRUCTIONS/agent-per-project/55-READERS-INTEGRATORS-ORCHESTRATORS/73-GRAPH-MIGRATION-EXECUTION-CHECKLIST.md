@@ -2585,6 +2585,13 @@ criteria.
     selected-scope cap regressions such as generic `limit` parameters,
     `LIMIT 500`, or `take(500)`. Bounded values in the spine must remain
     explicit hydration windows.
+  - Removed the direct center-panel show call from
+    `ContactGraphConversationSection`. Contact-by-conversation selection now
+    updates `SidebarFlow`, and the conversation evidence center spec is derived
+    from contact conversation projection state. The existing architecture
+    tripwire for the contact conversation section now also blocks direct
+    center-panel navigation imports and `MessagesSpec.forConversation`
+    construction inside the widget.
 
 ### Exit Criteria
 

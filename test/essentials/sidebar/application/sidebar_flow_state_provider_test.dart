@@ -441,6 +441,33 @@ void main() {
       );
     });
 
+    test('selected contact conversation derives center spec', () {
+      container
+          .read(sidebarFlowProvider.notifier)
+          .selectContactConversation(
+            contactId: 42,
+            conversationId: 8796093022216,
+          );
+
+      final flowState = container.read(sidebarFlowProvider);
+
+      expect(flowState.topMenuChoice, TopChatMenuChoice.contacts);
+      expect(flowState.chosenContactId, 42);
+      expect(
+        flowState.contactProjection,
+        SidebarFlowContactProjection.conversations,
+      );
+      expect(flowState.selectedConversationId, 8796093022216);
+      expect(
+        flowState.projectedCenterSpec,
+        equals(
+          const ViewSpec.messages(
+            MessagesSpec.forConversation(conversationId: 8796093022216),
+          ),
+        ),
+      );
+    });
+
     test('historical archives projects a settings-mode center spec', () {
       container
           .read(sidebarFlowProvider.notifier)

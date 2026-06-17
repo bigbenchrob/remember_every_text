@@ -5,14 +5,10 @@ import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
 import '../../../../essentials/conversation_graph/presentation/widgets/conversation_favourite_button.dart';
 import '../../../../essentials/conversation_graph/presentation/widgets/conversation_signature_card.dart';
-import '../../../../essentials/navigation/domain/entities/view_spec.dart';
-import '../../../../essentials/navigation/domain/navigation_constants.dart';
-import '../../../../essentials/navigation/domain/sidebar_mode.dart';
-import '../../../../essentials/navigation/feature_level_providers.dart';
+import '../../../../essentials/sidebar/feature_level_providers.dart';
 import '../../application/sidebar_cassette_spec/resolver_tools/contact_conversation_signatures_provider.dart';
 import '../../application/sidebar_cassette_spec/resolver_tools/conversation_signature_display_provider.dart';
 import '../../domain/calendar_heatmap_timeline_data.dart';
-import '../../domain/spec_classes/messages_view_spec.dart';
 import 'calendar_heatmap_timeline_widget.dart';
 
 class ContactGraphConversationSection extends ConsumerWidget {
@@ -45,6 +41,7 @@ class ContactGraphConversationSection extends ConsumerWidget {
         }
 
         return _ContactGraphConversationContent(
+          contactId: contactId,
           signatureDisplays: signatureDisplays,
           padding: padding,
           maxHeight: maxHeight,
@@ -107,11 +104,13 @@ class _ContactGraphConversationNotice extends ConsumerWidget {
 
 class _ContactGraphConversationContent extends ConsumerStatefulWidget {
   const _ContactGraphConversationContent({
+    required this.contactId,
     required this.signatureDisplays,
     required this.padding,
     required this.maxHeight,
   });
 
+  final int contactId;
   final List<ConversationSignatureDisplayModel> signatureDisplays;
   final EdgeInsetsGeometry padding;
   final double maxHeight;
@@ -152,7 +151,7 @@ class _ContactGraphConversationContentState
                   conversationId: signature.conversationId,
                 ),
                 onPressed: () {
-                  _showConversation(ref, signature.conversationId);
+                  _selectContactConversation(ref, signature.conversationId);
                 },
               );
             },
@@ -162,14 +161,12 @@ class _ContactGraphConversationContentState
     );
   }
 
-  void _showConversation(WidgetRef ref, int conversationId) {
+  void _selectContactConversation(WidgetRef ref, int conversationId) {
     ref
-        .read(panelsViewStateProvider(SidebarMode.messages).notifier)
-        .show(
-          panel: WindowPanel.center,
-          spec: ViewSpec.messages(
-            MessagesSpec.forConversation(conversationId: conversationId),
-          ),
+        .read(sidebarFlowProvider.notifier)
+        .selectContactConversation(
+          contactId: widget.contactId,
+          conversationId: conversationId,
         );
   }
 }
