@@ -494,6 +494,20 @@ void main() {
       );
     });
 
+    test('Settings action list uses action boundary', () async {
+      final offenders = await _findSettingsActionListActionOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'SettingsActionList may render action descriptors and forward '
+            'selection, but enabled-state dispatch and sidebar intent '
+            'construction belong behind SettingsActionListActions.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test(
       'Feature presentation does not construct panel navigation specs',
       () async {
@@ -6842,6 +6856,33 @@ Future<List<String>> _findSidebarUtilityTopMenuActionOffenders() async {
       if (uncommented.contains(token)) {
         offenders.add('$filePath uses $token');
       }
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findSettingsActionListActionOffenders() async {
+  const filePath =
+      'lib/features/settings/application/sidebar_cassette_spec/widget_builders/settings_action_list.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final offenders = <String>[];
+  const forbiddenTokens = <String>[
+    'sidebarActionDispatcherProvider',
+    'SidebarActionDispatchContext',
+    'SidebarMode.settings',
+    '.dispatch(',
+    '!action.isEnabled',
+  ];
+
+  for (final token in forbiddenTokens) {
+    if (uncommented.contains(token)) {
+      offenders.add('$filePath uses $token');
     }
   }
 

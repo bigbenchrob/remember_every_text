@@ -3,9 +3,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
-import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
-import '../../../../../essentials/sidebar/application/sidebar_action_dispatcher.dart';
 import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
+import '../actions/settings_action_list_actions_provider.dart';
 
 class SettingsActionList extends ConsumerWidget {
   const SettingsActionList({
@@ -22,7 +21,6 @@ class SettingsActionList extends ConsumerWidget {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
-    final dispatcher = ref.read(sidebarActionDispatcherProvider.notifier);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -33,17 +31,10 @@ class SettingsActionList extends ConsumerWidget {
             behavior: HitTestBehavior.opaque,
             onTap: () async {
               final action = actions[index];
-              if (!action.isEnabled) {
-                return;
-              }
 
-              await dispatcher.dispatch(
-                intent: action.intent,
-                context: SidebarActionDispatchContext(
-                  sidebarMode: SidebarMode.settings,
-                  cassetteIndex: cassetteIndex,
-                ),
-              );
+              await ref
+                  .read(settingsActionListActionsProvider.notifier)
+                  .selectAction(action: action, cassetteIndex: cassetteIndex);
             },
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 10),

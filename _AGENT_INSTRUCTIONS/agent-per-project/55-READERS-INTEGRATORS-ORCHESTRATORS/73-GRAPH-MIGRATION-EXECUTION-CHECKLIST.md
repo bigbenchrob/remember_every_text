@@ -2776,6 +2776,10 @@ criteria.
   The reusable sidebar utility menu widgets still render current choices and
   graph-readiness prompt state, but top-menu intent mapping and sidebar
   dispatch now live behind a sidebar-utilities application boundary.
+- Moved settings action-list dispatch behind `SettingsActionListActions`.
+  Settings action rows still render descriptor labels and tone, but
+  enabled-state dispatch and settings sidebar intent construction now live in
+  the settings application boundary.
 
 ### Exit Criteria
 
