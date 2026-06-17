@@ -1706,6 +1706,25 @@ void main() {
       );
     });
 
+    test(
+      'Sidebar action dispatcher does not push message evidence panels',
+      () async {
+        final offenders =
+            await _findSidebarActionDispatcherPanelPushOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'Sidebar action dispatch may mutate sidebar flow or call '
+              'feature-owned action boundaries, but message evidence center '
+              'content must derive from SidebarFlowState rather than direct '
+              'panel pushes.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
     test('Pipeline incident tracker stays overlay-storage agnostic', () async {
       final offenders = await _findPipelineIncidentTrackerStorageOffenders();
 
@@ -4606,6 +4625,27 @@ Future<List<String>> _findSidebarActionDispatcherStorageOffenders() async {
     offenders.add('$filePath handles storage-backed mutations directly');
   }
   return offenders..sort();
+}
+
+Future<List<String>> _findSidebarActionDispatcherPanelPushOffenders() async {
+  const filePath =
+      'lib/essentials/sidebar/application/sidebar_action_dispatcher.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final forbiddenTokens = [
+    'panelsViewStateProvider',
+    'WindowPanel.',
+    'ViewSpec.messages',
+    'MessagesSpec.',
+  ];
+  return [
+    for (final token in forbiddenTokens)
+      if (uncommented.contains(token)) '$filePath contains $token',
+  ]..sort();
 }
 
 Future<List<String>> _findPipelineIncidentTrackerStorageOffenders() async {

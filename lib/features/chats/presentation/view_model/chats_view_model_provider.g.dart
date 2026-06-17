@@ -6,7 +6,7 @@ part of 'chats_view_model_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$chatsViewModelHash() => r'311e529d3f993a47e62558313c7ba35bf06975fe';
+String _$chatsViewModelHash() => r'd04c0dceed22571908b44f9dfff8f35a26347778';
 
 /// View model that handles chat-centric user actions like selection.
 ///

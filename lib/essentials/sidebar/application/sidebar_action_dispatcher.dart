@@ -12,10 +12,7 @@ import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.d
 import '../../../features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
 import '../../logging/application/diagnostic_report_actions.dart';
 import '../../logging/feature_level_providers.dart';
-import '../../navigation/domain/entities/view_spec.dart';
-import '../../navigation/domain/navigation_constants.dart';
 import '../../navigation/domain/sidebar_mode.dart';
-import '../../navigation/feature_level_providers.dart';
 import '../../onboarding/application/message_data_reset_service.dart';
 import '../application/cassette_rack_state_provider.dart';
 import '../application/ephemeral_cassette_projection_provider.dart';
@@ -189,22 +186,12 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
             .setMode(_mapStrayHandleMode(mode));
       case StrayHandleOpened(:final handleId):
         ref
-            .read(panelsViewStateProvider(context.sidebarMode).notifier)
-            .show(
-              panel: WindowPanel.center,
-              spec: ViewSpec.messages(
-                MessagesSpec.handleLens(handleId: handleId),
-              ),
-            );
+            .read(sidebarFlowProvider.notifier)
+            .openStrayHandleLens(handleId: handleId);
       case HandleMessagesOpened(:final handleId):
         ref
-            .read(panelsViewStateProvider(context.sidebarMode).notifier)
-            .show(
-              panel: WindowPanel.center,
-              spec: ViewSpec.messages(
-                MessagesSpec.forHandle(handleId: handleId),
-              ),
-            );
+            .read(sidebarFlowProvider.notifier)
+            .openHandleMessages(handleId: handleId);
       case StrayHandleDismissed(:final normalizedHandle):
         await ref
             .read(handleReviewActionsProvider.notifier)

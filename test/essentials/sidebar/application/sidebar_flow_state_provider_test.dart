@@ -956,6 +956,54 @@ void main() {
       );
     });
 
+    testWidgets('stray handle lens derives handle lens center spec', (
+      tester,
+    ) async {
+      await _mountMessagesPanelReconciliation(tester, container);
+
+      container
+          .read(sidebarFlowProvider.notifier)
+          .openStrayHandleLens(handleId: 7);
+
+      await _flushMessagesPanelReconciliation(tester);
+
+      final flowState = container.read(sidebarFlowProvider);
+      expect(flowState.topMenuChoice, TopChatMenuChoice.strayHandles);
+      expect(flowState.selectedHandleEvidenceId, 7);
+      expect(
+        flowState.selectedHandleEvidenceKind,
+        SidebarFlowHandleEvidenceKind.lens,
+      );
+      expect(
+        _activeSpec(container, WindowPanel.center),
+        equals(const ViewSpec.messages(MessagesSpec.handleLens(handleId: 7))),
+      );
+    });
+
+    testWidgets('handle messages derive standalone handle center spec', (
+      tester,
+    ) async {
+      await _mountMessagesPanelReconciliation(tester, container);
+
+      container
+          .read(sidebarFlowProvider.notifier)
+          .openHandleMessages(handleId: 9001);
+
+      await _flushMessagesPanelReconciliation(tester);
+
+      final flowState = container.read(sidebarFlowProvider);
+      expect(flowState.topMenuChoice, TopChatMenuChoice.strayHandles);
+      expect(flowState.selectedHandleEvidenceId, 9001);
+      expect(
+        flowState.selectedHandleEvidenceKind,
+        SidebarFlowHandleEvidenceKind.messages,
+      );
+      expect(
+        _activeSpec(container, WindowPanel.center),
+        equals(const ViewSpec.messages(MessagesSpec.forHandle(handleId: 9001))),
+      );
+    });
+
     testWidgets(
       'showRecoveredDeletedAt stores month anchor in projected center spec',
       (tester) async {

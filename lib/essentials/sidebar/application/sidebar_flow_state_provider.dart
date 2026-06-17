@@ -22,6 +22,8 @@ enum SidebarFlowMessageScope { regular, recoveredDeleted }
 
 enum SidebarFlowContactProjection { allMessages, conversations }
 
+enum SidebarFlowHandleEvidenceKind { lens, messages }
+
 extension SidebarFlowMessageScopeStorage on SidebarFlowMessageScope {
   String get storageValue {
     return switch (this) {
@@ -210,6 +212,24 @@ void debugAssertValidSidebarFlowState(SidebarFlowState state) {
     throw StateError('Conversation anchors require a selected conversation.');
   }
 
+  final handleEvidenceSelected =
+      state.selectedHandleEvidenceId != null ||
+      state.selectedHandleEvidenceKind != null;
+  if (handleEvidenceSelected &&
+      (state.selectedHandleEvidenceId == null ||
+          state.selectedHandleEvidenceKind == null)) {
+    throw StateError(
+      'Handle evidence selection requires both handle id and evidence kind.',
+    );
+  }
+
+  if (state.topMenuChoice != TopChatMenuChoice.strayHandles &&
+      handleEvidenceSelected) {
+    throw StateError(
+      'Handle evidence selection belongs only to the stray handles branch.',
+    );
+  }
+
   switch (state.topMenuChoice) {
     case TopChatMenuChoice.conversations:
       if (state.chosenContactId != null || state.selectedHandleId != null) {
@@ -382,6 +402,8 @@ abstract class SidebarFlowState with _$SidebarFlowState {
     int? selectedConversationId,
     int? selectedConversationAnchorMessageId,
     String? selectedConversationSearchQuery,
+    int? selectedHandleEvidenceId,
+    SidebarFlowHandleEvidenceKind? selectedHandleEvidenceKind,
     SettingsMenuActionId? persistentSettingsContext,
     DateTime? scrollToDate,
     @Default(SidebarFlowMessageScope.regular)
@@ -453,7 +475,19 @@ abstract class SidebarFlowState with _$SidebarFlowState {
             );
         }
       case TopChatMenuChoice.strayHandles:
-        return null;
+        final handleEvidenceId = selectedHandleEvidenceId;
+        final handleEvidenceKind = selectedHandleEvidenceKind;
+        if (handleEvidenceId == null || handleEvidenceKind == null) {
+          return null;
+        }
+        return ViewSpec.messages(switch (handleEvidenceKind) {
+          SidebarFlowHandleEvidenceKind.lens => MessagesSpec.handleLens(
+            handleId: handleEvidenceId,
+          ),
+          SidebarFlowHandleEvidenceKind.messages => MessagesSpec.forHandle(
+            handleId: handleEvidenceId,
+          ),
+        });
       case TopChatMenuChoice.searchAllMessages:
         return ViewSpec.messages(
           MessagesSpec.globalTimeline(scrollToDate: scrollToDate),
@@ -631,6 +665,8 @@ class SidebarFlow extends _$SidebarFlow {
         selectedConversationId: null,
         selectedConversationAnchorMessageId: null,
         selectedConversationSearchQuery: null,
+        selectedHandleEvidenceId: null,
+        selectedHandleEvidenceKind: null,
         messageScope: SidebarFlowMessageScope.regular,
         contactProjection: contactProjection,
       ),
@@ -672,6 +708,8 @@ class SidebarFlow extends _$SidebarFlow {
         selectedConversationId: null,
         selectedConversationAnchorMessageId: null,
         selectedConversationSearchQuery: null,
+        selectedHandleEvidenceId: null,
+        selectedHandleEvidenceKind: null,
         messageScope: SidebarFlowMessageScope.regular,
         contactProjection: SidebarFlowContactProjection.allMessages,
       ),
@@ -720,6 +758,8 @@ class SidebarFlow extends _$SidebarFlow {
         selectedConversationId: null,
         selectedConversationAnchorMessageId: null,
         selectedConversationSearchQuery: null,
+        selectedHandleEvidenceId: null,
+        selectedHandleEvidenceKind: null,
         messageScope: SidebarFlowMessageScope.regular,
         contactProjection: SidebarFlowContactProjection.allMessages,
       ),
@@ -756,6 +796,8 @@ class SidebarFlow extends _$SidebarFlow {
           selectedConversationId: null,
           selectedConversationAnchorMessageId: null,
           selectedConversationSearchQuery: null,
+          selectedHandleEvidenceId: null,
+          selectedHandleEvidenceKind: null,
           scrollToDate: null,
           messageScope: SidebarFlowMessageScope.regular,
           contactProjection: SidebarFlowContactProjection.allMessages,
@@ -786,6 +828,8 @@ class SidebarFlow extends _$SidebarFlow {
         selectedConversationId: null,
         selectedConversationAnchorMessageId: null,
         selectedConversationSearchQuery: null,
+        selectedHandleEvidenceId: null,
+        selectedHandleEvidenceKind: null,
         scrollToDate: null,
         messageScope: SidebarFlowMessageScope.recoveredDeleted,
         contactProjection: SidebarFlowContactProjection.allMessages,
@@ -817,6 +861,8 @@ class SidebarFlow extends _$SidebarFlow {
         selectedConversationId: null,
         selectedConversationAnchorMessageId: null,
         selectedConversationSearchQuery: null,
+        selectedHandleEvidenceId: null,
+        selectedHandleEvidenceKind: null,
         scrollToDate: null,
         messageScope: SidebarFlowMessageScope.recoveredDeleted,
         contactProjection: SidebarFlowContactProjection.allMessages,
@@ -833,6 +879,8 @@ class SidebarFlow extends _$SidebarFlow {
         selectedConversationId: null,
         selectedConversationAnchorMessageId: null,
         selectedConversationSearchQuery: null,
+        selectedHandleEvidenceId: null,
+        selectedHandleEvidenceKind: null,
         scrollToDate: scrollToDate,
         messageScope: SidebarFlowMessageScope.regular,
         contactProjection: SidebarFlowContactProjection.allMessages,
@@ -849,6 +897,8 @@ class SidebarFlow extends _$SidebarFlow {
         selectedConversationId: null,
         selectedConversationAnchorMessageId: null,
         selectedConversationSearchQuery: null,
+        selectedHandleEvidenceId: null,
+        selectedHandleEvidenceKind: null,
         scrollToDate: null,
         messageScope: SidebarFlowMessageScope.regular,
         contactProjection: SidebarFlowContactProjection.conversations,
@@ -876,6 +926,8 @@ class SidebarFlow extends _$SidebarFlow {
         selectedConversationId: conversationId,
         selectedConversationAnchorMessageId: anchorMessageId,
         selectedConversationSearchQuery: searchQuery,
+        selectedHandleEvidenceId: null,
+        selectedHandleEvidenceKind: null,
         scrollToDate: null,
         messageScope: SidebarFlowMessageScope.regular,
         contactProjection: SidebarFlowContactProjection.conversations,
@@ -898,6 +950,8 @@ class SidebarFlow extends _$SidebarFlow {
         selectedConversationId: null,
         selectedConversationAnchorMessageId: null,
         selectedConversationSearchQuery: null,
+        selectedHandleEvidenceId: null,
+        selectedHandleEvidenceKind: null,
         scrollToDate: null,
         messageScope: SidebarFlowMessageScope.regular,
         contactProjection: SidebarFlowContactProjection.allMessages,
@@ -914,6 +968,8 @@ class SidebarFlow extends _$SidebarFlow {
         selectedConversationId: null,
         selectedConversationAnchorMessageId: null,
         selectedConversationSearchQuery: null,
+        selectedHandleEvidenceId: null,
+        selectedHandleEvidenceKind: null,
         scrollToDate: scrollToDate,
         messageScope: SidebarFlowMessageScope.regular,
         contactProjection: SidebarFlowContactProjection.allMessages,
@@ -934,6 +990,8 @@ class SidebarFlow extends _$SidebarFlow {
         selectedConversationId: null,
         selectedConversationAnchorMessageId: null,
         selectedConversationSearchQuery: null,
+        selectedHandleEvidenceId: null,
+        selectedHandleEvidenceKind: null,
         scrollToDate: scrollToDate,
         messageScope: SidebarFlowMessageScope.regular,
         contactProjection: SidebarFlowContactProjection.allMessages,
@@ -982,8 +1040,46 @@ class SidebarFlow extends _$SidebarFlow {
         selectedConversationId: null,
         selectedConversationAnchorMessageId: null,
         selectedConversationSearchQuery: null,
+        selectedHandleEvidenceId: null,
+        selectedHandleEvidenceKind: null,
         scrollToDate: startDate,
         messageScope: SidebarFlowMessageScope.recoveredDeleted,
+        contactProjection: SidebarFlowContactProjection.allMessages,
+      ),
+    );
+  }
+
+  void openStrayHandleLens({required int handleId}) {
+    _setState(
+      state.copyWith(
+        topMenuChoice: TopChatMenuChoice.strayHandles,
+        chosenContactId: null,
+        selectedHandleId: null,
+        selectedConversationId: null,
+        selectedConversationAnchorMessageId: null,
+        selectedConversationSearchQuery: null,
+        selectedHandleEvidenceId: handleId,
+        selectedHandleEvidenceKind: SidebarFlowHandleEvidenceKind.lens,
+        scrollToDate: null,
+        messageScope: SidebarFlowMessageScope.regular,
+        contactProjection: SidebarFlowContactProjection.allMessages,
+      ),
+    );
+  }
+
+  void openHandleMessages({required int handleId}) {
+    _setState(
+      state.copyWith(
+        topMenuChoice: TopChatMenuChoice.strayHandles,
+        chosenContactId: null,
+        selectedHandleId: null,
+        selectedConversationId: null,
+        selectedConversationAnchorMessageId: null,
+        selectedConversationSearchQuery: null,
+        selectedHandleEvidenceId: handleId,
+        selectedHandleEvidenceKind: SidebarFlowHandleEvidenceKind.messages,
+        scrollToDate: null,
+        messageScope: SidebarFlowMessageScope.regular,
         contactProjection: SidebarFlowContactProjection.allMessages,
       ),
     );

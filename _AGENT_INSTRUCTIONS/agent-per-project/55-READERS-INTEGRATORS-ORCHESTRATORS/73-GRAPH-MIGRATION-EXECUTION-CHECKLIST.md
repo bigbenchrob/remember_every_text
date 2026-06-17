@@ -2631,6 +2631,12 @@ criteria.
     anchor/search context. `ChatsViewModel` now translates chat selections into
     semantic sidebar actions rather than mutating `SidebarFlow` directly, with
     an architecture tripwire guarding the boundary.
+  - Moved stray-handle/handle-message center evidence projection into
+    `SidebarFlowState`. The flow state now carries explicit handle evidence
+    selection (`lens` vs `messages`) on the Stray Handles branch, and
+    `SidebarActionDispatcher` no longer constructs `MessagesSpec` or pushes
+    message evidence panels directly. Architecture tests now guard that
+    dispatcher boundary.
 
 ### Exit Criteria
 

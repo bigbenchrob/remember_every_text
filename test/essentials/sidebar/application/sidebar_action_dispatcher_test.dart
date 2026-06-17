@@ -221,13 +221,33 @@ void main() {
         await _flushMessagesPanelReconciliation(tester);
 
         expect(
-          _rawActiveSpec(container, WindowPanel.center),
+          _activeSpec(container, WindowPanel.center),
           equals(
             const ViewSpec.messages(MessagesSpec.forHandle(handleId: 9001)),
           ),
         );
       },
     );
+
+    testWidgets('dispatches stray handle lens opening through sidebar flow', (
+      tester,
+    ) async {
+      await _mountMessagesPanelReconciliation(tester, container);
+
+      await dispatcher.dispatch(
+        intent: const StrayHandleOpened(handleId: 7),
+        context: const SidebarActionDispatchContext(
+          sidebarMode: SidebarMode.messages,
+        ),
+      );
+
+      await _flushMessagesPanelReconciliation(tester);
+
+      expect(
+        _activeSpec(container, WindowPanel.center),
+        equals(const ViewSpec.messages(MessagesSpec.handleLens(handleId: 7))),
+      );
+    });
 
     test('dispatches reset message data through reset service', () async {
       await dispatcher.dispatch(
@@ -993,11 +1013,6 @@ ViewSpec? _activeSpec(ProviderContainer container, WindowPanel panel) {
     );
   }
 
-  final stacks = container.read(panelsViewStateProvider(SidebarMode.messages));
-  return stacks[panel]?.activePage?.spec;
-}
-
-ViewSpec? _rawActiveSpec(ProviderContainer container, WindowPanel panel) {
   final stacks = container.read(panelsViewStateProvider(SidebarMode.messages));
   return stacks[panel]?.activePage?.spec;
 }
