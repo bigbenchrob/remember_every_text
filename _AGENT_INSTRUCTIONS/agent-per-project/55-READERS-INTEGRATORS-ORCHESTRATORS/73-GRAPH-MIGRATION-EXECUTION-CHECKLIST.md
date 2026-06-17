@@ -2536,6 +2536,10 @@ criteria.
     `application/identity/retained_overlay_identity_bridge.dart`, and updated
     the import-surface tripwire. The bridge remains transitional compatibility
     logic, not graph domain identity semantics.
+  - Added a retired-file tripwire preventing the old
+    `conversation_graph/domain/identity_key_bridge.dart` path and test from
+    returning. Retained-overlay id conversion must stay in the named
+    application compatibility boundary.
 
 ### Exit Criteria
 

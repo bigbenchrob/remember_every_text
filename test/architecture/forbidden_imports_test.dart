@@ -538,6 +538,26 @@ void main() {
       );
     });
 
+    test('Retired retained-overlay identity domain bridge does not return', () {
+      const retiredFiles = <String>[
+        'lib/essentials/conversation_graph/domain/identity_key_bridge.dart',
+        'test/essentials/conversation_graph/domain/identity_key_bridge_test.dart',
+      ];
+      final existingFiles = retiredFiles
+          .where((path) => File(path).existsSync())
+          .toList();
+
+      expect(
+        existingFiles,
+        isEmpty,
+        reason:
+            'Retained-overlay id conversion is transitional compatibility '
+            'logic and must stay out of conversation_graph/domain. Use '
+            'application/identity/retained_overlay_identity_bridge.dart.\n'
+            'Existing retired files:\n${existingFiles.join('\n')}',
+      );
+    });
+
     test(
       'Retained archive metadata database imports stay quarantined',
       () async {
