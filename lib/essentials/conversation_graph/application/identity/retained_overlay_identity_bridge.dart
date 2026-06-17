@@ -1,7 +1,7 @@
 import '../../../source_scoped_import/domain/known_sources.dart';
 import '../../../source_scoped_import/domain/source_scoped_row_key.dart';
 
-/// Temporary compatibility helpers for graph ids and retained overlay ids.
+/// Transitional compatibility helpers for graph ids and retained overlay ids.
 ///
 /// These helpers do not define identity semantics. They only enumerate the
 /// equivalent storage keys needed while overlay rows still contain old ids.
