@@ -2577,6 +2577,10 @@ criteria.
     strategy folders from returning. Active evidence must continue through
     `MessageEvidenceScope`, full-scope skeletons, visible-row hydration, and
     `MessageEvidenceTimelineView`.
+  - Renamed the message evidence initial-row provider parameter from generic
+    `limit` to `hydrationLimit`. This preserves the full selected logical scope
+    invariant by making the bounded value explicitly local to visible-row
+    hydration, including larger month-jump hydration windows.
 
 ### Exit Criteria
 

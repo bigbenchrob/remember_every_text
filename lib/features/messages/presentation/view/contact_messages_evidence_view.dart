@@ -69,7 +69,7 @@ class _ContactMessagesEvidenceViewState
       messageEvidenceInitialRowsProvider(
         scope: evidenceScope,
         monthAnchor: widget.monthAnchor,
-        limit: widget.monthAnchor == null ? 80 : 500,
+        hydrationLimit: widget.monthAnchor == null ? 80 : 500,
       ),
     );
     final headerContextAsync = ref.watch(

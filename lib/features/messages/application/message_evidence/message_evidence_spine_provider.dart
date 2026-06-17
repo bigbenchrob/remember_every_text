@@ -265,7 +265,7 @@ Future<Map<int, MessageEvidenceRowData>> messageEvidenceInitialRows(
   Ref ref, {
   required MessageEvidenceScope scope,
   DateTime? monthAnchor,
-  int limit = 80,
+  int hydrationLimit = 80,
 }) async {
   ref.watch(messageDataVersionProvider);
 
@@ -273,7 +273,7 @@ Future<Map<int, MessageEvidenceRowData>> messageEvidenceInitialRows(
     ContactAllMessagesEvidenceScope(:final contactId) => ref.watch(
       contactPageGraphMessagesProvider(
         contactId: contactId,
-        limit: limit,
+        limit: hydrationLimit,
         monthAnchor: monthAnchor,
       ).future,
     ),
@@ -282,7 +282,7 @@ Future<Map<int, MessageEvidenceRowData>> messageEvidenceInitialRows(
         contactPageGraphHandleMessagesProvider(
           contactId: contactId,
           handleId: handleId,
-          limit: limit,
+          limit: hydrationLimit,
           monthAnchor: monthAnchor,
         ).future,
       ),

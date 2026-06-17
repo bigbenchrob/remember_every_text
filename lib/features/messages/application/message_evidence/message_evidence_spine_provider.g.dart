@@ -464,7 +464,7 @@ class _MessageEvidenceAttachmentsProviderElement
 }
 
 String _$messageEvidenceInitialRowsHash() =>
-    r'5fb1898609f685c2c33e5a6eb15a364df85d1f0d';
+    r'9802b35453ffece8b36bcc994f51a0a0965349e9';
 
 /// See also [messageEvidenceInitialRows].
 @ProviderFor(messageEvidenceInitialRows)
@@ -480,12 +480,12 @@ class MessageEvidenceInitialRowsFamily
   MessageEvidenceInitialRowsProvider call({
     required MessageEvidenceScope scope,
     DateTime? monthAnchor,
-    int limit = 80,
+    int hydrationLimit = 80,
   }) {
     return MessageEvidenceInitialRowsProvider(
       scope: scope,
       monthAnchor: monthAnchor,
-      limit: limit,
+      hydrationLimit: hydrationLimit,
     );
   }
 
@@ -496,7 +496,7 @@ class MessageEvidenceInitialRowsFamily
     return call(
       scope: provider.scope,
       monthAnchor: provider.monthAnchor,
-      limit: provider.limit,
+      hydrationLimit: provider.hydrationLimit,
     );
   }
 
@@ -522,13 +522,13 @@ class MessageEvidenceInitialRowsProvider
   MessageEvidenceInitialRowsProvider({
     required MessageEvidenceScope scope,
     DateTime? monthAnchor,
-    int limit = 80,
+    int hydrationLimit = 80,
   }) : this._internal(
          (ref) => messageEvidenceInitialRows(
            ref as MessageEvidenceInitialRowsRef,
            scope: scope,
            monthAnchor: monthAnchor,
-           limit: limit,
+           hydrationLimit: hydrationLimit,
          ),
          from: messageEvidenceInitialRowsProvider,
          name: r'messageEvidenceInitialRowsProvider',
@@ -540,7 +540,7 @@ class MessageEvidenceInitialRowsProvider
              MessageEvidenceInitialRowsFamily._allTransitiveDependencies,
          scope: scope,
          monthAnchor: monthAnchor,
-         limit: limit,
+         hydrationLimit: hydrationLimit,
        );
 
   MessageEvidenceInitialRowsProvider._internal(
@@ -552,12 +552,12 @@ class MessageEvidenceInitialRowsProvider
     required super.from,
     required this.scope,
     required this.monthAnchor,
-    required this.limit,
+    required this.hydrationLimit,
   }) : super.internal();
 
   final MessageEvidenceScope scope;
   final DateTime? monthAnchor;
-  final int limit;
+  final int hydrationLimit;
 
   @override
   Override overrideWith(
@@ -577,7 +577,7 @@ class MessageEvidenceInitialRowsProvider
         debugGetCreateSourceHash: null,
         scope: scope,
         monthAnchor: monthAnchor,
-        limit: limit,
+        hydrationLimit: hydrationLimit,
       ),
     );
   }
@@ -593,7 +593,7 @@ class MessageEvidenceInitialRowsProvider
     return other is MessageEvidenceInitialRowsProvider &&
         other.scope == scope &&
         other.monthAnchor == monthAnchor &&
-        other.limit == limit;
+        other.hydrationLimit == hydrationLimit;
   }
 
   @override
@@ -601,7 +601,7 @@ class MessageEvidenceInitialRowsProvider
     var hash = _SystemHash.combine(0, runtimeType.hashCode);
     hash = _SystemHash.combine(hash, scope.hashCode);
     hash = _SystemHash.combine(hash, monthAnchor.hashCode);
-    hash = _SystemHash.combine(hash, limit.hashCode);
+    hash = _SystemHash.combine(hash, hydrationLimit.hashCode);
 
     return _SystemHash.finish(hash);
   }
@@ -617,8 +617,8 @@ mixin MessageEvidenceInitialRowsRef
   /// The parameter `monthAnchor` of this provider.
   DateTime? get monthAnchor;
 
-  /// The parameter `limit` of this provider.
-  int get limit;
+  /// The parameter `hydrationLimit` of this provider.
+  int get hydrationLimit;
 }
 
 class _MessageEvidenceInitialRowsProviderElement
@@ -633,7 +633,8 @@ class _MessageEvidenceInitialRowsProviderElement
   DateTime? get monthAnchor =>
       (origin as MessageEvidenceInitialRowsProvider).monthAnchor;
   @override
-  int get limit => (origin as MessageEvidenceInitialRowsProvider).limit;
+  int get hydrationLimit =>
+      (origin as MessageEvidenceInitialRowsProvider).hydrationLimit;
 }
 
 String _$messageEvidenceTextMatchIdsHash() =>
