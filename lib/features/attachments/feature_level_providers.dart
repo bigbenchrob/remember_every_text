@@ -39,6 +39,7 @@ export 'application/archive_settings_provider.dart';
 export 'application/attachment_archive_service_provider.dart';
 export 'application/attachment_archive_write_store.dart';
 export 'application/attachment_file_access.dart';
+export 'application/attachment_recovery_actions_provider.dart';
 export 'application/attachment_resolver_provider.dart';
 export 'application/deterministic_recovery_provider.dart';
 export 'application/graph_attachment_archive_candidate_reader.dart';

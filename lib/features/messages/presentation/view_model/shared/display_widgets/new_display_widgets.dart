@@ -922,7 +922,9 @@ class ImageMessageTile extends ConsumerWidget {
                     onPrioritizeRecoveryTap: canPrioritizeRecovery
                         ? () {
                             ref
-                                .read(attachmentArchiveServiceProvider.notifier)
+                                .read(
+                                  attachmentRecoveryActionsProvider.notifier,
+                                )
                                 .prioritizeRecovery(
                                   archiveKey: archiveKey,
                                   resolvedLocalPath: fileAccess.expandPath(
@@ -1304,7 +1306,9 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
                     onPrioritizeRecoveryTap: canPrioritizeRecovery
                         ? () {
                             ref
-                                .read(attachmentArchiveServiceProvider.notifier)
+                                .read(
+                                  attachmentRecoveryActionsProvider.notifier,
+                                )
                                 .prioritizeRecovery(
                                   archiveKey: archiveKey,
                                   resolvedLocalPath: fileAccess.expandPath(

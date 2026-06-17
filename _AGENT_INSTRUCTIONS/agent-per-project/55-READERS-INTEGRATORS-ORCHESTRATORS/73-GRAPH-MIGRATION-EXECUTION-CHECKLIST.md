@@ -2736,6 +2736,11 @@ criteria.
   overlay unlinking, and the follow-up sidebar route decision are owned by the
   contact feature action boundary. Added a tripwire preventing direct manual
   link or sidebar-dispatch mutation from returning to the widget.
+- Moved message-display attachment recovery prioritization behind
+  `AttachmentRecoveryActions`. Shared message media widgets still render
+  unavailable attachment controls, but user recovery-priority writes now cross
+  the attachments feature action boundary rather than invoking the archive
+  service directly from presentation.
 
 ### Exit Criteria
 

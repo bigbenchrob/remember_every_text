@@ -1174,6 +1174,22 @@ void main() {
       },
     );
 
+    test('Message display recovery controls use attachment actions', () async {
+      final offenders =
+          await _findMessageDisplayAttachmentRecoveryActionOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Message display widgets may render unavailable attachment '
+            'controls, but recovery-priority writes should cross '
+            'AttachmentRecoveryActions instead of invoking archive services '
+            'directly.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Message URL previews use external URI opener boundary', () async {
       final offenders = await _findMessageUrlPreviewOpenerBoundaryOffenders();
 
@@ -3968,6 +3984,28 @@ _findMessageDisplayArchiveCompatibilityKeyOffenders() async {
   if (uncommented.contains('.messageGuid') ||
       uncommented.contains('.importAttachmentId')) {
     offenders.add('$filePath reads primitive archive compatibility fields');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>>
+_findMessageDisplayAttachmentRecoveryActionOffenders() async {
+  const filePath =
+      'lib/features/messages/presentation/view_model/shared/display_widgets/new_display_widgets.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final offenders = <String>[];
+  if (uncommented.contains('attachmentArchiveServiceProvider.notifier')) {
+    offenders.add('$filePath invokes attachment archive service directly');
+  }
+  if (uncommented.contains('.prioritizeRecovery(') &&
+      !uncommented.contains('attachmentRecoveryActionsProvider.notifier')) {
+    offenders.add('$filePath prioritizes recovery outside action boundary');
   }
 
   return offenders..sort();
