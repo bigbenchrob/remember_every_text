@@ -31,22 +31,26 @@ Future<List<FavoriteContactEntry>> favoriteContacts(
 
   final contacts = await ref.watch(contactsListRepositoryProvider.future);
 
-  final resolved = <FavoriteContactEntry>[];
+  final resolvedByContactId = <int, FavoriteContactEntry>{};
   for (final favorite in favorites) {
     final contact = findContactSummaryById(contacts, favorite.participantId);
     if (contact == null) {
       continue;
     }
 
-    resolved.add(
-      FavoriteContactEntry(
-        contact: contact,
-        favoritedAt: favorite.favoritedAt,
-        lastInteractionAt: favorite.lastInteractionAt,
-        updatedAt: favorite.updatedAt,
-      ),
+    final entry = FavoriteContactEntry(
+      contact: contact,
+      favoritedAt: favorite.favoritedAt,
+      lastInteractionAt: favorite.lastInteractionAt,
+      updatedAt: favorite.updatedAt,
     );
+    final existing = resolvedByContactId[contact.participantId];
+    if (existing == null ||
+        favorite.participantId == contact.participantId ||
+        existing.favoritedAt.isBefore(entry.favoritedAt)) {
+      resolvedByContactId[contact.participantId] = entry;
+    }
   }
 
-  return resolved;
+  return resolvedByContactId.values.toList(growable: false);
 }
