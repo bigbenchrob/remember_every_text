@@ -92,6 +92,13 @@ Future<Map<int, ParticipantOverride>> participantOverridesById(
   return {for (final row in rows) row.participantId: row};
 }
 
+ParticipantOverride? participantOverrideForContactId({
+  required Map<int, ParticipantOverride> participantOverrides,
+  required int contactId,
+}) {
+  return overlayValueForContactId(participantOverrides, contactId);
+}
+
 bool isPlaceholderDisplayName(String value) {
   final trimmed = value.trim();
   if (trimmed.isEmpty) {

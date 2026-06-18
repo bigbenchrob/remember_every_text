@@ -1,8 +1,8 @@
-import '../../../../essentials/conversation_graph/application/identity/retained_overlay_identity_bridge.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import '../../application/read_models/contact_profile_reader.dart';
 import '../../application/read_models/contact_profile_summary.dart';
+import '../../application/read_models/contact_summary_identity.dart';
 import '../../domain/overlay_virtual_contact.dart';
 import '../../domain/participant_origin.dart';
 import 'participant_merge_utils.dart';
@@ -69,7 +69,10 @@ class GraphContactProfileReader implements ContactProfileReader {
       }
 
       final overrides = await participantOverridesById(_overlayDb);
-      final override = overlayValueForContactId(overrides, graphContactId);
+      final override = participantOverrideForContactId(
+        participantOverrides: overrides,
+        contactId: graphContactId,
+      );
       final overrideLabel = override?.displayNameOverride?.trim();
 
       return ContactProfileSummary(
@@ -95,7 +98,7 @@ class GraphContactProfileReader implements ContactProfileReader {
     return [
       for (final row in rows)
         if (row['contact_id'] case final int id)
-          if (contactIdsRepresentSamePerson(id, contactId)) id,
+          if (contactIdentityIdsMatch(id, contactId)) id,
     ];
   }
 }
