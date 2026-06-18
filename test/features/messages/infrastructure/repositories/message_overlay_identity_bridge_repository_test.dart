@@ -68,6 +68,32 @@ void main() {
   );
 
   test(
+    'does not read retained rowid annotations for non-live graph messages',
+    () async {
+      final messageId = SourceScopedRowKey.pack(sourceId: 2, sourceRowId: 42);
+      await _insertGraphMessage(
+        graphDatabase: graphDatabase,
+        messageSsId: messageId,
+        guid: 'archive-guid-42',
+      );
+      await overlayDatabase.toggleMessageStar(42);
+      await overlayDatabase.setMessageArchived(messageId: 42, archived: true);
+      await overlayDatabase.addMessageTags(42, <String>['receipt']);
+      await overlayDatabase.setMessageNotes(42, 'retained note');
+      await overlayDatabase.setMessagePriority(42, 4);
+
+      final state = await repository.readForMessage(messageId);
+
+      expect(state.isStarred, isFalse);
+      expect(state.isArchived, isFalse);
+      expect(state.tags, isEmpty);
+      expect(state.userNotes, isNull);
+      expect(state.priority, isNull);
+      expect(state.usedRetainedAnnotationFallback, isFalse);
+    },
+  );
+
+  test(
     'reads unique GUID saved and tag overlays as compatibility fallback',
     () async {
       final messageId = _messageId(43);
