@@ -2809,6 +2809,11 @@ criteria.
   graph diagnostics and selected chat rows, but chat selection/navigation now
   crosses `ChatSelectionActions` instead of mutating the chats view model
   directly. Extended the graph-status-sheet tripwire for this boundary.
+- Moved panel-stack tab activation, tab close, and diagnostic build logging
+  behind `PanelActions`. `PanelStackSurface` now renders tabs/pages and
+  forwards user intent only; panel-stack mutation and logger writes stay in
+  navigation application code. Added a tripwire preventing those details from
+  returning to the render surface.
 
 ### Exit Criteria
 

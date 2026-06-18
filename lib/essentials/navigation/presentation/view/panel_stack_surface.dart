@@ -3,7 +3,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
-import '../../../logging/feature_level_providers.dart';
 import '../../application/sidebar_mode_provider.dart';
 import '../../domain/entities/panel_stack.dart';
 import '../../domain/navigation_constants.dart';
@@ -34,18 +33,8 @@ class PanelStackSurface extends ConsumerWidget {
       }
 
       ref
-          .read(appLoggerProvider.notifier)
-          .debug(
-            'Panel stack surface build',
-            source: 'PanelStackSurface',
-            context: {
-              'panel': panel.name,
-              'isEmpty': stack.isEmpty,
-              'activeIndex': stack.activeIndex,
-              'pageCount': stack.pages.length,
-              'activeSpec': '${stack.activePage?.spec}',
-            },
-          );
+          .read(panelActionsProvider.notifier)
+          .recordPanelStackBuilt(panel: panel, stack: stack);
     });
 
     if (stack.isEmpty) {
@@ -113,14 +102,14 @@ class _PanelTabStrip extends ConsumerWidget {
               closable: page.isClosable,
               onSelect: () {
                 ref
-                    .read(panelsViewStateProvider(mode).notifier)
-                    .activate(panel: panel, index: index);
+                    .read(panelActionsProvider.notifier)
+                    .activateTab(mode: mode, panel: panel, index: index);
               },
               onClose: page.isClosable
                   ? () {
                       ref
-                          .read(panelsViewStateProvider(mode).notifier)
-                          .closeAt(panel: panel, index: index);
+                          .read(panelActionsProvider.notifier)
+                          .closeTab(mode: mode, panel: panel, index: index);
                     }
                   : null,
             );

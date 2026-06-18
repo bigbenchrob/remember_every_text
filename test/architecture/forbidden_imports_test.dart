@@ -418,6 +418,20 @@ void main() {
       );
     });
 
+    test('Panel stack surface uses panel action boundary', () async {
+      final offenders = await _findPanelStackSurfaceActionBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'PanelStackSurface may render tabs and observed panel pages, but '
+            'tab activation/close and diagnostic logging belong behind '
+            'PanelActions.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Parked center actions use semantic cancellation naming', () async {
       final offenders = await _findParkedCenterActionNamingOffenders();
 
@@ -6813,6 +6827,32 @@ Future<List<String>> _findSidebarParkedOverlayPanelStateOffenders() async {
   if (uncommented.contains('panelsViewStateProvider') ||
       uncommented.contains('WindowPanel.')) {
     offenders.add('$filePath mutates panel stack directly');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findPanelStackSurfaceActionBoundaryOffenders() async {
+  const filePath =
+      'lib/essentials/navigation/presentation/view/panel_stack_surface.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final imports = _extractImports(uncommented);
+  final offenders = <String>[
+    for (final importTarget in imports)
+      if (importTarget.endsWith('feature_level_providers.dart') &&
+          importTarget.contains('logging'))
+        '$filePath imports $importTarget',
+  ];
+  if (uncommented.contains('panelsViewStateProvider') ||
+      uncommented.contains('appLoggerProvider.notifier') ||
+      uncommented.contains('.activate(panel:') ||
+      uncommented.contains('.closeAt(panel:')) {
+    offenders.add('$filePath owns panel-stack action details directly');
   }
 
   return offenders..sort();
