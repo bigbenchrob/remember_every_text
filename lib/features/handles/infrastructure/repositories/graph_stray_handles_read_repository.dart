@@ -48,11 +48,10 @@ final class GraphStrayHandlesReadRepository
 
     final dismissedHandles = await _overlayDb.getAllDismissedHandles();
     final visibilityOverrides = await _overlayDb.getAllHandleVisibilities();
-    final blacklistedHandleIds = <int>{
-      for (final override in visibilityOverrides)
-        if (override.isBlacklisted)
-          ..._graphHandleIdsForOverlayId(override.handleId),
-    };
+    final visibilityByHandleId = <int, HandleVisibilityOverride>{};
+    for (final override in visibilityOverrides) {
+      visibilityByHandleId[override.handleId] = override;
+    }
 
     final rows = await _graphDb.selectRows('''
     SELECT
@@ -84,8 +83,12 @@ final class GraphStrayHandlesReadRepository
     final results = <StrayHandleSummary>[];
     for (final row in rows) {
       final handleId = _readInt(row['handle_id']);
+      final visibility = overlayValueForHandleId(
+        visibilityByHandleId,
+        handleId,
+      );
       if (linkedOverrideHandleIds.contains(handleId) ||
-          blacklistedHandleIds.contains(handleId)) {
+          (visibility?.isBlacklisted ?? false)) {
         continue;
       }
 

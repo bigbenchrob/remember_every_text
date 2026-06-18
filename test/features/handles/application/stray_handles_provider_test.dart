@@ -4,6 +4,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/features/handles/domain/utilities/handle_normalizer.dart'
     as handle_normalizer;
 import 'package:remember_this_text/features/handles/feature_level_providers.dart';
@@ -77,6 +79,34 @@ void main() {
       final results = await container.read(strayHandlesProvider.future);
 
       expect(results, isEmpty);
+    });
+
+    test('graph visibility overrides retained blacklist variant', () async {
+      final graphHandleId = SourceScopedRowKey.pack(
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 42,
+      );
+      await _insertGraphHandleEvidence(
+        graphDb,
+        handleSsId: graphHandleId,
+        handleValue: '+17789908506',
+        messageSsId: 8004,
+      );
+      await overlayDb.setHandleVisibility(
+        42,
+        isVisible: false,
+        isBlacklisted: true,
+      );
+      await overlayDb.setHandleVisibility(
+        graphHandleId,
+        isVisible: true,
+        isBlacklisted: false,
+      );
+
+      final results = await container.read(strayHandlesProvider.future);
+
+      expect(results, hasLength(1));
+      expect(results.single.handleId, graphHandleId);
     });
 
     test('routes dismissed graph handles to dismissed escape hatch', () async {
