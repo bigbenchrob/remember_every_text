@@ -1,6 +1,6 @@
-import '../../../../essentials/conversation_graph/application/identity/retained_overlay_identity_bridge.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import '../../application/read_models/handle_identity.dart';
 import '../../application/read_models/stray_handle_summary.dart';
 import '../../application/read_models/stray_handles_read_repository.dart';
 import '../../domain/utilities/handle_normalizer.dart';
@@ -36,11 +36,11 @@ final class GraphStrayHandlesReadRepository
       if (override.participantId != null ||
           override.virtualParticipantId != null) {
         linkedOverrideHandleIds.addAll(
-          _graphHandleIdsForOverlayId(override.handleId),
+          handleIdentityKeyVariants(override.handleId),
         );
       }
       if (override.reviewedAt != null) {
-        for (final handleId in _graphHandleIdsForOverlayId(override.handleId)) {
+        for (final handleId in handleIdentityKeyVariants(override.handleId)) {
           reviewedAtByHandle[handleId] = override.reviewedAt!;
         }
       }
@@ -83,7 +83,7 @@ final class GraphStrayHandlesReadRepository
     final results = <StrayHandleSummary>[];
     for (final row in rows) {
       final handleId = _readInt(row['handle_id']);
-      final visibility = overlayValueForHandleId(
+      final visibility = overlayValueForHandleIdentity(
         visibilityByHandleId,
         handleId,
       );
@@ -151,8 +151,4 @@ DateTime? _parseDate(String? value) {
     return null;
   }
   return DateTime.tryParse(value)?.toLocal();
-}
-
-Set<int> _graphHandleIdsForOverlayId(int handleId) {
-  return handleOverlayKeyVariants(handleId);
 }

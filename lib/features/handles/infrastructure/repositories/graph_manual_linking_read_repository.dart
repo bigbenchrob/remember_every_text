@@ -1,8 +1,9 @@
-import '../../../../essentials/conversation_graph/application/identity/retained_overlay_identity_bridge.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import '../../../contacts/application/read_models/contact_summary_identity.dart';
 import '../../../contacts/feature_level_providers.dart'
     show DisplayIdentityResolver, OverlayVirtualContact;
+import '../../application/read_models/handle_identity.dart';
 import '../../application/settings_cassette_spec/resolver_tools/manual_linking_read_repository.dart';
 
 class GraphManualLinkingReadRepository implements ManualLinkingReadRepository {
@@ -35,7 +36,7 @@ class GraphManualLinkingReadRepository implements ManualLinkingReadRepository {
       if (override.participantId != null ||
           override.virtualParticipantId != null) {
         overlayLinkedHandleIds.addAll(
-          handleOverlayKeyVariants(override.handleId),
+          handleIdentityKeyVariants(override.handleId),
         );
       }
     }
@@ -72,7 +73,7 @@ class GraphManualLinkingReadRepository implements ManualLinkingReadRepository {
         continue;
       }
 
-      final visibility = overlayValueForHandleId(
+      final visibility = overlayValueForHandleIdentity(
         visibilityByHandleId,
         handleId,
       );
@@ -209,7 +210,7 @@ class GraphManualLinkingReadRepository implements ManualLinkingReadRepository {
   }
 
   Future<HandleToParticipantOverride?> _readHandleOverride(int handleId) async {
-    for (final candidateId in handleOverlayKeyVariants(handleId)) {
+    for (final candidateId in handleIdentityKeyVariants(handleId)) {
       final overlayRow = await _overlayDb.getHandleOverride(candidateId);
       if (overlayRow != null) {
         return overlayRow;
@@ -232,7 +233,7 @@ class GraphManualLinkingReadRepository implements ManualLinkingReadRepository {
       );
     }
 
-    final candidateIds = contactOverlayKeyVariants(participantId);
+    final candidateIds = contactIdentityKeyVariants(participantId);
     final placeholders = List.filled(candidateIds.length, '?').join(', ');
     final rows = await _graphDb.selectRows(
       '''
@@ -264,7 +265,7 @@ class GraphManualLinkingReadRepository implements ManualLinkingReadRepository {
   }
 
   Future<HandleLinkInfo?> _readGraphHandleLinkInfo(int handleId) async {
-    final candidateIds = handleOverlayKeyVariants(handleId);
+    final candidateIds = handleIdentityKeyVariants(handleId);
     final placeholders = List.filled(candidateIds.length, '?').join(', ');
     final graphRows = await _graphDb.selectRows(
       '''
@@ -304,7 +305,7 @@ class GraphManualLinkingReadRepository implements ManualLinkingReadRepository {
       }
       counts
           .putIfAbsent(participantId, () => <int>{})
-          .add(canonicalHandleOverlayKey(override.handleId));
+          .add(canonicalHandleIdentityKey(override.handleId));
     }
     return {for (final entry in counts.entries) entry.key: entry.value.length};
   }
@@ -319,7 +320,7 @@ class GraphManualLinkingReadRepository implements ManualLinkingReadRepository {
       }
       counts
           .putIfAbsent(virtualParticipantId, () => <int>{})
-          .add(canonicalHandleOverlayKey(override.handleId));
+          .add(canonicalHandleIdentityKey(override.handleId));
     }
     return {for (final entry in counts.entries) entry.key: entry.value.length};
   }
@@ -340,7 +341,7 @@ int _readInt(Object? value) {
 
 int _overlayCountForParticipant(Map<int, int> countsByParticipant, int id) {
   var count = 0;
-  for (final key in contactOverlayKeyVariants(id)) {
+  for (final key in contactIdentityKeyVariants(id)) {
     count += countsByParticipant[key] ?? 0;
   }
   return count;
