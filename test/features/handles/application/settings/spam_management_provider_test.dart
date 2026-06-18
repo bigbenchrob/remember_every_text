@@ -96,16 +96,28 @@ void main() {
     );
 
     test('block and unblock write overlay-only visibility intent', () async {
-      await _insertGraphHandle(graphDb, handleSsId: 7003, chatSsId: 6003);
+      final graphHandleId = SourceScopedRowKey.pack(
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 7003,
+      );
+      await _insertGraphHandle(
+        graphDb,
+        handleSsId: graphHandleId,
+        chatSsId: 6003,
+      );
 
-      await container.read(spamManagementProvider.notifier).blockHandle(7003);
-      final blocked = await overlayDb.getHandleVisibility(7003);
+      await container
+          .read(spamManagementProvider.notifier)
+          .blockHandle(graphHandleId);
+      final blocked = await overlayDb.getHandleVisibility(graphHandleId);
 
       expect(blocked?.isBlacklisted, isTrue);
       expect(blocked?.isVisible, isFalse);
 
-      await container.read(spamManagementProvider.notifier).unblockHandle(7003);
-      final unblocked = await overlayDb.getHandleVisibility(7003);
+      await container
+          .read(spamManagementProvider.notifier)
+          .unblockHandle(graphHandleId);
+      final unblocked = await overlayDb.getHandleVisibility(graphHandleId);
 
       expect(unblocked, isNull);
     });
