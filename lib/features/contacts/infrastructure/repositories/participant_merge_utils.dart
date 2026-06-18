@@ -1,5 +1,7 @@
-import '../../../../essentials/conversation_graph/application/identity/retained_overlay_identity_bridge.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import '../../../../essentials/source_scoped_import/domain/known_sources.dart';
+import '../../../../essentials/source_scoped_import/domain/source_scoped_row_key.dart';
+import '../../application/read_models/contact_summary_identity.dart';
 
 Future<Map<int, int>> overlayHandleCountsByParticipant(
   OverlayDatabase db,
@@ -13,7 +15,7 @@ Future<Map<int, int>> overlayHandleCountsByParticipant(
     }
     handlesByParticipant
         .putIfAbsent(participantId, () => <int>{})
-        .add(canonicalHandleOverlayKey(override.handleId));
+        .add(canonicalHandleIdentityKeyForOverlay(override.handleId));
   }
 
   return {
@@ -35,7 +37,7 @@ Future<Map<int, int>> overlayHandleCountsByVirtualParticipant(
     }
     handlesByVirtualParticipant
         .putIfAbsent(vpId, () => <int>{})
-        .add(canonicalHandleOverlayKey(override.handleId));
+        .add(canonicalHandleIdentityKeyForOverlay(override.handleId));
   }
 
   return {
@@ -59,7 +61,7 @@ Future<Map<int, Set<int>>> overlayHandleIdsByParticipant(
     }
     map
         .putIfAbsent(pid, () => <int>{})
-        .add(canonicalHandleOverlayKey(override.handleId));
+        .add(canonicalHandleIdentityKeyForOverlay(override.handleId));
   }
 
   return map;
@@ -79,7 +81,7 @@ Future<Map<int, Set<int>>> overlayHandleIdsByVirtualParticipant(
     }
     map
         .putIfAbsent(vpId, () => <int>{})
-        .add(canonicalHandleOverlayKey(override.handleId));
+        .add(canonicalHandleIdentityKeyForOverlay(override.handleId));
   }
 
   return map;
@@ -96,11 +98,34 @@ ParticipantOverride? participantOverrideForContactId({
   required Map<int, ParticipantOverride> participantOverrides,
   required int contactId,
 }) {
-  return overlayValueForContactId(participantOverrides, contactId);
+  for (final key in contactIdentityKeyVariants(contactId)) {
+    final value = participantOverrides[key];
+    if (value != null) {
+      return value;
+    }
+  }
+  return null;
 }
 
 Set<int> handleIdentityKeyVariantsForGraphLookup(int handleId) {
-  return handleOverlayKeyVariants(handleId);
+  final ids = <int>{handleId};
+  final graphHandleId = _graphHandleIdForRetainedHandleId(handleId);
+  if (graphHandleId != null) {
+    ids.add(graphHandleId);
+  }
+  final retainedHandleId = _retainedHandleIdForGraphHandleId(handleId);
+  if (retainedHandleId != null) {
+    ids.add(retainedHandleId);
+  }
+  return ids;
+}
+
+int canonicalHandleIdentityKeyForOverlay(int handleId) {
+  return _graphHandleIdForRetainedHandleId(handleId) ?? handleId;
+}
+
+int canonicalContactIdentityKeyForOverlay(int contactId) {
+  return canonicalContactIdentityKey(contactId);
 }
 
 bool isPlaceholderDisplayName(String value) {
@@ -109,4 +134,21 @@ bool isPlaceholderDisplayName(String value) {
     return true;
   }
   return trimmed.toLowerCase() == 'unknown contact';
+}
+
+int? _graphHandleIdForRetainedHandleId(int handleId) {
+  if (handleId <= 0 || handleId > SourceScopedRowKey.maxSourceRowId) {
+    return null;
+  }
+  return SourceScopedRowKey.pack(
+    sourceId: liveChatDbSourceId,
+    sourceRowId: handleId,
+  );
+}
+
+int? _retainedHandleIdForGraphHandleId(int handleId) {
+  if (SourceScopedRowKey.unpackSourceId(handleId) != liveChatDbSourceId) {
+    return null;
+  }
+  return SourceScopedRowKey.unpackSourceRowId(handleId);
 }
