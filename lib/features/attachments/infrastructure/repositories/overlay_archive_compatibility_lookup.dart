@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import '../../../../essentials/retained_archive/domain/archive_compatibility_key.dart';
 import '../../../../essentials/source_scoped_import/domain/known_sources.dart';
 import '../../../../essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import '../../application/graph_attachment_archive_lookup.dart';
@@ -65,8 +66,10 @@ class OverlayArchiveCompatibilityLookup
       return null;
     }
 
-    final archiveCompatibilityAttachmentId =
-        SourceScopedRowKey.unpackSourceRowId(attachmentSsId);
+    final archiveKey = ArchiveCompatibilityKey(
+      messageGuid: messageGuid,
+      importAttachmentId: SourceScopedRowKey.unpackSourceRowId(attachmentSsId),
+    );
     final archiveRows = await overlayDatabase
         .customSelect(
           '''
@@ -76,8 +79,8 @@ class OverlayArchiveCompatibilityLookup
           LIMIT 1
           ''',
           variables: [
-            Variable<String>(messageGuid),
-            Variable<int>(archiveCompatibilityAttachmentId),
+            Variable<String>(archiveKey.messageGuid),
+            Variable<int>(archiveKey.importAttachmentId),
           ],
         )
         .get();
