@@ -1,35 +1,35 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:remember_this_text/essentials/retained_archive/domain/archive_compatibility_key.dart';
 import 'package:remember_this_text/features/messages/presentation/widgets/message_evidence/media_tile_attachment.dart';
 
 void main() {
-  test('hasArchiveCompatibilityKey rejects empty message guid', () {
+  test('hasArchiveCompatibilityKey is false when no key is provided', () {
     const attachment = MediaTileAttachment(
       id: 1,
       localPath: null,
       mimeType: 'image/jpeg',
       transferName: 'image.jpg',
-      messageGuid: '',
-      importAttachmentId: 42,
     );
 
     expect(attachment.hasArchiveCompatibilityKey, isFalse);
     expect(attachment.archiveCompatibilityKey, isNull);
   });
 
-  test('archiveCompatibilityKey exposes typed key when complete', () {
+  test('archiveCompatibilityKey passes through typed key', () {
+    const key = ArchiveCompatibilityKey(
+      messageGuid: 'message-guid',
+      importAttachmentId: 42,
+    );
     const attachment = MediaTileAttachment(
       id: 1,
       localPath: null,
       mimeType: 'image/jpeg',
       transferName: 'image.jpg',
-      messageGuid: 'message-guid',
-      importAttachmentId: 42,
+      archiveCompatibilityKey: key,
     );
 
     final archiveKey = attachment.archiveCompatibilityKey;
 
-    expect(archiveKey, isNotNull);
-    expect(archiveKey!.messageGuid, 'message-guid');
-    expect(archiveKey.importAttachmentId, 42);
+    expect(archiveKey, same(key));
   });
 }

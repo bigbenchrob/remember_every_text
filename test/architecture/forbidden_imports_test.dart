@@ -130,11 +130,10 @@ const Set<String> _databaseConstructionAllowedFiles = {
 
 const Set<String> _archiveCompatibilityKeyConstructionAllowedFiles = {
   'lib/essentials/conversation_graph/infrastructure/repositories/graph_health_repository.dart',
-  'lib/features/attachments/application/archive_compatibility_key.dart',
+  'lib/essentials/retained_archive/domain/archive_compatibility_key.dart',
   'lib/features/attachments/application/attachment_resolver_provider.dart',
   'lib/features/attachments/application/cross_snapshot_mapping.dart',
   'lib/features/attachments/infrastructure/repositories/sqlite_graph_attachment_archive_candidate_reader.dart',
-  'lib/features/messages/presentation/widgets/message_evidence/media_tile_attachment.dart',
 };
 
 void main() {
@@ -3778,6 +3777,9 @@ Future<List<String>> _findCrossSystemAttachmentProviderImportOffenders() async {
     final imports = _extractImports(uncommented);
     for (final importTarget in imports) {
       if (importTarget.endsWith(
+            'features/attachments/application/archive_compatibility_key.dart',
+          ) ||
+          importTarget.endsWith(
             'features/attachments/application/archive_settings_provider.dart',
           ) ||
           importTarget.endsWith(
@@ -3800,6 +3802,9 @@ Future<List<String>> _findCrossSystemAttachmentProviderImportOffenders() async {
           ) ||
           importTarget.endsWith(
             'features/attachments/infrastructure/services/video_thumbnail_cache_service.dart',
+          ) ||
+          importTarget.endsWith(
+            'attachments/application/archive_compatibility_key.dart',
           ) ||
           importTarget.endsWith(
             'attachments/application/archive_settings_provider.dart',
@@ -6169,6 +6174,7 @@ Future<List<String>> _findGraphHealthAdHocArchiveKeyOffenders() async {
 Future<List<String>>
 _findArchiveCompatibilityTupleSerializationOffenders() async {
   const allowedFiles = <String>{
+    'lib/essentials/retained_archive/domain/archive_compatibility_key.dart',
     'lib/features/attachments/application/archive_compatibility_key.dart',
     'lib/features/attachments/application/attachment_recovery_hint_storage.dart',
   };

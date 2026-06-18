@@ -1,4 +1,4 @@
-import '../../../../attachments/application/archive_compatibility_key.dart';
+import '../../../../../essentials/retained_archive/domain/archive_compatibility_key.dart';
 import '../../../../attachments/domain/constants/attachment_provenance.dart';
 import '../../../../attachments/domain/constants/resolved_attachment_availability.dart';
 import '../../../../attachments/domain/entities/attachment_recovery_metadata.dart';
@@ -14,8 +14,7 @@ class MediaTileAttachment {
     required this.localPath,
     required this.mimeType,
     required this.transferName,
-    this.importAttachmentId,
-    this.messageGuid,
+    this.archiveCompatibilityKey,
     this.resolvedDisplayPath,
     this.availability,
     this.provenance,
@@ -28,10 +27,7 @@ class MediaTileAttachment {
   final String? localPath;
   final String? mimeType;
   final String? transferName;
-  // Current archive compatibility key passed through from evidence rows to
-  // media actions. The tile must not treat these as canonical graph identity.
-  final int? importAttachmentId;
-  final String? messageGuid;
+  final ArchiveCompatibilityKey? archiveCompatibilityKey;
   final String? resolvedDisplayPath;
   final ResolvedAttachmentAvailability? availability;
   final AttachmentProvenance? provenance;
@@ -45,8 +41,7 @@ class MediaTileAttachment {
     String? localPath,
     String? mimeType,
     String? transferName,
-    int? importAttachmentId,
-    String? messageGuid,
+    ArchiveCompatibilityKey? archiveCompatibilityKey,
     String? resolvedDisplayPath,
     ResolvedAttachmentAvailability? availability,
     AttachmentProvenance? provenance,
@@ -59,8 +54,8 @@ class MediaTileAttachment {
       localPath: localPath ?? this.localPath,
       mimeType: mimeType ?? this.mimeType,
       transferName: transferName ?? this.transferName,
-      importAttachmentId: importAttachmentId ?? this.importAttachmentId,
-      messageGuid: messageGuid ?? this.messageGuid,
+      archiveCompatibilityKey:
+          archiveCompatibilityKey ?? this.archiveCompatibilityKey,
       resolvedDisplayPath: resolvedDisplayPath ?? this.resolvedDisplayPath,
       availability: availability ?? this.availability,
       provenance: provenance ?? this.provenance,
@@ -72,20 +67,7 @@ class MediaTileAttachment {
 
   bool get hasLocalFile => localPath != null && localPath!.isNotEmpty;
 
-  bool get hasArchiveCompatibilityKey =>
-      messageGuid != null &&
-      messageGuid!.isNotEmpty &&
-      importAttachmentId != null;
-
-  ArchiveCompatibilityKey? get archiveCompatibilityKey {
-    if (!hasArchiveCompatibilityKey) {
-      return null;
-    }
-    return ArchiveCompatibilityKey(
-      messageGuid: messageGuid!,
-      importAttachmentId: importAttachmentId!,
-    );
-  }
+  bool get hasArchiveCompatibilityKey => archiveCompatibilityKey != null;
 
   bool get hasDimensions =>
       mediaWidth != null &&
