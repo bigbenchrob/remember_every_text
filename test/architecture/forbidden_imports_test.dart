@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
 
@@ -741,6 +742,22 @@ void main() {
         );
       },
     );
+
+    test('Handle blacklist overlays preserve graph-id precedence', () async {
+      final offenders = await _findHandleBlacklistVariantExpansionOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Handle visibility blacklist rows must not be expanded into '
+            'retained/graph variants before filtering graph rows. Exact '
+            'graph-id overlay intent must win over retained compatibility '
+            'variants; resolve with overlayValueForHandleId at the handle '
+            'being evaluated.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
 
     test('Overlay database filename literal stays centralized', () async {
       final offenders = await _findOverlayDatabaseFilenameLiteralOffenders();
@@ -3374,6 +3391,41 @@ _findRetainedOverlayIdentityBridgeTestImportOffenders() async {
 
     if (importsRetainedOverlayIdentityBridge) {
       offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findHandleBlacklistVariantExpansionOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final lines = uncommented.split('\n');
+    for (var index = 0; index < lines.length; index += 1) {
+      final line = lines[index];
+      final expandsVariants =
+          line.contains('handleOverlayKeyVariants(') ||
+          line.contains('_graphHandleIdsForOverlayId(');
+      if (!expandsVariants) {
+        continue;
+      }
+
+      final start = math.max(0, index - 3);
+      final end = math.min(lines.length, index + 4);
+      final localContext = lines.sublist(start, end).join('\n');
+      if (localContext.contains('isBlacklisted') ||
+          localContext.contains('blacklistedHandleIds')) {
+        offenders.add('$filePath:${index + 1}');
+      }
     }
   }
 
