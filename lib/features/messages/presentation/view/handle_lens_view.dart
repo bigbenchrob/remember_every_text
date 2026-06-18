@@ -6,9 +6,9 @@ import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../config/theme/theme_typography.dart';
 import '../../../../config/theme/widgets/buttons/buttons.dart';
-import '../../../../essentials/logging/feature_level_providers.dart';
 import '../../../contacts/feature_level_providers.dart';
 import '../../../handles/feature_level_providers.dart';
+import '../../application/handle_lens/handle_lens_actions_provider.dart';
 import '../../application/message_evidence/message_evidence_spine_provider.dart';
 import '../../domain/message_evidence/message_evidence_scope.dart';
 import '../../domain/message_evidence/message_evidence_search_mode.dart';
@@ -172,19 +172,12 @@ class _ActionBar extends HookConsumerWidget {
 
     isBusy.value = true;
     try {
-      final result = await ref
-          .read(manualHandleLinkServiceProvider.notifier)
-          .linkHandleToParticipant(
+      await ref
+          .read(handleLensActionsProvider.notifier)
+          .linkToExistingContact(
             handleId: handleId,
             participantId: participantId,
           );
-
-      result.fold((failure) {
-        // Show error — kept simple for Phase 2.
-        ref
-            .read(appLoggerProvider.notifier)
-            .warn('Link failed: ${failure.message}', source: 'HandleLens');
-      }, (_) {});
     } finally {
       isBusy.value = false;
     }
@@ -194,8 +187,8 @@ class _ActionBar extends HookConsumerWidget {
     isBusy.value = true;
     try {
       await ref
-          .read(handleReviewActionsProvider.notifier)
-          .markReviewed(handleId: handleId);
+          .read(handleLensActionsProvider.notifier)
+          .dismissHandle(handleId: handleId);
     } finally {
       isBusy.value = false;
     }
@@ -275,40 +268,17 @@ class _CreateContactForm extends HookConsumerWidget {
     errorMessage.value = null;
     isBusy.value = true;
     try {
-      final service = ref.read(manualHandleLinkServiceProvider.notifier);
+      final failureMessage = await ref
+          .read(handleLensActionsProvider.notifier)
+          .createContactAndLinkHandle(handleId: handleId, displayName: name);
 
-      // Create virtual participant.
-      final createResult = await service.createVirtualParticipant(
-        displayName: name,
-      );
+      if (failureMessage != null) {
+        errorMessage.value = failureMessage;
+        return;
+      }
 
-      await createResult.fold(
-        (failure) async {
-          errorMessage.value = failure.message;
-        },
-        (virtualParticipantId) async {
-          // Link handle to virtual participant.
-          final linkResult = await service.linkHandleToVirtualParticipant(
-            handleId: handleId,
-            virtualParticipantId: virtualParticipantId,
-          );
-
-          linkResult.fold(
-            (failure) {
-              ref
-                  .read(appLoggerProvider.notifier)
-                  .warn(
-                    'Link to virtual failed: ${failure.message}',
-                    source: 'HandleLens',
-                  );
-            },
-            (_) {
-              isCreating.value = false;
-              nameController.clear();
-            },
-          );
-        },
-      );
+      isCreating.value = false;
+      nameController.clear();
     } finally {
       isBusy.value = false;
     }

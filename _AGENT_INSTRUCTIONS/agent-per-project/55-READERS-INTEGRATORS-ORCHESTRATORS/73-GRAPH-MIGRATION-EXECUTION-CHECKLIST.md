@@ -2788,6 +2788,10 @@ criteria.
   `SidebarBodyModelContent` now renders typed dropdown body models and forwards
   selected options; disabled-option policy and sidebar dispatch live in the
   sidebar application boundary.
+- Moved unfamiliar-source handle lens link/create/dismiss side effects behind
+  `HandleLensActions`. `HandleLensView` now renders evidence, dialog/form
+  inputs, and busy/error state only; manual-link writes, review dismissal, and
+  warning logging stay behind a messages application action boundary.
 
 ### Exit Criteria
 

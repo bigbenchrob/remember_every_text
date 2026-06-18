@@ -1543,9 +1543,11 @@ void main() {
         offenders,
         isEmpty,
         reason:
-            'HandleLensView may render unfamiliar-source evidence and call '
-            'handles feature actions, but it must not import central database '
-            'providers or overlay infrastructure directly.\n'
+            'HandleLensView may render unfamiliar-source evidence and collect '
+            'form/dialog input, but link/create/dismiss side effects belong '
+            'behind HandleLensActions. It must not import central database '
+            'providers, overlay infrastructure, or manual-link/review '
+            'services directly.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -4680,6 +4682,9 @@ Future<List<String>> _findHandleLensOverlayDatabaseOffenders() async {
     for (final importTarget in imports)
       if (importTarget.endsWith('essentials/db/feature_level_providers.dart') ||
           importTarget.endsWith(
+            'essentials/logging/feature_level_providers.dart',
+          ) ||
+          importTarget.endsWith(
             'contacts/application/services/manual_handle_link_service.dart',
           ) ||
           importTarget.endsWith(
@@ -4687,6 +4692,18 @@ Future<List<String>> _findHandleLensOverlayDatabaseOffenders() async {
           ))
         '$filePath imports $importTarget',
   ];
+  const forbiddenTokens = <String>[
+    'manualHandleLinkServiceProvider.notifier',
+    'handleReviewActionsProvider.notifier',
+    'appLoggerProvider.notifier',
+  ];
+
+  for (final token in forbiddenTokens) {
+    if (uncommented.contains(token)) {
+      offenders.add('$filePath uses $token');
+    }
+  }
+
   return offenders..sort();
 }
 
