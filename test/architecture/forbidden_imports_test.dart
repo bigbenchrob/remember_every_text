@@ -51,6 +51,7 @@ const Set<String> _retainedOverlayIdentityBridgeAllowedFiles = {
   'lib/features/contacts/infrastructure/repositories/graph_contacts_list_reader.dart',
   'lib/features/contacts/infrastructure/repositories/graph_handles_for_contact_reader.dart',
   'lib/features/contacts/infrastructure/repositories/overlay_recent_contacts_reader.dart',
+  'lib/features/contacts/infrastructure/repositories/participant_merge_utils.dart',
   'lib/features/handles/infrastructure/repositories/graph_handle_display_name_reader.dart',
   'lib/features/handles/infrastructure/repositories/graph_manual_linking_read_repository.dart',
   'lib/features/handles/infrastructure/repositories/graph_spam_handles_repository.dart',

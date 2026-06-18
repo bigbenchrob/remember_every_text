@@ -182,6 +182,40 @@ void main() {
       expect(results.single.isVirtual, isTrue);
     });
 
+    test('deduplicates retained and graph overlay handle counts', () async {
+      final graphHandleId = SourceScopedRowKey.pack(
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 42,
+      );
+      await _insertGraphConversationForHandle(
+        graphDb,
+        handleId: graphHandleId,
+        chatId: 5001,
+        messageId: 8001,
+      );
+
+      final virtualParticipant = await overlayDb.createVirtualParticipant(
+        displayName: 'Virtual Friend',
+      );
+
+      await overlayDb.setHandleVirtualParticipantOverride(
+        42,
+        virtualParticipant.id,
+      );
+      await overlayDb.setHandleVirtualParticipantOverride(
+        graphHandleId,
+        virtualParticipant.id,
+      );
+
+      final results = await container.read(
+        contactsListRepositoryProvider.future,
+      );
+
+      expect(results, hasLength(1));
+      expect(results.single.participantId, virtualParticipant.id);
+      expect(results.single.handleCount, equals(1));
+    });
+
     test('omits graph contacts that have not participated in chats', () async {
       await graphDb.database.insert('contacts', <String, Object?>{
         'contact_id': 9003,

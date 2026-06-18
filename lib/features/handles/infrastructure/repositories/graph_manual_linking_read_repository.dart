@@ -296,28 +296,32 @@ class GraphManualLinkingReadRepository implements ManualLinkingReadRepository {
 
   Future<Map<int, int>> _overlayHandleCountsByParticipant() async {
     final overrides = await _overlayDb.getAllHandleOverrides();
-    final counts = <int, int>{};
+    final counts = <int, Set<int>>{};
     for (final override in overrides) {
       final participantId = override.participantId;
       if (participantId == null) {
         continue;
       }
-      counts[participantId] = (counts[participantId] ?? 0) + 1;
+      counts
+          .putIfAbsent(participantId, () => <int>{})
+          .add(canonicalHandleOverlayKey(override.handleId));
     }
-    return counts;
+    return {for (final entry in counts.entries) entry.key: entry.value.length};
   }
 
   Future<Map<int, int>> _overlayHandleCountsByVirtualParticipant() async {
     final overrides = await _overlayDb.getAllHandleOverrides();
-    final counts = <int, int>{};
+    final counts = <int, Set<int>>{};
     for (final override in overrides) {
       final virtualParticipantId = override.virtualParticipantId;
       if (virtualParticipantId == null) {
         continue;
       }
-      counts[virtualParticipantId] = (counts[virtualParticipantId] ?? 0) + 1;
+      counts
+          .putIfAbsent(virtualParticipantId, () => <int>{})
+          .add(canonicalHandleOverlayKey(override.handleId));
     }
-    return counts;
+    return {for (final entry in counts.entries) entry.key: entry.value.length};
   }
 }
 

@@ -148,6 +148,27 @@ void main() {
     });
   });
 
+  group('canonicalHandleOverlayKey', () {
+    test('collapses retained live handle id to graph handle id', () {
+      final graphHandleId = SourceScopedRowKey.pack(
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 42,
+      );
+
+      expect(canonicalHandleOverlayKey(42), graphHandleId);
+      expect(canonicalHandleOverlayKey(graphHandleId), graphHandleId);
+    });
+
+    test('preserves non-live graph handle ids', () {
+      final archiveHandleId = SourceScopedRowKey.pack(
+        sourceId: 99,
+        sourceRowId: 42,
+      );
+
+      expect(canonicalHandleOverlayKey(archiveHandleId), archiveHandleId);
+    });
+  });
+
   group('retainedOverlayMessageRowIdForGraphMessageId', () {
     test('returns source rowid for live chat-db message ids', () {
       final messageSsId = SourceScopedRowKey.pack(

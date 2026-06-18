@@ -1,58 +1,47 @@
-import 'package:drift/drift.dart';
-
+import '../../../../essentials/conversation_graph/application/identity/retained_overlay_identity_bridge.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 
 Future<Map<int, int>> overlayHandleCountsByParticipant(
   OverlayDatabase db,
 ) async {
-  final participantColumn = db.handleToParticipantOverrides.participantId;
-  final countExpression = db.handleToParticipantOverrides.handleId.count();
-
-  final rows =
-      await (db.selectOnly(db.handleToParticipantOverrides)
-            ..where(participantColumn.isNotNull())
-            ..addColumns([participantColumn, countExpression])
-            ..groupBy([participantColumn]))
-          .get();
-
-  final handleCounts = <int, int>{};
-
-  for (final row in rows) {
-    final participantId = row.read(participantColumn);
+  final overrides = await db.getAllHandleOverrides();
+  final handlesByParticipant = <int, Set<int>>{};
+  for (final override in overrides) {
+    final participantId = override.participantId;
     if (participantId == null) {
       continue;
     }
-    handleCounts[participantId] = row.read(countExpression) ?? 0;
+    handlesByParticipant
+        .putIfAbsent(participantId, () => <int>{})
+        .add(canonicalHandleOverlayKey(override.handleId));
   }
 
-  return handleCounts;
+  return {
+    for (final entry in handlesByParticipant.entries)
+      entry.key: entry.value.length,
+  };
 }
 
 /// Handle counts grouped by virtual_participant_id (overlay overrides only).
 Future<Map<int, int>> overlayHandleCountsByVirtualParticipant(
   OverlayDatabase db,
 ) async {
-  final vpColumn = db.handleToParticipantOverrides.virtualParticipantId;
-  final countExpression = db.handleToParticipantOverrides.handleId.count();
-
-  final rows =
-      await (db.selectOnly(db.handleToParticipantOverrides)
-            ..where(vpColumn.isNotNull())
-            ..addColumns([vpColumn, countExpression])
-            ..groupBy([vpColumn]))
-          .get();
-
-  final handleCounts = <int, int>{};
-
-  for (final row in rows) {
-    final vpId = row.read(vpColumn);
+  final overrides = await db.getAllHandleOverrides();
+  final handlesByVirtualParticipant = <int, Set<int>>{};
+  for (final override in overrides) {
+    final vpId = override.virtualParticipantId;
     if (vpId == null) {
       continue;
     }
-    handleCounts[vpId] = row.read(countExpression) ?? 0;
+    handlesByVirtualParticipant
+        .putIfAbsent(vpId, () => <int>{})
+        .add(canonicalHandleOverlayKey(override.handleId));
   }
 
-  return handleCounts;
+  return {
+    for (final entry in handlesByVirtualParticipant.entries)
+      entry.key: entry.value.length,
+  };
 }
 
 /// Map of participantId → Set<handleId> from overlay overrides
@@ -68,7 +57,9 @@ Future<Map<int, Set<int>>> overlayHandleIdsByParticipant(
     if (pid == null) {
       continue;
     }
-    map.putIfAbsent(pid, () => <int>{}).add(override.handleId);
+    map
+        .putIfAbsent(pid, () => <int>{})
+        .add(canonicalHandleOverlayKey(override.handleId));
   }
 
   return map;
@@ -86,7 +77,9 @@ Future<Map<int, Set<int>>> overlayHandleIdsByVirtualParticipant(
     if (vpId == null) {
       continue;
     }
-    map.putIfAbsent(vpId, () => <int>{}).add(override.handleId);
+    map
+        .putIfAbsent(vpId, () => <int>{})
+        .add(canonicalHandleOverlayKey(override.handleId));
   }
 
   return map;

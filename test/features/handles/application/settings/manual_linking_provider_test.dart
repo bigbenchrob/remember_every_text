@@ -142,6 +142,39 @@ void main() {
       },
     );
 
+    test(
+      'available participant handle count deduplicates retained graph variants',
+      () async {
+        const retainedContactId = 17;
+        final graphContactId = SourceScopedRowKey.pack(
+          sourceId: liveAddressBookSourceId,
+          sourceRowId: retainedContactId,
+        );
+        final graphHandleId = SourceScopedRowKey.pack(
+          sourceId: liveChatDbSourceId,
+          sourceRowId: 42,
+        );
+        await graphDb.database.insert('contacts', <String, Object?>{
+          'contact_id': graphContactId,
+          'display_name': 'Claire Merriman Campbell',
+        });
+        await overlayDb.setParticipantDisplayNameOverride(
+          retainedContactId,
+          'Claire',
+        );
+        await overlayDb.setHandleOverride(42, retainedContactId);
+        await overlayDb.setHandleOverride(graphHandleId, retainedContactId);
+
+        final participants = await container.read(
+          availableParticipantsProvider.future,
+        );
+
+        expect(participants, hasLength(1));
+        expect(participants.single.id, graphContactId);
+        expect(participants.single.handleCount, 1);
+      },
+    );
+
     test('linking a graph handle writes overlay-only intent', () async {
       await _insertGraphHandle(graphDb, handleSsId: 7003, chatSsId: 6003);
       await graphDb.database.insert('contacts', <String, Object?>{

@@ -84,6 +84,10 @@ Set<int> handleOverlayKeyVariants(int handleId) {
   return ids;
 }
 
+int canonicalHandleOverlayKey(int handleId) {
+  return graphHandleIdForRetainedOverlayHandleId(handleId) ?? handleId;
+}
+
 T? overlayValueForHandleId<T>(Map<int, T> valuesByHandleId, int handleId) {
   for (final key in handleOverlayKeyVariants(handleId)) {
     final value = valuesByHandleId[key];
