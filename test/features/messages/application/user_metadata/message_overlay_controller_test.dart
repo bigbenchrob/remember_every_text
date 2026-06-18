@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Variable;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -67,5 +68,43 @@ void main() {
     expect(updated.tags, contains('Review'));
     expect(updated.hasGraphNativeOverlay, isTrue);
     expect(retainedGuidFlag, isNull);
+  });
+
+  test('provider canonicalizes retained rowid before overlay writes', () async {
+    const retainedMessageRowId = 78;
+    final messageSsId = SourceScopedRowKey.pack(
+      sourceId: 1,
+      sourceRowId: retainedMessageRowId,
+    );
+    await graphDatabase.database.insert('messages', <String, Object?>{
+      'ss_id': messageSsId,
+      'guid': 'message-78',
+      'is_from_me': 0,
+    });
+
+    final controller = container.read(
+      messageOverlayProvider(retainedMessageRowId).notifier,
+    );
+    await controller.setSaved(isSaved: true);
+
+    final graphRows = await overlayDatabase.customSelect('''
+      SELECT message_ss_id, is_saved
+      FROM message_intent_overlays
+      ''').get();
+    final retainedRows = await overlayDatabase
+        .customSelect(
+          '''
+      SELECT message_ss_id
+      FROM message_intent_overlays
+      WHERE message_ss_id = ?
+      ''',
+          variables: const [Variable<int>(retainedMessageRowId)],
+        )
+        .get();
+
+    expect(graphRows, hasLength(1));
+    expect(graphRows.single.data['message_ss_id'], messageSsId);
+    expect(graphRows.single.data['is_saved'], 1);
+    expect(retainedRows, isEmpty);
   });
 }

@@ -7,6 +7,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../essentials/db/feature_level_providers.dart';
 import '../contacts/feature_level_providers.dart';
+import 'application/message_evidence/message_evidence_identity.dart';
 import 'application/sidebar_cassette_spec/resolver_tools/conversation_signature_preferences_store.dart';
 import 'application/user_metadata/message_overlay_controller.dart';
 import 'application/user_metadata/message_overlay_repository.dart';
@@ -114,7 +115,7 @@ class MessageOverlay extends _$MessageOverlay {
     final repository = await ref.watch(messageOverlayRepositoryProvider.future);
     return MessageOverlayController(
       repository: repository,
-      messageSsId: messageSsId,
+      messageSsId: canonicalMessageEvidenceId(messageSsId),
     );
   }
 }
