@@ -21,4 +21,22 @@ void main() {
 
     expect(canonicalMessageEvidenceId(messageSsId), messageSsId);
   });
+
+  test('canonicalMessageEvidenceId preserves non-live graph ids', () {
+    final archiveMessageSsId = SourceScopedRowKey.pack(
+      sourceId: 99,
+      sourceRowId: 42,
+    );
+
+    expect(canonicalMessageEvidenceId(archiveMessageSsId), archiveMessageSsId);
+  });
+
+  test('canonicalMessageEvidenceId preserves invalid retained rowids', () {
+    const invalidRetainedRowId = SourceScopedRowKey.maxSourceRowId + 1;
+
+    expect(
+      canonicalMessageEvidenceId(invalidRetainedRowId),
+      invalidRetainedRowId,
+    );
+  });
 }
