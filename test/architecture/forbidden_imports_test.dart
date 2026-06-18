@@ -58,6 +58,10 @@ const Set<String> _retainedOverlayIdentityBridgeAllowedFiles = {
   'lib/features/messages/infrastructure/repositories/message_overlay_identity_bridge_repository.dart',
 };
 
+const Set<String> _retainedOverlayIdentityBridgeTestAllowedFiles = {
+  'test/essentials/conversation_graph/application/identity/retained_overlay_identity_bridge_test.dart',
+};
+
 const Set<String> _retiredContactNameVariantAllowedFiles = {
   'lib/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart',
 };
@@ -716,6 +720,27 @@ void main() {
             'Actual users:\n${offenders.join('\n')}',
       );
     });
+
+    test(
+      'Retained overlay identity bridge tests stay centrally owned',
+      () async {
+        final offenders =
+            await _findRetainedOverlayIdentityBridgeTestImportOffenders();
+
+        expect(
+          offenders,
+          orderedEquals(
+            _retainedOverlayIdentityBridgeTestAllowedFiles.toList()..sort(),
+          ),
+          reason:
+              'retained_overlay_identity_bridge.dart behavior belongs to the '
+              'central conversation_graph bridge test suite. Feature tests '
+              'should assert their own repository/read-model contracts rather '
+              'than owning transitional bridge semantics directly.\n'
+              'Actual test users:\n${offenders.join('\n')}',
+        );
+      },
+    );
 
     test('Overlay database filename literal stays centralized', () async {
       final offenders = await _findOverlayDatabaseFilenameLiteralOffenders();
@@ -3308,6 +3333,33 @@ Future<List<String>> _findRetainedOverlayIdentityBridgeImportOffenders() async {
       return false;
     }
     return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    final importsRetainedOverlayIdentityBridge = imports.any(
+      (importTarget) =>
+          importTarget.endsWith('retained_overlay_identity_bridge.dart'),
+    );
+
+    if (importsRetainedOverlayIdentityBridge) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>>
+_findRetainedOverlayIdentityBridgeTestImportOffenders() async {
+  final files = await _collectProjectDartFiles((path) {
+    if (path.endsWith('.g.dart')) {
+      return false;
+    }
+    return path.startsWith('test/');
   });
   final offenders = <String>{};
 
