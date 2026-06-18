@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/features/handles/application/settings_cassette_spec/resolver_tools/spam_management_provider.dart';
 
 import '../../../../essentials/conversation_graph/conversation_graph_test_database.dart';
@@ -61,6 +63,37 @@ void main() {
       expect(handles.single.isBlacklisted, isTrue);
       expect(handles.single.isVisible, isFalse);
     });
+
+    test(
+      'prefers graph handle visibility over retained handle variant',
+      () async {
+        final graphHandleId = SourceScopedRowKey.pack(
+          sourceId: liveChatDbSourceId,
+          sourceRowId: 42,
+        );
+        await _insertGraphHandle(
+          graphDb,
+          handleSsId: graphHandleId,
+          chatSsId: 6004,
+        );
+        await overlayDb.setHandleVisibility(
+          42,
+          isVisible: false,
+          isBlacklisted: true,
+        );
+        await overlayDb.setHandleVisibility(
+          graphHandleId,
+          isVisible: true,
+          isBlacklisted: false,
+        );
+
+        final handles = await container.read(spamHandlesProvider.future);
+
+        expect(handles.single.id, graphHandleId);
+        expect(handles.single.isBlacklisted, isFalse);
+        expect(handles.single.isVisible, isTrue);
+      },
+    );
 
     test('block and unblock write overlay-only visibility intent', () async {
       await _insertGraphHandle(graphDb, handleSsId: 7003, chatSsId: 6003);

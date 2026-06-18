@@ -17,9 +17,7 @@ final class GraphSpamHandlesRepository implements SpamHandlesRepository {
     final visibilityOverrides = await visibilityStore.readAll();
     final overrideMap = <int, HandleVisibilityIntent>{};
     for (final override in visibilityOverrides) {
-      for (final handleId in handleOverlayKeyVariants(override.handleId)) {
-        overrideMap[handleId] = override;
-      }
+      overrideMap[override.handleId] = override;
     }
 
     final rows = await graphDatabase.selectRows('''
@@ -50,7 +48,7 @@ final class GraphSpamHandlesRepository implements SpamHandlesRepository {
         continue;
       }
 
-      final overlay = overrideMap[handleId];
+      final overlay = overlayValueForHandleId(overrideMap, handleId);
       results.add(
         SpamHandleInfo(
           id: handleId,
