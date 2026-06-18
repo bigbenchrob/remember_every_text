@@ -113,6 +113,10 @@ class OverlayDatabase extends _$OverlayDatabase {
     )..where((t) => t.participantId.equals(participantId))).getSingleOrNull();
   }
 
+  Future<List<ParticipantOverride>> getAllParticipantOverrides() {
+    return select(participantOverrides).get();
+  }
+
   /// Upsert helper for setting display name override.
   ///
   /// - Writes createdAtUtc only when creating a new row
