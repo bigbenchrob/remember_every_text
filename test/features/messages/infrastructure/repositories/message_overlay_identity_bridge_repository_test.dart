@@ -184,6 +184,46 @@ void main() {
       expect(retainedGuidFlag, isNull);
     },
   );
+
+  test(
+    'graph-native overlay suppresses retained rowid annotation fields',
+    () async {
+      final messageId = _messageId(46);
+      await _insertGraphMessage(
+        graphDatabase: graphDatabase,
+        messageSsId: messageId,
+        guid: 'guid-46',
+      );
+      await overlayDatabase.toggleMessageStar(46);
+      await overlayDatabase.setMessageArchived(messageId: 46, archived: true);
+      await overlayDatabase.addMessageTags(46, <String>['Retained']);
+      await overlayDatabase.setMessageNotes(46, 'retained note');
+      await overlayDatabase.setMessagePriority(46, 5);
+      await overlayDatabase.setMessageReminder(46, DateTime.utc(2026, 1, 2));
+
+      await repository.setStarred(messageSsId: messageId, isStarred: false);
+      await repository.setArchived(messageSsId: messageId, isArchived: false);
+      await repository.setNotes(messageSsId: messageId, notes: 'graph note');
+      await repository.setPriority(messageSsId: messageId, priority: 2);
+      await repository.setReminder(
+        messageSsId: messageId,
+        remindAt: DateTime.utc(2027, 3, 4),
+      );
+      await repository.addTags(messageSsId: messageId, tags: <String>['Graph']);
+
+      final state = await repository.readForMessage(messageId);
+
+      expect(state.hasGraphNativeOverlay, isTrue);
+      expect(state.isStarred, isFalse);
+      expect(state.isArchived, isFalse);
+      expect(state.userNotes, 'graph note');
+      expect(state.priority, 2);
+      expect(state.remindAtUtc, '2027-03-04T00:00:00.000Z');
+      expect(state.tags, contains('Graph'));
+      expect(state.tags, isNot(contains('Retained')));
+      expect(state.usedRetainedAnnotationFallback, isFalse);
+    },
+  );
 }
 
 int _messageId(int sourceRowId) {
