@@ -1,9 +1,9 @@
 import '../../../../essentials/conversation_graph/application/contacts/contact_projector.dart';
-import '../../../../essentials/conversation_graph/application/identity/retained_overlay_identity_bridge.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import '../../application/display_identity/display_identity.dart';
 import '../../application/display_identity/display_identity_repository.dart';
+import '../../application/read_models/contact_summary_identity.dart';
 import 'participant_merge_utils.dart';
 
 class SqliteDisplayIdentityRepository implements DisplayIdentityRepository {
@@ -52,7 +52,7 @@ class SqliteDisplayIdentityRepository implements DisplayIdentityRepository {
         continue;
       }
 
-      final override = participantOverrideForGraphContactId(
+      final override = participantOverrideForContactId(
         participantOverrides: participantOverrides,
         contactId: contactId,
       );
@@ -113,7 +113,7 @@ class SqliteDisplayIdentityRepository implements DisplayIdentityRepository {
         continue;
       }
 
-      final override = participantOverrideForGraphContactId(
+      final override = participantOverrideForContactId(
         participantOverrides: participantOverrides,
         contactId: contactId,
       );
@@ -162,19 +162,12 @@ class SqliteDisplayIdentityRepository implements DisplayIdentityRepository {
   }
 }
 
-ParticipantOverride? participantOverrideForGraphContactId({
-  required Map<int, ParticipantOverride> participantOverrides,
-  required int contactId,
-}) {
-  return overlayValueForContactId(participantOverrides, contactId);
-}
-
 void _putContactIdentity(
   Map<int, ParticipantDisplayIdentity> identitiesByContactId,
   int contactId,
   ParticipantDisplayIdentity identity,
 ) {
-  for (final key in contactOverlayKeyVariants(contactId)) {
+  for (final key in contactIdentityKeyVariants(contactId)) {
     identitiesByContactId.putIfAbsent(key, () => identity);
   }
 }
