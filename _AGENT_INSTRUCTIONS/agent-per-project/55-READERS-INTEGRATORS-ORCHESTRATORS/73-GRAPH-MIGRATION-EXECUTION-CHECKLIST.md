@@ -2804,6 +2804,11 @@ criteria.
   selection, begin import, and remove-imported-archive-data intents no longer
   call the workflow notifier directly from UI code. Added a tripwire guarding
   this workflow action boundary.
+- Routed the conversation graph status sheet's diagnostic open-chat action
+  through the chats feature action boundary. The status sheet still renders
+  graph diagnostics and selected chat rows, but chat selection/navigation now
+  crosses `ChatSelectionActions` instead of mutating the chats view model
+  directly. Extended the graph-status-sheet tripwire for this boundary.
 
 ### Exit Criteria
 

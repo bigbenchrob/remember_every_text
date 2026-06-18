@@ -199,7 +199,7 @@ class _ConversationGraphStatusSheetState
                     onChatOpened: (chatSsId) {
                       unawaited(
                         ref
-                            .read(chatsViewModelProvider.notifier)
+                            .read(chatSelectionActionsProvider.notifier)
                             .selectChat(chatSsId),
                       );
                     },

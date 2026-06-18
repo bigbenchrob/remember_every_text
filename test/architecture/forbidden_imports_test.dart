@@ -5644,6 +5644,7 @@ Future<List<String>> _findGraphStatusSheetControlBoundaryOffenders() async {
 
   if (uncommented.contains('ref.invalidate(') ||
       uncommented.contains('widget.ref.invalidate(') ||
+      uncommented.contains('chatsViewModelProvider.notifier') ||
       uncommented.contains('writeRun(') ||
       uncommented.contains('.runOnce(owner:')) {
     offenders.add('$filePath owns graph status refresh/build action details');
