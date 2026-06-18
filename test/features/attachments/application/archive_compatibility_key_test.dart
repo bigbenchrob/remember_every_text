@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:remember_this_text/features/attachments/application/archive_compatibility_key.dart';
+import 'package:remember_this_text/essentials/retained_archive/domain/archive_compatibility_key.dart';
 
 void main() {
   test('storageKeySegment preserves current archive compatibility shape', () {

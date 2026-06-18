@@ -1,5 +1,5 @@
+import '../../../essentials/retained_archive/domain/archive_compatibility_key.dart';
 import '../domain/entities/attachment_recovery_metadata.dart';
-import 'archive_compatibility_key.dart';
 
 class AttachmentArchiveLookupRecord {
   const AttachmentArchiveLookupRecord({

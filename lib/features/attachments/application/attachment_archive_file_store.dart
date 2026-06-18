@@ -1,4 +1,4 @@
-import 'archive_compatibility_key.dart';
+import '../../../essentials/retained_archive/domain/archive_compatibility_key.dart';
 
 class ArchivedAttachmentFileWrite {
   const ArchivedAttachmentFileWrite({

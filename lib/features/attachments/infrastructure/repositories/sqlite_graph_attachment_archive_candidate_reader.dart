@@ -2,9 +2,9 @@ import 'package:drift/drift.dart';
 
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import '../../../../essentials/retained_archive/domain/archive_compatibility_key.dart';
 import '../../../../essentials/source_scoped_import/domain/known_sources.dart';
 import '../../../../essentials/source_scoped_import/domain/source_scoped_row_key.dart';
-import '../../application/archive_compatibility_key.dart';
 import '../../application/graph_attachment_archive_candidate_reader.dart';
 
 class SqliteGraphAttachmentArchiveCandidateReader

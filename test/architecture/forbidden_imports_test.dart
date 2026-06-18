@@ -6174,7 +6174,6 @@ Future<List<String>>
 _findArchiveCompatibilityTupleSerializationOffenders() async {
   const allowedFiles = <String>{
     'lib/essentials/retained_archive/domain/archive_compatibility_key.dart',
-    'lib/features/attachments/application/archive_compatibility_key.dart',
     'lib/features/attachments/application/attachment_recovery_hint_storage.dart',
   };
   final files = await _collectDartFiles((path) {

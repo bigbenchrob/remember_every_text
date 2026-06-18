@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as path;
 
-import '../../application/archive_compatibility_key.dart';
+import '../../../../essentials/retained_archive/domain/archive_compatibility_key.dart';
 import '../../application/attachment_archive_file_store.dart';
 
 class FilesystemAttachmentArchiveFileStore
