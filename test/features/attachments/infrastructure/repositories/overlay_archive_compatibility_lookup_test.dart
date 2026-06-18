@@ -113,6 +113,43 @@ void main() {
   );
 
   test(
+    'does not resolve old archive-key rows for mixed-source endpoints',
+    () async {
+      final messageSsId = SourceScopedRowKey.pack(
+        sourceId: 2,
+        sourceRowId: 100,
+      );
+      final attachmentSsId = _ss(200);
+
+      await _insertGraphAttachment(
+        graphDatabase,
+        messageSsId: messageSsId,
+        attachmentSsId: attachmentSsId,
+        messageGuid: 'message-guid-1',
+      );
+      await _insertArchiveRow(
+        overlayDatabase,
+        messageGuid: 'message-guid-1',
+        importAttachmentId: 200,
+        archiveRelativePath: 'ab/archived.jpg',
+      );
+
+      final lookup = OverlayArchiveCompatibilityLookup(
+        graphDatabase: graphDatabase,
+        overlayDatabase: overlayDatabase,
+        archiveDirectory: archiveDir.path,
+      );
+
+      final record = await lookup.readArchiveRecord(
+        messageSsId: messageSsId,
+        attachmentSsId: attachmentSsId,
+      );
+
+      expect(record, isNull);
+    },
+  );
+
+  test(
     'returns null when graph topology does not link the endpoints',
     () async {
       final lookup = OverlayArchiveCompatibilityLookup(

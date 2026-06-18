@@ -39,10 +39,12 @@ class OverlayArchiveCompatibilityLookup
       return null;
     }
 
+    final messageSourceId = SourceScopedRowKey.unpackSourceId(messageSsId);
     final attachmentSourceId = SourceScopedRowKey.unpackSourceId(
       attachmentSsId,
     );
-    if (attachmentSourceId != liveChatDbSourceId) {
+    if (messageSourceId != liveChatDbSourceId ||
+        attachmentSourceId != liveChatDbSourceId) {
       return null;
     }
 
