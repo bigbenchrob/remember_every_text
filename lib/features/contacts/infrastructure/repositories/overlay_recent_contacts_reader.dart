@@ -1,6 +1,6 @@
-import '../../../../essentials/conversation_graph/application/identity/retained_overlay_identity_bridge.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import '../../application/read_models/contact_summary.dart';
+import '../../application/read_models/contact_summary_identity.dart';
 import '../../application/read_models/recent_contact_summary.dart';
 import '../../application/read_models/recent_contacts_reader.dart';
 import '../../domain/participant_origin.dart';
@@ -48,10 +48,7 @@ ContactSummary _findContactForRecent(
   int recentParticipantId,
 ) {
   for (final contact in contacts) {
-    if (contactIdsRepresentSamePerson(
-      contact.participantId,
-      recentParticipantId,
-    )) {
+    if (contactIdentityIdsMatch(contact.participantId, recentParticipantId)) {
       return contact;
     }
   }
