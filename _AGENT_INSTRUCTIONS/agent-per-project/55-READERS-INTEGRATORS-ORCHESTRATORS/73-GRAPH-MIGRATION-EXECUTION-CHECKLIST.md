@@ -2784,6 +2784,10 @@ criteria.
   model keeps its public selection API for existing callers, but conversation
   sidebar intent construction and dispatch now live in the chats application
   boundary.
+- Moved generic sidebar dropdown dispatch behind `SidebarBodyModelActions`.
+  `SidebarBodyModelContent` now renders typed dropdown body models and forwards
+  selected options; disabled-option policy and sidebar dispatch live in the
+  sidebar application boundary.
 
 ### Exit Criteria
 

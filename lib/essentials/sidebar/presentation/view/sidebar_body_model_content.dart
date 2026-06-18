@@ -5,7 +5,7 @@ import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
 import '../../../../config/theme/widgets/theme_widgets.dart';
 import '../../../navigation/domain/sidebar_mode.dart';
-import '../../application/sidebar_action_dispatcher.dart';
+import '../../application/sidebar_body_model_actions_provider.dart';
 import '../../domain/sidebar_body_model.dart';
 import '../../domain/sidebar_body_option.dart';
 
@@ -52,22 +52,17 @@ class _SidebarDropdownBody extends ConsumerWidget {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
-    final dispatcher = ref.read(sidebarActionDispatcherProvider.notifier);
     final selectedOption = _selectedOption(model);
     final options = model.options.cast<SidebarDropdownOption?>();
 
     Future<void> handleSelection(SidebarDropdownOption? option) async {
-      if (option == null || option.isDisabled) {
-        return;
-      }
-
-      await dispatcher.dispatch(
-        intent: option.selectionIntent,
-        context: SidebarActionDispatchContext(
-          sidebarMode: sidebarMode,
-          cassetteIndex: cassetteIndex,
-        ),
-      );
+      await ref
+          .read(sidebarBodyModelActionsProvider.notifier)
+          .selectDropdownOption(
+            option: option,
+            sidebarMode: sidebarMode,
+            cassetteIndex: cassetteIndex,
+          );
     }
 
     return AppThemeWidgets.dropdownMenu<SidebarDropdownOption?>(

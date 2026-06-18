@@ -559,6 +559,20 @@ void main() {
       },
     );
 
+    test('Sidebar body model renderer uses action boundary', () async {
+      final offenders = await _findSidebarBodyModelRendererActionOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'SidebarBodyModelContent may render typed body models, but option '
+            'disabled policy and sidebar dispatch belong behind '
+            'SidebarBodyModelActions.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Grouped contact selector uses refresh action boundary', () async {
       final offenders = await _findGroupedContactSelectorRefreshOffenders();
 
@@ -6946,6 +6960,32 @@ Future<List<String>> _findSidebarWidgetInvalidationOffenders() async {
     if (uncommented.contains('ref.invalidate(') ||
         uncommented.contains('widget.ref.invalidate(')) {
       offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findSidebarBodyModelRendererActionOffenders() async {
+  const filePath =
+      'lib/essentials/sidebar/presentation/view/sidebar_body_model_content.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final offenders = <String>[];
+  const forbiddenTokens = <String>[
+    'sidebarActionDispatcherProvider',
+    'SidebarActionDispatchContext',
+    '.dispatch(',
+    'option.isDisabled',
+  ];
+
+  for (final token in forbiddenTokens) {
+    if (uncommented.contains(token)) {
+      offenders.add('$filePath uses $token');
     }
   }
 
