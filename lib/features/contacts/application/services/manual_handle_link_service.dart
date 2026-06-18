@@ -1,7 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../essentials/conversation_graph/application/identity/retained_overlay_identity_bridge.dart';
 import '../../../handles/feature_level_providers.dart';
 import '../../feature_level_providers.dart';
 import '../read_models/contact_summary_identity.dart';
@@ -97,7 +96,7 @@ class ManualHandleLinkService extends _$ManualHandleLinkService {
 
       if (existingOverride != null &&
           existingOverride.participantId != null &&
-          !contactIdsRepresentSamePerson(
+          !contactIdentityIdsMatch(
             existingOverride.participantId!,
             canonicalParticipantId,
           )) {
@@ -223,11 +222,11 @@ class ManualHandleLinkService extends _$ManualHandleLinkService {
     bool includeVirtualParticipants = false,
   }) {
     ref.invalidate(strayHandlesProvider);
-    for (final candidateHandleId in handleOverlayKeyVariants(handleId)) {
+    for (final candidateHandleId in handleIdentityKeyVariants(handleId)) {
       ref.invalidate(handleDisplayNameProvider(handleId: candidateHandleId));
     }
     if (participantId != null) {
-      for (final candidateContactId in contactOverlayKeyVariants(
+      for (final candidateContactId in contactIdentityKeyVariants(
         participantId,
       )) {
         ref.invalidate(

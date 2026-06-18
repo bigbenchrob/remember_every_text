@@ -39,6 +39,7 @@ import 'infrastructure/repositories/overlay_handle_visibility_store.dart';
 
 export './application/info_cassette_spec/coordinators/info_cassette_coordinator.dart';
 export './application/read_models/handle_display_name_reader.dart';
+export './application/read_models/handle_identity.dart';
 export './application/read_models/stray_handle_summary.dart';
 export './application/review/handle_review_controller.dart';
 export './application/review/handle_review_store.dart';
