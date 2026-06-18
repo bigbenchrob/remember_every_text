@@ -15,27 +15,32 @@ class OverlayRecentContactsReader implements RecentContactsReader {
   Future<List<RecentContactSummary>> readRecentContacts({
     required List<ContactSummary> contacts,
   }) async {
-    final recentRows = await _overlayDb.getRecentContacts(limit: 3);
+    final recentRows = await _overlayDb.getRecentContacts(limit: 30);
     if (recentRows.isEmpty) {
       return const <RecentContactSummary>[];
     }
 
-    final results = <RecentContactSummary>[];
+    final resultsByContactId = <int, RecentContactSummary>{};
     for (final recent in recentRows) {
       final contact = _findContactForRecent(contacts, recent.participantId);
-      results.add(
-        RecentContactSummary(
+      resultsByContactId.putIfAbsent(
+        contact.participantId,
+        () => RecentContactSummary(
           participantId: contact.participantId,
           displayName: contact.displayName,
-          lastAccessedUtc: recent.lastInteractionUtc != null
-              ? DateTime.parse(recent.lastInteractionUtc!)
-              : DateTime.parse(recent.createdAtUtc),
+          lastAccessedUtc: _readLastAccessedUtc(recent),
         ),
       );
     }
 
-    return results;
+    return resultsByContactId.values.take(3).toList(growable: false);
   }
+}
+
+DateTime _readLastAccessedUtc(FavoriteContact recent) {
+  return recent.lastInteractionUtc != null
+      ? DateTime.parse(recent.lastInteractionUtc!)
+      : DateTime.parse(recent.createdAtUtc);
 }
 
 ContactSummary _findContactForRecent(

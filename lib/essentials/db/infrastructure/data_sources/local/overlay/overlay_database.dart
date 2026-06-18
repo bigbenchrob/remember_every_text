@@ -1024,10 +1024,27 @@ class OverlayDatabase extends _$OverlayDatabase {
     }
   }
 
+  /// Clear only the recency marker for a contact row.
+  ///
+  /// This preserves favourite intent because favourites and recents share this
+  /// table during the overlay transition.
+  Future<void> clearContactAccess(int participantId) async {
+    final nowIso = DateTime.now().toUtc().toIso8601String();
+    await (update(
+      favoriteContacts,
+    )..where((tbl) => tbl.participantId.equals(participantId))).write(
+      FavoriteContactsCompanion(
+        lastInteractionUtc: const Value(null),
+        updatedAtUtc: Value(nowIso),
+      ),
+    );
+  }
+
   /// Get recently accessed contacts (top N by lastInteractionUtc).
   /// This returns all contacts that have been accessed, sorted by recency.
   Future<List<FavoriteContact>> getRecentContacts({int limit = 10}) async {
     return (select(favoriteContacts)
+          ..where((tbl) => tbl.lastInteractionUtc.isNotNull())
           ..orderBy([
             (tbl) => OrderingTerm(
               expression: tbl.lastInteractionUtc,

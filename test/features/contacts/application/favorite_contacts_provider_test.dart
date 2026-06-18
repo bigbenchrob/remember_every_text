@@ -10,6 +10,7 @@ import 'package:remember_this_text/features/contacts/application/sidebar_cassett
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/resolver_tools/favorite_contacts_provider.dart';
 import 'package:remember_this_text/features/contacts/feature_level_providers.dart';
 import 'package:remember_this_text/features/contacts/infrastructure/repositories/favorite_contacts_repository.dart';
+import 'package:remember_this_text/features/contacts/infrastructure/repositories/overlay_contact_access_store.dart';
 
 import '../../../test_utils/contact_summary_fixture.dart';
 
@@ -229,5 +230,41 @@ void main() {
       ]);
       expect(favorites.single.contact.participantId, graphContactId);
     });
+
+    test(
+      'recent contact selection rewrites access marker to graph key',
+      () async {
+        const retainedContactId = 24;
+        final graphContactId = SourceScopedRowKey.pack(
+          sourceId: liveAddressBookSourceId,
+          sourceRowId: retainedContactId,
+        );
+        await overlayDb.addFavorite(
+          retainedContactId,
+          DateTime.utc(2024, 12, 1),
+        );
+
+        container = ProviderContainer(
+          overrides: [
+            contactAccessStoreProvider.overrideWith(
+              (ref) async =>
+                  OverlayContactAccessStore(overlayDatabase: overlayDb),
+            ),
+          ],
+        );
+
+        await container!
+            .read(contactAccessActionsProvider.notifier)
+            .recordContactSelection(graphContactId);
+
+        final recentRows = await overlayDb.getRecentContacts(limit: 10);
+        final favoriteRows = await overlayDb.getAllFavorites();
+
+        expect(recentRows.map((row) => row.participantId), [graphContactId]);
+        expect(favoriteRows.map((row) => row.participantId), [
+          retainedContactId,
+        ]);
+      },
+    );
   });
 }

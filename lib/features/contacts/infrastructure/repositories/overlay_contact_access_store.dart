@@ -8,6 +8,11 @@ class OverlayContactAccessStore implements ContactAccessStore {
   final OverlayDatabase _overlayDatabase;
 
   @override
+  Future<void> clearContactAccess(int contactId) {
+    return _overlayDatabase.clearContactAccess(contactId);
+  }
+
+  @override
   Future<void> trackContactAccess(int contactId) {
     return _overlayDatabase.trackContactAccess(contactId);
   }

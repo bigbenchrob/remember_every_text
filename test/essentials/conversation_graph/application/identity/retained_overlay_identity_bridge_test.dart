@@ -79,6 +79,35 @@ void main() {
     );
   });
 
+  group('canonicalContactOverlayKey', () {
+    test('rewrites retained live AddressBook id to graph contact id', () {
+      final graphContactId = SourceScopedRowKey.pack(
+        sourceId: liveAddressBookSourceId,
+        sourceRowId: 17,
+      );
+
+      expect(canonicalContactOverlayKey(17), graphContactId);
+    });
+
+    test('preserves graph contact id', () {
+      final graphContactId = SourceScopedRowKey.pack(
+        sourceId: liveAddressBookSourceId,
+        sourceRowId: 17,
+      );
+
+      expect(canonicalContactOverlayKey(graphContactId), graphContactId);
+    });
+
+    test('preserves non-live graph id', () {
+      final archiveContactId = SourceScopedRowKey.pack(
+        sourceId: 99,
+        sourceRowId: 17,
+      );
+
+      expect(canonicalContactOverlayKey(archiveContactId), archiveContactId);
+    });
+  });
+
   group('handleOverlayKeyVariants', () {
     test('includes graph handle id for retained live handle ids', () {
       final graphHandleId = SourceScopedRowKey.pack(

@@ -9,6 +9,7 @@ import 'application/display_name_overrides/contact_display_name_override_store.d
 import 'application/read_models/contact_profile_reader.dart';
 import 'application/read_models/contact_profile_summary.dart';
 import 'application/read_models/contact_summary.dart';
+import 'application/read_models/contact_summary_identity.dart';
 import 'application/read_models/contacts_list_reader.dart';
 import 'application/read_models/handles_for_contact_reader.dart';
 import 'application/read_models/linked_handle.dart';
@@ -225,7 +226,10 @@ class ContactAccessActions extends _$ContactAccessActions {
 
   Future<void> recordContactSelection(int contactId) async {
     final store = await ref.watch(contactAccessStoreProvider.future);
-    await store.trackContactAccess(contactId);
+    for (final key in contactIdentityKeyVariants(contactId)) {
+      await store.clearContactAccess(key);
+    }
+    await store.trackContactAccess(canonicalContactIdentityKey(contactId));
     ref.invalidate(recentContactsProvider);
   }
 }

@@ -29,7 +29,9 @@ class ContactFavoriteActions extends _$ContactFavoriteActions {
     }
 
     if (isFavorite) {
-      await repository.addFavorite(participantId: contactId);
+      await repository.addFavorite(
+        participantId: canonicalContactIdentityKey(contactId),
+      );
     }
 
     for (final key in identityVariants) {

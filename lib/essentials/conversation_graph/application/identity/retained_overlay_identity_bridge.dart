@@ -42,6 +42,10 @@ bool contactIdsRepresentSamePerson(int first, int second) {
       contactOverlayKeyVariants(second).contains(first);
 }
 
+int canonicalContactOverlayKey(int contactId) {
+  return graphContactIdForRetainedOverlayContactId(contactId) ?? contactId;
+}
+
 T? overlayValueForContactId<T>(Map<int, T> valuesByContactId, int contactId) {
   for (final key in contactOverlayKeyVariants(contactId)) {
     final value = valuesByContactId[key];

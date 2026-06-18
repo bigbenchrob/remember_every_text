@@ -9,6 +9,10 @@ Set<int> contactIdentityKeyVariants(int contactId) {
   return contactOverlayKeyVariants(contactId);
 }
 
+int canonicalContactIdentityKey(int contactId) {
+  return canonicalContactOverlayKey(contactId);
+}
+
 bool contactSummaryMatchesId(ContactSummary contact, int contactId) {
   return contactIdentityIdsMatch(contact.participantId, contactId);
 }
