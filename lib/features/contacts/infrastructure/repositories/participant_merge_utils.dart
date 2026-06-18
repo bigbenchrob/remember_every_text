@@ -99,6 +99,10 @@ ParticipantOverride? participantOverrideForContactId({
   return overlayValueForContactId(participantOverrides, contactId);
 }
 
+Set<int> handleIdentityKeyVariantsForGraphLookup(int handleId) {
+  return handleOverlayKeyVariants(handleId);
+}
+
 bool isPlaceholderDisplayName(String value) {
   final trimmed = value.trim();
   if (trimmed.isEmpty) {

@@ -1,4 +1,3 @@
-import '../../../../essentials/conversation_graph/application/identity/retained_overlay_identity_bridge.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import '../../application/read_models/contact_summary.dart';
@@ -89,9 +88,9 @@ class GraphContactsListReader implements ContactsListReader {
         continue;
       }
 
-      final override = overlayValueForContactId(
-        participantOverrides,
-        contactId,
+      final override = participantOverrideForContactId(
+        participantOverrides: participantOverrides,
+        contactId: contactId,
       );
       final overrideLabel = override?.displayNameOverride?.trim();
       final displayName = overrideLabel != null && overrideLabel.isNotEmpty
@@ -172,7 +171,7 @@ class GraphContactsListReader implements ContactsListReader {
 
     final graphHandleIds = <int>{};
     for (final handleId in handleIds) {
-      graphHandleIds.addAll(handleOverlayKeyVariants(handleId));
+      graphHandleIds.addAll(handleIdentityKeyVariantsForGraphLookup(handleId));
     }
 
     final placeholders = List.filled(graphHandleIds.length, '?').join(', ');
