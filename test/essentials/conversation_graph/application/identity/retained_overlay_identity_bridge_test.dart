@@ -108,6 +108,46 @@ void main() {
     });
   });
 
+  group('overlayValueForHandleId', () {
+    test('finds retained handle overlay value for graph handle id', () {
+      final graphHandleId = SourceScopedRowKey.pack(
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 42,
+      );
+
+      final value = overlayValueForHandleId({42: 'visible'}, graphHandleId);
+
+      expect(value, 'visible');
+    });
+
+    test('prefers exact graph handle value over retained variant', () {
+      final graphHandleId = SourceScopedRowKey.pack(
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 42,
+      );
+
+      final value = overlayValueForHandleId({
+        42: 'retained',
+        graphHandleId: 'graph',
+      }, graphHandleId);
+
+      expect(value, 'graph');
+    });
+
+    test('does not read retained value for non-live graph handle id', () {
+      final archiveHandleId = SourceScopedRowKey.pack(
+        sourceId: 99,
+        sourceRowId: 42,
+      );
+
+      final value = overlayValueForHandleId({
+        42: 'wrong source',
+      }, archiveHandleId);
+
+      expect(value, isNull);
+    });
+  });
+
   group('retainedOverlayMessageRowIdForGraphMessageId', () {
     test('returns source rowid for live chat-db message ids', () {
       final messageSsId = SourceScopedRowKey.pack(

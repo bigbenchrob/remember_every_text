@@ -84,6 +84,16 @@ Set<int> handleOverlayKeyVariants(int handleId) {
   return ids;
 }
 
+T? overlayValueForHandleId<T>(Map<int, T> valuesByHandleId, int handleId) {
+  for (final key in handleOverlayKeyVariants(handleId)) {
+    final value = valuesByHandleId[key];
+    if (value != null) {
+      return value;
+    }
+  }
+  return null;
+}
+
 int? retainedOverlayMessageRowIdForGraphMessageId(int messageSsId) {
   if (SourceScopedRowKey.unpackSourceId(messageSsId) != liveChatDbSourceId) {
     return null;
