@@ -1,8 +1,9 @@
-import '../../../../essentials/conversation_graph/application/identity/retained_overlay_identity_bridge.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import '../../application/read_models/contact_summary_identity.dart';
 import '../../application/read_models/handles_for_contact_reader.dart';
 import '../../application/read_models/linked_handle.dart';
+import 'participant_merge_utils.dart';
 
 class GraphHandlesForContactReader implements HandlesForContactReader {
   const GraphHandlesForContactReader({
@@ -34,7 +35,7 @@ class GraphHandlesForContactReader implements HandlesForContactReader {
         await _overlayDb.getOverridesForVirtualParticipant(contactId),
       );
     } else {
-      for (final candidateContactId in contactOverlayKeyVariants(contactId)) {
+      for (final candidateContactId in contactIdentityKeyVariants(contactId)) {
         overrides.addAll(
           await _overlayDb.getOverridesForParticipant(candidateContactId),
         );
@@ -60,7 +61,7 @@ class GraphHandlesForContactReader implements HandlesForContactReader {
   Future<List<LinkedHandle>> _readGraphHandlesForContact({
     required int contactId,
   }) async {
-    final graphContactIds = contactOverlayKeyVariants(contactId);
+    final graphContactIds = contactIdentityKeyVariants(contactId);
 
     for (final graphContactId in graphContactIds) {
       final rows = await _graphDb.selectRows(
@@ -99,7 +100,7 @@ class GraphHandlesForContactReader implements HandlesForContactReader {
   Future<LinkedHandle?> _readGraphHandleForOverlayLink({
     required int handleId,
   }) async {
-    final candidateIds = handleOverlayKeyVariants(handleId);
+    final candidateIds = handleIdentityKeyVariantsForGraphLookup(handleId);
     if (candidateIds.isEmpty) {
       return null;
     }

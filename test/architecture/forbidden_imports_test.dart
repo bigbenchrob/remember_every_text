@@ -47,7 +47,6 @@ const Set<String> _legacyTerminologyAllowedFiles = <String>{};
 const Set<String> _retainedOverlayIdentityBridgeAllowedFiles = {
   'lib/features/contacts/application/services/manual_handle_link_service.dart',
   'lib/features/contacts/infrastructure/repositories/display_identity_repository.dart',
-  'lib/features/contacts/infrastructure/repositories/graph_handles_for_contact_reader.dart',
   'lib/features/contacts/infrastructure/repositories/overlay_contact_display_name_override_store.dart',
   'lib/features/contacts/infrastructure/repositories/overlay_manual_handle_link_store.dart',
   'lib/features/contacts/infrastructure/repositories/participant_merge_utils.dart',
