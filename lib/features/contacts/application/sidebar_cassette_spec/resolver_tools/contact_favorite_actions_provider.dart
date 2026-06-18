@@ -26,7 +26,9 @@ class ContactFavoriteActions extends _$ContactFavoriteActions {
     if (isFavorite) {
       await repository.addFavorite(participantId: contactId);
     } else {
-      await repository.removeFavorite(contactId);
+      for (final key in contactIdentityKeyVariants(contactId)) {
+        await repository.removeFavorite(key);
+      }
     }
 
     for (final key in contactIdentityKeyVariants(contactId)) {
