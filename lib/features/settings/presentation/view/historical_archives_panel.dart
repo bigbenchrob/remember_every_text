@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
+import '../../application/historical_archives_workflow_actions_provider.dart';
 import '../../application/historical_archives_workflow_panel_model_provider.dart';
 
 class HistoricalArchivesPanel extends ConsumerWidget {
@@ -47,7 +48,8 @@ class HistoricalArchivesPanel extends ConsumerWidget {
                             onPressed: () {
                               ref
                                   .read(
-                                    historicalArchivesWorkflowProvider.notifier,
+                                    historicalArchivesWorkflowActionsProvider
+                                        .notifier,
                                   )
                                   .chooseMessagesFolder();
                             },
@@ -60,7 +62,7 @@ class HistoricalArchivesPanel extends ConsumerWidget {
                                 : () {
                                     ref
                                         .read(
-                                          historicalArchivesWorkflowProvider
+                                          historicalArchivesWorkflowActionsProvider
                                               .notifier,
                                         )
                                         .clearSelection();
@@ -152,7 +154,7 @@ class HistoricalArchivesPanel extends ConsumerWidget {
                             ? () {
                                 ref
                                     .read(
-                                      historicalArchivesWorkflowProvider
+                                      historicalArchivesWorkflowActionsProvider
                                           .notifier,
                                     )
                                     .beginImportForSelectedSource();
@@ -326,7 +328,7 @@ Future<void> _showRemoveImportedArchiveDataConfirmationDialog({
 
   if (confirmed == true) {
     await ref
-        .read(historicalArchivesWorkflowProvider.notifier)
+        .read(historicalArchivesWorkflowActionsProvider.notifier)
         .removeImportedArchiveDataForSelectedSource();
   }
 }

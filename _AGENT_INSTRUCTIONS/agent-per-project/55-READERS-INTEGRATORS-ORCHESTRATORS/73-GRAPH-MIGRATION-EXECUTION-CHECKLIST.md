@@ -2798,6 +2798,12 @@ criteria.
   simulation mutations now cross the onboarding application action boundary.
   Extended the dev-panel tripwire to prevent direct dev-override or readiness
   action mutation from returning to presentation.
+- Moved historical archive workflow UI actions behind
+  `HistoricalArchivesWorkflowActions`. The settings panel and archive-source
+  sidebar supplement still render workflow state, but folder selection, clear
+  selection, begin import, and remove-imported-archive-data intents no longer
+  call the workflow notifier directly from UI code. Added a tripwire guarding
+  this workflow action boundary.
 
 ### Exit Criteria
 

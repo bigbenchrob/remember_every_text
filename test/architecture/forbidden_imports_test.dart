@@ -2848,6 +2848,21 @@ void main() {
       );
     });
 
+    test('Historical archives UI uses workflow action boundary', () async {
+      final offenders =
+          await _findHistoricalArchivesWorkflowActionBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Historical Archives UI may render workflow state and controls, '
+            'but user actions should cross HistoricalArchivesWorkflowActions '
+            'instead of mutating the workflow notifier directly.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Archive source inspector provider stays feature-boundary owned', () {
       const retiredApplicationProvider =
           'lib/features/settings/application/archive_source_inspector_provider.dart';
@@ -3067,6 +3082,29 @@ _findHistoricalArchivesInspectionBoundaryOffenders() async {
   }
 
   return offenders.toList()..sort();
+}
+
+Future<List<String>>
+_findHistoricalArchivesWorkflowActionBoundaryOffenders() async {
+  const filePaths = <String>[
+    'lib/features/settings/presentation/view/historical_archives_panel.dart',
+    'lib/features/settings/application/sidebar_cassette_spec/widget_builders/historical_archives_settings_supplemental_content.dart',
+  ];
+  final offenders = <String>[];
+
+  for (final filePath in filePaths) {
+    final file = File(filePath);
+    if (!file.existsSync()) {
+      continue;
+    }
+
+    final uncommented = _stripComments(await file.readAsString());
+    if (uncommented.contains('historicalArchivesWorkflowProvider.notifier')) {
+      offenders.add('$filePath mutates historical archive workflow directly');
+    }
+  }
+
+  return offenders..sort();
 }
 
 Future<List<String>>
