@@ -1,16 +1,27 @@
-import '../../../../essentials/conversation_graph/application/identity/retained_overlay_identity_bridge.dart';
+import '../../../../essentials/source_scoped_import/domain/known_sources.dart';
+import '../../../../essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'contact_summary.dart';
 
 bool contactIdentityIdsMatch(int first, int second) {
-  return contactIdsRepresentSamePerson(first, second);
+  return contactIdentityKeyVariants(first).contains(second) ||
+      contactIdentityKeyVariants(second).contains(first);
 }
 
 Set<int> contactIdentityKeyVariants(int contactId) {
-  return contactOverlayKeyVariants(contactId);
+  final ids = <int>{contactId};
+  final graphContactId = _graphContactIdForRetainedContactId(contactId);
+  if (graphContactId != null) {
+    ids.add(graphContactId);
+  }
+  final retainedContactId = _retainedContactIdForGraphContactId(contactId);
+  if (retainedContactId != null) {
+    ids.add(retainedContactId);
+  }
+  return ids;
 }
 
 int canonicalContactIdentityKey(int contactId) {
-  return canonicalContactOverlayKey(contactId);
+  return _graphContactIdForRetainedContactId(contactId) ?? contactId;
 }
 
 bool contactSummaryMatchesId(ContactSummary contact, int contactId) {
@@ -27,4 +38,21 @@ ContactSummary? findContactSummaryById(
     }
   }
   return null;
+}
+
+int? _graphContactIdForRetainedContactId(int contactId) {
+  if (contactId <= 0 || contactId > SourceScopedRowKey.maxSourceRowId) {
+    return null;
+  }
+  return SourceScopedRowKey.pack(
+    sourceId: liveAddressBookSourceId,
+    sourceRowId: contactId,
+  );
+}
+
+int? _retainedContactIdForGraphContactId(int contactId) {
+  if (SourceScopedRowKey.unpackSourceId(contactId) != liveAddressBookSourceId) {
+    return null;
+  }
+  return SourceScopedRowKey.unpackSourceRowId(contactId);
 }

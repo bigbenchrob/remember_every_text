@@ -45,7 +45,6 @@ const Set<String> _sourceScopedDatabaseFilenameLiteralAllowedFiles = {
 const Set<String> _legacyTerminologyAllowedFiles = <String>{};
 
 const Set<String> _retainedOverlayIdentityBridgeAllowedFiles = {
-  'lib/features/contacts/application/read_models/contact_summary_identity.dart',
   'lib/features/contacts/application/services/manual_handle_link_service.dart',
   'lib/features/contacts/infrastructure/repositories/display_identity_repository.dart',
   'lib/features/contacts/infrastructure/repositories/graph_contact_profile_reader.dart',
