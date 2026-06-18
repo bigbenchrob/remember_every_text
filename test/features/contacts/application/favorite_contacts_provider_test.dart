@@ -189,5 +189,45 @@ void main() {
       expect(favorites, isEmpty);
       expect(isFavorite, isFalse);
     });
+
+    test('favorite rewrites retained variant to graph key', () async {
+      const retainedContactId = 24;
+      final graphContactId = SourceScopedRowKey.pack(
+        sourceId: liveAddressBookSourceId,
+        sourceRowId: retainedContactId,
+      );
+      await overlayDb.addFavorite(retainedContactId, DateTime.utc(2024, 12, 1));
+
+      container = ProviderContainer(
+        overrides: [
+          favoriteContactsRepositoryProvider.overrideWith(
+            (ref) async => FavoriteContactsRepository(overlayDb),
+          ),
+          contactsListRepositoryProvider.overrideWith(
+            (ref) async => [
+              buildContactSummary(
+                participantId: graphContactId,
+                displayName: 'Claire',
+              ),
+            ],
+          ),
+        ],
+      );
+
+      await container!
+          .read(contactFavoriteActionsProvider.notifier)
+          .setFavorite(contactId: graphContactId, isFavorite: true);
+
+      final repository = await container!.read(
+        favoriteContactsRepositoryProvider.future,
+      );
+      final rawFavorites = await repository.getAllFavorites();
+      final favorites = await container!.read(favoriteContactsProvider.future);
+
+      expect(rawFavorites.map((entry) => entry.participantId), [
+        graphContactId,
+      ]);
+      expect(favorites.single.contact.participantId, graphContactId);
+    });
   });
 }

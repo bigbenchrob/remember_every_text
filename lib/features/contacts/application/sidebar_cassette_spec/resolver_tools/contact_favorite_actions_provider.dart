@@ -23,15 +23,16 @@ class ContactFavoriteActions extends _$ContactFavoriteActions {
       favoriteContactsRepositoryProvider.future,
     );
 
-    if (isFavorite) {
-      await repository.addFavorite(participantId: contactId);
-    } else {
-      for (final key in contactIdentityKeyVariants(contactId)) {
-        await repository.removeFavorite(key);
-      }
+    final identityVariants = contactIdentityKeyVariants(contactId);
+    for (final key in identityVariants) {
+      await repository.removeFavorite(key);
     }
 
-    for (final key in contactIdentityKeyVariants(contactId)) {
+    if (isFavorite) {
+      await repository.addFavorite(participantId: contactId);
+    }
+
+    for (final key in identityVariants) {
       ref.invalidate(contactIsFavoriteProvider(participantId: key));
     }
     ref.invalidate(favoriteContactsProvider);
