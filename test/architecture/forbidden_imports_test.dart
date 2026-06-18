@@ -581,8 +581,8 @@ void main() {
         isEmpty,
         reason:
             'The chats selection controller may translate chat selections into '
-            'semantic sidebar actions, but SidebarFlow mutation belongs to '
-            'SidebarActionDispatcher.\n'
+            'semantic chat-selection actions, but sidebar intent construction '
+            'and dispatch belong behind ChatSelectionActions.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -6979,11 +6979,23 @@ Future<List<String>> _findChatsViewModelFlowMutationOffenders() async {
   }
 
   final uncommented = _stripComments(await file.readAsString());
+  final offenders = <String>[];
   if (uncommented.contains('sidebarFlowProvider')) {
-    return const ['$filePath imports or mutates sidebarFlowProvider'];
+    offenders.add('$filePath imports or mutates sidebarFlowProvider');
+  }
+  const forbiddenTokens = <String>[
+    'sidebarActionDispatcherProvider',
+    'SidebarActionDispatchContext',
+    'ConversationSelected',
+  ];
+
+  for (final token in forbiddenTokens) {
+    if (uncommented.contains(token)) {
+      offenders.add('$filePath uses $token');
+    }
   }
 
-  return const <String>[];
+  return offenders..sort();
 }
 
 Future<List<String>>

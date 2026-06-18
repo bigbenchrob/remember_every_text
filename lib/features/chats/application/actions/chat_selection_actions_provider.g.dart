@@ -1,28 +1,27 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'chats_view_model_provider.dart';
+part of 'chat_selection_actions_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$chatsViewModelHash() => r'202b3006db878b296a288d60df8d87228e1a90b3';
+String _$chatSelectionActionsHash() =>
+    r'9951aae977a72c0d921aef675c4ed4b2ee9f944d';
 
-/// View model that handles chat-centric user actions like selection.
-///
-/// Copied from [ChatsViewModel].
-@ProviderFor(ChatsViewModel)
-final chatsViewModelProvider =
-    AutoDisposeNotifierProvider<ChatsViewModel, void>.internal(
-      ChatsViewModel.new,
-      name: r'chatsViewModelProvider',
+/// See also [ChatSelectionActions].
+@ProviderFor(ChatSelectionActions)
+final chatSelectionActionsProvider =
+    AutoDisposeAsyncNotifierProvider<ChatSelectionActions, void>.internal(
+      ChatSelectionActions.new,
+      name: r'chatSelectionActionsProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
           ? null
-          : _$chatsViewModelHash,
+          : _$chatSelectionActionsHash,
       dependencies: null,
       allTransitiveDependencies: null,
     );
 
-typedef _$ChatsViewModel = AutoDisposeNotifier<void>;
+typedef _$ChatSelectionActions = AutoDisposeAsyncNotifier<void>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

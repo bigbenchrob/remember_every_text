@@ -2780,6 +2780,10 @@ criteria.
   Settings action rows still render descriptor labels and tone, but
   enabled-state dispatch and settings sidebar intent construction now live in
   the settings application boundary.
+- Moved chat selection dispatch behind `ChatSelectionActions`. The chats view
+  model keeps its public selection API for existing callers, but conversation
+  sidebar intent construction and dispatch now live in the chats application
+  boundary.
 
 ### Exit Criteria
 
