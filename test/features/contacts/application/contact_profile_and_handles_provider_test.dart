@@ -81,6 +81,39 @@ void main() {
     expect(profile?.origin, ParticipantOrigin.overlayOverride);
   });
 
+  test(
+    'contact profile prefers graph-key override over retained key',
+    () async {
+      const retainedContactId = 17;
+      final graphContactId = SourceScopedRowKey.pack(
+        sourceId: liveAddressBookSourceId,
+        sourceRowId: retainedContactId,
+      );
+      await graphDb.database.insert('contacts', <String, Object?>{
+        'contact_id': graphContactId,
+        'display_name': 'Claire Merriman Campbell',
+        'given_name': 'Claire',
+        'family_name': 'Campbell',
+      });
+      await overlayDb.setParticipantDisplayNameOverride(
+        retainedContactId,
+        'Retained Claire',
+      );
+      await overlayDb.setParticipantDisplayNameOverride(
+        graphContactId,
+        'Graph Claire',
+      );
+
+      final profile = await container.read(
+        contactProfileProvider(contactId: graphContactId).future,
+      );
+
+      expect(profile?.contactId, graphContactId);
+      expect(profile?.displayName, 'Graph Claire');
+      expect(profile?.origin, ParticipantOrigin.overlayOverride);
+    },
+  );
+
   test('handles for contact reads graph contact handles first', () async {
     await graphDb.database.insert('contacts', <String, Object?>{
       'contact_id': 9001,

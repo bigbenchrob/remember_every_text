@@ -88,6 +88,37 @@ void main() {
     },
   );
 
+  test('graph-key handle override wins over retained-key override', () async {
+    const retainedHandleId = 42;
+    final graphHandleId = SourceScopedRowKey.pack(
+      sourceId: liveChatDbSourceId,
+      sourceRowId: retainedHandleId,
+    );
+    await graphDb.database.insert('contacts', <String, Object?>{
+      'contact_id': 9001,
+      'display_name': 'Retained Contact',
+    });
+    await graphDb.database.insert('contacts', <String, Object?>{
+      'contact_id': 9002,
+      'display_name': 'Graph Contact',
+    });
+    await graphDb.database.insert('handles', <String, Object?>{
+      'ss_id': graphHandleId,
+      'id': '+17789908506',
+      'service': 'iMessage',
+    });
+    await overlayDb.setParticipantDisplayNameOverride(9001, 'Retained');
+    await overlayDb.setParticipantDisplayNameOverride(9002, 'Graph');
+    await overlayDb.setHandleOverride(retainedHandleId, 9001);
+    await overlayDb.setHandleOverride(graphHandleId, 9002);
+
+    final label = await container.read(
+      handleDisplayNameProvider(handleId: graphHandleId).future,
+    );
+
+    expect(label, 'Graph');
+  });
+
   test(
     'falls back to graph handle display when no contact identity exists',
     () async {
