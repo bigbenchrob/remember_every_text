@@ -760,6 +760,21 @@ void main() {
       );
     });
 
+    test('Recent contact overlays dedupe before visible limiting', () async {
+      final offenders = await _findRecentContactPreDedupeLimitOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Recent contact overlay readers must fetch enough candidates to '
+            'collapse retained/graph identity variants before applying the '
+            'visible recents cap. Limiting to the visible count first lets '
+            'compatibility duplicates consume picker slots.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Overlay database filename literal stays centralized', () async {
       final offenders = await _findOverlayDatabaseFilenameLiteralOffenders();
 
@@ -3431,6 +3446,25 @@ Future<List<String>> _findHandleBlacklistVariantExpansionOffenders() async {
   }
 
   return offenders.toList()..sort();
+}
+
+Future<List<String>> _findRecentContactPreDedupeLimitOffenders() async {
+  const filePath =
+      'lib/features/contacts/infrastructure/repositories/'
+      'overlay_recent_contacts_reader.dart';
+  final source = await File(filePath).readAsString();
+  final uncommented = _stripComments(source);
+  final offenders = <String>[];
+
+  final preDedupeLimitPattern = RegExp(
+    r'getRecentContacts\s*\(\s*limit\s*:\s*(3|kMaxRecents)\s*\)',
+  );
+  final match = preDedupeLimitPattern.firstMatch(uncommented);
+  if (match != null) {
+    offenders.add(filePath);
+  }
+
+  return offenders;
 }
 
 Future<List<String>> _findOverlayDatabaseFilenameLiteralOffenders() async {
