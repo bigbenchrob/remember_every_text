@@ -133,7 +133,7 @@ class MissingAttachmentRecoverySample {
   const MissingAttachmentRecoverySample({
     required this.attachmentSsId,
     required this.archiveMessageGuid,
-    required this.archiveCompatibilityAttachmentId,
+    required this.archiveCompatibilitySourceRowId,
     required this.filename,
     required this.mimeType,
     required this.uti,
@@ -145,7 +145,7 @@ class MissingAttachmentRecoverySample {
 
   final int attachmentSsId;
   final String archiveMessageGuid;
-  final int archiveCompatibilityAttachmentId;
+  final int archiveCompatibilitySourceRowId;
   final String? filename;
   final String? mimeType;
   final String? uti;

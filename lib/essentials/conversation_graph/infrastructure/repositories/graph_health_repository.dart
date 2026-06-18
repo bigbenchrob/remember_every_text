@@ -500,7 +500,7 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
         MissingAttachmentRecoverySample(
           attachmentSsId: attachmentSsId,
           archiveMessageGuid: messageGuid,
-          archiveCompatibilityAttachmentId: importAttachmentId,
+          archiveCompatibilitySourceRowId: importAttachmentId,
           filename: filename,
           mimeType: row['mime_type'] as String?,
           uti: row['uti'] as String?,

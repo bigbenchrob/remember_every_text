@@ -807,7 +807,7 @@ class _MissingAttachmentSampleCard extends ConsumerWidget {
           ),
           _AttachmentSampleDetail(
             label: 'source rowid',
-            value: '${sample.archiveCompatibilityAttachmentId}',
+            value: '${sample.archiveCompatibilitySourceRowId}',
           ),
           _AttachmentSampleDetail(
             label: 'type',

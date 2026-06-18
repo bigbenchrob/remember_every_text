@@ -421,7 +421,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
 
   /// Archive all locally available attachments from the conversation graph.
   ///
-  /// Intended for retained full/manual archive sweeps. Live graph updates use
+  /// Intended for manual graph archive sweeps. Live graph updates use
   /// source-row-range archiving instead. Runs in the background without
   /// blocking the UI. Emits [BulkArchiveProgress] state updates and supports
   /// pause/cancel.
@@ -613,10 +613,10 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       return;
     }
 
-    final archiveCompatibilityAttachmentId = archiveKey?.importAttachmentId;
-    final attachmentLabel = archiveCompatibilityAttachmentId == null
+    final archiveCompatibilitySourceRowId = archiveKey?.importAttachmentId;
+    final attachmentLabel = archiveCompatibilitySourceRowId == null
         ? 'unknown-id'
-        : '$archiveCompatibilityAttachmentId';
+        : '$archiveCompatibilitySourceRowId';
     final pathLabel = localPath == null || localPath.isEmpty
         ? 'no-path'
         : localPath;
