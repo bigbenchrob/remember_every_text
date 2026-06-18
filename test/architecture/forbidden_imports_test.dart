@@ -45,7 +45,6 @@ const Set<String> _sourceScopedDatabaseFilenameLiteralAllowedFiles = {
 const Set<String> _legacyTerminologyAllowedFiles = <String>{};
 
 const Set<String> _retainedOverlayIdentityBridgeAllowedFiles = {
-  'lib/features/messages/application/message_evidence/message_evidence_identity.dart',
   'lib/features/messages/infrastructure/repositories/message_overlay_identity_bridge_repository.dart',
 };
 
