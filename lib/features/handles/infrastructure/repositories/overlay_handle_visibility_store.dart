@@ -1,5 +1,5 @@
-import '../../../../essentials/conversation_graph/application/identity/retained_overlay_identity_bridge.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import '../../application/read_models/handle_identity.dart';
 import '../../application/settings_cassette_spec/resolver_tools/handle_visibility_store.dart';
 
 class OverlayHandleVisibilityStore implements HandleVisibilityStore {
@@ -13,7 +13,7 @@ class OverlayHandleVisibilityStore implements HandleVisibilityStore {
     final rows = await _overlayDatabase.getAllHandleVisibilities();
     final intentsByCanonicalHandleId = <int, HandleVisibilityIntent>{};
     for (final row in rows) {
-      final canonicalHandleId = canonicalHandleOverlayKey(row.handleId);
+      final canonicalHandleId = canonicalHandleIdentityKey(row.handleId);
       final existing = intentsByCanonicalHandleId[canonicalHandleId];
       final rowUsesCanonicalKey = row.handleId == canonicalHandleId;
       if (existing != null && !rowUsesCanonicalKey) {
@@ -30,7 +30,7 @@ class OverlayHandleVisibilityStore implements HandleVisibilityStore {
 
   @override
   Future<void> blockHandle(int handleId) async {
-    final canonicalHandleId = canonicalHandleOverlayKey(handleId);
+    final canonicalHandleId = canonicalHandleIdentityKey(handleId);
     await _deleteHandleVisibilityVariants(handleId);
     await _overlayDatabase.setHandleVisibility(
       canonicalHandleId,
@@ -45,7 +45,7 @@ class OverlayHandleVisibilityStore implements HandleVisibilityStore {
   }
 
   Future<void> _deleteHandleVisibilityVariants(int handleId) async {
-    for (final candidateId in handleOverlayKeyVariants(handleId)) {
+    for (final candidateId in handleIdentityKeyVariants(handleId)) {
       await _overlayDatabase.deleteHandleVisibility(candidateId);
     }
   }

@@ -50,12 +50,8 @@ const Set<String> _retainedOverlayIdentityBridgeAllowedFiles = {
   'lib/features/contacts/infrastructure/repositories/overlay_contact_display_name_override_store.dart',
   'lib/features/contacts/infrastructure/repositories/overlay_manual_handle_link_store.dart',
   'lib/features/contacts/infrastructure/repositories/participant_merge_utils.dart',
-  'lib/features/handles/infrastructure/repositories/graph_handle_display_name_reader.dart',
   'lib/features/handles/infrastructure/repositories/graph_manual_linking_read_repository.dart',
-  'lib/features/handles/infrastructure/repositories/graph_spam_handles_repository.dart',
   'lib/features/handles/infrastructure/repositories/graph_stray_handles_read_repository.dart',
-  'lib/features/handles/infrastructure/repositories/overlay_handle_review_store.dart',
-  'lib/features/handles/infrastructure/repositories/overlay_handle_visibility_store.dart',
   'lib/features/messages/application/message_evidence/message_evidence_identity.dart',
   'lib/features/messages/infrastructure/repositories/message_overlay_identity_bridge_repository.dart',
 };

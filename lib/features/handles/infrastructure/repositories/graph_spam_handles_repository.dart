@@ -1,5 +1,5 @@
-import '../../../../essentials/conversation_graph/application/identity/retained_overlay_identity_bridge.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
+import '../../application/read_models/handle_identity.dart';
 import '../../application/settings_cassette_spec/resolver_tools/handle_visibility_store.dart';
 import '../../application/settings_cassette_spec/resolver_tools/spam_handles_repository.dart';
 
@@ -48,7 +48,7 @@ final class GraphSpamHandlesRepository implements SpamHandlesRepository {
         continue;
       }
 
-      final overlay = overlayValueForHandleId(overrideMap, handleId);
+      final overlay = overlayValueForHandleIdentity(overrideMap, handleId);
       results.add(
         SpamHandleInfo(
           id: handleId,

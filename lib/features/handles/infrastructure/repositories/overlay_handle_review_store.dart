@@ -1,5 +1,6 @@
-import '../../../../essentials/conversation_graph/application/identity/retained_overlay_identity_bridge.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import '../../../contacts/application/read_models/contact_summary_identity.dart';
+import '../../application/read_models/handle_identity.dart';
 import '../../application/review/handle_review_store.dart';
 
 class OverlayHandleReviewStore implements HandleReviewStore {
@@ -10,7 +11,7 @@ class OverlayHandleReviewStore implements HandleReviewStore {
 
   @override
   Future<void> markReviewed({required int handleId}) async {
-    final canonicalHandleId = canonicalHandleOverlayKey(handleId);
+    final canonicalHandleId = canonicalHandleIdentityKey(handleId);
     final existing = await _readPreferredOverrideVariant(handleId);
     await _deleteHandleOverrideVariants(handleId);
 
@@ -18,7 +19,7 @@ class OverlayHandleReviewStore implements HandleReviewStore {
     if (participantId != null) {
       await _overlayDatabase.setHandleOverride(
         canonicalHandleId,
-        canonicalContactOverlayKey(participantId),
+        canonicalContactIdentityKey(participantId),
       );
       return;
     }
@@ -49,12 +50,12 @@ class OverlayHandleReviewStore implements HandleReviewStore {
     int handleId,
   ) async {
     HandleToParticipantOverride? fallback;
-    for (final candidateId in handleOverlayKeyVariants(handleId)) {
+    for (final candidateId in handleIdentityKeyVariants(handleId)) {
       final row = await _overlayDatabase.getHandleOverride(candidateId);
       if (row == null) {
         continue;
       }
-      if (row.handleId == canonicalHandleOverlayKey(handleId)) {
+      if (row.handleId == canonicalHandleIdentityKey(handleId)) {
         return row;
       }
       fallback ??= row;
@@ -63,7 +64,7 @@ class OverlayHandleReviewStore implements HandleReviewStore {
   }
 
   Future<void> _deleteHandleOverrideVariants(int handleId) async {
-    for (final candidateId in handleOverlayKeyVariants(handleId)) {
+    for (final candidateId in handleIdentityKeyVariants(handleId)) {
       await _overlayDatabase.deleteHandleOverride(candidateId);
     }
   }

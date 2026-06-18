@@ -1,9 +1,9 @@
-import '../../../../essentials/conversation_graph/application/identity/retained_overlay_identity_bridge.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import '../../../contacts/feature_level_providers.dart'
     show DisplayIdentityResolver;
 import '../../application/read_models/handle_display_name_reader.dart';
+import '../../application/read_models/handle_identity.dart';
 
 class GraphHandleDisplayNameReader implements HandleDisplayNameReader {
   const GraphHandleDisplayNameReader({
@@ -76,7 +76,7 @@ class GraphHandleDisplayNameReader implements HandleDisplayNameReader {
   }
 
   Future<HandleToParticipantOverride?> _readHandleOverride(int handleId) async {
-    for (final candidateId in handleOverlayKeyVariants(handleId)) {
+    for (final candidateId in handleIdentityKeyVariants(handleId)) {
       final override = await _overlayDb.getHandleOverride(candidateId);
       if (override != null) {
         return override;
