@@ -36,6 +36,49 @@ void main() {
     );
   });
 
+  group('overlayValueForContactId', () {
+    test('finds retained contact overlay value for graph contact id', () {
+      final graphContactId = SourceScopedRowKey.pack(
+        sourceId: liveAddressBookSourceId,
+        sourceRowId: 17,
+      );
+
+      final value = overlayValueForContactId({17: 'Claire'}, graphContactId);
+
+      expect(value, 'Claire');
+    });
+
+    test('prefers exact graph contact value over retained variant', () {
+      final graphContactId = SourceScopedRowKey.pack(
+        sourceId: liveAddressBookSourceId,
+        sourceRowId: 17,
+      );
+
+      final value = overlayValueForContactId({
+        17: 'Retained Claire',
+        graphContactId: 'Graph Claire',
+      }, graphContactId);
+
+      expect(value, 'Graph Claire');
+    });
+
+    test(
+      'does not read retained value for non-AddressBook graph contact id',
+      () {
+        final nonAddressBookId = SourceScopedRowKey.pack(
+          sourceId: liveChatDbSourceId,
+          sourceRowId: 17,
+        );
+
+        final value = overlayValueForContactId({
+          17: 'Wrong source Claire',
+        }, nonAddressBookId);
+
+        expect(value, isNull);
+      },
+    );
+  });
+
   group('handleOverlayKeyVariants', () {
     test('includes graph handle id for retained live handle ids', () {
       final graphHandleId = SourceScopedRowKey.pack(
