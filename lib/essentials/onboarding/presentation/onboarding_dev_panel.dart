@@ -10,7 +10,6 @@ import '../application/onboarding_dev_panel_actions_provider.dart';
 import '../application/onboarding_environment_report_provider.dart';
 import '../application/onboarding_gate_provider.dart';
 import '../application/onboarding_overlay_actions_provider.dart';
-import '../application/onboarding_readiness_actions_provider.dart';
 import '../domain/onboarding_environment_report.dart';
 import '../domain/onboarding_status.dart';
 
@@ -78,8 +77,8 @@ class OnboardingDevPanel extends ConsumerWidget {
                   color: colors.buttons.secondaryBackground,
                   onPressed: () {
                     ref
-                        .read(onboardingReadinessActionsProvider.notifier)
-                        .recheckReadiness(clearSimulationOverride: false);
+                        .read(onboardingDevPanelActionsProvider.notifier)
+                        .refreshDiagnostics();
                   },
                   child: Text(
                     'Refresh Diagnostics',
@@ -189,7 +188,7 @@ class _DevSimulationControls extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final overrides = ref.watch(onboardingDevOverridesProvider);
-    final notifier = ref.read(onboardingDevOverridesProvider.notifier);
+    final actions = ref.read(onboardingDevPanelActionsProvider.notifier);
 
     return Container(
       width: double.infinity,
@@ -218,7 +217,7 @@ class _DevSimulationControls extends ConsumerWidget {
                   padding: EdgeInsets.zero,
                   minimumSize: Size.zero,
                   onPressed: () {
-                    notifier.clearAll();
+                    actions.clearSimulations();
                   },
                   child: Text(
                     'Clear Simulations',
@@ -243,7 +242,7 @@ class _DevSimulationControls extends ConsumerWidget {
             colors: colors,
             typography: typography,
             onChanged: (value) {
-              notifier.setFullDiskAccessBlocked(enabled: value);
+              actions.setFullDiskAccessBlocked(enabled: value);
             },
           ),
           _SimulationToggleRow(
@@ -252,7 +251,7 @@ class _DevSimulationControls extends ConsumerWidget {
             colors: colors,
             typography: typography,
             onChanged: (value) {
-              notifier.setMessagesDatabaseMissing(enabled: value);
+              actions.setMessagesDatabaseMissing(enabled: value);
             },
           ),
           _SimulationToggleRow(
@@ -261,7 +260,7 @@ class _DevSimulationControls extends ConsumerWidget {
             colors: colors,
             typography: typography,
             onChanged: (value) {
-              notifier.setAddressBookUnavailable(enabled: value);
+              actions.setAddressBookUnavailable(enabled: value);
             },
           ),
           _SimulationToggleRow(
@@ -270,7 +269,7 @@ class _DevSimulationControls extends ConsumerWidget {
             colors: colors,
             typography: typography,
             onChanged: (value) {
-              notifier.setSparseSourceHistory(enabled: value);
+              actions.setSparseSourceHistory(enabled: value);
             },
           ),
           _SimulationToggleRow(
@@ -279,7 +278,7 @@ class _DevSimulationControls extends ConsumerWidget {
             colors: colors,
             typography: typography,
             onChanged: (value) {
-              notifier.setImportFailure(enabled: value);
+              actions.setImportFailure(enabled: value);
             },
           ),
           _SimulationToggleRow(
@@ -288,7 +287,7 @@ class _DevSimulationControls extends ConsumerWidget {
             colors: colors,
             typography: typography,
             onChanged: (value) {
-              notifier.setGraphProjectionFailure(enabled: value);
+              actions.setGraphProjectionFailure(enabled: value);
             },
           ),
         ],

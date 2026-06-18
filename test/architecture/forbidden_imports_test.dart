@@ -6260,6 +6260,8 @@ Future<List<String>> _findOnboardingDevPanelActionBoundaryOffenders() async {
   final uncommented = _stripComments(await file.readAsString());
   final offenders = <String>[];
   if (uncommented.contains('onboardingGateProvider.notifier') ||
+      uncommented.contains('onboardingDevOverridesProvider.notifier') ||
+      uncommented.contains('onboardingReadinessActionsProvider.notifier') ||
       uncommented.contains('ref.invalidate(') ||
       uncommented.contains('widget.ref.invalidate(') ||
       uncommented.contains('refreshEnvironment()') ||

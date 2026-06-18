@@ -7,7 +7,7 @@ part of 'onboarding_dev_panel_actions_provider.dart';
 // **************************************************************************
 
 String _$onboardingDevPanelActionsHash() =>
-    r'97f2214eeb1ca0ec18fbcc720f6aad5ebbac20cf';
+    r'702362e00ecd5321f147eb71b54ad5229f2ce711';
 
 /// See also [OnboardingDevPanelActions].
 @ProviderFor(OnboardingDevPanelActions)

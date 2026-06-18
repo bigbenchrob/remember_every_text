@@ -2792,6 +2792,12 @@ criteria.
   `HandleLensActions`. `HandleLensView` now renders evidence, dialog/form
   inputs, and busy/error state only; manual-link writes, review dismissal, and
   warning logging stay behind a messages application action boundary.
+- Moved onboarding dev-panel simulation toggles behind
+  `OnboardingDevPanelActions`. The dev panel still renders current simulated
+  readiness state, but Full Disk Access/database/source-history/pipeline
+  simulation mutations now cross the onboarding application action boundary.
+  Extended the dev-panel tripwire to prevent direct dev-override or readiness
+  action mutation from returning to presentation.
 
 ### Exit Criteria
 
