@@ -65,6 +65,36 @@ void main() {
     });
 
     test(
+      'graph handle visibility overrides retained blacklist variant',
+      () async {
+        final graphHandleId = SourceScopedRowKey.pack(
+          sourceId: liveChatDbSourceId,
+          sourceRowId: 42,
+        );
+        await _insertGraphHandle(
+          graphDb,
+          handleSsId: graphHandleId,
+          chatSsId: 6005,
+        );
+        await overlayDb.setHandleVisibility(
+          42,
+          isVisible: false,
+          isBlacklisted: true,
+        );
+        await overlayDb.setHandleVisibility(
+          graphHandleId,
+          isVisible: true,
+          isBlacklisted: false,
+        );
+
+        final handles = await container.read(unlinkedHandlesProvider.future);
+
+        expect(handles, hasLength(1));
+        expect(handles.single.id, graphHandleId);
+      },
+    );
+
+    test(
       'available participants read graph contacts with user override',
       () async {
         await graphDb.database.insert('contacts', <String, Object?>{

@@ -24,11 +24,10 @@ class GraphManualLinkingReadRepository implements ManualLinkingReadRepository {
   @override
   Future<List<UnlinkedHandle>> readUnlinkedHandles() async {
     final visibilityOverrides = await _overlayDb.getAllHandleVisibilities();
-    final blacklistedHandleIds = <int>{
-      for (final override in visibilityOverrides)
-        if (override.isBlacklisted)
-          ...handleOverlayKeyVariants(override.handleId),
-    };
+    final visibilityByHandleId = <int, HandleVisibilityOverride>{};
+    for (final override in visibilityOverrides) {
+      visibilityByHandleId[override.handleId] = override;
+    }
 
     final handleOverrides = await _overlayDb.getAllHandleOverrides();
     final overlayLinkedHandleIds = <int>{};
@@ -73,7 +72,11 @@ class GraphManualLinkingReadRepository implements ManualLinkingReadRepository {
         continue;
       }
 
-      if (blacklistedHandleIds.contains(handleId)) {
+      final visibility = overlayValueForHandleId(
+        visibilityByHandleId,
+        handleId,
+      );
+      if (visibility?.isBlacklisted ?? false) {
         continue;
       }
 
