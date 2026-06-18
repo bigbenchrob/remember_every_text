@@ -164,7 +164,6 @@ void main() {
                 id: 1,
                 localPath: null,
                 mimeType: null,
-                importAttachmentId: 100,
                 transferName: 'photo.jpg',
               ),
             ],

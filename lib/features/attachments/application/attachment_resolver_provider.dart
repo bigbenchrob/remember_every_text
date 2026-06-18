@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../essentials/retained_archive/domain/archive_compatibility_key.dart';
 import '../../messages/domain/entities/attachment_info.dart';
 import '../domain/constants/attachment_provenance.dart';
 import '../domain/constants/resolved_attachment_availability.dart';
@@ -41,7 +42,7 @@ Future<ResolvedAttachment> attachmentResolver(
   return _resolveForArchiveEnabledMode(
     ref,
     attachmentInfo: attachmentInfo,
-    archiveKey: _archiveCompatibilityKeyFor(attachmentInfo),
+    archiveKey: attachmentInfo.archiveCompatibilityKey,
     fileAccess: fileAccess,
   );
 }
@@ -195,17 +196,4 @@ void _triggerOnDemandArchive(
         mimeType: mimeType,
         sha256Hex: null,
       );
-}
-
-ArchiveCompatibilityKey? _archiveCompatibilityKeyFor(
-  AttachmentInfo attachmentInfo,
-) {
-  if (!attachmentInfo.hasArchiveCompatibilityKey) {
-    return null;
-  }
-
-  return ArchiveCompatibilityKey(
-    messageGuid: attachmentInfo.messageGuid!,
-    importAttachmentId: attachmentInfo.importAttachmentId!,
-  );
 }

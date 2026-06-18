@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import 'package:remember_this_text/features/attachments/application/archive_compatibility_key.dart';
+import 'package:remember_this_text/essentials/retained_archive/domain/archive_compatibility_key.dart';
 import 'package:remember_this_text/features/attachments/application/attachment_recovery_hint_storage.dart';
 import 'package:remember_this_text/features/attachments/application/attachment_resolver_provider.dart';
 import 'package:remember_this_text/features/attachments/domain/constants/attachment_provenance.dart';
@@ -64,9 +64,11 @@ void main() {
         attachmentResolverProvider(
           AttachmentInfo(
             id: 1,
-            importAttachmentId: 11,
+            archiveCompatibilityKey: const ArchiveCompatibilityKey(
+              messageGuid: 'm1',
+              importAttachmentId: 11,
+            ),
             localPath: liveFile.path,
-            messageGuid: 'm1',
             mimeType: 'image/jpeg',
             transferName: 'photo.jpg',
           ),
@@ -103,9 +105,11 @@ void main() {
         attachmentResolverProvider(
           const AttachmentInfo(
             id: 2,
-            importAttachmentId: 22,
+            archiveCompatibilityKey: ArchiveCompatibilityKey(
+              messageGuid: 'm2',
+              importAttachmentId: 22,
+            ),
             localPath: '/tmp/does-not-exist.jpg',
-            messageGuid: 'm2',
             mimeType: 'image/jpeg',
             transferName: 'archived.jpg',
           ),
@@ -130,9 +134,11 @@ void main() {
           attachmentResolverProvider(
             AttachmentInfo(
               id: 3,
-              importAttachmentId: 33,
+              archiveCompatibilityKey: const ArchiveCompatibilityKey(
+                messageGuid: 'm3',
+                importAttachmentId: 33,
+              ),
               localPath: liveFile.path,
-              messageGuid: 'm3',
               mimeType: 'image/png',
               transferName: 'pending.png',
             ),
@@ -175,9 +181,11 @@ void main() {
           attachmentResolverProvider(
             const AttachmentInfo(
               id: 4,
-              importAttachmentId: 44,
+              archiveCompatibilityKey: ArchiveCompatibilityKey(
+                messageGuid: 'm4',
+                importAttachmentId: 44,
+              ),
               localPath: '/tmp/evicted.mov',
-              messageGuid: 'm4',
               mimeType: 'video/quicktime',
               transferName: 'evicted.mov',
             ),
@@ -222,9 +230,11 @@ void main() {
           attachmentResolverProvider(
             const AttachmentInfo(
               id: 6,
-              importAttachmentId: 55,
+              archiveCompatibilityKey: ArchiveCompatibilityKey(
+                messageGuid: 'm-priority',
+                importAttachmentId: 55,
+              ),
               localPath: '/tmp/missing-priority.jpg',
-              messageGuid: 'm-priority',
               mimeType: 'image/jpeg',
               transferName: 'missing-priority.jpg',
             ),

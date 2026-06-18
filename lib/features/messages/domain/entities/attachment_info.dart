@@ -1,11 +1,12 @@
+import '../../../../essentials/retained_archive/domain/archive_compatibility_key.dart';
+
 class AttachmentInfo {
   const AttachmentInfo({
     required this.id,
     required this.localPath,
     required this.mimeType,
     required this.transferName,
-    this.importAttachmentId,
-    this.messageGuid,
+    this.archiveCompatibilityKey,
     this.mediaWidth,
     this.mediaHeight,
   });
@@ -14,20 +15,18 @@ class AttachmentInfo {
   final String? localPath;
   final String? mimeType;
   final String? transferName;
-  // Current archive compatibility key. These values are retained so the
-  // shared evidence spine can resolve existing archive records; they are not
-  // canonical graph attachment identity.
-  final int? importAttachmentId;
-  final String? messageGuid;
+
+  /// Current archive compatibility key.
+  ///
+  /// This is retained bridge identity for existing archive records, not
+  /// canonical graph attachment identity.
+  final ArchiveCompatibilityKey? archiveCompatibilityKey;
   final double? mediaWidth;
   final double? mediaHeight;
 
   bool get hasLocalFile => localPath != null && localPath!.isNotEmpty;
 
-  bool get hasArchiveCompatibilityKey =>
-      messageGuid != null &&
-      messageGuid!.isNotEmpty &&
-      importAttachmentId != null;
+  bool get hasArchiveCompatibilityKey => archiveCompatibilityKey != null;
 
   bool get hasDimensions =>
       mediaWidth != null &&

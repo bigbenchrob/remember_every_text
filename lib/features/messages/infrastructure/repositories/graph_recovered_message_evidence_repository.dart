@@ -171,7 +171,6 @@ class GraphRecoveredMessageEvidenceRepository
           localPath: row['filename'] as String?,
           mimeType: row['mime_type'] as String?,
           transferName: _attachmentDisplayName(row),
-          messageGuid: row['guid'] as String?,
         ),
     ];
   }
