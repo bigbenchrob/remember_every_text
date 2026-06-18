@@ -2814,6 +2814,11 @@ criteria.
   forwards user intent only; panel-stack mutation and logger writes stay in
   navigation application code. Added a tripwire preventing those details from
   returning to the render surface.
+- Moved conversation signature filter/sort mutations behind
+  `ConversationSignaturePreferencesActions`. The conversation signatures
+  widget still renders search/filter/sort controls and observes preference
+  state, but persisted preference mutation now crosses a messages application
+  action boundary. Added a tripwire guarding that boundary.
 
 ### Exit Criteria
 

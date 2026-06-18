@@ -16,6 +16,7 @@ import '../../../domain/calendar_heatmap_timeline_data.dart';
 import '../../../feature_level_providers.dart';
 import '../../../presentation/widgets/calendar_heatmap_timeline_widget.dart';
 import '../resolver_tools/conversation_signature_display_provider.dart';
+import '../resolver_tools/conversation_signature_preferences_actions_provider.dart';
 import '../resolver_tools/conversation_signature_preferences_provider.dart';
 
 class ConversationSignaturesWidget extends ConsumerStatefulWidget {
@@ -105,7 +106,7 @@ class _ConversationSignaturesWidgetState
             unawaited(
               ref
                   .read(
-                    conversationSignaturePreferencesControllerProvider.notifier,
+                    conversationSignaturePreferencesActionsProvider.notifier,
                   )
                   .setFilter(value),
             );
@@ -114,7 +115,7 @@ class _ConversationSignaturesWidgetState
             unawaited(
               ref
                   .read(
-                    conversationSignaturePreferencesControllerProvider.notifier,
+                    conversationSignaturePreferencesActionsProvider.notifier,
                   )
                   .setSort(value),
             );

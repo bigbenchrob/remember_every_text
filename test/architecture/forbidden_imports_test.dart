@@ -1332,6 +1332,21 @@ void main() {
       );
     });
 
+    test('Conversation signature preferences use action boundary', () async {
+      final offenders =
+          await _findConversationSignaturePreferencesActionBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'ConversationSignaturesWidget may render filter/sort controls, '
+            'but persisted preference mutation belongs behind '
+            'ConversationSignaturePreferencesActions.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Conversation message header uses context boundary', () async {
       final offenders =
           await _findConversationMessageHeaderContextBoundaryOffenders();
@@ -4362,6 +4377,26 @@ _findConversationSignatureSelectionActionBoundaryOffenders() async {
     if (uncommented.contains(token)) {
       offenders.add('$filePath uses $token');
     }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>>
+_findConversationSignaturePreferencesActionBoundaryOffenders() async {
+  const filePath =
+      'lib/features/messages/application/sidebar_cassette_spec/widget_builders/conversation_signatures_widget.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final offenders = <String>[];
+  if (uncommented.contains(
+    'conversationSignaturePreferencesControllerProvider.notifier',
+  )) {
+    offenders.add('$filePath mutates signature preferences directly');
   }
 
   return offenders..sort();
