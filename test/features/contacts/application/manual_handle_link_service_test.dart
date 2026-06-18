@@ -4,6 +4,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/features/contacts/application/services/manual_handle_link_service.dart';
 import 'package:remember_this_text/features/contacts/feature_level_providers.dart';
 import 'package:remember_this_text/features/handles/feature_level_providers.dart';
@@ -31,6 +33,10 @@ void main() {
     test('linkHandleToParticipant creates link successfully', () async {
       const handleId = 8796093022212;
       const participantId = 42;
+      final graphParticipantId = SourceScopedRowKey.pack(
+        sourceId: liveAddressBookSourceId,
+        sourceRowId: participantId,
+      );
 
       final service = container.read(manualHandleLinkServiceProvider.notifier);
       final result = await service.linkHandleToParticipant(
@@ -43,7 +49,7 @@ void main() {
       final overlayLink = await overlayDb.getHandleOverride(handleId);
       expect(overlayLink, isNotNull);
       expect(overlayLink!.handleId, handleId);
-      expect(overlayLink.participantId, participantId);
+      expect(overlayLink.participantId, graphParticipantId);
     });
 
     test(
@@ -130,6 +136,10 @@ void main() {
         const handleId = 8796093022212;
         const participant1 = 42;
         const participant2 = 43;
+        final graphParticipant1 = SourceScopedRowKey.pack(
+          sourceId: liveAddressBookSourceId,
+          sourceRowId: participant1,
+        );
 
         final service = container.read(
           manualHandleLinkServiceProvider.notifier,
@@ -154,7 +164,7 @@ void main() {
 
         // Verify original link unchanged
         final overlayLink = await overlayDb.getHandleOverride(handleId);
-        expect(overlayLink!.participantId, participant1);
+        expect(overlayLink!.participantId, graphParticipant1);
       },
     );
 

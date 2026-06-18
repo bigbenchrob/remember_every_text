@@ -1,8 +1,10 @@
 import 'package:dartz/dartz.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../essentials/conversation_graph/application/identity/retained_overlay_identity_bridge.dart';
 import '../../../handles/feature_level_providers.dart';
 import '../../feature_level_providers.dart';
+import '../read_models/contact_summary_identity.dart';
 
 part 'manual_handle_link_service.g.dart';
 
@@ -91,10 +93,14 @@ class ManualHandleLinkService extends _$ManualHandleLinkService {
 
       // Check if manual link already exists to a different participant
       final existingOverride = await store.readHandleOverride(handleId);
+      final canonicalParticipantId = canonicalContactIdentityKey(participantId);
 
       if (existingOverride != null &&
           existingOverride.participantId != null &&
-          existingOverride.participantId != participantId) {
+          !contactIdsRepresentSamePerson(
+            existingOverride.participantId!,
+            canonicalParticipantId,
+          )) {
         return const Left(
           Failure(
             'Handle is already manually linked to a different contact. '
@@ -106,12 +112,12 @@ class ManualHandleLinkService extends _$ManualHandleLinkService {
       // Write overlay-only link
       await store.linkHandleToParticipant(
         handleId: handleId,
-        participantId: participantId,
+        participantId: canonicalParticipantId,
       );
 
       _invalidateManualLinkReads(
         handleId: handleId,
-        participantId: participantId,
+        participantId: canonicalParticipantId,
       );
 
       return const Right(unit);
@@ -217,9 +223,17 @@ class ManualHandleLinkService extends _$ManualHandleLinkService {
     bool includeVirtualParticipants = false,
   }) {
     ref.invalidate(strayHandlesProvider);
-    ref.invalidate(handleDisplayNameProvider(handleId: handleId));
+    for (final candidateHandleId in handleOverlayKeyVariants(handleId)) {
+      ref.invalidate(handleDisplayNameProvider(handleId: candidateHandleId));
+    }
     if (participantId != null) {
-      ref.invalidate(handlesForContactProvider(contactId: participantId));
+      for (final candidateContactId in contactOverlayKeyVariants(
+        participantId,
+      )) {
+        ref.invalidate(
+          handlesForContactProvider(contactId: candidateContactId),
+        );
+      }
     }
     if (virtualParticipantId != null) {
       ref.invalidate(

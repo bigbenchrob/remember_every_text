@@ -176,34 +176,57 @@ void main() {
     );
 
     test('linking a graph handle writes overlay-only intent', () async {
-      await _insertGraphHandle(graphDb, handleSsId: 7003, chatSsId: 6003);
+      final graphHandleId = SourceScopedRowKey.pack(
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 7003,
+      );
+      await _insertGraphHandle(
+        graphDb,
+        handleSsId: graphHandleId,
+        chatSsId: 6003,
+      );
+      final graphContactId = SourceScopedRowKey.pack(
+        sourceId: liveAddressBookSourceId,
+        sourceRowId: 9003,
+      );
       await graphDb.database.insert('contacts', <String, Object?>{
-        'contact_id': 9003,
+        'contact_id': graphContactId,
         'display_name': 'Cathie Campbell',
       });
 
       await container
           .read(manualLinkingProvider.notifier)
-          .linkHandleToParticipant(handleId: 7003, participantId: 9003);
+          .linkHandleToParticipant(
+            handleId: graphHandleId,
+            participantId: graphContactId,
+          );
 
-      final override = await overlayDb.getHandleOverride(7003);
+      final override = await overlayDb.getHandleOverride(graphHandleId);
 
-      expect(override?.participantId, 9003);
+      expect(override?.participantId, graphContactId);
     });
 
     test(
       'creating a contact for a graph handle writes virtual overlay only',
       () async {
-        await _insertGraphHandle(graphDb, handleSsId: 7004, chatSsId: 6004);
+        final graphHandleId = SourceScopedRowKey.pack(
+          sourceId: liveChatDbSourceId,
+          sourceRowId: 7004,
+        );
+        await _insertGraphHandle(
+          graphDb,
+          handleSsId: graphHandleId,
+          chatSsId: 6004,
+        );
 
         await container
             .read(manualLinkingProvider.notifier)
             .createParticipantForHandle(
-              handleId: 7004,
+              handleId: graphHandleId,
               displayName: 'New Source',
             );
 
-        final override = await overlayDb.getHandleOverride(7004);
+        final override = await overlayDb.getHandleOverride(graphHandleId);
         final virtualContacts = await overlayDb.getVirtualParticipants();
 
         expect(virtualContacts.single.displayName, 'New Source');
