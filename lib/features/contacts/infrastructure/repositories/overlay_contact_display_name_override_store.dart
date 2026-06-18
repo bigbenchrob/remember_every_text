@@ -1,6 +1,6 @@
-import '../../../../essentials/conversation_graph/application/identity/retained_overlay_identity_bridge.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import '../../application/display_name_overrides/contact_display_name_override_store.dart';
+import '../../application/read_models/contact_summary_identity.dart';
 
 class OverlayContactDisplayNameOverrideStore
     implements ContactDisplayNameOverrideStore {
@@ -16,8 +16,8 @@ class OverlayContactDisplayNameOverrideStore
     required String? displayName,
   }) async {
     final trimmed = displayName?.trim();
-    final canonicalContactId = canonicalContactOverlayKey(contactId);
-    for (final key in contactOverlayKeyVariants(contactId)) {
+    final canonicalContactId = canonicalContactIdentityKey(contactId);
+    for (final key in contactIdentityKeyVariants(contactId)) {
       await _overlayDatabase.deleteParticipantOverride(key);
     }
     if (trimmed == null || trimmed.isEmpty) {
