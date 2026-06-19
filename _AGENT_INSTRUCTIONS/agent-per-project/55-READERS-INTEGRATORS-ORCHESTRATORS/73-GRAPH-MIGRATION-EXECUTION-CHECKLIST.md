@@ -2840,6 +2840,12 @@ criteria.
   refresh logic. Attachment archive application code now asks the retained key
   for the semantic live attachment ROWID instead of repeating retained
   `import_attachment_id` storage terminology at the path-lookup boundary.
+- Added `ArchiveCompatibilityKey.supportsLiveGraphEndpoints(...)` so live-only
+  archive compatibility checks are owned by the typed key boundary rather than
+  repeated in archive lookup repositories.
+- Routed graph health current-source archive diagnostics through
+  `ArchiveCompatibilityKey.fromLiveAttachmentSsId(...)`, removing the last
+  direct source-row unpacking from graph health's archive-key construction path.
 
 ### Exit Criteria
 
