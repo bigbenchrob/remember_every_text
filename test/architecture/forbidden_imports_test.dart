@@ -42,6 +42,11 @@ const Set<String> _sourceScopedDatabaseFilenameLiteralAllowedFiles = {
   'lib/essentials/source_scoped_import/infrastructure/import_database_provider.dart',
 };
 
+const Set<String> _sourceScopedSqlBitExtractionAllowedFiles = {
+  'lib/essentials/source_scoped_import/domain/source_scoped_row_key.dart',
+  'lib/essentials/source_scoped_import/domain/source_scoped_row_sql.dart',
+};
+
 const Set<String> _legacyTerminologyAllowedFiles = <String>{};
 
 const Set<String> _retainedOverlayIdentityBridgeAllowedFiles = <String>{};
@@ -784,6 +789,21 @@ void main() {
             'hard-coded macos_import_ss.db / working_ss.db literals in '
             'production code.\n'
             'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Source-scoped SQL bit extraction uses helper boundary', () async {
+      final offenders = await _findSourceScopedSqlBitExtractionOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'SQL repositories should use SourceScopedRowSql when extracting '
+            'source id or source rowid from packed ss_id values. Open-coded '
+            'bit shifts/masks make source-scoped identity derivation harder '
+            'to audit.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
       );
     });
 
@@ -3489,6 +3509,32 @@ Future<List<String>> _findSourceScopedDatabaseFilenameLiteralOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (sourceScopedFilenameLiteralPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findSourceScopedSqlBitExtractionOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+  final packedIdBitExtraction = RegExp(
+    r'\b(?:ss_id|message_ss_id|attachment_ss_id|chat_ss_id|handle_ss_id|contact_ss_id|[a-zA-Z_][\w.]*\.ss_id)\s*(?:>>|&)',
+  );
+
+  for (final filePath in files) {
+    if (_sourceScopedSqlBitExtractionAllowedFiles.contains(filePath)) {
+      continue;
+    }
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (packedIdBitExtraction.hasMatch(uncommented)) {
       offenders.add(filePath);
     }
   }
