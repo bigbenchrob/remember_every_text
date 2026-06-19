@@ -68,9 +68,9 @@ class OverlayArchiveCompatibilityLookup
       return null;
     }
 
-    final archiveKey = ArchiveCompatibilityKey(
+    final archiveKey = ArchiveCompatibilityKey.fromLiveAttachmentSsId(
       messageGuid: messageGuid,
-      importAttachmentId: SourceScopedRowKey.unpackSourceRowId(attachmentSsId),
+      attachmentSsId: attachmentSsId,
     );
     final archiveRows = await overlayDatabase
         .customSelect(

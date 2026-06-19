@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/retained_archive/domain/archive_compatibility_key.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 
 void main() {
   test('storageKeySegment preserves current archive compatibility shape', () {
@@ -9,5 +11,35 @@ void main() {
     );
 
     expect(key.storageKeySegment, 'message-guid::42');
+  });
+
+  test('fromLiveAttachmentSsId derives retained archive row id', () {
+    final attachmentSsId = SourceScopedRowKey.pack(
+      sourceId: liveChatDbSourceId,
+      sourceRowId: 42,
+    );
+
+    final key = ArchiveCompatibilityKey.fromLiveAttachmentSsId(
+      messageGuid: 'message-guid',
+      attachmentSsId: attachmentSsId,
+    );
+
+    expect(key.messageGuid, 'message-guid');
+    expect(key.importAttachmentId, 42);
+  });
+
+  test('fromLiveAttachmentSsId rejects non-live source ids', () {
+    final attachmentSsId = SourceScopedRowKey.pack(
+      sourceId: liveChatDbSourceId + 1,
+      sourceRowId: 42,
+    );
+
+    expect(
+      () => ArchiveCompatibilityKey.fromLiveAttachmentSsId(
+        messageGuid: 'message-guid',
+        attachmentSsId: attachmentSsId,
+      ),
+      throwsArgumentError,
+    );
   });
 }

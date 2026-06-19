@@ -258,12 +258,9 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
         attachmentsMissingArchiveRecordCount += 1;
         continue;
       }
-      final importAttachmentId = SourceScopedRowKey.unpackSourceRowId(
-        attachmentSsId,
-      );
-      final key = ArchiveCompatibilityKey(
+      final key = ArchiveCompatibilityKey.fromLiveAttachmentSsId(
         messageGuid: messageGuid,
-        importAttachmentId: importAttachmentId,
+        attachmentSsId: attachmentSsId,
       );
       if (archiveByKey.containsKey(key)) {
         matchedArchiveKeys.add(key);
@@ -485,16 +482,14 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
       if (messageGuid is! String || messageGuid.isEmpty) {
         continue;
       }
-      final importAttachmentId = SourceScopedRowKey.unpackSourceRowId(
-        attachmentSsId,
-      );
-      final key = ArchiveCompatibilityKey(
+      final key = ArchiveCompatibilityKey.fromLiveAttachmentSsId(
         messageGuid: messageGuid,
-        importAttachmentId: importAttachmentId,
+        attachmentSsId: attachmentSsId,
       );
       if (!missingKeys.contains(key)) {
         continue;
       }
+      final importAttachmentId = key.importAttachmentId;
       final filename = row['filename'] as String?;
       samples.add(
         MissingAttachmentRecoverySample(
@@ -534,11 +529,9 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
     return {
       for (final row in rows)
         if (row['message_guid'] case final String messageGuid)
-          ArchiveCompatibilityKey(
+          ArchiveCompatibilityKey.fromLiveAttachmentSsId(
             messageGuid: messageGuid,
-            importAttachmentId: SourceScopedRowKey.unpackSourceRowId(
-              _readInt(row['attachment_ss_id']),
-            ),
+            attachmentSsId: _readInt(row['attachment_ss_id']),
           ),
     };
   }

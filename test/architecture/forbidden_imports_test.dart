@@ -122,7 +122,6 @@ const Set<String> _archiveCompatibilityKeyConstructionAllowedFiles = {
   'lib/essentials/conversation_graph/infrastructure/repositories/graph_health_repository.dart',
   'lib/essentials/retained_archive/domain/archive_compatibility_key.dart',
   'lib/features/attachments/application/cross_snapshot_mapping.dart',
-  'lib/features/attachments/infrastructure/repositories/overlay_archive_compatibility_lookup.dart',
   'lib/features/attachments/infrastructure/repositories/sqlite_graph_attachment_archive_candidate_reader.dart',
 };
 
