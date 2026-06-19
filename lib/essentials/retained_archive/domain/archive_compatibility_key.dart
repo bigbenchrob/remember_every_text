@@ -37,6 +37,15 @@ class ArchiveCompatibilityKey {
   final String messageGuid;
   final int importAttachmentId;
 
+  /// Attachment ROWID used when resolving this retained key against live
+  /// `chat.db` attachment paths.
+  ///
+  /// The retained archive table calls this `import_attachment_id`. For the live
+  /// source it is the Apple attachment ROWID, so application code that refreshes
+  /// source paths should use this semantic name instead of repeating retained
+  /// storage terminology.
+  int get liveSourceAttachmentRowId => importAttachmentId;
+
   String get storageKeySegment => '$messageGuid::$importAttachmentId';
 
   @override

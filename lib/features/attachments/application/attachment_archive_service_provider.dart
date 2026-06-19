@@ -739,7 +739,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       ref
           .read(appLoggerProvider.notifier)
           .debug(
-            'Attachment ${archiveKey.importAttachmentId} resolved via refreshed chat.db '
+            'Attachment ${archiveKey.liveSourceAttachmentRowId} resolved via refreshed chat.db '
             'path $expandedRefreshedPath',
             source: 'AttachmentArchiveService',
           );
@@ -755,13 +755,15 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       final lookup = await ref.read(
         currentMessagesAttachmentPathLookupProvider.future,
       );
-      return lookup.attachmentPathForSourceRowId(archiveKey.importAttachmentId);
+      return lookup.attachmentPathForSourceRowId(
+        archiveKey.liveSourceAttachmentRowId,
+      );
     } on Object catch (error) {
       ref
           .read(appLoggerProvider.notifier)
           .warn(
             'Failed to refresh attachment path for '
-            '${archiveKey.importAttachmentId}: $error',
+            '${archiveKey.liveSourceAttachmentRowId}: $error',
             source: 'AttachmentArchiveService',
           );
       return null;
