@@ -8,9 +8,13 @@ import '../../../../essentials/db/infrastructure/data_sources/local/conversation
 class MessageHistoryCoverageRepository {
   const MessageHistoryCoverageRepository({
     required ConversationGraphDatabase graphDb,
-  }) : _graphDb = graphDb;
+    void Function(Object error, StackTrace stackTrace)? onSourceReadFailure,
+  }) : _graphDb = graphDb,
+       _onSourceReadFailure = onSourceReadFailure;
 
   final ConversationGraphDatabase _graphDb;
+  final void Function(Object error, StackTrace stackTrace)?
+  _onSourceReadFailure;
 
   MessageHistorySourceSummary? readChatDbSummary(String dbPath) {
     final file = File(dbPath);
@@ -53,7 +57,8 @@ class MessageHistoryCoverageRepository {
       } finally {
         database.dispose();
       }
-    } catch (_) {
+    } catch (error, stackTrace) {
+      _onSourceReadFailure?.call(error, stackTrace);
       return null;
     }
   }

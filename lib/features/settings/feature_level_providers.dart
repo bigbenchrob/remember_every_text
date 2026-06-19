@@ -84,7 +84,21 @@ Future<MessageHistoryCoverageRepository> messageHistoryCoverageRepository(
   final graphDb = await ref.watch(
     driftConversationGraphDatabaseProvider.future,
   );
-  return MessageHistoryCoverageRepository(graphDb: graphDb);
+  return MessageHistoryCoverageRepository(
+    graphDb: graphDb,
+    onSourceReadFailure: (error, stackTrace) {
+      ref
+          .read(appLoggerProvider.notifier)
+          .warn(
+            'MessageHistoryCoverage: failed to read source chat.db summary',
+            source: 'SettingsFeatureProviders',
+            context: <String, Object?>{
+              'error': error.toString(),
+              'stackTrace': stackTrace.toString(),
+            },
+          );
+    },
+  );
 }
 
 @riverpod
