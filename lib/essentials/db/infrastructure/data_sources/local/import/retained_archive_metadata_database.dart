@@ -7,7 +7,7 @@ import 'package:sqflite/sqflite.dart';
 
 import '../../../../application/retained_archive_metadata_store.dart';
 
-/// Retained `macos_import.db` compatibility wrapper.
+/// Retained archive-source metadata compatibility wrapper.
 ///
 /// Fresh files created through this class contain only archive-source metadata.
 /// Older schema upgrade paths remain so historical user data folders can still

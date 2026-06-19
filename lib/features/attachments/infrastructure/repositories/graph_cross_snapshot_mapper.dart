@@ -9,9 +9,9 @@ import '../../application/historical_snapshot_reader.dart';
 
 /// Maps historical attachment records to source-scoped graph identity.
 ///
-/// This replaces the old retained-database recovery bridge. Historical
+/// This replaces the retired cross-snapshot recovery bridge. Historical
 /// snapshots now resolve against the source-scoped import ledger and
-/// conversation graph, not retained `macos_import.db` / `working.db` rows.
+/// conversation graph, not retained compatibility/reference rows.
 ///
 /// The graph-era bridge is:
 /// historical snapshot -> source-scoped import ledger -> conversation graph.
