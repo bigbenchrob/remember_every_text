@@ -91,5 +91,39 @@ void main() {
       expect(decoded['chatDbTotal'], isNull);
       expect(decoded['detail'], 'chat.db is unavailable');
     });
+
+    test('returns an error message when export cannot be written', () async {
+      final tempDirectory = await Directory.systemTemp.createTemp(
+        'message_history_coverage_failed_export_test_',
+      );
+      addTearDown(() async {
+        if (tempDirectory.existsSync()) {
+          await tempDirectory.delete(recursive: true);
+        }
+      });
+      final filePath = '${tempDirectory.path}/not_a_directory';
+      await File(filePath).writeAsString('already a file');
+
+      final exporter = FilesystemMessageHistoryCoverageReportExporter(
+        processRunner: (_, _) async => ProcessResult(0, 0, '', ''),
+      );
+
+      final result = await exporter.export(
+        report: const MessageHistoryCoverageReport(
+          status: MessageHistoryCoverageStatus.unknown,
+          chatDbTotalCount: null,
+          graphConversationLinkedCount: null,
+          graphRecoveredOrphanCount: null,
+          earliestMessageDate: null,
+          latestMessageDate: null,
+        ),
+        exportDirectoryPath: filePath,
+        now: DateTime.utc(2026, 04, 26, 17, 47, 00),
+      );
+
+      expect(result.exportPath, isNull);
+      expect(result.revealedInFinder, isFalse);
+      expect(result.errorMessage, isNotNull);
+    });
   });
 }

@@ -46,10 +46,11 @@ class FilesystemMessageHistoryCoverageReportExporter
         exportPath: exportFile.path,
         revealedInFinder: revealedInFinder,
       );
-    } catch (_) {
-      return const MessageHistoryCoverageReportExportResult(
+    } catch (error) {
+      return MessageHistoryCoverageReportExportResult(
         exportPath: null,
         revealedInFinder: false,
+        errorMessage: error.toString(),
       );
     }
   }

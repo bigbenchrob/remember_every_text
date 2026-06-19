@@ -6,10 +6,12 @@ class MessageHistoryCoverageReportExportResult {
   const MessageHistoryCoverageReportExportResult({
     required this.exportPath,
     required this.revealedInFinder,
+    this.errorMessage,
   });
 
   final String? exportPath;
   final bool revealedInFinder;
+  final String? errorMessage;
 }
 
 abstract interface class MessageHistoryCoverageReportExporter {
