@@ -434,7 +434,7 @@ This section names what prevents each legacy layer from being retired.
 
 | Blocker | Affected systems | Removal criteria | Recommended sequencing |
 | --- | --- | --- | --- |
-| Graph build still shares lifecycle with legacy compatibility systems | whole app | Source-scoped import/projection can own production lifecycle without required legacy import/projection maintenance. | Lifecycle phase. |
+| Graph build still shares lifecycle with legacy compatibility systems | whole app | Closed: source-scoped import/projection owns production lifecycle without required legacy import/projection maintenance. | Complete. |
 | Legacy migrators encode semantic parity | contacts, handles, attachments, message semantics | Graph parity tests prove equivalent behavior where semantics matter. | Continuous; do not shortcut. |
 | Overlay references legacy IDs | user intent preservation | Overlay bridge/migration strategy is proven. | Before deleting working DB. |
 | Recovery/archive depends on legacy identity | evidence archive | Recovery plan moves to graph/source-scoped identity. | Last major blocker. |
