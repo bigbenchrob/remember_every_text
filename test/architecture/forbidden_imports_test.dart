@@ -1490,6 +1490,21 @@ void main() {
       },
     );
 
+    test('Contact context identity uses identity boundary', () async {
+      final offenders =
+          await _findContactContextIdentityProviderImportOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Contact context matching should depend on the contact-page graph '
+            'identity boundary, not the contact graph provider. Providers '
+            'compose reads; they should not be imported as identity utilities.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Conversation browser is not a message evidence spec route', () async {
       final offenders = await _findConversationBrowserSpecRouteOffenders();
 
@@ -4713,6 +4728,23 @@ _findMessagesHeatmapWidgetContactContextBoundaryOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>>
+_findContactContextIdentityProviderImportOffenders() async {
+  const filePath =
+      'lib/features/messages/application/sidebar_cassette_spec/resolver_tools/contact_context_identity.dart';
+  final source = await File(filePath).readAsString();
+  final uncommented = _stripComments(source);
+  final imports = _extractImports(uncommented);
+  const forbiddenImports = <String>{
+    '../../../../../essentials/conversation_graph/application/contacts/contact_graph_provider.dart',
+  };
+
+  return <String>[
+    for (final importTarget in imports)
+      if (forbiddenImports.contains(importTarget)) '$filePath -> $importTarget',
+  ]..sort();
 }
 
 Future<List<String>> _findConversationBrowserSpecRouteOffenders() async {
