@@ -93,6 +93,12 @@ void main() {
       );
       await tester.pump();
 
+      expect(
+        find.text(
+          'Import historical Messages folders into the source-scoped graph without replacing current message data.',
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Execution Gate'), findsOneWidget);
       expect(find.text('Available'), findsOneWidget);
       expect(find.text('Preflight complete — ready to import'), findsWidgets);

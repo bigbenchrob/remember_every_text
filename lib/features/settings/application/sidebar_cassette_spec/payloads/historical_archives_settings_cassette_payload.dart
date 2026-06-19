@@ -27,7 +27,7 @@ final class HistoricalArchivesSettingsCassettePayload
     super.role = SidebarCassetteRole.contextSecondary,
     super.topSpacing = 0,
     super.footnote =
-        'This shell is the first step: it makes the archive workflow visible before real import wiring is enabled.',
+        'Archive import adds historical Messages folders to the source-scoped graph without replacing current message data.',
     this.knownSources = const [],
   });
 

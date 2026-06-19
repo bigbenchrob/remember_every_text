@@ -23,7 +23,8 @@ void main() {
       expect(payload.bodyText, contains('projects them into'));
       expect(payload.bodyText, isNot(contains('migrates them into')));
       expect(payload.knownSources, isEmpty);
-      expect(payload.footnote, contains('first step'));
+      expect(payload.footnote, contains('source-scoped graph'));
+      expect(payload.footnote, isNot(contains('real import wiring')));
     });
 
     test('passes known source summaries into the payload', () {

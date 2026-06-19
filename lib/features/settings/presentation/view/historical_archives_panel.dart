@@ -394,7 +394,7 @@ class _ShellHeroCard extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'This shell makes the historical archive workflow visible before real import wiring is enabled.',
+              'Import historical Messages folders into the source-scoped graph without replacing current message data.',
               style: typography.title1.copyWith(
                 color: colors.content.textPrimary,
               ),
