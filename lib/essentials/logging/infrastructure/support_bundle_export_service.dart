@@ -161,7 +161,7 @@ class SupportBundleExportService {
           File('$databaseDirectoryPath/import_log'),
         ),
         (
-          'Historical Migration Pipeline Audit Log',
+          'Retained Historical Projection Audit Log',
           File('$databaseDirectoryPath/migrate_log'),
         ),
         (

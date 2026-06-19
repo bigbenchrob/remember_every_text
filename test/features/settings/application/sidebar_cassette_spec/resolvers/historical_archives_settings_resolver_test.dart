@@ -20,6 +20,8 @@ void main() {
         payload.bodyText,
         contains('Older Messages folders may contain message records'),
       );
+      expect(payload.bodyText, contains('projects them into'));
+      expect(payload.bodyText, isNot(contains('migrates them into')));
       expect(payload.knownSources, isEmpty);
       expect(payload.footnote, contains('first step'));
     });

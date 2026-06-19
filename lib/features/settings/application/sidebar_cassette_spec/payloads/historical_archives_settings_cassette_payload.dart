@@ -23,7 +23,7 @@ final class HistoricalArchivesSettingsCassettePayload
   const HistoricalArchivesSettingsCassettePayload({
     super.title = 'Historical Archives',
     super.bodyText =
-        'Older Messages folders may contain message records that are not present on this Mac today. MessageLens imports those records into its canonical message ledger, then migrates them into the normal timeline, search, and heatmap surfaces. Historical archive import is additive and does not replace current message data.',
+        'Older Messages folders may contain message records that are not present on this Mac today. MessageLens imports those records into its canonical message ledger, then projects them into the normal timeline, search, and heatmap surfaces. Historical archive import is additive and does not replace current message data.',
     super.role = SidebarCassetteRole.contextSecondary,
     super.topSpacing = 0,
     super.footnote =
