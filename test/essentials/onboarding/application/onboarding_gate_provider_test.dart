@@ -22,6 +22,7 @@ import 'package:remember_this_text/essentials/onboarding/domain/onboarding_statu
 import 'package:remember_this_text/essentials/source_scoped_import/application/attachments/attachment_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_rich_text_enricher.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/feature_level_providers.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/entities/address_book_folder_aggregate.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/entities/address_book_folder_entity.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/value_objects/value_objects.dart';
@@ -470,7 +471,7 @@ OnboardingEnvironmentReport _report({
       rowCount: 10,
     ),
     sourceScopedImportDatabase: const OnboardingDatabaseProbe(
-      path: retainedArchiveMetadataDatabaseFileName,
+      path: sourceScopedImportDatabaseFileName,
       exists: true,
       readable: true,
       rowCount: 100,
