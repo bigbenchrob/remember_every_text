@@ -431,7 +431,7 @@ class _StartupResetConfirmationDialogState
               ),
               const SizedBox(height: 16),
               Text(
-                "MessageLens can delete its local app data and rebuild everything from scratch.\n\nThis deletes only MessageLens's own local data folder, including imported databases, caches, indexes, migration state, and other generated app data. It does not delete your system Library folder or other applications' data.",
+                "MessageLens can delete its local app data and rebuild everything from scratch.\n\nThis deletes only MessageLens's own local data folder, including imported databases, caches, indexes, graph build state, and other generated app data. It does not delete your system Library folder or other applications' data.",
                 style: typography.body.copyWith(
                   color: colors.content.textSecondary,
                 ),

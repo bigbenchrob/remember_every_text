@@ -53,6 +53,24 @@ void main() {
       expect(loaded.recordedAt, recordedAt);
     });
 
+    test(
+      'uses historical graph projection failure key for compatibility',
+      () async {
+        await storage.saveGraphProjectionFailure(
+          batchId: 22,
+          message: 'Graph projection failed badly',
+          recordedAt: DateTime.utc(2026, 03, 24, 10, 30),
+        );
+
+        expect(
+          await overlayDb.readOverlaySetting(
+            'onboarding_last_migration_result',
+          ),
+          isNotNull,
+        );
+      },
+    );
+
     test('clear removes persisted results', () async {
       await storage.saveImportFailure(batchId: 1, message: 'fail');
       await storage.saveGraphProjectionFailure(batchId: 2, message: 'fail');
