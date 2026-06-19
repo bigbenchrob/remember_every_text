@@ -94,6 +94,57 @@ void main() {
     expect(overviews.single.lastMessageText, 'newer');
   });
 
+  test('reads conversation overviews by exact graph ids', () async {
+    final olderConversationId = _id(7);
+    final targetConversationId = _id(8);
+    final excludedConversationId = _id(9);
+    final targetHandleId = _id(101);
+    final targetMessageId = _id(201);
+    final excludedMessageId = _id(202);
+
+    await _insertChat(graphDatabase, id: olderConversationId);
+    await _insertChat(graphDatabase, id: targetConversationId);
+    await _insertChat(graphDatabase, id: excludedConversationId);
+    await _insertHandle(graphDatabase, id: targetHandleId, handle: '+15551');
+    await _insertChatHandle(
+      graphDatabase,
+      conversationId: targetConversationId,
+      handleId: targetHandleId,
+    );
+    await _insertMessage(
+      graphDatabase,
+      id: targetMessageId,
+      dateUtc: '2026-05-19T10:00:00.000Z',
+      text: 'target',
+    );
+    await _insertMessage(
+      graphDatabase,
+      id: excludedMessageId,
+      dateUtc: '2026-05-20T10:00:00.000Z',
+      text: 'excluded',
+    );
+    await _insertChatMessage(
+      graphDatabase,
+      conversationId: targetConversationId,
+      messageId: targetMessageId,
+    );
+    await _insertChatMessage(
+      graphDatabase,
+      conversationId: excludedConversationId,
+      messageId: excludedMessageId,
+    );
+
+    final overviews = await _reader(graphDatabase).readOverviewsByIds(
+      conversationIds: [targetConversationId],
+    );
+
+    expect(overviews, hasLength(1));
+    expect(overviews.single.conversationId, targetConversationId);
+    expect(overviews.single.participantHandles, ['+15551']);
+    expect(overviews.single.messageCount, 1);
+    expect(overviews.single.lastMessageText, 'target');
+  });
+
   test('reads conversation messages newest first', () async {
     final conversationId = _id(7);
     final senderHandleId = _id(101);
