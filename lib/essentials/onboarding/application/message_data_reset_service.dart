@@ -228,7 +228,13 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
         retainedArchiveMetadataStoreProvider.future,
       );
       await metadataStore.close();
-    } catch (_) {}
+    } catch (error, stackTrace) {
+      _logResetCloseWarning(
+        message: 'Failed to close retained archive metadata store before reset',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   Future<void> _closeSourceScopedImportDatabase() async {
@@ -241,7 +247,13 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
         sourceScopedImportDatabaseProvider.future,
       );
       await ledgerDb.close();
-    } catch (_) {}
+    } catch (error, stackTrace) {
+      _logResetCloseWarning(
+        message: 'Failed to close source-scoped import database before reset',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   Future<void> _closeConversationGraphDatabase() async {
@@ -254,7 +266,30 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
         driftConversationGraphDatabaseProvider.future,
       );
       await graphDb.close();
-    } catch (_) {}
+    } catch (error, stackTrace) {
+      _logResetCloseWarning(
+        message: 'Failed to close conversation graph database before reset',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  void _logResetCloseWarning({
+    required String message,
+    required Object error,
+    required StackTrace stackTrace,
+  }) {
+    _ref
+        .read(appLoggerProvider.notifier)
+        .warn(
+          message,
+          source: 'MessageDataResetService',
+          context: {
+            'error': error.toString(),
+            'stack': stackTrace.toString().split('\n').take(5).join('\n'),
+          },
+        );
   }
 
   Future<bool> _showResetProceedDialog(BuildContext context) async {
