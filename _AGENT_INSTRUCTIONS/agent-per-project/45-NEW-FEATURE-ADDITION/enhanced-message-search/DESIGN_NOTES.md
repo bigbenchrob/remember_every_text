@@ -11,7 +11,11 @@ ordinary canonical source.
 
 ## 1. Core Concepts
 
-The search system mirrors the project's Import/Migration architecture, treating "Search" as a subsystem that maintains derived views of the canonical `working_messages` table.
+The historical search system mirrored the project's Import/Migration
+architecture and treated "Search" as a subsystem maintaining derived views of a
+canonical working-message table. In the graph era, any equivalent acceleration
+layer must be subordinate to graph search repository methods and must return
+typed `message_ss_id` evidence scopes.
 
 ### 1.1. The Indexer Pattern
 To avoid a monolithic "search service" that knows everything, we split responsibilities into isolated **Indexers**.
@@ -29,10 +33,9 @@ To avoid a monolithic "search service" that knows everything, we split responsib
     }
     ```
 
-*   **`SearchContext`**: A read-only façade providing access to:
-    *   `working_messages` (canonical source)
-    *   `global_message_index` (structural source)
-    *   Helper methods (e.g., `streamAllMessages()`, `loadMessages(ids)`)
+*   **`SearchContext`**: Historical sketch. A graph-era equivalent would be a
+    read-only façade over graph message facts and source-scoped `message_ss_id`
+    scopes, not retained working projection tables.
 
 ### 1.2. The Orchestrator
 *   **`SearchIndexOrchestrator`**:
@@ -44,9 +47,12 @@ To avoid a monolithic "search service" that knows everything, we split responsib
 
 ### 2.1. `FtsMessageIndexer` (Lexical)
 *   **Purpose**: Provides multi-term text search.
-*   **Backing Store**: `messages_fts` (SQLite Virtual Table).
+*   **Backing Store**: historical sketch: `messages_fts` (SQLite Virtual
+    Table). A graph-era implementation may choose an FTS table only as a
+    graph-search accelerator.
 *   **Logic**:
-    *   *Rebuild*: Truncate `messages_fts`, populate from `working_messages`.
+    *   *Rebuild*: Historical sketch: truncate `messages_fts`, populate from
+        canonical message evidence.
     *   *Incremental*: Delete old entries for `messageIds`, insert new text.
     *   *Note*: Since we already have triggers on `messages_fts`, this indexer might primarily serve as a "Rebuild/Refresh" tool and a query interface, rather than needing heavy manual maintenance code.
 
