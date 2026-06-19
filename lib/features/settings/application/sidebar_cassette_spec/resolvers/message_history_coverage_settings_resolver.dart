@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../../essentials/logging/feature_level_providers.dart';
 import '../../../../../essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 import '../../../feature_level_providers.dart';
@@ -78,7 +79,17 @@ Future<MessageHistoryCoverageReport> messageHistoryCoverageReport(
       latestMessageDate: sourceSummary.latestMessageDate,
       generatedAt: generatedAt,
     );
-  } catch (error) {
+  } catch (error, stackTrace) {
+    ref
+        .read(appLoggerProvider.notifier)
+        .warn(
+          'MessageHistoryCoverage: failed to read graph summary',
+          source: 'MessageHistoryCoverageSettingsResolver',
+          context: <String, Object?>{
+            'error': error.toString(),
+            'stackTrace': stackTrace.toString(),
+          },
+        );
     return MessageHistoryCoverageReport(
       status: MessageHistoryCoverageStatus.unknown,
       chatDbTotalCount: sourceSummary.totalCount,
