@@ -648,6 +648,21 @@ void main() {
       },
     );
 
+    test('Onboarding source-scoped fixtures use source-scoped names', () async {
+      final offenders =
+          await _findOnboardingSourceScopedProbeFixtureOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Onboarding sourceScopedImportDatabase fixtures must use the '
+            'source-scoped import database name, not retained macos_import.db '
+            'metadata compatibility names.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test(
       'Retained working database file stays behind reference boundaries',
       () async {
@@ -3354,6 +3369,34 @@ Future<List<String>> _findRetainedArchiveMetadataFileOffenders() async {
   }
 
   return offenders.toList()..sort();
+}
+
+Future<List<String>> _findOnboardingSourceScopedProbeFixtureOffenders() async {
+  final offenders = <String>[];
+  final testDir = Directory('test/essentials/onboarding');
+  if (!testDir.existsSync()) {
+    return offenders;
+  }
+
+  await for (final entity in testDir.list(recursive: true)) {
+    if (entity is! File || !entity.path.endsWith('.dart')) {
+      continue;
+    }
+    final source = await entity.readAsString();
+    final uncommented = _stripComments(source);
+    final sourceScopedProbeUsesRetainedName = RegExp(
+      r'sourceScopedImportDatabase\s*:\s*(?:const\s+)?'
+      r'OnboardingDatabaseProbe\s*\([^)]*'
+      r'path\s*:\s*retainedArchiveMetadataDatabaseFileName',
+      multiLine: true,
+      dotAll: true,
+    ).hasMatch(uncommented);
+    if (sourceScopedProbeUsesRetainedName) {
+      offenders.add(entity.path);
+    }
+  }
+
+  return offenders..sort();
 }
 
 Future<List<String>> _findRetainedHistoricalWorkingFileOffenders() async {
