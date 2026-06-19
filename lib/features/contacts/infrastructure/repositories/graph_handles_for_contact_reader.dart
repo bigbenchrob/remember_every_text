@@ -1,9 +1,9 @@
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import '../../../handles/application/read_models/handle_identity.dart';
 import '../../application/read_models/contact_summary_identity.dart';
 import '../../application/read_models/handles_for_contact_reader.dart';
 import '../../application/read_models/linked_handle.dart';
-import 'participant_merge_utils.dart';
 
 class GraphHandlesForContactReader implements HandlesForContactReader {
   const GraphHandlesForContactReader({
@@ -100,7 +100,7 @@ class GraphHandlesForContactReader implements HandlesForContactReader {
   Future<LinkedHandle?> _readGraphHandleForOverlayLink({
     required int handleId,
   }) async {
-    final candidateIds = handleIdentityKeyVariantsForGraphLookup(handleId);
+    final candidateIds = handleIdentityKeyVariants(handleId);
     if (candidateIds.isEmpty) {
       return null;
     }

@@ -14,7 +14,7 @@ Future<Map<int, int>> overlayHandleCountsByParticipant(
     }
     handlesByParticipant
         .putIfAbsent(participantId, () => <int>{})
-        .add(canonicalHandleIdentityKeyForOverlay(override.handleId));
+        .add(canonicalHandleIdentityKey(override.handleId));
   }
 
   return {
@@ -36,7 +36,7 @@ Future<Map<int, int>> overlayHandleCountsByVirtualParticipant(
     }
     handlesByVirtualParticipant
         .putIfAbsent(vpId, () => <int>{})
-        .add(canonicalHandleIdentityKeyForOverlay(override.handleId));
+        .add(canonicalHandleIdentityKey(override.handleId));
   }
 
   return {
@@ -60,7 +60,7 @@ Future<Map<int, Set<int>>> overlayHandleIdsByParticipant(
     }
     map
         .putIfAbsent(pid, () => <int>{})
-        .add(canonicalHandleIdentityKeyForOverlay(override.handleId));
+        .add(canonicalHandleIdentityKey(override.handleId));
   }
 
   return map;
@@ -80,7 +80,7 @@ Future<Map<int, Set<int>>> overlayHandleIdsByVirtualParticipant(
     }
     map
         .putIfAbsent(vpId, () => <int>{})
-        .add(canonicalHandleIdentityKeyForOverlay(override.handleId));
+        .add(canonicalHandleIdentityKey(override.handleId));
   }
 
   return map;
@@ -104,14 +104,6 @@ ParticipantOverride? participantOverrideForContactId({
     }
   }
   return null;
-}
-
-Set<int> handleIdentityKeyVariantsForGraphLookup(int handleId) {
-  return handleIdentityKeyVariants(handleId);
-}
-
-int canonicalHandleIdentityKeyForOverlay(int handleId) {
-  return canonicalHandleIdentityKey(handleId);
 }
 
 int canonicalContactIdentityKeyForOverlay(int contactId) {

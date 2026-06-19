@@ -1,4 +1,5 @@
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import '../../../handles/application/read_models/handle_identity.dart';
 import '../../application/services/manual_handle_link_store.dart';
 import 'participant_merge_utils.dart';
 
@@ -39,9 +40,7 @@ class OverlayManualHandleLinkStore implements ManualHandleLinkStore {
   @override
   Future<ManualHandleOverride?> readHandleOverride(int handleId) async {
     HandleToParticipantOverride? row;
-    for (final candidateId in handleIdentityKeyVariantsForGraphLookup(
-      handleId,
-    )) {
+    for (final candidateId in handleIdentityKeyVariants(handleId)) {
       row = await _overlayDatabase.getHandleOverride(candidateId);
       if (row != null) {
         break;
@@ -52,7 +51,7 @@ class OverlayManualHandleLinkStore implements ManualHandleLinkStore {
     }
 
     return ManualHandleOverride(
-      handleId: canonicalHandleIdentityKeyForOverlay(row.handleId),
+      handleId: canonicalHandleIdentityKey(row.handleId),
       participantId: row.participantId == null
           ? null
           : canonicalContactIdentityKeyForOverlay(row.participantId!),
@@ -65,7 +64,7 @@ class OverlayManualHandleLinkStore implements ManualHandleLinkStore {
     required int handleId,
     required int participantId,
   }) async {
-    final canonicalHandleId = canonicalHandleIdentityKeyForOverlay(handleId);
+    final canonicalHandleId = canonicalHandleIdentityKey(handleId);
     final canonicalParticipantId = canonicalContactIdentityKeyForOverlay(
       participantId,
     );
@@ -81,7 +80,7 @@ class OverlayManualHandleLinkStore implements ManualHandleLinkStore {
     required int handleId,
     required int virtualParticipantId,
   }) async {
-    final canonicalHandleId = canonicalHandleIdentityKeyForOverlay(handleId);
+    final canonicalHandleId = canonicalHandleIdentityKey(handleId);
     await _deleteHandleOverrideVariants(handleId);
     await _overlayDatabase.setHandleVirtualParticipantOverride(
       canonicalHandleId,
@@ -103,9 +102,7 @@ class OverlayManualHandleLinkStore implements ManualHandleLinkStore {
     );
     final overridesByCanonicalHandleId = <int, ManualHandleOverride>{};
     for (final row in rows) {
-      final canonicalHandleId = canonicalHandleIdentityKeyForOverlay(
-        row.handleId,
-      );
+      final canonicalHandleId = canonicalHandleIdentityKey(row.handleId);
       overridesByCanonicalHandleId[canonicalHandleId] = ManualHandleOverride(
         handleId: canonicalHandleId,
         participantId: row.participantId == null
@@ -123,9 +120,7 @@ class OverlayManualHandleLinkStore implements ManualHandleLinkStore {
   }
 
   Future<void> _deleteHandleOverrideVariants(int handleId) async {
-    for (final candidateId in handleIdentityKeyVariantsForGraphLookup(
-      handleId,
-    )) {
+    for (final candidateId in handleIdentityKeyVariants(handleId)) {
       await _overlayDatabase.deleteHandleOverride(candidateId);
     }
   }

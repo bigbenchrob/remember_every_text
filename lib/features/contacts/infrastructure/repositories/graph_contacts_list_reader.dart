@@ -1,5 +1,6 @@
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import '../../../handles/application/read_models/handle_identity.dart';
 import '../../application/read_models/contact_summary.dart';
 import '../../application/read_models/contacts_list_reader.dart';
 import '../../domain/overlay_virtual_contact.dart';
@@ -171,7 +172,7 @@ class GraphContactsListReader implements ContactsListReader {
 
     final graphHandleIds = <int>{};
     for (final handleId in handleIds) {
-      graphHandleIds.addAll(handleIdentityKeyVariantsForGraphLookup(handleId));
+      graphHandleIds.addAll(handleIdentityKeyVariants(handleId));
     }
 
     final placeholders = List.filled(graphHandleIds.length, '?').join(', ');
