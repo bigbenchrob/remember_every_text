@@ -157,7 +157,7 @@ class SupportBundleExportService {
     try {
       return [
         (
-          'Historical Import Pipeline Audit Log',
+          'Retained Historical Import Audit Log',
           File('$databaseDirectoryPath/import_log'),
         ),
         (
