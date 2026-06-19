@@ -2,6 +2,11 @@ import '../../../../essentials/source_scoped_import/domain/known_sources.dart';
 import '../../../../essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'contact_summary.dart';
 
+/// Overlay compatibility bridge for contact identity.
+///
+/// Ordinary contact identity is the graph `ss_id`. These helpers exist so
+/// retained overlay rows keyed by older contact ids can still resolve to graph
+/// contacts while the app continues to write and present canonical graph ids.
 bool contactIdentityIdsMatch(int first, int second) {
   return contactIdentityKeyVariants(first).contains(second) ||
       contactIdentityKeyVariants(second).contains(first);

@@ -1,6 +1,11 @@
 import '../../../../essentials/source_scoped_import/domain/known_sources.dart';
 import '../../../../essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 
+/// Overlay compatibility bridge for handle identity.
+///
+/// Ordinary handle identity is the graph `ss_id`. These helpers exist so
+/// retained overlay rows keyed by older handle ids can still resolve to graph
+/// handles while the app continues to write and present canonical graph ids.
 Set<int> handleIdentityKeyVariants(int handleId) {
   final ids = <int>{handleId};
   final graphHandleId = _graphHandleIdForRetainedHandleId(handleId);

@@ -6,6 +6,19 @@ import 'package:remember_this_text/features/contacts/application/read_models/con
 import 'package:remember_this_text/features/contacts/domain/participant_origin.dart';
 
 void main() {
+  test(
+    'canonicalContactIdentityKey converts retained contact ids to graph ids',
+    () {
+      final graphContactId = SourceScopedRowKey.pack(
+        sourceId: liveAddressBookSourceId,
+        sourceRowId: 17,
+      );
+
+      expect(canonicalContactIdentityKey(17), graphContactId);
+      expect(canonicalContactIdentityKey(graphContactId), graphContactId);
+    },
+  );
+
   test('finds graph contact by retained overlay id', () {
     final graphContactId = SourceScopedRowKey.pack(
       sourceId: liveAddressBookSourceId,
