@@ -1,9 +1,10 @@
 import 'package:drift/drift.dart';
 
 import '../../../../core/util/message_tag_normalizer.dart';
-import '../../../../essentials/conversation_graph/application/identity/retained_overlay_identity_bridge.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import '../../../../essentials/source_scoped_import/domain/known_sources.dart';
+import '../../../../essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import '../../application/user_metadata/message_overlay_repository.dart';
 import '../../domain/entities/message_overlay_state.dart';
 
@@ -197,9 +198,8 @@ class MessageOverlayIdentityBridgeRepository
 
     return _GraphMessageIdentity(
       messageSsId: messageSsId,
-      retainedOverlayMessageRowId: retainedOverlayMessageRowIdForGraphMessageId(
-        messageSsId,
-      ),
+      retainedOverlayMessageRowId:
+          _retainedOverlayMessageRowIdForGraphMessageId(messageSsId),
       guid: rows.isEmpty ? null : _readNullableString(rows.single.data['guid']),
     );
   }
@@ -452,6 +452,13 @@ class MessageOverlayIdentityBridgeRepository
     }
     return value.toString();
   }
+}
+
+int? _retainedOverlayMessageRowIdForGraphMessageId(int messageSsId) {
+  if (SourceScopedRowKey.unpackSourceId(messageSsId) != liveChatDbSourceId) {
+    return null;
+  }
+  return SourceScopedRowKey.unpackSourceRowId(messageSsId);
 }
 
 class _GraphMessageIdentity {

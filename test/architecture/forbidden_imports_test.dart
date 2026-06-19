@@ -44,13 +44,9 @@ const Set<String> _sourceScopedDatabaseFilenameLiteralAllowedFiles = {
 
 const Set<String> _legacyTerminologyAllowedFiles = <String>{};
 
-const Set<String> _retainedOverlayIdentityBridgeAllowedFiles = {
-  'lib/features/messages/infrastructure/repositories/message_overlay_identity_bridge_repository.dart',
-};
+const Set<String> _retainedOverlayIdentityBridgeAllowedFiles = <String>{};
 
-const Set<String> _retainedOverlayIdentityBridgeTestAllowedFiles = {
-  'test/essentials/conversation_graph/application/identity/retained_overlay_identity_bridge_test.dart',
-};
+const Set<String> _retainedOverlayIdentityBridgeTestAllowedFiles = <String>{};
 
 const Set<String> _retiredContactNameVariantAllowedFiles = {
   'lib/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart',
@@ -704,33 +700,30 @@ void main() {
           _retainedOverlayIdentityBridgeAllowedFiles.toList()..sort(),
         ),
         reason:
-            'retained_overlay_identity_bridge.dart is a transitional '
-            'retained-overlay compatibility boundary. Its active import '
-            'surface should not grow without architectural review.\n'
+            'retained_overlay_identity_bridge.dart has been retired. '
+            'Retained overlay compatibility must stay localized inside named '
+            'feature/infrastructure boundaries instead of returning as a '
+            'shared bridge import.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
 
-    test(
-      'Retained overlay identity bridge tests stay centrally owned',
-      () async {
-        final offenders =
-            await _findRetainedOverlayIdentityBridgeTestImportOffenders();
+    test('Retained overlay identity bridge tests do not return', () async {
+      final offenders =
+          await _findRetainedOverlayIdentityBridgeTestImportOffenders();
 
-        expect(
-          offenders,
-          orderedEquals(
-            _retainedOverlayIdentityBridgeTestAllowedFiles.toList()..sort(),
-          ),
-          reason:
-              'retained_overlay_identity_bridge.dart behavior belongs to the '
-              'central conversation_graph bridge test suite. Feature tests '
-              'should assert their own repository/read-model contracts rather '
-              'than owning transitional bridge semantics directly.\n'
-              'Actual test users:\n${offenders.join('\n')}',
-        );
-      },
-    );
+      expect(
+        offenders,
+        orderedEquals(
+          _retainedOverlayIdentityBridgeTestAllowedFiles.toList()..sort(),
+        ),
+        reason:
+            'retained_overlay_identity_bridge.dart has been retired. Feature '
+            'tests should assert their own repository/read-model contracts '
+            'rather than restoring shared transitional bridge semantics.\n'
+            'Actual test users:\n${offenders.join('\n')}',
+      );
+    });
 
     test('Handle blacklist overlays preserve graph-id precedence', () async {
       final offenders = await _findHandleBlacklistVariantExpansionOffenders();
@@ -846,6 +839,8 @@ void main() {
       const retiredFiles = <String>[
         'lib/essentials/conversation_graph/domain/identity_key_bridge.dart',
         'test/essentials/conversation_graph/domain/identity_key_bridge_test.dart',
+        'lib/essentials/conversation_graph/application/identity/retained_overlay_identity_bridge.dart',
+        'test/essentials/conversation_graph/application/identity/retained_overlay_identity_bridge_test.dart',
       ];
       final existingFiles = retiredFiles
           .where((path) => File(path).existsSync())
@@ -856,8 +851,9 @@ void main() {
         isEmpty,
         reason:
             'Retained-overlay id conversion is transitional compatibility '
-            'logic and must stay out of conversation_graph/domain. Use '
-            'application/identity/retained_overlay_identity_bridge.dart.\n'
+            'logic and must stay localized inside named feature or '
+            'infrastructure boundaries; do not restore shared graph/domain '
+            'identity bridges.\n'
             'Existing retired files:\n${existingFiles.join('\n')}',
       );
     });

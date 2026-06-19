@@ -1,6 +1,7 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/features/messages/infrastructure/repositories/message_overlay_identity_bridge_repository.dart';
 
@@ -227,7 +228,10 @@ void main() {
 }
 
 int _messageId(int sourceRowId) {
-  return SourceScopedRowKey.pack(sourceId: 1, sourceRowId: sourceRowId);
+  return SourceScopedRowKey.pack(
+    sourceId: liveChatDbSourceId,
+    sourceRowId: sourceRowId,
+  );
 }
 
 Future<void> _insertGraphMessage({
