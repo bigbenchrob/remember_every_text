@@ -5,8 +5,12 @@ import '../../application/onboarding_failure_store.dart';
 import '../../domain/onboarding_environment_report.dart';
 
 class OverlayOnboardingFailureStorage implements OnboardingFailureStore {
-  OverlayOnboardingFailureStorage({required Future<OverlayDatabase> overlayDb})
-    : _overlayDb = overlayDb;
+  OverlayOnboardingFailureStorage({
+    required Future<OverlayDatabase> overlayDb,
+    void Function(String settingKey, Object error, StackTrace stackTrace)?
+    onReadFailure,
+  }) : _overlayDb = overlayDb,
+       _onReadFailure = onReadFailure;
 
   static const String _importFailureKey = 'onboarding_last_import_result';
   // Keep the historical key so existing persisted setup failures remain
@@ -16,6 +20,8 @@ class OverlayOnboardingFailureStorage implements OnboardingFailureStore {
   static const String _recordedAtKey = 'recorded_at_utc';
 
   final Future<OverlayDatabase> _overlayDb;
+  final void Function(String settingKey, Object error, StackTrace stackTrace)?
+  _onReadFailure;
 
   @override
   Future<OnboardingPipelineFailure?> loadImportResult() async {
@@ -53,7 +59,8 @@ class OverlayOnboardingFailureStorage implements OnboardingFailureStore {
           message: decoded['error'] as String?,
         ),
       );
-    } catch (_) {
+    } catch (error, stackTrace) {
+      _onReadFailure?.call(_importFailureKey, error, stackTrace);
       return null;
     }
   }
@@ -119,7 +126,8 @@ class OverlayOnboardingFailureStorage implements OnboardingFailureStore {
           message: decoded['error'] as String?,
         ),
       );
-    } catch (_) {
+    } catch (error, stackTrace) {
+      _onReadFailure?.call(_graphProjectionFailureKey, error, stackTrace);
       return null;
     }
   }

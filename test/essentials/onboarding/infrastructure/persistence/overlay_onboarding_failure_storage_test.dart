@@ -81,5 +81,45 @@ void main() {
       expect(await storage.loadImportResult(), isNull);
       expect(await storage.loadGraphProjectionResult(), isNull);
     });
+
+    test(
+      'reports unreadable import failure state and degrades to null',
+      () async {
+        final readFailures = <String>[];
+        final storage = OverlayOnboardingFailureStorage(
+          overlayDb: Future<OverlayDatabase>.value(overlayDb),
+          onReadFailure: (settingKey, _, _) => readFailures.add(settingKey),
+        );
+        await overlayDb.writeOverlaySetting(
+          settingKey: 'onboarding_last_import_result',
+          settingValue: '{',
+        );
+
+        final loaded = await storage.loadImportResultEntry();
+
+        expect(loaded, isNull);
+        expect(readFailures, ['onboarding_last_import_result']);
+      },
+    );
+
+    test(
+      'reports unreadable graph projection failure state and degrades to null',
+      () async {
+        final readFailures = <String>[];
+        final storage = OverlayOnboardingFailureStorage(
+          overlayDb: Future<OverlayDatabase>.value(overlayDb),
+          onReadFailure: (settingKey, _, _) => readFailures.add(settingKey),
+        );
+        await overlayDb.writeOverlaySetting(
+          settingKey: 'onboarding_last_migration_result',
+          settingValue: '{',
+        );
+
+        final loaded = await storage.loadGraphProjectionResultEntry();
+
+        expect(loaded, isNull);
+        expect(readFailures, ['onboarding_last_migration_result']);
+      },
+    );
   });
 }

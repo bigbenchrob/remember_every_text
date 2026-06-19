@@ -2,6 +2,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../db/feature_level_providers.dart';
+import '../logging/feature_level_providers.dart';
 import 'application/derived_message_data_file_store.dart';
 import 'application/full_disk_access.dart';
 import 'application/onboarding_database_probe_reader.dart';
@@ -22,6 +23,19 @@ OnboardingDatabaseProbeReader onboardingDatabaseProbeReader(Ref ref) {
 OnboardingFailureStore onboardingFailureStorage(Ref ref) {
   return OverlayOnboardingFailureStorage(
     overlayDb: ref.watch(overlayDatabaseProvider.future),
+    onReadFailure: (settingKey, error, stackTrace) {
+      ref
+          .read(appLoggerProvider.notifier)
+          .warn(
+            'OnboardingFailureStorage: ignored unreadable persisted failure state',
+            source: 'OverlayOnboardingFailureStorage',
+            context: <String, Object?>{
+              'settingKey': settingKey,
+              'error': error.toString(),
+              'stackTrace': stackTrace.toString(),
+            },
+          );
+    },
   );
 }
 
