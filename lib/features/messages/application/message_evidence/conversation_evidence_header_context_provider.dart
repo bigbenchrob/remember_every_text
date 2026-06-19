@@ -1,7 +1,6 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../essentials/conversation_graph/application/conversations/conversation.dart';
 import '../../../../essentials/conversation_graph/application/conversations/conversation_reader_provider.dart';
 import '../../../contacts/feature_level_providers.dart';
 
@@ -28,14 +27,12 @@ Future<ConversationEvidenceHeaderContext?> conversationEvidenceHeaderContext(
   Ref ref, {
   required int conversationId,
 }) async {
-  final overviews = await ref.watch(
-    conversationOverviewsProvider(limit: 1000).future,
+  final overview = await ref.watch(
+    conversationOverviewByIdProvider(conversationId: conversationId).future,
   );
   final identityResolver = await ref.watch(
     displayIdentityResolverProvider.future,
   );
-
-  final overview = _overviewForConversation(overviews, conversationId);
   if (overview == null) {
     return null;
   }
@@ -51,16 +48,4 @@ Future<ConversationEvidenceHeaderContext?> conversationEvidenceHeaderContext(
     firstMessageAtUtc: overview.firstMessageAtUtc,
     lastMessageAtUtc: overview.lastMessageAtUtc,
   );
-}
-
-ConversationOverview? _overviewForConversation(
-  List<ConversationOverview> overviews,
-  int conversationId,
-) {
-  for (final overview in overviews) {
-    if (overview.conversationId == conversationId) {
-      return overview;
-    }
-  }
-  return null;
 }

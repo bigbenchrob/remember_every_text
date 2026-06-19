@@ -20,20 +20,20 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          conversationOverviewsProvider(limit: 1000).overrideWith((ref) async {
-            return const [
-              ConversationOverview(
-                conversationId: 42,
-                participantHandles: ['1 (778) 990-8506', '+15552'],
-                participantCount: 2,
-                isGroup: true,
-                messageCount: 3,
-                attachmentCount: 0,
-                firstMessageAtUtc: '2026-05-18T10:00:00.000Z',
-                lastMessageAtUtc: '2026-05-20T10:00:00.000Z',
-                lastMessageText: 'newest',
-              ),
-            ];
+          conversationOverviewByIdProvider(conversationId: 42).overrideWith((
+            ref,
+          ) async {
+            return const ConversationOverview(
+              conversationId: 42,
+              participantHandles: ['1 (778) 990-8506', '+15552'],
+              participantCount: 2,
+              isGroup: true,
+              messageCount: 3,
+              attachmentCount: 0,
+              firstMessageAtUtc: '2026-05-18T10:00:00.000Z',
+              lastMessageAtUtc: '2026-05-20T10:00:00.000Z',
+              lastMessageText: 'newest',
+            );
           }),
           displayIdentityResolverProvider.overrideWith((ref) async {
             return const DisplayIdentityResolver(
@@ -138,8 +138,10 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          conversationOverviewsProvider(limit: 1000).overrideWith((ref) async {
-            return const [];
+          conversationOverviewByIdProvider(conversationId: 42).overrideWith((
+            ref,
+          ) async {
+            return null;
           }),
           messageEvidenceTimelineSkeletonProvider(scope: scope).overrideWith((
             ref,
@@ -178,8 +180,10 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          conversationOverviewsProvider(limit: 1000).overrideWith((ref) async {
-            return const [];
+          conversationOverviewByIdProvider(conversationId: 42).overrideWith((
+            ref,
+          ) async {
+            return null;
           }),
           messageEvidenceTimelineSkeletonProvider(scope: scope).overrideWith((
             ref,
@@ -243,20 +247,20 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          conversationOverviewsProvider(limit: 1000).overrideWith((ref) async {
-            return const [
-              ConversationOverview(
-                conversationId: 42,
-                participantHandles: ['+15551'],
-                participantCount: 1,
-                isGroup: false,
-                messageCount: 2,
-                attachmentCount: 0,
-                firstMessageAtUtc: '2026-05-18T10:00:00.000Z',
-                lastMessageAtUtc: '2026-05-20T10:00:00.000Z',
-                lastMessageText: 'other',
-              ),
-            ];
+          conversationOverviewByIdProvider(conversationId: 42).overrideWith((
+            ref,
+          ) async {
+            return const ConversationOverview(
+              conversationId: 42,
+              participantHandles: ['+15551'],
+              participantCount: 1,
+              isGroup: false,
+              messageCount: 2,
+              attachmentCount: 0,
+              firstMessageAtUtc: '2026-05-18T10:00:00.000Z',
+              lastMessageAtUtc: '2026-05-20T10:00:00.000Z',
+              lastMessageText: 'other',
+            );
           }),
           messageEvidenceTimelineSkeletonProvider(scope: scope).overrideWith((
             ref,

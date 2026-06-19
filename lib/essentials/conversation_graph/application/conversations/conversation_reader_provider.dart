@@ -26,6 +26,20 @@ Future<List<ConversationOverview>> conversationOverviews(
 }
 
 @riverpod
+Future<ConversationOverview?> conversationOverviewById(
+  Ref ref, {
+  required int conversationId,
+}) async {
+  ref.watch(messageDataVersionProvider);
+
+  final reader = await ref.watch(conversationReaderProvider.future);
+  final overviews = await reader.readOverviewsByIds(
+    conversationIds: [conversationId],
+  );
+  return overviews.isEmpty ? null : overviews.first;
+}
+
+@riverpod
 Future<List<ConversationMessage>> conversationMessages(
   Ref ref, {
   required int conversationId,

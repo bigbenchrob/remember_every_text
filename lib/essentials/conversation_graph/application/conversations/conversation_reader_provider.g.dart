@@ -177,6 +177,138 @@ class _ConversationOverviewsProviderElement
   int get limit => (origin as ConversationOverviewsProvider).limit;
 }
 
+String _$conversationOverviewByIdHash() =>
+    r'45cb90caf8075ea15b4d24bbcb9882f29dcd4685';
+
+/// See also [conversationOverviewById].
+@ProviderFor(conversationOverviewById)
+const conversationOverviewByIdProvider = ConversationOverviewByIdFamily();
+
+/// See also [conversationOverviewById].
+class ConversationOverviewByIdFamily
+    extends Family<AsyncValue<ConversationOverview?>> {
+  /// See also [conversationOverviewById].
+  const ConversationOverviewByIdFamily();
+
+  /// See also [conversationOverviewById].
+  ConversationOverviewByIdProvider call({required int conversationId}) {
+    return ConversationOverviewByIdProvider(conversationId: conversationId);
+  }
+
+  @override
+  ConversationOverviewByIdProvider getProviderOverride(
+    covariant ConversationOverviewByIdProvider provider,
+  ) {
+    return call(conversationId: provider.conversationId);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'conversationOverviewByIdProvider';
+}
+
+/// See also [conversationOverviewById].
+class ConversationOverviewByIdProvider
+    extends AutoDisposeFutureProvider<ConversationOverview?> {
+  /// See also [conversationOverviewById].
+  ConversationOverviewByIdProvider({required int conversationId})
+    : this._internal(
+        (ref) => conversationOverviewById(
+          ref as ConversationOverviewByIdRef,
+          conversationId: conversationId,
+        ),
+        from: conversationOverviewByIdProvider,
+        name: r'conversationOverviewByIdProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$conversationOverviewByIdHash,
+        dependencies: ConversationOverviewByIdFamily._dependencies,
+        allTransitiveDependencies:
+            ConversationOverviewByIdFamily._allTransitiveDependencies,
+        conversationId: conversationId,
+      );
+
+  ConversationOverviewByIdProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.conversationId,
+  }) : super.internal();
+
+  final int conversationId;
+
+  @override
+  Override overrideWith(
+    FutureOr<ConversationOverview?> Function(
+      ConversationOverviewByIdRef provider,
+    )
+    create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: ConversationOverviewByIdProvider._internal(
+        (ref) => create(ref as ConversationOverviewByIdRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        conversationId: conversationId,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<ConversationOverview?> createElement() {
+    return _ConversationOverviewByIdProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ConversationOverviewByIdProvider &&
+        other.conversationId == conversationId;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, conversationId.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin ConversationOverviewByIdRef
+    on AutoDisposeFutureProviderRef<ConversationOverview?> {
+  /// The parameter `conversationId` of this provider.
+  int get conversationId;
+}
+
+class _ConversationOverviewByIdProviderElement
+    extends AutoDisposeFutureProviderElement<ConversationOverview?>
+    with ConversationOverviewByIdRef {
+  _ConversationOverviewByIdProviderElement(super.provider);
+
+  @override
+  int get conversationId =>
+      (origin as ConversationOverviewByIdProvider).conversationId;
+}
+
 String _$conversationMessagesHash() =>
     r'1eb6fa335178c45ca945fa7b16f5dd6580cb78b8';
 
