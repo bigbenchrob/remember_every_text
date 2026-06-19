@@ -8,6 +8,7 @@ import '../../../essentials/conversation_graph/application/orchestration/graph_m
 import '../../../essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart';
 import '../../../essentials/db/feature_level_providers/db_maintenance_lock_provider.dart';
 import '../../../essentials/db/feature_level_providers/message_data_version_provider.dart';
+import '../../../essentials/logging/feature_level_providers.dart';
 import '../../../essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import '../feature_level_providers.dart';
 import 'archive_source_inspection.dart';
@@ -16,6 +17,24 @@ import 'historical_archive_sources.dart';
 part 'historical_archives_workflow_panel_model_provider.g.dart';
 
 const _historicalArchivesTestingOwner = 'historical-archives-testing-clear';
+
+void _logHistoricalArchivesWarning(
+  Ref ref, {
+  required String message,
+  required Object error,
+  required StackTrace stackTrace,
+}) {
+  ref
+      .read(appLoggerProvider.notifier)
+      .warn(
+        message,
+        source: 'HistoricalArchivesWorkflow',
+        context: {
+          'error': error.toString(),
+          'stack': stackTrace.toString().split('\n').take(5).join('\n'),
+        },
+      );
+}
 
 enum HistoricalArchivesExecutionGateStatus { available, busy, blocked }
 
@@ -361,10 +380,25 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       archiveSourceInspector = await ref.read(
         archiveSourceInspectorProvider.future,
       );
-    } catch (_) {}
+    } catch (error, stackTrace) {
+      _logHistoricalArchivesWarning(
+        ref,
+        message: 'Archive source inspector unavailable during preflight',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
     try {
       archiveSources = await ref.read(historicalArchiveSourcesProvider.future);
-    } catch (_) {}
+    } catch (error, stackTrace) {
+      _logHistoricalArchivesWarning(
+        ref,
+        message:
+            'Historical archive metadata store unavailable during preflight',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
 
     final result = await preflightHistoricalArchivesFolder(
       folderPath: folderPath,
@@ -595,7 +629,14 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         archiveSourceInspector = await ref.read(
           archiveSourceInspectorProvider.future,
         );
-      } catch (_) {}
+      } catch (error, stackTrace) {
+        _logHistoricalArchivesWarning(
+          ref,
+          message: 'Archive source inspector unavailable after import',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
 
       final refreshedResult = await preflightHistoricalArchivesFolder(
         folderPath: selectedFolderPath,
