@@ -28,6 +28,47 @@ void main() {
     expect(key.importAttachmentId, 42);
   });
 
+  test(
+    'supportsLiveGraphEndpoints accepts live message and attachment ids',
+    () {
+      final messageSsId = SourceScopedRowKey.pack(
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 41,
+      );
+      final attachmentSsId = SourceScopedRowKey.pack(
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 42,
+      );
+
+      expect(
+        ArchiveCompatibilityKey.supportsLiveGraphEndpoints(
+          messageSsId: messageSsId,
+          attachmentSsId: attachmentSsId,
+        ),
+        isTrue,
+      );
+    },
+  );
+
+  test('supportsLiveGraphEndpoints rejects non-live endpoint ids', () {
+    final messageSsId = SourceScopedRowKey.pack(
+      sourceId: liveChatDbSourceId,
+      sourceRowId: 41,
+    );
+    final nonLiveAttachmentSsId = SourceScopedRowKey.pack(
+      sourceId: liveChatDbSourceId + 1,
+      sourceRowId: 42,
+    );
+
+    expect(
+      ArchiveCompatibilityKey.supportsLiveGraphEndpoints(
+        messageSsId: messageSsId,
+        attachmentSsId: nonLiveAttachmentSsId,
+      ),
+      isFalse,
+    );
+  });
+
   test('fromLiveAttachmentSsId rejects non-live source ids', () {
     final attachmentSsId = SourceScopedRowKey.pack(
       sourceId: liveChatDbSourceId + 1,

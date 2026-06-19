@@ -5,8 +5,6 @@ import 'package:drift/drift.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import '../../../../essentials/retained_archive/domain/archive_compatibility_key.dart';
-import '../../../../essentials/source_scoped_import/domain/known_sources.dart';
-import '../../../../essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import '../../application/graph_attachment_archive_lookup.dart';
 
 /// Resolves graph attachment identity against existing archive overlay rows.
@@ -39,12 +37,10 @@ class OverlayArchiveCompatibilityLookup
       return null;
     }
 
-    final messageSourceId = SourceScopedRowKey.unpackSourceId(messageSsId);
-    final attachmentSourceId = SourceScopedRowKey.unpackSourceId(
-      attachmentSsId,
-    );
-    if (messageSourceId != liveChatDbSourceId ||
-        attachmentSourceId != liveChatDbSourceId) {
+    if (!ArchiveCompatibilityKey.supportsLiveGraphEndpoints(
+      messageSsId: messageSsId,
+      attachmentSsId: attachmentSsId,
+    )) {
       return null;
     }
 

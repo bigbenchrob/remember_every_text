@@ -15,12 +15,18 @@ class ArchiveCompatibilityKey {
     required this.importAttachmentId,
   });
 
+  static bool supportsLiveGraphEndpoints({
+    required int messageSsId,
+    required int attachmentSsId,
+  }) {
+    return _isLiveChatDbId(messageSsId) && _isLiveChatDbId(attachmentSsId);
+  }
+
   factory ArchiveCompatibilityKey.fromLiveAttachmentSsId({
     required String messageGuid,
     required int attachmentSsId,
   }) {
-    final sourceId = SourceScopedRowKey.unpackSourceId(attachmentSsId);
-    if (sourceId != liveChatDbSourceId) {
+    if (!_isLiveChatDbId(attachmentSsId)) {
       throw ArgumentError.value(
         attachmentSsId,
         'attachmentSsId',
@@ -62,5 +68,9 @@ class ArchiveCompatibilityKey {
   String toString() {
     return 'ArchiveCompatibilityKey(messageGuid: $messageGuid, '
         'importAttachmentId: $importAttachmentId)';
+  }
+
+  static bool _isLiveChatDbId(int ssId) {
+    return SourceScopedRowKey.unpackSourceId(ssId) == liveChatDbSourceId;
   }
 }
