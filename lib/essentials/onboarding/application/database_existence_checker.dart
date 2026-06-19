@@ -4,7 +4,7 @@ import '../../db/feature_level_providers/conversation_graph_readiness_provider.d
 import '../../source_scoped_import/feature_level_providers.dart';
 import 'onboarding_database_probe_reader.dart';
 
-/// Pure check: do `macos_import_ss.db` and the conversation graph exist?
+/// Pure check: do the source-scoped import ledger and conversation graph exist?
 ///
 /// Returns `true` when the graph import ledger exists and the graph is ready.
 /// This is a cheap filesystem check that avoids opening SQLite connections.
