@@ -81,44 +81,53 @@ void main() {
       },
     );
 
-    test(
-      'treats retained archive metadata database as metadata only',
-      () async {
-        final service = _buildService(
-          hasFullDiskAccess: true,
-          queryLayers: <DatabaseHealthQueryLayer>[
-            _FakeHealthQueryLayer(
-              databaseKey: 'import',
-              role: 'retained_archive_metadata',
-            ),
-          ],
-        );
+    test('treats retained archive metadata database as metadata only', () async {
+      final service = _buildService(
+        hasFullDiskAccess: true,
+        queryLayers: <DatabaseHealthQueryLayer>[
+          _FakeHealthQueryLayer(
+            databaseKey: 'import',
+            role: 'retained_archive_metadata',
+          ),
+        ],
+      );
 
-        final report = await service.buildPhase1Report();
-        final retainedMetadataTables = report.tableInventory
-            .where((entry) => entry.databaseKey == 'import')
-            .map((entry) => entry.tableName)
-            .toSet();
+      final report = await service.buildPhase1Report();
+      final retainedMetadataTables = report.tableInventory
+          .where((entry) => entry.databaseKey == 'import')
+          .map((entry) => entry.tableName)
+          .toSet();
 
-        expect(
-          retainedMetadataTables,
-          containsAll(<String>{
-            'schema_migrations',
-            'historical_archive_sources',
-          }),
-        );
-        expect(retainedMetadataTables, isNot(contains('messages')));
-        expect(retainedMetadataTables, isNot(contains('import_batches')));
-        expect(
-          report.relationshipChecks
-              .where((check) => check.databaseKey == 'import')
-              .map((check) => check.checkKey),
-          isEmpty,
-        );
-        expect(report.invariantChecks, isEmpty);
-        expect(report.errors, isEmpty);
-      },
-    );
+      expect(
+        retainedMetadataTables,
+        containsAll(<String>{
+          'schema_migrations',
+          'historical_archive_sources',
+        }),
+      );
+      expect(retainedMetadataTables, isNot(contains('messages')));
+      expect(retainedMetadataTables, isNot(contains('import_batches')));
+      expect(
+        report.tableInventory
+            .singleWhere(
+              (entry) =>
+                  entry.databaseKey == 'import' &&
+                  entry.tableName == 'historical_archive_sources',
+            )
+            .notes,
+        contains(
+          'Retained archive-source metadata only; source facts live in source-scoped import.',
+        ),
+      );
+      expect(
+        report.relationshipChecks
+            .where((check) => check.databaseKey == 'import')
+            .map((check) => check.checkKey),
+        isEmpty,
+      );
+      expect(report.invariantChecks, isEmpty);
+      expect(report.errors, isEmpty);
+    });
 
     test(
       'treats retained working database as historical reference only',
@@ -151,6 +160,18 @@ void main() {
         expect(retainedWorkingTables, isNot(contains('messages')));
         expect(retainedWorkingTables, isNot(contains('chats')));
         expect(retainedWorkingTables, isNot(contains('global_message_index')));
+        expect(
+          report.tableInventory
+              .singleWhere(
+                (entry) =>
+                    entry.databaseKey == 'working' &&
+                    entry.tableName == 'projection_state',
+              )
+              .notes,
+          contains(
+            'Retained historical projection-state metadata only; not an app-facing readiness source.',
+          ),
+        );
         expect(
           report.relationshipChecks
               .where((check) => check.databaseKey == 'working')
