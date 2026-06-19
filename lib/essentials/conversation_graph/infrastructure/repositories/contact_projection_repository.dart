@@ -1,5 +1,6 @@
 import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../source_scoped_import/infrastructure/import_database_provider.dart';
+import '../../application/contacts/contact_handle_keys.dart';
 import '../../application/contacts/contact_projection_repository.dart';
 
 class SqliteContactProjectionRepository implements ContactProjectionRepository {
