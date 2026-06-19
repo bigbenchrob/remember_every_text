@@ -2268,6 +2268,22 @@ void main() {
       }
     });
 
+    test('Message graph repository uses graph identity boundary', () async {
+      final offenders =
+          await _findMessageGraphRepositoryIdentityBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'MessageGraphRepository may normalize retained/live context ids, '
+            'but that compatibility derivation belongs behind '
+            'canonicalLiveChatGraphId. The repository should not pack '
+            'SourceScopedRowKey ids directly.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Message projector provider uses repository boundary', () async {
       final offenders = await _findMessageProjectorProviderBoundaryOffenders();
 
@@ -5711,6 +5727,38 @@ Future<List<String>> _findMessageGraphReaderProviderBoundaryOffenders() async {
       uncommented.contains('SqliteMessageGraphRepository')) {
     offenders.add('$filePath constructs message-graph infrastructure directly');
   }
+  return offenders..sort();
+}
+
+Future<List<String>>
+_findMessageGraphRepositoryIdentityBoundaryOffenders() async {
+  const filePath =
+      'lib/essentials/conversation_graph/infrastructure/repositories/message_graph_repository.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final source = await file.readAsString();
+  final uncommented = _stripComments(source);
+  final imports = _extractImports(uncommented);
+  final offenders = <String>[
+    for (final importTarget in imports)
+      if (importTarget.endsWith(
+            'source_scoped_import/domain/source_scoped_row_key.dart',
+          ) ||
+          importTarget.endsWith(
+            'source_scoped_import/domain/known_sources.dart',
+          ))
+        '$filePath imports $importTarget',
+  ];
+
+  if (uncommented.contains('SourceScopedRowKey.pack') ||
+      uncommented.contains('SourceScopedRowKey.unpack') ||
+      uncommented.contains('liveChatDbSourceId')) {
+    offenders.add('$filePath performs graph id normalization directly');
+  }
+
   return offenders..sort();
 }
 
