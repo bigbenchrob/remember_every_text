@@ -2831,6 +2831,15 @@ criteria.
   widget still renders search/filter/sort controls and observes preference
   state, but persisted preference mutation now crosses a messages application
   action boundary. Added a tripwire guarding that boundary.
+- Centralized live `attachment_ss_id` to retained archive-key derivation on
+  `ArchiveCompatibilityKey.fromLiveAttachmentSsId(...)`, reducing direct
+  `SourceScopedRowKey` unpacking at archive lookup/diagnostic call sites.
+  Tightened the archive-key construction tripwire so the overlay archive lookup
+  no longer remains an allowed direct constructor site.
+- Added `ArchiveCompatibilityKey.liveSourceAttachmentRowId` for source-path
+  refresh logic. Attachment archive application code now asks the retained key
+  for the semantic live attachment ROWID instead of repeating retained
+  `import_attachment_id` storage terminology at the path-lookup boundary.
 
 ### Exit Criteria
 
