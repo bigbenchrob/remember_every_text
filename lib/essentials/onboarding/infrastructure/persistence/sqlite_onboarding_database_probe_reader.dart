@@ -35,12 +35,13 @@ final class SqliteOnboardingDatabaseProbeReader
         lastModified: stat.modified,
         rowCount: rowCount,
       );
-    } catch (_) {
+    } catch (error) {
       return OnboardingDatabaseProbe(
         path: filePath,
         exists: true,
         readable: false,
         rowCount: rowCount,
+        failureMessage: 'Database file exists but could not be opened: $error',
       );
     }
   }

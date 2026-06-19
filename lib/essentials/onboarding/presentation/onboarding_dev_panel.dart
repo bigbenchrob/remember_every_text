@@ -452,7 +452,9 @@ String _probeSummary(OnboardingDatabaseProbe probe) {
     return 'missing';
   }
   if (!probe.readable) {
-    return 'blocked';
+    return probe.failureMessage == null
+        ? 'blocked'
+        : 'blocked: ${probe.failureMessage}';
   }
   final rowCount = probe.rowCount;
   if (rowCount == null) {

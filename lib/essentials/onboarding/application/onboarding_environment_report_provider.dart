@@ -621,6 +621,7 @@ extension on OnboardingDatabaseProbe {
       sizeBytes: sizeBytes,
       lastModified: lastModified,
       rowCount: rowCount ?? this.rowCount,
+      failureMessage: failureMessage,
     );
   }
 }

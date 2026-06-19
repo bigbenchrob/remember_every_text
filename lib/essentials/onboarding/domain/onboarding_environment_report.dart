@@ -52,6 +52,7 @@ class OnboardingDatabaseProbe {
     this.sizeBytes,
     this.lastModified,
     this.rowCount,
+    this.failureMessage,
   });
 
   final String path;
@@ -60,6 +61,7 @@ class OnboardingDatabaseProbe {
   final int? sizeBytes;
   final DateTime? lastModified;
   final int? rowCount;
+  final String? failureMessage;
 
   bool get hasData => (rowCount ?? 0) > 0;
 }

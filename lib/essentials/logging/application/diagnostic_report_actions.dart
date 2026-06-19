@@ -178,5 +178,6 @@ String _describeProbe({
       'path=${probe.path}; '
       'exists=${probe.exists}; '
       'readable=${probe.readable}; '
-      'rows=${probe.rowCount ?? 'unknown'}';
+      'rows=${probe.rowCount ?? 'unknown'}'
+      '${probe.failureMessage == null ? '' : '; failure=${probe.failureMessage}'}';
 }
