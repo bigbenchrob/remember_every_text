@@ -457,11 +457,10 @@ process explicitly.
 
 ## Settings and Historical Archives
 
-Historical archive tools still compare against `working.db` and
-`macos_import.db`.
-
-These should remain until source-scoped multi-source import is production-ready.
-They are diagnostic/import tooling, not ordinary evidence presentation.
+Historical archive dry-run tools now compare selected archive `chat.db`
+evidence against the conversation graph. Retained `macos_import.db` /
+`working.db` may remain as storage/reference files, but they are no longer the
+ordinary archive dry-run comparison source.
 
 ---
 

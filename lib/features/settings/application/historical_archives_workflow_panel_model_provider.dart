@@ -251,7 +251,7 @@ HistoricalArchivesWorkflowState buildInitialHistoricalArchivesWorkflowState() {
       'Rows with missing GUIDs: waiting for folder selection',
       'Earliest message: waiting for folder selection',
       'Latest message: waiting for folder selection',
-      'Likely duplicates already in ledger: waiting for folder selection',
+      'Likely duplicates already in conversation graph: waiting for folder selection',
       'Likely new rows: waiting for folder selection',
     ],
     dryRunSummaryLines: [
@@ -1275,7 +1275,7 @@ HistoricalArchivesFolderPreflightResult _failedPreflightResult({
       'Rows with missing GUIDs: unavailable',
       'Earliest message: unavailable',
       'Latest message: unavailable',
-      'Likely duplicates already in ledger: unavailable',
+      'Likely duplicates already in conversation graph: unavailable',
       'Likely new rows: unavailable',
     ],
     dryRunSummaryLines: const [
