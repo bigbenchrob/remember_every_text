@@ -13,6 +13,7 @@ import 'package:remember_this_text/essentials/conversation_graph/application/con
 import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_projection_repository.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/orchestrators/conversation_graph_build_orchestrator.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
+import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'package:remember_this_text/essentials/onboarding/application/message_data_reset_service.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_environment_report_provider.dart';
@@ -477,7 +478,7 @@ OnboardingEnvironmentReport _report({
       rowCount: 100,
     ),
     conversationGraph: const OnboardingDatabaseProbe(
-      path: 'working_ss.db',
+      path: conversationGraphDatabaseFileName,
       exists: true,
       readable: true,
       rowCount: 100,

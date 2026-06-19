@@ -428,7 +428,7 @@ String _createGraphDatabase(
   int rowCount = 1,
   bool graphComplete = true,
 }) {
-  final filePath = '$directoryPath/working_ss.db';
+  final filePath = '$directoryPath/$conversationGraphDatabaseFileName';
   final db = sqlite3.open(filePath);
   try {
     db

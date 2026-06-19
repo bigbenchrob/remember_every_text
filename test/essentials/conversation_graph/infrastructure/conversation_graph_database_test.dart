@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../conversation_graph_test_database.dart';
@@ -188,7 +189,7 @@ void main() {
   test(
     'opens existing pre-Drift graph database with upgrade strategy',
     () async {
-      final dbPath = '${tempDir.path}/working_ss.db';
+      final dbPath = '${tempDir.path}/$conversationGraphDatabaseFileName';
       final existingDatabase = await databaseFactoryFfi.openDatabase(dbPath);
       await existingDatabase.execute('''
       CREATE TABLE messages (
