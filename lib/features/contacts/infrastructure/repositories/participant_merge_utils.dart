@@ -1,6 +1,5 @@
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import '../../../../essentials/source_scoped_import/domain/known_sources.dart';
-import '../../../../essentials/source_scoped_import/domain/source_scoped_row_key.dart';
+import '../../../handles/application/read_models/handle_identity.dart';
 import '../../application/read_models/contact_summary_identity.dart';
 
 Future<Map<int, int>> overlayHandleCountsByParticipant(
@@ -108,20 +107,11 @@ ParticipantOverride? participantOverrideForContactId({
 }
 
 Set<int> handleIdentityKeyVariantsForGraphLookup(int handleId) {
-  final ids = <int>{handleId};
-  final graphHandleId = _graphHandleIdForRetainedHandleId(handleId);
-  if (graphHandleId != null) {
-    ids.add(graphHandleId);
-  }
-  final retainedHandleId = _retainedHandleIdForGraphHandleId(handleId);
-  if (retainedHandleId != null) {
-    ids.add(retainedHandleId);
-  }
-  return ids;
+  return handleIdentityKeyVariants(handleId);
 }
 
 int canonicalHandleIdentityKeyForOverlay(int handleId) {
-  return _graphHandleIdForRetainedHandleId(handleId) ?? handleId;
+  return canonicalHandleIdentityKey(handleId);
 }
 
 int canonicalContactIdentityKeyForOverlay(int contactId) {
@@ -134,21 +124,4 @@ bool isPlaceholderDisplayName(String value) {
     return true;
   }
   return trimmed.toLowerCase() == 'unknown contact';
-}
-
-int? _graphHandleIdForRetainedHandleId(int handleId) {
-  if (handleId <= 0 || handleId > SourceScopedRowKey.maxSourceRowId) {
-    return null;
-  }
-  return SourceScopedRowKey.pack(
-    sourceId: liveChatDbSourceId,
-    sourceRowId: handleId,
-  );
-}
-
-int? _retainedHandleIdForGraphHandleId(int handleId) {
-  if (SourceScopedRowKey.unpackSourceId(handleId) != liveChatDbSourceId) {
-    return null;
-  }
-  return SourceScopedRowKey.unpackSourceRowId(handleId);
 }
