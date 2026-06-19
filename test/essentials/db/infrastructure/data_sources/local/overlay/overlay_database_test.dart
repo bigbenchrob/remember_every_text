@@ -1,10 +1,16 @@
+import 'dart:io';
+
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {
   late OverlayDatabase db;
+
+  setUpAll(() {
+    sqfliteFfiInit();
+  });
 
   setUp(() {
     // Create in-memory database for testing
@@ -31,6 +37,116 @@ void main() {
       expect(
         virtualParticipantColumns.map((row) => row.read<String>('name')),
         isNot(contains('short_name')),
+      );
+    });
+
+    test('migrates v5 schema by dropping retired name columns', () async {
+      await db.close();
+
+      final tempDir = await Directory.systemTemp.createTemp(
+        'overlay_v5_migration_test_',
+      );
+      final dbPath = '${tempDir.path}/$overlayDatabaseFileName';
+      addTearDown(() async {
+        if (tempDir.existsSync()) {
+          await tempDir.delete(recursive: true);
+        }
+      });
+
+      final existingDatabase = await databaseFactoryFfi.openDatabase(dbPath);
+      await existingDatabase.execute('''
+        CREATE TABLE participant_overrides (
+          participant_id INTEGER NOT NULL PRIMARY KEY,
+          name_mode INTEGER,
+          display_name_override TEXT,
+          created_at_utc TEXT NOT NULL,
+          updated_at_utc TEXT NOT NULL
+        )
+      ''');
+      await existingDatabase.execute('''
+        INSERT INTO participant_overrides (
+          participant_id,
+          name_mode,
+          display_name_override,
+          created_at_utc,
+          updated_at_utc
+        )
+        VALUES (
+          7,
+          2,
+          'User Name',
+          '2026-06-19T00:00:00.000Z',
+          '2026-06-19T00:00:00.000Z'
+        )
+      ''');
+      await existingDatabase.execute('''
+        CREATE TABLE virtual_participants (
+          id INTEGER NOT NULL PRIMARY KEY CHECK (id >= 1000000000),
+          display_name TEXT NOT NULL,
+          short_name TEXT NOT NULL,
+          notes TEXT,
+          created_at_utc TEXT NOT NULL,
+          updated_at_utc TEXT NOT NULL
+        )
+      ''');
+      await existingDatabase.execute('''
+        INSERT INTO virtual_participants (
+          id,
+          display_name,
+          short_name,
+          notes,
+          created_at_utc,
+          updated_at_utc
+        )
+        VALUES (
+          1000000001,
+          'Virtual Person',
+          'VP',
+          NULL,
+          '2026-06-19T00:00:00.000Z',
+          '2026-06-19T00:00:00.000Z'
+        )
+      ''');
+      await existingDatabase.execute('''
+        CREATE TABLE message_user_tags (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          message_guid TEXT NOT NULL,
+          tag_display TEXT NOT NULL,
+          tag_normalized TEXT NOT NULL,
+          created_at_utc TEXT NOT NULL,
+          updated_at_utc TEXT NOT NULL
+        )
+      ''');
+      await existingDatabase.execute('PRAGMA user_version = 5');
+      await existingDatabase.close();
+
+      final migratedDatabase = OverlayDatabase(NativeDatabase(File(dbPath)));
+      addTearDown(migratedDatabase.close);
+
+      final participantOverrideColumns = await migratedDatabase
+          .customSelect('PRAGMA table_info(participant_overrides)')
+          .get();
+      final virtualParticipantColumns = await migratedDatabase
+          .customSelect('PRAGMA table_info(virtual_participants)')
+          .get();
+      final participantOverride = await migratedDatabase.getParticipantOverride(
+        7,
+      );
+      final virtualParticipants = await migratedDatabase
+          .getVirtualParticipants();
+
+      expect(
+        participantOverrideColumns.map((row) => row.read<String>('name')),
+        isNot(contains('name_mode')),
+      );
+      expect(
+        virtualParticipantColumns.map((row) => row.read<String>('name')),
+        isNot(contains('short_name')),
+      );
+      expect(participantOverride?.displayNameOverride, equals('User Name'));
+      expect(
+        virtualParticipants.map((row) => row.displayName),
+        contains('Virtual Person'),
       );
     });
   });
