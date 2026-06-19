@@ -2560,10 +2560,14 @@ criteria.
     project diagnostics.
   - Added an architecture tripwire preventing retired contact name variants
     (`shortName`, `short_name`, `nickname`, `nameMode`, `name_mode`) from
-    re-entering active app-facing identity code. The retained overlay
-    `virtual_participants.short_name` schema column remains the only allowed
-    active reference, and the single user-authored display-name path remains
-    `participant_overrides.display_name_override`.
+    re-entering active app-facing identity code. The single user-authored
+    display-name path remains `participant_overrides.display_name_override`.
+  - Removed the retired `participant_overrides.name_mode` and
+    `virtual_participants.short_name` columns from the active overlay Drift
+    schema with an overlay schema migration. The architecture tripwire now
+    allows retired contact-name variants only in explicit drop-column cleanup
+    statements, and overlay schema tests assert that fresh databases do not
+    recreate those columns.
   - Retired the shared
     `conversation_graph/application/identity/retained_overlay_identity_bridge.dart`
     file and test. Contact and handle retained-id compatibility now lives in
