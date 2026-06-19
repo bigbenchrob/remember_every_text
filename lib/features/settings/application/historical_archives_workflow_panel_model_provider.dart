@@ -1161,6 +1161,8 @@ preflightHistoricalArchivesFolder({
       'Rows with missing GUIDs: ${inspection.missingGuids}',
       'Earliest message: ${_dateSummaryLabel(inspection.earliestMessageUtc)}',
       'Latest message: ${_dateSummaryLabel(inspection.latestMessageUtc)}',
+      if (inspection.dateRangeUnavailableReason case final reason?)
+        'Date range diagnostic: $reason',
       if (dryRunEstimate.isAvailable)
         'Likely duplicates already in conversation graph: ${dryRunEstimate.duplicateGuidCount} GUID-backed source rows'
       else

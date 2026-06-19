@@ -10,10 +10,12 @@ final class ArchiveSourceDateRange {
   const ArchiveSourceDateRange({
     required this.earliestMessageUtc,
     required this.latestMessageUtc,
+    required this.unavailableReason,
   });
 
   final String? earliestMessageUtc;
   final String? latestMessageUtc;
+  final String? unavailableReason;
 }
 
 class ArchiveSourceInspectionRepository implements ArchiveSourceInspector {
@@ -112,6 +114,7 @@ class ArchiveSourceInspectionRepository implements ArchiveSourceInspector {
           missingGuids: missingGuids,
           earliestMessageUtc: dateRange.earliestMessageUtc,
           latestMessageUtc: dateRange.latestMessageUtc,
+          dateRangeUnavailableReason: dateRange.unavailableReason,
         );
       } finally {
         database.dispose();
@@ -163,6 +166,7 @@ ArchiveSourceDateRange _readArchiveDateRange(Database database) {
       return const ArchiveSourceDateRange(
         earliestMessageUtc: null,
         latestMessageUtc: null,
+        unavailableReason: null,
       );
     }
 
@@ -170,11 +174,14 @@ ArchiveSourceDateRange _readArchiveDateRange(Database database) {
     return ArchiveSourceDateRange(
       earliestMessageUtc: _archiveTimestampToUtcIsoString(row['earliest_date']),
       latestMessageUtc: _archiveTimestampToUtcIsoString(row['latest_date']),
+      unavailableReason: null,
     );
-  } catch (_) {
-    return const ArchiveSourceDateRange(
+  } catch (error) {
+    return ArchiveSourceDateRange(
       earliestMessageUtc: null,
       latestMessageUtc: null,
+      unavailableReason:
+          'date range could not be read from source message table: $error',
     );
   }
 }

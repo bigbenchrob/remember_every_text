@@ -14,6 +14,7 @@ final class ArchiveSourceInspection {
     this.missingGuids,
     this.earliestMessageUtc,
     this.latestMessageUtc,
+    this.dateRangeUnavailableReason,
   });
 
   final String folderPath;
@@ -30,6 +31,7 @@ final class ArchiveSourceInspection {
   final int? missingGuids;
   final String? earliestMessageUtc;
   final String? latestMessageUtc;
+  final String? dateRangeUnavailableReason;
 }
 
 final class ArchiveSourceDryRunEstimate {

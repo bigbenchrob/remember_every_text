@@ -231,6 +231,57 @@ void main() {
       expect(result.activityLog[1].label, 'Dry run ready');
     });
 
+    test(
+      'reports date range diagnostic when source date column is absent',
+      () async {
+        final tempDirectory = await Directory.systemTemp.createTemp(
+          'historical-archives-preflight-no-date-',
+        );
+        addTearDown(() async {
+          if (tempDirectory.existsSync()) {
+            await tempDirectory.delete(recursive: true);
+          }
+        });
+
+        final chatDbPath = '${tempDirectory.path}/chat.db';
+        final database = sqlite3.open(chatDbPath);
+        try {
+          database.execute('CREATE TABLE message (guid TEXT);');
+          database.execute('CREATE TABLE chat (id INTEGER PRIMARY KEY);');
+          database.execute('CREATE TABLE handle (id INTEGER PRIMARY KEY);');
+          database.execute("INSERT INTO message (guid) VALUES ('m1');");
+        } finally {
+          database.dispose();
+        }
+
+        final result = await preflightHistoricalArchivesFolder(
+          folderPath: tempDirectory.path,
+          archiveSourceInspector: ArchiveSourceInspectionRepository(
+            graphDb: graphDb,
+          ),
+        );
+
+        expect(
+          result.preflight.status,
+          HistoricalArchivesPreflightStatus.completeReadyToImport,
+        );
+        expect(
+          result.preflightSummaryLines,
+          contains('Earliest message: unavailable'),
+        );
+        expect(
+          result.preflightSummaryLines,
+          contains('Latest message: unavailable'),
+        );
+        expect(
+          result.preflightSummaryLines.any(
+            (line) => line.startsWith('Date range diagnostic:'),
+          ),
+          isTrue,
+        );
+      },
+    );
+
     test('fails preflight when the selected folder has no chat db', () async {
       final tempDirectory = await Directory.systemTemp.createTemp(
         'historical-archives-preflight-missing-',
