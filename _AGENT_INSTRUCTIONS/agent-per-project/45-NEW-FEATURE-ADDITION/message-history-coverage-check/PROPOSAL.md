@@ -81,7 +81,7 @@ After this feature:
 - Settings already uses the sidebar cassette system rather than a separate panel flow.
 - The settings menu currently exposes transient troubleshooting actions such as `Send logs...` and `Reset message data...`.
 - Those transient settings actions route through typed sidebar intents into settings cassette specs and settings resolvers.
-- `working.db` access must go through `driftWorkingDatabaseProvider` in `lib/essentials/db/feature_level_providers.dart`.
+- Current graph-era coverage reads must go through named graph/settings repository boundaries, not retained `working.db`.
 - Source `chat.db` access is FDA-gated and currently resolved through `FdaChecker` and `onboardingMessagesDatabasePathProvider`.
 - Database health auditing already produces structural diagnostics for support bundles, but that output is aimed at support and engineering, not end users.
 
@@ -97,7 +97,7 @@ The nearest architectural fit is therefore a new settings troubleshooting action
 
 ## Hard Invariants
 
-1. Do not bypass centralized database providers for `working.db` access.
+1. Do not bypass centralized database providers or named graph/settings repository boundaries for coverage reads.
 2. Do not write any user-intent or diagnostic state into `working.db` tables.
 3. Do not make coordinators return widgets.
 4. Do not introduce a new panel/navigation subsystem for a feature that belongs in the existing settings cassette flow.
@@ -111,7 +111,7 @@ The nearest architectural fit is therefore a new settings troubleshooting action
 
 1. Add a Settings troubleshooting entry for Message History Coverage.
 2. Query `chat.db` for total messages and earliest/latest source dates.
-3. Query `working.db` for visible message count and recovered/unlinked message count.
+3. Query graph-accounted MessageLens evidence for visible message count and recovered/orphan message count.
 4. Compute a deterministic report model and status classification.
 5. Present user-facing copy for complete, incomplete import, incomplete source history, and unknown states.
 6. Provide an export path for the report as JSON.
@@ -172,7 +172,7 @@ The new coverage logic should be implemented in a dedicated settings/support res
 
 That resolver will:
 
-- read `working.db` through the approved provider
+- read graph-accounted MessageLens evidence through approved graph/settings repository boundaries
 - read `chat.db` in read-only mode using existing FDA/path helpers
 - compute the report entity
 - return data for presentation, not widgets
