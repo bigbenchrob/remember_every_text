@@ -53,9 +53,7 @@ const Set<String> _retainedOverlayIdentityBridgeAllowedFiles = <String>{};
 
 const Set<String> _retainedOverlayIdentityBridgeTestAllowedFiles = <String>{};
 
-const Set<String> _retiredContactNameVariantAllowedFiles = {
-  'lib/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart',
-};
+const Set<String> _retiredContactNameVariantAllowedFiles = <String>{};
 
 const List<String> _retiredSourceSpecificMessageRendererSymbols = <String>[
   'ContactMessageRenderer',
@@ -6812,7 +6810,25 @@ Future<List<String>> _findRetiredContactNameVariantOffenders() async {
 
   for (final filePath in files) {
     final source = await File(filePath).readAsString();
-    final uncommented = _stripComments(source);
+    final uncommented = _stripComments(source)
+        .replaceAll(
+          RegExp(
+            r'''await\s+m\.dropColumn\(\s*participantOverrides\s*,\s*['"]nickname['"]\s*\)\s*;''',
+          ),
+          '',
+        )
+        .replaceAll(
+          RegExp(
+            r'''await\s+m\.dropColumn\(\s*participantOverrides\s*,\s*['"]name_mode['"]\s*\)\s*;''',
+          ),
+          '',
+        )
+        .replaceAll(
+          RegExp(
+            r'''await\s+m\.dropColumn\(\s*virtualParticipants\s*,\s*['"]short_name['"]\s*\)\s*;''',
+          ),
+          '',
+        );
     if (retiredNameVariantPattern.hasMatch(uncommented)) {
       offenders.add(filePath);
     }

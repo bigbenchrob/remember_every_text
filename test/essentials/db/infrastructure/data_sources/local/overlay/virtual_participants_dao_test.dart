@@ -22,7 +22,6 @@ void main() {
 
       expect(participant.id, greaterThanOrEqualTo(1000000000));
       expect(participant.displayName, equals('Example Contact'));
-      expect(participant.shortName, isEmpty);
       expect(participant.createdAtUtc, isNotEmpty);
       expect(participant.updatedAtUtc, isNotEmpty);
     });
@@ -37,28 +36,6 @@ void main() {
 
       expect(second.id, greaterThan(first.id));
     });
-
-    test(
-      'retained short-name schema column remains empty for single token names',
-      () async {
-        final participant = await db.createVirtualParticipant(
-          displayName: 'Plato',
-        );
-
-        expect(participant.shortName, isEmpty);
-      },
-    );
-
-    test(
-      'retained short-name schema column remains empty for emoji names',
-      () async {
-        final participant = await db.createVirtualParticipant(
-          displayName: '😀 Friend',
-        );
-
-        expect(participant.shortName, isEmpty);
-      },
-    );
 
     test('created rows are returned alphabetically', () async {
       await db.createVirtualParticipant(displayName: 'Charlie');

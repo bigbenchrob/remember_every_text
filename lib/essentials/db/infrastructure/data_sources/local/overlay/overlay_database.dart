@@ -29,7 +29,7 @@ class OverlayDatabase extends _$OverlayDatabase {
   OverlayDatabase(QueryExecutor executor) : super(executor);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -50,6 +50,10 @@ class OverlayDatabase extends _$OverlayDatabase {
       }
       if (from < 5) {
         await _createGraphMessageIntentTables();
+      }
+      if (from < 6) {
+        await m.dropColumn(participantOverrides, 'name_mode');
+        await m.dropColumn(virtualParticipants, 'short_name');
       }
       await _createOverlayIndexes();
     },
@@ -803,8 +807,6 @@ class OverlayDatabase extends _$OverlayDatabase {
         VirtualParticipantsCompanion.insert(
           id: Value(newId),
           displayName: trimmedName,
-          // Retained schema column only. User-facing identity uses displayName.
-          shortName: '',
           notes: Value(notes),
           createdAtUtc: now,
           updatedAtUtc: now,
@@ -1125,12 +1127,6 @@ class ParticipantOverrides extends Table {
   /// Matches the graph-era contact/participant identity.
   IntColumn get participantId => integer().named('participant_id')();
 
-  /// Nullable: when null, this participant inherits global default.
-  ///
-  /// Stored values map to ParticipantNameMode.dbValue (except we recommend
-  /// storing null for inherit).
-  IntColumn get nameMode => integer().named('name_mode').nullable()();
-
   /// User's custom display name override, e.g. "Dad (Mobile)"
   TextColumn get displayNameOverride =>
       text().named('display_name_override').nullable()();
@@ -1278,9 +1274,6 @@ class VirtualParticipants extends Table {
   IntColumn get id => integer().named('id')();
 
   TextColumn get displayName => text().named('display_name')();
-
-  /// Retained schema column only. Do not use as app-facing display identity.
-  TextColumn get shortName => text().named('short_name')();
 
   TextColumn get notes => text().named('notes').nullable()();
 

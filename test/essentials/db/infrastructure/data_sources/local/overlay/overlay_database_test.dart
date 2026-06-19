@@ -15,6 +15,26 @@ void main() {
     await db.close();
   });
 
+  group('schema', () {
+    test('does not retain retired contact name variant columns', () async {
+      final participantOverrideColumns = await db
+          .customSelect('PRAGMA table_info(participant_overrides)')
+          .get();
+      final virtualParticipantColumns = await db
+          .customSelect('PRAGMA table_info(virtual_participants)')
+          .get();
+
+      expect(
+        participantOverrideColumns.map((row) => row.read<String>('name')),
+        isNot(contains('name_mode')),
+      );
+      expect(
+        virtualParticipantColumns.map((row) => row.read<String>('name')),
+        isNot(contains('short_name')),
+      );
+    });
+  });
+
   group('HandleToParticipantOverrides', () {
     test('create handle override', () async {
       // Create a manual link

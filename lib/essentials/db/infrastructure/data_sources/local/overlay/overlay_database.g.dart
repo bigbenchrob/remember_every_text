@@ -20,17 +20,6 @@ class $ParticipantOverridesTable extends ParticipantOverrides
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _nameModeMeta = const VerificationMeta(
-    'nameMode',
-  );
-  @override
-  late final GeneratedColumn<int> nameMode = GeneratedColumn<int>(
-    'name_mode',
-    aliasedName,
-    true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-  );
   static const VerificationMeta _displayNameOverrideMeta =
       const VerificationMeta('displayNameOverride');
   @override
@@ -67,7 +56,6 @@ class $ParticipantOverridesTable extends ParticipantOverrides
   @override
   List<GeneratedColumn> get $columns => [
     participantId,
-    nameMode,
     displayNameOverride,
     createdAtUtc,
     updatedAtUtc,
@@ -91,12 +79,6 @@ class $ParticipantOverridesTable extends ParticipantOverrides
           data['participant_id']!,
           _participantIdMeta,
         ),
-      );
-    }
-    if (data.containsKey('name_mode')) {
-      context.handle(
-        _nameModeMeta,
-        nameMode.isAcceptableOrUnknown(data['name_mode']!, _nameModeMeta),
       );
     }
     if (data.containsKey('display_name_override')) {
@@ -143,10 +125,6 @@ class $ParticipantOverridesTable extends ParticipantOverrides
         DriftSqlType.int,
         data['${effectivePrefix}participant_id'],
       )!,
-      nameMode: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}name_mode'],
-      ),
       displayNameOverride: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}display_name_override'],
@@ -173,19 +151,12 @@ class ParticipantOverride extends DataClass
   /// Matches the graph-era contact/participant identity.
   final int participantId;
 
-  /// Nullable: when null, this participant inherits global default.
-  ///
-  /// Stored values map to ParticipantNameMode.dbValue (except we recommend
-  /// storing null for inherit).
-  final int? nameMode;
-
   /// User's custom display name override, e.g. "Dad (Mobile)"
   final String? displayNameOverride;
   final String createdAtUtc;
   final String updatedAtUtc;
   const ParticipantOverride({
     required this.participantId,
-    this.nameMode,
     this.displayNameOverride,
     required this.createdAtUtc,
     required this.updatedAtUtc,
@@ -194,9 +165,6 @@ class ParticipantOverride extends DataClass
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['participant_id'] = Variable<int>(participantId);
-    if (!nullToAbsent || nameMode != null) {
-      map['name_mode'] = Variable<int>(nameMode);
-    }
     if (!nullToAbsent || displayNameOverride != null) {
       map['display_name_override'] = Variable<String>(displayNameOverride);
     }
@@ -208,9 +176,6 @@ class ParticipantOverride extends DataClass
   ParticipantOverridesCompanion toCompanion(bool nullToAbsent) {
     return ParticipantOverridesCompanion(
       participantId: Value(participantId),
-      nameMode: nameMode == null && nullToAbsent
-          ? const Value.absent()
-          : Value(nameMode),
       displayNameOverride: displayNameOverride == null && nullToAbsent
           ? const Value.absent()
           : Value(displayNameOverride),
@@ -226,7 +191,6 @@ class ParticipantOverride extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ParticipantOverride(
       participantId: serializer.fromJson<int>(json['participantId']),
-      nameMode: serializer.fromJson<int?>(json['nameMode']),
       displayNameOverride: serializer.fromJson<String?>(
         json['displayNameOverride'],
       ),
@@ -239,7 +203,6 @@ class ParticipantOverride extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'participantId': serializer.toJson<int>(participantId),
-      'nameMode': serializer.toJson<int?>(nameMode),
       'displayNameOverride': serializer.toJson<String?>(displayNameOverride),
       'createdAtUtc': serializer.toJson<String>(createdAtUtc),
       'updatedAtUtc': serializer.toJson<String>(updatedAtUtc),
@@ -248,13 +211,11 @@ class ParticipantOverride extends DataClass
 
   ParticipantOverride copyWith({
     int? participantId,
-    Value<int?> nameMode = const Value.absent(),
     Value<String?> displayNameOverride = const Value.absent(),
     String? createdAtUtc,
     String? updatedAtUtc,
   }) => ParticipantOverride(
     participantId: participantId ?? this.participantId,
-    nameMode: nameMode.present ? nameMode.value : this.nameMode,
     displayNameOverride: displayNameOverride.present
         ? displayNameOverride.value
         : this.displayNameOverride,
@@ -266,7 +227,6 @@ class ParticipantOverride extends DataClass
       participantId: data.participantId.present
           ? data.participantId.value
           : this.participantId,
-      nameMode: data.nameMode.present ? data.nameMode.value : this.nameMode,
       displayNameOverride: data.displayNameOverride.present
           ? data.displayNameOverride.value
           : this.displayNameOverride,
@@ -283,7 +243,6 @@ class ParticipantOverride extends DataClass
   String toString() {
     return (StringBuffer('ParticipantOverride(')
           ..write('participantId: $participantId, ')
-          ..write('nameMode: $nameMode, ')
           ..write('displayNameOverride: $displayNameOverride, ')
           ..write('createdAtUtc: $createdAtUtc, ')
           ..write('updatedAtUtc: $updatedAtUtc')
@@ -294,7 +253,6 @@ class ParticipantOverride extends DataClass
   @override
   int get hashCode => Object.hash(
     participantId,
-    nameMode,
     displayNameOverride,
     createdAtUtc,
     updatedAtUtc,
@@ -304,7 +262,6 @@ class ParticipantOverride extends DataClass
       identical(this, other) ||
       (other is ParticipantOverride &&
           other.participantId == this.participantId &&
-          other.nameMode == this.nameMode &&
           other.displayNameOverride == this.displayNameOverride &&
           other.createdAtUtc == this.createdAtUtc &&
           other.updatedAtUtc == this.updatedAtUtc);
@@ -313,20 +270,17 @@ class ParticipantOverride extends DataClass
 class ParticipantOverridesCompanion
     extends UpdateCompanion<ParticipantOverride> {
   final Value<int> participantId;
-  final Value<int?> nameMode;
   final Value<String?> displayNameOverride;
   final Value<String> createdAtUtc;
   final Value<String> updatedAtUtc;
   const ParticipantOverridesCompanion({
     this.participantId = const Value.absent(),
-    this.nameMode = const Value.absent(),
     this.displayNameOverride = const Value.absent(),
     this.createdAtUtc = const Value.absent(),
     this.updatedAtUtc = const Value.absent(),
   });
   ParticipantOverridesCompanion.insert({
     this.participantId = const Value.absent(),
-    this.nameMode = const Value.absent(),
     this.displayNameOverride = const Value.absent(),
     required String createdAtUtc,
     required String updatedAtUtc,
@@ -334,14 +288,12 @@ class ParticipantOverridesCompanion
        updatedAtUtc = Value(updatedAtUtc);
   static Insertable<ParticipantOverride> custom({
     Expression<int>? participantId,
-    Expression<int>? nameMode,
     Expression<String>? displayNameOverride,
     Expression<String>? createdAtUtc,
     Expression<String>? updatedAtUtc,
   }) {
     return RawValuesInsertable({
       if (participantId != null) 'participant_id': participantId,
-      if (nameMode != null) 'name_mode': nameMode,
       if (displayNameOverride != null)
         'display_name_override': displayNameOverride,
       if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
@@ -351,14 +303,12 @@ class ParticipantOverridesCompanion
 
   ParticipantOverridesCompanion copyWith({
     Value<int>? participantId,
-    Value<int?>? nameMode,
     Value<String?>? displayNameOverride,
     Value<String>? createdAtUtc,
     Value<String>? updatedAtUtc,
   }) {
     return ParticipantOverridesCompanion(
       participantId: participantId ?? this.participantId,
-      nameMode: nameMode ?? this.nameMode,
       displayNameOverride: displayNameOverride ?? this.displayNameOverride,
       createdAtUtc: createdAtUtc ?? this.createdAtUtc,
       updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
@@ -370,9 +320,6 @@ class ParticipantOverridesCompanion
     final map = <String, Expression>{};
     if (participantId.present) {
       map['participant_id'] = Variable<int>(participantId.value);
-    }
-    if (nameMode.present) {
-      map['name_mode'] = Variable<int>(nameMode.value);
     }
     if (displayNameOverride.present) {
       map['display_name_override'] = Variable<String>(
@@ -392,7 +339,6 @@ class ParticipantOverridesCompanion
   String toString() {
     return (StringBuffer('ParticipantOverridesCompanion(')
           ..write('participantId: $participantId, ')
-          ..write('nameMode: $nameMode, ')
           ..write('displayNameOverride: $displayNameOverride, ')
           ..write('createdAtUtc: $createdAtUtc, ')
           ..write('updatedAtUtc: $updatedAtUtc')
@@ -2664,17 +2610,6 @@ class $VirtualParticipantsTable extends VirtualParticipants
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _shortNameMeta = const VerificationMeta(
-    'shortName',
-  );
-  @override
-  late final GeneratedColumn<String> shortName = GeneratedColumn<String>(
-    'short_name',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
   static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
@@ -2710,7 +2645,6 @@ class $VirtualParticipantsTable extends VirtualParticipants
   List<GeneratedColumn> get $columns => [
     id,
     displayName,
-    shortName,
     notes,
     createdAtUtc,
     updatedAtUtc,
@@ -2740,14 +2674,6 @@ class $VirtualParticipantsTable extends VirtualParticipants
       );
     } else if (isInserting) {
       context.missing(_displayNameMeta);
-    }
-    if (data.containsKey('short_name')) {
-      context.handle(
-        _shortNameMeta,
-        shortName.isAcceptableOrUnknown(data['short_name']!, _shortNameMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_shortNameMeta);
     }
     if (data.containsKey('notes')) {
       context.handle(
@@ -2794,10 +2720,6 @@ class $VirtualParticipantsTable extends VirtualParticipants
         DriftSqlType.string,
         data['${effectivePrefix}display_name'],
       )!,
-      shortName: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}short_name'],
-      )!,
       notes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
@@ -2823,16 +2745,12 @@ class VirtualParticipant extends DataClass
     implements Insertable<VirtualParticipant> {
   final int id;
   final String displayName;
-
-  /// Retained schema column only. Do not use as app-facing display identity.
-  final String shortName;
   final String? notes;
   final String createdAtUtc;
   final String updatedAtUtc;
   const VirtualParticipant({
     required this.id,
     required this.displayName,
-    required this.shortName,
     this.notes,
     required this.createdAtUtc,
     required this.updatedAtUtc,
@@ -2842,7 +2760,6 @@ class VirtualParticipant extends DataClass
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['display_name'] = Variable<String>(displayName);
-    map['short_name'] = Variable<String>(shortName);
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
     }
@@ -2855,7 +2772,6 @@ class VirtualParticipant extends DataClass
     return VirtualParticipantsCompanion(
       id: Value(id),
       displayName: Value(displayName),
-      shortName: Value(shortName),
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
@@ -2872,7 +2788,6 @@ class VirtualParticipant extends DataClass
     return VirtualParticipant(
       id: serializer.fromJson<int>(json['id']),
       displayName: serializer.fromJson<String>(json['displayName']),
-      shortName: serializer.fromJson<String>(json['shortName']),
       notes: serializer.fromJson<String?>(json['notes']),
       createdAtUtc: serializer.fromJson<String>(json['createdAtUtc']),
       updatedAtUtc: serializer.fromJson<String>(json['updatedAtUtc']),
@@ -2884,7 +2799,6 @@ class VirtualParticipant extends DataClass
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'displayName': serializer.toJson<String>(displayName),
-      'shortName': serializer.toJson<String>(shortName),
       'notes': serializer.toJson<String?>(notes),
       'createdAtUtc': serializer.toJson<String>(createdAtUtc),
       'updatedAtUtc': serializer.toJson<String>(updatedAtUtc),
@@ -2894,14 +2808,12 @@ class VirtualParticipant extends DataClass
   VirtualParticipant copyWith({
     int? id,
     String? displayName,
-    String? shortName,
     Value<String?> notes = const Value.absent(),
     String? createdAtUtc,
     String? updatedAtUtc,
   }) => VirtualParticipant(
     id: id ?? this.id,
     displayName: displayName ?? this.displayName,
-    shortName: shortName ?? this.shortName,
     notes: notes.present ? notes.value : this.notes,
     createdAtUtc: createdAtUtc ?? this.createdAtUtc,
     updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
@@ -2912,7 +2824,6 @@ class VirtualParticipant extends DataClass
       displayName: data.displayName.present
           ? data.displayName.value
           : this.displayName,
-      shortName: data.shortName.present ? data.shortName.value : this.shortName,
       notes: data.notes.present ? data.notes.value : this.notes,
       createdAtUtc: data.createdAtUtc.present
           ? data.createdAtUtc.value
@@ -2928,7 +2839,6 @@ class VirtualParticipant extends DataClass
     return (StringBuffer('VirtualParticipant(')
           ..write('id: $id, ')
           ..write('displayName: $displayName, ')
-          ..write('shortName: $shortName, ')
           ..write('notes: $notes, ')
           ..write('createdAtUtc: $createdAtUtc, ')
           ..write('updatedAtUtc: $updatedAtUtc')
@@ -2937,21 +2847,14 @@ class VirtualParticipant extends DataClass
   }
 
   @override
-  int get hashCode => Object.hash(
-    id,
-    displayName,
-    shortName,
-    notes,
-    createdAtUtc,
-    updatedAtUtc,
-  );
+  int get hashCode =>
+      Object.hash(id, displayName, notes, createdAtUtc, updatedAtUtc);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is VirtualParticipant &&
           other.id == this.id &&
           other.displayName == this.displayName &&
-          other.shortName == this.shortName &&
           other.notes == this.notes &&
           other.createdAtUtc == this.createdAtUtc &&
           other.updatedAtUtc == this.updatedAtUtc);
@@ -2960,14 +2863,12 @@ class VirtualParticipant extends DataClass
 class VirtualParticipantsCompanion extends UpdateCompanion<VirtualParticipant> {
   final Value<int> id;
   final Value<String> displayName;
-  final Value<String> shortName;
   final Value<String?> notes;
   final Value<String> createdAtUtc;
   final Value<String> updatedAtUtc;
   const VirtualParticipantsCompanion({
     this.id = const Value.absent(),
     this.displayName = const Value.absent(),
-    this.shortName = const Value.absent(),
     this.notes = const Value.absent(),
     this.createdAtUtc = const Value.absent(),
     this.updatedAtUtc = const Value.absent(),
@@ -2975,18 +2876,15 @@ class VirtualParticipantsCompanion extends UpdateCompanion<VirtualParticipant> {
   VirtualParticipantsCompanion.insert({
     this.id = const Value.absent(),
     required String displayName,
-    required String shortName,
     this.notes = const Value.absent(),
     required String createdAtUtc,
     required String updatedAtUtc,
   }) : displayName = Value(displayName),
-       shortName = Value(shortName),
        createdAtUtc = Value(createdAtUtc),
        updatedAtUtc = Value(updatedAtUtc);
   static Insertable<VirtualParticipant> custom({
     Expression<int>? id,
     Expression<String>? displayName,
-    Expression<String>? shortName,
     Expression<String>? notes,
     Expression<String>? createdAtUtc,
     Expression<String>? updatedAtUtc,
@@ -2994,7 +2892,6 @@ class VirtualParticipantsCompanion extends UpdateCompanion<VirtualParticipant> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (displayName != null) 'display_name': displayName,
-      if (shortName != null) 'short_name': shortName,
       if (notes != null) 'notes': notes,
       if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
       if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
@@ -3004,7 +2901,6 @@ class VirtualParticipantsCompanion extends UpdateCompanion<VirtualParticipant> {
   VirtualParticipantsCompanion copyWith({
     Value<int>? id,
     Value<String>? displayName,
-    Value<String>? shortName,
     Value<String?>? notes,
     Value<String>? createdAtUtc,
     Value<String>? updatedAtUtc,
@@ -3012,7 +2908,6 @@ class VirtualParticipantsCompanion extends UpdateCompanion<VirtualParticipant> {
     return VirtualParticipantsCompanion(
       id: id ?? this.id,
       displayName: displayName ?? this.displayName,
-      shortName: shortName ?? this.shortName,
       notes: notes ?? this.notes,
       createdAtUtc: createdAtUtc ?? this.createdAtUtc,
       updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
@@ -3027,9 +2922,6 @@ class VirtualParticipantsCompanion extends UpdateCompanion<VirtualParticipant> {
     }
     if (displayName.present) {
       map['display_name'] = Variable<String>(displayName.value);
-    }
-    if (shortName.present) {
-      map['short_name'] = Variable<String>(shortName.value);
     }
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
@@ -3048,7 +2940,6 @@ class VirtualParticipantsCompanion extends UpdateCompanion<VirtualParticipant> {
     return (StringBuffer('VirtualParticipantsCompanion(')
           ..write('id: $id, ')
           ..write('displayName: $displayName, ')
-          ..write('shortName: $shortName, ')
           ..write('notes: $notes, ')
           ..write('createdAtUtc: $createdAtUtc, ')
           ..write('updatedAtUtc: $updatedAtUtc')
@@ -4959,7 +4850,6 @@ abstract class _$OverlayDatabase extends GeneratedDatabase {
 typedef $$ParticipantOverridesTableCreateCompanionBuilder =
     ParticipantOverridesCompanion Function({
       Value<int> participantId,
-      Value<int?> nameMode,
       Value<String?> displayNameOverride,
       required String createdAtUtc,
       required String updatedAtUtc,
@@ -4967,7 +4857,6 @@ typedef $$ParticipantOverridesTableCreateCompanionBuilder =
 typedef $$ParticipantOverridesTableUpdateCompanionBuilder =
     ParticipantOverridesCompanion Function({
       Value<int> participantId,
-      Value<int?> nameMode,
       Value<String?> displayNameOverride,
       Value<String> createdAtUtc,
       Value<String> updatedAtUtc,
@@ -4984,11 +4873,6 @@ class $$ParticipantOverridesTableFilterComposer
   });
   ColumnFilters<int> get participantId => $composableBuilder(
     column: $table.participantId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get nameMode => $composableBuilder(
-    column: $table.nameMode,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5022,11 +4906,6 @@ class $$ParticipantOverridesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get nameMode => $composableBuilder(
-    column: $table.nameMode,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get displayNameOverride => $composableBuilder(
     column: $table.displayNameOverride,
     builder: (column) => ColumnOrderings(column),
@@ -5056,9 +4935,6 @@ class $$ParticipantOverridesTableAnnotationComposer
     column: $table.participantId,
     builder: (column) => column,
   );
-
-  GeneratedColumn<int> get nameMode =>
-      $composableBuilder(column: $table.nameMode, builder: (column) => column);
 
   GeneratedColumn<String> get displayNameOverride => $composableBuilder(
     column: $table.displayNameOverride,
@@ -5120,13 +4996,11 @@ class $$ParticipantOverridesTableTableManager
           updateCompanionCallback:
               ({
                 Value<int> participantId = const Value.absent(),
-                Value<int?> nameMode = const Value.absent(),
                 Value<String?> displayNameOverride = const Value.absent(),
                 Value<String> createdAtUtc = const Value.absent(),
                 Value<String> updatedAtUtc = const Value.absent(),
               }) => ParticipantOverridesCompanion(
                 participantId: participantId,
-                nameMode: nameMode,
                 displayNameOverride: displayNameOverride,
                 createdAtUtc: createdAtUtc,
                 updatedAtUtc: updatedAtUtc,
@@ -5134,13 +5008,11 @@ class $$ParticipantOverridesTableTableManager
           createCompanionCallback:
               ({
                 Value<int> participantId = const Value.absent(),
-                Value<int?> nameMode = const Value.absent(),
                 Value<String?> displayNameOverride = const Value.absent(),
                 required String createdAtUtc,
                 required String updatedAtUtc,
               }) => ParticipantOverridesCompanion.insert(
                 participantId: participantId,
-                nameMode: nameMode,
                 displayNameOverride: displayNameOverride,
                 createdAtUtc: createdAtUtc,
                 updatedAtUtc: updatedAtUtc,
@@ -6366,7 +6238,6 @@ typedef $$VirtualParticipantsTableCreateCompanionBuilder =
     VirtualParticipantsCompanion Function({
       Value<int> id,
       required String displayName,
-      required String shortName,
       Value<String?> notes,
       required String createdAtUtc,
       required String updatedAtUtc,
@@ -6375,7 +6246,6 @@ typedef $$VirtualParticipantsTableUpdateCompanionBuilder =
     VirtualParticipantsCompanion Function({
       Value<int> id,
       Value<String> displayName,
-      Value<String> shortName,
       Value<String?> notes,
       Value<String> createdAtUtc,
       Value<String> updatedAtUtc,
@@ -6397,11 +6267,6 @@ class $$VirtualParticipantsTableFilterComposer
 
   ColumnFilters<String> get displayName => $composableBuilder(
     column: $table.displayName,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get shortName => $composableBuilder(
-    column: $table.shortName,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6440,11 +6305,6 @@ class $$VirtualParticipantsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get shortName => $composableBuilder(
-    column: $table.shortName,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get notes => $composableBuilder(
     column: $table.notes,
     builder: (column) => ColumnOrderings(column),
@@ -6477,9 +6337,6 @@ class $$VirtualParticipantsTableAnnotationComposer
     column: $table.displayName,
     builder: (column) => column,
   );
-
-  GeneratedColumn<String> get shortName =>
-      $composableBuilder(column: $table.shortName, builder: (column) => column);
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
@@ -6540,14 +6397,12 @@ class $$VirtualParticipantsTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<String> displayName = const Value.absent(),
-                Value<String> shortName = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<String> createdAtUtc = const Value.absent(),
                 Value<String> updatedAtUtc = const Value.absent(),
               }) => VirtualParticipantsCompanion(
                 id: id,
                 displayName: displayName,
-                shortName: shortName,
                 notes: notes,
                 createdAtUtc: createdAtUtc,
                 updatedAtUtc: updatedAtUtc,
@@ -6556,14 +6411,12 @@ class $$VirtualParticipantsTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 required String displayName,
-                required String shortName,
                 Value<String?> notes = const Value.absent(),
                 required String createdAtUtc,
                 required String updatedAtUtc,
               }) => VirtualParticipantsCompanion.insert(
                 id: id,
                 displayName: displayName,
-                shortName: shortName,
                 notes: notes,
                 createdAtUtc: createdAtUtc,
                 updatedAtUtc: updatedAtUtc,
