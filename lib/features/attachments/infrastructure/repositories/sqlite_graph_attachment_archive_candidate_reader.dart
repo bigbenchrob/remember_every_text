@@ -4,7 +4,7 @@ import '../../../../essentials/db/infrastructure/data_sources/local/conversation
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import '../../../../essentials/retained_archive/domain/archive_compatibility_key.dart';
 import '../../../../essentials/source_scoped_import/domain/known_sources.dart';
-import '../../../../essentials/source_scoped_import/domain/source_scoped_row_key.dart';
+import '../../../../essentials/source_scoped_import/domain/source_scoped_row_sql.dart';
 import '../../application/graph_attachment_archive_candidate_reader.dart';
 
 class SqliteGraphAttachmentArchiveCandidateReader
@@ -29,32 +29,22 @@ class SqliteGraphAttachmentArchiveCandidateReader
       SELECT DISTINCT
         a.ss_id AS graph_attachment_id,
         m.guid AS message_guid,
-        (a.ss_id & ?) AS import_attachment_id,
+        ${SourceScopedRowSql.sourceRowId('a.ss_id')} AS import_attachment_id,
         a.filename AS local_path,
         a.mime_type,
         NULL AS sha256_hex
       FROM messages m
       JOIN message_to_attachment mta ON mta.message_ss_id = m.ss_id
       JOIN attachments a ON a.ss_id = mta.attachment_ss_id
-      WHERE (m.ss_id >> ?) = ?
-        AND (m.ss_id & ?) > ?
-        AND (m.ss_id & ?) <= ?
-        AND (a.ss_id >> ?) = ?
+      WHERE ${SourceScopedRowSql.sourceId('m.ss_id')} = ?
+        AND ${SourceScopedRowSql.sourceRowId('m.ss_id')} > ?
+        AND ${SourceScopedRowSql.sourceRowId('m.ss_id')} <= ?
+        AND ${SourceScopedRowSql.sourceId('a.ss_id')} = ?
         AND a.filename IS NOT NULL
         AND LENGTH(TRIM(a.filename)) > 0
       ORDER BY m.ss_id, a.ss_id
       ''',
-      <Object?>[
-        SourceScopedRowKey.maxSourceRowId,
-        SourceScopedRowKey.sourceRowIdBits,
-        sourceId,
-        SourceScopedRowKey.maxSourceRowId,
-        startedAfterSourceRowId,
-        SourceScopedRowKey.maxSourceRowId,
-        lastSourceRowId,
-        SourceScopedRowKey.sourceRowIdBits,
-        sourceId,
-      ],
+      <Object?>[sourceId, startedAfterSourceRowId, lastSourceRowId, sourceId],
     );
 
     return rows.map(_candidateFromRow).toList(growable: false);
@@ -144,22 +134,18 @@ class SqliteGraphAttachmentArchiveCandidateReader
       SELECT
         a.ss_id AS graph_attachment_id,
         m.guid AS message_guid,
-        (a.ss_id & ?) AS import_attachment_id,
+        ${SourceScopedRowSql.sourceRowId('a.ss_id')} AS import_attachment_id,
         a.filename AS local_path,
         a.mime_type,
         NULL AS sha256_hex
       FROM attachments a
       JOIN message_to_attachment mta ON mta.attachment_ss_id = a.ss_id
       JOIN messages m ON m.ss_id = mta.message_ss_id
-      WHERE (a.ss_id >> ?) = ?
+      WHERE ${SourceScopedRowSql.sourceId('a.ss_id')} = ?
         AND a.filename IS NOT NULL
         AND LENGTH(TRIM(a.filename)) > 0
       ''',
-      <Object?>[
-        SourceScopedRowKey.maxSourceRowId,
-        SourceScopedRowKey.sourceRowIdBits,
-        liveChatDbSourceId,
-      ],
+      <Object?>[liveChatDbSourceId],
     );
 
     return rows.map(_candidateFromRow).toList(growable: false);
@@ -174,7 +160,7 @@ class SqliteGraphAttachmentArchiveCandidateReader
           SELECT
             a.ss_id AS graph_attachment_id,
             m.guid AS message_guid,
-            (a.ss_id & ?) AS import_attachment_id,
+            ${SourceScopedRowSql.sourceRowId('a.ss_id')} AS import_attachment_id,
             a.filename AS local_path,
             a.mime_type,
             NULL AS sha256_hex
@@ -182,20 +168,14 @@ class SqliteGraphAttachmentArchiveCandidateReader
           JOIN message_to_attachment mta ON mta.attachment_ss_id = a.ss_id
           JOIN messages m ON m.ss_id = mta.message_ss_id
           WHERE a.ss_id > ?
-            AND (a.ss_id >> ?) = ?
+            AND ${SourceScopedRowSql.sourceId('a.ss_id')} = ?
             AND a.filename IS NOT NULL
             AND LENGTH(TRIM(a.filename)) > 0
             AND a.mime_type LIKE 'image/%'
           ORDER BY a.ss_id
           LIMIT ?
-          ''',
-      <Object?>[
-        SourceScopedRowKey.maxSourceRowId,
-        afterAttachmentId,
-        SourceScopedRowKey.sourceRowIdBits,
-        liveChatDbSourceId,
-        limit,
-      ],
+      ''',
+      <Object?>[afterAttachmentId, liveChatDbSourceId, limit],
     );
   }
 

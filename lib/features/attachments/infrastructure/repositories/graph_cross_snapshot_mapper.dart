@@ -1,6 +1,7 @@
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
+import '../../../../essentials/retained_archive/domain/archive_compatibility_key.dart';
 import '../../../../essentials/source_scoped_import/domain/known_sources.dart';
-import '../../../../essentials/source_scoped_import/domain/source_scoped_row_key.dart';
+import '../../../../essentials/source_scoped_import/domain/source_scoped_row_sql.dart';
 import '../../application/cross_snapshot_mapper.dart';
 import '../../application/cross_snapshot_mapping.dart';
 import '../../application/current_attachment_snapshot_lookup.dart';
@@ -164,9 +165,9 @@ class GraphCrossSnapshotMapper implements CrossSnapshotMapper {
       SELECT ss_id
       FROM messages
       WHERE guid = ?
-        AND (ss_id >> ?) = ?
+        AND ${SourceScopedRowSql.sourceId('ss_id')} = ?
       ''',
-      <Object?>[messageGuid, SourceScopedRowKey.sourceRowIdBits, sourceId],
+      <Object?>[messageGuid, sourceId],
     );
     return [
       for (final row in rows)
@@ -297,13 +298,9 @@ class GraphCrossSnapshotMapper implements CrossSnapshotMapper {
       SELECT DISTINCT message_ss_id, attachment_ss_id
       FROM message_to_attachment
       WHERE message_ss_id IN ($placeholders)
-        AND (attachment_ss_id >> ?) = ?
+        AND ${SourceScopedRowSql.sourceId('attachment_ss_id')} = ?
       ''',
-      <Object?>[
-        ...currentMessageSsIds,
-        SourceScopedRowKey.sourceRowIdBits,
-        sourceId,
-      ],
+      <Object?>[...currentMessageSsIds, sourceId],
     );
 
     return [
@@ -322,12 +319,14 @@ class GraphCrossSnapshotMapper implements CrossSnapshotMapper {
     required int attachmentSsId,
     required MatchMethod matchMethod,
   }) {
+    final archiveKey = ArchiveCompatibilityKey.fromLiveAttachmentSsId(
+      messageGuid: record.histMessageGuid,
+      attachmentSsId: attachmentSsId,
+    );
     return MappedAttachmentRecord(
       histMessageGuid: record.histMessageGuid,
       currentMessageGuid: record.histMessageGuid,
-      currentImportAttachmentId: SourceScopedRowKey.unpackSourceRowId(
-        attachmentSsId,
-      ),
+      currentImportAttachmentId: archiveKey.liveSourceAttachmentRowId,
       resolvedFilePath: record.resolvedFilePath!,
       matchMethod: matchMethod,
       histAttachmentGuid: record.histAttachmentGuid,
