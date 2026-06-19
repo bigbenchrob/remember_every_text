@@ -28,6 +28,17 @@ void main() {
     expect(key.importAttachmentId, 42);
   });
 
+  test('fromStoredTuple preserves retained archive tuple values', () {
+    final key = ArchiveCompatibilityKey.fromStoredTuple(
+      messageGuid: 'message-guid',
+      importAttachmentId: 42,
+    );
+
+    expect(key.messageGuid, 'message-guid');
+    expect(key.importAttachmentId, 42);
+    expect(key.storageKeySegment, 'message-guid::42');
+  });
+
   test(
     'supportsLiveGraphEndpoints accepts live message and attachment ids',
     () {

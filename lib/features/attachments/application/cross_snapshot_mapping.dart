@@ -57,7 +57,7 @@ class MappedAttachmentRecord {
   /// Canonical graph attachment identity is [currentAttachmentSsId].
   final int currentImportAttachmentId;
   ArchiveCompatibilityKey get currentArchiveCompatibilityKey {
-    return ArchiveCompatibilityKey(
+    return ArchiveCompatibilityKey.fromStoredTuple(
       messageGuid: currentMessageGuid,
       importAttachmentId: currentImportAttachmentId,
     );

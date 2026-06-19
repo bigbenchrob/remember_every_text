@@ -15,6 +15,16 @@ class ArchiveCompatibilityKey {
     required this.importAttachmentId,
   });
 
+  factory ArchiveCompatibilityKey.fromStoredTuple({
+    required String messageGuid,
+    required int importAttachmentId,
+  }) {
+    return ArchiveCompatibilityKey(
+      messageGuid: messageGuid,
+      importAttachmentId: importAttachmentId,
+    );
+  }
+
   static bool supportsLiveGraphEndpoints({
     required int messageSsId,
     required int attachmentSsId,

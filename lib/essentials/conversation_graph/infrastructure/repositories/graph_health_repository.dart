@@ -230,7 +230,7 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
       final messageGuid = row.read<String>('message_guid');
       final importAttachmentId = row.read<int>('import_attachment_id');
       final archiveRelativePath = row.read<String>('archive_relative_path');
-      archiveByKey[ArchiveCompatibilityKey(
+      archiveByKey[ArchiveCompatibilityKey.fromStoredTuple(
             messageGuid: messageGuid,
             importAttachmentId: importAttachmentId,
           )] =
@@ -436,7 +436,7 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
       ''').get();
     return {
       for (final row in rows)
-        ArchiveCompatibilityKey(
+        ArchiveCompatibilityKey.fromStoredTuple(
           messageGuid: row.read<String>('message_guid'),
           importAttachmentId: row.read<int>('import_attachment_id'),
         ),
@@ -565,7 +565,7 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
             relativePath is! String) {
           continue;
         }
-        final key = ArchiveCompatibilityKey(
+        final key = ArchiveCompatibilityKey.fromStoredTuple(
           messageGuid: messageGuid,
           importAttachmentId: importAttachmentId,
         );
@@ -628,7 +628,7 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
         if (messageGuid is! String || importAttachmentId is! int) {
           continue;
         }
-        final key = ArchiveCompatibilityKey(
+        final key = ArchiveCompatibilityKey.fromStoredTuple(
           messageGuid: messageGuid,
           importAttachmentId: importAttachmentId,
         );

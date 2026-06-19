@@ -210,7 +210,7 @@ class SqliteGraphAttachmentArchiveCandidateReader
 
     return rowsResult
         .map(
-          (row) => ArchiveCompatibilityKey(
+          (row) => ArchiveCompatibilityKey.fromStoredTuple(
             messageGuid: row.read<String>('message_guid'),
             importAttachmentId: row.read<int>('import_attachment_id'),
           ),
@@ -235,7 +235,7 @@ class SqliteGraphAttachmentArchiveCandidateReader
     if (importAttachmentId == null) {
       return null;
     }
-    return ArchiveCompatibilityKey(
+    return ArchiveCompatibilityKey.fromStoredTuple(
       messageGuid: _readRequiredString(row, 'message_guid'),
       importAttachmentId: importAttachmentId,
     );
