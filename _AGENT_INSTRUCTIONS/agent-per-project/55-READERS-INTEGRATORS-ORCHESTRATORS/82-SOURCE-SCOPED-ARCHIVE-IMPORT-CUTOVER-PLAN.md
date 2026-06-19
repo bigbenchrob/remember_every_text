@@ -2,7 +2,7 @@
 tier: project
 scope: source-scoped-graph-migration
 status: implemented-in-slices
-last_reviewed: 2026-06-08
+last_reviewed: 2026-06-19
 depends_on:
   - 75-ARCHIVE-RECOVERY-IDENTITY-PLAN.md
   - 81-LEGACY-STORAGE-RETENTION-REGISTER.md
@@ -82,8 +82,10 @@ The source-scoped import schema already has the right shape:
 - import tables for messages, chats, handles, contacts, attachments, and
   topology edges
 
-The missing production piece is archive-source registration and a small
-archive-specific orchestration path.
+Archive-source registration and graph archive orchestration have since been
+implemented. The remaining production work is not another retained archive
+execution bridge; it is storage/reference cleanup, archive metadata retirement,
+and eventual migration or freezing of old archive compatibility keys.
 
 ## Hard Invariants
 
