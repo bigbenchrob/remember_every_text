@@ -57,7 +57,7 @@ Future<void> _ensureDatabaseDirectoryExists() async {
   }
 }
 
-/// Provides access to retained archive-source metadata in `macos_import.db`.
+/// Provides access to retained archive-source metadata storage.
 @Riverpod(keepAlive: true)
 Future<RetainedArchiveMetadataStore> retainedArchiveMetadataStore(
   RetainedArchiveMetadataStoreRef ref,
