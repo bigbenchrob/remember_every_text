@@ -156,4 +156,13 @@ void main() {
       expect(summary, contains('slowest stage: import_messages 1000ms'));
     });
   });
+
+  group('buildChatDbPollingFailureMessage', () {
+    test('preserves the polling read failure cause', () {
+      expect(
+        buildChatDbPollingFailureMessage('permission denied'),
+        'chat.db polling read failed: permission denied',
+      );
+    });
+  });
 }

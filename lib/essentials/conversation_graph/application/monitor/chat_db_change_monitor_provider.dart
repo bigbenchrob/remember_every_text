@@ -54,6 +54,11 @@ String buildConversationGraphBuildSummaryLog({
       'slowest stage: $slowestStageLabel.';
 }
 
+@visibleForTesting
+String buildChatDbPollingFailureMessage(Object error) {
+  return 'chat.db polling read failed: $error';
+}
+
 String _formatSlowestGraphBuildStage(ConversationGraphBuildReport report) {
   if (report.stageTimings.isEmpty) {
     return 'no stage timings';
@@ -313,8 +318,8 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
         if (previousMaxRowId != null && currentMaxRowId > previousMaxRowId) {
           _scheduleProbe(trigger: StartupProbeTrigger.rowIdAdvanced);
         }
-      } catch (error) {
-        // Silently continue on polling errors
+      } catch (error, stackTrace) {
+        _handleError(buildChatDbPollingFailureMessage(error), stackTrace);
       }
     });
   }
