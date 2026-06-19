@@ -9,7 +9,7 @@ class ChatSummaryReader {
   Future<List<ChatSummary>> readSummaries({
     ChatSummaryFilter filter = ChatSummaryFilter.all,
     ChatSummarySort sort = ChatSummarySort.mostRecentMessage,
-    int limit = 50,
+    int? limit = 50,
   }) => repository.readSummaries(filter: filter, sort: sort, limit: limit);
 
   Future<ChatSummarySanityCounts> readSanityCounts() =>

@@ -19,7 +19,7 @@ class SqliteChatSummaryRepository implements ChatSummaryRepository {
   Future<List<ChatSummary>> readSummaries({
     ChatSummaryFilter filter = ChatSummaryFilter.all,
     ChatSummarySort sort = ChatSummarySort.mostRecentMessage,
-    int limit = 50,
+    int? limit = 50,
   }) async {
     final rows = await graphDatabase.selectRows('''
       SELECT
@@ -66,12 +66,13 @@ class SqliteChatSummaryRepository implements ChatSummaryRepository {
 
     final filtered = _applyFilter(summaries, filter);
     _applySort(filtered, sort);
-    return filtered.take(limit).toList(growable: false);
+    return (limit == null ? filtered : filtered.take(limit))
+        .toList(growable: false);
   }
 
   @override
   Future<ChatSummarySanityCounts> readSanityCounts() async {
-    final summaries = await readSummaries(limit: 1000000);
+    final summaries = await readSummaries(limit: null);
     var groupChatCount = 0;
     var singleParticipantChatCount = 0;
     var orphanChatCount = 0;

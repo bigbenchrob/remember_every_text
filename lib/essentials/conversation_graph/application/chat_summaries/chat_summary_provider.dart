@@ -15,7 +15,7 @@ Future<List<ChatSummary>> chatSummaries(Ref ref) async {
   final repository = await ref.watch(chatSummaryRepositoryProvider.future);
   return ChatSummaryReader(
     repository: repository,
-  ).readSummaries(limit: 1000000);
+  ).readSummaries(limit: null);
 }
 
 @riverpod
