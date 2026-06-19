@@ -1,4 +1,4 @@
-import '../../../../../essentials/conversation_graph/application/contacts/contact_graph_provider.dart';
+import '../../../../../essentials/conversation_graph/application/identity/contact_page_graph_identity.dart';
 
 bool isSameContactContext(int? selectedContactId, int cassetteContactId) {
   if (selectedContactId == null) {

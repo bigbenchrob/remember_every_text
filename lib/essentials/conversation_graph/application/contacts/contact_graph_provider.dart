@@ -2,10 +2,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../db/feature_level_providers/message_data_version_provider.dart';
-import '../../../source_scoped_import/domain/known_sources.dart';
-import '../../../source_scoped_import/domain/source_scoped_row_key.dart';
 import '../../feature_level_providers.dart';
 import '../conversations/conversation.dart';
+import '../identity/contact_page_graph_identity.dart';
 import 'contact_graph.dart';
 import 'contact_graph_reader.dart';
 
@@ -166,17 +165,5 @@ Future<List<int>> contactPageGraphMessageIdsMatchingText(
     query: query,
     matchAnyTerm: matchAnyTerm,
     handleId: handleId,
-  );
-}
-
-int graphContactIdForContactPage(int contactId) {
-  const virtualContactIdFloor = 1000000000;
-  if (contactId <= 0 || contactId >= virtualContactIdFloor) {
-    return contactId;
-  }
-
-  return SourceScopedRowKey.pack(
-    sourceId: liveAddressBookSourceId,
-    sourceRowId: contactId,
   );
 }

@@ -1,10 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:remember_this_text/essentials/conversation_graph/application/contacts/contact_graph_provider.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/contacts/contact_graph_reader.dart';
 import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/contact_graph_repository.dart';
-import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -504,17 +502,6 @@ void main() {
         );
 
     expect(matches, [selectedMessageId]);
-  });
-
-  test('maps live AddressBook source row ids to graph contact ids', () {
-    expect(
-      graphContactIdForContactPage(24),
-      SourceScopedRowKey.pack(
-        sourceId: liveAddressBookSourceId,
-        sourceRowId: 24,
-      ),
-    );
-    expect(graphContactIdForContactPage(1000000000), 1000000000);
   });
 }
 
