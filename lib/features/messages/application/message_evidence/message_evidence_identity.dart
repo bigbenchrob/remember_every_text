@@ -19,3 +19,14 @@ int canonicalMessageEvidenceId(int messageId) {
     sourceRowId: messageId,
   );
 }
+
+/// Returns the live `chat.db.message` ROWID for a graph message evidence id.
+///
+/// This exists only for retained overlay compatibility. Ordinary message
+/// evidence remains keyed by `message_ss_id`.
+int? retainedLiveMessageRowIdForEvidenceId(int messageId) {
+  if (SourceScopedRowKey.unpackSourceId(messageId) != liveChatDbSourceId) {
+    return null;
+  }
+  return SourceScopedRowKey.unpackSourceRowId(messageId);
+}
