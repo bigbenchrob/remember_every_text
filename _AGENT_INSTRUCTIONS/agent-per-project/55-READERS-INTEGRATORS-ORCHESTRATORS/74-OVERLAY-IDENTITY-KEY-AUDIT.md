@@ -2,7 +2,7 @@
 tier: project
 scope: source-scoped-graph-migration
 status: active
-last_reviewed: 2026-06-10
+last_reviewed: 2026-06-19
 depends_on:
   - 70-GRAPH-SYSTEM-COMPLETION-ROADMAP.md
   - 71-LEGACY-DEPENDENCY-MATRIX.md
@@ -24,7 +24,7 @@ This is a bridge design document, not a schema-change directive.
 
 ## Current Implementation Snapshot
 
-As of 2026-06-10, ordinary app evidence, contact, search, and conversation
+As of 2026-06-19, ordinary app evidence, contact, search, and conversation
 surfaces are graph-backed. Active `lib/` code now avoids legacy-named concepts;
 compatibility bridges are named for retained overlay keys, GUID-keyed rows, or
 their current graph role rather than the old app spine. Retained-key bridges
@@ -32,21 +32,24 @@ remain compatibility boundaries, not retained database authority.
 
 Intentional bridge locations:
 
-- `lib/essentials/conversation_graph/application/identity/retained_overlay_identity_bridge.dart`
-  translates retained overlay/contact/handle/message integer keys to
-  source-scoped graph ids and back where necessary.
-- `lib/features/messages/infrastructure/repositories/message_overlay_identity_bridge_repository.dart`
-  dual-reads retained rowid annotation rows and GUID-keyed overlay rows but
-  writes graph-native message intent keyed by `message_ss_id`.
+- Contact retained-id compatibility is localized in contacts application
+  read-model helpers. Contact and display identity callers should not import a
+  shared graph identity bridge.
+- Handle retained-id compatibility is localized in handle application helpers.
+  Handle readers should not import a shared graph identity bridge.
+- `lib/features/messages/infrastructure/repositories/graph_message_overlay_repository.dart`
+  reads retained rowid annotation rows and GUID-keyed overlay rows only as
+  compatibility fallbacks, while writing graph-native message intent keyed by
+  `message_ss_id`.
 - `lib/essentials/search/infrastructure/repositories/graph_search_repository.dart`
   reads GUID-keyed saved/tag rows only as an overlay compatibility bridge; it
   refuses ambiguous GUID matches.
 - Contact/favourite/manual-link readers use graph facts plus overlay bridges;
   they must not reopen retained `working.db` as naming or identity authority.
 
-These symbols should keep explicit retained/bridge terminology until older
-overlay rows are either migrated or intentionally left as read-only historical
-user intent. Do not rename them to hide the compatibility boundary.
+There is no longer a shared `retained_overlay_identity_bridge.dart`. Retained
+overlay compatibility should remain localized inside named feature/application
+or infrastructure boundaries. Do not restore a shared graph/domain bridge.
 
 ## Core Rule
 

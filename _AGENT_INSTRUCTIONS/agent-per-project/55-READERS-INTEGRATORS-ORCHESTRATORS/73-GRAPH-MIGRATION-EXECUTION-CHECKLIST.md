@@ -2,7 +2,7 @@
 tier: project
 scope: source-scoped-graph-migration
 status: active
-last_reviewed: 2026-06-09
+last_reviewed: 2026-06-19
 depends_on:
   - 70-GRAPH-SYSTEM-COMPLETION-ROADMAP.md
   - 71-LEGACY-DEPENDENCY-MATRIX.md
@@ -859,13 +859,13 @@ criteria.
   legacy `DbImportResult` / `DbMigrationResult` entities; overlay persistence
   remains backwards-compatible with legacy diagnostic writers and maps those
   rows into onboarding failure summaries at the read boundary.
-- Contact/handle/message overlay key compatibility is now centralized in
-  `retained_overlay_identity_bridge.dart`. Contact lists, display identity,
-  contact profile, handle menus, manual linking, spam management, and
-  stray-handle settings use that bridge instead of duplicating
-  graph-id/legacy-id pack/unpack logic inside feature-local repositories.
-  Message overlay fallback and bounded-search context anchoring also use the
-  same bridge for live `chat.db` rowid to graph `message_ss_id` translation.
+- At this checkpoint, contact/handle/message overlay key compatibility was
+  centralized in `retained_overlay_identity_bridge.dart` to stop duplicated
+  graph-id/retained-id pack/unpack logic. That bridge was later retired:
+  contact and handle compatibility moved to feature-owned identity helpers,
+  message evidence canonicalization moved to the message evidence identity
+  helper, and message overlay fallback moved inside the graph message overlay
+  repository.
 - The obsolete live import status precheck was removed from the retained
   `DbImportControlViewModel.startMigration()` path. Historical archive
   workflows already run archive import explicitly before retained migration, so
@@ -2475,10 +2475,10 @@ criteria.
   - Updated `AttachmentArchiveFileStore.writeArchiveEntry(...)` to accept
     `ArchiveCompatibilityKey`; only the filesystem adapter unwraps the key
     when it needs the retained id for deterministic fallback filenames.
-  - Added an architecture tripwire that freezes the current
+  - Added an architecture tripwire that froze the then-current
     `retained_overlay_identity_bridge.dart` import surface, keeping
     retained-overlay graph key conversion from spreading without explicit
-    review.
+    review while the transitional bridge still existed.
   - Moved contact-side retained/graph identity matching into a contacts
     application read-model helper, removing direct identity-bridge imports from
     the contact hero widget and favorite contact providers.
@@ -2499,10 +2499,11 @@ criteria.
   - Confirmed the retired `db_importers`, `db_migrate`, `incremental_update_ss`,
     retained Drift `working` schema, and old conversation browser roots remain
     physically absent from active source/test trees.
-  - Confirmed the only active retained database access surfaces are the named
-    retention boundaries: archive-source metadata storage, reset cleanup,
-    read-only diagnostics/health, overlay/archive compatibility keys, and
-    explicit retained-overlay identity bridges guarded by architecture tests.
+  - Confirmed the only active retained database access surfaces at that point
+    were named retention boundaries: archive-source metadata storage, reset
+    cleanup, read-only diagnostics/health, overlay/archive compatibility keys,
+    and explicit retained-overlay identity bridges guarded by architecture
+    tests. The shared retained-overlay identity bridge was later retired.
   - Added a companion architecture tripwire for the retained
     `macos_import.db` filename constant so production code can only reference
     retained archive metadata storage through central DB ownership or reset
@@ -2563,6 +2564,17 @@ criteria.
     `virtual_participants.short_name` schema column remains the only allowed
     active reference, and the single user-authored display-name path remains
     `participant_overrides.display_name_override`.
+  - Retired the shared
+    `conversation_graph/application/identity/retained_overlay_identity_bridge.dart`
+    file and test. Contact and handle retained-id compatibility now lives in
+    feature-owned identity helpers, message evidence canonicalization lives in
+    the message evidence identity helper, and architecture tripwires prevent
+    the shared bridge from returning.
+  - Renamed the message user-intent repository from
+    `message_overlay_identity_bridge_repository.dart` to
+    `graph_message_overlay_repository.dart`. The repository still honors
+    retained rowid/GUID overlay rows as internal compatibility fallbacks, but
+    its public boundary is graph-keyed message overlay state.
   - Corrected the Message Evidence Spine naming invariant so contact display
     precedence no longer includes an app-derived short-name step. Short-name,
     nickname, and name-mode variants are now documented as retired
