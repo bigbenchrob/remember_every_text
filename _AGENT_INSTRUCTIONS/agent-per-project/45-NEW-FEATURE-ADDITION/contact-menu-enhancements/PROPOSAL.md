@@ -3,8 +3,8 @@ tier: project
 scope: feature-proposal
 owner: agent-per-project
 last_reviewed: 2025-11-08
-source_of_truth: doc
-status: awaiting_approval
+source_of_truth: historical-record
+status: superseded
 links:
   - ../README.md
   - ../../40-FEATURES/README.md

@@ -3,8 +3,8 @@ tier: project
 scope: feature-checklist
 owner: agent-per-project
 last_reviewed: 2025-11-08
-source_of_truth: doc
-status: in_progress
+source_of_truth: historical-record
+status: superseded
 links:
   - ./PROPOSAL.md
   - ./DESIGN_NOTES.md
@@ -14,8 +14,8 @@ tests: []
 
 # Development Checklist: Contact Menu Enhancements
 
-**Status**: 🟡 In Progress  
-**Started**: 2025-11-08  
+**Status**: Superseded by graph-era Contacts implementation
+**Started**: 2025-11-08
 **Target Completion**: 2025-11-22 (2.5 weeks)
 
 ## Current Conformance Note (2026-06-06)
@@ -30,6 +30,9 @@ literally. A current implementation checklist must replace:
 
 Any future contact menu work should start from the current Contacts feature and
 the graph/overlay identity rules, not from the schema sketches below.
+Old snippets in this file may mention `participantId`,
+`driftWorkingDatabaseProvider`, `shortName`, or "pin" terminology; read those
+as historical implementation sketches only, not current instructions.
 
 ## Phase 1: Foundation - Database & Domain Layer (Days 1-2)
 

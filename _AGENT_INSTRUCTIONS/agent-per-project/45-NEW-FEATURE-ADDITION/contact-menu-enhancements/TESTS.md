@@ -102,6 +102,11 @@ group('FavoriteContact', () {
 
 ---
 
+> Current conformance note (2026-06-19): tests in this document are historical
+> sketches. Current Contacts tests must use graph contact identity plus overlay
+> Favourites/user-name intent. Do not copy retained `WorkingDatabase` mocks or
+> participant-ID-first provider examples into new graph-era tests.
+
 ### 2. Favorite Contacts Provider Tests
 
 **File**: `test/features/contacts/application/favorite_contacts_provider_test.dart`
