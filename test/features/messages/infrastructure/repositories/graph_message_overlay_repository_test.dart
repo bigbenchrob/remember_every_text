@@ -3,20 +3,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
-import 'package:remember_this_text/features/messages/infrastructure/repositories/message_overlay_identity_bridge_repository.dart';
+import 'package:remember_this_text/features/messages/infrastructure/repositories/graph_message_overlay_repository.dart';
 
 import '../../../../essentials/conversation_graph/conversation_graph_test_database.dart';
 
 void main() {
   late ConversationGraphDatabase graphDatabase;
   late OverlayDatabase overlayDatabase;
-  late MessageOverlayIdentityBridgeRepository repository;
+  late GraphMessageOverlayRepository repository;
 
   setUp(() async {
     graphDatabase = await openConversationGraphTestDatabase();
     overlayDatabase = OverlayDatabase(NativeDatabase.memory());
     await overlayDatabase.customSelect('SELECT 1').get();
-    repository = MessageOverlayIdentityBridgeRepository(
+    repository = GraphMessageOverlayRepository(
       graphDatabase: graphDatabase,
       overlayDatabase: overlayDatabase,
     );

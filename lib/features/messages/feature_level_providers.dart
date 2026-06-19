@@ -13,8 +13,8 @@ import 'application/user_metadata/message_overlay_controller.dart';
 import 'application/user_metadata/message_overlay_repository.dart';
 import 'domain/entities/message_overlay_state.dart';
 import 'domain/message_evidence/recovered_message_evidence.dart';
+import 'infrastructure/repositories/graph_message_overlay_repository.dart';
 import 'infrastructure/repositories/graph_recovered_message_evidence_repository.dart';
-import 'infrastructure/repositories/message_overlay_identity_bridge_repository.dart';
 import 'infrastructure/repositories/overlay_conversation_signature_preferences_store.dart';
 
 export './application/sidebar_cassette_spec/coordinators/cassette_coordinator.dart';
@@ -52,7 +52,7 @@ Future<MessageOverlayRepository> messageOverlayRepository(Ref ref) async {
     driftConversationGraphDatabaseProvider.future,
   );
   final overlayDatabase = await ref.watch(overlayDatabaseProvider.future);
-  return MessageOverlayIdentityBridgeRepository(
+  return GraphMessageOverlayRepository(
     graphDatabase: graphDatabase,
     overlayDatabase: overlayDatabase,
   );

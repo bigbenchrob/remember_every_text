@@ -8,16 +8,15 @@ import '../../../../essentials/source_scoped_import/domain/source_scoped_row_key
 import '../../application/user_metadata/message_overlay_repository.dart';
 import '../../domain/entities/message_overlay_state.dart';
 
-/// Bridges retained message user-intent overlay keys to graph message ids.
+/// Reads and writes graph-keyed message user intent.
 ///
 /// Identity resolution here is intentionally semantic: callers ask what user
 /// intent belongs to the graph message the user is looking at, not which
 /// retained row owns that fact. New writes go to graph-native overlay tables
 /// keyed by `message_ss_id`; retained rowid/GUID tables are read only as
 /// compatibility fallbacks.
-class MessageOverlayIdentityBridgeRepository
-    implements MessageOverlayRepository {
-  const MessageOverlayIdentityBridgeRepository({
+class GraphMessageOverlayRepository implements MessageOverlayRepository {
+  const GraphMessageOverlayRepository({
     required ConversationGraphDatabase graphDatabase,
     required OverlayDatabase overlayDatabase,
   }) : _graphDatabase = graphDatabase,
