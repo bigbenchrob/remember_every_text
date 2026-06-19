@@ -22,8 +22,9 @@ that state to advice.
 This design must remain aligned with the existing system:
 
 - onboarding remains essentials-owned
-- import remains owned by `db_importers`
-- migration remains owned by `db_migrate`
+- source-scoped import remains owned by the graph import spine
+- conversation graph build/readiness remains owned by graph orchestration
+- retained import/migration systems are compatibility diagnostics only
 - navigation remains ViewSpec-driven
 - app-level coordinators route; resolvers own meaning
 
@@ -40,11 +41,12 @@ Collect concrete facts such as:
 - can resolve and access required AddressBook source(s)
 - source database file sizes and modification timestamps
 - source row counts from key tables
-- import database present / readable / populated
-- working database present / readable / populated
+- source-scoped import database present / readable / populated
+- conversation graph database present / readable / populated
 - latest import error summary
-- latest migration error summary
-- projection state / integrity hints
+- latest graph build/projection error summary
+- graph topology / integrity hints
+- retained compatibility database health only when clearly labeled diagnostic
 
 ### 2. Environment report layer
 
@@ -57,10 +59,11 @@ Suggested fields:
 - contacts source status
 - local history richness estimate
 - sync plausibility estimate
-- import database readiness
-- working database readiness
-- import pipeline health
-- migration pipeline health
+- source-scoped import readiness
+- conversation graph readiness
+- source-scoped pipeline health
+- graph build/projection health
+- retained compatibility health, if relevant
 - top-priority blocker
 - recommended actions
 - diagnostic notes
@@ -75,8 +78,8 @@ Map the report into a stable user-facing state:
 - `readyToImport`
 - `importing`
 - `importFailed`
-- `migrating`
-- `migrationFailed`
+- `buildingGraph`
+- `graphBuildFailed`
 - `ready`
 
 ### 4. Presentation layer
@@ -135,27 +138,32 @@ Important:
 
 Suggested evidence:
 
-- `macos_import.db` existence and row counts
-- `working.db` existence and row counts
-- projection state integrity signals
+- `macos_import_ss.db` existence and row counts
+- `working_ss.db` existence and row counts
+- graph projection state integrity signals
 - obvious corruption or foreign key failure signals where cheap to inspect
+- retained `macos_import.db` / `working.db` health only for explicitly labeled
+  archive/recovery compatibility diagnostics
 
-Existing migration diagnostics utilities may be reused as an internal evidence
-source rather than exposed directly to the user.
+Existing compatibility diagnostics utilities may be reused as internal evidence
+for retained archive/recovery surfaces rather than exposed as ordinary setup
+authority.
 
 ### Pipeline checks
 
 Suggested evidence:
 
-- latest import result summary
-- latest migration result summary
+- latest source-scoped import result summary
+- latest graph build/projection result summary
 - known exception summaries
-- whether import completed but migration never populated working tables
+- whether source-scoped import completed but graph projection never populated
+  working graph tables
+- retained import/migration summaries only as compatibility diagnostics
 
 This should allow the UI to distinguish:
 
-- source is fine, import failed
-- import succeeded, migration failed
+- source is fine, source-scoped import failed
+- import succeeded, graph build/projection failed
 - both succeeded, but local history is genuinely sparse
 
 ## iCloud / Sync Inference
@@ -210,7 +218,7 @@ Examples:
 - Show concise failure summary
 - Expose advanced diagnostics in a secondary details view
 
-### Migration failed
+### Graph build failed
 
 - Retry setup
 - Expose the specific stage that failed
@@ -251,7 +259,8 @@ These names are suggestions, not requirements.
 3. evaluator produces report
 4. gate classifies report into onboarding status + blocker kind
 5. UI renders status and advice
-6. import/migration transitions update the same report with pipeline health
+6. source-scoped import / graph-build transitions update the same report with
+   pipeline health
 
 ## Scope Boundaries
 

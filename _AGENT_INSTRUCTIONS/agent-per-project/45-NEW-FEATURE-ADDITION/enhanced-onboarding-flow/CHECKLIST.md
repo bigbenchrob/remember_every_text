@@ -26,10 +26,11 @@ setup steps that depend on retained `working.db` migration completion.
 - [ ] Reuse existing FDA check as one evidence source
 - [ ] Add Messages source evidence beyond simple readability
 - [ ] Add AddressBook readiness evidence via approved path resolution
-- [ ] Add import database readiness evidence
-- [ ] Add working database readiness evidence
-- [ ] Add import failure summary evidence
-- [ ] Add migration failure summary evidence
+- [ ] Add source-scoped import database readiness evidence
+- [ ] Add conversation graph database readiness evidence
+- [ ] Add source-scoped import failure summary evidence
+- [ ] Add graph build/projection failure summary evidence
+- [ ] Keep retained import/migration evidence diagnostic-only
 
 ## Phase 3 — Classification
 
@@ -43,7 +44,8 @@ setup steps that depend on retained `working.db` migration completion.
 - [ ] Upgrade onboarding UI to render the richer diagnosis
 - [ ] Add clear next-step actions per blocker type
 - [ ] Add an optional advanced-details disclosure
-- [ ] Keep import and migration progress comprehensible and user-safe
+- [ ] Keep source-scoped import and graph-build progress comprehensible and
+  user-safe
 
 ## Phase 5 — Resilience
 

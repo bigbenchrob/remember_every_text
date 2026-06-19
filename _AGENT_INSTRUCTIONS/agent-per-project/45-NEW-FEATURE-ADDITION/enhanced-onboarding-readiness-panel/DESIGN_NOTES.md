@@ -25,10 +25,10 @@ Relevant current structure:
 - resolvers own interpretation and assembly inputs
 - widgets render decided state and actions
 - the onboarding environment evaluator already gathers evidence about machine
-  readiness and pipeline health
+  readiness and source-scoped graph pipeline health
 
-That means the new feature can be introduced without disturbing import or
-migration ownership boundaries.
+That means the new feature can be introduced without disturbing source-scoped
+import or graph-build ownership boundaries.
 
 ## Hard Invariants
 
@@ -37,8 +37,9 @@ migration ownership boundaries.
   steps
 - feature coordinators route only; resolvers own meaning
 - widgets do not inspect the machine or decide step ordering
-- import remains owned by `db_importers`
-- migration remains owned by `db_migrate`
+- source-scoped import remains owned by the graph import spine
+- graph build/projection remains owned by graph orchestration
+- retained import/migration systems are compatibility diagnostics only
 - existing DB access invariants remain intact
 - readiness success must derive from a fresh resolver pass, not from a button
   click side effect
