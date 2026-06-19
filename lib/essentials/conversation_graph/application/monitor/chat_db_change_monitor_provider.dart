@@ -10,8 +10,8 @@ import '../../../logging/feature_level_providers.dart';
 import '../../../source_scoped_import/domain/known_sources.dart';
 import '../../feature_level_providers.dart';
 import '../conversation_graph_build_controller_provider.dart';
+import '../conversation_graph_build_report.dart';
 import '../orchestration/graph_maintenance_execution_gate_provider.dart';
-import '../orchestrators/conversation_graph_build_orchestrator.dart';
 import 'chat_db_source_probe_reader.dart';
 
 part 'chat_db_change_monitor_provider.g.dart';

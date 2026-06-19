@@ -1,4 +1,4 @@
-import '../orchestrators/conversation_graph_build_orchestrator.dart';
+import '../conversation_graph_build_report.dart';
 import 'conversation_graph_status_provider.dart';
 
 abstract interface class ConversationGraphStatusLogWriter {

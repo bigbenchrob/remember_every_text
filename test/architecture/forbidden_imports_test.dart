@@ -2383,6 +2383,20 @@ void main() {
       );
     });
 
+    test('Onboarding presentation renders graph build state only', () async {
+      final offenders = await _findOnboardingGraphBuildPresentationOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Onboarding presentation may render graph build state/report DTOs, '
+            'but it must not import graph build orchestrator implementation '
+            'details directly.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Graph status and favourites stores stay feature-boundary owned', () {
       const retiredProviderPaths = <String>[
         'lib/essentials/conversation_graph/infrastructure/repositories/conversation_favourites_store_provider.dart',
@@ -5946,6 +5960,31 @@ Future<List<String>> _findGraphStatusSheetControlBoundaryOffenders() async {
       uncommented.contains('writeRun(') ||
       uncommented.contains('.runOnce(owner:')) {
     offenders.add('$filePath owns graph status refresh/build action details');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findOnboardingGraphBuildPresentationOffenders() async {
+  const filePaths = <String>{
+    'lib/essentials/onboarding/presentation/onboarding_dev_panel.dart',
+    'lib/essentials/onboarding/presentation/onboarding_overlay.dart',
+  };
+  final offenders = <String>[];
+
+  for (final filePath in filePaths) {
+    final file = File(filePath);
+    if (!file.existsSync()) {
+      continue;
+    }
+    final source = await file.readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    offenders.addAll([
+      for (final importTarget in imports)
+        if (importTarget.endsWith('conversation_graph_build_orchestrator.dart'))
+          '$filePath imports $importTarget',
+    ]);
   }
 
   return offenders..sort();

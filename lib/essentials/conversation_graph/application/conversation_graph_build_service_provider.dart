@@ -19,6 +19,7 @@ import 'chat_handle_joins/chat_to_handle_projector_provider.dart';
 import 'chat_message_joins/chat_to_message_projector_provider.dart';
 import 'chats/chat_projector_provider.dart';
 import 'contacts/contact_projector_provider.dart';
+import 'conversation_graph_build_report.dart';
 import 'handles/handle_projector_provider.dart';
 import 'message_attachment_joins/message_to_attachment_projector_provider.dart';
 import 'messages/message_projector_provider.dart';

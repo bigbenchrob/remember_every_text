@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 
-import '../../application/orchestrators/conversation_graph_build_orchestrator.dart';
+import '../../application/conversation_graph_build_report.dart';
 import '../../application/status/conversation_graph_status_log_writer.dart';
 import '../../application/status/conversation_graph_status_provider.dart';
 
