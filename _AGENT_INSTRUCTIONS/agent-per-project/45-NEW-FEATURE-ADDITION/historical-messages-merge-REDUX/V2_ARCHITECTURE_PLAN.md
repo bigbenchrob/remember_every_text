@@ -34,10 +34,11 @@ historical source
 ```
 
 The old `db-import` -> migration -> `working.db` visibility language below is
-retained for historical accuracy only. New archive/recovery work should follow
-the source-scoped graph identity plans and deterministic recovery docs, using
-retained legacy projection only as an explicitly named archive/recovery
-compatibility bridge.
+retained for historical accuracy only. This includes the older "Core
+Guardrail" section immediately below; it is not current implementation
+guidance. New archive/recovery work should follow the source-scoped graph
+identity plans and deterministic recovery docs, using retained legacy
+projection only as an explicitly named archive/recovery compatibility bridge.
 
 This document turns the spike retrospective into a v2 architecture plan.
 

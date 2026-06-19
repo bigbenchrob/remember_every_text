@@ -1,3 +1,11 @@
+CURRENT CONFORMANCE NOTE (2026-06-19):
+
+This addition is preserved as historical UX/flow planning. Its concrete
+`ledger -> migration -> working.db` language is superseded by source-scoped
+archive import, conversation graph projection, and Message Evidence Spine
+visibility. Retained legacy databases may be inspected only as explicitly named
+archive/recovery compatibility storage, not as ordinary app authority.
+
 ADDITION TO V2 PLAN: Durable Historical Archive Import Surface
 
 Purpose
