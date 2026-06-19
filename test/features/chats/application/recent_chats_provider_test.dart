@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversations/conversation.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversations/conversation_reader_provider.dart';
-import 'package:remember_this_text/features/chats/presentation/view_model/recent_chats_provider.dart';
+import 'package:remember_this_text/features/chats/application/recent_chats_provider.dart';
 import 'package:remember_this_text/features/contacts/feature_level_providers.dart';
 
 void main() {

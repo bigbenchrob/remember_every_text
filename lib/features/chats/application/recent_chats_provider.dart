@@ -1,10 +1,10 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../essentials/conversation_graph/application/conversations/conversation.dart';
-import '../../../../essentials/conversation_graph/application/conversations/conversation_reader_provider.dart';
-import '../../../contacts/feature_level_providers.dart';
-import '../../application/read_models/recent_chat_summary.dart';
+import '../../../essentials/conversation_graph/application/conversations/conversation.dart';
+import '../../../essentials/conversation_graph/application/conversations/conversation_reader_provider.dart';
+import '../../contacts/feature_level_providers.dart';
+import 'read_models/recent_chat_summary.dart';
 
 part 'recent_chats_provider.g.dart';
 

@@ -4059,13 +4059,7 @@ Future<List<String>> _findCrossSystemChatProviderImportOffenders() async {
             'features/chats/presentation/view_model/chats_view_model_provider.dart',
           ) ||
           importTarget.endsWith(
-            'features/chats/presentation/view_model/recent_chats_provider.dart',
-          ) ||
-          importTarget.endsWith(
             'chats/presentation/view_model/chats_view_model_provider.dart',
-          ) ||
-          importTarget.endsWith(
-            'chats/presentation/view_model/recent_chats_provider.dart',
           )) {
         offenders.add('$filePath imports $importTarget');
       }
