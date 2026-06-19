@@ -966,7 +966,7 @@ String _availableImportButtonDetail(
     HistoricalArchivesPreflightStatus.running =>
       'Import stays disabled while Historical Archives is reading source structure and counts.',
     HistoricalArchivesPreflightStatus.completeReadyToImport =>
-      'Source checks are complete. Begin Import will run the canonical ledger import and then rebuild projected data. Mixed-source ledger states are still rejected until the rowid identity refactor lands.',
+      'Source checks are complete. Begin Import will run source-scoped archive import and refresh the conversation graph. Source IDs keep archive rows isolated from the live Messages source.',
     HistoricalArchivesPreflightStatus.failed =>
       'Import stays disabled until the selected folder passes source preflight.',
   };

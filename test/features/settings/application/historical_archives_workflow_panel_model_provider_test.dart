@@ -124,7 +124,10 @@ void main() {
       expect(model.selectedFolderPath, '/tmp/Archive-2017');
       expect(model.preflightSummaryLines.single, 'Total messages: 42');
       expect(model.importButtonEnabled, isTrue);
-      expect(model.importButtonDetail, contains('Mixed-source ledger states'));
+      expect(
+        model.importButtonDetail,
+        contains('Source IDs keep archive rows isolated'),
+      );
       expect(
         model.archiveManagementSummaryLines,
         contains('Removal target chat.db: /tmp/Archive-2017/chat.db'),
