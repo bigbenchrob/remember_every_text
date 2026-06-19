@@ -603,7 +603,9 @@ void main() {
         reason:
             'The chats selection controller may translate chat selections into '
             'semantic chat-selection actions, but sidebar intent construction '
-            'and dispatch belong behind ChatSelectionActions.\n'
+            'and dispatch belong behind ChatSelectionActions. Graph read-model '
+            'composition belongs in the chats application layer, not '
+            'presentation view models.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -7400,6 +7402,12 @@ Future<List<String>> _findChatsViewModelFlowMutationOffenders() async {
 
   final uncommented = _stripComments(await file.readAsString());
   final offenders = <String>[];
+  final imports = _extractImports(uncommented);
+  for (final importTarget in imports) {
+    if (importTarget.contains('/conversation_graph/application/')) {
+      offenders.add('$filePath imports $importTarget');
+    }
+  }
   if (uncommented.contains('sidebarFlowProvider')) {
     offenders.add('$filePath imports or mutates sidebarFlowProvider');
   }
