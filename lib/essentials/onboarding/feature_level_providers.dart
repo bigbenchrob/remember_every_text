@@ -16,7 +16,22 @@ part 'feature_level_providers.g.dart';
 
 @riverpod
 OnboardingDatabaseProbeReader onboardingDatabaseProbeReader(Ref ref) {
-  return const SqliteOnboardingDatabaseProbeReader();
+  return SqliteOnboardingDatabaseProbeReader(
+    onTableCountFailure: (dbPath, tableName, error, stackTrace) {
+      ref
+          .read(appLoggerProvider.notifier)
+          .warn(
+            'OnboardingDatabaseProbeReader: failed to read table count',
+            source: 'SqliteOnboardingDatabaseProbeReader',
+            context: <String, Object?>{
+              'dbPath': dbPath,
+              'tableName': tableName,
+              'error': error.toString(),
+              'stackTrace': stackTrace.toString(),
+            },
+          );
+    },
+  );
 }
 
 @riverpod

@@ -30,5 +30,42 @@ void main() {
         startsWith('Database file exists but could not be opened:'),
       );
     });
+
+    test('reports table count read failures through diagnostic callback', () {
+      final tempDirectory = Directory.systemTemp.createTempSync(
+        'onboarding-probe-invalid-table-count-',
+      );
+      addTearDown(() {
+        if (tempDirectory.existsSync()) {
+          tempDirectory.deleteSync(recursive: true);
+        }
+      });
+
+      final invalidDb = File('${tempDirectory.path}/invalid.db')
+        ..writeAsStringSync('not sqlite');
+      String? reportedPath;
+      String? reportedTableName;
+      Object? reportedError;
+      StackTrace? reportedStackTrace;
+      final reader = SqliteOnboardingDatabaseProbeReader(
+        onTableCountFailure: (dbPath, tableName, error, stackTrace) {
+          reportedPath = dbPath;
+          reportedTableName = tableName;
+          reportedError = error;
+          reportedStackTrace = stackTrace;
+        },
+      );
+
+      final count = reader.readTableCount(
+        dbPath: invalidDb.path,
+        tableName: 'message',
+      );
+
+      expect(count, isNull);
+      expect(reportedPath, invalidDb.path);
+      expect(reportedTableName, 'message');
+      expect(reportedError, isNotNull);
+      expect(reportedStackTrace, isNotNull);
+    });
   });
 }

@@ -9,7 +9,23 @@ import '../../domain/onboarding_environment_report.dart';
 
 final class SqliteOnboardingDatabaseProbeReader
     implements OnboardingDatabaseProbeReader {
-  const SqliteOnboardingDatabaseProbeReader();
+  const SqliteOnboardingDatabaseProbeReader({
+    void Function(
+      String dbPath,
+      String tableName,
+      Object error,
+      StackTrace stackTrace,
+    )?
+    onTableCountFailure,
+  }) : _onTableCountFailure = onTableCountFailure;
+
+  final void Function(
+    String dbPath,
+    String tableName,
+    Object error,
+    StackTrace stackTrace,
+  )?
+  _onTableCountFailure;
 
   @override
   OnboardingDatabaseProbe probeFile(String filePath, {int? rowCount}) {
@@ -72,7 +88,8 @@ final class SqliteOnboardingDatabaseProbeReader
       } finally {
         db.dispose();
       }
-    } catch (_) {
+    } catch (error, stackTrace) {
+      _onTableCountFailure?.call(dbPath, tableName, error, stackTrace);
       return null;
     }
   }
