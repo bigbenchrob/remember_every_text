@@ -1,7 +1,6 @@
 import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
-import '../../../source_scoped_import/domain/known_sources.dart';
-import '../../../source_scoped_import/domain/source_scoped_row_key.dart';
 import '../../application/conversations/conversation.dart';
+import '../../application/identity/live_chat_graph_identity.dart';
 import '../../application/messages/message_graph_repository.dart';
 
 class SqliteMessageGraphRepository implements MessageGraphRepository {
@@ -284,8 +283,8 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
     required int beforeCount,
     required int afterCount,
   }) async {
-    final graphMessageId = _liveChatGraphId(messageId);
-    final graphChatId = _liveChatGraphId(chatId);
+    final graphMessageId = canonicalLiveChatGraphId(messageId);
+    final graphChatId = canonicalLiveChatGraphId(chatId);
 
     final selectedRows = await graphDatabase.selectRows(
       '''
@@ -483,15 +482,5 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
           return term.isNotEmpty;
         })
         .toList(growable: false);
-  }
-
-  static int _liveChatGraphId(int value) {
-    if (value > SourceScopedRowKey.maxSourceRowId) {
-      return value;
-    }
-    return SourceScopedRowKey.pack(
-      sourceId: liveChatDbSourceId,
-      sourceRowId: value,
-    );
   }
 }
