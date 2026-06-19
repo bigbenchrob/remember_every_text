@@ -41,7 +41,20 @@ OnboardingFailureStore onboardingFailureStorage(Ref ref) {
 
 @riverpod
 FullDiskAccess fullDiskAccess(Ref ref) {
-  return const MacosFullDiskAccess();
+  return MacosFullDiskAccess(
+    onReadFailure: (error, stackTrace) {
+      ref
+          .read(appLoggerProvider.notifier)
+          .warn(
+            'FullDiskAccess: Messages database exists but could not be read',
+            source: 'MacosFullDiskAccess',
+            context: <String, Object?>{
+              'error': error.toString(),
+              'stackTrace': stackTrace.toString(),
+            },
+          );
+    },
+  );
 }
 
 @riverpod
