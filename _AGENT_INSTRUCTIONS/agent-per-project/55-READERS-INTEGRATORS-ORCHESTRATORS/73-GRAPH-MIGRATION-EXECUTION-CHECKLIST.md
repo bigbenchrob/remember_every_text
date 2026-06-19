@@ -327,16 +327,14 @@ than dev-panel-owned.
   build lifecycle state (`idle`, `running`, `succeeded`, `failed`) and is now
   the entry point for both the source-scoped dev panel and live `chat.db`
   monitor graph builds.
-- Live `chat.db` changes now trigger the conversation graph build before any
-  legacy compatibility import or migration, so automatic sync updates the
-  app-facing graph before maintaining the legacy projection.
+- Live `chat.db` changes now trigger the conversation graph build as the
+  app-facing production update path. The retained legacy import/migration
+  maintenance tail has been retired from live updates.
 - Live `chat.db` monitor updates now treat source-scoped graph import/projection
-  as the app-facing success path. Legacy ledger import and `working.db`
-  migration still run for compatibility maintenance, but their failure or
-  exception no longer blocks refreshed graph evidence when the graph build has
-  succeeded.
+  as the app-facing success path; retained `macos_import.db` / `working.db`
+  files are compatibility/reference storage, not live-update outputs.
 - The live monitor now claims the global derived-data maintenance gate around
-  the graph build, attachment archive pass, legacy import, and legacy migration.
+  the graph build and attachment archive pass.
   Gate denial still delays/retries to avoid overlapping maintenance work, but
   the gate is no longer provided indirectly by the legacy import path.
 - Live monitor startup catch-up and cursor priming now compare `chat.db` to the
@@ -933,7 +931,7 @@ criteria.
   source import, graph build, archive graph projection, and graph data-version
   invalidation directly instead of generic migration/import wording.
 - Pipeline incident stage display now maps the persisted `migration` enum to
-  "Retained legacy projection" so diagnostic UI reflects the compatibility
+  "Retained historical projection" so diagnostic UI reflects the compatibility
   boundary without changing stored overlay values.
 - Attachment archive settings and handles-info spec comments now use
   "derived-data rebuilds" / "dependency refactor" wording instead of migration

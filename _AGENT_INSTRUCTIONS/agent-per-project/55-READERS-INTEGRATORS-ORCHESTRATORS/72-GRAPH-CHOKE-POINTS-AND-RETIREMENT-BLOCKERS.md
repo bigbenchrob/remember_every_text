@@ -255,13 +255,14 @@ projection.
 **Current state**
 
 It detects live `chat.db` changes and now triggers the central graph build as
-the app-facing success path before maintaining legacy compatibility systems.
-Startup catch-up and cursor priming compare against the source-scoped import
-ledger. Attachment archiving uses graph message source-row ranges during live
-updates.
+the app-facing success path. Startup catch-up and cursor priming compare
+against the source-scoped import ledger. Attachment archiving uses graph
+message source-row ranges during live updates.
 
-Legacy import/migration still run as compatibility maintenance, but no longer
-define ordinary graph evidence freshness after the graph build succeeds.
+Retained legacy import/migration maintenance no longer runs as the live-update
+tail. Retained `macos_import.db` and `working.db` may remain in user data
+folders for audit, recovery, and rollback safety, but they no longer define
+ordinary graph evidence freshness.
 
 **Dependencies blocked**
 
@@ -293,8 +294,8 @@ working graph projection. It is wired through the central graph build
 controller, participates in readiness/reset/onboarding flows, and is invoked by
 the live `chat.db` monitor.
 
-Remaining work is to remove legacy import/projection as a required
-compatibility path once archive/recovery and lifecycle blockers close.
+Remaining work is to keep reducing retained `macos_import.db` / `working.db`
+purposes until archive/recovery diagnostics no longer require them.
 
 **Dependencies blocked**
 
