@@ -266,11 +266,15 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
               source: 'ChatDbMonitor',
             );
       }
-    } catch (error) {
+    } catch (error, stackTrace) {
       // Non-fatal - polling will catch up
       ref
           .read(appLoggerProvider.notifier)
-          .warn('Startup check failed: $error', source: 'ChatDbMonitor');
+          .warn(
+            'Startup check failed: $error',
+            source: 'ChatDbMonitor',
+            context: {'stackTrace': '$stackTrace'},
+          );
     }
   }
 
