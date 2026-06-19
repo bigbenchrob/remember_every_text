@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/feature_level_providers.dart';
 
 void main() {
   group('OnboardingEnvironmentReport', () {
@@ -125,13 +127,13 @@ OnboardingEnvironmentReport _report({
       rowCount: 50,
     ),
     sourceScopedImportDatabase: const OnboardingDatabaseProbe(
-      path: 'macos_import_ss.db',
+      path: sourceScopedImportDatabaseFileName,
       exists: true,
       readable: true,
       rowCount: 100,
     ),
     conversationGraph: const OnboardingDatabaseProbe(
-      path: 'working_ss.db',
+      path: conversationGraphDatabaseFileName,
       exists: true,
       readable: true,
       rowCount: 100,
