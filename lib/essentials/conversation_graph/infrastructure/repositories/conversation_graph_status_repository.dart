@@ -15,22 +15,7 @@ final class ConversationGraphStatusRepository {
     required String graphDatabaseName,
     required int sourceId,
   }) async {
-    final sourceSnapshot = await _readSourceMessageSnapshot(chatDbPath);
-    final sourceChatCount = await _readSourceTableCount(
-      chatDbPath: chatDbPath,
-      tableName: 'chat',
-      alias: 'chat_count',
-    );
-    final sourceHandleCount = await _readSourceTableCount(
-      chatDbPath: chatDbPath,
-      tableName: 'handle',
-      alias: 'handle_count',
-    );
-    final sourceAttachmentCount = await _readSourceTableCount(
-      chatDbPath: chatDbPath,
-      tableName: 'attachment',
-      alias: 'attachment_count',
-    );
+    final sourceSnapshot = await _readSourceSnapshot(chatDbPath);
     final ledgerSnapshot = await _readLedgerMessageSnapshot(
       importLedgerDatabase,
       sourceId,
@@ -46,8 +31,8 @@ final class ConversationGraphStatusRepository {
       importDatabaseName: importLedgerDatabaseName,
       graphDatabaseName: graphDatabaseName,
       sourceId: sourceId,
-      sourceMessageCount: sourceSnapshot.count,
-      sourceMaxRowId: sourceSnapshot.maxRowId,
+      sourceMessageCount: sourceSnapshot.message.count,
+      sourceMaxRowId: sourceSnapshot.message.maxRowId,
       ledgerMessageCount: ledgerSnapshot.count,
       ledgerMaxSourceRowId: ledgerSnapshot.maxRowId,
       ledgerMessagesNeedingEnrichment: ledgerSnapshot.needingEnrichmentCount,
@@ -55,10 +40,10 @@ final class ConversationGraphStatusRepository {
       graphMessageCount: graphMessageSnapshot.count,
       associatedMessageEdgeCount:
           graphMessageSnapshot.associatedMessageEdgeCount,
-      sourceChatCount: sourceChatCount,
+      sourceChatCount: sourceSnapshot.chatCount,
       importChatCount: graphSnapshot.importChatCount,
       graphChatCount: graphSnapshot.graphChatCount,
-      sourceHandleCount: sourceHandleCount,
+      sourceHandleCount: sourceSnapshot.handleCount,
       importHandleCount: graphSnapshot.importHandleCount,
       graphHandleCount: graphSnapshot.graphHandleCount,
       importTopologyEdgeCount: graphSnapshot.importTopologyEdgeCount,
@@ -69,7 +54,7 @@ final class ConversationGraphStatusRepository {
       graphChatToHandleEdgeCount: graphSnapshot.graphChatToHandleEdgeCount,
       duplicateGraphChatToHandleEdgeCount:
           graphSnapshot.duplicateGraphChatToHandleEdgeCount,
-      sourceAttachmentCount: sourceAttachmentCount,
+      sourceAttachmentCount: sourceSnapshot.attachmentCount,
       importAttachmentCount: graphSnapshot.importAttachmentCount,
       graphAttachmentCount: graphSnapshot.graphAttachmentCount,
       importMessageToAttachmentEdgeCount:
@@ -81,7 +66,7 @@ final class ConversationGraphStatusRepository {
     );
   }
 
-  Future<_MessageSnapshot> _readSourceMessageSnapshot(String chatDbPath) async {
+  Future<_SourceSnapshot> _readSourceSnapshot(String chatDbPath) async {
     final db = await openDatabase(
       chatDbPath,
       readOnly: true,
@@ -89,39 +74,32 @@ final class ConversationGraphStatusRepository {
     );
 
     try {
-      final rows = await db.rawQuery(
+      final messageRows = await db.rawQuery(
         'SELECT COUNT(*) AS message_count, '
         'COALESCE(MAX(ROWID), 0) AS max_rowid FROM message',
       );
-      final row = rows.single;
-
-      return _MessageSnapshot(
-        count: _readInt(row['message_count']),
-        maxRowId: _readInt(row['max_rowid']),
-        needingEnrichmentCount: 0,
-        withoutTextCount: 0,
+      final chatRows = await db.rawQuery(
+        'SELECT COUNT(*) AS chat_count FROM chat',
       );
-    } finally {
-      await db.close();
-    }
-  }
-
-  Future<int> _readSourceTableCount({
-    required String chatDbPath,
-    required String tableName,
-    required String alias,
-  }) async {
-    final db = await openDatabase(
-      chatDbPath,
-      readOnly: true,
-      singleInstance: false,
-    );
-
-    try {
-      final rows = await db.rawQuery(
-        'SELECT COUNT(*) AS $alias FROM $tableName',
+      final handleRows = await db.rawQuery(
+        'SELECT COUNT(*) AS handle_count FROM handle',
       );
-      return _readInt(rows.single[alias]);
+      final attachmentRows = await db.rawQuery(
+        'SELECT COUNT(*) AS attachment_count FROM attachment',
+      );
+      final messageRow = messageRows.single;
+
+      return _SourceSnapshot(
+        message: _MessageSnapshot(
+          count: _readInt(messageRow['message_count']),
+          maxRowId: _readInt(messageRow['max_rowid']),
+          needingEnrichmentCount: 0,
+          withoutTextCount: 0,
+        ),
+        chatCount: _readInt(chatRows.single['chat_count']),
+        handleCount: _readInt(handleRows.single['handle_count']),
+        attachmentCount: _readInt(attachmentRows.single['attachment_count']),
+      );
     } finally {
       await db.close();
     }
@@ -286,6 +264,20 @@ int _readInt(Object? value) {
     return value.round();
   }
   return 0;
+}
+
+class _SourceSnapshot {
+  const _SourceSnapshot({
+    required this.message,
+    required this.chatCount,
+    required this.handleCount,
+    required this.attachmentCount,
+  });
+
+  final _MessageSnapshot message;
+  final int chatCount;
+  final int handleCount;
+  final int attachmentCount;
 }
 
 class _MessageSnapshot {
