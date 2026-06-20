@@ -13,7 +13,7 @@ void main() {
     expect(key.storageKeySegment, 'message-guid::42');
   });
 
-  test('fromLiveAttachmentSsId derives retained archive row id', () {
+  test('fromLiveAttachmentSsId derives live source attachment row id', () {
     final attachmentSsId = SourceScopedRowKey.pack(
       sourceId: liveChatDbSourceId,
       sourceRowId: 42,
@@ -29,7 +29,7 @@ void main() {
     expect(key.liveSourceAttachmentRowId, 42);
   });
 
-  test('fromStoredTuple preserves retained archive tuple values', () {
+  test('fromStoredTuple preserves existing archive tuple values', () {
     final key = ArchiveCompatibilityKey.fromStoredTuple(
       messageGuid: 'message-guid',
       importAttachmentId: 42,

@@ -6,7 +6,7 @@ import 'package:remember_this_text/features/attachments/domain/entities/attachme
 
 void main() {
   group('attachment recovery hint storage', () {
-    test('uses the retained archive compatibility key as storage identity', () {
+    test('uses the archive compatibility key as storage identity', () {
       final key = attachmentRecoveryHintSettingKey(
         archiveKey: const ArchiveCompatibilityKey(
           messageGuid: 'message-guid',

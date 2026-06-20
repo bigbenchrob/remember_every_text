@@ -7,7 +7,7 @@ const _kAttachmentRecoveryHintSettingPrefix = 'attachment_recovery_hint';
 
 /// Builds a recovery-hint key using the current archive compatibility key.
 ///
-/// The pair mirrors retained archive storage and is not canonical graph
+/// The pair mirrors existing archive storage and is not canonical graph
 /// identity.
 String attachmentRecoveryHintSettingKey({
   required ArchiveCompatibilityKey archiveKey,

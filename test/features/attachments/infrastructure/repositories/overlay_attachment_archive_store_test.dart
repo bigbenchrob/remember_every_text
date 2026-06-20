@@ -41,7 +41,7 @@ void main() {
   });
 
   test(
-    'writes and reads retained archive records by compatibility key',
+    'writes and reads existing archive records by compatibility key',
     () async {
       final archiveKey = _archiveKey();
       final archivedFile = File(path.join(archiveDir.path, 'ab/cd/photo.jpg'));
