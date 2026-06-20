@@ -5,7 +5,10 @@ import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'package:remember_this_text/essentials/sidebar/application/sidebar_flow_state_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/domain/sidebar_action_intent.dart';
+import 'package:remember_this_text/features/messages/application/sidebar_cassette_spec/resolver_tools/contact_timeline_provider.dart';
+import 'package:remember_this_text/features/messages/application/sidebar_cassette_spec/resolver_tools/global_messages_heatmap_provider.dart';
 import 'package:remember_this_text/features/messages/application/sidebar_cassette_spec/resolver_tools/message_heatmap_navigation_actions_provider.dart';
+import 'package:remember_this_text/features/messages/application/sidebar_cassette_spec/resolver_tools/message_heatmap_refresh_actions_provider.dart';
 import 'package:remember_this_text/features/messages/application/sidebar_cassette_spec/resolver_tools/recovered_message_navigation_actions_provider.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 
@@ -91,4 +94,57 @@ void main() {
     );
     expect(flowState.chosenContactId, isNull);
   });
+
+  test('refreshGlobalHeatmap invalidates global heatmap data', () async {
+    var builds = 0;
+    final refreshContainer = ProviderContainer(
+      overrides: [
+        globalMessagesHeatmapProvider.overrideWith((ref) {
+          builds++;
+          return null;
+        }),
+      ],
+    );
+    addTearDown(refreshContainer.dispose);
+
+    await refreshContainer.read(globalMessagesHeatmapProvider.future);
+    expect(builds, 1);
+
+    refreshContainer
+        .read(messageHeatmapRefreshActionsProvider.notifier)
+        .refreshGlobalHeatmap();
+    await refreshContainer.read(globalMessagesHeatmapProvider.future);
+
+    expect(builds, 2);
+  });
+
+  test(
+    'refreshContactTimeline invalidates selected contact timeline',
+    () async {
+      var builds = 0;
+      final timelineProvider = contactTimelineProvider(
+        contactId: 24,
+        filterHandleId: 7,
+      );
+      final refreshContainer = ProviderContainer(
+        overrides: [
+          timelineProvider.overrideWith((ref) {
+            builds++;
+            return null;
+          }),
+        ],
+      );
+      addTearDown(refreshContainer.dispose);
+
+      await refreshContainer.read(timelineProvider.future);
+      expect(builds, 1);
+
+      refreshContainer
+          .read(messageHeatmapRefreshActionsProvider.notifier)
+          .refreshContactTimeline(contactId: 24, filterHandleId: 7);
+      await refreshContainer.read(timelineProvider.future);
+
+      expect(builds, 2);
+    },
+  );
 }
