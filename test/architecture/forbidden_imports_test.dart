@@ -613,7 +613,7 @@ void main() {
         ),
         reason:
             'retainedArchiveMetadataStoreProvider has been retired. '
-            'Retired macos_import.db is cleanup/reference storage only, so '
+            'Retired macos_import.db is transitional cleanup storage only, so '
             'ordinary app behavior must not recreate a provider authority '
             'for it.\n'
             'Actual users:\n${offenders.join('\n')}',
@@ -627,7 +627,7 @@ void main() {
         offenders,
         orderedEquals(_retiredMacosImportFileAllowedFiles.toList()..sort()),
         reason:
-            'Retired macos_import.db is cleanup/reference storage only. '
+            'Retired macos_import.db is transitional cleanup storage only. '
             'Ordinary code must not add new retired import file access or '
             'workflow authority.\n'
             'Actual users:\n${offenders.join('\n')}',
@@ -643,14 +643,14 @@ void main() {
         isEmpty,
         reason:
             'Onboarding sourceScopedImportDatabase fixtures must use the '
-            'source-scoped import database name, not retained macos_import.db '
+            'source-scoped import database name, not retired macos_import.db '
             'metadata compatibility names.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
 
     test(
-      'Retired working database file stays behind reference boundaries',
+      'Retired working database file stays behind cleanup boundaries',
       () async {
         final offenders = await _findRetiredWorkingFileOffenders();
 
@@ -658,7 +658,7 @@ void main() {
           offenders,
           orderedEquals(_retiredWorkingFileAllowedFiles.toList()..sort()),
           reason:
-              'Retired working.db is cleanup/reference storage only. '
+              'Retired working.db is transitional cleanup storage only. '
               'Ordinary code must not add new retired working file access or '
               'workflow authority.\n'
               'Actual users:\n${offenders.join('\n')}',
@@ -891,7 +891,7 @@ void main() {
             'Do not import the retired archive metadata database from '
             'ordinary code. Active Historical Archives metadata belongs to '
             'the settings repository backed by overlay storage; retired '
-            'macos_import.db files are cleanup/reference storage only.\n'
+            'macos_import.db files are transitional cleanup storage only.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
