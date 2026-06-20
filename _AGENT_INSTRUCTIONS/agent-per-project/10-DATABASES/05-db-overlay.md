@@ -63,12 +63,12 @@ Full definitions live in `lib/essentials/db/infrastructure/data_sources/local/ov
 ## Usage Rules
 
 1. **Write through services/providers**: Only user-driven services mutate this database. Never write to it during projection/migration.
-2. **Respect independence**: Do not copy overlay data into graph or retained working tables. Merge at the provider/read-model layer. Review `07-overlay-database-independence.md` before touching overlay code.
+2. **Respect independence**: Do not copy overlay data into graph or retired working/projection tables. Merge at the provider/read-model layer. Review `07-overlay-database-independence.md` before touching overlay code.
 3. **Keep migrations forward-only**: Overlay database migrations must be additive and preserve user data; avoid destructive changes.
 4. **Invalidate providers after writes**: Ensure Riverpod providers that depend on overlay data are invalidated so merged views refresh.
 
 ## Cross-References
 
 - `07-overlay-database-independence.md` — Architectural rules for keeping overlay and projection databases isolated.
-- `10-group-import-working.md` — Retained compatibility context.
-- `../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md` — Retained table definitions and migration history.
+- `10-group-import-working.md` — Retired import/working storage context.
+- `../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md` — Retired table definitions and migration history.

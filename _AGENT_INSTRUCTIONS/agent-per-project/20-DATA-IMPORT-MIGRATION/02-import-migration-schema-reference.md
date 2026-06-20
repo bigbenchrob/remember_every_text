@@ -16,10 +16,10 @@ links:
 tests: []
 ---
 
-# Retained Legacy Database Schema Reference
+# Retired Legacy Database Schema Reference
 
-Historical table lists for retained import and working SQLite databases.
-Consult this note when interpreting old user data folders or retained
+Historical table lists for retired import and working SQLite databases.
+Consult this note when interpreting old user data folders or retired-storage
 diagnostics. Do not use it as an authoring guide for ordinary graph-era
 features.
 
@@ -37,11 +37,11 @@ features.
 - `working_ss.db` is the production conversation graph projection consumed by graph readers and the Message Evidence Spine.
 - `macos_import.db` is retired transitional cleanup storage; old files may still
   contain historical archive-source metadata or broader historical ledger tables.
-- `working.db` is retained file/schema storage only; old files may still contain
+- `working.db` is retired file/schema storage only; old files may still contain
   historical projection tables.
-- `user_overlays.db` stores durable user intent and archive/recovery metadata; neither graph projection nor retained migration may move user intent into working tables.
+- `user_overlays.db` stores durable user intent and archive/recovery metadata; neither graph projection nor retired migration/storage code may move user intent into working tables.
 
-## macos_import.db (Retained Legacy Ingest Ledger)
+## macos_import.db (Retired Legacy Ingest Ledger)
 
 Location: `~/Library/Application Support/com.bigbenchsoftware.MessageLens/macos_import.db`
 Active app code no longer owns a `macos_import.db` schema provider.
@@ -70,11 +70,11 @@ Active app code no longer owns a `macos_import.db` schema provider.
 ### Ledger Rules of Thumb
 - Treat old imported data as historical source-derived inventory, not
   user-editable app truth.
-- Do not add ordinary app features that depend on old retained ledger tables.
+- Do not add ordinary app features that depend on old retired ledger tables.
 - Before attaching this database in external tools, stop the Flutter app to
   avoid locking conflicts.
 
-## working.db (Retained Legacy Projection)
+## working.db (Retired Legacy Projection)
 
 Location: `~/Library/Application Support/com.bigbenchsoftware.MessageLens/working.db`
 Schema source: historical retained Drift schema, now removed from active app
@@ -105,18 +105,19 @@ code. Existing `working.db` files may still contain these tables.
 | `supabase_sync_state` | Checkpoints for outbound sync processes. |
 | `supabase_sync_logs` | Audit log for sync attempts. |
 
-### Retained Projection Rules of Thumb
+### Retired Projection Rules of Thumb
 - Historical population was deterministic from `macos_import.db`. Full
   migration cleared migrator target tables before projection; incremental
   migration skipped truncation and relied on migrator-specific insert/update
   semantics.
-- Never modify rows manually. If old retained storage needs recovery, design an
-  explicit graph-era compatibility path rather than editing historical tables.
-- Do not add new ordinary schema to retained `working.db`; current projection
+- Never modify rows manually. If old retired storage needs recovery, design an
+  explicit graph-era storage-retention, migration, or export path rather than
+  editing historical tables.
+- Do not add new ordinary schema to retired `working.db`; current projection
   schema changes belong to the conversation graph database.
 
 ## Quick Checks
 - Need table DDL? Run `dart run drift_dev schema dump` or inspect the schema files listed above.
 - Unsure if a column exists? Search in the schema source files rather than guessing - both databases are versioned and enforced by migrations.
-- See `./20-migration-orchestrator.md` only for historical retained projection
+- See `./20-migration-orchestrator.md` only for historical retired projection
   behavior.

@@ -20,17 +20,17 @@ for ordinary app data, archive import, or recovery.
 
 ## TL;DR
 
-- `incrementalMode: true` means retained historical projection preserves existing `working.db` rows and skips the orchestrator table-truncation step.
-- `incrementalMode: false` means full retained projection rebuild: migrator target tables are cleared, then rebuilt from `macos_import.db`.
-- `ChatDbChangeMonitor` no longer runs retained migration for live sync. It runs the source-scoped graph build lifecycle.
-- Retained incremental projection must not be restored as an active app path.
+- `incrementalMode: true` meant the retired historical projection preserved existing `working.db` rows and skipped the orchestrator table-truncation step.
+- `incrementalMode: false` meant full retired projection rebuild: migrator target tables were cleared, then rebuilt from `macos_import.db`.
+- `ChatDbChangeMonitor` no longer runs retired migration for live sync. It runs the source-scoped graph build lifecycle.
+- Retired incremental projection must not be restored as an active app path.
 - First-run/reimport app setup is graph-owned through the conversation graph build controller; archive/recovery work is source-scoped graph work plus storage-retention cleanup.
 
 ## Why The Flag Exists
 
-Full retained migration cleared target working tables before rebuilding the
+Full retired migration cleared target working tables before rebuilding the
 projection. That behavior is historical reference only; graph-era archive,
-recovery, and background sync must not revive retained `working.db` projection.
+recovery, and background sync must not revive retired `working.db` projection.
 
 Incremental mode was introduced to avoid:
 
@@ -49,7 +49,7 @@ ChatDbChangeMonitor
   -> graph/message data version bump
 ```
 
-The monitor does not query the legacy working message count and does not choose a retained migration mode. The automatic path is graph-incremental by source row cursor.
+The monitor does not query the legacy working message count and does not choose a retired migration mode. The automatic path is graph-incremental by source row cursor.
 
 ### Full / Manual Paths
 
@@ -65,16 +65,16 @@ Do not infer manual/full behavior from the monitor path. They are separate entry
 The retired `MigrationContextSqlite` carried the `incrementalMode` flag.
 `MigrationOrchestrator._prepareWorking()` enforced the shared behavior:
 
-- `dryRun: true` skips table truncation and copy writes.
-- `incrementalMode: true` skips table truncation.
-- `incrementalMode: false` clears each migrator's `targetTables` before phases run.
+- In the old path, `dryRun: true` skipped table truncation and copy writes.
+- In the old path, `incrementalMode: true` skipped table truncation.
+- In the old path, `incrementalMode: false` cleared each migrator's `targetTables` before phases ran.
 
 Migrators then applied table-appropriate copy and validation behavior. Treat
-this as historical retained projection behavior, not current graph guidance.
+this as historical retired projection behavior, not current graph guidance.
 
 ## Refresh Contract
 
-When this path existed, retained incremental projection had to keep the
+When this path existed, retired incremental projection had to keep the
 existing Drift working database connection open.
 
 This pattern remains prohibited if any future historical diagnostic attempts to
@@ -103,9 +103,9 @@ explicit graph/message data-version signals carry refresh.
 2. recreate message-index triggers
 3. call `searchIndexOrchestrator.rebuildAll()`
 
-This describes retained historical service behavior. Ordinary graph search now
+This describes retired historical service behavior. Ordinary graph search now
 selects graph `message_ss_id` evidence through the graph search/evidence spine,
-not retained working indexes. Do not restore retained projection/index rebuilds
+not retired working indexes. Do not restore retired projection/index rebuilds
 without a reviewed architecture decision.
 
 ## Historical Context
@@ -127,7 +127,7 @@ If new graph messages are not appearing:
 2. Check the Conversation Graph status panel for imported/projected counts and stage timings.
 3. Confirm the relevant UI provider observes graph/message data-version signals or Drift graph streams.
 
-If an old log shows retained incremental projection was slow:
+If an old log shows retired incremental projection was slow:
 
 1. Confirm the log contains `Incremental mode: skipping table truncation.`
 2. Inspect the specific historical migrator that was slow; do not assume all migrators used the same SQL strategy.
@@ -142,6 +142,6 @@ If a "connection was closed" loop appears:
 ## Related Reading
 
 - `./01-overview.md` - Source import and graph build overview.
-- `./10-import-orchestrator.md` - Monitor context and retained import service behavior.
+- `./10-import-orchestrator.md` - Monitor context and retired import service behavior.
 - `./20-migration-orchestrator.md` - Migrator dependency ordering and post-migration synthetic steps.
 - `../10-DATABASES/10-group-import-working.md` - Schema contracts between import and working DBs.

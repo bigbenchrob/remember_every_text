@@ -2,7 +2,7 @@
 tier: project
 scope: architecture
 owner: agent-per-project
-last_reviewed: 2026-06-06
+last_reviewed: 2026-06-20
 source_of_truth: doc
 links:
   - ./02-architecture-overview.md
@@ -29,7 +29,7 @@ docs win when lower-level details differ.
   linked to participants.
 - Attachments and reactions are message-adjacent data, not app-level
   orchestration owners.
-- Durable user intent is overlay data, not graph or retained projection data.
+- Durable user intent is overlay data, not graph or retired projection data.
 
 ## Current Domain Terms
 
@@ -38,7 +38,7 @@ docs win when lower-level details differ.
 | Chat / conversation | Conversation context projected into the source-scoped graph (`working_ss.db.chats`) with canonical topology edges. |
 | Message | Communication record projected into `working_ss.db.messages`; source rows without current conversation topology are preserved as graph orphan/recovered evidence, not suppressed. |
 | Handle | Communication endpoint from Messages, imported as source facts and projected into graph handle/canonical-handle topology. |
-| Participant / contact | Human-facing identity resolved from graph contact facts plus overlay user intent. Legacy participants are retained compatibility data, not current UI authority. |
+| Participant / contact | Human-facing identity resolved from graph contact facts plus overlay user intent. Legacy participants in retired storage are historical reference data, not current UI authority. |
 | Contact | Feature/domain term for human-facing contact behavior; backed by graph contact/handle topology, overlay overrides, and feature providers. |
 | Attachment | Message-associated file metadata in source-scoped import/graph projection plus optional archive metadata in overlay. |
 | Reaction | Tapback/reaction data projected into `reactions` and `reaction_counts`. |

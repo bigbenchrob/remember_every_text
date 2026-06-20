@@ -30,8 +30,8 @@ wording as legacy/transitional.
 - **`lib/essentials/navigation/`** — readiness panel synchronization, panel stack ownership, and sidebar parking
 - **`lib/essentials/source_scoped_import/`** — source-scoped import ledger
 - **`lib/essentials/conversation_graph/`** — graph build, projection, readiness, and app-facing graph queries
-- **Retired `lib/essentials/db_importers/`** — removed; source-scoped importers live in `lib/essentials/source_scoped_import/`, live monitoring and graph lifecycle live in `lib/essentials/conversation_graph/`, and retained DB diagnostics live in `lib/essentials/db/`
-- **Retired `lib/essentials/db_migrate/`** — historical retained projection
+- **Retired `lib/essentials/db_importers/`** — removed; source-scoped importers live in `lib/essentials/source_scoped_import/`, live monitoring and graph lifecycle live in `lib/essentials/conversation_graph/`, and retired-storage diagnostics live in `lib/essentials/db/`
+- **Retired `lib/essentials/db_migrate/`** — historical retired projection
   cleanup context only; no active onboarding setup ownership
 - **`lib/features/attachments/`** — archive service, resolver, deterministic recovery, settings
 - **`lib/essentials/db/`** — overlay database schema including `archived_attachments` table
@@ -52,5 +52,5 @@ wording as legacy/transitional.
 
 - [`10-DATABASES/00-all-databases-accessed.md`](../10-DATABASES/00-all-databases-accessed.md) — database locations and access patterns
 - [`10-DATABASES/INVIOLATE_RULES.md`](../10-DATABASES/INVIOLATE_RULES.md) — overlay/working separation, no suppression
-- [`20-DATA-IMPORT-MIGRATION/01-overview.md`](../20-DATA-IMPORT-MIGRATION/01-overview.md) — source import, graph build, and retained compatibility pipeline details
+- [`20-DATA-IMPORT-MIGRATION/01-overview.md`](../20-DATA-IMPORT-MIGRATION/01-overview.md) — source import, graph build, and retired storage cleanup/reference boundaries
 - [`60-BUILD-CONSIDERATIONS/02-macos-fda-grant-continuity.md`](../60-BUILD-CONSIDERATIONS/02-macos-fda-grant-continuity.md) — FDA grant preservation across builds
