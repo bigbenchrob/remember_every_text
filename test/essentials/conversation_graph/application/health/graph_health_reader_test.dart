@@ -142,6 +142,31 @@ void main() {
     expect(report.attachmentRecoveryAuditIncluded, isFalse);
   });
 
+  test(
+    'recovery audit uses unavailable defaults without external sources',
+    () async {
+      final database = await openConversationGraphTestDatabase();
+      addTearDown(database.close);
+      final reader = GraphHealthReader(
+        repository: SqliteGraphHealthRepository(graphDatabase: database),
+      );
+
+      final report = await reader.readHealthReport(includeRecoveryAudit: true);
+
+      expect(report.attachmentRecoveryAuditIncluded, isTrue);
+      expect(report.historicalArchiveAvailable, isFalse);
+      expect(report.historicalArchiveRecordCount, 0);
+      expect(report.historicalArchiveFilesAvailableCount, 0);
+      expect(report.historicalArchiveFilesMissingCount, 0);
+      expect(report.attachmentsRecoverableFromHistoricalArchiveCount, 0);
+      expect(report.recoveredMessagesSourceAvailable, isFalse);
+      expect(report.recoveredMessagesAttachmentKeyCount, 0);
+      expect(report.attachmentsRecoverableFromRecoveredMessagesCount, 0);
+      expect(report.attachmentsRecoverableFromBothRecoverySourcesCount, 0);
+      expect(report.attachmentsStillMissingFromKnownRecoverySourcesCount, 0);
+    },
+  );
+
   test('reports archive record and archive file readiness', () async {
     final database = await openConversationGraphTestDatabase();
     final overlayDatabase = OverlayDatabase(NativeDatabase.memory());
