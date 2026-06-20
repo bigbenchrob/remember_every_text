@@ -26,7 +26,7 @@ const Set<String> _retiredWorkingFileAllowedFiles = {
   'lib/essentials/onboarding/application/message_data_reset_service.dart',
 };
 
-const Set<String> _retainedDatabaseFilenameLiteralAllowedFiles = {
+const Set<String> _retiredDatabaseFilenameLiteralAllowedFiles = {
   'lib/essentials/db/feature_level_providers.dart',
 };
 
@@ -666,17 +666,17 @@ void main() {
       },
     );
 
-    test('Retained database filename literals stay centralized', () async {
-      final offenders = await _findRetainedDatabaseFilenameLiteralOffenders();
+    test('Retired database filename literals stay centralized', () async {
+      final offenders = await _findRetiredDatabaseFilenameLiteralOffenders();
 
       expect(
         offenders,
         orderedEquals(
-          _retainedDatabaseFilenameLiteralAllowedFiles.toList()..sort(),
+          _retiredDatabaseFilenameLiteralAllowedFiles.toList()..sort(),
         ),
         reason:
-            'Use retained database filename constants from '
-            'feature_level_providers.dart instead of hard-coded retained '
+            'Use retired database filename constants from '
+            'feature_level_providers.dart instead of hard-coded retired '
             'database names in code.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
@@ -3398,7 +3398,7 @@ Future<List<String>> _findRetiredWorkingFileOffenders() async {
   return offenders.toList()..sort();
 }
 
-Future<List<String>> _findRetainedDatabaseFilenameLiteralOffenders() async {
+Future<List<String>> _findRetiredDatabaseFilenameLiteralOffenders() async {
   final files = await _collectDartFiles((path) => !path.endsWith('.g.dart'));
   final offenders = <String>{};
   final retainedFilenameLiteralPattern = RegExp(
