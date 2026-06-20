@@ -1067,10 +1067,10 @@ const Map<String, List<_InvariantCheckSpec>>
 _invariantSpecsByDatabase = <String, List<_InvariantCheckSpec>>{
   'retired_working': <_InvariantCheckSpec>[
     _InvariantCheckSpec(
-      checkKey: 'projection_state_singleton_should_exist',
-      severity: DatabaseHealthSeverity.critical,
+      checkKey: 'retired_projection_state_cleanup_snapshot_if_present',
+      severity: DatabaseHealthSeverity.low,
       description:
-          'Retired historical working.projection_state should contain the singleton row with id = 1.',
+          'If retained working.projection_state exists, it may contain the historical singleton row with id = 1.',
       evaluatedRowCountSql: 'SELECT 1 AS c',
       violationCountSql: '''
             SELECT CASE
@@ -1080,6 +1080,9 @@ _invariantSpecsByDatabase = <String, List<_InvariantCheckSpec>>{
               ELSE 1
             END AS c
       ''',
+      notes: <String>[
+        'Cleanup diagnostic only; graph readiness and update lifecycle do not use retired working.projection_state.',
+      ],
     ),
   ],
   'source_scoped_import': <_InvariantCheckSpec>[

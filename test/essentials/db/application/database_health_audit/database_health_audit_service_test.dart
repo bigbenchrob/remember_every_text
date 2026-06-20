@@ -187,7 +187,19 @@ void main() {
       );
       expect(
         report.invariantChecks.map((check) => check.checkKey),
-        contains('projection_state_singleton_should_exist'),
+        contains('retired_projection_state_cleanup_snapshot_if_present'),
+      );
+      final projectionStateCheck = report.invariantChecks.singleWhere(
+        (check) =>
+            check.checkKey ==
+            'retired_projection_state_cleanup_snapshot_if_present',
+      );
+      expect(projectionStateCheck.severity, DatabaseHealthSeverity.low);
+      expect(
+        projectionStateCheck.notes,
+        contains(
+          'Cleanup diagnostic only; graph readiness and update lifecycle do not use retired working.projection_state.',
+        ),
       );
       expect(
         report.invariantChecks.map((check) => check.checkKey),
