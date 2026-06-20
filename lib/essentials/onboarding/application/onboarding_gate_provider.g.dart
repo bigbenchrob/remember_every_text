@@ -21,7 +21,7 @@ String _$onboardingGateHash() => r'38506653b0c03337972366e506c0a22cf2cd46e9';
 /// [OnboardingStatus.awaitingUserAction] so the import overlay appears.
 ///
 /// [startImportAndGraphBuild] builds the source-scoped conversation graph
-/// directly. Retained database files are compatibility/reference storage only
+/// directly. Retired database files are cleanup/reference storage only
 /// and are not the app-facing setup path.
 ///
 /// Copied from [OnboardingGate].
