@@ -13,9 +13,11 @@ class OverlayOnboardingFailureStorage implements OnboardingFailureStore {
        _onReadFailure = onReadFailure;
 
   static const String _importFailureKey = 'onboarding_last_import_result';
-  // Keep the historical key so existing persisted setup failures remain
-  // readable after the graph-projection terminology change.
   static const String _graphProjectionFailureKey =
+      'onboarding_last_graph_projection_result';
+  // Keep the historical key readable so existing persisted setup failures
+  // survive the graph-projection terminology change.
+  static const String _historicalGraphProjectionFailureKey =
       'onboarding_last_migration_result';
   static const String _recordedAtKey = 'recorded_at_utc';
 
@@ -95,11 +97,40 @@ class OverlayOnboardingFailureStorage implements OnboardingFailureStore {
   @override
   Future<PersistedOnboardingGraphProjectionResult?>
   loadGraphProjectionResultEntry() async {
+    return await _loadGraphProjectionResultFromKey(
+          _graphProjectionFailureKey,
+        ) ??
+        await _loadGraphProjectionResultFromKey(
+          _historicalGraphProjectionFailureKey,
+        );
+  }
+
+  @override
+  Future<void> saveGraphProjectionFailure({
+    required String message,
+    int batchId = -1,
+    DateTime? recordedAt,
+  }) async {
+    final summary = <String, Object?>{
+      'batch_id': batchId,
+      'success': false,
+      'error': message,
+      _recordedAtKey: (recordedAt ?? DateTime.now().toUtc()).toIso8601String(),
+    };
+    await _writeJsonSetting(_graphProjectionFailureKey, summary);
+  }
+
+  @override
+  Future<void> clearGraphProjectionResult() async {
+    await _clearSetting(_graphProjectionFailureKey);
+    await _clearSetting(_historicalGraphProjectionFailureKey);
+  }
+
+  Future<PersistedOnboardingGraphProjectionResult?>
+  _loadGraphProjectionResultFromKey(String settingKey) async {
     try {
       final overlayDb = await _overlayDb;
-      final rawValue = await overlayDb.readOverlaySetting(
-        _graphProjectionFailureKey,
-      );
+      final rawValue = await overlayDb.readOverlaySetting(settingKey);
       if (rawValue == null || rawValue.isEmpty) {
         return null;
       }
@@ -127,29 +158,9 @@ class OverlayOnboardingFailureStorage implements OnboardingFailureStore {
         ),
       );
     } catch (error, stackTrace) {
-      _onReadFailure?.call(_graphProjectionFailureKey, error, stackTrace);
+      _onReadFailure?.call(settingKey, error, stackTrace);
       return null;
     }
-  }
-
-  @override
-  Future<void> saveGraphProjectionFailure({
-    required String message,
-    int batchId = -1,
-    DateTime? recordedAt,
-  }) async {
-    final summary = <String, Object?>{
-      'batch_id': batchId,
-      'success': false,
-      'error': message,
-      _recordedAtKey: (recordedAt ?? DateTime.now().toUtc()).toIso8601String(),
-    };
-    await _writeJsonSetting(_graphProjectionFailureKey, summary);
-  }
-
-  @override
-  Future<void> clearGraphProjectionResult() async {
-    await _clearSetting(_graphProjectionFailureKey);
   }
 
   Future<void> _writeJsonSetting(

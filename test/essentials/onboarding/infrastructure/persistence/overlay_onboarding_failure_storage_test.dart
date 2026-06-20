@@ -54,7 +54,7 @@ void main() {
     });
 
     test(
-      'uses historical graph projection failure key for compatibility',
+      'writes graph projection failure summaries to graph-named key',
       () async {
         await storage.saveGraphProjectionFailure(
           batchId: 22,
@@ -64,10 +64,33 @@ void main() {
 
         expect(
           await overlayDb.readOverlaySetting(
-            'onboarding_last_migration_result',
+            'onboarding_last_graph_projection_result',
           ),
           isNotNull,
         );
+        expect(
+          await overlayDb.readOverlaySetting(
+            'onboarding_last_migration_result',
+          ),
+          isNull,
+        );
+      },
+    );
+
+    test(
+      'loads historical graph projection failure key as compatibility fallback',
+      () async {
+        await overlayDb.writeOverlaySetting(
+          settingKey: 'onboarding_last_migration_result',
+          settingValue:
+              '{"batch_id":22,"success":false,"error":"Old graph projection failure"}',
+        );
+
+        final loaded = await storage.loadGraphProjectionResultEntry();
+
+        expect(loaded, isNotNull);
+        expect(loaded!.failure.batchId, 22);
+        expect(loaded.failure.message, 'Old graph projection failure');
       },
     );
 
@@ -80,6 +103,16 @@ void main() {
 
       expect(await storage.loadImportResult(), isNull);
       expect(await storage.loadGraphProjectionResult(), isNull);
+      expect(
+        await overlayDb.readOverlaySetting(
+          'onboarding_last_graph_projection_result',
+        ),
+        isEmpty,
+      );
+      expect(
+        await overlayDb.readOverlaySetting('onboarding_last_migration_result'),
+        isEmpty,
+      );
     });
 
     test(
@@ -111,14 +144,14 @@ void main() {
           onReadFailure: (settingKey, _, _) => readFailures.add(settingKey),
         );
         await overlayDb.writeOverlaySetting(
-          settingKey: 'onboarding_last_migration_result',
+          settingKey: 'onboarding_last_graph_projection_result',
           settingValue: '{',
         );
 
         final loaded = await storage.loadGraphProjectionResultEntry();
 
         expect(loaded, isNull);
-        expect(readFailures, ['onboarding_last_migration_result']);
+        expect(readFailures, ['onboarding_last_graph_projection_result']);
       },
     );
   });
