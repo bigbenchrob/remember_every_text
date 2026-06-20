@@ -2,7 +2,7 @@
 tier: project
 scope: database-health-audit
 owner: agent-per-project
-last_reviewed: 2026-06-06
+last_reviewed: 2026-06-20
 source_of_truth: code
 links:
   - ./README.md
@@ -130,7 +130,7 @@ The report includes:
 - `summary`
 - `errors`
 
-Phase 1 relationship checks currently include source-scoped graph checks, retained compatibility checks, and counts plus percentages where applicable:
+Phase 1 relationship checks currently include source-scoped graph checks, retired storage/reference checks, and counts plus percentages where applicable:
 
 - `matched_percentage`
 - `unmatched_parent_percentage`

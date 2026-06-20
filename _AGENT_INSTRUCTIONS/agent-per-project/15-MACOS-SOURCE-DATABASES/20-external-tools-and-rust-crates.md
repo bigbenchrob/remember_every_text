@@ -2,7 +2,7 @@
 tier: project
 scope: macos-source-databases
 owner: agent-per-project
-last_reviewed: 2026-04-21
+last_reviewed: 2026-06-20
 source_of_truth: external-references
 links:
   - ./00-overview.md
@@ -71,7 +71,7 @@ External tools are for:
 - sanity checks when source-db behavior contradicts import assumptions
 
 They are not the source of truth for MessageLens architecture. Internal
-source-scoped import, graph projection, retained compatibility, and UI
+source-scoped import, graph projection, retired storage/reference behavior, and UI
 decisions remain governed by this repository's docs and code.
 
 Do not copy external export semantics into MessageLens without reconciling them against current internal boundaries:

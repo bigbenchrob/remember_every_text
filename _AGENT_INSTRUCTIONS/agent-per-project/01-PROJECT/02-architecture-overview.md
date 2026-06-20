@@ -2,7 +2,7 @@
 tier: project
 scope: architecture
 owner: agent-per-project
-last_reviewed: 2026-06-08
+last_reviewed: 2026-06-20
 source_of_truth: doc
 links:
   - ./01-aggregate-boundaries.md
@@ -42,8 +42,8 @@ Current feature modules include `address_book_folders`, `attachments`, `chats`,
 `settings`, and `sidebar_utilities`.
 
 Current essentials areas include navigation, sidebar, search, onboarding, db,
-source-scoped import, conversation graph, retained compatibility import/
-projection, logging, window state, config, debug, services, tooltips, and shared
+source-scoped import, conversation graph, retired storage cleanup/reference
+boundaries, logging, window state, config, debug, services, tooltips, and shared
 contacts infrastructure.
 
 ## Essentials vs Features
