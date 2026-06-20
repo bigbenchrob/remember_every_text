@@ -25,7 +25,7 @@ Pipeline failures fall into one or more of:
 - identity/deduplication failure.
 - evidence spine violation.
 - overlay authority violation.
-- retained compatibility leakage.
+- retired storage leakage.
 - silent tolerance failure.
 
 ---
@@ -268,26 +268,26 @@ model, or local hydration path instead of the shared Message Evidence Spine.
 
 ### Definition
 
-Retained `macos_import.db` / `working.db` compatibility code becomes ordinary
-app authority again.
+Retired `macos_import.db` / `working.db` storage or compatibility-era code
+becomes ordinary app authority again.
 
 ### Root Cause Pattern
 
 - old provider reused because it is convenient.
-- recovery/archive bridge not named as retained compatibility.
+- recovery/archive bridge not named as an explicit archive/storage bridge.
 - diagnostic read promoted into product surface.
 
 ### Detection
 
 - ordinary app surface opens retained historical DBs.
-- documents describe retained projection as current app path.
+- documents describe retired projection/storage as a current app path.
 - tests depend on legacy row IDs for graph-era evidence.
 
 ### Correct Handling
 
-- classify the retained path.
+- classify the retired storage path.
 - move ordinary reads to graph.
-- keep compatibility bridge named and removal criteria documented.
+- keep archive/storage bridge named and removal criteria documented.
 
 ---
 
@@ -324,7 +324,7 @@ When investigating a pipeline issue:
    - graph projection
    - overlay merge
    - evidence spine
-   - retained compatibility bridge
+   - explicit archive/storage bridge
    - UI
 4. Do not patch data first.
 5. Fix the responsible logic.

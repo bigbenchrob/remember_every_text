@@ -69,7 +69,7 @@ Agents MUST NOT:
 
 Agents MUST NOT:
 
-- write user intent into graph or retained projection tables.
+- write user intent into graph or retired projection/storage tables.
 - restore overlay intent by snapshotting it into projection data.
 - make import/projection behavior depend on overlay choices.
 
@@ -201,7 +201,7 @@ Graph projection must remain consistent even when:
 - no new source data exists.
 - source-scoped ledger changes underneath existing graph projection.
 - restored snapshots are used.
-- archive/recovery workflows modify retained compatibility data.
+- archive/recovery workflows register or inspect retained storage evidence.
 
 Reconciliation occurs through graph build/projection services, not through UI
 repair logic.
@@ -220,7 +220,7 @@ Agents MUST NOT introduce:
 
 - direct UI reads from `chat.db`.
 - writes to `working_ss.db` outside graph projection/build.
-- writes to retained `working.db` outside retained compatibility rebuild logic.
+- writes to retired `working.db` / `macos_import.db` files.
 - duplicate sources of truth.
 - silent fallback logic.
 - best-effort projection logic.
@@ -258,8 +258,8 @@ System is healthy when:
 - graph relationships use canonical `ss_id` endpoints.
 - overlay user intent is preserved and merged at read time.
 - message evidence surfaces use the shared evidence spine.
-- retained historical databases are either unused by ordinary app reads or
-  explicitly classified as archive/recovery/diagnostic compatibility.
+- retained historical databases are unused by ordinary app reads and
+  explicitly classified as storage-retention or diagnostic reference evidence.
 - no hidden inconsistencies exist.
 
 ---

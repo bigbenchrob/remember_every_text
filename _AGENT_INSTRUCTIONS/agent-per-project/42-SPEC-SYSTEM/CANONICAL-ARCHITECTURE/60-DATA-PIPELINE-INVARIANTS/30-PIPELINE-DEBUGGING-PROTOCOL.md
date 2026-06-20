@@ -47,7 +47,7 @@ Examples:
 - system appears idle after source change.
 - search/heatmap/timeline navigation disagrees with visible rows.
 - attachment evidence missing even though source/graph rows exist.
-- retained compatibility path appears in an ordinary app surface.
+- retired storage path appears in an ordinary app surface.
 
 Record:
 
@@ -75,7 +75,7 @@ Select one or more:
 - authority boundary violation.
 - overlay authority violation.
 - evidence spine violation.
-- retained compatibility leakage.
+- retired storage leakage.
 - silent tolerance failure.
 
 Do NOT proceed without classification.
@@ -111,7 +111,7 @@ Determine where the problem originates:
 - graph projection (`working_ss.db`)
 - overlay merge (`user_overlays.db`)
 - evidence spine scope/skeleton/hydration
-- retained compatibility bridge (`macos_import.db`, `working.db`)
+- explicit archive/storage bridge (`macos_import.db`, `working.db`)
 - orchestration / monitor
 - UI rendering
 
@@ -146,14 +146,14 @@ Look for:
 - graph projection counts.
 - graph health diagnostics.
 - evidence spine scope/skeleton size.
-- retained compatibility bridge usage.
+- explicit archive/storage bridge usage.
 
 ### 7.3 Code Path Tracing
 
 Identify:
 
 - where decisions are made.
-- where graph build or retained compatibility rebuild runs.
+- where graph build or explicit archive/storage bridge logic runs.
 - where validation occurs.
 - where evidence scopes are composed.
 - where row hydration is performed.
@@ -167,7 +167,7 @@ Examples:
 - "`working_ss.db.chat_to_message` is missing edges for imported source rows."
 - "Startup concluded graph was ready from cursor equality, but import count is
   lower than source count."
-- "A recovered surface is still using retained `working.db` as ordinary
+- "A recovered surface is still using retired `working.db` as ordinary
   authority."
 - "A message-bearing surface uses latest-N hydration instead of a full
   skeleton."
@@ -209,7 +209,7 @@ Typical fix locations:
 - graph readiness/health checker.
 - evidence scope/skeleton/hydration provider.
 - overlay merge repository.
-- retained compatibility bridge.
+- explicit archive/storage bridge.
 - lifecycle/orchestration service.
 
 DO NOT:
@@ -217,7 +217,7 @@ DO NOT:
 - delete data as a "solution".
 - weaken validation.
 - add fallback paths.
-- patch `working_ss.db` or retained `working.db` as the real fix.
+- patch `working_ss.db` or retired `working.db` as the real fix.
 - put SQL/semantic policy in widgets.
 
 ---
