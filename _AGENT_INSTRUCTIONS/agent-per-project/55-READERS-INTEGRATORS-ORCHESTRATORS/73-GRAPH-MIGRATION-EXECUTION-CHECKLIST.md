@@ -2917,6 +2917,21 @@ criteria.
 - Replaced a test fake's `UnimplementedError` marker with an explicit
   `StateError`, preserving test behavior while keeping unfinished-code markers
   out of active test code.
+- Moved onboarding infrastructure warning logs out of provider initialization.
+  `onboardingDatabaseProbeReader`, `onboardingFailureStorage`, and
+  `fullDiskAccess` still construct the same infrastructure boundaries, but
+  callback logging is now deferred until after provider build so logger state
+  mutation cannot occur during another provider's initialization.
+- Renamed the reset-service combined database deletion inventory from
+  `derivedMessageDataDatabaseBaseNames` to
+  `messageDataResetDatabaseBaseNames`. Reset still deletes both active graph
+  files and retired cleanup files, but the name no longer implies
+  `macos_import.db` / `working.db` remain derived graph data.
+- Changed onboarding graph-projection failure persistence to write the
+  graph-named overlay key
+  `onboarding_last_graph_projection_result`. The historical
+  `onboarding_last_migration_result` key remains readable and clearable only
+  as a persisted compatibility fallback.
 
 ### Exit Criteria
 
