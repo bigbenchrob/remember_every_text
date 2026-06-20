@@ -5,8 +5,22 @@ import 'package:remember_this_text/essentials/source_scoped_import/infrastructur
 
 void main() {
   test(
-    'derived message data reset includes retired and graph database files',
+    'derived message data reset separates retired cleanup and active graph files',
     () {
+      expect(
+        retiredCleanupDatabaseBaseNames,
+        containsAll(<String>[
+          retiredMacosImportDatabaseFileName,
+          retiredWorkingDatabaseFileName,
+        ]),
+      );
+      expect(
+        activeGraphDatabaseBaseNames,
+        containsAll(<String>[
+          importDatabaseFileName,
+          conversationGraphDatabaseFileName,
+        ]),
+      );
       expect(
         derivedMessageDataDatabaseBaseNames,
         containsAll(<String>[

@@ -15,11 +15,19 @@ part 'message_data_reset_service.g.dart';
 
 const _resetCompletionDialogExitDelay = Duration(milliseconds: 140);
 
-const derivedMessageDataDatabaseBaseNames = <String>[
+const retiredCleanupDatabaseBaseNames = <String>[
   retiredMacosImportDatabaseFileName,
   retiredWorkingDatabaseFileName,
+];
+
+const activeGraphDatabaseBaseNames = <String>[
   sourceScopedImportDatabaseFileName,
   conversationGraphDatabaseFileName,
+];
+
+const derivedMessageDataDatabaseBaseNames = <String>[
+  ...retiredCleanupDatabaseBaseNames,
+  ...activeGraphDatabaseBaseNames,
 ];
 
 abstract interface class MessageDataResetService {
