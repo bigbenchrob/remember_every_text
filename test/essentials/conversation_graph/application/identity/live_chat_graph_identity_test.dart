@@ -20,5 +20,10 @@ void main() {
 
       expect(canonicalLiveChatGraphId(graphId), graphId);
     });
+
+    test('preserves invalid placeholder ids', () {
+      expect(canonicalLiveChatGraphId(0), 0);
+      expect(canonicalLiveChatGraphId(-1), -1);
+    });
   });
 }

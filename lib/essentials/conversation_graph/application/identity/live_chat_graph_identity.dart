@@ -7,7 +7,7 @@ import '../../../source_scoped_import/domain/source_scoped_row_key.dart';
 /// source ROWID from compatibility/search/navigation inputs. Ordinary graph evidence
 /// remains keyed by source-scoped ids.
 int canonicalLiveChatGraphId(int value) {
-  if (value > SourceScopedRowKey.maxSourceRowId) {
+  if (value <= 0 || value > SourceScopedRowKey.maxSourceRowId) {
     return value;
   }
   return SourceScopedRowKey.pack(
