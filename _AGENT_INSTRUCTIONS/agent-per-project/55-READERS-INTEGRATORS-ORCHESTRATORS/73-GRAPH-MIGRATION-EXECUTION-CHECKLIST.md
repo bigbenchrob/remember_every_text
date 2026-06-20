@@ -2848,6 +2848,12 @@ criteria.
 - Routed graph health current-source archive diagnostics through
   `ArchiveCompatibilityKey.fromLiveAttachmentSsId(...)`, removing the last
   direct source-row unpacking from graph health's archive-key construction path.
+- Added focused `VideoThumbnailCacheService` coverage for missing source
+  videos, cached thumbnail reuse, generator failure, and concurrent in-flight
+  request coalescing.
+- Extended archive compatibility key tests so both message and attachment
+  endpoints must be live-source graph ids before retained archive bridge logic
+  treats them as compatible.
 
 ### Exit Criteria
 
