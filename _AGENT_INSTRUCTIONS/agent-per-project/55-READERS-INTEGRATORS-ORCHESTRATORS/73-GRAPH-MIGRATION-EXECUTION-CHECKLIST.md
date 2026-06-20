@@ -2854,6 +2854,11 @@ criteria.
 - Extended archive compatibility key tests so both message and attachment
   endpoints must be live-source graph ids before retained archive bridge logic
   treats them as compatible.
+- Added focused tests for top-level navigation action boundaries:
+  `AppShellActions`, `AppModeActions`, and `PanelActions`. The tests verify
+  that developer-mode/theme, sidebar mode, and panel-stack mutations remain
+  callable through application action boundaries rather than presentation-owned
+  provider mutation.
 
 ### Exit Criteria
 
