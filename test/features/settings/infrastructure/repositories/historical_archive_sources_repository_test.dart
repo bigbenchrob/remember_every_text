@@ -126,5 +126,16 @@ void main() {
         orderedEquals(['Archive-2018', 'Archive-2017']),
       );
     });
+
+    test('ignores malformed overlay metadata', () async {
+      await overlayDatabase.writeOverlaySetting(
+        settingKey: 'historical_archive_sources/v1',
+        settingValue: '{"unexpected":"shape"}',
+      );
+
+      final metadata = await repository.readKnownSources();
+
+      expect(metadata, isEmpty);
+    });
   });
 }
