@@ -18,7 +18,7 @@ class AttachmentInfo {
 
   /// Current archive compatibility key.
   ///
-  /// This is retained bridge identity for existing archive records, not
+  /// This is archive compatibility identity for existing archive records, not
   /// canonical graph attachment identity.
   final ArchiveCompatibilityKey? archiveCompatibilityKey;
   final double? mediaWidth;

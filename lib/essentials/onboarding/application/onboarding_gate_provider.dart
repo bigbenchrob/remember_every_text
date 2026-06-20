@@ -31,7 +31,7 @@ part 'onboarding_gate_provider.g.dart';
 /// [OnboardingStatus.awaitingUserAction] so the import overlay appears.
 ///
 /// [startImportAndGraphBuild] builds the source-scoped conversation graph
-/// directly. Retained database files are compatibility/reference storage only
+/// directly. Retired database files are cleanup/reference storage only
 /// and are not the app-facing setup path.
 @Riverpod(keepAlive: true)
 class OnboardingGate extends _$OnboardingGate {

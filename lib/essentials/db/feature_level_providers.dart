@@ -36,10 +36,10 @@ part 'feature_level_providers.g.dart';
 /// FOR DEVELOPER'S REFERENCE ONLY: path is ~/Library/Application Support/com.bigbenchsoftware.MessageLens/ on macOS.
 late final String databaseDirectoryPath;
 
-/// Retired retained-import file kept only for cleanup/reference diagnostics.
+/// Retired import file kept only for cleanup/reference diagnostics.
 const retiredMacosImportDatabaseFileName = 'macos_import.db';
 
-/// Retired retained-working file kept only for cleanup/reference diagnostics.
+/// Retired working file kept only for cleanup/reference diagnostics.
 const retiredWorkingDatabaseFileName = 'working.db';
 
 /// Must be called once in `main()` after `WidgetsFlutterBinding.ensureInitialized()`.
