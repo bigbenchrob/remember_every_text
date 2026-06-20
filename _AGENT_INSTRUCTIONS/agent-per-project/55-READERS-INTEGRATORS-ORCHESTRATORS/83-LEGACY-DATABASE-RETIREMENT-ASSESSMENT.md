@@ -106,16 +106,15 @@ Current usage:
 
 - declares `retainedArchiveMetadataDatabaseFileName = 'macos_import.db'`
 - declares `retainedHistoricalReferenceDatabaseFileName = 'working.db'`
-- constructs the retained archive metadata store provider
+- no longer constructs a retained archive metadata store provider
 
 Classification:
 
-3. Diagnostic/support and transitional metadata boundary.
+3. Diagnostic/support and retired-file cleanup boundary.
 
 Retirement direction:
 
-- keep constants only while reset/maintenance and retained metadata storage
-  still need to locate/delete old files.
+- keep constants only while reset/maintenance needs to locate/delete old files.
 - eventually replace with an explicit retired-file cleanup inventory or remove
   after the app no longer creates or inspects these files.
 
@@ -129,30 +128,27 @@ Deletion readiness:
 
 Current files:
 
-- `lib/essentials/db/feature_level_providers.dart`
-- `lib/features/settings/feature_level_providers.dart`
-- `lib/essentials/onboarding/application/message_data_reset_service.dart`
+- retired from production source
 
 Current usage:
 
-- settings Historical Archives source metadata reads/writes
-- reset closes and invalidates retained metadata before deleting derived data
+- none
 
 Classification:
 
-2. Can be migrated to graph/source-scoped identity.
+5. Safe deletion candidate, now satisfied.
 
 This is not ordinary evidence behavior. It is archive-source workflow metadata.
-It should move out of `macos_import.db` because the file name now implies
-legacy import authority that no longer exists.
+It has moved out of `macos_import.db` because the file name now implies
+retained import authority that no longer exists.
 
 Retirement direction:
 
-- move archive-source metadata into a source-scoped or overlay-adjacent
-  graph-era store.
-- candidate target: a dedicated archive-source metadata table in the overlay DB
-  if it represents user/workflow intent, or in `macos_import_ss.db` if it is
-  source registry/import provenance.
+- archive-source workflow metadata now lives in overlay settings behind
+  `HistoricalArchiveSourcesRepository`.
+- source identity/provenance can still move to a future
+  `macos_import_ss.db.source_registry` if a separate provenance registry is
+  needed.
 - keep the semantic split explicit:
   - selected/known archive folders and workflow status are user/workflow
     metadata.
@@ -160,8 +156,9 @@ Retirement direction:
 
 Deletion readiness:
 
-- blocked until Historical Archives source metadata no longer reads/writes
-  `macos_import.db`.
+- satisfied: Historical Archives source metadata no longer reads/writes
+  retained `macos_import.db`, and the retained metadata provider/wrapper has
+  been removed.
 
 ### Reset / Derived Data Cleanup
 
@@ -173,7 +170,6 @@ Current usage:
 
 - includes `macos_import.db` and `working.db` in
   `derivedMessageDataDatabaseBaseNames`
-- closes retained archive metadata store before reset
 - deletes retained DB base files along with source-scoped import and graph DBs
 
 Classification:
@@ -255,16 +251,17 @@ Classification summary:
 
 Retirement blockers:
 
-1. Historical Archives source metadata still uses
-   `retainedArchiveMetadataStoreProvider`.
-2. Reset still treats `macos_import.db` as a derived data file.
-3. Support diagnostics may still describe retained metadata file existence.
+1. Reset still treats `macos_import.db` as a derived/retired file cleanup
+   target.
+2. Support diagnostics may still describe retained metadata file existence.
 
 Recommended disposition:
 
-- migrate active archive-source metadata out of `macos_import.db`.
-- stop creating fresh `macos_import.db` for active workflow state.
-- retain a one-time cleanup/export path for existing local metadata if needed.
+- active archive-source metadata has moved out of `macos_import.db`.
+- fresh `macos_import.db` creation for active workflow state has stopped with
+  the removal of the retained metadata provider/wrapper.
+- retain a one-time cleanup/export/discard path for existing local metadata if
+  needed.
 - after migration, demote the filename to a retired-file cleanup target.
 
 ### working.db
@@ -465,12 +462,13 @@ explicit retirement planning.
 
 However, it is not yet ready for blind deletion because:
 
-1. `macos_import.db` still stores active Historical Archives source metadata.
-2. reset/maintenance still opens and invalidates retained metadata.
-3. attachment archive compatibility should receive one final source-scoped
+1. reset/maintenance still names retained files as cleanup targets.
+2. attachment archive compatibility should receive one final source-scoped
    trace audit before removing retained-file safety language.
 
-`working.db` is closer to retirement than `macos_import.db`.
+`working.db` and `macos_import.db` are now both retirement candidates, with
+attachment reachability and retained-file cleanup policy as the remaining
+safety checks.
 
 `macos_import.db` should be retired after archive-source metadata moves to a
 graph-era home.
