@@ -2744,7 +2744,9 @@ criteria.
   `ConversationFavouriteActions`. The reusable favourite button still renders
   current favourite state, but the user-intent mutation now crosses an explicit
   action boundary. Added a tripwire preventing direct controller mutation from
-  returning to the widget.
+  returning to the widget. Added provider-level test coverage proving Core
+  favourite toggles cross the action boundary before reaching overlay-backed
+  state.
 - Moved contact handle-filter selection/unlinking behind `HandleFilterActions`.
   The handle-filter widget now renders menu controls only; handle selection,
   overlay unlinking, and the follow-up sidebar route decision are owned by the
