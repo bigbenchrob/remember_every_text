@@ -2824,7 +2824,10 @@ criteria.
   through the chats feature action boundary. The status sheet still renders
   graph diagnostics and selected chat rows, but chat selection/navigation now
   crosses `ChatSelectionActions` instead of mutating the chats view model
-  directly. Extended the graph-status-sheet tripwire for this boundary.
+  directly. Extended the graph-status-sheet tripwire for this boundary. Added
+  provider-level coverage proving chat selection dispatches the semantic
+  conversation sidebar intent, including anchor message and search query
+  context.
 - Moved panel-stack tab activation, tab close, and diagnostic build logging
   behind `PanelActions`. `PanelStackSurface` now renders tabs/pages and
   forwards user intent only; panel-stack mutation and logger writes stay in
