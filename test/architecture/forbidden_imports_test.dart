@@ -14,7 +14,7 @@ const Set<String> _sidebarSemanticActionTransportFiles = {
   'lib/essentials/sidebar/domain/sidebar_list_item_model.dart',
 };
 
-const Set<String> _retainedArchiveMetadataStoreProviderAllowedFiles = {};
+const Set<String> _retiredArchiveMetadataProviderAllowedFiles = {};
 
 const Set<String> _retiredMacosImportFileAllowedFiles = {
   'lib/essentials/db/feature_level_providers.dart',
@@ -603,25 +603,22 @@ void main() {
       );
     });
 
-    test(
-      'Retained archive metadata provider stays behind retention boundaries',
-      () async {
-        final offenders = await _findRetainedArchiveMetadataProviderOffenders();
+    test('Retired archive metadata provider does not return', () async {
+      final offenders = await _findRetiredArchiveMetadataProviderOffenders();
 
-        expect(
-          offenders,
-          orderedEquals(
-            _retainedArchiveMetadataStoreProviderAllowedFiles.toList()..sort(),
-          ),
-          reason:
-              'retainedArchiveMetadataStoreProvider has been retired. '
-              'Retained macos_import.db is cleanup/reference storage only, so '
-              'ordinary app behavior must not recreate a provider authority '
-              'for it.\n'
-              'Actual users:\n${offenders.join('\n')}',
-        );
-      },
-    );
+      expect(
+        offenders,
+        orderedEquals(
+          _retiredArchiveMetadataProviderAllowedFiles.toList()..sort(),
+        ),
+        reason:
+            'retainedArchiveMetadataStoreProvider has been retired. '
+            'Retained macos_import.db is cleanup/reference storage only, so '
+            'ordinary app behavior must not recreate a provider authority '
+            'for it.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
 
     test('Retired macos_import file stays behind cleanup boundaries', () async {
       final offenders = await _findRetiredMacosImportFileOffenders();
@@ -3108,8 +3105,8 @@ void main() {
           reason:
               'Historical archive source metadata is an application read/write '
               'contract. Presentation and application consumers should use '
-              'HistoricalArchiveSources, while retained metadata persistence '
-              'stays behind settings infrastructure.\n'
+              'HistoricalArchiveSources, while overlay persistence stays '
+              'behind settings infrastructure.\n'
               'Actual offenders:\n${offenders.join('\n')}',
         );
       },
@@ -3331,7 +3328,7 @@ Future<List<String>> _findSemanticActionTransportOffenders(
   return offenders.toList()..sort();
 }
 
-Future<List<String>> _findRetainedArchiveMetadataProviderOffenders() async {
+Future<List<String>> _findRetiredArchiveMetadataProviderOffenders() async {
   final files = await _collectDartFiles((path) => !path.endsWith('.g.dart'));
   final offenders = <String>{};
 

@@ -78,12 +78,12 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
       );
 
       logger.info(
-        'Invalidated retained metadata and graph database providers after reset',
+        'Invalidated graph database providers and checked retired file cleanup',
         source: 'MessageDataResetService',
         context: {
-          'retainedArchiveMetadataDbExistsAfterReset':
+          'retiredMacosImportDbExistsAfterReset':
               databaseExistsAfterReset[retiredMacosImportDatabaseFileName],
-          'retainedHistoricalReferenceDbExistsAfterReset':
+          'retiredWorkingDbExistsAfterReset':
               databaseExistsAfterReset[retiredWorkingDatabaseFileName],
           'sourceScopedImportDbExistsAfterReset':
               databaseExistsAfterReset[sourceScopedImportDatabaseFileName],

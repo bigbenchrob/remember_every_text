@@ -2,7 +2,7 @@
 tier: project
 scope: data-import-migration
 owner: agent-per-project
-last_reviewed: 2026-06-08
+last_reviewed: 2026-06-20
 source_of_truth: code
 links:
   - ./01-overview.md
@@ -25,17 +25,18 @@ features.
 
 > Current conformance note (2026-06-08): ordinary app data now uses
 > `macos_import_ss.db` and `working_ss.db` through the source-scoped
-> conversation graph. Fresh `macos_import.db` files contain only
-> `schema_migrations` and `historical_archive_sources`; retained `working.db`
-> has no central app provider. The broader tables below may exist in historical
-> user data folders only.
+> conversation graph. Active Historical Archives source metadata now lives in
+> overlay storage. Old `macos_import.db` files may contain
+> `schema_migrations`, `historical_archive_sources`, or broader historical
+> ledger tables. Retained `working.db` has no central app provider. The broader
+> tables below may exist in historical user data folders only.
 
 ## Boundary Summary
 
 - `macos_import_ss.db` is the production source-scoped import ledger for ordinary app data.
 - `working_ss.db` is the production conversation graph projection consumed by graph readers and the Message Evidence Spine.
-- `macos_import.db` is retained archive-source metadata storage in fresh
-  graph-era files; old files may still contain historical ledger tables.
+- `macos_import.db` is retired cleanup/reference storage; old files may still
+  contain historical archive-source metadata or broader historical ledger tables.
 - `working.db` is retained file/schema storage only; old files may still contain
   historical projection tables.
 - `user_overlays.db` stores durable user intent and archive/recovery metadata; neither graph projection nor retained migration may move user intent into working tables.
@@ -43,7 +44,7 @@ features.
 ## macos_import.db (Retained Legacy Ingest Ledger)
 
 Location: `~/Library/Application Support/com.bigbenchsoftware.MessageLens/macos_import.db`
-Retained metadata schema source: `lib/essentials/db/infrastructure/data_sources/local/import/retained_archive_metadata_database.dart`
+Active app code no longer owns a `macos_import.db` schema provider.
 
 | Table | Purpose / Notes |
 | ----- | --------------- |

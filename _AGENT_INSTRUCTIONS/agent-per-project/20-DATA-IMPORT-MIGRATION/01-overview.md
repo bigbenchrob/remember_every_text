@@ -2,7 +2,7 @@
 tier: project
 scope: data-import-migration
 owner: agent-per-project
-last_reviewed: 2026-06-14
+last_reviewed: 2026-06-20
 source_of_truth: doc
 links:
       - ./02-import-migration-schema-reference.md
@@ -45,9 +45,9 @@ chat.db + AddressBook.sqlite
 
 The retained historical `macos_import.db` -> `working.db` projection implementation
 has been retired from active app code. Old files remain compatibility inventory:
-fresh `macos_import.db` stores historical archive-source metadata, old
+old `macos_import.db` files may contain historical archive-source metadata, old
 `working.db` files may be inspected read-only by diagnostics, and neither file
-is the ordinary live-sync or user-facing read spine.
+is the ordinary live-sync, archive-source metadata, or user-facing read spine.
 
 ## 🔥 Automatic Background Sync
 

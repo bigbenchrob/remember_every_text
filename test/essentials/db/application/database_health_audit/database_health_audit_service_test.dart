@@ -81,32 +81,32 @@ void main() {
       },
     );
 
-    test('treats retained archive metadata database as metadata only', () async {
+    test('treats retired macos import database as reference only', () async {
       final service = _buildService(
         hasFullDiskAccess: true,
         queryLayers: <DatabaseHealthQueryLayer>[
           _FakeHealthQueryLayer(
             databaseKey: 'import',
-            role: 'retained_archive_metadata',
+            role: 'retired_macos_import_reference',
           ),
         ],
       );
 
       final report = await service.buildPhase1Report();
-      final retainedMetadataTables = report.tableInventory
+      final retiredReferenceTables = report.tableInventory
           .where((entry) => entry.databaseKey == 'import')
           .map((entry) => entry.tableName)
           .toSet();
 
       expect(
-        retainedMetadataTables,
+        retiredReferenceTables,
         containsAll(<String>{
           'schema_migrations',
           'historical_archive_sources',
         }),
       );
-      expect(retainedMetadataTables, isNot(contains('messages')));
-      expect(retainedMetadataTables, isNot(contains('import_batches')));
+      expect(retiredReferenceTables, isNot(contains('messages')));
+      expect(retiredReferenceTables, isNot(contains('import_batches')));
       expect(
         report.tableInventory
             .singleWhere(
@@ -116,7 +116,7 @@ void main() {
             )
             .notes,
         contains(
-          'Retained archive-source metadata only; source facts live in source-scoped import.',
+          'Retired archive-source reference rows; active archive-source metadata lives in overlay.',
         ),
       );
       expect(

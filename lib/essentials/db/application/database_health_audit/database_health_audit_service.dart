@@ -659,7 +659,7 @@ _tableSpecsByDatabase = <String, List<AuditTableSpec>>{
         ),
       ],
       notes: <String>[
-        'Retained archive-source metadata only; source facts live in source-scoped import.',
+        'Retired archive-source reference rows; active archive-source metadata lives in overlay.',
       ],
     ),
   ],
