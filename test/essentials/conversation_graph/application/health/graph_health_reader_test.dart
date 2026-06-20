@@ -236,6 +236,6 @@ void main() {
     expect(report.attachmentsMissingArchiveRecordCount, 1);
     expect(report.archiveFilesAvailableCount, 1);
     expect(report.archiveFilesMissingCount, 1);
-    expect(report.archiveRecordsWithoutWorkingAttachmentCount, 1);
+    expect(report.archiveRecordsWithoutGraphAttachmentCount, 1);
   });
 }

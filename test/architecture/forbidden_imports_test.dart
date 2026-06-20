@@ -14,9 +14,7 @@ const Set<String> _sidebarSemanticActionTransportFiles = {
   'lib/essentials/sidebar/domain/sidebar_list_item_model.dart',
 };
 
-const Set<String> _retainedArchiveMetadataStoreProviderAllowedFiles = {
-  'lib/essentials/onboarding/application/message_data_reset_service.dart',
-};
+const Set<String> _retainedArchiveMetadataStoreProviderAllowedFiles = {};
 
 const Set<String> _retainedArchiveMetadataFileAllowedFiles = {
   'lib/essentials/db/feature_level_providers.dart',
@@ -108,9 +106,7 @@ const List<String> _retiredImportMigrationPathFragments = <String>[
   'sqflite_import_database.dart',
 ];
 
-const Set<String> _retainedImportWrapperImportAllowedFiles = {
-  'lib/essentials/db/feature_level_providers.dart',
-};
+const Set<String> _retainedImportWrapperImportAllowedFiles = {};
 
 const Set<String> _databaseConstructionAllowedFiles = {
   'lib/essentials/db/feature_level_providers.dart',
@@ -615,10 +611,10 @@ void main() {
             _retainedArchiveMetadataStoreProviderAllowedFiles.toList()..sort(),
           ),
           reason:
-              'retainedArchiveMetadataStoreProvider is transitional '
-              'compatibility storage for archive-source metadata, reset, and '
-              'central DB ownership only. Ordinary app behavior must not read '
-              'or write retained macos_import.db through this provider.\n'
+              'retainedArchiveMetadataStoreProvider has been retired. '
+              'Retained macos_import.db is cleanup/reference storage only, so '
+              'ordinary app behavior must not recreate a provider authority '
+              'for it.\n'
               'Actual users:\n${offenders.join('\n')}',
         );
       },
@@ -900,7 +896,9 @@ void main() {
           ),
           reason:
               'Do not import the retained archive metadata database from '
-              'ordinary code. Use the semantic provider/repository boundary.\n'
+              'ordinary code. Active Historical Archives metadata belongs to '
+              'the settings repository backed by overlay storage; retained '
+              'macos_import.db files are cleanup/reference storage only.\n'
               'Actual users:\n${offenders.join('\n')}',
         );
       },

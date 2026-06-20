@@ -58,8 +58,8 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
           archiveHealth.attachmentsMissingArchiveRecordCount,
       archiveFilesAvailableCount: archiveHealth.archiveFilesAvailableCount,
       archiveFilesMissingCount: archiveHealth.archiveFilesMissingCount,
-      archiveRecordsWithoutWorkingAttachmentCount:
-          archiveHealth.archiveRecordsWithoutWorkingAttachmentCount,
+      archiveRecordsWithoutGraphAttachmentCount:
+          archiveHealth.archiveRecordsWithoutGraphAttachmentCount,
       attachmentRecoveryAuditIncluded: includeRecoveryAudit,
       historicalArchiveAvailable: recoveryAudit.historicalArchiveAvailable,
       historicalArchiveRecordCount: recoveryAudit.historicalArchiveRecordCount,
@@ -298,7 +298,7 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
           attachmentsMissingArchiveRecordCount,
       archiveFilesAvailableCount: archiveFilesAvailableCount,
       archiveFilesMissingCount: archiveFilesMissingCount,
-      archiveRecordsWithoutWorkingAttachmentCount:
+      archiveRecordsWithoutGraphAttachmentCount:
           archiveByKey.length - matchedArchiveKeys.length,
     );
   }
@@ -306,19 +306,19 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
   Future<_AttachmentRecoveryAudit> _readAttachmentRecoveryAudit({
     required Set<ArchiveCompatibilityKey> currentAvailableArchiveKeys,
   }) async {
-    final workingAttachmentKeys = await _readWorkingAttachmentKeys();
+    final graphAttachmentKeys = await _readGraphAttachmentKeys();
     final currentSource = await _readCurrentSourceAttachmentKeys();
-    final unarchivedWorkingAttachmentKeys = workingAttachmentKeys.difference(
+    final unarchivedGraphAttachmentKeys = graphAttachmentKeys.difference(
       currentAvailableArchiveKeys,
     );
     final historicalArchive = await _readHistoricalArchiveKeys();
     final recoveredMessages = _readRecoveredMessagesAttachmentKeys();
     final currentArchiveRecordKeys = await _readCurrentArchiveRecordKeys();
 
-    final historicalRecoverable = unarchivedWorkingAttachmentKeys.intersection(
+    final historicalRecoverable = unarchivedGraphAttachmentKeys.intersection(
       historicalArchive.availableKeys,
     );
-    final recoveredMessagesRecoverable = unarchivedWorkingAttachmentKeys
+    final recoveredMessagesRecoverable = unarchivedGraphAttachmentKeys
         .intersection(recoveredMessages.availableKeys);
     final bothRecoverable = historicalRecoverable.intersection(
       recoveredMessagesRecoverable,
@@ -327,7 +327,7 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
       ...historicalRecoverable,
       ...recoveredMessagesRecoverable,
     };
-    final remainingAfterHistorical = unarchivedWorkingAttachmentKeys.difference(
+    final remainingAfterHistorical = unarchivedGraphAttachmentKeys.difference(
       historicalRecoverable,
     );
     final wouldCopyFromRecoveredMessages = remainingAfterHistorical
@@ -363,8 +363,8 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
       attachmentsRecoverableFromBothRecoverySourcesCount:
           bothRecoverable.length,
       attachmentsStillMissingFromKnownRecoverySourcesCount:
-          unarchivedWorkingAttachmentKeys.length - anyRecoverable.length,
-      dryRunAlreadyAvailableInCurrentArchiveCount: workingAttachmentKeys
+          unarchivedGraphAttachmentKeys.length - anyRecoverable.length,
+      dryRunAlreadyAvailableInCurrentArchiveCount: graphAttachmentKeys
           .intersection(currentAvailableArchiveKeys)
           .length,
       dryRunWouldCopyFromHistoricalArchiveCount: historicalRecoverable.length,
@@ -511,7 +511,7 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
     return samples;
   }
 
-  Future<Set<ArchiveCompatibilityKey>> _readWorkingAttachmentKeys() async {
+  Future<Set<ArchiveCompatibilityKey>> _readGraphAttachmentKeys() async {
     final rows = await graphDatabase.selectRows('''
       SELECT DISTINCT
         a.ss_id AS attachment_ss_id,
@@ -733,7 +733,7 @@ class _ArchiveHealth {
     required this.attachmentsMissingArchiveRecordCount,
     required this.archiveFilesAvailableCount,
     required this.archiveFilesMissingCount,
-    required this.archiveRecordsWithoutWorkingAttachmentCount,
+    required this.archiveRecordsWithoutGraphAttachmentCount,
   });
 
   const _ArchiveHealth.empty()
@@ -744,7 +744,7 @@ class _ArchiveHealth {
       attachmentsMissingArchiveRecordCount = 0,
       archiveFilesAvailableCount = 0,
       archiveFilesMissingCount = 0,
-      archiveRecordsWithoutWorkingAttachmentCount = 0;
+      archiveRecordsWithoutGraphAttachmentCount = 0;
 
   final int archiveRecordCount;
   final Set<ArchiveCompatibilityKey> currentArchiveKeys;
@@ -753,7 +753,7 @@ class _ArchiveHealth {
   final int attachmentsMissingArchiveRecordCount;
   final int archiveFilesAvailableCount;
   final int archiveFilesMissingCount;
-  final int archiveRecordsWithoutWorkingAttachmentCount;
+  final int archiveRecordsWithoutGraphAttachmentCount;
 }
 
 class _ExternalArchiveKeys {

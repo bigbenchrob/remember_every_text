@@ -15,10 +15,8 @@ import '../source_scoped_import/feature_level_providers.dart';
 
 import 'application/database_health_audit/database_health_audit_service.dart';
 import 'application/database_health_audit/database_health_query_layer.dart';
-import 'application/retained_archive_metadata_store.dart';
 import 'feature_level_providers/db_maintenance_lock_provider.dart';
 import 'infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
-import 'infrastructure/data_sources/local/import/retained_archive_metadata_database.dart';
 import 'infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'infrastructure/repositories/database_health_audit_queries.dart';
 import 'infrastructure/repositories/filesystem_database_health_audit_report_writer.dart';
@@ -55,28 +53,6 @@ Future<void> _ensureDatabaseDirectoryExists() async {
   if (!directory.existsSync()) {
     await directory.create(recursive: true);
   }
-}
-
-/// Provides access to retained archive-source metadata storage.
-@Riverpod(keepAlive: true)
-Future<RetainedArchiveMetadataStore> retainedArchiveMetadataStore(
-  RetainedArchiveMetadataStoreRef ref,
-) async {
-  await _ensureDatabaseDirectoryExists();
-  final database = RetainedArchiveMetadataDatabase(
-    databaseDirectory: databaseDirectoryPath,
-    databaseName: retainedArchiveMetadataDatabaseFileName,
-  );
-
-  // Ensure the retained metadata file is created immediately so dependent
-  // archive-source services can query schema metadata.
-  await database.database;
-
-  ref.onDispose(() async {
-    await database.close();
-  });
-
-  return database;
 }
 
 /// Provides access to the source-scoped conversation graph projection database.

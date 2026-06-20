@@ -44,10 +44,9 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
     _ref.read(dbMaintenanceLockProvider.notifier).begin();
     try {
       logger.info(
-        'Closing retained metadata and source-scoped import databases before reset',
+        'Closing source-scoped import database before reset',
         source: 'MessageDataResetService',
       );
-      await _closeRetainedArchiveMetadataStore();
       await _closeSourceScopedImportDatabase();
       logger.info(
         'Closing source-scoped graph database before reset',
@@ -68,7 +67,6 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
         },
       );
 
-      _ref.invalidate(retainedArchiveMetadataStoreProvider);
       _ref.invalidate(sourceScopedImportDatabaseProvider);
       _ref.invalidate(driftConversationGraphDatabaseProvider);
       _ref.invalidate(conversationGraphReadinessProvider);
@@ -211,30 +209,6 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
       source: 'MessageDataResetService',
     );
     _ref.read(onboardingGateProvider.notifier).refreshEnvironment();
-  }
-
-  Future<void> _closeRetainedArchiveMetadataStore() async {
-    final fileStore = _ref.read(derivedMessageDataFileStoreProvider);
-    if (!fileStore.databaseBaseFileExists(
-      retainedArchiveMetadataDatabaseFileName,
-    )) {
-      return;
-    }
-    if (!_ref.exists(retainedArchiveMetadataStoreProvider)) {
-      return;
-    }
-    try {
-      final metadataStore = await _ref.read(
-        retainedArchiveMetadataStoreProvider.future,
-      );
-      await metadataStore.close();
-    } catch (error, stackTrace) {
-      _logResetCloseWarning(
-        message: 'Failed to close retained archive metadata store before reset',
-        error: error,
-        stackTrace: stackTrace,
-      );
-    }
   }
 
   Future<void> _closeSourceScopedImportDatabase() async {

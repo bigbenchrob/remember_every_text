@@ -504,7 +504,7 @@ class _GraphHealthSection extends StatelessWidget {
                 ),
               _StatusRow(
                 'archive records without graph attachment',
-                '${report.archiveRecordsWithoutWorkingAttachmentCount}',
+                '${report.archiveRecordsWithoutGraphAttachmentCount}',
                 labelWidth: 250,
               ),
             ],

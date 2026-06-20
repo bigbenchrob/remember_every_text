@@ -384,6 +384,9 @@ Implementation status:
   retained files, but it is no longer the active metadata authority. Its
   remaining disposition is cleanup/export/discard policy, not production
   workflow support.
+- The central `retainedArchiveMetadataStoreProvider` has been removed. Reset
+  still deletes retained `macos_import.db` files when present, but it no longer
+  opens a retained metadata database to do so.
 
 ### Phase 3: Demote Retained Files to Cleanup Targets
 
@@ -402,6 +405,12 @@ Done means:
 - no active provider constructs a retained `macos_import.db`.
 - no active code opens `working.db`.
 - architecture tripwire allowed lists for retained providers shrink to zero.
+
+Implementation status:
+
+- Satisfied for provider authority. Active provider scans are guarded by
+  architecture tests: retained metadata provider usage and retained metadata
+  database imports now have empty production allow-lists.
 
 ### Phase 4: Archive Attachment Compatibility Audit
 

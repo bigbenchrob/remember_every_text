@@ -6,28 +6,6 @@ part of 'feature_level_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$retainedArchiveMetadataStoreHash() =>
-    r'1ec2902256e0ad9e46c715b2fb4b6bdaef1d8eec';
-
-/// Provides access to retained archive-source metadata storage.
-///
-/// Copied from [retainedArchiveMetadataStore].
-@ProviderFor(retainedArchiveMetadataStore)
-final retainedArchiveMetadataStoreProvider =
-    FutureProvider<RetainedArchiveMetadataStore>.internal(
-      retainedArchiveMetadataStore,
-      name: r'retainedArchiveMetadataStoreProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$retainedArchiveMetadataStoreHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef RetainedArchiveMetadataStoreRef =
-    FutureProviderRef<RetainedArchiveMetadataStore>;
 String _$driftConversationGraphDatabaseHash() =>
     r'6b5758ced4eddacc44e4c709b6363adf0603ed2d';
 

@@ -13,7 +13,7 @@ class GraphHealthReport {
     required this.attachmentsMissingArchiveRecordCount,
     required this.archiveFilesAvailableCount,
     required this.archiveFilesMissingCount,
-    required this.archiveRecordsWithoutWorkingAttachmentCount,
+    required this.archiveRecordsWithoutGraphAttachmentCount,
     required this.attachmentRecoveryAuditIncluded,
     required this.historicalArchiveAvailable,
     required this.historicalArchiveRecordCount,
@@ -66,7 +66,7 @@ class GraphHealthReport {
   final int attachmentsMissingArchiveRecordCount;
   final int archiveFilesAvailableCount;
   final int archiveFilesMissingCount;
-  final int archiveRecordsWithoutWorkingAttachmentCount;
+  final int archiveRecordsWithoutGraphAttachmentCount;
   final bool attachmentRecoveryAuditIncluded;
   final bool historicalArchiveAvailable;
   final int historicalArchiveRecordCount;

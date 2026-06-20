@@ -7,7 +7,7 @@ part of 'feature_level_providers.dart';
 // **************************************************************************
 
 String _$archiveSourceInspectorHash() =>
-    r'02c3550e09fb6fca5d410fe37947bd9e9efa2ae8';
+    r'dea3bd7468ab07f94b22ef286d3daa0dbd6187e6';
 
 /// See also [archiveSourceInspector].
 @ProviderFor(archiveSourceInspector)
@@ -47,7 +47,7 @@ final historicalArchiveFolderChooserProvider =
 typedef HistoricalArchiveFolderChooserRef =
     AutoDisposeProviderRef<HistoricalArchiveFolderChooser>;
 String _$historicalArchiveSourcesHash() =>
-    r'bedbed256324ee09f40549ea2c1a18b86ab08b5f';
+    r'44d39930485f65c6a66a160534644086538ca5af';
 
 /// See also [historicalArchiveSources].
 @ProviderFor(historicalArchiveSources)
@@ -87,7 +87,7 @@ final historicalArchiveSourceMetadataProvider =
 typedef HistoricalArchiveSourceMetadataRef =
     AutoDisposeFutureProviderRef<List<HistoricalArchiveSourceMetadata>>;
 String _$messageHistoryCoverageRepositoryHash() =>
-    r'46027f320db6880ebe3bcc346b45dc859ee3d086';
+    r'2635d8948dfd17b1e552cb27960957636df0be11';
 
 /// See also [messageHistoryCoverageRepository].
 @ProviderFor(messageHistoryCoverageRepository)

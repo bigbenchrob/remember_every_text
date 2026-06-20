@@ -158,20 +158,24 @@ criteria above.
 
 **Why retained**
 
-The historical archive workflow stores and reads archive-source status in the
-retained archive metadata database. This is compatibility metadata for
-user-visible archive workflow state.
+The historical archive workflow previously stored and read archive-source
+status in the retained archive metadata database. That active workflow state
+has moved to overlay settings. Retained `macos_import.db` files may still carry
+old archive-source rows in existing data folders, but those rows are now
+compatibility/reference material only.
 
 **Current boundary**
 
-Settings code may read this metadata as a quarantined archive workflow bridge
-through `RetainedArchiveMetadataStore`. It must not treat retained archive
-metadata as ordinary graph identity. `RetainedArchiveMetadataDatabase` is the
-concrete storage adapter behind the central database provider and should expose
-only storage, metadata, health, and reset support needed by this boundary;
-obsolete public helpers for retained import execution, spam filtering, and
-row-existence maintenance should be removed as soon as scans confirm no
-callers.
+Settings code reads and writes active Historical Archives source metadata
+through `HistoricalArchiveSourcesRepository`, backed by overlay settings. The
+central `retainedArchiveMetadataStoreProvider` has been removed. No active app
+provider should construct `RetainedArchiveMetadataDatabase`; retained
+`macos_import.db` is now a file-retention concern for reset, diagnostics, and
+explicit cleanup/export/discard decisions.
+`RetainedArchiveMetadataDatabase` may remain only as tested historical schema
+reference until the old retained file purpose is fully retired.
+Obsolete public helpers for retained import execution, spam filtering, and
+row-existence maintenance should remain absent.
 The old retained batch-ledger deletion API has been removed; Historical
 Archives removal now deletes source-scoped archive rows through the graph
 archive-removal service.
@@ -291,8 +295,9 @@ storage as a side effect of a support bundle or health report.
 The old provider-backed retained archive metadata / working health query
 adapters have been removed; retained health diagnostics now have exactly one
 retained database access path: read-only file inspection.
-Because retained `working.db` no longer has a central app provider, health and
-support diagnostics must not reintroduce one for convenience.
+Because retained `working.db` and retained `macos_import.db` no longer have
+central app providers, health and support diagnostics must not reintroduce one
+for convenience.
 
 **Reduction criteria**
 

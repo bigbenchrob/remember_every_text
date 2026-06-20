@@ -2529,6 +2529,14 @@ criteria.
     `HistoricalArchiveSourcesRepository`. The settings feature provider no
     longer watches `retainedArchiveMetadataStoreProvider`, and the retained
     provider tripwire was tightened so settings cannot regain that authority.
+  - Removed the central `retainedArchiveMetadataStoreProvider` entirely after
+    active Historical Archives metadata moved to overlay storage. Message-data
+    reset still deletes retained `macos_import.db` files by filename, but no
+    app provider now constructs a retained `macos_import.db` database.
+  - Renamed graph-health archive readiness internals from "working attachment"
+    to "graph attachment" so attachment reachability is described as
+    graph/source-scoped identity plus overlay archive records, not retained
+    `working.db` shape.
   - Renamed conversation graph projection/status repository constructor fields
     and tests from generic `importDatabase` to `importLedgerDatabase`. The only
     remaining conversation-graph `importDatabase` wording is the physical
