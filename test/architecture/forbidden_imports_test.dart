@@ -856,7 +856,7 @@ void main() {
       );
     });
 
-    test('Retired retained-overlay identity domain bridge does not return', () {
+    test('Retired overlay identity domain bridge does not return', () {
       const retiredFiles = <String>[
         'lib/essentials/conversation_graph/domain/identity_key_bridge.dart',
         'test/essentials/conversation_graph/domain/identity_key_bridge_test.dart',
