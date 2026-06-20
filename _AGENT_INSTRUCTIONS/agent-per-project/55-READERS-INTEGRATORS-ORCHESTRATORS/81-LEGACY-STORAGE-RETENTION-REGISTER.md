@@ -19,12 +19,12 @@ The ordinary MessageLens app path is now graph-backed. Remaining
 storage-retention questions, not ordinary UI migration blockers.
 
 This register defines what remains, why it remains, and what must be true
-before each retained storage/reference purpose can be reduced, migrated,
+before each retained storage purpose can be reduced, migrated,
 frozen, or removed.
 
 ## Current Decision
 
-Document retained storage/reference files as transitional compatibility
+Document retained storage files as transitional compatibility
 storage. Do not delete them yet.
 
 `macos_import.db` and `working.db` are retained compatibility storage, not
@@ -161,7 +161,7 @@ The historical archive workflow previously stored and read archive-source
 status in the retained archive metadata database. That active workflow state
 has moved to overlay settings. Retained `macos_import.db` files may still carry
 old archive-source rows in existing data folders, but those rows are now
-compatibility/reference material only.
+transitional compatibility material only.
 
 **Current boundary**
 
@@ -211,7 +211,7 @@ reference inventory only; active source facts and topology health belong to
 No active app provider now creates a fresh retained `macos_import.db`.
 Existing older retained `macos_import.db` files may still keep
 `schema_migrations`, `historical_archive_sources`, historical ledger tables,
-or old topology ledgers for compatibility/reference inventory.
+or old topology ledgers for transitional cleanup inventory.
 
 **Reduction criteria**
 
@@ -259,7 +259,7 @@ it does not instantiate a retained Drift connection merely to close the file.
 Done means:
 
 - retained storage has been reduced to deliberate transitional compatibility
-  storage or declared permanently historical/reference storage.
+  storage with explicit retirement criteria.
 - reset behavior no longer needs to close/delete retained DB files.
 - startup no longer needs to distinguish legacy-only derived data from
   graph-ready data.
@@ -276,7 +276,7 @@ Done means:
 **Why retained**
 
 Diagnostics intentionally inspect both current graph databases and retained
-historical/reference databases while the transition is incomplete. This helps
+historical cleanup databases while the transition is incomplete. This helps
 identify stale-data, compatibility, and recovery conditions.
 
 **Current boundary**
