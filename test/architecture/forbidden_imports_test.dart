@@ -897,6 +897,20 @@ void main() {
       );
     });
 
+    test('Active lib code does not hard-code personal backup paths', () async {
+      final offenders = await _findPersonalBackupPathOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Personal backup and external-drive paths must be supplied through '
+            'explicit diagnostic configuration, not hard-coded in active app '
+            'code.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('App database construction stays behind provider boundaries', () async {
       final offenders = await _findDatabaseConstructionOffenders();
 
@@ -3665,6 +3679,33 @@ Future<List<String>> _findRetiredArchiveMetadataWrapperImportOffenders() async {
 
     if (importsRetiredArchiveMetadataWrapper) {
       offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findPersonalBackupPathOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+  const forbiddenFragments = <String>[
+    '/Volumes/WD_ELEMENTS',
+    'DATA_FOLDER_WITH_ALL_RECENT_IMAGES_WAS_RENAMED',
+    'Messages-bkp-',
+  ];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    for (final fragment in forbiddenFragments) {
+      if (uncommented.contains(fragment)) {
+        offenders.add('$filePath contains $fragment');
+      }
     }
   }
 

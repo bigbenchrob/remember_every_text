@@ -302,12 +302,15 @@ messageToAttachmentProjectionRepository(Ref ref) async {
 }
 
 const historicalMessageLensDataFolderPathForGraphHealth =
-    '/Volumes/WD_ELEMENTS/DATA_FOLDER_WITH_ALL_RECENT_IMAGES_WAS_RENAMED/'
-    'com.bigbenchsoftware.MessageLens';
+    String.fromEnvironment('MESSAGE_LENS_GRAPH_HEALTH_HISTORICAL_DATA_FOLDER');
 
-const recoveredMessagesFolderPathForGraphHealth =
-    '/Volumes/WD_ELEMENTS/DO_NOT_LOSE/iMessages_backup/'
-    'Messages-bkp-2026-03-29';
+// External recovery sources are diagnostic-only and intentionally opt-in.
+const recoveredMessagesFolderPathForGraphHealth = String.fromEnvironment(
+  'MESSAGE_LENS_GRAPH_HEALTH_RECOVERED_MESSAGES_FOLDER',
+);
 
 const recoveredMessagesAttachmentsFolderNameForGraphHealth =
-    'Attachments-2026-03-29';
+    String.fromEnvironment(
+      'MESSAGE_LENS_GRAPH_HEALTH_RECOVERED_MESSAGES_ATTACHMENTS_FOLDER',
+      defaultValue: 'Attachments',
+    );

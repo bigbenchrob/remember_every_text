@@ -2899,6 +2899,11 @@ criteria.
   recovered scope focus, no-handle recovered opening, contact projection,
   recovered-contact scope, and handle-filter selection now have executable
   coverage through semantic actions and derived sidebar flow state.
+- Removed hard-coded personal external-drive recovery paths from graph health
+  provider wiring. Historical MessageLens and recovered Messages backup probes
+  are now opt-in diagnostic sources supplied through Dart defines, and an
+  architecture tripwire prevents personal backup paths from returning to active
+  `lib/` code.
 
 ### Exit Criteria
 
