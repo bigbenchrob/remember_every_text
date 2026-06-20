@@ -27,7 +27,7 @@ Essentials owns:
 * onboarding gate state, onboarding overlay lifecycle, and readiness-panel sync
 * shared graph search service and evidence selection infrastructure
 * app shell, window state, logging, database infrastructure, source-scoped
-  import, conversation graph build, retained metadata/diagnostic boundaries,
+  import, conversation graph build, retired-file diagnostic boundaries,
   and shared cross-cutting services
 
 Features must not take ownership of app-level orchestration, global flow state,

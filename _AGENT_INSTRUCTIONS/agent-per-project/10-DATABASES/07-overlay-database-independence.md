@@ -20,10 +20,10 @@ tests: []
 
 1. **No synchronization** — The databases never copy data to each other.
 2. **No cross-writing** — Code that writes to overlay never writes to working, and vice versa. **No dual-writes.**
-3. **No shared projection/import/metadata maintenance** — Tasks for one
+3. **No shared projection/import/cleanup maintenance** — Tasks for one
    database must not read or mutate the other. Graph projection, source import,
-   retained metadata writers, retained-file diagnostics, and recovery tooling
-   NEVER consult overlay.
+   retired-file diagnostics, cleanup, and recovery tooling NEVER consult
+   overlay.
 4. **Provider-level merging only** — Combine data in Riverpod providers or services, not in SQL.
 5. **Overlay wins on conflict** — When a provider/read model merges graph-derived data + overlay data for the same entity, the overlay value ALWAYS takes precedence.
 
