@@ -143,13 +143,13 @@ void main() {
         );
 
         final report = await service.buildPhase1Report();
-        final retainedWorkingTables = report.tableInventory
+        final retiredWorkingTables = report.tableInventory
             .where((entry) => entry.databaseKey == 'retired_working')
             .map((entry) => entry.tableName)
             .toSet();
 
         expect(
-          retainedWorkingTables,
+          retiredWorkingTables,
           containsAll(<String>{
             'schema_migrations',
             'projection_state',
@@ -157,9 +157,9 @@ void main() {
             'recovered_unlinked_attachments',
           }),
         );
-        expect(retainedWorkingTables, isNot(contains('messages')));
-        expect(retainedWorkingTables, isNot(contains('chats')));
-        expect(retainedWorkingTables, isNot(contains('global_message_index')));
+        expect(retiredWorkingTables, isNot(contains('messages')));
+        expect(retiredWorkingTables, isNot(contains('chats')));
+        expect(retiredWorkingTables, isNot(contains('global_message_index')));
         expect(
           report.tableInventory
               .singleWhere(
@@ -197,7 +197,7 @@ void main() {
     );
 
     test(
-      'does not inventory a retained database when its file is absent',
+      'does not inventory a retired database when its file is absent',
       () async {
         final service = _buildService(
           hasFullDiskAccess: true,

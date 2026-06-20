@@ -34,52 +34,47 @@ void main() {
     }
   });
 
-  test(
-    'archives mapped historical file into retained overlay archive',
-    () async {
-      final sourceFile = File(
-        path.join(tempDir.path, 'historical', 'Photo.JPG'),
-      );
-      await sourceFile.parent.create(recursive: true);
-      await sourceFile.writeAsString('historical image');
-      final sourceBytes = await sourceFile.readAsBytes();
-      final expectedHash = sha256.convert(sourceBytes).toString();
+  test('archives mapped historical file into overlay archive', () async {
+    final sourceFile = File(path.join(tempDir.path, 'historical', 'Photo.JPG'));
+    await sourceFile.parent.create(recursive: true);
+    await sourceFile.writeAsString('historical image');
+    final sourceBytes = await sourceFile.readAsBytes();
+    final expectedHash = sha256.convert(sourceBytes).toString();
 
-      final size = await writer.archive(
-        _record(
-          resolvedFilePath: sourceFile.path,
-          histLocalPath: '~/Historical/Messages/Attachments/Photo.JPG',
-        ),
-      );
+    final size = await writer.archive(
+      _record(
+        resolvedFilePath: sourceFile.path,
+        histLocalPath: '~/Historical/Messages/Attachments/Photo.JPG',
+      ),
+    );
 
-      expect(size, sourceBytes.length);
+    expect(size, sourceBytes.length);
 
-      final archivedRows = await overlayDatabase
-          .select(overlayDatabase.archivedAttachments)
-          .get();
-      expect(archivedRows, hasLength(1));
-      final archivedRow = archivedRows.single;
-      expect(archivedRow.messageGuid, 'current-message-guid');
-      expect(archivedRow.importAttachmentId, 200);
-      expect(
-        archivedRow.archiveRelativePath,
-        '${expectedHash.substring(0, 2)}/$expectedHash.jpg',
-      );
-      expect(archivedRow.fileSizeBytes, sourceBytes.length);
-      expect(archivedRow.contentHash, expectedHash);
-      expect(archivedRow.provenance, 'imported_historical_snapshot');
-      expect(
-        archivedRow.originalLocalPath,
-        '~/Historical/Messages/Attachments/Photo.JPG',
-      );
-      expect(
-        File(
-          path.join(archiveDir.path, archivedRow.archiveRelativePath),
-        ).readAsBytesSync(),
-        sourceBytes,
-      );
-    },
-  );
+    final archivedRows = await overlayDatabase
+        .select(overlayDatabase.archivedAttachments)
+        .get();
+    expect(archivedRows, hasLength(1));
+    final archivedRow = archivedRows.single;
+    expect(archivedRow.messageGuid, 'current-message-guid');
+    expect(archivedRow.importAttachmentId, 200);
+    expect(
+      archivedRow.archiveRelativePath,
+      '${expectedHash.substring(0, 2)}/$expectedHash.jpg',
+    );
+    expect(archivedRow.fileSizeBytes, sourceBytes.length);
+    expect(archivedRow.contentHash, expectedHash);
+    expect(archivedRow.provenance, 'imported_historical_snapshot');
+    expect(
+      archivedRow.originalLocalPath,
+      '~/Historical/Messages/Attachments/Photo.JPG',
+    );
+    expect(
+      File(
+        path.join(archiveDir.path, archivedRow.archiveRelativePath),
+      ).readAsBytesSync(),
+      sourceBytes,
+    );
+  });
 
   test(
     'returns null and does not rewrite when archive row already exists',
