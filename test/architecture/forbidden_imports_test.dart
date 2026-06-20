@@ -644,7 +644,7 @@ void main() {
         reason:
             'Onboarding sourceScopedImportDatabase fixtures must use the '
             'source-scoped import database name, not retired macos_import.db '
-            'metadata compatibility names.\n'
+            'cleanup-file names.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -879,7 +879,7 @@ void main() {
       );
     });
 
-    test('Retired archive metadata database imports do not return', () async {
+    test('Retired archive metadata wrapper imports do not return', () async {
       final offenders = await _findRetainedImportWrapperImportOffenders();
 
       expect(
@@ -888,7 +888,7 @@ void main() {
           _retainedImportWrapperImportAllowedFiles.toList()..sort(),
         ),
         reason:
-            'Do not import the retired archive metadata database from '
+            'Do not import the retired archive metadata wrapper from '
             'ordinary code. Active Historical Archives metadata belongs to '
             'the settings repository backed by overlay storage; retired '
             'macos_import.db files are transitional cleanup storage only.\n'
