@@ -2904,6 +2904,19 @@ criteria.
   are now opt-in diagnostic sources supplied through Dart defines, and an
   architecture tripwire prevents personal backup paths from returning to active
   `lib/` code.
+- Aligned current database, onboarding/archive, project overview, and pipeline
+  invariant docs with the retired-storage policy: `macos_import.db` and
+  `working.db` are retired cleanup/reference files, not active compatibility
+  systems or projection targets.
+- Tightened current migration status docs so the remaining database-file work
+  is described as retired storage reduction under explicit retention criteria,
+  not a live compatibility subsystem.
+- Clarified architecture-test wording around handle blacklist overlay
+  precedence: exact graph-id overlay intent wins over retired-storage
+  compatibility variants.
+- Replaced a test fake's `UnimplementedError` marker with an explicit
+  `StateError`, preserving test behavior while keeping unfinished-code markers
+  out of active test code.
 
 ### Exit Criteria
 
@@ -2912,9 +2925,9 @@ Done means:
 - every deleted system is listed in the dependency matrix or this checklist.
 - every preserved system has a current classification.
 - no ordinary user-facing read depends on legacy working/import identity.
-- legacy import/projection execution is retired; any remaining retained database
-  access is explicitly classified as diagnostic, recovery, metadata, or storage
-  infrastructure.
+- legacy import/projection execution is retired; any remaining retired database
+  access is explicitly classified as diagnostic, recovery, cleanup/reference, or
+  storage-retention infrastructure.
 
 ## Update Rule
 
