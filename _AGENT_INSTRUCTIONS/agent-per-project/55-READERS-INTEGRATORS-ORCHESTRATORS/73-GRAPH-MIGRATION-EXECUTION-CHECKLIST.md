@@ -1817,7 +1817,9 @@ criteria.
 - Moved contact hero display-name override writes behind a contact action
   boundary. The hero widget still collects the edited name, but user-intent
   persistence now flows through `ContactDisplayNameOverrideController` and an
-  overlay-backed store instead of direct widget database access.
+  overlay-backed store instead of direct widget database access. Added
+  provider-level coverage proving set/clear display-name override intents cross
+  the action boundary and persist only as overlay user intent.
 - Moved contact hero favourite toggles behind a contact action provider. The
   widget reports favourite intent; provider-level action code owns repository
   calls and invalidation of dependent contact picker/favourite projections.
