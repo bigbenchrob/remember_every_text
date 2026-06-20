@@ -116,8 +116,8 @@ MessageLens cannot.
    mode displays from the MessageLens archive and uses live files as ingestion
    sources; live-only mode can display directly from Messages paths
 4. **Stores archive metadata in the overlay database** — graph projection is a
-   derived source-data view, and retained historical/reference files are
-   compatibility references; neither owns durable archive metadata
+   derived source-data view, and retained historical cleanup files are
+   transitional compatibility inputs only; neither owns durable archive metadata
 
 Archive storage uses SHA-256 content addressing:
 ```

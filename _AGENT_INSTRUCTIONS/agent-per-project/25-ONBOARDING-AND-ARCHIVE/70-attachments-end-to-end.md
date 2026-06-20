@@ -131,7 +131,7 @@ Inputs:
 - historical `chat.db`
 - matching historical `Attachments` folder
 - current source-scoped graph/import databases where available
-- retained `macos_import.db` / `working.db` only as historical/reference
+- retained `macos_import.db` / `working.db` only as historical cleanup
   history or explicit fallback bridges where graph-native recovery has not
   replaced a path
 - current `user_overlays.db`
@@ -225,7 +225,7 @@ Reference the canonical spec docs for the boundary rules; do not reimplement spe
 | Path mutation | `local_path` may become stale. The path is audit/ingestion input only, not an identifier. Durable identity remains `(message_guid, import_attachment_id)` plus archive metadata. |
 | Missing files at import time | Import still records structural attachment data and joins. Archive ingestion skips missing files; UI renders an unavailable state. |
 | Files appear later | Periodic working sweep or resolver-triggered ingestion can archive newly available files. |
-| Orphaned/unlinked attachments | Import routes joins for recovered-unlinked messages through explicit recovered/unlinked attachment relationships; graph projection keeps recovered content distinct from normal timelines, while retained files remain compatibility/reference material. |
+| Orphaned/unlinked attachments | Import routes joins for recovered-unlinked messages through explicit recovered/unlinked attachment relationships; graph projection keeps recovered content distinct from normal timelines, while retained files remain transitional compatibility material. |
 | Historical file missing from backup | Deterministic recovery reports the mapped record as missing and does not guess. |
 | Ambiguous historical mapping | Recovery reports an unmapped/ambiguous reason and does not use heuristic fallback. |
 

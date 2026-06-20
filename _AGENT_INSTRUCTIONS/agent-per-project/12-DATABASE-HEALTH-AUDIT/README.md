@@ -35,7 +35,7 @@ Use it when you need to understand:
 - **Invocation path:** support bundle export
 - **Privacy model:** aggregate-only; no raw database copies; no row-level sampling
 - **Current DB scope:** source-scoped import, conversation graph, overlay,
-  retained archive-source metadata, and retained historical reference storage
+  retained archive-source metadata, and retained historical cleanup storage
 
 ## Important Constraints
 

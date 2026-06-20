@@ -32,7 +32,7 @@ wording as legacy/transitional.
 - **`lib/essentials/conversation_graph/`** — graph build, projection, readiness, and app-facing graph queries
 - **Retired `lib/essentials/db_importers/`** — removed; source-scoped importers live in `lib/essentials/source_scoped_import/`, live monitoring and graph lifecycle live in `lib/essentials/conversation_graph/`, and retained DB diagnostics live in `lib/essentials/db/`
 - **Retired `lib/essentials/db_migrate/`** — historical retained projection
-  reference only; no active onboarding setup ownership
+  cleanup context only; no active onboarding setup ownership
 - **`lib/features/attachments/`** — archive service, resolver, deterministic recovery, settings
 - **`lib/essentials/db/`** — overlay database schema including `archived_attachments` table
 

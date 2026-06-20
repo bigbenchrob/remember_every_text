@@ -48,7 +48,7 @@ Current `lib/essentials/` top-level areas include:
 | `source_scoped_import/` | Production source-scoped import ledger and importers for `macos_import_ss.db`. |
 | `conversation_graph/` | Production graph projection/build/read layer for `working_ss.db`. |
 | Retired `db_importers/` | Removed. Source-scoped importers live in `source_scoped_import/`; live `chat.db` monitoring and graph lifecycle work live in `conversation_graph/`; retained DB diagnostics live in `db/`. |
-| Retired `db_migrate/` | Historical retained projection reference only; no active app provider or service. |
+| Retired `db_migrate/` | Historical retained projection cleanup context only; no active app provider or service. |
 | `logging/` | Application logging and diagnostic export support. |
 | `window_state/` | Window persistence and platform window-management services. |
 | `config/`, `debug/`, `services/`, `tooltips/`, `contacts/` | Shared app infrastructure and smaller cross-cutting systems. |

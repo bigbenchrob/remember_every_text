@@ -18,8 +18,8 @@ SHA-256 hash — was proven fundamentally broken by forensic analysis:
 
 The heuristic system was replaced with a deterministic three-layer mapping flow.
 The current implementation maps through source-scoped graph identity first.
-Retained `macos_import.db` / `working.db` identity is historical/reference
-context, not the ordinary recovery direction.
+Retained `macos_import.db` / `working.db` identity is historical cleanup
+context only, not the ordinary recovery direction.
 
 ## Three-Layer Read Topology
 
