@@ -226,7 +226,7 @@ Deletion readiness:
 
 Current role:
 
-- retained archive-source metadata storage
+- retired archive-source reference inventory if older files exist
 - existing-file compatibility for older local data folders
 - reset cleanup target
 - diagnostic/support-bundle context
@@ -243,7 +243,7 @@ Classification summary:
 
 - Must remain temporarily for archive/recovery integrity: no direct ordinary
   evidence need identified.
-- Can be migrated: Historical Archives source metadata.
+- Migrated: Historical Archives source metadata now lives in overlay storage.
 - Diagnostic-only: schema/file inventory and support context.
 - Historical-only: old ledger/projection tables in pre-existing files.
 - Safe deletion candidate: old import/projection execution schema and any fresh
@@ -262,7 +262,7 @@ Recommended disposition:
   the removal of the retained metadata provider/wrapper.
 - retain a one-time cleanup/export/discard path for existing local metadata if
   needed.
-- after migration, demote the filename to a retired-file cleanup target.
+- the filename has been demoted to a retired-file cleanup/reference target.
 
 ### working.db
 
@@ -358,13 +358,13 @@ Goal:
 
 - remove the last active `macos_import.db` workflow dependency.
 
-Work:
+Completed work:
 
-- decide the new home for archive-source metadata:
-  - overlay DB for user/workflow metadata
-  - `macos_import_ss.db.source_registry` for source identity/provenance
-- migrate or intentionally discard existing local metadata.
-- update settings providers to stop reading `retainedArchiveMetadataStoreProvider`.
+- active user/workflow metadata now lives in overlay DB.
+- source identity/provenance remains graph/source-scoped.
+- settings providers no longer read `retainedArchiveMetadataStoreProvider`.
+- existing local `macos_import.db.historical_archive_sources` rows are now
+  cleanup/export/discard policy, not production workflow support.
 
 Done means:
 
@@ -487,8 +487,8 @@ However, it is not yet ready for blind deletion because:
 attachment reachability and retained-file cleanup policy as the remaining
 safety checks.
 
-`macos_import.db` should be retired after archive-source metadata moves to a
-graph-era home.
+`macos_import.db` is now eligible for explicit retired-file policy work because
+archive-source metadata has moved to a graph-era/overlay home.
 
 ## Bottom Line
 
