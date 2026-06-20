@@ -433,6 +433,23 @@ Done means:
 - attachment retrieval can be explained without retained `macos_import.db` or
   `working.db`.
 
+Implementation status:
+
+- Existing attachment tests cover the critical graph/source-scoped identity
+  trace:
+  - `archive_compatibility_key_test.dart` proves live attachment `ss_id`
+    derives the archive compatibility row id by unpacking source row identity
+    and rejects non-live source ids.
+  - `overlay_archive_compatibility_lookup_test.dart` proves graph
+    `message_ss_id` / `attachment_ss_id` resolves through overlay
+    `archived_attachments` to an archive file path without retained DB reads.
+  - `sqlite_graph_attachment_archive_candidate_reader_test.dart` proves graph
+    archive sweep candidates carry typed compatibility keys and exclude already
+    archived rows through overlay archive records.
+- This satisfies the core reachability explanation for the live graph path:
+  graph `ss_id` endpoints -> live source row identity -> typed compatibility
+  key -> overlay archive record -> archive file.
+
 ### Phase 5: Retire / Delete / Ignore Old Files
 
 Goal:
