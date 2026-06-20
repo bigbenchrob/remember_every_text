@@ -16,8 +16,8 @@ part 'message_data_reset_service.g.dart';
 const _resetCompletionDialogExitDelay = Duration(milliseconds: 140);
 
 const derivedMessageDataDatabaseBaseNames = <String>[
-  retainedArchiveMetadataDatabaseFileName,
-  retainedHistoricalReferenceDatabaseFileName,
+  retiredMacosImportDatabaseFileName,
+  retiredWorkingDatabaseFileName,
   sourceScopedImportDatabaseFileName,
   conversationGraphDatabaseFileName,
 ];
@@ -82,9 +82,9 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
         source: 'MessageDataResetService',
         context: {
           'retainedArchiveMetadataDbExistsAfterReset':
-              databaseExistsAfterReset[retainedArchiveMetadataDatabaseFileName],
+              databaseExistsAfterReset[retiredMacosImportDatabaseFileName],
           'retainedHistoricalReferenceDbExistsAfterReset':
-              databaseExistsAfterReset[retainedHistoricalReferenceDatabaseFileName],
+              databaseExistsAfterReset[retiredWorkingDatabaseFileName],
           'sourceScopedImportDbExistsAfterReset':
               databaseExistsAfterReset[sourceScopedImportDatabaseFileName],
           'conversationGraphDbExistsAfterReset':

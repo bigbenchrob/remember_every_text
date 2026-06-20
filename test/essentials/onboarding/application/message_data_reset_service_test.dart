@@ -5,13 +5,13 @@ import 'package:remember_this_text/essentials/source_scoped_import/infrastructur
 
 void main() {
   test(
-    'derived message data reset includes retained and graph database files',
+    'derived message data reset includes retired and graph database files',
     () {
       expect(
         derivedMessageDataDatabaseBaseNames,
         containsAll(<String>[
-          retainedArchiveMetadataDatabaseFileName,
-          retainedHistoricalReferenceDatabaseFileName,
+          retiredMacosImportDatabaseFileName,
+          retiredWorkingDatabaseFileName,
           importDatabaseFileName,
           conversationGraphDatabaseFileName,
         ]),

@@ -104,8 +104,8 @@ Current files:
 
 Current usage:
 
-- declares `retainedArchiveMetadataDatabaseFileName = 'macos_import.db'`
-- declares `retainedHistoricalReferenceDatabaseFileName = 'working.db'`
+- declares `retiredMacosImportDatabaseFileName = 'macos_import.db'`
+- declares `retiredWorkingDatabaseFileName = 'working.db'`
 - no longer constructs a retained archive metadata store provider
 
 Classification:
@@ -253,7 +253,7 @@ Retirement blockers:
 
 1. Reset still treats `macos_import.db` as a derived/retired file cleanup
    target.
-2. Support diagnostics may still describe retained metadata file existence.
+2. Support diagnostics may still describe retained/retired file existence.
 
 Recommended disposition:
 

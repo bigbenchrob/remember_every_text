@@ -40,24 +40,23 @@ void main() {
     });
 
     test(
-      'does not treat retained metadata and historical reference databases as sufficient',
+      'does not treat retired import and working databases as sufficient',
       () {
         const checker = DatabaseExistenceChecker(
           _FakeDatabaseProbeReader(
             probes: {
-              retainedArchiveMetadataDatabaseFileName: OnboardingDatabaseProbe(
-                path: 'retained archive metadata',
+              retiredMacosImportDatabaseFileName: OnboardingDatabaseProbe(
+                path: 'retired macos import',
                 exists: true,
                 readable: true,
                 sizeBytes: 1,
               ),
-              retainedHistoricalReferenceDatabaseFileName:
-                  OnboardingDatabaseProbe(
-                    path: 'retained historical reference',
-                    exists: true,
-                    readable: true,
-                    sizeBytes: 1,
-                  ),
+              retiredWorkingDatabaseFileName: OnboardingDatabaseProbe(
+                path: 'retired working',
+                exists: true,
+                readable: true,
+                sizeBytes: 1,
+              ),
             },
           ),
         );

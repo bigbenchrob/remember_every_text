@@ -16,12 +16,12 @@ const Set<String> _sidebarSemanticActionTransportFiles = {
 
 const Set<String> _retainedArchiveMetadataStoreProviderAllowedFiles = {};
 
-const Set<String> _retainedArchiveMetadataFileAllowedFiles = {
+const Set<String> _retiredMacosImportFileAllowedFiles = {
   'lib/essentials/db/feature_level_providers.dart',
   'lib/essentials/onboarding/application/message_data_reset_service.dart',
 };
 
-const Set<String> _retainedHistoricalWorkingFileAllowedFiles = {
+const Set<String> _retiredWorkingFileAllowedFiles = {
   'lib/essentials/db/feature_level_providers.dart',
   'lib/essentials/onboarding/application/message_data_reset_service.dart',
 };
@@ -623,23 +623,19 @@ void main() {
       },
     );
 
-    test(
-      'Retained import metadata file stays behind metadata boundaries',
-      () async {
-        final offenders = await _findRetainedArchiveMetadataFileOffenders();
+    test('Retired macos_import file stays behind cleanup boundaries', () async {
+      final offenders = await _findRetiredMacosImportFileOffenders();
 
-        expect(
-          offenders,
-          orderedEquals(
-            _retainedArchiveMetadataFileAllowedFiles.toList()..sort(),
-          ),
-          reason:
-              'Retained macos_import.db is archive-source metadata storage. '
-              'Ordinary code must not add new retained import file access.\n'
-              'Actual users:\n${offenders.join('\n')}',
-        );
-      },
-    );
+      expect(
+        offenders,
+        orderedEquals(_retiredMacosImportFileAllowedFiles.toList()..sort()),
+        reason:
+            'Retired macos_import.db is cleanup/reference storage only. '
+            'Ordinary code must not add new retained import file access or '
+            'workflow authority.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
 
     test('Onboarding source-scoped fixtures use source-scoped names', () async {
       final offenders =
@@ -657,18 +653,17 @@ void main() {
     });
 
     test(
-      'Retained working database file stays behind reference boundaries',
+      'Retired working database file stays behind reference boundaries',
       () async {
-        final offenders = await _findRetainedHistoricalWorkingFileOffenders();
+        final offenders = await _findRetiredWorkingFileOffenders();
 
         expect(
           offenders,
-          orderedEquals(
-            _retainedHistoricalWorkingFileAllowedFiles.toList()..sort(),
-          ),
+          orderedEquals(_retiredWorkingFileAllowedFiles.toList()..sort()),
           reason:
-              'Retained working.db is historical/reference storage only. '
-              'Ordinary code must not add new retained working file access.\n'
+              'Retired working.db is cleanup/reference storage only. '
+              'Ordinary code must not add new retained working file access or '
+              'workflow authority.\n'
               'Actual users:\n${offenders.join('\n')}',
         );
       },
@@ -3351,14 +3346,14 @@ Future<List<String>> _findRetainedArchiveMetadataProviderOffenders() async {
   return offenders.toList()..sort();
 }
 
-Future<List<String>> _findRetainedArchiveMetadataFileOffenders() async {
+Future<List<String>> _findRetiredMacosImportFileOffenders() async {
   final files = await _collectDartFiles((path) => !path.endsWith('.g.dart'));
   final offenders = <String>{};
 
   for (final filePath in files) {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
-    if (uncommented.contains('retainedArchiveMetadataDatabaseFileName')) {
+    if (uncommented.contains('retiredMacosImportDatabaseFileName')) {
       offenders.add(filePath);
     }
   }
@@ -3382,7 +3377,7 @@ Future<List<String>> _findOnboardingSourceScopedProbeFixtureOffenders() async {
     final sourceScopedProbeUsesRetainedName = RegExp(
       r'sourceScopedImportDatabase\s*:\s*(?:const\s+)?'
       r'OnboardingDatabaseProbe\s*\([^)]*'
-      r'path\s*:\s*retainedArchiveMetadataDatabaseFileName',
+      r'path\s*:\s*retiredMacosImportDatabaseFileName',
       multiLine: true,
       dotAll: true,
     ).hasMatch(uncommented);
@@ -3394,14 +3389,14 @@ Future<List<String>> _findOnboardingSourceScopedProbeFixtureOffenders() async {
   return offenders..sort();
 }
 
-Future<List<String>> _findRetainedHistoricalWorkingFileOffenders() async {
+Future<List<String>> _findRetiredWorkingFileOffenders() async {
   final files = await _collectDartFiles((path) => !path.endsWith('.g.dart'));
   final offenders = <String>{};
 
   for (final filePath in files) {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
-    if (uncommented.contains('retainedHistoricalReferenceDatabaseFileName')) {
+    if (uncommented.contains('retiredWorkingDatabaseFileName')) {
       offenders.add(filePath);
     }
   }

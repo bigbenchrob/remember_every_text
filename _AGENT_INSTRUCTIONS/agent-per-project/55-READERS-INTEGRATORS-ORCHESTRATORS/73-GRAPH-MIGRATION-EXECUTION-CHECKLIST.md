@@ -2538,6 +2538,11 @@ criteria.
     Existing retained files may still be deleted by reset or inspected by
     read-only diagnostic/file-query paths, but there is no active retained
     metadata database abstraction left in `lib/`.
+  - Renamed the retained database filename constants to
+    `retiredMacosImportDatabaseFileName` and
+    `retiredWorkingDatabaseFileName`. Reset and diagnostics still know how to
+    delete/inspect existing files, but active code no longer names them as
+    metadata stores or historical working databases.
   - Renamed graph-health archive readiness internals from "working attachment"
     to "graph attachment" so attachment reachability is described as
     graph/source-scoped identity plus overlay archive records, not retained
