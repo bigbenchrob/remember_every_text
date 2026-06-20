@@ -1070,7 +1070,7 @@ _invariantSpecsByDatabase = <String, List<_InvariantCheckSpec>>{
       checkKey: 'retired_projection_state_cleanup_snapshot_if_present',
       severity: DatabaseHealthSeverity.low,
       description:
-          'If retained working.projection_state exists, it may contain the historical singleton row with id = 1.',
+          'If retired working.projection_state exists, it may contain the historical singleton row with id = 1.',
       evaluatedRowCountSql: 'SELECT 1 AS c',
       violationCountSql: '''
             SELECT CASE
