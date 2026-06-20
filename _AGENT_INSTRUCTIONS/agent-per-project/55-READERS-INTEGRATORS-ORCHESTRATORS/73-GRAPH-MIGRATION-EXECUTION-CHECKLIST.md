@@ -2864,6 +2864,11 @@ criteria.
   selection, and contact-conversation selection now have executable coverage
   proving widgets can invoke semantic actions without owning notifier mutation
   or sidebar dispatch.
+- Added focused tests for message heatmap, recovered-message, contact message
+  scope, and contact handle-filter navigation action boundaries. Month focus,
+  recovered scope focus, no-handle recovered opening, contact projection,
+  recovered-contact scope, and handle-filter selection now have executable
+  coverage through semantic actions and derived sidebar flow state.
 
 ### Exit Criteria
 
