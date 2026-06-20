@@ -37,7 +37,7 @@ Examples:
 
 - Retired `essentials/db_importers/` must not return. Source-scoped import
   belongs in `essentials/source_scoped_import/`; graph lifecycle belongs in
-  `essentials/conversation_graph/`; retained metadata/diagnostics belong in
+  `essentials/conversation_graph/`; retired-file diagnostics belong in
   `essentials/db/`.
 - `essentials/source_scoped_import/` may become the production source-scoped import spine.
 - `essentials/db/` remains the legacy database access spine.

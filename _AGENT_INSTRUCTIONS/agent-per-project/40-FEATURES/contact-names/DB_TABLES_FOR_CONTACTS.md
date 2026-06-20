@@ -44,6 +44,6 @@ If legacy compatibility columns such as `short_name`, `name_mode`, or `nickname`
 
 ## 5. Legacy Compatibility
 
-Retained `working.db.participants` and `working.db.handles_canonical` remain useful historical references while retained recovery/archive paths exist, but they are not the production naming authority for ordinary graph-backed surfaces.
+Retained `working.db.participants` and `working.db.handles_canonical` may remain useful historical cleanup inputs while retained recovery/archive paths exist, but they are not the production naming authority for ordinary graph-backed surfaces.
 
-If a retained historical-reference path must bridge into the graph era, it should resolve display names through the shared display identity resolver rather than reading retained participant columns directly.
+If a retained historical cleanup path must bridge into the graph era, it should resolve display names through the shared display identity resolver rather than reading retained participant columns directly.
