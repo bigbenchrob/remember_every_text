@@ -395,11 +395,11 @@ Goal:
 
 - remove retained DB provider authority.
 
-Work:
+Status:
 
-- remove or replace `retainedArchiveMetadataStoreProvider`.
-- keep old filenames only in a retired-file cleanup list if needed.
-- update reset service so it deletes old files without opening retained DBs.
+- Complete. `retainedArchiveMetadataStoreProvider` has been removed.
+- Old filenames remain only in the retired-file cleanup/reference boundary.
+- Reset deletes old files without opening retained DB providers.
 
 Done means:
 
