@@ -2859,6 +2859,11 @@ criteria.
   that developer-mode/theme, sidebar mode, and panel-stack mutations remain
   callable through application action boundaries rather than presentation-owned
   provider mutation.
+- Added focused tests for sidebar preference and conversation navigation action
+  boundaries. Picker filter, conversation signature preferences, conversation
+  selection, and contact-conversation selection now have executable coverage
+  proving widgets can invoke semantic actions without owning notifier mutation
+  or sidebar dispatch.
 
 ### Exit Criteria
 
