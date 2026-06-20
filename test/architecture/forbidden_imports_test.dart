@@ -110,7 +110,7 @@ const List<String> _retiredImportMigrationPathFragments = <String>[
   'sqflite_import_database.dart',
 ];
 
-const Set<String> _retainedImportWrapperImportAllowedFiles = {};
+const Set<String> _retiredArchiveMetadataWrapperImportAllowedFiles = {};
 
 const Set<String> _databaseConstructionAllowedFiles = {
   'lib/essentials/db/feature_level_providers.dart',
@@ -880,12 +880,13 @@ void main() {
     });
 
     test('Retired archive metadata wrapper imports do not return', () async {
-      final offenders = await _findRetainedImportWrapperImportOffenders();
+      final offenders =
+          await _findRetiredArchiveMetadataWrapperImportOffenders();
 
       expect(
         offenders,
         orderedEquals(
-          _retainedImportWrapperImportAllowedFiles.toList()..sort(),
+          _retiredArchiveMetadataWrapperImportAllowedFiles.toList()..sort(),
         ),
         reason:
             'Do not import the retired archive metadata wrapper from '
@@ -3644,7 +3645,7 @@ Future<List<String>> _findRetiredImportMigrationExecutionOffenders() async {
   return offenders.toList()..sort();
 }
 
-Future<List<String>> _findRetainedImportWrapperImportOffenders() async {
+Future<List<String>> _findRetiredArchiveMetadataWrapperImportOffenders() async {
   final files = await _collectDartFiles((path) {
     if (path.endsWith('.g.dart')) {
       return false;
@@ -3657,12 +3658,12 @@ Future<List<String>> _findRetainedImportWrapperImportOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     final imports = _extractImports(uncommented);
-    final importsRetainedWrapper = imports.any(
+    final importsRetiredArchiveMetadataWrapper = imports.any(
       (importTarget) =>
           importTarget.endsWith('archive_compatibility_metadata_database.dart'),
     );
 
-    if (importsRetainedWrapper) {
+    if (importsRetiredArchiveMetadataWrapper) {
       offenders.add(filePath);
     }
   }
