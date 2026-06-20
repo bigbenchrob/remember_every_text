@@ -81,120 +81,120 @@ void main() {
       },
     );
 
-    test('treats retired macos import database as reference only', () async {
-      final service = _buildService(
-        hasFullDiskAccess: true,
-        queryLayers: <DatabaseHealthQueryLayer>[
-          _FakeHealthQueryLayer(
-            databaseKey: 'retired_macos_import',
-            role: 'retired_macos_import_reference',
-          ),
-        ],
-      );
-
-      final report = await service.buildPhase1Report();
-      final retiredReferenceTables = report.tableInventory
-          .where((entry) => entry.databaseKey == 'retired_macos_import')
-          .map((entry) => entry.tableName)
-          .toSet();
-
-      expect(
-        retiredReferenceTables,
-        containsAll(<String>{
-          'schema_migrations',
-          'historical_archive_sources',
-        }),
-      );
-      expect(retiredReferenceTables, isNot(contains('messages')));
-      expect(retiredReferenceTables, isNot(contains('import_batches')));
-      expect(
-        report.tableInventory
-            .singleWhere(
-              (entry) =>
-                  entry.databaseKey == 'retired_macos_import' &&
-                  entry.tableName == 'historical_archive_sources',
-            )
-            .notes,
-        contains(
-          'Retired archive-source reference rows; active archive-source metadata lives in overlay.',
-        ),
-      );
-      expect(
-        report.relationshipChecks
-            .where((check) => check.databaseKey == 'retired_macos_import')
-            .map((check) => check.checkKey),
-        isEmpty,
-      );
-      expect(report.invariantChecks, isEmpty);
-      expect(report.errors, isEmpty);
-    });
-
     test(
-      'treats retired working database as historical reference only',
+      'treats retired macos import database as cleanup storage only',
       () async {
         final service = _buildService(
           hasFullDiskAccess: true,
           queryLayers: <DatabaseHealthQueryLayer>[
             _FakeHealthQueryLayer(
-              databaseKey: 'retired_working',
-              role: 'retired_working_reference',
+              databaseKey: 'retired_macos_import',
+              role: 'retired_macos_import_cleanup',
             ),
           ],
         );
 
         final report = await service.buildPhase1Report();
-        final retiredWorkingTables = report.tableInventory
-            .where((entry) => entry.databaseKey == 'retired_working')
+        final retiredReferenceTables = report.tableInventory
+            .where((entry) => entry.databaseKey == 'retired_macos_import')
             .map((entry) => entry.tableName)
             .toSet();
 
         expect(
-          retiredWorkingTables,
+          retiredReferenceTables,
           containsAll(<String>{
             'schema_migrations',
-            'projection_state',
-            'recovered_unlinked_messages',
-            'recovered_unlinked_attachments',
+            'historical_archive_sources',
           }),
         );
-        expect(retiredWorkingTables, isNot(contains('messages')));
-        expect(retiredWorkingTables, isNot(contains('chats')));
-        expect(retiredWorkingTables, isNot(contains('global_message_index')));
+        expect(retiredReferenceTables, isNot(contains('messages')));
+        expect(retiredReferenceTables, isNot(contains('import_batches')));
         expect(
           report.tableInventory
               .singleWhere(
                 (entry) =>
-                    entry.databaseKey == 'retired_working' &&
-                    entry.tableName == 'projection_state',
+                    entry.databaseKey == 'retired_macos_import' &&
+                    entry.tableName == 'historical_archive_sources',
               )
               .notes,
           contains(
-            'Retired historical projection-state metadata only; not an app-facing readiness source.',
+            'Retired archive-source reference rows; active archive-source metadata lives in overlay.',
           ),
         );
         expect(
           report.relationshipChecks
-              .where((check) => check.databaseKey == 'retired_working')
+              .where((check) => check.databaseKey == 'retired_macos_import')
               .map((check) => check.checkKey),
-          contains('recovered_unlinked_attachments_to_messages_by_guid'),
+          isEmpty,
         );
-        expect(
-          report.relationshipChecks
-              .where((check) => check.databaseKey == 'retired_working')
-              .map((check) => check.checkKey),
-          isNot(contains('messages_to_chats')),
-        );
-        expect(
-          report.invariantChecks.map((check) => check.checkKey),
-          contains('projection_state_singleton_should_exist'),
-        );
-        expect(
-          report.invariantChecks.map((check) => check.checkKey),
-          isNot(contains('working_messages_should_have_chat_linkage')),
-        );
+        expect(report.invariantChecks, isEmpty);
         expect(report.errors, isEmpty);
       },
     );
+
+    test('treats retired working database as cleanup storage only', () async {
+      final service = _buildService(
+        hasFullDiskAccess: true,
+        queryLayers: <DatabaseHealthQueryLayer>[
+          _FakeHealthQueryLayer(
+            databaseKey: 'retired_working',
+            role: 'retired_working_cleanup',
+          ),
+        ],
+      );
+
+      final report = await service.buildPhase1Report();
+      final retiredWorkingTables = report.tableInventory
+          .where((entry) => entry.databaseKey == 'retired_working')
+          .map((entry) => entry.tableName)
+          .toSet();
+
+      expect(
+        retiredWorkingTables,
+        containsAll(<String>{
+          'schema_migrations',
+          'projection_state',
+          'recovered_unlinked_messages',
+          'recovered_unlinked_attachments',
+        }),
+      );
+      expect(retiredWorkingTables, isNot(contains('messages')));
+      expect(retiredWorkingTables, isNot(contains('chats')));
+      expect(retiredWorkingTables, isNot(contains('global_message_index')));
+      expect(
+        report.tableInventory
+            .singleWhere(
+              (entry) =>
+                  entry.databaseKey == 'retired_working' &&
+                  entry.tableName == 'projection_state',
+            )
+            .notes,
+        contains(
+          'Retired historical projection-state metadata only; not an app-facing readiness source.',
+        ),
+      );
+      expect(
+        report.relationshipChecks
+            .where((check) => check.databaseKey == 'retired_working')
+            .map((check) => check.checkKey),
+        contains('recovered_unlinked_attachments_to_messages_by_guid'),
+      );
+      expect(
+        report.relationshipChecks
+            .where((check) => check.databaseKey == 'retired_working')
+            .map((check) => check.checkKey),
+        isNot(contains('messages_to_chats')),
+      );
+      expect(
+        report.invariantChecks.map((check) => check.checkKey),
+        contains('projection_state_singleton_should_exist'),
+      );
+      expect(
+        report.invariantChecks.map((check) => check.checkKey),
+        isNot(contains('working_messages_should_have_chat_linkage')),
+      );
+      expect(report.errors, isEmpty);
+    });
 
     test(
       'does not inventory a retired database when its file is absent',
@@ -204,7 +204,7 @@ void main() {
           queryLayers: <DatabaseHealthQueryLayer>[
             _FakeHealthQueryLayer(
               databaseKey: 'retired_working',
-              role: 'retired_working_reference',
+              role: 'retired_working_cleanup',
               fileExists: false,
             ),
           ],

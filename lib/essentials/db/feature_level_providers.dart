@@ -36,10 +36,10 @@ part 'feature_level_providers.g.dart';
 /// FOR DEVELOPER'S REFERENCE ONLY: path is ~/Library/Application Support/com.bigbenchsoftware.MessageLens/ on macOS.
 late final String databaseDirectoryPath;
 
-/// Retired import file kept only for cleanup/reference diagnostics.
+/// Retired import file kept only for transitional cleanup diagnostics.
 const retiredMacosImportDatabaseFileName = 'macos_import.db';
 
-/// Retired working file kept only for cleanup/reference diagnostics.
+/// Retired working file kept only for transitional cleanup diagnostics.
 const retiredWorkingDatabaseFileName = 'working.db';
 
 /// Must be called once in `main()` after `WidgetsFlutterBinding.ensureInitialized()`.
@@ -146,7 +146,7 @@ Future<DatabaseHealthAuditService> databaseHealthAuditService(
     queryLayers: <DatabaseHealthQueryLayer>[
       ReadOnlySqliteFileHealthQueryLayer(
         databaseKey: 'retired_macos_import',
-        role: 'retired_macos_import_reference',
+        role: 'retired_macos_import_cleanup',
         databasePath: path.join(
           databaseDirectoryPath,
           retiredMacosImportDatabaseFileName,
@@ -154,7 +154,7 @@ Future<DatabaseHealthAuditService> databaseHealthAuditService(
       ),
       ReadOnlySqliteFileHealthQueryLayer(
         databaseKey: 'retired_working',
-        role: 'retired_working_reference',
+        role: 'retired_working_cleanup',
         databasePath: path.join(
           databaseDirectoryPath,
           retiredWorkingDatabaseFileName,
