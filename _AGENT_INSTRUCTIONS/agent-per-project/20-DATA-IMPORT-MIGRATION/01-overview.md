@@ -66,33 +66,30 @@ See `10-import-orchestrator.md` for the current `ChatDbChangeMonitor`
 runbook and historical retained importer mechanics. Do not use the historical
 retained importer sections as live-sync guidance.
 
-## Historical Retained Compatibility Flow
+## Retired Storage Reference Flow
 
 ```
-archive/recovery source
+old app data folder
         |
         v
- retained historical import
-   macos_import.db
+retired storage files
+macos_import.db / working.db
         |
         v
- retained historical projection
-     working.db
-        |
-        v
- graph refresh / compatibility readers
+reset cleanup / health diagnostics / explicit storage-retention review
 ```
 
 - **Source-scoped import** pulls source facts into `macos_import_ss.db`; graph projection derives canonical `ss_id` rows and topology in `working_ss.db`.
-- **Retained historical import/projection** is historical unless an explicit
-  recovery/archive compatibility task reintroduces a reviewed graph-era path.
-  Keep old references named as retained compatibility, not production import.
+- **Retired historical import/projection** is historical only. If old
+  `macos_import.db` or `working.db` contents matter for archive/recovery,
+  migrate, export, or intentionally discard that storage evidence through an
+  explicit retention task. Do not recreate the old import/projection pipeline.
 - **Archive coordination** belongs to the attachment feature, not to
   import/projection. The live graph path archives newly imported source ranges
-  after graph build; retained full/manual archive workflows use explicit archive
-  services. Periodic archive sweeps read graph/import facts and overlay archive
-  records through named attachment ports; they must not consult retained
-  `working.db` as an attachment authority.
+  after graph build. Historical archive workflows use source-scoped archive
+  import and graph projection. Periodic archive sweeps read graph/import facts
+  and overlay archive records through named attachment ports; they must not
+  consult retained `working.db` as an attachment authority.
 - **Search and message evidence** now select graph `message_ss_id` scopes. Legacy working indexes are not the ordinary search spine.
 - **Overlay providers** merge user overrides at runtime; they are documented in `../10-DATABASES/05-db-overlay.md` and operate strictly after graph/import projection.
 
