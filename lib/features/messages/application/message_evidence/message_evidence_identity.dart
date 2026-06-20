@@ -24,7 +24,7 @@ int canonicalMessageEvidenceId(int messageId) {
 ///
 /// This exists only for older rowid-keyed overlay compatibility. Ordinary message
 /// evidence remains keyed by `message_ss_id`.
-int? retainedLiveMessageRowIdForEvidenceId(int messageId) {
+int? liveMessageRowIdForEvidenceId(int messageId) {
   if (SourceScopedRowKey.unpackSourceId(messageId) != liveChatDbSourceId) {
     return null;
   }

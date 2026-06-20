@@ -196,9 +196,7 @@ class GraphMessageOverlayRepository implements MessageOverlayRepository {
 
     return _GraphMessageIdentity(
       messageSsId: messageSsId,
-      retainedOverlayMessageRowId: retainedLiveMessageRowIdForEvidenceId(
-        messageSsId,
-      ),
+      retainedOverlayMessageRowId: liveMessageRowIdForEvidenceId(messageSsId),
       guid: rows.isEmpty ? null : _readNullableString(rows.single.data['guid']),
     );
   }

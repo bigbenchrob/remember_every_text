@@ -40,22 +40,22 @@ void main() {
     );
   });
 
-  test('retainedLiveMessageRowIdForEvidenceId resolves live graph ids', () {
+  test('liveMessageRowIdForEvidenceId resolves live graph ids', () {
     final messageSsId = SourceScopedRowKey.pack(
       sourceId: liveChatDbSourceId,
       sourceRowId: 42,
     );
 
-    expect(retainedLiveMessageRowIdForEvidenceId(messageSsId), 42);
+    expect(liveMessageRowIdForEvidenceId(messageSsId), 42);
   });
 
-  test('retainedLiveMessageRowIdForEvidenceId ignores non-live ids', () {
+  test('liveMessageRowIdForEvidenceId ignores non-live ids', () {
     final archiveMessageSsId = SourceScopedRowKey.pack(
       sourceId: 99,
       sourceRowId: 42,
     );
 
-    expect(retainedLiveMessageRowIdForEvidenceId(42), isNull);
-    expect(retainedLiveMessageRowIdForEvidenceId(archiveMessageSsId), isNull);
+    expect(liveMessageRowIdForEvidenceId(42), isNull);
+    expect(liveMessageRowIdForEvidenceId(archiveMessageSsId), isNull);
   });
 }
