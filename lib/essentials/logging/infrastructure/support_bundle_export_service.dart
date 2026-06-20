@@ -157,11 +157,11 @@ class SupportBundleExportService {
     try {
       return [
         (
-          'Retained Historical Import Audit Log',
+          'Retired Historical Import Audit Log',
           File('$databaseDirectoryPath/import_log'),
         ),
         (
-          'Retained Historical Projection Audit Log',
+          'Retired Historical Projection Audit Log',
           File('$databaseDirectoryPath/migrate_log'),
         ),
         (

@@ -4,14 +4,14 @@ enum PipelineIncidentSeverity { context, warning, blocking }
 ///
 /// Do not rename [PipelineIncidentStage.migration]. Older overlay incident
 /// rows may still store that enum name even though the user-facing label now
-/// describes its retained historical-projection role.
+/// describes its retired historical-projection role.
 enum PipelineIncidentStage { import, migration }
 
 extension PipelineIncidentStageDisplay on PipelineIncidentStage {
   String get displayLabel {
     return switch (this) {
       PipelineIncidentStage.import => 'Import',
-      PipelineIncidentStage.migration => 'Retained historical projection',
+      PipelineIncidentStage.migration => 'Retired historical projection',
     };
   }
 }
