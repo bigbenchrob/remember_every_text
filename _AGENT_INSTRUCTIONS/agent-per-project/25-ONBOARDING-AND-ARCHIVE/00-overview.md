@@ -158,13 +158,13 @@ mapping flow using a matched historical `chat.db` snapshot:
    relationships via SQL joins (not filesystem heuristics)
 2. **Source-scoped import DB** bridges Apple's `attachment.guid` to canonical
    source-scoped message/attachment identity for graph-native recovery.
-   Retained import files are compatibility/reference inputs only.
+   Retired import files are transitional compatibility inputs only.
 3. **Overlay archive metadata** receives archive rows with provenance
    `imported_historical_snapshot`
 
 Primary graph-native match: `attachment.guid` → source-scoped import facts →
-canonical graph message/attachment identity. Retained legacy import/working
-identity may still be read as compatibility/reference material until those
+canonical graph message/attachment identity. Retired legacy import/working
+identity may still be read as transitional compatibility material until those
 recovery paths are retired.
 Single-attachment fallback: when GUID is NULL and exactly one attachment
 exists on both sides.

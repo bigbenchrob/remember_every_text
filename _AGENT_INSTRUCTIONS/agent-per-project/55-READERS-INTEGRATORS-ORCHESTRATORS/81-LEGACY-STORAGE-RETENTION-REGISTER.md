@@ -424,13 +424,14 @@ Current implementation note:
 ## Recommended Next Slice
 
 Source-scoped archive import/removal has now cut over to graph-backed services,
-and the retained archive execution stack has been removed from production code.
+and the retired archive execution stack has been removed from production code.
 The remaining highest-leverage retention blocker is no longer archive import
-execution. It is retained compatibility storage reduction:
+execution. It is retired-file compatibility storage reduction:
 
 ```text
-reduce each retained macos_import.db / working.db purpose behind the retention
-register, without letting either file become ordinary app authority again
+reduce each retired macos_import.db / working.db purpose behind the retention
+register, without letting either file become ordinary app authority or permanent
+reference storage
 ```
 
 Closing that blocker would unlock the remaining storage simplification:
