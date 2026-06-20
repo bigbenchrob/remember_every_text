@@ -35,7 +35,7 @@ features.
 
 - `macos_import_ss.db` is the production source-scoped import ledger for ordinary app data.
 - `working_ss.db` is the production conversation graph projection consumed by graph readers and the Message Evidence Spine.
-- `macos_import.db` is retired cleanup/reference storage; old files may still
+- `macos_import.db` is retired transitional cleanup storage; old files may still
   contain historical archive-source metadata or broader historical ledger tables.
 - `working.db` is retained file/schema storage only; old files may still contain
   historical projection tables.

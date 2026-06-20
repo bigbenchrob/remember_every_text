@@ -35,7 +35,7 @@ the subsystem docs when details matter.
 | App shell, navigation, global flow, sidebar, panel stacks, search, onboarding gate, database providers, source-scoped import, graph build, and retained metadata/diagnostic boundaries | `lib/essentials/` |
 | Business feature content, feature-owned specs, domain repositories, terminal feature rendering | `lib/features/` |
 | Shared DDD helpers and generic utilities | `lib/domain_driven_development/`, `lib/core/` |
-| Graph, retained archive metadata, retained historical reference, and overlay database infrastructure | `lib/essentials/db/` plus `lib/essentials/source_scoped_import/` |
+| Graph, retained archive metadata, retained historical cleanup, and overlay database infrastructure | `lib/essentials/db/` plus `lib/essentials/source_scoped_import/` |
 | Attachment archive, deterministic recovery, attachment resolution | `lib/features/attachments/` plus overlay database metadata |
 
 ## Authoritative Reading Paths

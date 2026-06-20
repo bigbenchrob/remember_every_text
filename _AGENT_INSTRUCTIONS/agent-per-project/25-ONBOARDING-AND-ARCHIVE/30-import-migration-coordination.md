@@ -4,7 +4,7 @@
 
 Onboarding coordinates startup/retry lifecycle but does not own source-scoped
 import, projection, or graph query systems. This document describes the current
-graph-first setup flow and the retained storage/reference boundary.
+graph-first setup flow and the retained cleanup-storage boundary.
 
 ## Ownership Boundaries
 
