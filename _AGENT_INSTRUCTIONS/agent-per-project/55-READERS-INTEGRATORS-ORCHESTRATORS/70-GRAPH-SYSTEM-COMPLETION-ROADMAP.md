@@ -525,10 +525,10 @@ The graph migration is complete when these are all true.
 
 - Retired legacy execution code should be deleted when it no longer owns any
   named behavior.
-- Retained `macos_import.db` / `working.db` files are compatibility storage,
+- Retired `macos_import.db` / `working.db` files are historical storage,
   not ordinary app authority.
-- Remaining retained code or storage is explicitly classified as:
-  - retained compatibility storage
+- Remaining retired code or storage is explicitly classified as:
+  - retired cleanup/reference storage
   - recovery/archive dependency
   - diagnostic/reference path
   - deletion/export/freeze candidate
@@ -550,7 +550,7 @@ stabilize current graph branch
 → migrate search and identity fully
 → migrate archive/recovery flows
 → retire legacy import/projection execution
-→ reduce retained compatibility storage under explicit retention criteria
+→ reduce retired historical storage under explicit retention criteria
 ```
 
 The reason is simple:

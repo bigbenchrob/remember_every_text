@@ -10,7 +10,7 @@ depends_on:
   - 80-GRAPH-MIGRATION-INTERIM-PROGRESS-REPORT.md
 ---
 
-# 81 - Retained Historical Storage Register
+# 81 - Retired Historical Storage Register
 
 ## Purpose
 
@@ -24,10 +24,10 @@ frozen, or removed.
 
 ## Current Decision
 
-Document retained storage files as transitional compatibility
-storage. Do not delete them yet.
+Document retired storage files as transitional cleanup/reference storage. Do
+not delete them blindly.
 
-`macos_import.db` and `working.db` are retained compatibility storage, not
+`macos_import.db` and `working.db` are retired historical storage, not
 permanent system-of-record storage. Existing user data folders may keep them
 during the transition for recovery, audit, comparison, rollback safety, and
 support diagnostics.
@@ -36,7 +36,7 @@ The retained database files no longer own ordinary evidence, search, contact
 identity, conversation browsing, live polling, Historical Archives execution,
 or first-run graph setup. New ordinary app behavior must not read or write
 them. Remaining access is allowed only when it is explicitly classified in this
-register as transitional compatibility storage.
+register as retired storage/reference evidence.
 
 The safe next stage is:
 
@@ -139,9 +139,9 @@ Done means:
   authority.
 
 The completed execution-retirement criteria are now satisfied for Historical
-Archives import/removal. The retained archive pipeline provider, old import
+Archives import/removal. The retired archive pipeline provider, old import
 progress/detail widgets, old ledger orchestrator, old table-importer stack,
-old retained projection orchestrator/migrator stack, and their tests have been
+old retired projection orchestrator/migrator stack, and their tests have been
 removed. Broader deletion of retained database files, schemas, and diagnostic
 surfaces must still follow this retention register and the full-deletion
 criteria above.
@@ -155,13 +155,13 @@ criteria above.
 - `lib/features/settings/feature_level_providers.dart`
 - `lib/features/settings/presentation/view_model/historical_archives_workflow_panel_model_provider.dart`
 
-**Why retained**
+**Why kept**
 
 The historical archive workflow previously stored and read archive-source
 status in the retained archive metadata database. That active workflow state
 has moved to overlay settings. Retained `macos_import.db` files may still carry
 old archive-source rows in existing data folders, but those rows are now
-transitional compatibility material only.
+retired transitional material only.
 
 **Current boundary**
 
@@ -201,7 +201,7 @@ metadata has moved to overlay-owned settings storage behind
 composes that repository from `overlayDatabaseProvider`, not
 `retainedArchiveMetadataStoreProvider`. The retained
 `macos_import.db.historical_archive_sources` table is no longer the active
-workflow metadata home. It remains existing-file compatibility storage only
+workflow metadata home. It remains existing-file retired storage only
 until a deliberate cleanup/export/discard policy removes the old file purpose.
 Fresh retained archive metadata DB creation no longer recreates those old
 archive-source metadata columns.
@@ -233,7 +233,7 @@ Done means:
 - `lib/essentials/onboarding/application/message_data_reset_service.dart`
 - `lib/essentials/onboarding/application/database_existence_checker.dart`
 
-**Why retained**
+**Why kept**
 
 Reset and startup detection intentionally know about both graph-era derived
 databases and retained derived database files. This prevents stale files,
@@ -258,7 +258,7 @@ it does not instantiate a retained Drift connection merely to close the file.
 
 Done means:
 
-- retained storage has been reduced to deliberate transitional compatibility
+- retired storage has been reduced to deliberate transitional cleanup/reference
   storage with explicit retirement criteria.
 - reset behavior no longer needs to close/delete retained DB files.
 - startup no longer needs to distinguish legacy-only derived data from
@@ -273,7 +273,7 @@ Done means:
 - `lib/essentials/db/application/database_health_audit/**`
 - support bundle / diagnostic report actions that invoke database health audit
 
-**Why retained**
+**Why kept**
 
 Diagnostics intentionally inspect both current graph databases and retained
 historical cleanup databases while the transition is incomplete. This helps
@@ -283,8 +283,8 @@ identify stale-data, compatibility, and recovery conditions.
 
 Diagnostic reads are allowed to look across layers as long as they do not make
 retained storage authoritative for ordinary feature behavior.
-Database health now treats retained `working.db` as recovered-message
-compatibility storage plus minimal projection-state storage sanity. Ordinary
+Database health now treats retained `working.db` as recovered-message retired
+storage/reference evidence plus minimal projection-state storage sanity. Ordinary
 message/chat/contact/handle/attachment/reaction health belongs to
 `working_ss.db`; retained `working.db` ordinal indexes are no longer audited as
 timeline infrastructure because graph evidence skeletons own timeline
@@ -318,14 +318,15 @@ Done means:
 - retained/source-scoped tests for graph monitor behavior and source-scoped
   extractor behavior
 
-**Why retained**
+**Why kept**
 
-Tests should remain as long as the corresponding retained compatibility code
-remains. The old table-importer tests were removed with the old table-importer
-execution stack, and retained `db_migrate` tests were removed with the retained
-projection orchestrator/migrator stack. The old `db_importers` folder has also
-been retired: graph monitor tests now live under `conversation_graph`, while
-extractor/enrichment tests now live under `source_scoped_import`.
+Tests should remain as long as the corresponding retired-storage code or
+diagnostic boundary remains. The old table-importer tests were removed with the
+old table-importer execution stack, and historical `db_migrate` tests were
+removed with the retired projection orchestrator/migrator stack. The old
+`db_importers` folder has also been retired: graph monitor tests now live under
+`conversation_graph`, while extractor/enrichment tests now live under
+`source_scoped_import`.
 
 The old retained `working.db` ordinal-index rebuild and trigger-maintenance
 tests were also removed after the graph Message Evidence Spine took over
@@ -426,7 +427,7 @@ Current implementation note:
 Source-scoped archive import/removal has now cut over to graph-backed services,
 and the retired archive execution stack has been removed from production code.
 The remaining highest-leverage retention blocker is no longer archive import
-execution. It is retired-file compatibility storage reduction:
+execution. It is retired-file storage reduction:
 
 ```text
 reduce each retired macos_import.db / working.db purpose behind the retention

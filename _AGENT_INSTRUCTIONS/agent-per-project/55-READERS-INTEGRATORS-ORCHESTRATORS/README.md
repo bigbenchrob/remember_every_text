@@ -82,8 +82,8 @@ Read and update [`73-GRAPH-MIGRATION-EXECUTION-CHECKLIST.md`](73-GRAPH-MIGRATION
 
 Read [`74-OVERLAY-IDENTITY-KEY-AUDIT.md`](74-OVERLAY-IDENTITY-KEY-AUDIT.md) before changing overlay schemas, graph-native Search, message tags/saved state, contact favourites, manual handle links, dismissed/visibility behavior, or attachment archive identity.
 
-Read [`80-GRAPH-MIGRATION-INTERIM-PROGRESS-REPORT.md`](80-GRAPH-MIGRATION-INTERIM-PROGRESS-REPORT.md) for the current interim state after graph lifecycle productionization, live polling proof, ordinary-read migration, retained compatibility cleanup, and documentation alignment.
+Read [`80-GRAPH-MIGRATION-INTERIM-PROGRESS-REPORT.md`](80-GRAPH-MIGRATION-INTERIM-PROGRESS-REPORT.md) for historical interim state after graph lifecycle productionization, live polling proof, ordinary-read migration, retained-storage cleanup, and documentation alignment.
 
-Read [`81-LEGACY-STORAGE-RETENTION-REGISTER.md`](81-LEGACY-STORAGE-RETENTION-REGISTER.md) before deleting retained `macos_import.db` / `working.db` schemas, retained archive import/projection code, historical archive settings metadata, retained database diagnostics, or legacy schema/migrator tests.
+Read [`81-LEGACY-STORAGE-RETENTION-REGISTER.md`](81-LEGACY-STORAGE-RETENTION-REGISTER.md) before deleting retired `macos_import.db` / `working.db` files, retired archive import/projection references, historical archive settings metadata, retired database diagnostics, or legacy schema/migrator tests.
 
 Read [`82-SOURCE-SCOPED-ARCHIVE-IMPORT-CUTOVER-PLAN.md`](82-SOURCE-SCOPED-ARCHIVE-IMPORT-CUTOVER-PLAN.md) before implementing graph-native historical archive import, registering non-live source IDs, parameterizing graph import/projection by source, or changing the Historical Archives workflow.

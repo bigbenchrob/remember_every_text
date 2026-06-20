@@ -19,8 +19,8 @@ This document records the current retirement-oriented assessment of:
 - `macos_import.db`
 - `working.db`
 
-It applies the explicit policy decision that these files are transitional
-compatibility storage only. They are not permanent reference databases and
+It applies the explicit policy decision that these files are retired
+transitional storage only. They are not permanent reference databases and
 should not remain architectural components of MessageLens.
 
 The target end state remains:
@@ -43,8 +43,8 @@ working.db
 
 ## Policy Decision
 
-`macos_import.db` and `working.db` are retained transitional compatibility
-storage, not permanent system-of-record storage.
+`macos_import.db` and `working.db` are retired transitional storage, not
+permanent system-of-record storage.
 
 They may remain temporarily during final retirement work, but only for named
 storage, metadata, diagnostic, or migration purposes. They should not be used
@@ -339,7 +339,7 @@ Non-risks under the new policy:
 
 Goal:
 
-- make "transitional compatibility storage only" explicit.
+- make "retired transitional storage only" explicit.
 
 Work:
 
@@ -474,7 +474,7 @@ Done means:
 
 ## Current Readiness Judgment
 
-The project is ready to move from retained compatibility storage toward
+The project is ready to move from retained historical storage toward
 explicit retirement planning.
 
 However, it is not yet ready for blind deletion because:
