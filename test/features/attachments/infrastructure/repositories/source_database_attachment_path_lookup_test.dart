@@ -118,7 +118,7 @@ final class _FakeSourceDatabase implements ReadOnlySourceDatabase {
 
   @override
   Future<List<Map<String, Object?>>> query(String table, {String? orderBy}) {
-    throw UnimplementedError('query is not used by this test');
+    throw StateError('query should not be used by this test');
   }
 
   @override
