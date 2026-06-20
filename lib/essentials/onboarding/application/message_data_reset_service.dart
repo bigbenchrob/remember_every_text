@@ -25,7 +25,7 @@ const activeGraphDatabaseBaseNames = <String>[
   conversationGraphDatabaseFileName,
 ];
 
-const derivedMessageDataDatabaseBaseNames = <String>[
+const messageDataResetDatabaseBaseNames = <String>[
   ...retiredCleanupDatabaseBaseNames,
   ...activeGraphDatabaseBaseNames,
 ];
@@ -64,7 +64,7 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
 
       final fileStore = _ref.read(derivedMessageDataFileStoreProvider);
       final deletedFilePaths = await fileStore.deleteDatabaseBaseFiles(
-        derivedMessageDataDatabaseBaseNames,
+        messageDataResetDatabaseBaseNames,
       );
       logger.info(
         'Deleted derived database files',
@@ -82,7 +82,7 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
       _ref.read(messageDataVersionProvider.notifier).bump();
 
       final databaseExistsAfterReset = fileStore.databaseExistenceByBaseName(
-        derivedMessageDataDatabaseBaseNames,
+        messageDataResetDatabaseBaseNames,
       );
 
       logger.info(

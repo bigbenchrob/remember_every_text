@@ -22,7 +22,7 @@ void main() {
         ]),
       );
       expect(
-        derivedMessageDataDatabaseBaseNames,
+        messageDataResetDatabaseBaseNames,
         containsAll(<String>[
           retiredMacosImportDatabaseFileName,
           retiredWorkingDatabaseFileName,
