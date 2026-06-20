@@ -659,7 +659,7 @@ _tableSpecsByDatabase = <String, List<AuditTableSpec>>{
         ),
       ],
       notes: <String>[
-        'Retired archive-source reference rows; active archive-source metadata lives in overlay.',
+        'Retired archive-source cleanup rows; active archive-source metadata lives in overlay.',
       ],
     ),
   ],
@@ -667,7 +667,7 @@ _tableSpecsByDatabase = <String, List<AuditTableSpec>>{
     AuditTableSpec(
       tableName: 'schema_migrations',
       notes: <String>[
-        'Retired historical reference storage only; graph readiness is app-facing.',
+        'Retired historical cleanup storage only; graph readiness is app-facing.',
       ],
     ),
     AuditTableSpec(

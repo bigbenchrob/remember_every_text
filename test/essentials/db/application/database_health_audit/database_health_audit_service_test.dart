@@ -118,7 +118,7 @@ void main() {
               )
               .notes,
           contains(
-            'Retired archive-source reference rows; active archive-source metadata lives in overlay.',
+            'Retired archive-source cleanup rows; active archive-source metadata lives in overlay.',
           ),
         );
         expect(
