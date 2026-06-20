@@ -613,7 +613,7 @@ void main() {
         ),
         reason:
             'retainedArchiveMetadataStoreProvider has been retired. '
-            'Retained macos_import.db is cleanup/reference storage only, so '
+            'Retired macos_import.db is cleanup/reference storage only, so '
             'ordinary app behavior must not recreate a provider authority '
             'for it.\n'
             'Actual users:\n${offenders.join('\n')}',
@@ -628,7 +628,7 @@ void main() {
         orderedEquals(_retiredMacosImportFileAllowedFiles.toList()..sort()),
         reason:
             'Retired macos_import.db is cleanup/reference storage only. '
-            'Ordinary code must not add new retained import file access or '
+            'Ordinary code must not add new retired import file access or '
             'workflow authority.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
@@ -659,7 +659,7 @@ void main() {
           orderedEquals(_retiredWorkingFileAllowedFiles.toList()..sort()),
           reason:
               'Retired working.db is cleanup/reference storage only. '
-              'Ordinary code must not add new retained working file access or '
+              'Ordinary code must not add new retired working file access or '
               'workflow authority.\n'
               'Actual users:\n${offenders.join('\n')}',
         );
@@ -2726,7 +2726,7 @@ void main() {
             'Conversation graph projection/status repositories should name '
             'the source-scoped import database as an import ledger. Generic '
             'importDatabase identifiers blur active source-scoped ledger '
-            'ownership with retained import compatibility storage.\n'
+            'ownership with retired import compatibility storage.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
