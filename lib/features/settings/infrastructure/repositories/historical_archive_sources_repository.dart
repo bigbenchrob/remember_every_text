@@ -1,16 +1,20 @@
-import '../../../../essentials/db/application/retained_archive_metadata_store.dart';
+import 'dart:convert';
+
+import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import '../../application/historical_archive_sources.dart';
 
 class HistoricalArchiveSourcesRepository implements HistoricalArchiveSources {
   const HistoricalArchiveSourcesRepository({
-    required RetainedArchiveMetadataStore metadataStore,
-  }) : _metadataStore = metadataStore;
+    required OverlayDatabase overlayDatabase,
+  }) : _overlayDatabase = overlayDatabase;
 
-  final RetainedArchiveMetadataStore _metadataStore;
+  static const String _settingKey = 'historical_archive_sources/v1';
+
+  final OverlayDatabase _overlayDatabase;
 
   @override
   Future<List<HistoricalArchiveSourceMetadata>> readKnownSources() async {
-    final records = await _metadataStore.listHistoricalArchiveSources();
+    final records = await _readRecords();
     return [
       for (final record in records)
         HistoricalArchiveSourceMetadata(
@@ -32,8 +36,69 @@ class HistoricalArchiveSourcesRepository implements HistoricalArchiveSources {
   @override
   Future<void> upsertSourceMetadata(
     HistoricalArchiveSourceMetadataUpdate update,
+  ) async {
+    final recordsBySource = {
+      for (final record in await _readRecords()) record.sourceChatDb: record,
+    };
+    recordsBySource[update.sourceChatDb] = _ArchiveSourceRecord.fromUpdate(
+      update,
+    );
+
+    final records = recordsBySource.values.toList()
+      ..sort((left, right) => right.updatedAtUtc.compareTo(left.updatedAtUtc));
+
+    await _overlayDatabase.writeOverlaySetting(
+      settingKey: _settingKey,
+      settingValue: jsonEncode([for (final record in records) record.toJson()]),
+    );
+  }
+
+  Future<List<_ArchiveSourceRecord>> _readRecords() async {
+    final rawValue = await _overlayDatabase.readOverlaySetting(_settingKey);
+    if (rawValue == null || rawValue.trim().isEmpty) {
+      return const [];
+    }
+
+    final decoded = jsonDecode(rawValue);
+    if (decoded is! List<Object?>) {
+      return const [];
+    }
+
+    return [
+      for (final item in decoded)
+        if (item is Map<String, Object?>) _ArchiveSourceRecord.fromJson(item),
+    ]..sort((left, right) => right.updatedAtUtc.compareTo(left.updatedAtUtc));
+  }
+}
+
+final class _ArchiveSourceRecord {
+  const _ArchiveSourceRecord({
+    required this.sourceChatDb,
+    required this.folderPath,
+    required this.sourceLabel,
+    required this.chatDbStatusLabel,
+    required this.attachmentsStatusLabel,
+    required this.preflightStatusLabel,
+    required this.preflightDetail,
+    required this.updatedAtUtc,
+    this.totalMessages,
+    this.totalChats,
+    this.totalHandles,
+    this.missingGuids,
+    this.earliestMessageUtc,
+    this.latestMessageUtc,
+    this.dryRunNewMessages,
+    this.dryRunDuplicateMessages,
+    this.lastImportFinishedAtUtc,
+    this.lastImportSuccess,
+    this.lastImportError,
+    this.lastImportedMessageCount,
+  });
+
+  factory _ArchiveSourceRecord.fromUpdate(
+    HistoricalArchiveSourceMetadataUpdate update,
   ) {
-    return _metadataStore.upsertHistoricalArchiveSource(
+    return _ArchiveSourceRecord(
       sourceChatDb: update.sourceChatDb,
       folderPath: update.folderPath,
       sourceLabel: update.sourceLabel,
@@ -41,6 +106,7 @@ class HistoricalArchiveSourcesRepository implements HistoricalArchiveSources {
       attachmentsStatusLabel: update.attachmentsStatusLabel,
       preflightStatusLabel: update.preflightStatusLabel,
       preflightDetail: update.preflightDetail,
+      updatedAtUtc: update.updatedAtUtc,
       totalMessages: update.totalMessages,
       totalChats: update.totalChats,
       totalHandles: update.totalHandles,
@@ -53,7 +119,95 @@ class HistoricalArchiveSourcesRepository implements HistoricalArchiveSources {
       lastImportSuccess: update.lastImportSuccess,
       lastImportError: update.lastImportError,
       lastImportedMessageCount: update.lastImportedMessageCount,
-      updatedAtUtc: update.updatedAtUtc,
     );
   }
+
+  factory _ArchiveSourceRecord.fromJson(Map<String, Object?> json) {
+    return _ArchiveSourceRecord(
+      sourceChatDb: _stringValue(json['sourceChatDb']),
+      folderPath: _stringValue(json['folderPath']),
+      sourceLabel: _stringValue(json['sourceLabel']),
+      chatDbStatusLabel: _stringValue(json['chatDbStatusLabel']),
+      attachmentsStatusLabel: _stringValue(json['attachmentsStatusLabel']),
+      preflightStatusLabel: _stringValue(json['preflightStatusLabel']),
+      preflightDetail: _stringValue(json['preflightDetail']),
+      updatedAtUtc: _stringValue(json['updatedAtUtc']),
+      totalMessages: _intValue(json['totalMessages']),
+      totalChats: _intValue(json['totalChats']),
+      totalHandles: _intValue(json['totalHandles']),
+      missingGuids: _intValue(json['missingGuids']),
+      earliestMessageUtc: _nullableStringValue(json['earliestMessageUtc']),
+      latestMessageUtc: _nullableStringValue(json['latestMessageUtc']),
+      dryRunNewMessages: _intValue(json['dryRunNewMessages']),
+      dryRunDuplicateMessages: _intValue(json['dryRunDuplicateMessages']),
+      lastImportFinishedAtUtc: _nullableStringValue(
+        json['lastImportFinishedAtUtc'],
+      ),
+      lastImportSuccess: _boolValue(json['lastImportSuccess']),
+      lastImportError: _nullableStringValue(json['lastImportError']),
+      lastImportedMessageCount: _intValue(json['lastImportedMessageCount']),
+    );
+  }
+
+  final String sourceChatDb;
+  final String folderPath;
+  final String sourceLabel;
+  final String chatDbStatusLabel;
+  final String attachmentsStatusLabel;
+  final String preflightStatusLabel;
+  final String preflightDetail;
+  final int? totalMessages;
+  final int? totalChats;
+  final int? totalHandles;
+  final int? missingGuids;
+  final String? earliestMessageUtc;
+  final String? latestMessageUtc;
+  final int? dryRunNewMessages;
+  final int? dryRunDuplicateMessages;
+  final String? lastImportFinishedAtUtc;
+  final bool? lastImportSuccess;
+  final String? lastImportError;
+  final int? lastImportedMessageCount;
+  final String updatedAtUtc;
+
+  Map<String, Object?> toJson() {
+    return <String, Object?>{
+      'sourceChatDb': sourceChatDb,
+      'folderPath': folderPath,
+      'sourceLabel': sourceLabel,
+      'chatDbStatusLabel': chatDbStatusLabel,
+      'attachmentsStatusLabel': attachmentsStatusLabel,
+      'preflightStatusLabel': preflightStatusLabel,
+      'preflightDetail': preflightDetail,
+      'totalMessages': totalMessages,
+      'totalChats': totalChats,
+      'totalHandles': totalHandles,
+      'missingGuids': missingGuids,
+      'earliestMessageUtc': earliestMessageUtc,
+      'latestMessageUtc': latestMessageUtc,
+      'dryRunNewMessages': dryRunNewMessages,
+      'dryRunDuplicateMessages': dryRunDuplicateMessages,
+      'lastImportFinishedAtUtc': lastImportFinishedAtUtc,
+      'lastImportSuccess': lastImportSuccess,
+      'lastImportError': lastImportError,
+      'lastImportedMessageCount': lastImportedMessageCount,
+      'updatedAtUtc': updatedAtUtc,
+    };
+  }
+}
+
+String _stringValue(Object? value) {
+  return value is String ? value : '';
+}
+
+String? _nullableStringValue(Object? value) {
+  return value is String && value.isNotEmpty ? value : null;
+}
+
+int? _intValue(Object? value) {
+  return value is int ? value : null;
+}
+
+bool? _boolValue(Object? value) {
+  return value is bool ? value : null;
 }

@@ -189,16 +189,14 @@ Retained archive-source batch ID and import-start timestamp fields have been
 removed from the public metadata wrapper. Their old SQLite columns are tolerated
 only as existing-file schema compatibility.
 Historical Archives workflow presentation no longer imports the retained
-database wrapper or provider directly. Read/write access to
-`macos_import.db.historical_archive_sources` is quarantined behind
-`HistoricalArchiveSourcesRepository`, which depends on the typed
-`RetainedArchiveMetadataStore` contract. The settings feature public provider
-barrel owns repository composition for both historical archive sources and
-archive source inspection; infrastructure repositories no longer declare their
-own Riverpod providers or import broad database provider barrels. The central
-DB provider constructs the concrete retained archive metadata adapter;
-presentation state handles archive workflow semantics while infrastructure owns
-retained metadata persistence.
+database wrapper or provider directly. Active Historical Archives source
+metadata has moved to overlay-owned settings storage behind
+`HistoricalArchiveSourcesRepository`; the settings feature public provider now
+composes that repository from `overlayDatabaseProvider`, not
+`retainedArchiveMetadataStoreProvider`. The retained
+`macos_import.db.historical_archive_sources` table is no longer the active
+workflow metadata home. It remains existing-file compatibility storage only
+until a deliberate cleanup/export/discard policy removes the old file purpose.
 Fresh retained archive metadata DB creation no longer recreates those old
 archive-source metadata columns.
 Database health also treats retained `macos_import.db` as archive-source
@@ -214,10 +212,12 @@ compatibility, but new files do not recreate `import_batches`, `messages`,
 
 Done means:
 
-- archive-source metadata has a source-scoped home.
+- archive-source metadata has an overlay-owned workflow home or a
+  source-scoped/source-registry provenance home, as appropriate.
 - existing archive-source status can be migrated or intentionally discarded.
 - the settings workflow no longer reads `macos_import.db` for archive-source
-  rows.
+  rows. This is satisfied for active Historical Archives metadata by the
+  overlay-backed `HistoricalArchiveSourcesRepository`.
 - graph preflight/dry-run duplicate estimates remain available.
 - removal/import success criteria no longer mention retained projection.
 
@@ -398,7 +398,7 @@ Known retained purposes:
 
 | Purpose | Current retained storage | Allowed owner | Reduction target |
 | --- | --- | --- | --- |
-| Archive-source workflow metadata | `macos_import.db.historical_archive_sources` | Historical Archives settings repository | Move metadata to source-scoped/overlay-owned archive source state or deliberately export/discard old workflow state. |
+| Archive-source workflow metadata | overlay settings key `historical_archive_sources/v1`; old `macos_import.db.historical_archive_sources` may exist in retained files | Historical Archives settings repository | Active metadata has moved to overlay storage. Decide whether old retained metadata is migrated, exported, or intentionally discarded before deleting retained files. |
 | Existing-folder reset cleanup | `macos_import.db`, `working.db`, WAL/SHM files | Message data reset service | Keep until old derived files are either no longer created or a safe backup/cleanup policy replaces direct deletion. |
 | Support diagnostics and audit | read-only retained file inspection | Database health/support diagnostics | Add graph/source-scoped equivalents for any retained report value before narrowing retained inspection. |
 | Historical comparison / rollback safety | existing user `working.db` / `macos_import.db` files | Diagnostic-only file readers | Keep until historical-reference value is migrated, exported, explicitly rejected, or user backup guidance exists. |

@@ -374,6 +374,17 @@ Done means:
 - `lib/features/settings/feature_level_providers.dart` no longer watches
   `retainedArchiveMetadataStoreProvider`.
 
+Implementation status:
+
+- Satisfied for active Historical Archives workflow metadata. The public
+  settings provider now composes `HistoricalArchiveSourcesRepository` from
+  `overlayDatabaseProvider`, and the repository stores source metadata in the
+  overlay settings key `historical_archive_sources/v1`.
+- The old `macos_import.db.historical_archive_sources` table may still exist in
+  retained files, but it is no longer the active metadata authority. Its
+  remaining disposition is cleanup/export/discard policy, not production
+  workflow support.
+
 ### Phase 3: Demote Retained Files to Cleanup Targets
 
 Goal:

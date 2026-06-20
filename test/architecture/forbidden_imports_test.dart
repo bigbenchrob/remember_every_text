@@ -16,7 +16,6 @@ const Set<String> _sidebarSemanticActionTransportFiles = {
 
 const Set<String> _retainedArchiveMetadataStoreProviderAllowedFiles = {
   'lib/essentials/onboarding/application/message_data_reset_service.dart',
-  'lib/features/settings/feature_level_providers.dart',
 };
 
 const Set<String> _retainedArchiveMetadataFileAllowedFiles = {

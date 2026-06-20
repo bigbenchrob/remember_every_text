@@ -2524,6 +2524,11 @@ criteria.
     `ArchiveCompatibilityKey` construction sites. New code must pass typed keys
     through existing evidence/resolver/diagnostic boundaries instead of
     rebuilding retained archive compatibility identity ad hoc.
+  - Moved active Historical Archives source metadata out of retained
+    `macos_import.db` storage and into overlay-owned settings storage behind
+    `HistoricalArchiveSourcesRepository`. The settings feature provider no
+    longer watches `retainedArchiveMetadataStoreProvider`, and the retained
+    provider tripwire was tightened so settings cannot regain that authority.
   - Renamed conversation graph projection/status repository constructor fields
     and tests from generic `importDatabase` to `importLedgerDatabase`. The only
     remaining conversation-graph `importDatabase` wording is the physical
