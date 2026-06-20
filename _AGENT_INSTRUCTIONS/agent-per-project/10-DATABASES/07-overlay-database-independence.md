@@ -199,7 +199,7 @@ in providers via `overlayDb.getAllHandleVisibilities()`.
 | Concern | `db-graph-working` / retained files | `db-overlay` |
 | --- | --- | --- |
 | Ownership | Source-scoped graph projection; retired files only for recovery/reference diagnostics | User-facing services and archive-source metadata |
-| Lifecycle | Graph projection is disposable/rebuildable; retired files are cleanup/reference storage | Persistent |
+| Lifecycle | Graph projection is disposable/rebuildable; retired files are transitional cleanup storage | Persistent |
 | Writes | Graph projectors write graph DB; retired import/working files are not ordinary write targets | User actions/services and archive-source metadata services only |
 | Contents | Source-derived contacts, handles, chats, messages, topology, projection inputs; historical file inventory | Manual handle links, custom names, visibility preferences, message user metadata, favorites, archived attachment metadata, archive-source metadata |
 | Foreign Keys | Enforced by Drift schema | Enforced by Drift schema |

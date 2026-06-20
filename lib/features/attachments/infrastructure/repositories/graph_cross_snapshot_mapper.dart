@@ -11,7 +11,7 @@ import '../../application/historical_snapshot_reader.dart';
 ///
 /// This replaces the retired cross-snapshot recovery bridge. Historical
 /// snapshots now resolve against the source-scoped import ledger and
-/// conversation graph, not retired compatibility/reference rows.
+/// conversation graph, not retired compatibility rows.
 ///
 /// The graph-era bridge is:
 /// historical snapshot -> source-scoped import ledger -> conversation graph.

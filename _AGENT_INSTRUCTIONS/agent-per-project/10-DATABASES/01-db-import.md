@@ -29,7 +29,7 @@ tolerate those files.
 > `macos_import_ss.db` via source-scoped import providers. Archive-source
 > metadata now lives in `user_overlays.db` behind overlay-owned services. Do not
 > add new product-facing behavior or provider access to `macos_import.db`; it is
-> cleanup/reference storage only.
+> transitional cleanup storage only.
 
 - **Alias**: `db-import`
 - **Physical File**: `~/Library/Application Support/com.bigbenchsoftware.MessageLens/macos_import.db`

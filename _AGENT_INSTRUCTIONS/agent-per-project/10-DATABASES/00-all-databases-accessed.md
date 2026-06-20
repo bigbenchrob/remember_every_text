@@ -23,7 +23,7 @@ This is the canonical index for every SQLite database the project touches. Treat
 
 - **Resolve AddressBook paths via providers only.** Use `getFolderAggregateEitherProvider` (documented in `06-addressbook-path-resolution.md`). Never hardcode `/Sources/<UUID>/...`.
 - **Do not open SQLite files directly.** Always go through the Riverpod providers declared in `lib/essentials/db/feature_level_providers.dart`. Extra connections will lock the file.
-- **Production reads are graph-backed.** Ordinary app data flows through `db-import-ss` and `db-graph-working`; archive-source metadata now lives in `db-overlay`. Retired `db-import` and `db-working` files are old cleanup/reference inventory for reset and diagnostics.
+- **Production reads are graph-backed.** Ordinary app data flows through `db-import-ss` and `db-graph-working`; archive-source metadata now lives in `db-overlay`. Retired `db-import` and `db-working` files are transitional cleanup inventory for reset and diagnostics.
 - **Overlay remains separate.** User intent lives in `db-overlay` and is merged at read time; no import/projection path may copy overlay intent into graph or working tables.
 - **Shut everything down before manual access.** Quit the Flutter app and tooling prior to backups or ad-hoc SQL to avoid WAL/locking surprises.
 
@@ -37,8 +37,8 @@ Use these aliases consistently across docs, code comments, and conversations.
 | `db-chat` | `chat.db` | macOS Messages source ledger | `PathsHelper.messagesDatabasePath` (import pipeline) | `~/Library/Messages/chat.db` |
 | `db-import-ss` | `macos_import_ss.db` | Production source-scoped import ledger for Messages + AddressBook facts | `importDatabaseProvider` | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/macos_import_ss.db` |
 | `db-graph-working` | `working_ss.db` | Production source-scoped conversation graph consumed by graph readers and Message Evidence Spine | `driftConversationGraphDatabaseProvider` | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/working_ss.db` |
-| `db-import` | `macos_import.db` | Retired historical import/reference file; old files may contain retained ledger tables | No central app provider; reset/diagnostics treat as cleanup/reference file storage | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/macos_import.db` |
-| `db-working` | `working.db` | Retired historical projection file/schema inventory | No central app provider; reset/diagnostics treat as cleanup/reference file storage | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/working.db` |
+| `db-import` | `macos_import.db` | Retired historical import cleanup file; old files may contain retained ledger tables | No central app provider; reset/diagnostics treat as transitional cleanup file storage | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/macos_import.db` |
+| `db-working` | `working.db` | Retired historical projection file/schema inventory | No central app provider; reset/diagnostics treat as transitional cleanup file storage | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/working.db` |
 | `db-overlay` | `user_overlays.db` | Long-lived user overrides and preferences | `overlayDatabaseProvider` | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/user_overlays.db` |
 
 ## Coupled Database Groups
@@ -66,8 +66,8 @@ macOS AddressBook (db-address-book)
 - `db-chat`: retrieved via `PathsHelper` inside import/monitor infrastructure; feature and presentation code must not open it directly.
 - `db-import-ss`: `importDatabaseProvider` from `lib/essentials/source_scoped_import/infrastructure/import_database_provider.dart`.
 - `db-graph-working`: `driftConversationGraphDatabaseProvider` from `lib/essentials/db/feature_level_providers.dart`.
-- `db-import`: no central app provider remains; retired cleanup/reference file only.
-- `db-working`: no central app provider remains; retired cleanup/reference file only.
+- `db-import`: no central app provider remains; retired transitional cleanup file only.
+- `db-working`: no central app provider remains; retired transitional cleanup file only.
 - `db-overlay`: `overlayDatabaseProvider` (generated from `overlayDatabase`) for user intent and archive-source metadata.
 
 ## When to Touch What
@@ -78,7 +78,7 @@ macOS AddressBook (db-address-book)
 | Inspect raw macOS Messages | `db-chat` | Read-only; consumed by import/monitor infrastructure. |
 | Verify production source-scoped import batches or schema diffs | `db-import-ss` | Treat as source-derived and importer-owned; agents must never mutate rows manually. |
 | Debug app-visible graph state | `db-graph-working` | Graph projection backing ordinary app reads. Manual edits are overwritten by graph rebuild. |
-| Inspect retired historical/reference storage | `db-import` / `db-working` | Diagnostics/cleanup only; do not use as the authority for ordinary UI behavior or archive-source metadata. |
+| Inspect retired historical cleanup storage | `db-import` / `db-working` | Diagnostics/cleanup only; do not use as the authority for ordinary UI behavior or archive-source metadata. |
 | Review manual overrides (handles, UI prefs) | `db-overlay` | Persistent user customizations. Follow overlay independence rules before editing. |
 
 ## Next References

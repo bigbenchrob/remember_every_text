@@ -118,7 +118,7 @@ Hard boundaries:
 
 Onboarding is essentials-owned orchestration. It evaluates environment readiness,
 drives the onboarding overlay lifecycle, coordinates graph build actions, and
-syncs readiness states into panel surfaces. Retained metadata/reference storage
+syncs readiness states into panel surfaces. Retired-file cleanup storage
 is not the ordinary onboarding success path.
 
 Attachment archive and deterministic recovery are feature-owned attachment
@@ -135,7 +135,7 @@ Use `../25-ONBOARDING-AND-ARCHIVE/` for current behavior.
   reads use `driftConversationGraphDatabaseProvider`; source-scoped import uses
   `importDatabaseProvider` from `source_scoped_import`; overlay user intent and
   archive-source metadata use `overlayDatabaseProvider`.
-  Retired `macos_import.db` and `working.db` are cleanup/reference file concerns
+  Retired `macos_import.db` and `working.db` are transitional cleanup file concerns
   and no longer have central app providers.
 - Do not invent generic provider names such as `workingDatabaseProvider` or
   `importDatabaseProvider` unless code first introduces them.
