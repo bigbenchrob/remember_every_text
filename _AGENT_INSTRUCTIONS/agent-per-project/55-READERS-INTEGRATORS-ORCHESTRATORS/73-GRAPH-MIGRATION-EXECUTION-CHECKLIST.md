@@ -2932,6 +2932,15 @@ criteria.
   `onboarding_last_graph_projection_result`. The historical
   `onboarding_last_migration_result` key remains readable and clearable only
   as a persisted compatibility fallback.
+- Tightened `canonicalLiveChatGraphId` so invalid placeholder ids are
+  preserved instead of being packed into graph identity. This keeps source-row
+  compatibility normalization aligned with the `SourceScopedRowKey` contract:
+  only positive live `chat.db` ROWIDs can be converted to graph ids.
+- Moved message URL opening behind `ExternalLinkActions`. Message evidence
+  widgets still render tappable URL previews, but external-launch side effects
+  now cross the external-links action boundary instead of reading the lower
+  level opener service directly. Added provider coverage and an architecture
+  tripwire for this boundary.
 
 ### Exit Criteria
 
