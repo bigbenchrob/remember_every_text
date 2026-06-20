@@ -75,7 +75,7 @@ Representative historical tables that may still appear in old files:
 | `chats` | Chat metadata (service, title, derived counters). |
 | `messages` | Message records referencing chat + handle IDs, along with derived UI flags. |
 | `recovered_unlinked_messages` / `recovered_unlinked_attachments` | Preserved source rows and attachments that are not linked through normal chat-message joins. |
-| `global_message_index` / `message_index` / `contact_message_index` | Retained legacy ordinal-index tables. Ordinary timeline navigation and heatmap coordination now use graph evidence skeletons. |
+| `global_message_index` / `message_index` / `contact_message_index` | Retired legacy ordinal-index tables. Ordinary timeline navigation and heatmap coordination now use graph evidence skeletons. |
 | `attachments` | Projected attachment metadata keyed to message GUIDs and import attachment IDs. |
 | `reactions` / `reaction_counts` | Projected tapbacks and cached reaction totals. |
 | `read_state` / `message_read_marks` | Chat-level and message-level read-state projection. |

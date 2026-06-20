@@ -55,8 +55,8 @@ metadata adapter has been removed from active code.
 
 Existing user folders may still contain older tables such as `messages`,
 `attachments`, `recovered_unlinked_messages`, or `import_batches`. Treat them as
-historical retained compatibility inventory. Do not build new ordinary features
-on those tables.
+historical retired storage inventory. Do not build new ordinary features on
+those tables.
 
 ## Typical Use Cases
 

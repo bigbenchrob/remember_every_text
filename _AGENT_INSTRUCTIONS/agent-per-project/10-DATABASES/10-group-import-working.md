@@ -92,7 +92,7 @@ historical contact -> chat relationship.
 | `recovered_unlinked_messages` | `db-import.recovered_unlinked_messages` | Preserves source rows that are not linked through normal chat-message joins. |
 | `attachments` / `recovered_unlinked_attachments` | `db-import.attachments` plus normal/recovered attachment joins | Preserves attachment source identity and separates normal chat-linked rows from recovered rows. |
 | `read_state` / `message_read_marks` | `db-import.messages` | Projects read timestamps and message-level read markers. |
-| `global_message_index` / `message_index` / `contact_message_index` | Built from `db-working.messages` and related joins | Retained legacy indexes; ordinary timelines/search now use graph evidence/search. |
+| `global_message_index` / `message_index` / `contact_message_index` | Built from `db-working.messages` and related joins | Retired legacy indexes; ordinary timelines/search now use graph evidence/search. |
 
 ## 4. Current Lifecycle Expectations
 
@@ -124,14 +124,15 @@ This is the practical implication of the current Apple data shape: source visibi
 ## 6. Debugging Checklist
 
 1. Prefer the graph status panel and source-scoped graph evidence first.
-2. For historical retained files, confirm the row exists in `db-import` before suspecting retained migration bugs.
+2. For historical retained files, confirm whether the row exists in `db-import`
+       only to interpret retired storage, not to route active app behavior.
        For source orphan rows, check both `messages` and `recovered_unlinked_messages`.
 3. Verify the corresponding row in `db-working` retains the same ID.
        For recovered rows, check `recovered_unlinked_messages` and `recovered_unlinked_attachments` rather than normal chat-linked tables.
 4. Check `handle_to_participant` and `chat_to_handle` join paths using the preserved IDs.
 5. Do not attempt to re-run deleted retained orchestrators. If old retained
    storage is required for a recovery task, design an explicit graph-era
-   compatibility/import path.
+   storage-retention review, migration, or export path.
 6. Inspect retained `import_log` and `migrate_log` only as historical
    diagnostics. Graph build status lives in the Conversation Graph status panel.
 7. If IDs differ at any step, halt - someone attempted to remap during historical migration.

@@ -2,7 +2,7 @@
 tier: project
 scope: databases
 owner: agent-per-project
-last_reviewed: 2026-06-05
+last_reviewed: 2026-06-20
 source_of_truth: doc
 links:
   - ./00-all-databases-accessed.md
@@ -14,7 +14,7 @@ tests: []
 
 # `db-overlay` — User Overrides (`user_overlays.db`)
 
-`db-overlay` stores long-lived user customisations that must survive source import, graph projection, retained migration, and rebuild cycles. It pairs with graph/working projection at the read-model layer - never through direct database synchronization.
+`db-overlay` stores long-lived user customisations that must survive source import, graph projection, retired-file cleanup, and rebuild cycles. It pairs with graph/working projection at the read-model layer - never through direct database synchronization.
 
 - **Alias**: `db-overlay`
 - **Physical File**: `~/Library/Application Support/com.bigbenchsoftware.MessageLens/user_overlays.db`
