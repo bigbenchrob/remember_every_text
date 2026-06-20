@@ -2780,7 +2780,9 @@ criteria.
 - Moved message heatmap month/projection navigation behind
   `MessageHeatmapNavigationActions`. The heatmap widget now renders global and
   contact heatmaps, while month-focus and all-messages/by-conversation sidebar
-  intent construction live in the messages application boundary.
+  intent construction live in the messages application boundary. Added refresh
+  action coverage proving global and selected contact heatmap invalidation stay
+  behind `MessageHeatmapRefreshActions`.
 - Moved contact message-scope toggle navigation behind
   `ContactMessageScopeActions`. The segmented control now renders current vs
   recovered scope state and reports the selected scope; cassette-indexed
