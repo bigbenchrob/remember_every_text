@@ -16,11 +16,11 @@ links:
 # Import Orchestrator
 
 > Current conformance note (2026-06-08): ordinary live sync is source-scoped
-> graph build, not retained historical import/migration. The old retained
+> graph build, not legacy historical import/migration. The old legacy
 > `ImportOrchestrator` implementation has been removed from active app code.
 > This page combines the current `ChatDbChangeMonitor` runbook with historical
-> retained importer mechanics. Treat the monitor sections as current live-sync
-> guidance and the retained importer sections as old-log/retained-storage
+> legacy importer mechanics. Treat the monitor sections as current live-sync
+> guidance and the legacy importer sections as old-log/retired-pipeline
 > interpretation only.
 
 ## 🔥 Automatic Polling (ChatDbChangeMonitor)
@@ -73,15 +73,15 @@ This ensures the monitor starts at app launch and runs continuously. It is macOS
 ---
 
 ## Purpose
-- Preserve the historical retained importer mechanics for old logs and
+- Preserve the historical retired importer mechanics for old logs and
   architecture archaeology.
 - Make clear that new source ingestion belongs to source-scoped import and graph
-  build services, not to the deleted retained import orchestrator.
-- Prevent future work from reintroducing retained ledger import as an ordinary
+  build services, not to the deleted legacy import orchestrator.
+- Prevent future work from reintroducing legacy ledger import as an ordinary
   product path.
 
 ## Location
-- Retired retained orchestrator: `lib/essentials/db_importers/application/orchestrator/import_orchestrator.dart`
+- Retired legacy orchestrator: `lib/essentials/db_importers/application/orchestrator/import_orchestrator.dart`
 - Retired shared context: `lib/essentials/db_importers/infrastructure/sqlite/import_context_sqlite.dart`
 - Retired base importer helpers: `lib/essentials/db_importers/domain/base_table_importer.dart`
 - Retired importer contract: `lib/essentials/db_importers/domain/i_importers.dart/table_importer.dart`
@@ -89,7 +89,7 @@ This ensures the monitor starts at app launch and runs continuously. It is macOS
 - Retired Riverpod wiring: `lib/essentials/db_importers/feature_level_providers.dart`
 - Retired service registry: `lib/essentials/db_importers/application/services/orchestrated_ledger_import_service.dart`
 
-These retained paths are intentionally not present in the current source tree.
+These retired paths are intentionally not present in the current source tree.
 Current live import/build code is source-scoped and graph-backed.
 
 ## Execution Model
@@ -134,7 +134,7 @@ Current live import/build code is source-scoped and graph-backed.
 
 ## When Adding Importers
 
-Do not add retained importers for ordinary app behavior. New source
+Do not add legacy importers for ordinary app behavior. New source
 facts should usually be modeled in `macos_import_ss.db` and projected into
 `working_ss.db`. If an explicit archive/recovery compatibility task truly
 requires retained `macos_import.db` behavior, write a reviewed graph-era plan
