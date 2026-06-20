@@ -26,6 +26,7 @@ void main() {
 
     expect(key.messageGuid, 'message-guid');
     expect(key.importAttachmentId, 42);
+    expect(key.liveSourceAttachmentRowId, 42);
   });
 
   test('fromStoredTuple preserves retained archive tuple values', () {
@@ -60,6 +61,25 @@ void main() {
       );
     },
   );
+
+  test('supportsLiveGraphEndpoints rejects non-live message ids', () {
+    final nonLiveMessageSsId = SourceScopedRowKey.pack(
+      sourceId: liveChatDbSourceId + 1,
+      sourceRowId: 41,
+    );
+    final attachmentSsId = SourceScopedRowKey.pack(
+      sourceId: liveChatDbSourceId,
+      sourceRowId: 42,
+    );
+
+    expect(
+      ArchiveCompatibilityKey.supportsLiveGraphEndpoints(
+        messageSsId: nonLiveMessageSsId,
+        attachmentSsId: attachmentSsId,
+      ),
+      isFalse,
+    );
+  });
 
   test('supportsLiveGraphEndpoints rejects non-live endpoint ids', () {
     final messageSsId = SourceScopedRowKey.pack(
