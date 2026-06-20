@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -18,18 +20,20 @@ part 'feature_level_providers.g.dart';
 OnboardingDatabaseProbeReader onboardingDatabaseProbeReader(Ref ref) {
   return SqliteOnboardingDatabaseProbeReader(
     onTableCountFailure: (dbPath, tableName, error, stackTrace) {
-      ref
-          .read(appLoggerProvider.notifier)
-          .warn(
-            'OnboardingDatabaseProbeReader: failed to read table count',
-            source: 'SqliteOnboardingDatabaseProbeReader',
-            context: <String, Object?>{
-              'dbPath': dbPath,
-              'tableName': tableName,
-              'error': error.toString(),
-              'stackTrace': stackTrace.toString(),
-            },
-          );
+      _logWarningAfterProviderBuild(
+        () => ref
+            .read(appLoggerProvider.notifier)
+            .warn(
+              'OnboardingDatabaseProbeReader: failed to read table count',
+              source: 'SqliteOnboardingDatabaseProbeReader',
+              context: <String, Object?>{
+                'dbPath': dbPath,
+                'tableName': tableName,
+                'error': error.toString(),
+                'stackTrace': stackTrace.toString(),
+              },
+            ),
+      );
     },
   );
 }
@@ -39,17 +43,19 @@ OnboardingFailureStore onboardingFailureStorage(Ref ref) {
   return OverlayOnboardingFailureStorage(
     overlayDb: ref.watch(overlayDatabaseProvider.future),
     onReadFailure: (settingKey, error, stackTrace) {
-      ref
-          .read(appLoggerProvider.notifier)
-          .warn(
-            'OnboardingFailureStorage: ignored unreadable persisted failure state',
-            source: 'OverlayOnboardingFailureStorage',
-            context: <String, Object?>{
-              'settingKey': settingKey,
-              'error': error.toString(),
-              'stackTrace': stackTrace.toString(),
-            },
-          );
+      _logWarningAfterProviderBuild(
+        () => ref
+            .read(appLoggerProvider.notifier)
+            .warn(
+              'OnboardingFailureStorage: ignored unreadable persisted failure state',
+              source: 'OverlayOnboardingFailureStorage',
+              context: <String, Object?>{
+                'settingKey': settingKey,
+                'error': error.toString(),
+                'stackTrace': stackTrace.toString(),
+              },
+            ),
+      );
     },
   );
 }
@@ -58,16 +64,18 @@ OnboardingFailureStore onboardingFailureStorage(Ref ref) {
 FullDiskAccess fullDiskAccess(Ref ref) {
   return MacosFullDiskAccess(
     onReadFailure: (error, stackTrace) {
-      ref
-          .read(appLoggerProvider.notifier)
-          .warn(
-            'FullDiskAccess: Messages database exists but could not be read',
-            source: 'MacosFullDiskAccess',
-            context: <String, Object?>{
-              'error': error.toString(),
-              'stackTrace': stackTrace.toString(),
-            },
-          );
+      _logWarningAfterProviderBuild(
+        () => ref
+            .read(appLoggerProvider.notifier)
+            .warn(
+              'FullDiskAccess: Messages database exists but could not be read',
+              source: 'MacosFullDiskAccess',
+              context: <String, Object?>{
+                'error': error.toString(),
+                'stackTrace': stackTrace.toString(),
+              },
+            ),
+      );
     },
   );
 }
@@ -75,4 +83,8 @@ FullDiskAccess fullDiskAccess(Ref ref) {
 @riverpod
 DerivedMessageDataFileStore derivedMessageDataFileStore(Ref ref) {
   return const FilesystemDerivedMessageDataFileStore();
+}
+
+void _logWarningAfterProviderBuild(void Function() logWarning) {
+  scheduleMicrotask(logWarning);
 }
