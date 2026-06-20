@@ -332,7 +332,7 @@ than dev-panel-owned.
   maintenance tail has been retired from live updates.
 - Live `chat.db` monitor updates now treat source-scoped graph import/projection
   as the app-facing success path; retained `macos_import.db` / `working.db`
-  files are compatibility/reference storage, not live-update outputs.
+  files are transitional cleanup storage, not live-update outputs.
 - The live monitor now claims the global derived-data maintenance gate around
   the graph build and attachment archive pass.
   Gate denial still delays/retries to avoid overlapping maintenance work, but
@@ -1431,14 +1431,14 @@ criteria.
   only the source-scoped conversation graph, avoiding active runtime language
   that suggests retained `working.db` projection maintenance remains part of
   the polling path.
-- Onboarding gate source comments now describe retained legacy database files
-  as compatibility/reference storage only, while `startImportAndGraphBuild`
+- Onboarding gate source comments now describe retired legacy database files
+  as transitional cleanup storage only, while `startImportAndGraphBuild`
   remains the app-facing setup path.
 - Database health audit role labels and notes now call retained
-  `macos_import.db` archive metadata and retained `working.db` historical
-  reference storage. The database keys remain stable for report consumers, but
-  exported role text no longer describes retained projection as an active
-  app-facing compatibility path.
+  `macos_import.db` and retained `working.db` transitional cleanup storage.
+  The database keys remain stable for report consumers, but exported role text
+  no longer describes retained projection as an active app-facing compatibility
+  path or permanent reference tier.
 - Active source/test comments now avoid loose "legacy" wording where the
   implementation is merely using retained files or old overlay/archive key
   compatibility. Remaining legacy-named variables/tests are intentional bridge
@@ -1449,7 +1449,7 @@ criteria.
 - The source-scoped archive cutover plan and retained storage register now
   reflect the implemented state: Historical Archives import/removal is
   graph-backed, retained archive import/projection execution has been removed,
-  and the remaining blocker is storage/reference retirement for retained
+  and the remaining blocker is cleanup-storage retirement for retained
   `macos_import.db` / `working.db` file roles.
 - Migration planning docs 71, 72, 78, 80, 81, and 82 were tightened so retained
   `macos_import.db` / `working.db` references mean storage, metadata,
@@ -1460,15 +1460,14 @@ criteria.
   sole owner that constructs the retained `macos_import.db` archive metadata
   adapter; settings/archive callers use the semantic store boundary rather than
   importing the concrete database wrapper.
-- Retained database filenames are now centralized in the DB dependency entry
-  point as `retainedArchiveMetadataDatabaseFileName` and
-  `retainedHistoricalReferenceDatabaseFileName`. Reset and database-health
+- Retired database filenames are now centralized in the DB dependency entry
+  point as `retiredMacosImportDatabaseFileName` and
+  `retiredWorkingDatabaseFileName`. Reset and database-health
   code no longer hard-code `macos_import.db` / `working.db` outside that
-  retained-storage boundary.
-- Retained filename tests now assert against the central constants instead of
-  repeating raw database names, and `RetainedArchiveMetadataDatabase` has a class-level
-  comment documenting that fresh files are archive-metadata-only while old
-  upgrade paths exist for historical compatibility.
+  retired cleanup boundary.
+- Retired filename tests now assert against the central constants instead of
+  repeating raw database names. Active archive-source metadata now lives in
+  overlay, while old database files remain transitional cleanup targets.
 - A production/test scan for raw `macos_import.db` / `working.db` strings now
   resolves only to the central retained filename constants.
 - Historical archive source metadata repository constructor and field names now
@@ -1480,10 +1479,9 @@ criteria.
 - Retained metadata database tests and health-audit test names now refer to the
   retained archive metadata role rather than calling the wrapper an active
   import database. Local retained-metadata variables now use `metadataDb`.
-- Active database access docs now name `retainedArchiveMetadataStoreProvider`
-  as the retained archive-source metadata store for settings metadata plus
-  reset/storage cleanup. The central DB provider remains the only production
-  owner that imports and constructs the concrete retained database adapter.
+- Active database access docs now name overlay storage as the archive-source
+  metadata owner. Retired database filenames remain centralized for
+  reset/storage cleanup and diagnostics only.
 - Onboarding environment reporting now calls the app setup ledger
   `sourceScopedImportDatabase`, and gate/reset diagnostic log keys use
   `sourceScopedImportDb*`. This keeps onboarding readiness language separate
@@ -1504,11 +1502,11 @@ criteria.
   diagnostics generically rather than implying an active retained import
   execution database.
 - Active environment safety and database-health README docs now describe
-  retained `macos_import.db` as archive-source metadata storage and retained
-  `working.db` as historical reference/storage inventory, not as an active
-  retained import/projection pair.
+  retained `macos_import.db` and retained `working.db` as historical cleanup
+  inventory, not as an active retained import/projection pair or permanent
+  reference tier.
 - Onboarding/archive coordination docs now describe retained files as metadata,
-  diagnostics, reset, and historical-reference storage. Mentions of
+  diagnostics, reset, and historical cleanup storage. Mentions of
   `DbImportControlViewModel` / `runImportAndMigration()` are now explicit
   "do not call retired paths" guardrails rather than live service ownership.
 - The top-level data-location index now points retained archive-source metadata
@@ -1523,20 +1521,20 @@ criteria.
   `working.participants` rows as historical-file interpretation only and no
   longer reference the removed retained Drift `WorkingParticipants` class.
 - Project overview, architecture overview, and essentials index now use
-  retained metadata/reference terminology. They point retained archive metadata
-  callers at the semantic retained metadata store boundary instead of
-  suggesting the retained database provider as a normal feature entry point.
+  retained cleanup terminology. They point active archive metadata callers at
+  overlay storage instead of suggesting any retained database provider as a
+  normal feature entry point.
 - Message, onboarding, and contact-name feature docs now distinguish retained
-  archive-source metadata / historical-reference storage from active graph
+  archive-source cleanup / historical cleanup storage from active graph
   authority. The docs no longer describe retained `working.db` as ordinary
   archive/recovery compatibility for production message evidence.
-- Chats and chat-handles feature docs now use the same retained-reference
+- Chats and chat-handles feature docs now use the same retained-cleanup
   vocabulary: conversation and handle truth are graph-backed; retained
-  `working.db` / canonical-handle rows are historical/reference context only.
+  `working.db` / canonical-handle rows are historical cleanup context only.
 - Remaining current feature docs now avoid "retained legacy" as generic
-  terminology. They distinguish retained historical/reference material from
+  terminology. They distinguish retained historical cleanup material from
   active graph, overlay, and evidence-spine ownership.
-- Onboarding/archive docs now use retained historical/reference terminology
+- Onboarding/archive docs now use retained historical cleanup terminology
   for old `macos_import.db` / `working.db` attachment-recovery context while
   preserving the current rule that archive metadata is overlay-owned and graph
   recovery maps through source-scoped identity first.
@@ -1545,7 +1543,7 @@ criteria.
   mechanics. These docs still preserve old mechanics for interpreting old logs
   and data folders, but no longer describe them as active legacy authority.
 - Canonical pipeline-invariant and database-health docs now classify old
-  `macos_import.db` / `working.db` access as retained historical/reference
+  `macos_import.db` / `working.db` access as retained historical cleanup
   storage. Failure-mode docs still forbid ordinary app surfaces from reopening
   those files as authority.
 - Build-handoff guidance now uses the same retained historical terminology for
@@ -1660,7 +1658,7 @@ criteria.
   and not deletion targets by default. Future slices should reduce retained
   purposes through the storage retention register, and full deletion requires
   archive/recovery independence, graph/source-scoped diagnostic equivalents,
-  historical-reference migration/export/rejection, and a user-safe
+  historical cleanup migration/export/rejection, and a user-safe
   backup/retention path.
 - Added an architecture tripwire that keeps
   `retainedArchiveMetadataStoreProvider` limited to reset cleanup and the
@@ -2340,20 +2338,20 @@ criteria.
 - Updated the graph completion roadmap and retained storage register so their
   active-status sections describe Historical Archives import/removal as
   source-scoped graph services, with remaining work limited to retained
-  storage/reference retirement.
+  cleanup-storage retirement.
 - Reworded the source-scoped archive cutover plan's Stage 4 as completed for
-  execution code, leaving only the retained-file storage/reference policy as a
+  execution code, leaving only the retained-file cleanup-storage policy as a
   future decision.
 - Aligned the graph completion roadmap's lifecycle phase with the completed
   graph lifecycle orchestration slice: ordinary build/readiness/update
-  ownership is done, while remaining work is retained storage/reference policy
+  ownership is done, while remaining work is retained cleanup-storage policy
   and diagnostic hardening.
 - Aligned the graph completion roadmap's display-identity phase with the
   completed graph-native contact/handle identity slice: ordinary surfaces use
   graph plus overlay display identity, while remaining work is stewardship and
   old-field/bridge retirement.
 - Replaced stale roadmap "immediate next slices" with the current remaining
-  work: retained storage/reference policy, archive overlay key evolution,
+  work: retained cleanup-storage policy, archive overlay key evolution,
   historical/recovered source intake, and diagnostic hardening.
 - Updated the roadmap risk register so the leading risk is now retained
   storage policy lagging behind graph ownership, not graph lifecycle work
