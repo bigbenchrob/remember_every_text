@@ -613,7 +613,7 @@ void main() {
         ),
         reason:
             'retainedArchiveMetadataStoreProvider has been retired. '
-            'Retired macos_import.db is transitional cleanup storage only, so '
+            'Retired macos_import.db is cleanup/reference storage only, so '
             'ordinary app behavior must not recreate a provider authority '
             'for it.\n'
             'Actual users:\n${offenders.join('\n')}',
@@ -627,7 +627,7 @@ void main() {
         offenders,
         orderedEquals(_retiredMacosImportFileAllowedFiles.toList()..sort()),
         reason:
-            'Retired macos_import.db is transitional cleanup storage only. '
+            'Retired macos_import.db is cleanup/reference storage only. '
             'Ordinary code must not add new retired import file access or '
             'workflow authority.\n'
             'Actual users:\n${offenders.join('\n')}',
@@ -658,7 +658,7 @@ void main() {
           offenders,
           orderedEquals(_retiredWorkingFileAllowedFiles.toList()..sort()),
           reason:
-              'Retired working.db is transitional cleanup storage only. '
+              'Retired working.db is cleanup/reference storage only. '
               'Ordinary code must not add new retired working file access or '
               'workflow authority.\n'
               'Actual users:\n${offenders.join('\n')}',
@@ -892,7 +892,7 @@ void main() {
             'Do not import the retired archive metadata wrapper from '
             'ordinary code. Active Historical Archives metadata belongs to '
             'the settings repository backed by overlay storage; retired '
-            'macos_import.db files are transitional cleanup storage only.\n'
+            'macos_import.db files are cleanup/reference storage only.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -3416,14 +3416,14 @@ Future<List<String>> _findRetiredWorkingFileOffenders() async {
 Future<List<String>> _findRetiredDatabaseFilenameLiteralOffenders() async {
   final files = await _collectDartFiles((path) => !path.endsWith('.g.dart'));
   final offenders = <String>{};
-  final retainedFilenameLiteralPattern = RegExp(
+  final retiredFilenameLiteralPattern = RegExp(
     r'''['"](macos_import|working)\.db['"]''',
   );
 
   for (final filePath in files) {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
-    if (retainedFilenameLiteralPattern.hasMatch(uncommented)) {
+    if (retiredFilenameLiteralPattern.hasMatch(uncommented)) {
       offenders.add(filePath);
     }
   }
