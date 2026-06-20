@@ -3,9 +3,9 @@ import '../../../../essentials/source_scoped_import/domain/source_scoped_row_key
 
 /// Resolves a message selection id to the canonical graph id used by evidence.
 ///
-/// Some retained overlay/search entry points can still hand the evidence spine
+/// Some compatibility overlay/search entry points can still hand the evidence spine
 /// an old live `chat.db.message` rowid. Message evidence remains graph-native:
-/// callers get back the canonical `message_ss_id` whenever the retained key is
+/// callers get back the canonical `message_ss_id` whenever the live rowid is
 /// recognizable, otherwise the supplied id is assumed to already be canonical.
 int canonicalMessageEvidenceId(int messageId) {
   if (SourceScopedRowKey.unpackSourceId(messageId) == liveChatDbSourceId) {
@@ -22,7 +22,7 @@ int canonicalMessageEvidenceId(int messageId) {
 
 /// Returns the live `chat.db.message` ROWID for a graph message evidence id.
 ///
-/// This exists only for retained overlay compatibility. Ordinary message
+/// This exists only for older rowid-keyed overlay compatibility. Ordinary message
 /// evidence remains keyed by `message_ss_id`.
 int? retainedLiveMessageRowIdForEvidenceId(int messageId) {
   if (SourceScopedRowKey.unpackSourceId(messageId) != liveChatDbSourceId) {

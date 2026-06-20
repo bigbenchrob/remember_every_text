@@ -15,7 +15,7 @@ CassetteSpec? resolveContactsInfoChild(ContactsInfoCassetteSpec spec) {
             ContactsCassetteSpec.contactChooser(),
           );
         case ContactsInfoKey.chosenContact:
-          // Retained topology fallback for any explicitly seeded
+          // Seeded topology fallback for any explicitly seeded
           // selected-contact info cassette. The default selected-contact chain
           // now goes directly from heroSummary to messageScopeToggle.
           return CassetteSpec.contacts(

@@ -7,7 +7,7 @@ import '../../domain/message_evidence/recovered_message_evidence.dart';
 
 /// Graph-backed recovered deleted-message evidence repository.
 ///
-/// This is the production source-scoped replacement for retained recovered
+/// This is the production source-scoped replacement for retired recovered
 /// message compatibility reads. Recovered evidence is defined as
 /// source-retained graph messages that have no current `chat_to_message`
 /// topology edge.

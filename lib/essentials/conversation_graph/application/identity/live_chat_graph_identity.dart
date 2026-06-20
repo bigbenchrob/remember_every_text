@@ -4,7 +4,7 @@ import '../../../source_scoped_import/domain/source_scoped_row_key.dart';
 /// Normalizes live `chat.db` row identifiers into conversation-graph identity.
 ///
 /// This boundary exists for graph context lookups that can still receive a live
-/// source ROWID from retained/search/navigation inputs. Ordinary graph evidence
+/// source ROWID from compatibility/search/navigation inputs. Ordinary graph evidence
 /// remains keyed by source-scoped ids.
 int canonicalLiveChatGraphId(int value) {
   if (value > SourceScopedRowKey.maxSourceRowId) {
