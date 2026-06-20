@@ -128,9 +128,9 @@ attachment_archive/
 
 The archive service runs after graph live updates for newly imported source
 ranges, on demand when a live file is seen by the resolver, and through a
-periodic graph attachment sweep. Retained archive-compatible workflows
-may invoke the same archive service explicitly, but retained projection is not
-an ordinary app update path.
+periodic graph attachment sweep. Historical archive/recovery workflows may
+invoke the same archive service explicitly, but retired projection is not an
+app update or recovery path.
 
 See [`40-attachment-archive.md`](40-attachment-archive.md) for full
 architectural details.
@@ -163,9 +163,9 @@ mapping flow using a matched historical `chat.db` snapshot:
    `imported_historical_snapshot`
 
 Primary graph-native match: `attachment.guid` → source-scoped import facts →
-canonical graph message/attachment identity. Retired legacy import/working
-identity may still be read as transitional compatibility material until those
-recovery paths are retired.
+canonical graph message/attachment identity. The overlay archive key remains
+compatibility-shaped for existing archive rows, but retired import/working DBs
+are storage-retention evidence only.
 Single-attachment fallback: when GUID is NULL and exactly one attachment
 exists on both sides.
 No further fallback: no path-tail, transfer_name, or ordinal matching.

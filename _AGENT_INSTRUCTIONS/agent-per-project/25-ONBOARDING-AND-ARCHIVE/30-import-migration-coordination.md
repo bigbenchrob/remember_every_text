@@ -13,7 +13,7 @@ graph-first setup flow and the retained cleanup-storage boundary.
 | Bootstrap gate and user-facing status | Onboarding | `lib/essentials/onboarding/` |
 | Source-scoped import ledger | source_scoped_import | `lib/essentials/source_scoped_import/` |
 | Conversation graph build/projection/readiness | conversation_graph | `lib/essentials/conversation_graph/` |
-| Retained archive metadata and historical cleanup storage | db / database health / reset infrastructure | Explicit metadata, diagnostics, and reset boundaries only |
+| Archive metadata and historical cleanup storage | overlay / db / database health / reset infrastructure | Overlay metadata plus explicit diagnostics and reset boundaries only |
 | Attachment archiving and recovery | attachments feature | `lib/features/attachments/` |
 
 **Rule:** `OnboardingGate` delegates cleanup to `MessageDataResetService` and

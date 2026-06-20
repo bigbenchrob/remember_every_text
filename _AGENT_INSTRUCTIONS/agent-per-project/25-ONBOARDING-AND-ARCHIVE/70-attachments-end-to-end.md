@@ -2,7 +2,7 @@
 tier: project
 scope: onboarding-and-archive
 owner: agent-per-project
-last_reviewed: 2026-06-04
+last_reviewed: 2026-06-20
 source_of_truth: doc
 links:
   - ./40-attachment-archive.md
@@ -29,9 +29,9 @@ MessageLens uses an archive-first attachment model.
 
 Only the source-scoped graph/import pipeline defines durable app-facing
 MessageLens semantics. Source database observations, row counts, orphan counts,
-and Apple path behavior are diagnostic evidence, not guarantees. Retained
-legacy import/working identities remain compatibility bridges for archive and
-recovery flows until those flows are fully graph-native.
+and Apple path behavior are diagnostic evidence, not guarantees. Retired
+legacy import/working DBs are storage-retention evidence only. The active
+archive bridge is the named overlay archive compatibility key.
 
 ## 1. Source Reality (Apple `chat.db`)
 
@@ -132,8 +132,7 @@ Inputs:
 - matching historical `Attachments` folder
 - current source-scoped graph/import databases where available
 - retained `macos_import.db` / `working.db` only as historical cleanup
-  history or explicit fallback bridges where graph-native recovery has not
-  replaced a path
+  inventory during explicit storage-retention review
 - current `user_overlays.db`
 
 The historical snapshot is opened read-only. Recovery never mutates Apple backups, current source databases, import tables, or working projection tables.
@@ -147,7 +146,7 @@ Current graph-native identity mapping:
 
 The archive overlay key remains compatibility-shaped so existing archived files
 survive the graph migration. Do not extend retained historical GUID/import-id
-bridges beyond explicit recovery compatibility.
+bridges beyond the named archive compatibility key.
 
 Primary match:
 
@@ -225,7 +224,7 @@ Reference the canonical spec docs for the boundary rules; do not reimplement spe
 | Path mutation | `local_path` may become stale. The path is audit/ingestion input only, not an identifier. Durable identity remains `(message_guid, import_attachment_id)` plus archive metadata. |
 | Missing files at import time | Import still records structural attachment data and joins. Archive ingestion skips missing files; UI renders an unavailable state. |
 | Files appear later | Periodic working sweep or resolver-triggered ingestion can archive newly available files. |
-| Orphaned/unlinked attachments | Import routes joins for recovered-unlinked messages through explicit recovered/unlinked attachment relationships; graph projection keeps recovered content distinct from normal timelines, while retained files remain transitional compatibility material. |
+| Orphaned/unlinked attachments | Import routes joins for recovered-unlinked messages through explicit recovered/unlinked attachment relationships; graph projection keeps recovered content distinct from normal timelines, while retained files remain storage-retention evidence only. |
 | Historical file missing from backup | Deterministic recovery reports the mapped record as missing and does not guess. |
 | Ambiguous historical mapping | Recovery reports an unmapped/ambiguous reason and does not use heuristic fallback. |
 
@@ -247,9 +246,9 @@ No attachment record should be hidden merely because its file is missing.
 ## References
 
 - `../15-MACOS-SOURCE-DATABASES/00-overview.md` - Apple source DB interpretation and source observation boundary.
-- `../20-DATA-IMPORT-MIGRATION/01-overview.md` - retained import/migration history and compatibility context.
-- `../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md` - retained import and working table names.
-- `../10-DATABASES/02-db-working.md` - retained working projection contract.
+- `../20-DATA-IMPORT-MIGRATION/01-overview.md` - source import, graph build, and retired storage review context.
+- `../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md` - retired import and working table names.
+- `../10-DATABASES/02-db-working.md` - retired working file status.
 - `../10-DATABASES/05-db-overlay.md` - overlay DB and archive metadata boundary.
 - `./40-attachment-archive.md` - archive storage and resolver details.
 - `./50-deterministic-recovery.md` - historical snapshot recovery algorithm.

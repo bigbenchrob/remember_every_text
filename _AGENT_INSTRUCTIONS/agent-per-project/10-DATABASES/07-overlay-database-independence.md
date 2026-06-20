@@ -2,7 +2,7 @@
 tier: project
 scope: databases
 owner: agent-per-project
-last_reviewed: 2026-06-08
+last_reviewed: 2026-06-20
 source_of_truth: doc
 links:
   - ./00-all-databases-accessed.md
@@ -35,12 +35,12 @@ Breaking these rules jeopardizes user data persistence and invalidates the sourc
 |---|---|---|---|
 | **Import source data** | Import DB only | Source DBs only | Rebuilt or extended by import flows |
 | **Graph projection data** | Graph working DB only | Source-scoped import DB only | Rebuilt or incrementally updated by graph projection |
-| **Retained archive metadata** | Retained import DB only | Source/archive metadata only | Maintained only for archive-source compatibility |
+| **Archive metadata and archive-source metadata** | Overlay DB only | Source/archive metadata only | Persistent user/app archive state |
 | **Retained historical projection inventory** | — | Retained working DB only | Read-only diagnostics/recovery reference |
 | **User intent** (overlay) | Overlay DB only | — | Always persists |
 | **Providers/read models** (read path) | — | Graph-derived data ∪ Overlay, overlay wins | N/A |
 
-Source-scoped import is a **pure function** of macOS source databases → `macos_import_ss.db`. Graph projection is a **pure function** of `macos_import_ss.db` → `working_ss.db`. Retained archive metadata is maintained separately in retained `macos_import.db` for archive-source compatibility. None of these paths reads overlay.
+Source-scoped import is a **pure function** of macOS source databases → `macos_import_ss.db`. Graph projection is a **pure function** of `macos_import_ss.db` → `working_ss.db`. Archive metadata and archive-source metadata live in overlay storage. Import/projection paths do not read overlay.
 User actions are **pure writes** to overlay. They never write to graph tables or retained files.
 Providers/read models are the **sole merge point** where projection data and overlay data are read and combined.
 
@@ -198,7 +198,7 @@ in providers via `overlayDb.getAllHandleVisibilities()`.
 
 | Concern | `db-graph-working` / retained files | `db-overlay` |
 | --- | --- | --- |
-| Ownership | Source-scoped graph projection; retired files only for recovery/reference diagnostics | User-facing services and archive-source metadata |
+| Ownership | Source-scoped graph projection; retired files only for recovery/reference diagnostics | User-facing services, archive metadata, and archive-source metadata |
 | Lifecycle | Graph projection is disposable/rebuildable; retired files are transitional cleanup storage | Persistent |
 | Writes | Graph projectors write graph DB; retired import/working files are not ordinary write targets | User actions/services and archive-source metadata services only |
 | Contents | Source-derived contacts, handles, chats, messages, topology, projection inputs; historical file inventory | Manual handle links, custom names, visibility preferences, message user metadata, favorites, archived attachment metadata, archive-source metadata |
@@ -224,7 +224,7 @@ The following violations were fixed on the `Ftr.overlay-handle-visibility` branc
 
 ## Related Documentation
 
-- `02-db-working.md` — Retained Drift projection overview.
+- `02-db-working.md` — Retired working file overview.
 - `05-db-overlay.md` — Overlay database schema and access patterns.
-- `10-group-import-working.md` — Retained import/working contract.
-- `../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md` — Retained table definitions.
+- `10-group-import-working.md` — Historical import/working contract.
+- `../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md` — Retired table definitions.
