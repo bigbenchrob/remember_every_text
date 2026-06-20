@@ -1,4 +1,4 @@
-import '../../../essentials/retained_archive/domain/archive_compatibility_key.dart';
+import '../../../essentials/archive_compatibility/domain/archive_compatibility_key.dart';
 
 /// How a historical record was matched to a current attachment identity.
 enum MatchMethod {

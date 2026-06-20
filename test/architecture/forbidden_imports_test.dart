@@ -105,8 +105,8 @@ const List<String> _retiredImportMigrationPathFragments = <String>[
   '/db_importers/presentation/view/db_import_control_panel',
   '/db_migrate/application/migrators/',
   '/db_migrate/application/orchestrator/',
-  'retained_archive_metadata_database.dart',
-  'retained_archive_metadata_store.dart',
+  'archive_compatibility_metadata_database.dart',
+  'archive_compatibility_metadata_store.dart',
   'sqflite_import_database.dart',
 ];
 
@@ -120,7 +120,7 @@ const Set<String> _databaseConstructionAllowedFiles = {
 };
 
 const Set<String> _archiveCompatibilityKeyConstructionAllowedFiles = {
-  'lib/essentials/retained_archive/domain/archive_compatibility_key.dart',
+  'lib/essentials/archive_compatibility/domain/archive_compatibility_key.dart',
 };
 
 void main() {
@@ -3659,7 +3659,7 @@ Future<List<String>> _findRetainedImportWrapperImportOffenders() async {
     final imports = _extractImports(uncommented);
     final importsRetainedWrapper = imports.any(
       (importTarget) =>
-          importTarget.endsWith('retained_archive_metadata_database.dart'),
+          importTarget.endsWith('archive_compatibility_metadata_database.dart'),
     );
 
     if (importsRetainedWrapper) {
@@ -6484,7 +6484,7 @@ Future<List<String>> _findGraphHealthAdHocArchiveKeyOffenders() async {
 Future<List<String>>
 _findArchiveCompatibilityTupleSerializationOffenders() async {
   const allowedFiles = <String>{
-    'lib/essentials/retained_archive/domain/archive_compatibility_key.dart',
+    'lib/essentials/archive_compatibility/domain/archive_compatibility_key.dart',
     'lib/features/attachments/application/attachment_recovery_hint_storage.dart',
   };
   final files = await _collectDartFiles((path) {

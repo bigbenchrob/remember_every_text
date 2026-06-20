@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import '../../../essentials/retained_archive/domain/archive_compatibility_key.dart';
+import '../../../essentials/archive_compatibility/domain/archive_compatibility_key.dart';
 import '../domain/entities/attachment_recovery_metadata.dart';
 
 const _kAttachmentRecoveryHintSettingPrefix = 'attachment_recovery_hint';

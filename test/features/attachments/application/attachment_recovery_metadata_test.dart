@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:remember_this_text/essentials/retained_archive/domain/archive_compatibility_key.dart';
+import 'package:remember_this_text/essentials/archive_compatibility/domain/archive_compatibility_key.dart';
 import 'package:remember_this_text/features/attachments/application/attachment_recovery_hint_storage.dart';
 import 'package:remember_this_text/features/attachments/application/attachment_recovery_metadata_merge.dart';
 import 'package:remember_this_text/features/attachments/domain/entities/attachment_recovery_metadata.dart';

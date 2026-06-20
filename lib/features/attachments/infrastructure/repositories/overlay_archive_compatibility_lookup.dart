@@ -2,9 +2,9 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 
+import '../../../../essentials/archive_compatibility/domain/archive_compatibility_key.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import '../../../../essentials/retained_archive/domain/archive_compatibility_key.dart';
 import '../../application/graph_attachment_archive_lookup.dart';
 
 /// Resolves graph attachment identity against existing archive overlay rows.

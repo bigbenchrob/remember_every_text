@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../source_scoped_import/domain/known_sources.dart';
 import '../../source_scoped_import/domain/source_scoped_row_key.dart';
 
-/// Current compatibility key for retained attachment archive storage.
+/// Current compatibility key for existing attachment archive storage.
 ///
 /// The archive overlay still stores records by `(message_guid,
 /// import_attachment_id)`. This value object names that bridge explicitly so
@@ -53,7 +53,7 @@ class ArchiveCompatibilityKey {
   final String messageGuid;
   final int importAttachmentId;
 
-  /// Attachment ROWID used when resolving this retained key against live
+  /// Attachment ROWID used when resolving this compatibility key against live
   /// `chat.db` attachment paths.
   ///
   /// The retained archive table calls this `import_attachment_id`. For the live

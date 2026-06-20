@@ -2,9 +2,9 @@ import 'dart:io';
 
 import 'package:sqlite3/sqlite3.dart' as sqlite3;
 
+import '../../../archive_compatibility/domain/archive_compatibility_key.dart';
 import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import '../../../retained_archive/domain/archive_compatibility_key.dart';
 import '../../application/health/graph_health_report.dart';
 import '../../application/health/graph_health_repository.dart';
 

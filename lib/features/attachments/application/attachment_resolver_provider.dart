@@ -1,6 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../essentials/retained_archive/domain/archive_compatibility_key.dart';
+import '../../../essentials/archive_compatibility/domain/archive_compatibility_key.dart';
 import '../../messages/domain/entities/attachment_info.dart';
 import '../domain/constants/attachment_provenance.dart';
 import '../domain/constants/resolved_attachment_availability.dart';

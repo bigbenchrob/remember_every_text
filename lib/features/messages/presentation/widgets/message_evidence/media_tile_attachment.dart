@@ -1,4 +1,4 @@
-import '../../../../../essentials/retained_archive/domain/archive_compatibility_key.dart';
+import '../../../../../essentials/archive_compatibility/domain/archive_compatibility_key.dart';
 import '../../../../attachments/domain/constants/attachment_provenance.dart';
 import '../../../../attachments/domain/constants/resolved_attachment_availability.dart';
 import '../../../../attachments/domain/entities/attachment_recovery_metadata.dart';

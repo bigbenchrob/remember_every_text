@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 
+import '../../../../essentials/archive_compatibility/domain/archive_compatibility_key.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import '../../../../essentials/retained_archive/domain/archive_compatibility_key.dart';
 import '../../application/attachment_archive_read_store.dart';
 import '../../application/attachment_recovery_hint_storage.dart';
 import '../../domain/entities/attachment_recovery_metadata.dart';
