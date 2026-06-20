@@ -10,3 +10,13 @@ part 'feature_level_providers.g.dart';
 ExternalUriOpener externalUriOpener(Ref ref) {
   return const UrlLauncherExternalUriOpener();
 }
+
+@riverpod
+class ExternalLinkActions extends _$ExternalLinkActions {
+  @override
+  Future<void> build() async {}
+
+  Future<bool> open(Uri uri) {
+    return ref.read(externalUriOpenerProvider).open(uri);
+  }
+}

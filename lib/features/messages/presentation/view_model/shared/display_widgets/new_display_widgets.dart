@@ -1831,7 +1831,7 @@ class LinkPreviewTile extends ConsumerWidget {
   }
 
   Future<void> _launch(WidgetRef ref, Uri target) async {
-    if (!await ref.read(externalUriOpenerProvider).open(target)) {
+    if (!await ref.read(externalLinkActionsProvider.notifier).open(target)) {
       // Optional: surface failure to caller.
     }
   }

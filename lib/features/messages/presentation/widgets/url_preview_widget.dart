@@ -396,7 +396,7 @@ class _UrlPreviewWidgetState extends ConsumerState<UrlPreviewWidget> {
 
   Future<void> _launchUrl(String url) async {
     final uri = Uri.parse(url);
-    await ref.read(externalUriOpenerProvider).open(uri);
+    await ref.read(externalLinkActionsProvider.notifier).open(uri);
   }
 }
 
