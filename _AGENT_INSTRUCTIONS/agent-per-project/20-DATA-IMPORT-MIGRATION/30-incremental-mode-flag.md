@@ -2,7 +2,7 @@
 tier: project
 scope: data-import-migration
 owner: agent-per-project
-last_reviewed: 2026-06-08
+last_reviewed: 2026-06-20
 source_of_truth: code
 links:
   - ./01-overview.md
@@ -12,21 +12,25 @@ links:
 tests: []
 ---
 
-# Retained Legacy Incremental Mode Flag
+# Retired Legacy Incremental Mode Flag
 
-This document explains the retained historical `incrementalMode` contract in the `db_migrate` projection system. It is not the production live-sync mechanism for ordinary app data.
+This document explains the historical `incrementalMode` contract in the deleted
+`db_migrate` projection system. It is not the production live-sync mechanism
+for ordinary app data, archive import, or recovery.
 
 ## TL;DR
 
 - `incrementalMode: true` means retained historical projection preserves existing `working.db` rows and skips the orchestrator table-truncation step.
 - `incrementalMode: false` means full retained projection rebuild: migrator target tables are cleared, then rebuilt from `macos_import.db`.
 - `ChatDbChangeMonitor` no longer runs retained migration for live sync. It runs the source-scoped graph build lifecycle.
-- Retained incremental projection must not invalidate active Drift working database connections.
-- First-run/reimport app setup is graph-owned through the conversation graph build controller; retained projection is archive/recovery compatibility.
+- Retained incremental projection must not be restored as an active app path.
+- First-run/reimport app setup is graph-owned through the conversation graph build controller; archive/recovery work is source-scoped graph work plus storage-retention cleanup.
 
 ## Why The Flag Exists
 
-Full retained migration clears target working tables before rebuilding the projection. That remains useful for explicit archive/recovery compatibility, but it is too expensive and conceptually wrong for graph-era background sync when the app is already displaying a populated graph message store.
+Full retained migration cleared target working tables before rebuilding the
+projection. That behavior is historical reference only; graph-era archive,
+recovery, and background sync must not revive retained `working.db` projection.
 
 Incremental mode was introduced to avoid:
 
@@ -49,7 +53,10 @@ The monitor does not query the legacy working message count and does not choose 
 
 ### Full / Manual Paths
 
-Graph onboarding and reimport call the conversation graph build controller. Historical archive/recovery workflows may still invoke retained archive-compatible projection rebuilds through their named compatibility service.
+Graph onboarding and reimport call the conversation graph build controller.
+Historical archive/recovery workflows use source-scoped archive import and
+graph projection. Old retained database contents are storage-retention evidence
+only.
 
 Do not infer manual/full behavior from the monitor path. They are separate entry points with different operational requirements.
 
@@ -67,9 +74,11 @@ this as historical retained projection behavior, not current graph guidance.
 
 ## Refresh Contract
 
-Retained incremental projection must keep the existing Drift working database connection open.
+When this path existed, retained incremental projection had to keep the
+existing Drift working database connection open.
 
-Prohibited in the incremental path:
+This pattern remains prohibited if any future historical diagnostic attempts to
+touch the old path:
 
 ```dart
 ref.invalidate(driftWorkingDatabaseProvider);
@@ -81,7 +90,10 @@ Required pattern:
 ref.read(messageDataVersionProvider.notifier).bump();
 ```
 
-Why: invalidating `driftWorkingDatabaseProvider` closes the Drift isolate connection and can break active compatibility readers with "connection was closed" errors. Drift streams and explicit data-version signals should carry the refresh instead.
+Why: invalidating the retired working database provider used to close the Drift
+isolate connection and could break active compatibility readers with
+"connection was closed" errors. The provider is now retired; graph streams and
+explicit graph/message data-version signals carry refresh.
 
 ## Search And Index Rebuilds
 
@@ -91,7 +103,10 @@ Why: invalidating `driftWorkingDatabaseProvider` closes the Drift isolate connec
 2. recreate message-index triggers
 3. call `searchIndexOrchestrator.rebuildAll()`
 
-This describes retained historical service behavior. Ordinary graph search now selects graph `message_ss_id` evidence through the graph search/evidence spine, not retained working indexes. If retained projection behavior changes, update this document and `20-migration-orchestrator.md`.
+This describes retained historical service behavior. Ordinary graph search now
+selects graph `message_ss_id` evidence through the graph search/evidence spine,
+not retained working indexes. Do not restore retained projection/index rebuilds
+without a reviewed architecture decision.
 
 ## Historical Context
 
@@ -112,10 +127,10 @@ If new graph messages are not appearing:
 2. Check the Conversation Graph status panel for imported/projected counts and stage timings.
 3. Confirm the relevant UI provider observes graph/message data-version signals or Drift graph streams.
 
-If retained incremental projection is slow:
+If an old log shows retained incremental projection was slow:
 
 1. Confirm the log contains `Incremental mode: skipping table truncation.`
-2. Inspect the specific migrator that is slow; do not assume all migrators use the same SQL strategy.
+2. Inspect the specific historical migrator that was slow; do not assume all migrators used the same SQL strategy.
 3. Check for lingering import database attachments or SQLite locks reported by `ensureImportReady` / `ensureImportClean`.
 
 If a "connection was closed" loop appears:

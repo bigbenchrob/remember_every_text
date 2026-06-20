@@ -2,7 +2,7 @@
 tier: project
 scope: data-import-migration
 owner: agent-per-project
-last_reviewed: 2026-06-08
+last_reviewed: 2026-06-20
 source_of_truth: code
 links:
   - ./01-overview.md
@@ -90,9 +90,9 @@ Migrators receive a shared `MigrationContext` instance from `HandlesMigrationSer
 
 Do not add retained migrators for ordinary app behavior. New ordinary
 projection belongs in the source-scoped graph projectors and graph read models.
-If an explicit archive/recovery compatibility task requires retained
-`working.db` projection behavior, write a reviewed graph-era plan first and
-update this page with the new concrete implementation path.
+If old `working.db` contents matter for archive/recovery, treat them as
+storage-retention evidence to migrate, export, or intentionally discard. Do not
+recreate the retained migrator framework.
 
 ## Related References
 

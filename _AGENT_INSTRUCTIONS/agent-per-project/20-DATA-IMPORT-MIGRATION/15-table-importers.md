@@ -2,7 +2,7 @@
 tier: project
 scope: data-import-migration
 owner: agent-per-project
-last_reviewed: 2026-06-08
+last_reviewed: 2026-06-20
 source_of_truth: code
 links:
   - ./01-overview.md
@@ -92,9 +92,9 @@ phases:
 
 Do not add retained importers for ordinary app behavior. New source
 facts belong in `lib/essentials/source_scoped_import/` and should project into
-the conversation graph. If an explicit archive/recovery compatibility task
-requires retained `macos_import.db` behavior, write a reviewed graph-era plan
-first and update this page with the new concrete implementation path.
+the conversation graph. If old `macos_import.db` contents matter for
+archive/recovery, treat them as storage-retention evidence to migrate, export,
+or intentionally discard. Do not recreate the retained importer framework.
 
 ## Related References
 
