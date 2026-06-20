@@ -73,8 +73,7 @@ app truth.
   services. Do not recreate retained `macos_import.db` provider access.
 - **No active import semantics**: Source identity, rich text, reactions,
   recovered/orphan evidence, and attachment topology now belong to
-  `macos_import_ss.db` and `working_ss.db`, not fresh retained
-  `macos_import.db`.
+  `macos_import_ss.db` and `working_ss.db`, not `macos_import.db`.
 
 ## Cross-References
 

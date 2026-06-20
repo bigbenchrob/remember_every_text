@@ -88,7 +88,7 @@ Representative historical tables that may still appear in old files:
 - Historical documentation may refer to old projection tables when explaining
   migration decisions.
 
-Remember: `db-working` is retained compatibility storage, not the ordinary app
+Remember: `db-working` is retained transitional cleanup storage, not the ordinary app
 truth. Historical retained projection concepts may still appear in schema
 records, but ordinary MessageLens evidence, search, timelines, and heatmaps use
 the source-scoped graph. Any manual edits are unsupported and may make retained

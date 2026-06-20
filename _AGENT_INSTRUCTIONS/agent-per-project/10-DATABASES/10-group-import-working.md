@@ -27,8 +27,9 @@ archive/recovery decisions can still be interpreted correctly.
 
 > Current conformance note (2026-06-08): ordinary app data now flows through
 > `macos_import_ss.db` -> `working_ss.db` using source-scoped `ss_id` graph
-> identity. Fresh retained `macos_import.db` files store historical archive
-> source metadata only, and retained `working.db` has no central app provider.
+> identity. Active archive-source metadata lives in overlay storage. Retained
+> `macos_import.db` / `working.db` files are transitional cleanup inputs only,
+> and retained `working.db` has no central app provider.
 > Do not use this retained import/working contract as the model for new
 > graph-era features.
 

@@ -90,5 +90,5 @@ macOS AddressBook (db-address-book)
 - `05-db-overlay.md` — Persistent user overrides and preferences.
 - `06-addressbook-path-resolution.md` — Provider chain for locating the live AddressBook.
 - `07-overlay-database-independence.md` — Non-negotiable rule set for overlay/working separation.
-- `10-group-import-working.md` — Retained legacy import/working contract and source-scoped graph replacement note.
+- `10-group-import-working.md` — Retired import/working contract and source-scoped graph replacement note.
 - `../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md` — Table schemas for all ledger/projection databases.
