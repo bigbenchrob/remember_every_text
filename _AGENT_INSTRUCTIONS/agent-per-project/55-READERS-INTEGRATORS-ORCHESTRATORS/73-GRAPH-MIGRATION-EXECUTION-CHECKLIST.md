@@ -2533,6 +2533,11 @@ criteria.
     active Historical Archives metadata moved to overlay storage. Message-data
     reset still deletes retained `macos_import.db` files by filename, but no
     app provider now constructs a retained `macos_import.db` database.
+  - Retired the unused `RetainedArchiveMetadataDatabase` wrapper,
+    `RetainedArchiveMetadataStore` interface, and their dedicated schema tests.
+    Existing retained files may still be deleted by reset or inspected by
+    read-only diagnostic/file-query paths, but there is no active retained
+    metadata database abstraction left in `lib/`.
   - Renamed graph-health archive readiness internals from "working attachment"
     to "graph attachment" so attachment reachability is described as
     graph/source-scoped identity plus overlay archive records, not retained

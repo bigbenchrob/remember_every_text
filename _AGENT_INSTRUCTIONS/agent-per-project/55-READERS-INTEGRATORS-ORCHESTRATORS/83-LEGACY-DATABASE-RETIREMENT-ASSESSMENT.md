@@ -387,6 +387,10 @@ Implementation status:
 - The central `retainedArchiveMetadataStoreProvider` has been removed. Reset
   still deletes retained `macos_import.db` files when present, but it no longer
   opens a retained metadata database to do so.
+- The old retained metadata database wrapper and store interface have also been
+  removed from production source. Remaining `macos_import.db` references are
+  filename cleanup, diagnostics, or historical documentation references rather
+  than active database-provider authority.
 
 ### Phase 3: Demote Retained Files to Cleanup Targets
 

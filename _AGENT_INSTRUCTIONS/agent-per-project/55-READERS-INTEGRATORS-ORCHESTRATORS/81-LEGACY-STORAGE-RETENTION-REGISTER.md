@@ -172,8 +172,11 @@ central `retainedArchiveMetadataStoreProvider` has been removed. No active app
 provider should construct `RetainedArchiveMetadataDatabase`; retained
 `macos_import.db` is now a file-retention concern for reset, diagnostics, and
 explicit cleanup/export/discard decisions.
-`RetainedArchiveMetadataDatabase` may remain only as tested historical schema
-reference until the old retained file purpose is fully retired.
+The old `RetainedArchiveMetadataDatabase` wrapper and
+`RetainedArchiveMetadataStore` interface have been retired from production
+source. Existing retained files can still be removed by reset or inspected by
+read-only file-query diagnostics, but there is no retained metadata database
+abstraction left for app code to depend on.
 Obsolete public helpers for retained import execution, spam filtering, and
 row-existence maintenance should remain absent.
 The old retained batch-ledger deletion API has been removed; Historical
@@ -352,8 +355,9 @@ Done means:
 - corresponding retained production code is deleted, narrowed, or permanently
   frozen.
 - archive/recovery functionality has graph-native tests.
-- remaining retained archive metadata schema tests are either removed with the
-  schema or kept only as fixture/documentation tests with explicit labels.
+- remaining retained archive metadata schema tests are removed with the schema
+  wrapper or kept only as fixture/documentation tests with explicit labels. The
+  old wrapper tests have now been deleted with the production wrapper.
 
 ## Non-Retention Buckets
 

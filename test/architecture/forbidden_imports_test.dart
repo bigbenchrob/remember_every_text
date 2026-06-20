@@ -87,6 +87,8 @@ const List<String> _retiredImportMigrationExecutionSymbols = <String>[
   'ImportOrchestrator',
   'OrchestratedLedgerImportService',
   'RetainedLegacyArchivePipeline',
+  'RetainedArchiveMetadataDatabase',
+  'RetainedArchiveMetadataStore',
   'SqfliteImportDatabase',
   'TableImporter',
   'TableMigrator',
@@ -103,6 +105,8 @@ const List<String> _retiredImportMigrationPathFragments = <String>[
   '/db_importers/presentation/view/db_import_control_panel',
   '/db_migrate/application/migrators/',
   '/db_migrate/application/orchestrator/',
+  'retained_archive_metadata_database.dart',
+  'retained_archive_metadata_store.dart',
   'sqflite_import_database.dart',
 ];
 
@@ -111,7 +115,6 @@ const Set<String> _retainedImportWrapperImportAllowedFiles = {};
 const Set<String> _databaseConstructionAllowedFiles = {
   'lib/essentials/db/feature_level_providers.dart',
   'lib/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart',
-  'lib/essentials/db/infrastructure/data_sources/local/import/retained_archive_metadata_database.dart',
   'lib/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart',
   'lib/essentials/source_scoped_import/infrastructure/import_database_provider.dart',
 };
