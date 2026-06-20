@@ -2,7 +2,7 @@
 tier: project
 scope: source-scoped-graph-migration
 status: active
-last_reviewed: 2026-06-10
+last_reviewed: 2026-06-20
 depends_on:
   - 71-LEGACY-DEPENDENCY-MATRIX.md
   - 73-GRAPH-MIGRATION-EXECUTION-CHECKLIST.md
@@ -79,9 +79,8 @@ tested, and prevented from becoming ordinary app authority again.
 - `lib/essentials/db_migrate/application/migrators/**`
   (retired 2026-06-07)
 
-**Remaining retained storage boundaries**
+**Remaining retired storage boundaries**
 
-- `lib/essentials/db/infrastructure/data_sources/local/import/retained_archive_metadata_database.dart`
 - retained user-data files: `macos_import.db`, `working.db`, and sidecar
   WAL/SHM files in existing data folders
 
@@ -206,14 +205,13 @@ workflow metadata home. It remains existing-file compatibility storage only
 until a deliberate cleanup/export/discard policy removes the old file purpose.
 Fresh retained archive metadata DB creation no longer recreates those old
 archive-source metadata columns.
-Database health also treats retained `macos_import.db` as archive-source
-metadata storage only; active source facts and topology health belong to
+Database health treats retained `macos_import.db` as retired archive-source
+reference inventory only; active source facts and topology health belong to
 `macos_import_ss.db`.
-Fresh retained `macos_import.db` creation now creates only
-`schema_migrations` and `historical_archive_sources`. Existing older retained
-`macos_import.db` files may still keep historical ledger tables for
-compatibility, but new files do not recreate `import_batches`, `messages`,
-`handles`, `chats`, attachments, or old topology ledgers.
+No active app provider now creates a fresh retained `macos_import.db`.
+Existing older retained `macos_import.db` files may still keep
+`schema_migrations`, `historical_archive_sources`, historical ledger tables,
+or old topology ledgers for compatibility/reference inventory.
 
 **Reduction criteria**
 

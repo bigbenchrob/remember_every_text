@@ -879,25 +879,22 @@ void main() {
       );
     });
 
-    test(
-      'Retained archive metadata database imports stay quarantined',
-      () async {
-        final offenders = await _findRetainedImportWrapperImportOffenders();
+    test('Retired archive metadata database imports do not return', () async {
+      final offenders = await _findRetainedImportWrapperImportOffenders();
 
-        expect(
-          offenders,
-          orderedEquals(
-            _retainedImportWrapperImportAllowedFiles.toList()..sort(),
-          ),
-          reason:
-              'Do not import the retained archive metadata database from '
-              'ordinary code. Active Historical Archives metadata belongs to '
-              'the settings repository backed by overlay storage; retained '
-              'macos_import.db files are cleanup/reference storage only.\n'
-              'Actual users:\n${offenders.join('\n')}',
-        );
-      },
-    );
+      expect(
+        offenders,
+        orderedEquals(
+          _retainedImportWrapperImportAllowedFiles.toList()..sort(),
+        ),
+        reason:
+            'Do not import the retired archive metadata database from '
+            'ordinary code. Active Historical Archives metadata belongs to '
+            'the settings repository backed by overlay storage; retired '
+            'macos_import.db files are cleanup/reference storage only.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
 
     test('App database construction stays behind provider boundaries', () async {
       final offenders = await _findDatabaseConstructionOffenders();
