@@ -740,7 +740,7 @@ void main() {
         reason:
             'Handle visibility blacklist rows must not be expanded into '
             'retained/graph variants before filtering graph rows. Exact '
-            'graph-id overlay intent must win over retained compatibility '
+            'graph-id overlay intent must win over retired-storage compatibility '
             'variants; resolve with overlayValueForHandleId at the handle '
             'being evaluated.\n'
             'Actual offenders:\n${offenders.join('\n')}',
