@@ -638,7 +638,7 @@ String _quoted(String value) {
 
 const Map<String, List<AuditTableSpec>>
 _tableSpecsByDatabase = <String, List<AuditTableSpec>>{
-  'import': <AuditTableSpec>[
+  'retired_macos_import': <AuditTableSpec>[
     AuditTableSpec(tableName: 'schema_migrations'),
     AuditTableSpec(
       tableName: 'historical_archive_sources',
@@ -663,17 +663,17 @@ _tableSpecsByDatabase = <String, List<AuditTableSpec>>{
       ],
     ),
   ],
-  'working': <AuditTableSpec>[
+  'retired_working': <AuditTableSpec>[
     AuditTableSpec(
       tableName: 'schema_migrations',
       notes: <String>[
-        'Retained historical reference storage only; graph readiness is app-facing.',
+        'Retired historical reference storage only; graph readiness is app-facing.',
       ],
     ),
     AuditTableSpec(
       tableName: 'projection_state',
       notes: <String>[
-        'Retained historical projection-state metadata only; not an app-facing readiness source.',
+        'Retired historical projection-state metadata only; not an app-facing readiness source.',
       ],
     ),
     AuditTableSpec(
@@ -689,7 +689,7 @@ _tableSpecsByDatabase = <String, List<AuditTableSpec>>{
         AuditImportantColumnSpec('has_attachments'),
       ],
       notes: <String>[
-        'Retained recovered-message reference rows; ordinary evidence lives in the graph.',
+        'Retired recovered-message reference rows; ordinary evidence lives in the graph.',
       ],
     ),
     AuditTableSpec(
@@ -699,7 +699,7 @@ _tableSpecsByDatabase = <String, List<AuditTableSpec>>{
         AuditImportantColumnSpec('import_attachment_id'),
         AuditImportantColumnSpec('local_path'),
       ],
-      notes: <String>['Retained recovered-message attachment reference rows.'],
+      notes: <String>['Retired recovered-message attachment reference rows.'],
     ),
   ],
   'source_scoped_import': <AuditTableSpec>[
@@ -908,7 +908,7 @@ _tableSpecsByDatabase = <String, List<AuditTableSpec>>{
 
 const Map<String, List<_RelationshipCheckSpec>>
 _relationshipSpecsByDatabase = <String, List<_RelationshipCheckSpec>>{
-  'working': <_RelationshipCheckSpec>[
+  'retired_working': <_RelationshipCheckSpec>[
     _RelationshipCheckSpec(
       checkKey: 'recovered_unlinked_attachments_to_messages_by_guid',
       relationshipType: DatabaseHealthRelationshipType.existenceCheck,
@@ -919,7 +919,7 @@ _relationshipSpecsByDatabase = <String, List<_RelationshipCheckSpec>>{
       joinExpressionDescription:
           'recovered_unlinked_attachments.message_guid = recovered_unlinked_messages.guid',
       notes: <String>[
-        'Retained recovered-message reference check; ordinary attachment edges are graph-owned.',
+        'Retired recovered-message reference check; ordinary attachment edges are graph-owned.',
       ],
     ),
   ],
@@ -1065,12 +1065,12 @@ _relationshipSpecsByDatabase = <String, List<_RelationshipCheckSpec>>{
 
 const Map<String, List<_InvariantCheckSpec>>
 _invariantSpecsByDatabase = <String, List<_InvariantCheckSpec>>{
-  'working': <_InvariantCheckSpec>[
+  'retired_working': <_InvariantCheckSpec>[
     _InvariantCheckSpec(
       checkKey: 'projection_state_singleton_should_exist',
       severity: DatabaseHealthSeverity.critical,
       description:
-          'Retained historical working.projection_state should contain the singleton row with id = 1.',
+          'Retired historical working.projection_state should contain the singleton row with id = 1.',
       evaluatedRowCountSql: 'SELECT 1 AS c',
       violationCountSql: '''
             SELECT CASE

@@ -145,7 +145,7 @@ Future<DatabaseHealthAuditService> databaseHealthAuditService(
     reportWriter: const FilesystemDatabaseHealthAuditReportWriter(),
     queryLayers: <DatabaseHealthQueryLayer>[
       ReadOnlySqliteFileHealthQueryLayer(
-        databaseKey: 'import',
+        databaseKey: 'retired_macos_import',
         role: 'retired_macos_import_reference',
         databasePath: path.join(
           databaseDirectoryPath,
@@ -153,7 +153,7 @@ Future<DatabaseHealthAuditService> databaseHealthAuditService(
         ),
       ),
       ReadOnlySqliteFileHealthQueryLayer(
-        databaseKey: 'working',
+        databaseKey: 'retired_working',
         role: 'retired_working_reference',
         databasePath: path.join(
           databaseDirectoryPath,

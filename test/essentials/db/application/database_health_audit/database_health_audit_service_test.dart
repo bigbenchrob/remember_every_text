@@ -86,7 +86,7 @@ void main() {
         hasFullDiskAccess: true,
         queryLayers: <DatabaseHealthQueryLayer>[
           _FakeHealthQueryLayer(
-            databaseKey: 'import',
+            databaseKey: 'retired_macos_import',
             role: 'retired_macos_import_reference',
           ),
         ],
@@ -94,7 +94,7 @@ void main() {
 
       final report = await service.buildPhase1Report();
       final retiredReferenceTables = report.tableInventory
-          .where((entry) => entry.databaseKey == 'import')
+          .where((entry) => entry.databaseKey == 'retired_macos_import')
           .map((entry) => entry.tableName)
           .toSet();
 
@@ -111,7 +111,7 @@ void main() {
         report.tableInventory
             .singleWhere(
               (entry) =>
-                  entry.databaseKey == 'import' &&
+                  entry.databaseKey == 'retired_macos_import' &&
                   entry.tableName == 'historical_archive_sources',
             )
             .notes,
@@ -121,7 +121,7 @@ void main() {
       );
       expect(
         report.relationshipChecks
-            .where((check) => check.databaseKey == 'import')
+            .where((check) => check.databaseKey == 'retired_macos_import')
             .map((check) => check.checkKey),
         isEmpty,
       );
@@ -130,21 +130,21 @@ void main() {
     });
 
     test(
-      'treats retained working database as historical reference only',
+      'treats retired working database as historical reference only',
       () async {
         final service = _buildService(
           hasFullDiskAccess: true,
           queryLayers: <DatabaseHealthQueryLayer>[
             _FakeHealthQueryLayer(
-              databaseKey: 'working',
-              role: 'retained_historical_reference',
+              databaseKey: 'retired_working',
+              role: 'retired_working_reference',
             ),
           ],
         );
 
         final report = await service.buildPhase1Report();
         final retainedWorkingTables = report.tableInventory
-            .where((entry) => entry.databaseKey == 'working')
+            .where((entry) => entry.databaseKey == 'retired_working')
             .map((entry) => entry.tableName)
             .toSet();
 
@@ -164,23 +164,23 @@ void main() {
           report.tableInventory
               .singleWhere(
                 (entry) =>
-                    entry.databaseKey == 'working' &&
+                    entry.databaseKey == 'retired_working' &&
                     entry.tableName == 'projection_state',
               )
               .notes,
           contains(
-            'Retained historical projection-state metadata only; not an app-facing readiness source.',
+            'Retired historical projection-state metadata only; not an app-facing readiness source.',
           ),
         );
         expect(
           report.relationshipChecks
-              .where((check) => check.databaseKey == 'working')
+              .where((check) => check.databaseKey == 'retired_working')
               .map((check) => check.checkKey),
           contains('recovered_unlinked_attachments_to_messages_by_guid'),
         );
         expect(
           report.relationshipChecks
-              .where((check) => check.databaseKey == 'working')
+              .where((check) => check.databaseKey == 'retired_working')
               .map((check) => check.checkKey),
           isNot(contains('messages_to_chats')),
         );
@@ -203,8 +203,8 @@ void main() {
           hasFullDiskAccess: true,
           queryLayers: <DatabaseHealthQueryLayer>[
             _FakeHealthQueryLayer(
-              databaseKey: 'working',
-              role: 'retained_historical_reference',
+              databaseKey: 'retired_working',
+              role: 'retired_working_reference',
               fileExists: false,
             ),
           ],
@@ -212,7 +212,7 @@ void main() {
 
         final report = await service.buildPhase1Report();
 
-        expect(report.databases.single.databaseKey, 'working');
+        expect(report.databases.single.databaseKey, 'retired_working');
         expect(report.databases.single.accessible, isFalse);
         expect(report.databases.single.readOnlyOpenSucceeded, isFalse);
         expect(report.tableInventory, isEmpty);
