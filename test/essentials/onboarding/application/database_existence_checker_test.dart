@@ -42,16 +42,22 @@ void main() {
     test(
       'does not treat retired import and working databases as sufficient',
       () {
-        const checker = DatabaseExistenceChecker(
+        final checker = DatabaseExistenceChecker(
           _FakeDatabaseProbeReader(
             probes: {
-              retiredMacosImportDatabaseFileName: OnboardingDatabaseProbe(
+              path.join(
+                databaseDirectory,
+                retiredMacosImportDatabaseFileName,
+              ): const OnboardingDatabaseProbe(
                 path: 'retired macos import',
                 exists: true,
                 readable: true,
                 sizeBytes: 1,
               ),
-              retiredWorkingDatabaseFileName: OnboardingDatabaseProbe(
+              path.join(
+                databaseDirectory,
+                retiredWorkingDatabaseFileName,
+              ): const OnboardingDatabaseProbe(
                 path: 'retired working',
                 exists: true,
                 readable: true,
