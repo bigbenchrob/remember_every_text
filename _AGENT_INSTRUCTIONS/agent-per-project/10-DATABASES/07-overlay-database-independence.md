@@ -198,10 +198,10 @@ in providers via `overlayDb.getAllHandleVisibilities()`.
 
 | Concern | `db-graph-working` / retained files | `db-overlay` |
 | --- | --- | --- |
-| Ownership | Source-scoped graph projection; retained files only for archive metadata, recovery, and diagnostics | User-facing services |
-| Lifecycle | Graph projection is disposable/rebuildable; retained files are compatibility/reference storage | Persistent |
-| Writes | Graph projectors write graph DB; retained metadata writers write retained import metadata only | User actions/services only |
-| Contents | Source-derived contacts, handles, chats, messages, topology, projection inputs; retained archive-source metadata and historical file inventory | Manual handle links, custom names, visibility preferences, message user metadata, favorites, archived attachment metadata |
+| Ownership | Source-scoped graph projection; retired files only for recovery/reference diagnostics | User-facing services and archive-source metadata |
+| Lifecycle | Graph projection is disposable/rebuildable; retired files are cleanup/reference storage | Persistent |
+| Writes | Graph projectors write graph DB; retired import/working files are not ordinary write targets | User actions/services and archive-source metadata services only |
+| Contents | Source-derived contacts, handles, chats, messages, topology, projection inputs; historical file inventory | Manual handle links, custom names, visibility preferences, message user metadata, favorites, archived attachment metadata, archive-source metadata |
 | Foreign Keys | Enforced by Drift schema | Enforced by Drift schema |
 
 ## Debugging Checklist

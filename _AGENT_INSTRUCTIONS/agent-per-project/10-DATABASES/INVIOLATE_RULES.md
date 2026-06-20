@@ -2,7 +2,7 @@
 tier: project
 scope: inviolate-rules
 owner: 10-DATABASES
-last_reviewed: 2026-06-08
+last_reviewed: 2026-06-20
 source_of_truth: doc
 tests: []
 ---
@@ -20,13 +20,14 @@ These rules are **absolute constraints**. They apply to every agent, every sessi
 - User intent → overlay DB **ONLY**
 - Source-scoped import → `macos_import_ss.db` **ONLY**
 - Graph projection → `working_ss.db` **ONLY**
-- Retained archive-source metadata → retained `macos_import.db` **ONLY**
-- Retained `working.db` → historical file/schema inventory only; no ordinary
+- Archive-source metadata → overlay DB **ONLY**
+- Retired `working.db` → historical file/schema inventory only; no ordinary
   app provider remains
 - Providers merge at read time; overlay wins on conflict
 - ❌ NEVER dual-write to both overlay AND graph/retained storage
-- ❌ NEVER have graph projection, import, retained metadata writers, or
-  diagnostics read or consult overlay DB
+- ❌ NEVER have graph projection or import read or consult overlay DB
+- ❌ NEVER feed overlay-owned archive-source metadata back into graph
+  projection/import semantics
 - ❌ NEVER snapshot overlay before projection/import/metadata maintenance then
   restore into graph/retained storage
 - ❌ NEVER store user-intent flags on graph/retained tables rebuilt from source
@@ -97,11 +98,9 @@ The correct response is **always investigation, never concealment**:
 
 - **Source-scoped import DB**: `ref.watch(importDatabaseProvider.future)`
 - **Graph working DB**: `ref.watch(driftConversationGraphDatabaseProvider.future)`
-- **Retained archive metadata DB**:
-  `ref.watch(retainedArchiveMetadataStoreProvider.future)` for
-  archive-source metadata; only the central DB provider constructs the concrete
-  retained metadata adapter
-- **Retained working DB**: no central app provider remains; use explicit
+- **Archive-source metadata**: `ref.watch(overlayDatabaseProvider.future)` via
+  named overlay-owned services
+- **Retired import/working DBs**: no central app providers remain; use explicit
   read-only diagnostic boundaries only when retained file inspection is
   deliberately required
 - **Overlay DB**: `ref.watch(overlayDatabaseProvider.future)`

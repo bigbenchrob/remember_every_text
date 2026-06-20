@@ -34,9 +34,9 @@ Current app-owned files/directories include:
 | --- | --- | --- |
 | Source-scoped import ledger | `macos_import_ss.db` | `importDatabaseProvider`, source-scoped import pipeline |
 | Conversation graph projection | `working_ss.db` | `driftConversationGraphDatabaseProvider`, graph projection/readers |
-| Retained archive-source metadata | `macos_import.db` | `retainedArchiveMetadataStoreProvider` for archive metadata; concrete storage adapter is constructed only by the central DB provider |
-| Retained working file inventory | `working.db` | Retained file/schema for reset cleanup and read-only diagnostics; no central app provider |
-| Overlay database | `user_overlays.db` | `overlayDatabaseProvider`, user-intent services |
+| Retired import reference file | `macos_import.db` | Cleanup/reference file only; no central app provider |
+| Retired working reference file | `working.db` | Cleanup/reference file only; no central app provider |
+| Overlay database | `user_overlays.db` | `overlayDatabaseProvider`, user-intent and archive-source metadata services |
 | Attachment archive | `attachment_archive/` | Attachment archive service |
 | Historical import/projection audit logs | `import_log`, `migrate_log` | Historical retained diagnostics; source-scoped graph status is reported through graph lifecycle/health surfaces |
 
@@ -74,9 +74,8 @@ deployment automation in this repository owns that behavior.
 
 - Source-scoped import DB: `lib/essentials/source_scoped_import/infrastructure/import_database_provider.dart`
 - Conversation graph DB: `lib/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart`
-- Retained archive metadata DB: `lib/essentials/db/infrastructure/data_sources/local/import/retained_archive_metadata_database.dart`
-- Retained working DB: no live Drift schema remains; existing `working.db`
-  files are retained storage only and may be inspected read-only by diagnostics
-  or removed by reset cleanup.
+- Retired import/working DBs: no live providers or schemas remain; existing
+  `macos_import.db` and `working.db` files are cleanup/reference storage only
+  and may be inspected read-only by diagnostics or removed by reset cleanup.
 - Overlay DB: `lib/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart`
 - High-level summaries: `../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md`

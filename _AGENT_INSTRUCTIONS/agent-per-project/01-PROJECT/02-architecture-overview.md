@@ -110,7 +110,7 @@ Hard boundaries:
 
 - source-scoped import writes only to `macos_import_ss.db`
 - graph projection writes only to `working_ss.db`
-- retained archive-source metadata writes only to retained `macos_import.db`
+- archive-source metadata writes only to overlay-owned services
 - user intent writes only to `user_overlays.db`
 - providers merge graph projection + overlay at read time
 
@@ -133,12 +133,10 @@ Use `../25-ONBOARDING-AND-ARCHIVE/` for current behavior.
 - Riverpod providers should use project-standard generated-provider patterns.
 - Use the current provider names from code and database docs. Ordinary graph
   reads use `driftConversationGraphDatabaseProvider`; source-scoped import uses
-  `importDatabaseProvider` from `source_scoped_import`; overlay user intent uses
-  `overlayDatabaseProvider`. Retained archive metadata callers use
-  `retainedArchiveMetadataStoreProvider`; the central DB provider constructs
-  the concrete retained metadata adapter.
-  Retained `working.db` is a file/schema retention concern and no longer has a
-  central app provider.
+  `importDatabaseProvider` from `source_scoped_import`; overlay user intent and
+  archive-source metadata use `overlayDatabaseProvider`.
+  Retired `macos_import.db` and `working.db` are cleanup/reference file concerns
+  and no longer have central app providers.
 - Do not invent generic provider names such as `workingDatabaseProvider` or
   `importDatabaseProvider` unless code first introduces them.
 - Keep generated files untouched unless running the approved generator.
