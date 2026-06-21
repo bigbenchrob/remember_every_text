@@ -2976,6 +2976,10 @@ criteria.
   database filename through the public feature-level boundary instead of
   reaching into `source_scoped_import/infrastructure/import_database_provider`
   solely for constants.
+- Added an architecture tripwire preventing onboarding application tests from
+  importing source-scoped import infrastructure solely for filename constants.
+  They must use the public source-scoped feature-level API, preserving the same
+  boundary expected of production onboarding code.
 
 ### Exit Criteria
 
