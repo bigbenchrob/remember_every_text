@@ -2758,6 +2758,22 @@ void main() {
       );
     });
 
+    test('Cross-snapshot mapping uses source-row identity language', () async {
+      final offenders =
+          await _findCrossSnapshotMappingIdentityLanguageOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Cross-snapshot attachment mapping is graph/source-scoped archive '
+            'recovery logic. Public read models and mapper internals should '
+            'name the current attachment endpoint as source-row identity, not '
+            'retained import attachment identity.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Archive compatibility tuple serialization stays centralized', () async {
       final offenders =
           await _findArchiveCompatibilityTupleSerializationOffenders();
@@ -6658,6 +6674,28 @@ Future<List<String>> _findGraphHealthAdHocArchiveKeyOffenders() async {
   }
 
   return offenders;
+}
+
+Future<List<String>>
+_findCrossSnapshotMappingIdentityLanguageOffenders() async {
+  const files = <String>[
+    'lib/features/attachments/application/cross_snapshot_mapping.dart',
+    'lib/features/attachments/infrastructure/repositories/graph_cross_snapshot_mapper.dart',
+  ];
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final file = File(filePath);
+    if (!file.existsSync()) {
+      continue;
+    }
+    final uncommented = _stripComments(await file.readAsString());
+    if (uncommented.contains('currentImportAttachmentId')) {
+      offenders.add('$filePath exposes current import attachment identity');
+    }
+  }
+
+  return offenders..sort();
 }
 
 Future<List<String>>
