@@ -75,7 +75,7 @@ rebuilds and must not depend on retired compatibility files.
 
 | Value | Meaning |
 |-------|---------|
-| `archived` | Copied from live Messages Attachments during graph sync or retained archive compatibility |
+| `archived` | Copied from live Messages Attachments during graph sync or archive compatibility lookup |
 | `imported_historical_snapshot` | Recovered from a Time Machine or backup snapshot |
 
 ### Current Caveat: Attachment Provenance Naming

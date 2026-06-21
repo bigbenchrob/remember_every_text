@@ -117,4 +117,4 @@ Each auto-sync cycle maintains the living archive:
 | `lib/essentials/conversation_graph/application/monitor/chat_db_change_monitor_provider.dart` | Poll-based auto-sync and attachment sweep |
 | `lib/essentials/onboarding/application/onboarding_gate_provider.dart` | `startReimport()` trigger |
 | `lib/essentials/conversation_graph/application/orchestrators/conversation_graph_build_controller_provider.dart` | Source-scoped graph build/rebuild lifecycle |
-| `lib/features/attachments/application/attachment_archive_service_provider.dart` | `archiveGraphMessageSourceRange()`, graph sweeps, retained archive compatibility |
+| `lib/features/attachments/application/attachment_archive_service_provider.dart` | `archiveGraphMessageSourceRange()`, graph sweeps, typed archive compatibility lookup |

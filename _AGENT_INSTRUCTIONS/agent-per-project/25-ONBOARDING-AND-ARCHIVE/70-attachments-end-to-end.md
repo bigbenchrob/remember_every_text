@@ -145,8 +145,8 @@ Current graph-native identity mapping:
 4. Overlay receives or skips an `archived_attachments` row keyed by the existing archive-compatible `(message_guid, import_attachment_id)` pair, where `import_attachment_id` is currently the source attachment ROWID unpacked from the graph attachment `ss_id`.
 
 The archive overlay key remains compatibility-shaped so existing archived files
-survive the graph migration. Do not extend retained historical GUID/import-id
-bridges beyond the named archive compatibility key.
+survive the graph migration. Do not extend GUID/import-id bridges beyond the
+typed `ArchiveCompatibilityKey` boundary.
 
 Primary match:
 

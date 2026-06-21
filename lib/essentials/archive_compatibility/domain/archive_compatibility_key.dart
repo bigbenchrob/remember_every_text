@@ -62,7 +62,7 @@ class ArchiveCompatibilityKey {
   /// column terminology.
   int get liveSourceAttachmentRowId => importAttachmentId;
 
-  /// Attachment id component used by the retained archive compatibility tuple.
+  /// Attachment id component used by the archive compatibility tuple.
   ///
   /// Prefer this name when code is reasoning about archive lookup identity but
   /// is not directly reading or writing the persisted overlay column.
