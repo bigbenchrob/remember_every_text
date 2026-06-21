@@ -66,7 +66,10 @@ void main() {
         rows.single.archiveCompatibilityKey!.messageGuid,
         'message-guid-100',
       );
-      expect(rows.single.archiveCompatibilityKey!.importAttachmentId, 200);
+      expect(
+        rows.single.archiveCompatibilityKey!.archiveCompatibilityAttachmentId,
+        200,
+      );
     },
   );
 
@@ -135,7 +138,11 @@ void main() {
       'unarchived-message-guid',
     );
     expect(
-      selection.rows.single.archiveCompatibilityKey!.importAttachmentId,
+      selection
+          .rows
+          .single
+          .archiveCompatibilityKey!
+          .archiveCompatibilityAttachmentId,
       201,
     );
   });
