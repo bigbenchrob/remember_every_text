@@ -2,7 +2,7 @@
 tier: project
 scope: databases
 owner: agent-per-project
-last_reviewed: 2026-06-08
+last_reviewed: 2026-06-21
 source_of_truth: doc
 links:
   - ./00-all-databases-accessed.md
@@ -15,11 +15,11 @@ links:
 tests: []
 ---
 
-# `db-working` - Retained Historical Projection File (`working.db`)
+# `db-working` - Retired Historical Cleanup File (`working.db`)
 
 ## Overview
 
-`db-working` is the retained `working.db` storage name. The Drift schema and
+`db-working` is the retired `working.db` cleanup filename. The Drift schema and
 migrator implementation have been retired from active app code. Existing user
 data folders may still contain a historical projection file, and reset or
 read-only diagnostics must tolerate that file.
@@ -32,7 +32,7 @@ read-only diagnostics must tolerate that file.
 
 - **Alias**: `db-working`
 - **Physical File**: `~/Library/Application Support/com.bigbenchsoftware.MessageLens/working.db`
-- **Primary Consumers**: Reset cleanup, read-only diagnostics, historical file interpretation
+- **Primary Consumers**: Reset cleanup and read-only diagnostics
 
 ## File Location
 
@@ -40,7 +40,7 @@ read-only diagnostics must tolerate that file.
 | --- | --- |
 | Directory | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/`
 | Filename | `working.db`
-| Provisioning | Retained file/schema storage only; no central app provider remains |
+| Provisioning | Retired cleanup-file storage only; no central app provider remains |
 | Backups | External/operational backup if configured; not owned by the working database provider |
 
 Manual access requires shutting down the Flutter app and orchestration tooling
@@ -88,7 +88,7 @@ Representative historical tables that may still appear in old files:
 - Historical documentation may refer to old projection tables when explaining
   migration decisions.
 
-Remember: `db-working` is retained transitional cleanup storage, not the ordinary app
+Remember: `db-working` is retired transitional cleanup storage, not the ordinary app
 truth. Historical retained projection concepts may still appear in schema
 records, but ordinary MessageLens evidence, search, timelines, and heatmaps use
 the source-scoped graph. Any manual edits are unsupported and may make retained
@@ -109,6 +109,6 @@ diagnostics inconsistent.
 ## Cross-References
 
 - `10-group-import-working.md` — Historical retained pipeline rules.
-- `01-db-import.md` — Retained archive-source metadata and historical ledger details.
+- `01-db-import.md` — Retired import cleanup-file details.
 - `07-overlay-database-independence.md` — Runtime merge strategy for overlay data.
 - `../55-READERS-INTEGRATORS-ORCHESTRATORS/81-LEGACY-STORAGE-RETENTION-REGISTER.md` — Current retained storage status.

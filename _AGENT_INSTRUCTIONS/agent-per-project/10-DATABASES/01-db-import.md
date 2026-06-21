@@ -16,11 +16,11 @@ links:
 tests: []
 ---
 
-# `db-import` - Retired Import Reference Storage (`macos_import.db`)
+# `db-import` - Retired Import Cleanup File (`macos_import.db`)
 
 ## Overview
 
-`db-import` is the retired `macos_import.db` storage name. Existing user data
+`db-import` is the retired `macos_import.db` cleanup filename. Existing user data
 folders may still contain historical legacy ledger tables or older retained
 archive-source metadata from earlier versions, and diagnostics/reset code must
 tolerate those files.
@@ -33,7 +33,7 @@ tolerate those files.
 
 - **Alias**: `db-import`
 - **Physical File**: `~/Library/Application Support/com.bigbenchsoftware.MessageLens/macos_import.db`
-- **Primary Consumers**: Database health diagnostics and reset cleanup
+- **Primary Consumers**: Read-only database health diagnostics and reset cleanup
 
 ## File Location
 
@@ -63,7 +63,7 @@ those tables.
 - Inspect old `macos_import.db` files read-only during diagnostics.
 - Delete the retained file during full derived-data reset.
 
-Because historical user files may still contain old ledger or metadata tables,
+Because historical user files may still contain retired ledger or metadata tables,
 diagnostics should report what exists without treating those tables as active
 app truth.
 
@@ -78,5 +78,5 @@ app truth.
 ## Cross-References
 
 - `10-group-import-working.md` — Historical retained import/working contract.
-- `02-db-working.md` — Retained projection database status.
+- `02-db-working.md` — Retired projection cleanup-file status.
 - `../55-READERS-INTEGRATORS-ORCHESTRATORS/81-LEGACY-STORAGE-RETENTION-REGISTER.md` — Current retained storage status.
