@@ -2941,6 +2941,11 @@ criteria.
   now cross the external-links action boundary instead of reading the lower
   level opener service directly. Added provider coverage and an architecture
   tripwire for this boundary.
+- Moved native URL-preview metadata loading behind the external-links provider
+  boundary. `UrlPreviewWidget` still owns visual loading/fallback/rendering,
+  but it no longer instantiates the platform `NativeLinkPreviewService`
+  directly. The existing URL-preview architecture tripwire now guards both
+  browser-opening and metadata-loading boundaries.
 - Added a current `PipelineIncidentStage.graphProjection` value while
   preserving the historical persisted `migration` stage for old overlay rows.
   JSON parsing now keeps old incident records readable without forcing current
