@@ -268,8 +268,23 @@ class RustMessageExtractor implements MessageExtractorPort {
         '--bin',
         'extract_messages_limited',
       ]);
-      return result.exitCode == 0;
-    } catch (_) {
+      final succeeded = result.exitCode == 0;
+      if (!succeeded) {
+        _warn(
+          'Rust extractor build failed',
+          context: <String, dynamic>{
+            'exitCode': result.exitCode,
+            'stdout': '${result.stdout}',
+            'stderr': '${result.stderr}',
+          },
+        );
+      }
+      return succeeded;
+    } catch (error) {
+      _error(
+        'Rust extractor build threw',
+        context: <String, dynamic>{'error': '$error'},
+      );
       return false;
     }
   }
