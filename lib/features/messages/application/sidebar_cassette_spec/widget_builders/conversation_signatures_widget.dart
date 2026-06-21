@@ -91,7 +91,19 @@ class _ConversationSignaturesWidgetState
             );
           },
           loading: () => const SizedBox.shrink(),
-          error: (_, _) => const SizedBox.shrink(),
+          error: (error, _) => Padding(
+            padding: const EdgeInsets.fromLTRB(
+              _conversationSignatureListInset,
+              0,
+              _conversationSignatureListInset,
+              AppSpacing.lg,
+            ),
+            child: _ConversationSignatureStatus(
+              message: 'Unable to load favourites. $error',
+              colors: colors,
+              typography: typography,
+            ),
+          ),
         ),
         _ConversationSignatureControls(
           searchController: _searchController,
@@ -179,6 +191,26 @@ class _ConversationSignaturesWidgetState
 
 const double _conversationSignatureListInset = 12;
 const double _conversationSignatureControlInset = 12;
+
+class _ConversationSignatureStatus extends StatelessWidget {
+  const _ConversationSignatureStatus({
+    required this.message,
+    required this.colors,
+    required this.typography,
+  });
+
+  final String message;
+  final ThemeColors colors;
+  final ThemeTypography typography;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      message,
+      style: typography.caption.copyWith(color: colors.content.textSecondary),
+    );
+  }
+}
 
 class _FavouriteConversationSection extends ConsumerWidget {
   const _FavouriteConversationSection({
