@@ -1066,11 +1066,15 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
         if (controller.value.isPlaying) {
           await controller.pause();
         }
-      } catch (_) {}
+      } catch (error) {
+        debugPrint('Video tile pause during dispose failed: $error');
+      }
 
       try {
         await controller.dispose();
-      } catch (_) {}
+      } catch (error) {
+        debugPrint('Video tile controller dispose failed: $error');
+      }
     }());
   }
 
@@ -1137,7 +1141,8 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
         _thumbnailFile = thumbnailPath == null ? null : File(thumbnailPath);
         _thumbnailSourcePath = videoFile.path;
       });
-    } catch (_) {
+    } catch (error) {
+      debugPrint('Video tile thumbnail load failed: $error');
       if (!mounted || requestGeneration != _thumbnailRequestGeneration) {
         return;
       }
@@ -1224,7 +1229,8 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
           return;
         }
       }
-    } catch (_) {
+    } catch (error) {
+      debugPrint('Video tile activation failed: $error');
       await controller.dispose();
       if (!mounted || activationGeneration != _activationGeneration) {
         return;
