@@ -3079,6 +3079,10 @@ criteria.
 - Updated pipeline invariant and onboarding proposal wording so retired
   `macos_import.db` / `working.db` files are described as cleanup/reference
   storage, not active compatibility databases.
+- Centralized contact/handle graph-id conversion behind conversation-graph
+  identity helpers. Contact and handle overlay bridges now use those helpers
+  instead of importing `SourceScopedRowKey` directly, and the architecture
+  tripwire now enforces the stricter boundary.
 
 ### Exit Criteria
 

@@ -60,8 +60,6 @@ const Set<String> _retainedOverlayIdentityBridgeAllowedFiles = <String>{};
 const Set<String> _retainedOverlayIdentityBridgeTestAllowedFiles = <String>{};
 
 const Set<String> _featureIdentitySourceScopedRowKeyAllowedFiles = {
-  'lib/features/contacts/application/read_models/contact_summary_identity.dart',
-  'lib/features/handles/application/read_models/handle_identity.dart',
   'lib/features/messages/application/message_evidence/message_evidence_identity.dart',
   'lib/features/messages/domain/message_evidence/recovered_message_identity.dart',
 };
@@ -814,10 +812,10 @@ void main() {
         ),
         reason:
             'Feature code should not rebuild source-scoped ids directly from '
-            'widgets, repositories, or ad hoc read models. Ordinary contact, '
-            'handle, and message evidence identity conversion belongs in named '
-            'identity helpers; recovered-message source identity remains a '
-            'domain concern.\n'
+            'widgets, repositories, or ad hoc read models. Contact and handle '
+            'identity conversion belongs in conversation-graph identity '
+            'helpers; message evidence still has a named compatibility helper, '
+            'and recovered-message source identity remains a domain concern.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });

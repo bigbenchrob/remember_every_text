@@ -18,5 +18,15 @@ void main() {
     test('preserves virtual contact ids', () {
       expect(graphContactIdForContactPage(1000000000), 1000000000);
     });
+
+    test('unpacks graph AddressBook contact ids to source rowids', () {
+      final graphId = SourceScopedRowKey.pack(
+        sourceId: liveAddressBookSourceId,
+        sourceRowId: 24,
+      );
+
+      expect(liveAddressBookRowIdForGraphContactId(graphId), 24);
+      expect(liveAddressBookRowIdForGraphContactId(24), isNull);
+    });
   });
 }

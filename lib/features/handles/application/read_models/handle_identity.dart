@@ -1,5 +1,4 @@
-import '../../../../essentials/source_scoped_import/domain/known_sources.dart';
-import '../../../../essentials/source_scoped_import/domain/source_scoped_row_key.dart';
+import '../../../../essentials/conversation_graph/application/identity/live_chat_graph_identity.dart';
 
 /// Overlay compatibility bridge for handle identity.
 ///
@@ -37,18 +36,10 @@ T? overlayValueForHandleIdentity<T>(
 }
 
 int? _graphHandleIdForRetainedHandleId(int handleId) {
-  if (handleId <= 0 || handleId > SourceScopedRowKey.maxSourceRowId) {
-    return null;
-  }
-  return SourceScopedRowKey.pack(
-    sourceId: liveChatDbSourceId,
-    sourceRowId: handleId,
-  );
+  final graphHandleId = canonicalLiveChatGraphId(handleId);
+  return graphHandleId == handleId ? null : graphHandleId;
 }
 
 int? _retainedHandleIdForGraphHandleId(int handleId) {
-  if (SourceScopedRowKey.unpackSourceId(handleId) != liveChatDbSourceId) {
-    return null;
-  }
-  return SourceScopedRowKey.unpackSourceRowId(handleId);
+  return liveChatSourceRowIdForGraphId(handleId);
 }

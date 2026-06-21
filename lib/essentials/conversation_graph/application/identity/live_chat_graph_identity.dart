@@ -15,3 +15,11 @@ int canonicalLiveChatGraphId(int value) {
     sourceRowId: value,
   );
 }
+
+/// Returns the live `chat.db` ROWID for a graph id.
+int? liveChatSourceRowIdForGraphId(int value) {
+  if (SourceScopedRowKey.unpackSourceId(value) != liveChatDbSourceId) {
+    return null;
+  }
+  return SourceScopedRowKey.unpackSourceRowId(value);
+}

@@ -17,3 +17,11 @@ int graphContactIdForContactPage(int contactId) {
     sourceRowId: contactId,
   );
 }
+
+/// Returns the live AddressBook row id for a graph contact id.
+int? liveAddressBookRowIdForGraphContactId(int contactId) {
+  if (SourceScopedRowKey.unpackSourceId(contactId) != liveAddressBookSourceId) {
+    return null;
+  }
+  return SourceScopedRowKey.unpackSourceRowId(contactId);
+}

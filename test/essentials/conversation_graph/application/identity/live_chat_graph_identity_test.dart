@@ -25,5 +25,15 @@ void main() {
       expect(canonicalLiveChatGraphId(0), 0);
       expect(canonicalLiveChatGraphId(-1), -1);
     });
+
+    test('unpacks live chat graph ids to source rowids', () {
+      final graphId = SourceScopedRowKey.pack(
+        sourceId: liveChatDbSourceId,
+        sourceRowId: 42,
+      );
+
+      expect(liveChatSourceRowIdForGraphId(graphId), 42);
+      expect(liveChatSourceRowIdForGraphId(42), isNull);
+    });
   });
 }

@@ -46,6 +46,13 @@ void main() {
 
     expect(contact, isNull);
   });
+
+  test('preserves app-owned virtual contact ids', () {
+    const virtualContactId = 1000000000;
+
+    expect(canonicalContactIdentityKey(virtualContactId), virtualContactId);
+    expect(contactIdentityKeyVariants(virtualContactId), {virtualContactId});
+  });
 }
 
 ContactSummary _contact(int participantId, String name) {

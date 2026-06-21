@@ -1,5 +1,4 @@
-import '../../../../essentials/source_scoped_import/domain/known_sources.dart';
-import '../../../../essentials/source_scoped_import/domain/source_scoped_row_key.dart';
+import '../../../../essentials/conversation_graph/application/identity/contact_page_graph_identity.dart';
 import 'contact_summary.dart';
 
 /// Overlay compatibility bridge for contact identity.
@@ -46,18 +45,10 @@ ContactSummary? findContactSummaryById(
 }
 
 int? _graphContactIdForRetainedContactId(int contactId) {
-  if (contactId <= 0 || contactId > SourceScopedRowKey.maxSourceRowId) {
-    return null;
-  }
-  return SourceScopedRowKey.pack(
-    sourceId: liveAddressBookSourceId,
-    sourceRowId: contactId,
-  );
+  final graphContactId = graphContactIdForContactPage(contactId);
+  return graphContactId == contactId ? null : graphContactId;
 }
 
 int? _retainedContactIdForGraphContactId(int contactId) {
-  if (SourceScopedRowKey.unpackSourceId(contactId) != liveAddressBookSourceId) {
-    return null;
-  }
-  return SourceScopedRowKey.unpackSourceRowId(contactId);
+  return liveAddressBookRowIdForGraphContactId(contactId);
 }
