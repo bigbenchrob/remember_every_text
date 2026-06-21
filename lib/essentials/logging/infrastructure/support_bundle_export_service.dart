@@ -74,7 +74,7 @@ class SupportBundleExportService {
       );
       attachmentFiles.add(File(auditOutput.reportPath));
       databaseHealthIncluded = true;
-    } catch (error) {
+    } catch (error, stackTrace) {
       final errorFile = File(
         '${bundleDirectory.path}/database_health_error.json',
       );
@@ -84,6 +84,7 @@ class SupportBundleExportService {
           'artifact': 'database_health.json',
           'status': 'failed',
           'message': error.toString(),
+          'stack_trace': stackTrace.toString(),
           'notes': <String>['Support bundle export continued after database health generation failed.', 'No raw database copies were exported.'],
         })}\n',
       );
