@@ -91,17 +91,17 @@ class OverlayOnboardingFailureStorage implements OnboardingFailureStore {
   }
 
   @override
-  Future<OnboardingPipelineFailure?> loadGraphProjectionResult() async {
-    return (await loadGraphProjectionResultEntry())?.failure;
+  Future<OnboardingPipelineFailure?> loadGraphProjectionFailure() async {
+    return (await loadGraphProjectionFailureEntry())?.failure;
   }
 
   @override
-  Future<PersistedOnboardingGraphProjectionResult?>
-  loadGraphProjectionResultEntry() async {
-    return await _loadGraphProjectionResultFromKey(
+  Future<PersistedOnboardingGraphProjectionFailure?>
+  loadGraphProjectionFailureEntry() async {
+    return await _loadGraphProjectionFailureFromKey(
           _graphProjectionFailureKey,
         ) ??
-        await _loadGraphProjectionResultFromKey(
+        await _loadGraphProjectionFailureFromKey(
           _historicalGraphProjectionFailureKey,
         );
   }
@@ -122,13 +122,13 @@ class OverlayOnboardingFailureStorage implements OnboardingFailureStore {
   }
 
   @override
-  Future<void> clearGraphProjectionResult() async {
+  Future<void> clearGraphProjectionFailure() async {
     await _clearSetting(_graphProjectionFailureKey);
     await _clearSetting(_historicalGraphProjectionFailureKey);
   }
 
-  Future<PersistedOnboardingGraphProjectionResult?>
-  _loadGraphProjectionResultFromKey(String settingKey) async {
+  Future<PersistedOnboardingGraphProjectionFailure?>
+  _loadGraphProjectionFailureFromKey(String settingKey) async {
     try {
       final overlayDb = await _overlayDb;
       final rawValue = await overlayDb.readOverlaySetting(settingKey);
@@ -150,7 +150,7 @@ class OverlayOnboardingFailureStorage implements OnboardingFailureStore {
         return null;
       }
 
-      return PersistedOnboardingGraphProjectionResult(
+      return PersistedOnboardingGraphProjectionFailure(
         recordedAt: _asDateTime(decoded[_recordedAtKey]),
         failure: OnboardingPipelineFailure(
           phase: OnboardingPipelinePhase.graphProjection,

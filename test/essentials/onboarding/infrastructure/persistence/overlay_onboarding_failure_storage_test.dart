@@ -45,7 +45,7 @@ void main() {
         recordedAt: recordedAt,
       );
 
-      final loaded = await storage.loadGraphProjectionResultEntry();
+      final loaded = await storage.loadGraphProjectionFailureEntry();
 
       expect(loaded, isNotNull);
       expect(loaded!.failure.batchId, 22);
@@ -86,7 +86,7 @@ void main() {
               '{"batch_id":22,"success":false,"error":"Old graph projection failure"}',
         );
 
-        final loaded = await storage.loadGraphProjectionResultEntry();
+        final loaded = await storage.loadGraphProjectionFailureEntry();
 
         expect(loaded, isNotNull);
         expect(loaded!.failure.batchId, 22);
@@ -99,10 +99,10 @@ void main() {
       await storage.saveGraphProjectionFailure(batchId: 2, message: 'fail');
 
       await storage.clearSourceImportFailure();
-      await storage.clearGraphProjectionResult();
+      await storage.clearGraphProjectionFailure();
 
       expect(await storage.loadSourceImportFailure(), isNull);
-      expect(await storage.loadGraphProjectionResult(), isNull);
+      expect(await storage.loadGraphProjectionFailure(), isNull);
       expect(
         await overlayDb.readOverlaySetting(
           'onboarding_last_graph_projection_result',
@@ -148,7 +148,7 @@ void main() {
           settingValue: '{',
         );
 
-        final loaded = await storage.loadGraphProjectionResultEntry();
+        final loaded = await storage.loadGraphProjectionFailureEntry();
 
         expect(loaded, isNull);
         expect(readFailures, ['onboarding_last_graph_projection_result']);

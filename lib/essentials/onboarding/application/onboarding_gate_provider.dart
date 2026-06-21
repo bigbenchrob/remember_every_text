@@ -409,7 +409,7 @@ class OnboardingGate extends _$OnboardingGate {
 
   Future<void> _clearConversationGraphBuildFailure() async {
     final storage = ref.read(onboardingFailureStorageProvider);
-    await storage.clearGraphProjectionResult();
+    await storage.clearGraphProjectionFailure();
   }
 
   void _finishFirstRunWithFailure() {

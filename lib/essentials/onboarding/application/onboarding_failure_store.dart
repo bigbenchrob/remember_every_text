@@ -10,8 +10,8 @@ class PersistedOnboardingSourceImportFailure {
   final DateTime? recordedAt;
 }
 
-class PersistedOnboardingGraphProjectionResult {
-  const PersistedOnboardingGraphProjectionResult({
+class PersistedOnboardingGraphProjectionFailure {
+  const PersistedOnboardingGraphProjectionFailure({
     required this.failure,
     this.recordedAt,
   });
@@ -35,10 +35,10 @@ abstract interface class OnboardingFailureStore {
 
   Future<void> clearSourceImportFailure();
 
-  Future<OnboardingPipelineFailure?> loadGraphProjectionResult();
+  Future<OnboardingPipelineFailure?> loadGraphProjectionFailure();
 
-  Future<PersistedOnboardingGraphProjectionResult?>
-  loadGraphProjectionResultEntry();
+  Future<PersistedOnboardingGraphProjectionFailure?>
+  loadGraphProjectionFailureEntry();
 
   Future<void> saveGraphProjectionFailure({
     required String message,
@@ -46,5 +46,5 @@ abstract interface class OnboardingFailureStore {
     DateTime? recordedAt,
   });
 
-  Future<void> clearGraphProjectionResult();
+  Future<void> clearGraphProjectionFailure();
 }

@@ -145,7 +145,7 @@ class _OnboardingEnvironmentEvaluator {
     final persistedImportEntry = await failureStorage
         .loadSourceImportFailureEntry();
     final persistedGraphProjectionEntry = await failureStorage
-        .loadGraphProjectionResultEntry();
+        .loadGraphProjectionFailureEntry();
     final persistedImportFailure = persistedImportEntry?.failure;
     final persistedGraphProjectionFailure =
         persistedGraphProjectionEntry?.failure;
