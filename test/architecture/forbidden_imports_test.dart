@@ -288,6 +288,20 @@ void main() {
       );
     });
 
+    test('Project docs avoid raw provider invalidation examples', () async {
+      final offenders = await _findRawInvalidationDocumentationOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Project documentation should point callers to named action '
+            'boundaries or explicit graph/message data-version signals, not '
+            'copyable raw ref.invalidate(...) examples.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Active Dart code does not throw raw strings', () async {
       final offenders = await _findRawStringThrowOffenders();
 
@@ -8107,6 +8121,23 @@ Future<List<String>> _findActiveTodoFixmeOffenders() async {
   return offenders..sort();
 }
 
+Future<List<String>> _findRawInvalidationDocumentationOffenders() async {
+  final files = await _collectProjectInstructionFiles();
+  final invalidationPattern = RegExp(
+    r'\b(?:ref|_ref|widget\.ref)\.invalidate\(',
+  );
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    if (invalidationPattern.hasMatch(source)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
 Future<List<String>> _findRawStringThrowOffenders() async {
   final files = await _collectProjectDartFiles((path) {
     if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
@@ -8254,6 +8285,31 @@ Future<List<String>> _collectProjectDartFiles(
       }
 
       if (include(normalizedPath)) {
+        files.add(normalizedPath);
+      }
+    }
+  }
+
+  files.sort();
+  return files;
+}
+
+Future<List<String>> _collectProjectInstructionFiles() async {
+  final files = <String>[];
+  final agentsFile = File('AGENTS.md');
+  if (agentsFile.existsSync()) {
+    files.add(agentsFile.path);
+  }
+
+  final root = Directory('_AGENT_INSTRUCTIONS/agent-per-project');
+  if (root.existsSync()) {
+    await for (final entity in root.list(recursive: true, followLinks: false)) {
+      if (entity is! File) {
+        continue;
+      }
+
+      final normalizedPath = entity.path.replaceAll(r'\', '/');
+      if (normalizedPath.endsWith('.md')) {
         files.add(normalizedPath);
       }
     }

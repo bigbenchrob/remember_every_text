@@ -3069,6 +3069,10 @@ criteria.
 - Marked pre-graph manual-handle-linking invalidation examples as retired and
   redirected the notes toward named action/service boundaries plus graph/message
   data-version signals.
+- Added an architecture tripwire that scans project instruction docs for
+  copyable raw provider-invalidation examples, preserving the current guidance
+  that refresh ownership belongs to named action boundaries or explicit
+  data-version signals.
 
 ### Exit Criteria
 
