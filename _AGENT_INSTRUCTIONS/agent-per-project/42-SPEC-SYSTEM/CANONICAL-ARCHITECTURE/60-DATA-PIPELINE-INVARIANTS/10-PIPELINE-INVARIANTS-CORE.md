@@ -23,9 +23,11 @@ source (chat.db / attachments / AddressBook)
 → UI
 ```
 
-Retained `macos_import.db` and `working.db` are compatibility databases for
-archive/recovery workflows and explicit diagnostics. They are not the ordinary
-app-facing message evidence authority.
+Retired `macos_import.db` and `working.db` files are cleanup/reference storage
+for explicit diagnostics and historical interpretation. They are not ordinary
+app-facing message evidence authority, and new archive/recovery workflows must
+explain reachability through graph/source-scoped identity plus overlay archive
+records rather than through retired database shape.
 
 ---
 

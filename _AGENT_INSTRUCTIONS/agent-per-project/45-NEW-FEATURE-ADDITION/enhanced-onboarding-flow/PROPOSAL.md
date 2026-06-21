@@ -9,8 +9,8 @@ changed since this was written.
 
 Current onboarding/reimport success is based on source-scoped import and
 conversation graph build/readiness. Retained `db_importers` / `db_migrate`
-`macos_import.db` -> `working.db` flows are archive/recovery compatibility and
-diagnostics, not the ordinary production setup path.
+`macos_import.db` -> `working.db` flows are retired historical references and
+cleanup/diagnostic storage, not the ordinary production setup path.
 
 ## Problem
 

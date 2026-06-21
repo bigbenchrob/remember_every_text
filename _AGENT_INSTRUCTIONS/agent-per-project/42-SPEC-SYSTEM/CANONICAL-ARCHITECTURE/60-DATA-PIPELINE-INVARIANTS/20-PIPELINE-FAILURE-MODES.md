@@ -264,11 +264,11 @@ model, or local hydration path instead of the shared Message Evidence Spine.
 
 ---
 
-## 11. Retained Compatibility Leakage
+## 11. Retired Storage Leakage
 
 ### Definition
 
-Retired `macos_import.db` / `working.db` storage or compatibility-era code
+Retired `macos_import.db` / `working.db` storage or old compatibility-era code
 becomes ordinary app authority again.
 
 ### Root Cause Pattern

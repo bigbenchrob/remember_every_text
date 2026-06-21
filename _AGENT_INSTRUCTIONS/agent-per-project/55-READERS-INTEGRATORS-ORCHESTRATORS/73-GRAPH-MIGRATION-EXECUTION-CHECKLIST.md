@@ -3076,6 +3076,9 @@ criteria.
 - Added a historical-status preface to `99-ROADMAP` so its early
   provider-switch and legacy-UI language is read as superseded by the current
   graph migration docs and execution checklist.
+- Updated pipeline invariant and onboarding proposal wording so retired
+  `macos_import.db` / `working.db` files are described as cleanup/reference
+  storage, not active compatibility databases.
 
 ### Exit Criteria
 
