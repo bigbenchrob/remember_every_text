@@ -15,6 +15,49 @@ void main() {
     );
   });
 
+  test('graph projection enum renders as current graph projection stage', () {
+    expect(
+      PipelineIncidentStage.graphProjection.displayLabel,
+      equals('Graph projection'),
+    );
+  });
+
+  test('pipeline incident report parses current graph projection stage', () {
+    final report = PipelineIncidentReport.fromJson({
+      'report_id': 'report-graph',
+      'stage': 'graphProjection',
+      'headline': 'Graph issue',
+      'summary': 'Graph summary',
+      'recorded_at_utc': '2026-06-13T00:00:00.000Z',
+      'entries': const [],
+    });
+
+    expect(report, isNotNull);
+    expect(report!.stage, PipelineIncidentStage.graphProjection);
+  });
+
+  test('pipeline incident report still parses historical migration stage', () {
+    final report = PipelineIncidentReport.fromJson({
+      'report_id': 'report-retired',
+      'stage': 'migration',
+      'headline': 'Historical issue',
+      'summary': 'Historical summary',
+      'recorded_at_utc': '2026-06-13T00:00:00.000Z',
+      'entries': [
+        {
+          'severity': 'blocking',
+          'stage': 'migration',
+          'summary': 'Entry summary',
+          'recorded_at_utc': '2026-06-13T00:00:00.000Z',
+        },
+      ],
+    });
+
+    expect(report, isNotNull);
+    expect(report!.stage, PipelineIncidentStage.migration);
+    expect(report.entries.single.stage, PipelineIncidentStage.migration);
+  });
+
   test('activeBlockingPipelineIncident reads through store boundary', () async {
     final store = _FakePipelineIncidentStore(
       initialReport: _report(hasBlockingEntry: true),
