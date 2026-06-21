@@ -179,6 +179,19 @@ void main() {
             .map((check) => check.checkKey),
         contains('recovered_unlinked_attachments_to_messages_by_guid'),
       );
+      final retiredRecoveredRelationship = report.relationshipChecks
+          .where((check) => check.databaseKey == 'retired_working')
+          .singleWhere(
+            (check) =>
+                check.checkKey ==
+                'recovered_unlinked_attachments_to_messages_by_guid',
+          );
+      expect(
+        retiredRecoveredRelationship.notes,
+        contains(
+          'Retired recovered-message reference check; ordinary attachment edges are graph-owned.',
+        ),
+      );
       expect(
         report.relationshipChecks
             .where((check) => check.databaseKey == 'retired_working')
