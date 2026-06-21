@@ -2,7 +2,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../essentials/db/feature_level_providers.dart';
-import '../../essentials/db/feature_level_providers/message_data_version_provider.dart';
 import 'application/contact_access/contact_access_store.dart';
 import 'application/display_identity/display_identity.dart';
 import 'application/display_name_overrides/contact_display_name_override_store.dart';
