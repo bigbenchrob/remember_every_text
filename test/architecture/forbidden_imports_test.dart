@@ -6247,6 +6247,7 @@ Future<List<String>> _findArchiveGraphRemovalResetterBoundaryOffenders() async {
 
 Future<List<String>> _findSettingsGraphReadBoundaryOffenders() async {
   const files = <String>{
+    'lib/features/settings/feature_level_providers.dart',
     'lib/features/settings/application/sidebar_cassette_spec/resolvers/message_history_coverage_settings_resolver.dart',
     'lib/features/settings/application/historical_archives_workflow_panel_model_provider.dart',
   };
@@ -6262,14 +6263,20 @@ Future<List<String>> _findSettingsGraphReadBoundaryOffenders() async {
     final uncommented = _stripComments(source);
     final imports = _extractImports(uncommented);
     for (final importTarget in imports) {
-      if (importTarget.endsWith('conversation_graph_database.dart') ||
+      if (importTarget.endsWith('conversation_graph_database.dart')) {
+        offenders.add('$filePath imports $importTarget');
+      }
+      if (filePath != 'lib/features/settings/feature_level_providers.dart' &&
           importTarget.endsWith('essentials/db/feature_level_providers.dart')) {
         offenders.add('$filePath imports $importTarget');
       }
     }
 
-    if (uncommented.contains('driftConversationGraphDatabaseProvider') ||
-        uncommented.contains('ConversationGraphDatabase')) {
+    if (filePath != 'lib/features/settings/feature_level_providers.dart' &&
+        uncommented.contains('driftConversationGraphDatabaseProvider')) {
+      offenders.add('$filePath opens conversation graph storage directly');
+    }
+    if (RegExp(r'\bConversationGraphDatabase\b').hasMatch(uncommented)) {
       offenders.add('$filePath opens conversation graph storage directly');
     }
   }
