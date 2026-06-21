@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../essentials/logging/feature_level_providers.dart';
 import '../../providers.dart';
 import 'domain/entities/address_book_folder_aggregate.dart';
 import 'domain/failures/folder_retrieval_failure.dart';
@@ -41,7 +42,21 @@ If you have not moved your address book, please contact the developer.
 @riverpod
 Future<AddressBookFolderPathsFinder> folderPathFinder(Ref ref) async {
   final pathsHelper = await ref.watch(pathsHelperProvider.future);
-  return AddressBookFolderPathsFinder(pathsHelper: pathsHelper);
+  final logger = ref.read(appLoggerProvider.notifier);
+  return AddressBookFolderPathsFinder(
+    pathsHelper: pathsHelper,
+    onDirectoryReadFailure: (dirPath, error, stackTrace) {
+      logger.warn(
+        'AddressBook folder scan: skipped unreadable candidate directory',
+        source: 'AddressBookFolderPathsFinder',
+        context: <String, Object?>{
+          'dirPath': dirPath,
+          'error': error.toString(),
+          'stackTrace': stackTrace.toString(),
+        },
+      );
+    },
+  );
 }
 
 /// Responsible for querying the  [AddressBookFolderPathsFinder]

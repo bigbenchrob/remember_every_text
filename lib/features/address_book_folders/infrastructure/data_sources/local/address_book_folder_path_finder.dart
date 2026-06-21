@@ -7,8 +7,13 @@ import '../../../../../core/util/paths_helper.dart';
 
 class AddressBookFolderPathsFinder {
   final PathsHelper pathsHelper;
+  final void Function(String dirPath, Object error, StackTrace stackTrace)?
+  onDirectoryReadFailure;
 
-  AddressBookFolderPathsFinder({required this.pathsHelper});
+  AddressBookFolderPathsFinder({
+    required this.pathsHelper,
+    this.onDirectoryReadFailure,
+  });
 
   Future<List<String>> getAddressBookPaths() async {
     final dirList = await getAddressBookDirectories();
@@ -58,7 +63,8 @@ class AddressBookFolderPathsFinder {
           }
         }
       }
-    } catch (_) {
+    } catch (error, stackTrace) {
+      onDirectoryReadFailure?.call(dirPath, error, stackTrace);
       return false;
     }
 
