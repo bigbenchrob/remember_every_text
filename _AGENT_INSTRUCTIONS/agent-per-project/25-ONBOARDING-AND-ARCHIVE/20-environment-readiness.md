@@ -172,7 +172,7 @@ says it is "likely" or "inferred." No false certainty.
 Every recommendation is tied to a concrete signal:
 - File unreadable → permission advice
 - Row counts near zero → sync advice
-- Import DB empty after attempt → pipeline advice
+- Source-scoped import ledger empty after attempt → pipeline advice
 
 ### No Architectural Leakage
 
