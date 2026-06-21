@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
+
 import '../../db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import '../application/pipeline_incident_store.dart';
 import '../domain/pipeline_incident_report.dart';
@@ -15,17 +17,26 @@ class PipelineIncidentStorage implements PipelineIncidentStore {
 
   @override
   Future<PipelineIncidentReport?> loadLatestReport() async {
+    String? rawValue;
     try {
       final overlayDb = await _overlayDb;
-      final rawValue = await overlayDb.readOverlaySetting(
-        _latestIncidentReportKey,
-      );
-      if (rawValue == null || rawValue.isEmpty) {
-        return null;
-      }
-
-      return PipelineIncidentReport.fromJson(jsonDecode(rawValue));
+      rawValue = await overlayDb.readOverlaySetting(_latestIncidentReportKey);
     } catch (_) {
+      return null;
+    }
+
+    if (rawValue == null || rawValue.isEmpty) {
+      return null;
+    }
+
+    try {
+      return PipelineIncidentReport.fromJson(jsonDecode(rawValue));
+    } catch (error, stackTrace) {
+      _debugStorageFailure(
+        'decode latest pipeline incident report',
+        error,
+        stackTrace,
+      );
       return null;
     }
   }
@@ -56,5 +67,18 @@ class PipelineIncidentStorage implements PipelineIncidentStore {
       settingKey: _latestIncidentReportKey,
       settingValue: '',
     );
+  }
+
+  void _debugStorageFailure(
+    String operation,
+    Object error,
+    StackTrace stackTrace,
+  ) {
+    if (!kDebugMode) {
+      return;
+    }
+
+    debugPrint('Pipeline incident storage could not $operation: $error');
+    debugPrintStack(stackTrace: stackTrace);
   }
 }
