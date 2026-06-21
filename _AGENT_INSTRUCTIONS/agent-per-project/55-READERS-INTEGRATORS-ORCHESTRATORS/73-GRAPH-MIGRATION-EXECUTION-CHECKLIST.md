@@ -2941,6 +2941,13 @@ criteria.
   now cross the external-links action boundary instead of reading the lower
   level opener service directly. Added provider coverage and an architecture
   tripwire for this boundary.
+- Added a current `PipelineIncidentStage.graphProjection` value while
+  preserving the historical persisted `migration` stage for old overlay rows.
+  JSON parsing now keeps old incident records readable without forcing current
+  graph-projection incidents to use retired terminology.
+- Added an architecture tripwire preventing active `lib/` code from creating
+  new `PipelineIncidentStage.migration` incidents outside the logging domain
+  compatibility parser.
 
 ### Exit Criteria
 
