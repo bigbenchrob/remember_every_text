@@ -35,6 +35,10 @@ const Set<String> _readOnlyRetiredHealthInspectionAllowedFiles = {
   'lib/essentials/db/infrastructure/repositories/database_health_audit_queries.dart',
 };
 
+const Set<String> _historicalOnboardingMigrationKeyAllowedFiles = {
+  'lib/essentials/onboarding/infrastructure/persistence/overlay_onboarding_failure_storage.dart',
+};
+
 const Set<String> _overlayDatabaseFilenameLiteralAllowedFiles = {
   'lib/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart',
 };
@@ -699,6 +703,27 @@ void main() {
               'ReadOnlySqliteFileHealthQueryLayer is a retired-file diagnostic '
               'boundary only. Feature code must not use it to inspect retained '
               'working/import databases directly.\n'
+              'Actual users:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
+    test(
+      'Historical onboarding migration key stays in persistence fallback',
+      () async {
+        final offenders =
+            await _findHistoricalOnboardingMigrationKeyOffenders();
+
+        expect(
+          offenders,
+          orderedEquals(
+            _historicalOnboardingMigrationKeyAllowedFiles.toList()..sort(),
+          ),
+          reason:
+              'onboarding_last_migration_result is a historical persisted '
+              'overlay key only. Active onboarding code should use graph '
+              'projection terminology and must not add new migration-key '
+              'consumers.\n'
               'Actual users:\n${offenders.join('\n')}',
         );
       },
@@ -3478,6 +3503,21 @@ Future<List<String>> _findReadOnlyRetiredHealthInspectionOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (uncommented.contains('ReadOnlySqliteFileHealthQueryLayer')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findHistoricalOnboardingMigrationKeyOffenders() async {
+  final files = await _collectDartFiles((path) => !path.endsWith('.g.dart'));
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (uncommented.contains('onboarding_last_migration_result')) {
       offenders.add(filePath);
     }
   }
