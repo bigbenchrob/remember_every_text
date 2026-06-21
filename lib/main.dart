@@ -109,7 +109,7 @@ void main() async {
       zoneSpecification: ZoneSpecification(
         print: (self, parent, zone, line) {
           if (!line.contains('sqflite warning')) {
-            parent.print(zone, line);
+            debugPrint(line);
           }
         },
       ),

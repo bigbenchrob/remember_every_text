@@ -79,8 +79,6 @@ const List<String> _retiredMessageTimelinePathFragments = <String>[
   '/application/strategies/',
 ];
 
-const Set<String> _rawPrintAllowedFiles = {'lib/main.dart'};
-
 const List<String> _retiredImportMigrationExecutionSymbols = <String>[
   'DbImportControl',
   'HandlesMigrationService',
@@ -317,7 +315,7 @@ void main() {
 
         expect(
           offenders,
-          orderedEquals(_rawPrintAllowedFiles.toList()..sort()),
+          isEmpty,
           reason:
               'Raw print calls should not spread through application code. Use '
               'the app logger or an explicit diagnostic boundary instead.\n'
