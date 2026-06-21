@@ -30,6 +30,15 @@ void main() {
           conversationGraphDatabaseFileName,
         ]),
       );
+      expect(
+        activeGraphDerivedDatabaseBaseNames.toSet().intersection(
+          retiredHistoricalDatabaseCleanupBaseNames.toSet(),
+        ),
+        isEmpty,
+        reason:
+            'Active graph rebuild files and retired cleanup files must remain '
+            'separate reset categories.',
+      );
     },
   );
 }
