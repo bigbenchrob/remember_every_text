@@ -21,9 +21,14 @@ final class ArchiveSourceDateRange {
 class ArchiveSourceInspectionRepository implements ArchiveSourceInspector {
   const ArchiveSourceInspectionRepository({
     required ConversationGraphDatabase? graphDb,
-  }) : _graphDb = graphDb;
+    void Function(String folderPath, Object error, StackTrace stackTrace)?
+    onInspectionFailure,
+  }) : _graphDb = graphDb,
+       _onInspectionFailure = onInspectionFailure;
 
   final ConversationGraphDatabase? _graphDb;
+  final void Function(String folderPath, Object error, StackTrace stackTrace)?
+  _onInspectionFailure;
 
   @override
   Future<ArchiveSourceInspection> inspectFolder({
@@ -119,7 +124,8 @@ class ArchiveSourceInspectionRepository implements ArchiveSourceInspector {
       } finally {
         database.dispose();
       }
-    } catch (error) {
+    } catch (error, stackTrace) {
+      _onInspectionFailure?.call(folderPath, error, stackTrace);
       return ArchiveSourceInspection(
         folderPath: folderPath,
         sourceLabel: sourceLabel,

@@ -53,7 +53,21 @@ Future<ArchiveSourceInspector> archiveSourceInspector(Ref ref) async {
     graphDb = null;
   }
 
-  return ArchiveSourceInspectionRepository(graphDb: graphDb);
+  final logger = ref.read(appLoggerProvider.notifier);
+  return ArchiveSourceInspectionRepository(
+    graphDb: graphDb,
+    onInspectionFailure: (folderPath, error, stackTrace) {
+      logger.warn(
+        'ArchiveSourceInspector: failed to inspect selected folder',
+        source: 'ArchiveSourceInspectionRepository',
+        context: <String, Object?>{
+          'folderPath': folderPath,
+          'error': error.toString(),
+          'stackTrace': stackTrace.toString(),
+        },
+      );
+    },
+  );
 }
 
 @riverpod
