@@ -471,7 +471,7 @@ class _OnboardingEnvironmentEvaluator {
     }
 
     if (!importProbe.exists) {
-      return OnboardingBlockerKind.importDatabaseMissing;
+      return OnboardingBlockerKind.sourceScopedImportDatabaseMissing;
     }
 
     if (!graphProbe.exists) {
@@ -479,7 +479,7 @@ class _OnboardingEnvironmentEvaluator {
     }
 
     if (!importProbe.hasData) {
-      return OnboardingBlockerKind.importDatabaseEmpty;
+      return OnboardingBlockerKind.sourceScopedImportDatabaseEmpty;
     }
 
     if (!graphProbe.hasData) {

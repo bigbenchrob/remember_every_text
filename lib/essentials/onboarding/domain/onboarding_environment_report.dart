@@ -16,9 +16,9 @@ enum OnboardingBlockerKind {
   sourceDataSparseOrUnsynced,
   importFailed,
   graphProjectionFailed,
-  importDatabaseMissing,
+  sourceScopedImportDatabaseMissing,
   conversationGraphMissing,
-  importDatabaseEmpty,
+  sourceScopedImportDatabaseEmpty,
   conversationGraphEmpty,
 }
 

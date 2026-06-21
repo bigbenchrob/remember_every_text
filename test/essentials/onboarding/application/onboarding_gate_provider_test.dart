@@ -378,7 +378,7 @@ void main() {
                     : OnboardingEnvironmentState.readyToImport,
                 blockerKind: shouldReset
                     ? OnboardingBlockerKind.graphProjectionFailed
-                    : OnboardingBlockerKind.importDatabaseMissing,
+                    : OnboardingBlockerKind.sourceScopedImportDatabaseMissing,
                 shouldResetAppDatabasesBeforeImport: shouldReset,
                 resetAppDatabasesReason: shouldReset
                     ? 'Synthetic stale setup state for gate recovery test'

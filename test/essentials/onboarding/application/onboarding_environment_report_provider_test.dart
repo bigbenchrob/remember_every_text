@@ -81,7 +81,10 @@ void main() {
         );
 
         expect(report.state, OnboardingEnvironmentState.readyToImport);
-        expect(report.blockerKind, OnboardingBlockerKind.importDatabaseMissing);
+        expect(
+          report.blockerKind,
+          OnboardingBlockerKind.sourceScopedImportDatabaseMissing,
+        );
         expect(report.importFailureMessage, 'Persisted import failure');
         expect(report.usingPersistedImportFailure, isTrue);
         expect(report.lastImportFailureRecordedAt, recordedAt);
