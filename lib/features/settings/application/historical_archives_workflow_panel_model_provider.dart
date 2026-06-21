@@ -394,7 +394,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       _logHistoricalArchivesWarning(
         ref,
         message:
-            'Historical archive metadata store unavailable during preflight',
+            'Historical archive sources boundary unavailable during preflight',
         error: error,
         stackTrace: stackTrace,
       );
