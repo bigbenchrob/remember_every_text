@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:macos_window_utils/macos_window_utils.dart';
 
 import '../../domain/ports/window_manager_port.dart';
@@ -21,8 +22,8 @@ class MacosWindowManager implements WindowManagerPort {
       await WindowManipulator.setWindowFrame(
         Rect.fromLTWH(x, y, width, height),
       );
-    } catch (e) {
-      // Silently fail if window manipulation is not available
+    } catch (e, stackTrace) {
+      _debugWindowFailure('set window frame', e, stackTrace);
     }
   }
 
@@ -40,7 +41,8 @@ class MacosWindowManager implements WindowManagerPort {
         'width': frame.width,
         'height': frame.height,
       };
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _debugWindowFailure('read window frame', e, stackTrace);
       return {'x': 100, 'y': 100, 'width': 1200, 'height': 800};
     }
   }
@@ -53,8 +55,8 @@ class MacosWindowManager implements WindowManagerPort {
 
     try {
       await WindowManipulator.zoomWindow();
-    } catch (e) {
-      // Silently fail
+    } catch (e, stackTrace) {
+      _debugWindowFailure('maximize window', e, stackTrace);
     }
   }
 
@@ -66,8 +68,8 @@ class MacosWindowManager implements WindowManagerPort {
 
     try {
       await WindowManipulator.miniaturizeWindow();
-    } catch (e) {
-      // Silently fail
+    } catch (e, stackTrace) {
+      _debugWindowFailure('minimize window', e, stackTrace);
     }
   }
 
@@ -80,8 +82,8 @@ class MacosWindowManager implements WindowManagerPort {
     try {
       // macOS doesn't have a direct restore method, but we can use setWindowFrame
       // with the last known normal size
-    } catch (e) {
-      // Silently fail
+    } catch (e, stackTrace) {
+      _debugWindowFailure('restore window', e, stackTrace);
     }
   }
 
@@ -93,7 +95,8 @@ class MacosWindowManager implements WindowManagerPort {
 
     try {
       return await WindowManipulator.isWindowZoomed();
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _debugWindowFailure('read zoomed state', e, stackTrace);
       return false;
     }
   }
@@ -120,14 +123,29 @@ class MacosWindowManager implements WindowManagerPort {
 
     try {
       await _setMinSize(Size(width, height));
-    } catch (e) {
-      // Silently fail if window manipulation is not available
+    } catch (e, stackTrace) {
+      _debugWindowFailure('set window minimum size', e, stackTrace);
     }
   }
 
   Future<void> _setMinSize(Size size) async {
     try {
       await WindowManipulator.setWindowMinSize(size);
-    } catch (_) {}
+    } catch (e, stackTrace) {
+      _debugWindowFailure('apply native minimum size', e, stackTrace);
+    }
+  }
+
+  void _debugWindowFailure(
+    String operation,
+    Object error,
+    StackTrace stackTrace,
+  ) {
+    if (!kDebugMode) {
+      return;
+    }
+
+    debugPrint('Window manager could not $operation: $error');
+    debugPrintStack(stackTrace: stackTrace);
   }
 }

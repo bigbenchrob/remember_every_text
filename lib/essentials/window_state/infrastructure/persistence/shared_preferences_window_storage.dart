@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../domain/entities/window_state_entity.dart';
 import '../../domain/ports/window_storage_port.dart';
 
@@ -45,7 +47,8 @@ class SharedPreferencesWindowStorage implements WindowStoragePort {
       }
 
       return null;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _debugStorageFailure('load window state', e, stackTrace);
       return null;
     }
   }
@@ -61,8 +64,8 @@ class SharedPreferencesWindowStorage implements WindowStoragePort {
       await prefs.setDouble(_keyY, state.y);
       await prefs.setBool(_keyIsMinimized, state.isMinimized);
       await prefs.setDouble(_keySidebarWidth, state.sidebarWidth);
-    } catch (e) {
-      // Fail silently - not critical
+    } catch (e, stackTrace) {
+      _debugStorageFailure('save window state', e, stackTrace);
     }
   }
 
@@ -79,8 +82,21 @@ class SharedPreferencesWindowStorage implements WindowStoragePort {
         prefs.remove(_keyIsMinimized),
         prefs.remove(_keySidebarWidth),
       ]);
-    } catch (e) {
-      // Silently fail
+    } catch (e, stackTrace) {
+      _debugStorageFailure('clear window state', e, stackTrace);
     }
+  }
+
+  void _debugStorageFailure(
+    String operation,
+    Object error,
+    StackTrace stackTrace,
+  ) {
+    if (!kDebugMode) {
+      return;
+    }
+
+    debugPrint('SharedPreferences window storage could not $operation: $error');
+    debugPrintStack(stackTrace: stackTrace);
   }
 }
