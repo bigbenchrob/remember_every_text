@@ -3073,6 +3073,9 @@ criteria.
   copyable raw provider-invalidation examples, preserving the current guidance
   that refresh ownership belongs to named action boundaries or explicit
   data-version signals.
+- Added a historical-status preface to `99-ROADMAP` so its early
+  provider-switch and legacy-UI language is read as superseded by the current
+  graph migration docs and execution checklist.
 
 ### Exit Criteria
 
