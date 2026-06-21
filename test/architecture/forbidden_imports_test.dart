@@ -30,6 +30,11 @@ const Set<String> _retiredDatabaseFilenameLiteralAllowedFiles = {
   'lib/essentials/db/feature_level_providers.dart',
 };
 
+const Set<String> _readOnlyRetiredHealthInspectionAllowedFiles = {
+  'lib/essentials/db/feature_level_providers.dart',
+  'lib/essentials/db/infrastructure/repositories/database_health_audit_queries.dart',
+};
+
 const Set<String> _overlayDatabaseFilenameLiteralAllowedFiles = {
   'lib/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart',
 };
@@ -679,6 +684,25 @@ void main() {
             'Actual users:\n${offenders.join('\n')}',
       );
     });
+
+    test(
+      'Read-only retired database inspection stays in database health boundary',
+      () async {
+        final offenders = await _findReadOnlyRetiredHealthInspectionOffenders();
+
+        expect(
+          offenders,
+          orderedEquals(
+            _readOnlyRetiredHealthInspectionAllowedFiles.toList()..sort(),
+          ),
+          reason:
+              'ReadOnlySqliteFileHealthQueryLayer is a retired-file diagnostic '
+              'boundary only. Feature code must not use it to inspect retained '
+              'working/import databases directly.\n'
+              'Actual users:\n${offenders.join('\n')}',
+        );
+      },
+    );
 
     test('Legacy terminology does not appear in active lib code', () async {
       final offenders = await _findLegacyTerminologyOffenders();
@@ -3439,6 +3463,21 @@ Future<List<String>> _findRetiredDatabaseFilenameLiteralOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (retiredFilenameLiteralPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findReadOnlyRetiredHealthInspectionOffenders() async {
+  final files = await _collectDartFiles((path) => !path.endsWith('.g.dart'));
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (uncommented.contains('ReadOnlySqliteFileHealthQueryLayer')) {
       offenders.add(filePath);
     }
   }
