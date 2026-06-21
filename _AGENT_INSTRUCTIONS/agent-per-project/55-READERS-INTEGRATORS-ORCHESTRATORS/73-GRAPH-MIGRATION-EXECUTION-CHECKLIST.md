@@ -2985,6 +2985,12 @@ criteria.
   attachment id, not current import ownership. Added a matching tripwire
   preventing cross-snapshot mapping read models from regressing to
   `currentImportAttachmentId` terminology.
+- Removed the concrete conversation graph database type import from the
+  Settings feature-level provider. Settings composition now watches the public
+  database provider boundary and passes inferred graph DB values into named
+  infrastructure repositories. The Settings graph-read architecture tripwire
+  now also guards the feature-level provider against direct concrete graph DB
+  imports.
 
 ### Exit Criteria
 
