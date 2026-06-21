@@ -285,6 +285,20 @@ void main() {
       );
     });
 
+    test('Tests do not use placeholder coverage assertions', () async {
+      final offenders = await _findPlaceholderTestCoverageOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Tests should assert real behavior. Placeholder tests such as '
+            'expect(true, isTrue), disabled-test notes, or manual-only '
+            'coverage claims create false confidence and hide migration gaps.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Project docs avoid raw provider invalidation examples', () async {
       final offenders = await _findRawInvalidationDocumentationOffenders();
 
@@ -8111,6 +8125,35 @@ Future<List<String>> _findActiveTodoFixmeOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (markerPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findPlaceholderTestCoverageOffenders() async {
+  final files = await _collectProjectDartFiles((path) {
+    if (path == 'test/architecture/forbidden_imports_test.dart' ||
+        path.endsWith('.g.dart') ||
+        path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('test/');
+  });
+  final placeholderPatterns = <RegExp>[
+    RegExp(r'expect\s*\(\s*true\s*,\s*isTrue\s*\)'),
+    RegExp(r'placeholder\s+-', caseSensitive: false),
+    RegExp(r'tests\s+disabled', caseSensitive: false),
+    RegExp(r'disabled\s+due', caseSensitive: false),
+    RegExp(r'manual\s+E2E', caseSensitive: false),
+  ];
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (placeholderPatterns.any((pattern) => pattern.hasMatch(uncommented))) {
       offenders.add(filePath);
     }
   }

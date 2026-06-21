@@ -3089,6 +3089,9 @@ criteria.
 - Replaced the placeholder `ContactPickerDialog` widget test with a real
   interaction test that opens the dialog, filters contacts through the provider
   boundary, selects a contact, and verifies the returned participant id.
+- Added an architecture tripwire preventing placeholder/no-op test coverage
+  from returning (`expect(true, isTrue)`, disabled-test notes, or manual-only
+  coverage claims).
 
 ### Exit Criteria
 
