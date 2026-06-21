@@ -2967,6 +2967,11 @@ criteria.
   for the semantic live source attachment ROWID when producing labels/log
   context. Stored tuple construction remains inside explicit archive
   compatibility boundaries.
+- Renamed cross-snapshot mapped attachment read-model output from
+  `currentImportAttachmentId` to `currentAttachmentSourceRowId`. Historical
+  archive mapping now exposes current source identity language while
+  `ArchiveCompatibilityKey` remains responsible for translating that value to
+  the retained overlay archive tuple.
 
 ### Exit Criteria
 
