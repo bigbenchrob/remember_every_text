@@ -613,7 +613,8 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       return;
     }
 
-    final archiveCompatibilitySourceRowId = archiveKey?.importAttachmentId;
+    final archiveCompatibilitySourceRowId =
+        archiveKey?.liveSourceAttachmentRowId;
     final attachmentLabel = archiveCompatibilitySourceRowId == null
         ? 'unknown-id'
         : '$archiveCompatibilitySourceRowId';
