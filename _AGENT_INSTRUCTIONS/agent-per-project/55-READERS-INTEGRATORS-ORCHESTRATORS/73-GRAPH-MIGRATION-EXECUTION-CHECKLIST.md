@@ -2991,6 +2991,11 @@ criteria.
   infrastructure repositories. The Settings graph-read architecture tripwire
   now also guards the feature-level provider against direct concrete graph DB
   imports.
+- Added `ArchiveCompatibilityKey.archiveCompatibilityAttachmentId` as the
+  semantic name for retained archive tuple attachment identity when code is not
+  directly reading or writing the persisted overlay column. Graph health,
+  archive file fallback paths, and graph archive candidate lookup now use this
+  alias instead of spreading `importAttachmentId` outside schema-facing code.
 
 ### Exit Criteria
 
