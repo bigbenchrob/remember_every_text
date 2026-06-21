@@ -3033,6 +3033,10 @@ criteria.
   language to the current graph invariant: chat participant topology is a
   source relationship fact preserved through source-scoped import and projected
   as canonical `chat_to_handle` graph edges.
+- Added an architecture tripwire that keeps feature-level source-scoped identity
+  conversion centralized in named contact, handle, message-evidence, and
+  recovered-message identity helpers. Widgets, repositories, and ad hoc read
+  models must not rebuild graph ids directly from retained row ids.
 
 ### Exit Criteria
 
