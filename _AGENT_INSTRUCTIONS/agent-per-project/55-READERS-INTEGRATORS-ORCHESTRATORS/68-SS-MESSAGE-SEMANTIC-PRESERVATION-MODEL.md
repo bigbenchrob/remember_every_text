@@ -2,7 +2,7 @@
 tier: project
 scope: source-scoped-migration
 owner: agent-per-project
-last_reviewed: 2026-05-21
+last_reviewed: 2026-06-21
 source_of_truth: doc
 links:
   - ./64-SOURCE-SCOPED-ROW-KEY-STRATEGY.md
@@ -101,16 +101,18 @@ interpretation.
 Attachment presence is foundational, but it should not be guessed inside
 message import.
 
-Preferred sequence:
+Current graph-era sequence:
 
 ```text
 attachment import/topology
 → message attachment endpoint preservation
-→ working message has_attachments semantic flag
+→ message evidence/query layer attachment semantics
 ```
 
-Until attachment topology exists in SS, message import should not fabricate
-`has_attachments`.
+Attachment topology now exists through `message_to_attachment`. Message import
+still must not fabricate `has_attachments`; readers should derive attachment
+presence from graph topology unless a specific, measured query need justifies a
+small projected shortcut.
 
 ## Category B: Derive Lightweight SS Semantics
 
@@ -124,7 +126,7 @@ for query/review/traversal behavior.
 | system message flag | `is_system_message INTEGER` | Fast review/timeline filtering. |
 | sparse/anomaly flag | `is_sparse_artifact INTEGER` | Ensures anomalous records remain visible and reviewable. |
 | reaction/associated flag | `is_associated_message INTEGER` or encoded in `semantic_kind` | Supports reaction overlays and filtering without exposing Apple internals. |
-| attachment flag | `has_attachments INTEGER` once attachment topology exists | Timeline/search/review shortcut derived from topology. |
+| attachment presence | derive from `message_to_attachment`; optional projected shortcut only if measured | Timeline/search/review shortcut derived from topology, not message import. |
 | canonical sender endpoint | `sender_canonical_handle_ss_id INTEGER` or separate view | Supports participant-centric review while preserving source sender occurrence. |
 
 ### Sender Handle Semantics
@@ -230,7 +232,7 @@ Defer:
 
 - payload JSON
 - balloon/app-message internals
-- attachment flag until attachment topology exists
+- message-table attachment flag unless a measured query need justifies it
 - reaction summary until reaction interpretation is intentionally designed
 
 ## Suggested Semantic Vocabulary
@@ -277,7 +279,9 @@ Implement only the minimal model above:
 
 Do not add UI behavior in the first implementation slice.
 
-Do not add attachment semantics until SS attachment topology exists.
+Do not add message-table attachment semantics merely because topology exists.
+Attachment-aware evidence should derive from `message_to_attachment` unless a
+specific read-model shortcut is intentionally introduced.
 
 Do not add decoded payload behavior until a concrete review/search use case is
 defined.

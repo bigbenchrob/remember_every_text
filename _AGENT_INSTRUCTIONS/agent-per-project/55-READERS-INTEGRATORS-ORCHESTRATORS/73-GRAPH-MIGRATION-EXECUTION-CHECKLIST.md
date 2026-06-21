@@ -3024,6 +3024,11 @@ criteria.
   working_ss.chat_to_message`. The invariant now says conversation graph
   projectors own working relationship projection and must preserve
   source-scoped, occurrence-preserving endpoints.
+- Updated the message semantic preservation model now that attachment topology
+  exists. Attachment presence is documented as derived from
+  `message_to_attachment` in graph/query/evidence layers, not fabricated by
+  message import and not automatically added as a message-table flag without a
+  measured read-model need.
 
 ### Exit Criteria
 
