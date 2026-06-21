@@ -3086,6 +3086,9 @@ criteria.
 - Moved message evidence id normalization through the same live-chat graph
   identity boundary. The feature-level source-scoped conversion tripwire now
   allows only recovered-message domain source identity.
+- Replaced the placeholder `ContactPickerDialog` widget test with a real
+  interaction test that opens the dialog, filters contacts through the provider
+  boundary, selects a contact, and verifies the returned participant id.
 
 ### Exit Criteria
 
