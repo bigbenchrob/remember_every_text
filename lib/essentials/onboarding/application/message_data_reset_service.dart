@@ -25,7 +25,7 @@ const activeGraphDerivedDatabaseBaseNames = <String>[
   conversationGraphDatabaseFileName,
 ];
 
-const messageDataResetDatabaseBaseNames = <String>[
+const messageDataResetPostCleanupCheckBaseNames = <String>[
   ...activeGraphDerivedDatabaseBaseNames,
   ...retiredHistoricalDatabaseCleanupBaseNames,
 ];
@@ -91,7 +91,7 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
       _ref.read(messageDataVersionProvider.notifier).bump();
 
       final databaseExistsAfterReset = fileStore.databaseExistenceByBaseName(
-        messageDataResetDatabaseBaseNames,
+        messageDataResetPostCleanupCheckBaseNames,
       );
 
       logger.info(

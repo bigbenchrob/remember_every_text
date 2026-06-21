@@ -3120,6 +3120,11 @@ criteria.
   button widget to an action-button name. The UI behavior is unchanged, but the
   active presentation code no longer suggests that the real archive workflow
   controls are placeholder scaffolding.
+- Renamed the reset service's combined post-reset database inspection list to
+  `messageDataResetPostCleanupCheckBaseNames`, preserving the active graph
+  derived-file versus retired historical cleanup-file split in code. Reset
+  behavior is unchanged; the naming now makes clear that retained
+  `macos_import.db` / `working.db` files are only cleanup-check targets.
 
 ### Exit Criteria
 
