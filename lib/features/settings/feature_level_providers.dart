@@ -6,7 +6,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../essentials/db/feature_level_providers.dart';
-import '../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../essentials/logging/feature_level_providers.dart';
 import './application/archive_source_inspection.dart';
 import './application/historical_archive_folder_chooser.dart';
@@ -36,9 +35,25 @@ part 'feature_level_providers.g.dart';
 
 @riverpod
 Future<ArchiveSourceInspector> archiveSourceInspector(Ref ref) async {
-  ConversationGraphDatabase? graphDb;
+  final logger = ref.read(appLoggerProvider.notifier);
   try {
-    graphDb = await ref.watch(driftConversationGraphDatabaseProvider.future);
+    final graphDb = await ref.watch(
+      driftConversationGraphDatabaseProvider.future,
+    );
+    return ArchiveSourceInspectionRepository(
+      graphDb: graphDb,
+      onInspectionFailure: (folderPath, error, stackTrace) {
+        logger.warn(
+          'ArchiveSourceInspector: failed to inspect selected folder',
+          source: 'ArchiveSourceInspectionRepository',
+          context: <String, Object?>{
+            'folderPath': folderPath,
+            'error': error.toString(),
+            'stackTrace': stackTrace.toString(),
+          },
+        );
+      },
+    );
   } catch (error, stackTrace) {
     ref
         .read(appLoggerProvider.notifier)
@@ -50,12 +65,10 @@ Future<ArchiveSourceInspector> archiveSourceInspector(Ref ref) async {
             'stackTrace': stackTrace.toString(),
           },
         );
-    graphDb = null;
   }
 
-  final logger = ref.read(appLoggerProvider.notifier);
   return ArchiveSourceInspectionRepository(
-    graphDb: graphDb,
+    graphDb: null,
     onInspectionFailure: (folderPath, error, stackTrace) {
       logger.warn(
         'ArchiveSourceInspector: failed to inspect selected folder',
