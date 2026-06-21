@@ -2387,8 +2387,9 @@ void main() {
         isEmpty,
         reason:
             'Message projector application providers should depend on the '
-            'MessageProjectionRepository boundary. Import DB, graph DB, and '
-            'concrete SQLite repository construction belong in infrastructure.\n'
+            'MessageProjectionRepository boundary. Import ledger, working '
+            'graph, and concrete SQLite repository construction belong in '
+            'infrastructure.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -2401,8 +2402,9 @@ void main() {
         isEmpty,
         reason:
             'Graph projector application providers should depend on projection '
-            'repository boundaries. Import DB, graph DB, and concrete SQLite '
-            'repository construction belong in infrastructure providers.\n'
+            'repository boundaries. Import ledger, working graph, and concrete '
+            'SQLite repository construction belong in infrastructure '
+            'providers.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
