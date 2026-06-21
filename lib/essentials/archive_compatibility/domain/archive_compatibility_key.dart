@@ -83,7 +83,7 @@ class ArchiveCompatibilityKey {
   @override
   String toString() {
     return 'ArchiveCompatibilityKey(messageGuid: $messageGuid, '
-        'importAttachmentId: $importAttachmentId)';
+        'archiveCompatibilityAttachmentId: $archiveCompatibilityAttachmentId)';
   }
 
   static bool _isLiveChatDbId(int ssId) {

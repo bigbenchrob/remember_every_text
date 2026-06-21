@@ -41,6 +41,16 @@ void main() {
     expect(key.storageKeySegment, 'message-guid::42');
   });
 
+  test('debug label uses archive compatibility identity language', () {
+    final key = ArchiveCompatibilityKey.fromStoredTuple(
+      messageGuid: 'message-guid',
+      importAttachmentId: 42,
+    );
+
+    expect(key.toString(), contains('archiveCompatibilityAttachmentId: 42'));
+    expect(key.toString(), isNot(contains('importAttachmentId: 42')));
+  });
+
   test(
     'supportsLiveGraphEndpoints accepts live message and attachment ids',
     () {
