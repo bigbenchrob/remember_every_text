@@ -37,8 +37,8 @@ Includes:
 
 - macos_import_ss.db (source-scoped import ledger)
 - working_ss.db (conversation graph projection)
-- macos_import.db (retained archive-source metadata storage)
-- working.db (retained historical cleanup storage inventory)
+- macos_import.db (retired historical import cleanup file, if present)
+- working.db (retired historical projection cleanup file, if present)
 - user_overlays.db
 - any matching SQLite sidecar files (`*.db-wal`, `*.db-shm`) if present
 - logs
