@@ -2607,6 +2607,24 @@ void main() {
     );
 
     test(
+      'Message data refresh uses version bump instead of invalidation',
+      () async {
+        final offenders = await _findMessageDataVersionInvalidationOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'Message data refresh should call '
+              'messageDataVersionProvider.notifier.bump() instead of invalidating '
+              'the provider. Invalidation reads like imperative repair and can '
+              'recreate old working-DB refresh assumptions.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
+    test(
       'Attachment archive service uses source attachment path lookup boundary',
       () async {
         final offenders =
@@ -6480,6 +6498,28 @@ Future<List<String>> _findGraphRefreshBroadDatabaseImportOffenders() async {
       if (importTarget.endsWith('essentials/db/feature_level_providers.dart')) {
         offenders.add('$filePath imports $importTarget');
       }
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findMessageDataVersionInvalidationOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final invalidationPattern = RegExp(
+    r'\b(?:ref|_ref|widget\.ref)\.invalidate\(\s*messageDataVersionProvider\b',
+  );
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    if (invalidationPattern.hasMatch(source)) {
+      offenders.add(filePath);
     }
   }
 

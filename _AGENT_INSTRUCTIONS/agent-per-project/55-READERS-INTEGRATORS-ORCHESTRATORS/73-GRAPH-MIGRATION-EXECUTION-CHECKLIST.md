@@ -3046,6 +3046,10 @@ criteria.
   rationale describes old in-flight working-DB readers historically, not as
   current retained readers. Graph streams and explicit data-version signals
   remain the current refresh mechanism.
+- Updated `messageDataVersionProvider` documentation to describe explicit
+  version bumps rather than provider invalidation, and added an architecture
+  tripwire requiring handwritten graph/message refresh code to call the
+  notifier `bump()` path instead of directly invalidating the provider.
 
 ### Exit Criteria
 
