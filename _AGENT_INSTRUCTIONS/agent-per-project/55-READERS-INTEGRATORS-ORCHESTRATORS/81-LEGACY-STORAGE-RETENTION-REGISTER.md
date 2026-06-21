@@ -299,6 +299,11 @@ retained database access path: read-only file inspection.
 Because retained `working.db` and retained `macos_import.db` no longer have
 central app providers, health and support diagnostics must not reintroduce one
 for convenience.
+Focused tests now verify that read-only retained database health inspection:
+
+- does not create missing `working.db` / `macos_import.db` files.
+- reads existing retained files without mutating them.
+- remains a diagnostic boundary rather than a retained database provider.
 
 **Reduction criteria**
 

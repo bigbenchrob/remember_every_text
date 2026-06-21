@@ -979,6 +979,11 @@ criteria.
   directly with graph-era stable ids, matching the production boundary where
   manual links write only to `user_overlays.db` and graph/contact readers merge
   overlay intent at read time.
+- Retired database health inspection is now covered by focused read-only
+  query-layer tests. The tests verify that health diagnostics do not create a
+  missing retained `working.db` / `macos_import.db`, and that existing retained
+  files can be inspected without mutation. This keeps support diagnostics from
+  becoming a back-door retained database provider.
 - The unused `lib/essentials/contacts/domain/entities/` contact aggregate
   files were retired. They carried obsolete `pinnedRank` terminology and had no
   runtime imports.
