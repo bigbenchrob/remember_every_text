@@ -84,7 +84,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
           .read(appLoggerProvider.notifier)
           .warn(
             'Failed to archive attachment '
-            '${archiveKey.importAttachmentId}: $e',
+            '${archiveKey.liveSourceAttachmentRowId}: $e',
             source: 'AttachmentArchiveService',
           );
       return false;
