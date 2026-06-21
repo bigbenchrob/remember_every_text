@@ -3221,7 +3221,7 @@ void main() {
     });
 
     test(
-      'Historical archive source metadata consumers use application boundary',
+      'Historical archive source metadata consumers stay off overlay storage',
       () async {
         final offenders =
             await _findHistoricalArchiveSourcesRepositoryBoundaryOffenders();
@@ -3232,8 +3232,8 @@ void main() {
           reason:
               'Historical archive source metadata is an application read/write '
               'contract. Presentation and application consumers should use '
-              'HistoricalArchiveSources, while overlay persistence stays '
-              'behind settings infrastructure.\n'
+              'HistoricalArchiveSources read models; source paths and overlay '
+              'persistence stay behind settings infrastructure.\n'
               'Actual offenders:\n${offenders.join('\n')}',
         );
       },
