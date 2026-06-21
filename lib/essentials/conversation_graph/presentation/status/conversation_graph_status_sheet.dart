@@ -310,7 +310,7 @@ class _StatusContent extends ConsumerWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _ProofScopeCard(status: status, colors: colors),
+        _GraphScopeCard(status: status, colors: colors),
         const SizedBox(height: 12),
         _PipelineDashboard(status: status, colors: colors),
         const SizedBox(height: 12),
@@ -953,8 +953,8 @@ class _AttachmentSampleDetail extends ConsumerWidget {
   }
 }
 
-class _ProofScopeCard extends StatelessWidget {
-  const _ProofScopeCard({required this.status, required this.colors});
+class _GraphScopeCard extends StatelessWidget {
+  const _GraphScopeCard({required this.status, required this.colors});
 
   final ConversationGraphStatus status;
   final ThemeColors colors;
@@ -974,7 +974,7 @@ class _ProofScopeCard extends StatelessWidget {
             Expanded(
               child: _ScopeValue(
                 label: 'Mode',
-                value: 'auto polling + manual build',
+                value: 'auto polling + manual graph build',
                 colors: colors,
               ),
             ),
