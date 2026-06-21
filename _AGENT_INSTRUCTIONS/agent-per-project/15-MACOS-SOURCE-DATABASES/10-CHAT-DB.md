@@ -127,7 +127,9 @@ App-relevant fields include:
 | `chat_id` | Source-local `chat.ROWID`. |
 | `handle_id` | Source-local `handle.ROWID`. |
 
-This relationship is prerequisite data for any future importer that wants to preserve chat participants before canonical projection.
+This relationship is the source fact for chat participant topology. Preserve it
+through source-scoped import and project it as canonical `chat_to_handle`
+graph edges; do not infer participants from chat rows or handle rows alone.
 
 ## `attachment`
 

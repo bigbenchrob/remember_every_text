@@ -3029,6 +3029,10 @@ criteria.
   `message_to_attachment` in graph/query/evidence layers, not fabricated by
   message import and not automatically added as a message-table flag without a
   measured read-model need.
+- Updated the `chat_handle_join` source-database note from future-importer
+  language to the current graph invariant: chat participant topology is a
+  source relationship fact preserved through source-scoped import and projected
+  as canonical `chat_to_handle` graph edges.
 
 ### Exit Criteria
 
