@@ -472,8 +472,8 @@ void main() {
         isEmpty,
         reason:
             'MacosAppShell may render toolbar controls and observe toolbar '
-            'state, but developer-mode and theme mutations should cross '
-            'AppShellActions.\n'
+            'state, but developer-mode, theme, and window-state mutations '
+            'should cross AppShellActions.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -7392,6 +7392,9 @@ Future<List<String>> _findMacosAppShellActionBoundaryOffenders() async {
   }
   if (uncommented.contains('switchableDarkModeProvider.notifier')) {
     offenders.add('$filePath mutates theme mode directly');
+  }
+  if (uncommented.contains('windowStateServiceProvider')) {
+    offenders.add('$filePath mutates window state directly');
   }
 
   return offenders..sort();

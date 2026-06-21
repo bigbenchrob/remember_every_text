@@ -12,7 +12,6 @@ import '../../../debug/application/developer_mode_provider.dart';
 import '../../../onboarding/application/onboarding_gate_provider.dart';
 import '../../../onboarding/domain/onboarding_status.dart';
 import '../../../onboarding/presentation/onboarding_overlay.dart';
-import '../../../window_state/feature_level_providers.dart';
 import '../../application/app_shell_actions_provider.dart';
 import '../../application/panel_widget_providers.dart';
 import '../../application/sidebar_mode_provider.dart';
@@ -60,8 +59,6 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
 
   @override
   Widget build(BuildContext context) {
-    final windowSvc = ref.watch(windowStateServiceProvider);
-
     // Capture window size/position after each frame (debounced)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final now = DateTime.now();
@@ -70,7 +67,11 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
       // Throttle: only allow an immediate save if > 1500ms since last save
       if (elapsed > 1500) {
         _lastFrameSave = now;
-        windowSvc.saveCurrentWindowState(includeSize: false);
+        unawaited(
+          ref
+              .read(appShellActionsProvider.notifier)
+              .saveCurrentWindowState(includeSize: false),
+        );
         _pendingTrailingFrameSave = false;
       } else {
         // Schedule a trailing save 1600ms after last immediate save
@@ -81,7 +82,11 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
           if (_pendingTrailingFrameSave) {
             _lastFrameSave = DateTime.now();
             _pendingTrailingFrameSave = false;
-            windowSvc.saveCurrentWindowState(includeSize: false);
+            unawaited(
+              ref
+                  .read(appShellActionsProvider.notifier)
+                  .saveCurrentWindowState(includeSize: false),
+            );
           }
         });
       }
@@ -235,7 +240,7 @@ class _EndSidebarSyncObserver extends ConsumerWidget {
         scope.toggleEndSidebar();
         unawaited(
           ref
-              .read(windowStateServiceProvider)
+              .read(appShellActionsProvider.notifier)
               .animateEndSidebarWindowWidth(
                 showing: shouldShow,
                 sidebarWidth: _MacosAppShellState._defaultEndSidebarWidth,
