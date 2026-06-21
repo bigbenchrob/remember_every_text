@@ -18,7 +18,7 @@ abstract class MessagesSpec with _$MessagesSpec {
     int? filterHandleId,
   }) = _MessagesForContact;
 
-  /// Show every message across all chats ordered by the global ordinal index.
+  /// Show every message across all chats as a graph evidence timeline.
   const factory MessagesSpec.globalTimeline({DateTime? scrollToDate}) =
       _MessagesGlobalTimeline;
 

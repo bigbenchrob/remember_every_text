@@ -90,6 +90,10 @@ const List<String> _retiredMessageTimelineSymbols = <String>[
   'MessagesTimelineView',
 ];
 
+const List<String> _retiredMessageTimelinePhrases = <String>[
+  'global ordinal index',
+];
+
 const List<String> _retiredMessageTimelinePathFragments = <String>[
   'messages_timeline_view.dart',
   'message_timeline_scope.dart',
@@ -5342,6 +5346,12 @@ Future<List<String>> _findRetiredMessageTimelineOffenders() async {
     for (final symbol in _retiredMessageTimelineSymbols) {
       if (RegExp('\\b$symbol\\b').hasMatch(uncommented)) {
         offenders.add('$filePath uses $symbol');
+      }
+    }
+    final lowerSource = uncommented.toLowerCase();
+    for (final phrase in _retiredMessageTimelinePhrases) {
+      if (lowerSource.contains(phrase)) {
+        offenders.add('$filePath uses retired timeline phrase "$phrase"');
       }
     }
   }

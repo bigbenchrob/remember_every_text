@@ -3096,6 +3096,11 @@ criteria.
   through the central DB feature boundary, while preserving the guard that
   settings application code must not open graph storage directly. Added a
   tripwire preventing direct imports of the maintenance-lock provider island.
+- Removed the last active source comment describing the global messages route
+  as ordered by a "global ordinal index". `MessagesSpec.globalTimeline` now
+  points at the graph evidence timeline model, and the retired timeline
+  tripwire prevents that old ordinal-index phrase from returning in active
+  `lib/` code.
 
 ### Exit Criteria
 
