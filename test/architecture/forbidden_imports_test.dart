@@ -700,7 +700,7 @@ void main() {
             _readOnlyRetiredHealthInspectionAllowedFiles.toList()..sort(),
           ),
           reason:
-              'ReadOnlySqliteFileHealthQueryLayer is a retired-file diagnostic '
+              'RetiredCleanupSqliteFileHealthQueryLayer is a retired-file diagnostic '
               'boundary only. Feature code must not use it to inspect retained '
               'working/import databases directly.\n'
               'Actual users:\n${offenders.join('\n')}',
@@ -3553,7 +3553,7 @@ Future<List<String>> _findReadOnlyRetiredHealthInspectionOffenders() async {
   for (final filePath in files) {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
-    if (uncommented.contains('ReadOnlySqliteFileHealthQueryLayer')) {
+    if (uncommented.contains('RetiredCleanupSqliteFileHealthQueryLayer')) {
       offenders.add(filePath);
     }
   }

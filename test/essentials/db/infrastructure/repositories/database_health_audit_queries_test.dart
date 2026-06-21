@@ -5,7 +5,7 @@ import 'package:remember_this_text/essentials/db/infrastructure/repositories/dat
 import 'package:sqlite3/sqlite3.dart' as sqlite3;
 
 void main() {
-  group('ReadOnlySqliteFileHealthQueryLayer', () {
+  group('RetiredCleanupSqliteFileHealthQueryLayer', () {
     test('does not create a missing database file during inspection', () async {
       final tempDir = await Directory.systemTemp.createTemp(
         'database_health_query_layer_',
@@ -17,7 +17,7 @@ void main() {
       });
 
       final missingPath = '${tempDir.path}/retired_working.db';
-      final layer = ReadOnlySqliteFileHealthQueryLayer(
+      final layer = RetiredCleanupSqliteFileHealthQueryLayer(
         databaseKey: 'retired_working',
         role: 'retired_working_cleanup',
         databasePath: missingPath,
@@ -54,7 +54,7 @@ void main() {
       }
       final lastModifiedBefore = File(databasePath).lastModifiedSync();
 
-      final layer = ReadOnlySqliteFileHealthQueryLayer(
+      final layer = RetiredCleanupSqliteFileHealthQueryLayer(
         databaseKey: 'retired_macos_import',
         role: 'retired_macos_import_cleanup',
         databasePath: databasePath,

@@ -8,8 +8,9 @@ import '../../application/database_health_audit/database_health_query_layer.dart
 import '../data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../data_sources/local/overlay/overlay_database.dart';
 
-class ReadOnlySqliteFileHealthQueryLayer extends DatabaseHealthQueryLayer {
-  ReadOnlySqliteFileHealthQueryLayer({
+class RetiredCleanupSqliteFileHealthQueryLayer
+    extends DatabaseHealthQueryLayer {
+  RetiredCleanupSqliteFileHealthQueryLayer({
     required this.databaseKey,
     required this.role,
     required this.databasePath,

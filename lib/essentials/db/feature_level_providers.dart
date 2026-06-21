@@ -146,7 +146,7 @@ Future<DatabaseHealthAuditService> databaseHealthAuditService(
     runtimeEnvironment: const LocalDatabaseHealthRuntimeEnvironment(),
     reportWriter: const FilesystemDatabaseHealthAuditReportWriter(),
     queryLayers: <DatabaseHealthQueryLayer>[
-      ReadOnlySqliteFileHealthQueryLayer(
+      RetiredCleanupSqliteFileHealthQueryLayer(
         databaseKey: 'retired_macos_import',
         role: 'retired_macos_import_cleanup',
         databasePath: path.join(
@@ -154,7 +154,7 @@ Future<DatabaseHealthAuditService> databaseHealthAuditService(
           retiredMacosImportDatabaseFileName,
         ),
       ),
-      ReadOnlySqliteFileHealthQueryLayer(
+      RetiredCleanupSqliteFileHealthQueryLayer(
         databaseKey: 'retired_working',
         role: 'retired_working_cleanup',
         databasePath: path.join(
