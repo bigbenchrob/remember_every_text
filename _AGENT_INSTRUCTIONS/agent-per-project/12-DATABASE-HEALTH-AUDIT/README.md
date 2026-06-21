@@ -40,7 +40,7 @@ Use it when you need to understand:
 ## Important Constraints
 
 - The audit reads app-owned graph databases through provider-managed
-  connections and retained storage through explicit read-only diagnostic
+  connections and retired cleanup files through explicit read-only diagnostic
   boundaries.
 - The audit service remains service-layer only and does not know about UI or presentation.
 - Overlay cross-database relationship checks are intentionally deferred beyond Phase 1.

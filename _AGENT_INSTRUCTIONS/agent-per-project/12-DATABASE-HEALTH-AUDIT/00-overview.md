@@ -30,21 +30,21 @@ The current implementation audits these app-owned databases:
 - `db-import-ss` (`macos_import_ss.db`)
 - `db-graph-working` (`working_ss.db`)
 - `db-overlay` (`user_overlays.db`)
-- retained `db-import` (`macos_import.db`)
-- retained `db-working` (`working.db`)
+- retired cleanup `db-import` (`macos_import.db`)
+- retired cleanup `db-working` (`working.db`)
 
-It does **not** create retained database files as a side effect. It uses
+It does **not** create retired database files as a side effect. It uses
 provider-managed instances for active graph/overlay/source-scoped databases
-and read-only file inspection for retained historical databases:
+and read-only file inspection for retired historical cleanup databases:
 
 - `importDatabaseProvider` from source-scoped import
 - `driftConversationGraphDatabaseProvider`
 - `overlayDatabaseProvider`
-- read-only file inspection for retained `macos_import.db`
-- read-only file inspection for retained `working.db`
+- read-only file inspection for retired `macos_import.db`
+- read-only file inspection for retired `working.db`
 
 This preserves the project rule against competing writable connections while
-also preventing diagnostics from recreating retained historical storage.
+also preventing diagnostics from recreating retired historical storage.
 
 ## Service Entry Point
 
@@ -94,11 +94,11 @@ Concrete adapters:
 - `SourceScopedImportDatabaseHealthQueryLayer`
 - `ConversationGraphDatabaseHealthQueryLayer`
 - `OverlayDatabaseHealthQueryLayer`
-- read-only retained SQLite file query layers for `macos_import.db` and
+- read-only retired SQLite file query layers for `macos_import.db` and
   `working.db`
 
 These adapters normalize query execution across source-scoped import,
-conversation-graph Drift, overlay Drift, and retained read-only SQLite files
+conversation-graph Drift, overlay Drift, and retired read-only SQLite files
 while keeping orchestration out of the query layer.
 
 Shared query-layer responsibilities include:
