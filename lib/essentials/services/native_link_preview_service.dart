@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 /// Metadata returned from Apple's LinkPresentation framework
@@ -121,10 +122,12 @@ class NativeLinkPreviewService {
       // Cache the result (even null results to avoid repeat failures)
       _addToCache(url, metadata);
       return metadata;
-    } on PlatformException catch (_) {
+    } on PlatformException catch (e, stackTrace) {
+      _debugMetadataFailure(url, e, stackTrace);
       _addToCache(url, null);
       return null;
-    } catch (_) {
+    } catch (e, stackTrace) {
+      _debugMetadataFailure(url, e, stackTrace);
       _addToCache(url, null);
       return null;
     } finally {
@@ -144,5 +147,14 @@ class NativeLinkPreviewService {
   static void clearCache() {
     _cache.clear();
     _pendingUrls.clear();
+  }
+
+  void _debugMetadataFailure(String url, Object error, StackTrace stackTrace) {
+    if (!kDebugMode) {
+      return;
+    }
+
+    debugPrint('Native link preview metadata failed for $url: $error');
+    debugPrintStack(stackTrace: stackTrace);
   }
 }
