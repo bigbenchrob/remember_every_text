@@ -2810,6 +2810,26 @@ void main() {
       },
     );
 
+    test(
+      'Archive compatibility raw attachment id stays schema-facing',
+      () async {
+        final offenders =
+            await _findArchiveCompatibilityRawAttachmentIdOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'Code outside persisted overlay/archive storage should use '
+              'ArchiveCompatibilityKey semantic aliases such as '
+              'archiveCompatibilityAttachmentId or liveSourceAttachmentRowId. '
+              'Direct importAttachmentId property reads should stay bounded to '
+              'schema-facing compatibility code.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
     test('Conversation graph repositories use import-ledger naming', () async {
       final offenders =
           await _findConversationGraphImportLedgerNamingOffenders();
@@ -6752,6 +6772,38 @@ Future<List<String>> _findArchiveCompatibilityKeyConstructionOffenders() async {
   }
 
   return offenders.toList()..sort();
+}
+
+Future<List<String>> _findArchiveCompatibilityRawAttachmentIdOffenders() async {
+  const allowedFiles = <String>{
+    'lib/essentials/archive_compatibility/domain/archive_compatibility_key.dart',
+    'lib/features/attachments/infrastructure/repositories/overlay_archive_compatibility_lookup.dart',
+    'lib/features/attachments/infrastructure/repositories/overlay_attachment_archive_read_store.dart',
+    'lib/features/attachments/infrastructure/repositories/overlay_attachment_archive_write_store.dart',
+    'lib/features/attachments/infrastructure/repositories/overlay_recovered_attachment_archive_writer.dart',
+  };
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/features/attachments/') ||
+        path.startsWith('lib/features/messages/') ||
+        path.startsWith('lib/essentials/conversation_graph/') ||
+        path.startsWith('lib/essentials/archive_compatibility/');
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    if (allowedFiles.contains(filePath)) {
+      continue;
+    }
+    final uncommented = _stripComments(await File(filePath).readAsString());
+    if (uncommented.contains('.importAttachmentId')) {
+      offenders.add('$filePath reads raw archive compatibility attachment id');
+    }
+  }
+
+  return offenders..sort();
 }
 
 Future<List<String>> _findConversationGraphImportLedgerNamingOffenders() async {
