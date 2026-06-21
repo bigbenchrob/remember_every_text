@@ -15,19 +15,19 @@ part 'message_data_reset_service.g.dart';
 
 const _resetCompletionDialogExitDelay = Duration(milliseconds: 140);
 
-const retiredCleanupDatabaseBaseNames = <String>[
+const retiredHistoricalDatabaseCleanupBaseNames = <String>[
   retiredMacosImportDatabaseFileName,
   retiredWorkingDatabaseFileName,
 ];
 
-const activeGraphDatabaseBaseNames = <String>[
+const activeGraphDerivedDatabaseBaseNames = <String>[
   sourceScopedImportDatabaseFileName,
   conversationGraphDatabaseFileName,
 ];
 
 const messageDataResetDatabaseBaseNames = <String>[
-  ...retiredCleanupDatabaseBaseNames,
-  ...activeGraphDatabaseBaseNames,
+  ...activeGraphDerivedDatabaseBaseNames,
+  ...retiredHistoricalDatabaseCleanupBaseNames,
 ];
 
 abstract interface class MessageDataResetService {
@@ -63,15 +63,24 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
       await _closeConversationGraphDatabase();
 
       final fileStore = _ref.read(derivedMessageDataFileStoreProvider);
-      final deletedFilePaths = await fileStore.deleteDatabaseBaseFiles(
-        messageDataResetDatabaseBaseNames,
-      );
+      final deletedActiveGraphFilePaths = await fileStore
+          .deleteDatabaseBaseFiles(activeGraphDerivedDatabaseBaseNames);
       logger.info(
-        'Deleted derived database files',
+        'Deleted active graph derived database files',
         source: 'MessageDataResetService',
         context: {
-          'deletedCount': deletedFilePaths.length,
-          'deletedFiles': deletedFilePaths,
+          'deletedCount': deletedActiveGraphFilePaths.length,
+          'deletedFiles': deletedActiveGraphFilePaths,
+        },
+      );
+      final deletedRetiredCleanupFilePaths = await fileStore
+          .deleteDatabaseBaseFiles(retiredHistoricalDatabaseCleanupBaseNames);
+      logger.info(
+        'Deleted retired historical database cleanup files',
+        source: 'MessageDataResetService',
+        context: {
+          'deletedCount': deletedRetiredCleanupFilePaths.length,
+          'deletedFiles': deletedRetiredCleanupFilePaths,
         },
       );
 

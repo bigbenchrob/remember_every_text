@@ -8,14 +8,14 @@ void main() {
     'derived message data reset separates retired cleanup and active graph files',
     () {
       expect(
-        retiredCleanupDatabaseBaseNames,
+        retiredHistoricalDatabaseCleanupBaseNames,
         containsAll(<String>[
           retiredMacosImportDatabaseFileName,
           retiredWorkingDatabaseFileName,
         ]),
       );
       expect(
-        activeGraphDatabaseBaseNames,
+        activeGraphDerivedDatabaseBaseNames,
         containsAll(<String>[
           importDatabaseFileName,
           conversationGraphDatabaseFileName,
