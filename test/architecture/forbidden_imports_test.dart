@@ -1042,6 +1042,21 @@ void main() {
       );
     });
 
+    test('DB maintenance lock consumers use DB feature boundary', () async {
+      final offenders = await _findDbMaintenanceLockProviderIslandOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Consumers should import dbMaintenanceLockProvider through '
+            'essentials/db/feature_level_providers.dart. Direct imports of the '
+            'maintenance-lock provider file recreate a database provider '
+            'island.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Database health query contract stays file-system agnostic', () async {
       final offenders = await _findDatabaseHealthQueryLayerFileIoOffenders();
 
@@ -4091,6 +4106,33 @@ Future<List<String>> _findUiRenderingDatabaseAccessOffenders() async {
   return offenders.toList()..sort();
 }
 
+Future<List<String>> _findDbMaintenanceLockProviderIslandOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  const directProviderImport =
+      'essentials/db/feature_level_providers/db_maintenance_lock_provider.dart';
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    if (filePath == 'lib/essentials/db/feature_level_providers.dart' ||
+        filePath ==
+            'lib/essentials/db/feature_level_providers/db_maintenance_lock_provider.dart') {
+      continue;
+    }
+    final source = await File(filePath).readAsString();
+    final imports = _extractImports(_stripComments(source));
+    if (imports.any((target) => target.endsWith(directProviderImport))) {
+      offenders.add('$filePath imports $directProviderImport');
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
 Future<List<String>> _findDatabaseHealthQueryLayerFileIoOffenders() async {
   const filePath =
       'lib/essentials/db/application/database_health_audit/database_health_query_layer.dart';
@@ -6413,10 +6455,6 @@ Future<List<String>> _findSettingsGraphReadBoundaryOffenders() async {
     final imports = _extractImports(uncommented);
     for (final importTarget in imports) {
       if (importTarget.endsWith('conversation_graph_database.dart')) {
-        offenders.add('$filePath imports $importTarget');
-      }
-      if (filePath != 'lib/features/settings/feature_level_providers.dart' &&
-          importTarget.endsWith('essentials/db/feature_level_providers.dart')) {
         offenders.add('$filePath imports $importTarget');
       }
     }

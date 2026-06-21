@@ -3092,6 +3092,10 @@ criteria.
 - Added an architecture tripwire preventing placeholder/no-op test coverage
   from returning (`expect(true, isTrue)`, disabled-test notes, or manual-only
   coverage claims).
+- Routed Historical Archives workflow access to `dbMaintenanceLockProvider`
+  through the central DB feature boundary, while preserving the guard that
+  settings application code must not open graph storage directly. Added a
+  tripwire preventing direct imports of the maintenance-lock provider island.
 
 ### Exit Criteria
 
