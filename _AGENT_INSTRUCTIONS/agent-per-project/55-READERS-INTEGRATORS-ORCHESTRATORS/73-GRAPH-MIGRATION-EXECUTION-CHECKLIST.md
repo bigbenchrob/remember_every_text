@@ -2996,6 +2996,10 @@ criteria.
   directly reading or writing the persisted overlay column. Graph health,
   archive file fallback paths, and graph archive candidate lookup now use this
   alias instead of spreading `importAttachmentId` outside schema-facing code.
+- Added an architecture tripwire that keeps direct
+  `ArchiveCompatibilityKey.importAttachmentId` property reads inside the
+  archive compatibility key and schema-facing overlay/archive storage
+  repositories. Non-schema graph/archive code must use semantic aliases.
 
 ### Exit Criteria
 
