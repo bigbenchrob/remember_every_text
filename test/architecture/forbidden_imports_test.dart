@@ -66,6 +66,11 @@ const Set<String> _featureIdentitySourceScopedRowKeyAllowedFiles = {
   'lib/features/messages/domain/message_evidence/recovered_message_identity.dart',
 };
 
+const Set<String> _attachmentSourceScopedIdentityAllowedFiles = {
+  'lib/features/attachments/infrastructure/repositories/graph_cross_snapshot_mapper.dart',
+  'lib/features/attachments/infrastructure/repositories/sqlite_graph_attachment_archive_candidate_reader.dart',
+};
+
 const Set<String> _retiredContactNameVariantAllowedFiles = <String>{};
 
 const List<String> _retiredSourceSpecificMessageRendererSymbols = <String>[
@@ -2668,6 +2673,27 @@ void main() {
               'graph attachment candidate SQL and graph database selection '
               'belong behind GraphAttachmentArchiveCandidateReader.\n'
               'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
+    test(
+      'Attachment source-scoped identity reads stay infrastructure-owned',
+      () async {
+        final offenders =
+            await _findAttachmentSourceScopedIdentityImportOffenders();
+
+        expect(
+          offenders,
+          orderedEquals(
+            _attachmentSourceScopedIdentityAllowedFiles.toList()..sort(),
+          ),
+          reason:
+              'Attachment source-scoped graph identity conversion is archive and '
+              'recovery infrastructure work. It must stay inside named graph '
+              'archive/recovery repositories instead of leaking into widgets, '
+              'application services, or ad hoc read models.\n'
+              'Actual users:\n${offenders.join('\n')}',
         );
       },
     );
@@ -6585,6 +6611,41 @@ _findAttachmentArchiveGraphCandidateBoundaryOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>>
+_findAttachmentSourceScopedIdentityImportOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/features/attachments/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    final importsSourceScopedIdentity = imports.any(
+      (importTarget) =>
+          importTarget.endsWith(
+            'source_scoped_import/domain/source_scoped_row_key.dart',
+          ) ||
+          importTarget.endsWith(
+            'source_scoped_import/domain/source_scoped_row_sql.dart',
+          ) ||
+          importTarget.endsWith(
+            'source_scoped_import/domain/known_sources.dart',
+          ),
+    );
+
+    if (importsSourceScopedIdentity) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
 }
 
 Future<List<String>> _findAttachmentArchiveWriteStoreBoundaryOffenders() async {

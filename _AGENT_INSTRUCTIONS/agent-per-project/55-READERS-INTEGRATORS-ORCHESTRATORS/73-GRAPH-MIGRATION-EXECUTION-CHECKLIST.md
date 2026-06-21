@@ -3037,6 +3037,11 @@ criteria.
   conversion centralized in named contact, handle, message-evidence, and
   recovered-message identity helpers. Widgets, repositories, and ad hoc read
   models must not rebuild graph ids directly from retained row ids.
+- Added an attachment architecture tripwire that keeps source-scoped graph
+  identity reads for archive/recovery inside named attachment infrastructure
+  repositories. Attachment widgets and application services must consume typed
+  archive/recovery boundaries instead of importing source-scoped identity
+  primitives directly.
 
 ### Exit Criteria
 
