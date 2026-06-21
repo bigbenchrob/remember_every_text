@@ -3113,6 +3113,9 @@ criteria.
   result wording to source-import-failure / graph-projection-failure wording.
   The persisted overlay keys remain backward-compatible, but the active
   contract no longer exposes retained result concepts for failure records.
+- Added an architecture tripwire preventing those retired onboarding
+  failure-store result-style API/class names from returning in active `lib/`
+  code.
 
 ### Exit Criteria
 

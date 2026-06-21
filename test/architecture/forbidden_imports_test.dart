@@ -39,6 +39,17 @@ const Set<String> _historicalOnboardingMigrationKeyAllowedFiles = {
   'lib/essentials/onboarding/infrastructure/persistence/overlay_onboarding_failure_storage.dart',
 };
 
+const List<String> _retiredOnboardingFailureResultSymbols = <String>[
+  'PersistedOnboardingImportResult',
+  'PersistedOnboardingGraphProjectionResult',
+  'loadImportResult',
+  'loadImportResultEntry',
+  'clearImportResult',
+  'loadGraphProjectionResult',
+  'loadGraphProjectionResultEntry',
+  'clearGraphProjectionResult',
+];
+
 const Set<String> _overlayDatabaseFilenameLiteralAllowedFiles = {
   'lib/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart',
 };
@@ -784,6 +795,23 @@ void main() {
         );
       },
     );
+
+    test('Onboarding failure storage uses failure terminology', () async {
+      final offenders =
+          await _findRetiredOnboardingFailureResultSymbolOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Onboarding persisted failure storage should expose source-import '
+            'and graph-projection failure concepts, not retired result-style '
+            'API names. Historical overlay keys may remain hidden inside the '
+            'persistence fallback, but active contracts should speak in '
+            'failure terminology.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
 
     test('Legacy terminology does not appear in active lib code', () async {
       final offenders = await _findLegacyTerminologyOffenders();
@@ -3700,6 +3728,29 @@ Future<List<String>> _findHistoricalOnboardingMigrationKeyOffenders() async {
     final uncommented = _stripComments(source);
     if (uncommented.contains('onboarding_last_migration_result')) {
       offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>>
+_findRetiredOnboardingFailureResultSymbolOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    for (final symbol in _retiredOnboardingFailureResultSymbols) {
+      if (uncommented.contains(symbol)) {
+        offenders.add('$filePath: $symbol');
+      }
     }
   }
 
