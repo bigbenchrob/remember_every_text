@@ -2191,6 +2191,21 @@ void main() {
       );
     });
 
+    test('Historical pipeline migration stage stays historical', () async {
+      final offenders =
+          await _findPipelineIncidentHistoricalMigrationStageOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'PipelineIncidentStage.migration is retained only for persisted '
+            'historical overlay rows. Current graph projection incidents '
+            'should use PipelineIncidentStage.graphProjection.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('App logger consumers use logging feature boundary', () async {
       final offenders = await _findAppLoggerFeatureBoundaryOffenders();
 
@@ -5697,6 +5712,28 @@ Future<List<String>> _findPipelineIncidentTrackerStorageOffenders() async {
       uncommented.contains('writeOverlaySetting')) {
     offenders.add('$filePath handles overlay storage directly');
   }
+  return offenders..sort();
+}
+
+Future<List<String>>
+_findPipelineIncidentHistoricalMigrationStageOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (!path.startsWith('lib/') || path.endsWith('.g.dart')) {
+      return false;
+    }
+    return path !=
+        'lib/essentials/logging/domain/pipeline_incident_report.dart';
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (uncommented.contains('PipelineIncidentStage.migration')) {
+      offenders.add(filePath);
+    }
+  }
+
   return offenders..sort();
 }
 
