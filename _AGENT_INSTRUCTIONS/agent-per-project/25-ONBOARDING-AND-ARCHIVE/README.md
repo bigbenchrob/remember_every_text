@@ -52,5 +52,5 @@ wording as legacy/transitional.
 
 - [`10-DATABASES/00-all-databases-accessed.md`](../10-DATABASES/00-all-databases-accessed.md) — database locations and access patterns
 - [`10-DATABASES/INVIOLATE_RULES.md`](../10-DATABASES/INVIOLATE_RULES.md) — overlay/working separation, no suppression
-- [`20-DATA-IMPORT-MIGRATION/01-overview.md`](../20-DATA-IMPORT-MIGRATION/01-overview.md) — source import, graph build, and retired storage cleanup/reference boundaries
+- [`20-DATA-IMPORT-MIGRATION/01-overview.md`](../20-DATA-IMPORT-MIGRATION/01-overview.md) — source import, graph build, and retired storage cleanup/diagnostic boundaries
 - [`60-BUILD-CONSIDERATIONS/02-macos-fda-grant-continuity.md`](../60-BUILD-CONSIDERATIONS/02-macos-fda-grant-continuity.md) — FDA grant preservation across builds

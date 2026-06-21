@@ -262,7 +262,7 @@ Recommended disposition:
   the removal of the retained metadata provider/wrapper.
 - retain a one-time cleanup/export/discard path for existing local metadata if
   needed.
-- the filename has been demoted to a retired-file cleanup/reference target.
+- the filename has been demoted to a retired-file cleanup/diagnostic target.
 
 ### working.db
 
@@ -398,7 +398,7 @@ Goal:
 Status:
 
 - Complete. `retainedArchiveMetadataStoreProvider` has been removed.
-- Old filenames remain only in the retired-file cleanup/reference boundary.
+- Old filenames remain only in the retired-file cleanup/diagnostic boundary.
 - Reset deletes old files without opening retained DB providers.
 
 Done means:

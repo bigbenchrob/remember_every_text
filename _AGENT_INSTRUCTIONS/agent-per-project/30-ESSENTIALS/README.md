@@ -215,7 +215,7 @@ Essentials may:
 * route top-level specs to feature-owned coordinators
 * reconcile sidebar, panel, onboarding, and related surfaces
 * provide shared infrastructure such as search, logging, database providers,
-  source-scoped import, graph build, retired storage cleanup/reference
+  source-scoped import, graph build, retired storage cleanup/diagnostic
   boundaries, and window state
 
 Features may:

@@ -2911,7 +2911,7 @@ criteria.
   `lib/` code.
 - Aligned current database, onboarding/archive, project overview, and pipeline
   invariant docs with the retired-storage policy: `macos_import.db` and
-  `working.db` are retired cleanup/reference files, not active compatibility
+  `working.db` are retired cleanup/diagnostic files, not active compatibility
   systems or projection targets.
 - Tightened current migration status docs so the remaining database-file work
   is described as retired storage reduction under explicit retention criteria,
@@ -3077,7 +3077,7 @@ criteria.
   provider-switch and legacy-UI language is read as superseded by the current
   graph migration docs and execution checklist.
 - Updated pipeline invariant and onboarding proposal wording so retired
-  `macos_import.db` / `working.db` files are described as cleanup/reference
+  `macos_import.db` / `working.db` files are described as cleanup/diagnostic
   storage, not active compatibility databases.
 - Centralized contact/handle graph-id conversion behind conversation-graph
   identity helpers. Contact and handle overlay bridges now use those helpers
@@ -3134,7 +3134,7 @@ Done means:
 - every preserved system has a current classification.
 - no ordinary user-facing read depends on legacy working/import identity.
 - legacy import/projection execution is retired; any remaining retired database
-  access is explicitly classified as diagnostic, recovery, cleanup/reference, or
+  access is explicitly classified as diagnostic, recovery, cleanup, or
   storage-retention infrastructure.
 
 ## Update Rule

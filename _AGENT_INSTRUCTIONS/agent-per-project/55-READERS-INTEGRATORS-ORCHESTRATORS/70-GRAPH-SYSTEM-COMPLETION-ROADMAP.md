@@ -528,7 +528,7 @@ The graph migration is complete when these are all true.
 - Retired `macos_import.db` / `working.db` files are historical storage,
   not ordinary app authority.
 - Remaining retired code or storage is explicitly classified as:
-  - retired cleanup/reference storage
+  - retired cleanup/diagnostic storage
   - recovery/archive dependency
   - diagnostic/reference path
   - deletion/export/freeze candidate

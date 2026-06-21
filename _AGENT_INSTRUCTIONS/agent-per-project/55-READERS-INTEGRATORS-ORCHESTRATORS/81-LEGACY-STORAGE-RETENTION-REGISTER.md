@@ -24,7 +24,7 @@ frozen, or removed.
 
 ## Current Decision
 
-Document retired storage files as transitional cleanup/reference storage. Do
+Document retired storage files as transitional cleanup/diagnostic storage. Do
 not delete them blindly.
 
 `macos_import.db` and `working.db` are retired historical storage, not
@@ -258,7 +258,7 @@ it does not instantiate a retained Drift connection merely to close the file.
 
 Done means:
 
-- retired storage has been reduced to deliberate transitional cleanup/reference
+- retired storage has been reduced to deliberate transitional cleanup/diagnostic
   storage with explicit retirement criteria.
 - reset behavior no longer needs to close/delete retained DB files.
 - startup no longer needs to distinguish legacy-only derived data from
