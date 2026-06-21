@@ -2843,7 +2843,7 @@ void main() {
             'Conversation graph projection/status repositories should name '
             'the source-scoped import database as an import ledger. Generic '
             'importDatabase identifiers blur active source-scoped ledger '
-            'ownership with retired import compatibility storage.\n'
+            'ownership with retired import database-file naming.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
