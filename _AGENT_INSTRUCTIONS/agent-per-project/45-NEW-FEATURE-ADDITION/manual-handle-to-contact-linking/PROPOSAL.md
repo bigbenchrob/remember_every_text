@@ -499,7 +499,8 @@ contactsMenuAProvider → filters to participants with links
 contactsMenuBProvider → all participants from working DB
 ```
 
-**Cache Invalidation**:
-- After link creation: `ref.invalidate(contactsMenuAProvider)`
-- After link creation: `ref.invalidate(unmatchedHandlesProvider)`
-- After link creation: `ref.invalidate(contactMessagesOrdinalProvider)`
+**Historical cache invalidation note**:
+This proposal predates the graph/action-boundary migration. The old concrete
+provider invalidation list is retired. Current handle-link writes should route
+post-write refresh through named feature action/service boundaries and, for
+message evidence, graph/message data-version signals.

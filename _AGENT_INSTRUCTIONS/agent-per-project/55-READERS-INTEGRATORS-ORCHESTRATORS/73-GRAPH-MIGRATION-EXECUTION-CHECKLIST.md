@@ -3066,6 +3066,9 @@ criteria.
 - Updated the overlay independence documentation example so post-write UI
   refresh is routed through a named action boundary instead of demonstrating
   raw provider invalidation in sample code.
+- Marked pre-graph manual-handle-linking invalidation examples as retired and
+  redirected the notes toward named action/service boundaries plus graph/message
+  data-version signals.
 
 ### Exit Criteria
 

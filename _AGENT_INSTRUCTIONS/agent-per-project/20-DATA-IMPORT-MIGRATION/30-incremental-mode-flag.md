@@ -77,12 +77,8 @@ this as historical retired projection behavior, not current graph guidance.
 When this path existed, retired incremental projection had to keep the
 existing Drift working database connection open.
 
-This pattern remains prohibited if any future historical diagnostic attempts to
-touch the old path:
-
-```dart
-ref.invalidate(driftWorkingDatabaseProvider);
-```
+Invalidating the retired working database provider remains prohibited if any
+future historical diagnostic attempts to touch the old path.
 
 Required pattern:
 
@@ -135,9 +131,11 @@ If an old log shows retired incremental projection was slow:
 
 If a "connection was closed" loop appears:
 
-1. Search for `ref.invalidate(driftWorkingDatabaseProvider)` in the completion path.
+1. Search the completion path for retired working database provider
+   invalidation.
 2. Remove it from incremental flows.
-3. Use provider-specific invalidation or `messageDataVersionProvider.bump()` instead.
+3. Use explicit graph/message data-version signals such as
+   `messageDataVersionProvider.notifier.bump()` instead.
 
 ## Related Reading
 

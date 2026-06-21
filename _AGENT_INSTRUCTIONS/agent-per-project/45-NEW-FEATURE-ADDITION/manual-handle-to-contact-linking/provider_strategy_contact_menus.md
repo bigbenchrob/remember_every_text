@@ -119,10 +119,10 @@ contactsAsync.when(
 );
 ```
 
-Invalidate when needed (e.g. after a migration):
-```dart
-ref.invalidate(contactsMenuBProvider);
-```
+Historical note: this pre-graph proposal referred to direct provider
+invalidation after migration. Current code should route refresh through named
+application/action boundaries and graph/message data-version signals instead of
+showing raw invalidation calls in widgets or ad hoc services.
 
 ---
 
@@ -198,18 +198,12 @@ linkedContactsAsync.when(
 );
 ```
 
-### Invalidation
+### Refresh Ownership
 
-Whenever user links a handle or re-imports data:
-```dart
-ref.invalidate(contactsMenuAProvider);
-```
-
-You can also invalidate both menus for simplicity:
-```dart
-ref.invalidate(contactsMenuAProvider);
-ref.invalidate(contactsMenuBProvider);
-```
+Whenever user links a handle or source data changes, current graph-era code
+should delegate to the relevant feature action/service boundary. The old
+menu-specific invalidation examples are retired with the working-DB menu
+prototype.
 
 ---
 
