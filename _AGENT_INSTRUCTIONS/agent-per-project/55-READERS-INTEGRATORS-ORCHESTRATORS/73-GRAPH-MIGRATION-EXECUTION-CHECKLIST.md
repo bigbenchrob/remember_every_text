@@ -2972,6 +2972,10 @@ criteria.
   archive mapping now exposes current source identity language while
   `ArchiveCompatibilityKey` remains responsible for translating that value to
   the retained overlay archive tuple.
+- Cleaned onboarding/reset tests so they reference the source-scoped import
+  database filename through the public feature-level boundary instead of
+  reaching into `source_scoped_import/infrastructure/import_database_provider`
+  solely for constants.
 
 ### Exit Criteria
 
