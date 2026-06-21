@@ -59,6 +59,13 @@ const Set<String> _retainedOverlayIdentityBridgeAllowedFiles = <String>{};
 
 const Set<String> _retainedOverlayIdentityBridgeTestAllowedFiles = <String>{};
 
+const Set<String> _featureIdentitySourceScopedRowKeyAllowedFiles = {
+  'lib/features/contacts/application/read_models/contact_summary_identity.dart',
+  'lib/features/handles/application/read_models/handle_identity.dart',
+  'lib/features/messages/application/message_evidence/message_evidence_identity.dart',
+  'lib/features/messages/domain/message_evidence/recovered_message_identity.dart',
+};
+
 const Set<String> _retiredContactNameVariantAllowedFiles = <String>{};
 
 const List<String> _retiredSourceSpecificMessageRendererSymbols = <String>[
@@ -775,6 +782,25 @@ void main() {
             'tests should assert their own repository/read-model contracts '
             'rather than restoring shared transitional bridge semantics.\n'
             'Actual test users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Feature identity source-scoped conversions stay centralized', () async {
+      final offenders =
+          await _findFeatureIdentitySourceScopedRowKeyImportOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(
+          _featureIdentitySourceScopedRowKeyAllowedFiles.toList()..sort(),
+        ),
+        reason:
+            'Feature code should not rebuild source-scoped ids directly from '
+            'widgets, repositories, or ad hoc read models. Ordinary contact, '
+            'handle, and message evidence identity conversion belongs in named '
+            'identity helpers; recovered-message source identity remains a '
+            'domain concern.\n'
+            'Actual users:\n${offenders.join('\n')}',
       );
     });
 
@@ -3645,6 +3671,36 @@ _findRetainedOverlayIdentityBridgeTestImportOffenders() async {
     );
 
     if (importsRetainedOverlayIdentityBridge) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>>
+_findFeatureIdentitySourceScopedRowKeyImportOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/features/contacts/') ||
+        path.startsWith('lib/features/handles/') ||
+        path.startsWith('lib/features/messages/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    final importsSourceScopedRowKey = imports.any(
+      (importTarget) => importTarget.endsWith(
+        'source_scoped_import/domain/source_scoped_row_key.dart',
+      ),
+    );
+
+    if (importsSourceScopedRowKey) {
       offenders.add(filePath);
     }
   }
