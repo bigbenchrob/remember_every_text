@@ -49,7 +49,7 @@ These rules are **absolute constraints**. They apply to every agent, every sessi
 
 2. **Projection pipeline**: If a row exists in source-scoped import, it MUST appear in graph projection or a documented recovery/orphan graph path (subject only to documented, intentional JOIN semantics). A projector may add metadata columns to describe anomalies — but it MUST NOT filter the row out.
 
-3. **Historical retained files**: Old retained `macos_import.db` / `working.db`
+3. **Retired historical files**: Old retired `macos_import.db` / `working.db`
    pairs must remain interpretable for recovery, audit, and diagnostic tooling.
    Do not silently discard rows when writing explicit retained-file inspection
    or recovery utilities. Do not reintroduce retained projection as an ordinary
@@ -96,12 +96,12 @@ The correct response is **always investigation, never concealment**:
 
 ## Rule 3: Database Access Via Centralized Providers Only
 
-- **Source-scoped import DB**: `ref.watch(importDatabaseProvider.future)`
-- **Graph working DB**: `ref.watch(driftConversationGraphDatabaseProvider.future)`
+- **Source-scoped import ledger**: `ref.watch(importDatabaseProvider.future)`
+- **Working graph DB**: `ref.watch(driftConversationGraphDatabaseProvider.future)`
 - **Archive-source metadata**: `ref.watch(overlayDatabaseProvider.future)` via
   named overlay-owned services
 - **Retired import/working DBs**: no central app providers remain; use explicit
-  read-only diagnostic boundaries only when retained file inspection is
+  read-only diagnostic boundaries only when retired-file inspection is
   deliberately required
 - **Overlay DB**: `ref.watch(overlayDatabaseProvider.future)`
 - ❌ NEVER instantiate database classes directly
@@ -113,6 +113,6 @@ The correct response is **always investigation, never concealment**:
 
 These rules are enforced by:
 - Code review (human and agent)
-- Graph health/status reports and retained audit logging compare source vs destination counts
+- Graph health/status reports and retired-file diagnostics compare source vs destination counts
 - The anti-pattern lists in `.github/copilot-instructions.md` and `AGENTS.md`
 - This document, which agents MUST read before modifying any database, import, migration, or data-rendering code
