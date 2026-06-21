@@ -987,8 +987,8 @@ class _ProofScopeCard extends StatelessWidget {
             ),
             Expanded(
               child: _ScopeValue(
-                label: 'Import DB',
-                value: status.importDatabaseName,
+                label: 'Import ledger',
+                value: status.importLedgerDatabaseName,
                 colors: colors,
               ),
             ),

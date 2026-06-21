@@ -28,7 +28,7 @@ final class ConversationGraphStatusRepository {
 
     return ConversationGraphStatus(
       chatDbPath: chatDbPath,
-      importDatabaseName: importLedgerDatabaseName,
+      importLedgerDatabaseName: importLedgerDatabaseName,
       graphDatabaseName: graphDatabaseName,
       sourceId: sourceId,
       sourceMessageCount: sourceSnapshot.message.count,
