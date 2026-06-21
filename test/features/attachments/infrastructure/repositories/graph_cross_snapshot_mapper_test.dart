@@ -82,7 +82,7 @@ void main() {
     expect(result.mapped.first.matchMethod, MatchMethod.guidMatch);
     expect(result.mapped.first.currentMessageSsId, messageSsId);
     expect(result.mapped.first.currentAttachmentSsId, attachmentSsId);
-    expect(result.mapped.first.currentImportAttachmentId, 201);
+    expect(result.mapped.first.currentAttachmentSourceRowId, 201);
     expect(result.mappedByGuid, 1);
   });
 

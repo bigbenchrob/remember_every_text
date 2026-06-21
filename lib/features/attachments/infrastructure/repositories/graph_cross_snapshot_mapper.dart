@@ -326,7 +326,7 @@ class GraphCrossSnapshotMapper implements CrossSnapshotMapper {
     return MappedAttachmentRecord(
       histMessageGuid: record.histMessageGuid,
       currentMessageGuid: record.histMessageGuid,
-      currentImportAttachmentId: archiveKey.liveSourceAttachmentRowId,
+      currentAttachmentSourceRowId: archiveKey.liveSourceAttachmentRowId,
       resolvedFilePath: record.resolvedFilePath!,
       matchMethod: matchMethod,
       histAttachmentGuid: record.histAttachmentGuid,

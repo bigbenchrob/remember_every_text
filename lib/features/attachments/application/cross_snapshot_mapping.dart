@@ -40,7 +40,7 @@ class MappedAttachmentRecord {
   const MappedAttachmentRecord({
     required this.histMessageGuid,
     required this.currentMessageGuid,
-    required this.currentImportAttachmentId,
+    required this.currentAttachmentSourceRowId,
     required this.resolvedFilePath,
     required this.matchMethod,
     required this.histAttachmentGuid,
@@ -52,14 +52,14 @@ class MappedAttachmentRecord {
   final String histMessageGuid;
   final String currentMessageGuid;
 
-  /// Compatibility row id used by existing overlay archive keys.
+  /// Current source attachment ROWID used by existing overlay archive keys.
   ///
   /// Canonical graph attachment identity is [currentAttachmentSsId].
-  final int currentImportAttachmentId;
+  final int currentAttachmentSourceRowId;
   ArchiveCompatibilityKey get currentArchiveCompatibilityKey {
     return ArchiveCompatibilityKey.fromStoredTuple(
       messageGuid: currentMessageGuid,
-      importAttachmentId: currentImportAttachmentId,
+      importAttachmentId: currentAttachmentSourceRowId,
     );
   }
 

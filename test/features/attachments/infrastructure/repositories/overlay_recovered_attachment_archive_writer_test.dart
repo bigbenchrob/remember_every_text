@@ -128,7 +128,7 @@ MappedAttachmentRecord _record({
   return MappedAttachmentRecord(
     histMessageGuid: 'historical-message-guid',
     currentMessageGuid: 'current-message-guid',
-    currentImportAttachmentId: 200,
+    currentAttachmentSourceRowId: 200,
     resolvedFilePath: resolvedFilePath,
     matchMethod: MatchMethod.guidMatch,
     histAttachmentGuid: 'historical-attachment-guid',
