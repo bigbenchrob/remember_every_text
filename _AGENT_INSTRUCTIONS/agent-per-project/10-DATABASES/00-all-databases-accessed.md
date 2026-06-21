@@ -24,7 +24,7 @@ This is the canonical index for every SQLite database the project touches. Treat
 - **Resolve AddressBook paths via providers only.** Use `getFolderAggregateEitherProvider` (documented in `06-addressbook-path-resolution.md`). Never hardcode `/Sources/<UUID>/...`.
 - **Do not open SQLite files directly.** Always go through the Riverpod providers declared in `lib/essentials/db/feature_level_providers.dart`. Extra connections will lock the file.
 - **Production reads are graph-backed.** Ordinary app data flows through `db-import-ss` and `db-graph-working`; archive-source metadata now lives in `db-overlay`. Retired `db-import` and `db-working` files are transitional cleanup inventory for reset and diagnostics.
-- **Overlay remains separate.** User intent lives in `db-overlay` and is merged at read time; no import/projection path may copy overlay intent into graph or working tables.
+- **Overlay remains separate.** User intent lives in `db-overlay` and is merged at read time; no import/projection path may copy overlay intent into source-scoped graph tables or retired files.
 - **Shut everything down before manual access.** Quit the Flutter app and tooling prior to backups or ad-hoc SQL to avoid WAL/locking surprises.
 
 ## Canonical Database Aliases
