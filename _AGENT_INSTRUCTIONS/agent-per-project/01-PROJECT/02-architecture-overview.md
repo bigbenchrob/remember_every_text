@@ -99,10 +99,10 @@ macOS Messages + AddressBook
 ```
 
 The old retained `macos_import.db` -> `working.db` projection implementation is
-retired from active app code. Fresh `macos_import.db` stores historical
-archive-source metadata, and existing `working.db` files are retained
-file/schema inventory for reset cleanup and read-only diagnostics. Source
-import, graph build, and retained storage details belong in
+retired from active app code. Archive-source metadata now lives in overlay
+storage. Existing `macos_import.db` and `working.db` files are retained
+file/schema cleanup inventory for reset cleanup and read-only diagnostics.
+Source import, graph build, and retired-file cleanup details belong in
 `../20-DATA-IMPORT-MIGRATION/`.
 Database boundaries and provider access rules belong in `../10-DATABASES/`.
 

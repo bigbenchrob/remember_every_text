@@ -34,8 +34,8 @@ Use it when you need to understand:
 - **Output artifact:** `database_health.json`
 - **Invocation path:** support bundle export
 - **Privacy model:** aggregate-only; no raw database copies; no row-level sampling
-- **Current DB scope:** source-scoped import, conversation graph, overlay,
-  retained archive-source metadata, and retained historical cleanup storage
+- **Current DB scope:** source-scoped import, conversation graph, overlay-owned
+  archive-source metadata, and retired historical cleanup storage
 
 ## Important Constraints
 
