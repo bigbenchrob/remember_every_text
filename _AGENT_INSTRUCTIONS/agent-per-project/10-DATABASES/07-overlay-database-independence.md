@@ -33,10 +33,10 @@ Breaking these rules jeopardizes user data persistence and invalidates the sourc
 
 | Concern | Writes to | Reads from | Survives migration |
 |---|---|---|---|
-| **Import source data** | Import DB only | Source DBs only | Rebuilt or extended by import flows |
-| **Graph projection data** | Graph working DB only | Source-scoped import DB only | Rebuilt or incrementally updated by graph projection |
+| **Import source data** | Source-scoped import ledger only | Source DBs only | Rebuilt or extended by import flows |
+| **Graph projection data** | Working graph DB only | Source-scoped import ledger only | Rebuilt or incrementally updated by graph projection |
 | **Archive metadata and archive-source metadata** | Overlay DB only | Source/archive metadata only | Persistent user/app archive state |
-| **Retained historical projection inventory** | — | Retained working DB only | Read-only diagnostics/recovery reference |
+| **Retired historical projection inventory** | — | Retired `working.db` file only | Read-only diagnostics/recovery reference |
 | **User intent** (overlay) | Overlay DB only | — | Always persists |
 | **Providers/read models** (read path) | — | Graph-derived data ∪ Overlay, overlay wins | N/A |
 
@@ -216,11 +216,11 @@ in providers via `overlayDb.getAllHandleVisibilities()`.
 
 The following violations were fixed on the `Ftr.overlay-handle-visibility` branch:
 
-1. **`ManualLinking.linkHandleToParticipant()`** — Was dual-writing to both overlay and working. Now writes overlay only; providers merge at read time.
-2. **`ManualLinking.unlinkHandle()`** — Was deleting from working DB. Now deletes from overlay (reverts to addressbook default).
-3. **`ManualLinking.createParticipantForHandle()`** — Was writing handle→participant link to working. Now writes link to overlay (participant record stays in working as the only participant table).
-4. **`SpamManagement.blockHandle()`/`unblockHandle()`** — Was writing `is_blacklisted`/`is_visible` to working DB's `handles_canonical`. Now writes to overlay's `HandleVisibilityOverrides`; spam providers merge at read time.
-5. **"Restore Overrides" migration step** — Snapshot/restore cycle read overlay before migration and wrote manual links back into working. Removed entirely; providers now merge overlay + working at read time.
+1. **`ManualLinking.linkHandleToParticipant()`** — Was dual-writing to both overlay and the then-current working projection. Now writes overlay only; providers merge at read time.
+2. **`ManualLinking.unlinkHandle()`** — Was deleting from the then-current working projection. Now deletes from overlay (reverts to addressbook default).
+3. **`ManualLinking.createParticipantForHandle()`** — Was writing handle→participant links to the then-current working projection. Now writes user-authored links to overlay; current ordinary identity reads merge graph facts + overlay intent.
+4. **`SpamManagement.blockHandle()`/`unblockHandle()`** — Was writing `is_blacklisted`/`is_visible` to the then-current working projection's `handles_canonical`. Now writes to overlay's `HandleVisibilityOverrides`; spam providers merge at read time.
+5. **"Restore Overrides" migration step** — Snapshot/restore cycle read overlay before migration and wrote manual links back into the working projection. Removed entirely; providers now merge graph facts + overlay intent at read time.
 
 ## Related Documentation
 
