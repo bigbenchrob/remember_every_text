@@ -487,7 +487,8 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
       if (!missingKeys.contains(key)) {
         continue;
       }
-      final archiveCompatibilityAttachmentId = key.importAttachmentId;
+      final archiveCompatibilityAttachmentId =
+          key.archiveCompatibilityAttachmentId;
       final filename = row['filename'] as String?;
       samples.add(
         MissingAttachmentRecoverySample(

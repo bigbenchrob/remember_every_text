@@ -196,7 +196,7 @@ class SqliteGraphAttachmentArchiveCandidateReader
     for (final archiveKey in keyedRows) {
       predicates.add('(message_guid = ? AND import_attachment_id = ?)');
       variables.add(Variable<String>(archiveKey.messageGuid));
-      variables.add(Variable<int>(archiveKey.importAttachmentId));
+      variables.add(Variable<int>(archiveKey.archiveCompatibilityAttachmentId));
     }
 
     final rowsResult = await _overlayDatabase

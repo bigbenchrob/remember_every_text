@@ -50,7 +50,8 @@ class FilesystemAttachmentArchiveFileStore
       final prefix = contentHash.substring(0, 2);
       relativePath = '$prefix/$contentHash$extension';
     } else {
-      relativePath = '_by_id/${archiveKey.importAttachmentId}$extension';
+      relativePath =
+          '_by_id/${archiveKey.archiveCompatibilityAttachmentId}$extension';
     }
 
     final destinationFile = File(path.join(archiveDirectoryPath, relativePath));

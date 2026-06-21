@@ -26,6 +26,7 @@ void main() {
 
     expect(key.messageGuid, 'message-guid');
     expect(key.importAttachmentId, 42);
+    expect(key.archiveCompatibilityAttachmentId, 42);
     expect(key.liveSourceAttachmentRowId, 42);
   });
 
