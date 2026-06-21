@@ -768,8 +768,8 @@ void main() {
           ),
           reason:
               'RetiredCleanupSqliteFileHealthQueryLayer is a retired-file diagnostic '
-              'boundary only. Feature code must not use it to inspect retained '
-              'working/import databases directly.\n'
+              'boundary only. Feature code must not use it to inspect retired '
+              'working/import cleanup files directly.\n'
               'Actual users:\n${offenders.join('\n')}',
         );
       },
@@ -821,7 +821,7 @@ void main() {
         orderedEquals(_legacyTerminologyAllowedFiles.toList()..sort()),
         reason:
             'Active lib/ code should not grow legacy-named concepts. '
-            'Retained storage and compatibility bridges must be named for '
+            'Retired storage cleanup and compatibility bridges must be named for '
             'their current architectural role.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
@@ -967,7 +967,7 @@ void main() {
         reason:
             'Retired import/migration execution symbols or paths were found. '
             'Ordinary import/projection must use source-scoped graph lifecycle; '
-            'do not reintroduce retained execution paths.\n'
+            'do not reintroduce retired execution paths.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -995,12 +995,12 @@ void main() {
         isEmpty,
         reason:
             'The old db_importers, db_migrate, incremental_update_ss, and '
-            'retained Drift working-schema folders have been retired. The old '
+            'retired Drift working-schema folders have been retired. The old '
             'conversation browser has also been retired. Live source monitoring '
             'belongs to conversation_graph lifecycle code, source fact importers '
             'belong to source_scoped_import, ordinary conversation browsing '
-            'belongs to the conversation signature/evidence spine, and retained '
-            'DB diagnostics belong to essentials/db.\n'
+            'belongs to the conversation signature/evidence spine, and retired-file '
+            'diagnostics belong to essentials/db.\n'
             'Existing retired paths:\n${existingPaths.join('\n')}',
       );
     });
