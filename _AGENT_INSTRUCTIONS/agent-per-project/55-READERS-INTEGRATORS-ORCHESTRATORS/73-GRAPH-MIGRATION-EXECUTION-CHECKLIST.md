@@ -3063,6 +3063,9 @@ criteria.
 - Clarified the graph recovered-message repository comment with the same
   language: recovered evidence is imported graph messages without current
   conversation edges, not a separate retained-storage read path.
+- Updated the overlay independence documentation example so post-write UI
+  refresh is routed through a named action boundary instead of demonstrating
+  raw provider invalidation in sample code.
 
 ### Exit Criteria
 

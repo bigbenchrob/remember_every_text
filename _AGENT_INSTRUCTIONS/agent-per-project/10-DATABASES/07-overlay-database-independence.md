@@ -110,7 +110,7 @@ Future<void> linkHandleToParticipant({
 }) async {
   final overlayDb = await ref.read(overlayDatabaseProvider.future);
   await overlayDb.setHandleOverride(handleId: handleId, participantId: participantId);
-  ref.invalidate(conversationsForContactProvider);
+  ref.read(contactSidebarRefreshActionsProvider.notifier).refreshContactList();
 }
 ```
 
