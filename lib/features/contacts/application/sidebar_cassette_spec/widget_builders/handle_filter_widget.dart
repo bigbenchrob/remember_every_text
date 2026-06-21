@@ -50,8 +50,39 @@ class HandleFilterWidget extends ConsumerWidget {
           typography: typography,
         );
       },
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      loading: () => _HandleFilterStatus(
+        message: 'Loading handle options...',
+        colors: colors,
+        typography: typography,
+      ),
+      error: (error, _) => _HandleFilterStatus(
+        message: 'Unable to load handle options. $error',
+        colors: colors,
+        typography: typography,
+      ),
+    );
+  }
+}
+
+class _HandleFilterStatus extends StatelessWidget {
+  const _HandleFilterStatus({
+    required this.message,
+    required this.colors,
+    required this.typography,
+  });
+
+  final String message;
+  final ThemeColors colors;
+  final ThemeTypography typography;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Text(
+        message,
+        style: typography.caption.copyWith(color: colors.content.textSecondary),
+      ),
     );
   }
 }
