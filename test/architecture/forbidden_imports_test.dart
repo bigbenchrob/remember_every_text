@@ -2687,8 +2687,8 @@ void main() {
         isEmpty,
         reason:
             'AttachmentArchiveService archive/recovery entry points should '
-            'accept ArchiveCompatibilityKey instead of primitive retained '
-            'archive key pairs.\n'
+            'accept ArchiveCompatibilityKey instead of primitive archive key '
+            'pairs.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -2705,7 +2705,7 @@ void main() {
           reason:
               'GraphAttachmentArchiveLookup is a graph-facing application '
               'contract. It may expose archive compatibility keys, but should '
-              'not name those values as retained import identity.\n'
+              'not name those values as import attachment identity.\n'
               'Actual offenders:\n${offenders.join('\n')}',
         );
       },
@@ -2771,7 +2771,7 @@ void main() {
             'Cross-snapshot attachment mapping is graph/source-scoped archive '
             'recovery logic. Public read models and mapper internals should '
             'name the current attachment endpoint as source-row identity, not '
-            'retained import attachment identity.\n'
+            'import attachment identity.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -6640,7 +6640,7 @@ _findGraphArchiveLookupContractIdentityLanguageOffenders() async {
   if (uncommented.contains('retainedImportAttachmentId') ||
       uncommented.contains('retained import attachment') ||
       uncommented.contains('archiveCompatibilityAttachmentId')) {
-    offenders.add('$filePath exposes retained import attachment identity');
+    offenders.add('$filePath exposes archive compatibility as import identity');
   }
 
   return offenders;
