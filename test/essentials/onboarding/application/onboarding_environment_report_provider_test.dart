@@ -261,7 +261,7 @@ void main() {
     );
 
     test(
-      'does not open working database while maintenance lock is active',
+      'does not open graph database while maintenance lock is active',
       () async {
         final messagesDbPath = _createMessagesDatabase(
           tempDir.path,

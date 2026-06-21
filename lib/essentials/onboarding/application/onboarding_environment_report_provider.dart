@@ -20,7 +20,7 @@ part 'onboarding_environment_report_provider.g.dart';
 
 const int _sparseMessagesThreshold = 10;
 const int _automaticRecoveryMinimumImportRows = 25;
-const double _automaticRecoveryWorkingToImportRatio = 0.5;
+const double _automaticRecoveryGraphToImportRatio = 0.5;
 
 class OnboardingDevOverridesState {
   const OnboardingDevOverridesState({
@@ -580,14 +580,13 @@ class _OnboardingEnvironmentEvaluator {
         sourceMessageCount == null ||
         sourceMessageCount <= _sparseMessagesThreshold ||
         importCount >=
-            (sourceMessageCount * _automaticRecoveryWorkingToImportRatio)
-                .round();
-    final workingClearlyIncomplete =
+            (sourceMessageCount * _automaticRecoveryGraphToImportRatio).round();
+    final graphClearlyIncomplete =
         !graphProbe.hasData ||
         graphCount <
-            (importCount * _automaticRecoveryWorkingToImportRatio).round();
+            (importCount * _automaticRecoveryGraphToImportRatio).round();
 
-    if (!importTracksSource || !workingClearlyIncomplete) {
+    if (!importTracksSource || !graphClearlyIncomplete) {
       return null;
     }
 
