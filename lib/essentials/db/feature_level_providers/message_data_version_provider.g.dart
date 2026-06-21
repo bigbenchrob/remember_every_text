@@ -21,9 +21,9 @@ String _$messageDataVersionHash() =>
 /// ## How it works
 ///
 /// 1. Message providers (e.g., `contactMessagesOrdinalProvider`) watch this
-/// 2. After graph build/projection completes, the graph lifecycle bumps this
-///    provider
-/// 3. The invalidation cascades to all watching providers, triggering rebuilds
+/// 2. After graph build/projection completes, the graph lifecycle increments
+///    this provider through `MessageDataVersion.bump()`
+/// 3. The version change cascades to all watching providers, triggering rebuilds
 ///
 /// ## Usage
 ///
@@ -31,7 +31,7 @@ String _$messageDataVersionHash() =>
 /// ```dart
 /// @riverpod
 /// Future<SomeState> myProvider(MyProviderRef ref) async {
-///   // Watch the signal - rebuilds when invalidated
+///   // Watch the signal - rebuilds when the version changes.
 ///   ref.watch(messageDataVersionProvider);
 ///
 ///   // ... fetch data from database
@@ -40,7 +40,7 @@ String _$messageDataVersionHash() =>
 ///
 /// To trigger a refresh (in ChatDbChangeMonitor):
 /// ```dart
-/// ref.invalidate(messageDataVersionProvider);
+/// ref.read(messageDataVersionProvider.notifier).bump();
 /// ```
 ///
 /// Copied from [MessageDataVersion].

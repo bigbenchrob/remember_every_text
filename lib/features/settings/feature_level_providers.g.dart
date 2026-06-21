@@ -7,7 +7,7 @@ part of 'feature_level_providers.dart';
 // **************************************************************************
 
 String _$archiveSourceInspectorHash() =>
-    r'dea3bd7468ab07f94b22ef286d3daa0dbd6187e6';
+    r'e7b1d6df7fc3da672d1462b560c256211ae56c90';
 
 /// See also [archiveSourceInspector].
 @ProviderFor(archiveSourceInspector)

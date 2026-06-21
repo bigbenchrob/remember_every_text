@@ -6,7 +6,7 @@ part of 'feature_level_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$folderPathFinderHash() => r'4ba472b7817abc99b8db4113dedc89263e804e81';
+String _$folderPathFinderHash() => r'54cd4747d4c4d16b6258a86ed2c8a3bdb0d6207c';
 
 ///* The next two providers are the low level utilities that do the work of
 ///* finding the address book folder and the address book database files.

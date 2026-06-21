@@ -3053,6 +3053,9 @@ criteria.
 - Removed stale comments that described graph id normalization as a search
   compatibility path. Search is graph-native; the remaining normalization
   helpers are for explicitly bounded overlay/navigation compatibility inputs.
+- Regenerated Riverpod outputs after the message data version documentation
+  change so generated provider comments and hashes match current source and
+  generator output.
 
 ### Exit Criteria
 

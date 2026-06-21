@@ -7,7 +7,7 @@ part of 'contact_favorite_actions_provider.dart';
 // **************************************************************************
 
 String _$contactFavoriteActionsHash() =>
-    r'da63f7fd04ba9f7e605dedd1b446c9092fcc6c10';
+    r'3eef0ae4bc35e81d3cd2d1d9e888477605aacdc2';
 
 /// See also [ContactFavoriteActions].
 @ProviderFor(ContactFavoriteActions)

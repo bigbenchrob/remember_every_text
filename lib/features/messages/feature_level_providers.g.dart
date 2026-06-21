@@ -27,7 +27,7 @@ final conversationSignaturePreferencesStoreProvider =
 typedef ConversationSignaturePreferencesStoreRef =
     AutoDisposeFutureProviderRef<ConversationSignaturePreferencesStore>;
 String _$messageOverlayRepositoryHash() =>
-    r'5e2ca10ed905482768974d0d88c5207d2c364175';
+    r'ec23a04cd482f5ede89fe62066cac4557275448b';
 
 /// See also [messageOverlayRepository].
 @ProviderFor(messageOverlayRepository)
@@ -219,7 +219,7 @@ class _RecoveredUnlinkedMessagesProviderElement
   int? get contactId => (origin as RecoveredUnlinkedMessagesProvider).contactId;
 }
 
-String _$messageOverlayHash() => r'9013555aacc3382825c309f1745a477b3dde60f6';
+String _$messageOverlayHash() => r'c9c6f88aa7d091a511bdce419f460722866dc4dd';
 
 abstract class _$MessageOverlay
     extends BuildlessAutoDisposeAsyncNotifier<MessageOverlayState> {

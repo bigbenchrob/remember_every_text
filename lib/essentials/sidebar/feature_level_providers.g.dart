@@ -7,7 +7,7 @@ part of 'feature_level_providers.dart';
 // **************************************************************************
 
 String _$sidebarFlowPreferenceStoreHash() =>
-    r'32a07479931b851731ec9ae3d31921943525de52';
+    r'5d051da87c766834c7fd77d5910bcff14b9eb879';
 
 /// See also [sidebarFlowPreferenceStore].
 @ProviderFor(sidebarFlowPreferenceStore)

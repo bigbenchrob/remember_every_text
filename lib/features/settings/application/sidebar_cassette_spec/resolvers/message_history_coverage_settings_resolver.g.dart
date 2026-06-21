@@ -7,7 +7,7 @@ part of 'message_history_coverage_settings_resolver.dart';
 // **************************************************************************
 
 String _$messageHistoryCoverageReportHash() =>
-    r'274b2a7cf25d87ac347e8c9917b6f2a3ab5aab2b';
+    r'1d45710f4cae023cd92c99686f2e5d539e4ed4ac';
 
 /// See also [messageHistoryCoverageReport].
 @ProviderFor(messageHistoryCoverageReport)

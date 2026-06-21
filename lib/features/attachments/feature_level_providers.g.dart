@@ -243,7 +243,7 @@ final crossSnapshotMapperProvider =
 typedef CrossSnapshotMapperRef =
     AutoDisposeFutureProviderRef<CrossSnapshotMapper>;
 String _$currentAttachmentSnapshotLookupHash() =>
-    r'33d9d51d2612028a5f0e851d20f6eb7f7088090e';
+    r'073bca73e41e9b5ae08e1ac34193ba901c5be127';
 
 /// See also [currentAttachmentSnapshotLookup].
 @ProviderFor(currentAttachmentSnapshotLookup)

@@ -47,7 +47,7 @@ final conversationGraphStatusLogWriterProvider =
 typedef ConversationGraphStatusLogWriterRef =
     AutoDisposeProviderRef<ConversationGraphStatusLogWriter>;
 String _$attachmentProjectionRepositoryHash() =>
-    r'b9b48bccd42fb9ba78490c115765d9fc09e65f23';
+    r'f88c7fe1536b6174990c077e75dd22442483bff3';
 
 /// See also [attachmentProjectionRepository].
 @ProviderFor(attachmentProjectionRepository)
@@ -67,7 +67,7 @@ final attachmentProjectionRepositoryProvider =
 typedef AttachmentProjectionRepositoryRef =
     AutoDisposeFutureProviderRef<AttachmentProjectionRepository>;
 String _$chatProjectionRepositoryHash() =>
-    r'edbaa329ad243f6a4af01bf944e2337646886a9d';
+    r'b21c249ae15f116567735a584d2438e3d0f28aca';
 
 /// See also [chatProjectionRepository].
 @ProviderFor(chatProjectionRepository)
@@ -107,7 +107,7 @@ final chatSummaryRepositoryProvider =
 typedef ChatSummaryRepositoryRef =
     AutoDisposeFutureProviderRef<ChatSummaryRepository>;
 String _$chatToHandleProjectionRepositoryHash() =>
-    r'065226bf7fd8e52798357fc78bc447d027e9785e';
+    r'3b205050b06fc22f045d424848bde4011c7035da';
 
 /// See also [chatToHandleProjectionRepository].
 @ProviderFor(chatToHandleProjectionRepository)
@@ -127,7 +127,7 @@ final chatToHandleProjectionRepositoryProvider =
 typedef ChatToHandleProjectionRepositoryRef =
     AutoDisposeFutureProviderRef<ChatToHandleProjectionRepository>;
 String _$chatToMessageProjectionRepositoryHash() =>
-    r'a4e890feee81647463980d585e67bfd6bc31dec7';
+    r'fc37487a7cbe337954e77dcc29c0bdd77fe15246';
 
 /// See also [chatToMessageProjectionRepository].
 @ProviderFor(chatToMessageProjectionRepository)
@@ -207,7 +207,7 @@ final contactGraphRepositoryProvider =
 typedef ContactGraphRepositoryRef =
     AutoDisposeFutureProviderRef<ContactGraphRepository>;
 String _$contactProjectionRepositoryHash() =>
-    r'ce63145416e2b058fd64da3b09ca5ffbfe1831d9';
+    r'd1a295a8b61a635e75446f0502eecfdbb299eba3';
 
 /// See also [contactProjectionRepository].
 @ProviderFor(contactProjectionRepository)
@@ -247,7 +247,7 @@ final conversationFavouritesStoreProvider =
 typedef ConversationFavouritesStoreRef =
     AutoDisposeFutureProviderRef<ConversationFavouritesStore>;
 String _$conversationGraphStatusSnapshotHash() =>
-    r'56f0a2d20113c77e69ed1694f610d7d65bff053f';
+    r'c65ccadb3a5452cc998e959b4d96d1267202c1b8';
 
 /// See also [conversationGraphStatusSnapshot].
 @ProviderFor(conversationGraphStatusSnapshot)
@@ -307,7 +307,7 @@ final graphProjectionResetterProvider =
 typedef GraphProjectionResetterRef =
     AutoDisposeFutureProviderRef<GraphProjectionResetter>;
 String _$handleProjectionRepositoryHash() =>
-    r'cda0c7ccbbc5a9833e01f10f0f7b3c967813695f';
+    r'0700a538aa33b7d633e87c25315dc2d7db1c5aed';
 
 /// See also [handleProjectionRepository].
 @ProviderFor(handleProjectionRepository)
@@ -347,7 +347,7 @@ final graphHealthRepositoryProvider =
 typedef GraphHealthRepositoryRef =
     AutoDisposeFutureProviderRef<GraphHealthRepository>;
 String _$importLedgerProbeReaderHash() =>
-    r'11861e427f063af8464be5a9e72064f9de32b3a7';
+    r'7b36db405e34d0994070c8892ddf11d249756c49';
 
 /// See also [importLedgerProbeReader].
 @ProviderFor(importLedgerProbeReader)
@@ -387,7 +387,7 @@ final messageGraphRepositoryProvider =
 typedef MessageGraphRepositoryRef =
     AutoDisposeFutureProviderRef<MessageGraphRepository>;
 String _$messageProjectionRepositoryHash() =>
-    r'b7ce66827b6a9cccf7b39d51b307d78e3f3dfd2b';
+    r'324c024e1ad99465598661d169c3b63ba1cdf4bd';
 
 /// See also [messageProjectionRepository].
 @ProviderFor(messageProjectionRepository)
@@ -407,7 +407,7 @@ final messageProjectionRepositoryProvider =
 typedef MessageProjectionRepositoryRef =
     AutoDisposeFutureProviderRef<MessageProjectionRepository>;
 String _$messageToAttachmentProjectionRepositoryHash() =>
-    r'5fa9dc1d88cef8febba8861f75a77a043d2a2984';
+    r'a512618271c1d35a983f34ccb7b5c475cbaaf6ab';
 
 /// See also [messageToAttachmentProjectionRepository].
 @ProviderFor(messageToAttachmentProjectionRepository)
