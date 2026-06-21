@@ -3014,6 +3014,10 @@ criteria.
   forbid primitive archive key pairs and import-attachment identity leakage
   without implying the typed graph-facing compatibility key is itself retained
   storage.
+- Clarified the conversation-graph import-ledger naming tripwire so it
+  distinguishes active source-scoped ledger ownership from retired import
+  database-file naming, rather than describing a live retained compatibility
+  storage subsystem.
 
 ### Exit Criteria
 
