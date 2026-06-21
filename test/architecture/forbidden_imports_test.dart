@@ -785,9 +785,8 @@ void main() {
       );
     });
 
-    test('Feature identity source-scoped conversions stay centralized', () async {
-      final offenders =
-          await _findFeatureIdentitySourceScopedRowKeyImportOffenders();
+    test('Feature source-scoped identity conversions stay centralized', () async {
+      final offenders = await _findFeatureSourceScopedIdentityImportOffenders();
 
       expect(
         offenders,
@@ -3678,8 +3677,7 @@ _findRetainedOverlayIdentityBridgeTestImportOffenders() async {
   return offenders.toList()..sort();
 }
 
-Future<List<String>>
-_findFeatureIdentitySourceScopedRowKeyImportOffenders() async {
+Future<List<String>> _findFeatureSourceScopedIdentityImportOffenders() async {
   final files = await _collectDartFiles((path) {
     if (path.endsWith('.g.dart')) {
       return false;
@@ -3694,13 +3692,17 @@ _findFeatureIdentitySourceScopedRowKeyImportOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     final imports = _extractImports(uncommented);
-    final importsSourceScopedRowKey = imports.any(
-      (importTarget) => importTarget.endsWith(
-        'source_scoped_import/domain/source_scoped_row_key.dart',
-      ),
+    final importsSourceScopedIdentity = imports.any(
+      (importTarget) =>
+          importTarget.endsWith(
+            'source_scoped_import/domain/source_scoped_row_key.dart',
+          ) ||
+          importTarget.endsWith(
+            'source_scoped_import/domain/known_sources.dart',
+          ),
     );
 
-    if (importsSourceScopedRowKey) {
+    if (importsSourceScopedIdentity) {
       offenders.add(filePath);
     }
   }
