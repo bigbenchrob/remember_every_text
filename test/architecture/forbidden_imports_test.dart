@@ -30,7 +30,7 @@ const Set<String> _retiredDatabaseFilenameLiteralAllowedFiles = {
   'lib/essentials/db/feature_level_providers.dart',
 };
 
-const Set<String> _readOnlyRetiredHealthInspectionAllowedFiles = {
+const Set<String> _retiredCleanupHealthInspectionAllowedFiles = {
   'lib/essentials/db/feature_level_providers.dart',
   'lib/essentials/db/infrastructure/repositories/database_health_audit_queries.dart',
 };
@@ -692,12 +692,12 @@ void main() {
     test(
       'Retired cleanup database inspection stays in database health boundary',
       () async {
-        final offenders = await _findReadOnlyRetiredHealthInspectionOffenders();
+        final offenders = await _findRetiredCleanupHealthInspectionOffenders();
 
         expect(
           offenders,
           orderedEquals(
-            _readOnlyRetiredHealthInspectionAllowedFiles.toList()..sort(),
+            _retiredCleanupHealthInspectionAllowedFiles.toList()..sort(),
           ),
           reason:
               'RetiredCleanupSqliteFileHealthQueryLayer is a retired-file diagnostic '
@@ -3546,7 +3546,7 @@ Future<List<String>> _findRetiredDatabaseFilenameLiteralOffenders() async {
   return offenders.toList()..sort();
 }
 
-Future<List<String>> _findReadOnlyRetiredHealthInspectionOffenders() async {
+Future<List<String>> _findRetiredCleanupHealthInspectionOffenders() async {
   final files = await _collectDartFiles((path) => !path.endsWith('.g.dart'));
   final offenders = <String>{};
 
