@@ -169,7 +169,7 @@ void main() {
                 SidebarUtilityCassetteSpec.settingsMenu(),
               ),
               const CassetteSpec.settings(
-                SettingsCassetteSpec.textSizePlaceholder(),
+                SettingsCassetteSpec.textSizeInfo(),
               ),
             ]);
         container
@@ -283,13 +283,13 @@ void main() {
     );
 
     test(
-      'resolves text size placeholder settings spec to feature-info payload',
+      'resolves text size info settings spec to feature-info payload',
       () async {
         container
             .read(cassetteRackStateProvider(SidebarMode.settings).notifier)
             .setRackForTesting([
               const CassetteSpec.settings(
-                SettingsCassetteSpec.textSizePlaceholder(),
+                SettingsCassetteSpec.textSizeInfo(),
               ),
             ]);
 

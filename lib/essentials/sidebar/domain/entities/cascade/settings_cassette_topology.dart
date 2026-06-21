@@ -29,10 +29,10 @@ CassetteSpec? resolveSettingsChild(SettingsCassetteSpec spec) {
     resetMessageDataPanel: () {
       return null;
     },
-    textSizePlaceholder: () {
+    textSizeInfo: () {
       return null;
     },
-    imageSizePlaceholder: () {
+    imageSizeInfo: () {
       return null;
     },
     attachmentArchive: () {

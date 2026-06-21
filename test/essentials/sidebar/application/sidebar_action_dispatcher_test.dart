@@ -292,7 +292,7 @@ void main() {
               SidebarUtilityCassetteSpec.settingsMenu(),
             ),
             const CassetteSpec.settings(
-              SettingsCassetteSpec.textSizePlaceholder(),
+              SettingsCassetteSpec.textSizeInfo(),
             ),
           ]),
         );
@@ -317,7 +317,7 @@ void main() {
             SidebarUtilityCassetteSpec.settingsMenu(),
           ),
           const CassetteSpec.settings(
-            SettingsCassetteSpec.textSizePlaceholder(),
+            SettingsCassetteSpec.textSizeInfo(),
           ),
         ]);
 
@@ -432,7 +432,7 @@ void main() {
             SidebarUtilityCassetteSpec.settingsMenu(),
           ),
           const CassetteSpec.settings(
-            SettingsCassetteSpec.textSizePlaceholder(),
+            SettingsCassetteSpec.textSizeInfo(),
           ),
         ]);
 
@@ -485,7 +485,7 @@ void main() {
             SidebarUtilityCassetteSpec.settingsMenu(),
           ),
           const CassetteSpec.settings(
-            SettingsCassetteSpec.textSizePlaceholder(),
+            SettingsCassetteSpec.textSizeInfo(),
           ),
         ]);
 
@@ -574,7 +574,7 @@ void main() {
               SidebarUtilityCassetteSpec.settingsMenu(),
             ),
             const CassetteSpec.settings(
-              SettingsCassetteSpec.textSizePlaceholder(),
+              SettingsCassetteSpec.textSizeInfo(),
             ),
           ]),
         );
