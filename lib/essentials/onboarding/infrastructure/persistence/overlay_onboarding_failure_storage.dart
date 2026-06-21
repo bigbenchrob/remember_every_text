@@ -26,12 +26,13 @@ class OverlayOnboardingFailureStorage implements OnboardingFailureStore {
   _onReadFailure;
 
   @override
-  Future<OnboardingPipelineFailure?> loadImportResult() async {
-    return (await loadImportResultEntry())?.failure;
+  Future<OnboardingPipelineFailure?> loadSourceImportFailure() async {
+    return (await loadSourceImportFailureEntry())?.failure;
   }
 
   @override
-  Future<PersistedOnboardingImportResult?> loadImportResultEntry() async {
+  Future<PersistedOnboardingSourceImportFailure?>
+  loadSourceImportFailureEntry() async {
     try {
       final overlayDb = await _overlayDb;
       final rawValue = await overlayDb.readOverlaySetting(_importFailureKey);
@@ -53,7 +54,7 @@ class OverlayOnboardingFailureStorage implements OnboardingFailureStore {
         return null;
       }
 
-      return PersistedOnboardingImportResult(
+      return PersistedOnboardingSourceImportFailure(
         recordedAt: _asDateTime(decoded[_recordedAtKey]),
         failure: OnboardingPipelineFailure(
           phase: OnboardingPipelinePhase.import,
@@ -85,7 +86,7 @@ class OverlayOnboardingFailureStorage implements OnboardingFailureStore {
   }
 
   @override
-  Future<void> clearImportResult() async {
+  Future<void> clearSourceImportFailure() async {
     await _clearSetting(_importFailureKey);
   }
 

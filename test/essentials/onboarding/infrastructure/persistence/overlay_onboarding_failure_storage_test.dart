@@ -29,7 +29,7 @@ void main() {
         recordedAt: recordedAt,
       );
 
-      final loaded = await storage.loadImportResultEntry();
+      final loaded = await storage.loadSourceImportFailureEntry();
 
       expect(loaded, isNotNull);
       expect(loaded!.failure.batchId, 11);
@@ -98,10 +98,10 @@ void main() {
       await storage.saveImportFailure(batchId: 1, message: 'fail');
       await storage.saveGraphProjectionFailure(batchId: 2, message: 'fail');
 
-      await storage.clearImportResult();
+      await storage.clearSourceImportFailure();
       await storage.clearGraphProjectionResult();
 
-      expect(await storage.loadImportResult(), isNull);
+      expect(await storage.loadSourceImportFailure(), isNull);
       expect(await storage.loadGraphProjectionResult(), isNull);
       expect(
         await overlayDb.readOverlaySetting(
@@ -128,7 +128,7 @@ void main() {
           settingValue: '{',
         );
 
-        final loaded = await storage.loadImportResultEntry();
+        final loaded = await storage.loadSourceImportFailureEntry();
 
         expect(loaded, isNull);
         expect(readFailures, ['onboarding_last_import_result']);

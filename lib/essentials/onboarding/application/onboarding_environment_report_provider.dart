@@ -142,7 +142,8 @@ class _OnboardingEnvironmentEvaluator {
     final databaseProbeReader = ref.watch(
       onboardingDatabaseProbeReaderProvider,
     );
-    final persistedImportEntry = await failureStorage.loadImportResultEntry();
+    final persistedImportEntry = await failureStorage
+        .loadSourceImportFailureEntry();
     final persistedGraphProjectionEntry = await failureStorage
         .loadGraphProjectionResultEntry();
     final persistedImportFailure = persistedImportEntry?.failure;

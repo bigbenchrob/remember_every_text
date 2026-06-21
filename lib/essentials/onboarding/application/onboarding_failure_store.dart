@@ -1,7 +1,7 @@
 import '../domain/onboarding_environment_report.dart';
 
-class PersistedOnboardingImportResult {
-  const PersistedOnboardingImportResult({
+class PersistedOnboardingSourceImportFailure {
+  const PersistedOnboardingSourceImportFailure({
     required this.failure,
     this.recordedAt,
   });
@@ -21,9 +21,10 @@ class PersistedOnboardingGraphProjectionResult {
 }
 
 abstract interface class OnboardingFailureStore {
-  Future<OnboardingPipelineFailure?> loadImportResult();
+  Future<OnboardingPipelineFailure?> loadSourceImportFailure();
 
-  Future<PersistedOnboardingImportResult?> loadImportResultEntry();
+  Future<PersistedOnboardingSourceImportFailure?>
+  loadSourceImportFailureEntry();
 
   Future<void> saveImportFailure({
     required String message,
@@ -32,7 +33,7 @@ abstract interface class OnboardingFailureStore {
     List<String> warnings,
   });
 
-  Future<void> clearImportResult();
+  Future<void> clearSourceImportFailure();
 
   Future<OnboardingPipelineFailure?> loadGraphProjectionResult();
 

@@ -3109,6 +3109,10 @@ criteria.
   comments and message evidence id normalization comments, replacing "old
   files" / "old live" shorthand with retired-file and older rowid-keyed
   language.
+- Renamed onboarding failure-store APIs from import-result wording to
+  source-import-failure wording. The persisted overlay key remains
+  backward-compatible, but the active contract no longer exposes a retained
+  import-result concept.
 
 ### Exit Criteria
 
