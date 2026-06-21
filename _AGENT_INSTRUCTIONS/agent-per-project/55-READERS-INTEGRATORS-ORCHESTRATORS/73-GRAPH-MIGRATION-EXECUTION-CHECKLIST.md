@@ -3083,6 +3083,9 @@ criteria.
   identity helpers. Contact and handle overlay bridges now use those helpers
   instead of importing `SourceScopedRowKey` directly, and the architecture
   tripwire now enforces the stricter boundary.
+- Moved message evidence id normalization through the same live-chat graph
+  identity boundary. The feature-level source-scoped conversion tripwire now
+  allows only recovered-message domain source identity.
 
 ### Exit Criteria
 

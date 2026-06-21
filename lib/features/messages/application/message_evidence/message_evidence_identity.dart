@@ -1,5 +1,4 @@
-import '../../../../essentials/source_scoped_import/domain/known_sources.dart';
-import '../../../../essentials/source_scoped_import/domain/source_scoped_row_key.dart';
+import '../../../../essentials/conversation_graph/application/identity/live_chat_graph_identity.dart';
 
 /// Resolves a message selection id to the canonical graph id used by evidence.
 ///
@@ -9,16 +8,7 @@ import '../../../../essentials/source_scoped_import/domain/source_scoped_row_key
 /// live rowid is recognizable, otherwise the supplied id is assumed to already
 /// be canonical.
 int canonicalMessageEvidenceId(int messageId) {
-  if (SourceScopedRowKey.unpackSourceId(messageId) == liveChatDbSourceId) {
-    return messageId;
-  }
-  if (messageId <= 0 || messageId > SourceScopedRowKey.maxSourceRowId) {
-    return messageId;
-  }
-  return SourceScopedRowKey.pack(
-    sourceId: liveChatDbSourceId,
-    sourceRowId: messageId,
-  );
+  return canonicalLiveChatGraphId(messageId);
 }
 
 /// Returns the live `chat.db.message` ROWID for a graph message evidence id.
@@ -26,8 +16,5 @@ int canonicalMessageEvidenceId(int messageId) {
 /// This exists only for older rowid-keyed overlay compatibility. Ordinary message
 /// evidence remains keyed by `message_ss_id`.
 int? liveMessageRowIdForEvidenceId(int messageId) {
-  if (SourceScopedRowKey.unpackSourceId(messageId) != liveChatDbSourceId) {
-    return null;
-  }
-  return SourceScopedRowKey.unpackSourceRowId(messageId);
+  return liveChatSourceRowIdForGraphId(messageId);
 }
