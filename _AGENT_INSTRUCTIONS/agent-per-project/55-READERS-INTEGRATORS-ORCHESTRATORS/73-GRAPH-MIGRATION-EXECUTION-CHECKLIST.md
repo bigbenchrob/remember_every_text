@@ -2932,6 +2932,11 @@ criteria.
   `messageDataResetDatabaseBaseNames`. Reset still deletes both active graph
   files and retired cleanup files, but the name no longer implies
   `macos_import.db` / `working.db` remain derived graph data.
+- Added a reset-service regression test that requires active graph rebuild
+  files and retired cleanup files to remain disjoint reset categories.
+- Renamed the retained database health query boundary to
+  `RetiredCleanupSqliteFileHealthQueryLayer`, making it explicit that direct
+  SQLite file inspection is for retired cleanup diagnostics only.
 - Changed onboarding graph-projection failure persistence to write the
   graph-named overlay key
   `onboarding_last_graph_projection_result`. The historical

@@ -690,7 +690,7 @@ void main() {
     });
 
     test(
-      'Read-only retired database inspection stays in database health boundary',
+      'Retired cleanup database inspection stays in database health boundary',
       () async {
         final offenders = await _findReadOnlyRetiredHealthInspectionOffenders();
 
