@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -9,7 +7,6 @@ import '../../../../essentials/services/native_link_preview_service.dart';
 import '../view_model/shared/display_widgets/new_display_widgets.dart';
 
 const double _previewAspectRatio = 2.0;
-const Duration _fallbackDelay = Duration(seconds: 10);
 const Duration _transitionDuration = Duration(milliseconds: 180);
 
 /// Rich URL preview widget for displaying link metadata in messages.
@@ -32,95 +29,18 @@ class UrlPreviewWidget extends ConsumerStatefulWidget {
 }
 
 class _UrlPreviewWidgetState extends ConsumerState<UrlPreviewWidget> {
-  final _previewService = NativeLinkPreviewService();
-
-  NativeLinkMetadata? _metadata;
-  bool _showFallback = false;
-  Timer? _fallbackTimer;
-  int _requestId = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    unawaited(_loadMetadata(resetState: false));
-  }
-
-  @override
-  void didUpdateWidget(covariant UrlPreviewWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.url != widget.url) {
-      unawaited(_loadMetadata(resetState: true));
-    }
-  }
-
-  @override
-  void dispose() {
-    _fallbackTimer?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _loadMetadata({required bool resetState}) async {
-    _fallbackTimer?.cancel();
-    final requestId = ++_requestId;
-
-    if (resetState && mounted) {
-      setState(() {
-        _metadata = null;
-        _showFallback = false;
-      });
-    } else {
-      _metadata = null;
-      _showFallback = false;
-    }
-
-    _fallbackTimer = Timer(_fallbackDelay, () {
-      if (!mounted || requestId != _requestId || _metadata != null) {
-        return;
-      }
-      setState(() {
-        _showFallback = true;
-      });
-    });
-
-    try {
-      final metadata = await _previewService.fetchMetadata(widget.url);
-      if (!mounted || requestId != _requestId) {
-        return;
-      }
-
-      _fallbackTimer?.cancel();
-
-      if (metadata != null) {
-        setState(() {
-          _metadata = metadata;
-          _showFallback = false;
-        });
-      } else {
-        setState(() {
-          _showFallback = true;
-        });
-      }
-    } catch (_) {
-      if (!mounted || requestId != _requestId) {
-        return;
-      }
-
-      _fallbackTimer?.cancel();
-      setState(() {
-        _showFallback = true;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
-    final child = _metadata != null
-        ? _buildNativePreview(_metadata!, colors)
-        : _showFallback
-        ? _buildLinkFallback(colors)
-        : _buildLoadingWidget(colors);
+    final metadata = ref.watch(linkPreviewMetadataProvider(widget.url));
+    final child = metadata.when(
+      data: (value) => value == null
+          ? _buildLinkFallback(colors)
+          : _buildNativePreview(value, colors),
+      error: (_, _) => _buildLinkFallback(colors),
+      loading: () => _buildLoadingWidget(colors),
+    );
 
     return AnimatedSwitcher(
       duration: _transitionDuration,

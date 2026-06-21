@@ -1330,7 +1330,9 @@ void main() {
         isEmpty,
         reason:
             'Message URL previews may render tappable links, but external '
-            'launch mechanics belong behind ExternalLinkActions.\n'
+            'launch mechanics belong behind ExternalLinkActions and native '
+            'preview metadata loading belongs behind the external-links '
+            'provider boundary.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -4537,6 +4539,9 @@ Future<List<String>> _findMessageUrlPreviewOpenerBoundaryOffenders() async {
     }
     if (uncommented.contains('externalUriOpenerProvider')) {
       offenders.add('$filePath reads ExternalUriOpener directly');
+    }
+    if (uncommented.contains('NativeLinkPreviewService(')) {
+      offenders.add('$filePath creates NativeLinkPreviewService directly');
     }
   }
 
