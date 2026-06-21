@@ -289,6 +289,20 @@ void main() {
       );
     });
 
+    test('Active lib comments avoid ambiguous old-system shorthand', () async {
+      final offenders = await _findAmbiguousOldSystemPhraseOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Active source comments should name current architectural '
+            'boundaries precisely. Avoid vague old-system shorthand such as '
+            'old archive pair, old archive key, old method, or old spec.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Tests do not use placeholder coverage assertions', () async {
       final offenders = await _findPlaceholderTestCoverageOffenders();
 
@@ -8174,6 +8188,34 @@ Future<List<String>> _findActiveTodoFixmeOffenders() async {
     final uncommented = _stripComments(source);
     if (markerPattern.hasMatch(uncommented)) {
       offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findAmbiguousOldSystemPhraseOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  const retiredPhrases = <String>[
+    'old archive pair',
+    'old archive key',
+    'old method',
+    'old spec',
+  ];
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final lowerSource = source.toLowerCase();
+    for (final phrase in retiredPhrases) {
+      if (lowerSource.contains(phrase)) {
+        offenders.add('$filePath uses ambiguous phrase "$phrase"');
+      }
     }
   }
 

@@ -9,13 +9,14 @@ import '../../application/graph_attachment_archive_lookup.dart';
 
 /// Resolves graph attachment identity against existing archive overlay rows.
 ///
-/// The current archive table is still keyed by the old archive pair
+/// The current archive table is still keyed by the overlay archive tuple
 /// `(message_guid, import_attachment_id)`. For live `chat.db` rows,
 /// `import_attachment_id` is the source attachment ROWID and can be derived
 /// from `attachment_ss_id`.
 ///
 /// This is an explicit compatibility bridge. It must not become the model for
-/// non-live sources because the old archive key does not carry source scope.
+/// non-live sources because the overlay archive tuple does not carry source
+/// scope.
 class OverlayArchiveCompatibilityLookup
     implements GraphAttachmentArchiveLookup {
   const OverlayArchiveCompatibilityLookup({

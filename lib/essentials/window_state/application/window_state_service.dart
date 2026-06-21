@@ -170,7 +170,7 @@ class WindowStateService {
       await saveWindowState(currentState);
     } catch (e, stackTrace) {
       _debugWindowStateFailure('save current window state', e, stackTrace);
-      // If anything fails, fall back to the old method
+      // If decorated-frame capture fails, fall back to direct window capture.
       final currentState = await getCurrentWindowState();
       await saveWindowState(currentState);
     }

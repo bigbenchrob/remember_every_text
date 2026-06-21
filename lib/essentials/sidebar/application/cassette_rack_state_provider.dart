@@ -129,7 +129,7 @@ class CassetteRackState extends _$CassetteRackState {
   /// the resolver (which received it from the coordinator), constructs the
   /// new spec locally, and calls this method.
   ///
-  /// This approach avoids requiring widgets to hold the old spec in state,
+  /// This approach avoids requiring widgets to hold the previous spec in state,
   /// which would violate the cross-surface spec system rules.
   ///
   /// If the index is out of bounds, this is a no-op.

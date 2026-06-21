@@ -3101,6 +3101,10 @@ criteria.
   points at the graph evidence timeline model, and the retired timeline
   tripwire prevents that old ordinal-index phrase from returning in active
   `lib/` code.
+- Replaced ambiguous active-source comments that used "old archive pair",
+  "old archive key", "old method", or "old spec" with current boundary
+  language. Added a targeted architecture tripwire so those shorthand phrases
+  do not return to active `lib/` code.
 
 ### Exit Criteria
 
