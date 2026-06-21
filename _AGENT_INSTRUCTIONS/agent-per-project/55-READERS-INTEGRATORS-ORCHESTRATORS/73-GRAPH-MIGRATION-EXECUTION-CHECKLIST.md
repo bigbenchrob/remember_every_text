@@ -3116,6 +3116,10 @@ criteria.
 - Added an architecture tripwire preventing those retired onboarding
   failure-store result-style API/class names from returning in active `lib/`
   code.
+- Renamed the active Historical Archives panel's private placeholder-named
+  button widget to an action-button name. The UI behavior is unchanged, but the
+  active presentation code no longer suggests that the real archive workflow
+  controls are placeholder scaffolding.
 
 ### Exit Criteria
 

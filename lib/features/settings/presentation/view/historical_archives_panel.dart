@@ -42,7 +42,7 @@ class HistoricalArchivesPanel extends ConsumerWidget {
                         spacing: 10,
                         runSpacing: 10,
                         children: [
-                          _PlaceholderButton(
+                          _HistoricalArchiveActionButton(
                             label: 'Choose Messages Folder...',
                             enabled: true,
                             onPressed: () {
@@ -54,7 +54,7 @@ class HistoricalArchivesPanel extends ConsumerWidget {
                                   .chooseMessagesFolder();
                             },
                           ),
-                          _PlaceholderButton(
+                          _HistoricalArchiveActionButton(
                             label: 'Clear Selected Folder',
                             enabled: panelModel.selectedFolderPath != null,
                             onPressed: panelModel.selectedFolderPath == null
@@ -147,7 +147,7 @@ class HistoricalArchivesPanel extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _PlaceholderButton(
+                      _HistoricalArchiveActionButton(
                         label: 'Begin Import',
                         enabled: panelModel.importButtonEnabled,
                         onPressed: panelModel.importButtonEnabled
@@ -177,7 +177,7 @@ class HistoricalArchivesPanel extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _PlaceholderButton(
+                      _HistoricalArchiveActionButton(
                         label: 'Clear Imported Archive Data for This Source',
                         enabled: panelModel.removeImportedArchiveDataEnabled,
                         onPressed: panelModel.removeImportedArchiveDataEnabled
@@ -474,8 +474,8 @@ class _ShellSectionCard extends ConsumerWidget {
   }
 }
 
-class _PlaceholderButton extends ConsumerWidget {
-  const _PlaceholderButton({
+class _HistoricalArchiveActionButton extends ConsumerWidget {
+  const _HistoricalArchiveActionButton({
     required this.label,
     this.enabled = false,
     this.onPressed,
