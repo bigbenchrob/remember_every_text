@@ -57,6 +57,32 @@ void main() {
       expect(metadata.single.lastImportedMessageCount, 2);
     });
 
+    test('does not expose source paths from read metadata', () async {
+      await repository.upsertSourceMetadata(
+        const HistoricalArchiveSourceMetadataUpdate(
+          sourceChatDb: '/Private/Archive/chat.db',
+          folderPath: '/Private/Archive',
+          sourceLabel: 'Archive',
+          chatDbStatusLabel: 'Found',
+          attachmentsStatusLabel: 'Found',
+          preflightStatusLabel: 'Preflight complete',
+          preflightDetail: 'Source checks succeeded.',
+          updatedAtUtc: '2026-06-10T00:00:00.000Z',
+          totalMessages: 12,
+        ),
+      );
+
+      final rawSetting = await overlayDatabase.readOverlaySetting(
+        'historical_archive_sources/v1',
+      );
+      final metadata = await repository.readKnownSources();
+
+      expect(rawSetting, contains('/Private/Archive/chat.db'));
+      expect(metadata.single.sourceLabel, 'Archive');
+      expect(metadata.single.totalMessages, 12);
+      expect(metadata.single.preflightStatusLabel, 'Preflight complete');
+    });
+
     test('replaces metadata by source chat database path', () async {
       await repository.upsertSourceMetadata(
         const HistoricalArchiveSourceMetadataUpdate(
