@@ -42,7 +42,7 @@ Current feature modules include `address_book_folders`, `attachments`, `chats`,
 `settings`, and `sidebar_utilities`.
 
 Current essentials areas include navigation, sidebar, search, onboarding, db,
-source-scoped import, conversation graph, retired storage cleanup/reference
+source-scoped import, conversation graph, retired storage cleanup/diagnostic
 boundaries, logging, window state, config, debug, services, tooltips, and shared
 contacts infrastructure.
 

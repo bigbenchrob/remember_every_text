@@ -687,7 +687,7 @@ void main() {
         ),
         reason:
             'retainedArchiveMetadataStoreProvider has been retired. '
-            'Retired macos_import.db is cleanup/reference storage only, so '
+            'Retired macos_import.db is cleanup/diagnostic storage only, so '
             'ordinary app behavior must not recreate a provider authority '
             'for it.\n'
             'Actual users:\n${offenders.join('\n')}',
@@ -701,7 +701,7 @@ void main() {
         offenders,
         orderedEquals(_retiredMacosImportFileAllowedFiles.toList()..sort()),
         reason:
-            'Retired macos_import.db is cleanup/reference storage only. '
+            'Retired macos_import.db is cleanup/diagnostic storage only. '
             'Ordinary code must not add new retired import file access or '
             'workflow authority.\n'
             'Actual users:\n${offenders.join('\n')}',
@@ -732,7 +732,7 @@ void main() {
           offenders,
           orderedEquals(_retiredWorkingFileAllowedFiles.toList()..sort()),
           reason:
-              'Retired working.db is cleanup/reference storage only. '
+              'Retired working.db is cleanup/diagnostic storage only. '
               'Ordinary code must not add new retired working file access or '
               'workflow authority.\n'
               'Actual users:\n${offenders.join('\n')}',
@@ -1041,7 +1041,7 @@ void main() {
             'Do not import the retired archive metadata wrapper from '
             'ordinary code. Active Historical Archives metadata belongs to '
             'the settings repository backed by overlay storage; retired '
-            'macos_import.db files are cleanup/reference storage only.\n'
+            'macos_import.db files are cleanup/diagnostic storage only.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });

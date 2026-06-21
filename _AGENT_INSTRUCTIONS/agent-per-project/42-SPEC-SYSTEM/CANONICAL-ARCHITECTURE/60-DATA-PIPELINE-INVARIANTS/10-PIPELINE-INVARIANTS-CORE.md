@@ -23,7 +23,7 @@ source (chat.db / attachments / AddressBook)
 → UI
 ```
 
-Retired `macos_import.db` and `working.db` files are cleanup/reference storage
+Retired `macos_import.db` and `working.db` files are cleanup/diagnostic storage
 for explicit diagnostics and historical interpretation. They are not ordinary
 app-facing message evidence authority, and new archive/recovery workflows must
 explain reachability through graph/source-scoped identity plus overlay archive

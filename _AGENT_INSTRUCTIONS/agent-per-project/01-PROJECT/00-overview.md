@@ -43,7 +43,7 @@ the subsystem docs when details matter.
 - Spec-driven surfaces: start at `../42-SPEC-SYSTEM/README.md`.
 - Essentials vs feature ownership: read `../30-ESSENTIALS/README.md` and `../40-FEATURES/README.md`.
 - Database access and boundaries: read `../10-DATABASES/00-all-databases-accessed.md` and `../10-DATABASES/INVIOLATE_RULES.md`.
-- Source import, graph build, and retired storage cleanup/reference behavior: read `../20-DATA-IMPORT-MIGRATION/01-overview.md`.
+- Source import, graph build, and retired storage cleanup/diagnostic behavior: read `../20-DATA-IMPORT-MIGRATION/01-overview.md`.
 - Onboarding, environment readiness, archive, and recovery: read `../25-ONBOARDING-AND-ARCHIVE/README.md`.
 - Build/FDA continuity: read `../60-BUILD-CONSIDERATIONS/02-macos-fda-grant-continuity.md` before production builds.
 
