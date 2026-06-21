@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/onboarding/application/message_data_reset_service.dart';
-import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/feature_level_providers.dart';
 
 void main() {
   test(
@@ -17,7 +17,7 @@ void main() {
       expect(
         activeGraphDerivedDatabaseBaseNames,
         containsAll(<String>[
-          importDatabaseFileName,
+          sourceScopedImportDatabaseFileName,
           conversationGraphDatabaseFileName,
         ]),
       );
@@ -26,7 +26,7 @@ void main() {
         containsAll(<String>[
           retiredMacosImportDatabaseFileName,
           retiredWorkingDatabaseFileName,
-          importDatabaseFileName,
+          sourceScopedImportDatabaseFileName,
           conversationGraphDatabaseFileName,
         ]),
       );
