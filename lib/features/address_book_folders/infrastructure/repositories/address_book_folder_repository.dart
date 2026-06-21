@@ -23,18 +23,20 @@ class AddressBookFolderRepository {
       }
 
       // (2) Filter paths having a viable database.
-      final viablePaths = await _filterViablePaths(candidatePaths);
-      if (viablePaths.isEmpty) {
-        return const Left(
+      final viablePathScan = await _filterViablePaths(candidatePaths);
+      if (viablePathScan.viablePaths.isEmpty) {
+        return Left(
           FolderRetrievalFailure(
-            message: 'No viable address book folders found',
+            message:
+                'No viable address book folders found'
+                '${viablePathScan.rejectionSummary}',
           ),
         );
       }
 
       // (3) Convert each viable path to a folder entity.
       final folders = await Future.wait(
-        viablePaths.map((path) => _processToFolderEntity(path)),
+        viablePathScan.viablePaths.map((path) => _processToFolderEntity(path)),
         eagerError: true,
       );
 
@@ -42,30 +44,39 @@ class AddressBookFolderRepository {
       final aggregate = AddressBookFolderAggregate(folders);
       return Right(aggregate);
     } catch (e) {
-      return const Left(
-        FolderRetrievalFailure(message: 'Folder retrieval failed'),
+      return Left(
+        FolderRetrievalFailure(message: 'Folder retrieval failed: $e'),
       );
     }
   }
 
-  Future<List<String>> _filterViablePaths(List<String> paths) async {
+  Future<_ViableAddressBookPathScan> _filterViablePaths(
+    List<String> paths,
+  ) async {
     final viablePaths = <String>[];
+    final rejectedReasons = <String>[];
     for (final path in paths) {
-      if (await _addressBookDbExistsAtPath(path)) {
+      final rejectionReason = await _addressBookDbRejectionReason(path);
+      if (rejectionReason == null) {
         viablePaths.add(path);
+      } else {
+        rejectedReasons.add('$path: $rejectionReason');
       }
     }
-    return viablePaths;
+    return _ViableAddressBookPathScan(
+      viablePaths: viablePaths,
+      rejectedReasons: rejectedReasons,
+    );
   }
 
-  Future<bool> _addressBookDbExistsAtPath(String path) async {
+  Future<String?> _addressBookDbRejectionReason(String path) async {
     try {
       // This awaits for database access to confirm viability.
       final helper = AddressBookDbHelperMultiInstance(path);
       await helper.database;
-      return true;
+      return null;
     } catch (e) {
-      return false;
+      return '$e';
     }
   }
 
@@ -77,8 +88,10 @@ class AddressBookFolderRepository {
       final jsonResult = result.first;
       return AddressBookFolderEntity.fromJson(jsonResult);
     } catch (e) {
-      throw const FolderRetrievalFailure(
-        message: 'Conversion of path to folder failed',
+      throw FolderRetrievalFailure(
+        message:
+            'Conversion of AddressBook path to folder entity failed for '
+            '$path: $e',
       );
     }
   }
@@ -92,5 +105,23 @@ class AddressBookFolderRepository {
               MAX(ZMODIFICATIONDATE) AS modificationDateMax
         FROM  ZABCDRECORD
     ''';
+  }
+}
+
+class _ViableAddressBookPathScan {
+  const _ViableAddressBookPathScan({
+    required this.viablePaths,
+    required this.rejectedReasons,
+  });
+
+  final List<String> viablePaths;
+  final List<String> rejectedReasons;
+
+  String get rejectionSummary {
+    if (rejectedReasons.isEmpty) {
+      return '';
+    }
+
+    return ': ${rejectedReasons.join('; ')}';
   }
 }
