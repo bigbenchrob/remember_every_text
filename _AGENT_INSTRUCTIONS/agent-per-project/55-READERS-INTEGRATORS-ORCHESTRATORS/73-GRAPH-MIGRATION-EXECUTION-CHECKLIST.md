@@ -3005,6 +3005,15 @@ criteria.
   `ArchiveCompatibilityKey.importAttachmentId` property reads inside the
   archive compatibility key and schema-facing overlay/archive storage
   repositories. Non-schema graph/archive code must use semantic aliases.
+- Clarified current archive documentation and the typed
+  `ArchiveCompatibilityKey` comment so archive compatibility lookup is not
+  described as retained storage. The retained overlay tuple remains a schema
+  compatibility detail, while active graph/archive code talks in terms of the
+  typed archive compatibility boundary.
+- Clarified archive compatibility architecture-test failure messages so they
+  forbid primitive archive key pairs and import-attachment identity leakage
+  without implying the typed graph-facing compatibility key is itself retained
+  storage.
 
 ### Exit Criteria
 
