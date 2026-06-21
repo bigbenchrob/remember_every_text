@@ -228,11 +228,13 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
     final archiveByKey = <ArchiveCompatibilityKey, String>{};
     for (final row in archiveRows) {
       final messageGuid = row.read<String>('message_guid');
-      final importAttachmentId = row.read<int>('import_attachment_id');
+      final archiveCompatibilityAttachmentId = row.read<int>(
+        'import_attachment_id',
+      );
       final archiveRelativePath = row.read<String>('archive_relative_path');
       archiveByKey[ArchiveCompatibilityKey.fromStoredTuple(
             messageGuid: messageGuid,
-            importAttachmentId: importAttachmentId,
+            importAttachmentId: archiveCompatibilityAttachmentId,
           )] =
           archiveRelativePath;
     }
@@ -485,13 +487,13 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
       if (!missingKeys.contains(key)) {
         continue;
       }
-      final importAttachmentId = key.importAttachmentId;
+      final archiveCompatibilityAttachmentId = key.importAttachmentId;
       final filename = row['filename'] as String?;
       samples.add(
         MissingAttachmentRecoverySample(
           attachmentSsId: attachmentSsId,
           archiveMessageGuid: messageGuid,
-          archiveCompatibilitySourceRowId: importAttachmentId,
+          archiveCompatibilitySourceRowId: archiveCompatibilityAttachmentId,
           filename: filename,
           mimeType: row['mime_type'] as String?,
           uti: row['uti'] as String?,
@@ -558,16 +560,16 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
       var filesMissingCount = 0;
       for (final row in rows) {
         final messageGuid = row['message_guid'];
-        final importAttachmentId = row['import_attachment_id'];
+        final archiveCompatibilityAttachmentId = row['import_attachment_id'];
         final relativePath = row['archive_relative_path'];
         if (messageGuid is! String ||
-            importAttachmentId is! int ||
+            archiveCompatibilityAttachmentId is! int ||
             relativePath is! String) {
           continue;
         }
         final key = ArchiveCompatibilityKey.fromStoredTuple(
           messageGuid: messageGuid,
-          importAttachmentId: importAttachmentId,
+          importAttachmentId: archiveCompatibilityAttachmentId,
         );
         allKeys.add(key);
         if (File('${archiveDirectory.path}/$relativePath').existsSync()) {
@@ -623,14 +625,15 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
       final allKeys = <ArchiveCompatibilityKey>{};
       for (final row in resultSet) {
         final messageGuid = row['message_guid'];
-        final importAttachmentId = row['import_attachment_id'];
+        final archiveCompatibilityAttachmentId = row['import_attachment_id'];
         final filename = row['filename'];
-        if (messageGuid is! String || importAttachmentId is! int) {
+        if (messageGuid is! String ||
+            archiveCompatibilityAttachmentId is! int) {
           continue;
         }
         final key = ArchiveCompatibilityKey.fromStoredTuple(
           messageGuid: messageGuid,
-          importAttachmentId: importAttachmentId,
+          importAttachmentId: archiveCompatibilityAttachmentId,
         );
         allKeys.add(key);
         if (_recoveredAttachmentFileExists(
