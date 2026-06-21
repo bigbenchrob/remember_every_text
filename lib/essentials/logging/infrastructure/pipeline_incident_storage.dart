@@ -21,7 +21,12 @@ class PipelineIncidentStorage implements PipelineIncidentStore {
     try {
       final overlayDb = await _overlayDb;
       rawValue = await overlayDb.readOverlaySetting(_latestIncidentReportKey);
-    } catch (_) {
+    } catch (error, stackTrace) {
+      _debugStorageFailure(
+        'read latest pipeline incident report',
+        error,
+        stackTrace,
+      );
       return null;
     }
 
