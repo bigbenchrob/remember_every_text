@@ -3105,6 +3105,10 @@ criteria.
   "old archive key", "old method", or "old spec" with current boundary
   language. Added a targeted architecture tripwire so those shorthand phrases
   do not return to active `lib/` code.
+- Extended that exact-phrase cleanup to central retired database filename
+  comments and message evidence id normalization comments, replacing "old
+  files" / "old live" shorthand with retired-file and older rowid-keyed
+  language.
 
 ### Exit Criteria
 

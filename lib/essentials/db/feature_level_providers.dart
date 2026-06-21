@@ -37,11 +37,11 @@ part 'feature_level_providers.g.dart';
 late final String databaseDirectoryPath;
 
 /// Retired import filename kept only so reset/health diagnostics can identify
-/// old files in an existing data folder. This is not a database provider.
+/// retired files in an existing data folder. This is not a database provider.
 const retiredMacosImportDatabaseFileName = 'macos_import.db';
 
 /// Retired working filename kept only so reset/health diagnostics can identify
-/// old files in an existing data folder. This is not a database provider.
+/// retired files in an existing data folder. This is not a database provider.
 const retiredWorkingDatabaseFileName = 'working.db';
 
 /// Must be called once in `main()` after `WidgetsFlutterBinding.ensureInitialized()`.

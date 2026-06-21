@@ -298,7 +298,8 @@ void main() {
         reason:
             'Active source comments should name current architectural '
             'boundaries precisely. Avoid vague old-system shorthand such as '
-            'old archive pair, old archive key, old method, or old spec.\n'
+            'old archive pair, old archive key, old files, old live, '
+            'old method, or old spec.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -8204,6 +8205,8 @@ Future<List<String>> _findAmbiguousOldSystemPhraseOffenders() async {
   const retiredPhrases = <String>[
     'old archive pair',
     'old archive key',
+    'old files',
+    'old live',
     'old method',
     'old spec',
   ];
