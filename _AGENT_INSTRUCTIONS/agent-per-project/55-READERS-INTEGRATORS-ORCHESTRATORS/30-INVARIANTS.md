@@ -466,7 +466,8 @@ Shadow/dev databases may contain structural shim rows needed to satisfy existing
 
 Example:
 
-- a shadow-only placeholder `chats` row used as a temporary foreign-key anchor for message rows before `chat_message_join` topology import exists
+- a shadow-only placeholder `chats` row used by an obsolete proof-stage schema
+  while topology import was incomplete
 
 These rows are implementation scaffolding, not observed source facts.
 
@@ -497,15 +498,13 @@ chat_message_join
 
 not to `message.chat_id`.
 
-The shadow incremental-update pipeline now preserves this source topology as its own concern before migration/projection runs:
+The graph-era source-scoped pipeline preserves this source topology as its own
+concern before projection:
 
 ```text
-HandleStageController
-→ ChatStageController
-→ MessageImportStageController
-→ ChatMessageJoinStageController
-→ MessageMigrationStageController
-→ ComparativeValidationStageController
+chat.db.chat_message_join
+→ macos_import_ss.chat_to_message
+→ working_ss.chat_to_message
 ```
 
 This ordering is intentional.
@@ -513,19 +512,22 @@ This ordering is intentional.
 Source topology preservation means:
 
 - observe source relationship rows
-- preserve source-scoped relationship provenance in `macos_import_shadow.db`
+- preserve source-scoped relationship provenance in `macos_import_ss.db`
 - keep topology import resumable and idempotent
-- run migration/projection only after source topology has had a chance to catch up
-- project source-local relationship endpoints into `SourceScopedRowKey` working identities when topology projection is introduced
+- project source-local relationship endpoints into `SourceScopedRowKey` working
+  identities during graph projection
 
 Source topology preservation does not mean:
 
 - canonical chat resolution
-- merge-collapsed relationship projection into `working_shadow.db`
+- merge-collapsed relationship projection into `working_ss.db`
 - search/UI relationship semantics
 - production projection ownership
 
-Working relationship projection remains deferred until a projection concern explicitly owns it. When it is introduced, source-derived relationship endpoints should be occurrence-preserving and source-scoped, not remapped through merge-collapsed canonical endpoint layers.
+Working relationship projection is now owned by the conversation graph
+projectors. Source-derived relationship endpoints must remain
+occurrence-preserving and source-scoped, not remapped through merge-collapsed
+canonical endpoint layers.
 
 ---
 

@@ -3018,6 +3018,12 @@ criteria.
   distinguishes active source-scoped ledger ownership from retired import
   database-file naming, rather than describing a live retained compatibility
   storage subsystem.
+- Updated the topology invariant documentation from proof-era shadow
+  controller language to the current graph path:
+  `chat.db.chat_message_join -> macos_import_ss.chat_to_message ->
+  working_ss.chat_to_message`. The invariant now says conversation graph
+  projectors own working relationship projection and must preserve
+  source-scoped, occurrence-preserving endpoints.
 
 ### Exit Criteria
 
