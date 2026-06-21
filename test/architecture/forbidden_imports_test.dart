@@ -2868,6 +2868,21 @@ void main() {
       );
     });
 
+    test('Onboarding tests use source-scoped feature boundary', () async {
+      final offenders =
+          await _findOnboardingTestSourceScopedBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Onboarding application tests that need the source-scoped import '
+            'database filename should import the source-scoped feature-level '
+            'provider API, not the import database infrastructure directly.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Onboarding center sync observer delegates panel policy', () async {
       final offenders = await _findOnboardingCenterSyncObserverOffenders();
 
@@ -6780,6 +6795,33 @@ Future<List<String>> _findOnboardingEnvironmentProbeBoundaryOffenders() async {
         uncommented.contains('OpenMode.readOnly') ||
         uncommented.contains('ConversationGraphReadinessChecker')) {
       offenders.add('$filePath performs onboarding database probing directly');
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findOnboardingTestSourceScopedBoundaryOffenders() async {
+  final testDir = Directory('test/essentials/onboarding/application');
+  if (!testDir.existsSync()) {
+    return const <String>[];
+  }
+
+  final offenders = <String>[];
+  await for (final entity in testDir.list(recursive: true)) {
+    if (entity is! File || !entity.path.endsWith('.dart')) {
+      continue;
+    }
+
+    final source = await entity.readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    for (final importTarget in imports) {
+      if (importTarget.endsWith(
+        'source_scoped_import/infrastructure/import_database_provider.dart',
+      )) {
+        offenders.add('${entity.path} imports $importTarget');
+      }
     }
   }
 
