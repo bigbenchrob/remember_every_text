@@ -69,10 +69,10 @@ historical chat.db attachment.guid
   -> overlay archived_attachments(message_guid, import_attachment_id)
 ```
 
-Recovered deleted messages are graph-orphan evidence: source-retained
-`working_ss.messages` rows without current `chat_to_message` topology are
-rendered through the shared Message Evidence Spine. Legacy recovered tables
-remain historical storage until broader legacy database retirement.
+Recovered deleted messages are graph-orphan evidence: imported
+`working_ss.messages` rows without current `chat_to_message` conversation edges
+are rendered through the shared Message Evidence Spine. Retired recovered
+tables remain historical storage until broader legacy database retirement.
 
 ## Hard Invariants
 

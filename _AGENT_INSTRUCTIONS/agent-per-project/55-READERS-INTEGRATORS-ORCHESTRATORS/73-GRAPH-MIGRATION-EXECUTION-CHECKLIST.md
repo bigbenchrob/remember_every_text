@@ -3060,6 +3060,9 @@ criteria.
   current topology" to "imported rows without current graph edges" so the dev
   panel describes the graph condition directly rather than implying a separate
   recovery source.
+- Clarified the graph recovered-message repository comment with the same
+  language: recovered evidence is imported graph messages without current
+  conversation edges, not a separate retained-storage read path.
 
 ### Exit Criteria
 
