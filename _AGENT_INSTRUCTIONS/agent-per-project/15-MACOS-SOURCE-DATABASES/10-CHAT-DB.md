@@ -168,4 +168,7 @@ Before adding or changing a `chat.db` reader/importer:
 4. Keep source relationship identity separate from canonical app identity.
 5. Add focused tests that would fail if an inferred source column is used.
 
-Recommended follow-up for the current `MessageImporter`: replace any attempted `message.chat_id` read with explicit observation of `chat_message_join` when preserving message-to-chat source relationship identity. Until a real chat importer exists, continue keeping canonical chat resolution out of the message importer.
+Current graph-era invariant: message rows do not own chat membership. Preserve
+message facts in the message importer, preserve chat/message topology from
+`chat_message_join`, and keep canonical chat resolution out of message-row
+import logic.
