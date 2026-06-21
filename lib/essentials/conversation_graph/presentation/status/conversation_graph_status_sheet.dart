@@ -437,7 +437,7 @@ class _GraphHealthSection extends StatelessWidget {
             title: 'Graph health summary',
             rows: [
               _StatusRow(
-                'source rows without topology',
+                'imported rows without graph edges',
                 '${report.sourceRowsWithoutTopologyCount}',
                 labelWidth: 230,
               ),
@@ -634,7 +634,7 @@ class _GraphHealthSection extends StatelessWidget {
             ],
           ),
           _StatusSection(
-            title: 'Source-retained rows without current topology',
+            title: 'Imported rows without current graph edges',
             rows: [
               _StatusRow(
                 'messages without conversation edge',

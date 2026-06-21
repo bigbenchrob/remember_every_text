@@ -3056,6 +3056,10 @@ criteria.
 - Regenerated Riverpod outputs after the message data version documentation
   change so generated provider comments and hashes match current source and
   generator output.
+- Clarified graph health status wording from "source-retained rows without
+  current topology" to "imported rows without current graph edges" so the dev
+  panel describes the graph condition directly rather than implying a separate
+  recovery source.
 
 ### Exit Criteria
 
