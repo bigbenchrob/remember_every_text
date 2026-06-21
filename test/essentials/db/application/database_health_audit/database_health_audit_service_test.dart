@@ -360,11 +360,11 @@ class _FakeHealthQueryLayer extends DatabaseHealthQueryLayer {
 
   List<String> _tablesFor(String key) {
     return switch (key) {
-      'import' => const <String>[
+      'retired_macos_import' => const <String>[
         'schema_migrations',
         'historical_archive_sources',
       ],
-      'working' => const <String>[
+      'retired_working' => const <String>[
         'schema_migrations',
         'projection_state',
         'recovered_unlinked_messages',
