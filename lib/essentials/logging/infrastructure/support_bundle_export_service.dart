@@ -47,14 +47,16 @@ class SupportBundleExportService {
     final diagnosticLogFile = File(
       '${bundleDirectory.path}/diagnostic_report.log',
     );
+    final pipelineAuditLogFiles = _pipelineAuditLogFiles();
     await _writeDiagnosticLog(
       diagnosticLogFile,
       now: now,
       headerLines: headerLines,
+      pipelineAuditLogFiles: pipelineAuditLogFiles,
     );
     attachmentFiles.add(diagnosticLogFile);
 
-    for (final auditLog in _pipelineAuditLogFiles()) {
+    for (final auditLog in pipelineAuditLogFiles.files) {
       final copied = await _copyIfPresent(
         source: auditLog.$2,
         destinationPath:
@@ -101,6 +103,7 @@ class SupportBundleExportService {
     File exportFile, {
     required DateTime now,
     required List<String> headerLines,
+    required _PipelineAuditLogFiles pipelineAuditLogFiles,
   }) async {
     final sink = exportFile.openWrite();
     sink.write(_buildHeader(now, headerLines: headerLines));
@@ -115,7 +118,11 @@ class SupportBundleExportService {
       file: _writer.prevLogFile,
       title: 'Application Log (Previous Session)',
     );
-    for (final auditLog in _pipelineAuditLogFiles()) {
+    if (pipelineAuditLogFiles.unavailableReason case final reason?) {
+      sink.write('--- Pipeline Audit Logs ---\n');
+      sink.write('$reason\n\n');
+    }
+    for (final auditLog in pipelineAuditLogFiles.files) {
       await _appendFileIfPresent(sink, file: auditLog.$2, title: auditLog.$1);
     }
 
@@ -153,24 +160,30 @@ class SupportBundleExportService {
     sink.write('\n');
   }
 
-  List<(String, File)> _pipelineAuditLogFiles() {
+  _PipelineAuditLogFiles _pipelineAuditLogFiles() {
     try {
-      return [
-        (
-          'Retired Historical Import Audit Log',
-          File('$databaseDirectoryPath/import_log'),
-        ),
-        (
-          'Retired Historical Projection Audit Log',
-          File('$databaseDirectoryPath/migrate_log'),
-        ),
-        (
-          'Pipeline Incident Log',
-          File('$databaseDirectoryPath/pipeline_incident_log'),
-        ),
-      ];
-    } catch (_) {
-      return const <(String, File)>[];
+      return _PipelineAuditLogFiles(
+        files: [
+          (
+            'Retired Historical Import Audit Log',
+            File('$databaseDirectoryPath/import_log'),
+          ),
+          (
+            'Retired Historical Projection Audit Log',
+            File('$databaseDirectoryPath/migrate_log'),
+          ),
+          (
+            'Pipeline Incident Log',
+            File('$databaseDirectoryPath/pipeline_incident_log'),
+          ),
+        ],
+      );
+    } catch (error) {
+      return _PipelineAuditLogFiles(
+        files: const <(String, File)>[],
+        unavailableReason:
+            'Pipeline audit log paths could not be resolved: $error',
+      );
     }
   }
 
@@ -185,4 +198,11 @@ class SupportBundleExportService {
   }
 
   String _pad(int n) => n.toString().padLeft(2, '0');
+}
+
+class _PipelineAuditLogFiles {
+  const _PipelineAuditLogFiles({required this.files, this.unavailableReason});
+
+  final List<(String, File)> files;
+  final String? unavailableReason;
 }
