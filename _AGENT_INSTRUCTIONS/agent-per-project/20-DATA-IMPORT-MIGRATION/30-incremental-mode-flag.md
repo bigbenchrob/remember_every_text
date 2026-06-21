@@ -2,7 +2,7 @@
 tier: project
 scope: data-import-migration
 owner: agent-per-project
-last_reviewed: 2026-06-20
+last_reviewed: 2026-06-21
 source_of_truth: code
 links:
   - ./01-overview.md
@@ -90,10 +90,10 @@ Required pattern:
 ref.read(messageDataVersionProvider.notifier).bump();
 ```
 
-Why: invalidating the retired working database provider used to close the Drift
-isolate connection and could break active compatibility readers with
-"connection was closed" errors. The provider is now retired; graph streams and
-explicit graph/message data-version signals carry refresh.
+Why: invalidating the old working database provider could close the Drift
+isolate connection and break in-flight readers with "connection was closed"
+errors. That provider is now retired; graph streams and explicit graph/message
+data-version signals carry refresh.
 
 ## Search And Index Rebuilds
 
