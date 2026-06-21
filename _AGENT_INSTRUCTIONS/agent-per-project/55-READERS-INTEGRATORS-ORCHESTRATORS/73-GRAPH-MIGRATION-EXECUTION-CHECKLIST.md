@@ -2958,6 +2958,15 @@ criteria.
 - Added an architecture tripwire preventing active `lib/` code from creating
   new `PipelineIncidentStage.migration` incidents outside the logging domain
   compatibility parser.
+- Added an architecture tripwire keeping the historical
+  `onboarding_last_migration_result` overlay key confined to the onboarding
+  failure persistence fallback. Current onboarding failure writes use
+  graph-projection terminology.
+- Removed direct `importAttachmentId` field reads from
+  `AttachmentArchiveService`; the service now asks `ArchiveCompatibilityKey`
+  for the semantic live source attachment ROWID when producing labels/log
+  context. Stored tuple construction remains inside explicit archive
+  compatibility boundaries.
 
 ### Exit Criteria
 
