@@ -10,8 +10,7 @@ import 'package:remember_this_text/essentials/db/infrastructure/data_sources/loc
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
 import 'package:remember_this_text/essentials/onboarding/infrastructure/persistence/overlay_onboarding_failure_storage.dart';
-import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart'
-    as source_scoped_import;
+import 'package:remember_this_text/essentials/source_scoped_import/feature_level_providers.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/entities/address_book_folder_aggregate.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/entities/address_book_folder_entity.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/value_objects/value_objects.dart';
@@ -142,7 +141,7 @@ void main() {
       );
       _createProjectionDatabase(
         tempDir.path,
-        source_scoped_import.importDatabaseFileName,
+        sourceScopedImportDatabaseFileName,
       );
       _createGraphDatabase(tempDir.path);
 
@@ -190,7 +189,7 @@ void main() {
       );
       _createProjectionDatabase(
         tempDir.path,
-        source_scoped_import.importDatabaseFileName,
+        sourceScopedImportDatabaseFileName,
       );
       _createGraphDatabase(tempDir.path, graphComplete: false);
 
@@ -231,7 +230,7 @@ void main() {
         );
         _createProjectionDatabase(
           tempDir.path,
-          source_scoped_import.importDatabaseFileName,
+          sourceScopedImportDatabaseFileName,
         );
         _createGraphDatabase(tempDir.path, graphComplete: true);
 
@@ -273,7 +272,7 @@ void main() {
         );
         _createProjectionDatabase(
           tempDir.path,
-          source_scoped_import.importDatabaseFileName,
+          sourceScopedImportDatabaseFileName,
         );
         _createGraphDatabase(tempDir.path, graphComplete: true);
 
@@ -322,7 +321,7 @@ void main() {
         );
         _createProjectionDatabase(
           tempDir.path,
-          source_scoped_import.importDatabaseFileName,
+          sourceScopedImportDatabaseFileName,
           rowCount: 120,
         );
         _createGraphDatabase(tempDir.path, rowCount: 1, graphComplete: false);

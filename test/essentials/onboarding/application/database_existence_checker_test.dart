@@ -5,8 +5,7 @@ import 'package:remember_this_text/essentials/db/feature_level_providers/convers
 import 'package:remember_this_text/essentials/onboarding/application/database_existence_checker.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_database_probe_reader.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
-import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart'
-    as source_scoped_import;
+import 'package:remember_this_text/essentials/source_scoped_import/feature_level_providers.dart';
 
 void main() {
   group('DatabaseExistenceChecker', () {
@@ -18,7 +17,7 @@ void main() {
           probes: {
             path.join(
               databaseDirectory,
-              source_scoped_import.importDatabaseFileName,
+              sourceScopedImportDatabaseFileName,
             ): const OnboardingDatabaseProbe(
               path: 'import',
               exists: true,
