@@ -3050,6 +3050,9 @@ criteria.
   version bumps rather than provider invalidation, and added an architecture
   tripwire requiring handwritten graph/message refresh code to call the
   notifier `bump()` path instead of directly invalidating the provider.
+- Removed stale comments that described graph id normalization as a search
+  compatibility path. Search is graph-native; the remaining normalization
+  helpers are for explicitly bounded overlay/navigation compatibility inputs.
 
 ### Exit Criteria
 
