@@ -2980,6 +2980,11 @@ criteria.
   importing source-scoped import infrastructure solely for filename constants.
   They must use the public source-scoped feature-level API, preserving the same
   boundary expected of production onboarding code.
+- Clarified graph health diagnostic local naming so retained overlay
+  `import_attachment_id` storage is interpreted as an archive compatibility
+  attachment id, not current import ownership. Added a matching tripwire
+  preventing cross-snapshot mapping read models from regressing to
+  `currentImportAttachmentId` terminology.
 
 ### Exit Criteria
 
