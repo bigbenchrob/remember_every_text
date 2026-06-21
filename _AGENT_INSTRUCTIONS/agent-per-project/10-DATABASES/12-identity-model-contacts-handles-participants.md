@@ -144,7 +144,7 @@ A participant may:
 - link to an AddressBook contact
 - link to one or more canonical handles
 - have no active handle linkage
-- be represented by an overlay virtual participant rather than a working DB participant row
+- be represented by an overlay virtual participant rather than a graph contact row
 
 A contact may:
 
@@ -163,7 +163,7 @@ extend display identity without writing to `working_ss.db` or retained
 
 ## 5. Overlay Model (User Control Layer)
 
-`user_overlays.db` stores durable user intent. It refines presentation and grouping without changing source DB, import DB, or working DB structure.
+`user_overlays.db` stores durable user intent. It refines presentation and grouping without changing source DBs, the source-scoped import ledger, the working graph, or retired files.
 
 Identity-related overlay tables:
 
@@ -254,7 +254,7 @@ Spec → Coordinator → Resolver → Payload / ViewModel → Rendering
 | Conflicting contact data | Import preserves source evidence; working projection uses deterministic migration rules; overlay overrides provide user-controlled correction without mutating source/projection. |
 | Stale or incorrect AddressBook entry | The participant may inherit stale source names, but overlay `participant_overrides` can change presentation. Source contact data remains traceable. |
 | Orphaned handles | Unlinked canonical handles remain visible to handle-focused flows unless hidden/dismissed by overlay state. |
-| User override conflicts with contact data | Overlay wins at provider merge/read time. The working DB remains unchanged. |
+| User override conflicts with contact data | Overlay wins at provider merge/read time. The working graph remains source-derived and unchanged by user intent. |
 | Virtual participant linked to handles | UI can show the virtual identity after overlay merge; graph contact tables and old retained `working.participants` rows will not contain that row. |
 | Display names collide | Collision is allowed. Display names are labels, not identity keys. |
 
