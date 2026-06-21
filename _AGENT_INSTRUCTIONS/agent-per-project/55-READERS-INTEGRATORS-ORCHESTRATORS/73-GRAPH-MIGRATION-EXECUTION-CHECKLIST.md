@@ -3044,7 +3044,7 @@ criteria.
   primitives directly.
 - Updated the retired incremental-mode flag note so its refresh-contract
   rationale describes old in-flight working-DB readers historically, not as
-  active compatibility readers. Graph streams and explicit data-version signals
+  current retained readers. Graph streams and explicit data-version signals
   remain the current refresh mechanism.
 
 ### Exit Criteria
