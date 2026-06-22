@@ -3202,6 +3202,10 @@ criteria.
   the overlay preference controller boundary. Local sidebar state still updates
   immediately, but failed overlay writes no longer disappear through
   fire-and-forget UI actions.
+- Made conversation-favourite persistence failures observable at the global
+  user-intent controller boundary. Favourite toggles remain optimistic and
+  overlay-owned, but failed overlay writes no longer disappear through
+  fire-and-forget star taps.
 
 ### Exit Criteria
 

@@ -95,12 +95,27 @@ class ConversationFavouritesController
     state = state.isCoreFavourite(conversationId)
         ? state.removeCoreFavourite(conversationId)
         : state.addCoreFavourite(conversationId);
-    await _persistCoreFavourites();
+    await _persistCoreFavourites(conversationId: conversationId);
   }
 
-  Future<void> _persistCoreFavourites() async {
-    final store = await ref.read(conversationFavouritesStoreProvider.future);
-    await store.writeCoreFavourites(state.coreStorageValue);
+  Future<void> _persistCoreFavourites({required int conversationId}) async {
+    try {
+      final store = await ref.read(conversationFavouritesStoreProvider.future);
+      await store.writeCoreFavourites(state.coreStorageValue);
+    } catch (error, stackTrace) {
+      ref
+          .read(appLoggerProvider.notifier)
+          .warn(
+            'Conversation favourites persist failed',
+            source: 'ConversationFavouritesController',
+            context: <String, Object?>{
+              'conversationId': conversationId,
+              'state': state.coreStorageValue,
+              'error': error.toString(),
+              'stackTrace': stackTrace.toString(),
+            },
+          );
+    }
   }
 
   Future<void> _restoreFavourites() async {
