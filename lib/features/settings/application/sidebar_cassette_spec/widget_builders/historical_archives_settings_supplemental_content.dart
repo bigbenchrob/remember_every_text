@@ -42,7 +42,7 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Text(
-                'No archive folders have been added yet. When this workflow is fully wired, known sources will appear here with date range, message count, last import result, last-run counts, and last imported time.',
+                'No archive folders have been added yet. Known sources will appear here with date range, message count, last import result, last-run counts, and last imported time.',
                 style: typography.body.copyWith(
                   color: colors.content.textSecondary,
                 ),
