@@ -318,7 +318,7 @@ HistoricalArchivesWorkflowState buildInitialHistoricalArchivesWorkflowState() {
         detail: 'Post-projection rebuild steps are still waiting.',
       ),
       HistoricalArchivesWorkflowPhaseViewModel(
-        label: 'Refreshing app-visible data',
+        label: 'Refreshing shared evidence surfaces',
         status: HistoricalArchivesWorkflowPhaseStatus.waiting,
         detail:
             'Shared message evidence surfaces are unchanged until refresh completes.',
@@ -840,7 +840,7 @@ buildHistoricalArchivesWorkflowPanelModel({
       workflowState,
     ),
     HistoricalArchivesExecutionGateStatus.busy =>
-      'The canonical import pipeline is currently busy. Historical Archives stays visible so you can inspect the workflow, but import cannot begin until the current pipeline owner releases the execution gate.',
+      'The source-scoped import pipeline is currently busy. Historical Archives stays visible so you can inspect the workflow, but import cannot begin until the current pipeline owner releases the execution gate.',
     HistoricalArchivesExecutionGateStatus.blocked =>
       'Message data maintenance is currently blocking new archive work. Historical Archives remains visible, but import cannot begin until maintenance completes and the execution gate becomes available again.',
   };
@@ -1207,14 +1207,15 @@ preflightHistoricalArchivesFolder({
         detail: 'Archive source metadata and counts were read successfully.',
       ),
       HistoricalArchivesWorkflowPhaseViewModel(
-        label: 'Normalizing records into canonical ledger format',
+        label: 'Normalizing records for source-scoped import',
         status: HistoricalArchivesWorkflowPhaseStatus.waiting,
         detail: 'Normalization begins when you run archive import.',
       ),
       HistoricalArchivesWorkflowPhaseViewModel(
         label: 'Writing archive rows to source-scoped import',
         status: HistoricalArchivesWorkflowPhaseStatus.waiting,
-        detail: 'Ledger ingestion begins when you run archive import.',
+        detail:
+            'Source-scoped import ingestion begins when you run archive import.',
       ),
       HistoricalArchivesWorkflowPhaseViewModel(
         label: 'Projecting archive rows into conversation graph',
@@ -1227,7 +1228,7 @@ preflightHistoricalArchivesFolder({
         detail: 'Rebuild steps are still waiting.',
       ),
       HistoricalArchivesWorkflowPhaseViewModel(
-        label: 'Refreshing app-visible data',
+        label: 'Refreshing shared evidence surfaces',
         status: HistoricalArchivesWorkflowPhaseStatus.waiting,
         detail:
             'Shared message evidence surfaces are unchanged until refresh completes.',
@@ -1338,7 +1339,7 @@ HistoricalArchivesFolderPreflightResult _failedPreflightResult({
         detail: 'Archive source validation failed.',
       ),
       HistoricalArchivesWorkflowPhaseViewModel(
-        label: 'Normalizing records into canonical ledger format',
+        label: 'Normalizing records for source-scoped import',
         status: HistoricalArchivesWorkflowPhaseStatus.skipped,
         detail: 'Skipped until source preflight succeeds.',
       ),
@@ -1358,7 +1359,7 @@ HistoricalArchivesFolderPreflightResult _failedPreflightResult({
         detail: 'Skipped until source preflight succeeds.',
       ),
       HistoricalArchivesWorkflowPhaseViewModel(
-        label: 'Refreshing app-visible data',
+        label: 'Refreshing shared evidence surfaces',
         status: HistoricalArchivesWorkflowPhaseStatus.skipped,
         detail: 'Skipped until source preflight succeeds.',
       ),
@@ -1422,7 +1423,7 @@ List<HistoricalArchivesWorkflowPhaseViewModel> _runningPreflightPhases() {
       detail: 'Inspecting folder structure and source counts.',
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Normalizing records into canonical ledger format',
+      label: 'Normalizing records for source-scoped import',
       status: HistoricalArchivesWorkflowPhaseStatus.waiting,
       detail: 'Waiting for source checks to complete.',
     ),
@@ -1442,7 +1443,7 @@ List<HistoricalArchivesWorkflowPhaseViewModel> _runningPreflightPhases() {
       detail: 'Waiting for source checks to complete.',
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Refreshing app-visible data',
+      label: 'Refreshing shared evidence surfaces',
       status: HistoricalArchivesWorkflowPhaseStatus.waiting,
       detail: 'Waiting for source checks to complete.',
     ),
@@ -1469,7 +1470,7 @@ List<HistoricalArchivesWorkflowPhaseViewModel> _runningArchiveRemovalPhases() {
           'Rebuilding graph-visible data from the remaining source-scoped import facts.',
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Refreshing app-visible data',
+      label: 'Refreshing shared evidence surfaces',
       status: HistoricalArchivesWorkflowPhaseStatus.waiting,
       detail: 'Waiting for rebuild completion.',
     ),
@@ -1497,7 +1498,7 @@ List<HistoricalArchivesWorkflowPhaseViewModel> _failedArchiveRemovalPhases({
           'Skipped because archive row removal did not complete successfully.',
     ),
     const HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Refreshing app-visible data',
+      label: 'Refreshing shared evidence surfaces',
       status: HistoricalArchivesWorkflowPhaseStatus.skipped,
       detail:
           'Skipped because archive row removal did not complete successfully.',
@@ -1518,14 +1519,15 @@ List<HistoricalArchivesWorkflowPhaseViewModel> _runningArchiveImportPhases() {
       detail: 'Selected archive metadata was already validated in preflight.',
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Normalizing records into canonical ledger format',
+      label: 'Normalizing records for source-scoped import',
       status: HistoricalArchivesWorkflowPhaseStatus.running,
-      detail: 'Canonical importers are reading archive source tables now.',
+      detail: 'Source-scoped importers are reading archive source tables now.',
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
       label: 'Writing archive rows to source-scoped import',
       status: HistoricalArchivesWorkflowPhaseStatus.running,
-      detail: 'Archive rows are being written into the canonical ledger.',
+      detail:
+          'Archive rows are being written into the source-scoped import ledger.',
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
       label: 'Projecting archive rows into conversation graph',
@@ -1538,7 +1540,7 @@ List<HistoricalArchivesWorkflowPhaseViewModel> _runningArchiveImportPhases() {
       detail: 'Waiting for graph projection to complete.',
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Refreshing app-visible data',
+      label: 'Refreshing shared evidence surfaces',
       status: HistoricalArchivesWorkflowPhaseStatus.waiting,
       detail: 'Waiting for graph projection to complete.',
     ),
@@ -1560,7 +1562,7 @@ List<HistoricalArchivesWorkflowPhaseViewModel> _failedArchiveImportPhases({
       detail: 'Selected archive metadata was already validated in preflight.',
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Normalizing records into canonical ledger format',
+      label: 'Normalizing records for source-scoped import',
       status: HistoricalArchivesWorkflowPhaseStatus.failed,
       detail: detail,
     ),
@@ -1580,7 +1582,7 @@ List<HistoricalArchivesWorkflowPhaseViewModel> _failedArchiveImportPhases({
       detail: 'Skipped because archive import did not complete successfully.',
     ),
     const HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Refreshing app-visible data',
+      label: 'Refreshing shared evidence surfaces',
       status: HistoricalArchivesWorkflowPhaseStatus.skipped,
       detail: 'Skipped because archive import did not complete successfully.',
     ),
@@ -1602,9 +1604,9 @@ List<HistoricalArchivesWorkflowPhaseViewModel> _completedArchiveImportPhases({
       detail: 'Selected archive metadata was validated successfully.',
     ),
     const HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Normalizing records into canonical ledger format',
+      label: 'Normalizing records for source-scoped import',
       status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
-      detail: 'Canonical importers normalized archive rows successfully.',
+      detail: 'Source-scoped importers normalized archive rows successfully.',
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
       label: 'Writing archive rows to source-scoped import',
@@ -1623,9 +1625,9 @@ List<HistoricalArchivesWorkflowPhaseViewModel> _completedArchiveImportPhases({
       detail: 'Projection rebuild steps completed successfully.',
     ),
     const HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Refreshing app-visible data',
+      label: 'Refreshing shared evidence surfaces',
       status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
-      detail: 'App-visible data was refreshed successfully.',
+      detail: 'Shared message evidence surfaces refreshed successfully.',
     ),
     const HistoricalArchivesWorkflowPhaseViewModel(
       label: 'Complete',

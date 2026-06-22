@@ -35,7 +35,7 @@ void main() {
     );
 
     test(
-      'reports busy execution gate when canonical import pipeline owns it',
+      'reports busy execution gate when source-scoped import pipeline owns it',
       () {
         final model = buildHistoricalArchivesWorkflowPanelModel(
           executionGateState: const GraphMaintenanceExecutionGateState(
@@ -58,7 +58,7 @@ void main() {
         expect(model.statusLabel, 'Execution Gate Busy');
         expect(
           model.summaryText,
-          contains('canonical import pipeline is currently busy'),
+          contains('source-scoped import pipeline is currently busy'),
         );
         expect(
           model.importButtonDetail,

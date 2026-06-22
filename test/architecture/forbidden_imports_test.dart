@@ -70,6 +70,9 @@ const Set<String> _legacyTerminologyAllowedFiles = <String>{};
 
 const List<String> _retiredHistoricalArchiveUiPhrases = <String>[
   'canonical message ledger',
+  'canonical ledger',
+  'canonical import',
+  'app-visible data',
   'normal app surfaces',
   'normal timeline',
   'fully wired',

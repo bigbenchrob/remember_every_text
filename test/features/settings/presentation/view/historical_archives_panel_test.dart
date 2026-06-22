@@ -13,7 +13,7 @@ void main() {
       const model = HistoricalArchivesWorkflowPanelViewModel(
         statusLabel: 'Ready For Import',
         summaryText:
-            'A previously selected archive has completed preflight and is ready for canonical import.',
+            'A previously selected archive has completed preflight and is ready for source-scoped import.',
         executionGate: HistoricalArchivesExecutionGateViewModel(
           status: HistoricalArchivesExecutionGateStatus.available,
           statusLabel: 'Available',
@@ -69,7 +69,7 @@ void main() {
             detail: 'Archive source metadata was read successfully.',
           ),
           HistoricalArchivesWorkflowPhaseViewModel(
-            label: 'Normalizing records into canonical ledger format',
+            label: 'Normalizing records for source-scoped import',
             status: HistoricalArchivesWorkflowPhaseStatus.running,
             detail: 'Normalization is in progress.',
           ),
