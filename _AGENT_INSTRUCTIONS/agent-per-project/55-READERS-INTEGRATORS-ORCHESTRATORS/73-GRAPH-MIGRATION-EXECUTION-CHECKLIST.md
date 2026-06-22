@@ -3146,6 +3146,10 @@ criteria.
   warning. Removed a stale navigation placeholder-removal comment, and added an
   architecture tripwire preventing hand-written Dart from reintroducing
   `unused_local_variable` ignores.
+- Replaced the root window-state background-save silent swallow with a
+  structured warning through the app logger. Save failures remain non-fatal,
+  but now surface with context instead of disappearing behind imperative
+  cleanup behavior.
 
 ### Exit Criteria
 

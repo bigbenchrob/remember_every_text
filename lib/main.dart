@@ -86,8 +86,21 @@ class _MyDelegate extends NSWindowDelegate {
         container
             .read(windowStateServiceProvider)
             .saveCurrentWindowState(includeSize: includeSize)
-            .catchError((error) {
-              // Silently ignore errors in background saves
+            .catchError((Object error, StackTrace stackTrace) {
+              container
+                  .read(appLoggerProvider.notifier)
+                  .warn(
+                    'Failed to save window state: $error',
+                    source: 'WindowState',
+                    context: {
+                      'includeSize': includeSize.toString(),
+                      'stack': stackTrace
+                          .toString()
+                          .split('\n')
+                          .take(10)
+                          .join('\n'),
+                    },
+                  );
             });
       });
     }
