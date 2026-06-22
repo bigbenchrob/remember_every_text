@@ -3127,6 +3127,20 @@ criteria.
   derived-file versus retired historical cleanup-file split in code. Reset
   behavior is unchanged; the naming now makes clear that retained
   `macos_import.db` / `working.db` files are only cleanup-check targets.
+- Aligned active Historical Archives settings copy with the source-scoped graph
+  path. The sidebar and workflow now describe older Messages folders as
+  source-scoped import facts projected into the conversation graph and shared
+  message evidence surfaces, not as a separate canonical message ledger or
+  future-only app visibility path.
+- Added an architecture tripwire that prevents retired Historical Archives UI
+  wording from returning to active `lib/` code. Banned phrases include
+  "canonical ledger", "canonical import", "app-visible data", "normal app
+  surfaces", and provider-visible `working.db` wording.
+- Normalized Historical Archives workflow phase labels and focused tests to use
+  source-scoped import, graph projection, and shared evidence-surface language.
+  Internal source-scoped "import ledger" terminology remains valid inside graph
+  status/repository boundaries, but user-facing workflow copy no longer implies
+  retained `macos_import.db` / `working.db` authority.
 
 ### Exit Criteria
 
