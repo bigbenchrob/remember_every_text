@@ -3216,6 +3216,10 @@ criteria.
   infrastructure/provider boundary instead of raw debug output. URL preview
   failures remain non-fatal and still fall back to a simple link tile, but now
   produce structured app-log context.
+- Added an architecture tripwire for `debugPrint`/`debugPrintStack` usage so
+  future debug output remains confined to explicit startup, logging, and
+  low-level diagnostic boundaries instead of reappearing in feature or
+  application code.
 
 ### Exit Criteria
 

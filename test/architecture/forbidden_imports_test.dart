@@ -68,6 +68,16 @@ const Set<String> _sourceScopedSqlBitExtractionAllowedFiles = {
 
 const Set<String> _legacyTerminologyAllowedFiles = <String>{};
 
+const Set<String> _debugPrintAllowedFiles = {
+  'lib/essentials/logging/infrastructure/log_export_service.dart',
+  'lib/essentials/logging/infrastructure/pipeline_incident_storage.dart',
+  'lib/essentials/window_state/application/window_state_service.dart',
+  'lib/essentials/window_state/infrastructure/persistence/macos_window_manager.dart',
+  'lib/essentials/window_state/infrastructure/persistence/overlay_window_storage.dart',
+  'lib/essentials/window_state/infrastructure/persistence/shared_preferences_window_storage.dart',
+  'lib/main.dart',
+};
+
 const List<String> _retiredHistoricalArchiveUiPhrases = <String>[
   'canonical message ledger',
   'canonical ledger',
@@ -423,6 +433,23 @@ void main() {
           reason:
               'Raw print calls should not spread through application code. Use '
               'the app logger or an explicit diagnostic boundary instead.\n'
+              'Actual users:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
+    test(
+      'Debug print usage stays behind approved diagnostic boundaries',
+      () async {
+        final offenders = await _findDebugPrintOffenders();
+
+        expect(
+          offenders,
+          orderedEquals(_debugPrintAllowedFiles.toList()..sort()),
+          reason:
+              'debugPrint calls should stay limited to explicit startup, logging, '
+              'or low-level diagnostic boundaries. Feature/application failures '
+              'should use the app logger or a named diagnostic boundary.\n'
               'Actual users:\n${offenders.join('\n')}',
         );
       },
@@ -8496,6 +8523,27 @@ Future<List<String>> _findRawPrintOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (rawPrintPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findDebugPrintOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final debugPrintPattern = RegExp(r'\bdebugPrint(?:Stack)?\(');
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (debugPrintPattern.hasMatch(uncommented)) {
       offenders.add(filePath);
     }
   }
