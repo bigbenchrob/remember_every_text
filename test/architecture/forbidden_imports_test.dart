@@ -83,6 +83,11 @@ const Set<String> _silentCatchAllowedFiles = {
   'lib/features/messages/presentation/widgets/url_preview_widget.dart',
 };
 
+const Set<String> _catchErrorAllowedFiles = {
+  'lib/essentials/sidebar/application/sidebar_flow_state_provider.dart',
+  'lib/main.dart',
+};
+
 const List<String> _retiredHistoricalArchiveUiPhrases = <String>[
   'canonical message ledger',
   'canonical ledger',
@@ -477,6 +482,20 @@ void main() {
         );
       },
     );
+
+    test('catchError usage stays behind approved async boundaries', () async {
+      final offenders = await _findCatchErrorOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_catchErrorAllowedFiles.toList()..sort()),
+        reason:
+            'Future.catchError chains should stay limited to explicit async '
+            'persistence/scheduling boundaries. Prefer try/catch with typed '
+            'logging inside ordinary application workflows.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
 
     test(
       'Sidebar semantic/application imports do not grow beyond tracked temporary exceptions',
@@ -8588,6 +8607,26 @@ Future<List<String>> _findSilentCatchOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (silentCatchPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findCatchErrorOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (uncommented.contains('.catchError(')) {
       offenders.add(filePath);
     }
   }

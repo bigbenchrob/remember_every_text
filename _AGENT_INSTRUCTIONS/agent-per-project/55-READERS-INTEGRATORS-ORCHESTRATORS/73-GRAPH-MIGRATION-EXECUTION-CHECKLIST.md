@@ -3224,6 +3224,10 @@ criteria.
   Current silent catches are limited to the log-writer failure-degradation path
   and URL-domain fallback parsing; new ordinary application failures must be
   logged or represented as typed state.
+- Added an architecture tripwire for `.catchError` usage. Existing calls remain
+  confined to window-state scheduling and sidebar preference persistence;
+  ordinary workflows should prefer explicit `try`/`catch` blocks with typed
+  logging or state.
 
 ### Exit Criteria
 
