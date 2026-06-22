@@ -3212,6 +3212,10 @@ criteria.
 - Replaced raw video message tile debug prints with structured app-logger
   warnings. Thumbnail, activation, and disposal failures remain non-fatal, but
   shared evidence media failures now carry stage and attachment-path context.
+- Routed native link-preview metadata failures through the external-links
+  infrastructure/provider boundary instead of raw debug output. URL preview
+  failures remain non-fatal and still fall back to a simple link tile, but now
+  produce structured app-log context.
 
 ### Exit Criteria
 

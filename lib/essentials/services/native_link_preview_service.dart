@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:typed_data';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+
+typedef NativeLinkPreviewFailureLogger =
+    void Function(String url, Object error, StackTrace stackTrace);
 
 /// Metadata returned from Apple's LinkPresentation framework
 class NativeLinkMetadata {
@@ -35,6 +37,9 @@ class _CacheEntry {
 ///
 /// Includes an in-memory LRU cache to avoid refetching on scroll.
 class NativeLinkPreviewService {
+  NativeLinkPreviewService({NativeLinkPreviewFailureLogger? logFailure})
+    : _logFailure = logFailure;
+
   static const _channel = MethodChannel('com.remember_this_text/link_preview');
 
   /// Maximum number of cached previews.
@@ -48,6 +53,8 @@ class NativeLinkPreviewService {
 
   /// URLs currently being fetched (prevents duplicate concurrent requests).
   static final Set<String> _pendingUrls = {};
+
+  final NativeLinkPreviewFailureLogger? _logFailure;
 
   /// Fetch metadata for a URL using Apple's LinkPresentation framework.
   /// Returns null if the platform doesn't support it or if fetching fails.
@@ -123,11 +130,11 @@ class NativeLinkPreviewService {
       _addToCache(url, metadata);
       return metadata;
     } on PlatformException catch (e, stackTrace) {
-      _debugMetadataFailure(url, e, stackTrace);
+      _logFailure?.call(url, e, stackTrace);
       _addToCache(url, null);
       return null;
     } catch (e, stackTrace) {
-      _debugMetadataFailure(url, e, stackTrace);
+      _logFailure?.call(url, e, stackTrace);
       _addToCache(url, null);
       return null;
     } finally {
@@ -147,14 +154,5 @@ class NativeLinkPreviewService {
   static void clearCache() {
     _cache.clear();
     _pendingUrls.clear();
-  }
-
-  void _debugMetadataFailure(String url, Object error, StackTrace stackTrace) {
-    if (!kDebugMode) {
-      return;
-    }
-
-    debugPrint('Native link preview metadata failed for $url: $error');
-    debugPrintStack(stackTrace: stackTrace);
   }
 }

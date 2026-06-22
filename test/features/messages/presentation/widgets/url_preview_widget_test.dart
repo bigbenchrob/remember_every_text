@@ -123,4 +123,32 @@ void main() {
       expect(find.text('Image Preview Title'), findsOneWidget);
     });
   });
+
+  group('NativeLinkPreviewService', () {
+    test('logs metadata failures while preserving null fallback', () async {
+      Object? loggedError;
+      StackTrace? loggedStackTrace;
+      String? loggedUrl;
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+            throw PlatformException(code: 'link-preview-failed');
+          });
+
+      final service = NativeLinkPreviewService(
+        logFailure: (url, error, stackTrace) {
+          loggedUrl = url;
+          loggedError = error;
+          loggedStackTrace = stackTrace;
+        },
+      );
+
+      final result = await service.fetchMetadata('https://example.com/fails');
+
+      expect(result, isNull);
+      expect(loggedUrl, 'https://example.com/fails');
+      expect(loggedError, isA<PlatformException>());
+      expect(loggedStackTrace, isNotNull);
+    });
+  });
 }

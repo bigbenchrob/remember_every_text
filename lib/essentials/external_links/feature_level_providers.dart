@@ -1,6 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../logging/feature_level_providers.dart';
 import '../services/native_link_preview_service.dart';
 import 'application/external_uri_opener.dart';
 import 'application/link_preview_metadata_reader.dart';
@@ -16,7 +17,23 @@ ExternalUriOpener externalUriOpener(Ref ref) {
 
 @riverpod
 LinkPreviewMetadataReader linkPreviewMetadataReader(Ref ref) {
-  return NativeLinkPreviewMetadataReader();
+  return NativeLinkPreviewMetadataReader(
+    service: NativeLinkPreviewService(
+      logFailure: (url, error, stackTrace) {
+        ref
+            .read(appLoggerProvider.notifier)
+            .warn(
+              'Native link preview metadata failed',
+              source: 'NativeLinkPreviewService',
+              context: <String, Object?>{
+                'url': url,
+                'error': error.toString(),
+                'stackTrace': stackTrace.toString(),
+              },
+            );
+      },
+    ),
+  );
 }
 
 @riverpod
