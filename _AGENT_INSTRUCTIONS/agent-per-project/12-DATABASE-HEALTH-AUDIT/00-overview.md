@@ -2,7 +2,7 @@
 tier: project
 scope: database-health-audit
 owner: agent-per-project
-last_reviewed: 2026-06-20
+last_reviewed: 2026-06-22
 source_of_truth: code
 links:
   - ./README.md
@@ -129,6 +129,14 @@ The report includes:
 - `invariant_checks`
 - `summary`
 - `errors`
+
+The top-level `summary` is intentionally **active-health scoped**. Its
+`overall_status`, warning/fail/error counts, headline findings, and `table_count`
+describe active app databases only: source-scoped import, conversation graph,
+and overlay. Retired `macos_import.db` / `working.db` cleanup files may still
+appear in detailed `databases`, `table_inventory`, relationship checks, or
+invariant checks, but they must not make app health look degraded merely because
+old cleanup tables are absent or empty.
 
 Phase 1 relationship checks currently include source-scoped graph checks, retired cleanup/diagnostic checks, and counts plus percentages where applicable:
 
