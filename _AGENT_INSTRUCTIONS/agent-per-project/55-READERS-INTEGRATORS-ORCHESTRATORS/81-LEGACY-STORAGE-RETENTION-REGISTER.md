@@ -188,7 +188,7 @@ metadata wrapper.
 The unused generic retained archive metadata `countRows` helper has also been
 removed; row-count diagnostics now belong to the database-health query layer
 rather than the archive-source metadata wrapper.
-The retained archive batch-count compatibility read has been removed as well.
+The old retained archive batch-count read has been removed as well.
 Historical Archives source management now describes the source-scoped removal
 target directly instead of reading old `macos_import.db.import_batches` rows.
 Retained archive-source batch ID and import-start timestamp fields have been

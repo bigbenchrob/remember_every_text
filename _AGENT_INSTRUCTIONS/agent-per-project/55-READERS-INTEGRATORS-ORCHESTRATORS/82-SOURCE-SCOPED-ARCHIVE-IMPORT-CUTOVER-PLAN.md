@@ -67,7 +67,7 @@ archive chat.db
 The retained bridge no longer blocks ordinary archive execution. Remaining
 work is cleanup/diagnostic retirement:
 
-- retained `macos_import.db` archive-source metadata compatibility
+- retired `macos_import.db` archive-source metadata cleanup inventory
 - retained `working.db` historical/recovered-message cleanup inventory
 - retained schema/health diagnostics that inventory those files
 - overlay archive rows that still use the old `(message_guid,
@@ -155,7 +155,7 @@ originally scoped as:
 That first slice has been superseded by the current source-scoped archive graph
 workflow. Historical Archives import/removal now uses the graph path; retained
 `macos_import.db` / `working.db` files remain only as cleanup/diagnostic
-compatibility until final storage retirement.
+inventory until final storage retirement.
 
 ## Import Strategy
 
@@ -340,7 +340,7 @@ Add focused tests for:
 - source-scoped rich-text enrichment only touches selected archive source.
 - full projection is idempotent after archive import.
 - retained archive import/removal is graph-backed; retained files remain only
-  as cleanup/diagnostic compatibility until final storage retirement.
+  as cleanup/diagnostic inventory until final storage retirement.
 
 ## Do Not Do Yet
 
