@@ -3251,6 +3251,10 @@ criteria.
   `Platform.isMacOS`, OS metadata, and `Platform.resolvedExecutable`. Runtime
   platform decisions remain owned by bootstrap, infrastructure, or explicit
   system-adapter boundaries.
+- Added an architecture tripwire for `Timer` usage. Polling, debounce, delayed
+  cleanup, and scoped cache expiry remain confined to named lifecycle/status/
+  shell/evidence-spine boundaries; timers must not become ordinary imperative
+  repair logic.
 
 ### Exit Criteria
 

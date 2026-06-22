@@ -158,6 +158,15 @@ const Set<String> _platformRuntimeAllowedFiles = {
   'lib/main.dart',
 };
 
+const Set<String> _timerAllowedFiles = {
+  'lib/essentials/conversation_graph/application/monitor/chat_db_change_monitor_provider.dart',
+  'lib/essentials/conversation_graph/presentation/status/conversation_graph_status_sheet.dart',
+  'lib/essentials/navigation/presentation/view/macos_app_shell.dart',
+  'lib/features/messages/application/message_evidence/message_evidence_spine_provider.dart',
+  'lib/features/messages/presentation/view_model/shared/display_widgets/new_display_widgets.dart',
+  'lib/main.dart',
+};
+
 const List<String> _retiredHistoricalArchiveUiPhrases = <String>[
   'canonical message ledger',
   'canonical ledger',
@@ -653,6 +662,21 @@ void main() {
             'Platform runtime checks should stay in bootstrap, infrastructure, '
             'or explicit system adapters. Feature/application/presentation code '
             'should depend on named runtime environment boundaries.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Timer usage stays behind approved lifecycle boundaries', () async {
+      final offenders = await _findTimerUsageOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_timerAllowedFiles.toList()..sort()),
+        reason:
+            'Timers create lifecycle and invalidation pressure. Keep polling, '
+            'debounce, and delayed cleanup inside explicit monitor, shell, '
+            'status, cache, or evidence-spine boundaries; do not use timers as '
+            'imperative repair in ordinary feature logic.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -8921,6 +8945,27 @@ Future<List<String>> _findPlatformRuntimeOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (runtimePattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findTimerUsageOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final timerPattern = RegExp(r'\bTimer(?:\.periodic)?\s*\(');
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (timerPattern.hasMatch(uncommented)) {
       offenders.add(filePath);
     }
   }
