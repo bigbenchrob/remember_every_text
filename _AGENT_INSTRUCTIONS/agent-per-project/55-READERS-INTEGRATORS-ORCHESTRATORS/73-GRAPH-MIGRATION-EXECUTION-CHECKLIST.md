@@ -3150,6 +3150,10 @@ criteria.
   structured warning through the app logger. Save failures remain non-fatal,
   but now surface with context instead of disappearing behind imperative
   cleanup behavior.
+- Retired an unreferenced `core/extension_methods/datetime_extensions.dart`
+  utility after confirming no active imports or extension-member uses remained.
+  This removed stale calendar-replacement wording and file-level analyzer
+  suppressions from dormant code.
 
 ### Exit Criteria
 
