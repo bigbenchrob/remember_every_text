@@ -314,6 +314,19 @@ void main() {
       );
     });
 
+    test('Hand-written Dart does not suppress unused locals', () async {
+      final offenders = await _findUnusedLocalVariableIgnoreOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Unused-local ignores hide unclear ownership. Keep values alive '
+            'through an explicitly named owner, or remove the value.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Active lib comments avoid ambiguous old-system shorthand', () async {
       final offenders = await _findAmbiguousOldSystemPhraseOffenders();
 
@@ -8292,6 +8305,31 @@ Future<List<String>> _findActiveTodoFixmeOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (markerPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findUnusedLocalVariableIgnoreOffenders() async {
+  final files = await _collectProjectDartFiles((path) {
+    if (path.endsWith('.g.dart') ||
+        path.endsWith('.freezed.dart') ||
+        path == 'lib/frb_generated.dart' ||
+        path == 'lib/frb_generated.io.dart' ||
+        path == 'lib/frb_generated.web.dart' ||
+        path == 'test/architecture/forbidden_imports_test.dart') {
+      return false;
+    }
+    return path.startsWith('lib/') || path.startsWith('test/');
+  });
+  const marker = 'ignore: unused_local_variable';
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    if (source.contains(marker)) {
       offenders.add(filePath);
     }
   }

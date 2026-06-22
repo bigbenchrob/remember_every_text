@@ -3141,6 +3141,11 @@ criteria.
   Internal source-scoped "import ledger" terminology remains valid inside graph
   status/repository boundaries, but user-facing workflow copy no longer implies
   retained `macos_import.db` / `working.db` authority.
+- Made the root macOS window delegate lifetime explicit by retaining its
+  delegate handle in a named owner instead of suppressing an unused-local
+  warning. Removed a stale navigation placeholder-removal comment, and added an
+  architecture tripwire preventing hand-written Dart from reintroducing
+  `unused_local_variable` ignores.
 
 ### Exit Criteria
 

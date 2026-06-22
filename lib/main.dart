@@ -94,6 +94,8 @@ class _MyDelegate extends NSWindowDelegate {
   }
 }
 
+final List<Object> _retainedWindowDelegateHandles = <Object>[];
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -157,8 +159,9 @@ void main() async {
   /// with other plugins. Set it to true if you wish to use NSWindowDelegate.
   /// WindowManipulator.initialize(enableWindowDelegate: true);
   final delegate = _MyDelegate();
-  // ignore: unused_local_variable
-  final handle = WindowManipulator.addNSWindowDelegate(delegate);
+  _retainedWindowDelegateHandles.add(
+    WindowManipulator.addNSWindowDelegate(delegate),
+  );
 
   final brightness =
       sched.SchedulerBinding.instance.platformDispatcher.platformBrightness;
