@@ -71,7 +71,7 @@ External tools are for:
 - sanity checks when source-db behavior contradicts import assumptions
 
 They are not the source of truth for MessageLens architecture. Internal
-source-scoped import, graph projection, retired storage/reference behavior, and UI
+source-scoped import, graph projection, retired cleanup/diagnostic behavior, and UI
 decisions remain governed by this repository's docs and code.
 
 Do not copy external export semantics into MessageLens without reconciling them against current internal boundaries:

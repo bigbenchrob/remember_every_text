@@ -130,7 +130,7 @@ The report includes:
 - `summary`
 - `errors`
 
-Phase 1 relationship checks currently include source-scoped graph checks, retired storage/reference checks, and counts plus percentages where applicable:
+Phase 1 relationship checks currently include source-scoped graph checks, retired cleanup/diagnostic checks, and counts plus percentages where applicable:
 
 - `matched_percentage`
 - `unmatched_parent_percentage`

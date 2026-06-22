@@ -268,7 +268,7 @@ Recommended disposition:
 
 Current role:
 
-- retained historical/reference file if present in old data folders
+- retired historical cleanup/diagnostic file if present in old data folders
 - reset cleanup target
 - possible diagnostic/file-inventory context
 
@@ -294,8 +294,9 @@ Classification summary:
 
 Retirement blockers:
 
-1. Conservative storage policy still lists `working.db` as retained historical
-   reference storage.
+1. Conservative storage policy still listed `working.db` as retained historical
+   reference storage; current policy demotes it to retired cleanup/diagnostic
+   storage.
 2. Reset still deletes it as a derived data base name.
 3. Any remaining support documentation must be updated so `working.db` is not
    implied to be a recovery authority.
@@ -303,9 +304,8 @@ Retirement blockers:
 Recommended disposition:
 
 - treat `working.db` as the first legacy DB eligible for explicit retirement.
-- convert references from "retained historical reference database" to
-  "retired file cleanup target" once final dependency scan confirms no active
-  reader.
+- convert remaining references from "retained historical reference database" to
+  "retired file cleanup target" as dependency scans confirm no active reader.
 - do not build new graph-era recovery logic that consults `working.db`.
 
 ## Archive / Recovery Risk Assessment

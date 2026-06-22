@@ -398,9 +398,9 @@ Current status update:
 - Historical Archives import/removal now uses source-scoped graph services
   directly; the retained archive pipeline bridge has been retired
 
-The remaining issue is retained storage/reference retirement: old
+The remaining issue is retained cleanup/diagnostic retirement: old
 `macos_import.db` / `working.db` files may still exist for diagnostics,
-historical interpretation, or user-safe retention, but ordinary production
+historical inventory, or user-safe cleanup, but ordinary production
 ownership now belongs to source-scoped import and graph projection.
 
 ## Search
@@ -430,7 +430,7 @@ names win everywhere and overlay writes remain overlay-only.
 ## Chats Feature
 
 Conversation sidebar/signature and recent-chat product reads are graph-backed.
-Any remaining legacy chat/read-model code is diagnostic/reference or retained
+Any remaining legacy chat/read-model code is diagnostic/historical or retained
 legacy schema, not an ordinary product conversation model.
 
 ## Attachments and Recovery
@@ -459,7 +459,7 @@ process explicitly.
 
 Historical archive dry-run tools now compare selected archive `chat.db`
 evidence against the conversation graph. Retained `macos_import.db` /
-`working.db` may remain as storage/reference files, but they are no longer the
+`working.db` may remain as cleanup/diagnostic files, but they are no longer the
 ordinary archive dry-run comparison source.
 
 ---
@@ -647,7 +647,7 @@ Current status update:
 - evidence surfaces refresh through graph/message data-version invalidation.
 
 The remaining lifecycle work is not ordinary graph ownership. It is retained
-storage/reference policy for old `macos_import.db` / `working.db` files and
+cleanup/diagnostic policy for old `macos_import.db` / `working.db` files and
 continued hardening of diagnostics around the graph lifecycle.
 
 ## Completed Work
@@ -1019,7 +1019,7 @@ Completed for execution code:
 6. Remove old read repositories.
 7. Remove old import/migration execution code.
 
-Remaining for retained storage/reference:
+Remaining for retained cleanup/diagnostic storage:
 
 1. Keep retained storage uses registered and bounded.
 2. Replace retained metadata keys with graph/source-scoped equivalents where
@@ -1055,7 +1055,7 @@ The following early roadmap slices are now complete for ordinary app behavior:
 
 ## Remaining Recommended Slices
 
-1. Retained storage/reference policy:
+1. Retained cleanup/diagnostic policy:
    decide what to keep, export, or delete for old `macos_import.db` /
    `working.db` files.
 2. Archive overlay key evolution:

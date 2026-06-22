@@ -50,7 +50,7 @@ such as "do not remove retained legacy path" describe the pre-cutover safety
 posture and should not be read as the current default execution path. As of
 2026-06-08, the retained archive import/projection execution path has been
 removed from production code; retained `macos_import.db` / `working.db` are
-storage/reference-retirement questions only.
+cleanup/diagnostic-retirement questions only.
 
 ## Current State
 
@@ -65,10 +65,10 @@ archive chat.db
 ```
 
 The retained bridge no longer blocks ordinary archive execution. Remaining
-work is storage/reference cleanup:
+work is cleanup/diagnostic retirement:
 
 - retained `macos_import.db` archive-source metadata compatibility
-- retained `working.db` historical/recovered-message reference storage
+- retained `working.db` historical/recovered-message cleanup inventory
 - retained schema/health diagnostics that inventory those files
 - overlay archive rows that still use the old `(message_guid,
   import_attachment_id)` key shape
@@ -84,7 +84,7 @@ The source-scoped import schema already has the right shape:
 
 Archive-source registration and graph archive orchestration have since been
 implemented. The remaining production work is not another retained archive
-execution bridge; it is storage/reference cleanup, archive metadata retirement,
+execution bridge; it is cleanup/diagnostic retirement, archive metadata retirement,
 and eventual migration or freezing of old archive compatibility keys.
 
 ## Hard Invariants
@@ -154,7 +154,7 @@ originally scoped as:
 
 That first slice has been superseded by the current source-scoped archive graph
 workflow. Historical Archives import/removal now uses the graph path; retained
-`macos_import.db` / `working.db` files remain only as storage/reference
+`macos_import.db` / `working.db` files remain only as cleanup/diagnostic
 compatibility until final storage retirement.
 
 ## Import Strategy
@@ -315,15 +315,15 @@ source-scoped archive service.
 
 Historical pre-cutover note: this step originally made the retained path a
 fallback/diagnostic path. That fallback has since been removed from production
-code; diagnostics now inspect retained files as historical/reference storage.
+code; diagnostics now inspect retained files as historical cleanup/diagnostic storage.
 
 ### Stage 4 - Retire Retained Legacy Bridge
 
 Historical pre-cutover note: this stage is complete for execution code.
 `RetainedLegacyArchivePipeline`, unused retained importers/migrators, and their
 execution-path tests have been removed from production code. The remaining
-question is storage/reference policy: decide whether retained
-`macos_import.db` / `working.db` files remain historical storage or are deleted
+question is cleanup/diagnostic policy: decide whether retained
+`macos_import.db` / `working.db` files remain inert historical inventory or are deleted
 by reset/cleanup after the retention criteria are satisfied.
 
 ## Tests Needed
@@ -340,7 +340,7 @@ Add focused tests for:
 - source-scoped rich-text enrichment only touches selected archive source.
 - full projection is idempotent after archive import.
 - retained archive import/removal is graph-backed; retained files remain only
-  as storage/reference compatibility until final storage retirement.
+  as cleanup/diagnostic compatibility until final storage retirement.
 
 ## Do Not Do Yet
 

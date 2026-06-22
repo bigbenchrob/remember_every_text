@@ -36,7 +36,7 @@ The retained database files no longer own ordinary evidence, search, contact
 identity, conversation browsing, live polling, Historical Archives execution,
 or first-run graph setup. New ordinary app behavior must not read or write
 them. Remaining access is allowed only when it is explicitly classified in this
-register as retired storage/reference evidence.
+register as retired cleanup/diagnostic evidence.
 
 The safe next stage is:
 
@@ -284,7 +284,7 @@ identify stale-data, compatibility, and recovery conditions.
 Diagnostic reads are allowed to look across layers as long as they do not make
 retained storage authoritative for ordinary feature behavior.
 Database health now treats retained `working.db` as recovered-message retired
-storage/reference evidence plus minimal projection-state storage sanity. Ordinary
+cleanup/diagnostic evidence plus minimal projection-state storage sanity. Ordinary
 message/chat/contact/handle/attachment/reaction health belongs to
 `working_ss.db`; retained `working.db` ordinal indexes are no longer audited as
 timeline infrastructure because graph evidence skeletons own timeline
@@ -437,7 +437,7 @@ execution. It is retired-file storage reduction:
 ```text
 reduce each retired macos_import.db / working.db purpose behind the retention
 register, without letting either file become ordinary app authority or permanent
-reference storage
+storage
 ```
 
 Closing that blocker would unlock the remaining storage simplification:
