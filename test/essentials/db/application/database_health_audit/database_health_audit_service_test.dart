@@ -82,7 +82,7 @@ void main() {
     );
 
     test(
-      'treats retired macos import database as cleanup storage only',
+      'treats retired macos import database as cleanup inventory only',
       () async {
         final service = _buildService(
           hasFullDiskAccess: true,
@@ -132,7 +132,7 @@ void main() {
       },
     );
 
-    test('treats retired working database as cleanup storage only', () async {
+    test('treats retired working database as cleanup inventory only', () async {
       final service = _buildService(
         hasFullDiskAccess: true,
         queryLayers: <DatabaseHealthQueryLayer>[
@@ -189,7 +189,7 @@ void main() {
       expect(
         retiredRecoveredRelationship.notes,
         contains(
-          'Retired recovered-message reference check; ordinary attachment edges are graph-owned.',
+          'Retired recovered-message cleanup check; ordinary attachment edges are graph-owned.',
         ),
       );
       expect(

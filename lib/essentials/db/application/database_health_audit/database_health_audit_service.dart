@@ -667,7 +667,7 @@ _tableSpecsByDatabase = <String, List<AuditTableSpec>>{
     AuditTableSpec(
       tableName: 'schema_migrations',
       notes: <String>[
-        'Retired historical cleanup storage only; graph readiness is app-facing.',
+        'Retired historical cleanup inventory only; graph readiness is app-facing.',
       ],
     ),
     AuditTableSpec(
@@ -689,7 +689,7 @@ _tableSpecsByDatabase = <String, List<AuditTableSpec>>{
         AuditImportantColumnSpec('has_attachments'),
       ],
       notes: <String>[
-        'Retired recovered-message reference rows; ordinary evidence lives in the graph.',
+        'Retired recovered-message cleanup rows; ordinary evidence lives in the graph.',
       ],
     ),
     AuditTableSpec(
@@ -699,7 +699,7 @@ _tableSpecsByDatabase = <String, List<AuditTableSpec>>{
         AuditImportantColumnSpec('import_attachment_id'),
         AuditImportantColumnSpec('local_path'),
       ],
-      notes: <String>['Retired recovered-message attachment reference rows.'],
+      notes: <String>['Retired recovered-message attachment cleanup rows.'],
     ),
   ],
   'source_scoped_import': <AuditTableSpec>[
@@ -919,7 +919,7 @@ _relationshipSpecsByDatabase = <String, List<_RelationshipCheckSpec>>{
       joinExpressionDescription:
           'recovered_unlinked_attachments.message_guid = recovered_unlinked_messages.guid',
       notes: <String>[
-        'Retired recovered-message reference check; ordinary attachment edges are graph-owned.',
+        'Retired recovered-message cleanup check; ordinary attachment edges are graph-owned.',
       ],
     ),
   ],
