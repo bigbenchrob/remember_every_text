@@ -68,6 +68,15 @@ const Set<String> _sourceScopedSqlBitExtractionAllowedFiles = {
 
 const Set<String> _legacyTerminologyAllowedFiles = <String>{};
 
+const List<String> _retiredHistoricalArchiveUiPhrases = <String>[
+  'canonical message ledger',
+  'normal app surfaces',
+  'normal timeline',
+  'fully wired',
+  'provider-visible working.db',
+  'working.db state',
+];
+
 const Set<String> _retainedOverlayIdentityBridgeAllowedFiles = <String>{};
 
 const Set<String> _retainedOverlayIdentityBridgeTestAllowedFiles = <String>{};
@@ -826,6 +835,22 @@ void main() {
             'Retired storage cleanup and compatibility bridges must be named for '
             'their current architectural role.\n'
             'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Historical archive UI copy uses graph evidence language', () async {
+      final offenders = await _findRetiredHistoricalArchiveUiPhraseOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Active historical-archive UI copy should describe source-scoped '
+            'import, graph projection, and shared message evidence surfaces. '
+            'Do not restore retired wording that implies a canonical legacy '
+            'message ledger, provider-visible working.db state, or future-only '
+            'visibility wiring.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
       );
     });
 
@@ -3774,6 +3799,29 @@ Future<List<String>> _findLegacyTerminologyOffenders() async {
     final uncommented = _stripComments(source);
     if (legacyTerminologyPattern.hasMatch(uncommented)) {
       offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findRetiredHistoricalArchiveUiPhraseOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final lowerSource = uncommented.toLowerCase();
+    for (final phrase in _retiredHistoricalArchiveUiPhrases) {
+      if (lowerSource.contains(phrase.toLowerCase())) {
+        offenders.add('$filePath uses retired phrase "$phrase"');
+      }
     }
   }
 

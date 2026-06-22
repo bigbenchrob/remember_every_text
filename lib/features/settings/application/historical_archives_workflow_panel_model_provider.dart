@@ -298,7 +298,7 @@ HistoricalArchivesWorkflowState buildInitialHistoricalArchivesWorkflowState() {
         detail: 'Waiting for a folder to be selected.',
       ),
       HistoricalArchivesWorkflowPhaseViewModel(
-        label: 'Normalizing records into canonical ledger format',
+        label: 'Normalizing records for source-scoped import',
         status: HistoricalArchivesWorkflowPhaseStatus.waiting,
         detail: 'No archive source has started yet.',
       ),
@@ -320,7 +320,8 @@ HistoricalArchivesWorkflowState buildInitialHistoricalArchivesWorkflowState() {
       HistoricalArchivesWorkflowPhaseViewModel(
         label: 'Refreshing app-visible data',
         status: HistoricalArchivesWorkflowPhaseStatus.waiting,
-        detail: 'Normal app surfaces are unchanged until refresh completes.',
+        detail:
+            'Shared message evidence surfaces are unchanged until refresh completes.',
       ),
       HistoricalArchivesWorkflowPhaseViewModel(
         label: 'Complete',
@@ -1228,7 +1229,8 @@ preflightHistoricalArchivesFolder({
       HistoricalArchivesWorkflowPhaseViewModel(
         label: 'Refreshing app-visible data',
         status: HistoricalArchivesWorkflowPhaseStatus.waiting,
-        detail: 'Normal app surfaces are unchanged until refresh completes.',
+        detail:
+            'Shared message evidence surfaces are unchanged until refresh completes.',
       ),
       HistoricalArchivesWorkflowPhaseViewModel(
         label: 'Complete',
