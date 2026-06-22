@@ -130,6 +130,12 @@ const Set<String> _processRunAllowedFiles = {
   'lib/features/settings/infrastructure/repositories/filesystem_message_history_coverage_report_exporter.dart',
 };
 
+const Set<String> _rawFileSinkAllowedFiles = {
+  'lib/essentials/logging/infrastructure/log_file_writer.dart',
+  'lib/essentials/logging/infrastructure/pipeline_audit_logger.dart',
+  'lib/essentials/logging/infrastructure/support_bundle_export_service.dart',
+};
+
 const Set<String> _platformChannelAllowedFiles = {
   'lib/essentials/logging/infrastructure/macos_unified_log_bridge.dart',
   'lib/essentials/services/native_link_preview_service.dart',
@@ -668,6 +674,21 @@ void main() {
             'boundaries. Feature/application code should depend on named ports, '
             'repositories, or action services instead of launching processes '
             'directly.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Raw file sinks stay behind approved boundaries', () async {
+      final offenders = await _findRawFileSinkOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_rawFileSinkAllowedFiles.toList()..sort()),
+        reason:
+            'Raw file sinks are durable side-effect boundaries. Keep openWrite '
+            'and IOSink usage inside logging/export infrastructure; ordinary '
+            'application and presentation code should use named repositories '
+            'or services.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -9037,6 +9058,27 @@ Future<List<String>> _findProcessRunOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (processPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findRawFileSinkOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final sinkPattern = RegExp(r'\b(?:IOSink|\.openWrite\s*\()');
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (sinkPattern.hasMatch(uncommented)) {
       offenders.add(filePath);
     }
   }

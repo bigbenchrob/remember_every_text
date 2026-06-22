@@ -3240,6 +3240,10 @@ criteria.
   Process execution remains confined to explicit infrastructure/system
   boundaries such as log export, Full Disk Access launching, and Rust
   extraction.
+- Added an architecture tripwire for raw file sinks. `openWrite` and `IOSink`
+  remain confined to logging/export infrastructure; ordinary application and
+  presentation code should write durable files through named repositories or
+  services.
 - Added an architecture tripwire for `path_provider` imports. Resolved paths
   remain owned by shared path/bootstrap or infrastructure services; application
   and presentation code should receive paths through named boundaries.
