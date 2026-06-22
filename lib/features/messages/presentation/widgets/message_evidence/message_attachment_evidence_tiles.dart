@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
 import '../../../application/message_evidence/message_attachment_evidence.dart';
+import '../../view_model/shared/display_widgets/message_display_metrics.dart';
 import '../../view_model/shared/display_widgets/new_display_widgets.dart';
 import '../url_preview_widget.dart';
 import 'media_tile_attachment.dart';
@@ -205,7 +206,7 @@ class _MessageUrlPreviewEvidenceTile extends StatelessWidget {
         child: UrlPreviewWidget(
           url: previewUrl,
           isFromMe: isFromMe,
-          maxWidth: MsgTheme.maxBubbleWidth,
+          maxWidth: messageMaxBubbleWidth,
         ),
       ),
     );
@@ -223,7 +224,7 @@ Widget _alignForFullWidth({required bool isFromMe, required Widget child}) {
   return Align(
     alignment: isFromMe ? Alignment.centerRight : Alignment.centerLeft,
     child: ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: MsgTheme.maxBubbleWidth),
+      constraints: const BoxConstraints(maxWidth: messageMaxBubbleWidth),
       child: child,
     ),
   );

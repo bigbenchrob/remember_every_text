@@ -4,7 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../essentials/external_links/feature_level_providers.dart';
 import '../../../../essentials/services/native_link_preview_service.dart';
-import '../view_model/shared/display_widgets/new_display_widgets.dart';
+import '../view_model/shared/display_widgets/message_display_metrics.dart';
 
 const double _previewAspectRatio = 2.0;
 const Duration _transitionDuration = Duration(milliseconds: 180);
@@ -147,11 +147,11 @@ class _UrlPreviewWidgetState extends ConsumerState<UrlPreviewWidget> {
         child: MouseRegion(
           cursor: SystemMouseCursors.click,
           child: ClipRRect(
-            borderRadius: MsgTheme.textRadius,
+            borderRadius: messageTextRadius,
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: _surfaceBackground(colors),
-                borderRadius: MsgTheme.textRadius,
+                borderRadius: messageTextRadius,
               ),
               child: child,
             ),
@@ -180,12 +180,12 @@ class _UrlPreviewWidgetState extends ConsumerState<UrlPreviewWidget> {
           child: MouseRegion(
             cursor: SystemMouseCursors.click,
             child: ClipRRect(
-              borderRadius: MsgTheme.textRadius,
+              borderRadius: messageTextRadius,
               child: DecoratedBox(
                 key: key,
                 decoration: BoxDecoration(
                   color: _surfaceBackground(colors),
-                  borderRadius: MsgTheme.textRadius,
+                  borderRadius: messageTextRadius,
                 ),
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),

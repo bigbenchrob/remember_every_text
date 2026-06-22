@@ -12,21 +12,7 @@ import '../../../../../attachments/domain/constants/attachment_provenance.dart';
 import '../../../../../attachments/domain/constants/resolved_attachment_availability.dart';
 import '../../../../../attachments/feature_level_providers.dart';
 import '../../../widgets/message_evidence/media_tile_attachment.dart';
-
-// ignore: avoid_classes_with_only_static_members
-class MsgTheme {
-  static const maxBubbleWidth = 520.0;
-  static const bubblePadding = EdgeInsets.symmetric(
-    horizontal: 12,
-    vertical: 10,
-  );
-  static const mediaRadius = BorderRadius.all(Radius.circular(14));
-  static const textRadius = BorderRadius.all(Radius.circular(16));
-  static const gapXS = SizedBox(height: 4);
-  static const gapMD = SizedBox(height: 12);
-
-  static EdgeInsets convoHPad() => const EdgeInsets.symmetric(horizontal: 14);
-}
+import 'message_display_metrics.dart';
 
 enum MessageLayout { bubble, fullWidth }
 
@@ -68,7 +54,7 @@ Widget _alignMediaForLayout({
   return Align(
     alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
     child: ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: MsgTheme.maxBubbleWidth),
+      constraints: const BoxConstraints(maxWidth: messageMaxBubbleWidth),
       child: child,
     ),
   );
@@ -86,7 +72,7 @@ Widget _alignMetadataForLayout({
   return Align(
     alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
     child: ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: MsgTheme.maxBubbleWidth),
+      constraints: const BoxConstraints(maxWidth: messageMaxBubbleWidth),
       child: child,
     ),
   );
@@ -205,9 +191,7 @@ class MessageShell extends StatelessWidget {
             : MainAxisAlignment.start,
         children: [
           ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: MsgTheme.maxBubbleWidth,
-            ),
+            constraints: const BoxConstraints(maxWidth: messageMaxBubbleWidth),
             child: child,
           ),
         ],
@@ -234,7 +218,7 @@ class MessageShell extends StatelessWidget {
         },
         children: [
           bubbleRow,
-          if (metadata != null) ...[MsgTheme.gapXS, metadata!],
+          if (metadata != null) ...[messageGapXS, metadata!],
         ],
       ),
     );
@@ -396,17 +380,17 @@ class TextMessageTile extends ConsumerWidget {
       grouping: grouping,
       child: Container(
         padding: EdgeInsets.symmetric(
-          horizontal: MsgTheme.bubblePadding.horizontal / 2,
+          horizontal: messageBubblePadding.horizontal / 2,
           vertical:
               layout == MessageLayout.fullWidth && grouping.compactTopSpacing
               ? 4
-              : MsgTheme.bubblePadding.vertical / 2,
+              : messageBubblePadding.vertical / 2,
         ),
         decoration: BoxDecoration(
           color: bg,
           borderRadius: layout == MessageLayout.fullWidth
               ? _textBorderRadiusForRole(grouping.role)
-              : MsgTheme.textRadius,
+              : messageTextRadius,
           border: borderColor == null
               ? null
               : layout == MessageLayout.fullWidth
@@ -652,7 +636,7 @@ class _MediaUnavailablePlaceholder extends ConsumerWidget {
             key: cardKey,
             decoration: BoxDecoration(
               color: colors.surfaces.surface,
-              borderRadius: MsgTheme.mediaRadius,
+              borderRadius: messageMediaRadius,
               border: Border.all(color: colors.lines.borderSubtle),
             ),
             child: Padding(
@@ -893,7 +877,7 @@ class ImageMessageTile extends ConsumerWidget {
             isMe: isMe,
             child: file != null
                 ? ClipRRect(
-                    borderRadius: MsgTheme.mediaRadius,
+                    borderRadius: messageMediaRadius,
                     child: _IntrinsicSizedMedia(
                       child: AspectRatio(
                         aspectRatio: aspectRatio,
@@ -951,7 +935,7 @@ class ImageMessageTile extends ConsumerWidget {
               ),
             ],
           if (captionText != null) ...[
-            MsgTheme.gapMD,
+            messageGapMD,
             _AttachedTextBubble(
               isMe: isMe,
               text: captionText!,
@@ -1341,7 +1325,7 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
               ),
             ],
           if (widget.captionText != null) ...[
-            MsgTheme.gapMD,
+            messageGapMD,
             _AttachedTextBubble(
               isMe: widget.isMe,
               text: widget.captionText!,
@@ -1376,11 +1360,11 @@ class _ActivatedVideoPlayer extends ConsumerWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colors.surfaces.surface,
-        borderRadius: MsgTheme.mediaRadius,
+        borderRadius: messageMediaRadius,
         border: Border.all(color: colors.lines.borderSubtle),
       ),
       child: ClipRRect(
-        borderRadius: MsgTheme.mediaRadius,
+        borderRadius: messageMediaRadius,
         child: _IntrinsicSizedMedia(
           child: ValueListenableBuilder<VideoPlayerValue>(
             valueListenable: controller,
@@ -1544,11 +1528,11 @@ class VideoActivationShell extends ConsumerWidget {
       key: const ValueKey<String>('video-activation-shell-card'),
       decoration: BoxDecoration(
         color: colors.surfaces.surface,
-        borderRadius: MsgTheme.mediaRadius,
+        borderRadius: messageMediaRadius,
         border: Border.all(color: colors.lines.borderSubtle),
       ),
       child: ClipRRect(
-        borderRadius: MsgTheme.mediaRadius,
+        borderRadius: messageMediaRadius,
         child: _IntrinsicSizedMedia(
           child: AspectRatio(
             aspectRatio: aspectRatio,
@@ -1710,12 +1694,12 @@ class _AttachedTextBubble extends ConsumerWidget {
       width: double.infinity,
       child: Container(
         padding: EdgeInsets.symmetric(
-          horizontal: MsgTheme.bubblePadding.horizontal / 2,
-          vertical: MsgTheme.bubblePadding.vertical / 2,
+          horizontal: messageBubblePadding.horizontal / 2,
+          vertical: messageBubblePadding.vertical / 2,
         ),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: MsgTheme.textRadius,
+          borderRadius: messageTextRadius,
           border: borderColor == null
               ? null
               : Border.all(color: borderColor, width: 1),
@@ -1776,11 +1760,11 @@ class LinkPreviewTile extends ConsumerWidget {
     final card = DecoratedBox(
       decoration: BoxDecoration(
         color: colors.surfaces.surface,
-        borderRadius: MsgTheme.mediaRadius,
+        borderRadius: messageMediaRadius,
         border: Border.all(color: colors.lines.borderSubtle),
       ),
       child: ClipRRect(
-        borderRadius: MsgTheme.mediaRadius,
+        borderRadius: messageMediaRadius,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -1901,7 +1885,7 @@ class DemoConversationList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
-      padding: MsgTheme.convoHPad(),
+      padding: conversationHorizontalPadding(),
       itemCount: items.length,
       itemBuilder: (context, index) {
         final message = items[index];

@@ -3166,6 +3166,10 @@ criteria.
   active consumers. Removed the old `config/colors.dart` enum surface that was
   only reachable through the retired color watcher, and regenerated Riverpod
   outputs.
+- Replaced the message display `MsgTheme` static utility class with named
+  shared presentation metrics. Message bubbles, attachment evidence tiles, and
+  URL previews still share the same sizing/radius vocabulary, but no longer
+  require a hand-written analyzer suppression in active presentation code.
 
 ### Exit Criteria
 
