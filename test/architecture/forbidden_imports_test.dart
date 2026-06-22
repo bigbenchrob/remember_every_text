@@ -177,6 +177,10 @@ const Set<String> _deferredUiCallbackAllowedFiles = {
   'lib/main.dart',
 };
 
+const Set<String> _sharedPreferencesAllowedFiles = {
+  'lib/essentials/window_state/infrastructure/persistence/shared_preferences_window_storage.dart',
+};
+
 const List<String> _retiredHistoricalArchiveUiPhrases = <String>[
   'canonical message ledger',
   'canonical ledger',
@@ -707,6 +711,20 @@ void main() {
         );
       },
     );
+
+    test('SharedPreferences stays behind approved storage boundaries', () async {
+      final offenders = await _findSharedPreferencesOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_sharedPreferencesAllowedFiles.toList()..sort()),
+        reason:
+            'SharedPreferences is platform storage, not an app-wide user-intent '
+            'store. Keep it behind explicit infrastructure ports such as window '
+            'state storage; overlay DB remains the ordinary user-intent store.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
 
     test(
       'Sidebar semantic/application imports do not grow beyond tracked temporary exceptions',
@@ -9016,6 +9034,29 @@ Future<List<String>> _findDeferredUiCallbackOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (callbackPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findSharedPreferencesOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    if (imports.contains(
+      'package:shared_preferences/shared_preferences.dart',
+    )) {
       offenders.add(filePath);
     }
   }

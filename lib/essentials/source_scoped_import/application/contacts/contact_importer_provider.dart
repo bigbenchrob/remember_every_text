@@ -2,7 +2,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../features/address_book_folders/feature_level_providers.dart';
-import '../../../../providers.dart';
 import '../../feature_level_providers.dart';
 import 'contact_importer.dart';
 
@@ -10,14 +9,7 @@ part 'contact_importer_provider.g.dart';
 
 @riverpod
 Future<ContactImporter> contactImporter(Ref ref) async {
-  final sharedPreferences = await ref.watch(sharedPreferencesProvider.future);
-  final storedAddressBookPath = sharedPreferences.getString(
-    FOLDER_PATH_FAVOURITE_KEY,
-  );
-  final addressBookDbPath =
-      storedAddressBookPath == null || storedAddressBookPath.isEmpty
-      ? await _mostRecentAddressBookPath(ref)
-      : storedAddressBookPath;
+  final addressBookDbPath = await _mostRecentAddressBookPath(ref);
   final importLedger = await ref.watch(sourceScopedImportLedgerProvider.future);
   final sourceDatabaseOpener = ref.watch(sourceDatabaseOpenerProvider);
 

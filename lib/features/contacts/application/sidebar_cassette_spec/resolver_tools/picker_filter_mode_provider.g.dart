@@ -6,7 +6,7 @@ part of 'picker_filter_mode_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$pickerFilterHash() => r'fa0dd9198d10cabe20d2eaf29977d53ed35901be';
+String _$pickerFilterHash() => r'd155b9193786d086e7e80a501732fa563648cfd6';
 
 /// See also [PickerFilter].
 @ProviderFor(PickerFilter)

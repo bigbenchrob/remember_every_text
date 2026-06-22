@@ -26,26 +26,6 @@ final platformBrightnessProvider = AutoDisposeProvider<Brightness>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef PlatformBrightnessRef = AutoDisposeProviderRef<Brightness>;
-String _$sharedPreferencesHash() => r'6c03b929f567eb6f97608f6208b95744ffee3bfd';
-
-/// The asynchronous provider of the [SharedPreferences] instance.
-///
-/// Copied from [sharedPreferences].
-@ProviderFor(sharedPreferences)
-final sharedPreferencesProvider =
-    AutoDisposeFutureProvider<SharedPreferences>.internal(
-      sharedPreferences,
-      name: r'sharedPreferencesProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$sharedPreferencesHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef SharedPreferencesRef = AutoDisposeFutureProviderRef<SharedPreferences>;
 String _$pathsHelperHash() => r'5252def1042151aa97852715b35adf65a0a9bb1c';
 
 /// The asynchronous provider of [PathsHelper].

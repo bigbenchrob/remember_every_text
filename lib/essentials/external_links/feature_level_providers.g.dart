@@ -25,7 +25,7 @@ final externalUriOpenerProvider =
 // ignore: unused_element
 typedef ExternalUriOpenerRef = AutoDisposeProviderRef<ExternalUriOpener>;
 String _$linkPreviewMetadataReaderHash() =>
-    r'ee61c22599c631a8b8f027f08085db90d0773aac';
+    r'df96c39d146dd71b4e18a76bcd8d65c78ae7f4bb';
 
 /// See also [linkPreviewMetadataReader].
 @ProviderFor(linkPreviewMetadataReader)

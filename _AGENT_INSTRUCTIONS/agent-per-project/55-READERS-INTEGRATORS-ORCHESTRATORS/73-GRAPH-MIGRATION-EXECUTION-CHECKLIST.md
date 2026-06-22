@@ -3259,6 +3259,10 @@ criteria.
   deferred UI/lifecycle tools remain confined to startup, onboarding,
   panel-stack, and evidence-timeline boundaries, rather than becoming hidden
   repair logic.
+- Added an architecture tripwire for `SharedPreferences` imports. Platform
+  preference storage remains confined to explicit infrastructure ports such as
+  window state storage; the overlay database remains the ordinary user-intent
+  store.
 
 ### Exit Criteria
 

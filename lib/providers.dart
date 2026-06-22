@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/util/paths_helper.dart';
 
@@ -14,12 +13,6 @@ part 'providers.g.dart';
 Brightness platformBrightness(Ref ref) {
   // This will be overridden in main.dart with the actual platform brightness
   return Brightness.light;
-}
-
-/// The asynchronous provider of the [SharedPreferences] instance.
-@riverpod
-Future<SharedPreferences> sharedPreferences(Ref ref) async {
-  return SharedPreferences.getInstance();
 }
 
 /// The asynchronous provider of [PathsHelper].

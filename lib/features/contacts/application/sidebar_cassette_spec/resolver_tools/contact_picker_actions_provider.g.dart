@@ -7,7 +7,7 @@ part of 'contact_picker_actions_provider.dart';
 // **************************************************************************
 
 String _$contactPickerActionsHash() =>
-    r'42c3203219ec7f5da0d6bced7d3b89257e9a1ce6';
+    r'53da766a54a517018ebe0e542af40a4ff9dd3b77';
 
 /// See also [ContactPickerActions].
 @ProviderFor(ContactPickerActions)
