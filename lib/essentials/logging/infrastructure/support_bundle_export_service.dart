@@ -138,8 +138,9 @@ class SupportBundleExportService {
       ..writeln('macOS: $macosVersion')
       ..writeln('Exported: ${now.toUtc().toIso8601String()}')
       ..writeln(
-        'Contains: diagnostic_report.log, database_health.json when available',
+        'Contains: diagnostic_report.log, active graph health, and retired cleanup inventory when available',
       )
+      ..writeln('No raw database files are included.')
       ..writeln('====================================');
 
     headerLines.forEach(buffer.writeln);
