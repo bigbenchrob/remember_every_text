@@ -181,6 +181,26 @@ const Set<String> _sharedPreferencesAllowedFiles = {
   'lib/essentials/window_state/infrastructure/persistence/shared_preferences_window_storage.dart',
 };
 
+const Set<String> _rootProvidersImportAllowedFiles = {
+  'lib/config/theme/colors/theme_colors.dart',
+  'lib/config/theme/colors/theme_colors_annotated.dart',
+  'lib/essentials/conversation_graph/application/monitor/chat_db_change_monitor_provider.dart',
+  'lib/essentials/conversation_graph/feature_level_providers.dart',
+  'lib/essentials/navigation/application/app_shell_actions_provider.dart',
+  'lib/essentials/navigation/presentation/view/macos_app_shell.dart',
+  'lib/essentials/source_scoped_import/application/attachments/attachment_importer_provider.dart',
+  'lib/essentials/source_scoped_import/application/chat_handle_joins/chat_handle_join_importer_provider.dart',
+  'lib/essentials/source_scoped_import/application/chat_message_joins/chat_message_join_importer_provider.dart',
+  'lib/essentials/source_scoped_import/application/chats/chat_importer_provider.dart',
+  'lib/essentials/source_scoped_import/application/handles/handle_importer_provider.dart',
+  'lib/essentials/source_scoped_import/application/message_attachment_joins/message_attachment_join_importer_provider.dart',
+  'lib/essentials/source_scoped_import/application/messages/message_importer_provider.dart',
+  'lib/essentials/source_scoped_import/application/messages/message_rich_text_enricher_provider.dart',
+  'lib/features/address_book_folders/feature_level_providers.dart',
+  'lib/features/attachments/feature_level_providers.dart',
+  'lib/main.dart',
+};
+
 const List<String> _retiredHistoricalArchiveUiPhrases = <String>[
   'canonical message ledger',
   'canonical ledger',
@@ -722,6 +742,21 @@ void main() {
             'SharedPreferences is platform storage, not an app-wide user-intent '
             'store. Keep it behind explicit infrastructure ports such as window '
             'state storage; overlay DB remains the ordinary user-intent store.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Root providers imports stay behind approved boundaries', () async {
+      final offenders = await _findRootProvidersImportOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_rootProvidersImportAllowedFiles.toList()..sort()),
+        reason:
+            'The root providers.dart file exposes bootstrap/theme/path-helper '
+            'providers only. New feature/application code should depend on '
+            'feature_level_providers.dart or named ports instead of importing '
+            'the root provider module directly.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -9062,6 +9097,36 @@ Future<List<String>> _findSharedPreferencesOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>> _findRootProvidersImportOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    if (imports.any(_isRootProvidersImport)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+bool _isRootProvidersImport(String importTarget) {
+  if (importTarget == 'providers.dart' ||
+      importTarget == 'package:remember_this_text/providers.dart') {
+    return true;
+  }
+  return importTarget.endsWith('/providers.dart') &&
+      !importTarget.endsWith('/feature_level_providers.dart');
 }
 
 Future<List<String>> _collectSidebarPayloadFiles() async {

@@ -3263,6 +3263,10 @@ criteria.
   preference storage remains confined to explicit infrastructure ports such as
   window state storage; the overlay database remains the ordinary user-intent
   store.
+- Added an architecture tripwire for root `providers.dart` imports. The root
+  provider module remains limited to bootstrap/theme/path-helper composition;
+  new feature/application code should depend on `feature_level_providers.dart`
+  or named ports.
 
 ### Exit Criteria
 
