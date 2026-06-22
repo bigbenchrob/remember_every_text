@@ -136,6 +136,8 @@ const Set<String> _rawFileSinkAllowedFiles = {
   'lib/essentials/logging/infrastructure/support_bundle_export_service.dart',
 };
 
+const Set<String> _appBootstrapPrimitiveAllowedFiles = {'lib/main.dart'};
+
 const Set<String> _platformChannelAllowedFiles = {
   'lib/essentials/logging/infrastructure/macos_unified_log_bridge.dart',
   'lib/essentials/services/native_link_preview_service.dart',
@@ -689,6 +691,21 @@ void main() {
             'and IOSink usage inside logging/export infrastructure; ordinary '
             'application and presentation code should use named repositories '
             'or services.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('App bootstrap primitives stay in main', () async {
+      final offenders = await _findAppBootstrapPrimitiveOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_appBootstrapPrimitiveAllowedFiles.toList()..sort()),
+        reason:
+            'runApp, framework binding initialization, media initialization, '
+            'and root platform error handling are app-bootstrap concerns. '
+            'Feature, application, and presentation code should receive an '
+            'already-initialized runtime through named providers/services.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -9079,6 +9096,29 @@ Future<List<String>> _findRawFileSinkOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (sinkPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findAppBootstrapPrimitiveOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final bootstrapPattern = RegExp(
+    r'\b(?:runApp|WidgetsFlutterBinding\.ensureInitialized|MediaKit\.ensureInitialized|PlatformDispatcher\.instance\.onError)\b',
+  );
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (bootstrapPattern.hasMatch(uncommented)) {
       offenders.add(filePath);
     }
   }

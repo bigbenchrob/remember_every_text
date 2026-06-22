@@ -3244,6 +3244,10 @@ criteria.
   remain confined to logging/export infrastructure; ordinary application and
   presentation code should write durable files through named repositories or
   services.
+- Added an architecture tripwire for app bootstrap primitives. `runApp`,
+  framework binding initialization, media initialization, and root platform
+  error handling remain confined to `main.dart`; other layers should receive an
+  initialized runtime through named providers or services.
 - Added an architecture tripwire for `path_provider` imports. Resolved paths
   remain owned by shared path/bootstrap or infrastructure services; application
   and presentation code should receive paths through named boundaries.
