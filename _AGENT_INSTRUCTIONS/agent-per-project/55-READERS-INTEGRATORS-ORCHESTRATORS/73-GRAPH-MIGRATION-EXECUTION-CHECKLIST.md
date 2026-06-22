@@ -3243,6 +3243,10 @@ criteria.
 - Added an architecture tripwire for `path_provider` imports. Resolved paths
   remain owned by shared path/bootstrap or infrastructure services; application
   and presentation code should receive paths through named boundaries.
+- Added an architecture tripwire for `Platform.environment` reads. Environment
+  values remain owned by infrastructure/system adapters that resolve runtime
+  paths or diagnostics; application and presentation code receive explicit
+  values through named boundaries.
 
 ### Exit Criteria
 

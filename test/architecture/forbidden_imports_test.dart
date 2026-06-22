@@ -136,6 +136,17 @@ const Set<String> _pathProviderImportAllowedFiles = {
   'lib/features/attachments/infrastructure/services/video_thumbnail_cache_service.dart',
 };
 
+const Set<String> _platformEnvironmentAllowedFiles = {
+  'lib/essentials/conversation_graph/infrastructure/repositories/chat_summary_repository.dart',
+  'lib/essentials/conversation_graph/infrastructure/repositories/graph_health_repository.dart',
+  'lib/essentials/db/infrastructure/repositories/local_database_health_runtime_environment.dart',
+  'lib/essentials/logging/infrastructure/log_file_writer.dart',
+  'lib/essentials/onboarding/infrastructure/system/macos_full_disk_access.dart',
+  'lib/features/attachments/infrastructure/repositories/filesystem_attachment_archive_file_store.dart',
+  'lib/features/attachments/infrastructure/repositories/local_attachment_file_access.dart',
+  'lib/features/attachments/infrastructure/repositories/sqlite_historical_snapshot_reader.dart',
+};
+
 const List<String> _retiredHistoricalArchiveUiPhrases = <String>[
   'canonical message ledger',
   'canonical ledger',
@@ -602,6 +613,24 @@ void main() {
             'Actual users:\n${offenders.join('\n')}',
       );
     });
+
+    test(
+      'Platform environment access stays behind approved boundaries',
+      () async {
+        final offenders = await _findPlatformEnvironmentOffenders();
+
+        expect(
+          offenders,
+          orderedEquals(_platformEnvironmentAllowedFiles.toList()..sort()),
+          reason:
+              'Platform.environment reads should stay in infrastructure/system '
+              'boundaries that resolve runtime paths or diagnostics. Application '
+              'and presentation code should receive explicit values through '
+              'providers, repositories, or ports.\n'
+              'Actual users:\n${offenders.join('\n')}',
+        );
+      },
+    );
 
     test(
       'Sidebar semantic/application imports do not grow beyond tracked temporary exceptions',
@@ -8823,6 +8852,27 @@ Future<List<String>> _findPathProviderImportOffenders() async {
     final uncommented = _stripComments(source);
     final imports = _extractImports(uncommented);
     if (imports.contains('package:path_provider/path_provider.dart')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findPlatformEnvironmentOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final environmentPattern = RegExp(r'\bPlatform\.environment\b');
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (environmentPattern.hasMatch(uncommented)) {
       offenders.add(filePath);
     }
   }
