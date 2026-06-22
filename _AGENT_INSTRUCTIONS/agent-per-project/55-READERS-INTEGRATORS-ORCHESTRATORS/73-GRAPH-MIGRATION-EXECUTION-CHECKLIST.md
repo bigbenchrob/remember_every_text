@@ -3190,6 +3190,10 @@ criteria.
   Contact selection remains non-blocking, but failed profile or message prewarm
   is now visible through the app logger instead of disappearing as an
   unobserved background future.
+- Added structured logging around diagnostic group-profile chat-open failures.
+  The graph status sheet still forwards selection through the chat action
+  boundary, but a failed open no longer disappears as an unobserved background
+  future.
 
 ### Exit Criteria
 
