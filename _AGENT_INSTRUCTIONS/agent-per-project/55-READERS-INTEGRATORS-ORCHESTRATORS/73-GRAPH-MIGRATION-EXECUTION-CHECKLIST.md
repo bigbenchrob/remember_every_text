@@ -3251,6 +3251,10 @@ criteria.
   framework binding initialization, media initialization, and root platform
   error handling remain confined to `main.dart`; other layers should receive an
   initialized runtime through named providers or services.
+- Added an architecture tripwire for `media_kit` imports. The media runtime
+  remains a process-wide bootstrap concern; feature media presentation should
+  use the existing shared media widgets/APIs rather than importing the runtime
+  directly.
 - Added an architecture tripwire for `macos_window_utils` access. Low-level
   NSWindow integration remains confined to app bootstrap and the window-state
   infrastructure adapter; UI/application code should use window-state actions

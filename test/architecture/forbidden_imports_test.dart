@@ -157,6 +157,8 @@ const Set<String> _rawFileSinkAllowedFiles = {
 
 const Set<String> _appBootstrapPrimitiveAllowedFiles = {'lib/main.dart'};
 
+const Set<String> _mediaKitImportAllowedFiles = {'lib/main.dart'};
+
 const Set<String> _macosWindowUtilsAllowedFiles = {
   'lib/essentials/window_state/infrastructure/persistence/macos_window_manager.dart',
   'lib/main.dart',
@@ -745,6 +747,20 @@ void main() {
             'and root platform error handling are app-bootstrap concerns. '
             'Feature, application, and presentation code should receive an '
             'already-initialized runtime through named providers/services.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Media runtime imports stay in app bootstrap', () async {
+      final offenders = await _findMediaKitImportOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_mediaKitImportAllowedFiles.toList()..sort()),
+        reason:
+            'media_kit initializes a process-wide media runtime. Keep direct '
+            'media_kit imports in app bootstrap; feature media widgets should '
+            'depend on the existing shared media presentation APIs.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -9196,6 +9212,26 @@ Future<List<String>> _findAppBootstrapPrimitiveOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (bootstrapPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findMediaKitImportOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final imports = _extractImports(_stripComments(source));
+    if (imports.any((target) => target.startsWith('package:media_kit'))) {
       offenders.add(filePath);
     }
   }
