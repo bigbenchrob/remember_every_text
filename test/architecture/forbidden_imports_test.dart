@@ -130,6 +130,12 @@ const Set<String> _processRunAllowedFiles = {
   'lib/features/settings/infrastructure/repositories/filesystem_message_history_coverage_report_exporter.dart',
 };
 
+const Set<String> _pathProviderImportAllowedFiles = {
+  'lib/core/util/paths_helper.dart',
+  'lib/essentials/db/feature_level_providers.dart',
+  'lib/features/attachments/infrastructure/services/video_thumbnail_cache_service.dart',
+};
+
 const List<String> _retiredHistoricalArchiveUiPhrases = <String>[
   'canonical message ledger',
   'canonical ledger',
@@ -578,6 +584,21 @@ void main() {
             'boundaries. Feature/application code should depend on named ports, '
             'repositories, or action services instead of launching processes '
             'directly.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Path provider imports stay behind approved boundaries', () async {
+      final offenders = await _findPathProviderImportOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_pathProviderImportAllowedFiles.toList()..sort()),
+        reason:
+            'path_provider should stay in shared path/bootstrap or '
+            'infrastructure services. Application and presentation code should '
+            'receive resolved paths through named providers, repositories, or '
+            'ports.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -8781,6 +8802,27 @@ Future<List<String>> _findProcessRunOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (processPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findPathProviderImportOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    if (imports.contains('package:path_provider/path_provider.dart')) {
       offenders.add(filePath);
     }
   }
