@@ -3232,6 +3232,10 @@ criteria.
   invalidations remain confined to named refresh, reset, build, archive, and
   migration action boundaries; future UI/state work should prefer derivation,
   explicit action boundaries, and versioned evidence scopes.
+- Added an architecture tripwire for direct `sqlite3`/`sqflite` imports.
+  Current direct database imports remain confined to app bootstrap and
+  infrastructure adapters/repositories; application and presentation layers
+  must use named providers, repositories, or ports.
 
 ### Exit Criteria
 

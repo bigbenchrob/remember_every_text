@@ -107,6 +107,22 @@ const Set<String> _providerInvalidationAllowedFiles = {
   'lib/features/settings/application/historical_archives_workflow_panel_model_provider.dart',
 };
 
+const Set<String> _directSqliteImportAllowedFiles = {
+  'lib/essentials/conversation_graph/infrastructure/repositories/conversation_graph_status_repository.dart',
+  'lib/essentials/conversation_graph/infrastructure/repositories/graph_health_repository.dart',
+  'lib/essentials/conversation_graph/infrastructure/repositories/sqlite_chat_db_source_probe_reader.dart',
+  'lib/essentials/db/infrastructure/repositories/database_health_audit_queries.dart',
+  'lib/essentials/db/infrastructure/repositories/sqlite_conversation_graph_readiness_checker.dart',
+  'lib/essentials/onboarding/infrastructure/persistence/sqlite_onboarding_database_probe_reader.dart',
+  'lib/essentials/source_scoped_import/infrastructure/import_database_provider.dart',
+  'lib/essentials/source_scoped_import/infrastructure/source_database/sqflite_source_database.dart',
+  'lib/features/address_book_folders/infrastructure/data_sources/local/address_book_db_helper_multi_instance.dart',
+  'lib/features/attachments/infrastructure/repositories/sqlite_historical_snapshot_reader.dart',
+  'lib/features/settings/infrastructure/repositories/archive_source_inspection_repository.dart',
+  'lib/features/settings/infrastructure/repositories/message_history_coverage_repository.dart',
+  'lib/main.dart',
+};
+
 const List<String> _retiredHistoricalArchiveUiPhrases = <String>[
   'canonical message ledger',
   'canonical ledger',
@@ -526,6 +542,20 @@ void main() {
             'Provider invalidation is an imperative refresh/reset tool. Keep it '
             'inside named action, reset, build, or migration boundaries; ordinary '
             'UI state should flow from derivation and versioned evidence scopes.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Direct SQLite imports stay behind approved boundaries', () async {
+      final offenders = await _findDirectSqliteImportOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_directSqliteImportAllowedFiles.toList()..sort()),
+        reason:
+            'Direct sqlite3/sqflite imports should stay in bootstrap or '
+            'infrastructure adapters/repositories. Application and presentation '
+            'layers must use named provider, repository, or port boundaries.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -8690,6 +8720,31 @@ Future<List<String>> _findProviderInvalidationOffenders() async {
   return offenders..sort();
 }
 
+Future<List<String>> _findDirectSqliteImportOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    if (imports.any(
+      (importTarget) =>
+          importTarget == 'package:sqlite3/sqlite3.dart' ||
+          importTarget.startsWith('package:sqflite'),
+    )) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
 Future<List<String>> _collectSidebarPayloadFiles() async {
   return _collectDartFiles((path) {
     if (path.endsWith('.g.dart')) {
@@ -8785,7 +8840,7 @@ Future<List<String>> _collectProjectInstructionFiles() async {
 
 Iterable<String> _extractImports(String source) sync* {
   final importPattern = RegExp(
-    r'''^import\s+['\"]([^'\"]+)['\"];''',
+    r'''^import\s+['\"]([^'\"]+)['\"][^;]*;''',
     multiLine: true,
   );
 
