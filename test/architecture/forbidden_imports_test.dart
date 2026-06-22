@@ -88,6 +88,25 @@ const Set<String> _catchErrorAllowedFiles = {
   'lib/main.dart',
 };
 
+const Set<String> _unawaitedAllowedFiles = {
+  'lib/essentials/conversation_graph/application/conversation_favourites/conversation_favourites_provider.dart',
+  'lib/essentials/conversation_graph/application/monitor/chat_db_change_monitor_provider.dart',
+  'lib/essentials/conversation_graph/presentation/status/conversation_graph_status_sheet.dart',
+  'lib/essentials/conversation_graph/presentation/widgets/conversation_favourite_button.dart',
+  'lib/essentials/logging/application/app_logger.dart',
+  'lib/essentials/navigation/presentation/view/macos_app_shell.dart',
+  'lib/essentials/onboarding/application/onboarding_gate_provider.dart',
+  'lib/essentials/sidebar/application/sidebar_flow_state_provider.dart',
+  'lib/features/attachments/application/attachment_archive_service_provider.dart',
+  'lib/features/attachments/application/attachment_resolver_provider.dart',
+  'lib/features/contacts/application/sidebar_cassette_spec/resolver_tools/contact_picker_actions_provider.dart',
+  'lib/features/contacts/application/sidebar_cassette_spec/resolver_tools/picker_filter_mode_provider.dart',
+  'lib/features/messages/application/sidebar_cassette_spec/resolver_tools/conversation_signature_preferences_provider.dart',
+  'lib/features/messages/application/sidebar_cassette_spec/widget_builders/conversation_signatures_widget.dart',
+  'lib/features/messages/presentation/view_model/shared/display_widgets/new_display_widgets.dart',
+  'lib/main.dart',
+};
+
 const Set<String> _providerInvalidationAllowedFiles = {
   'lib/essentials/conversation_graph/application/conversation_graph_build_controller_provider.dart',
   'lib/essentials/conversation_graph/application/status/conversation_graph_status_sheet_actions_provider.dart',
@@ -638,6 +657,21 @@ void main() {
             'Future.catchError chains should stay limited to explicit async '
             'persistence/scheduling boundaries. Prefer try/catch with typed '
             'logging inside ordinary application workflows.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('unawaited futures stay behind approved boundaries', () async {
+      final offenders = await _findUnawaitedFutureOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_unawaitedAllowedFiles.toList()..sort()),
+        reason:
+            'Fire-and-forget futures are lifecycle and observability pressure. '
+            'Keep unawaited work in explicit startup, monitor, restore, media, '
+            'logging, or action boundaries where errors are observable and '
+            'ownership is named.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -9029,6 +9063,26 @@ Future<List<String>> _findCatchErrorOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (uncommented.contains('.catchError(')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findUnawaitedFutureOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (uncommented.contains('unawaited(')) {
       offenders.add(filePath);
     }
   }

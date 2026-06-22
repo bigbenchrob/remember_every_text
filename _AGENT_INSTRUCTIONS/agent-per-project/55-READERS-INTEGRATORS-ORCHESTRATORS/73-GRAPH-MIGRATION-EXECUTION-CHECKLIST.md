@@ -3190,6 +3190,9 @@ criteria.
   Contact selection remains non-blocking, but failed profile or message prewarm
   is now visible through the app logger instead of disappearing as an
   unobserved background future.
+- Added an architecture tripwire for `unawaited(...)` futures. Fire-and-forget
+  work remains confined to explicit startup, monitor, restore, media, logging,
+  or action boundaries where ownership is named and failures are observable.
 - Added structured logging around diagnostic group-profile chat-open failures.
   The graph status sheet still forwards selection through the chat action
   boundary, but a failed open no longer disappears as an unobserved background
