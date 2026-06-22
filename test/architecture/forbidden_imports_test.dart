@@ -142,6 +142,10 @@ const Set<String> _directSqliteImportAllowedFiles = {
   'lib/main.dart',
 };
 
+const Set<String> _nativeDriftExecutorAllowedFiles = {
+  'lib/essentials/db/feature_level_providers.dart',
+};
+
 const Set<String> _processRunAllowedFiles = {
   'lib/essentials/logging/infrastructure/log_export_service.dart',
   'lib/essentials/onboarding/infrastructure/system/macos_full_disk_access.dart',
@@ -702,6 +706,21 @@ void main() {
             'Direct sqlite3/sqflite imports should stay in bootstrap or '
             'infrastructure adapters/repositories. Application and presentation '
             'layers must use named provider, repository, or port boundaries.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Native Drift executors stay behind database providers', () async {
+      final offenders = await _findNativeDriftExecutorOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_nativeDriftExecutorAllowedFiles.toList()..sort()),
+        reason:
+            'Production NativeDatabase construction should stay at the central '
+            'database provider boundary. Feature code should consume injected '
+            'Drift databases, repositories, or typed stores instead of opening '
+            'its own executor island.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -9147,6 +9166,27 @@ Future<List<String>> _findDirectSqliteImportOffenders() async {
           importTarget == 'package:sqlite3/sqlite3.dart' ||
           importTarget.startsWith('package:sqflite'),
     )) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findNativeDriftExecutorOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    if (imports.contains('package:drift/native.dart')) {
       offenders.add(filePath);
     }
   }

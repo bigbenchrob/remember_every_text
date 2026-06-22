@@ -3302,6 +3302,10 @@ criteria.
   access remains confined to infrastructure adapters for archive export and
   historical source selection; presentation/application code should use named
   chooser or file-operation ports.
+- Added an architecture tripwire for Drift native executor imports.
+  `NativeDatabase` construction remains owned by the central database provider
+  boundary; feature/application code should consume injected databases,
+  repositories, or typed stores instead of opening local executor islands.
 
 ### Exit Criteria
 
