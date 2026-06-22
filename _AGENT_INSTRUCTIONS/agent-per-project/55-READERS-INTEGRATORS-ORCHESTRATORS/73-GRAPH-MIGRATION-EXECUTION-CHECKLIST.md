@@ -3194,6 +3194,10 @@ criteria.
   The graph status sheet still forwards selection through the chat action
   boundary, but a failed open no longer disappears as an unobserved background
   future.
+- Made on-demand attachment archive attempts explicitly fire-and-forget and
+  observable. Attachment resolution still returns promptly, but unexpected
+  archive-copy failures now log through the app logger with the typed archive
+  compatibility key.
 
 ### Exit Criteria
 

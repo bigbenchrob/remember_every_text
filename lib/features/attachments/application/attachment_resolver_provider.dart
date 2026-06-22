@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../essentials/archive_compatibility/domain/archive_compatibility_key.dart';
+import '../../../essentials/logging/feature_level_providers.dart';
 import '../../messages/domain/entities/attachment_info.dart';
 import '../domain/constants/attachment_provenance.dart';
 import '../domain/constants/resolved_attachment_availability.dart';
@@ -187,13 +190,43 @@ void _triggerOnDemandArchive(
     return;
   }
 
-  // Fire-and-forget archive call.
-  ref
-      .read(attachmentArchiveServiceProvider.notifier)
-      .archiveAttachment(
-        archiveKey: archiveKey,
-        resolvedLocalPath: resolvedLocalPath,
-        mimeType: mimeType,
-        sha256Hex: null,
-      );
+  unawaited(
+    _archiveOnDemand(
+      ref,
+      archiveKey: archiveKey,
+      resolvedLocalPath: resolvedLocalPath,
+      mimeType: mimeType,
+    ),
+  );
+}
+
+Future<void> _archiveOnDemand(
+  AttachmentResolverRef ref, {
+  required ArchiveCompatibilityKey archiveKey,
+  required String resolvedLocalPath,
+  required String? mimeType,
+}) async {
+  try {
+    await ref
+        .read(attachmentArchiveServiceProvider.notifier)
+        .archiveAttachment(
+          archiveKey: archiveKey,
+          resolvedLocalPath: resolvedLocalPath,
+          mimeType: mimeType,
+          sha256Hex: null,
+        );
+  } catch (error, stackTrace) {
+    ref
+        .read(appLoggerProvider.notifier)
+        .warn(
+          'On-demand attachment archive failed',
+          source: 'AttachmentResolver',
+          context: <String, Object?>{
+            'archiveKey': archiveKey.storageKeySegment,
+            'resolvedLocalPath': resolvedLocalPath,
+            'error': error.toString(),
+            'stackTrace': stackTrace.toString(),
+          },
+        );
+  }
 }
