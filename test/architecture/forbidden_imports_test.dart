@@ -201,6 +201,8 @@ const Set<String> _rootProvidersImportAllowedFiles = {
   'lib/main.dart',
 };
 
+const Set<String> _providerContainerAllowedFiles = {'lib/main.dart'};
+
 const List<String> _retiredHistoricalArchiveUiPhrases = <String>[
   'canonical message ledger',
   'canonical ledger',
@@ -757,6 +759,20 @@ void main() {
             'providers only. New feature/application code should depend on '
             'feature_level_providers.dart or named ports instead of importing '
             'the root provider module directly.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Provider containers stay behind app bootstrap boundary', () async {
+      final offenders = await _findProviderContainerOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_providerContainerAllowedFiles.toList()..sort()),
+        reason:
+            'ProviderContainer and UncontrolledProviderScope own Riverpod '
+            'root lifecycle. They should remain at app bootstrap, not appear '
+            'inside features, widgets, repositories, or repair flows.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -9127,6 +9143,29 @@ bool _isRootProvidersImport(String importTarget) {
   }
   return importTarget.endsWith('/providers.dart') &&
       !importTarget.endsWith('/feature_level_providers.dart');
+}
+
+Future<List<String>> _findProviderContainerOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final pattern = RegExp(
+    r'\b(?:ProviderContainer|UncontrolledProviderScope)\s*\(',
+  );
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (pattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
 }
 
 Future<List<String>> _collectSidebarPayloadFiles() async {

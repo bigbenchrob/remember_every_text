@@ -3267,6 +3267,11 @@ criteria.
   provider module remains limited to bootstrap/theme/path-helper composition;
   new feature/application code should depend on `feature_level_providers.dart`
   or named ports.
+- Added an architecture tripwire for Riverpod root container ownership.
+  `ProviderContainer` and `UncontrolledProviderScope` remain app-bootstrap
+  lifecycle tools; feature, presentation, repository, and repair flows should
+  receive dependencies through provider scopes rather than creating local
+  containers.
 
 ### Exit Criteria
 
