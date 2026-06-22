@@ -3157,6 +3157,10 @@ criteria.
 - Removed the remaining root `main.dart` file-level analyzer suppressions by
   deleting a no-op window-resize override and renaming the delegate container
   injection method to an action-shaped `attachContainer` method.
+- Replaced sidebar flow preference chain swallow handlers with structured
+  app-logger warnings. Contact-context and navigation preference persistence
+  remain best-effort, but failed restores or writes are now observable instead
+  of disappearing behind empty catches.
 
 ### Exit Criteria
 

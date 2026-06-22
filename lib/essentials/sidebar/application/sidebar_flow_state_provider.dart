@@ -1101,13 +1101,27 @@ class SidebarFlow extends _$SidebarFlow {
   ) {
     final storeFuture = ref.read(sidebarFlowPreferenceStoreProvider.future);
     _contactContextPersistChain = _contactContextPersistChain
-        .catchError((Object _, StackTrace _) {})
+        .catchError(
+          (Object error, StackTrace stackTrace) =>
+              _logPreferencePersistenceFailure(
+                operation: 'contact-context prior persist',
+                error: error,
+                stackTrace: stackTrace,
+              ),
+        )
         .then((_) async {
           final store = await storeFuture;
           await store.writeContactContextPreference(preference.storageValue);
         });
     unawaited(
-      _contactContextPersistChain.catchError((Object _, StackTrace _) {}),
+      _contactContextPersistChain.catchError(
+        (Object error, StackTrace stackTrace) =>
+            _logPreferencePersistenceFailure(
+              operation: 'contact-context persist',
+              error: error,
+              stackTrace: stackTrace,
+            ),
+      ),
     );
   }
 
@@ -1128,7 +1142,17 @@ class SidebarFlow extends _$SidebarFlow {
 
       _setState(preference.state, persistNavigation: false);
       _restoreCassetteRackForState(preference.state);
-    } catch (_) {
+    } catch (error, stackTrace) {
+      ref
+          .read(appLoggerProvider.notifier)
+          .warn(
+            'Sidebar navigation preference restore failed',
+            source: 'SidebarFlow',
+            context: <String, Object?>{
+              'error': error.toString(),
+              'stackTrace': stackTrace.toString(),
+            },
+          );
       // Restore is best-effort user intent. Invalid or unavailable overlay
       // state should never block the default sidebar from rendering.
     }
@@ -1177,13 +1201,45 @@ class SidebarFlow extends _$SidebarFlow {
   ) {
     final storeFuture = ref.read(sidebarFlowPreferenceStoreProvider.future);
     _navigationPreferencePersistChain = _navigationPreferencePersistChain
-        .catchError((Object _, StackTrace _) {})
+        .catchError(
+          (Object error, StackTrace stackTrace) =>
+              _logPreferencePersistenceFailure(
+                operation: 'navigation prior persist',
+                error: error,
+                stackTrace: stackTrace,
+              ),
+        )
         .then((_) async {
           final store = await storeFuture;
           await store.writeNavigationPreference(preference.storageValue);
         });
     unawaited(
-      _navigationPreferencePersistChain.catchError((Object _, StackTrace _) {}),
+      _navigationPreferencePersistChain.catchError(
+        (Object error, StackTrace stackTrace) =>
+            _logPreferencePersistenceFailure(
+              operation: 'navigation persist',
+              error: error,
+              stackTrace: stackTrace,
+            ),
+      ),
     );
+  }
+
+  void _logPreferencePersistenceFailure({
+    required String operation,
+    required Object error,
+    required StackTrace stackTrace,
+  }) {
+    ref
+        .read(appLoggerProvider.notifier)
+        .warn(
+          'Sidebar preference persistence failed',
+          source: 'SidebarFlow',
+          context: <String, Object?>{
+            'operation': operation,
+            'error': error.toString(),
+            'stackTrace': stackTrace.toString(),
+          },
+        );
   }
 }
