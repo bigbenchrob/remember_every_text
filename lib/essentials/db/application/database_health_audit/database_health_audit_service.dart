@@ -416,23 +416,26 @@ class DatabaseHealthAuditService {
     required List<InvariantCheckResult> invariantChecks,
     required List<HealthReportError> errors,
   }) {
+    final activeTableInventory = tableInventory
+        .where((entry) => !_isRetiredCleanupDatabaseKey(entry.databaseKey))
+        .toList();
     final allStatuses = <DatabaseHealthStatus>[
       ...relationshipChecks.map((check) => check.status),
       ...invariantChecks.map((check) => check.status),
       if (errors.isNotEmpty) DatabaseHealthStatus.error,
-      if (tableInventory.any((entry) => !entry.exists))
+      if (activeTableInventory.any((entry) => !entry.exists))
         DatabaseHealthStatus.fail,
-      if (tableInventory.any(
+      if (activeTableInventory.any(
         (entry) => entry.exists && (entry.rowCount ?? 0) == 0,
       ))
         DatabaseHealthStatus.warning,
     ];
 
     final headlineFindings = <String>[
-      ...tableInventory
+      ...activeTableInventory
           .where((entry) => !entry.exists)
           .map((entry) => '${entry.databaseKey}.${entry.tableName} is missing'),
-      ...tableInventory
+      ...activeTableInventory
           .where((entry) => entry.exists && (entry.rowCount ?? 0) == 0)
           .map((entry) => '${entry.databaseKey}.${entry.tableName} is empty'),
       ...relationshipChecks
@@ -526,6 +529,11 @@ Future<int> _countQuery(DatabaseHealthQueryLayer layer, String sql) async {
     return value.toInt();
   }
   return int.parse(value.toString());
+}
+
+bool _isRetiredCleanupDatabaseKey(String databaseKey) {
+  return databaseKey == 'retired_macos_import' ||
+      databaseKey == 'retired_working';
 }
 
 DatabaseHealthStatus _statusFromRelationshipCounts({

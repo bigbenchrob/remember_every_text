@@ -127,6 +127,15 @@ void main() {
               .map((check) => check.checkKey),
           isEmpty,
         );
+        expect(
+          report.summary.overallStatus,
+          DatabaseHealthStatus.notApplicable,
+        );
+        expect(report.summary.warningCount, 0);
+        expect(
+          report.summary.headlineFindings,
+          isNot(contains('retired_macos_import.schema_migrations is empty')),
+        );
         expect(report.invariantChecks, isEmpty);
         expect(report.errors, isEmpty);
       },
