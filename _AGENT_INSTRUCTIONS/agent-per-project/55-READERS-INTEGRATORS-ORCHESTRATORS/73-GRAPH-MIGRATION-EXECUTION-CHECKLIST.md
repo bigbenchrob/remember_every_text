@@ -3209,6 +3209,9 @@ criteria.
 - Made contact-picker filter-mode persistence failures observable at the mode
   controller boundary. Picker mode changes remain local and immediate, but
   failed overlay writes no longer disappear behind action forwarding.
+- Replaced raw video message tile debug prints with structured app-logger
+  warnings. Thumbnail, activation, and disposal failures remain non-fatal, but
+  shared evidence media failures now carry stage and attachment-path context.
 
 ### Exit Criteria
 

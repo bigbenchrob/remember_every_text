@@ -8,6 +8,7 @@ import 'package:video_player/video_player.dart';
 import '../../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../../essentials/debug/application/developer_mode_provider.dart';
 import '../../../../../../essentials/external_links/feature_level_providers.dart';
+import '../../../../../../essentials/logging/feature_level_providers.dart';
 import '../../../../../attachments/domain/constants/attachment_provenance.dart';
 import '../../../../../attachments/domain/constants/resolved_attachment_availability.dart';
 import '../../../../../attachments/feature_level_providers.dart';
@@ -1050,14 +1051,22 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
         if (controller.value.isPlaying) {
           await controller.pause();
         }
-      } catch (error) {
-        debugPrint('Video tile pause during dispose failed: $error');
+      } catch (error, stackTrace) {
+        _logVideoFailure(
+          stage: 'pauseDuringDispose',
+          error: error,
+          stackTrace: stackTrace,
+        );
       }
 
       try {
         await controller.dispose();
-      } catch (error) {
-        debugPrint('Video tile controller dispose failed: $error');
+      } catch (error, stackTrace) {
+        _logVideoFailure(
+          stage: 'disposeController',
+          error: error,
+          stackTrace: stackTrace,
+        );
       }
     }());
   }
@@ -1125,8 +1134,13 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
         _thumbnailFile = thumbnailPath == null ? null : File(thumbnailPath);
         _thumbnailSourcePath = videoFile.path;
       });
-    } catch (error) {
-      debugPrint('Video tile thumbnail load failed: $error');
+    } catch (error, stackTrace) {
+      _logVideoFailure(
+        stage: 'loadThumbnail',
+        error: error,
+        stackTrace: stackTrace,
+        filePath: videoFile.path,
+      );
       if (!mounted || requestGeneration != _thumbnailRequestGeneration) {
         return;
       }
@@ -1213,8 +1227,13 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
           return;
         }
       }
-    } catch (error) {
-      debugPrint('Video tile activation failed: $error');
+    } catch (error, stackTrace) {
+      _logVideoFailure(
+        stage: 'activateVideo',
+        error: error,
+        stackTrace: stackTrace,
+        filePath: file.path,
+      );
       await controller.dispose();
       if (!mounted || activationGeneration != _activationGeneration) {
         return;
@@ -1225,6 +1244,30 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
         _activationFailed = true;
       });
     }
+  }
+
+  void _logVideoFailure({
+    required String stage,
+    required Object error,
+    required StackTrace stackTrace,
+    String? filePath,
+  }) {
+    ref
+        .read(appLoggerProvider.notifier)
+        .warn(
+          'Video message tile operation failed',
+          source: 'VideoMessageTile',
+          context: <String, Object?>{
+            'stage': stage,
+            'filePath': filePath,
+            'attachmentLocalPath': widget.attachment.localPath,
+            'attachmentResolvedDisplayPath':
+                widget.attachment.resolvedDisplayPath,
+            'mimeType': widget.attachment.mimeType,
+            'error': error.toString(),
+            'stackTrace': stackTrace.toString(),
+          },
+        );
   }
 
   @override
