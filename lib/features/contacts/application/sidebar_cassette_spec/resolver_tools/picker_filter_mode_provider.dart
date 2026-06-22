@@ -49,8 +49,26 @@ class PickerFilter extends _$PickerFilter {
     _hasLocalMutation = true;
     state = mode;
 
-    final store = await ref.read(pickerFilterModeStoreProvider.future);
-    await store.writeMode(mode.storageValue);
+    await _persistMode(mode);
+  }
+
+  Future<void> _persistMode(PickerFilterMode mode) async {
+    try {
+      final store = await ref.read(pickerFilterModeStoreProvider.future);
+      await store.writeMode(mode.storageValue);
+    } catch (error, stackTrace) {
+      ref
+          .read(appLoggerProvider.notifier)
+          .warn(
+            'Contact picker filter mode persist failed',
+            source: 'PickerFilter',
+            context: <String, Object?>{
+              'mode': mode.storageValue,
+              'error': error.toString(),
+              'stackTrace': stackTrace.toString(),
+            },
+          );
+    }
   }
 
   Future<void> _restorePersistedMode() async {

@@ -3206,6 +3206,9 @@ criteria.
   user-intent controller boundary. Favourite toggles remain optimistic and
   overlay-owned, but failed overlay writes no longer disappear through
   fire-and-forget star taps.
+- Made contact-picker filter-mode persistence failures observable at the mode
+  controller boundary. Picker mode changes remain local and immediate, but
+  failed overlay writes no longer disappear behind action forwarding.
 
 ### Exit Criteria
 
