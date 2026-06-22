@@ -3255,6 +3255,10 @@ criteria.
   cleanup, and scoped cache expiry remain confined to named lifecycle/status/
   shell/evidence-spine boundaries; timers must not become ordinary imperative
   repair logic.
+- Added an architecture tripwire for post-frame callbacks and microtasks. These
+  deferred UI/lifecycle tools remain confined to startup, onboarding,
+  panel-stack, and evidence-timeline boundaries, rather than becoming hidden
+  repair logic.
 
 ### Exit Criteria
 

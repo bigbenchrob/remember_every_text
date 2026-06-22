@@ -167,6 +167,16 @@ const Set<String> _timerAllowedFiles = {
   'lib/main.dart',
 };
 
+const Set<String> _deferredUiCallbackAllowedFiles = {
+  'lib/essentials/navigation/presentation/view/macos_app_shell.dart',
+  'lib/essentials/navigation/presentation/view/panel_stack_surface.dart',
+  'lib/essentials/navigation/presentation/widgets/onboarding_center_panel_sync_observer.dart',
+  'lib/essentials/onboarding/application/onboarding_gate_provider.dart',
+  'lib/essentials/onboarding/feature_level_providers.dart',
+  'lib/features/messages/presentation/widgets/message_evidence/message_evidence_timeline_view.dart',
+  'lib/main.dart',
+};
+
 const List<String> _retiredHistoricalArchiveUiPhrases = <String>[
   'canonical message ledger',
   'canonical ledger',
@@ -680,6 +690,23 @@ void main() {
             'Actual users:\n${offenders.join('\n')}',
       );
     });
+
+    test(
+      'Deferred UI callbacks stay behind approved lifecycle boundaries',
+      () async {
+        final offenders = await _findDeferredUiCallbackOffenders();
+
+        expect(
+          offenders,
+          orderedEquals(_deferredUiCallbackAllowedFiles.toList()..sort()),
+          reason:
+              'Post-frame callbacks and microtasks can become hidden repair '
+              'logic. Keep them inside explicit startup, onboarding, panel-stack, '
+              'or evidence-timeline lifecycle boundaries.\n'
+              'Actual users:\n${offenders.join('\n')}',
+        );
+      },
+    );
 
     test(
       'Sidebar semantic/application imports do not grow beyond tracked temporary exceptions',
@@ -8966,6 +8993,29 @@ Future<List<String>> _findTimerUsageOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (timerPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findDeferredUiCallbackOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final callbackPattern = RegExp(
+    r'\b(?:WidgetsBinding\.instance\.addPostFrameCallback|scheduleMicrotask)\b',
+  );
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (callbackPattern.hasMatch(uncommented)) {
       offenders.add(filePath);
     }
   }
