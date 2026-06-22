@@ -1,5 +1,10 @@
 # Handle-to-Participant Overrides Architecture
 
+> Historical note: this document describes an early overlay design sketch.
+> Current MessageLens identity resolution is graph-backed and overlay-owned;
+> retained `working.db` is cleanup/diagnostic inventory only and must not be
+> used as an active participant authority or override cache target.
+
 ## 1. What to Store in `user_overlays.db`
 
 Use **stable natural keys** so overrides survive re-imports when integer IDs shift.
@@ -11,7 +16,7 @@ Use **stable natural keys** so overrides survive re-imports when integer IDs shi
 | `id` | INTEGER PRIMARY KEY | |
 | `normalized_handle` | TEXT NOT NULL | E.164 or lowercase email |
 | `contact_external_key` | TEXT NOT NULL | AddressBook GUID or persistent ID |
-| `participant_id` | INTEGER NULL | Cached pointer into working.db |
+| `participant_id` | INTEGER NULL | Historical sketch: cached pointer into the then-current projection. Current code must use graph/overlay identity boundaries instead of retained `working.db`. |
 | `source` | TEXT NOT NULL DEFAULT 'user' | |
 | `created_at` | INTEGER NOT NULL | |
 | `updated_at` | INTEGER NOT NULL | |
