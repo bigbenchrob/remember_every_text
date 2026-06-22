@@ -16,21 +16,20 @@ depends_on:
 
 The ordinary MessageLens app path is now graph-backed. Remaining
 `macos_import.db` and `working.db` references should therefore be treated as
-storage-retention questions, not ordinary UI migration blockers.
+retired cleanup-inventory questions, not ordinary UI migration blockers.
 
 This register defines what remains, why it remains, and what must be true
-before each retained storage purpose can be reduced, migrated,
-frozen, or removed.
+before each retired-file purpose can be reduced, migrated, frozen, or removed.
 
 ## Current Decision
 
-Document retired storage files as transitional cleanup/diagnostic storage. Do
+Document retired files as cleanup/diagnostic inventory. Do
 not delete them blindly.
 
-`macos_import.db` and `working.db` are retired historical storage, not
-permanent system-of-record storage. Existing user data folders may keep them
-during the transition for recovery, audit, comparison, rollback safety, and
-support diagnostics.
+`macos_import.db` and `working.db` are retired historical cleanup inventory,
+not permanent system-of-record storage. Existing user data folders may keep
+them during the transition for recovery, audit, comparison, rollback safety,
+and support diagnostics.
 
 The retained database files no longer own ordinary evidence, search, contact
 identity, conversation browsing, live polling, Historical Archives execution,
@@ -45,7 +44,7 @@ retain deliberately
 → replace remaining storage/key compatibility paths
 → verify historical data reachability
 → reduce retained purposes under this register
-→ delete or freeze retained storage only after reviewed user-safe criteria
+→ delete or freeze retired files only after reviewed user-safe criteria
 ```
 
 Full deletion should occur only after all of the following are true:
@@ -206,7 +205,7 @@ until a deliberate cleanup/export/discard policy removes the old file purpose.
 Fresh retained archive metadata DB creation no longer recreates those old
 archive-source metadata columns.
 Database health treats retained `macos_import.db` as retired archive-source
-reference inventory only; active source facts and topology health belong to
+cleanup inventory only; active source facts and topology health belong to
 `macos_import_ss.db`.
 No active app provider now creates a fresh retained `macos_import.db`.
 Existing older retained `macos_import.db` files may still keep
@@ -282,7 +281,7 @@ identify stale-data, compatibility, and recovery conditions.
 **Current boundary**
 
 Diagnostic reads are allowed to look across layers as long as they do not make
-retained storage authoritative for ordinary feature behavior.
+retired cleanup inventory authoritative for ordinary feature behavior.
 Database health now treats retained `working.db` as recovered-message retired
 cleanup/diagnostic evidence plus minimal projection-state storage sanity. Ordinary
 message/chat/contact/handle/attachment/reaction health belongs to
@@ -309,9 +308,9 @@ Focused tests now verify that read-only retained database health inspection:
 
 Done means:
 
-- retained DB files are gone, frozen, or classified as deliberate
-  transitional/historical storage.
-- health audit labels no longer need to inventory retained storage layers.
+- retired DB files are gone, frozen, or classified as deliberate cleanup
+  inventory.
+- health audit labels no longer need to inventory retired file layers.
 - support bundles still expose enough graph/import/overlay evidence to debug
   data issues.
 
@@ -384,7 +383,7 @@ review.
 
 ## High-Risk Deletion Mistakes
 
-Do not remove retained storage merely because ordinary UI no longer
+Do not remove retired cleanup inventory merely because ordinary UI no longer
 uses it. The risky losses are:
 
 - loss of historical archive-source status metadata.
@@ -392,13 +391,13 @@ uses it. The risky losses are:
   shape.
 - degraded support diagnostics while users still have transitional data
   folders.
-- inability to compare graph storage against retained historical storage during
+- inability to compare graph storage against retired historical inventory during
   final retirement.
 
 ## Retention Reduction Register
 
-Future work should continue reducing retained purposes rather than deleting
-files opportunistically. Track each remaining retained purpose by answering:
+Future work should continue reducing retired-file purposes rather than deleting
+files opportunistically. Track each remaining purpose by answering:
 
 - What retained file/table/path is involved?
 - Is it recovery, audit, comparison, rollback safety, diagnostics, reset, or
@@ -409,7 +408,7 @@ files opportunistically. Track each remaining retained purpose by answering:
 
 Known retained purposes:
 
-| Purpose | Current retained storage | Allowed owner | Reduction target |
+| Purpose | Current retired-file inventory | Allowed owner | Reduction target |
 | --- | --- | --- | --- |
 | Archive-source workflow metadata | overlay settings key `historical_archive_sources/v1`; old `macos_import.db.historical_archive_sources` may exist in retained files | Historical Archives settings repository | Active metadata has moved to overlay storage. Decide whether old retained metadata is migrated, exported, or intentionally discarded before deleting retained files. |
 | Existing-folder reset cleanup | `macos_import.db`, `working.db`, WAL/SHM files | Message data reset service | Keep until old derived files are either no longer created or a safe backup/cleanup policy replaces direct deletion. |
@@ -448,5 +447,5 @@ Closing that blocker would unlock the remaining storage simplification:
 - final migration of any overlay/archive keys that still require retained
   identity interpretation
 
-Until then, retained storage should stay bounded, named, tested, and explicitly
-transitional.
+Until then, retired cleanup inventory should stay bounded, named, tested, and
+explicitly transitional.

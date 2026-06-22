@@ -35,9 +35,9 @@ source-scoped archive path for both import and removal:
 - removal runs `SourceScopedArchiveGraphRemovalService`
 - archive source facts live in `macos_import_ss.db`
 - projected archive rows live in `working_ss.db`
-- retained `macos_import.db` / `working.db` archive paths remain storage and
-  diagnostic-retirement questions, not the ordinary Historical Archives
-  execution path
+- retired `macos_import.db` / `working.db` archive paths are cleanup-inventory
+  and diagnostic-retirement questions, not the ordinary Historical Archives
+  execution path.
 
 As of 2026-06-07, the retained legacy archive pipeline provider and old
 import-progress/detail widgets have also been removed. The standalone
@@ -315,7 +315,7 @@ source-scoped archive service.
 
 Historical pre-cutover note: this step originally made the retained path a
 fallback/diagnostic path. That fallback has since been removed from production
-code; diagnostics now inspect retained files as historical cleanup/diagnostic storage.
+code; diagnostics now inspect retired files as historical cleanup inventory.
 
 ### Stage 4 - Retire Retained Legacy Bridge
 

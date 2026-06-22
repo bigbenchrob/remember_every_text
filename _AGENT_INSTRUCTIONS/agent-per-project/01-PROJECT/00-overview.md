@@ -61,7 +61,7 @@ the subsystem docs when details matter.
 - User intent writes to `user_overlays.db`. Providers merge graph projection +
   overlay at read time, and overlay wins on conflict.
 - Onboarding coordinates and presents graph readiness/build state; it does not
-  own source-scoped import, graph projection, or retained storage diagnostics.
+  own source-scoped import, graph projection, or retired-file diagnostics.
 - Attachment archive metadata lives in overlay; archive files live under the app
   support archive directory and are never written back to Apple's Messages
   Attachments folder.

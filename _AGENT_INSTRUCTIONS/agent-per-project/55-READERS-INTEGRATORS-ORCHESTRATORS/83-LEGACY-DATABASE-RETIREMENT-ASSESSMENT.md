@@ -226,7 +226,7 @@ Deletion readiness:
 
 Current role:
 
-- retired archive-source reference inventory if older files exist
+- retired archive-source cleanup inventory if older files exist
 - existing-file compatibility for older local data folders
 - reset cleanup target
 - diagnostic/support-bundle context
@@ -294,9 +294,9 @@ Classification summary:
 
 Retirement blockers:
 
-1. Conservative storage policy still listed `working.db` as retained historical
-   reference storage; current policy demotes it to retired cleanup/diagnostic
-   storage.
+1. Conservative policy previously listed `working.db` as retained historical
+   reference material; current policy demotes it to retired cleanup/diagnostic
+   inventory.
 2. Reset still deletes it as a derived data base name.
 3. Any remaining support documentation must be updated so `working.db` is not
    implied to be a recovery authority.

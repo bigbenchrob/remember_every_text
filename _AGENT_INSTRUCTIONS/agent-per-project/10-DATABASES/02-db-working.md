@@ -96,7 +96,7 @@ diagnostics inconsistent.
 
 ## Related Rules & Contracts
 
-- **Source identity remains traceable in historical retained files**: Chat
+- **Source identity remains traceable in retired historical files**: Chat
   IDs/GUIDs, message IDs/GUIDs, handle IDs, and participant IDs should remain
   interpretable from old `db-import` / `db-working` pairs. See
   `10-group-import-working.md` for the historical compatibility flow.
@@ -111,4 +111,4 @@ diagnostics inconsistent.
 - `10-group-import-working.md` — Historical retained pipeline rules.
 - `01-db-import.md` — Retired import cleanup-file details.
 - `07-overlay-database-independence.md` — Runtime merge strategy for overlay data.
-- `../55-READERS-INTEGRATORS-ORCHESTRATORS/81-LEGACY-STORAGE-RETENTION-REGISTER.md` — Current retained storage status.
+- `../55-READERS-INTEGRATORS-ORCHESTRATORS/81-LEGACY-STORAGE-RETENTION-REGISTER.md` — Current retired cleanup-inventory status.

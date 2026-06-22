@@ -56,7 +56,7 @@ Do not assume `message` plus `chat_message_join` gives a complete picture of all
 | `chat_message_join` | Mapping needed to associate messages with chats. |
 | `attachment` / `message_attachment_join` | Attachments tied to messages. |
 
-Source-scoped importers persist these tables into ledger equivalents (`chats`, `handles`, `messages`, recovered/orphan message facts, `chat_to_handle`, `chat_to_message`, `attachments`, `message_attachments`) while preserving source identifiers and deriving canonical `ss_id` endpoints for graph projection. Historical retained `db-import` files may contain equivalent facts from the retired importer era, but they are storage-retention evidence only and must not be treated as an active compatibility import path.
+Source-scoped importers persist these tables into ledger equivalents (`chats`, `handles`, `messages`, recovered/orphan message facts, `chat_to_handle`, `chat_to_message`, `attachments`, `message_attachments`) while preserving source identifiers and deriving canonical `ss_id` endpoints for graph projection. Retired historical `db-import` files may contain equivalent facts from the retired importer era, but they are cleanup inventory only and must not be treated as an active compatibility import path.
 
 ## Usage Rules
 

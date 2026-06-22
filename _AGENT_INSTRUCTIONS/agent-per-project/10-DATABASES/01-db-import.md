@@ -79,4 +79,4 @@ app truth.
 
 - `10-group-import-working.md` — Historical retained import/working contract.
 - `02-db-working.md` — Retired projection cleanup-file status.
-- `../55-READERS-INTEGRATORS-ORCHESTRATORS/81-LEGACY-STORAGE-RETENTION-REGISTER.md` — Current retained storage status.
+- `../55-READERS-INTEGRATORS-ORCHESTRATORS/81-LEGACY-STORAGE-RETENTION-REGISTER.md` — Current retired cleanup-inventory status.

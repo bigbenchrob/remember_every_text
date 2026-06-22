@@ -37,8 +37,8 @@ Use these aliases consistently across docs, code comments, and conversations.
 | `db-chat` | `chat.db` | macOS Messages source ledger | `PathsHelper.messagesDatabasePath` (import pipeline) | `~/Library/Messages/chat.db` |
 | `db-import-ss` | `macos_import_ss.db` | Production source-scoped import ledger for Messages + AddressBook facts | `importDatabaseProvider` | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/macos_import_ss.db` |
 | `db-graph-working` | `working_ss.db` | Production source-scoped conversation graph consumed by graph readers and Message Evidence Spine | `driftConversationGraphDatabaseProvider` | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/working_ss.db` |
-| `db-import` | `macos_import.db` | Retired historical import cleanup file; old files may contain retained ledger tables | No central app provider; reset/diagnostics treat as transitional cleanup file storage | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/macos_import.db` |
-| `db-working` | `working.db` | Retired historical projection file/schema inventory | No central app provider; reset/diagnostics treat as transitional cleanup file storage | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/working.db` |
+| `db-import` | `macos_import.db` | Retired historical import cleanup file; old files may contain retained ledger tables | No central app provider; reset/diagnostics treat as retired cleanup inventory | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/macos_import.db` |
+| `db-working` | `working.db` | Retired historical projection file/schema inventory | No central app provider; reset/diagnostics treat as retired cleanup inventory | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/working.db` |
 | `db-overlay` | `user_overlays.db` | Long-lived user overrides and preferences | `overlayDatabaseProvider` | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/user_overlays.db` |
 
 ## Coupled Database Groups

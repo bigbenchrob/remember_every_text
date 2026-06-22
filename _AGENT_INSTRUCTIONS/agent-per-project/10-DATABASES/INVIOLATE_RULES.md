@@ -24,13 +24,13 @@ These rules are **absolute constraints**. They apply to every agent, every sessi
 - Retired `working.db` → historical file/schema inventory only; no ordinary
   app provider remains
 - Providers merge at read time; overlay wins on conflict
-- ❌ NEVER dual-write to both overlay AND graph/retained storage
+- ❌ NEVER dual-write to both overlay AND graph/retired cleanup inventory
 - ❌ NEVER have graph projection or import read or consult overlay DB
 - ❌ NEVER feed overlay-owned archive-source metadata back into graph
   projection/import semantics
 - ❌ NEVER snapshot overlay before projection/import/metadata maintenance then
-  restore into graph/retained storage
-- ❌ NEVER store user-intent flags on graph/retained tables rebuilt from source
+  restore into graph/retired cleanup inventory
+- ❌ NEVER store user-intent flags on graph/retired cleanup tables rebuilt from source
   data
 
 ---

@@ -28,7 +28,7 @@ archive/recovery decisions can still be interpreted correctly.
 > Current conformance note (2026-06-08): ordinary app data now flows through
 > `macos_import_ss.db` -> `working_ss.db` using source-scoped `ss_id` graph
 > identity. Active archive-source metadata lives in overlay storage. Retained
-> `macos_import.db` / `working.db` files are transitional cleanup inputs only,
+> `macos_import.db` / `working.db` files are retired cleanup inventory only,
 > and retained `working.db` has no central app provider.
 > Do not use this retained import/working contract as the model for new
 > graph-era features.
@@ -115,7 +115,7 @@ source-scoped graph/orphan message semantics.
 - `chat.db.message` count can exceed thread-linked graph topology
 - the orphan portion should appear in source-scoped recovered/orphan graph
   evidence
-- historical retained files may contain `db-import.recovered_unlinked_messages`
+- retired historical files may contain `db-import.recovered_unlinked_messages`
   and `db-working.recovered_unlinked_messages`
 - audit logs should distinguish thread-linked counts from recovered preserved counts
 
@@ -124,8 +124,8 @@ This is the practical implication of the current Apple data shape: source visibi
 ## 6. Debugging Checklist
 
 1. Prefer the graph status panel and source-scoped graph evidence first.
-2. For historical retained files, confirm whether the row exists in `db-import`
-       only to interpret retired storage, not to route active app behavior.
+2. For retired historical files, confirm whether the row exists in `db-import`
+       only to interpret cleanup inventory, not to route active app behavior.
        For source orphan rows, check both `messages` and `recovered_unlinked_messages`.
 3. Verify the corresponding row in `db-working` retains the same ID.
        For recovered rows, check `recovered_unlinked_messages` and `recovered_unlinked_attachments` rather than normal chat-linked tables.
