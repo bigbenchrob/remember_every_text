@@ -3198,6 +3198,10 @@ criteria.
   observable. Attachment resolution still returns promptly, but unexpected
   archive-copy failures now log through the app logger with the typed archive
   compatibility key.
+- Made conversation-signature filter/sort persistence failures observable at
+  the overlay preference controller boundary. Local sidebar state still updates
+  immediately, but failed overlay writes no longer disappear through
+  fire-and-forget UI actions.
 
 ### Exit Criteria
 

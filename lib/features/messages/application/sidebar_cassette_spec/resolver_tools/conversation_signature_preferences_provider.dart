@@ -101,20 +101,45 @@ class ConversationSignaturePreferencesController
   Future<void> setFilter(ConversationSignatureFilter filter) async {
     _hasLocalMutation = true;
     state = state.copyWith(filter: filter);
-    await _persistPreferences();
+    await _persistPreferences(
+      operation: 'setFilter',
+      attemptedValue: filter.storageValue,
+    );
   }
 
   Future<void> setSort(ConversationSignatureSort sort) async {
     _hasLocalMutation = true;
     state = state.copyWith(sort: sort);
-    await _persistPreferences();
+    await _persistPreferences(
+      operation: 'setSort',
+      attemptedValue: sort.storageValue,
+    );
   }
 
-  Future<void> _persistPreferences() async {
-    final store = await ref.read(
-      conversationSignaturePreferencesStoreProvider.future,
-    );
-    await store.writePreferences(state.storageValue);
+  Future<void> _persistPreferences({
+    required String operation,
+    required String attemptedValue,
+  }) async {
+    try {
+      final store = await ref.read(
+        conversationSignaturePreferencesStoreProvider.future,
+      );
+      await store.writePreferences(state.storageValue);
+    } catch (error, stackTrace) {
+      ref
+          .read(appLoggerProvider.notifier)
+          .warn(
+            'Conversation signature preferences persist failed',
+            source: 'ConversationSignaturePreferencesController',
+            context: <String, Object?>{
+              'operation': operation,
+              'attemptedValue': attemptedValue,
+              'state': state.storageValue,
+              'error': error.toString(),
+              'stackTrace': stackTrace.toString(),
+            },
+          );
+    }
   }
 
   Future<void> _restorePersistedPreferences() async {
