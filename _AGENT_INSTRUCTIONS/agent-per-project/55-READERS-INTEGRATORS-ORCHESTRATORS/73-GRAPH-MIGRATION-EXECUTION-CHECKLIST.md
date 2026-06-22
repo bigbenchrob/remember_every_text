@@ -3306,6 +3306,10 @@ criteria.
   `NativeDatabase` construction remains owned by the central database provider
   boundary; feature/application code should consume injected databases,
   repositories, or typed stores instead of opening local executor islands.
+- Added an architecture tripwire for sqflite FFI bootstrap. `sqfliteFfiInit`,
+  `databaseFactoryFfi`, and `databaseFactory` mutation remain app-bootstrap
+  concerns; production code should receive initialized database services rather
+  than configuring the sqflite runtime locally.
 
 ### Exit Criteria
 

@@ -146,6 +146,8 @@ const Set<String> _nativeDriftExecutorAllowedFiles = {
   'lib/essentials/db/feature_level_providers.dart',
 };
 
+const Set<String> _sqfliteFfiBootstrapAllowedFiles = {'lib/main.dart'};
+
 const Set<String> _processRunAllowedFiles = {
   'lib/essentials/logging/infrastructure/log_export_service.dart',
   'lib/essentials/onboarding/infrastructure/system/macos_full_disk_access.dart',
@@ -721,6 +723,21 @@ void main() {
             'database provider boundary. Feature code should consume injected '
             'Drift databases, repositories, or typed stores instead of opening '
             'its own executor island.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('sqflite FFI initialization stays in app bootstrap', () async {
+      final offenders = await _findSqfliteFfiBootstrapOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_sqfliteFfiBootstrapAllowedFiles.toList()..sort()),
+        reason:
+            'sqflite FFI initialization and databaseFactory mutation are '
+            'process-wide bootstrap concerns. Production feature and '
+            'infrastructure code should receive initialized database services '
+            'instead of configuring the sqflite runtime directly.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -9187,6 +9204,35 @@ Future<List<String>> _findNativeDriftExecutorOffenders() async {
     final uncommented = _stripComments(source);
     final imports = _extractImports(uncommented);
     if (imports.contains('package:drift/native.dart')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findSqfliteFfiBootstrapOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    if (imports.any(
+      (target) => target.startsWith('package:sqflite_common_ffi/'),
+    )) {
+      offenders.add(filePath);
+      continue;
+    }
+    if (uncommented.contains('sqfliteFfiInit(') ||
+        uncommented.contains('databaseFactoryFfi') ||
+        uncommented.contains('databaseFactory =')) {
       offenders.add(filePath);
     }
   }
