@@ -3272,6 +3272,10 @@ criteria.
   lifecycle tools; feature, presentation, repository, and repair flows should
   receive dependencies through provider scopes rather than creating local
   containers.
+- Added an architecture tripwire for native platform channels.
+  `MethodChannel`, `EventChannel`, and `BasicMessageChannel` remain explicit
+  native integration boundaries owned by services, bridges, or infrastructure
+  adapters; feature and presentation code should depend on named Dart APIs.
 
 ### Exit Criteria
 

@@ -130,6 +130,12 @@ const Set<String> _processRunAllowedFiles = {
   'lib/features/settings/infrastructure/repositories/filesystem_message_history_coverage_report_exporter.dart',
 };
 
+const Set<String> _platformChannelAllowedFiles = {
+  'lib/essentials/logging/infrastructure/macos_unified_log_bridge.dart',
+  'lib/essentials/services/native_link_preview_service.dart',
+  'lib/essentials/services/startup_flags_service.dart',
+};
+
 const Set<String> _pathProviderImportAllowedFiles = {
   'lib/core/util/paths_helper.dart',
   'lib/essentials/db/feature_level_providers.dart',
@@ -651,6 +657,21 @@ void main() {
             'boundaries. Feature/application code should depend on named ports, '
             'repositories, or action services instead of launching processes '
             'directly.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Platform channels stay behind approved boundaries', () async {
+      final offenders = await _findPlatformChannelOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_platformChannelAllowedFiles.toList()..sort()),
+        reason:
+            'MethodChannel/EventChannel/BasicMessageChannel calls are native '
+            'integration boundaries. Keep them in explicit services, bridges, '
+            'or infrastructure adapters; feature and presentation code should '
+            'depend on named Dart APIs.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -8976,6 +8997,29 @@ Future<List<String>> _findProcessRunOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (processPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findPlatformChannelOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final channelPattern = RegExp(
+    r'\b(?:MethodChannel|EventChannel|BasicMessageChannel)\s*\(',
+  );
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (channelPattern.hasMatch(uncommented)) {
       offenders.add(filePath);
     }
   }
