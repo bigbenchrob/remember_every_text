@@ -181,6 +181,57 @@ void main() {
       expect(report.usingPersistedImportFailure, isFalse);
     });
 
+    test(
+      'retired cleanup databases do not satisfy onboarding readiness',
+      () async {
+        final messagesDbPath = _createMessagesDatabase(
+          tempDir.path,
+          messageCount: 11,
+        );
+        final addressBookPath = _createReadableFile(
+          tempDir.path,
+          'AddressBook-v22.abcddb',
+        );
+        _createProjectionDatabase(
+          tempDir.path,
+          retiredMacosImportDatabaseFileName,
+        );
+        _createProjectionDatabase(
+          tempDir.path,
+          retiredWorkingDatabaseFileName,
+        );
+
+        container = ProviderContainer(
+          overrides: [
+            overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
+            onboardingFullDiskAccessProvider.overrideWith((ref) => true),
+            onboardingMessagesDatabasePathProvider.overrideWith(
+              (ref) => messagesDbPath,
+            ),
+            onboardingDatabaseDirectoryPathProvider.overrideWith(
+              (ref) => tempDir.path,
+            ),
+            futureGetFolderAggregateProvider.overrideWith(
+              (ref) async => right(_addressBookAggregate(addressBookPath)),
+            ),
+          ],
+        );
+
+        final report = await container.read(
+          onboardingEnvironmentReportProvider.future,
+        );
+
+        expect(report.state, OnboardingEnvironmentState.readyToImport);
+        expect(
+          report.blockerKind,
+          OnboardingBlockerKind.sourceScopedImportDatabaseMissing,
+        );
+        expect(report.sourceScopedImportDatabase.exists, isFalse);
+        expect(report.conversationGraph.exists, isFalse);
+        expect(report.hasPopulatedAppDatabases, isFalse);
+      },
+    );
+
     test('conversation graph without topology is not ready', () async {
       final messagesDbPath = _createMessagesDatabase(
         tempDir.path,
