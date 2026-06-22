@@ -3161,6 +3161,11 @@ criteria.
   app-logger warnings. Contact-context and navigation preference persistence
   remain best-effort, but failed restores or writes are now observable instead
   of disappearing behind empty catches.
+- Retired unused root-provider-era sidebar index, boolean dark-mode, color
+  watcher, and selected-screen-tag providers after reference scans found no
+  active consumers. Removed the old `config/colors.dart` enum surface that was
+  only reachable through the retired color watcher, and regenerated Riverpod
+  outputs.
 
 ### Exit Criteria
 
