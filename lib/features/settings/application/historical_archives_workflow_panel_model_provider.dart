@@ -603,7 +603,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       phases: _runningArchiveImportPhases(),
       resultSummaryLines: const [
         'Archive import is running.',
-        'Source-scoped import and graph projection must both finish before imported archive messages become visible in normal app surfaces.',
+        'Source-scoped import and graph projection must both finish before imported archive messages become visible in shared message evidence surfaces.',
       ],
     );
 
@@ -972,7 +972,7 @@ String _availableStatusLabel(HistoricalArchivesWorkflowState workflowState) {
 String _availableSummaryText(HistoricalArchivesWorkflowState workflowState) {
   return switch (workflowState.preflight.status) {
     HistoricalArchivesPreflightStatus.waitingForFolder =>
-      'Historical archive import is a durable, step-by-step workflow. Choose an older Messages folder, review preflight evidence, then run source-scoped import and graph projection before messages become visible in normal app surfaces.',
+      'Historical archive import is a durable, step-by-step workflow. Choose an older Messages folder, review preflight evidence, then run source-scoped import and graph projection before messages become visible in shared message evidence surfaces.',
     HistoricalArchivesPreflightStatus.running =>
       'Historical Archives is reading the selected source folder now. The workflow remains visible while source checks gather basic message, chat, handle, and GUID evidence.',
     HistoricalArchivesPreflightStatus.completeReadyToImport =>
