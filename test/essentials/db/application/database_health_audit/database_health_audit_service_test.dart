@@ -131,6 +131,7 @@ void main() {
           report.summary.overallStatus,
           DatabaseHealthStatus.notApplicable,
         );
+        expect(report.summary.tableCount, 0);
         expect(report.summary.warningCount, 0);
         expect(
           report.summary.headlineFindings,
@@ -188,6 +189,7 @@ void main() {
             .map((check) => check.checkKey),
         contains('recovered_unlinked_attachments_to_messages_by_guid'),
       );
+      expect(report.summary.tableCount, 0);
       final retiredRecoveredRelationship = report.relationshipChecks
           .where((check) => check.databaseKey == 'retired_working')
           .singleWhere(

@@ -467,7 +467,7 @@ class DatabaseHealthAuditService {
 
     return HealthReportSummary(
       overallStatus: _overallStatus(allStatuses),
-      tableCount: tableInventory.length,
+      tableCount: activeTableInventory.length,
       relationshipCheckCount: relationshipChecks.length,
       invariantCheckCount: invariantChecks.length,
       passCount: passCount,
