@@ -3236,6 +3236,10 @@ criteria.
   Current direct database imports remain confined to app bootstrap and
   infrastructure adapters/repositories; application and presentation layers
   must use named providers, repositories, or ports.
+- Added an architecture tripwire for `Process.run`/`Process.start` usage.
+  Process execution remains confined to explicit infrastructure/system
+  boundaries such as log export, Full Disk Access launching, and Rust
+  extraction.
 
 ### Exit Criteria
 

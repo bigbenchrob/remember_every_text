@@ -123,6 +123,13 @@ const Set<String> _directSqliteImportAllowedFiles = {
   'lib/main.dart',
 };
 
+const Set<String> _processRunAllowedFiles = {
+  'lib/essentials/logging/infrastructure/log_export_service.dart',
+  'lib/essentials/onboarding/infrastructure/system/macos_full_disk_access.dart',
+  'lib/essentials/source_scoped_import/infrastructure/extraction/rust_message_extractor.dart',
+  'lib/features/settings/infrastructure/repositories/filesystem_message_history_coverage_report_exporter.dart',
+};
+
 const List<String> _retiredHistoricalArchiveUiPhrases = <String>[
   'canonical message ledger',
   'canonical ledger',
@@ -556,6 +563,21 @@ void main() {
             'Direct sqlite3/sqflite imports should stay in bootstrap or '
             'infrastructure adapters/repositories. Application and presentation '
             'layers must use named provider, repository, or port boundaries.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Process execution stays behind approved boundaries', () async {
+      final offenders = await _findProcessRunOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_processRunAllowedFiles.toList()..sort()),
+        reason:
+            'Process execution should stay in explicit infrastructure/system '
+            'boundaries. Feature/application code should depend on named ports, '
+            'repositories, or action services instead of launching processes '
+            'directly.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -8738,6 +8760,27 @@ Future<List<String>> _findDirectSqliteImportOffenders() async {
           importTarget == 'package:sqlite3/sqlite3.dart' ||
           importTarget.startsWith('package:sqflite'),
     )) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findProcessRunOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final processPattern = RegExp(r'\bProcess\.(?:run|start)\b');
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (processPattern.hasMatch(uncommented)) {
       offenders.add(filePath);
     }
   }
