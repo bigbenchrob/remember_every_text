@@ -1138,8 +1138,10 @@ criteria.
 - Root agent quick-reference files (`AGENTS.md` and
   `.github/copilot-instructions.md`) now direct ordinary database access to the
   source-scoped import / conversation graph / overlay providers, classify
-  `retainedArchiveMetadataStoreProvider` as retained archive metadata compatibility,
-  and state that retained `working.db` has no central app provider.
+  the then-current `retainedArchiveMetadataStoreProvider` as retained archive
+  metadata compatibility, and state that retained `working.db` has no central
+  app provider. Later slices retired that provider and demoted the old files to
+  cleanup/diagnostic storage.
 - Active instruction index links now point to current `01-PROJECT` and
   `42-SPEC-SYSTEM` paths instead of removed `00-PROJECT`, `00-GLOBAL`,
   `50/52/54/56-*` spec-system folders, or `30-NEW-FEATURE-ADDITION`.
@@ -1164,8 +1166,8 @@ criteria.
   ordinary UI providers or the user-facing projection; those docs now classify
   it as archive/recovery compatibility and diagnostics only.
 - Database Health Audit docs now match the implemented five-layer audit scope:
-  source-scoped import, conversation graph, overlay, retained legacy import,
-  and retained legacy working compatibility databases.
+  source-scoped import, conversation graph, overlay, retired import cleanup
+  diagnostics, and retired working cleanup diagnostics.
 - Active messages feature docs now describe overlay reads through graph
   evidence/overlay repositories rather than vague graph/legacy bridges, and
   the Message Evidence Spine invariant path was corrected.
