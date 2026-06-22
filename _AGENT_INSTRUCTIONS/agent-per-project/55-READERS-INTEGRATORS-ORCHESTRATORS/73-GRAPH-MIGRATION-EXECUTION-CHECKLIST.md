@@ -3170,6 +3170,10 @@ criteria.
   shared presentation metrics. Message bubbles, attachment evidence tiles, and
   URL previews still share the same sizing/radius vocabulary, but no longer
   require a hand-written analyzer suppression in active presentation code.
+- Replaced the contact handle-filter unlink action's ignored failure branch
+  with a structured app-logger warning. The action remains overlay-only and
+  success behavior is unchanged, but a failed unlink is now observable instead
+  of silently disappearing.
 
 ### Exit Criteria
 

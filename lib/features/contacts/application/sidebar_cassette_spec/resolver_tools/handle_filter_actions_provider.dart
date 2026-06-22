@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../../essentials/logging/feature_level_providers.dart';
 import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart';
@@ -35,9 +36,24 @@ class HandleFilterActions extends _$HandleFilterActions {
         .unlinkHandle(handleId: selectedHandleId);
 
     bool? contactDeleted;
-    result.fold((_) {}, (deleted) {
-      contactDeleted = deleted;
-    });
+    result.fold(
+      (failure) {
+        ref
+            .read(appLoggerProvider.notifier)
+            .warn(
+              'Selected contact handle unlink failed',
+              source: 'HandleFilterActions',
+              context: {
+                'contactId': contactId,
+                'selectedHandleId': selectedHandleId,
+                'failure': failure.message,
+              },
+            );
+      },
+      (deleted) {
+        contactDeleted = deleted;
+      },
+    );
     if (contactDeleted == null) {
       return;
     }

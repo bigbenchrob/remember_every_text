@@ -7,7 +7,7 @@ part of 'handle_filter_actions_provider.dart';
 // **************************************************************************
 
 String _$handleFilterActionsHash() =>
-    r'540fb14ce81bd71051edbf4342737b0a7ac4f20a';
+    r'0812544e38de1d26050f9c1114c27896c82d816f';
 
 /// See also [HandleFilterActions].
 @ProviderFor(HandleFilterActions)
