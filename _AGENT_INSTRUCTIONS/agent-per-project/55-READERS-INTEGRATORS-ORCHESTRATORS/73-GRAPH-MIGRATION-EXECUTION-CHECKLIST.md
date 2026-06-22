@@ -3178,6 +3178,10 @@ criteria.
   analyzer suppressions in active hand-written Dart, excluding generated/FRB
   surfaces. Active code must now fix ownership, derivation, or code shape
   instead of hiding diagnostics with `ignore` comments.
+- Added structured logging around the fire-and-forget conversation favourites
+  restore path. Favourites remain overlay-owned and optimistic writes still
+  flow through the action boundary, but restore failures are now visible
+  instead of becoming unobserved async errors.
 
 ### Exit Criteria
 

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../logging/feature_level_providers.dart';
 import '../../feature_level_providers.dart';
 
 part 'conversation_favourites_provider.g.dart';
@@ -103,11 +104,24 @@ class ConversationFavouritesController
   }
 
   Future<void> _restoreFavourites() async {
-    final store = await ref.read(conversationFavouritesStoreProvider.future);
-    final rawValue = await store.readCoreFavourites();
-    if (_hasLocalMutation) {
-      return;
+    try {
+      final store = await ref.read(conversationFavouritesStoreProvider.future);
+      final rawValue = await store.readCoreFavourites();
+      if (_hasLocalMutation) {
+        return;
+      }
+      state = ConversationFavourites.fromCoreStorage(rawValue);
+    } catch (error, stackTrace) {
+      ref
+          .read(appLoggerProvider.notifier)
+          .warn(
+            'Conversation favourites restore failed',
+            source: 'ConversationFavouritesController',
+            context: <String, Object?>{
+              'error': error.toString(),
+              'stackTrace': stackTrace.toString(),
+            },
+          );
     }
-    state = ConversationFavourites.fromCoreStorage(rawValue);
   }
 }
