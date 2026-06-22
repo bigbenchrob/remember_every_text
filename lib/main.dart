@@ -1,5 +1,3 @@
-// ignore_for_file: unnecessary_overrides, use_setters_to_change_properties
-
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
@@ -39,13 +37,8 @@ class _MyDelegate extends NSWindowDelegate {
   ProviderContainer? _container;
   Timer? _pendingSave;
 
-  void setContainer(ProviderContainer container) {
+  void attachContainer(ProviderContainer container) {
     _container = container;
-  }
-
-  @override
-  void windowDidResize() {
-    super.windowDidResize();
   }
 
   @override
@@ -188,7 +181,7 @@ void main() async {
   );
 
   // Set up the delegate to access the container
-  delegate.setContainer(container);
+  delegate.attachContainer(container);
 
   // Initialize the app logger early so all subsequent operations are captured.
   final logger = container.read(appLoggerProvider.notifier);

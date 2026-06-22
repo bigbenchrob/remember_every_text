@@ -3154,6 +3154,9 @@ criteria.
   utility after confirming no active imports or extension-member uses remained.
   This removed stale calendar-replacement wording and file-level analyzer
   suppressions from dormant code.
+- Removed the remaining root `main.dart` file-level analyzer suppressions by
+  deleting a no-op window-resize override and renaming the delegate container
+  injection method to an action-shaped `attachContainer` method.
 
 ### Exit Criteria
 
