@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:core';
 import 'dart:io';
+
 import 'package:path/path.dart';
 
 import '../../../../../core/util/paths_helper.dart';
@@ -40,8 +40,9 @@ class AddressBookFolderPathsFinder {
     lister.listen(
       (entity) {
         if (entity is! File) {
-          if (directoryAtPathContainsAddressBookDB(entity.path))
+          if (directoryAtPathContainsAddressBookDB(entity.path)) {
             directories.add(Directory(entity.path));
+          }
         }
       },
       onDone: () => completer.complete(directories),
