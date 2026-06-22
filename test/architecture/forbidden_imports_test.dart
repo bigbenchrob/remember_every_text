@@ -136,6 +136,11 @@ const Set<String> _platformChannelAllowedFiles = {
   'lib/essentials/services/startup_flags_service.dart',
 };
 
+const Set<String> _fileSelectorAllowedFiles = {
+  'lib/features/attachments/infrastructure/repositories/filesystem_attachment_archive_file_operations.dart',
+  'lib/features/settings/infrastructure/repositories/file_selector_historical_archive_folder_chooser.dart',
+};
+
 const Set<String> _pathProviderImportAllowedFiles = {
   'lib/core/util/paths_helper.dart',
   'lib/essentials/db/feature_level_providers.dart',
@@ -672,6 +677,21 @@ void main() {
             'integration boundaries. Keep them in explicit services, bridges, '
             'or infrastructure adapters; feature and presentation code should '
             'depend on named Dart APIs.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('File selector access stays behind approved boundaries', () async {
+      final offenders = await _findFileSelectorOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_fileSelectorAllowedFiles.toList()..sort()),
+        reason:
+            'Native file/folder selection is a platform boundary. Keep it in '
+            'infrastructure adapters for explicit archive export or source '
+            'selection flows; presentation and application code should depend '
+            'on named chooser/operation ports.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -9020,6 +9040,34 @@ Future<List<String>> _findPlatformChannelOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (channelPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findFileSelectorOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    if (imports.any(
+          (importTarget) =>
+              importTarget.startsWith('package:file_selector') ||
+              importTarget.startsWith(
+                'package:file_selector_platform_interface',
+              ),
+        ) ||
+        uncommented.contains('FileSelectorPlatform.instance')) {
       offenders.add(filePath);
     }
   }
