@@ -56,13 +56,57 @@ class ContactPickerActions extends _$ContactPickerActions {
   }
 
   void prewarmContact({required int contactId}) {
-    unawaited(ref.read(contactProfileProvider(contactId: contactId).future));
-    unawaited(
-      ref.read(
+    unawaited(_prewarmContactProfile(contactId: contactId));
+    unawaited(_prewarmContactMessages(contactId: contactId));
+  }
+
+  Future<void> _prewarmContactProfile({required int contactId}) async {
+    try {
+      await ref.read(contactProfileProvider(contactId: contactId).future);
+    } catch (error, stackTrace) {
+      _logPrewarmFailure(
+        contactId: contactId,
+        stage: 'contactProfile',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  Future<void> _prewarmContactMessages({required int contactId}) async {
+    try {
+      await ref.read(
         messages_feature
             .prewarmContactMessagesProvider(contactId: contactId)
             .future,
-      ),
-    );
+      );
+    } catch (error, stackTrace) {
+      _logPrewarmFailure(
+        contactId: contactId,
+        stage: 'contactMessages',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  void _logPrewarmFailure({
+    required int contactId,
+    required String stage,
+    required Object error,
+    required StackTrace stackTrace,
+  }) {
+    ref
+        .read(appLoggerProvider.notifier)
+        .warn(
+          'Contact prewarm failed',
+          source: 'ContactPickerActions',
+          context: <String, Object?>{
+            'contactId': contactId,
+            'stage': stage,
+            'error': error.toString(),
+            'stackTrace': stackTrace.toString(),
+          },
+        );
   }
 }

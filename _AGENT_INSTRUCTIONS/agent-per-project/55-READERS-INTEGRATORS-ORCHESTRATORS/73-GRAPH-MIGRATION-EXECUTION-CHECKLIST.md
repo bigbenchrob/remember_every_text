@@ -3186,6 +3186,10 @@ criteria.
   contact-picker filter mode: restore failures are logged, and delayed overlay
   restores cannot overwrite a local user choice made after the controller
   becomes active.
+- Added structured logging around contact picker background prewarm failures.
+  Contact selection remains non-blocking, but failed profile or message prewarm
+  is now visible through the app logger instead of disappearing as an
+  unobserved background future.
 
 ### Exit Criteria
 
