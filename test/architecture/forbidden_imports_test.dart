@@ -136,6 +136,12 @@ const Set<String> _platformChannelAllowedFiles = {
   'lib/essentials/services/startup_flags_service.dart',
 };
 
+const Set<String> _urlLauncherAllowedFiles = {
+  'lib/essentials/conversation_graph/infrastructure/repositories/url_launcher_archived_attachment_file_opener.dart',
+  'lib/essentials/external_links/infrastructure/url_launcher_external_uri_opener.dart',
+  'lib/essentials/logging/infrastructure/log_export_service.dart',
+};
+
 const Set<String> _fileSelectorAllowedFiles = {
   'lib/features/attachments/infrastructure/repositories/filesystem_attachment_archive_file_operations.dart',
   'lib/features/settings/infrastructure/repositories/file_selector_historical_archive_folder_chooser.dart',
@@ -677,6 +683,20 @@ void main() {
             'integration boundaries. Keep them in explicit services, bridges, '
             'or infrastructure adapters; feature and presentation code should '
             'depend on named Dart APIs.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('URL launcher access stays behind approved boundaries', () async {
+      final offenders = await _findUrlLauncherOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_urlLauncherAllowedFiles.toList()..sort()),
+        reason:
+            'External URL/file opening is a platform side effect. Keep '
+            'url_launcher behind explicit infrastructure opener/exporter '
+            'boundaries; presentation should dispatch named actions or ports.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -9040,6 +9060,30 @@ Future<List<String>> _findPlatformChannelOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (channelPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findUrlLauncherOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final launchPattern = RegExp(r'(^|[^\w.])launchUrl\(');
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    if (imports.contains('package:url_launcher/url_launcher.dart') ||
+        launchPattern.hasMatch(uncommented) ||
+        uncommented.contains('LaunchMode.')) {
       offenders.add(filePath);
     }
   }

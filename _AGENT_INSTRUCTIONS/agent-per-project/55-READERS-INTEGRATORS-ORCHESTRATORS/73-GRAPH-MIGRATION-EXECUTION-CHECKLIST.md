@@ -3276,6 +3276,9 @@ criteria.
   `MethodChannel`, `EventChannel`, and `BasicMessageChannel` remain explicit
   native integration boundaries owned by services, bridges, or infrastructure
   adapters; feature and presentation code should depend on named Dart APIs.
+- Added an architecture tripwire for URL/file opening through `url_launcher`.
+  External opening remains behind infrastructure opener/exporter boundaries;
+  presentation code should dispatch named actions or ports.
 - Added an architecture tripwire for native file/folder selectors. File chooser
   access remains confined to infrastructure adapters for archive export and
   historical source selection; presentation/application code should use named
