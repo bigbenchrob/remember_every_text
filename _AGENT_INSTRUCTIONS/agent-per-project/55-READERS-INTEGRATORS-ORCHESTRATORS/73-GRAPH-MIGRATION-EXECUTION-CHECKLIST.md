@@ -3182,6 +3182,10 @@ criteria.
   restore path. Favourites remain overlay-owned and optimistic writes still
   flow through the action boundary, but restore failures are now visible
   instead of becoming unobserved async errors.
+- Added the same restore discipline to conversation-signature preferences and
+  contact-picker filter mode: restore failures are logged, and delayed overlay
+  restores cannot overwrite a local user choice made after the controller
+  becomes active.
 
 ### Exit Criteria
 

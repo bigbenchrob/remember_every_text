@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../../../essentials/logging/feature_level_providers.dart';
 import '../../../feature_level_providers.dart';
 import 'conversation_signature_display_provider.dart';
 
@@ -117,13 +118,26 @@ class ConversationSignaturePreferencesController
   }
 
   Future<void> _restorePersistedPreferences() async {
-    final store = await ref.read(
-      conversationSignaturePreferencesStoreProvider.future,
-    );
-    final rawValue = await store.readPreferences();
-    if (_hasLocalMutation) {
-      return;
+    try {
+      final store = await ref.read(
+        conversationSignaturePreferencesStoreProvider.future,
+      );
+      final rawValue = await store.readPreferences();
+      if (_hasLocalMutation) {
+        return;
+      }
+      state = ConversationSignaturePreferences.fromStorage(rawValue);
+    } catch (error, stackTrace) {
+      ref
+          .read(appLoggerProvider.notifier)
+          .warn(
+            'Conversation signature preferences restore failed',
+            source: 'ConversationSignaturePreferencesController',
+            context: <String, Object?>{
+              'error': error.toString(),
+              'stackTrace': stackTrace.toString(),
+            },
+          );
     }
-    state = ConversationSignaturePreferences.fromStorage(rawValue);
   }
 }

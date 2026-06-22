@@ -60,5 +60,29 @@ void main() {
     test('falls back to all contacts for unknown stored values', () {
       expect(PickerFilterMode.fromStorage('unknown'), PickerFilterMode.all);
     });
+
+    test('does not let delayed restore overwrite local mode choice', () async {
+      final firstContainer = buildContainer();
+      addTearDown(firstContainer.dispose);
+
+      await firstContainer
+          .read(pickerFilterProvider.notifier)
+          .setMode(PickerFilterMode.favouritesOnly);
+
+      final restoredContainer = buildContainer();
+      addTearDown(restoredContainer.dispose);
+
+      restoredContainer.read(pickerFilterProvider);
+      await restoredContainer
+          .read(pickerFilterProvider.notifier)
+          .setMode(PickerFilterMode.all);
+
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(
+        restoredContainer.read(pickerFilterProvider),
+        PickerFilterMode.all,
+      );
+    });
   });
 }

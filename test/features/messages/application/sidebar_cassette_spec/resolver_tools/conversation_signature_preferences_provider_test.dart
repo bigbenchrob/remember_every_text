@@ -77,5 +77,38 @@ void main() {
       expect(restored.filter, ConversationSignatureFilter.recent);
       expect(restored.sort, ConversationSignatureSort.recent);
     });
+
+    test('does not let delayed restore overwrite local choices', () async {
+      final firstContainer = buildContainer();
+      addTearDown(firstContainer.dispose);
+
+      await firstContainer
+          .read(conversationSignaturePreferencesControllerProvider.notifier)
+          .setFilter(ConversationSignatureFilter.groups);
+      await firstContainer
+          .read(conversationSignaturePreferencesControllerProvider.notifier)
+          .setSort(ConversationSignatureSort.largest);
+
+      final restoredContainer = buildContainer();
+      addTearDown(restoredContainer.dispose);
+
+      restoredContainer.read(
+        conversationSignaturePreferencesControllerProvider,
+      );
+      await restoredContainer
+          .read(conversationSignaturePreferencesControllerProvider.notifier)
+          .setFilter(ConversationSignatureFilter.oneToOne);
+      await restoredContainer
+          .read(conversationSignaturePreferencesControllerProvider.notifier)
+          .setSort(ConversationSignatureSort.mostActiveRecently);
+
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      final preferences = restoredContainer.read(
+        conversationSignaturePreferencesControllerProvider,
+      );
+      expect(preferences.filter, ConversationSignatureFilter.oneToOne);
+      expect(preferences.sort, ConversationSignatureSort.mostActiveRecently);
+    });
   });
 }

@@ -7,7 +7,7 @@ part of 'conversation_signature_preferences_provider.dart';
 // **************************************************************************
 
 String _$conversationSignaturePreferencesControllerHash() =>
-    r'521b89e5693b060aea82d4e5c5448c540ddd9bbb';
+    r'5c793511909e132edd34c18c803cfe938401b9f3';
 
 /// See also [ConversationSignaturePreferencesController].
 @ProviderFor(ConversationSignaturePreferencesController)

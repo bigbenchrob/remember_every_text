@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../../../essentials/logging/feature_level_providers.dart';
 import '../../../feature_level_providers.dart';
 
 part 'picker_filter_mode_provider.g.dart';
@@ -32,6 +33,7 @@ enum PickerFilterMode {
 @Riverpod(keepAlive: true)
 class PickerFilter extends _$PickerFilter {
   bool _restoreScheduled = false;
+  bool _hasLocalMutation = false;
 
   @override
   PickerFilterMode build() {
@@ -44,6 +46,7 @@ class PickerFilter extends _$PickerFilter {
   }
 
   Future<void> setMode(PickerFilterMode mode) async {
+    _hasLocalMutation = true;
     state = mode;
 
     final store = await ref.read(pickerFilterModeStoreProvider.future);
@@ -51,8 +54,24 @@ class PickerFilter extends _$PickerFilter {
   }
 
   Future<void> _restorePersistedMode() async {
-    final store = await ref.read(pickerFilterModeStoreProvider.future);
-    final rawValue = await store.readMode();
-    state = PickerFilterMode.fromStorage(rawValue);
+    try {
+      final store = await ref.read(pickerFilterModeStoreProvider.future);
+      final rawValue = await store.readMode();
+      if (_hasLocalMutation) {
+        return;
+      }
+      state = PickerFilterMode.fromStorage(rawValue);
+    } catch (error, stackTrace) {
+      ref
+          .read(appLoggerProvider.notifier)
+          .warn(
+            'Contact picker filter mode restore failed',
+            source: 'PickerFilter',
+            context: <String, Object?>{
+              'error': error.toString(),
+              'stackTrace': stackTrace.toString(),
+            },
+          );
+    }
   }
 }
