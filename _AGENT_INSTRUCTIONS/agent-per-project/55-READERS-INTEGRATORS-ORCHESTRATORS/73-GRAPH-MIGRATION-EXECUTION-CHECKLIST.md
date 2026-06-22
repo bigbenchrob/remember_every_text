@@ -3247,6 +3247,10 @@ criteria.
   values remain owned by infrastructure/system adapters that resolve runtime
   paths or diagnostics; application and presentation code receive explicit
   values through named boundaries.
+- Added an architecture tripwire for platform-runtime checks such as
+  `Platform.isMacOS`, OS metadata, and `Platform.resolvedExecutable`. Runtime
+  platform decisions remain owned by bootstrap, infrastructure, or explicit
+  system-adapter boundaries.
 
 ### Exit Criteria
 

@@ -147,6 +147,17 @@ const Set<String> _platformEnvironmentAllowedFiles = {
   'lib/features/attachments/infrastructure/repositories/sqlite_historical_snapshot_reader.dart',
 };
 
+const Set<String> _platformRuntimeAllowedFiles = {
+  'lib/essentials/conversation_graph/infrastructure/system/local_chat_db_monitor_runtime_environment.dart',
+  'lib/essentials/db/infrastructure/repositories/local_database_health_runtime_environment.dart',
+  'lib/essentials/logging/infrastructure/log_export_service.dart',
+  'lib/essentials/logging/infrastructure/support_bundle_export_service.dart',
+  'lib/essentials/source_scoped_import/infrastructure/extraction/rust_message_extractor.dart',
+  'lib/essentials/window_state/infrastructure/persistence/macos_window_manager.dart',
+  'lib/features/settings/infrastructure/repositories/filesystem_message_history_coverage_report_exporter.dart',
+  'lib/main.dart',
+};
+
 const List<String> _retiredHistoricalArchiveUiPhrases = <String>[
   'canonical message ledger',
   'canonical ledger',
@@ -631,6 +642,20 @@ void main() {
         );
       },
     );
+
+    test('Platform runtime access stays behind approved boundaries', () async {
+      final offenders = await _findPlatformRuntimeOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_platformRuntimeAllowedFiles.toList()..sort()),
+        reason:
+            'Platform runtime checks should stay in bootstrap, infrastructure, '
+            'or explicit system adapters. Feature/application/presentation code '
+            'should depend on named runtime environment boundaries.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
 
     test(
       'Sidebar semantic/application imports do not grow beyond tracked temporary exceptions',
@@ -8873,6 +8898,29 @@ Future<List<String>> _findPlatformEnvironmentOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (environmentPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findPlatformRuntimeOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final runtimePattern = RegExp(
+    r'\bPlatform\.(?:isMacOS|isWindows|isLinux|operatingSystem|operatingSystemVersion|resolvedExecutable)\b',
+  );
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (runtimePattern.hasMatch(uncommented)) {
       offenders.add(filePath);
     }
   }
