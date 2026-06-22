@@ -3228,6 +3228,10 @@ criteria.
   confined to window-state scheduling and sidebar preference persistence;
   ordinary workflows should prefer explicit `try`/`catch` blocks with typed
   logging or state.
+- Added an architecture tripwire for provider invalidation usage. Existing
+  invalidations remain confined to named refresh, reset, build, archive, and
+  migration action boundaries; future UI/state work should prefer derivation,
+  explicit action boundaries, and versioned evidence scopes.
 
 ### Exit Criteria
 

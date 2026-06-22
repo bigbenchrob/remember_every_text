@@ -88,6 +88,25 @@ const Set<String> _catchErrorAllowedFiles = {
   'lib/main.dart',
 };
 
+const Set<String> _providerInvalidationAllowedFiles = {
+  'lib/essentials/conversation_graph/application/conversation_graph_build_controller_provider.dart',
+  'lib/essentials/conversation_graph/application/status/conversation_graph_status_sheet_actions_provider.dart',
+  'lib/essentials/onboarding/application/message_data_reset_service.dart',
+  'lib/essentials/onboarding/application/onboarding_gate_provider.dart',
+  'lib/features/attachments/application/archive_settings_provider.dart',
+  'lib/features/attachments/application/attachment_archive_service_provider.dart',
+  'lib/features/contacts/application/services/manual_handle_link_service.dart',
+  'lib/features/contacts/application/sidebar_cassette_spec/resolver_tools/contact_display_name_override_actions_provider.dart',
+  'lib/features/contacts/application/sidebar_cassette_spec/resolver_tools/contact_favorite_actions_provider.dart',
+  'lib/features/contacts/application/sidebar_cassette_spec/resolver_tools/contact_sidebar_refresh_actions_provider.dart',
+  'lib/features/contacts/feature_level_providers.dart',
+  'lib/features/handles/application/settings_cassette_spec/resolver_tools/manual_linking_provider.dart',
+  'lib/features/handles/application/settings_cassette_spec/resolver_tools/spam_management_provider.dart',
+  'lib/features/handles/feature_level_providers.dart',
+  'lib/features/messages/application/sidebar_cassette_spec/resolver_tools/message_heatmap_refresh_actions_provider.dart',
+  'lib/features/settings/application/historical_archives_workflow_panel_model_provider.dart',
+};
+
 const List<String> _retiredHistoricalArchiveUiPhrases = <String>[
   'canonical message ledger',
   'canonical ledger',
@@ -493,6 +512,20 @@ void main() {
             'Future.catchError chains should stay limited to explicit async '
             'persistence/scheduling boundaries. Prefer try/catch with typed '
             'logging inside ordinary application workflows.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Provider invalidation stays behind approved boundaries', () async {
+      final offenders = await _findProviderInvalidationOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_providerInvalidationAllowedFiles.toList()..sort()),
+        reason:
+            'Provider invalidation is an imperative refresh/reset tool. Keep it '
+            'inside named action, reset, build, or migration boundaries; ordinary '
+            'UI state should flow from derivation and versioned evidence scopes.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -8627,6 +8660,29 @@ Future<List<String>> _findCatchErrorOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (uncommented.contains('.catchError(')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findProviderInvalidationOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final invalidationPattern = RegExp(
+    r'\b(?:ref|_ref|widget\.ref)\.invalidate(?:Self)?\(',
+  );
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (invalidationPattern.hasMatch(uncommented)) {
       offenders.add(filePath);
     }
   }
