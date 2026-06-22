@@ -314,15 +314,16 @@ void main() {
       );
     });
 
-    test('Hand-written Dart does not suppress unused locals', () async {
-      final offenders = await _findUnusedLocalVariableIgnoreOffenders();
+    test('Hand-written Dart does not suppress analyzer diagnostics', () async {
+      final offenders = await _findAnalyzerSuppressionOffenders();
 
       expect(
         offenders,
         isEmpty,
         reason:
-            'Unused-local ignores hide unclear ownership. Keep values alive '
-            'through an explicitly named owner, or remove the value.\n'
+            'Analyzer suppressions hide unclear ownership. Fix the underlying '
+            'derivation, ownership, or code shape instead of suppressing the '
+            'diagnostic in active hand-written Dart.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -8312,10 +8313,11 @@ Future<List<String>> _findActiveTodoFixmeOffenders() async {
   return offenders..sort();
 }
 
-Future<List<String>> _findUnusedLocalVariableIgnoreOffenders() async {
+Future<List<String>> _findAnalyzerSuppressionOffenders() async {
   final files = await _collectProjectDartFiles((path) {
     if (path.endsWith('.g.dart') ||
         path.endsWith('.freezed.dart') ||
+        path == 'lib/api.dart' ||
         path == 'lib/frb_generated.dart' ||
         path == 'lib/frb_generated.io.dart' ||
         path == 'lib/frb_generated.web.dart' ||
@@ -8324,12 +8326,12 @@ Future<List<String>> _findUnusedLocalVariableIgnoreOffenders() async {
     }
     return path.startsWith('lib/') || path.startsWith('test/');
   });
-  const marker = 'ignore: unused_local_variable';
+  final marker = RegExp(r'//\s*ignore(?:_for_file)?:');
   final offenders = <String>[];
 
   for (final filePath in files) {
     final source = await File(filePath).readAsString();
-    if (source.contains(marker)) {
+    if (marker.hasMatch(source)) {
       offenders.add(filePath);
     }
   }

@@ -3174,6 +3174,10 @@ criteria.
   with a structured app-logger warning. The action remains overlay-only and
   success behavior is unchanged, but a failed unlink is now observable instead
   of silently disappearing.
+- Broadened the architecture tripwire from unused-local suppressions to all
+  analyzer suppressions in active hand-written Dart, excluding generated/FRB
+  surfaces. Active code must now fix ownership, derivation, or code shape
+  instead of hiding diagnostics with `ignore` comments.
 
 ### Exit Criteria
 
