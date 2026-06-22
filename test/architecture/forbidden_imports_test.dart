@@ -138,6 +138,11 @@ const Set<String> _rawFileSinkAllowedFiles = {
 
 const Set<String> _appBootstrapPrimitiveAllowedFiles = {'lib/main.dart'};
 
+const Set<String> _macosWindowUtilsAllowedFiles = {
+  'lib/essentials/window_state/infrastructure/persistence/macos_window_manager.dart',
+  'lib/main.dart',
+};
+
 const Set<String> _platformChannelAllowedFiles = {
   'lib/essentials/logging/infrastructure/macos_unified_log_bridge.dart',
   'lib/essentials/services/native_link_preview_service.dart',
@@ -709,6 +714,24 @@ void main() {
             'Actual users:\n${offenders.join('\n')}',
       );
     });
+
+    test(
+      'macOS window utility access stays behind approved boundaries',
+      () async {
+        final offenders = await _findMacosWindowUtilsOffenders();
+
+        expect(
+          offenders,
+          orderedEquals(_macosWindowUtilsAllowedFiles.toList()..sort()),
+          reason:
+              'macos_window_utils is a low-level NSWindow integration boundary. '
+              'Keep direct access in app bootstrap or the window-state '
+              'infrastructure adapter; UI and application code should use '
+              'window-state actions/services.\n'
+              'Actual users:\n${offenders.join('\n')}',
+        );
+      },
+    );
 
     test('Platform channels stay behind approved boundaries', () async {
       final offenders = await _findPlatformChannelOffenders();
@@ -9119,6 +9142,33 @@ Future<List<String>> _findAppBootstrapPrimitiveOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (bootstrapPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findMacosWindowUtilsOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final utilityPattern = RegExp(
+    r'\b(?:MacosWindowUtilsConfig|NSWindowDelegate|WindowManipulator)\b',
+  );
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    if (imports.contains(
+          'package:macos_window_utils/macos_window_utils.dart',
+        ) ||
+        utilityPattern.hasMatch(uncommented)) {
       offenders.add(filePath);
     }
   }

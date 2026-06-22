@@ -3248,6 +3248,10 @@ criteria.
   framework binding initialization, media initialization, and root platform
   error handling remain confined to `main.dart`; other layers should receive an
   initialized runtime through named providers or services.
+- Added an architecture tripwire for `macos_window_utils` access. Low-level
+  NSWindow integration remains confined to app bootstrap and the window-state
+  infrastructure adapter; UI/application code should use window-state actions
+  or services.
 - Added an architecture tripwire for `path_provider` imports. Resolved paths
   remain owned by shared path/bootstrap or infrastructure services; application
   and presentation code should receive paths through named boundaries.
