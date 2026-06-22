@@ -78,6 +78,11 @@ const Set<String> _debugPrintAllowedFiles = {
   'lib/main.dart',
 };
 
+const Set<String> _silentCatchAllowedFiles = {
+  'lib/essentials/logging/infrastructure/log_file_writer.dart',
+  'lib/features/messages/presentation/widgets/url_preview_widget.dart',
+};
+
 const List<String> _retiredHistoricalArchiveUiPhrases = <String>[
   'canonical message ledger',
   'canonical ledger',
@@ -450,6 +455,24 @@ void main() {
               'debugPrint calls should stay limited to explicit startup, logging, '
               'or low-level diagnostic boundaries. Feature/application failures '
               'should use the app logger or a named diagnostic boundary.\n'
+              'Actual users:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
+    test(
+      'Silent catch usage stays behind approved fallback boundaries',
+      () async {
+        final offenders = await _findSilentCatchOffenders();
+
+        expect(
+          offenders,
+          orderedEquals(_silentCatchAllowedFiles.toList()..sort()),
+          reason:
+              'catch (_) and empty catch blocks should stay limited to explicit '
+              'fallback boundaries where no safer reporting channel exists. '
+              'Ordinary application failures should be logged or represented as '
+              'typed state.\n'
               'Actual users:\n${offenders.join('\n')}',
         );
       },
@@ -8544,6 +8567,27 @@ Future<List<String>> _findDebugPrintOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (debugPrintPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findSilentCatchOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final silentCatchPattern = RegExp(r'catch\s*(?:\(_\)|\{\s*\})');
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (silentCatchPattern.hasMatch(uncommented)) {
       offenders.add(filePath);
     }
   }

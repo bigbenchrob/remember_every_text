@@ -3220,6 +3220,10 @@ criteria.
   future debug output remains confined to explicit startup, logging, and
   low-level diagnostic boundaries instead of reappearing in feature or
   application code.
+- Added an architecture tripwire for silent `catch (_)` and empty catch blocks.
+  Current silent catches are limited to the log-writer failure-degradation path
+  and URL-domain fallback parsing; new ordinary application failures must be
+  logged or represented as typed state.
 
 ### Exit Criteria
 
