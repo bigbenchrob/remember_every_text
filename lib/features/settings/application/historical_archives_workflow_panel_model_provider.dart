@@ -305,7 +305,8 @@ HistoricalArchivesWorkflowState buildInitialHistoricalArchivesWorkflowState() {
       HistoricalArchivesWorkflowPhaseViewModel(
         label: 'Writing archive rows to source-scoped import',
         status: HistoricalArchivesWorkflowPhaseStatus.waiting,
-        detail: 'Ledger ingestion starts after you run archive import.',
+        detail:
+            'Source-scoped import ingestion starts after you run archive import.',
       ),
       HistoricalArchivesWorkflowPhaseViewModel(
         label: 'Projecting archive rows into conversation graph',
@@ -469,7 +470,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         status: HistoricalArchivesPreflightStatus.running,
         statusLabel: 'Removing imported archive data',
         detail:
-            'Deleting previously imported archive ledger rows for this source and refreshing graph-visible data.',
+            'Deleting previously imported source-scoped import rows for this source and refreshing graph-visible data.',
       ),
       activityLog: [
         HistoricalArchivesLogEntryViewModel(
