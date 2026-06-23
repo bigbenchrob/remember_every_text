@@ -1818,7 +1818,9 @@ criteria.
 - Moved unfamiliar-source handle review actions behind the handles feature
   boundary. `HandleLensView` now calls a typed handle review action provider;
   overlay persistence for reviewed/unlinked handles is owned by handles
-  infrastructure and guarded by an architecture tripwire.
+  infrastructure and guarded by an architecture tripwire. Added a provider
+  spread guard so `handleReviewActionsProvider` remains a handles-feature
+  bridge consumed only by named application action/dispatch boundaries.
 - Moved contact hero display-name override writes behind a contact action
   boundary. The hero widget still collects the edited name, but user-intent
   persistence now flows through `ContactDisplayNameOverrideController` and an

@@ -428,6 +428,11 @@ const Set<String> _handleLensActionProviderAllowedFiles = {
   'lib/features/messages/presentation/view/handle_lens_view.dart',
 };
 
+const Set<String> _handleReviewActionProviderAllowedFiles = {
+  'lib/essentials/sidebar/application/sidebar_action_dispatcher.dart',
+  'lib/features/messages/application/handle_lens/handle_lens_actions_provider.dart',
+};
+
 const Set<String>
 _conversationSignaturePreferencesActionProviderAllowedFiles = {
   'lib/features/messages/application/sidebar_cassette_spec/widget_builders/conversation_signatures_widget.dart',
@@ -3235,6 +3240,20 @@ void main() {
             'lens view boundary. Other surfaces should receive typed handle '
             'review/link workflows instead of borrowing unfamiliar-source '
             'screen actions directly.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Handle review action provider stays bridge-owned', () async {
+      final offenders = await _findHandleReviewActionProviderOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_handleReviewActionProviderAllowedFiles.toList()..sort()),
+        reason:
+            'handleReviewActionsProvider is the handles-feature review bridge. '
+            'It should be consumed only by named application action/dispatch '
+            'boundaries, not directly by presentation widgets.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -7689,6 +7708,14 @@ Future<List<String>> _findHandleLensActionProviderOffenders() async {
   }
 
   return offenders.toList()..sort();
+}
+
+Future<List<String>> _findHandleReviewActionProviderOffenders() async {
+  const actionsFile = 'lib/features/handles/feature_level_providers.dart';
+  return _findProviderUsageOffenders(
+    providerName: 'handleReviewActionsProvider',
+    providerFile: actionsFile,
+  );
 }
 
 Future<List<String>>
