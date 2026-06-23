@@ -2700,8 +2700,9 @@ criteria.
     conversation-graph application action controller. The status sheet now
     renders buttons and local spinner/hover state only; provider invalidation,
     manual graph build execution, summary/health refresh, and status run
-    logging live behind the action boundary. Added a tripwire preventing those
-    details from returning to the presentation sheet.
+    logging live behind the action boundary. Added tripwires preventing those
+    details from returning to the presentation sheet and preventing the status
+    sheet action provider from spreading beyond the status sheet.
   - Moved sidebar retry refresh invalidation out of contact hero and message
     heatmap widget builders into feature-local application action providers.
     Sidebar widgets now render retry controls and invoke typed refresh actions;

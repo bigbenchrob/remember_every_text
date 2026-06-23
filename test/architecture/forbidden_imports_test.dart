@@ -33,6 +33,10 @@ const Set<String> _sidebarBodyModelActionProviderAllowedFiles = {
   'lib/essentials/sidebar/presentation/view/sidebar_body_model_content.dart',
 };
 
+const Set<String> _graphStatusSheetActionProviderAllowedFiles = {
+  'lib/essentials/conversation_graph/presentation/status/conversation_graph_status_sheet.dart',
+};
+
 // Retired database filenames are cleanup/diagnostic inventory only. Keep their
 // allowlists small so old files cannot regain provider or workflow authority.
 const Set<String> _retiredArchiveMetadataProviderAllowedFiles = {};
@@ -4152,6 +4156,23 @@ void main() {
             'Conversation graph status sheet controls may render refresh/build '
             'buttons, but provider invalidation, graph build execution, and '
             'status run logging belong in the application action boundary.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Graph status sheet action provider stays sheet-owned', () async {
+      final offenders = await _findGraphStatusSheetActionProviderOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(
+          _graphStatusSheetActionProviderAllowedFiles.toList()..sort(),
+        ),
+        reason:
+            'conversationGraphStatusSheetActionsProvider should be consumed '
+            'only by the graph status sheet. Other diagnostics should own '
+            'their own application action boundary instead of borrowing sheet '
+            'refresh/build/logging authority.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -8742,6 +8763,15 @@ Future<List<String>> _findGraphStatusSheetControlBoundaryOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>> _findGraphStatusSheetActionProviderOffenders() async {
+  const actionsFile =
+      'lib/essentials/conversation_graph/application/status/conversation_graph_status_sheet_actions_provider.dart';
+  return _findProviderUsageOffenders(
+    providerName: 'conversationGraphStatusSheetActionsProvider',
+    providerFile: actionsFile,
+  );
 }
 
 Future<List<String>> _findOnboardingGraphBuildPresentationOffenders() async {
