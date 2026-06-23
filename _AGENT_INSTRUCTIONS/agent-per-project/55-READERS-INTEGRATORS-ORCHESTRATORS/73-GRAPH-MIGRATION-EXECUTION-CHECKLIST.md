@@ -3327,6 +3327,10 @@ criteria.
   to render through `MessageEvidenceTimelineView`. Source-specific views may
   compose `MessageEvidenceHeaderModel`, but must not render independent header
   widgets that can stack or drift from the shared evidence surface.
+- Added an architecture tripwire requiring source-specific message views to
+  render evidence rows through `MessageEvidenceTimelineView`. The shared
+  timeline owns skeleton/window hydration and row rendering; source views own
+  scope/header composition only.
 - Added an architecture tripwire for sqflite FFI bootstrap. `sqfliteFfiInit`,
   `databaseFactoryFfi`, and `databaseFactory` mutation remain app-bootstrap
   concerns; production code should receive initialized database services rather

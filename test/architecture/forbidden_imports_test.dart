@@ -2326,6 +2326,21 @@ void main() {
       },
     );
 
+    test('Message evidence rows render only through timeline view', () async {
+      final offenders = await _findMessageEvidenceRowDirectRenderOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Source-specific message views should not render MessageEvidenceRow '
+            'directly. They should produce a typed MessageEvidenceScope, let '
+            'MessageEvidenceTimelineView own skeleton/window hydration, and '
+            'let the shared timeline render hydrated evidence rows.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Conversation message header uses context boundary', () async {
       final offenders =
           await _findConversationMessageHeaderContextBoundaryOffenders();
@@ -6212,6 +6227,33 @@ Future<List<String>> _findMessageEvidenceHeaderDirectRenderOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (RegExp(r'\bMessageEvidenceHeader\s*\(').hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findMessageEvidenceRowDirectRenderOffenders() async {
+  const timelineFile =
+      'lib/features/messages/presentation/widgets/message_evidence/message_evidence_timeline_view.dart';
+  const rowFile =
+      'lib/features/messages/presentation/widgets/message_evidence/message_evidence_row.dart';
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path == timelineFile || path == rowFile) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (RegExp(r'\bMessageEvidenceRow\s*\(').hasMatch(uncommented)) {
       offenders.add(filePath);
     }
   }
