@@ -342,6 +342,16 @@ const Set<String> _messageEvidenceAttachmentsProviderAllowedFiles = {
   'lib/features/messages/presentation/widgets/message_evidence/message_evidence_row.dart',
 };
 
+const Set<String> _messageEvidenceTimelineViewAllowedFiles = {
+  'lib/features/messages/presentation/view/contact_messages_evidence_view.dart',
+  'lib/features/messages/presentation/view/conversation_messages_preview_view.dart',
+  'lib/features/messages/presentation/view/global_messages_evidence_view.dart',
+  'lib/features/messages/presentation/view/handle_lens_view.dart',
+  'lib/features/messages/presentation/view/handle_messages_evidence_view.dart',
+  'lib/features/messages/presentation/view/recovered_messages_evidence_view.dart',
+  'lib/features/messages/presentation/view/search_result_context_sidebar_view.dart',
+};
+
 const Set<String> _attachmentSourceScopedIdentityAllowedFiles = {
   'lib/features/attachments/infrastructure/repositories/graph_cross_snapshot_mapper.dart',
   'lib/features/attachments/infrastructure/repositories/sqlite_graph_attachment_archive_candidate_reader.dart',
@@ -2493,6 +2503,27 @@ void main() {
               'Attachment evidence requests should be owned by the shared '
               'MessageEvidenceRow. Source-specific views and lower-level media '
               'tiles should not hydrate attachment evidence directly.\n'
+              'Actual users:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
+    test(
+      'Message evidence timeline view is used only by source views',
+      () async {
+        final offenders = await _findMessageEvidenceTimelineViewOffenders();
+
+        expect(
+          offenders,
+          orderedEquals(
+            _messageEvidenceTimelineViewAllowedFiles.toList()..sort(),
+          ),
+          reason:
+              'MessageEvidenceTimelineView is the shared evidence presentation '
+              'surface and should be composed only by source-specific evidence '
+              'views. Lower-level widgets should not instantiate another '
+              'message timeline, and unrelated features should enter through a '
+              'typed MessageEvidenceScope source view.\n'
               'Actual users:\n${offenders.join('\n')}',
         );
       },
@@ -6594,6 +6625,31 @@ Future<List<String>> _findMessageEvidenceAttachmentsProviderOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (uncommented.contains('messageEvidenceAttachmentsProvider(')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findMessageEvidenceTimelineViewOffenders() async {
+  const timelineViewFile =
+      'lib/features/messages/presentation/widgets/message_evidence/message_evidence_timeline_view.dart';
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path == timelineViewFile) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (RegExp(r'\bMessageEvidenceTimelineView\s*\(').hasMatch(uncommented)) {
       offenders.add(filePath);
     }
   }

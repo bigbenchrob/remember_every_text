@@ -3353,6 +3353,10 @@ criteria.
   `MessageEvidenceTimelineView` and attachment hydration owned by
   `MessageEvidenceRow`. Source views compose scopes; shared evidence widgets
   own viewport row and media evidence hydration.
+- Added an architecture tripwire keeping direct `MessageEvidenceTimelineView`
+  composition limited to source-specific evidence views. Other features should
+  enter message evidence through a typed scope source view, not by constructing
+  parallel message timelines.
 - Added an architecture tripwire for sqflite FFI bootstrap. `sqfliteFfiInit`,
   `databaseFactoryFfi`, and `databaseFactory` mutation remain app-bootstrap
   concerns; production code should receive initialized database services rather
