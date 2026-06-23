@@ -21,6 +21,10 @@ const Set<String> _panelActionProviderAllowedFiles = {
   'lib/features/messages/presentation/view/search_result_context_sidebar_view.dart',
 };
 
+const Set<String> _appModeActionProviderAllowedFiles = {
+  'lib/essentials/navigation/presentation/widgets/app_mode_toggle.dart',
+};
+
 // Retired database filenames are cleanup/diagnostic inventory only. Keep their
 // allowlists small so old files cannot regain provider or workflow authority.
 const Set<String> _retiredArchiveMetadataProviderAllowedFiles = {};
@@ -1350,6 +1354,20 @@ void main() {
         );
       },
     );
+
+    test('App mode action provider stays toggle-owned', () async {
+      final offenders = await _findAppModeActionProviderOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_appModeActionProviderAllowedFiles.toList()..sort()),
+        reason:
+            'appModeActionsProvider should be consumed only by the app-mode '
+            'toggle. Other surfaces should receive derived sidebar mode state '
+            'instead of mutating top-level mode directly.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
 
     test('Mac app shell toolbar controls use action boundary', () async {
       final offenders = await _findMacosAppShellActionBoundaryOffenders();
@@ -10143,6 +10161,15 @@ Future<List<String>> _findAppModeToggleActionBoundaryOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>> _findAppModeActionProviderOffenders() async {
+  const actionsFile =
+      'lib/essentials/navigation/application/app_mode_actions_provider.dart';
+  return _findProviderUsageOffenders(
+    providerName: 'appModeActionsProvider',
+    providerFile: actionsFile,
+  );
 }
 
 Future<List<String>> _findMacosAppShellActionBoundaryOffenders() async {

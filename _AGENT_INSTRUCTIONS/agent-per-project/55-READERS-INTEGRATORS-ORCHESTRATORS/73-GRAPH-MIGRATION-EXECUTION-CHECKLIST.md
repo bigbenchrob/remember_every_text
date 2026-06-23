@@ -2752,8 +2752,9 @@ criteria.
   - Moved top-level Messages/Settings mode selection behind
     `AppModeActions`. The toggle still renders the active mode, but selected
     mode mutation and associated cleanup now cross a navigation action
-    boundary. Added a tripwire preventing direct active-mode mutation from
-    returning to the toolbar widget.
+    boundary. Added tripwires preventing direct active-mode mutation from
+    returning to the toolbar widget and preventing the action provider from
+    spreading beyond the top-level mode toggle.
   - Moved contact picker filter mutation behind `PickerFilterActions`. The
     segmented control still renders the selected filter mode, but persisted
     filter selection now crosses a contact application action boundary. Added a
