@@ -459,6 +459,11 @@ const Set<String> _attachmentRecoveryActionProviderAllowedFiles = {
   'lib/features/messages/presentation/view_model/shared/display_widgets/new_display_widgets.dart',
 };
 
+const Set<String> _externalLinkActionProviderAllowedFiles = {
+  'lib/features/messages/presentation/view_model/shared/display_widgets/new_display_widgets.dart',
+  'lib/features/messages/presentation/widgets/url_preview_widget.dart',
+};
+
 const Set<String> _attachmentSourceScopedIdentityAllowedFiles = {
   'lib/features/attachments/infrastructure/repositories/graph_cross_snapshot_mapper.dart',
   'lib/features/attachments/infrastructure/repositories/sqlite_graph_attachment_archive_candidate_reader.dart',
@@ -2400,6 +2405,21 @@ void main() {
             'preview metadata loading belongs behind the external-links '
             'provider boundary.\n'
             'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('External link action provider stays message-link-owned', () async {
+      final offenders = await _findExternalLinkActionProviderOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_externalLinkActionProviderAllowedFiles.toList()..sort()),
+        reason:
+            'externalLinkActionsProvider should be consumed only by shared '
+            'message link/url-preview renderers. Other surfaces should define '
+            'their own reviewed external-link action seam instead of borrowing '
+            'message evidence link behavior directly.\n'
+            'Actual users:\n${offenders.join('\n')}',
       );
     });
 
@@ -6458,6 +6478,15 @@ Future<List<String>> _findMessageUrlPreviewOpenerBoundaryOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>> _findExternalLinkActionProviderOffenders() async {
+  const actionsFile =
+      'lib/essentials/external_links/feature_level_providers.dart';
+  return _findProviderUsageOffenders(
+    providerName: 'externalLinkActionsProvider',
+    providerFile: actionsFile,
+  );
 }
 
 Future<List<String>> _findResolvedAttachmentPathOnlyOffenders() async {

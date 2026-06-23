@@ -3404,6 +3404,10 @@ criteria.
   scoped to the shared message media renderer. Unavailable-attachment recovery
   intent remains a named media evidence action seam rather than an ad hoc
   archive-service shortcut.
+- Added an ownership tripwire keeping `externalLinkActionsProvider` scoped to
+  shared message link/url-preview renderers. External URI launch mechanics stay
+  behind the external-links boundary and do not become an arbitrary widget
+  shortcut.
 - Added an architecture tripwire for sqflite FFI bootstrap. `sqfliteFfiInit`,
   `databaseFactoryFfi`, and `databaseFactory` mutation remain app-bootstrap
   concerns; production code should receive initialized database services rather
