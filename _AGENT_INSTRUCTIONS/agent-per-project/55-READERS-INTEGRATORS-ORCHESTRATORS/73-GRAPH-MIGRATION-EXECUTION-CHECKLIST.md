@@ -3364,6 +3364,10 @@ criteria.
   composition limited to source-specific evidence views. Search matching stays
   in the evidence spine while the shared header renders the configured search
   row.
+- Added an architecture tripwire keeping current visible-month synchronization
+  scoped to message evidence source views and sidebar heatmaps. Month selection
+  remains derived from the evidence timeline rather than local scroll-repair
+  state.
 - Added an architecture tripwire for sqflite FFI bootstrap. `sqfliteFfiInit`,
   `databaseFactoryFfi`, and `databaseFactory` mutation remain app-bootstrap
   concerns; production code should receive initialized database services rather
