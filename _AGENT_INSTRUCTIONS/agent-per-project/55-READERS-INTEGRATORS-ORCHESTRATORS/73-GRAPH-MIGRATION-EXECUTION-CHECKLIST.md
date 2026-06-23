@@ -3323,6 +3323,10 @@ criteria.
   pure reusable presentation primitive. Conversation favourite/tag behavior,
   provider reads, graph queries, and navigation spec construction must remain
   owned by the caller/context, not the card.
+- Added an architecture tripwire requiring production message evidence headers
+  to render through `MessageEvidenceTimelineView`. Source-specific views may
+  compose `MessageEvidenceHeaderModel`, but must not render independent header
+  widgets that can stack or drift from the shared evidence surface.
 - Added an architecture tripwire for sqflite FFI bootstrap. `sqfliteFfiInit`,
   `databaseFactoryFfi`, and `databaseFactory` mutation remain app-bootstrap
   concerns; production code should receive initialized database services rather

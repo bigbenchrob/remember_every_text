@@ -2306,6 +2306,26 @@ void main() {
       );
     });
 
+    test(
+      'Message evidence header renders only through timeline view',
+      () async {
+        final offenders =
+            await _findMessageEvidenceHeaderDirectRenderOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'Message evidence source views should compose '
+              'MessageEvidenceHeaderModel and pass it into the shared '
+              'MessageEvidenceTimelineView. Rendering MessageEvidenceHeader '
+              'directly from source-specific views risks stacked headers and '
+              'source-specific presentation drift.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
     test('Conversation message header uses context boundary', () async {
       final offenders =
           await _findConversationMessageHeaderContextBoundaryOffenders();
@@ -6170,6 +6190,33 @@ Future<List<String>> _findConversationSignatureCardPurityOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>> _findMessageEvidenceHeaderDirectRenderOffenders() async {
+  const allowedFile =
+      'lib/features/messages/presentation/widgets/message_evidence/message_evidence_timeline_view.dart';
+  const headerFile =
+      'lib/features/messages/presentation/widgets/message_evidence/message_evidence_header.dart';
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path == allowedFile || path == headerFile) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (RegExp(r'\bMessageEvidenceHeader\s*\(').hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
 }
 
 Future<List<String>>
