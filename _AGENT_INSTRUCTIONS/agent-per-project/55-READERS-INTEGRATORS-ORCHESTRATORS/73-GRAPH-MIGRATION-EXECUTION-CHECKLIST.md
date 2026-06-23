@@ -3319,6 +3319,10 @@ criteria.
   graph IDs remains confined to named graph infrastructure or feature identity
   boundaries; ordinary widgets and ad hoc read models should receive resolved
   graph identity rather than packing source IDs locally.
+- Added an architecture tripwire preserving `ConversationSignatureCard` as a
+  pure reusable presentation primitive. Conversation favourite/tag behavior,
+  provider reads, graph queries, and navigation spec construction must remain
+  owned by the caller/context, not the card.
 - Added an architecture tripwire for sqflite FFI bootstrap. `sqfliteFfiInit`,
   `databaseFactoryFfi`, and `databaseFactory` mutation remain app-bootstrap
   concerns; production code should receive initialized database services rather

@@ -2290,6 +2290,22 @@ void main() {
       );
     });
 
+    test('Conversation signature card stays pure presentation', () async {
+      final offenders = await _findConversationSignatureCardPurityOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'ConversationSignatureCard is the canonical visual display for a '
+            'conversation entity. It may render typed card data, explicit '
+            'style data, callbacks, and an action slot, but it must not watch '
+            'providers, embed favourites/tag behavior, construct message or '
+            'sidebar specs, or query graph data directly.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Conversation message header uses context boundary', () async {
       final offenders =
           await _findConversationMessageHeaderContextBoundaryOffenders();
@@ -6107,6 +6123,53 @@ _findRetiredConversationBrowserInternalImportOffenders() async {
   }
 
   return offenders.toList()..sort();
+}
+
+Future<List<String>> _findConversationSignatureCardPurityOffenders() async {
+  const filePath =
+      'lib/essentials/conversation_graph/presentation/widgets/conversation_signature_card.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final source = await file.readAsString();
+  final uncommented = _stripComments(source);
+  final imports = _extractImports(uncommented);
+  final offenders = <String>[
+    for (final importTarget in imports)
+      if (importTarget.contains('hooks_riverpod') ||
+          importTarget.endsWith('conversation_favourite_button.dart') ||
+          importTarget.endsWith('messages_spec.dart') ||
+          importTarget.endsWith('sidebar_action_intent.dart') ||
+          importTarget.endsWith('sidebar_action_dispatcher.dart') ||
+          importTarget.endsWith('feature_level_providers.dart') ||
+          importTarget.endsWith('conversation_signature_provider.dart'))
+        '$filePath imports $importTarget',
+  ];
+
+  const forbiddenTokens = <String>[
+    'ConsumerWidget',
+    'ConsumerStatefulWidget',
+    'WidgetRef',
+    'ref.watch',
+    'ref.read',
+    'ConversationFavouriteButton',
+    'MessagesSpec',
+    'SidebarActionIntent',
+    'SidebarActionDispatcher',
+    'conversationSignatureProvider',
+    'driftConversationGraphDatabaseProvider',
+    'overlayDatabaseProvider',
+  ];
+
+  for (final token in forbiddenTokens) {
+    if (uncommented.contains(token)) {
+      offenders.add('$filePath contains $token');
+    }
+  }
+
+  return offenders..sort();
 }
 
 Future<List<String>>
