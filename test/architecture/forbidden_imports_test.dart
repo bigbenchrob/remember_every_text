@@ -402,6 +402,11 @@ const Set<String> _contactConversationNavigationActionProviderAllowedFiles = {
   'lib/features/messages/presentation/widgets/contact_graph_conversation_section.dart',
 };
 
+const Set<String> _chatSelectionActionProviderAllowedFiles = {
+  'lib/essentials/conversation_graph/presentation/status/conversation_graph_status_sheet.dart',
+  'lib/features/chats/presentation/view_model/chats_view_model_provider.dart',
+};
+
 const Set<String> _recoveredMessageNavigationActionProviderAllowedFiles = {
   'lib/features/messages/application/sidebar_cassette_spec/widget_builders/recovered_no_handle_from_me_navigator_widget.dart',
   'lib/features/messages/presentation/widgets/recovered_messages_heatmap_sidebar.dart',
@@ -1511,6 +1516,23 @@ void main() {
             'and dispatch belong behind ChatSelectionActions. Graph read-model '
             'composition belongs in the chats application layer, not '
             'presentation view models.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Chat selection action provider stays selection-owned', () async {
+      final offenders = await _findChatSelectionActionProviderOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(
+          _chatSelectionActionProviderAllowedFiles.toList()..sort(),
+        ),
+        reason:
+            'chatSelectionActionsProvider owns chat-to-conversation '
+            'navigation intent construction. New surfaces should use a '
+            'feature-local action/read-model boundary instead of spreading '
+            'chat selection authority directly.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -10360,6 +10382,15 @@ Future<List<String>> _findChatsViewModelFlowMutationOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>> _findChatSelectionActionProviderOffenders() async {
+  const actionsFile =
+      'lib/features/chats/application/actions/chat_selection_actions_provider.dart';
+  return _findProviderUsageOffenders(
+    providerName: 'chatSelectionActionsProvider',
+    providerFile: actionsFile,
+  );
 }
 
 Future<List<String>>

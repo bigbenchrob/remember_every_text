@@ -2860,6 +2860,10 @@ criteria.
   provider-level coverage proving chat selection dispatches the semantic
   conversation sidebar intent, including anchor message and search query
   context.
+- Tightened `ChatSelectionActions` provider spread. The action provider is now
+  guarded as the owner of chat-to-conversation navigation intent construction,
+  with only the chats view model and graph status diagnostic opener approved as
+  direct consumers.
 - Moved panel-stack tab activation, tab close, and diagnostic build logging
   behind `PanelActions`. `PanelStackSurface` now renders tabs/pages and
   forwards user intent only; panel-stack mutation and logger writes stay in
