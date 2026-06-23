@@ -3384,6 +3384,10 @@ criteria.
   navigation action providers scoped to their selection boundaries. These
   providers remain sidebar/section action seams, not general-purpose shortcuts
   for arbitrary widgets to push conversation evidence.
+- Added an architecture tripwire keeping `handleLensActionsProvider` scoped to
+  the handle lens view boundary. Unfamiliar-source create/link/dismiss actions
+  remain a named screen action seam rather than a reusable cross-surface command
+  bus.
 - Added an architecture tripwire for sqflite FFI bootstrap. `sqfliteFfiInit`,
   `databaseFactoryFfi`, and `databaseFactory` mutation remain app-bootstrap
   concerns; production code should receive initialized database services rather

@@ -400,6 +400,10 @@ const Set<String> _recoveredMessageNavigationActionProviderAllowedFiles = {
   'lib/features/messages/presentation/widgets/recovered_messages_heatmap_sidebar.dart',
 };
 
+const Set<String> _handleLensActionProviderAllowedFiles = {
+  'lib/features/messages/presentation/view/handle_lens_view.dart',
+};
+
 const Set<String> _attachmentSourceScopedIdentityAllowedFiles = {
   'lib/features/attachments/infrastructure/repositories/graph_cross_snapshot_mapper.dart',
   'lib/features/attachments/infrastructure/repositories/sqlite_graph_attachment_archive_candidate_reader.dart',
@@ -2966,6 +2970,21 @@ void main() {
             'providers, overlay infrastructure, or manual-link/review '
             'services directly.\n'
             'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Handle lens action provider stays view-owned', () async {
+      final offenders = await _findHandleLensActionProviderOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_handleLensActionProviderAllowedFiles.toList()..sort()),
+        reason:
+            'handleLensActionsProvider should be consumed only by the handle '
+            'lens view boundary. Other surfaces should receive typed handle '
+            'review/link workflows instead of borrowing unfamiliar-source '
+            'screen actions directly.\n'
+            'Actual users:\n${offenders.join('\n')}',
       );
     });
 
@@ -7229,6 +7248,31 @@ Future<List<String>> _findHandleLensOverlayDatabaseOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>> _findHandleLensActionProviderOffenders() async {
+  const actionsFile =
+      'lib/features/messages/application/handle_lens/handle_lens_actions_provider.dart';
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path == actionsFile) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (uncommented.contains('handleLensActionsProvider')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
 }
 
 Future<List<String>> _findManualHandleLinkServiceStorageOffenders() async {
