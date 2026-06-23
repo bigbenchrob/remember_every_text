@@ -3368,6 +3368,10 @@ criteria.
   scoped to message evidence source views and sidebar heatmaps. Month selection
   remains derived from the evidence timeline rather than local scroll-repair
   state.
+- Added an architecture tripwire keeping message heatmap navigation/refresh
+  actions behind the heatmap widget boundary. Month focus and contact
+  projection changes continue through semantic sidebar actions instead of local
+  state mutation.
 - Added an architecture tripwire for sqflite FFI bootstrap. `sqfliteFfiInit`,
   `databaseFactoryFfi`, and `databaseFactory` mutation remain app-bootstrap
   concerns; production code should receive initialized database services rather

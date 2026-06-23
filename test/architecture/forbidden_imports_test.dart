@@ -378,6 +378,10 @@ const Set<String> _currentVisibleMonthProviderAllowedFiles = {
   'lib/features/messages/presentation/widgets/recovered_messages_heatmap_sidebar.dart',
 };
 
+const Set<String> _messageHeatmapActionProviderAllowedFiles = {
+  'lib/features/messages/application/sidebar_cassette_spec/widget_builders/messages_heatmap_widget.dart',
+};
+
 const Set<String> _attachmentSourceScopedIdentityAllowedFiles = {
   'lib/features/attachments/infrastructure/repositories/graph_cross_snapshot_mapper.dart',
   'lib/features/attachments/infrastructure/repositories/sqlite_graph_attachment_archive_candidate_reader.dart',
@@ -2612,6 +2616,26 @@ void main() {
             'Actual users:\n${offenders.join('\n')}',
       );
     });
+
+    test(
+      'Message heatmap actions stay behind heatmap widget boundary',
+      () async {
+        final offenders = await _findMessageHeatmapActionProviderOffenders();
+
+        expect(
+          offenders,
+          orderedEquals(
+            _messageHeatmapActionProviderAllowedFiles.toList()..sort(),
+          ),
+          reason:
+              'Message heatmap navigation and refresh providers should be used '
+              'only by the heatmap widget boundary. Month focus and projection '
+              'changes must flow through semantic actions, and refreshes must '
+              'stay behind the named heatmap refresh action provider.\n'
+              'Actual users:\n${offenders.join('\n')}',
+        );
+      },
+    );
 
     test('Conversation message header uses context boundary', () async {
       final offenders =
@@ -6811,6 +6835,34 @@ Future<List<String>> _findCurrentVisibleMonthProviderOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (uncommented.contains('currentVisibleMonthForScopeProvider(')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findMessageHeatmapActionProviderOffenders() async {
+  const navigationActionsFile =
+      'lib/features/messages/application/sidebar_cassette_spec/resolver_tools/message_heatmap_navigation_actions_provider.dart';
+  const refreshActionsFile =
+      'lib/features/messages/application/sidebar_cassette_spec/resolver_tools/message_heatmap_refresh_actions_provider.dart';
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path == navigationActionsFile || path == refreshActionsFile) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (uncommented.contains('messageHeatmapNavigationActionsProvider') ||
+        uncommented.contains('messageHeatmapRefreshActionsProvider')) {
       offenders.add(filePath);
     }
   }
