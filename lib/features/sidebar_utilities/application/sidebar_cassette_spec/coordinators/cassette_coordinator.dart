@@ -32,7 +32,7 @@ class SidebarUtilitiesCassetteCoordinator
     extends _$SidebarUtilitiesCassetteCoordinator {
   @override
   void build() {
-    // Stateless coordinator; invoked imperatively.
+    // Stateless coordinator; called by the sidebar cassette render router.
   }
 
   /// Route a [SidebarUtilityCassetteSpec] to the appropriate resolver.

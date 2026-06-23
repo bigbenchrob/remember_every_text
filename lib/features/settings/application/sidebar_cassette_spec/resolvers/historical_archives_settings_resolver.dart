@@ -9,7 +9,7 @@ class HistoricalArchivesSettingsResolver
     extends _$HistoricalArchivesSettingsResolver {
   @override
   void build() {
-    // Stateless resolver; invoked imperatively.
+    // Stateless resolver; called by the settings cassette workflow.
   }
 
   HistoricalArchivesSettingsCassettePayload resolve({

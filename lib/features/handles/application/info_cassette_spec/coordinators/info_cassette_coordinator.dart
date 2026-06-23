@@ -44,7 +44,7 @@ part 'info_cassette_coordinator.g.dart';
 class HandlesInfoCassetteCoordinator extends _$HandlesInfoCassetteCoordinator {
   @override
   void build() {
-    // Stateless coordinator; invoked imperatively by other coordinators.
+    // Stateless coordinator; called by sidebar info cassette routing.
   }
 
   /// Build a sidebar cassette view model for a Handles info cassette request.

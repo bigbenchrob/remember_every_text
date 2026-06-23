@@ -32,7 +32,7 @@ class HandlesInfoContent {
 class HandlesInfoContentResolver extends _$HandlesInfoContentResolver {
   @override
   void build() {
-    // No state yet. This resolver is invoked imperatively via methods below.
+    // Stateless resolver; callers use resolve() with an explicit info key.
   }
 
   /// Resolve an info key into surface-agnostic content.

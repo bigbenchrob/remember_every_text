@@ -10,7 +10,7 @@ part 'settings_root_resolver.g.dart';
 class SettingsRootResolver extends _$SettingsRootResolver {
   @override
   void build() {
-    // Stateless resolver; invoked imperatively.
+    // Stateless resolver; called by the sidebar utility coordinator.
   }
 
   Future<SettingsTopMenuCassettePayload> resolve({
