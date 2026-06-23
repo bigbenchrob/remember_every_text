@@ -14,6 +14,13 @@ const Set<String> _sidebarSemanticActionTransportFiles = {
   'lib/essentials/sidebar/domain/sidebar_list_item_model.dart',
 };
 
+const Set<String> _panelActionProviderAllowedFiles = {
+  'lib/essentials/navigation/presentation/view/panel_stack_surface.dart',
+  'lib/essentials/navigation/presentation/view/sidebar_parked_overlay.dart',
+  'lib/features/messages/presentation/view/recovered_attachment_sidebar_view.dart',
+  'lib/features/messages/presentation/view/search_result_context_sidebar_view.dart',
+};
+
 // Retired database filenames are cleanup/diagnostic inventory only. Keep their
 // allowlists small so old files cannot regain provider or workflow authority.
 const Set<String> _retiredArchiveMetadataProviderAllowedFiles = {};
@@ -1272,6 +1279,21 @@ void main() {
             'PanelStackSurface may render tabs and observed panel pages, but '
             'tab activation/close and diagnostic logging belong behind '
             'PanelActions.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Panel action provider stays navigation-surface-owned', () async {
+      final offenders = await _findPanelActionProviderOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_panelActionProviderAllowedFiles.toList()..sort()),
+        reason:
+            'panelActionsProvider is a navigation action boundary for the '
+            'panel stack and approved parked evidence surfaces. Other '
+            'features should expose local semantic actions instead of '
+            'spreading direct panel mutation authority.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -10024,6 +10046,15 @@ Future<List<String>> _findPanelStackSurfaceActionBoundaryOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>> _findPanelActionProviderOffenders() async {
+  const actionsFile =
+      'lib/essentials/navigation/application/panel_actions_provider.dart';
+  return _findProviderUsageOffenders(
+    providerName: 'panelActionsProvider',
+    providerFile: actionsFile,
+  );
 }
 
 Future<List<String>> _findParkedCenterActionNamingOffenders() async {

@@ -2865,6 +2865,10 @@ criteria.
   forwards user intent only; panel-stack mutation and logger writes stay in
   navigation application code. Added a tripwire preventing those details from
   returning to the render surface.
+- Tightened `PanelActions` provider spread. The provider is now guarded as a
+  navigation action boundary consumed only by the panel stack and approved
+  parked evidence surfaces; other features must expose local semantic actions
+  rather than reacquiring direct panel mutation authority.
 - Moved conversation signature filter/sort mutations behind
   `ConversationSignaturePreferencesActions`. The conversation signatures
   widget still renders search/filter/sort controls and observes preference
