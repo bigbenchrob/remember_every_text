@@ -2774,7 +2774,8 @@ criteria.
   incident, and diagnostic export state, but re-check/import/open-settings,
   developer simulation cleanup, retry, and dismiss intents no longer call the
   underlying onboarding or incident notifiers directly. Added tripwires for
-  both panels.
+  both panels and provider-spread guards so the action providers remain owned
+  by their panels.
 - Moved conversation favourite toggle writes behind
   `ConversationFavouriteActions`. The reusable favourite button still renders
   current favourite state, but the user-intent mutation now crosses an explicit

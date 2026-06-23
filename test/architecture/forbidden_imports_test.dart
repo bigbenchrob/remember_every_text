@@ -37,6 +37,14 @@ const Set<String> _graphStatusSheetActionProviderAllowedFiles = {
   'lib/essentials/conversation_graph/presentation/status/conversation_graph_status_sheet.dart',
 };
 
+const Set<String> _environmentReadinessActionProviderAllowedFiles = {
+  'lib/features/environment_readiness/presentation/view/environment_readiness_panel_view.dart',
+};
+
+const Set<String> _pipelineIncidentActionProviderAllowedFiles = {
+  'lib/features/environment_readiness/presentation/view/pipeline_incident_panel_view.dart',
+};
+
 // Retired database filenames are cleanup/diagnostic inventory only. Keep their
 // allowlists small so old files cannot regain provider or workflow authority.
 const Set<String> _retiredArchiveMetadataProviderAllowedFiles = {};
@@ -4732,6 +4740,24 @@ void main() {
       );
     });
 
+    test('Environment readiness action provider stays panel-owned', () async {
+      final offenders =
+          await _findEnvironmentReadinessActionProviderOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(
+          _environmentReadinessActionProviderAllowedFiles.toList()..sort(),
+        ),
+        reason:
+            'environmentReadinessActionsProvider should be consumed only by '
+            'the environment readiness panel. Other lifecycle surfaces should '
+            'own their own action boundary instead of borrowing panel '
+            'authority.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Pipeline incident panel uses action boundary', () async {
       final offenders =
           await _findPipelineIncidentPanelActionBoundaryOffenders();
@@ -4743,6 +4769,22 @@ void main() {
             'PipelineIncidentPanelView may render incident state and export '
             'reports, but retry/dismiss lifecycle mutations should cross the '
             'feature action boundary.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Pipeline incident action provider stays panel-owned', () async {
+      final offenders = await _findPipelineIncidentActionProviderOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(
+          _pipelineIncidentActionProviderAllowedFiles.toList()..sort(),
+        ),
+        reason:
+            'pipelineIncidentActionsProvider should be consumed only by the '
+            'pipeline incident panel. Retry/dismiss incident authority should '
+            'not spread into unrelated presentation surfaces.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -9639,6 +9681,15 @@ _findEnvironmentReadinessPanelActionBoundaryOffenders() async {
   return offenders..sort();
 }
 
+Future<List<String>> _findEnvironmentReadinessActionProviderOffenders() async {
+  const actionsFile =
+      'lib/features/environment_readiness/application/environment_readiness_actions_provider.dart';
+  return _findProviderUsageOffenders(
+    providerName: 'environmentReadinessActionsProvider',
+    providerFile: actionsFile,
+  );
+}
+
 Future<List<String>> _findPipelineIncidentPanelActionBoundaryOffenders() async {
   const filePath =
       'lib/features/environment_readiness/presentation/view/pipeline_incident_panel_view.dart';
@@ -9657,6 +9708,15 @@ Future<List<String>> _findPipelineIncidentPanelActionBoundaryOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>> _findPipelineIncidentActionProviderOffenders() async {
+  const actionsFile =
+      'lib/features/environment_readiness/application/pipeline_incident_actions_provider.dart';
+  return _findProviderUsageOffenders(
+    providerName: 'pipelineIncidentActionsProvider',
+    providerFile: actionsFile,
+  );
 }
 
 Future<List<String>>
