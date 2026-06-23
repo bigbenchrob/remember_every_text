@@ -2341,6 +2341,25 @@ void main() {
       );
     });
 
+    test(
+      'Message attachment evidence renders only through row renderer',
+      () async {
+        final offenders =
+            await _findMessageAttachmentEvidenceDirectRenderOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'Source-specific message views should not render attachment '
+              'evidence directly. Attachment media/fallback rendering belongs '
+              'inside MessageEvidenceRow so all evidence scopes share the same '
+              'attachment presentation path.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
     test('Conversation message header uses context boundary', () async {
       final offenders =
           await _findConversationMessageHeaderContextBoundaryOffenders();
@@ -6254,6 +6273,36 @@ Future<List<String>> _findMessageEvidenceRowDirectRenderOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (RegExp(r'\bMessageEvidenceRow\s*\(').hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>>
+_findMessageAttachmentEvidenceDirectRenderOffenders() async {
+  const rowFile =
+      'lib/features/messages/presentation/widgets/message_evidence/message_evidence_row.dart';
+  const attachmentTilesFile =
+      'lib/features/messages/presentation/widgets/message_evidence/message_attachment_evidence_tiles.dart';
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path == rowFile || path == attachmentTilesFile) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (RegExp(
+      r'\bMessageAttachmentEvidenceTiles\s*\(',
+    ).hasMatch(uncommented)) {
       offenders.add(filePath);
     }
   }
