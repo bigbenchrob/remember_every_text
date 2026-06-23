@@ -3360,6 +3360,10 @@ criteria.
 - Added an architecture tripwire keeping `MessageEvidenceHeaderModel`
   composition limited to source-specific evidence views. Header meaning stays
   with the source composer; the shared header widget owns presentation form.
+- Added an architecture tripwire keeping `MessageEvidenceHeaderSearchConfig`
+  composition limited to source-specific evidence views. Search matching stays
+  in the evidence spine while the shared header renders the configured search
+  row.
 - Added an architecture tripwire for sqflite FFI bootstrap. `sqfliteFfiInit`,
   `databaseFactoryFfi`, and `databaseFactory` mutation remain app-bootstrap
   concerns; production code should receive initialized database services rather
