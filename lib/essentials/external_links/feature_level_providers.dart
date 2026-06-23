@@ -46,6 +46,21 @@ class ExternalLinkActions extends _$ExternalLinkActions {
   @override
   Future<void> build() async {}
 
+  Future<bool> openString(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) {
+      ref
+          .read(appLoggerProvider.notifier)
+          .warn(
+            'External link URL was invalid',
+            source: 'ExternalLinkActions',
+            context: <String, Object?>{'url': url},
+          );
+      return false;
+    }
+    return open(uri);
+  }
+
   Future<bool> open(Uri uri) async {
     try {
       final opened = await ref.read(externalUriOpenerProvider).open(uri);

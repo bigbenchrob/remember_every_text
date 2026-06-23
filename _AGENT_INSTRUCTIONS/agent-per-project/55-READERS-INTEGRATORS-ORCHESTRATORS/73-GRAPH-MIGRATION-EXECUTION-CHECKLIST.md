@@ -2905,6 +2905,9 @@ criteria.
   message link renderers now forward link-open intent only; failed and thrown
   URL launches are logged behind the external-links action boundary while the
   existing `Future<bool>` contract remains intact for callers.
+- Added `ExternalLinkActions.openString` so URL preview widgets can forward
+  string-link intent without parsing or silently catching invalid URLs in
+  presentation. The silent-catch tripwire was narrowed accordingly.
 - Moved panel-stack tab activation, tab close, and diagnostic build logging
   behind `PanelActions`. `PanelStackSurface` now renders tabs/pages and
   forwards user intent only; panel-stack mutation and logger writes stay in

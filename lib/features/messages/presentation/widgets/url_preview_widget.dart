@@ -272,12 +272,11 @@ class _UrlPreviewWidgetState extends ConsumerState<UrlPreviewWidget> {
   }
 
   String _extractDomain(String url) {
-    try {
-      final uri = Uri.parse(url);
-      return uri.host;
-    } catch (_) {
+    final uri = Uri.tryParse(url);
+    if (uri == null || uri.host.isEmpty) {
       return url;
     }
+    return uri.host;
   }
 
   Color _surfaceBackground(ThemeColors colors) {
@@ -315,8 +314,7 @@ class _UrlPreviewWidgetState extends ConsumerState<UrlPreviewWidget> {
   }
 
   Future<void> _launchUrl(String url) async {
-    final uri = Uri.parse(url);
-    await ref.read(externalLinkActionsProvider.notifier).open(uri);
+    await ref.read(externalLinkActionsProvider.notifier).openString(url);
   }
 }
 

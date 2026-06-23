@@ -37,6 +37,36 @@ void main() {
     expect(opened, isFalse);
     expect(opener.openedUris, [uri]);
   });
+
+  test('openString parses URL before delegating', () async {
+    final opener = _FakeExternalUriOpener(result: true);
+    final container = ProviderContainer(
+      overrides: [externalUriOpenerProvider.overrideWithValue(opener)],
+    );
+    addTearDown(container.dispose);
+
+    final opened = await container
+        .read(externalLinkActionsProvider.notifier)
+        .openString('https://example.com/from-string');
+
+    expect(opened, isTrue);
+    expect(opener.openedUris, [Uri.parse('https://example.com/from-string')]);
+  });
+
+  test('openString returns false for invalid URL strings', () async {
+    final opener = _FakeExternalUriOpener(result: true);
+    final container = ProviderContainer(
+      overrides: [externalUriOpenerProvider.overrideWithValue(opener)],
+    );
+    addTearDown(container.dispose);
+
+    final opened = await container
+        .read(externalLinkActionsProvider.notifier)
+        .openString('http://[invalid');
+
+    expect(opened, isFalse);
+    expect(opener.openedUris, isEmpty);
+  });
 }
 
 final class _FakeExternalUriOpener implements ExternalUriOpener {

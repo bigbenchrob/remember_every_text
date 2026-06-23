@@ -132,7 +132,6 @@ const Set<String> _debugPrintAllowedFiles = {
 
 const Set<String> _silentCatchAllowedFiles = {
   'lib/essentials/logging/infrastructure/log_file_writer.dart',
-  'lib/features/messages/presentation/widgets/url_preview_widget.dart',
 };
 
 const Set<String> _catchErrorAllowedFiles = {
