@@ -323,6 +323,17 @@ const Set<String> _messageEvidenceInitialRowsProviderAllowedFiles = {
   'lib/features/messages/presentation/view/contact_messages_evidence_view.dart',
 };
 
+const Set<String> _messageEvidenceTimelineSkeletonProviderAllowedFiles = {
+  'lib/features/messages/application/sidebar_cassette_spec/resolver_tools/prewarm_contact_messages_provider.dart',
+  'lib/features/messages/presentation/view/contact_messages_evidence_view.dart',
+  'lib/features/messages/presentation/view/conversation_messages_preview_view.dart',
+  'lib/features/messages/presentation/view/global_messages_evidence_view.dart',
+  'lib/features/messages/presentation/view/handle_lens_view.dart',
+  'lib/features/messages/presentation/view/handle_messages_evidence_view.dart',
+  'lib/features/messages/presentation/view/recovered_messages_evidence_view.dart',
+  'lib/features/messages/presentation/view/search_result_context_sidebar_view.dart',
+};
+
 const Set<String> _attachmentSourceScopedIdentityAllowedFiles = {
   'lib/features/attachments/infrastructure/repositories/graph_cross_snapshot_mapper.dart',
   'lib/features/attachments/infrastructure/repositories/sqlite_graph_attachment_archive_candidate_reader.dart',
@@ -2425,6 +2436,24 @@ void main() {
         );
       },
     );
+
+    test('Message evidence skeleton requests stay source-view scoped', () async {
+      final offenders =
+          await _findMessageEvidenceTimelineSkeletonProviderOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(
+          _messageEvidenceTimelineSkeletonProviderAllowedFiles.toList()..sort(),
+        ),
+        reason:
+            'Message evidence skeleton requests should stay with source views '
+            'and the explicit contact prewarm boundary. Low-level renderers '
+            'must not create source-specific skeleton paths; the evidence spine '
+            'owns full-scope skeleton construction and viewport hydration.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
 
     test('Conversation message header uses context boundary', () async {
       final offenders =
@@ -6446,6 +6475,32 @@ Future<List<String>> _findMessageEvidenceInitialRowsProviderOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (uncommented.contains('messageEvidenceInitialRowsProvider(')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>>
+_findMessageEvidenceTimelineSkeletonProviderOffenders() async {
+  const spineProviderFile =
+      'lib/features/messages/application/message_evidence/message_evidence_spine_provider.dart';
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path == spineProviderFile) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (uncommented.contains('messageEvidenceTimelineSkeletonProvider(')) {
       offenders.add(filePath);
     }
   }

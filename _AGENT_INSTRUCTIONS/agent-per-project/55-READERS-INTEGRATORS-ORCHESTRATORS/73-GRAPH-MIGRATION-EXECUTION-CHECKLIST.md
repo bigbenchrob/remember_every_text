@@ -3345,6 +3345,10 @@ criteria.
 - Added an architecture tripwire keeping message evidence initial-row requests
   scoped to the source view that owns contact all-message timeline startup.
   Shared renderers must not initiate their own row-loading path.
+- Added an architecture tripwire keeping message evidence skeleton requests
+  scoped to source views and the explicit contact prewarm boundary. Full-scope
+  skeleton construction remains part of the evidence spine rather than a
+  source-specific renderer concern.
 - Added an architecture tripwire for sqflite FFI bootstrap. `sqfliteFfiInit`,
   `databaseFactoryFfi`, and `databaseFactory` mutation remain app-bootstrap
   concerns; production code should receive initialized database services rather
