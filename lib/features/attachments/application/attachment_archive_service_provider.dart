@@ -79,12 +79,12 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
         return false;
       }
       archiveWrite = writeResult;
-    } on Object catch (e) {
+    } on Object catch (error) {
       ref
           .read(appLoggerProvider.notifier)
           .warn(
             'Failed to archive attachment '
-            '${archiveKey.liveSourceAttachmentRowId}: $e',
+            '${archiveKey.liveSourceAttachmentRowId}: $error',
             source: 'AttachmentArchiveService',
           );
       return false;

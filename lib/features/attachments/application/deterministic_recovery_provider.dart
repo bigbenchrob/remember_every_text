@@ -248,11 +248,11 @@ class DeterministicRecovery extends _$DeterministicRecovery {
           archivedNew++;
           totalBytesArchived += archived;
         }
-      } on Exception catch (e) {
+      } on Exception catch (error) {
         archiveFailed++;
         logger.warn(
           'Deterministic recovery: failed to archive '
-          '${record.resolvedFilePath}: $e',
+          '${record.resolvedFilePath}: $error',
           source: 'DeterministicRecovery',
         );
       }
