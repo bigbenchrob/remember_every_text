@@ -6,9 +6,9 @@ part 'info_content_resolver.g.dart';
 
 /// Surface-agnostic resolved information content for the Handles feature.
 ///
-/// For now this is plain text + optional title + optional footnote.
-/// Later, if needed, this can be replaced by a shared model that supports
-/// rich text, links, actions, etc.
+/// This payload carries meaning only: plain text plus optional title and
+/// footnote. Rendering, actions, spacing, and chrome belong to the surface
+/// that consumes it.
 ///
 /// IMPORTANT: Keep this payload UI-surface agnostic:
 /// - no padding

@@ -5,7 +5,7 @@ import '../application/tooltip_coordinator.dart';
 import '../domain/entities/tooltip_spec.dart';
 import '../domain/tooltip_config.dart';
 
-/// TooltipWrapper - A widget that displays a tooltip on hover
+/// Displays resolved tooltip text on hover.
 ///
 /// Wraps any child widget and shows a tooltip when the user hovers over it.
 /// Uses Flutter's built-in [Tooltip] widget with macOS-appropriate styling.
@@ -49,12 +49,9 @@ class TooltipWrapper extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Use FutureBuilder pattern for async resolution
     return FutureBuilder<String>(
-      // Resolve tooltip text via coordinator
       future: ref.read(tooltipCoordinatorProvider.notifier).resolve(spec),
       builder: (context, snapshot) {
-        // While loading or if error, just show child without tooltip
         if (!snapshot.hasData) {
           return child;
         }
@@ -66,8 +63,6 @@ class TooltipWrapper extends ConsumerWidget {
           waitDuration: showDelay ?? TooltipConfig.defaultShowDelay,
           showDuration: TooltipConfig.defaultDisplayDuration,
           preferBelow: preferBelow,
-          // Use default Material tooltip styling for now
-          // Can be customized later for macOS-specific appearance
           child: child,
         );
       },
