@@ -424,6 +424,18 @@ const Set<String> _contactMessageScopeActionProviderAllowedFiles = {
   'lib/features/contacts/application/sidebar_cassette_spec/widget_builders/contact_message_scope_toggle_widget.dart',
 };
 
+const Set<String> _contactDisplayNameOverrideActionProviderAllowedFiles = {
+  'lib/features/contacts/application/sidebar_cassette_spec/widget_builders/contact_hero_summary_widget.dart',
+};
+
+const Set<String> _contactFavoriteActionProviderAllowedFiles = {
+  'lib/features/contacts/application/sidebar_cassette_spec/widget_builders/contact_hero_summary_widget.dart',
+};
+
+const Set<String> _pickerFilterActionProviderAllowedFiles = {
+  'lib/features/contacts/presentation/widgets/picker_filter_toggle.dart',
+};
+
 const Set<String> _attachmentSourceScopedIdentityAllowedFiles = {
   'lib/features/attachments/infrastructure/repositories/graph_cross_snapshot_mapper.dart',
   'lib/features/attachments/infrastructure/repositories/sqlite_graph_attachment_archive_candidate_reader.dart',
@@ -3046,6 +3058,45 @@ void main() {
       );
     });
 
+    test(
+      'Contact display-name override action provider stays hero-owned',
+      () async {
+        final offenders =
+            await _findContactDisplayNameOverrideActionProviderOffenders();
+
+        expect(
+          offenders,
+          orderedEquals(
+            _contactDisplayNameOverrideActionProviderAllowedFiles.toList()
+              ..sort(),
+          ),
+          reason:
+              'contactDisplayNameOverrideActionsProvider should be consumed '
+              'only by the contact hero edit boundary. User display-name '
+              'intent must not spread as ad hoc overlay writes from other '
+              'widgets.\n'
+              'Actual users:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
+    test('Contact favorite action provider stays hero-owned', () async {
+      final offenders = await _findContactFavoriteActionProviderOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(
+          _contactFavoriteActionProviderAllowedFiles.toList()..sort(),
+        ),
+        reason:
+            'contactFavoriteActionsProvider should be consumed only by the '
+            'contact hero favourite control. Other surfaces should receive '
+            'resolved favourite state or define their own user-intent action '
+            'boundary.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Handle filter unlink uses manual-link action boundary', () async {
       final offenders = await _findHandleFilterManualLinkBoundaryOffenders();
 
@@ -3293,6 +3344,21 @@ void main() {
             'PickerFilterActions rather than calling the state provider '
             'notifier directly.\n'
             'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Contact picker filter action provider stays toggle-owned', () async {
+      final offenders = await _findPickerFilterActionProviderOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_pickerFilterActionProviderAllowedFiles.toList()..sort()),
+        reason:
+            'pickerFilterActionsProvider should be consumed only by the '
+            'picker filter toggle. Other contact surfaces should receive the '
+            'resolved filter mode rather than mutating picker preferences '
+            'through this control-specific seam.\n'
+            'Actual users:\n${offenders.join('\n')}',
       );
     });
 
@@ -7376,6 +7442,25 @@ Future<List<String>> _findHandleLensActionProviderOffenders() async {
   return offenders.toList()..sort();
 }
 
+Future<List<String>>
+_findContactDisplayNameOverrideActionProviderOffenders() async {
+  const actionsFile =
+      'lib/features/contacts/application/sidebar_cassette_spec/resolver_tools/contact_display_name_override_actions_provider.dart';
+  return _findProviderUsageOffenders(
+    providerName: 'contactDisplayNameOverrideActionsProvider',
+    providerFile: actionsFile,
+  );
+}
+
+Future<List<String>> _findContactFavoriteActionProviderOffenders() async {
+  const actionsFile =
+      'lib/features/contacts/application/sidebar_cassette_spec/resolver_tools/contact_favorite_actions_provider.dart';
+  return _findProviderUsageOffenders(
+    providerName: 'contactFavoriteActionsProvider',
+    providerFile: actionsFile,
+  );
+}
+
 Future<List<String>> _findManualHandleLinkServiceStorageOffenders() async {
   const filePath =
       'lib/features/contacts/application/services/manual_handle_link_service.dart';
@@ -7540,6 +7625,15 @@ Future<List<String>> _findPickerFilterToggleActionBoundaryOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>> _findPickerFilterActionProviderOffenders() async {
+  const actionsFile =
+      'lib/features/contacts/application/sidebar_cassette_spec/resolver_tools/picker_filter_actions_provider.dart';
+  return _findProviderUsageOffenders(
+    providerName: 'pickerFilterActionsProvider',
+    providerFile: actionsFile,
+  );
 }
 
 Future<List<String>> _findContactPickerSelectionActionOffenders() async {

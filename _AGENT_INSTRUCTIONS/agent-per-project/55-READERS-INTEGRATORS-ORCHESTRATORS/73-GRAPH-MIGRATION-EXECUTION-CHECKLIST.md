@@ -3392,6 +3392,10 @@ criteria.
   preferences, contact picker selection, contact handle filtering, and contact
   message-scope toggles. These seams remain owned by their sidebar controls
   rather than becoming general-purpose UI mutation APIs.
+- Added companion ownership tripwires for contact display-name override,
+  contact favourite, and contact picker-filter actions. User-intent overlay
+  writes and picker preference writes stay behind their named controls/action
+  boundaries instead of spreading through arbitrary widgets.
 - Added an architecture tripwire for sqflite FFI bootstrap. `sqfliteFfiInit`,
   `databaseFactoryFfi`, and `databaseFactory` mutation remain app-bootstrap
   concerns; production code should receive initialized database services rather
