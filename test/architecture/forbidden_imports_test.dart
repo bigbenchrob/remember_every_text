@@ -761,6 +761,20 @@ void main() {
       );
     });
 
+    test('Active Dart comments avoid provider template boilerplate', () async {
+      final offenders = await _findProviderTemplateBoilerplateOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Hand-written provider documentation should use concrete '
+            'MessageLens examples, not generic Riverpod template names such '
+            'as SomeState or myProvider.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Hand-written Dart does not suppress analyzer diagnostics', () async {
       final offenders = await _findAnalyzerSuppressionOffenders();
 
@@ -10910,6 +10924,30 @@ Future<List<String>> _findActiveTodoFixmeOffenders() async {
     final uncommented = _stripComments(source);
     if (markerPattern.hasMatch(uncommented)) {
       offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findProviderTemplateBoilerplateOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') ||
+        path.endsWith('.freezed.dart') ||
+        path == 'lib/frb_generated.dart') {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  const staleTokens = <String>['Future<SomeState>', 'SomeState', 'myProvider'];
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    for (final token in staleTokens) {
+      if (source.contains(token)) {
+        offenders.add('$filePath contains $token');
+      }
     }
   }
 

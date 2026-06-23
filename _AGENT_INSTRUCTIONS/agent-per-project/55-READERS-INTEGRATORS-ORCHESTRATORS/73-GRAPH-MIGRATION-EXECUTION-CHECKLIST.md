@@ -2299,6 +2299,10 @@ criteria.
 - Replaced remaining generic `throw Exception(...)` uses in hand-written
   production code with typed `StateError`s, and added a tripwire to keep
   generic exception throws out of active Dart.
+- Replaced the remaining hand-written Riverpod template provider example with a
+  concrete MessageLens graph-skeleton example and added a tripwire preventing
+  `SomeState` / `myProvider` boilerplate from returning to active provider
+  documentation.
 - Removed the stale `SearchResultContextEvidenceScope` intra-scope search
   `UnimplementedError`; bounded search-result context now intersects global
   graph text matches with the context skeleton so matches stay inside the

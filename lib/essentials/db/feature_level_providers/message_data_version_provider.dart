@@ -23,11 +23,14 @@ part 'message_data_version_provider.g.dart';
 /// In a provider that needs to refresh when new messages arrive:
 /// ```dart
 /// @riverpod
-/// Future<SomeState> myProvider(MyProviderRef ref) async {
+/// Future<MessageEvidenceSkeleton> contactMessageSkeleton(
+///   Ref ref, {
+///   required int contactId,
+/// }) async {
 ///   // Watch the signal - rebuilds when the version changes.
 ///   ref.watch(messageDataVersionProvider);
 ///
-///   // ... fetch data from database
+///   // Fetch the graph-backed skeleton for this contact.
 /// }
 /// ```
 ///
