@@ -523,7 +523,7 @@ Widget _buildLeftPanelSurface({
     return const Center(child: CircularProgressIndicator.adaptive());
   }
 
-  // Render the sidebar surface with the current (possibly stale) cassette list.
+  // Render the sidebar surface with the current derived cassette list.
   //
   // The MouseRegion wrapper supports future hover-based interactions
   // (e.g., showing cassette actions on hover).

@@ -197,8 +197,8 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
 
       await _primeMaxRowId(chatDbPath);
 
-      // Immediate check on startup to catch messages that arrived while app was closed.
-      // This ensures users don't see stale data for 15 seconds.
+      // Immediate startup check catches messages that arrived while the app
+      // was closed, before the regular polling interval begins.
       await _checkForNewMessagesOnStartup(chatDbPath);
 
       _startPolling(chatDbPath);
@@ -210,9 +210,8 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
 
   /// Check for new messages immediately on startup.
   ///
-  /// This catches the case where the app was closed for an extended period
-  /// and new messages arrived. Without this, users would see stale data until
-  /// the first polling interval (15 seconds).
+  /// This catches messages that arrived while the app was closed, before the
+  /// first polling interval begins.
   Future<void> _checkForNewMessagesOnStartup(String chatDbPath) async {
     try {
       final importLedgerProbeReader = await ref.read(

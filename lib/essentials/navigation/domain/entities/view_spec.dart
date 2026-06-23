@@ -20,7 +20,7 @@ abstract class ViewSpec with _$ViewSpec {
 /// the sidebar cassette rack (e.g. maintenance panels).
 ///
 /// When true, the sidebar should be replaced with a contextual overlay
-/// rather than showing stale cassette state.
+/// rather than showing cassette context from an unrelated app surface.
 extension ViewSpecSidebarAwareness on ViewSpec {
   bool get isSidebarIndependent => switch (this) {
     _ViewEnvironmentReadiness() => true,
