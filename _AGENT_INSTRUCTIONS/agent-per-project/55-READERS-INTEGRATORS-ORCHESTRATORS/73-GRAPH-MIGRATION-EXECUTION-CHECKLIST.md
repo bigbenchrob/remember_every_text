@@ -3310,6 +3310,10 @@ criteria.
   acceptable inside database classes, infrastructure repositories, or named
   query boundaries; application and presentation code should consume typed
   methods/read models instead of owning custom SQL.
+- Added an architecture tripwire for the message evidence identity bridge.
+  Older rowid-keyed message inputs may be translated to graph `message_ss_id`
+  only at the message feature boundary, evidence spine, or overlay repository;
+  ordinary widgets/read models should speak canonical graph message identity.
 - Added an architecture tripwire for sqflite FFI bootstrap. `sqfliteFfiInit`,
   `databaseFactoryFfi`, and `databaseFactory` mutation remain app-bootstrap
   concerns; production code should receive initialized database services rather

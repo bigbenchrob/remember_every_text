@@ -293,6 +293,12 @@ const Set<String> _featureIdentitySourceScopedRowKeyAllowedFiles = {
   'lib/features/messages/domain/message_evidence/recovered_message_identity.dart',
 };
 
+const Set<String> _messageEvidenceIdentityBridgeAllowedFiles = {
+  'lib/features/messages/application/message_evidence/message_evidence_spine_provider.dart',
+  'lib/features/messages/feature_level_providers.dart',
+  'lib/features/messages/infrastructure/repositories/graph_message_overlay_repository.dart',
+};
+
 const Set<String> _attachmentSourceScopedIdentityAllowedFiles = {
   'lib/features/attachments/infrastructure/repositories/graph_cross_snapshot_mapper.dart',
   'lib/features/attachments/infrastructure/repositories/sqlite_graph_attachment_archive_candidate_reader.dart',
@@ -1505,6 +1511,25 @@ void main() {
             'identity conversion belongs in conversation-graph identity helpers; '
             'message evidence should delegate to the same graph identity boundary; '
             'recovered-message source identity remains a domain concern.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Message evidence identity bridge stays narrowly owned', () async {
+      final offenders =
+          await _findMessageEvidenceIdentityBridgeImportOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(
+          _messageEvidenceIdentityBridgeAllowedFiles.toList()..sort(),
+        ),
+        reason:
+            'message_evidence_identity.dart bridges older rowid-keyed message '
+            'inputs into canonical graph message ids. Keep that bridge confined '
+            'to the message feature boundary, evidence spine, and overlay '
+            'repository; ordinary widgets/read models should speak message_ss_id '
+            'directly.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -4509,6 +4534,31 @@ Future<List<String>> _findFeatureSourceScopedIdentityImportOffenders() async {
     );
 
     if (importsSourceScopedIdentity) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findMessageEvidenceIdentityBridgeImportOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path ==
+        'lib/features/messages/application/message_evidence/message_evidence_identity.dart') {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (uncommented.contains('canonicalMessageEvidenceId(') ||
+        uncommented.contains('liveMessageRowIdForEvidenceId(')) {
       offenders.add(filePath);
     }
   }
