@@ -2326,6 +2326,20 @@ void main() {
       },
     );
 
+    test('Message evidence fade overlay stays timeline-owned', () async {
+      final offenders = await _findMessageEvidenceFadeOverlayOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'MessageEvidenceFadeOverlay is part of the shared evidence '
+            'timeline transition grammar. Source-specific views should not '
+            'apply their own fade/blur wrappers around message lists.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Message evidence rows render only through timeline view', () async {
       final offenders = await _findMessageEvidenceRowDirectRenderOffenders();
 
@@ -6246,6 +6260,33 @@ Future<List<String>> _findMessageEvidenceHeaderDirectRenderOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (RegExp(r'\bMessageEvidenceHeader\s*\(').hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findMessageEvidenceFadeOverlayOffenders() async {
+  const timelineFile =
+      'lib/features/messages/presentation/widgets/message_evidence/message_evidence_timeline_view.dart';
+  const overlayFile =
+      'lib/features/messages/presentation/widgets/message_evidence/message_evidence_fade_overlay.dart';
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path == timelineFile || path == overlayFile) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (RegExp(r'\bMessageEvidenceFadeOverlay\s*\(').hasMatch(uncommented)) {
       offenders.add(filePath);
     }
   }

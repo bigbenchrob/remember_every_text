@@ -3327,6 +3327,9 @@ criteria.
   to render through `MessageEvidenceTimelineView`. Source-specific views may
   compose `MessageEvidenceHeaderModel`, but must not render independent header
   widgets that can stack or drift from the shared evidence surface.
+- Added an architecture tripwire keeping `MessageEvidenceFadeOverlay` owned by
+  the shared evidence timeline. Header/list transition affordances should not
+  be reimplemented or pasted into source-specific message evidence views.
 - Added an architecture tripwire requiring source-specific message views to
   render evidence rows through `MessageEvidenceTimelineView`. The shared
   timeline owns skeleton/window hydration and row rendering; source views own
