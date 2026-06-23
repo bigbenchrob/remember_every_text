@@ -404,6 +404,26 @@ const Set<String> _handleLensActionProviderAllowedFiles = {
   'lib/features/messages/presentation/view/handle_lens_view.dart',
 };
 
+const Set<String>
+_conversationSignaturePreferencesActionProviderAllowedFiles = {
+  'lib/features/messages/application/sidebar_cassette_spec/widget_builders/conversation_signatures_widget.dart',
+};
+
+const Set<String> _contactPickerActionProviderAllowedFiles = {
+  'lib/features/contacts/application/sidebar_cassette_spec/widget_builders/contact_flat_list_widget.dart',
+  'lib/features/contacts/application/sidebar_cassette_spec/widget_builders/contact_grouped_picker_widget.dart',
+  'lib/features/contacts/application/sidebar_cassette_spec/widget_builders/contact_selection_control_widget.dart',
+  'lib/features/contacts/application/sidebar_cassette_spec/widget_builders/recent_contacts_section.dart',
+};
+
+const Set<String> _contactHandleFilterActionProviderAllowedFiles = {
+  'lib/features/contacts/application/sidebar_cassette_spec/widget_builders/handle_filter_widget.dart',
+};
+
+const Set<String> _contactMessageScopeActionProviderAllowedFiles = {
+  'lib/features/contacts/application/sidebar_cassette_spec/widget_builders/contact_message_scope_toggle_widget.dart',
+};
+
 const Set<String> _attachmentSourceScopedIdentityAllowedFiles = {
   'lib/features/attachments/infrastructure/repositories/graph_cross_snapshot_mapper.dart',
   'lib/features/attachments/infrastructure/repositories/sqlite_graph_attachment_archive_candidate_reader.dart',
@@ -2405,6 +2425,28 @@ void main() {
       );
     });
 
+    test(
+      'Conversation signature preferences action provider stays list-owned',
+      () async {
+        final offenders =
+            await _findConversationSignaturePreferencesActionProviderOffenders();
+
+        expect(
+          offenders,
+          orderedEquals(
+            _conversationSignaturePreferencesActionProviderAllowedFiles.toList()
+              ..sort(),
+          ),
+          reason:
+              'conversationSignaturePreferencesActionsProvider should be '
+              'consumed only by the conversation signature list controls. '
+              'Other surfaces should receive resolved preferences or dispatch '
+              'through their own named action seam.\n'
+              'Actual users:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
     test('Conversation signature card stays pure presentation', () async {
       final offenders = await _findConversationSignatureCardPurityOffenders();
 
@@ -3269,6 +3311,22 @@ void main() {
       );
     });
 
+    test('Contact picker action provider stays picker-owned', () async {
+      final offenders = await _findContactPickerActionProviderOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(
+          _contactPickerActionProviderAllowedFiles.toList()..sort(),
+        ),
+        reason:
+            'contactPickerActionsProvider should be consumed only by contact '
+            'picker widgets. Other surfaces should receive resolved contact '
+            'selection state or route through their own action seam.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Contact handle filter uses action boundary', () async {
       final offenders = await _findHandleFilterActionBoundaryOffenders();
 
@@ -3280,6 +3338,22 @@ void main() {
             'selection, unlinking, and follow-up navigation should cross '
             'HandleFilterActions.\n'
             'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Contact handle filter action provider stays filter-owned', () async {
+      final offenders = await _findContactHandleFilterActionProviderOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(
+          _contactHandleFilterActionProviderAllowedFiles.toList()..sort(),
+        ),
+        reason:
+            'handleFilterActionsProvider should be consumed only by the '
+            'contact handle-filter control. Other surfaces should not borrow '
+            'that sidebar-specific unlink/selection workflow directly.\n'
+            'Actual users:\n${offenders.join('\n')}',
       );
     });
 
@@ -3295,6 +3369,23 @@ void main() {
             'scope controls, but cassette-indexed sidebar intent construction '
             'and dispatch belong behind ContactMessageScopeActions.\n'
             'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Contact message scope action provider stays toggle-owned', () async {
+      final offenders = await _findContactMessageScopeActionProviderOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(
+          _contactMessageScopeActionProviderAllowedFiles.toList()..sort(),
+        ),
+        reason:
+            'contactMessageScopeActionsProvider should be consumed only by '
+            'the contact message-scope toggle. Other surfaces should not '
+            'construct contact sidebar scope changes indirectly through this '
+            'control-specific action seam.\n'
+            'Actual users:\n${offenders.join('\n')}',
       );
     });
 
@@ -6371,6 +6462,16 @@ _findConversationSignaturePreferencesActionBoundaryOffenders() async {
 }
 
 Future<List<String>>
+_findConversationSignaturePreferencesActionProviderOffenders() async {
+  const actionsFile =
+      'lib/features/messages/application/sidebar_cassette_spec/resolver_tools/conversation_signature_preferences_actions_provider.dart';
+  return _findProviderUsageOffenders(
+    providerName: 'conversationSignaturePreferencesActionsProvider',
+    providerFile: actionsFile,
+  );
+}
+
+Future<List<String>>
 _findConversationMessageHeaderContextBoundaryOffenders() async {
   const filePath =
       'lib/features/messages/presentation/view/conversation_messages_preview_view.dart';
@@ -7475,6 +7576,15 @@ Future<List<String>> _findContactPickerSelectionActionOffenders() async {
   return offenders..sort();
 }
 
+Future<List<String>> _findContactPickerActionProviderOffenders() async {
+  const actionsFile =
+      'lib/features/contacts/application/sidebar_cassette_spec/resolver_tools/contact_picker_actions_provider.dart';
+  return _findProviderUsageOffenders(
+    providerName: 'contactPickerActionsProvider',
+    providerFile: actionsFile,
+  );
+}
+
 Future<List<String>> _findHandleFilterActionBoundaryOffenders() async {
   const filePath =
       'lib/features/contacts/application/sidebar_cassette_spec/widget_builders/handle_filter_widget.dart';
@@ -7493,6 +7603,15 @@ Future<List<String>> _findHandleFilterActionBoundaryOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>> _findContactHandleFilterActionProviderOffenders() async {
+  const actionsFile =
+      'lib/features/contacts/application/sidebar_cassette_spec/resolver_tools/handle_filter_actions_provider.dart';
+  return _findProviderUsageOffenders(
+    providerName: 'handleFilterActionsProvider',
+    providerFile: actionsFile,
+  );
 }
 
 Future<List<String>>
@@ -7519,6 +7638,15 @@ _findContactMessageScopeToggleActionBoundaryOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>> _findContactMessageScopeActionProviderOffenders() async {
+  const actionsFile =
+      'lib/features/contacts/application/sidebar_cassette_spec/resolver_tools/contact_message_scope_actions_provider.dart';
+  return _findProviderUsageOffenders(
+    providerName: 'contactMessageScopeActionsProvider',
+    providerFile: actionsFile,
+  );
 }
 
 Future<List<String>> _findConversationFavouritesStorageOffenders() async {
@@ -10833,6 +10961,32 @@ Future<List<String>> _collectSidebarPayloadFiles() async {
             'lib/essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart' ||
         path.contains('/application/') && path.contains('/payloads/');
   });
+}
+
+Future<List<String>> _findProviderUsageOffenders({
+  required String providerName,
+  required String providerFile,
+}) async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path == providerFile) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (uncommented.contains(providerName)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
 }
 
 Future<List<String>> _collectDartFiles(

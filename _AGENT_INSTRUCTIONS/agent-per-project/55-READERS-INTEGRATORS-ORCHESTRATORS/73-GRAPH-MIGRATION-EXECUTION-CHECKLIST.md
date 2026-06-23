@@ -3388,6 +3388,10 @@ criteria.
   the handle lens view boundary. Unfamiliar-source create/link/dismiss actions
   remain a named screen action seam rather than a reusable cross-surface command
   bus.
+- Added action-provider ownership tripwires for conversation signature
+  preferences, contact picker selection, contact handle filtering, and contact
+  message-scope toggles. These seams remain owned by their sidebar controls
+  rather than becoming general-purpose UI mutation APIs.
 - Added an architecture tripwire for sqflite FFI bootstrap. `sqfliteFfiInit`,
   `databaseFactoryFfi`, and `databaseFactory` mutation remain app-bootstrap
   concerns; production code should receive initialized database services rather
