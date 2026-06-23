@@ -2896,6 +2896,11 @@ criteria.
   `ChatSelectionActions`. The status sheet now forwards chat-open intent only;
   selection dispatch and warning logging stay behind the chats action boundary,
   with a tripwire preventing direct logging from returning to the sheet.
+- Moved video message tile failure logging behind `MessageMediaDiagnostics`.
+  Shared message display widgets still own media-controller lifecycle, but
+  media failure logger writes now stay behind a messages application action
+  boundary with a tripwire preventing direct presentation logging from
+  returning.
 - Moved panel-stack tab activation, tab close, and diagnostic build logging
   behind `PanelActions`. `PanelStackSurface` now renders tabs/pages and
   forwards user intent only; panel-stack mutation and logger writes stay in

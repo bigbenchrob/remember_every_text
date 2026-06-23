@@ -1669,6 +1669,20 @@ void main() {
       );
     });
 
+    test('Message display media diagnostics use action boundary', () async {
+      final offenders = await _findMessageDisplayMediaDiagnosticOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Shared message display widgets may own media-controller lifecycle, '
+            'but logger writes for media failures belong behind '
+            'MessageMediaDiagnostics.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Retired archive metadata provider does not return', () async {
       final offenders = await _findRetiredArchiveMetadataProviderOffenders();
 
@@ -10834,6 +10848,31 @@ Future<List<String>> _findGraphStatusSheetChatOpenOffenders() async {
   if (uncommented.contains('appLoggerProvider.notifier') ||
       uncommented.contains('Conversation graph status chat open failed')) {
     offenders.add('$filePath owns chat-open failure diagnostics');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findMessageDisplayMediaDiagnosticOffenders() async {
+  const filePath =
+      'lib/features/messages/presentation/view_model/shared/display_widgets/new_display_widgets.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final imports = _extractImports(uncommented);
+  final offenders = <String>[
+    for (final importTarget in imports)
+      if (importTarget.endsWith(
+        'essentials/logging/feature_level_providers.dart',
+      ))
+        '$filePath imports $importTarget',
+  ];
+  if (uncommented.contains('appLoggerProvider.notifier') ||
+      uncommented.contains('Video message tile operation failed')) {
+    offenders.add('$filePath owns video-tile failure diagnostics');
   }
 
   return offenders..sort();
