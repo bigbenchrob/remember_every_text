@@ -20,6 +20,23 @@ void main() {
     expect(opened, isTrue);
     expect(opener.openedUris, [uri]);
   });
+
+  test('open returns false when URL launch fails', () async {
+    final opener = _FakeExternalUriOpener(result: false);
+    final container = ProviderContainer(
+      overrides: [externalUriOpenerProvider.overrideWithValue(opener)],
+    );
+    addTearDown(container.dispose);
+
+    final uri = Uri.parse('https://example.com/missing');
+
+    final opened = await container
+        .read(externalLinkActionsProvider.notifier)
+        .open(uri);
+
+    expect(opened, isFalse);
+    expect(opener.openedUris, [uri]);
+  });
 }
 
 final class _FakeExternalUriOpener implements ExternalUriOpener {

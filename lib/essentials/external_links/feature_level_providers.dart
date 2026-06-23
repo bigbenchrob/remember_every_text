@@ -46,7 +46,32 @@ class ExternalLinkActions extends _$ExternalLinkActions {
   @override
   Future<void> build() async {}
 
-  Future<bool> open(Uri uri) {
-    return ref.read(externalUriOpenerProvider).open(uri);
+  Future<bool> open(Uri uri) async {
+    try {
+      final opened = await ref.read(externalUriOpenerProvider).open(uri);
+      if (!opened) {
+        ref
+            .read(appLoggerProvider.notifier)
+            .warn(
+              'External link open failed',
+              source: 'ExternalLinkActions',
+              context: <String, Object?>{'uri': uri.toString()},
+            );
+      }
+      return opened;
+    } catch (error, stackTrace) {
+      ref
+          .read(appLoggerProvider.notifier)
+          .warn(
+            'External link open threw',
+            source: 'ExternalLinkActions',
+            context: <String, Object?>{
+              'uri': uri.toString(),
+              'error': error.toString(),
+              'stackTrace': stackTrace.toString(),
+            },
+          );
+      return false;
+    }
   }
 }

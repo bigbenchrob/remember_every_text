@@ -191,7 +191,7 @@ class _LinkPreviewMetadataProviderElement
 }
 
 String _$externalLinkActionsHash() =>
-    r'0a28031bef8256d22e5469944c7a6db9b15bfd18';
+    r'ecf40df53f2a100751a6f72e28254e192390bbaf';
 
 /// See also [ExternalLinkActions].
 @ProviderFor(ExternalLinkActions)
