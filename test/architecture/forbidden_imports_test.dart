@@ -387,6 +387,14 @@ const Set<String> _messageHeatmapActionProviderAllowedFiles = {
   'lib/features/messages/application/sidebar_cassette_spec/widget_builders/messages_heatmap_widget.dart',
 };
 
+const Set<String> _conversationNavigationActionProviderAllowedFiles = {
+  'lib/features/messages/application/sidebar_cassette_spec/widget_builders/conversation_signatures_widget.dart',
+};
+
+const Set<String> _contactConversationNavigationActionProviderAllowedFiles = {
+  'lib/features/messages/presentation/widgets/contact_graph_conversation_section.dart',
+};
+
 const Set<String> _recoveredMessageNavigationActionProviderAllowedFiles = {
   'lib/features/messages/application/sidebar_cassette_spec/widget_builders/recovered_no_handle_from_me_navigator_widget.dart',
   'lib/features/messages/presentation/widgets/recovered_messages_heatmap_sidebar.dart',
@@ -2356,6 +2364,28 @@ void main() {
       );
     });
 
+    test(
+      'Conversation navigation action provider stays sidebar-owned',
+      () async {
+        final offenders =
+            await _findConversationNavigationActionProviderOffenders();
+
+        expect(
+          offenders,
+          orderedEquals(
+            _conversationNavigationActionProviderAllowedFiles.toList()..sort(),
+          ),
+          reason:
+              'conversationNavigationActionsProvider should be consumed only '
+              'by the Conversations sidebar signature-list boundary. Other '
+              'surfaces should enter conversation evidence through typed '
+              'selection/spec flows rather than dispatching sidebar navigation '
+              'actions directly.\n'
+              'Actual users:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
     test('Conversation signature preferences use action boundary', () async {
       final offenders =
           await _findConversationSignaturePreferencesActionBoundaryOffenders();
@@ -2731,6 +2761,29 @@ void main() {
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
+
+    test(
+      'Contact conversation navigation action provider stays section-owned',
+      () async {
+        final offenders =
+            await _findContactConversationNavigationActionProviderOffenders();
+
+        expect(
+          offenders,
+          orderedEquals(
+            _contactConversationNavigationActionProviderAllowedFiles.toList()
+              ..sort(),
+          ),
+          reason:
+              'contactConversationNavigationActionsProvider should be consumed '
+              'only by the contact conversation section boundary. Other '
+              'surfaces should receive typed conversation evidence specs '
+              'instead of dispatching contact-sidebar navigation actions '
+              'directly.\n'
+              'Actual users:\n${offenders.join('\n')}',
+        );
+      },
+    );
 
     test(
       'Messages heatmap widget uses contact context identity boundary',
@@ -6253,6 +6306,32 @@ _findConversationSignatureSelectionActionBoundaryOffenders() async {
 }
 
 Future<List<String>>
+_findConversationNavigationActionProviderOffenders() async {
+  const navigationActionsFile =
+      'lib/features/messages/application/sidebar_cassette_spec/resolver_tools/conversation_navigation_actions_provider.dart';
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path == navigationActionsFile) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (uncommented.contains('conversationNavigationActionsProvider')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>>
 _findConversationSignaturePreferencesActionBoundaryOffenders() async {
   const filePath =
       'lib/features/messages/application/sidebar_cassette_spec/widget_builders/conversation_signatures_widget.dart';
@@ -6364,6 +6443,32 @@ _findContactConversationSectionActionBoundaryOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>>
+_findContactConversationNavigationActionProviderOffenders() async {
+  const navigationActionsFile =
+      'lib/features/messages/application/sidebar_cassette_spec/resolver_tools/contact_conversation_navigation_actions_provider.dart';
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path == navigationActionsFile) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (uncommented.contains('contactConversationNavigationActionsProvider')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
 }
 
 Future<List<String>>

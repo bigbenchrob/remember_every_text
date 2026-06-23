@@ -3380,6 +3380,10 @@ criteria.
   scoped to the recovered sidebar heatmap/button widgets. Other surfaces should
   enter recovered evidence through typed specs/scopes rather than dispatching
   recovered sidebar navigation directly.
+- Added companion tripwires keeping conversation and contact-conversation
+  navigation action providers scoped to their selection boundaries. These
+  providers remain sidebar/section action seams, not general-purpose shortcuts
+  for arbitrary widgets to push conversation evidence.
 - Added an architecture tripwire for sqflite FFI bootstrap. `sqfliteFfiInit`,
   `databaseFactoryFfi`, and `databaseFactory` mutation remain app-bootstrap
   concerns; production code should receive initialized database services rather
