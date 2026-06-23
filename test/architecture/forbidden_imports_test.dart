@@ -455,6 +455,10 @@ const Set<String> _conversationFavouriteActionProviderAllowedFiles = {
   'lib/essentials/conversation_graph/presentation/widgets/conversation_favourite_button.dart',
 };
 
+const Set<String> _attachmentRecoveryActionProviderAllowedFiles = {
+  'lib/features/messages/presentation/view_model/shared/display_widgets/new_display_widgets.dart',
+};
+
 const Set<String> _attachmentSourceScopedIdentityAllowedFiles = {
   'lib/features/attachments/infrastructure/repositories/graph_cross_snapshot_mapper.dart',
   'lib/features/attachments/infrastructure/repositories/sqlite_graph_attachment_archive_candidate_reader.dart',
@@ -2362,6 +2366,27 @@ void main() {
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
+
+    test(
+      'Attachment recovery action provider stays media-renderer-owned',
+      () async {
+        final offenders =
+            await _findAttachmentRecoveryActionProviderOffenders();
+
+        expect(
+          offenders,
+          orderedEquals(
+            _attachmentRecoveryActionProviderAllowedFiles.toList()..sort(),
+          ),
+          reason:
+              'attachmentRecoveryActionsProvider should be consumed only by the '
+              'shared message media renderer that exposes unavailable-attachment '
+              'recovery intent. Other surfaces should use an explicit reviewed '
+              'recovery workflow instead of borrowing message-tile actions.\n'
+              'Actual users:\n${offenders.join('\n')}',
+        );
+      },
+    );
 
     test('Message URL previews use external URI opener boundary', () async {
       final offenders = await _findMessageUrlPreviewOpenerBoundaryOffenders();
@@ -6387,6 +6412,15 @@ _findMessageDisplayAttachmentRecoveryActionOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>> _findAttachmentRecoveryActionProviderOffenders() async {
+  const actionsFile =
+      'lib/features/attachments/application/attachment_recovery_actions_provider.dart';
+  return _findProviderUsageOffenders(
+    providerName: 'attachmentRecoveryActionsProvider',
+    providerFile: actionsFile,
+  );
 }
 
 Future<List<String>> _findMessageUrlPreviewOpenerBoundaryOffenders() async {

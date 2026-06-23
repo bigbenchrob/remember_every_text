@@ -3400,6 +3400,10 @@ criteria.
   action lists, stray-handle cassettes, and conversation favourite buttons.
   These controls remain named action seams instead of provider shortcuts that
   arbitrary widgets can borrow.
+- Added an ownership tripwire keeping `attachmentRecoveryActionsProvider`
+  scoped to the shared message media renderer. Unavailable-attachment recovery
+  intent remains a named media evidence action seam rather than an ad hoc
+  archive-service shortcut.
 - Added an architecture tripwire for sqflite FFI bootstrap. `sqfliteFfiInit`,
   `databaseFactoryFfi`, and `databaseFactory` mutation remain app-bootstrap
   concerns; production code should receive initialized database services rather
