@@ -319,6 +319,10 @@ const Set<String> _messageEvidenceTextMatchProviderAllowedFiles = {
   'lib/features/messages/presentation/view/recovered_messages_evidence_view.dart',
 };
 
+const Set<String> _messageEvidenceInitialRowsProviderAllowedFiles = {
+  'lib/features/messages/presentation/view/contact_messages_evidence_view.dart',
+};
+
 const Set<String> _attachmentSourceScopedIdentityAllowedFiles = {
   'lib/features/attachments/infrastructure/repositories/graph_cross_snapshot_mapper.dart',
   'lib/features/attachments/infrastructure/repositories/sqlite_graph_attachment_archive_candidate_reader.dart',
@@ -2399,6 +2403,28 @@ void main() {
             'Actual users:\n${offenders.join('\n')}',
       );
     });
+
+    test(
+      'Message evidence initial-row requests stay source-view scoped',
+      () async {
+        final offenders =
+            await _findMessageEvidenceInitialRowsProviderOffenders();
+
+        expect(
+          offenders,
+          orderedEquals(
+            _messageEvidenceInitialRowsProviderAllowedFiles.toList()..sort(),
+          ),
+          reason:
+              'Initial visible-row hydration should be requested only by the '
+              'source view that owns contact all-message timeline startup. '
+              'Generic renderers should receive hydrated evidence from the '
+              'message evidence spine rather than initiating their own row '
+              'loading path.\n'
+              'Actual users:\n${offenders.join('\n')}',
+        );
+      },
+    );
 
     test('Conversation message header uses context boundary', () async {
       final offenders =
@@ -6395,6 +6421,31 @@ Future<List<String>> _findMessageEvidenceTextMatchProviderOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (uncommented.contains('messageEvidenceTextMatchIdsProvider(')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findMessageEvidenceInitialRowsProviderOffenders() async {
+  const spineProviderFile =
+      'lib/features/messages/application/message_evidence/message_evidence_spine_provider.dart';
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path == spineProviderFile) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (uncommented.contains('messageEvidenceInitialRowsProvider(')) {
       offenders.add(filePath);
     }
   }

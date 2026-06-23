@@ -3342,6 +3342,9 @@ criteria.
   scoped to the known source views that compose `MessageEvidenceScope`.
   Matching semantics remain owned by the evidence spine provider rather than
   ad hoc widgets or renderers.
+- Added an architecture tripwire keeping message evidence initial-row requests
+  scoped to the source view that owns contact all-message timeline startup.
+  Shared renderers must not initiate their own row-loading path.
 - Added an architecture tripwire for sqflite FFI bootstrap. `sqfliteFfiInit`,
   `databaseFactoryFfi`, and `databaseFactory` mutation remain app-bootstrap
   concerns; production code should receive initialized database services rather
