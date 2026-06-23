@@ -2718,6 +2718,9 @@ criteria.
     sidebar refresh action provider. The picker continues to watch its typed
     view model and render retry UI, but provider invalidation is no longer
     owned by presentation. Added a focused tripwire for this picker boundary.
+  - Added a provider-spread tripwire for `ContactSidebarRefreshActions` so the
+    retry/refresh boundary remains limited to contact sidebar retry surfaces
+    instead of becoming a generic widget-level invalidation shortcut.
   - Moved sidebar parked overlay center-panel cancellation onto the navigation
     panel action boundary. The overlay now renders the parked/cancel affordance
     and invokes `PanelActions`; direct panel-stack mutation remains in

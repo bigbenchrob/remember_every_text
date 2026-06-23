@@ -494,6 +494,11 @@ const Set<String> _contactFavoriteActionProviderAllowedFiles = {
   'lib/features/contacts/application/sidebar_cassette_spec/widget_builders/contact_hero_summary_widget.dart',
 };
 
+const Set<String> _contactSidebarRefreshActionProviderAllowedFiles = {
+  'lib/features/contacts/application/sidebar_cassette_spec/widget_builders/contact_hero_summary_widget.dart',
+  'lib/features/contacts/presentation/widgets/grouped_contact_selector.dart',
+};
+
 const Set<String> _pickerFilterActionProviderAllowedFiles = {
   'lib/features/contacts/presentation/widgets/picker_filter_toggle.dart',
 };
@@ -3342,6 +3347,24 @@ void main() {
             'contact hero favourite control. Other surfaces should receive '
             'resolved favourite state or define their own user-intent action '
             'boundary.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Contact sidebar refresh action provider stays retry-owned', () async {
+      final offenders =
+          await _findContactSidebarRefreshActionProviderOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(
+          _contactSidebarRefreshActionProviderAllowedFiles.toList()..sort(),
+        ),
+        reason:
+            'contactSidebarRefreshActionsProvider should be consumed only by '
+            'contact sidebar retry/refresh surfaces. Other contact widgets '
+            'should receive refreshed read models rather than borrowing this '
+            'repair boundary directly.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -7900,6 +7923,15 @@ Future<List<String>> _findContactFavoriteActionProviderOffenders() async {
       'lib/features/contacts/application/sidebar_cassette_spec/resolver_tools/contact_favorite_actions_provider.dart';
   return _findProviderUsageOffenders(
     providerName: 'contactFavoriteActionsProvider',
+    providerFile: actionsFile,
+  );
+}
+
+Future<List<String>> _findContactSidebarRefreshActionProviderOffenders() async {
+  const actionsFile =
+      'lib/features/contacts/application/sidebar_cassette_spec/resolver_tools/contact_sidebar_refresh_actions_provider.dart';
+  return _findProviderUsageOffenders(
+    providerName: 'contactSidebarRefreshActionsProvider',
     providerFile: actionsFile,
   );
 }
