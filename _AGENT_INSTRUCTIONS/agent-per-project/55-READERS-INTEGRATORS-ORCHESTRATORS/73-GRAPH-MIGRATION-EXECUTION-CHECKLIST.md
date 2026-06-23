@@ -3372,6 +3372,10 @@ criteria.
   actions behind the heatmap widget boundary. Month focus and contact
   projection changes continue through semantic sidebar actions instead of local
   state mutation.
+- Added an architecture tripwire keeping recovered-message navigation actions
+  scoped to the recovered sidebar heatmap/button widgets. Other surfaces should
+  enter recovered evidence through typed specs/scopes rather than dispatching
+  recovered sidebar navigation directly.
 - Added an architecture tripwire for sqflite FFI bootstrap. `sqfliteFfiInit`,
   `databaseFactoryFfi`, and `databaseFactory` mutation remain app-bootstrap
   concerns; production code should receive initialized database services rather

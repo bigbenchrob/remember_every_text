@@ -382,6 +382,11 @@ const Set<String> _messageHeatmapActionProviderAllowedFiles = {
   'lib/features/messages/application/sidebar_cassette_spec/widget_builders/messages_heatmap_widget.dart',
 };
 
+const Set<String> _recoveredMessageNavigationActionProviderAllowedFiles = {
+  'lib/features/messages/application/sidebar_cassette_spec/widget_builders/recovered_no_handle_from_me_navigator_widget.dart',
+  'lib/features/messages/presentation/widgets/recovered_messages_heatmap_sidebar.dart',
+};
+
 const Set<String> _attachmentSourceScopedIdentityAllowedFiles = {
   'lib/features/attachments/infrastructure/repositories/graph_cross_snapshot_mapper.dart',
   'lib/features/attachments/infrastructure/repositories/sqlite_graph_attachment_archive_candidate_reader.dart',
@@ -2942,6 +2947,25 @@ void main() {
             'but recovered sidebar intent construction and dispatch belong '
             'behind RecoveredMessageNavigationActions.\n'
             'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Recovered message navigation provider stays sidebar-scoped', () async {
+      final offenders =
+          await _findRecoveredMessageNavigationActionProviderOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(
+          _recoveredMessageNavigationActionProviderAllowedFiles.toList()
+            ..sort(),
+        ),
+        reason:
+            'Recovered message navigation actions should be invoked only by '
+            'the recovered sidebar heatmap/button widgets. Other surfaces '
+            'should enter recovered evidence through typed specs/scopes rather '
+            'than dispatching recovered sidebar navigation directly.\n'
+            'Actual users:\n${offenders.join('\n')}',
       );
     });
 
@@ -9318,6 +9342,32 @@ _findRecoveredMessageSidebarNavigationBoundaryOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>>
+_findRecoveredMessageNavigationActionProviderOffenders() async {
+  const navigationActionsFile =
+      'lib/features/messages/application/sidebar_cassette_spec/resolver_tools/recovered_message_navigation_actions_provider.dart';
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path == navigationActionsFile) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (uncommented.contains('recoveredMessageNavigationActionsProvider')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
 }
 
 Future<List<String>> _findMessagePresentationPanelStateOffenders() async {
