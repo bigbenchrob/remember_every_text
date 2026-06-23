@@ -299,6 +299,18 @@ const Set<String> _messageEvidenceIdentityBridgeAllowedFiles = {
   'lib/features/messages/infrastructure/repositories/graph_message_overlay_repository.dart',
 };
 
+const Set<String> _liveChatGraphIdentityBridgeAllowedFiles = {
+  'lib/essentials/conversation_graph/infrastructure/repositories/message_graph_repository.dart',
+  'lib/features/handles/application/read_models/handle_identity.dart',
+  'lib/features/messages/application/message_evidence/message_evidence_identity.dart',
+};
+
+const Set<String> _contactPageGraphIdentityBridgeAllowedFiles = {
+  'lib/essentials/conversation_graph/application/contacts/contact_graph_provider.dart',
+  'lib/features/contacts/application/read_models/contact_summary_identity.dart',
+  'lib/features/messages/application/sidebar_cassette_spec/resolver_tools/contact_context_identity.dart',
+};
+
 const Set<String> _attachmentSourceScopedIdentityAllowedFiles = {
   'lib/features/attachments/infrastructure/repositories/graph_cross_snapshot_mapper.dart',
   'lib/features/attachments/infrastructure/repositories/sqlite_graph_attachment_archive_candidate_reader.dart',
@@ -1530,6 +1542,41 @@ void main() {
             'to the message feature boundary, evidence spine, and overlay '
             'repository; ordinary widgets/read models should speak message_ss_id '
             'directly.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Live chat graph identity bridge stays narrowly owned', () async {
+      final offenders = await _findLiveChatGraphIdentityBridgeOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(
+          _liveChatGraphIdentityBridgeAllowedFiles.toList()..sort(),
+        ),
+        reason:
+            'live_chat_graph_identity.dart bridges live chat.db ROWIDs into '
+            'canonical graph ids. Keep that compatibility conversion confined '
+            'to named graph infrastructure or feature identity boundaries; '
+            'widgets/read models should not pack live source ROWIDs ad hoc.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Contact page graph identity bridge stays narrowly owned', () async {
+      final offenders = await _findContactPageGraphIdentityBridgeOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(
+          _contactPageGraphIdentityBridgeAllowedFiles.toList()..sort(),
+        ),
+        reason:
+            'contact_page_graph_identity.dart bridges contact-page row IDs into '
+            'canonical graph contact ids. Keep that compatibility conversion '
+            'confined to contact graph/read-model boundaries and sidebar '
+            'context identity; ordinary widgets should receive resolved graph '
+            'identity rather than deriving it.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -4559,6 +4606,56 @@ Future<List<String>> _findMessageEvidenceIdentityBridgeImportOffenders() async {
     final uncommented = _stripComments(source);
     if (uncommented.contains('canonicalMessageEvidenceId(') ||
         uncommented.contains('liveMessageRowIdForEvidenceId(')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findLiveChatGraphIdentityBridgeOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path ==
+        'lib/essentials/conversation_graph/application/identity/live_chat_graph_identity.dart') {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (uncommented.contains('canonicalLiveChatGraphId(') ||
+        uncommented.contains('liveChatSourceRowIdForGraphId(')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findContactPageGraphIdentityBridgeOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path ==
+        'lib/essentials/conversation_graph/application/identity/contact_page_graph_identity.dart') {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (uncommented.contains('graphContactIdForContactPage(') ||
+        uncommented.contains('liveAddressBookRowIdForGraphContactId(')) {
       offenders.add(filePath);
     }
   }

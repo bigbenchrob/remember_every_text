@@ -3314,6 +3314,11 @@ criteria.
   Older rowid-keyed message inputs may be translated to graph `message_ss_id`
   only at the message feature boundary, evidence spine, or overlay repository;
   ordinary widgets/read models should speak canonical graph message identity.
+- Added architecture tripwires for live chat/contact graph identity bridge
+  ownership. Compatibility conversion from live source row IDs to canonical
+  graph IDs remains confined to named graph infrastructure or feature identity
+  boundaries; ordinary widgets and ad hoc read models should receive resolved
+  graph identity rather than packing source IDs locally.
 - Added an architecture tripwire for sqflite FFI bootstrap. `sqfliteFfiInit`,
   `databaseFactoryFfi`, and `databaseFactory` mutation remain app-bootstrap
   concerns; production code should receive initialized database services rather
