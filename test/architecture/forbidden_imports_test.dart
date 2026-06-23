@@ -146,6 +146,19 @@ const Set<String> _nativeDriftExecutorAllowedFiles = {
   'lib/essentials/db/feature_level_providers.dart',
 };
 
+const Set<String> _driftCustomSqlAllowedFiles = {
+  'lib/essentials/conversation_graph/infrastructure/repositories/graph_health_repository.dart',
+  'lib/essentials/db/feature_level_providers.dart',
+  'lib/essentials/db/infrastructure/repositories/database_health_audit_queries.dart',
+  'lib/essentials/search/infrastructure/repositories/graph_search_repository.dart',
+  'lib/features/attachments/infrastructure/repositories/attachment_archive_stats_repository.dart',
+  'lib/features/attachments/infrastructure/repositories/overlay_archive_compatibility_lookup.dart',
+  'lib/features/attachments/infrastructure/repositories/overlay_attachment_archive_read_store.dart',
+  'lib/features/attachments/infrastructure/repositories/overlay_attachment_archive_write_store.dart',
+  'lib/features/attachments/infrastructure/repositories/sqlite_graph_attachment_archive_candidate_reader.dart',
+  'lib/features/messages/infrastructure/repositories/graph_message_overlay_repository.dart',
+};
+
 const Set<String> _sqfliteFfiBootstrapAllowedFiles = {'lib/main.dart'};
 
 const Set<String> _processRunAllowedFiles = {
@@ -723,6 +736,21 @@ void main() {
             'database provider boundary. Feature code should consume injected '
             'Drift databases, repositories, or typed stores instead of opening '
             'its own executor island.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Drift custom SQL stays behind infrastructure boundaries', () async {
+      final offenders = await _findDriftCustomSqlOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_driftCustomSqlAllowedFiles.toList()..sort()),
+        reason:
+            'Raw SQL through Drift is acceptable when it is quarantined in '
+            'database classes, infrastructure repositories, or named query '
+            'boundaries. Application and presentation code should consume typed '
+            'methods/read models instead of owning custom SQL.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -9204,6 +9232,32 @@ Future<List<String>> _findNativeDriftExecutorOffenders() async {
     final uncommented = _stripComments(source);
     final imports = _extractImports(uncommented);
     if (imports.contains('package:drift/native.dart')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findDriftCustomSqlOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>[];
+  const customSqlTokens = <String>[
+    '.customSelect(',
+    '.customStatement(',
+    '.customUpdate(',
+    '.customInsert(',
+  ];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (customSqlTokens.any(uncommented.contains)) {
       offenders.add(filePath);
     }
   }

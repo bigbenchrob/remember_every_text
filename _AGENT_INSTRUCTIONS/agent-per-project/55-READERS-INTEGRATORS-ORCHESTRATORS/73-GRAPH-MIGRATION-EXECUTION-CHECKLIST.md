@@ -3306,6 +3306,10 @@ criteria.
   `NativeDatabase` construction remains owned by the central database provider
   boundary; feature/application code should consume injected databases,
   repositories, or typed stores instead of opening local executor islands.
+- Added an architecture tripwire for Drift custom SQL ownership. Raw SQL is
+  acceptable inside database classes, infrastructure repositories, or named
+  query boundaries; application and presentation code should consume typed
+  methods/read models instead of owning custom SQL.
 - Added an architecture tripwire for sqflite FFI bootstrap. `sqfliteFfiInit`,
   `databaseFactoryFfi`, and `databaseFactory` mutation remain app-bootstrap
   concerns; production code should receive initialized database services rather
