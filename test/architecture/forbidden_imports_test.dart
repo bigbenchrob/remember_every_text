@@ -29,6 +29,10 @@ const Set<String> _appShellActionProviderAllowedFiles = {
   'lib/essentials/navigation/presentation/view/macos_app_shell.dart',
 };
 
+const Set<String> _sidebarBodyModelActionProviderAllowedFiles = {
+  'lib/essentials/sidebar/presentation/view/sidebar_body_model_content.dart',
+};
+
 // Retired database filenames are cleanup/diagnostic inventory only. Keep their
 // allowlists small so old files cannot regain provider or workflow authority.
 const Set<String> _retiredArchiveMetadataProviderAllowedFiles = {};
@@ -1522,6 +1526,23 @@ void main() {
             'SidebarBodyModelContent may render typed body models, but option '
             'disabled policy and sidebar dispatch belong behind '
             'SidebarBodyModelActions.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Sidebar body model action provider stays renderer-owned', () async {
+      final offenders = await _findSidebarBodyModelActionProviderOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(
+          _sidebarBodyModelActionProviderAllowedFiles.toList()..sort(),
+        ),
+        reason:
+            'sidebarBodyModelActionsProvider should be consumed only by the '
+            'generic sidebar body-model renderer. Feature-specific widgets '
+            'should own their own semantic actions rather than borrowing the '
+            'generic dropdown dispatch boundary.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -10384,6 +10405,15 @@ Future<List<String>> _findSidebarBodyModelRendererActionOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>> _findSidebarBodyModelActionProviderOffenders() async {
+  const actionsFile =
+      'lib/essentials/sidebar/application/sidebar_body_model_actions_provider.dart';
+  return _findProviderUsageOffenders(
+    providerName: 'sidebarBodyModelActionsProvider',
+    providerFile: actionsFile,
+  );
 }
 
 Future<List<String>> _findGroupedContactSelectorRefreshOffenders() async {

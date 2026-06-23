@@ -2837,7 +2837,9 @@ criteria.
 - Moved generic sidebar dropdown dispatch behind `SidebarBodyModelActions`.
   `SidebarBodyModelContent` now renders typed dropdown body models and forwards
   selected options; disabled-option policy and sidebar dispatch live in the
-  sidebar application boundary.
+  sidebar application boundary. Added a provider-spread tripwire so this
+  generic dropdown boundary stays owned by the generic body-model renderer
+  instead of becoming a feature-widget shortcut.
 - Moved unfamiliar-source handle lens link/create/dismiss side effects behind
   `HandleLensActions`. `HandleLensView` now renders evidence, dialog/form
   inputs, and busy/error state only; manual-link writes, review dismissal, and
