@@ -3349,6 +3349,10 @@ criteria.
   scoped to source views and the explicit contact prewarm boundary. Full-scope
   skeleton construction remains part of the evidence spine rather than a
   source-specific renderer concern.
+- Added architecture tripwires keeping row hydration owned by
+  `MessageEvidenceTimelineView` and attachment hydration owned by
+  `MessageEvidenceRow`. Source views compose scopes; shared evidence widgets
+  own viewport row and media evidence hydration.
 - Added an architecture tripwire for sqflite FFI bootstrap. `sqfliteFfiInit`,
   `databaseFactoryFfi`, and `databaseFactory` mutation remain app-bootstrap
   concerns; production code should receive initialized database services rather

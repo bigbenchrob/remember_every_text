@@ -334,6 +334,14 @@ const Set<String> _messageEvidenceTimelineSkeletonProviderAllowedFiles = {
   'lib/features/messages/presentation/view/search_result_context_sidebar_view.dart',
 };
 
+const Set<String> _messageEvidenceRowProviderAllowedFiles = {
+  'lib/features/messages/presentation/widgets/message_evidence/message_evidence_timeline_view.dart',
+};
+
+const Set<String> _messageEvidenceAttachmentsProviderAllowedFiles = {
+  'lib/features/messages/presentation/widgets/message_evidence/message_evidence_row.dart',
+};
+
 const Set<String> _attachmentSourceScopedIdentityAllowedFiles = {
   'lib/features/attachments/infrastructure/repositories/graph_cross_snapshot_mapper.dart',
   'lib/features/attachments/infrastructure/repositories/sqlite_graph_attachment_archive_candidate_reader.dart',
@@ -2454,6 +2462,41 @@ void main() {
             'Actual users:\n${offenders.join('\n')}',
       );
     });
+
+    test('Message evidence row hydration stays in timeline renderer', () async {
+      final offenders = await _findMessageEvidenceRowProviderOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_messageEvidenceRowProviderAllowedFiles.toList()..sort()),
+        reason:
+            'Hydrated message row requests should be owned by the shared '
+            'MessageEvidenceTimelineView. Source-specific views compose scopes '
+            'and headers; low-level row widgets render typed hydrated evidence '
+            'they are handed.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test(
+      'Message evidence attachment hydration stays in row renderer',
+      () async {
+        final offenders =
+            await _findMessageEvidenceAttachmentsProviderOffenders();
+
+        expect(
+          offenders,
+          orderedEquals(
+            _messageEvidenceAttachmentsProviderAllowedFiles.toList()..sort(),
+          ),
+          reason:
+              'Attachment evidence requests should be owned by the shared '
+              'MessageEvidenceRow. Source-specific views and lower-level media '
+              'tiles should not hydrate attachment evidence directly.\n'
+              'Actual users:\n${offenders.join('\n')}',
+        );
+      },
+    );
 
     test('Conversation message header uses context boundary', () async {
       final offenders =
@@ -6501,6 +6544,56 @@ _findMessageEvidenceTimelineSkeletonProviderOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (uncommented.contains('messageEvidenceTimelineSkeletonProvider(')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findMessageEvidenceRowProviderOffenders() async {
+  const spineProviderFile =
+      'lib/features/messages/application/message_evidence/message_evidence_spine_provider.dart';
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path == spineProviderFile) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (uncommented.contains('messageEvidenceRowProvider(')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findMessageEvidenceAttachmentsProviderOffenders() async {
+  const spineProviderFile =
+      'lib/features/messages/application/message_evidence/message_evidence_spine_provider.dart';
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path == spineProviderFile) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (uncommented.contains('messageEvidenceAttachmentsProvider(')) {
       offenders.add(filePath);
     }
   }
