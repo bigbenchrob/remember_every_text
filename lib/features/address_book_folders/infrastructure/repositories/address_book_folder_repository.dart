@@ -14,7 +14,6 @@ class AddressBookFolderRepository {
   Future<Either<FolderRetrievalFailure, AddressBookFolderAggregate>>
   getFinalFolderAggregate() async {
     try {
-      // (1) Retrieve candidate paths.
       final candidatePaths = await folderPathsFinder.getAddressBookPaths();
       if (candidatePaths.isEmpty) {
         return const Left(
@@ -22,7 +21,6 @@ class AddressBookFolderRepository {
         );
       }
 
-      // (2) Filter paths having a viable database.
       final viablePathScan = await _filterViablePaths(candidatePaths);
       if (viablePathScan.viablePaths.isEmpty) {
         return Left(
@@ -34,18 +32,16 @@ class AddressBookFolderRepository {
         );
       }
 
-      // (3) Convert each viable path to a folder entity.
       final folders = await Future.wait(
         viablePathScan.viablePaths.map((path) => _processToFolderEntity(path)),
         eagerError: true,
       );
 
-      // (4) Build the aggregate (the factory constructor decides the most recent folder).
       final aggregate = AddressBookFolderAggregate(folders);
       return Right(aggregate);
-    } catch (e) {
+    } catch (error) {
       return Left(
-        FolderRetrievalFailure(message: 'Folder retrieval failed: $e'),
+        FolderRetrievalFailure(message: 'Folder retrieval failed: $error'),
       );
     }
   }
@@ -71,12 +67,11 @@ class AddressBookFolderRepository {
 
   Future<String?> _addressBookDbRejectionReason(String path) async {
     try {
-      // This awaits for database access to confirm viability.
       final helper = AddressBookDbHelperMultiInstance(path);
       await helper.database;
       return null;
-    } catch (e) {
-      return '$e';
+    } catch (error) {
+      return '$error';
     }
   }
 
@@ -87,11 +82,11 @@ class AddressBookFolderRepository {
       final result = await db.rawQuery(_qsAddressFolderInfo(path));
       final jsonResult = result.first;
       return AddressBookFolderEntity.fromJson(jsonResult);
-    } catch (e) {
+    } catch (error) {
       throw FolderRetrievalFailure(
         message:
             'Conversion of AddressBook path to folder entity failed for '
-            '$path: $e',
+            '$path: $error',
       );
     }
   }

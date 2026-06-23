@@ -1,13 +1,9 @@
 import 'package:sqflite/sqflite.dart';
 
-/// Necessary because AddressBookFolderRepository needs to
-/// rapidly generate a sequence of database instances for different
-/// paths. A singleton is exactly what we *don't* want here!
-
-/// _db initialization is lazy loaded, so in order to test that
-/// a folder path contains a functional sqlite database, need
-/// to instantiate this helper and call .database on it.
-
+/// Opens one AddressBook SQLite candidate path for viability checks.
+///
+/// AddressBook folder discovery probes multiple candidate database paths, so
+/// this helper intentionally avoids singleton database ownership.
 class AddressBookDbHelperMultiInstance {
   final String _path;
   Database? _db;
