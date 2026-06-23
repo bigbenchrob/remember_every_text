@@ -378,6 +378,11 @@ const Set<String> _currentVisibleMonthProviderAllowedFiles = {
   'lib/features/messages/presentation/widgets/recovered_messages_heatmap_sidebar.dart',
 };
 
+const Set<String> _currentVisibleMonthWriterAllowedFiles = {
+  'lib/features/messages/presentation/view/contact_messages_evidence_view.dart',
+  'lib/features/messages/presentation/view/global_messages_evidence_view.dart',
+};
+
 const Set<String> _messageHeatmapActionProviderAllowedFiles = {
   'lib/features/messages/application/sidebar_cassette_spec/widget_builders/messages_heatmap_widget.dart',
 };
@@ -2621,6 +2626,26 @@ void main() {
             'Actual users:\n${offenders.join('\n')}',
       );
     });
+
+    test(
+      'Current visible month writes stay in evidence source views',
+      () async {
+        final offenders = await _findCurrentVisibleMonthWriterOffenders();
+
+        expect(
+          offenders,
+          orderedEquals(
+            _currentVisibleMonthWriterAllowedFiles.toList()..sort(),
+          ),
+          reason:
+              'setVisibleMonthKey should be called only by message evidence '
+              'source views responding to MessageEvidenceTimelineView '
+              'callbacks. Sidebar heatmaps may observe the derived month, but '
+              'must not write scroll synchronization state directly.\n'
+              'Actual users:\n${offenders.join('\n')}',
+        );
+      },
+    );
 
     test(
       'Message heatmap actions stay behind heatmap widget boundary',
@@ -6859,6 +6884,31 @@ Future<List<String>> _findCurrentVisibleMonthProviderOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (uncommented.contains('currentVisibleMonthForScopeProvider(')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findCurrentVisibleMonthWriterOffenders() async {
+  const providerFile =
+      'lib/features/messages/application/message_evidence/current_visible_month_provider.dart';
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path == providerFile) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (uncommented.contains('setVisibleMonthKey(')) {
       offenders.add(filePath);
     }
   }
