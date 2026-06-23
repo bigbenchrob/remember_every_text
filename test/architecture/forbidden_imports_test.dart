@@ -25,6 +25,10 @@ const Set<String> _appModeActionProviderAllowedFiles = {
   'lib/essentials/navigation/presentation/widgets/app_mode_toggle.dart',
 };
 
+const Set<String> _appShellActionProviderAllowedFiles = {
+  'lib/essentials/navigation/presentation/view/macos_app_shell.dart',
+};
+
 // Retired database filenames are cleanup/diagnostic inventory only. Keep their
 // allowlists small so old files cannot regain provider or workflow authority.
 const Set<String> _retiredArchiveMetadataProviderAllowedFiles = {};
@@ -1379,6 +1383,20 @@ void main() {
             'MacosAppShell may render toolbar controls and observe toolbar '
             'state, but developer-mode, theme, and window-state mutations '
             'should cross AppShellActions.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('App shell action provider stays shell-owned', () async {
+      final offenders = await _findAppShellActionProviderOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_appShellActionProviderAllowedFiles.toList()..sort()),
+        reason:
+            'appShellActionsProvider should be consumed only by MacosAppShell. '
+            'Feature widgets should not borrow toolbar-level mutation '
+            'authority for developer-mode, theme, or window-state actions.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -10193,6 +10211,15 @@ Future<List<String>> _findMacosAppShellActionBoundaryOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>> _findAppShellActionProviderOffenders() async {
+  const actionsFile =
+      'lib/essentials/navigation/application/app_shell_actions_provider.dart';
+  return _findProviderUsageOffenders(
+    providerName: 'appShellActionsProvider',
+    providerFile: actionsFile,
+  );
 }
 
 Future<List<String>> _findSidebarUtilityTopMenuActionOffenders() async {

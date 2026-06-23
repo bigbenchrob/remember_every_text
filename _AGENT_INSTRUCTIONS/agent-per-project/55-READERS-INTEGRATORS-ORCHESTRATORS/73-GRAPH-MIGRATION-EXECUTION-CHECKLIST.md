@@ -2763,8 +2763,9 @@ criteria.
 - Moved app-shell toolbar mutations behind `AppShellActions`. `MacosAppShell`
   still renders developer-mode and theme controls from observed state, but
   developer-mode toggling and theme cycling now cross a navigation action
-  boundary. Added a tripwire preventing direct toolbar provider mutation from
-  returning.
+  boundary. Added tripwires preventing direct toolbar provider mutation from
+  returning and preventing the action provider from spreading beyond the app
+  shell.
 - Moved environment-readiness and pipeline-incident panel lifecycle mutations
   behind feature-owned action boundaries. The panels still render readiness,
   incident, and diagnostic export state, but re-check/import/open-settings,
