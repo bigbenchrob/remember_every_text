@@ -2859,7 +2859,8 @@ criteria.
   sidebar supplement still render workflow state, but folder selection, clear
   selection, begin import, and remove-imported-archive-data intents no longer
   call the workflow notifier directly from UI code. Added a tripwire guarding
-  this workflow action boundary.
+  this workflow action boundary and a provider-spread guard limiting direct
+  consumers to the archive workflow UI surfaces.
 - Routed the conversation graph status sheet's diagnostic open-chat action
   through the chats feature action boundary. The status sheet still renders
   graph diagnostics and selected chat rows, but chat selection/navigation now

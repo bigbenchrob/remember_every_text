@@ -45,6 +45,11 @@ const Set<String> _pipelineIncidentActionProviderAllowedFiles = {
   'lib/features/environment_readiness/presentation/view/pipeline_incident_panel_view.dart',
 };
 
+const Set<String> _historicalArchivesWorkflowActionProviderAllowedFiles = {
+  'lib/features/settings/application/sidebar_cassette_spec/widget_builders/historical_archives_settings_supplemental_content.dart',
+  'lib/features/settings/presentation/view/historical_archives_panel.dart',
+};
+
 // Retired database filenames are cleanup/diagnostic inventory only. Keep their
 // allowlists small so old files cannot regain provider or workflow authority.
 const Set<String> _retiredArchiveMetadataProviderAllowedFiles = {};
@@ -4925,6 +4930,25 @@ void main() {
       );
     });
 
+    test('Historical archives workflow provider stays UI-owned', () async {
+      final offenders =
+          await _findHistoricalArchivesWorkflowActionProviderOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(
+          _historicalArchivesWorkflowActionProviderAllowedFiles.toList()
+            ..sort(),
+        ),
+        reason:
+            'historicalArchivesWorkflowActionsProvider should be consumed '
+            'only by the historical archives panel and its sidebar supplement. '
+            'Other settings surfaces should expose their own workflow action '
+            'boundary instead of borrowing archive workflow authority.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Archive source inspector provider stays feature-boundary owned', () {
       const retiredApplicationProvider =
           'lib/features/settings/application/archive_source_inspector_provider.dart';
@@ -5167,6 +5191,16 @@ _findHistoricalArchivesWorkflowActionBoundaryOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>>
+_findHistoricalArchivesWorkflowActionProviderOffenders() async {
+  const actionsFile =
+      'lib/features/settings/application/historical_archives_workflow_actions_provider.dart';
+  return _findProviderUsageOffenders(
+    providerName: 'historicalArchivesWorkflowActionsProvider',
+    providerFile: actionsFile,
+  );
 }
 
 Future<List<String>>
