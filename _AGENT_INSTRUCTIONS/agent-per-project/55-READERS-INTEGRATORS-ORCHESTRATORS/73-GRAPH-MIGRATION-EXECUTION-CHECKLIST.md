@@ -2892,6 +2892,10 @@ criteria.
   guarded as the owner of chat-to-conversation navigation intent construction,
   with only the chats view model and graph status diagnostic opener approved as
   direct consumers.
+- Moved graph-status-sheet chat-open failure diagnostics into
+  `ChatSelectionActions`. The status sheet now forwards chat-open intent only;
+  selection dispatch and warning logging stay behind the chats action boundary,
+  with a tripwire preventing direct logging from returning to the sheet.
 - Moved panel-stack tab activation, tab close, and diagnostic build logging
   behind `PanelActions`. `PanelStackSurface` now renders tabs/pages and
   forwards user intent only; panel-stack mutation and logger writes stay in

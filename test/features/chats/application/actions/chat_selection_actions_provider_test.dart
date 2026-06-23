@@ -1,30 +1,29 @@
-import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
-import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import 'package:remember_this_text/essentials/sidebar/application/sidebar_flow_preference_store.dart';
 import 'package:remember_this_text/essentials/sidebar/application/sidebar_flow_state_provider.dart';
+import 'package:remember_this_text/essentials/sidebar/feature_level_providers.dart'
+    as sidebar;
 import 'package:remember_this_text/features/chats/application/actions/chat_selection_actions_provider.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 
 void main() {
   group('ChatSelectionActions', () {
-    late OverlayDatabase overlayDb;
     late ProviderContainer container;
 
     setUp(() {
-      overlayDb = OverlayDatabase(NativeDatabase.memory());
       container = ProviderContainer(
         overrides: [
-          overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
+          sidebar.sidebarFlowPreferenceStoreProvider.overrideWith((ref) async {
+            return _InMemorySidebarFlowPreferenceStore();
+          }),
         ],
       );
     });
 
     tearDown(() async {
       container.dispose();
-      await overlayDb.close();
     });
 
     test('selectChat dispatches conversation sidebar flow intent', () async {
@@ -43,4 +42,30 @@ void main() {
       expect(flowState.selectedConversationSearchQuery, 'flower');
     });
   });
+}
+
+class _InMemorySidebarFlowPreferenceStore
+    implements SidebarFlowPreferenceStore {
+  String? _contactContextPreference;
+  String? _navigationPreference;
+
+  @override
+  Future<String?> readContactContextPreference() async {
+    return _contactContextPreference;
+  }
+
+  @override
+  Future<String?> readNavigationPreference() async {
+    return _navigationPreference;
+  }
+
+  @override
+  Future<void> writeContactContextPreference(String value) async {
+    _contactContextPreference = value;
+  }
+
+  @override
+  Future<void> writeNavigationPreference(String value) async {
+    _navigationPreference = value;
+  }
 }

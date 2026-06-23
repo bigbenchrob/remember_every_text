@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../essentials/logging/feature_level_providers.dart';
 import '../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../essentials/sidebar/application/sidebar_action_dispatcher.dart';
 import '../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
@@ -18,17 +19,33 @@ class ChatSelectionActions extends _$ChatSelectionActions {
     int? anchorMessageId,
     String? searchQuery,
   }) async {
-    await ref
-        .read(sidebarActionDispatcherProvider.notifier)
-        .dispatch(
-          intent: ConversationSelected(
-            conversationId: chatId,
-            anchorMessageId: anchorMessageId,
-            searchQuery: searchQuery,
-          ),
-          context: const SidebarActionDispatchContext(
-            sidebarMode: SidebarMode.messages,
-          ),
-        );
+    try {
+      await ref
+          .read(sidebarActionDispatcherProvider.notifier)
+          .dispatch(
+            intent: ConversationSelected(
+              conversationId: chatId,
+              anchorMessageId: anchorMessageId,
+              searchQuery: searchQuery,
+            ),
+            context: const SidebarActionDispatchContext(
+              sidebarMode: SidebarMode.messages,
+            ),
+          );
+    } catch (error, stackTrace) {
+      ref
+          .read(appLoggerProvider.notifier)
+          .warn(
+            'Chat selection failed',
+            source: 'ChatSelectionActions',
+            context: <String, Object?>{
+              'chatId': chatId,
+              'anchorMessageId': anchorMessageId,
+              'searchQuery': searchQuery,
+              'error': error.toString(),
+              'stackTrace': stackTrace.toString(),
+            },
+          );
+    }
   }
 }

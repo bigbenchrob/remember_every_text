@@ -8,7 +8,6 @@ import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../config/theme/colors/theme_colors_annotated.dart';
 import '../../../../config/theme/theme_typography.dart';
-import '../../../../essentials/logging/feature_level_providers.dart';
 import '../../../../features/chats/feature_level_providers.dart';
 import '../../application/chat_summaries/chat_summary.dart';
 import '../../application/chat_summaries/chat_summary_provider.dart';
@@ -214,23 +213,7 @@ class _ConversationGraphStatusSheetState
   }
 
   Future<void> _openChatFromStatusSheet(int chatSsId) async {
-    try {
-      await ref
-          .read(chatSelectionActionsProvider.notifier)
-          .selectChat(chatSsId);
-    } catch (error, stackTrace) {
-      ref
-          .read(appLoggerProvider.notifier)
-          .warn(
-            'Conversation graph status chat open failed',
-            source: 'ConversationGraphStatusSheet',
-            context: <String, Object?>{
-              'chatSsId': chatSsId,
-              'error': error.toString(),
-              'stackTrace': stackTrace.toString(),
-            },
-          );
-    }
+    await ref.read(chatSelectionActionsProvider.notifier).selectChat(chatSsId);
   }
 }
 

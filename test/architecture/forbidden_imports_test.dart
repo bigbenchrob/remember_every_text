@@ -1655,6 +1655,20 @@ void main() {
       );
     });
 
+    test('Graph status sheet delegates chat-open diagnostics', () async {
+      final offenders = await _findGraphStatusSheetChatOpenOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'ConversationGraphStatusSheet may forward chat-open intent, but '
+            'chat-selection dispatch and failure diagnostics belong behind '
+            'ChatSelectionActions.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Retired archive metadata provider does not return', () async {
       final offenders = await _findRetiredArchiveMetadataProviderOffenders();
 
@@ -10798,6 +10812,31 @@ Future<List<String>> _findChatSelectionActionProviderOffenders() async {
     providerName: 'chatSelectionActionsProvider',
     providerFile: actionsFile,
   );
+}
+
+Future<List<String>> _findGraphStatusSheetChatOpenOffenders() async {
+  const filePath =
+      'lib/essentials/conversation_graph/presentation/status/conversation_graph_status_sheet.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final imports = _extractImports(uncommented);
+  final offenders = <String>[
+    for (final importTarget in imports)
+      if (importTarget.endsWith(
+        'essentials/logging/feature_level_providers.dart',
+      ))
+        '$filePath imports $importTarget',
+  ];
+  if (uncommented.contains('appLoggerProvider.notifier') ||
+      uncommented.contains('Conversation graph status chat open failed')) {
+    offenders.add('$filePath owns chat-open failure diagnostics');
+  }
+
+  return offenders..sort();
 }
 
 Future<List<String>>
