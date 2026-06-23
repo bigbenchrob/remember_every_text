@@ -145,9 +145,9 @@ void main() async {
     } else {
       await RustLib.init();
     }
-  } catch (e) {
+  } catch (error) {
     debugPrint(
-      'RustLib.init failed: $e — URL preview parsing will be unavailable',
+      'RustLib.init failed: $error — URL preview parsing will be unavailable',
     );
   }
 
@@ -171,15 +171,15 @@ void main() async {
   final brightness =
       sched.SchedulerBinding.instance.platformDispatcher.platformBrightness;
 
-  // Create provider container
+  // Create provider container.
   final container = ProviderContainer(
     overrides: [
-      // Initialize platform brightness immediately
+      // Initialize platform brightness immediately.
       platformBrightnessProvider.overrideWith((ref) => brightness),
     ],
   );
 
-  // Set up the delegate to access the container
+  // Set up the delegate to access the container.
   delegate.attachContainer(container);
 
   // Initialize the app logger early so all subsequent operations are captured.
@@ -220,8 +220,11 @@ void main() async {
   // Restore window state
   try {
     await container.read(windowStateServiceProvider).restoreWindowState();
-  } catch (e) {
-    logger.warn('Failed to restore window state: $e', source: 'WindowState');
+  } catch (error) {
+    logger.warn(
+      'Failed to restore window state: $error',
+      source: 'WindowState',
+    );
   }
 
   // Reassert minimum window size after the first frame when the NSWindow exists.

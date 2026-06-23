@@ -86,9 +86,9 @@ class PathsHelper {
       if (directory == null) {
         throw StateError('Path provider directory not found');
       }
-    } catch (e) {
+    } catch (error) {
       throw StateError(
-        "PathsHelper initialization error for key '$directoryKey': $e",
+        "PathsHelper initialization error for key '$directoryKey': $error",
       );
     }
     return directory.path;
