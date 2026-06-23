@@ -436,6 +436,25 @@ const Set<String> _pickerFilterActionProviderAllowedFiles = {
   'lib/features/contacts/presentation/widgets/picker_filter_toggle.dart',
 };
 
+const Set<String> _sidebarTopMenuActionProviderAllowedFiles = {
+  'lib/features/sidebar_utilities/application/sidebar_cassette_spec/widget_builders/settings_top_menu_widget.dart',
+  'lib/features/sidebar_utilities/application/sidebar_cassette_spec/widget_builders/top_chat_menu_widget.dart',
+};
+
+const Set<String> _settingsActionListActionProviderAllowedFiles = {
+  'lib/features/settings/application/sidebar_cassette_spec/widget_builders/settings_action_list.dart',
+};
+
+const Set<String> _strayHandleSidebarActionProviderAllowedFiles = {
+  'lib/features/handles/application/sidebar_cassette_spec/widget_builders/stray_handles_mode_switcher_cassette.dart',
+  'lib/features/handles/application/sidebar_cassette_spec/widget_builders/stray_handles_review_cassette.dart',
+  'lib/features/handles/application/sidebar_cassette_spec/widget_builders/stray_handles_type_switcher_cassette.dart',
+};
+
+const Set<String> _conversationFavouriteActionProviderAllowedFiles = {
+  'lib/essentials/conversation_graph/presentation/widgets/conversation_favourite_button.dart',
+};
+
 const Set<String> _attachmentSourceScopedIdentityAllowedFiles = {
   'lib/features/attachments/infrastructure/repositories/graph_cross_snapshot_mapper.dart',
   'lib/features/attachments/infrastructure/repositories/sqlite_graph_attachment_archive_candidate_reader.dart',
@@ -1324,6 +1343,22 @@ void main() {
       );
     });
 
+    test('Sidebar top-menu action provider stays top-menu-owned', () async {
+      final offenders = await _findSidebarTopMenuActionProviderOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(
+          _sidebarTopMenuActionProviderAllowedFiles.toList()..sort(),
+        ),
+        reason:
+            'sidebarTopMenuActionsProvider should be consumed only by sidebar '
+            'top-menu widgets. Other surfaces should receive resolved sidebar '
+            'mode/menu intent rather than borrowing top-menu dispatch actions.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Settings action list uses action boundary', () async {
       final offenders = await _findSettingsActionListActionOffenders();
 
@@ -1335,6 +1370,22 @@ void main() {
             'selection, but enabled-state dispatch and sidebar intent '
             'construction belong behind SettingsActionListActions.\n'
             'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Settings action-list provider stays list-owned', () async {
+      final offenders = await _findSettingsActionListActionProviderOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(
+          _settingsActionListActionProviderAllowedFiles.toList()..sort(),
+        ),
+        reason:
+            'settingsActionListActionsProvider should be consumed only by the '
+            'settings action list widget. Other settings surfaces should use '
+            'their own named workflow/action boundary.\n'
+            'Actual users:\n${offenders.join('\n')}',
       );
     });
 
@@ -3125,6 +3176,22 @@ void main() {
       );
     });
 
+    test('Stray handle action provider stays cassette-owned', () async {
+      final offenders = await _findStrayHandleSidebarActionProviderOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(
+          _strayHandleSidebarActionProviderAllowedFiles.toList()..sort(),
+        ),
+        reason:
+            'strayHandleSidebarActionsProvider should be consumed only by the '
+            'stray-handle sidebar cassettes. Other surfaces should not borrow '
+            'that sidebar-specific open/filter/review action seam directly.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Recovered message sidebar uses navigation action boundary', () async {
       final offenders =
           await _findRecoveredMessageSidebarNavigationBoundaryOffenders();
@@ -3480,6 +3547,24 @@ void main() {
             'ConversationFavouriteButton may render favourite state, but '
             'toggle writes should cross ConversationFavouriteActions.\n'
             'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Conversation favourite action provider stays button-owned', () async {
+      final offenders =
+          await _findConversationFavouriteActionProviderOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(
+          _conversationFavouriteActionProviderAllowedFiles.toList()..sort(),
+        ),
+        reason:
+            'conversationFavouriteActionsProvider should be consumed only by '
+            'the reusable conversation favourite button. Other surfaces should '
+            'render that button or define a reviewed user-intent action seam, '
+            'not mutate favourites directly.\n'
+            'Actual users:\n${offenders.join('\n')}',
       );
     });
 
@@ -7791,6 +7876,15 @@ _findConversationFavouriteButtonActionBoundaryOffenders() async {
   return offenders..sort();
 }
 
+Future<List<String>> _findConversationFavouriteActionProviderOffenders() async {
+  const actionsFile =
+      'lib/essentials/conversation_graph/application/conversation_favourites/conversation_favourite_actions_provider.dart';
+  return _findProviderUsageOffenders(
+    providerName: 'conversationFavouriteActionsProvider',
+    providerFile: actionsFile,
+  );
+}
+
 Future<List<String>> _findSpamManagementStorageOffenders() async {
   const filePath =
       'lib/features/handles/application/settings_cassette_spec/resolver_tools/spam_management_provider.dart';
@@ -9734,6 +9828,15 @@ Future<List<String>> _findStrayHandleCassetteActionBoundaryOffenders() async {
   return offenders..sort();
 }
 
+Future<List<String>> _findStrayHandleSidebarActionProviderOffenders() async {
+  const actionsFile =
+      'lib/features/handles/application/sidebar_cassette_spec/resolver_tools/stray_handle_sidebar_actions_provider.dart';
+  return _findProviderUsageOffenders(
+    providerName: 'strayHandleSidebarActionsProvider',
+    providerFile: actionsFile,
+  );
+}
+
 Future<List<String>>
 _findRecoveredMessageSidebarNavigationBoundaryOffenders() async {
   const filePaths = <String>[
@@ -9979,6 +10082,15 @@ Future<List<String>> _findSidebarUtilityTopMenuActionOffenders() async {
   return offenders..sort();
 }
 
+Future<List<String>> _findSidebarTopMenuActionProviderOffenders() async {
+  const actionsFile =
+      'lib/features/sidebar_utilities/application/sidebar_cassette_spec/resolver_tools/sidebar_top_menu_actions_provider.dart';
+  return _findProviderUsageOffenders(
+    providerName: 'sidebarTopMenuActionsProvider',
+    providerFile: actionsFile,
+  );
+}
+
 Future<List<String>> _findSettingsActionListActionOffenders() async {
   const filePath =
       'lib/features/settings/application/sidebar_cassette_spec/widget_builders/settings_action_list.dart';
@@ -10004,6 +10116,15 @@ Future<List<String>> _findSettingsActionListActionOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>> _findSettingsActionListActionProviderOffenders() async {
+  const actionsFile =
+      'lib/features/settings/application/sidebar_cassette_spec/actions/settings_action_list_actions_provider.dart';
+  return _findProviderUsageOffenders(
+    providerName: 'settingsActionListActionsProvider',
+    providerFile: actionsFile,
+  );
 }
 
 Future<List<String>> _findFeaturePresentationNavigationSpecOffenders() async {

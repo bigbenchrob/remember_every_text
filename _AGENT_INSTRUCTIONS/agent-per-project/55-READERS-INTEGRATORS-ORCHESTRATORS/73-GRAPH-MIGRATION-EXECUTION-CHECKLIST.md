@@ -3396,6 +3396,10 @@ criteria.
   contact favourite, and contact picker-filter actions. User-intent overlay
   writes and picker preference writes stay behind their named controls/action
   boundaries instead of spreading through arbitrary widgets.
+- Added action-provider ownership tripwires for sidebar top menus, settings
+  action lists, stray-handle cassettes, and conversation favourite buttons.
+  These controls remain named action seams instead of provider shortcuts that
+  arbitrary widgets can borrow.
 - Added an architecture tripwire for sqflite FFI bootstrap. `sqfliteFfiInit`,
   `databaseFactoryFfi`, and `databaseFactory` mutation remain app-bootstrap
   concerns; production code should receive initialized database services rather
