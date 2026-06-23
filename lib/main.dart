@@ -158,12 +158,11 @@ void main() async {
     'Startup flags: optionLaunchResetRequested=${startupFlags.optionLaunchResetRequested}',
   );
 
-  // Initialize Media Kit
+  // Initialize Media Kit.
   MediaKit.ensureInitialized();
 
-  /// By default, enableWindowDelegate is set to false to ensure compatibility
-  /// with other plugins. Set it to true if you wish to use NSWindowDelegate.
-  /// WindowManipulator.initialize(enableWindowDelegate: true);
+  // Retain the window delegate handle for the app lifetime so macOS window
+  // close events keep flowing into the app-shell action boundary.
   final delegate = _MyDelegate();
   _retainedWindowDelegateHandles.add(
     WindowManipulator.addNSWindowDelegate(delegate),
