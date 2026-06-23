@@ -83,8 +83,8 @@ class LogExportService {
         exportPath: exportPath,
         attachedToMailDraft: false,
       );
-    } catch (e) {
-      debugPrint('LogExportService: export failed: $e');
+    } catch (error) {
+      debugPrint('LogExportService: export failed: $error');
       return const DiagnosticReportPresentationResult(
         exportPath: null,
         attachedToMailDraft: false,
@@ -123,8 +123,8 @@ class LogExportService {
         'LogExportService: Apple Mail compose failed: ${result.stderr}',
       );
       return false;
-    } catch (e) {
-      debugPrint('LogExportService: Apple Mail compose threw: $e');
+    } catch (error) {
+      debugPrint('LogExportService: Apple Mail compose threw: $error');
       return false;
     }
   }

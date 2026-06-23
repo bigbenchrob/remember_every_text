@@ -73,10 +73,10 @@ class SqliteHistoricalSnapshotReader implements HistoricalSnapshotReader {
       } finally {
         db.dispose();
       }
-    } on SqliteException catch (e) {
+    } on SqliteException catch (error) {
       return SnapshotValidationResult(
         isValid: false,
-        errorMessage: 'Invalid SQLite database: $e',
+        errorMessage: 'Invalid SQLite database: $error',
         walDetected: walExists,
         shmDetected: shmExists,
       );
