@@ -59,6 +59,13 @@ const Set<String> _onboardingOverlayActionProviderAllowedFiles = {
   'lib/essentials/onboarding/presentation/onboarding_overlay.dart',
 };
 
+const Set<String> _onboardingReadinessActionProviderAllowedFiles = {
+  'lib/essentials/navigation/presentation/view/sidebar_parked_overlay.dart',
+  'lib/essentials/onboarding/application/onboarding_dev_panel_actions_provider.dart',
+  'lib/essentials/onboarding/application/onboarding_overlay_actions_provider.dart',
+  'lib/features/environment_readiness/application/environment_readiness_actions_provider.dart',
+};
+
 // Retired database filenames are cleanup/diagnostic inventory only. Keep their
 // allowlists small so old files cannot regain provider or workflow authority.
 const Set<String> _retiredArchiveMetadataProviderAllowedFiles = {};
@@ -4787,6 +4794,26 @@ void main() {
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
+
+    test(
+      'Onboarding readiness action provider stays lifecycle-owned',
+      () async {
+        final offenders =
+            await _findOnboardingReadinessActionProviderOffenders();
+
+        expect(
+          offenders,
+          orderedEquals(
+            _onboardingReadinessActionProviderAllowedFiles.toList()..sort(),
+          ),
+          reason:
+              'onboardingReadinessActionsProvider is a shared onboarding '
+              'lifecycle boundary. Its direct consumers should remain limited '
+              'to named lifecycle/action surfaces, not ordinary widgets.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
 
     test('Environment readiness action provider stays panel-owned', () async {
       final offenders =
@@ -9774,6 +9801,15 @@ _findEnvironmentReadinessPanelActionBoundaryOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>> _findOnboardingReadinessActionProviderOffenders() async {
+  const actionsFile =
+      'lib/essentials/onboarding/application/onboarding_readiness_actions_provider.dart';
+  return _findProviderUsageOffenders(
+    providerName: 'onboardingReadinessActionsProvider',
+    providerFile: actionsFile,
+  );
 }
 
 Future<List<String>> _findEnvironmentReadinessActionProviderOffenders() async {

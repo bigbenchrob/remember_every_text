@@ -2756,6 +2756,11 @@ criteria.
     `OnboardingOverlayActions` so those action boundaries remain owned by the
     dev panel / production overlay surfaces instead of becoming convenient
     lifecycle shortcuts for unrelated widgets.
+  - Added a provider-spread tripwire for the shared
+    `OnboardingReadinessActions` lifecycle boundary. Unlike panel-owned action
+    providers, this one is intentionally shared, but direct consumers must stay
+    limited to named lifecycle/action surfaces rather than spreading into
+    ordinary presentation widgets.
   - Moved top-level Messages/Settings mode selection behind
     `AppModeActions`. The toggle still renders the active mode, but selected
     mode mutation and associated cleanup now cross a navigation action
