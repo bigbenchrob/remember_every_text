@@ -50,6 +50,15 @@ const Set<String> _historicalArchivesWorkflowActionProviderAllowedFiles = {
   'lib/features/settings/presentation/view/historical_archives_panel.dart',
 };
 
+const Set<String> _onboardingDevPanelActionProviderAllowedFiles = {
+  'lib/essentials/onboarding/presentation/onboarding_dev_panel.dart',
+};
+
+const Set<String> _onboardingOverlayActionProviderAllowedFiles = {
+  'lib/essentials/onboarding/presentation/onboarding_dev_panel.dart',
+  'lib/essentials/onboarding/presentation/onboarding_overlay.dart',
+};
+
 // Retired database filenames are cleanup/diagnostic inventory only. Keep their
 // allowlists small so old files cannot regain provider or workflow authority.
 const Set<String> _retiredArchiveMetadataProviderAllowedFiles = {};
@@ -4715,6 +4724,23 @@ void main() {
       );
     });
 
+    test('Onboarding dev panel action provider stays panel-owned', () async {
+      final offenders = await _findOnboardingDevPanelActionProviderOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(
+          _onboardingDevPanelActionProviderAllowedFiles.toList()..sort(),
+        ),
+        reason:
+            'onboardingDevPanelActionsProvider should be consumed only by '
+            'the onboarding dev panel. Other onboarding surfaces should own '
+            'their own action boundary instead of borrowing dev-panel '
+            'authority.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Onboarding overlay controls use action boundary', () async {
       final offenders = await _findOnboardingOverlayActionBoundaryOffenders();
 
@@ -4725,6 +4751,23 @@ void main() {
             'Onboarding overlay may watch gate state, but button callbacks '
             'should report onboarding intents through OnboardingOverlayActions '
             'instead of calling the gate notifier directly.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Onboarding overlay action provider stays overlay-owned', () async {
+      final offenders = await _findOnboardingOverlayActionProviderOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(
+          _onboardingOverlayActionProviderAllowedFiles.toList()..sort(),
+        ),
+        reason:
+            'onboardingOverlayActionsProvider should be consumed only by '
+            'the production onboarding overlay and its dev diagnostic panel. '
+            'Other surfaces should report lifecycle intents through their '
+            'own action boundary.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -9674,6 +9717,15 @@ Future<List<String>> _findOnboardingDevPanelActionBoundaryOffenders() async {
   return offenders..sort();
 }
 
+Future<List<String>> _findOnboardingDevPanelActionProviderOffenders() async {
+  const actionsFile =
+      'lib/essentials/onboarding/application/onboarding_dev_panel_actions_provider.dart';
+  return _findProviderUsageOffenders(
+    providerName: 'onboardingDevPanelActionsProvider',
+    providerFile: actionsFile,
+  );
+}
+
 Future<List<String>> _findOnboardingOverlayActionBoundaryOffenders() async {
   const filePath =
       'lib/essentials/onboarding/presentation/onboarding_overlay.dart';
@@ -9689,6 +9741,15 @@ Future<List<String>> _findOnboardingOverlayActionBoundaryOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>> _findOnboardingOverlayActionProviderOffenders() async {
+  const actionsFile =
+      'lib/essentials/onboarding/application/onboarding_overlay_actions_provider.dart';
+  return _findProviderUsageOffenders(
+    providerName: 'onboardingOverlayActionsProvider',
+    providerFile: actionsFile,
+  );
 }
 
 Future<List<String>>

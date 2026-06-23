@@ -2752,6 +2752,10 @@ criteria.
     for diagnostic rendering, but Open Settings, start import, and dismiss
     callbacks no longer call the gate notifier directly. Extended the dev-panel
     tripwire to guard that boundary.
+  - Added provider-spread tripwires for `OnboardingDevPanelActions` and
+    `OnboardingOverlayActions` so those action boundaries remain owned by the
+    dev panel / production overlay surfaces instead of becoming convenient
+    lifecycle shortcuts for unrelated widgets.
   - Moved top-level Messages/Settings mode selection behind
     `AppModeActions`. The toggle still renders the active mode, but selected
     mode mutation and associated cleanup now cross a navigation action
