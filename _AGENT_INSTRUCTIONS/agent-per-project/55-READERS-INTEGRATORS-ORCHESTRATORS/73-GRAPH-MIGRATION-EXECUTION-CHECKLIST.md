@@ -1877,6 +1877,9 @@ criteria.
   boundaries. `SidebarActionDispatcher` now routes contact access and
   unfamiliar-handle dismiss/restore intents without opening overlay storage or
   performing storage-backed mutations directly.
+- Added a provider-spread tripwire for `ContactAccessActions` so contact
+  recents/access mutation remains a sidebar-dispatch consequence of the
+  semantic `ContactChosen` intent instead of spreading into ordinary widgets.
 - Moved onboarding failure-storage construction behind an infrastructure
   provider. Onboarding gate/status application code now records and reads graph
   build/import failure state through an onboarding storage boundary rather than

@@ -499,6 +499,10 @@ const Set<String> _contactSidebarRefreshActionProviderAllowedFiles = {
   'lib/features/contacts/presentation/widgets/grouped_contact_selector.dart',
 };
 
+const Set<String> _contactAccessActionProviderAllowedFiles = {
+  'lib/essentials/sidebar/application/sidebar_action_dispatcher.dart',
+};
+
 const Set<String> _pickerFilterActionProviderAllowedFiles = {
   'lib/features/contacts/presentation/widgets/picker_filter_toggle.dart',
 };
@@ -3542,6 +3546,23 @@ void main() {
               'not resolver tools or infrastructure provider islands.',
         );
       }
+    });
+
+    test('Contact access action provider stays dispatch-owned', () async {
+      final offenders = await _findContactAccessActionProviderOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(
+          _contactAccessActionProviderAllowedFiles.toList()..sort(),
+        ),
+        reason:
+            'contactAccessActionsProvider records user contact-selection '
+            'access after a semantic sidebar ContactChosen intent. It should '
+            'not spread into ordinary widgets as an ad hoc recents/favourites '
+            'mutation shortcut.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
     });
 
     test('Other features use contacts feature boundary', () async {
@@ -7932,6 +7953,14 @@ Future<List<String>> _findContactSidebarRefreshActionProviderOffenders() async {
       'lib/features/contacts/application/sidebar_cassette_spec/resolver_tools/contact_sidebar_refresh_actions_provider.dart';
   return _findProviderUsageOffenders(
     providerName: 'contactSidebarRefreshActionsProvider',
+    providerFile: actionsFile,
+  );
+}
+
+Future<List<String>> _findContactAccessActionProviderOffenders() async {
+  const actionsFile = 'lib/features/contacts/feature_level_providers.dart';
+  return _findProviderUsageOffenders(
+    providerName: 'contactAccessActionsProvider',
     providerFile: actionsFile,
   );
 }
