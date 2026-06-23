@@ -311,6 +311,14 @@ const Set<String> _contactPageGraphIdentityBridgeAllowedFiles = {
   'lib/features/messages/application/sidebar_cassette_spec/resolver_tools/contact_context_identity.dart',
 };
 
+const Set<String> _messageEvidenceTextMatchProviderAllowedFiles = {
+  'lib/features/messages/presentation/view/contact_messages_evidence_view.dart',
+  'lib/features/messages/presentation/view/conversation_messages_preview_view.dart',
+  'lib/features/messages/presentation/view/handle_lens_view.dart',
+  'lib/features/messages/presentation/view/handle_messages_evidence_view.dart',
+  'lib/features/messages/presentation/view/recovered_messages_evidence_view.dart',
+};
+
 const Set<String> _attachmentSourceScopedIdentityAllowedFiles = {
   'lib/features/attachments/infrastructure/repositories/graph_cross_snapshot_mapper.dart',
   'lib/features/attachments/infrastructure/repositories/sqlite_graph_attachment_archive_candidate_reader.dart',
@@ -2373,6 +2381,24 @@ void main() {
         );
       },
     );
+
+    test('Message evidence text matching stays source-view scoped', () async {
+      final offenders = await _findMessageEvidenceTextMatchProviderOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(
+          _messageEvidenceTextMatchProviderAllowedFiles.toList()..sort(),
+        ),
+        reason:
+            'Text matching for in-scope message evidence should be requested '
+            'only by the source views composing a MessageEvidenceScope. '
+            'Matching semantics belong to the evidence spine provider, and '
+            'ordinary widgets should receive skeletons/highlight text rather '
+            'than performing their own matching lookups.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
 
     test('Conversation message header uses context boundary', () async {
       final offenders =
@@ -6344,6 +6370,31 @@ _findMessageAttachmentEvidenceDirectRenderOffenders() async {
     if (RegExp(
       r'\bMessageAttachmentEvidenceTiles\s*\(',
     ).hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findMessageEvidenceTextMatchProviderOffenders() async {
+  const spineProviderFile =
+      'lib/features/messages/application/message_evidence/message_evidence_spine_provider.dart';
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path == spineProviderFile) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (uncommented.contains('messageEvidenceTextMatchIdsProvider(')) {
       offenders.add(filePath);
     }
   }

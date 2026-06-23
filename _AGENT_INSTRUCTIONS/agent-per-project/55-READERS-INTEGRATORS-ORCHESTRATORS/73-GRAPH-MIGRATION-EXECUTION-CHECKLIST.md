@@ -3338,6 +3338,10 @@ criteria.
   through `MessageEvidenceRow`. Image/video/fallback attachment presentation
   stays shared across contact, conversation, handle, search, and recovered
   evidence scopes.
+- Added an architecture tripwire keeping message evidence text-match requests
+  scoped to the known source views that compose `MessageEvidenceScope`.
+  Matching semantics remain owned by the evidence spine provider rather than
+  ad hoc widgets or renderers.
 - Added an architecture tripwire for sqflite FFI bootstrap. `sqfliteFfiInit`,
   `databaseFactoryFfi`, and `databaseFactory` mutation remain app-bootstrap
   concerns; production code should receive initialized database services rather
