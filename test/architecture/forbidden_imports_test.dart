@@ -67,7 +67,7 @@ const Set<String> _onboardingReadinessActionProviderAllowedFiles = {
 };
 
 // Retired database filenames are cleanup/diagnostic inventory only. Keep their
-// allowlists small so old files cannot regain provider or workflow authority.
+// allowlists small so retired files cannot regain provider or workflow authority.
 const Set<String> _retiredArchiveMetadataProviderAllowedFiles = {};
 
 const Set<String> _retiredMacosImportFileAllowedFiles = {
@@ -788,20 +788,23 @@ void main() {
       );
     });
 
-    test('Active lib comments avoid ambiguous old-system shorthand', () async {
-      final offenders = await _findAmbiguousOldSystemPhraseOffenders();
+    test(
+      'Active lib comments avoid ambiguous retired-system shorthand',
+      () async {
+        final offenders = await _findAmbiguousOldSystemPhraseOffenders();
 
-      expect(
-        offenders,
-        isEmpty,
-        reason:
-            'Active source comments should name current architectural '
-            'boundaries precisely. Avoid ambiguous retired-system shorthand such as '
-            'old archive pair, old archive key, old files, old live, '
-            'old method, or old spec.\n'
-            'Actual offenders:\n${offenders.join('\n')}',
-      );
-    });
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'Active source comments should name current architectural '
+              'boundaries precisely. Avoid ambiguous retired-system shorthand such as '
+              'old archive pair, old archive key, old files, old live, '
+              'old method, or old spec.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
 
     test('Tests do not use placeholder coverage assertions', () async {
       final offenders = await _findPlaceholderTestCoverageOffenders();
