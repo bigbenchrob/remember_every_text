@@ -18,41 +18,44 @@ void main() {
       await overlayDb.close();
     });
 
-    test('rewrites retained display override to graph contact key', () async {
-      const retainedContactId = 24;
+    test(
+      'rewrites rowid-keyed display override to graph contact key',
+      () async {
+        const rowidKeyedContactId = 24;
+        final graphContactId = SourceScopedRowKey.pack(
+          sourceId: liveAddressBookSourceId,
+          sourceRowId: rowidKeyedContactId,
+        );
+        await overlayDb.setParticipantDisplayNameOverride(
+          rowidKeyedContactId,
+          'Old Claire',
+        );
+
+        final store = OverlayContactDisplayNameOverrideStore(
+          overlayDatabase: overlayDb,
+        );
+
+        await store.setDisplayNameOverride(
+          contactId: graphContactId,
+          displayName: 'Claire',
+        );
+
+        final rows = await overlayDb.getAllParticipantOverrides();
+
+        expect(rows.map((row) => row.participantId), [graphContactId]);
+        expect(rows.single.displayNameOverride, 'Claire');
+      },
+    );
+
+    test('clears rowid-keyed and graph display override variants', () async {
+      const rowidKeyedContactId = 24;
       final graphContactId = SourceScopedRowKey.pack(
         sourceId: liveAddressBookSourceId,
-        sourceRowId: retainedContactId,
+        sourceRowId: rowidKeyedContactId,
       );
       await overlayDb.setParticipantDisplayNameOverride(
-        retainedContactId,
-        'Old Claire',
-      );
-
-      final store = OverlayContactDisplayNameOverrideStore(
-        overlayDatabase: overlayDb,
-      );
-
-      await store.setDisplayNameOverride(
-        contactId: graphContactId,
-        displayName: 'Claire',
-      );
-
-      final rows = await overlayDb.getAllParticipantOverrides();
-
-      expect(rows.map((row) => row.participantId), [graphContactId]);
-      expect(rows.single.displayNameOverride, 'Claire');
-    });
-
-    test('clears retained and graph display override variants', () async {
-      const retainedContactId = 24;
-      final graphContactId = SourceScopedRowKey.pack(
-        sourceId: liveAddressBookSourceId,
-        sourceRowId: retainedContactId,
-      );
-      await overlayDb.setParticipantDisplayNameOverride(
-        retainedContactId,
-        'Retained Claire',
+        rowidKeyedContactId,
+        'Rowid-keyed Claire',
       );
       await overlayDb.setParticipantDisplayNameOverride(
         graphContactId,

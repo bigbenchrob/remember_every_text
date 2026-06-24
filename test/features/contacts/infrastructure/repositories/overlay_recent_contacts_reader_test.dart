@@ -20,44 +20,50 @@ void main() {
       await overlayDb.close();
     });
 
-    test('deduplicates retained and graph recents before limiting', () async {
-      const retainedClaireId = 24;
-      final graphClaireId = SourceScopedRowKey.pack(
-        sourceId: liveAddressBookSourceId,
-        sourceRowId: retainedClaireId,
-      );
-      final graphBobId = SourceScopedRowKey.pack(
-        sourceId: liveAddressBookSourceId,
-        sourceRowId: 25,
-      );
-      final graphAdaId = SourceScopedRowKey.pack(
-        sourceId: liveAddressBookSourceId,
-        sourceRowId: 26,
-      );
+    test(
+      'deduplicates rowid-keyed and graph recents before limiting',
+      () async {
+        const rowidKeyedClaireId = 24;
+        final graphClaireId = SourceScopedRowKey.pack(
+          sourceId: liveAddressBookSourceId,
+          sourceRowId: rowidKeyedClaireId,
+        );
+        final graphBobId = SourceScopedRowKey.pack(
+          sourceId: liveAddressBookSourceId,
+          sourceRowId: 25,
+        );
+        final graphAdaId = SourceScopedRowKey.pack(
+          sourceId: liveAddressBookSourceId,
+          sourceRowId: 26,
+        );
 
-      await overlayDb.addFavorite(retainedClaireId, DateTime.utc(2024, 12, 5));
-      await overlayDb.addFavorite(graphClaireId, DateTime.utc(2024, 12, 4));
-      await overlayDb.addFavorite(graphBobId, DateTime.utc(2024, 12, 3));
-      await overlayDb.addFavorite(graphAdaId, DateTime.utc(2024, 12, 2));
+        await overlayDb.addFavorite(
+          rowidKeyedClaireId,
+          DateTime.utc(2024, 12, 5),
+        );
+        await overlayDb.addFavorite(graphClaireId, DateTime.utc(2024, 12, 4));
+        await overlayDb.addFavorite(graphBobId, DateTime.utc(2024, 12, 3));
+        await overlayDb.addFavorite(graphAdaId, DateTime.utc(2024, 12, 2));
 
-      final reader = OverlayRecentContactsReader(overlayDb: overlayDb);
+        final reader = OverlayRecentContactsReader(overlayDb: overlayDb);
 
-      final recents = await reader.readRecentContacts(
-        contacts: [
-          buildContactSummary(
-            participantId: graphClaireId,
-            displayName: 'Claire',
-          ),
-          buildContactSummary(participantId: graphBobId, displayName: 'Bob'),
-          buildContactSummary(participantId: graphAdaId, displayName: 'Ada'),
-        ],
-      );
+        final recents = await reader.readRecentContacts(
+          contacts: [
+            buildContactSummary(
+              participantId: graphClaireId,
+              displayName: 'Claire',
+            ),
+            buildContactSummary(participantId: graphBobId, displayName: 'Bob'),
+            buildContactSummary(participantId: graphAdaId, displayName: 'Ada'),
+          ],
+        );
 
-      expect(recents.map((entry) => entry.participantId), [
-        graphClaireId,
-        graphBobId,
-        graphAdaId,
-      ]);
-    });
+        expect(recents.map((entry) => entry.participantId), [
+          graphClaireId,
+          graphBobId,
+          graphAdaId,
+        ]);
+      },
+    );
   });
 }

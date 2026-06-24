@@ -55,11 +55,11 @@ void main() {
     expect(profile?.origin, ParticipantOrigin.overlayOverride);
   });
 
-  test('contact profile applies retained-key overlay override', () async {
-    const retainedContactId = 17;
+  test('contact profile applies rowid-keyed overlay override', () async {
+    const rowidKeyedContactId = 17;
     final graphContactId = SourceScopedRowKey.pack(
       sourceId: liveAddressBookSourceId,
-      sourceRowId: retainedContactId,
+      sourceRowId: rowidKeyedContactId,
     );
     await graphDb.database.insert('contacts', <String, Object?>{
       'contact_id': graphContactId,
@@ -68,7 +68,7 @@ void main() {
       'family_name': 'Campbell',
     });
     await overlayDb.setParticipantDisplayNameOverride(
-      retainedContactId,
+      rowidKeyedContactId,
       'Claire',
     );
 
@@ -82,12 +82,12 @@ void main() {
   });
 
   test(
-    'contact profile prefers graph-key override over retained key',
+    'contact profile prefers graph-key override over rowid-keyed key',
     () async {
-      const retainedContactId = 17;
+      const rowidKeyedContactId = 17;
       final graphContactId = SourceScopedRowKey.pack(
         sourceId: liveAddressBookSourceId,
-        sourceRowId: retainedContactId,
+        sourceRowId: rowidKeyedContactId,
       );
       await graphDb.database.insert('contacts', <String, Object?>{
         'contact_id': graphContactId,
@@ -96,8 +96,8 @@ void main() {
         'family_name': 'Campbell',
       });
       await overlayDb.setParticipantDisplayNameOverride(
-        retainedContactId,
-        'Retained Claire',
+        rowidKeyedContactId,
+        'Rowid-keyed Claire',
       );
       await overlayDb.setParticipantDisplayNameOverride(
         graphContactId,

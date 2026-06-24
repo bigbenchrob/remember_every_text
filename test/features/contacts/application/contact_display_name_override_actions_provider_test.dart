@@ -52,14 +52,14 @@ void main() {
     test(
       'clears user display-name override variants through action boundary',
       () async {
-        const retainedContactId = 24;
+        const rowidKeyedContactId = 24;
         final graphContactId = SourceScopedRowKey.pack(
           sourceId: liveAddressBookSourceId,
-          sourceRowId: retainedContactId,
+          sourceRowId: rowidKeyedContactId,
         );
         await overlayDb.setParticipantDisplayNameOverride(
-          retainedContactId,
-          'Retained Claire',
+          rowidKeyedContactId,
+          'Rowid-keyed Claire',
         );
         await overlayDb.setParticipantDisplayNameOverride(
           graphContactId,

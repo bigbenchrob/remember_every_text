@@ -7,7 +7,7 @@ import 'package:remember_this_text/features/contacts/domain/participant_origin.d
 
 void main() {
   test(
-    'canonicalContactIdentityKey converts retained contact ids to graph ids',
+    'canonicalContactIdentityKey converts rowid-keyed contact ids to graph ids',
     () {
       final graphContactId = SourceScopedRowKey.pack(
         sourceId: liveAddressBookSourceId,
@@ -19,7 +19,7 @@ void main() {
     },
   );
 
-  test('finds graph contact by retained overlay id', () {
+  test('finds graph contact by rowid-keyed overlay id', () {
     final graphContactId = SourceScopedRowKey.pack(
       sourceId: liveAddressBookSourceId,
       sourceRowId: 17,

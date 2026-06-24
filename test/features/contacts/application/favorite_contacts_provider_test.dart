@@ -79,13 +79,16 @@ void main() {
       expect(results, isEmpty);
     });
 
-    test('resolves retained-keyed favorite to graph contact summary', () async {
-      const retainedContactId = 24;
+    test('resolves rowid-keyed favorite to graph contact summary', () async {
+      const rowidKeyedContactId = 24;
       final graphContactId = SourceScopedRowKey.pack(
         sourceId: liveAddressBookSourceId,
-        sourceRowId: retainedContactId,
+        sourceRowId: rowidKeyedContactId,
       );
-      await overlayDb.addFavorite(retainedContactId, DateTime.utc(2024, 12, 1));
+      await overlayDb.addFavorite(
+        rowidKeyedContactId,
+        DateTime.utc(2024, 12, 1),
+      );
 
       container = ProviderContainer(
         overrides: [
@@ -114,15 +117,15 @@ void main() {
     });
 
     test(
-      'deduplicates retained and graph favorites for same contact',
+      'deduplicates rowid-keyed and graph favorites for same contact',
       () async {
-        const retainedContactId = 24;
+        const rowidKeyedContactId = 24;
         final graphContactId = SourceScopedRowKey.pack(
           sourceId: liveAddressBookSourceId,
-          sourceRowId: retainedContactId,
+          sourceRowId: rowidKeyedContactId,
         );
         await overlayDb.addFavorite(
-          retainedContactId,
+          rowidKeyedContactId,
           DateTime.utc(2024, 12, 1),
         );
         await overlayDb.addFavorite(graphContactId, DateTime.utc(2024, 12, 5));
@@ -153,13 +156,16 @@ void main() {
       },
     );
 
-    test('unfavorite clears retained and graph key variants', () async {
-      const retainedContactId = 24;
+    test('unfavorite clears rowid-keyed and graph key variants', () async {
+      const rowidKeyedContactId = 24;
       final graphContactId = SourceScopedRowKey.pack(
         sourceId: liveAddressBookSourceId,
-        sourceRowId: retainedContactId,
+        sourceRowId: rowidKeyedContactId,
       );
-      await overlayDb.addFavorite(retainedContactId, DateTime.utc(2024, 12, 1));
+      await overlayDb.addFavorite(
+        rowidKeyedContactId,
+        DateTime.utc(2024, 12, 1),
+      );
       await overlayDb.addFavorite(graphContactId, DateTime.utc(2024, 12, 5));
 
       container = ProviderContainer(
@@ -191,13 +197,16 @@ void main() {
       expect(isFavorite, isFalse);
     });
 
-    test('favorite rewrites retained variant to graph key', () async {
-      const retainedContactId = 24;
+    test('favorite rewrites rowid-keyed variant to graph key', () async {
+      const rowidKeyedContactId = 24;
       final graphContactId = SourceScopedRowKey.pack(
         sourceId: liveAddressBookSourceId,
-        sourceRowId: retainedContactId,
+        sourceRowId: rowidKeyedContactId,
       );
-      await overlayDb.addFavorite(retainedContactId, DateTime.utc(2024, 12, 1));
+      await overlayDb.addFavorite(
+        rowidKeyedContactId,
+        DateTime.utc(2024, 12, 1),
+      );
 
       container = ProviderContainer(
         overrides: [
@@ -234,13 +243,13 @@ void main() {
     test(
       'recent contact selection rewrites access marker to graph key',
       () async {
-        const retainedContactId = 24;
+        const rowidKeyedContactId = 24;
         final graphContactId = SourceScopedRowKey.pack(
           sourceId: liveAddressBookSourceId,
-          sourceRowId: retainedContactId,
+          sourceRowId: rowidKeyedContactId,
         );
         await overlayDb.addFavorite(
-          retainedContactId,
+          rowidKeyedContactId,
           DateTime.utc(2024, 12, 1),
         );
 
@@ -262,7 +271,7 @@ void main() {
 
         expect(recentRows.map((row) => row.participantId), [graphContactId]);
         expect(favoriteRows.map((row) => row.participantId), [
-          retainedContactId,
+          rowidKeyedContactId,
         ]);
       },
     );

@@ -21,23 +21,23 @@ void main() {
   test(
     'real contact links are stored with graph handle and contact keys',
     () async {
-      const retainedHandleId = 42;
-      const retainedContactId = 17;
+      const rowidKeyedHandleId = 42;
+      const rowidKeyedContactId = 17;
       final graphHandleId = SourceScopedRowKey.pack(
         sourceId: liveChatDbSourceId,
-        sourceRowId: retainedHandleId,
+        sourceRowId: rowidKeyedHandleId,
       );
       final graphContactId = SourceScopedRowKey.pack(
         sourceId: liveAddressBookSourceId,
-        sourceRowId: retainedContactId,
+        sourceRowId: rowidKeyedContactId,
       );
 
       await store.linkHandleToParticipant(
-        handleId: retainedHandleId,
-        participantId: retainedContactId,
+        handleId: rowidKeyedHandleId,
+        participantId: rowidKeyedContactId,
       );
 
-      expect(await overlayDb.getHandleOverride(retainedHandleId), isNull);
+      expect(await overlayDb.getHandleOverride(rowidKeyedHandleId), isNull);
       final row = await overlayDb.getHandleOverride(graphHandleId);
       expect(row, isNotNull);
       expect(row!.participantId, graphContactId);
@@ -45,26 +45,26 @@ void main() {
   );
 
   test(
-    'real contact links clear retained and graph handle variants first',
+    'real contact links clear rowid-keyed and graph handle variants first',
     () async {
-      const retainedHandleId = 42;
-      const retainedContactId = 17;
+      const rowidKeyedHandleId = 42;
+      const rowidKeyedContactId = 17;
       const oldContactId = 19;
       final graphHandleId = SourceScopedRowKey.pack(
         sourceId: liveChatDbSourceId,
-        sourceRowId: retainedHandleId,
+        sourceRowId: rowidKeyedHandleId,
       );
       final graphContactId = SourceScopedRowKey.pack(
         sourceId: liveAddressBookSourceId,
-        sourceRowId: retainedContactId,
+        sourceRowId: rowidKeyedContactId,
       );
 
-      await overlayDb.setHandleOverride(retainedHandleId, oldContactId);
+      await overlayDb.setHandleOverride(rowidKeyedHandleId, oldContactId);
       await overlayDb.setHandleOverride(graphHandleId, oldContactId);
 
       await store.linkHandleToParticipant(
-        handleId: retainedHandleId,
-        participantId: retainedContactId,
+        handleId: rowidKeyedHandleId,
+        participantId: rowidKeyedContactId,
       );
 
       final rows = await overlayDb.getAllHandleOverrides();
@@ -74,59 +74,65 @@ void main() {
     },
   );
 
-  test('readHandleOverride resolves retained variants as graph keys', () async {
-    const retainedHandleId = 42;
-    const retainedContactId = 17;
-    final graphHandleId = SourceScopedRowKey.pack(
-      sourceId: liveChatDbSourceId,
-      sourceRowId: retainedHandleId,
-    );
-    final graphContactId = SourceScopedRowKey.pack(
-      sourceId: liveAddressBookSourceId,
-      sourceRowId: retainedContactId,
-    );
+  test(
+    'readHandleOverride resolves rowid-keyed variants as graph keys',
+    () async {
+      const rowidKeyedHandleId = 42;
+      const rowidKeyedContactId = 17;
+      final graphHandleId = SourceScopedRowKey.pack(
+        sourceId: liveChatDbSourceId,
+        sourceRowId: rowidKeyedHandleId,
+      );
+      final graphContactId = SourceScopedRowKey.pack(
+        sourceId: liveAddressBookSourceId,
+        sourceRowId: rowidKeyedContactId,
+      );
 
-    await overlayDb.setHandleOverride(retainedHandleId, retainedContactId);
+      await overlayDb.setHandleOverride(
+        rowidKeyedHandleId,
+        rowidKeyedContactId,
+      );
 
-    final override = await store.readHandleOverride(graphHandleId);
+      final override = await store.readHandleOverride(graphHandleId);
 
-    expect(override, isNotNull);
-    expect(override!.handleId, graphHandleId);
-    expect(override.participantId, graphContactId);
-  });
+      expect(override, isNotNull);
+      expect(override!.handleId, graphHandleId);
+      expect(override.participantId, graphContactId);
+    },
+  );
 
   test('virtual links normalize handle key only', () async {
-    const retainedHandleId = 42;
+    const rowidKeyedHandleId = 42;
     final graphHandleId = SourceScopedRowKey.pack(
       sourceId: liveChatDbSourceId,
-      sourceRowId: retainedHandleId,
+      sourceRowId: rowidKeyedHandleId,
     );
     final virtualParticipant = await store.createVirtualParticipant(
       displayName: 'New Source',
     );
 
     await store.linkHandleToVirtualParticipant(
-      handleId: retainedHandleId,
+      handleId: rowidKeyedHandleId,
       virtualParticipantId: virtualParticipant.id,
     );
 
-    expect(await overlayDb.getHandleOverride(retainedHandleId), isNull);
+    expect(await overlayDb.getHandleOverride(rowidKeyedHandleId), isNull);
     final row = await overlayDb.getHandleOverride(graphHandleId);
     expect(row, isNotNull);
     expect(row!.participantId, isNull);
     expect(row.virtualParticipantId, virtualParticipant.id);
   });
 
-  test('deleteHandleOverride removes retained and graph variants', () async {
-    const retainedHandleId = 42;
+  test('deleteHandleOverride removes rowid-keyed and graph variants', () async {
+    const rowidKeyedHandleId = 42;
     final graphHandleId = SourceScopedRowKey.pack(
       sourceId: liveChatDbSourceId,
-      sourceRowId: retainedHandleId,
+      sourceRowId: rowidKeyedHandleId,
     );
-    await overlayDb.setHandleOverride(retainedHandleId, 17);
+    await overlayDb.setHandleOverride(rowidKeyedHandleId, 17);
     await overlayDb.setHandleOverride(graphHandleId, 17);
 
-    await store.deleteHandleOverride(retainedHandleId);
+    await store.deleteHandleOverride(rowidKeyedHandleId);
 
     expect(await overlayDb.getAllHandleOverrides(), isEmpty);
   });

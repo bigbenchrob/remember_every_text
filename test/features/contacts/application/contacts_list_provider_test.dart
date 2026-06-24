@@ -78,12 +78,12 @@ void main() {
     );
 
     test(
-      'applies retained-keyed overlay override to graph contact summaries',
+      'applies rowid-keyed overlay override to graph contact summaries',
       () async {
-        const retainedContactId = 24;
+        const rowidKeyedContactId = 24;
         final graphContactId = SourceScopedRowKey.pack(
           sourceId: liveAddressBookSourceId,
-          sourceRowId: retainedContactId,
+          sourceRowId: rowidKeyedContactId,
         );
         await _insertGraphContact(
           graphDb,
@@ -94,7 +94,7 @@ void main() {
           messageId: 8001,
         );
         await overlayDb.setParticipantDisplayNameOverride(
-          retainedContactId,
+          rowidKeyedContactId,
           'Claire',
         );
 
@@ -111,12 +111,12 @@ void main() {
     );
 
     test(
-      'prefers graph-keyed overlay override over retained contact variant',
+      'prefers graph-keyed overlay override over rowid-keyed contact variant',
       () async {
-        const retainedContactId = 24;
+        const rowidKeyedContactId = 24;
         final graphContactId = SourceScopedRowKey.pack(
           sourceId: liveAddressBookSourceId,
-          sourceRowId: retainedContactId,
+          sourceRowId: rowidKeyedContactId,
         );
         await _insertGraphContact(
           graphDb,
@@ -127,8 +127,8 @@ void main() {
           messageId: 8001,
         );
         await overlayDb.setParticipantDisplayNameOverride(
-          retainedContactId,
-          'Retained Claire',
+          rowidKeyedContactId,
+          'Rowid-keyed Claire',
         );
         await overlayDb.setParticipantDisplayNameOverride(
           graphContactId,
@@ -182,7 +182,7 @@ void main() {
       expect(results.single.isVirtual, isTrue);
     });
 
-    test('deduplicates retained and graph overlay handle counts', () async {
+    test('deduplicates rowid-keyed and graph overlay handle counts', () async {
       final graphHandleId = SourceScopedRowKey.pack(
         sourceId: liveChatDbSourceId,
         sourceRowId: 42,
