@@ -3472,6 +3472,10 @@ criteria.
   centralized as retired filename constants plus reset/health/support
   diagnostics; no ordinary `lib/` feature code reads provider-visible retained
   database state.
+- Tightened remaining focused-test labels around onboarding failure persistence,
+  rich-text enrichment cursors, and archive compatibility-key lookup so tests
+  describe current graph/source-scoped behavior rather than pre-migration
+  "old" or "stale" shorthand.
 
 ### Exit Criteria
 
