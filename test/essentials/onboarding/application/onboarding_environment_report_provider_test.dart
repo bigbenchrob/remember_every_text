@@ -39,7 +39,7 @@ void main() {
     });
 
     test(
-      'treats stale persisted import failures as ready to import when app databases are empty',
+      'treats previous import failures as ready to import when app databases are empty',
       () async {
         final messagesDbPath = _createMessagesDatabase(
           tempDir.path,
@@ -196,10 +196,7 @@ void main() {
           tempDir.path,
           retiredMacosImportDatabaseFileName,
         );
-        _createProjectionDatabase(
-          tempDir.path,
-          retiredWorkingDatabaseFileName,
-        );
+        _createProjectionDatabase(tempDir.path, retiredWorkingDatabaseFileName);
 
         container = ProviderContainer(
           overrides: [
