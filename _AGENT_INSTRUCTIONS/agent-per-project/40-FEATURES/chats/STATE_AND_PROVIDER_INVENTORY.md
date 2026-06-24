@@ -16,7 +16,7 @@ last_updated: 2026-06-14
 # State & Provider Inventory - Chats
 
 > Current conformance note (2026-06-05): ordinary chat/conversation reads are
-> graph-backed. Do not reintroduce retained `working.db` chat repositories,
+> graph-backed. Do not reintroduce retired `working.db` chat repositories,
 > `chatsByAgeProvider`, or a parallel chat heatmap model. Conversation
 > navigation and summaries should flow through the conversation graph and the
 > shared message evidence spine.

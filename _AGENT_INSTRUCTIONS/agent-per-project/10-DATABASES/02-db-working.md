@@ -48,7 +48,7 @@ to avoid WAL/locking conflicts.
 
 ## Access Boundary
 
-There is no central app provider for retained `working.db`. Ordinary app
+There is no central app provider for retired `working.db`. Ordinary app
 reads, search, timelines, heatmaps, recovered-message evidence, and contact
 identity use the source-scoped graph and Message Evidence Spine.
 
@@ -82,7 +82,7 @@ Representative historical tables that may still appear in old files:
 
 ## Typical Use Cases
 
-- Reset cleanup may delete retained `working.db` files.
+- Reset cleanup may delete retired `working.db` files.
 - Diagnostics may inspect the retained file through read-only file query
   boundaries while legacy storage remains in user data folders.
 - Historical documentation may refer to old projection tables when explaining

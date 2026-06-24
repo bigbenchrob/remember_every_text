@@ -2,7 +2,7 @@
 
 > Legacy note (2026-04-21, updated 2026-06-03): this is V1 planning material. Current code includes `OnboardingStatus.awaitingFda`, environment reports, onboarding failure persistence in overlay settings, reset/retry support, `OnboardingSpec.devPanel`, and `EnvironmentReadinessSpec.readinessPanel`. Use `../25-ONBOARDING-AND-ARCHIVE/` plus `lib/essentials/onboarding` and `lib/features/environment_readiness` for current implementation guidance.
 >
-> Current rule: onboarding readiness and setup are graph-first. Do not use this historical data map to reintroduce `DbImportControlProvider.runImportAndMigration()` or retained `working.db` readiness as ordinary app truth.
+> Current rule: onboarding readiness and setup are graph-first. Do not use this historical data map to reintroduce `DbImportControlProvider.runImportAndMigration()` or retired `working.db` readiness as ordinary app truth.
 
 ## Domain Concepts
 

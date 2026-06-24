@@ -27,10 +27,10 @@ archive/recovery decisions can still be interpreted correctly.
 
 > Current conformance note (2026-06-08): ordinary app data now flows through
 > `macos_import_ss.db` -> `working_ss.db` using source-scoped `ss_id` graph
-> identity. Active archive-source metadata lives in overlay storage. Retained
+> identity. Active archive-source metadata lives in overlay storage. Retired
 > `macos_import.db` / `working.db` files are retired cleanup inventory only,
-> and retained `working.db` has no central app provider.
-> Do not use this retained import/working contract as the model for new
+> and retired `working.db` has no central app provider.
+> Do not use this retired import/working contract as the model for new
 > graph-era features.
 
 ## 1. Historical Source -> Import -> Working Flow
@@ -132,7 +132,7 @@ This is the practical implication of the current Apple data shape: source visibi
 4. Check `handle_to_participant` and `chat_to_handle` join paths using the preserved IDs.
 5. Do not attempt to re-run deleted retained orchestrators. If old retained
    storage is required for a recovery task, design an explicit graph-era
-   storage-retention review, migration, or export path.
+   retired-file audit, migration, or export path.
 6. Inspect retained `import_log` and `migrate_log` only as historical
    diagnostics. Graph build status lives in the Conversation Graph status panel.
 7. If IDs differ at any step, halt - someone attempted to remap during historical migration.

@@ -70,7 +70,7 @@ app truth.
 ## Related Rules & Contracts
 
 - **No active provider access**: Archive-source metadata belongs to overlay-owned
-  services. Do not recreate retained `macos_import.db` provider access.
+  services. Do not recreate retired `macos_import.db` provider access.
 - **No active import semantics**: Source identity, rich text, reactions,
   recovered/orphan evidence, and attachment topology now belong to
   `macos_import_ss.db` and `working_ss.db`, not `macos_import.db`.

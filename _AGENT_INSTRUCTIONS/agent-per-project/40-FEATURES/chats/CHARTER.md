@@ -17,7 +17,7 @@ last_updated: 2026-06-05
 
 > Current conformance note (2026-06-05): MessageLens is now
 > conversation-frontmost, but conversation truth lives in
-> `essentials/conversation_graph`, not in retained `working.db` chat rows.
+> `essentials/conversation_graph`, not in retired `working.db` chat rows.
 > The chats feature may provide diagnostic/reference browsing and lightweight
 > graph adapters, but ordinary conversation navigation and message evidence
 > must remain graph-backed and evidence-spine based.
@@ -39,7 +39,7 @@ last_updated: 2026-06-05
 
 ## Success Metrics
 - Conversation lists remain graph-backed and responsive after live updates.
-- No ordinary conversation read path depends on retained `working.db`.
+- No ordinary conversation read path depends on retired `working.db`.
 - Selected conversations render through the shared Message Evidence Spine.
 - Conversation favourites are overlay-owned and appear consistently wherever
   the conversation appears.

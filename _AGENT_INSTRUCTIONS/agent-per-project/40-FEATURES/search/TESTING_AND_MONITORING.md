@@ -15,7 +15,7 @@ last_updated: 2026-06-14
 
 # Testing & Monitoring — Search
 
-> Current conformance note (2026-06-06): current search is graph-backed through `lib/essentials/search` and the Message Evidence Spine. Tests should target graph `message_ss_id` scopes, full-scope skeleton/search behavior, result-context navigation, and overlay saved/tag search semantics. Do not reintroduce retained `working.db` FTS/index fallback as ordinary search behavior.
+> Current conformance note (2026-06-06): current search is graph-backed through `lib/essentials/search` and the Message Evidence Spine. Tests should target graph `message_ss_id` scopes, full-scope skeleton/search behavior, result-context navigation, and overlay saved/tag search semantics. Do not reintroduce retired `working.db` FTS/index fallback as ordinary search behavior.
 
 ## Automated Coverage Targets
 - Unit: query parser, ranking heuristics, filter logic.
