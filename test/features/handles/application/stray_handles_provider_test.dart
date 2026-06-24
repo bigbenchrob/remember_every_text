@@ -81,7 +81,7 @@ void main() {
       expect(results, isEmpty);
     });
 
-    test('graph visibility overrides retained blacklist variant', () async {
+    test('graph visibility overrides rowid-keyed blacklist variant', () async {
       final graphHandleId = SourceScopedRowKey.pack(
         sourceId: liveChatDbSourceId,
         sourceRowId: 42,
