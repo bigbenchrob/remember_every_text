@@ -3479,6 +3479,9 @@ criteria.
 - Tightened attachment archive and architecture-tripwire wording so path
   refresh and retained-system guardrails use obsolete/retired/provider-visible
   language instead of ambiguous old-system shorthand.
+- Renamed the ambiguous old-system comment tripwire label/comment to
+  retired-system wording so the guardrail's own output models the current
+  retention vocabulary.
 
 ### Exit Criteria
 
