@@ -1966,7 +1966,7 @@ void main() {
         isEmpty,
         reason:
             'Handle visibility blacklist rows must not be expanded into '
-            'retained/graph variants before filtering graph rows. Exact '
+            'rowid-keyed/graph variants before filtering graph rows. Exact '
             'graph-id overlay intent must win over retired-storage compatibility '
             'variants; resolve with overlayValueForHandleId at the handle '
             'being evaluated.\n'
@@ -1982,7 +1982,7 @@ void main() {
         isEmpty,
         reason:
             'Recent contact overlay readers must fetch enough candidates to '
-            'collapse retained/graph identity variants before applying the '
+            'collapse rowid-keyed/graph identity variants before applying the '
             'visible recents cap. Limiting to the visible count first lets '
             'compatibility duplicates consume picker slots.\n'
             'Actual offenders:\n${offenders.join('\n')}',

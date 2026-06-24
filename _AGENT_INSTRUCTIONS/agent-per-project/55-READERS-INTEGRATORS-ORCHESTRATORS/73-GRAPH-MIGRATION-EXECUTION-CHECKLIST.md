@@ -1685,9 +1685,8 @@ criteria.
   adapter; the architecture tripwire now allows that adapter import only in the
   central DB provider.
 - Renamed the final active message overlay compatibility bridge terminology
-  from legacy row ownership to retained-overlay identity. Rowid annotation
-  fallback is now described as retained annotation fallback, GUID fallback
-  remains explicitly GUID-keyed, and active `lib/` code is protected by an
+  from legacy row ownership to graph-keyed user intent with rowid-keyed and
+  GUID-keyed compatibility fallbacks. Active `lib/` code is protected by an
   architecture tripwire that forbids new legacy-named concepts.
 - Updated the deterministic historical attachment recovery planning notes so
   future implementation targets source-scoped import facts, graph
@@ -2493,7 +2492,7 @@ criteria.
     `retained_overlay_identity_bridge.dart` import surface, keeping
     retained-overlay graph key conversion from spreading without explicit
     review while the transitional bridge still existed.
-  - Moved contact-side retained/graph identity matching into a contacts
+  - Moved contact-side rowid-keyed/graph identity matching into a contacts
     application read-model helper, removing direct identity-bridge imports from
     the contact hero widget and favorite contact providers.
   - Moved message evidence context-anchor id compatibility into a named message
@@ -2614,8 +2613,8 @@ criteria.
   - Renamed the message user-intent repository from
     `message_overlay_identity_bridge_repository.dart` to
     `graph_message_overlay_repository.dart`. The repository still honors
-    retained rowid/GUID overlay rows as internal compatibility fallbacks, but
-    its public boundary is graph-keyed message overlay state.
+    rowid-keyed/GUID-keyed overlay rows as internal compatibility fallbacks,
+    but its public boundary is graph-keyed message overlay state.
   - Corrected the Message Evidence Spine naming invariant so contact display
     precedence no longer includes an app-derived short-name step. Short-name,
     nickname, and name-mode variants are now documented as retired
@@ -3467,7 +3466,7 @@ criteria.
 - Clarified graph recovery/onboarding wording so incomplete app database states
   are described as incomplete setup/projection results rather than ambiguous
   stale state. The status panel now describes source rows without topology as
-  retained source rows without current graph edges.
+  imported source evidence without current graph edges.
 - Confirmed active retained `macos_import.db` / `working.db` references remain
   centralized as retired filename constants plus reset/health/support
   diagnostics; no ordinary `lib/` feature code reads provider-visible retained
