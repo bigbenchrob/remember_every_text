@@ -324,43 +324,46 @@ void main() {
       expect(thirdArchivedRow, isNotNull);
     });
 
-    test('refreshes a stale Messages attachment path from chat.db', () async {
-      final liveSource = File('${tempDir.path}/messages/live-path.png');
-      await liveSource.parent.create(recursive: true);
-      await liveSource.writeAsString('live-path');
-      attachmentPathLookup.pathsBySourceRowId[500] = liveSource.path;
+    test(
+      'refreshes an obsolete Messages attachment path from chat.db',
+      () async {
+        final liveSource = File('${tempDir.path}/messages/live-path.png');
+        await liveSource.parent.create(recursive: true);
+        await liveSource.writeAsString('live-path');
+        attachmentPathLookup.pathsBySourceRowId[500] = liveSource.path;
 
-      await insertGraphAttachment(
-        graphDb,
-        messageGuid: 'message-path-drift',
-        importAttachmentId: 500,
-        localPath: '${tempDir.path}/messages/stale-path.png',
-        mimeType: 'image/png',
-      );
+        await insertGraphAttachment(
+          graphDb,
+          messageGuid: 'message-path-drift',
+          importAttachmentId: 500,
+          localPath: '${tempDir.path}/messages/obsolete-path.png',
+          mimeType: 'image/png',
+        );
 
-      final result = await container
-          .read(attachmentArchiveServiceProvider.notifier)
-          .archiveNextGraphSweepChunk(limit: 1);
+        final result = await container
+            .read(attachmentArchiveServiceProvider.notifier)
+            .archiveNextGraphSweepChunk(limit: 1);
 
-      expect(result.totalScanned, 1);
-      expect(result.newlyArchived, 1);
+        expect(result.totalScanned, 1);
+        expect(result.newlyArchived, 1);
 
-      final archivedRow =
-          await (overlayDb.select(overlayDb.archivedAttachments)..where(
-                (t) =>
-                    t.messageGuid.equals('message-path-drift') &
-                    t.importAttachmentId.equals(500),
-              ))
-              .getSingleOrNull();
-      expect(archivedRow, isNotNull);
-      expect(archivedRow!.originalLocalPath, liveSource.path);
-      expect(
-        File(
-          '${tempDir.path}/archive/${archivedRow.archiveRelativePath}',
-        ).existsSync(),
-        isTrue,
-      );
-    });
+        final archivedRow =
+            await (overlayDb.select(overlayDb.archivedAttachments)..where(
+                  (t) =>
+                      t.messageGuid.equals('message-path-drift') &
+                      t.importAttachmentId.equals(500),
+                ))
+                .getSingleOrNull();
+        expect(archivedRow, isNotNull);
+        expect(archivedRow!.originalLocalPath, liveSource.path);
+        expect(
+          File(
+            '${tempDir.path}/archive/${archivedRow.archiveRelativePath}',
+          ).existsSync(),
+          isTrue,
+        );
+      },
+    );
 
     test(
       'archives graph attachments for the imported message source row range',
