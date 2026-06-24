@@ -45,7 +45,7 @@ The safe next stage is:
 retain deliberately
 → replace remaining storage/key compatibility paths
 → verify historical data reachability
-→ reduce retained purposes under this register
+→ reduce retired-file purposes under this register
 → delete or explicitly ignore retired files only after reviewed user-safe criteria
 ```
 
@@ -60,10 +60,10 @@ Full deletion should occur only after all of the following are true:
    recovery data.
 
 Until then, the target is not deletion by default. The target is a shrinking,
-bounded retention register where every retained purpose is named, justified,
-tested, and prevented from becoming ordinary app authority again.
+bounded retention register where every retired-file purpose is named,
+justified, tested, and prevented from becoming ordinary app authority again.
 
-## Retained Storage Buckets
+## Retired File Storage Buckets
 
 ### 1. Retired Archive-Compatible Import/Projection Execution
 
@@ -82,17 +82,17 @@ tested, and prevented from becoming ordinary app authority again.
 
 **Remaining retired storage boundaries**
 
-- retained user-data files: `macos_import.db`, `working.db`, and sidecar
+- retired user-data files: `macos_import.db`, `working.db`, and sidecar
   WAL/SHM files in existing data folders
 
 **Current status**
 
 Historical archive workflows no longer import older Messages folders through
-the retained historical ledger/projection path. Forward import uses
+the retired historical ledger/projection path. Forward import uses
 `SourceScopedArchiveGraphImportService`; removal uses
 `SourceScopedArchiveGraphRemovalService`.
 
-This bucket remains listed because retained historical database files may still
+This bucket remains listed because retired historical database files may still
 exist for storage-retirement cleanup, but it is no longer the Historical
 Archives execution path. The standalone import-control panel and
 `ViewSpec.import` route have been retired.
@@ -105,8 +105,8 @@ import/removal now uses source-scoped graph services directly:
 - `SourceScopedArchiveGraphImportService`
 - `SourceScopedArchiveGraphRemovalService`
 
-Retained database files may still exist for storage-retirement cleanup,
-diagnostics, backup interpretation, and historical reference. No retained
+Retired database files may still exist for storage-retirement cleanup,
+diagnostics, backup interpretation, and retained-file audit. No retained
 import/projection execution boundary remains current.
 
 **Completed execution-retirement criteria**
@@ -119,9 +119,9 @@ Done:
   project directly into `working_ss.db`.
 - source IDs distinguish live source and archive sources.
 - deterministic duplicate handling is graph-native and source-scoped.
-- retained `macos_import.db` batches are no longer required to make
+- retired `macos_import.db` batches are no longer required to make
   archive messages visible.
-- retained `working.db` projection is no longer required before graph
+- retired `working.db` projection is no longer required before graph
   refresh.
 - existing historical archive UI either calls the new source-scoped archive
   path or is explicitly retired.
@@ -130,7 +130,7 @@ Done:
 
 Done means:
 
-- retained `macos_import.db` / `working.db` file purposes are reduced to the
+- retired `macos_import.db` / `working.db` file purposes are reduced to the
   storage buckets listed below.
 - backup/export/delete/ignore policy is explicit for users who may still need
   old recovery or audit data.
@@ -174,7 +174,7 @@ provider should construct `RetainedArchiveMetadataDatabase`; retained
 explicit cleanup/export/discard decisions.
 The old `RetainedArchiveMetadataDatabase` wrapper and
 `RetainedArchiveMetadataStore` interface have been retired from production
-source. Existing retained files can still be removed by reset or inspected by
+source. Existing retired files can still be removed by reset or inspected by
 read-only file-query diagnostics, but there is no retained metadata database
 abstraction left for app code to depend on.
 Obsolete public helpers for retained import execution, spam filtering, and
@@ -200,17 +200,17 @@ database wrapper or provider directly. Active Historical Archives source
 metadata has moved to overlay-owned settings storage behind
 `HistoricalArchiveSourcesRepository`; the settings feature public provider now
 composes that repository from `overlayDatabaseProvider`, not
-`retainedArchiveMetadataStoreProvider`. The retained
+`retainedArchiveMetadataStoreProvider`. The retired
 `macos_import.db.historical_archive_sources` table is no longer the active
 workflow metadata home. It remains existing-file retired storage only
 until a deliberate cleanup/export/discard policy removes the old file purpose.
-Fresh retained archive metadata DB creation no longer recreates those old
+Fresh retired archive metadata DB creation no longer recreates those old
 archive-source metadata columns.
-Database health treats retained `macos_import.db` as retired archive-source
+Database health treats retired `macos_import.db` as retired archive-source
 cleanup inventory only; active source facts and topology health belong to
 `macos_import_ss.db`.
-No active app provider now creates a fresh retained `macos_import.db`.
-Existing older retained `macos_import.db` files may still keep
+No active app provider now creates a fresh retired `macos_import.db`.
+Existing older retired `macos_import.db` files may still keep
 `schema_migrations`, `historical_archive_sources`, historical ledger tables,
 or old topology ledgers for transitional cleanup inventory.
 
@@ -237,7 +237,7 @@ Done means:
 **Why kept**
 
 Reset and startup detection intentionally know about both graph-era derived
-databases and retained derived database files. This prevents stale files,
+databases and retired derived database files. This prevents stale files,
 locking problems, or misleading readiness states during the transition.
 
 **Current boundary**
@@ -249,7 +249,7 @@ Reset may delete:
 - `macos_import_ss.db`
 - `working_ss.db`
 
-This does not mean the retained databases are app truth. It means reset must
+This does not mean the retired databases are app truth. It means reset must
 clean all derived data safely.
 The central retained `working.db` provider has been removed. Reset still
 deletes `working.db`, `working.db-wal`, and `working.db-shm` when present, but
@@ -261,7 +261,7 @@ Done means:
 
 - retired storage has been reduced to deliberate transitional cleanup/diagnostic
   storage with explicit retirement criteria.
-- reset behavior no longer needs to close/delete retained DB files.
+- reset behavior no longer needs to close/delete retired DB files.
 - startup no longer needs to distinguish legacy-only derived data from
   graph-ready data.
 - old data folders are either migrated or explicitly ignored with a clear user
@@ -276,7 +276,7 @@ Done means:
 
 **Why kept**
 
-Diagnostics intentionally inspect both current graph databases and retained
+Diagnostics intentionally inspect both current graph databases and retired
 historical cleanup databases while the transition is incomplete. This helps
 identify stale-data, compatibility, and recovery conditions.
 
@@ -284,27 +284,27 @@ identify stale-data, compatibility, and recovery conditions.
 
 Diagnostic reads are allowed to look across layers as long as they do not make
 retired cleanup inventory authoritative for ordinary feature behavior.
-Database health now treats retained `working.db` as recovered-message retired
+Database health now treats retired `working.db` as recovered-message retired
 cleanup/diagnostic evidence plus minimal projection-state storage sanity. Ordinary
 message/chat/contact/handle/attachment/reaction health belongs to
-`working_ss.db`; retained `working.db` ordinal indexes are no longer audited as
+`working_ss.db`; retired `working.db` ordinal indexes are no longer audited as
 timeline infrastructure because graph evidence skeletons own timeline
 navigation.
-Database health also opens retained `macos_import.db` and `working.db` through
-read-only file query layers. It must not instantiate the central retained DB
-providers merely to build diagnostics, because doing so could recreate retained
+Database health also opens retired `macos_import.db` and `working.db` through
+read-only file query layers. It must not instantiate the central retired DB
+providers merely to build diagnostics, because doing so could recreate retired
 storage as a side effect of a support bundle or health report.
 The old provider-backed retained archive metadata / working health query
-adapters have been removed; retained health diagnostics now have exactly one
-retained database access path: read-only file inspection.
-Because retained `working.db` and retained `macos_import.db` no longer have
+adapters have been removed; retired health diagnostics now have exactly one
+retired database access path: read-only file inspection.
+Because retired `working.db` and retired `macos_import.db` no longer have
 central app providers, health and support diagnostics must not reintroduce one
 for convenience.
-Focused tests now verify that read-only retained database health inspection:
+Focused tests now verify that read-only retired database health inspection:
 
 - does not create missing `working.db` / `macos_import.db` files.
-- reads existing retained files without mutating them.
-- remains a diagnostic boundary rather than a retained database provider.
+- reads existing retired files without mutating them.
+- remains a diagnostic boundary rather than a retired database provider.
 
 **Reduction criteria**
 
@@ -338,7 +338,7 @@ The old retained `working.db` ordinal-index rebuild and trigger-maintenance
 tests were also removed after the graph Message Evidence Spine took over
 timeline skeletons and heatmap coordination. The physical
 `global_message_index`, `message_index`, and `contact_message_index` tables may
-still exist in retained schema for diagnostic inventory, but no active
+still exist in retired schema for diagnostic inventory, but no active
 maintenance API or test should preserve them as app-facing timeline
 infrastructure.
 
@@ -348,7 +348,7 @@ production code or tests still instantiate `WorkingDatabase`. Existing
 `working.db` files remain a storage-retention concern on disk, not an app schema
 surface.
 
-Database health may list these tables as retained schema inventory, but it
+Database health may list these tables as retired schema inventory, but it
 must not treat their emptiness, missing coverage, or missing relationships as
 ordinary graph integrity failure. Timeline-like graph surfaces are validated
 through the source-scoped Message Evidence Spine instead.
@@ -357,7 +357,7 @@ through the source-scoped Message Evidence Spine instead.
 
 Done means:
 
-- corresponding retained production code is deleted or narrowed to explicit
+- corresponding retired production code is deleted or narrowed to explicit
   cleanup/diagnostic boundaries.
 - archive/recovery functionality has graph-native tests.
 - remaining retained archive metadata schema tests are removed with the schema
@@ -379,7 +379,7 @@ The following are no longer valid reasons to keep legacy storage:
 - live `chat.db` polling
 - first-run app-facing setup
 
-If future scans find retained `working.db` / `macos_import.db` reads in those
+If future scans find retired `working.db` / `macos_import.db` reads in those
 areas, classify them as defects or compatibility bridges requiring immediate
 review.
 
@@ -401,31 +401,31 @@ uses it. The risky losses are:
 Future work should continue reducing retired-file purposes rather than deleting
 files opportunistically. Track each remaining purpose by answering:
 
-- What retained file/table/path is involved?
+- What retired file/table/path is involved?
 - Is it recovery, audit, comparison, diagnostics, reset, cleanup, or archive
   metadata?
 - What graph/source-scoped equivalent would replace it?
 - What user data could be lost or made harder to recover if this disappears?
 - What test or support report proves the replacement?
 
-Known retained purposes:
+Known retired-file purposes:
 
 | Purpose | Current retired-file inventory | Allowed owner | Reduction target |
 | --- | --- | --- | --- |
-| Archive-source workflow metadata | overlay settings key `historical_archive_sources/v1`; old `macos_import.db.historical_archive_sources` may exist in retained files | Historical Archives settings repository | Active metadata has moved to overlay storage. Decide whether old retained metadata is migrated, exported, or intentionally discarded before deleting retained files. |
+| Archive-source workflow metadata | overlay settings key `historical_archive_sources/v1`; old `macos_import.db.historical_archive_sources` may exist in retired files | Historical Archives settings repository | Active metadata has moved to overlay storage. Decide whether old archive-source metadata is migrated, exported, or intentionally discarded before deleting retired files. |
 | Existing-folder reset cleanup | `macos_import.db`, `working.db`, WAL/SHM files | Message data reset service | Keep until old derived files are either no longer created or a safe backup/cleanup policy replaces direct deletion. |
-| Support diagnostics and audit | read-only retained file inspection | Database health/support diagnostics | Add graph/source-scoped equivalents for any retained report value before narrowing retained inspection. |
+| Support diagnostics and audit | read-only retired-file inspection | Database health/support diagnostics | Add graph/source-scoped equivalents for any retained-file report value before narrowing retired-file inspection. |
 | Historical comparison / retained-file audit | existing user `working.db` / `macos_import.db` files | Diagnostic-only file readers | Keep only while a named diagnostic or audit report still needs retained-file context; ordinary rollback safety is no longer a retention reason. |
 | Archive/recovery compatibility keys | retained-shaped overlay/archive keys and old message/attachment identifiers | Named compatibility bridges only | Replace with graph/source-scoped archive identity and prove recovered attachment/message lookup parity. |
 
 Current implementation note:
 
-- Message overlay compatibility now names retained rowid annotation fallback
+- Message overlay compatibility now names rowid-keyed annotation fallback
   and GUID-keyed fallback explicitly. New message overlay writes target
-  graph-native `message_ss_id` tables; retained annotation/GUID rows are
+  graph-native `message_ss_id` tables; older annotation/GUID rows are
   read-only compatibility sources.
 - Active `lib/` code is guarded by an architecture test that forbids new
-  legacy-named concepts. Retained storage and compatibility bridges must be
+  legacy-named concepts. Retired storage and compatibility bridges must be
   named for their current architectural role.
 
 ## Recommended Next Slice
@@ -445,8 +445,8 @@ Closing that blocker would unlock the remaining storage simplification:
 
 - eventual deletion, export, migration, or explicit ignore policy for
   `macos_import.db` / `working.db` schemas
-- removal or narrowing of retained schema/health diagnostics
-- final migration of any overlay/archive keys that still require retained
+- removal or narrowing of retired schema/health diagnostics
+- final migration of any overlay/archive keys that still require retired
   identity interpretation
 
 Until then, retired cleanup inventory should stay bounded, named, tested, and
