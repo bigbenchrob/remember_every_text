@@ -64,7 +64,7 @@ void main() {
     });
 
     testWidgets(
-      're-entering chooser state does not keep stale rows or toggle meaning',
+      're-entering chooser state does not keep previous rows or toggle meaning',
       (tester) async {
         await _pumpPickerShell(
           tester,

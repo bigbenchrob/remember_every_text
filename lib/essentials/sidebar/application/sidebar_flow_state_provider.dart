@@ -1230,6 +1230,10 @@ class SidebarFlow extends _$SidebarFlow {
     required Object error,
     required StackTrace stackTrace,
   }) {
+    if (_isDisposed) {
+      return;
+    }
+
     ref
         .read(appLoggerProvider.notifier)
         .warn(

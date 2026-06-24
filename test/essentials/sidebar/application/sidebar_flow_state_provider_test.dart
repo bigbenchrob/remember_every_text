@@ -635,7 +635,7 @@ void main() {
     );
 
     testWidgets(
-      'contactChosen removes stale hero and filter specs when replacing contact',
+      'contactChosen removes obsolete hero and filter specs when replacing contact',
       (tester) async {
         await _mountMessagesPanelReconciliation(tester, container);
 
