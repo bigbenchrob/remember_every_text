@@ -294,8 +294,8 @@ working graph projection. It is wired through the central graph build
 controller, participates in readiness/reset/onboarding flows, and is invoked by
 the live `chat.db` monitor.
 
-Remaining work is to keep reducing retained `macos_import.db` / `working.db`
-purposes until archive/recovery diagnostics no longer require them.
+Remaining work is to keep reducing retired `macos_import.db` / `working.db`
+file purposes until archive/recovery diagnostics no longer require them.
 
 **Dependencies blocked**
 

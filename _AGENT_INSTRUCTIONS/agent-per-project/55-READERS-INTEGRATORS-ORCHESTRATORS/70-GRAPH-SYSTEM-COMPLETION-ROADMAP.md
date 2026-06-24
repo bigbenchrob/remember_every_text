@@ -991,9 +991,9 @@ Legacy import/projection execution has been retired for ordinary app behavior:
 - live change monitoring builds/invalidates the source-scoped graph.
 - search/contact/handle/message evidence surfaces use graph selectors.
 - Historical Archives import/removal uses source-scoped graph services.
-- retained `working.db` has no central app provider.
+- retired `working.db` has no central app provider.
 
-The remaining retirement question is retained file/storage policy, not ordinary
+The remaining retirement question is retired-file cleanup policy, not ordinary
 execution ownership. Old `macos_import.db` / `working.db` files may still exist
 for diagnostics, historical interpretation, reset cleanup, archive metadata, or
 user-safe retention.
@@ -1019,9 +1019,9 @@ Completed for execution code:
 6. Remove old read repositories.
 7. Remove old import/migration execution code.
 
-Remaining for retained cleanup/diagnostic storage:
+Remaining for retired cleanup/diagnostic storage:
 
-1. Keep retained storage uses registered and bounded.
+1. Keep retired-file cleanup uses registered and bounded.
 2. Replace retained metadata keys with graph/source-scoped equivalents where
    practical.
 3. Preserve or export historical-reference value before deletion.
@@ -1096,7 +1096,7 @@ Mitigation:
 
 - use the legacy parity audit
 - preserve semantics, not field shape
-- delete/export/freeze retained storage only after graph tests prove equivalent
+- delete/export/freeze retired-file storage only after graph tests prove equivalent
   behavior and user-safe retention criteria are met
 
 ## Risk: Reintroducing Pagination as Timeline Navigation

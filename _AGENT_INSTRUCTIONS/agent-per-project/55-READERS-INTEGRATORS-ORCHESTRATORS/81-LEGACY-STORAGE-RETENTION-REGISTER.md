@@ -30,8 +30,7 @@ not delete them blindly.
 `macos_import.db` and `working.db` are retired historical cleanup inventory,
 not permanent system-of-record storage. Existing user data folders may keep
 them during the transition for recovery, audit, comparison, and support
-diagnostics. They are no longer treated as rollback insurance for ordinary app
-operation.
+diagnostics. They no longer provide ordinary-app rollback safety.
 
 The retired database files no longer own ordinary evidence, search, contact
 identity, conversation browsing, live polling, Historical Archives execution,
@@ -251,7 +250,7 @@ Reset may delete:
 
 This does not mean the retired databases are app truth. It means reset must
 clean all derived data safely.
-The central retained `working.db` provider has been removed. Reset still
+The central retired `working.db` provider has been removed. Reset still
 deletes `working.db`, `working.db-wal`, and `working.db-shm` when present, but
 it does not instantiate a retained Drift connection merely to close the file.
 
@@ -334,7 +333,7 @@ removed with the retired projection orchestrator/migrator stack. The old
 `conversation_graph`, while extractor/enrichment tests now live under
 `source_scoped_import`.
 
-The old retained `working.db` ordinal-index rebuild and trigger-maintenance
+The old retired `working.db` ordinal-index rebuild and trigger-maintenance
 tests were also removed after the graph Message Evidence Spine took over
 timeline skeletons and heatmap coordination. The physical
 `global_message_index`, `message_index`, and `contact_message_index` tables may
@@ -342,10 +341,10 @@ still exist in retired schema for diagnostic inventory, but no active
 maintenance API or test should preserve them as app-facing timeline
 infrastructure.
 
-The retained Drift schema implementation itself was later removed after the
-central retained working provider was retired and reference scans confirmed no
+The retired Drift schema implementation itself was later removed after the
+central retired working provider was retired and reference scans confirmed no
 production code or tests still instantiate `WorkingDatabase`. Existing
-`working.db` files remain a storage-retention concern on disk, not an app schema
+`working.db` files remain a retired-file cleanup concern on disk, not an app schema
 surface.
 
 Database health may list these tables as retired schema inventory, but it

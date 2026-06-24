@@ -49,7 +49,7 @@ The staged plan below is preserved as historical design context. Instructions
 such as "do not remove retained legacy path" describe the pre-cutover safety
 posture and should not be read as the current default execution path. As of
 2026-06-08, the retained archive import/projection execution path has been
-removed from production code; retained `macos_import.db` / `working.db` are
+removed from production code; retired `macos_import.db` / `working.db` are
 cleanup/diagnostic-retirement questions only.
 
 ## Current State
@@ -68,8 +68,8 @@ The retained bridge no longer blocks ordinary archive execution. Remaining
 work is cleanup/diagnostic retirement:
 
 - retired `macos_import.db` archive-source metadata cleanup inventory
-- retained `working.db` historical/recovered-message cleanup inventory
-- retained schema/health diagnostics that inventory those files
+- retired `working.db` historical/recovered-message cleanup inventory
+- retired schema/health diagnostics that inventory those files
 - overlay archive rows that still use the old `(message_guid,
   import_attachment_id)` key shape
 

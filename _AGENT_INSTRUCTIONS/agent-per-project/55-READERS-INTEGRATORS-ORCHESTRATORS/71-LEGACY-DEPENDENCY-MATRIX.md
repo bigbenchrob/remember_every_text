@@ -61,7 +61,7 @@ message overlay fallback and bounded-search context anchoring.
 Fresh retention-oriented scans on 2026-06-06 confirmed the June 4 conclusion:
 no ordinary app-facing feature/read surface was found opening retained legacy
 `working.db` / `macos_import.db` providers. A later cleanup slice removed the
-central retained `working.db` provider entirely; retained `working.db` now
+central retired `working.db` provider entirely; retired `working.db` now
 exists only as file/schema storage for reset, diagnostics, and eventual storage
 retirement review.
 
@@ -77,12 +77,12 @@ classified:
   `ImportDatabase` provider, not the retained legacy import DB
 
 This means the next retirement step is not ordinary UI migration. It is
-storage-retention review: decide which retained DB files, schema references, and
+retired-file audit: decide which retired DB files, schema references, and
 tests must remain for archive/recovery compatibility and which can be deleted
 only after that compatibility is replaced or intentionally abandoned.
 
 See `81-LEGACY-STORAGE-RETENTION-REGISTER.md` for the removal criteria for
-each retained storage bucket.
+each retired-file cleanup bucket.
 
 ## Current Findings - 2026-06-04
 
@@ -151,7 +151,7 @@ consumers**.
 | Global/contact/handle/conversation message evidence | Message Evidence Spine over graph scopes | Graph-backed ordinary read | Timeline-like scopes use full graph skeletons; hydration is windowed. |
 | Global/contact heatmaps | Graph timeline data only | Graph-backed ordinary read | Legacy `global_message_index` / `contact_message_index` fallback retired. |
 | Unfamiliar sources / manual linking / spam management | Graph canonical handles plus overlay intent | Graph-backed settings/user-facing read | Overlay writes remain overlay-only. |
-| Recovered deleted messages | Graph orphan evidence feeds the shared evidence spine | Graph-backed recovery/archive read | Retained legacy parity diagnostics retired; legacy recovered storage remains only as historical data until retained storage retirement. |
+| Recovered deleted messages | Graph orphan evidence feeds the shared evidence spine | Graph-backed recovery/archive read | Retained legacy parity diagnostics retired; legacy recovered storage remains only as historical data until retired-file cleanup is complete. |
 
 ## Production Lifecycle Dependencies
 
@@ -167,9 +167,9 @@ first-class and tested.
 | `lib/essentials/db_migrate/application/migrators/app_settings_migrator.dart` and empty `domain/policies/migration_order_policy.dart` | Retired | Unimplemented/empty migration scaffolding | Deletion candidate closed | Removed because they had no callers and were not part of any retained compatibility boundary. |
 | `lib/essentials/db_importers/**` | Retired folder | Former mixed import/extractor/monitor/debug location | Deletion candidate closed | Removed. Source-scoped extractor/provider ownership moved to `lib/essentials/source_scoped_import/`; live `chat.db` monitoring moved to `lib/essentials/conversation_graph/application/monitor/`; retained DB debug settings moved to `lib/essentials/db/application/`. Architecture tests fail if the retired folder returns. |
 | `lib/essentials/db_importers/application/services/retained_legacy_archive_pipeline_provider.dart` | Retired | Former retained diagnostic import-control bridge | Deletion candidate closed | Removed after Historical Archives import/removal moved to source-scoped graph services and import-control stopped offering legacy import execution. |
-| `lib/essentials/db_importers/application/services/orchestrated_ledger_import_service.dart` | Retired | Former high-level retained `macos_import.db` import orchestrator | Deletion candidate closed | Removed after live, onboarding, settings, and Historical Archives paths all moved to source-scoped graph import/projection. Source-scoped rich-text enrichment now uses `sourceScopedMessageExtractorProvider` from `source_scoped_import`. |
+| `lib/essentials/db_importers/application/services/orchestrated_ledger_import_service.dart` | Retired | Former high-level retired `macos_import.db` import orchestrator | Deletion candidate closed | Removed after live, onboarding, settings, and Historical Archives paths all moved to source-scoped graph import/projection. Source-scoped rich-text enrichment now uses `sourceScopedMessageExtractorProvider` from `source_scoped_import`. |
 | `lib/essentials/db_importers/application/importers/**`, `lib/essentials/db_importers/infrastructure/sqlite/importers/**`, and old `ImportOrchestrator`/`IImportContext` framework | Retired | Former retained table-importer implementation details | Deletion candidate closed | Removed after the old ledger orchestrator was deleted and caller scans confirmed no active runtime path. Source-scoped importers now own graph facts directly; contact import uses shared handle normalization instead of the old importer utility wrapper. |
-| `lib/essentials/db_migrate/**` | Retired | Former retained `working.db` projection execution stack | Deletion candidate closed | Removed after Historical Archives import/removal moved to source-scoped graph services, old legacy import/projection execution was retired, and caller scans confirmed no active production owner. Retained `working.db` schema/provider remains a separate storage-retirement question. |
+| `lib/essentials/db_migrate/**` | Retired | Former retired `working.db` projection execution stack | Deletion candidate closed | Removed after Historical Archives import/removal moved to source-scoped graph services, old legacy import/projection execution was retired, and caller scans confirmed no active production owner. Retired `working.db` schema/provider remains a separate retired-file cleanup question. |
 | `lib/essentials/conversation_graph/application/monitor/chat_db_change_monitor_provider.dart` | Source-scoped graph build controller plus graph attachment archive source-row range | Live change monitor | Production lifecycle | Keep as live source detector. Live polling now builds the app-facing graph and archives graph source-row ranges; it no longer runs legacy import/migration maintenance. |
 | `lib/essentials/db_importers/application/services/legacy_compatibility_maintenance_service.dart` | Retired | Former live-update legacy import/migration tail | Deletion candidate closed | Removed after live polling proved graph import/projection plus graph attachment archiving as the production update path. |
 | `lib/essentials/onboarding/application/onboarding_gate_provider.dart` | Source-scoped graph build controller; derived-data reset through centralized lifecycle boundaries; graph-build failure recorded in overlay failure state | First-run and settings reimport lifecycle | Production lifecycle | Keep. First-run onboarding and settings reimport now build the graph directly and no longer invoke the retained legacy import/migration control path. Graph-build failures are persisted as onboarding semantic failures rather than legacy migration result entities. |
@@ -177,8 +177,8 @@ first-class and tested.
 | `lib/essentials/onboarding/application/message_data_reset_service.dart` | Source-scoped graph reset plus retired-file cleanup behavior | Data reset/maintenance | Production lifecycle | Keep; deliberately handles graph DBs, retired DB file cleanup, and overlay separation. |
 | `lib/essentials/onboarding/application/onboarding_environment_report_provider.dart` | Source probes, source-scoped import/graph readiness, overlay onboarding failure summaries | Environment diagnostics for onboarding | Production lifecycle | Keep; graph readiness is now app-facing readiness. The report consumes onboarding-owned failure summaries, not legacy import/migration result entities. |
 | `lib/essentials/db/infrastructure/data_sources/local/working/working_database.dart` | Retired Drift `working.db` schema | Deletion candidate closed | No production blocker | Removed after the central retained working provider was retired and scans confirmed no app code instantiates `WorkingDatabase`. Existing `working.db` files may still exist in user data folders and can be deleted by reset or inspected read-only by diagnostics. |
-| `lib/essentials/db/infrastructure/data_sources/local/import/retained_archive_metadata_database.dart` | Retired | Former retained `macos_import.db` archive metadata schema | Deletion candidate closed | Removed after Historical Archives source metadata moved to overlay storage. Existing `macos_import.db` files may still be deleted by reset or inspected read-only by diagnostics. |
-| Supabase mirror runtime/service/provider/repository/migrator stubs | Retired | Former external mirror/export path | Deletion candidate closed | Removed after reference scan confirmed no active caller and the service was stub-only. Legacy `working.db` Supabase table definitions remain until the retained `working.db` schema itself is retired, avoiding schema churn for no product gain. |
+| `lib/essentials/db/infrastructure/data_sources/local/import/retained_archive_metadata_database.dart` | Retired | Former retained archive metadata schema for retired `macos_import.db` | Deletion candidate closed | Removed after Historical Archives source metadata moved to overlay storage. Existing `macos_import.db` files may still be deleted by reset or inspected read-only by diagnostics. |
+| Supabase mirror runtime/service/provider/repository/migrator stubs | Retired | Former external mirror/export path | Deletion candidate closed | Removed after reference scan confirmed no active caller and the service was stub-only. Legacy `working.db` Supabase table definitions remain until the retired `working.db` schema itself is removed, avoiding schema churn for no product gain. |
 
 ## Recovery and Archive Dependencies
 
@@ -191,8 +191,8 @@ after the ordinary graph path is reliable.
 | `lib/features/attachments/application/deterministic_recovery_provider.dart` | `macos_import_ss.db`; `working_ss.db`; overlay archive records | Historical attachment recovery workflow | Recovery/archive | Graph/source-scoped mapper is now used for deterministic recovery. Keep overlay compatibility key until archive rows become graph-keyed or permanently bridged. |
 | `lib/features/attachments/application/graph_cross_snapshot_mapper.dart` | Source-scoped import attachment GUIDs and `working_ss.db` topology | Maps recovered Messages snapshots to current graph attachment identity | Recovery/archive | Active deterministic recovery mapper. Preserve overlay archive compatibility key until archive rows become graph-keyed or permanently bridged. |
 | Old `lib/features/attachments/domain/entities/attachment.dart`, `AttachmentId`, and `AttachmentStatus` model | Retired | Former generic Freezed attachment entity/value object | Deletion candidate closed | Removed after reference scans confirmed active attachment behavior uses graph attachment evidence, archive rows, `AttachmentInfo`, and `ResolvedAttachment`. Archive/recovery services remain retained. |
-| `lib/features/messages/infrastructure/repositories/recovered_unlinked_messages_provider.dart` | `working_ss.messages` graph-orphan evidence | Recovered/deleted message review | Recovery/archive | Production recovered evidence is graph-backed. Keep reviewing recovered source/archive identity before deleting retained storage. |
-| `lib/features/settings/infrastructure/repositories/historical_archive_sources_repository.dart` | Overlay-backed Historical Archives source metadata | Historical archive source UI | Recovery/archive plus settings | Keep. Archive-source metadata is active user/application metadata in overlay storage, not retained `macos_import.db` state. |
+| `lib/features/messages/infrastructure/repositories/recovered_unlinked_messages_provider.dart` | `working_ss.messages` graph-orphan evidence | Recovered/deleted message review | Recovery/archive | Production recovered evidence is graph-backed. Keep reviewing recovered source/archive identity before deleting retired-file cleanup inventory. |
+| `lib/features/settings/infrastructure/repositories/historical_archive_sources_repository.dart` | Overlay-backed Historical Archives source metadata | Historical archive source UI | Recovery/archive plus settings | Keep. Archive-source metadata is active user/application metadata in overlay storage, not retired `macos_import.db` state. |
 | `lib/features/settings/application/sidebar_cassette_spec/resolvers/message_history_coverage_settings_resolver.dart` | Graph conversation-linked and graph-orphan counts | Coverage settings | Graph-backed settings | Legacy recovered-message count fallback retired. Keep source `chat.db` read as the comparison baseline until source-scoped live import owns the source summary. |
 | `lib/features/settings/presentation/view_model/historical_archives_workflow_panel_model_provider.dart` | Historical archive workflow state; source-scoped archive import/removal services; conversation graph dry-run duplicate estimates; overlay archive-source metadata | Recovery workflow UI | Recovery/archive plus settings | Keep. Forward import and removal now use source-scoped archive graph services, while source metadata is persisted in overlay storage. |
 

@@ -20,7 +20,7 @@ This document records the current retirement-oriented assessment of:
 - `working.db`
 
 It applies the explicit policy decision that these files are retired
-transitional storage only. They are not permanent reference databases and
+transitional storage only. They are not lasting reference databases and
 should not remain architectural components of MessageLens.
 
 The target end state remains:
@@ -84,16 +84,16 @@ not on:
 
 ```text
 graph identity
-→ retained macos_import.db / working.db
+→ retired macos_import.db / working.db
 ```
 
-Therefore, retained database retirement is safe only when attachment archive
-and recovery identity can be explained without consulting retained legacy
+Therefore, retired database retirement is safe only when attachment archive
+and recovery identity can be explained without consulting retired legacy
 projection tables.
 
 ## Current Active-Code Dependency Assessment
 
-As of this review, active Dart references to retained database files/providers
+As of this review, active Dart references to retired database files/providers
 are narrow and intentionally guarded by architecture tests.
 
 ### Central Filename Constants
@@ -159,7 +159,7 @@ Retirement direction:
 Deletion readiness:
 
 - satisfied: Historical Archives source metadata no longer reads/writes
-  retained `macos_import.db`, and the retained metadata provider/wrapper has
+  retired `macos_import.db`, and the retired metadata provider/wrapper has
   been removed.
 
 ### Reset / Derived Data Cleanup
@@ -179,7 +179,7 @@ Classification:
 
 3. Diagnostic/support/reset cleanup.
 
-This does not make retained databases app authority. It is a cleanup path for
+This does not make retired databases app authority. It is a cleanup path for
 files that may still exist in the data folder.
 
 Retirement direction:
@@ -245,7 +245,7 @@ Not current role:
 - Historical Archives import execution path
 - message/contact/chat/handle/attachment source facts
 - graph projection source
-- rollback insurance
+- ordinary app rollback fallback
 
 Classification summary:
 
@@ -318,7 +318,7 @@ Recommended disposition:
 
 ## Archive / Recovery Risk Assessment
 
-Retiring retained databases is unsafe only if any archive/recovery path still
+Retiring retired databases is unsafe only if any archive/recovery path still
 requires a value that cannot be derived from graph/source-scoped identity.
 
 Risks to verify before deletion:
@@ -386,11 +386,11 @@ Implementation status:
   `overlayDatabaseProvider`, and the repository stores source metadata in the
   overlay settings key `historical_archive_sources/v1`.
 - The old `macos_import.db.historical_archive_sources` table may still exist in
-  retained files, but it is no longer the active metadata authority. Its
+  retired files, but it is no longer the active metadata authority. Its
   remaining disposition is cleanup/export/discard policy, not production
   workflow support.
 - The central `retainedArchiveMetadataStoreProvider` has been removed. Reset
-  still deletes retained `macos_import.db` files when present, but it no longer
+  still deletes retired `macos_import.db` files when present, but it no longer
   opens a retained metadata database to do so.
 - The old retained metadata database wrapper and store interface have also been
   removed from production source. Remaining `macos_import.db` references are
@@ -411,7 +411,7 @@ Status:
 
 Done means:
 
-- no active provider constructs a retained `macos_import.db`.
+- no active provider constructs a retired `macos_import.db`.
 - no active code opens `working.db`.
 - architecture tripwire allowed lists for retained providers shrink to zero.
 
@@ -438,7 +438,7 @@ Work:
 
 Done means:
 
-- attachment retrieval can be explained without retained `macos_import.db` or
+- attachment retrieval can be explained without retired `macos_import.db` or
   `working.db`.
 
 Implementation status:
@@ -500,8 +500,8 @@ archive-source metadata has moved to a graph-era/overlay home.
 
 ## Bottom Line
 
-Under the new policy, neither retained legacy database should be treated as a
-permanent reference database.
+Under the new policy, neither retired legacy database should be treated as a
+lasting reference database.
 
 The remaining work is finite and practical:
 
