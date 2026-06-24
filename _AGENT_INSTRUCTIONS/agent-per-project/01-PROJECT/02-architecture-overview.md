@@ -98,9 +98,9 @@ macOS Messages + AddressBook
 → specs / payloads / rendering
 ```
 
-The old retained `macos_import.db` -> `working.db` projection implementation is
+The old `macos_import.db` -> `working.db` projection implementation is
 retired from active app code. Archive-source metadata now lives in overlay
-storage. Existing `macos_import.db` and `working.db` files are retained
+storage. Existing `macos_import.db` and `working.db` files are retired
 file/schema cleanup inventory for reset cleanup and read-only diagnostics.
 Source import, graph build, and retired-file cleanup details belong in
 `../20-DATA-IMPORT-MIGRATION/`.

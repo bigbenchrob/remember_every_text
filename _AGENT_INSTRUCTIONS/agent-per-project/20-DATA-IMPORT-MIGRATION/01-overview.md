@@ -43,8 +43,8 @@ chat.db + AddressBook.sqlite
  overlay merge at read time
 ```
 
-The retained historical `macos_import.db` -> `working.db` projection implementation
-has been retired from active app code. Old files remain compatibility inventory:
+The historical `macos_import.db` -> `working.db` projection implementation has
+been retired from active app code. Old files remain retired cleanup inventory:
 old `macos_import.db` files may contain historical archive-source metadata, old
 `working.db` files may be inspected read-only by diagnostics, and neither file
 is the ordinary live-sync, archive-source metadata, or user-facing read spine.
@@ -89,7 +89,7 @@ reset cleanup / health diagnostics / explicit storage-retention review
   after graph build. Historical archive workflows use source-scoped archive
   import and graph projection. Periodic archive sweeps read graph/import facts
   and overlay archive records through named attachment ports; they must not
-  consult retained `working.db` as an attachment authority.
+  consult retired `working.db` files as an attachment authority.
 - **Search and message evidence** now select graph `message_ss_id` scopes. Legacy working indexes are not the ordinary search spine.
 - **Overlay providers** merge user overrides at runtime; they are documented in `../10-DATABASES/05-db-overlay.md` and operate strictly after graph/import projection.
 
@@ -118,7 +118,7 @@ stage timings, and graph health are surfaced through the Conversation Graph
 status panel. Historical logs may capture:
 
 - Source row counts from macOS `chat.db` and AddressBook
-- Destination row counts in retained `macos_import.db` and `working.db`
+- Destination row counts in retired-file `macos_import.db` and `working.db`
 - Rich-text extraction stats such as `messages.richTextApplied`
 - Message text-presence counts before and after migration
 - Source-vs-destination deltas that explain intentional JOIN-driven exclusions

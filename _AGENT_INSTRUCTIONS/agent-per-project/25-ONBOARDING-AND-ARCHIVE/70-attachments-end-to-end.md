@@ -30,7 +30,7 @@ MessageLens uses an archive-first attachment model.
 Only the source-scoped graph/import pipeline defines durable app-facing
 MessageLens semantics. Source database observations, row counts, orphan counts,
 and Apple path behavior are diagnostic evidence, not guarantees. Retired
-legacy import/working DBs are storage-retention evidence only. The active
+legacy import/working DBs are cleanup/audit evidence only. The active
 archive bridge is the named overlay archive compatibility key.
 
 ## 1. Source Reality (Apple `chat.db`)
@@ -131,8 +131,8 @@ Inputs:
 - historical `chat.db`
 - matching historical `Attachments` folder
 - current source-scoped graph/import databases where available
-- retained `macos_import.db` / `working.db` only as historical cleanup
-  inventory during explicit storage-retention review
+- retired `macos_import.db` / `working.db` only as historical cleanup
+  inventory during explicit retired-file audit
 - current `user_overlays.db`
 
 The historical snapshot is opened read-only. Recovery never mutates Apple backups, current source databases, import tables, or working projection tables.
@@ -224,7 +224,7 @@ Reference the canonical spec docs for the boundary rules; do not reimplement spe
 | Path mutation | `local_path` may become stale. The path is audit/ingestion input only, not an identifier. Durable identity remains `(message_guid, import_attachment_id)` plus archive metadata. |
 | Missing files at import time | Import still records structural attachment data and joins. Archive ingestion skips missing files; UI renders an unavailable state. |
 | Files appear later | Periodic working sweep or resolver-triggered ingestion can archive newly available files. |
-| Orphaned/unlinked attachments | Import routes joins for recovered-unlinked messages through explicit recovered/unlinked attachment relationships; graph projection keeps recovered content distinct from normal timelines, while retained files remain storage-retention evidence only. |
+| Orphaned/unlinked attachments | Import routes joins for recovered-unlinked messages through explicit recovered/unlinked attachment relationships; graph projection keeps recovered content distinct from normal timelines, while retired files remain cleanup/audit evidence only. |
 | Historical file missing from backup | Deterministic recovery reports the mapped record as missing and does not guess. |
 | Ambiguous historical mapping | Recovery reports an unmapped/ambiguous reason and does not use heuristic fallback. |
 
@@ -237,7 +237,7 @@ No attachment record should be hidden merely because its file is missing.
 - Do not assume attachment existence at import, migration, hydration, or render time.
 - Do not render directly from live Messages files by reading raw paths in widgets.
 - Do not bypass the attachment resolver or archive logic.
-- Do not store archive metadata in `working_ss.db` or retained `working.db`.
+- Do not store archive metadata in `working_ss.db` or retired `working.db`.
 - Do not write to Apple Messages source databases or attachment directories.
 - Do not merge recovered-unlinked attachment data into normal timelines without an explicit documented migration boundary.
 - Do not invent heuristic recovery matching beyond the documented GUID match and single-attachment fallback.

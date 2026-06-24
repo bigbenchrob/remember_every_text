@@ -56,7 +56,7 @@ the subsystem docs when details matter.
   stack policy, or shared chrome.
 - Ordinary app data flows through source-scoped import into `macos_import_ss.db`
   and graph projection into `working_ss.db`; archive-source metadata lives in
-  overlay storage, and retained `macos_import.db` / `working.db` files are
+  overlay storage, and retired `macos_import.db` / `working.db` files are
   retired cleanup inventory only.
 - User intent writes to `user_overlays.db`. Providers merge graph projection +
   overlay at read time, and overlay wins on conflict.
