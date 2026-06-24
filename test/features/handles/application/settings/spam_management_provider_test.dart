@@ -65,7 +65,7 @@ void main() {
     });
 
     test(
-      'prefers graph handle visibility over retained handle variant',
+      'prefers graph handle visibility over rowid-keyed handle variant',
       () async {
         final graphHandleId = SourceScopedRowKey.pack(
           sourceId: liveChatDbSourceId,

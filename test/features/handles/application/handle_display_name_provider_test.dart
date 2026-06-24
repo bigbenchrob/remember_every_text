@@ -61,12 +61,12 @@ void main() {
   });
 
   test(
-    'retained-key handle override wins over raw graph handle label',
+    'rowid-keyed handle override wins over raw graph handle label',
     () async {
-      const retainedHandleId = 42;
+      const rowidKeyedHandleId = 42;
       final graphHandleId = SourceScopedRowKey.pack(
         sourceId: liveChatDbSourceId,
-        sourceRowId: retainedHandleId,
+        sourceRowId: rowidKeyedHandleId,
       );
       await graphDb.database.insert('contacts', <String, Object?>{
         'contact_id': 9001,
@@ -78,7 +78,7 @@ void main() {
         'service': 'iMessage',
       });
       await overlayDb.setParticipantDisplayNameOverride(9001, 'Claire');
-      await overlayDb.setHandleOverride(retainedHandleId, 9001);
+      await overlayDb.setHandleOverride(rowidKeyedHandleId, 9001);
 
       final label = await container.read(
         handleDisplayNameProvider(handleId: graphHandleId).future,
@@ -88,15 +88,15 @@ void main() {
     },
   );
 
-  test('graph-key handle override wins over retained-key override', () async {
-    const retainedHandleId = 42;
+  test('graph-key handle override wins over rowid-keyed override', () async {
+    const rowidKeyedHandleId = 42;
     final graphHandleId = SourceScopedRowKey.pack(
       sourceId: liveChatDbSourceId,
-      sourceRowId: retainedHandleId,
+      sourceRowId: rowidKeyedHandleId,
     );
     await graphDb.database.insert('contacts', <String, Object?>{
       'contact_id': 9001,
-      'display_name': 'Retained Contact',
+      'display_name': 'Rowid-Keyed Contact',
     });
     await graphDb.database.insert('contacts', <String, Object?>{
       'contact_id': 9002,
@@ -107,9 +107,9 @@ void main() {
       'id': '+17789908506',
       'service': 'iMessage',
     });
-    await overlayDb.setParticipantDisplayNameOverride(9001, 'Retained');
+    await overlayDb.setParticipantDisplayNameOverride(9001, 'Rowid-keyed');
     await overlayDb.setParticipantDisplayNameOverride(9002, 'Graph');
-    await overlayDb.setHandleOverride(retainedHandleId, 9001);
+    await overlayDb.setHandleOverride(rowidKeyedHandleId, 9001);
     await overlayDb.setHandleOverride(graphHandleId, 9002);
 
     final label = await container.read(

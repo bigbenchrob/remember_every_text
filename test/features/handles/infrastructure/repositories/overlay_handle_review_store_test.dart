@@ -19,15 +19,15 @@ void main() {
   });
 
   test('markReviewed stores reviewed-only row with graph handle key', () async {
-    const retainedHandleId = 42;
+    const rowidKeyedHandleId = 42;
     final graphHandleId = SourceScopedRowKey.pack(
       sourceId: liveChatDbSourceId,
-      sourceRowId: retainedHandleId,
+      sourceRowId: rowidKeyedHandleId,
     );
 
-    await store.markReviewed(handleId: retainedHandleId);
+    await store.markReviewed(handleId: rowidKeyedHandleId);
 
-    expect(await overlayDb.getHandleOverride(retainedHandleId), isNull);
+    expect(await overlayDb.getHandleOverride(rowidKeyedHandleId), isNull);
     final row = await overlayDb.getHandleOverride(graphHandleId);
     expect(row, isNotNull);
     expect(row!.participantId, isNull);
@@ -38,21 +38,24 @@ void main() {
   test(
     'markReviewed preserves real contact link while normalizing keys',
     () async {
-      const retainedHandleId = 42;
-      const retainedContactId = 17;
+      const rowidKeyedHandleId = 42;
+      const rowidKeyedContactId = 17;
       final graphHandleId = SourceScopedRowKey.pack(
         sourceId: liveChatDbSourceId,
-        sourceRowId: retainedHandleId,
+        sourceRowId: rowidKeyedHandleId,
       );
       final graphContactId = SourceScopedRowKey.pack(
         sourceId: liveAddressBookSourceId,
-        sourceRowId: retainedContactId,
+        sourceRowId: rowidKeyedContactId,
       );
-      await overlayDb.setHandleOverride(retainedHandleId, retainedContactId);
+      await overlayDb.setHandleOverride(
+        rowidKeyedHandleId,
+        rowidKeyedContactId,
+      );
 
       await store.markReviewed(handleId: graphHandleId);
 
-      expect(await overlayDb.getHandleOverride(retainedHandleId), isNull);
+      expect(await overlayDb.getHandleOverride(rowidKeyedHandleId), isNull);
       final row = await overlayDb.getHandleOverride(graphHandleId);
       expect(row, isNotNull);
       expect(row!.participantId, graphContactId);
@@ -63,22 +66,22 @@ void main() {
   test(
     'markReviewed preserves virtual contact link while normalizing handle',
     () async {
-      const retainedHandleId = 42;
+      const rowidKeyedHandleId = 42;
       final graphHandleId = SourceScopedRowKey.pack(
         sourceId: liveChatDbSourceId,
-        sourceRowId: retainedHandleId,
+        sourceRowId: rowidKeyedHandleId,
       );
       final virtualParticipant = await overlayDb.createVirtualParticipant(
         displayName: 'New Source',
       );
       await overlayDb.setHandleVirtualParticipantOverride(
-        retainedHandleId,
+        rowidKeyedHandleId,
         virtualParticipant.id,
       );
 
-      await store.markReviewed(handleId: retainedHandleId);
+      await store.markReviewed(handleId: rowidKeyedHandleId);
 
-      expect(await overlayDb.getHandleOverride(retainedHandleId), isNull);
+      expect(await overlayDb.getHandleOverride(rowidKeyedHandleId), isNull);
       final row = await overlayDb.getHandleOverride(graphHandleId);
       expect(row, isNotNull);
       expect(row!.participantId, isNull);

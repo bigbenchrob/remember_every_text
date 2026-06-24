@@ -5,7 +5,7 @@ import 'package:remember_this_text/features/handles/application/read_models/hand
 
 void main() {
   test(
-    'canonicalHandleIdentityKey converts retained handle ids to graph ids',
+    'canonicalHandleIdentityKey converts rowid-keyed handle ids to graph ids',
     () {
       final graphHandleId = SourceScopedRowKey.pack(
         sourceId: liveChatDbSourceId,
@@ -17,7 +17,7 @@ void main() {
     },
   );
 
-  test('handleIdentityKeyVariants includes retained and graph ids', () {
+  test('handleIdentityKeyVariants includes rowid-keyed and graph ids', () {
     final graphHandleId = SourceScopedRowKey.pack(
       sourceId: liveChatDbSourceId,
       sourceRowId: 42,
@@ -41,9 +41,9 @@ void main() {
 
     expect(
       overlayValueForHandleIdentity(<int, String>{
-        42: 'retained',
+        42: 'rowid-keyed',
       }, graphHandleId),
-      'retained',
+      'rowid-keyed',
     );
     expect(
       overlayValueForHandleIdentity(<int, String>{graphHandleId: 'graph'}, 42),

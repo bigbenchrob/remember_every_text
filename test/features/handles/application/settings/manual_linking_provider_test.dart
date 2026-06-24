@@ -114,22 +114,22 @@ void main() {
     );
 
     test(
-      'available participant handle count includes retained-key overlay links',
+      'available participant handle count includes rowid-keyed overlay links',
       () async {
-        const retainedContactId = 17;
+        const rowidKeyedContactId = 17;
         final graphContactId = SourceScopedRowKey.pack(
           sourceId: liveAddressBookSourceId,
-          sourceRowId: retainedContactId,
+          sourceRowId: rowidKeyedContactId,
         );
         await graphDb.database.insert('contacts', <String, Object?>{
           'contact_id': graphContactId,
           'display_name': 'Claire Merriman Campbell',
         });
         await overlayDb.setParticipantDisplayNameOverride(
-          retainedContactId,
+          rowidKeyedContactId,
           'Claire',
         );
-        await overlayDb.setHandleOverride(42, retainedContactId);
+        await overlayDb.setHandleOverride(42, rowidKeyedContactId);
 
         final participants = await container.read(
           availableParticipantsProvider.future,
@@ -143,12 +143,12 @@ void main() {
     );
 
     test(
-      'available participant handle count deduplicates retained graph variants',
+      'available participant handle count deduplicates rowid-keyed graph variants',
       () async {
-        const retainedContactId = 17;
+        const rowidKeyedContactId = 17;
         final graphContactId = SourceScopedRowKey.pack(
           sourceId: liveAddressBookSourceId,
-          sourceRowId: retainedContactId,
+          sourceRowId: rowidKeyedContactId,
         );
         final graphHandleId = SourceScopedRowKey.pack(
           sourceId: liveChatDbSourceId,
@@ -159,11 +159,11 @@ void main() {
           'display_name': 'Claire Merriman Campbell',
         });
         await overlayDb.setParticipantDisplayNameOverride(
-          retainedContactId,
+          rowidKeyedContactId,
           'Claire',
         );
-        await overlayDb.setHandleOverride(42, retainedContactId);
-        await overlayDb.setHandleOverride(graphHandleId, retainedContactId);
+        await overlayDb.setHandleOverride(42, rowidKeyedContactId);
+        await overlayDb.setHandleOverride(graphHandleId, rowidKeyedContactId);
 
         final participants = await container.read(
           availableParticipantsProvider.future,

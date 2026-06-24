@@ -19,15 +19,15 @@ void main() {
   });
 
   test('blockHandle stores graph handle key', () async {
-    const retainedHandleId = 42;
+    const rowidKeyedHandleId = 42;
     final graphHandleId = SourceScopedRowKey.pack(
       sourceId: liveChatDbSourceId,
-      sourceRowId: retainedHandleId,
+      sourceRowId: rowidKeyedHandleId,
     );
 
-    await store.blockHandle(retainedHandleId);
+    await store.blockHandle(rowidKeyedHandleId);
 
-    expect(await overlayDb.getHandleVisibility(retainedHandleId), isNull);
+    expect(await overlayDb.getHandleVisibility(rowidKeyedHandleId), isNull);
     final row = await overlayDb.getHandleVisibility(graphHandleId);
     expect(row, isNotNull);
     expect(row!.isVisible, isFalse);
@@ -35,15 +35,15 @@ void main() {
   });
 
   test(
-    'blockHandle clears retained and graph variants before writing',
+    'blockHandle clears rowid-keyed and graph variants before writing',
     () async {
-      const retainedHandleId = 42;
+      const rowidKeyedHandleId = 42;
       final graphHandleId = SourceScopedRowKey.pack(
         sourceId: liveChatDbSourceId,
-        sourceRowId: retainedHandleId,
+        sourceRowId: rowidKeyedHandleId,
       );
       await overlayDb.setHandleVisibility(
-        retainedHandleId,
+        rowidKeyedHandleId,
         isVisible: true,
         isBlacklisted: false,
       );
@@ -53,7 +53,7 @@ void main() {
         isBlacklisted: false,
       );
 
-      await store.blockHandle(retainedHandleId);
+      await store.blockHandle(rowidKeyedHandleId);
 
       final rows = await overlayDb.getAllHandleVisibilities();
       expect(rows, hasLength(1));
@@ -62,14 +62,14 @@ void main() {
     },
   );
 
-  test('unblockHandle removes retained and graph variants', () async {
-    const retainedHandleId = 42;
+  test('unblockHandle removes rowid-keyed and graph variants', () async {
+    const rowidKeyedHandleId = 42;
     final graphHandleId = SourceScopedRowKey.pack(
       sourceId: liveChatDbSourceId,
-      sourceRowId: retainedHandleId,
+      sourceRowId: rowidKeyedHandleId,
     );
     await overlayDb.setHandleVisibility(
-      retainedHandleId,
+      rowidKeyedHandleId,
       isVisible: false,
       isBlacklisted: true,
     );
@@ -79,19 +79,19 @@ void main() {
       isBlacklisted: true,
     );
 
-    await store.unblockHandle(retainedHandleId);
+    await store.unblockHandle(rowidKeyedHandleId);
 
     expect(await overlayDb.getAllHandleVisibilities(), isEmpty);
   });
 
-  test('readAll deduplicates retained and graph variants', () async {
-    const retainedHandleId = 42;
+  test('readAll deduplicates rowid-keyed and graph variants', () async {
+    const rowidKeyedHandleId = 42;
     final graphHandleId = SourceScopedRowKey.pack(
       sourceId: liveChatDbSourceId,
-      sourceRowId: retainedHandleId,
+      sourceRowId: rowidKeyedHandleId,
     );
     await overlayDb.setHandleVisibility(
-      retainedHandleId,
+      rowidKeyedHandleId,
       isVisible: false,
       isBlacklisted: true,
     );
