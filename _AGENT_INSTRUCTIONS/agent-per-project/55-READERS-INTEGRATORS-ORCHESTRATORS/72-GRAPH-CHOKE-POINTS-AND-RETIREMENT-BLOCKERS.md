@@ -428,7 +428,7 @@ This section names what prevents each legacy layer from being retired.
 | Contact read models remain legacy | contact picker, contact hero, handle filters | Closed: graph contact summaries and handle scopes exist. | Complete. |
 | Global heatmap remains legacy | global message timeline | Closed: graph full-scope global skeleton exists. | Complete. |
 | Old chat summary providers remain fallback | recent/age/unmatched chats | Closed: graph conversation summaries cover required product views and old fallbacks are retired or diagnostic-only. | Complete. |
-| Retained recovered-message legacy diagnostics remain | Retired recovered parity diagnostic bridge | Production recovered evidence is graph-backed and remaining legacy-only rows have an accepted retention explanation. | Closed; legacy recovered storage remains only as historical data inside retained DB files until broader storage retirement. |
+| Retired recovered-message diagnostics remain | Retired recovered parity diagnostic bridge | Production recovered evidence is graph-backed and remaining legacy-only rows have an accepted retirement explanation. | Closed; legacy recovered storage remains only as historical data inside retired DB files until broader storage retirement. |
 
 ### Legacy Projection Systems
 

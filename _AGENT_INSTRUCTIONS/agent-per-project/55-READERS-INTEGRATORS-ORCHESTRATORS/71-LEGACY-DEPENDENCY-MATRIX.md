@@ -92,12 +92,12 @@ each retired-file cleanup bucket.
    through the graph/evidence spine or graph-backed read models.
 
    Fresh scans on 2026-06-02 and 2026-06-04 found the remaining tracked legacy
-   references concentrated in retained lifecycle, archive/recovery,
-   diagnostics/settings, legacy database definitions, and tests for retained
+   references concentrated in retired lifecycle, archive/recovery,
+   diagnostics/settings, legacy database definitions, and tests for retired
    systems.
 
    The 2026-06-04 direct-provider scan found no ordinary feature/read surface
-   opening the retained working/import providers. The retained working provider
+   opening the retired working/import providers. The retired working provider
    was later removed; remaining retained import provider reads are historical
    archive settings metadata, onboarding reset/maintenance, and retained import
    schema/tests.
@@ -118,14 +118,14 @@ each retired-file cleanup bucket.
 4. **Legacy import/migration is no longer the app-facing lifecycle path.**
    Live update, first-run onboarding, and settings-triggered reimport now build
    the source-scoped graph directly. Remaining legacy import/migration
-   references are retained lifecycle, archive/recovery, diagnostics/settings,
-   schema, and test references. Treat them as compatibility/reference systems,
+   references are retired-file cleanup, archive/recovery diagnostics/settings,
+   schema, and test references. Treat them as cleanup/reference systems,
    not ordinary production evidence authority.
 
 5. **Diagnostics intentionally see both worlds.**
    Database health audit, import/migration audit logs, support bundles, and
-   historical archive preflights still inspect retained DB files. These are
-   legitimate compatibility/reference uses and should not be confused with
+   historical archive preflights may still inspect retired DB files. These are
+   legitimate cleanup/reference uses and should not be confused with
    ordinary app reads.
 
 6. **The old shadow incremental-update package is retired.**
@@ -160,7 +160,7 @@ first-class and tested.
 
 | Consumer | Legacy dependency | Current role | Classification | Migration direction |
 | --- | --- | --- | --- | --- |
-| `lib/essentials/db/feature_level_providers.dart` | Central providers for source-scoped graph DBs, overlay, and retired `macos_import.db` / `working.db` filename constants | Database dependency entry point | Production lifecycle plus cleanup/diagnostic constants | Keep centralization. Retired database filenames remain cleanup/diagnostic constants only; do not reintroduce app-facing retained DB providers. |
+| `lib/essentials/db/feature_level_providers.dart` | Central providers for source-scoped graph DBs, overlay, and retired `macos_import.db` / `working.db` filename constants | Database dependency entry point | Production lifecycle plus cleanup/diagnostic constants | Keep centralization. Retired database filenames remain cleanup/diagnostic constants only; do not reintroduce app-facing old DB providers. |
 | `lib/essentials/db/feature_level_providers/working_db_populated_provider.dart` | Retired in favor of graph readiness | Former sidebar readiness gate | Deletion candidate closed | Sidebar gating now uses `conversationGraphPopulatedProvider`. |
 | `lib/essentials/db/feature_level_providers/working_projection_readiness_provider.dart` | Retired | Former `working.db` readiness gate | Deletion candidate closed | Removed. Retained diagnostics now report legacy recovered evidence unavailability directly instead of using a central `working.db` readiness provider. |
 | `lib/essentials/db_migrate/infrastructure/repositories/drift_legacy_projection_status_repository.dart` | Retired | Former ad hoc “does legacy working.db have messages?” readiness check | Deletion candidate closed | Removed after onboarding/readiness moved to source-scoped graph readiness. The later retained archive pipeline and its private legacy rebuild check have also been retired; graph readiness is the app-facing readiness boundary. |
@@ -218,7 +218,7 @@ diagnostic/reference and not the ordinary app truth.
 Current branch work has removed or replaced ordinary legacy message
 presentation components. Recovered deleted messages now route through graph
 orphan evidence and the shared Message Evidence Spine. Legacy recovered tables
-remain only as historical storage inside retained DB files until broader storage
+remain only as historical storage inside retired DB files until broader storage
 retirement.
 
 | Consumer | Current state | Classification | Action |

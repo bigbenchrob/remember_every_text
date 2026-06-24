@@ -174,7 +174,7 @@ explicit cleanup/export/discard decisions.
 The old `RetainedArchiveMetadataDatabase` wrapper and
 `RetainedArchiveMetadataStore` interface have been retired from production
 source. Existing retired files can still be removed by reset or inspected by
-read-only file-query diagnostics, but there is no retained metadata database
+read-only file-query diagnostics, but there is no old metadata database
 abstraction left for app code to depend on.
 Obsolete public helpers for retained import execution, spam filtering, and
 row-existence maintenance should remain absent.

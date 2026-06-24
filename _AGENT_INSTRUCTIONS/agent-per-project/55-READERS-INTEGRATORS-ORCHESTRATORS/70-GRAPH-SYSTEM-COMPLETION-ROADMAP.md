@@ -998,9 +998,9 @@ execution ownership. Old `macos_import.db` / `working.db` files may still exist
 for diagnostics, historical interpretation, reset cleanup, archive metadata, or
 user-safe retention.
 
-## Do Not Delete Retained Files Yet If
+## Do Not Delete Retired Files Yet If
 
-- archive/recovery identity or archive lookup still requires retained metadata.
+- archive/recovery identity or archive lookup still requires old metadata.
 - support diagnostics lack graph/source-scoped equivalents.
 - historical-reference value has not been migrated, exported, or explicitly
   rejected.
@@ -1022,7 +1022,7 @@ Completed for execution code:
 Remaining for retired cleanup/diagnostic storage:
 
 1. Keep retired-file cleanup uses registered and bounded.
-2. Replace retained metadata keys with graph/source-scoped equivalents where
+2. Replace old metadata keys with graph/source-scoped equivalents where
    practical.
 3. Preserve or export historical-reference value before deletion.
 4. Define a user-safe backup/retention cleanup path.
@@ -1055,7 +1055,7 @@ The following early roadmap slices are now complete for ordinary app behavior:
 
 ## Remaining Recommended Slices
 
-1. Retained cleanup/diagnostic policy:
+1. Retired-file cleanup/diagnostic policy:
    decide what to keep, export, or delete for old `macos_import.db` /
    `working.db` files.
 2. Archive overlay key evolution:
@@ -1065,30 +1065,30 @@ The following early roadmap slices are now complete for ordinary app behavior:
    keep recovered Messages folders as explicit source-scoped sources, not
    ordinary legacy projection inputs.
 4. Diagnostic hardening:
-   keep graph health, support bundles, and retained-file reports accurate
-   without giving retained files app-authority semantics.
+   keep graph health, support bundles, and retired-file reports accurate
+   without giving retired files app-authority semantics.
 
 ---
 
 # Risk Register
 
-## Risk: Retained Storage Policy Lags Behind Graph Ownership
+## Risk: Retired-File Cleanup Policy Lags Behind Graph Ownership
 
 Ordinary app behavior now runs through the graph, but old `macos_import.db` and
-`working.db` files can still exist for retained metadata, diagnostics,
-historical interpretation, reset cleanup, or user-safe retention. If those
-roles stay vague, future work may accidentally treat retained files as
+`working.db` files can still exist for diagnostics, historical interpretation,
+reset cleanup, or user-safe deletion/export. If those roles stay vague, future
+work may accidentally treat retired files as
 authoritative again.
 
 Mitigation:
 
-- keep retained file purposes registered and bounded.
+- keep retired file purposes registered and bounded.
 - move archive/recovery metadata toward graph/source-scoped identity where
   practical.
-- do not delete retained files until backup/export/retention criteria are
+- do not delete retired files until backup/export/retirement criteria are
   explicit.
 
-## Risk: Retained Storage Deletion Before Semantic Capture
+## Risk: Retired Storage Deletion Before Semantic Capture
 
 Some legacy systems encode hard-won behavior that is easy to miss.
 
