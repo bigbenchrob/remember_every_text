@@ -5200,7 +5200,7 @@ void main() {
     });
 
     test(
-      'Historical archive source metadata consumers stay off overlay storage',
+      'Historical archive source metadata storage stays infrastructure-owned',
       () async {
         final offenders =
             await _findHistoricalArchiveSourcesRepositoryBoundaryOffenders();
