@@ -3464,6 +3464,14 @@ criteria.
   `databaseFactoryFfi`, and `databaseFactory` mutation remain app-bootstrap
   concerns; production code should receive initialized database services rather
   than configuring the sqflite runtime locally.
+- Clarified graph recovery/onboarding wording so incomplete app database states
+  are described as incomplete setup/projection results rather than ambiguous
+  stale state. The status panel now describes source rows without topology as
+  retained source rows without current graph edges.
+- Confirmed active retained `macos_import.db` / `working.db` references remain
+  centralized as retired filename constants plus reset/health/support
+  diagnostics; no ordinary `lib/` feature code reads provider-visible retained
+  database state.
 
 ### Exit Criteria
 
