@@ -4,7 +4,7 @@ import 'contact_summary.dart';
 /// Overlay compatibility bridge for contact identity.
 ///
 /// Ordinary contact identity is the graph `ss_id`. These helpers exist so
-/// retained overlay rows keyed by older contact ids can still resolve to graph
+/// older rowid-keyed overlay rows can still resolve to graph
 /// contacts while the app continues to write and present canonical graph ids.
 bool contactIdentityIdsMatch(int first, int second) {
   return contactIdentityKeyVariants(first).contains(second) ||
@@ -13,19 +13,19 @@ bool contactIdentityIdsMatch(int first, int second) {
 
 Set<int> contactIdentityKeyVariants(int contactId) {
   final ids = <int>{contactId};
-  final graphContactId = _graphContactIdForRetainedContactId(contactId);
+  final graphContactId = _graphContactIdForRowidKeyedContactId(contactId);
   if (graphContactId != null) {
     ids.add(graphContactId);
   }
-  final retainedContactId = _retainedContactIdForGraphContactId(contactId);
-  if (retainedContactId != null) {
-    ids.add(retainedContactId);
+  final rowidKeyedContactId = _rowidKeyedContactIdForGraphContactId(contactId);
+  if (rowidKeyedContactId != null) {
+    ids.add(rowidKeyedContactId);
   }
   return ids;
 }
 
 int canonicalContactIdentityKey(int contactId) {
-  return _graphContactIdForRetainedContactId(contactId) ?? contactId;
+  return _graphContactIdForRowidKeyedContactId(contactId) ?? contactId;
 }
 
 bool contactSummaryMatchesId(ContactSummary contact, int contactId) {
@@ -44,11 +44,11 @@ ContactSummary? findContactSummaryById(
   return null;
 }
 
-int? _graphContactIdForRetainedContactId(int contactId) {
+int? _graphContactIdForRowidKeyedContactId(int contactId) {
   final graphContactId = graphContactIdForContactPage(contactId);
   return graphContactId == contactId ? null : graphContactId;
 }
 
-int? _retainedContactIdForGraphContactId(int contactId) {
+int? _rowidKeyedContactIdForGraphContactId(int contactId) {
   return liveAddressBookRowIdForGraphContactId(contactId);
 }
