@@ -115,8 +115,10 @@ Classification:
 Retirement direction:
 
 - keep constants only while reset/maintenance needs to locate/delete old files.
-- eventually replace with an explicit retired-file cleanup inventory or remove
-  after the app no longer creates or inspects these files.
+- keep them as retired-file cleanup names, not database providers or active
+  derived-data names.
+- remove after the app no longer needs a one-time cleanup path for existing
+  user data folders.
 
 Deletion readiness:
 
@@ -168,9 +170,10 @@ Current file:
 
 Current usage:
 
-- includes `macos_import.db` and `working.db` in
-  `derivedMessageDataDatabaseBaseNames`
-- deletes retained DB base files along with source-scoped import and graph DBs
+- keeps active graph rebuild files in `activeGraphDerivedDatabaseBaseNames`
+- keeps `macos_import.db` and `working.db` in
+  `retiredHistoricalDatabaseCleanupBaseNames`
+- deletes both categories during reset, but logs and verifies them separately
 
 Classification:
 
@@ -183,14 +186,19 @@ Retirement direction:
 
 - keep until retained file creation stops and old file cleanup policy is
   settled.
-- later replace with a retired-file cleanup list that can delete old files
-  without treating them as active derived databases.
+- satisfied for naming/ownership: reset now has a retired-file cleanup list
+  separate from active graph derived databases.
+- eventual removal depends only on whether existing user data folders still
+  need automatic cleanup of retired files.
 
 Deletion readiness:
 
-- safe after archive-source metadata moves out of `macos_import.db`.
-- `working.db` can likely move first from "derived data base name" to
-  "retired file cleanup target" because active code has no provider for it.
+- archive-source metadata has moved out of `macos_import.db`.
+- `working.db` has moved from active derived-data naming to retired cleanup
+  target naming.
+- final deletion of the cleanup target list is safe only after the retired-file
+  cleanup policy is closed or replaced by an explicit one-time cleanup/export
+  action.
 
 ### Architecture Tripwires
 
