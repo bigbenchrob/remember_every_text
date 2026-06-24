@@ -3476,6 +3476,9 @@ criteria.
   rich-text enrichment cursors, and archive compatibility-key lookup so tests
   describe current graph/source-scoped behavior rather than pre-migration
   "old" or "stale" shorthand.
+- Tightened attachment archive and architecture-tripwire wording so path
+  refresh and retained-system guardrails use obsolete/retired/provider-visible
+  language instead of ambiguous old-system shorthand.
 
 ### Exit Criteria
 
