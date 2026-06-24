@@ -19,7 +19,8 @@ The ordinary MessageLens app path is now graph-backed. Remaining
 retired cleanup-inventory questions, not ordinary UI migration blockers.
 
 This register defines what remains, why it remains, and what must be true
-before each retired-file purpose can be reduced, migrated, frozen, or removed.
+before each retired-file purpose can be reduced, migrated, explicitly ignored,
+or removed.
 
 ## Current Decision
 
@@ -32,7 +33,7 @@ them during the transition for recovery, audit, comparison, and support
 diagnostics. They are no longer treated as rollback insurance for ordinary app
 operation.
 
-The retained database files no longer own ordinary evidence, search, contact
+The retired database files no longer own ordinary evidence, search, contact
 identity, conversation browsing, live polling, Historical Archives execution,
 or first-run graph setup. New ordinary app behavior must not read or write
 them. Remaining access is allowed only when it is explicitly classified in this
@@ -45,7 +46,7 @@ retain deliberately
 → replace remaining storage/key compatibility paths
 → verify historical data reachability
 → reduce retained purposes under this register
-→ delete or freeze retired files only after reviewed user-safe criteria
+→ delete or explicitly ignore retired files only after reviewed user-safe criteria
 ```
 
 Full deletion should occur only after all of the following are true:
@@ -131,8 +132,8 @@ Done means:
 
 - retained `macos_import.db` / `working.db` file purposes are reduced to the
   storage buckets listed below.
-- backup/export/freeze policy is explicit for users who may still need old
-  recovery or audit data.
+- backup/export/delete/ignore policy is explicit for users who may still need
+  old recovery or audit data.
 - support diagnostics no longer require old schema assumptions except where
   deliberately preserved as historical-file inspection.
 - reset cleanup can safely handle old files without recreating them as app
@@ -142,7 +143,7 @@ The completed execution-retirement criteria are now satisfied for Historical
 Archives import/removal. The retired archive pipeline provider, old import
 progress/detail widgets, old ledger orchestrator, old table-importer stack,
 old retired projection orchestrator/migrator stack, and their tests have been
-removed. Broader deletion of retained database files, schemas, and diagnostic
+removed. Broader deletion of retired database files, schemas, and diagnostic
 surfaces must still follow this retention register and the full-deletion
 criteria above.
 
@@ -309,8 +310,8 @@ Focused tests now verify that read-only retained database health inspection:
 
 Done means:
 
-- retired DB files are gone, frozen, or classified as deliberate cleanup
-  inventory.
+- retired DB files are gone, exported, explicitly ignored, or classified as
+  deliberate cleanup inventory.
 - health audit labels no longer need to inventory retired file layers.
 - support bundles still expose enough graph/import/overlay evidence to debug
   data issues.
@@ -356,8 +357,8 @@ through the source-scoped Message Evidence Spine instead.
 
 Done means:
 
-- corresponding retained production code is deleted, narrowed, or permanently
-  frozen.
+- corresponding retained production code is deleted or narrowed to explicit
+  cleanup/diagnostic boundaries.
 - archive/recovery functionality has graph-native tests.
 - remaining retained archive metadata schema tests are removed with the schema
   wrapper or kept only as fixture/documentation tests with explicit labels. The
