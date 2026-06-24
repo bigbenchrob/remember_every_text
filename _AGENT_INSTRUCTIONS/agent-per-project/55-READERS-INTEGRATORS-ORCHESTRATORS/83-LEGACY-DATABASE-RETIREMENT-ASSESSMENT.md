@@ -506,10 +506,10 @@ permanent reference database.
 The remaining work is finite and practical:
 
 ```text
-migrate archive-source metadata
-→ demote old filenames to cleanup-only
+archive-source metadata migrated
+→ old filenames demoted to cleanup-only
 → verify attachment archive identity path
-→ remove retained providers
+→ retained providers removed
 → delete or ignore inert old files
 ```
 

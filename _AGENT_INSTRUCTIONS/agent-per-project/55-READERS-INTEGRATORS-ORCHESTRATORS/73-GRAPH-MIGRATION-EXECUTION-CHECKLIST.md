@@ -1609,7 +1609,7 @@ criteria.
   `conversationGraphDatabaseFileName`.
 - Added an architecture tripwire that keeps active-code `legacy` terminology
   quarantined inside explicit old-overlay/key compatibility bridges. New
-  production code should use graph, retained metadata, retained reference, or
+  production code should use graph, retired cleanup, compatibility-key, or
   source-scoped terminology instead of introducing new legacy-named concepts.
 - Attachment archive compatibility read models now use
   `archiveCompatibilityAttachmentId` wording at the graph boundary. The

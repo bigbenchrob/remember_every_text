@@ -95,20 +95,20 @@ void main() {
         );
 
         final report = await service.buildPhase1Report();
-        final retiredReferenceTables = report.tableInventory
+        final retiredCleanupTables = report.tableInventory
             .where((entry) => entry.databaseKey == 'retired_macos_import')
             .map((entry) => entry.tableName)
             .toSet();
 
         expect(
-          retiredReferenceTables,
+          retiredCleanupTables,
           containsAll(<String>{
             'schema_migrations',
             'historical_archive_sources',
           }),
         );
-        expect(retiredReferenceTables, isNot(contains('messages')));
-        expect(retiredReferenceTables, isNot(contains('import_batches')));
+        expect(retiredCleanupTables, isNot(contains('messages')));
+        expect(retiredCleanupTables, isNot(contains('import_batches')));
         expect(
           report.tableInventory
               .singleWhere(
