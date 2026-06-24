@@ -3476,7 +3476,7 @@ criteria.
   describe current graph/source-scoped behavior rather than pre-migration
   "old" or "stale" shorthand.
 - Tightened attachment archive and architecture-tripwire wording so path
-  refresh and retained-system guardrails use obsolete/retired/provider-visible
+  refresh and retired-system guardrails use obsolete/retired/provider-visible
   language instead of ambiguous old-system shorthand.
 - Renamed the ambiguous old-system comment tripwire label/comment to
   retired-system wording so the guardrail's own output models the current
@@ -3491,7 +3491,7 @@ Done means:
 - no ordinary user-facing read depends on legacy working/import identity.
 - legacy import/projection execution is retired; any remaining retired database
   access is explicitly classified as diagnostic, recovery, cleanup, or
-  storage-retention infrastructure.
+  retired-file audit infrastructure.
 
 ## Update Rule
 
