@@ -2,7 +2,7 @@
 tier: project
 scope: source-scoped-graph-migration
 status: active
-last_reviewed: 2026-06-20
+last_reviewed: 2026-06-24
 depends_on:
   - 71-LEGACY-DEPENDENCY-MATRIX.md
   - 73-GRAPH-MIGRATION-EXECUTION-CHECKLIST.md
@@ -28,8 +28,9 @@ not delete them blindly.
 
 `macos_import.db` and `working.db` are retired historical cleanup inventory,
 not permanent system-of-record storage. Existing user data folders may keep
-them during the transition for recovery, audit, comparison, rollback safety,
-and support diagnostics.
+them during the transition for recovery, audit, comparison, and support
+diagnostics. They are no longer treated as rollback insurance for ordinary app
+operation.
 
 The retained database files no longer own ordinary evidence, search, contact
 identity, conversation browsing, live polling, Historical Archives execution,
@@ -52,8 +53,8 @@ Full deletion should occur only after all of the following are true:
 1. archive/recovery identity and archive lookup no longer require retained
    storage.
 2. support diagnostics have graph/source-scoped equivalents.
-3. historical-reference value has either been migrated, exported, or explicitly
-   rejected.
+3. retained-file audit value has either been migrated, exported, or explicitly
+   rejected as unnecessary.
 4. a user-safe backup/retention path exists for anyone who may still need old
    recovery data.
 
@@ -400,8 +401,8 @@ Future work should continue reducing retired-file purposes rather than deleting
 files opportunistically. Track each remaining purpose by answering:
 
 - What retained file/table/path is involved?
-- Is it recovery, audit, comparison, rollback safety, diagnostics, reset, or
-  archive metadata?
+- Is it recovery, audit, comparison, diagnostics, reset, cleanup, or archive
+  metadata?
 - What graph/source-scoped equivalent would replace it?
 - What user data could be lost or made harder to recover if this disappears?
 - What test or support report proves the replacement?
@@ -413,7 +414,7 @@ Known retained purposes:
 | Archive-source workflow metadata | overlay settings key `historical_archive_sources/v1`; old `macos_import.db.historical_archive_sources` may exist in retained files | Historical Archives settings repository | Active metadata has moved to overlay storage. Decide whether old retained metadata is migrated, exported, or intentionally discarded before deleting retained files. |
 | Existing-folder reset cleanup | `macos_import.db`, `working.db`, WAL/SHM files | Message data reset service | Keep until old derived files are either no longer created or a safe backup/cleanup policy replaces direct deletion. |
 | Support diagnostics and audit | read-only retained file inspection | Database health/support diagnostics | Add graph/source-scoped equivalents for any retained report value before narrowing retained inspection. |
-| Historical comparison / rollback safety | existing user `working.db` / `macos_import.db` files | Diagnostic-only file readers | Keep until historical-reference value is migrated, exported, explicitly rejected, or user backup guidance exists. |
+| Historical comparison / retained-file audit | existing user `working.db` / `macos_import.db` files | Diagnostic-only file readers | Keep only while a named diagnostic or audit report still needs retained-file context; ordinary rollback safety is no longer a retention reason. |
 | Archive/recovery compatibility keys | retained-shaped overlay/archive keys and old message/attachment identifiers | Named compatibility bridges only | Replace with graph/source-scoped archive identity and prove recovered attachment/message lookup parity. |
 
 Current implementation note:
@@ -441,7 +442,7 @@ storage
 
 Closing that blocker would unlock the remaining storage simplification:
 
-- eventual deletion, export, migration, or permanent freezing of
+- eventual deletion, export, migration, or explicit ignore policy for
   `macos_import.db` / `working.db` schemas
 - removal or narrowing of retained schema/health diagnostics
 - final migration of any overlay/archive keys that still require retained
