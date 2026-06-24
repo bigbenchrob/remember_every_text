@@ -4,7 +4,7 @@ import 'package:remember_this_text/essentials/source_scoped_import/domain/source
 import 'package:remember_this_text/features/messages/application/message_evidence/message_evidence_identity.dart';
 
 void main() {
-  test('canonicalMessageEvidenceId resolves retained rowid to graph id', () {
+  test('canonicalMessageEvidenceId resolves rowid-keyed id to graph id', () {
     final messageSsId = SourceScopedRowKey.pack(
       sourceId: liveChatDbSourceId,
       sourceRowId: 42,
@@ -31,12 +31,12 @@ void main() {
     expect(canonicalMessageEvidenceId(archiveMessageSsId), archiveMessageSsId);
   });
 
-  test('canonicalMessageEvidenceId preserves invalid retained rowids', () {
-    const invalidRetainedRowId = SourceScopedRowKey.maxSourceRowId + 1;
+  test('canonicalMessageEvidenceId preserves invalid rowid-keyed ids', () {
+    const invalidRowidKeyedId = SourceScopedRowKey.maxSourceRowId + 1;
 
     expect(
-      canonicalMessageEvidenceId(invalidRetainedRowId),
-      invalidRetainedRowId,
+      canonicalMessageEvidenceId(invalidRowidKeyedId),
+      invalidRowidKeyedId,
     );
   });
 

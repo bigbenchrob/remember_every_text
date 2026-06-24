@@ -59,7 +59,7 @@ void main() {
     final updated = await container.read(
       messageOverlayProvider(messageId).future,
     );
-    final retainedGuidFlag = await overlayDatabase.getMessageUserFlag(
+    final guidKeyedFlag = await overlayDatabase.getMessageUserFlag(
       'message-77',
     );
 
@@ -67,14 +67,14 @@ void main() {
     expect(updated.isStarred, isTrue);
     expect(updated.tags, contains('Review'));
     expect(updated.hasGraphNativeOverlay, isTrue);
-    expect(retainedGuidFlag, isNull);
+    expect(guidKeyedFlag, isNull);
   });
 
-  test('provider canonicalizes retained rowid before overlay writes', () async {
-    const retainedMessageRowId = 78;
+  test('provider canonicalizes rowid-keyed id before overlay writes', () async {
+    const rowidKeyedMessageId = 78;
     final messageSsId = SourceScopedRowKey.pack(
       sourceId: 1,
-      sourceRowId: retainedMessageRowId,
+      sourceRowId: rowidKeyedMessageId,
     );
     await graphDatabase.database.insert('messages', <String, Object?>{
       'ss_id': messageSsId,
@@ -83,7 +83,7 @@ void main() {
     });
 
     final controller = container.read(
-      messageOverlayProvider(retainedMessageRowId).notifier,
+      messageOverlayProvider(rowidKeyedMessageId).notifier,
     );
     await controller.setSaved(isSaved: true);
 
@@ -91,20 +91,20 @@ void main() {
       SELECT message_ss_id, is_saved
       FROM message_intent_overlays
       ''').get();
-    final retainedRows = await overlayDatabase
+    final rowidKeyedRows = await overlayDatabase
         .customSelect(
           '''
       SELECT message_ss_id
       FROM message_intent_overlays
       WHERE message_ss_id = ?
       ''',
-          variables: const [Variable<int>(retainedMessageRowId)],
+          variables: const [Variable<int>(rowidKeyedMessageId)],
         )
         .get();
 
     expect(graphRows, hasLength(1));
     expect(graphRows.single.data['message_ss_id'], messageSsId);
     expect(graphRows.single.data['is_saved'], 1);
-    expect(retainedRows, isEmpty);
+    expect(rowidKeyedRows, isEmpty);
   });
 }

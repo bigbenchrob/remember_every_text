@@ -2,8 +2,9 @@ import '../../domain/entities/message_overlay_state.dart';
 
 /// Application boundary for graph-keyed message user intent.
 ///
-/// Callers speak in canonical `message_ss_id` values. Any retained overlay key
-/// compatibility remains an infrastructure concern behind this contract.
+/// Callers speak in canonical `message_ss_id` values. Any rowid-keyed or
+/// GUID-keyed overlay compatibility remains an infrastructure concern behind
+/// this contract.
 abstract class MessageOverlayRepository {
   Future<MessageOverlayState> readForMessage(int messageSsId);
 

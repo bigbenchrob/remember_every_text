@@ -11,8 +11,8 @@ import '../../domain/entities/message_overlay_state.dart';
 ///
 /// Identity resolution here is intentionally semantic: callers ask what user
 /// intent belongs to the graph message the user is looking at, not which
-/// retained row owns that fact. New writes go to graph-native overlay tables
-/// keyed by `message_ss_id`; retained rowid/GUID tables are read only as
+/// compatibility row owns that fact. New writes go to graph-native overlay tables
+/// keyed by `message_ss_id`; rowid-keyed/GUID-keyed tables are read only as
 /// compatibility fallbacks.
 class GraphMessageOverlayRepository implements MessageOverlayRepository {
   const GraphMessageOverlayRepository({
@@ -37,9 +37,9 @@ class GraphMessageOverlayRepository implements MessageOverlayRepository {
         ).copyWith(tags: graphTags);
 
     if (graphOverlay == null) {
-      final retainedAnnotation = await _readRetainedAnnotation(identity);
-      if (retainedAnnotation != null) {
-        state = _applyRetainedAnnotation(state, retainedAnnotation);
+      final rowidAnnotation = await _readRowidAnnotation(identity);
+      if (rowidAnnotation != null) {
+        state = _applyRowidAnnotation(state, rowidAnnotation);
       }
     } else if (graphTags.isNotEmpty) {
       state = graphOverlay.copyWith(tags: graphTags);
@@ -52,14 +52,14 @@ class GraphMessageOverlayRepository implements MessageOverlayRepository {
 
     final guidOccurrenceCount = await _readGuidOccurrenceCount(guid);
     if (guidOccurrenceCount != 1) {
-      final retainedGuidIntentExists = await _retainedGuidIntentExists(guid);
-      if (!retainedGuidIntentExists) {
+      final guidKeyedIntentExists = await _guidKeyedIntentExists(guid);
+      if (!guidKeyedIntentExists) {
         return state;
       }
       return state.copyWith(skippedGuidFallbackBecauseAmbiguous: true);
     }
 
-    final guidState = await _readRetainedGuidState(messageSsId, guid);
+    final guidState = await _readGuidKeyedState(messageSsId, guid);
     if (!guidState.hasUserIntent) {
       return state;
     }
@@ -196,7 +196,7 @@ class GraphMessageOverlayRepository implements MessageOverlayRepository {
 
     return _GraphMessageIdentity(
       messageSsId: messageSsId,
-      retainedOverlayMessageRowId: liveMessageRowIdForEvidenceId(messageSsId),
+      rowidKeyedOverlayMessageRowId: liveMessageRowIdForEvidenceId(messageSsId),
       guid: rows.isEmpty ? null : _readNullableString(rows.single.data['guid']),
     );
   }
@@ -271,35 +271,33 @@ class GraphMessageOverlayRepository implements MessageOverlayRepository {
     ];
   }
 
-  Future<MessageAnnotation?> _readRetainedAnnotation(
+  Future<MessageAnnotation?> _readRowidAnnotation(
     _GraphMessageIdentity identity,
   ) {
-    final retainedOverlayMessageRowId = identity.retainedOverlayMessageRowId;
-    if (retainedOverlayMessageRowId == null) {
+    final rowidKeyedOverlayMessageRowId =
+        identity.rowidKeyedOverlayMessageRowId;
+    if (rowidKeyedOverlayMessageRowId == null) {
       return Future<MessageAnnotation?>.value();
     }
-    return _overlayDatabase.getMessageAnnotation(retainedOverlayMessageRowId);
+    return _overlayDatabase.getMessageAnnotation(rowidKeyedOverlayMessageRowId);
   }
 
-  MessageOverlayState _applyRetainedAnnotation(
+  MessageOverlayState _applyRowidAnnotation(
     MessageOverlayState state,
     MessageAnnotation annotation,
   ) {
     return state.copyWith(
       isStarred: annotation.isStarred,
       isArchived: annotation.isArchived,
-      tags: _mergeTags(
-        state.tags,
-        _parseRetainedAnnotationTags(annotation.tags),
-      ),
+      tags: _mergeTags(state.tags, _parseRowidAnnotationTags(annotation.tags)),
       userNotes: annotation.userNotes,
       priority: annotation.priority,
       remindAtUtc: annotation.remindAt,
-      usedRetainedAnnotationFallback: true,
+      usedRowidAnnotationFallback: true,
     );
   }
 
-  Future<bool> _retainedGuidIntentExists(String guid) async {
+  Future<bool> _guidKeyedIntentExists(String guid) async {
     final saved = await _overlayDatabase.getMessageUserFlag(guid);
     if (saved != null) {
       return true;
@@ -308,7 +306,7 @@ class GraphMessageOverlayRepository implements MessageOverlayRepository {
     return tags.isNotEmpty;
   }
 
-  Future<MessageOverlayState> _readRetainedGuidState(
+  Future<MessageOverlayState> _readGuidKeyedState(
     int messageSsId,
     String guid,
   ) async {
@@ -380,7 +378,7 @@ class GraphMessageOverlayRepository implements MessageOverlayRepository {
     );
   }
 
-  static List<String> _parseRetainedAnnotationTags(String? tagsJson) {
+  static List<String> _parseRowidAnnotationTags(String? tagsJson) {
     final raw = tagsJson
         ?.replaceAll('[', '')
         .replaceAll(']', '')
@@ -454,11 +452,11 @@ class GraphMessageOverlayRepository implements MessageOverlayRepository {
 class _GraphMessageIdentity {
   const _GraphMessageIdentity({
     required this.messageSsId,
-    required this.retainedOverlayMessageRowId,
+    required this.rowidKeyedOverlayMessageRowId,
     required this.guid,
   });
 
   final int messageSsId;
-  final int? retainedOverlayMessageRowId;
+  final int? rowidKeyedOverlayMessageRowId;
   final String? guid;
 }

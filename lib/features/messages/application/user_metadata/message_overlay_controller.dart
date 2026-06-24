@@ -4,8 +4,8 @@ import 'message_overlay_repository.dart';
 /// Graph-keyed controller for message user intent.
 ///
 /// This is the graph-era application boundary. It accepts canonical
-/// `message_ss_id` values and delegates retained overlay-key compatibility to
-/// the injected repository implementation.
+/// `message_ss_id` values and delegates rowid-keyed/GUID-keyed overlay
+/// compatibility to the injected repository implementation.
 class MessageOverlayController {
   const MessageOverlayController({
     required MessageOverlayRepository repository,
