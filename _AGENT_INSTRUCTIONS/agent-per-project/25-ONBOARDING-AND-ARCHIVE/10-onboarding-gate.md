@@ -29,7 +29,7 @@ The gate tracks a single `OnboardingStatus` enum with 10 states:
 │                     OnboardingStatus                        │
 ├─────────────────────────────────────────────────────────────┤
 │ notNeeded               — App databases populated, skip     │
-│ recoveringFailedAttempt — Reset stale app DBs before retry  │
+│ recoveringFailedAttempt — Reset incomplete DBs before retry │
 │ awaitingFda             — FDA not granted, show instructions│
 │ awaitingUserAction      — FDA OK, databases empty, show UI  │
 │ importing               — Import pipeline running           │
@@ -63,7 +63,7 @@ App Start
   │           ├─ buildingGraph (conversation graph build running)
   │           └─ complete (show summary, "Get Started" button)
   │
-  ├─ environment report → stale partial app DBs?
+  ├─ environment report → incomplete partial app DBs?
   │   └─ recoveringFailedAttempt
   │       └─ reset app-owned source-scoped import/graph DBs
   │           └─ awaitingUserAction

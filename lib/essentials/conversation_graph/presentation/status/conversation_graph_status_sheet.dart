@@ -454,7 +454,8 @@ class _GraphHealthSection extends StatelessWidget {
               const _StatusRow(
                 'interpretation',
                 'endpoint issues indicate graph corruption; source rows '
-                    'without topology usually reflect deleted/stale source rows',
+                    'without topology usually reflect retained source rows '
+                    'without current graph edges',
                 labelWidth: 230,
               ),
             ],

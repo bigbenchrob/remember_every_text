@@ -184,7 +184,7 @@ The onboarding pipeline today works as follows:
 2. **FDA/user-action gate** → `OnboardingCenterPanelSyncObserver` projects
    `awaitingFda` and `awaitingUserAction` into the center panel with
    `ViewSpec.environmentReadiness`
-3. **Recovery gate** → if stale partial app databases are detected,
+3. **Recovery gate** → if incomplete partial app databases are detected,
    `OnboardingGate` can enter `recoveringFailedAttempt` and reset app-owned
    import/working data before returning to user action
 4. **Graph build** → `ConversationGraphBuildController` runs the

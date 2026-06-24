@@ -353,7 +353,7 @@ void main() {
     );
 
     testWidgets(
-      'automatically resets stale app databases once before returning to awaitingUserAction',
+      'automatically resets incomplete app databases once before returning to awaitingUserAction',
       (tester) async {
         var shouldReset = true;
         final seenStatuses = <OnboardingStatus>[];
