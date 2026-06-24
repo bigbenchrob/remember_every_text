@@ -596,7 +596,7 @@ class _OnboardingEnvironmentEvaluator {
     }
 
     if (graphProbe.hasData) {
-      return 'The conversation graph contains far fewer messages than the import ledger, which strongly suggests a stale partial graph projection.';
+      return 'The conversation graph contains far fewer messages than the import ledger, which strongly suggests an incomplete graph projection.';
     }
 
     return null;

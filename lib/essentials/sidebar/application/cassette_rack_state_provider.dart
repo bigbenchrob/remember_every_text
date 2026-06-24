@@ -129,8 +129,8 @@ class CassetteRackState extends _$CassetteRackState {
   /// the resolver (which received it from the coordinator), constructs the
   /// new spec locally, and calls this method.
   ///
-  /// This approach avoids requiring widgets to hold the previous spec in state,
-  /// which would violate the cross-surface spec system rules.
+  /// The rack owns the previous spec; widgets provide only the replacement
+  /// spec for their current index.
   ///
   /// If the index is out of bounds, this is a no-op.
   void replaceAtIndexAndCascade(int index, CassetteSpec newSpec) {

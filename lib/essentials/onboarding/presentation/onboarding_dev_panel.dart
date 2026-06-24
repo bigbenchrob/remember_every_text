@@ -657,7 +657,7 @@ class _DevRecoveryContent extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           report?.resetAppDatabasesReason ??
-              'MessageLens is deleting stale app databases before allowing setup to continue.',
+              'MessageLens is deleting incomplete derived app databases before allowing setup to continue.',
           style: typography.body.copyWith(color: colors.content.textSecondary),
         ),
         const SizedBox(height: 16),
