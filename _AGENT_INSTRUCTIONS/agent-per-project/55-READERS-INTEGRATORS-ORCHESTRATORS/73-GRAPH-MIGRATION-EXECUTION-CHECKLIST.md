@@ -66,7 +66,7 @@ deletion, or feature drift while completing the graph migration.
 | 5. Graph lifecycle orchestration | Done | Make graph build/readiness/update flow production-owned. | graph build service; graph readiness; onboarding; reset; `ChatDbChangeMonitor`; invalidation | removes manual/dev-panel dependency | graph build idempotence; incremental update test; readiness state tests; reset/onboarding tests | graph build is first-class lifecycle path and failures are visible/actionable |
 | 6. Remaining ordinary read migration | Done | Retire leftover ordinary `working.db` reads. | global heatmap; old chat summaries; stray/spam handle lists; diagnostics vs product routes | proof-era recent chat legacy-vs-graph comparison removed from SS status sheet | provider tests; route smoke tests; dependency `rg` checks | no ordinary user-facing read depends on `working.db` except documented compatibility bridges |
 | 7. Archive/recovery identity plan | Done | Design source-scoped archive/recovery identity without disrupting archive integrity. | attachment archive; deterministic recovery; cross-snapshot mapper; recovered messages | prevents premature recovery rewrite | mapping audit; archive compatibility tests identified | recovery/archive path has graph identity plan and existing archive records remain usable |
-| 8. Legacy retirement and retained storage reduction | In progress | Delete retired execution/read/presentation code only after blockers are closed, while reducing retained DB storage under the retention register. | legacy import/migration/read models; retired widgets; diagnostics; retained `macos_import.db` / `working.db` files | removes attractive nuisance code safely without losing retained user data | dependency checks; analyzer; focused tests; smoke test; retention-register review | legacy systems are deleted, demoted to diagnostics, or explicitly preserved as recovery/lifecycle/compatibility references |
+| 8. Legacy retirement and retired-file cleanup | In progress | Delete retired execution/read/presentation code only after blockers are closed, while reducing retired DB file roles under the retention register. | legacy import/migration/read models; retired widgets; diagnostics; retired `macos_import.db` / `working.db` files | removes attractive nuisance code safely without losing archive/recovery traceability | dependency checks; analyzer; focused tests; smoke test; retention-register review | legacy systems are deleted, demoted to diagnostics, or explicitly preserved as recovery/lifecycle/compatibility references |
 
 ## Slice 0 - Checkpoint Current Graph Branch
 
@@ -1227,12 +1227,12 @@ criteria.
   `ImportDatabase` provider. The retained legacy database schemas are now
   storage-retirement questions, not ordinary UI migration blockers.
 - Added `81-LEGACY-STORAGE-RETENTION-REGISTER.md` to make the remaining
-  storage-retention buckets explicit before further deletion: retained
+  retired-file cleanup buckets explicit before further deletion: retired
   archive-compatible import/projection, historical archive settings metadata,
   reset/derived-data maintenance, database health/support diagnostics, and
-  retained schema/migrator tests.
+  retired schema/migrator tests.
 - Added `82-SOURCE-SCOPED-ARCHIVE-IMPORT-CUTOVER-PLAN.md` after reviewing the
-  retained storage register and archive/recovery identity plan. The plan
+  retired-file storage register and archive/recovery identity plan. The plan
   identifies the next high-leverage blocker as source-scoped historical archive
   import, with the first implementation task limited to deterministic archive
   source registration before row import or Historical Archives UI cutover.
@@ -1384,7 +1384,7 @@ criteria.
 - Database health now inspects retained `macos_import.db` and `working.db`
   through read-only file query layers instead of central retained DB providers.
   Health/support diagnostics therefore report missing retained files without
-  recreating retained storage as a side effect.
+  recreating retired-file storage as a side effect.
 - The obsolete provider-backed retained import/working health query adapters
   were removed after caller scans confirmed diagnostics use only the read-only
   retained file query layer for `macos_import.db` and `working.db`.
@@ -1433,7 +1433,7 @@ criteria.
 - Message data reset now avoids instantiating the retained `macos_import.db`
   provider solely to close/delete retained files. It closes the retained import
   database only if the provider already exists, preserving reset coverage while
-  avoiding accidental retained storage recreation during cleanup.
+  avoiding accidental retired-file storage recreation during cleanup.
 - Live chat-db monitor completion logs now describe live polling as updating
   only the source-scoped conversation graph, avoiding active runtime language
   that suggests retained `working.db` projection maintenance remains part of
@@ -1505,7 +1505,7 @@ criteria.
   `(message_guid, import_attachment_id)` archive key. Historical attachment
   recovery mapping is documented as source-scoped import ledger plus graph
   topology, not retained `macos_import.db` / `working.db` projection storage.
-- The remaining import-debug settings comments now describe retained database
+- The remaining import-debug settings comments now describe retired database
   diagnostics generically rather than implying an active retained import
   execution database.
 - Active environment safety and database-health README docs now describe
