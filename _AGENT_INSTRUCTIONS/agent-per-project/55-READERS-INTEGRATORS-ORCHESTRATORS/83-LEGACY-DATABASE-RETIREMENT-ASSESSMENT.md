@@ -34,7 +34,7 @@ chat.db / AddressBook
 → overlay intent
 ```
 
-with no ordinary application behavior depending on retained:
+with no ordinary application behavior depending on retired files:
 
 ```text
 macos_import.db
@@ -87,7 +87,7 @@ graph identity
 → retired macos_import.db / working.db
 ```
 
-Therefore, retired database retirement is safe only when attachment archive
+Therefore, legacy database retirement is safe only when attachment archive
 and recovery identity can be explained without consulting retired legacy
 projection tables.
 
@@ -106,7 +106,7 @@ Current usage:
 
 - declares `retiredMacosImportDatabaseFileName = 'macos_import.db'`
 - declares `retiredWorkingDatabaseFileName = 'working.db'`
-- no longer constructs a retained archive metadata store provider
+- no longer constructs an old archive metadata store provider
 
 Classification:
 
@@ -122,11 +122,11 @@ Retirement direction:
 
 Deletion readiness:
 
-- not immediate, because reset still deletes retained file base names.
+- not immediate, because reset still deletes retired file base names.
 - safe after reset no longer needs to target these files, or after cleanup has
   a one-time retired-file removal path.
 
-### Retained Archive Metadata Store Provider
+### Old Archive Metadata Store Provider
 
 Current files:
 
@@ -141,8 +141,8 @@ Classification:
 5. Safe deletion candidate, now satisfied.
 
 This is not ordinary evidence behavior. It is archive-source workflow metadata.
-It has moved out of `macos_import.db` because the file name now implies
-retained import authority that no longer exists.
+It has moved out of `macos_import.db` because the file name now implies old
+import authority that no longer exists.
 
 Retirement direction:
 
@@ -184,7 +184,7 @@ files that may still exist in the data folder.
 
 Retirement direction:
 
-- keep until retained file creation stops and old file cleanup policy is
+- keep until retired file creation stops and old file cleanup policy is
   settled.
 - satisfied for naming/ownership: reset now has a retired-file cleanup list
   separate from active graph derived databases.
@@ -208,8 +208,8 @@ Current file:
 
 Current usage:
 
-- protects retained metadata/provider access lists
-- protects retained filename literal access lists
+- protects old metadata/provider access lists
+- protects retired filename literal access lists
 - prevents retired import/migration execution paths from returning
 - prevents new ordinary `working.db` / `macos_import.db` access
 
@@ -221,7 +221,7 @@ Retirement direction:
 
 - keep while retirement is in progress.
 - update as dependencies are removed so allowed lists shrink toward zero.
-- after retained DB retirement completes, replace with stronger tests that
+- after retired DB cleanup completes, replace with stronger tests that
   assert the old filenames/providers do not appear in active code at all.
 
 Deletion readiness:
@@ -261,13 +261,13 @@ Retirement blockers:
 
 1. Reset still treats `macos_import.db` as a derived/retired file cleanup
    target.
-2. Support diagnostics may still describe retained/retired file existence.
+2. Support diagnostics may still describe retired file existence.
 
 Recommended disposition:
 
 - active archive-source metadata has moved out of `macos_import.db`.
 - fresh `macos_import.db` creation for active workflow state has stopped with
-  the removal of the retained metadata provider/wrapper.
+  the removal of the old metadata provider/wrapper.
 - retain a one-time cleanup/export/discard path for existing local metadata if
   needed.
 - the filename has been demoted to a retired-file cleanup/diagnostic target.
@@ -295,7 +295,7 @@ Classification summary:
 - Must remain temporarily for archive/recovery integrity: no active code need
   identified.
 - Can be migrated: no current application dependency identified.
-- Diagnostic-only: retained file existence / historical inventory.
+- Diagnostic-only: retired file existence / historical inventory.
 - Historical-only: old tables in existing local backup/data folder.
 - Safe deletion candidate: stronger candidate than `macos_import.db`, because
   active code has no current working DB provider.
@@ -323,14 +323,14 @@ requires a value that cannot be derived from graph/source-scoped identity.
 
 Risks to verify before deletion:
 
-1. Attachment archive lookup still has any hidden dependency on retained
-   import attachment IDs rather than source-scoped attachment identity or an
+1. Attachment archive lookup still has any hidden dependency on old import
+   attachment IDs rather than source-scoped attachment identity or an
    explicit compatibility key.
 2. Historical archive source metadata is stored only in `macos_import.db` and
    would be lost without migration or explicit discard.
-3. Support diagnostics still use retained DB schema assumptions to determine
+3. Support diagnostics still use old DB schema assumptions to determine
    archive health.
-4. Reset/maintenance expects retained providers to exist and would fail if the
+4. Reset/maintenance expects old providers to exist and would fail if the
    files/providers disappear.
 
 Non-risks under the new policy:
@@ -358,7 +358,7 @@ Work:
 
 Done means:
 
-- future agents cannot interpret retained DBs as permanent architecture.
+- future agents cannot interpret retired DB files as permanent architecture.
 
 ### Phase 2: Migrate Historical Archive Source Metadata
 
@@ -370,14 +370,14 @@ Completed work:
 
 - active user/workflow metadata now lives in overlay DB.
 - source identity/provenance remains graph/source-scoped.
-- settings providers no longer read `retainedArchiveMetadataStoreProvider`.
+- settings providers no longer read the old archive metadata store provider.
 - existing local `macos_import.db.historical_archive_sources` rows are now
   cleanup/export/discard policy, not production workflow support.
 
 Done means:
 
 - `lib/features/settings/feature_level_providers.dart` no longer watches
-  `retainedArchiveMetadataStoreProvider`.
+  an old archive metadata store provider.
 
 Implementation status:
 
@@ -389,43 +389,43 @@ Implementation status:
   retired files, but it is no longer the active metadata authority. Its
   remaining disposition is cleanup/export/discard policy, not production
   workflow support.
-- The central `retainedArchiveMetadataStoreProvider` has been removed. Reset
+- The central old archive metadata store provider has been removed. Reset
   still deletes retired `macos_import.db` files when present, but it no longer
-  opens a retained metadata database to do so.
-- The old retained metadata database wrapper and store interface have also been
+  opens an old metadata database to do so.
+- The old metadata database wrapper and store interface have also been
   removed from production source. Remaining `macos_import.db` references are
   filename cleanup, diagnostics, or historical documentation references rather
   than active database-provider authority.
 
-### Phase 3: Demote Retained Files to Cleanup Targets
+### Phase 3: Demote Retired Files to Cleanup Targets
 
 Goal:
 
-- remove retained DB provider authority.
+- remove retired DB provider authority.
 
 Status:
 
-- Complete. `retainedArchiveMetadataStoreProvider` has been removed.
+- Complete. The old archive metadata store provider has been removed.
 - Old filenames remain only in the retired-file cleanup/diagnostic boundary.
-- Reset deletes old files without opening retained DB providers.
+- Reset deletes old files without opening old DB providers.
 
 Done means:
 
 - no active provider constructs a retired `macos_import.db`.
 - no active code opens `working.db`.
-- architecture tripwire allowed lists for retained providers shrink to zero.
+- architecture tripwire allowed lists for old providers shrink to zero.
 
 Implementation status:
 
 - Satisfied for provider authority. Active provider scans are guarded by
-  architecture tests: retained metadata provider usage and retained metadata
+  architecture tests: old metadata provider usage and old metadata
   database imports now have empty production allow-lists.
 
 ### Phase 4: Archive Attachment Compatibility Audit
 
 Goal:
 
-- prove attachment retrieval does not need retained DBs.
+- prove attachment retrieval does not need retired DBs.
 
 Work:
 
@@ -434,7 +434,7 @@ Work:
   - source attachment path hint
   - archive compatibility key if still needed
   - current attachment archive file
-- identify any remaining retained import attachment ID language.
+- identify any remaining old import attachment ID language.
 
 Done means:
 
@@ -450,7 +450,7 @@ Implementation status:
     and rejects non-live source ids.
   - `overlay_archive_compatibility_lookup_test.dart` proves graph
     `message_ss_id` / `attachment_ss_id` resolves through overlay
-    `archived_attachments` to an archive file path without retained DB reads.
+    `archived_attachments` to an archive file path without retired DB reads.
   - `sqlite_graph_attachment_archive_candidate_reader_test.dart` proves graph
     archive sweep candidates carry typed compatibility keys and exclude already
     archived rows through overlay archive records.
@@ -482,17 +482,17 @@ Done means:
 
 ## Current Readiness Judgment
 
-The project is ready to move from retained historical storage toward
+The project is ready to move from retired historical storage toward
 explicit retirement planning.
 
 However, it is not yet ready for blind deletion because:
 
-1. reset/maintenance still names retained files as cleanup targets.
+1. reset/maintenance still names retired files as cleanup targets.
 2. attachment archive compatibility should receive one final source-scoped
-   trace audit before removing retained-file safety language.
+   trace audit before removing retired-file safety language.
 
 `working.db` and `macos_import.db` are now both retirement candidates, with
-attachment reachability and retained-file cleanup policy as the remaining
+attachment reachability and retired-file cleanup policy as the remaining
 safety checks.
 
 `macos_import.db` is now eligible for explicit retired-file policy work because
@@ -509,7 +509,7 @@ The remaining work is finite and practical:
 archive-source metadata migrated
 → old filenames demoted to cleanup-only
 → verify attachment archive identity path
-→ retained providers removed
+→ old providers removed
 → delete or ignore inert old files
 ```
 

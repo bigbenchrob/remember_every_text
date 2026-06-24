@@ -21,7 +21,7 @@ historical Messages folder
 → Message Evidence Spine
 ```
 
-The goal is to replace the retained legacy archive import/projection bridge
+The goal was to replace the old legacy archive import/projection bridge
 without risking historical data or archived attachment reachability.
 
 This is intentionally a cutover plan, not a broad redesign.
@@ -39,7 +39,7 @@ source-scoped archive path for both import and removal:
   and diagnostic-retirement questions, not the ordinary Historical Archives
   execution path.
 
-As of 2026-06-07, the retained legacy archive pipeline provider and old
+As of 2026-06-07, the old legacy archive pipeline provider and old
 import-progress/detail widgets have also been removed. The standalone
 import-control panel, `ImportSpec`, and `ViewSpec.import` route are retired.
 Reset/clear maintenance remains owned by active `MessageDataResetService`
@@ -48,7 +48,7 @@ callers rather than a dedicated import surface.
 The staged plan below is preserved as historical design context. Instructions
 such as "do not remove retained legacy path" describe the pre-cutover safety
 posture and should not be read as the current default execution path. As of
-2026-06-08, the retained archive import/projection execution path has been
+2026-06-08, the old archive import/projection execution path has been
 removed from production code; retired `macos_import.db` / `working.db` are
 cleanup/diagnostic-retirement questions only.
 
@@ -64,7 +64,7 @@ archive chat.db
 → Message Evidence Spine
 ```
 
-The retained bridge no longer blocks ordinary archive execution. Remaining
+The old bridge no longer blocks ordinary archive execution. Remaining
 work is cleanup/diagnostic retirement:
 
 - retired `macos_import.db` archive-source metadata cleanup inventory
@@ -83,7 +83,7 @@ The source-scoped import schema already has the right shape:
   topology edges
 
 Archive-source registration and graph archive orchestration have since been
-implemented. The remaining production work is not another retained archive
+implemented. The remaining production work is not another old archive
 execution bridge; it is cleanup/diagnostic retirement, archive metadata retirement,
 and eventual migration or freezing of old archive compatibility keys.
 
@@ -96,7 +96,7 @@ and eventual migration or freezing of old archive compatibility keys.
 5. Preserve occurrence identity: same Apple GUID in two sources means two
    graph rows with different `ss_id` values.
 6. Preserve existing attachment archive overlay rows and files.
-7. Do not reintroduce retained archive import/projection as an execution
+7. Do not reintroduce old archive import/projection as an execution
    fallback; graph archive import/removal is now the production path.
 8. The first graph archive import slice should be idempotent and reversible.
 
@@ -149,11 +149,11 @@ originally scoped as:
 1. register archive source in `macos_import_ss.db.source_registry`
 2. import archive `chat.db` source facts into `macos_import_ss.db`
 3. project imported rows into `working_ss.db`
-4. leave retained archive pipeline available during parity review
-5. do not yet delete retained DB files
+4. leave the old archive pipeline available during parity review
+5. do not yet delete retired DB files
 
 That first slice has been superseded by the current source-scoped archive graph
-workflow. Historical Archives import/removal now uses the graph path; retained
+workflow. Historical Archives import/removal now uses the graph path; retired
 `macos_import.db` / `working.db` files remain only as cleanup/diagnostic
 inventory until final storage retirement.
 
@@ -304,8 +304,8 @@ Compare:
 - projected graph rows
 - evidence visibility
 
-Historical pre-cutover note: this step originally required keeping the
-retained archive path available. That path has since been retired after
+Historical pre-cutover note: this step originally required keeping the old
+archive path available. That path has since been retired after
 source-scoped graph archive import/removal became the default.
 
 ### Stage 3 - Make Graph Archive Import Default
@@ -313,18 +313,18 @@ source-scoped graph archive import/removal became the default.
 After real-data verification, switch Historical Archives default import to the
 source-scoped archive service.
 
-Historical pre-cutover note: this step originally made the retained path a
+Historical pre-cutover note: this step originally made the old path a
 fallback/diagnostic path. That fallback has since been removed from production
 code; diagnostics now inspect retired files as historical cleanup inventory.
 
-### Stage 4 - Retire Retained Legacy Bridge
+### Stage 4 - Retire Old Legacy Bridge
 
 Historical pre-cutover note: this stage is complete for execution code.
-`RetainedLegacyArchivePipeline`, unused retained importers/migrators, and their
+`RetainedLegacyArchivePipeline`, unused old importers/migrators, and their
 execution-path tests have been removed from production code. The remaining
-question is cleanup/diagnostic policy: decide whether retained
+question is cleanup/diagnostic policy: decide whether retired
 `macos_import.db` / `working.db` files remain inert historical inventory or are deleted
-by reset/cleanup after the retention criteria are satisfied.
+by reset/cleanup after the retirement criteria are satisfied.
 
 ## Tests Needed
 
@@ -339,7 +339,7 @@ Add focused tests for:
 - archive message/attachment topology projects to graph endpoints.
 - source-scoped rich-text enrichment only touches selected archive source.
 - full projection is idempotent after archive import.
-- retained archive import/removal is graph-backed; retained files remain only
+- old archive import/removal is graph-backed; retired files remain only
   as cleanup/diagnostic inventory until final storage retirement.
 
 ## Do Not Do Yet
