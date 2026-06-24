@@ -117,7 +117,7 @@ void main() {
             chatDbPath: '/fake/chat.db',
             importLedger: importDatabase,
             extractor: const _FakeExtractor(<int, String>{
-              100: 'old decoded text',
+              100: 'previous decoded text',
               101: 'new decoded text',
             }),
           ).enrichMissingTextAfterSourceRowId(

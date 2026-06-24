@@ -73,7 +73,7 @@ void main() {
   );
 
   test(
-    'does not resolve old archive-key rows for non-live source ids',
+    'does not resolve compatibility-key archive rows for non-live source ids',
     () async {
       final messageSsId = SourceScopedRowKey.pack(
         sourceId: 2,
@@ -113,7 +113,7 @@ void main() {
   );
 
   test(
-    'does not resolve old archive-key rows for mixed-source endpoints',
+    'does not resolve compatibility-key archive rows for mixed-source endpoints',
     () async {
       final messageSsId = SourceScopedRowKey.pack(
         sourceId: 2,
