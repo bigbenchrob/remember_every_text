@@ -34,7 +34,7 @@ Overlay storage owns user intent and must survive graph rebuilds.
 
 The contact hero-card pencil is the only app-facing entry point for an existing contact's user-edited display name. That override is sparse: clearing it returns the contact to the graph/imported fallback name.
 
-Do not add a second display-name override column. Do not write user-authored names into `working_ss.db` or retained `working.db`.
+Do not add a second display-name override column. Do not write user-authored names into `working_ss.db` or retired `working.db`.
 
 ## 4. Virtual Contacts
 

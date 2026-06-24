@@ -195,7 +195,7 @@ boundary unless current code introduces one.
 
 ## Invariants
 
-1. Archive metadata lives in overlay DB only — never in `working_ss.db` or retained `working.db`.
+1. Archive metadata lives in overlay DB only — never in `working_ss.db` or retired `working.db`.
 2. Graph `attachments` rows remain source projections — not durable file-store records.
 3. Graph incremental sync uses source-range archiving plus periodic graph attachment sweeps; explicit full/manual graph archive sweeps may still call `archiveAllAvailable()`.
 4. The Messages Attachments folder is never written to.

@@ -165,7 +165,7 @@ mapping flow using a matched historical `chat.db` snapshot:
 Primary graph-native match: `attachment.guid` → source-scoped import facts →
 canonical graph message/attachment identity. The overlay archive key remains
 compatibility-shaped for existing archive rows, but retired import/working DBs
-are storage-retention evidence only.
+are cleanup/audit evidence only.
 Single-attachment fallback: when GUID is NULL and exactly one attachment
 exists on both sides.
 No further fallback: no path-tail, transfer_name, or ordinal matching.
