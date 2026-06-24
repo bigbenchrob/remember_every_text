@@ -796,7 +796,7 @@ void main() {
         isEmpty,
         reason:
             'Active source comments should name current architectural '
-            'boundaries precisely. Avoid vague old-system shorthand such as '
+            'boundaries precisely. Avoid ambiguous retired-system shorthand such as '
             'old archive pair, old archive key, old files, old live, '
             'old method, or old spec.\n'
             'Actual offenders:\n${offenders.join('\n')}',
@@ -4416,7 +4416,7 @@ void main() {
               'Message data refresh should call '
               'messageDataVersionProvider.notifier.bump() instead of invalidating '
               'the provider. Invalidation reads like imperative repair and can '
-              'recreate old working-DB refresh assumptions.\n'
+              'recreate provider-visible working.db refresh assumptions.\n'
               'Actual offenders:\n${offenders.join('\n')}',
         );
       },
@@ -11016,12 +11016,16 @@ Future<List<String>> _findProviderTemplateBoilerplateOffenders() async {
     }
     return path.startsWith('lib/');
   });
-  const staleTokens = <String>['Future<SomeState>', 'SomeState', 'myProvider'];
+  const templateTokens = <String>[
+    'Future<SomeState>',
+    'SomeState',
+    'myProvider',
+  ];
   final offenders = <String>[];
 
   for (final filePath in files) {
     final source = await File(filePath).readAsString();
-    for (final token in staleTokens) {
+    for (final token in templateTokens) {
       if (source.contains(token)) {
         offenders.add('$filePath contains $token');
       }
@@ -11064,7 +11068,7 @@ Future<List<String>> _findAmbiguousOldSystemPhraseOffenders() async {
     }
     return path.startsWith('lib/');
   });
-  const retiredPhrases = <String>[
+  const ambiguousRetiredSystemPhrases = <String>[
     'old archive pair',
     'old archive key',
     'old files',
@@ -11077,7 +11081,7 @@ Future<List<String>> _findAmbiguousOldSystemPhraseOffenders() async {
   for (final filePath in files) {
     final source = await File(filePath).readAsString();
     final lowerSource = source.toLowerCase();
-    for (final phrase in retiredPhrases) {
+    for (final phrase in ambiguousRetiredSystemPhrases) {
       if (lowerSource.contains(phrase)) {
         offenders.add('$filePath uses ambiguous phrase "$phrase"');
       }
