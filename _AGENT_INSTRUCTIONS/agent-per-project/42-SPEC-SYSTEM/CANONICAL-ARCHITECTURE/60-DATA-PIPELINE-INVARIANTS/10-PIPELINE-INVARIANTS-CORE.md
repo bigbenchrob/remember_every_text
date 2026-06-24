@@ -203,7 +203,7 @@ Graph projection must remain consistent even when:
 - no new source data exists.
 - source-scoped ledger changes underneath existing graph projection.
 - restored snapshots are used.
-- archive/recovery workflows register or inspect retained storage evidence.
+- archive/recovery workflows register or inspect retired-file audit evidence.
 
 Reconciliation occurs through graph build/projection services, not through UI
 repair logic.
@@ -260,8 +260,8 @@ System is healthy when:
 - graph relationships use canonical `ss_id` endpoints.
 - overlay user intent is preserved and merged at read time.
 - message evidence surfaces use the shared evidence spine.
-- retained historical databases are unused by ordinary app reads and
-  explicitly classified as storage-retention or diagnostic reference evidence.
+- retired historical databases are unused by ordinary app reads and
+  explicitly classified as retired-file audit or diagnostic reference evidence.
 - no hidden inconsistencies exist.
 
 ---
