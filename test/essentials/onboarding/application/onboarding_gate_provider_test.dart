@@ -381,7 +381,7 @@ void main() {
                     : OnboardingBlockerKind.sourceScopedImportDatabaseMissing,
                 shouldResetAppDatabasesBeforeImport: shouldReset,
                 resetAppDatabasesReason: shouldReset
-                    ? 'Synthetic stale setup state for gate recovery test'
+                    ? 'Synthetic incomplete setup state for gate recovery test'
                     : null,
               );
             }),
