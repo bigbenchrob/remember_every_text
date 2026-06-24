@@ -76,7 +76,7 @@ retired storage files
 macos_import.db / working.db
         |
         v
-reset cleanup / health diagnostics / explicit storage-retention review
+reset cleanup / health diagnostics / explicit retired-file audit
 ```
 
 - **Source-scoped import** pulls source facts into `macos_import_ss.db`; graph projection derives canonical `ss_id` rows and topology in `working_ss.db`.

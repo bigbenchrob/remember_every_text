@@ -137,5 +137,5 @@ Current live import/build code is source-scoped and graph-backed.
 Do not add legacy importers for ordinary app behavior. New source
 facts should usually be modeled in `macos_import_ss.db` and projected into
 `working_ss.db`. If old `macos_import.db` contents matter for archive/recovery,
-treat them as storage-retention evidence to migrate, export, or intentionally
+treat them as cleanup/audit evidence to migrate, export, or intentionally
 discard. Do not recreate the retained importer/orchestrator framework.

@@ -50,10 +50,10 @@ Live graph updates should use the blob-based enrichment path. Do not reintroduce
 the old pattern where a single new message causes the extractor to scan every
 row in `chat.db`.
 
-## Retired Retained Ledger Import
+## Retired Ledger Import
 
-The old retained `macos_import.db` rich-text importer has been removed from the
-active app path. Historical retained files may still contain decoded text from
+The old `macos_import.db` rich-text importer has been removed from the
+active app path. Historical retired files may still contain decoded text from
 older runs, but new text enrichment belongs to the source-scoped import stage.
 
 ## Decoder Interfaces

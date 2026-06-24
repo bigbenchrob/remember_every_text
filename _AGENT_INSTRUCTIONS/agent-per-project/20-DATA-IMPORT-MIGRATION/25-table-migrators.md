@@ -91,7 +91,7 @@ Migrators receive a shared `MigrationContext` instance from `HandlesMigrationSer
 Do not add retained migrators for ordinary app behavior. New ordinary
 projection belongs in the source-scoped graph projectors and graph read models.
 If old `working.db` contents matter for archive/recovery, treat them as
-storage-retention evidence to migrate, export, or intentionally discard. Do not
+cleanup/audit evidence to migrate, export, or intentionally discard. Do not
 recreate the retained migrator framework.
 
 ## Related References

@@ -22,9 +22,9 @@ links:
 > work.
 
 ## Purpose
-- Preserve the historical retained projection mechanics for interpreting old
+- Preserve the historical retired projection mechanics for interpreting old
   logs and old `working.db` files.
-- Document the ID-preservation rules that shaped old retained storage.
+- Document the ID-preservation rules that shaped old retired storage.
 - Make clear that recovered/orphan evidence now belongs to the source-scoped
   graph path rather than a live retained projection.
 
@@ -72,5 +72,5 @@ Current projection code is source-scoped and graph-backed.
 Do not add retained migrators for ordinary app behavior. New ordinary
 projection belongs in the source-scoped graph import/projector path. If old
 `working.db` contents matter for archive/recovery, treat them as
-storage-retention evidence to migrate, export, or intentionally discard. Do not
+cleanup/audit evidence to migrate, export, or intentionally discard. Do not
 recreate the retained migrator/orchestrator framework.

@@ -93,7 +93,7 @@ phases:
 Do not add retired-era importers for ordinary app behavior. New source
 facts belong in `lib/essentials/source_scoped_import/` and should project into
 the conversation graph. If old `macos_import.db` contents matter for
-archive/recovery, treat them as storage-retention evidence to migrate, export,
+archive/recovery, treat them as cleanup/audit evidence to migrate, export,
 or intentionally discard. Do not recreate the retired importer framework.
 
 ## Related References

@@ -111,7 +111,7 @@ code. Existing `working.db` files may still contain these tables.
   migration skipped truncation and relied on migrator-specific insert/update
   semantics.
 - Never modify rows manually. If old retired storage needs recovery, design an
-  explicit graph-era storage-retention, migration, or export path rather than
+  explicit graph-era retired-file audit, migration, or export path rather than
   editing historical tables.
 - Do not add new ordinary schema to retired `working.db`; current projection
   schema changes belong to the conversation graph database.

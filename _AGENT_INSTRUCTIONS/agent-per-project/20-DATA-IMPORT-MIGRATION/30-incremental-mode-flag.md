@@ -24,7 +24,7 @@ for ordinary app data, archive import, or recovery.
 - `incrementalMode: false` meant full retired projection rebuild: migrator target tables were cleared, then rebuilt from `macos_import.db`.
 - `ChatDbChangeMonitor` no longer runs retired migration for live sync. It runs the source-scoped graph build lifecycle.
 - Retired incremental projection must not be restored as an active app path.
-- First-run/reimport app setup is graph-owned through the conversation graph build controller; archive/recovery work is source-scoped graph work plus storage-retention cleanup.
+- First-run/reimport app setup is graph-owned through the conversation graph build controller; archive/recovery work is source-scoped graph work plus retired-file cleanup.
 
 ## Why The Flag Exists
 
@@ -55,7 +55,7 @@ The monitor does not query the legacy working message count and does not choose 
 
 Graph onboarding and reimport call the conversation graph build controller.
 Historical archive/recovery workflows use source-scoped archive import and
-graph projection. Old retained database contents are storage-retention evidence
+graph projection. Old retired database contents are cleanup/audit evidence
 only.
 
 Do not infer manual/full behavior from the monitor path. They are separate entry points with different operational requirements.
