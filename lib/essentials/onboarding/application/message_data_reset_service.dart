@@ -112,11 +112,11 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
         'Invalidated graph database providers and checked retired file cleanup',
         source: 'MessageDataResetService',
         context: {
-          'retiredMacosImportDbExistsAfterReset':
+          'retiredMacosImportCleanupFileExistsAfterReset':
               databaseExistsAfterReset[appDatabaseFileName(
                 AppDatabaseFile.retiredMacosImport,
               )],
-          'retiredWorkingDbExistsAfterReset':
+          'retiredWorkingCleanupFileExistsAfterReset':
               databaseExistsAfterReset[appDatabaseFileName(
                 AppDatabaseFile.retiredWorking,
               )],
