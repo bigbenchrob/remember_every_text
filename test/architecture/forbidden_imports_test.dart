@@ -1258,6 +1258,36 @@ void main() {
       );
     });
 
+    test('Production app mode provider imports stay explicit', () async {
+      final offenders = await _findBroadAppModeProviderImportOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Production code should import only the specific app-mode '
+            'provider symbols it composes. Broad imports of '
+            'essentials/app_mode/feature_level_providers.dart make theme and '
+            'mode authority less auditable.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Production debug provider imports stay explicit', () async {
+      final offenders = await _findBroadDebugProviderImportOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Production code should import only the specific debug provider '
+            'symbols it composes. Broad imports of '
+            'essentials/debug/feature_level_providers.dart make developer '
+            'mode authority less auditable.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Production navigation provider imports stay explicit', () async {
       final offenders = await _findBroadNavigationProviderImportOffenders();
 
@@ -7007,6 +7037,52 @@ Future<List<String>> _findBroadExternalLinkProviderImportOffenders() async {
   final offenders = <String>{};
   final broadImportPattern = RegExp(
     r'''import\s+['"][^'"]*external_links/feature_level_providers\.dart['"]\s*;''',
+  );
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (broadImportPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findBroadAppModeProviderImportOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+  final broadImportPattern = RegExp(
+    r'''import\s+['"][^'"]*app_mode/feature_level_providers\.dart['"]\s*;''',
+  );
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (broadImportPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findBroadDebugProviderImportOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+  final broadImportPattern = RegExp(
+    r'''import\s+['"][^'"]*debug/feature_level_providers\.dart['"]\s*;''',
   );
 
   for (final filePath in files) {

@@ -6,9 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 
-import '../../../app_mode/feature_level_providers.dart';
+import '../../../app_mode/feature_level_providers.dart'
+    show switchableDarkModeProvider;
 import '../../../conversation_graph/presentation/status/conversation_graph_status_sheet.dart';
-import '../../../debug/feature_level_providers.dart';
+import '../../../debug/feature_level_providers.dart'
+    show DeveloperModeValue, developerModeProvider;
 import '../../../onboarding/domain/onboarding_status.dart';
 import '../../../onboarding/feature_level_providers.dart'
     show onboardingGateProvider;

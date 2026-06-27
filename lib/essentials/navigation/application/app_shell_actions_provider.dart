@@ -2,8 +2,9 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../app_mode/feature_level_providers.dart';
-import '../../debug/feature_level_providers.dart';
+import '../../app_mode/feature_level_providers.dart'
+    show switchableDarkModeProvider;
+import '../../debug/feature_level_providers.dart' show developerModeProvider;
 import '../../window_state/application/window_state_providers.dart';
 
 part 'app_shell_actions_provider.g.dart';
