@@ -3801,6 +3801,11 @@ criteria.
 - Updated the canonical database-access guide to document the same concrete
   import-ledger provider exception list, keeping the written architecture
   aligned with the active tripwire.
+- Tightened the inviolable database-access rule so it distinguishes physical
+  source-scoped import DB construction from ordinary import semantics. The rule
+  now points ordinary source import code at `sourceScopedImportLedgerProvider`
+  and limits direct physical-provider use to the approved composition,
+  diagnostic, projection, and attachment snapshot boundaries.
 
 ### Vocabulary Note
 

@@ -96,10 +96,13 @@ The correct response is **always investigation, never concealment**:
 
 ## Rule 3: Database Access Via Centralized Providers Only
 
-- **Source-scoped import ledger**: physical database access is
-  `ref.watch(sourceScopedImportDatabaseProvider.future)` from
-  `essentials/db`; source import semantics should usually consume
-  `ref.watch(sourceScopedImportLedgerProvider.future)`
+- **Source-scoped import ledger**: physical database construction is
+  `sourceScopedImportDatabaseProvider` in `essentials/db`, but ordinary source
+  import semantics should consume
+  `ref.watch(sourceScopedImportLedgerProvider.future)`. Direct use of the
+  physical provider is limited to central DB construction, reset/diagnostic
+  composition, graph projection repository composition, and archive attachment
+  snapshot boundaries.
 - **Working graph DB**: `ref.watch(driftConversationGraphDatabaseProvider.future)`
 - **Archive-source metadata**: `ref.watch(overlayDatabaseProvider.future)` via
   named overlay-owned services
