@@ -48,7 +48,7 @@ You MUST read these files in order before any code changes:
  - **Control bodies**: Always put control bodies on new lines with braces
 - **🔥 FREEZED CLASSES**: ALL Freezed classes MUST be declared as `abstract class`, never just `class`
  - **Freezed unnamed ctor order**: Place `const ClassName._();` AFTER the primary `const factory` constructor in the class body to satisfy `sort_unnamed_constructors_first`.
-- **🔥 DATABASE ACCESS**: ALL database access MUST use centralized providers. Ordinary graph reads use `driftConversationGraphDatabaseProvider`; source-scoped import uses `importDatabaseProvider`; overlay intent uses `overlayDatabaseProvider`; retained legacy providers are archive/recovery compatibility only.
+- **🔥 DATABASE ACCESS**: ALL database access MUST use centralized providers. Ordinary graph reads use `driftConversationGraphDatabaseProvider`; source-scoped import DB access is physically constructed by `sourceScopedImportDatabaseProvider` in `lib/essentials/db/feature_level_providers.dart`; source import semantics should usually consume `sourceScopedImportLedgerProvider`; overlay intent uses `overlayDatabaseProvider`; retired `macos_import.db` and `working.db` have no central app providers and are cleanup/diagnostic files only.
 - **AddressBook imports**: MUST use `getFolderAggregateEitherProvider` for path resolution
 - **🔥 RIVERPOD PATTERNS**: Follow ONLY the patterns documented in `_AGENT_INSTRUCTIONS/agent-instructions-shared/20-flutter/riverpod-provider-patterns.md` - DO NOT scan codebase for examples
 - **Provider naming**: Class names follow documented pattern: `MyFeature` → generates `myFeatureProvider`
@@ -159,10 +159,10 @@ class MyFeature extends _$MyFeature {
 **ANY CLASS accessing application databases MUST use centralized providers:**
 
 - **Graph DB**: `ref.watch(driftConversationGraphDatabaseProvider)` from `lib/essentials/db/feature_level_providers.dart`
-- **Source-scoped import DB**: `ref.watch(importDatabaseProvider)` from `lib/essentials/source_scoped_import/infrastructure/import_database_provider.dart`
+- **Source-scoped import DB**: `ref.watch(sourceScopedImportDatabaseProvider.future)` from `lib/essentials/db/feature_level_providers.dart`; semantic import code should usually consume `sourceScopedImportLedgerProvider`
 - **Overlay DB**: `ref.watch(overlayDatabaseProvider)` from `lib/essentials/db/feature_level_providers.dart`
-- **Retained import DB**: `sqfliteImportDatabaseProvider` only for explicitly retained archive/recovery metadata compatibility
-- **Retained working DB**: `working.db` has no central app provider; treat it as retained file/schema storage only
+- **Retired import cleanup file**: `macos_import.db` has no central app provider; treat it as cleanup/diagnostic file storage only
+- **Retired working cleanup file**: `working.db` has no central app provider; treat it as cleanup/diagnostic file storage only
 - **NEVER**: Direct `ImportDatabase()` or `DriftDb()` instantiation
 - **REASON**: Prevents SQLite locking issues from multiple connections to same file
 
