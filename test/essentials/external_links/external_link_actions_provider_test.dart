@@ -1,7 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:remember_this_text/essentials/external_links/application/external_link_actions_provider.dart';
 import 'package:remember_this_text/essentials/external_links/application/external_uri_opener.dart';
-import 'package:remember_this_text/essentials/external_links/feature_level_providers.dart';
+import 'package:remember_this_text/essentials/external_links/application/external_uri_opener_provider.dart';
 
 void main() {
   test('open delegates URL launch through action boundary', () async {
