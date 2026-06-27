@@ -3865,6 +3865,9 @@ criteria.
 - Replaced the stray-handle type switcher's selected fill/text constants with
   shared primary button tokens, keeping compact segmented controls on the
   app-wide action color vocabulary.
+- Replaced the graph-status sheet's selected-row and import-hover
+  `CupertinoColors` usage with shared brand-highlight tokens, and removed
+  the status controls' forwarded `WidgetRef` in favor of local action reads.
 
 ### Vocabulary Note
 

@@ -204,7 +204,7 @@ class _ConversationGraphStatusSheetState
                 ),
               ),
               const SizedBox(height: 16),
-              _StatusControls(ref: ref),
+              const _StatusControls(),
             ],
           ),
         ),
@@ -1588,7 +1588,7 @@ class _SummaryControls extends StatelessWidget {
   }
 }
 
-class _ChatSummaryRow extends StatelessWidget {
+class _ChatSummaryRow extends ConsumerWidget {
   const _ChatSummaryRow({
     required this.summary,
     required this.isSelected,
@@ -1602,7 +1602,10 @@ class _ChatSummaryRow extends StatelessWidget {
   final VoidCallback onOpened;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final selectionColor = colors.brandHighlight(BrandHighlight.primary);
     final participantText = summary.participantHandles.isEmpty
         ? 'chat ${summary.chatSsId}'
         : summary.participantHandles.join('  |  ');
@@ -1610,13 +1613,11 @@ class _ChatSummaryRow extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 4),
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: isSelected
-            ? CupertinoColors.activeBlue.withValues(alpha: 0.12)
-            : CupertinoColors.transparent,
+        color: isSelected ? selectionColor.withValues(alpha: 0.12) : null,
         border: Border.all(
           color: isSelected
-              ? CupertinoColors.activeBlue.withValues(alpha: 0.45)
-              : CupertinoColors.separator.withValues(alpha: 0.35),
+              ? selectionColor.withValues(alpha: 0.45)
+              : colors.grayFive.withValues(alpha: 0.35),
         ),
         borderRadius: BorderRadius.circular(6),
       ),
@@ -1750,7 +1751,7 @@ class _SelectedChatSection extends StatelessWidget {
   }
 }
 
-class _RecentMessageRow extends StatelessWidget {
+class _RecentMessageRow extends ConsumerWidget {
   const _RecentMessageRow({
     required this.message,
     required this.isSelected,
@@ -1762,7 +1763,9 @@ class _RecentMessageRow extends StatelessWidget {
   final VoidCallback onSelected;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
     final text = message.text;
     final attachmentText = message.attachmentCount == 0
         ? ''
@@ -1774,8 +1777,10 @@ class _RecentMessageRow extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 2),
         decoration: BoxDecoration(
           color: isSelected
-              ? CupertinoColors.activeBlue.withValues(alpha: 0.11)
-              : CupertinoColors.transparent,
+              ? colors
+                    .brandHighlight(BrandHighlight.primary)
+                    .withValues(alpha: 0.11)
+              : null,
           borderRadius: BorderRadius.circular(5),
         ),
         child: _StatusRow(
@@ -1998,16 +2003,14 @@ class _AttachmentDetailRow extends ConsumerWidget {
   }
 }
 
-class _StatusControls extends StatefulWidget {
-  const _StatusControls({required this.ref});
-
-  final WidgetRef ref;
+class _StatusControls extends ConsumerStatefulWidget {
+  const _StatusControls();
 
   @override
-  State<_StatusControls> createState() => _StatusControlsState();
+  ConsumerState<_StatusControls> createState() => _StatusControlsState();
 }
 
-class _StatusControlsState extends State<_StatusControls> {
+class _StatusControlsState extends ConsumerState<_StatusControls> {
   var _isHoveringImport = false;
   var _isImporting = false;
   Timer? _statusRefreshTimer;
@@ -2020,6 +2023,11 @@ class _StatusControlsState extends State<_StatusControls> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final actionColor = colors.brandHighlight(BrandHighlight.primary);
+    final isImportActive = _isHoveringImport || _isImporting;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -2034,7 +2042,7 @@ class _StatusControlsState extends State<_StatusControls> {
               controlSize: ControlSize.regular,
               secondary: true,
               onPressed: () {
-                widget.ref
+                ref
                     .read(conversationGraphStatusSheetActionsProvider.notifier)
                     .refreshPrimaryStatus();
               },
@@ -2056,14 +2064,14 @@ class _StatusControlsState extends State<_StatusControls> {
                 duration: const Duration(milliseconds: 120),
                 padding: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
-                  color: _isHoveringImport || _isImporting
-                      ? CupertinoColors.activeBlue.withValues(alpha: 0.14)
-                      : CupertinoColors.transparent,
+                  color: isImportActive
+                      ? actionColor.withValues(alpha: 0.14)
+                      : null,
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
-                    color: _isHoveringImport || _isImporting
-                        ? CupertinoColors.activeBlue.withValues(alpha: 0.55)
-                        : CupertinoColors.transparent,
+                    color: isImportActive
+                        ? actionColor.withValues(alpha: 0.55)
+                        : actionColor.withValues(alpha: 0),
                   ),
                 ),
                 child: PushButton(
@@ -2105,7 +2113,7 @@ class _StatusControlsState extends State<_StatusControls> {
     setState(() {
       _isImporting = true;
     });
-    final actions = widget.ref.read(
+    final actions = ref.read(
       conversationGraphStatusSheetActionsProvider.notifier,
     );
     actions.refreshPrimaryStatus();
