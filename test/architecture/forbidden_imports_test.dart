@@ -164,6 +164,21 @@ const Set<String> _broadConversationGraphApplicationProviderImportAllowedFiles =
 // remaining provider-definition relocation work and should only shrink.
 const Set<String> _selfFeatureLevelProviderImportAllowedFiles = {};
 
+const Set<String> _rawPresentationColorLiteralAllowedFiles = {
+  // Theme token definitions are the correct home for raw color literals.
+  'lib/config/theme/colors/theme_colors.dart',
+  'lib/config/theme/colors/theme_colors_annotated.dart',
+
+  // Canonical heatmap activity scale: these colors are data semantics shared
+  // by contact heatmaps and conversation glyphs, not incidental chrome.
+  'lib/features/messages/presentation/widgets/calendar_heatmap_timeline_widget.dart',
+
+  // Narrow transparent sentinels used for state switching where a token would
+  // incorrectly imply a visible surface color.
+  'lib/config/theme/widgets/cassette_chrome.dart',
+  'lib/features/sidebar_utilities/application/sidebar_cassette_spec/widget_builders/settings_top_menu_widget.dart',
+};
+
 const Set<String> _sourceScopedSqlBitExtractionAllowedFiles = {
   'lib/essentials/source_scoped_import/domain/source_scoped_row_key.dart',
   'lib/essentials/source_scoped_import/domain/source_scoped_row_sql.dart',
@@ -784,6 +799,23 @@ void main() {
               'Active UI code should use themeColorsProvider and '
               'themeTypographyProvider, not Theme.of(context), '
               'MacosTheme.of(context), or CupertinoTheme.of(context).\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
+    test(
+      'Presentation color literals stay in theme or data-scale boundaries',
+      () async {
+        final offenders = await _findRawPresentationColorLiteralOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'Raw Color(0x...) literals in active lib/ presentation code drift '
+              'away from the shared theme. Add a semantic token, use an existing '
+              'token, or document a narrow data-scale/transparent exception.\n'
               'Actual offenders:\n${offenders.join('\n')}',
         );
       },
@@ -12375,6 +12407,31 @@ Future<List<String>> _findFrameworkThemeLookupOffenders() async {
     if (uncommented.contains('Theme.of(') ||
         uncommented.contains('MacosTheme.of(') ||
         uncommented.contains('CupertinoTheme.of(')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findRawPresentationColorLiteralOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final colorLiteralPattern = RegExp(r'\bColor\s*\(\s*0x[0-9A-Fa-f]{8}\s*\)');
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    if (_rawPresentationColorLiteralAllowedFiles.contains(filePath)) {
+      continue;
+    }
+
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (colorLiteralPattern.hasMatch(uncommented)) {
       offenders.add(filePath);
     }
   }

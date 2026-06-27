@@ -3854,6 +3854,9 @@ criteria.
 - Moved onboarding and historical-archives status colors onto the shared
   status theme tokens, removing the remaining feature-local success/warning
   status literals from those setup and archive workflow surfaces.
+- Added an architecture tripwire that rejects new raw `Color(0x...)` literals
+  in active `lib/` code outside theme definitions, the canonical heatmap data
+  scale, and two explicitly documented transparent sentinels.
 
 ### Vocabulary Note
 
