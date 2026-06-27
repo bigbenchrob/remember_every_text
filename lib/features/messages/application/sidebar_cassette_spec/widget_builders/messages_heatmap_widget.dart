@@ -7,8 +7,9 @@ import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../essentials/sidebar/application/sidebar_cassette_sectioning.dart';
-import '../../../../../essentials/sidebar/application/sidebar_flow_state_provider.dart';
 import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
+import '../../../../../essentials/sidebar/feature_level_providers.dart'
+    show SidebarFlowContactProjection, sidebarFlowProvider;
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 import '../../../../sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../application/message_evidence/current_visible_month_provider.dart';

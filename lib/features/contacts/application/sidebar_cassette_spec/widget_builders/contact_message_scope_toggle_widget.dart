@@ -3,7 +3,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
-import '../../../../../essentials/sidebar/application/sidebar_flow_state_provider.dart';
+import '../../../../../essentials/sidebar/feature_level_providers.dart'
+    show SidebarFlowMessageScope, sidebarFlowProvider;
 import '../resolver_tools/contact_message_scope_actions_provider.dart';
 
 /// Segmented control that toggles between regular contact messages and

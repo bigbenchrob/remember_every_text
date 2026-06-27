@@ -11,7 +11,8 @@ import '../../../../../essentials/conversation_graph/feature_level_providers.dar
     show conversationFavouritesControllerProvider;
 import '../../../../../essentials/conversation_graph/presentation/widgets/conversation_favourite_button.dart';
 import '../../../../../essentials/conversation_graph/presentation/widgets/conversation_signature_card.dart';
-import '../../../../../essentials/sidebar/application/sidebar_flow_state_provider.dart';
+import '../../../../../essentials/sidebar/feature_level_providers.dart'
+    show sidebarFlowProvider;
 import '../../../../../essentials/sidebar/presentation/view/sidebar_grouped_control_section_surface.dart';
 import '../../../domain/calendar_heatmap_timeline_data.dart';
 import '../../../presentation/widgets/calendar_heatmap_timeline_widget.dart';

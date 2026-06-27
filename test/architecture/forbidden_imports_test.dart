@@ -1289,6 +1289,21 @@ void main() {
       );
     });
 
+    test('Feature sidebar flow state access uses sidebar seam', () async {
+      final offenders = await _findFeatureSidebarFlowProviderImportOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Feature code may observe sidebar flow state, but access should '
+            'flow through essentials/sidebar/feature_level_providers.dart '
+            'with explicit show imports. Direct imports of the concrete '
+            'sidebar flow provider file hide sidebar authority.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Production window state provider imports stay explicit', () async {
       final offenders = await _findBroadWindowStateProviderImportOffenders();
 
@@ -7003,6 +7018,31 @@ Future<List<String>> _findBroadSidebarProviderImportOffenders() async {
   }
 
   return offenders.toList()..sort();
+}
+
+Future<List<String>> _findFeatureSidebarFlowProviderImportOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/features/');
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    for (final importTarget in imports) {
+      if (importTarget.endsWith(
+        'essentials/sidebar/application/sidebar_flow_state_provider.dart',
+      )) {
+        offenders.add('$filePath imports $importTarget');
+      }
+    }
+  }
+
+  return offenders..sort();
 }
 
 Future<List<String>> _findBroadWindowStateProviderImportOffenders() async {
