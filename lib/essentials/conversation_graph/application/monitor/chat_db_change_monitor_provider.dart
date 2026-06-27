@@ -5,9 +5,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../features/attachments/feature_level_providers.dart'
     show BulkArchivePhase, attachmentArchiveServiceProvider;
-import '../../../../providers.dart';
 import '../../../db/feature_level_providers/conversation_graph_readiness_provider.dart';
 import '../../../logging/feature_level_providers.dart' show appLoggerProvider;
+import '../../../paths/feature_level_providers.dart';
 import '../../../source_scoped_import/domain/known_sources.dart';
 import '../conversation_graph_build_controller_provider.dart';
 import '../conversation_graph_build_report.dart';

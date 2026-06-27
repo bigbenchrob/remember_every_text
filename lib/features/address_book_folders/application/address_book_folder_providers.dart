@@ -4,7 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../essentials/logging/feature_level_providers.dart'
     show appLoggerProvider;
-import '../../../providers.dart';
+import '../../../essentials/paths/feature_level_providers.dart';
 import '../domain/entities/address_book_folder_aggregate.dart';
 import '../domain/failures/folder_retrieval_failure.dart';
 import '../infrastructure/data_sources/local/address_book_folder_path_finder.dart';

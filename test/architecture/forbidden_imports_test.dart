@@ -418,20 +418,8 @@ const Set<String> _sharedPreferencesAllowedFiles = {
 const Set<String> _rootProvidersImportAllowedFiles = {
   'lib/config/theme/colors/theme_colors.dart',
   'lib/config/theme/colors/theme_colors_annotated.dart',
-  'lib/essentials/conversation_graph/application/monitor/chat_db_change_monitor_provider.dart',
-  'lib/essentials/conversation_graph/application/status/conversation_graph_status_snapshot_provider.dart',
   'lib/essentials/navigation/application/app_shell_actions_provider.dart',
   'lib/essentials/navigation/presentation/view/macos_app_shell.dart',
-  'lib/essentials/source_scoped_import/application/attachments/attachment_importer_provider.dart',
-  'lib/essentials/source_scoped_import/application/chat_handle_joins/chat_handle_join_importer_provider.dart',
-  'lib/essentials/source_scoped_import/application/chat_message_joins/chat_message_join_importer_provider.dart',
-  'lib/essentials/source_scoped_import/application/chats/chat_importer_provider.dart',
-  'lib/essentials/source_scoped_import/application/handles/handle_importer_provider.dart',
-  'lib/essentials/source_scoped_import/application/message_attachment_joins/message_attachment_join_importer_provider.dart',
-  'lib/essentials/source_scoped_import/application/messages/message_importer_provider.dart',
-  'lib/essentials/source_scoped_import/application/messages/message_rich_text_enricher_provider.dart',
-  'lib/features/address_book_folders/application/address_book_folder_providers.dart',
-  'lib/features/attachments/application/graph_attachment_archive_providers.dart',
   'lib/main.dart',
 };
 
