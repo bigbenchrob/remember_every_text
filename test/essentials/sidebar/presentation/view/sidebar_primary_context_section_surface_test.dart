@@ -3,8 +3,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import 'package:remember_this_text/essentials/app_mode/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/sidebar/presentation/view/sidebar_primary_context_section_surface.dart';
-import 'package:remember_this_text/providers.dart';
 
 void main() {
   group('SidebarPrimaryContextSectionSurface', () {

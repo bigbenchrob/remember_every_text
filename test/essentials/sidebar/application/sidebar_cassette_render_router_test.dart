@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:remember_this_text/essentials/app_mode/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/navigation/domain/sidebar_mode.dart';
 import 'package:remember_this_text/essentials/sidebar/application/sidebar_cassette_render_router.dart';
 import 'package:remember_this_text/essentials/sidebar/application/sidebar_cassette_sectioning.dart';
@@ -16,7 +17,6 @@ import 'package:remember_this_text/features/sidebar_utilities/application/sideba
 import 'package:remember_this_text/features/sidebar_utilities/domain/settings_top_menu_row.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
-import 'package:remember_this_text/providers.dart';
 
 void main() {
   group('sidebar cassette render contract', () {

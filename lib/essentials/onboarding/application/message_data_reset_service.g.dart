@@ -7,7 +7,7 @@ part of 'message_data_reset_service.dart';
 // **************************************************************************
 
 String _$messageDataResetServiceHash() =>
-    r'49993375f5ae4ef938901c74e6e7144440d93220';
+    r'5873a6f0bae4e04f3ceef7b7e29c1484dfe35e95';
 
 /// See also [messageDataResetService].
 @ProviderFor(messageDataResetService)

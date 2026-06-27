@@ -1,2 +1,1 @@
-export '../../providers.dart'
-    show platformBrightnessProvider, switchableDarkModeProvider;
+export 'application/app_mode_providers.dart';

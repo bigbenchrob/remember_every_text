@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:remember_this_text/essentials/app_mode/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/debug/application/developer_mode_provider.dart';
 import 'package:remember_this_text/essentials/debug/application/developer_mode_store.dart';
 import 'package:remember_this_text/essentials/debug/feature_level_providers.dart';
@@ -9,7 +10,6 @@ import 'package:remember_this_text/essentials/window_state/domain/entities/windo
 import 'package:remember_this_text/essentials/window_state/domain/ports/window_manager_port.dart';
 import 'package:remember_this_text/essentials/window_state/domain/ports/window_storage_port.dart';
 import 'package:remember_this_text/essentials/window_state/feature_level_providers.dart';
-import 'package:remember_this_text/providers.dart';
 
 void main() {
   test('toggleDeveloperMode delegates to developer mode boundary', () async {

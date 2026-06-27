@@ -12,9 +12,10 @@ import 'package:macos_ui/macos_ui.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-import './providers.dart';
 import 'config/theme/colors/theme_colors.dart';
 import 'config/theme/theme_typography.dart';
+import 'essentials/app_mode/feature_level_providers.dart'
+    show platformBrightnessProvider, switchableDarkModeProvider;
 import 'essentials/conversation_graph/application/monitor/chat_db_change_monitor_provider.dart';
 import 'essentials/db/database_directory.dart';
 import 'essentials/logging/application/diagnostic_report_actions.dart';

@@ -415,7 +415,7 @@ const Set<String> _sharedPreferencesAllowedFiles = {
   'lib/essentials/window_state/infrastructure/persistence/shared_preferences_window_storage.dart',
 };
 
-const Set<String> _rootProvidersImportAllowedFiles = {'lib/main.dart'};
+const Set<String> _rootProvidersImportAllowedFiles = {};
 
 const Set<String> _providerContainerAllowedFiles = {'lib/main.dart'};
 
@@ -1822,17 +1822,16 @@ void main() {
       );
     });
 
-    test('Root providers imports stay behind approved boundaries', () async {
+    test('Retired root providers imports stay absent', () async {
       final offenders = await _findRootProvidersImportOffenders();
 
       expect(
         offenders,
         orderedEquals(_rootProvidersImportAllowedFiles.toList()..sort()),
         reason:
-            'The root providers.dart file exposes bootstrap/theme/path-helper '
-            'providers only. New feature/application code should depend on '
-            'feature_level_providers.dart or named ports instead of importing '
-            'the root provider module directly.\n'
+            'The root providers.dart barrel is retired. Cross-cutting providers '
+            'must live behind owned feature_level_providers.dart seams or named '
+            'ports; do not recreate or import a root provider module.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });

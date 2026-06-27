@@ -33,8 +33,8 @@ This is the canonical index for every SQLite database the project touches. Treat
 - **Path access uses the paths seam.** Code that needs `PathsHelper` should
   import `pathsHelperProvider` from
   `lib/essentials/paths/feature_level_providers.dart`, not the root
-  `providers.dart` barrel. Root provider imports are reserved for app bootstrap,
-  theme infrastructure, and explicitly reviewed shell-level boundaries.
+  `providers.dart` barrel. The root provider barrel is retired; add or consume
+  owned essential seams instead.
 - **Physical file identity stays explicit.** Database file names and app
   database paths are centralized in `lib/essentials/db/app_database_files.dart`.
   The mutable Application Support directory primitive lives in

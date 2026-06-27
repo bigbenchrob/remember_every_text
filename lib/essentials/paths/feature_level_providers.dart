@@ -1,1 +1,1 @@
-export '../../providers.dart' show pathsHelperProvider;
+export 'application/paths_helper_provider.dart';
