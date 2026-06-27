@@ -64,7 +64,6 @@ class CalendarHeatmapTimelineWidget extends ConsumerWidget {
             onMonthTap: onMonthTap,
             selectedMonthKey: selectedMonthKey,
             monthTooltipBuilder: monthTooltipBuilder,
-            ref: ref,
           ),
       ],
     );
@@ -129,7 +128,6 @@ class _YearRowsGroup extends StatelessWidget {
     required this.yearRows,
     required this.monthSize,
     required this.monthSpacing,
-    required this.ref,
     required this.onMonthTap,
     this.selectedMonthKey,
     this.monthTooltipBuilder,
@@ -138,7 +136,6 @@ class _YearRowsGroup extends StatelessWidget {
   final List<YearRow> yearRows;
   final double monthSize;
   final double monthSpacing;
-  final WidgetRef ref;
   final void Function(int year, int month, int messageCount) onMonthTap;
   final String? selectedMonthKey;
   final String? Function(MonthData monthData)? monthTooltipBuilder;
@@ -157,7 +154,6 @@ class _YearRowsGroup extends StatelessWidget {
             onMonthTap: onMonthTap,
             selectedMonthKey: selectedMonthKey,
             monthTooltipBuilder: monthTooltipBuilder,
-            ref: ref,
           ),
           SizedBox(height: monthSpacing * 2),
         ],
@@ -167,12 +163,11 @@ class _YearRowsGroup extends StatelessWidget {
 }
 
 /// A single year row: year label + 12 month cells
-class _SingleYearRow extends StatelessWidget {
+class _SingleYearRow extends ConsumerWidget {
   const _SingleYearRow({
     required this.yearRow,
     required this.monthSize,
     required this.monthSpacing,
-    required this.ref,
     required this.onMonthTap,
     this.selectedMonthKey,
     this.monthTooltipBuilder,
@@ -181,13 +176,12 @@ class _SingleYearRow extends StatelessWidget {
   final YearRow yearRow;
   final double monthSize;
   final double monthSpacing;
-  final WidgetRef ref;
   final void Function(int year, int month, int messageCount) onMonthTap;
   final String? selectedMonthKey;
   final String? Function(MonthData monthData)? monthTooltipBuilder;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final typography = ref.watch(themeTypographyProvider);
 
     return Row(
@@ -213,7 +207,6 @@ class _SingleYearRow extends StatelessWidget {
             onMonthTap: onMonthTap,
             isSelected: _isMonthSelected(yearRow.months[i]),
             monthTooltipBuilder: monthTooltipBuilder,
-            ref: ref,
           ),
         ],
       ],
@@ -234,7 +227,6 @@ class _MonthCell extends StatelessWidget {
   const _MonthCell({
     required this.monthData,
     required this.size,
-    required this.ref,
     required this.onMonthTap,
     this.isSelected = false,
     this.monthTooltipBuilder,
@@ -242,7 +234,6 @@ class _MonthCell extends StatelessWidget {
 
   final MonthData monthData;
   final double size;
-  final WidgetRef ref;
   final void Function(int year, int month, int messageCount) onMonthTap;
   final bool isSelected;
   final String? Function(MonthData monthData)? monthTooltipBuilder;

@@ -3871,6 +3871,9 @@ criteria.
 - Added an architecture tripwire preventing direct `Colors.*` and
   `CupertinoColors.*` presentation usage outside exact transparent, media, and
   shadow exceptions, so future semantic color drift fails at test time.
+- Removed `WidgetRef` field plumbing from the calendar heatmap's private row
+  widgets; the row that needs typography now owns its own `ConsumerWidget`
+  dependency instead of passing provider authority through render data.
 
 ### Vocabulary Note
 
