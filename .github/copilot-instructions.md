@@ -158,9 +158,9 @@ class MyFeature extends _$MyFeature {
 
 **ANY CLASS accessing application databases MUST use centralized providers:**
 
-- **Graph DB**: `ref.watch(driftConversationGraphDatabaseProvider)` from `lib/essentials/db/feature_level_providers.dart`
+- **Graph DB**: `ref.watch(driftConversationGraphDatabaseProvider.future)` from `lib/essentials/db/feature_level_providers.dart`
 - **Source-scoped import DB**: physical construction is `sourceScopedImportDatabaseProvider` in `lib/essentials/db/feature_level_providers.dart`; ordinary import semantics should consume `sourceScopedImportLedgerProvider`
-- **Overlay DB**: `ref.watch(overlayDatabaseProvider)` from `lib/essentials/db/feature_level_providers.dart`
+- **Overlay DB**: `ref.watch(overlayDatabaseProvider.future)` from `lib/essentials/db/feature_level_providers.dart`
 - **Retired import cleanup file**: `macos_import.db` has no central app provider; treat it as cleanup/diagnostic file storage only
 - **Retired working cleanup file**: `working.db` has no central app provider; treat it as cleanup/diagnostic file storage only
 - **NEVER**: Direct `ImportDatabase()` or `DriftDb()` instantiation

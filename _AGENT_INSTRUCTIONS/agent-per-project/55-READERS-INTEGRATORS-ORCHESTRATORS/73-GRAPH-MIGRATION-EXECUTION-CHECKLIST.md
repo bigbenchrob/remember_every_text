@@ -3812,6 +3812,9 @@ criteria.
   overview/data-location docs, deterministic recovery, and database-health
   guidance now point ordinary import semantics toward
   `sourceScopedImportLedgerProvider` or approved diagnostic boundaries.
+- Corrected the remaining DB quick-reference wording so async graph/overlay
+  providers are shown with `.future`, and the `db-import-ss` table distinguishes
+  physical provider construction from ordinary import-ledger semantics.
 
 ### Vocabulary Note
 
