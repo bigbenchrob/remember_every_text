@@ -1273,6 +1273,21 @@ void main() {
       );
     });
 
+    test('External sidebar mode access uses navigation seam', () async {
+      final offenders = await _findExternalSidebarModeProviderImportOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Code outside essentials/navigation should consume active sidebar '
+            'mode through essentials/navigation/feature_level_providers.dart '
+            'with explicit show imports. Direct imports of the concrete '
+            'sidebar mode provider make navigation authority harder to audit.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Production sidebar provider imports stay explicit', () async {
       final offenders = await _findBroadSidebarProviderImportOffenders();
 
@@ -6995,6 +7010,32 @@ Future<List<String>> _findBroadNavigationProviderImportOffenders() async {
   }
 
   return offenders.toList()..sort();
+}
+
+Future<List<String>> _findExternalSidebarModeProviderImportOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/') &&
+        !path.startsWith('lib/essentials/navigation/');
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    for (final importTarget in imports) {
+      if (importTarget.endsWith(
+        'essentials/navigation/application/sidebar_mode_provider.dart',
+      )) {
+        offenders.add('$filePath imports $importTarget');
+      }
+    }
+  }
+
+  return offenders..sort();
 }
 
 Future<List<String>> _findBroadSidebarProviderImportOffenders() async {

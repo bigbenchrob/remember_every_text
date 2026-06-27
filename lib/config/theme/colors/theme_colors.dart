@@ -5,8 +5,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../essentials/app_mode/feature_level_providers.dart'
     show platformBrightnessProvider, switchableDarkModeProvider;
-import '../../../essentials/navigation/application/sidebar_mode_provider.dart';
-import '../../../essentials/navigation/domain/sidebar_mode.dart';
+import '../../../essentials/navigation/feature_level_providers.dart'
+    show SidebarMode, activeSidebarModeProvider;
 
 part 'theme_colors.g.dart';
 

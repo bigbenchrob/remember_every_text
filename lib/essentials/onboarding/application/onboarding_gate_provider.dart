@@ -7,8 +7,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../conversation_graph/application/conversation_graph_build_controller_provider.dart';
 import '../../db/database_directory.dart';
 import '../../logging/feature_level_providers.dart' show appLoggerProvider;
-import '../../navigation/application/sidebar_mode_provider.dart';
-import '../../navigation/domain/sidebar_mode.dart';
+import '../../navigation/feature_level_providers.dart'
+    show SidebarMode, activeSidebarModeProvider;
 import '../domain/onboarding_environment_report.dart';
 import '../domain/onboarding_status.dart';
 import 'database_existence_checker.dart';
