@@ -5,8 +5,9 @@ import 'package:remember_this_text/essentials/conversation_graph/application/con
 import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_graph_reader.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_graph_reader_provider.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_graph_repository.dart';
-import 'package:remember_this_text/features/contacts/feature_level_providers.dart';
-import 'package:remember_this_text/features/handles/feature_level_providers.dart';
+import 'package:remember_this_text/features/contacts/application/display_identity/display_identity.dart';
+import 'package:remember_this_text/features/contacts/application/display_identity/display_identity_resolver_provider.dart';
+import 'package:remember_this_text/features/handles/application/read_models/handle_display_name_provider.dart';
 import 'package:remember_this_text/features/messages/presentation/view/handle_messages_evidence_view.dart';
 
 void main() {
