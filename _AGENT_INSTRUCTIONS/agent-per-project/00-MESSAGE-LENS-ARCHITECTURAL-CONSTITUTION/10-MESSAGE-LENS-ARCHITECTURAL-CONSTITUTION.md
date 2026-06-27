@@ -229,8 +229,7 @@ Must NOT own:
   `feature_level_providers.dart` as a convenience barrel. Internal code must
   import the exact sibling provider, repository, action, model, or type file it
   actually depends on.
-- Except for the central `essentials/db` database boundary,
-  `feature_level_providers.dart` must remain export-only and must not have a
+- `feature_level_providers.dart` must remain export-only and must not have a
   generated `feature_level_providers.g.dart` sibling. Provider state belongs in
   named application/provider files, not in the public seam.
 

@@ -3762,11 +3762,9 @@ criteria.
   `macos_import.db` / `working.db`, old ordinal indexes, and old full-scan
   helper paths are retired-file or compatibility concepts rather than
   "retained" app authorities.
-- Added an architecture tripwire preventing non-DB
-  `feature_level_providers.dart` seams from regaining generated
-  `feature_level_providers.g.dart` siblings. Provider state must live in named
-  application/provider files; only the central database seam may keep generated
-  provider construction.
+- Added an architecture tripwire preventing public `feature_level_providers.dart`
+  seams from regaining generated `feature_level_providers.g.dart` siblings.
+  Provider state must live in named application/provider files.
 - Renamed graph status database-name fields to database-label fields so the
   status sheet presents DB filenames as diagnostic display labels, not as
   path/provider construction authority.

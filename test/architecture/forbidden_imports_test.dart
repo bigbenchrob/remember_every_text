@@ -1082,7 +1082,8 @@ void main() {
         isEmpty,
         reason:
             'Physical app database provider construction belongs in '
-            'lib/essentials/db/feature_level_providers.dart. Feature and '
+            'named files under lib/essentials/db/feature_level_providers/. '
+            'Feature and '
             'domain-specific modules may expose semantic repositories or ports, '
             'but must not declare provider authorities for macos_import_ss.db, '
             'working_ss.db, user_overlays.db, or retired database files.\n'
@@ -7394,9 +7395,6 @@ Future<List<String>> _findFeatureLevelProviderBarrelOffenders() async {
     if (!path.endsWith('/feature_level_providers.dart')) {
       return false;
     }
-    if (path == 'lib/essentials/db/feature_level_providers.dart') {
-      return false;
-    }
     return path.startsWith('lib/features/') ||
         path.startsWith('lib/essentials/');
   });
@@ -7457,9 +7455,6 @@ _findFeatureLevelProviderGeneratedSiblingOffenders() async {
     if (!path.endsWith('/feature_level_providers.g.dart')) {
       return false;
     }
-    if (path == 'lib/essentials/db/feature_level_providers.g.dart') {
-      return false;
-    }
     return path.startsWith('lib/features/') ||
         path.startsWith('lib/essentials/');
   });
@@ -7471,9 +7466,6 @@ Future<List<String>>
 _findFeatureLevelProviderInfrastructureExportOffenders() async {
   final files = await _collectDartFiles((path) {
     if (!path.endsWith('/feature_level_providers.dart')) {
-      return false;
-    }
-    if (path == 'lib/essentials/db/feature_level_providers.dart') {
       return false;
     }
     return path.startsWith('lib/features/') ||

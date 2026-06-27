@@ -134,10 +134,10 @@ Use `../25-ONBOARDING-AND-ARCHIVE/` for current behavior.
 - `feature_level_providers.dart` files are public seams for external consumers,
   not convenience barrels for code inside the same feature or essential module.
   Internal code must import the exact sibling provider, repository, action,
-  model, or type file it depends on. Except for the central `essentials/db`
-  database boundary, public provider seams should remain export-only.
-- Except for the central `essentials/db` database boundary, public provider
-  seams must not have generated `feature_level_providers.g.dart` siblings.
+  model, or type file it depends on. Public provider seams should remain
+  export-only.
+- Public provider seams must not have generated `feature_level_providers.g.dart`
+  siblings.
   Generated provider state belongs in named application/provider files.
 - Public provider seams should not export infrastructure implementation files.
   Expose application/domain contracts, providers, and render-edge types; keep
