@@ -2,7 +2,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../essentials/logging/feature_level_providers.dart'
     show appLoggerProvider;
-import '../../../../../essentials/onboarding/application/onboarding_environment_report_provider.dart';
+import '../../../../../essentials/onboarding/feature_level_providers.dart'
+    show
+        onboardingFullDiskAccessProvider,
+        onboardingMessagesDatabasePathProvider;
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 import '../../message_history_coverage_repository_provider.dart';
 import '../entities/message_history_coverage_report.dart';

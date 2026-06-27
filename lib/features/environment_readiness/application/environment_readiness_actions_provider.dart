@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../essentials/onboarding/application/onboarding_gate_provider.dart';
-import '../../../essentials/onboarding/application/onboarding_readiness_actions_provider.dart';
+import '../../../essentials/onboarding/feature_level_providers.dart'
+    show onboardingGateProvider, onboardingReadinessActionsProvider;
 
 part 'environment_readiness_actions_provider.g.dart';
 

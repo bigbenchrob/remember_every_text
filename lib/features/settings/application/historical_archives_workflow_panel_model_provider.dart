@@ -9,7 +9,8 @@ import '../../../essentials/db/feature_level_providers.dart'
     show dbMaintenanceLockProvider, messageDataVersionProvider;
 import '../../../essentials/logging/feature_level_providers.dart'
     show appLoggerProvider;
-import '../../../essentials/onboarding/application/onboarding_environment_report_provider.dart';
+import '../../../essentials/onboarding/feature_level_providers.dart'
+    show onboardingMessagesDatabasePathProvider;
 import 'archive_source_inspection.dart';
 import 'archive_source_inspector_provider.dart';
 import 'historical_archive_folder_chooser_provider.dart';

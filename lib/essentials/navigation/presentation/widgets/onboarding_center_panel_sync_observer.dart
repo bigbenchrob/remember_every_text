@@ -3,7 +3,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../logging/feature_level_providers.dart'
     show activeBlockingPipelineIncidentProvider;
-import '../../../onboarding/application/onboarding_gate_provider.dart';
+import '../../../onboarding/feature_level_providers.dart'
+    show onboardingGateProvider;
 import '../../application/onboarding_center_panel_sync_controller.dart';
 import '../../application/panel_widget_providers.dart';
 import '../../domain/sidebar_mode.dart';

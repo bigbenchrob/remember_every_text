@@ -10,8 +10,9 @@ import '../../../../essentials/logging/feature_level_providers.dart'
     show
         diagnosticReportExporterProvider,
         activeBlockingPipelineIncidentProvider;
-import '../../../../essentials/onboarding/application/onboarding_gate_provider.dart';
 import '../../../../essentials/onboarding/domain/onboarding_status.dart';
+import '../../../../essentials/onboarding/feature_level_providers.dart'
+    show onboardingGateProvider;
 import '../../application/pipeline_incident_actions_provider.dart';
 
 class PipelineIncidentPanelView extends ConsumerWidget {

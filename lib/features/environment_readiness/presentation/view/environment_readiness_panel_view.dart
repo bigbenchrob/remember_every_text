@@ -8,8 +8,9 @@ import '../../../../essentials/logging/application/diagnostic_report_actions.dar
 import '../../../../essentials/logging/domain/diagnostic_report_presentation_result.dart';
 import '../../../../essentials/logging/feature_level_providers.dart'
     show diagnosticReportExporterProvider;
-import '../../../../essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import '../../../../essentials/onboarding/domain/onboarding_environment_report.dart';
+import '../../../../essentials/onboarding/feature_level_providers.dart'
+    show onboardingDevOverridesProvider, onboardingEnvironmentReportProvider;
 import '../../application/environment_readiness_actions_provider.dart';
 import '../../application/view_spec/resolver_tools/environment_readiness_surface_provider.dart';
 import '../../domain/entities/environment_readiness_surface_view_model.dart';

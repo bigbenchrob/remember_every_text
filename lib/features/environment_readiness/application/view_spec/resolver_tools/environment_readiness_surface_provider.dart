@@ -1,10 +1,10 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../../essentials/onboarding/application/onboarding_environment_report_provider.dart';
-import '../../../../../essentials/onboarding/application/onboarding_gate_provider.dart';
 import '../../../../../essentials/onboarding/domain/onboarding_environment_report.dart';
 import '../../../../../essentials/onboarding/domain/onboarding_status.dart';
+import '../../../../../essentials/onboarding/feature_level_providers.dart'
+    show onboardingEnvironmentReportProvider, onboardingGateProvider;
 import '../../../domain/entities/environment_readiness_surface_view_model.dart';
 
 part 'environment_readiness_surface_provider.g.dart';

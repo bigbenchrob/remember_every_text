@@ -9,8 +9,9 @@ import 'package:macos_ui/macos_ui.dart';
 import '../../../app_mode/feature_level_providers.dart';
 import '../../../conversation_graph/presentation/status/conversation_graph_status_sheet.dart';
 import '../../../debug/feature_level_providers.dart';
-import '../../../onboarding/application/onboarding_gate_provider.dart';
 import '../../../onboarding/domain/onboarding_status.dart';
+import '../../../onboarding/feature_level_providers.dart'
+    show onboardingGateProvider;
 import '../../../onboarding/presentation/onboarding_overlay.dart';
 import '../../application/app_shell_actions_provider.dart';
 import '../../application/panel_widget_providers.dart';

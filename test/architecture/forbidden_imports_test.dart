@@ -5524,6 +5524,20 @@ void main() {
       );
     });
 
+    test('Onboarding public providers use onboarding seam', () async {
+      final offenders = await _findOnboardingPublicProviderImportOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Onboarding gate, readiness, and environment-report providers are '
+            'onboarding-owned. Production consumers outside onboarding should '
+            'import them through essentials/onboarding/feature_level_providers.dart.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Onboarding tests use source-scoped feature boundary', () async {
       final offenders =
           await _findOnboardingTestSourceScopedBoundaryOffenders();
@@ -11454,6 +11468,35 @@ Future<List<String>> _findOnboardingTestSourceScopedBoundaryOffenders() async {
         'source_scoped_import/infrastructure/import_database_provider.dart',
       )) {
         offenders.add('${entity.path} imports $importTarget');
+      }
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findOnboardingPublicProviderImportOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/') &&
+        !path.startsWith('lib/essentials/onboarding/');
+  });
+  final offenders = <String>[];
+  const publicProviderFiles = <String>{
+    'onboarding/application/onboarding_environment_report_provider.dart',
+    'onboarding/application/onboarding_gate_provider.dart',
+    'onboarding/application/onboarding_readiness_actions_provider.dart',
+  };
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    for (final importTarget in imports) {
+      if (publicProviderFiles.any(importTarget.endsWith)) {
+        offenders.add('$filePath imports $importTarget');
       }
     }
   }

@@ -1,7 +1,8 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../onboarding/application/onboarding_environment_report_provider.dart';
+import '../../onboarding/feature_level_providers.dart'
+    show onboardingFullDiskAccessProvider;
 import '../app_database_files.dart';
 import '../application/database_health_audit/database_health_audit_service.dart';
 import '../application/database_health_audit/database_health_database_keys.dart';

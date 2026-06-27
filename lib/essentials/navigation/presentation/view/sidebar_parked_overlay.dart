@@ -4,8 +4,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
-import '../../../onboarding/application/onboarding_environment_report_provider.dart';
-import '../../../onboarding/application/onboarding_readiness_actions_provider.dart';
+import '../../../onboarding/feature_level_providers.dart'
+    show onboardingDevOverridesProvider, onboardingReadinessActionsProvider;
 import '../../application/panel_actions_provider.dart';
 import '../../application/panel_widget_providers.dart';
 import '../../domain/entities/view_spec.dart';
