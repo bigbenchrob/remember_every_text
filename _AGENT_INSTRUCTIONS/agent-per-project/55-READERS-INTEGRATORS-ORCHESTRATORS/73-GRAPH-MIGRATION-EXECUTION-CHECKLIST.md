@@ -49,10 +49,10 @@ deletion, or feature drift while completing the graph migration.
     sibling providers/files, not its own public barrel. Remaining self-barrel
     imports are transitional provider-definition relocation debt tracked by an
     architecture tripwire and must only shrink.
-11. Non-DB `feature_level_providers.dart` seams are export-only and must not
-    have generated `.g.dart` siblings. Provider state belongs in named
-    application/provider files; `essentials/db` is the central database
-    exception.
+11. `feature_level_providers.dart` seams are export-only and must not have
+    generated `.g.dart` siblings. Provider state belongs in named
+    application/provider files; `essentials/db` remains the central database
+    provider seam by exporting named DB-layer provider files.
 
 ## Status Legend
 

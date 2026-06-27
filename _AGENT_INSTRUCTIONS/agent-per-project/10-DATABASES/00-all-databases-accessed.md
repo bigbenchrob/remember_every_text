@@ -23,8 +23,10 @@ This is the canonical index for every SQLite database the project touches. Treat
 
 - **Resolve AddressBook paths via providers only.** Use `getFolderAggregateEitherProvider` (documented in `06-addressbook-path-resolution.md`). Never hardcode `/Sources/<UUID>/...`.
 - **Persistent app DB instances are centralized.** Long-lived application
-  databases must be constructed only through the Riverpod providers declared in
-  `lib/essentials/db/feature_level_providers.dart`. Infrastructure repositories
+  databases must be constructed only through Riverpod providers exported by
+  `lib/essentials/db/feature_level_providers.dart`; implementation lives in
+  named files under `lib/essentials/db/feature_level_providers/`.
+  Infrastructure repositories
   may open source/probe SQLite files directly only for named one-off
   read-only queries, and must close/dispose the connection before returning.
   Extra persistent connections will lock app database files.
@@ -48,7 +50,7 @@ Use these aliases consistently across docs, code comments, and conversations.
 | --- | --- | --- | --- | --- |
 | `db-address-book` | `AddressBook-v22.abcddb` inside the most recent `/Library/Application Support/AddressBook/Sources/<UUID>/` | macOS contact source of truth | `getFolderAggregateEitherProvider` → `AddressBookFolderAggregate.mostRecentFolderPath` | Resolved dynamically at runtime |
 | `db-chat` | `chat.db` | macOS Messages source ledger | `PathsHelper.messagesDatabasePath` (import pipeline) | `~/Library/Messages/chat.db` |
-| `db-import-ss` | `macos_import_ss.db` | Production source-scoped import ledger for Messages + AddressBook facts | Physical construction: `sourceScopedImportDatabaseProvider` from `lib/essentials/db/feature_level_providers.dart`; ordinary import semantics: `sourceScopedImportLedgerProvider` | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/macos_import_ss.db` |
+| `db-import-ss` | `macos_import_ss.db` | Production source-scoped import ledger for Messages + AddressBook facts | Public access: `sourceScopedImportDatabaseProvider` exported by `lib/essentials/db/feature_level_providers.dart`; physical construction implemented in `persistent_database_providers.dart`; ordinary import semantics: `sourceScopedImportLedgerProvider` | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/macos_import_ss.db` |
 | `db-graph-working` | `working_ss.db` | Production source-scoped conversation graph consumed by graph readers and Message Evidence Spine | `driftConversationGraphDatabaseProvider` | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/working_ss.db` |
 | `db-import` | `macos_import.db` | Retired import cleanup file; old files may contain historical ledger tables | No central app provider; reset/diagnostics treat as retired cleanup inventory | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/macos_import.db` |
 | `db-working` | `working.db` | Retired working cleanup file/schema inventory | No central app provider; reset/diagnostics treat as retired cleanup inventory | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/working.db` |
@@ -77,7 +79,7 @@ macOS AddressBook (db-address-book)
 
 - `db-address-book`: `getFolderAggregateEitherProvider` (features/address_book_folders) → `AddressBookFolderAggregate.mostRecentFolderPath`.
 - `db-chat`: retrieved via `PathsHelper` inside import/monitor infrastructure; feature and presentation code must not open it directly.
-- `db-import-ss`: physical provider construction is `sourceScopedImportDatabaseProvider` from `lib/essentials/db/feature_level_providers.dart`. Source-scoped import semantics should consume `sourceScopedImportLedgerProvider` unless a graph projection/repository explicitly needs the concrete import database.
+- `db-import-ss`: physical provider access is `sourceScopedImportDatabaseProvider` exported from `lib/essentials/db/feature_level_providers.dart`; physical construction is implemented in `lib/essentials/db/feature_level_providers/persistent_database_providers.dart`. Source-scoped import semantics should consume `sourceScopedImportLedgerProvider` unless a graph projection/repository explicitly needs the concrete import database.
 - `db-graph-working`: `driftConversationGraphDatabaseProvider` from `lib/essentials/db/feature_level_providers.dart`.
 - `db-import`: no central app provider remains; retired transitional cleanup file only.
 - `db-working`: no central app provider remains; retired transitional cleanup file only.
@@ -88,7 +90,7 @@ macOS AddressBook (db-address-book)
 `sourceScopedImportDatabaseProvider` is a physical DB provider, not a general
 feature dependency. Direct access is limited to:
 
-- the central DB seam that constructs it;
+- the central DB provider implementation that constructs it;
 - the semantic `sourceScopedImportLedgerProvider` bridge;
 - reset, health, and status diagnostics;
 - graph projection repository composition, where import-ledger rows are joined
@@ -104,7 +106,8 @@ physical provider.
 ## Persistent vs One-Off Database Access
 
 - Persistent DB instances: import ledger, conversation graph, overlay, and any
-  future long-lived app database must be physically constructed in
+  future long-lived app database must be physically constructed in named files
+  under `lib/essentials/db/feature_level_providers/` and exported by
   `lib/essentials/db/feature_level_providers.dart`.
 - One-off source/probe reads: infrastructure repositories may open `chat.db`,
   AddressBook candidates, historical archive `chat.db` files, or retired
