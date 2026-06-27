@@ -3815,6 +3815,12 @@ criteria.
 - Corrected the remaining DB quick-reference wording so async graph/overlay
   providers are shown with `.future`, and the `db-import-ss` table distinguishes
   physical provider construction from ordinary import-ledger semantics.
+- Split the central DB provider seam into export-only public access plus named
+  DB-layer provider subfiles. Physical app database construction now lives in
+  `persistent_database_providers.dart`, database-health service composition
+  lives in `database_health_audit_service_provider.dart`, and the public
+  `essentials/db/feature_level_providers.dart` seam exports both without
+  owning implementation code.
 
 ### Vocabulary Note
 

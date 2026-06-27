@@ -7,7 +7,7 @@ part of 'chat_summary_repository_provider.dart';
 // **************************************************************************
 
 String _$chatSummaryRepositoryHash() =>
-    r'9a953360bfa7f66d402cb694d58ca768afb30c41';
+    r'7e6d4c6d3658c4b207782053bd36567e502cc73b';
 
 /// See also [chatSummaryRepository].
 @ProviderFor(chatSummaryRepository)

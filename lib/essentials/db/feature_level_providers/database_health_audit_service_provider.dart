@@ -1,0 +1,76 @@
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+import '../../onboarding/application/onboarding_environment_report_provider.dart';
+import '../app_database_files.dart';
+import '../application/database_health_audit/database_health_audit_service.dart';
+import '../application/database_health_audit/database_health_database_keys.dart';
+import '../application/database_health_audit/database_health_query_layer.dart';
+import '../database_directory.dart';
+import '../infrastructure/repositories/database_health_audit_queries.dart';
+import '../infrastructure/repositories/filesystem_database_health_audit_report_writer.dart';
+import '../infrastructure/repositories/local_database_health_runtime_environment.dart';
+import 'persistent_database_providers.dart'
+    show
+        driftConversationGraphDatabaseProvider,
+        overlayDatabaseProvider,
+        sourceScopedImportDatabaseProvider;
+
+part 'database_health_audit_service_provider.g.dart';
+
+@Riverpod(keepAlive: true)
+Future<DatabaseHealthAuditService> databaseHealthAuditService(Ref ref) async {
+  final sourceScopedImportDb = await ref.read(
+    sourceScopedImportDatabaseProvider.future,
+  );
+  final conversationGraphDb = await ref.read(
+    driftConversationGraphDatabaseProvider.future,
+  );
+  final overlayDb = await ref.read(overlayDatabaseProvider.future);
+  final hasFullDiskAccess = ref.read(onboardingFullDiskAccessProvider);
+
+  return DatabaseHealthAuditService(
+    hasFullDiskAccess: hasFullDiskAccess,
+    runtimeEnvironment: const LocalDatabaseHealthRuntimeEnvironment(),
+    reportWriter: const FilesystemDatabaseHealthAuditReportWriter(),
+    queryLayers: <DatabaseHealthQueryLayer>[
+      RetiredCleanupSqliteFileHealthQueryLayer(
+        databaseKey: databaseHealthKeyRetiredMacosImport,
+        role: databaseHealthRoleRetiredMacosImportCleanup,
+        databasePath: appDatabasePath(
+          AppDatabaseFile.retiredMacosImport,
+          databaseDirectory: databaseDirectoryPath,
+        ),
+      ),
+      RetiredCleanupSqliteFileHealthQueryLayer(
+        databaseKey: databaseHealthKeyRetiredWorking,
+        role: databaseHealthRoleRetiredWorkingCleanup,
+        databasePath: appDatabasePath(
+          AppDatabaseFile.retiredWorking,
+          databaseDirectory: databaseDirectoryPath,
+        ),
+      ),
+      SourceScopedImportDatabaseHealthQueryLayer(
+        database: sourceScopedImportDb,
+        databasePath: appDatabasePath(
+          AppDatabaseFile.sourceScopedImport,
+          databaseDirectory: databaseDirectoryPath,
+        ),
+      ),
+      ConversationGraphDatabaseHealthQueryLayer(
+        database: conversationGraphDb,
+        databasePath: appDatabasePath(
+          AppDatabaseFile.conversationGraph,
+          databaseDirectory: databaseDirectoryPath,
+        ),
+      ),
+      OverlayDatabaseHealthQueryLayer(
+        database: overlayDb,
+        databasePath: appDatabasePath(
+          AppDatabaseFile.overlay,
+          databaseDirectory: databaseDirectoryPath,
+        ),
+      ),
+    ],
+  );
+}

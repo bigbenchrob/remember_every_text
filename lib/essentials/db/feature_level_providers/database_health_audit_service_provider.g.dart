@@ -1,30 +1,30 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'conversation_graph_status_snapshot_provider.dart';
+part of 'database_health_audit_service_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$conversationGraphStatusSnapshotHash() =>
-    r'95e587fa79a8ddde388e28a8c7053d9bcb9105d1';
+String _$databaseHealthAuditServiceHash() =>
+    r'4f8a7ec45d5d2de8c016ec0e8ec3ef3178709024';
 
-/// See also [conversationGraphStatusSnapshot].
-@ProviderFor(conversationGraphStatusSnapshot)
-final conversationGraphStatusSnapshotProvider =
-    AutoDisposeFutureProvider<ConversationGraphStatus>.internal(
-      conversationGraphStatusSnapshot,
-      name: r'conversationGraphStatusSnapshotProvider',
+/// See also [databaseHealthAuditService].
+@ProviderFor(databaseHealthAuditService)
+final databaseHealthAuditServiceProvider =
+    FutureProvider<DatabaseHealthAuditService>.internal(
+      databaseHealthAuditService,
+      name: r'databaseHealthAuditServiceProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
           ? null
-          : _$conversationGraphStatusSnapshotHash,
+          : _$databaseHealthAuditServiceHash,
       dependencies: null,
       allTransitiveDependencies: null,
     );
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef ConversationGraphStatusSnapshotRef =
-    AutoDisposeFutureProviderRef<ConversationGraphStatus>;
+typedef DatabaseHealthAuditServiceRef =
+    FutureProviderRef<DatabaseHealthAuditService>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

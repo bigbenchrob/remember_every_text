@@ -83,12 +83,12 @@ const Set<String> _retiredDatabaseFilenameLiteralAllowedFiles = {
 };
 
 const Set<String> _retiredCleanupHealthInspectionAllowedFiles = {
-  'lib/essentials/db/feature_level_providers.dart',
+  'lib/essentials/db/feature_level_providers/database_health_audit_service_provider.dart',
   'lib/essentials/db/infrastructure/repositories/database_health_audit_queries.dart',
 };
 
 const Set<String> _sourceScopedImportDatabaseProviderAllowedFiles = {
-  'lib/essentials/db/feature_level_providers.dart',
+  'lib/essentials/db/feature_level_providers/database_health_audit_service_provider.dart',
   'lib/essentials/source_scoped_import/application/source_scoped_import_ledger_provider.dart',
   'lib/essentials/onboarding/application/message_data_reset_service.dart',
   'lib/essentials/conversation_graph/application/attachments/attachment_projection_repository_provider.dart',
@@ -133,8 +133,9 @@ const Set<String> _databaseHealthIdentityLiteralAllowedFiles = {
 
 const Set<String> _appDatabaseFileHelperAllowedFiles = {
   'lib/essentials/db/app_database_files.dart',
-  'lib/essentials/db/feature_level_providers.dart',
+  'lib/essentials/db/feature_level_providers/database_health_audit_service_provider.dart',
   'lib/essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart',
+  'lib/essentials/db/feature_level_providers/persistent_database_providers.dart',
   'lib/essentials/db/infrastructure/repositories/sqlite_conversation_graph_readiness_checker.dart',
   'lib/essentials/conversation_graph/application/status/conversation_graph_status_snapshot_provider.dart',
   'lib/essentials/conversation_graph/infrastructure/repositories/graph_health_repository.dart',
@@ -145,8 +146,9 @@ const Set<String> _appDatabaseFileHelperAllowedFiles = {
 
 const Set<String> _databaseDirectoryPathAllowedFiles = {
   'lib/essentials/db/database_directory.dart',
-  'lib/essentials/db/feature_level_providers.dart',
+  'lib/essentials/db/feature_level_providers/database_health_audit_service_provider.dart',
   'lib/essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart',
+  'lib/essentials/db/feature_level_providers/persistent_database_providers.dart',
   'lib/essentials/logging/infrastructure/pipeline_audit_logger.dart',
   'lib/essentials/logging/infrastructure/support_bundle_export_service.dart',
   'lib/essentials/onboarding/application/onboarding_gate_provider.dart',
@@ -243,18 +245,18 @@ const Set<String> _directSqliteImportAllowedFiles = {
 };
 
 const Set<String> _nativeDriftExecutorAllowedFiles = {
-  'lib/essentials/db/feature_level_providers.dart',
+  'lib/essentials/db/feature_level_providers/persistent_database_providers.dart',
 };
 
 const Set<String> _physicalDatabaseConstructionAllowedFiles = {
-  'lib/essentials/db/feature_level_providers.dart',
+  'lib/essentials/db/feature_level_providers/persistent_database_providers.dart',
   'lib/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart',
   'lib/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart',
 };
 
 const Set<String> _driftCustomSqlAllowedFiles = {
   'lib/essentials/conversation_graph/infrastructure/repositories/graph_health_repository.dart',
-  'lib/essentials/db/feature_level_providers.dart',
+  'lib/essentials/db/feature_level_providers/persistent_database_providers.dart',
   'lib/essentials/db/infrastructure/repositories/database_health_audit_queries.dart',
   'lib/essentials/search/infrastructure/repositories/graph_search_repository.dart',
   'lib/features/attachments/infrastructure/repositories/attachment_archive_stats_repository.dart',
@@ -661,7 +663,7 @@ const List<String> _retiredImportMigrationPathFragments = <String>[
 const Set<String> _retiredArchiveMetadataWrapperImportAllowedFiles = {};
 
 const Set<String> _databaseConstructionAllowedFiles = {
-  'lib/essentials/db/feature_level_providers.dart',
+  'lib/essentials/db/feature_level_providers/persistent_database_providers.dart',
   'lib/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart',
   'lib/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart',
 };
@@ -7205,7 +7207,8 @@ Future<List<String>> _findPhysicalDatabaseProviderOffenders() async {
     if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
       return false;
     }
-    if (path == 'lib/essentials/db/feature_level_providers.dart') {
+    if (path ==
+        'lib/essentials/db/feature_level_providers/persistent_database_providers.dart') {
       return false;
     }
     return path.startsWith('lib/');
@@ -7562,7 +7565,8 @@ Future<List<String>> _findDbMaintenanceLockProviderIslandOffenders() async {
   final offenders = <String>{};
 
   for (final filePath in files) {
-    if (filePath == 'lib/essentials/db/feature_level_providers.dart' ||
+    if (filePath ==
+            'lib/essentials/db/feature_level_providers/persistent_database_providers.dart' ||
         filePath ==
             'lib/essentials/db/feature_level_providers/db_maintenance_lock_provider.dart') {
       continue;
