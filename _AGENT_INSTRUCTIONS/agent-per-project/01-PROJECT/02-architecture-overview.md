@@ -143,6 +143,11 @@ Use `../25-ONBOARDING-AND-ARCHIVE/` for current behavior.
   Expose application/domain contracts, providers, and render-edge types; keep
   data sources and repository implementations behind named provider or
   application boundaries.
+- The root `providers.dart` barrel is a bootstrap artifact, not a general
+  dependency surface. Production code outside app bootstrap should consume
+  narrow seams such as `essentials/paths/feature_level_providers.dart` or
+  `essentials/app_mode/feature_level_providers.dart` instead of importing the
+  root barrel directly.
 - Use the current provider names from code and database docs. Ordinary graph
   reads use `driftConversationGraphDatabaseProvider`; source-scoped import DB
   construction lives behind `sourceScopedImportDatabaseProvider` exported by

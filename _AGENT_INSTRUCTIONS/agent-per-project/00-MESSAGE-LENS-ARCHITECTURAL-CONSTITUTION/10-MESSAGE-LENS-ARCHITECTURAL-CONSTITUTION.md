@@ -312,6 +312,12 @@ If the needed provider exists only in `feature_level_providers.dart`, treat that
 as transitional provider-definition debt. Move the provider to an owned sibling
 file before removing the self-barrel import.
 
+The root `providers.dart` barrel is even narrower: it is a bootstrap artifact.
+Production code should not import it directly. If a root provider must remain
+defined there temporarily, expose it through a narrow essential seam such as
+`essentials/paths/feature_level_providers.dart` or
+`essentials/app_mode/feature_level_providers.dart` and consume that seam instead.
+
 Do not add `part 'feature_level_providers.g.dart';` or regenerate
 `feature_level_providers.g.dart` for public feature/essential seams. Physical
 database provider construction still belongs in `essentials/db`, but generated
