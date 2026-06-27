@@ -3786,6 +3786,11 @@ criteria.
   `sourceScopedImportDatabaseProvider` in `essentials/db`, semantic import code
   usually consumes `sourceScopedImportLedgerProvider`, and retired
   `macos_import.db` / `working.db` have no central app providers.
+- Expanded the active architecture-doc tripwires to include
+  `.github/copilot-instructions.md`, so the GitHub Copilot entry point cannot
+  drift back toward old import-provider names or retained-database authority
+  language while `AGENTS.md` and `_AGENT_INSTRUCTIONS/agent-per-project/`
+  remain protected.
 
 ### Vocabulary Note
 
