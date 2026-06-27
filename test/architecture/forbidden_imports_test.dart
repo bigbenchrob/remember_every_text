@@ -6705,7 +6705,8 @@ Future<List<String>> _findAppDatabaseFileExportOffenders() async {
 }
 
 Future<List<String>> _findDatabaseProviderLoggingImportOffenders() async {
-  const filePath = 'lib/essentials/db/feature_level_providers.dart';
+  const filePath =
+      'lib/essentials/db/feature_level_providers/persistent_database_providers.dart';
   final source = await File(filePath).readAsString();
   final uncommented = _stripComments(source);
   final offenders = <String>[];

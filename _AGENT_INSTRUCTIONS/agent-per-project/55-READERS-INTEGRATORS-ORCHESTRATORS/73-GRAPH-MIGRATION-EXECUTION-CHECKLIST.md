@@ -3823,6 +3823,10 @@ criteria.
   failures now describe `feature_level_providers.dart` as universally
   export-only and refer to the named database provider implementation boundary
   for physical DB construction.
+- Retargeted the database-provider logging-import tripwire from the now
+  export-only public DB seam to `persistent_database_providers.dart`, so the
+  explicit `appLoggerProvider` import rule protects the physical database
+  construction implementation that actually composes logging.
 
 ### Vocabulary Note
 
