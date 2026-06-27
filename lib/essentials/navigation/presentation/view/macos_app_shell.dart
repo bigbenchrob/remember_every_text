@@ -8,7 +8,7 @@ import 'package:macos_ui/macos_ui.dart';
 
 import '../../../app_mode/feature_level_providers.dart';
 import '../../../conversation_graph/presentation/status/conversation_graph_status_sheet.dart';
-import '../../../debug/application/developer_mode_provider.dart';
+import '../../../debug/feature_level_providers.dart';
 import '../../../onboarding/application/onboarding_gate_provider.dart';
 import '../../../onboarding/domain/onboarding_status.dart';
 import '../../../onboarding/presentation/onboarding_overlay.dart';

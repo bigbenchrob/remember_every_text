@@ -5,7 +5,7 @@ import 'package:macos_ui/macos_ui.dart' as macos_ui;
 
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
-import '../../../../../essentials/debug/application/developer_mode_provider.dart';
+import '../../../../../essentials/debug/feature_level_providers.dart';
 import '../../../domain/message_evidence/message_evidence_search_mode.dart';
 
 class MessageEvidenceHeaderModel {

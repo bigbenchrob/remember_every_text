@@ -2,7 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../../config/theme/colors/theme_colors.dart';
-import '../../../../../essentials/debug/application/developer_mode_provider.dart';
+import '../../../../../essentials/debug/feature_level_providers.dart';
 import '../../../application/message_evidence/message_evidence_spine_provider.dart';
 import '../../../domain/message_evidence/message_evidence_row_data.dart';
 import '../../../domain/message_evidence/message_evidence_scope.dart';

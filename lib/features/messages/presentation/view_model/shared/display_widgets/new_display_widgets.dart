@@ -6,7 +6,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../../../../config/theme/colors/theme_colors.dart';
-import '../../../../../../essentials/debug/application/developer_mode_provider.dart';
+import '../../../../../../essentials/debug/feature_level_providers.dart';
 import '../../../../../../essentials/external_links/feature_level_providers.dart'
     show externalLinkActionsProvider;
 import '../../../../../attachments/domain/constants/attachment_provenance.dart';

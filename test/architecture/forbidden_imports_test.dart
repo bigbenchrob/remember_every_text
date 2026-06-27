@@ -4654,6 +4654,20 @@ void main() {
       );
     });
 
+    test('Developer mode provider access uses debug seam', () async {
+      final offenders = await _findDeveloperModeProviderImportOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Developer-mode state is debug-owned. Consumers outside debug '
+            'should import it through essentials/debug/feature_level_providers.dart '
+            'instead of the developer_mode_provider.dart implementation file.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Developer mode store provider stays feature-boundary owned', () {
       const retiredInfrastructureProvider =
           'lib/essentials/debug/infrastructure/persistence/developer_mode_store_provider.dart';
@@ -10055,6 +10069,35 @@ Future<List<String>> _findDeveloperModeStorageOffenders() async {
       uncommented.contains('writeOverlaySetting')) {
     offenders.add('$filePath handles overlay settings storage directly');
   }
+  return offenders..sort();
+}
+
+Future<List<String>> _findDeveloperModeProviderImportOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path.startsWith('lib/essentials/debug/') ||
+        path.startsWith('test/essentials/debug/')) {
+      return false;
+    }
+    return path.startsWith('lib/') || path.startsWith('test/');
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    if (imports.any((importTarget) {
+      return importTarget.endsWith(
+        'debug/application/developer_mode_provider.dart',
+      );
+    })) {
+      offenders.add(filePath);
+    }
+  }
+
   return offenders..sort();
 }
 
