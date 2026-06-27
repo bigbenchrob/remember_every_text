@@ -3862,6 +3862,9 @@ criteria.
 - Replaced the messages heatmap error state's `CupertinoColors.systemRed`
   usage with `status.error`, keeping sidebar error affordances on the shared
   status-token vocabulary.
+- Replaced the stray-handle type switcher's selected fill/text constants with
+  shared primary button tokens, keeping compact segmented controls on the
+  app-wide action color vocabulary.
 
 ### Vocabulary Note
 

@@ -44,7 +44,7 @@ class StrayHandlesTypeSwitcherCassette extends ConsumerWidget {
         groupValue: selectedFilter,
         onValueChanged: handleFilterChange,
         padding: const EdgeInsets.all(2),
-        // Use neutral gray for unselected border/separator
+        selectedColor: colors.buttons.primaryBackground,
         unselectedColor: colors.surfaces.surface,
         borderColor: colors.lines.border,
         pressedColor: colors.surfaces.hover,
@@ -93,10 +93,8 @@ class _SegmentContent extends StatelessWidget {
       child: Text(
         label,
         style: typography.caption.copyWith(
-          // Selected segment has blue background, so use white text
-          // Unselected uses secondary text color
           color: isSelected
-              ? CupertinoColors.white
+              ? colors.buttons.primaryForeground
               : colors.content.textSecondary,
           fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
           fontSize: 12,
