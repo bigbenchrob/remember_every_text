@@ -3831,6 +3831,11 @@ criteria.
   existing theme tokens (`buttons.destructiveForeground` and
   `content.textTertiary`) so that cleanup/review UI remains app-theme governed
   instead of carrying local palette decisions.
+- Removed the stale constitution exception that allowed the central DB
+  `feature_level_providers.dart` seam to own generated provider state. The
+  constitution now matches the implementation and tripwire: public seams are
+  export-only everywhere, while DB provider state lives in named DB-layer
+  implementation files.
 
 ### Vocabulary Note
 

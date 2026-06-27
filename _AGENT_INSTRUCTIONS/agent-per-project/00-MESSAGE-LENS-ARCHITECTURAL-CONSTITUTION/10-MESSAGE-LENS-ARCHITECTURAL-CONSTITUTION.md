@@ -313,9 +313,10 @@ as transitional provider-definition debt. Move the provider to an owned sibling
 file before removing the self-barrel import.
 
 Do not add `part 'feature_level_providers.g.dart';` or regenerate
-`feature_level_providers.g.dart` for public feature/essential seams. The central
-database seam is the only approved generated exception because it owns physical
-database provider construction.
+`feature_level_providers.g.dart` for public feature/essential seams. Physical
+database provider construction still belongs in `essentials/db`, but generated
+provider state must live in named implementation files under
+`essentials/db/feature_level_providers/`, not in the public DB seam itself.
 
 
 ---
