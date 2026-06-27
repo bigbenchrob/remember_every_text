@@ -2,7 +2,7 @@
 tier: project
 scope: architecture
 owner: agent-per-project
-last_reviewed: 2026-06-20
+last_reviewed: 2026-06-26
 source_of_truth: doc
 links:
   - ./02-architecture-overview.md
@@ -41,7 +41,7 @@ docs win when lower-level details differ.
 | Participant / contact | Human-facing identity resolved from graph contact facts plus overlay user intent. Legacy participants in retired storage are historical reference data, not current UI authority. |
 | Contact | Feature/domain term for human-facing contact behavior; backed by graph contact/handle topology, overlay overrides, and feature providers. |
 | Attachment | Message-associated file metadata in source-scoped import/graph projection plus optional archive metadata in overlay. |
-| Reaction | Tapback/reaction data projected into `reactions` and `reaction_counts`. |
+| Reaction | Tapback/reaction semantics preserved through message import/projection fields. The standalone reactions feature/table surface is retired unless a future graph-facing reaction feature is explicitly designed. |
 | Overlay | Durable user intent in `user_overlays.db`, merged with working data at read time. |
 
 ## Boundary Rules
