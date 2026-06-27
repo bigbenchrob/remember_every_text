@@ -3836,6 +3836,9 @@ criteria.
   constitution now matches the implementation and tripwire: public seams are
   export-only everywhere, while DB provider state lives in named DB-layer
   implementation files.
+- Replaced the handle-lens create-contact error label's hard-coded red with
+  the shared `buttons.destructiveForeground` theme token, keeping message
+  evidence and handle triage surfaces visually governed by the app theme.
 
 ### Vocabulary Note
 

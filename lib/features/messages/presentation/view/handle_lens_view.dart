@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:macos_ui/macos_ui.dart';
 
+import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
 import '../../../../config/theme/widgets/buttons/buttons.dart';
 import '../../../contacts/feature_level_providers.dart'
@@ -30,6 +31,8 @@ class HandleLensView extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = _readThemeColors(ref);
     final typography = ref.watch(themeTypographyProvider);
     final asyncHandles = ref.watch(strayHandlesProvider);
     final asyncDisplayName = ref.watch(
@@ -100,6 +103,8 @@ class HandleLensView extends HookConsumerWidget {
                             isBusy: isBusy,
                             isCreating: isCreating,
                             typography: typography,
+                            errorColor:
+                                colors.buttons.destructiveForeground,
                           )
                         : null,
                   ),
@@ -111,6 +116,10 @@ class HandleLensView extends HookConsumerWidget {
       ],
     );
   }
+}
+
+ThemeColors _readThemeColors(WidgetRef ref) {
+  return ref.read(themeColorsProvider.notifier);
 }
 
 // =============================================================================
@@ -208,6 +217,7 @@ class _CreateContactForm extends HookConsumerWidget {
     required this.isBusy,
     required this.isCreating,
     required this.typography,
+    required this.errorColor,
   });
 
   final int handleId;
@@ -215,6 +225,7 @@ class _CreateContactForm extends HookConsumerWidget {
   final ValueNotifier<bool> isBusy;
   final ValueNotifier<bool> isCreating;
   final ThemeTypography typography;
+  final Color errorColor;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -250,7 +261,7 @@ class _CreateContactForm extends HookConsumerWidget {
             child: Text(
               errorMessage.value!,
               style: typography.caption.copyWith(
-                color: const Color(0xFFD64545),
+                color: errorColor,
               ),
             ),
           ),
