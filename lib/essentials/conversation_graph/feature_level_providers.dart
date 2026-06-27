@@ -1,4 +1,6 @@
 export 'application/archives/graph_projection_resetter_provider.dart';
+export 'application/archives/source_scoped_archive_graph_import_service_provider.dart';
+export 'application/archives/source_scoped_archive_graph_removal_service_provider.dart';
 export 'application/attachments/attachment_projection_repository_provider.dart';
 export 'application/chat_handle_joins/chat_to_handle_projection_repository_provider.dart';
 export 'application/chat_message_joins/chat_to_message_projection_repository_provider.dart';
@@ -23,6 +25,7 @@ export 'application/monitor/chat_db_change_monitor_provider.dart';
 export 'application/monitor/chat_db_monitor_runtime_environment_provider.dart';
 export 'application/monitor/chat_db_source_probe_reader_provider.dart';
 export 'application/monitor/import_ledger_probe_reader_provider.dart';
+export 'application/orchestration/graph_maintenance_execution_gate_provider.dart';
 export 'application/status/archived_attachment_file_opener_provider.dart';
 export 'application/status/conversation_graph_status_log_writer_provider.dart';
 export 'application/status/conversation_graph_status_snapshot_provider.dart';

@@ -5116,7 +5116,9 @@ void main() {
         reason:
             'Settings application/presentation code may compose report and '
             'workflow semantics, but concrete conversation graph database '
-            'access belongs behind named infrastructure repositories.\n'
+            'access belongs behind named infrastructure repositories, and '
+            'graph archive/gate provider access should flow through '
+            'essentials/conversation_graph/feature_level_providers.dart.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -10831,6 +10833,19 @@ Future<List<String>> _findSettingsGraphReadBoundaryOffenders() async {
     for (final importTarget in imports) {
       if (importTarget.endsWith('conversation_graph_database.dart')) {
         offenders.add('$filePath imports $importTarget');
+      }
+      if (importTarget.endsWith(
+            'conversation_graph/application/archives/source_scoped_archive_graph_import_service_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'conversation_graph/application/archives/source_scoped_archive_graph_removal_service_provider.dart',
+          ) ||
+          importTarget.endsWith(
+            'conversation_graph/application/orchestration/graph_maintenance_execution_gate_provider.dart',
+          )) {
+        offenders.add(
+          '$filePath imports concrete graph workflow provider $importTarget',
+        );
       }
     }
 

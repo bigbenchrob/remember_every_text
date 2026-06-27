@@ -2,9 +2,12 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../essentials/conversation_graph/application/archives/source_scoped_archive_graph_import_service_provider.dart';
-import '../../../essentials/conversation_graph/application/archives/source_scoped_archive_graph_removal_service_provider.dart';
-import '../../../essentials/conversation_graph/application/orchestration/graph_maintenance_execution_gate_provider.dart';
+import '../../../essentials/conversation_graph/feature_level_providers.dart'
+    show
+        GraphMaintenanceExecutionGateState,
+        graphMaintenanceExecutionGateProvider,
+        sourceScopedArchiveGraphImportServiceProvider,
+        sourceScopedArchiveGraphRemovalServiceProvider;
 import '../../../essentials/db/feature_level_providers.dart'
     show dbMaintenanceLockProvider, messageDataVersionProvider;
 import '../../../essentials/logging/feature_level_providers.dart'
