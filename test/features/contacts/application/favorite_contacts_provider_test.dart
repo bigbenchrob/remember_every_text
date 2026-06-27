@@ -5,10 +5,12 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
+import 'package:remember_this_text/features/contacts/application/contact_access/contact_access_provider.dart';
+import 'package:remember_this_text/features/contacts/application/favorites/favorite_contacts_repository_provider.dart';
+import 'package:remember_this_text/features/contacts/application/read_models/contacts_list_repository_provider.dart';
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/resolver_tools/contact_favorite_actions_provider.dart';
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/resolver_tools/contact_is_favorite_provider.dart';
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/resolver_tools/favorite_contacts_provider.dart';
-import 'package:remember_this_text/features/contacts/feature_level_providers.dart';
 import 'package:remember_this_text/features/contacts/infrastructure/repositories/favorite_contacts_repository.dart';
 import 'package:remember_this_text/features/contacts/infrastructure/repositories/overlay_contact_access_store.dart';
 

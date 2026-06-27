@@ -1,5 +1,5 @@
+import 'package:remember_this_text/features/contacts/application/read_models/contact_summary.dart';
 import 'package:remember_this_text/features/contacts/domain/participant_origin.dart';
-import 'package:remember_this_text/features/contacts/feature_level_providers.dart';
 
 ContactSummary buildContactSummary({
   int participantId = 1,
