@@ -3767,6 +3767,17 @@ criteria.
   `feature_level_providers.g.dart` siblings. Provider state must live in named
   application/provider files; only the central database seam may keep generated
   provider construction.
+- Renamed graph status database-name fields to database-label fields so the
+  status sheet presents DB filenames as diagnostic display labels, not as
+  path/provider construction authority.
+- Refreshed current architecture/source-scoped migration docs so
+  `essentials/db` is described as centralized database provider/file identity
+  infrastructure, while `source_scoped_import` and `conversation_graph` own
+  import/projection semantics. Removed the retired reactions feature shell
+  from the current feature-module list.
+- Reworded reset-service retired-file diagnostic context keys so old
+  `macos_import.db` / `working.db` reset checks are labeled as retired cleanup
+  file checks rather than generic database reset state.
 
 ### Vocabulary Note
 
