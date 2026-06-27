@@ -16,6 +16,7 @@ import 'full_disk_access_provider.dart';
 import 'onboarding_database_probe_reader.dart';
 import 'onboarding_database_probe_reader_provider.dart';
 import 'onboarding_failure_storage_provider.dart';
+import 'onboarding_failure_store.dart';
 
 part 'onboarding_environment_report_provider.g.dart';
 
@@ -128,21 +129,52 @@ String onboardingDatabaseDirectoryPath(Ref ref) {
 
 @Riverpod(keepAlive: true)
 Future<OnboardingEnvironmentReport> onboardingEnvironmentReport(Ref ref) async {
-  final evaluator = _OnboardingEnvironmentEvaluator(ref);
+  final inputs = _OnboardingEnvironmentInputs(
+    devOverrides: ref.watch(onboardingDevOverridesProvider),
+    failureStorage: ref.watch(onboardingFailureStorageProvider),
+    databaseProbeReader: ref.watch(onboardingDatabaseProbeReaderProvider),
+    hasFullDiskAccess: ref.watch(onboardingFullDiskAccessProvider),
+    messagesDatabasePath: ref.watch(onboardingMessagesDatabasePathProvider),
+    addressBookEither: await ref.watch(futureGetFolderAggregateProvider.future),
+    databaseDirectoryPath: ref.watch(onboardingDatabaseDirectoryPathProvider),
+    isMaintenanceLocked: ref.watch(dbMaintenanceLockProvider),
+  );
+  final evaluator = _OnboardingEnvironmentEvaluator(inputs);
   return evaluator.evaluate();
 }
 
-class _OnboardingEnvironmentEvaluator {
-  const _OnboardingEnvironmentEvaluator(this.ref);
+class _OnboardingEnvironmentInputs {
+  const _OnboardingEnvironmentInputs({
+    required this.devOverrides,
+    required this.failureStorage,
+    required this.databaseProbeReader,
+    required this.hasFullDiskAccess,
+    required this.messagesDatabasePath,
+    required this.addressBookEither,
+    required this.databaseDirectoryPath,
+    required this.isMaintenanceLocked,
+  });
 
-  final Ref ref;
+  final OnboardingDevOverridesState devOverrides;
+  final OnboardingFailureStore failureStorage;
+  final OnboardingDatabaseProbeReader databaseProbeReader;
+  final bool hasFullDiskAccess;
+  final String messagesDatabasePath;
+  final Either<FolderRetrievalFailure, AddressBookFolderAggregate>
+  addressBookEither;
+  final String databaseDirectoryPath;
+  final bool isMaintenanceLocked;
+}
+
+class _OnboardingEnvironmentEvaluator {
+  const _OnboardingEnvironmentEvaluator(this.inputs);
+
+  final _OnboardingEnvironmentInputs inputs;
 
   Future<OnboardingEnvironmentReport> evaluate() async {
-    final devOverrides = ref.watch(onboardingDevOverridesProvider);
-    final failureStorage = ref.watch(onboardingFailureStorageProvider);
-    final databaseProbeReader = ref.watch(
-      onboardingDatabaseProbeReaderProvider,
-    );
+    final devOverrides = inputs.devOverrides;
+    final failureStorage = inputs.failureStorage;
+    final databaseProbeReader = inputs.databaseProbeReader;
     final persistedImportEntry = await failureStorage
         .loadSourceImportFailureEntry();
     final persistedGraphProjectionEntry = await failureStorage
@@ -173,13 +205,11 @@ class _OnboardingEnvironmentEvaluator {
         : simulatedPipelineFailureActive
         ? null
         : persistedGraphProjectionFailure;
-    var hasFullDiskAccess = ref.watch(onboardingFullDiskAccessProvider);
+    var hasFullDiskAccess = inputs.hasFullDiskAccess;
     if (devOverrides.simulateFullDiskAccessBlocked) {
       hasFullDiskAccess = false;
     }
-    final messagesDatabasePath = ref.watch(
-      onboardingMessagesDatabasePathProvider,
-    );
+    final messagesDatabasePath = inputs.messagesDatabasePath;
     final messagesProbe = devOverrides.simulateMessagesDatabaseMissing
         ? OnboardingDatabaseProbe(
             path: messagesDatabasePath,
@@ -194,21 +224,17 @@ class _OnboardingEnvironmentEvaluator {
             failureMessage:
                 'Simulated unavailable Contacts source from onboarding dev panel',
           )
-        : _probeAddressBook(
-            databaseProbeReader,
-            await ref.watch(futureGetFolderAggregateProvider.future),
-          );
+        : _probeAddressBook(databaseProbeReader, inputs.addressBookEither);
 
-    final databaseDirPath = ref.watch(onboardingDatabaseDirectoryPathProvider);
     final sourceScopedImportDbPath = appDatabasePath(
       AppDatabaseFile.sourceScopedImport,
-      databaseDirectory: databaseDirPath,
+      databaseDirectory: inputs.databaseDirectoryPath,
     );
     final graphDbPath = appDatabasePath(
       AppDatabaseFile.conversationGraph,
-      databaseDirectory: databaseDirPath,
+      databaseDirectory: inputs.databaseDirectoryPath,
     );
-    final isMaintenanceLocked = ref.watch(dbMaintenanceLockProvider);
+    final isMaintenanceLocked = inputs.isMaintenanceLocked;
 
     final sourceMessageCount = devOverrides.simulateSparseSourceHistory
         ? 0

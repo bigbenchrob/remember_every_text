@@ -3879,6 +3879,9 @@ criteria.
   boundaries, not carried as render payload.
 - Changed `SearchService` to depend on an explicit graph-search repository
   reader instead of storing broad `Ref` authority inside the service.
+- Split onboarding environment report dependency gathering from evaluation:
+  the provider now gathers explicit inputs, while the evaluator class performs
+  classification without storing `Ref`.
 
 ### Vocabulary Note
 
