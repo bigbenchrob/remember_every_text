@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 
-import '../../../../providers.dart';
+import '../../../app_mode/feature_level_providers.dart';
 import '../../../conversation_graph/presentation/status/conversation_graph_status_sheet.dart';
 import '../../../debug/application/developer_mode_provider.dart';
 import '../../../onboarding/application/onboarding_gate_provider.dart';

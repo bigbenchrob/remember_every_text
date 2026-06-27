@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../providers.dart';
+import '../../app_mode/feature_level_providers.dart';
 import '../../debug/application/developer_mode_provider.dart';
 import '../../window_state/application/window_state_providers.dart';
 

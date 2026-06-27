@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../essentials/app_mode/feature_level_providers.dart'
+    show platformBrightnessProvider, switchableDarkModeProvider;
 import '../../../essentials/navigation/application/sidebar_mode_provider.dart';
 import '../../../essentials/navigation/domain/sidebar_mode.dart';
-import '../../../providers.dart'
-    show platformBrightnessProvider, switchableDarkModeProvider;
 
 part 'theme_colors.g.dart';
 

@@ -415,13 +415,7 @@ const Set<String> _sharedPreferencesAllowedFiles = {
   'lib/essentials/window_state/infrastructure/persistence/shared_preferences_window_storage.dart',
 };
 
-const Set<String> _rootProvidersImportAllowedFiles = {
-  'lib/config/theme/colors/theme_colors.dart',
-  'lib/config/theme/colors/theme_colors_annotated.dart',
-  'lib/essentials/navigation/application/app_shell_actions_provider.dart',
-  'lib/essentials/navigation/presentation/view/macos_app_shell.dart',
-  'lib/main.dart',
-};
+const Set<String> _rootProvidersImportAllowedFiles = {'lib/main.dart'};
 
 const Set<String> _providerContainerAllowedFiles = {'lib/main.dart'};
 
