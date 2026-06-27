@@ -6,11 +6,7 @@ import '../../../essentials/conversation_graph/application/archives/source_scope
 import '../../../essentials/conversation_graph/application/archives/source_scoped_archive_graph_removal_service_provider.dart';
 import '../../../essentials/conversation_graph/application/orchestration/graph_maintenance_execution_gate_provider.dart';
 import '../../../essentials/db/feature_level_providers.dart'
-    show
-        conversationGraphPopulatedProvider,
-        conversationGraphReadinessProvider,
-        dbMaintenanceLockProvider,
-        messageDataVersionProvider;
+    show dbMaintenanceLockProvider, messageDataVersionProvider;
 import '../../../essentials/logging/feature_level_providers.dart'
     show appLoggerProvider;
 import '../../../essentials/onboarding/application/onboarding_environment_report_provider.dart';
@@ -498,8 +494,6 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       final removalResult = await removalService.removeArchiveSource(
         folderPath: selectedFolderPath,
       );
-      ref.invalidate(conversationGraphReadinessProvider);
-      ref.invalidate(conversationGraphPopulatedProvider);
       ref.read(messageDataVersionProvider.notifier).bump();
 
       if (!removalResult.sourceWasRegistered ||
@@ -628,8 +622,6 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         folderPath: selectedFolderPath,
         sourceLabel: state.sourceLabel,
       );
-      ref.invalidate(conversationGraphReadinessProvider);
-      ref.invalidate(conversationGraphPopulatedProvider);
       ref.read(messageDataVersionProvider.notifier).bump();
 
       ArchiveSourceInspector? archiveSourceInspector;

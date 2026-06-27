@@ -3889,6 +3889,9 @@ criteria.
   now signals completed graph changes through `messageDataVersionProvider`
   instead of also imperatively invalidating readiness/populated providers that
   already derive from that version signal.
+- Applied the same derivation rule to historical archive import/removal:
+  archive graph changes bump `messageDataVersionProvider`; they no longer
+  directly invalidate graph readiness/populated providers.
 
 ### Vocabulary Note
 
