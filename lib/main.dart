@@ -19,9 +19,8 @@ import 'essentials/app_mode/feature_level_providers.dart'
 import 'essentials/conversation_graph/application/monitor/chat_db_change_monitor_provider.dart';
 import 'essentials/db/database_directory.dart';
 import 'essentials/logging/application/diagnostic_report_actions.dart';
-import 'essentials/logging/application/diagnostic_report_provider.dart'
-    show diagnosticReportExporterProvider;
-import 'essentials/logging/feature_level_providers.dart' show appLoggerProvider;
+import 'essentials/logging/feature_level_providers.dart'
+    show appLoggerProvider, diagnosticReportExporterProvider;
 import 'essentials/navigation/application/router.dart';
 import 'essentials/services/startup_flags_service.dart';
 import 'essentials/window_state/feature_level_providers.dart'
