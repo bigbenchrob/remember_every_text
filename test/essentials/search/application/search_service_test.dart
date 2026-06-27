@@ -1,8 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/essentials/search/application/graph_message_search.dart';
+import 'package:remember_this_text/essentials/search/application/graph_search_repository_provider.dart';
 import 'package:remember_this_text/essentials/search/application/search_service.dart';
-import 'package:remember_this_text/essentials/search/feature_level_providers.dart';
+import 'package:remember_this_text/essentials/search/application/search_service_provider.dart';
 
 void main() {
   test('searchGraphMessageIds delegates graph scope and query', () async {
