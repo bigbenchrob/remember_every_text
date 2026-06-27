@@ -187,7 +187,7 @@ class _ContactNameEditDialogState
                     '${_currentText.length}/$kMaxDisplayNameLength',
                     style: typography.cassetteCardFooter.copyWith(
                       color: _currentText.length > kMaxDisplayNameLength
-                          ? Colors.red
+                          ? colors.status.error
                           : colors.content.textTertiary,
                     ),
                   ),

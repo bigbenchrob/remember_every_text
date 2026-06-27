@@ -3857,6 +3857,8 @@ criteria.
 - Added an architecture tripwire that rejects new raw `Color(0x...)` literals
   in active `lib/` code outside theme definitions, the canonical heatmap data
   scale, and two explicitly documented transparent sentinels.
+- Replaced the contact-name edit dialog's validation `Colors.red` with
+  `status.error`, keeping contact identity editing on shared status tokens.
 
 ### Vocabulary Note
 
