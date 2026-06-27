@@ -3,8 +3,9 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
+import 'package:remember_this_text/features/contacts/application/read_models/handles_for_contact_provider.dart';
+import 'package:remember_this_text/features/contacts/application/read_models/linked_handle.dart';
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/widget_builders/handle_filter_widget.dart';
-import 'package:remember_this_text/features/contacts/feature_level_providers.dart';
 
 void main() {
   group('HandleFilterWidget', () {

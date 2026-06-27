@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 
-import 'package:remember_this_text/features/contacts/feature_level_providers.dart';
+import 'package:remember_this_text/features/contacts/application/read_models/contacts_list_repository_provider.dart';
 import 'package:remember_this_text/features/contacts/presentation/widgets/contact_picker_dialog.dart';
 
 import '../../../../test_utils/contact_summary_fixture.dart';

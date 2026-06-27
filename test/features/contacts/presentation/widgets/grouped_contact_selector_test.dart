@@ -2,11 +2,11 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import 'package:remember_this_text/features/contacts/application/read_models/contact_summary.dart';
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/resolver_tools/filtered_picker_sections_provider.dart';
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/resolver_tools/picker_filter_mode_provider.dart';
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/resolver_tools/unified_picker_sections_provider.dart';
 import 'package:remember_this_text/features/contacts/domain/participant_origin.dart';
-import 'package:remember_this_text/features/contacts/feature_level_providers.dart';
 import 'package:remember_this_text/features/contacts/presentation/widgets/grouped_contact_selector.dart';
 
 void main() {
