@@ -2,9 +2,11 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
+import 'package:remember_this_text/essentials/db/feature_level_providers.dart'
+    show overlayDatabaseProvider;
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import 'package:remember_this_text/features/contacts/feature_level_providers.dart';
+import 'package:remember_this_text/features/contacts/application/read_models/virtual_participants_provider.dart';
+import 'package:remember_this_text/features/contacts/application/services/manual_handle_link_service.dart';
 
 void main() {
   group('ManualHandleLinkService virtual participants', () {
