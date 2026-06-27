@@ -3,8 +3,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart';
+import 'package:remember_this_text/essentials/db/feature_level_providers/persistent_database_providers.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'package:remember_this_text/essentials/navigation/application/panel_widget_providers.dart';
 import 'package:remember_this_text/essentials/navigation/domain/entities/view_spec.dart';
@@ -291,9 +291,7 @@ void main() {
             const CassetteSpec.sidebarUtility(
               SidebarUtilityCassetteSpec.settingsMenu(),
             ),
-            const CassetteSpec.settings(
-              SettingsCassetteSpec.textSizeInfo(),
-            ),
+            const CassetteSpec.settings(SettingsCassetteSpec.textSizeInfo()),
           ]),
         );
         expect(
@@ -316,9 +314,7 @@ void main() {
           const CassetteSpec.sidebarUtility(
             SidebarUtilityCassetteSpec.settingsMenu(),
           ),
-          const CassetteSpec.settings(
-            SettingsCassetteSpec.textSizeInfo(),
-          ),
+          const CassetteSpec.settings(SettingsCassetteSpec.textSizeInfo()),
         ]);
 
         await dispatcher.dispatch(
@@ -431,9 +427,7 @@ void main() {
           const CassetteSpec.sidebarUtility(
             SidebarUtilityCassetteSpec.settingsMenu(),
           ),
-          const CassetteSpec.settings(
-            SettingsCassetteSpec.textSizeInfo(),
-          ),
+          const CassetteSpec.settings(SettingsCassetteSpec.textSizeInfo()),
         ]);
 
         await dispatcher.dispatch(
@@ -484,9 +478,7 @@ void main() {
           const CassetteSpec.sidebarUtility(
             SidebarUtilityCassetteSpec.settingsMenu(),
           ),
-          const CassetteSpec.settings(
-            SettingsCassetteSpec.textSizeInfo(),
-          ),
+          const CassetteSpec.settings(SettingsCassetteSpec.textSizeInfo()),
         ]);
 
         await dispatcher.dispatch(
@@ -573,9 +565,7 @@ void main() {
             const CassetteSpec.sidebarUtility(
               SidebarUtilityCassetteSpec.settingsMenu(),
             ),
-            const CassetteSpec.settings(
-              SettingsCassetteSpec.textSizeInfo(),
-            ),
+            const CassetteSpec.settings(SettingsCassetteSpec.textSizeInfo()),
           ]),
         );
       },
